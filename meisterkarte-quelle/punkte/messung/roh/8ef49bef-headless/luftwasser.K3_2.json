@@ -1,0 +1,134 @@
+{
+ "proben": {
+  "bestaeuber2": {
+   "zelleM": 16,
+   "mitte": [
+    -248,
+    -1048
+   ],
+   "nachbar": [
+    -280,
+    -1048
+   ],
+   "traegS": 90,
+   "akt": true,
+   "geste": [
+    1,
+    364.318,
+    545.835
+   ],
+   "vor": {
+    "mitte": 5.3,
+    "nachbar": 5.829,
+    "feld": [
+     0.658,
+     0.855
+    ],
+    "aktiv": 1
+   },
+   "ruhe": {
+    "mitte": 5.643,
+    "nachbar": 6.343,
+    "feld": [
+     0.658,
+     0.855
+    ],
+    "aktiv": 1
+   },
+   "nach": {
+    "mitte": 9.171,
+    "nachbar": 6.671,
+    "feld": [
+     0.821,
+     0.855
+    ],
+    "aktiv": 1
+   },
+   "nacht": {
+    "mitte": 0.171,
+    "nachbar": 0,
+    "feld": [
+     0.664,
+     0.855
+    ],
+    "aktiv": 0.01
+   },
+   "tag": {
+    "mitte": 5.071,
+    "nachbar": 5.814,
+    "feld": [
+     0.658,
+     0.855
+    ],
+    "aktiv": 0.99
+   },
+   "sek": 46.5
+  },
+  "fische2": {
+   "bach": [
+    -309.768,
+    -822.525
+   ],
+   "gesetz": {
+    "tiefe": 0.4,
+    "fluchtM": 4.5,
+    "wegM": 10,
+    "ruheS": 8
+   },
+   "fische": 27,
+   "meiden": {
+    "stand": [
+     -300.375,
+     -817.427
+    ],
+    "vorher": 13,
+    "spielerAmStand": 0,
+    "naechsterM": 4.778,
+    "heim": 12
+   },
+   "pegel": {
+    "sekunden": 2,
+    "spur": [
+     [
+      0,
+      0.046,
+      25.826
+     ]
+    ],
+    "spiegel": [
+     25.826,
+     26.022
+    ],
+    "vor": {
+     "n": 27,
+     "y": 25.17,
+     "spiegel": 25.508,
+     "anteil": 0.341
+    },
+    "nach": {
+     "n": 27,
+     "y": 25.247,
+     "spiegel": 25.707,
+     "anteil": 0.377,
+     "ueber": 0
+    }
+   },
+   "sicht": {
+    "kamera": [
+     -298.894,
+     25.308,
+     -813.838
+    ],
+    "saeule": 0.632,
+    "unterWasser": true,
+    "sichtM": 30,
+    "trupp": 12,
+    "binnen15": 16,
+    "imBild": 9,
+    "naechsterM": 3.903
+   },
+   "sek": 17.7
+  }
+ },
+ "fehler": []
+}

@@ -1,0 +1,177 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function musik2Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port, seite] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 900000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    let out = {};
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r._foundry && r._foundry.recipes, { timeout: 300000, polling: 250 });
+        await page.evaluate(require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs")).AUSGABE_INSTALL); // der EINE Wetter-Weg (`__wetterSetzen`)
+        out = await page.evaluate("(" + seite + ")()");
+    } catch (e) {
+        out = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+    } finally {
+        console.log("MUSIK2 " + JSON.stringify(out));
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/8ef49bef-headless/affekt.K5_2.json 7704 async function musik2Seite() {
+    const [sy, pm, A] = [st.symphony, st.playerMesh.position, r.constructor];
+    const [GEO, AX] = [A.EMOTION_GEOMETRY, A.EMOTION_AXES];
+    const ach = (v) => AX.reduce((b, a) => (v * ((GEO[a] || {}).erregung || 0) > v * ((GEO[b] || {}).erregung || 0) ? a : b));
+    const [HOCH, TIEF] = [ach(1), ach(-1)];
+    const leer = Object.fromEntries(AX.map((a) => [a, 0]));
+    const alt = { sy: Object.assign({}, sy), emo: st.player.emotions, ef: st.emotionField, mel: r._lofiMelodyNotes, sprache: st.grok.speechEnabled };
+    const setze = (e) => {
+        st.player.emotions = Object.assign({}, leer, e);
+        st.emotionField = new Map([[r._lifeCellKey(pm.x, pm.z), { axes: Object.assign({}, leer, e), t: st.spielZeit }]]);
+    };
+    const SR = 8000;
+    const ereignisTun = (art) => {
+        const p = st.playerMesh.position;
+        if (art === "schritt") return !!r._playSchrittOneShot(r._schrittKlangParams(r._schrittMaterialAt(p.x, p.z, p.y), false, 0));
+        if (art === "ruf") {
+            // das nächste Tier ruft 6 m vor dem Spieler (in Hörweite, `tierRufPegel`), danach steht es, wo es stand
+            const c = (st.creatures || []).filter((x) => x.position).sort((a, b) => a.position.distanceTo(p) - b.position.distanceTo(p))[0];
+            if (!c) return false;
+            const vor = c.position.clone();
+            c.position.set(p.x + 6, p.y, p.z);
+            try {
+                return !!r._tierRuf(c, "freude");
+            } finally {
+                c.position.copy(vor);
+            }
+        }
+        if (art === "gespraech") {
+            st.grok.speechEnabled = true;
+            r.grokRender("Hörst du den Bach dort unten?");
+            return true;
+        }
+        return false;
+    };
+    const fahre = async (L) => {
+        const ctx = new OfflineAudioContext(2, Math.ceil(SR * L.sek), SR);
+        const quellen = [];
+        for (const name of ["createOscillator", "createBufferSource"]) {
+            const f = ctx[name].bind(ctx);
+            ctx[name] = (...a) => {
+                const n = f(...a);
+                const s0 = n.start.bind(n);
+                n.start = (t = 0, ...b) => (quellen.push([Math.max(t, ctx.currentTime), n.type || "puffer"]), s0(t, ...b));
+                return n;
+            };
+        }
+        const zu = ctx.createChannelMerger(2);
+        zu.connect(ctx.destination);
+        const musik = ctx.createGain();
+        musik.connect(zu, 0, 0);
+        const welt = ctx.createGain();
+        welt.connect(zu, 0, 1);
+        // DAS WETTER DES LAUFS über den EINEN Weg einer Probe (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs): er taut den
+        // Mess-Halt für DIESES Wort und hält danach wieder. Bis 03.11. setzte die Probe das Wort selbst und fror den Halt dahinter
+        // (`weatherEffectTime` −1e9): ab dem zweiten Lauf verweigerte `_setWeather` jedes Wort, der Sturm lief sonnig (w6-musik 6c4b8f35)
+        const wort = L.wetter || "sunny";
+        if (window.__wetterSetzen(wort) !== wort) throw new Error("das Wetter des Laufs gilt nicht: " + wort + " (es gilt " + st.weather + ")");
+        r.setTimeOfDay(L.uhr == null ? 0.5 : L.uhr, "regler");
+        setze(L.emo || {});
+        Object.assign(sy, { ctx, masterGain: welt, enabled: true, umwelt: null });
+        sy.lofi = r._buildLofiLayer(ctx, musik);
+        sy.lofi.rngState = L.saat >>> 0;
+        if (L.ereignisse) sy.umwelt = r._umweltKlangBauen(ctx, welt, A._umweltGesetz());
+        const akkorde = [];
+        const phrasen = [];
+        r._lofiMelodyNotes = function (d, dur) {
+            const n = alt.mel.call(this, d, dur);
+            phrasen.push(d + ":" + n.map((x) => Math.round(12 * Math.log2(x.freq / A.LOFI_BASE_FREQ)) + "@" + Math.round(x.start / (dur / 16))).join(","));
+            return n;
+        };
+        const fehler = [];
+        const ereignisse = (L.ereignisse || []).map((e) => Object.assign({}, e));
+        const halt = (t) =>
+            ctx.suspend(t).then(() => {
+                try {
+                    r._lofiTick();
+                    if (Number.isFinite(sy.lofi.lastChordAt) && sy.lofi.lastChordAt !== akkorde[akkorde.length - 1]) akkorde.push(sy.lofi.lastChordAt);
+                    for (const e of ereignisse) if (!e.da && t >= e.t) (e.da = true), (e.ok = ereignisTun(e.art));
+                } catch (x) {
+                    if (fehler.length < 3) fehler.push(String((x && x.message) || x).slice(0, 160));
+                }
+                if (t + 0.25 < L.sek - 0.25) halt(t + 0.25);
+                ctx.resume();
+            });
+        halt(0.25);
+        const buf = await ctx.startRendering();
+        r._lofiMelodyNotes = alt.mel;
+        if (sy.umwelt && sy.umwelt.werkstatt) sy.umwelt.werkstatt.terminate();
+        const k0 = buf.getChannelData(0);
+        const rms = (t) => {
+            let s = 0;
+            const [a, b] = [Math.floor((t + 0.05) * SR), Math.floor((t + 0.65) * SR)];
+            for (let i = a; i < b; i++) s += k0[i] * k0[i];
+            return Math.sqrt(s / Math.max(1, b - a));
+        };
+        const typen = {};
+        for (const [, ty] of quellen) typen[ty] = (typen[ty] || 0) + 1;
+        const abst = akkorde
+            .slice(1)
+            .map((x, i) => x - akkorde[i])
+            .sort((a, b) => a - b);
+        return {
+            sek: L.sek,
+            wetter: st.weather,
+            fehler,
+            akkorde: akkorde.length,
+            periode: abst.length ? +abst[abst.length >> 1].toFixed(3) : null,
+            dichte: +(quellen.length / L.sek).toFixed(3),
+            typen,
+            phrasen,
+            ereignisse: ereignisse.map((e) => ({ art: e.art, t: e.t, ok: !!e.ok })),
+            rms: (L.messen || []).map((t) => +rms(t).toExponential(4)),
+        };
+    };
+    const J = { achsen: [HOCH, TIEF] };
+    try {
+        const erregung = (e) => (setze(e), +r._emotionState(r.auraAt(pm.x, pm.z).emotion).arousal.toFixed(2));
+        J.erregung = [erregung({ [HOCH]: 1 }), erregung({ [TIEF]: 1 })];
+        J.hoch = await fahre({ sek: 60, saat: 1, emo: { [HOCH]: 1 } });
+        J.tief = await fahre({ sek: 60, saat: 1, emo: { [TIEF]: 1 } });
+        J.hoch2 = await fahre({ sek: 60, saat: 2, emo: { [HOCH]: 1 } });
+        J.sonne = await fahre({ sek: 60, saat: 1 });
+        J.sturm = await fahre({ sek: 60, saat: 1, wetter: "stormy" });
+        J.nacht = await fahre({ sek: 60, saat: 1, uhr: 0 });
+        J.sonne2 = await fahre({ sek: 60, saat: 2 });
+        const lang = await fahre({ sek: 600, saat: 3 });
+        const zuletzt = new Map();
+        const wieder = [];
+        lang.phrasen.forEach((p, i) => {
+            const zwei = p + "|" + (lang.phrasen[i + 1] || "");
+            if (!/@/.test(zwei)) return;
+            if (zuletzt.has(zwei)) wieder.push([zuletzt.get(zwei), i]);
+            zuletzt.set(zwei, i);
+        });
+        J.lang = { sek: 600, akkorde: lang.akkorde, phrasen: lang.phrasen.length, mitTon: lang.phrasen.filter((p) => /@/.test(p)).length, wieder: wieder.length, beispiel: wieder.slice(0, 3), fehler: lang.fehler };
+        for (const k of ["hoch", "tief", "hoch2", "sonne", "sturm", "nacht", "sonne2"]) delete J[k].phrasen;
+        const EV = [{ art: "schritt", t: 8 }, { art: "ruf", t: 13 }, { art: "gespraech", t: 18 }];
+        const messen = [4, 8, 13, 18];
+        const mit = await fahre({ sek: 24, saat: 4, ereignisse: EV, messen });
+        const ohne = await fahre({ sek: 24, saat: 4, messen });
+        const db = (a, b) => (a > 0 && b > 0 ? +(20 * Math.log10(b / a)).toFixed(2) : null);
+        J.duck = { ereignisse: mit.ereignisse, rauschenDb: db(mit.rms[0], ohne.rms[0]), schrittDb: db(mit.rms[1], ohne.rms[1]), rufDb: db(mit.rms[2], ohne.rms[2]), gespraechDb: db(mit.rms[3], ohne.rms[3]), rms: [mit.rms, ohne.rms], fehler: mit.fehler };
+    } catch (e) {
+        J.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+    } finally {
+        Object.assign(sy, alt.sy);
+        [st.player.emotions, st.emotionField, st.grok.speechEnabled] = [alt.emo, alt.ef, alt.sprache];
+        r._lofiMelodyNotes = alt.mel;
+    }
+    return J;
+}
+MUSIK2 {"achsen":["awe","peace"],"erregung":[0.9,-0.7],"hoch":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":22,"periode":2.752,"dichte":12.633,"typen":{"sine":340,"triangle":132,"puffer":286},"ereignisse":[],"rms":[]},"tief":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":16,"periode":3.744,"dichte":6.583,"typen":{"sine":155,"triangle":96,"puffer":144},"ereignisse":[],"rms":[]},"hoch2":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":22,"periode":2.752,"dichte":12.583,"typen":{"sine":337,"triangle":132,"puffer":286},"ereignisse":[],"rms":[]},"sonne":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":19,"periode":3.248,"dichte":9.367,"typen":{"sine":201,"triangle":114,"puffer":247},"ereignisse":[],"rms":[]},"sturm":{"sek":60,"wetter":"stormy","fehler":[],"akkorde":19,"periode":3.248,"dichte":13.483,"typen":{"sine":220,"sawtooth":76,"triangle":114,"puffer":399},"ereignisse":[],"rms":[]},"nacht":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":19,"periode":3.248,"dichte":6.2,"typen":{"sine":201,"triangle":114,"puffer":57},"ereignisse":[],"rms":[]},"sonne2":{"sek":60,"wetter":"sunny","fehler":[],"akkorde":19,"periode":3.248,"dichte":9.3,"typen":{"sine":197,"triangle":114,"puffer":247},"ereignisse":[],"rms":[]},"lang":{"sek":600,"akkorde":185,"phrasen":185,"mitTon":185,"wieder":0,"beispiel":[],"fehler":[]},"duck":{"ereignisse":[{"art":"schritt","t":8,"ok":true},{"art":"ruf","t":13,"ok":true},{"art":"gespraech","t":18,"ok":true}],"rauschenDb":0,"schrittDb":8.51,"rufDb":10,"gespraechDb":12,"rms":[[0.098369,0.067618,0.0038187,0.043344],[0.098399,0.18016,0.012076,0.17256]],"fehler":[]}}

@@ -1,0 +1,25 @@
+{
+ "neu": true,
+ "bytes": 7822,
+ "nennt": 0,
+ "gegenlauf": {
+  "rezepte": 3,
+  "bauplaene": 3,
+  "steht": true,
+  "tris": 160,
+  "geladen": true
+ },
+ "bibliothek": {
+  "ok": true,
+  "art": "gesetzbuch",
+  "code": "922a9f495ef5b52e",
+  "bytes": 4209
+ },
+ "spieler": {
+  "rezepte": 3,
+  "bauplaene": 3,
+  "steht": true,
+  "tris": 160,
+  "geladen": true
+ }
+}

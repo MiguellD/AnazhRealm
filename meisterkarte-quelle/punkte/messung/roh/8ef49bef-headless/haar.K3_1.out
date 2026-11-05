@@ -1,0 +1,103 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function haarWindLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    let erg;
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const f = await werkbankRuf(W, "/fenster", { w: 640, h: 360 });
+        if (!f || f.fehler) throw new Error("fenster 640 360: " + JSON.stringify(f).slice(0, 200));
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ abstand: 0.6, je: 5, faktor: 4 }) + ");" });
+        if (!a || !a.ergebnis) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        erg = a.ergebnis;
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    } finally {
+        tor.stop();
+    }
+    console.log("HAAR-WIND " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/8ef49bef-headless/haar.K3_1.json 7704 async function haarWindSzene(r, T, o) {
+    const st = r.state, rend = st.renderer, cam = st.camera;
+    rend.setAnimationLoop(null);
+    window.__buehne({});
+    r.setCameraMode("third");
+    window.__halten(["leib", "tiere"]);
+    const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
+    // der Leib des Spielers wächst nach dem Start der Werkbank (der Ofen liefert ihn im Faden): bis 120 s auf sein Haar warten
+    const haar = [];
+    for (let k = 0; k < 120 && !haar.length; k++) {
+        st.playerMesh.traverse((m) => m.isMesh && r._kopfKlasse(m)[1] === "spieler:kopf/hair" && haar.push(m));
+        if (!haar.length) r._gameLoopTick(performance.now()), await sleep(1000);
+    }
+    if (!haar.length) return { fehler: "keine Klasse spieler:kopf/hair am Leib des Spielers nach 120 s" };
+    // die Sicht Third zeigt den Kopf erst nach ihrem Takt (Ego blendet ihn aus), der Leib steht nach dem Fall des Starts
+    for (let k = 0; k < 4; k++) r.setCameraMode("third"), r._gameLoopTick(performance.now());
+    st.playerMesh.updateMatrixWorld(true);
+    const box = new T.Box3();
+    haar.forEach((m) => box.expandByObject(m));
+    const c = box.getCenter(new T.Vector3());
+    let blick = null;
+    const stellen = () => {
+        cam.position.copy(c).addScaledVector(blick, o.abstand);
+        cam.lookAt(c);
+        cam.updateMatrixWorld(true);
+    };
+    const schuss = async () => (stellen(), (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+    const L = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+    // die Seite mit dem meisten Haar im Bild (der Leib dreht im Third frei gegen die Gier, `_loopCamera`): vier Blicke, je die Maske
+    let maske = [];
+    let mit = null;
+    for (const w of [0, 0.5, 1, 1.5]) {
+        blick = new T.Vector3(Math.sin(Math.PI * w), 0, Math.cos(Math.PI * w));
+        haar.forEach((m) => (m.visible = false));
+        window.__bundlesNeu();
+        const ohne = await schuss();
+        haar.forEach((m) => (m.visible = true));
+        window.__bundlesNeu();
+        const mi = await schuss();
+        const ma = [];
+        for (let p = 0, i = 0; p < W * H; p++, i += 4)
+            if (Math.abs(mi[i] - ohne[i]) > 18 || Math.abs(mi[i + 1] - ohne[i + 1]) > 18 || Math.abs(mi[i + 2] - ohne[i + 2]) > 18) ma.push(i);
+        if (ma.length > maske.length) [maske, mit, o.seite] = [ma, mi, w];
+    }
+    blick = new T.Vector3(Math.sin(Math.PI * o.seite), 0, Math.cos(Math.PI * o.seite));
+    if (maske.length < 200) return { fehler: "das Haar trägt " + maske.length + " Pixel im Bild (< 200)", pixel: maske.length };
+    // das Rauschen des Bilds: derselbe Schuss ohne Takt dazwischen
+    const noch = await schuss();
+    let rd = 0;
+    for (const i of maske) rd += Math.abs(L(noch, i) - L(mit, i));
+    const wob = r._windWob;
+    let t = performance.now();
+    let vor = mit;
+    const bilder = [];
+    try {
+        for (const an of [true, false, true, false]) {
+            r._windWob = an ? (u) => o.faktor * wob(u) : () => 0;
+            for (let k = 0; k < o.je; k++) {
+                r._gameLoopTick((t += 250));
+                const u = await schuss();
+                let d = 0;
+                for (const i of maske) d += Math.abs(L(u, i) - L(vor, i));
+                vor = u;
+                bilder.push([+r._windAt(c.x, c.z, st.spielZeit).ms.toFixed(3), +(d / maske.length).toFixed(3), an ? 1 : 0]);
+            }
+        }
+    } finally {
+        r._windWob = wob;
+    }
+    const a = bilder.slice(1).map((b) => b[0]);
+    const b = bilder.slice(1).map((x) => x[1]);
+    const ma = a.reduce((x, y) => x + y, 0) / a.length;
+    const mb = b.reduce((x, y) => x + y, 0) / b.length;
+    let sab = 0, saa = 0, sbb = 0;
+    for (let i = 0; i < a.length; i++) (sab += (a[i] - ma) * (b[i] - mb)), (saa += (a[i] - ma) ** 2), (sbb += (b[i] - mb) ** 2);
+    const mittel = (an) => { const x = bilder.slice(1).filter((q) => q[2] === an).map((q) => q[1]); return +(x.reduce((p, q) => p + q, 0) / x.length).toFixed(3); };
+    return { pixel: maske.length, seite: o.seite, schirm: [W, H], rauschen: +(rd / maske.length).toFixed(3), bilder, r: saa > 0 && sbb > 0 ? +(sab / Math.sqrt(saa * sbb)).toFixed(3) : null, bewegungAn: mittel(1), bewegungAus: mittel(0) };
+}
+[linse-gpu] google/swiftshader
+HAAR-WIND {"pixel":2477,"seite":1,"schirm":[640,360],"rauschen":0,"bilder":[[5.408,27.526,1],[5.517,24.749,1],[5.624,13.746,1],[5.73,20.153,1],[5.834,23.43,1],[0,23.363,0],[0,1.375,0],[0,0.003,0],[0,0.003,0],[0,0.163,0],[6.415,26.782,1],[6.502,15.075,1],[6.585,29.03,1],[6.664,27.755,1],[6.74,18.254,1],[0,26.827,0],[0,3.485,0],[0,0.008,0],[0,0.079,0],[0,0.002,0]],"r":0.722,"bewegungAn":22.108,"bewegungAus":5.531}

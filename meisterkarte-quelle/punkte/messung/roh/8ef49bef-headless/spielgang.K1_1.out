@@ -1,0 +1,75 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function spielgangLauf(port, aus, G) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const out = { spur: G.spur, laden: 0, schritte: {} };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    page.on("framenavigated", (f) => f === page.mainFrame() && out.laden++);
+    try {
+        const spur = JSON.parse(fs.readFileSync(G.spur, "utf8"));
+        const marken = Object.entries(spur.marken).sort((a, b) => a[1] - b[1]);
+        out.marken = marken.map(([m]) => m);
+        await page.setViewport({ width: spur.schirm[0], height: spur.schirm[1] });
+        await server.zeige(page, 120000, "index.html?spur=" + G.spur);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0 || (r._spur && r._spur.fehler)));
+        if (!(await page.evaluate(() => !!r._spur))) throw new Error("kein Abspieler im Spiel: ?spur= liest niemand (r._spur fehlt)");
+        // DIE UHR und DER LESER: je Takt [Schritt, x, z, Gier, Sicht] — gelesen, nie gestellt
+        await page.evaluate(() => {
+            window.__lese = [];
+            setInterval(() => {
+                __handTakt();
+                window.__lese.push([r._spur.schritt, pm.position.x, pm.position.z, st.yaw, st.cameraMode]);
+            }, 20);
+        });
+        const stand = () =>
+            page.evaluate((werk) => {
+                const [sp, bank] = [r._spur, st.architectures.find((a) => a.type === werk)];
+                return {
+                    s: sp.schritt, i: sp.i, fehler: sp.fehler || null, verfehlt: sp.verfehlt.length, kontrolleMs: Math.round(st._weltbildDa || 0),
+                    lade: r._ladeschirmSteht(), zeiger: st.isPointerLocked, modus: r.getGameMode(),
+                    werke: st.architectures.filter((a) => a.type === werk).length,
+                    studio: st.architectures.filter((a) => /^w-/.test(String(a.id))).map((a) => a.type),
+                    sitzt: !!bank && st.player.mountedArch === bank.id,
+                    satz: ([...document.querySelectorAll("#chat-output > div")].pop() || { textContent: "" }).textContent,
+                };
+            }, G.werk);
+        const am = {};
+        for (const [m, s] of marken) {
+            await page.waitForFunction((n) => r._spur.fehler || r._spur.schritt >= n, { timeout: 180000, polling: 10 }, s);
+            am[m] = await stand();
+            if (am[m].fehler) throw new Error("die Spur lädt nicht: " + am[m].fehler);
+        }
+        const lese = await page.evaluate(() => window.__lese);
+        const ende = am[marken[marken.length - 1][0]];
+        Object.assign(out, { abgespielt: ende.i, eingaben: spur.zeilen.length, verfehlt: ende.verfehlt, kontrolleMs: am[marken[0][0]].kontrolleMs });
+        const folgt = (m) => out.marken[out.marken.indexOf(m) + 1];
+        const nach = (m) => am[folgt(m)];
+        const S = out.schritte;
+        // die Eingaben eines Schritts: je Taste, Knopf und Raste eine (keydown ohne Wiederholung, mousedown, wheel)
+        const eingaben = (m) =>
+            spur.zeilen.map((z) => z.split(" ")).filter(([s, art, , , , mods]) => +s >= spur.marken[m] && +s < spur.marken[folgt(m)] && (art === "mousedown" || art === "wheel" || (art === "keydown" && !(+mods & 16)))).length;
+        if (am.ankommen) S.ankommen = { kontrolleMs: am.ankommen.kontrolleMs, zeiger: nach("ankommen").zeiger };
+        if (am.laufen) {
+            const teil = lese.filter(([s]) => s >= spur.marken.laufen && s <= spur.marken[folgt("laufen")]);
+            let weg = 0;
+            for (let k = 1; k < teil.length; k++) weg += Math.hypot(teil[k][1] - teil[k - 1][1], teil[k][2] - teil[k - 1][2]);
+            const gier = teil.length ? Math.abs(teil[teil.length - 1][3] - teil[0][3]) : 0;
+            const sichten = teil.map((t) => t[4]).filter((v, k, l) => v !== l[k - 1]);
+            S.laufen = { wegM: Math.round(weg * 100) / 100, blickGrad: Math.round((gier * 180) / Math.PI), sicht: sichten.join("→") };
+        }
+        if (am.bauen) S.bauen = { werk: nach("bauen").werke - am.bauen.werke, modus: nach("bauen").modus, eingaben: eingaben("bauen") };
+        if (am.ki) S.ki = { werke: nach("ki").studio.length - am.ki.studio.length, art: nach("ki").studio.slice(am.ki.studio.length).join(","), satz: nach("ki").satz };
+        if (am.benutzen) S.benutzen = { sitzt: nach("benutzen").sitzt };
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("SPIELGANG " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+})(process.argv[1], process.argv[2], {"spur":"spec/spielgang/k1-spur.json","werk":"bank_sitzbank","wegM":5,"blickGrad":45,"mindest":3}); 7704 /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/8ef49bef-headless/spielgang.K1_1.json
+SPIELGANG {"spur":"spec/spielgang/k1-spur.json","laden":1,"schritte":{"ankommen":{"kontrolleMs":805,"zeiger":true},"laufen":{"wegM":12.81,"blickGrad":142,"sicht":"first→third→first"},"bauen":{"werk":1,"modus":"schöpfer","eingaben":8},"ki":{"werke":1,"art":"haus_alemannisch","satz":"1× Alemannisch aus dem Studio vor dir gebaut"},"benutzen":{"sitzt":true}},"marken":["ankommen","laufen","bauen","ki","benutzen","ende"],"abgespielt":93,"eingaben":93,"verfehlt":0,"kontrolleMs":805}

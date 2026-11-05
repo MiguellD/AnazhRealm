@@ -1,0 +1,84 @@
+{
+ "proben": {
+  "tuch": {
+   "loeser": [
+    "xpbdSchritt",
+    "xpbdKette",
+    "tuchGitter",
+    "tuchZustand",
+    "tuchTakt",
+    "tuchRuhe",
+    "tuchDrapieren"
+   ],
+   "rufe": {
+    "xpbdSchritt": 0,
+    "xpbdKette": 0,
+    "tuchGitter": 1,
+    "tuchZustand": 1,
+    "tuchTakt": 40,
+    "tuchRuhe": 0,
+    "tuchDrapieren": 1
+   },
+   "teile": [
+    "haar",
+    "haut*",
+    "stoff*",
+    "*",
+    "auge*",
+    "haar*"
+   ],
+   "kleidung": {
+    "top": "poncho",
+    "bottom": "pants",
+    "shoes": "boot",
+    "farben": [
+     "sand",
+     "olive",
+     "grey",
+     "mustard",
+     "burgundy"
+    ]
+   },
+   "ruhe": {
+    "durchdringung": 57
+   },
+   "rufeImGang": {
+    "xpbdSchritt": 0,
+    "xpbdKette": 0,
+    "tuchGitter": 1,
+    "tuchZustand": 1,
+    "tuchTakt": 40,
+    "tuchRuhe": 0,
+    "tuchDrapieren": 1
+   },
+   "gang": {
+    "ecken": 11122,
+    "durchdringung": 0,
+    "bilderMitDurchdringung": 0,
+    "loeserTraegtM": 0.1159
+   },
+   "stillgelegt": {
+    "ecken": 11122,
+    "durchdringung": 9883,
+    "bilderMitDurchdringung": 38
+   },
+   "labor": {
+    "kern": true,
+    "rufe": {
+     "xpbdSchritt": 0,
+     "xpbdKette": 0,
+     "tuchGitter": 0,
+     "tuchZustand": 0,
+     "tuchTakt": 0,
+     "tuchRuhe": 0,
+     "tuchDrapieren": 0
+    },
+    "fehler": null
+   },
+   "sek": 23.1
+  }
+ },
+ "fehler": [
+  "Error creating WebGL context."
+ ]
+}

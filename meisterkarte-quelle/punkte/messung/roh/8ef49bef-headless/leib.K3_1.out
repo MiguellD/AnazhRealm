@@ -1,0 +1,105 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function leibK3Lauf() {
+const fs = require("fs");
+const path = require("path");
+const [aus, port] = process.argv.slice(1);
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+const server = WB.statikServer();
+await server.lausche(Number(port));
+const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 600000 });
+const page = await browser.newPage();
+await WB.nullRenderer(page);
+const out = { laeufe: {} };
+let code = 2;
+const gang = async (see, sicht, mut) => {
+const A = r.constructor;
+const pm = st.playerMesh;
+const setze = (x, y, z) => {
+pm.position.set(x, y, z);
+if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+[st._fixedPrevPos, st._fieldVy, st.isInAir, st._fieldWasGrounded, st.playerUnderwater, st.playerEyesUnderwater] = [null, 0, false, false, false, false];
+st.playerVel.setValue(0, 0, 0);
+};
+const [x0, mz] = see.ufer;
+r.setCameraMode(sicht);
+setze(x0, r._voxelSurfaceY(x0, mz) + A.PLAYER_FOOT_OFFSET + 0.05, mz);
+st.yaw = -Math.PI / 2;
+const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+const B = [];
+let tMs = performance.now();
+let nr = 0;
+const bild = (keys, phase) => {
+st.keys = Object.assign({}, keys);
+tMs += MUSTER[nr++ % MUSTER.length];
+r._gameLoopTick(tMs);
+if (mut && phase === "tauchen" && B.filter((b) => b[1] === "tauchen").length === 30) {
+pm.position.y -= mut;
+if (st._fixedSimPos) st._fixedSimPos.y -= mut;
+}
+const c = st.camera.position;
+B.push([tMs, phase, pm.position.x, pm.position.y, pm.position.z, c.x, c.y, c.z, st.playerUnderwater ? 1 : 0, st.playerEyesUnderwater ? 1 : 0, st._fieldWasGrounded ? 1 : 0]);
+};
+for (let i = 0; i < 30; i++) bild({}, "stand");
+for (let i = 0; i < 2400 && !(st.playerUnderwater && !st._fieldWasGrounded); i++) bild({ w: true }, "ufer");
+const tief = () => see.level - r._voxelSurfaceY(pm.position.x, pm.position.z) >= 2.5;
+for (let i = 0; i < 900 && (i < 60 || !tief()); i++) bild({ w: true }, "schwimmen");
+for (let i = 0; i < 240; i++) bild({ w: true, shift: true }, "tauchen");
+for (let i = 0; i < 120; i++) bild({}, "auftrieb");
+st.keys = {};
+return B;
+};
+const auswerten = (B) => {
+const R = (x, n = 3) => +x.toFixed(n);
+const m = { bilder: B.length, phasen: {} };
+for (const ph of ["ufer", "schwimmen", "tauchen", "auftrieb"]) {
+const b = B.filter((x) => x[1] === ph);
+m.phasen[ph] = { n: b.length, unter: b.filter((x) => x[8]).length, augen: b.filter((x) => x[9]).length, geerdet: b.filter((x) => x[10]).length };
+}
+const sw = B.filter((x) => x[1] === "schwimmen").map((x) => x[3]).sort((a, b) => a - b);
+const linie = sw.length ? sw[sw.length >> 1] : null;
+const ta = B.filter((x) => x[1] === "tauchen").map((x) => x[3]);
+m.tiefe = linie === null || !ta.length ? null : R(linie - Math.min(...ta), 2);
+const ruck = (i0) => {
+const r = [];
+for (let k = 1; k < B.length - 1; k++) {
+const [u, w, z] = [B[k - 1], B[k], B[k + 1]];
+if (u[1] === "stand") continue;
+const f = (w[0] - u[0]) / (z[0] - u[0]);
+r.push([Math.hypot(...[0, 1, 2].map((i) => w[i0 + i] - u[i0 + i] - (z[i0 + i] - u[i0 + i]) * f)), w[1] + " " + k]);
+}
+const s = r.map((x) => x[0]).sort((a, b) => a - b);
+const top = r.reduce((a, x) => (x[0] > a[0] ? x : a), [0, "—"]);
+return { max: R(top[0]), wo: top[1], p95: R(s[Math.floor(0.95 * (s.length - 1))] || 0, 4) };
+};
+m.ruckLeib = ruck(2);
+m.ruckKamera = ruck(5);
+return m;
+};
+try {
+await server.zeige(page, 120000, "index.html");
+await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r.state.hydrosphere && r.state.hydrosphere.ready, { timeout: 300000, polling: 250 });
+await page.evaluate(WASSER_INSTALL);
+await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6)));
+const orte = await page.evaluate(() => window.__wasserOrte({}));
+if (!orte.see) throw new Error("kein See nächst der Mess-Wiese (__wasserOrte)");
+await page.evaluate((u) => window.__wasserStrom(u, 0.6), orte.see.ufer);
+out.see = [orte.see.x, orte.see.z, +orte.see.level.toFixed(2)];
+console.log("LEIB_K3 see " + JSON.stringify(out.see));
+for (const [name, sicht, mut] of [["ego", "first", 0], ["third", "third", 0], ["mutante", "first", 0.3]]) {
+out.laeufe[name] = auswerten(await page.evaluate(gang, orte.see, sicht, mut));
+console.log("LEIB_K3 " + name + " " + JSON.stringify(out.laeufe[name]));
+}
+code = 0;
+} catch (e) {
+out.fehler = String((e && e.message) || e).split("\n")[0];
+console.log("LEIB_K3 FEHLER " + out.fehler);
+} finally {
+fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+await browser.close().catch(() => {});
+process.exit(code);
+}
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/8ef49bef-headless/leib.K3_1.json 7704
+LEIB_K3 see [1816,-6168,0.93]
+LEIB_K3 ego {"bilder":1117,"phasen":{"ufer":{"n":445,"unter":1,"augen":0,"geerdet":412},"schwimmen":{"n":282,"unter":282,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":189,"geerdet":89},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":0}},"tiefe":2.21,"ruckLeib":{"max":0.013,"wo":"ufer 66","p95":0.0029},"ruckKamera":{"max":0.009,"wo":"ufer 65","p95":0.0009}}
+LEIB_K3 third {"bilder":1117,"phasen":{"ufer":{"n":445,"unter":1,"augen":0,"geerdet":411},"schwimmen":{"n":282,"unter":282,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":189,"geerdet":90},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":0}},"tiefe":2.21,"ruckLeib":{"max":0.011,"wo":"ufer 67","p95":0.0029},"ruckKamera":{"max":0.011,"wo":"ufer 67","p95":0.0029}}
+LEIB_K3 mutante {"bilder":1117,"phasen":{"ufer":{"n":444,"unter":1,"augen":0,"geerdet":411},"schwimmen":{"n":283,"unter":283,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":205,"geerdet":96},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":1}},"tiefe":2.21,"ruckLeib":{"max":0.202,"wo":"tauchen 787","p95":0.003},"ruckKamera":{"max":0.038,"wo":"tauchen 787","p95":0.0009}}

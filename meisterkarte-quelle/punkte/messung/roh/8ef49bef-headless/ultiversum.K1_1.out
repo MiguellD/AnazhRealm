@@ -1,0 +1,132 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function ultiversumK1Lauf() {
+const fs = require("fs");
+const path = require("path");
+const [aus, port] = process.argv.slice(1);
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const out = {};
+let code = 2;
+const server = WB.statikServer();
+await server.lausche(Number(port));
+const { browser, page } = await WB.nullSeite({ frist: 300000 });
+function MISS() {
+window.__k1Miss = async () => {
+const r = window.anazhRealm;
+const st = r.state;
+const G = st.worldMeta.gesetz;
+if (!G) throw new Error("die Welt trägt kein Gesetz (worldMeta.gesetz)");
+const m = { welt: st.worldMeta.worldId, slug: st.worldMeta.slug };
+m.gesetz = {
+schwere: G.schwere,
+rayleighTiefe: G.himmel.rayleighTiefe.slice(),
+wetter: { ...G.wetter },
+hoeheRegler: G.gelaende && G.gelaende.terme && G.gelaende.terme[0].hoehe != null ? G.gelaende.terme[0].hoehe : null,
+};
+m.g = st.gravity;
+const pm = st.playerMesh;
+let t = performance.now();
+for (let i = 0; i < 120; i++) r._gameLoopTick((t += 1000 / 60));
+const y0 = pm.position.y;
+const abdruck = r._sprungAbdruck();
+const sprang = AnazhRealm._leibTakt().leibSprung(st, r._leibOrt(), t / 1000);
+let top = y0;
+for (let i = 0; i < 240; i++) {
+r._gameLoopTick((t += 1000 / 60));
+top = Math.max(top, pm.position.y);
+}
+m.sprung = { y0: +y0.toFixed(3), hoehe: +(top - y0).toFixed(3), abdruck: +abdruck.toFixed(3), sprang: !!sprang };
+const M = r._atmoMediumJetzt();
+const s = r._atmoSonne(0.5);
+m.himmel = { betaR: M.betaR.map((v) => +v.toFixed(5)), blauRot: +(M.betaR[2] / M.betaR[0]).toFixed(4), sonne: [s.col.r, s.col.g, s.col.b].map((v) => +v.toFixed(4)) };
+const seed = st.worldMeta.seed;
+const je = {};
+let gegen = 0;
+for (let i = 0; i < 240; i++) {
+const x = (i % 16) * 2300 - 18000;
+const z = Math.floor(i / 16) * 1700 - 12000;
+const tt = i * 397;
+const zeile = globalThis.__phytoCore.wetterAt(seed, x, z, tt).zeile;
+const wort = r._wetterAmOrt(x, z, tt);
+je[zeile + ">" + wort] = (je[zeile + ">" + wort] || 0) + 1;
+if (wort !== G.wetter[zeile]) gegen++;
+}
+const worte = {};
+for (const [k, n] of Object.entries(je)) worte[k.split(">")[1]] = (worte[k.split(">")[1]] || 0) + n;
+m.wetter = { je, worte, gegenTafel: gegen };
+const K = globalThis.__gelaendeCore;
+const L = r._gelaende();
+const LE = Object.create(L);
+Object.defineProperty(LE, "erbgut", { value: { terme: K.erbgutNormal(undefined), wildnis: 1 } });
+const p = pm.position;
+const hs = [];
+const he = [];
+for (let i = 0; i < 41; i++)
+for (let j = 0; j < 41; j++) {
+const x = p.x + (i - 20) * 120;
+const z = p.z + (j - 20) * 120;
+hs.push(K.hoehe(L, x, z, false));
+he.push(K.hoehe(LE, x, z, false));
+}
+const sd = (a) => {
+const mu = a.reduce((q, v) => q + v, 0) / a.length;
+return Math.sqrt(a.reduce((q, v) => q + (v - mu) ** 2, 0) / a.length);
+};
+const e0 = r._erbgut().terme[0];
+m.gelaende = { relief: +sd(hs).toFixed(3), reliefErde: +sd(he).toFixed(3), verhaeltnis: +(sd(hs) / Math.max(1e-9, sd(he))).toFixed(4), leserRegler: e0.hoehe != null ? e0.hoehe : null };
+return m;
+};
+}
+try {
+await server.zeige(page, 120000);
+await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+await page.evaluate(MISS.toString() + ";MISS()");
+out.a = await page.evaluate(() => window.__k1Miss());
+console.log("ULTI_K1 a " + JSON.stringify(out.a));
+out.tor = await page.evaluate(async () => {
+const r = window.anazhRealm, st = r.state;
+const hol = r.obtainPortalForWorld("ferne");
+if (!hol || !hol.ok) return { ok: false, grund: "obtainPortalForWorld " + (hol && hol.reason) };
+const p = st.playerMesh.position;
+const e = r.spawnArchitecture(hol.blueprint, { x: p.x + 4, y: p.y, z: p.z }, { id: "ulti-k1-tor", precise: true });
+if (!e || !(e.affordances && e.affordances.isPortal)) return { ok: false, grund: "das Tor steht nicht als Portal" };
+const idA = st.worldMeta.worldId;
+const res = r.enterPortal(e);
+if (!res || !res.ok) return { ok: false, grund: "enterPortal " + JSON.stringify(res) };
+const erw = await r.erwacht;
+const gA = JSON.parse(localStorage.getItem(r.worldStorageKey(idA)) || "{}");
+const torA = (gA.architectures || []).find((a) => a && a.id === "ulti-k1-tor");
+return { ok: erw === true && st !== r.state && r.state.worldMeta.worldId === res.worldId && res.geboren === true, a: idA, b: res.worldId, merkt: !!(torA && torA.portalMeta && torA.portalMeta.weltId === res.worldId) };
+});
+console.log("ULTI_K1 tor " + JSON.stringify(out.tor));
+if (!out.tor.ok) throw new Error("das Tor führt nicht in die Ferne: " + JSON.stringify(out.tor));
+await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+out.b = await page.evaluate(() => window.__k1Miss());
+console.log("ULTI_K1 b " + JSON.stringify(out.b));
+out.heim = await page.evaluate(async (idA) => {
+const r = window.anazhRealm, st = r.state;
+const h = (st.architectures || []).find((a) => a && a.id === "heimtor-" + idA);
+if (!h) return { ok: false, grund: "kein Heimtor in der Ferne" };
+const res = r.enterPortal(h);
+if (!res || !res.ok) return { ok: false, grund: "enterPortal " + JSON.stringify(res) };
+const erw = await r.erwacht;
+return { ok: erw === true && r.state.worldMeta.worldId === idA, hier: r.state.worldMeta.worldId };
+}, out.tor.a);
+console.log("ULTI_K1 heim " + JSON.stringify(out.heim));
+if (!out.heim.ok) throw new Error("das Heimtor führt nicht zurück: " + JSON.stringify(out.heim));
+await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+out.a2 = await page.evaluate(() => window.__k1Miss());
+console.log("ULTI_K1 a2 " + JSON.stringify(out.a2));
+code = 0;
+} catch (e) {
+out.fehler = String((e && e.message) || e).split("\n")[0];
+console.log("ULTI_K1 FEHLER " + out.fehler);
+} finally {
+fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+await browser.close().catch(() => {});
+process.exit(code);
+}
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/8ef49bef-headless/ultiversum.K1_1.json 7704
+ULTI_K1 a {"welt":"586aff13-b306-4abd-ae75-eb94722cf759","slug":"still-weiher","gesetz":{"schwere":-9.81,"rayleighTiefe":[0.044,0.1,0.23],"wetter":{"klar":"sunny","bewoelkt":"cloudy","nebel":"foggy","regen":"rainy","sturm":"stormy"},"hoeheRegler":null},"g":-9.81,"sprung":{"y0":90.805,"hoehe":0.323,"abdruck":2.599,"sprang":true},"himmel":{"betaR":[0.0055,0.0125,0.02875],"blauRot":5.2273,"sonne":[1,0.8107,0.6063]},"wetter":{"je":{"nebel>foggy":29,"regen>rainy":55,"klar>sunny":69,"sturm>stormy":32,"bewoelkt>cloudy":55},"worte":{"foggy":29,"rainy":55,"sunny":69,"stormy":32,"cloudy":55},"gegenTafel":0},"gelaende":{"relief":27.02,"reliefErde":27.02,"verhaeltnis":1,"leserRegler":null}}
+ULTI_K1 tor {"ok":true,"a":"586aff13-b306-4abd-ae75-eb94722cf759","b":"e24e7ae9-89f4-483d-938f-14f961f45ec0","merkt":true}
+ULTI_K1 b {"welt":"e24e7ae9-89f4-483d-938f-14f961f45ec0","slug":"ferne","gesetz":{"schwere":-3.71,"rayleighTiefe":[0.13,0.085,0.05],"wetter":{"klar":"sunny","bewoelkt":"foggy","nebel":"foggy","regen":"cloudy","sturm":"stormy"},"hoeheRegler":1.6},"g":-3.71,"sprung":{"y0":230.972,"hoehe":1.54,"abdruck":3.411,"sprang":true},"himmel":{"betaR":[0.01625,0.01063,0.00625],"blauRot":0.3846,"sonne":[1,0.5305,0.2303]},"wetter":{"je":{"regen>cloudy":57,"bewoelkt>foggy":45,"nebel>foggy":34,"klar>sunny":68,"sturm>stormy":36},"worte":{"cloudy":57,"foggy":79,"sunny":68,"stormy":36},"gegenTafel":0},"gelaende":{"relief":53.26,"reliefErde":34.597,"verhaeltnis":1.5394,"leserRegler":1.6}}
+ULTI_K1 heim {"ok":true,"hier":"586aff13-b306-4abd-ae75-eb94722cf759"}
+ULTI_K1 a2 {"welt":"586aff13-b306-4abd-ae75-eb94722cf759","slug":"still-weiher","gesetz":{"schwere":-9.81,"rayleighTiefe":[0.044,0.1,0.23],"wetter":{"klar":"sunny","bewoelkt":"cloudy","nebel":"foggy","regen":"rainy","sturm":"stormy"},"hoeheRegler":null},"g":-9.81,"sprung":{"y0":90.805,"hoehe":0.323,"abdruck":2.599,"sprang":true},"himmel":{"betaR":[0.0055,0.0125,0.02875],"blauRot":5.2273,"sonne":[1,0.8107,0.6063]},"wetter":{"je":{"nebel>foggy":29,"regen>rainy":55,"klar>sunny":69,"sturm>stormy":32,"bewoelkt>cloudy":55},"worte":{"foggy":29,"rainy":55,"sunny":69,"stormy":32,"cloudy":55},"gegenTafel":0},"gelaende":{"relief":27.02,"reliefErde":27.02,"verhaeltnis":1,"leserRegler":null}}
