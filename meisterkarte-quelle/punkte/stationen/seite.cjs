@@ -11,7 +11,7 @@
 //   quelle(datei, namen, mit, extra)   die benannten Deklarationen, in node ausgewertet (eine Funktion trägt ihren Text: die Seite
 //                 bekommt String(fn)); `mit` die freien Namen (halteBis …), `extra` weitere Rückgaben (ein Getter auf ein `let`)
 //   cdp()         die Seite der Sitzung als puppeteer-Page (Rahmen, Tastatur, Bild): der Browser der Werkbank über seinen
-//                 DevToolsActivePort im Profil werkbank-profil-<WERKBANK_PORT>-*; die Probe trennt sich am Ende, schließt nie
+//                 DevToolsActivePort im Profil, das /status der Werkbank nennt (`boot.profil`); die Probe trennt sich am Ende, schließt nie
 //   frist(s)      DIE FRIST IN DER SEITE: nach s Sekunden (Vorgabe der Deckel des Laufs − 6) wirft jeder Takt (`_gameLoopTick`,
 //                 `_loopFixedStep`) — eine Probe über ihrem Deckel hält die Welt der Sitzung nie fest (die Grundstellung danach findet
 //                 eine freie Seite); gerissen schreibt der Läufer die Marke „@@PUNKTE@@ FRIST <s> s der Probe gerissen“ (punkte.cjs
@@ -60,11 +60,12 @@ async function seiteLauf() {
     };
     H.cdp = async () => {
         if (H.page) return H.page;
-        const os = require("os");
         const pp = require(path.resolve("node_modules/puppeteer"));
         const marke = (d) => path.join(d, "DevToolsActivePort");
-        const dirs = fs.readdirSync(os.tmpdir()).filter((d) => d.startsWith("werkbank-profil-" + W + "-")).map((d) => path.join(os.tmpdir(), d))
-            .filter((d) => fs.existsSync(marke(d))).sort((a, b) => fs.statSync(marke(b)).mtimeMs - fs.statSync(marke(a)).mtimeMs);
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.ruf("/status", {});
+        const dirs = [st && st.boot && st.boot.profil].filter((d) => d && fs.existsSync(marke(d)));
         for (const d of dirs) {
             const [p, weg] = fs.readFileSync(marke(d), "utf8").split(/\r?\n/);
             let b = null;
@@ -82,7 +83,7 @@ async function seiteLauf() {
             Object.assign(H, { browser: b, profil: d, page: seite });
             return seite;
         }
-        throw new Error("kein Browser der Sitzung (DevToolsActivePort in " + os.tmpdir() + "/werkbank-profil-" + W + "-*)");
+        throw new Error("kein Browser der Sitzung: /status nennt " + (st && st.boot && st.boot.profil ? "kein DevToolsActivePort in " + st.boot.profil : "kein Profil der Werkbank"));
     };
     H.frist = (s = H.sek - 6) => {
         H.fristS = Math.max(5, s);

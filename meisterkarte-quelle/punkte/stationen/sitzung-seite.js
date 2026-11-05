@@ -4,7 +4,7 @@
 // Dauerlast" — keine dieser Stationen bootet mehr eine eigene Welt.
 //
 // DER ANSCHLUSS: die Probe hängt sich an den Browser der Welt der Sitzung — `werkbank start --echt` startet ihn über
-// puppeteer.launch ohne pipe, Chrome legt DevToolsActivePort in sein Profil (os.tmpdir()/werkbank-profil-<W>-<Zeit>). Nie ein
+// puppeteer.launch ohne pipe, Chrome legt DevToolsActivePort in sein Profil, das /status der Werkbank nennt (`boot.profil`). Nie ein
 // eigener Browser, nie ein eigener save-server; am Ende löst sie sich (disconnect, nie close), jede Seite, die sie öffnete, fällt,
 // die Welt kommt nach vorn (ein Tab dahinter zeichnet nie). Ihre eigene Frist liegt 6 s unter dem Deckel DIESES Laufs ({SEK}, punkte.cjs
 // ersetze — in der Sitzung probe.sek, in der Eich-Fahrt 90 s, am Rest der Fahrt dieser): wer sie reißt, baut ab, schreibt, was er bis
@@ -92,13 +92,11 @@ function sitzungWerkzeug() {
     // DER BROWSER DER SITZUNG
     H.verbinde = async () => {
         const pp = require("puppeteer");
-        const tmp = os.tmpdir();
-        const kand = fs
-            .readdirSync(tmp)
-            .filter((n) => n.startsWith("werkbank-profil-" + W + "-"))
-            .map((n) => path.join(tmp, n, "DevToolsActivePort"))
-            .filter((f) => fs.existsSync(f))
-            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
         const fehl = [];
         for (const f of kand) {
             const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
@@ -126,7 +124,7 @@ function sitzungWerkzeug() {
                 if (b) await b.disconnect().catch(() => {});
             }
         }
-        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || "kein DevToolsActivePort unter " + tmp + "/werkbank-profil-" + W + "-*") + ")");
+        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")");
     };
     // DIE LINSE ALS BIBLIOTHEK
     H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
