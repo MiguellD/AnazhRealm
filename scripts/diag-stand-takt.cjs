@@ -959,10 +959,12 @@ async function brandSeite(MESS) {
         delete r._brandZuenden;
         // REGEN und LESER am Herd der Mess-Wiese: Licht, Ohr und das Bild (15 s zu 0,1 s, `_brandBild`: die Fahne steht) — die Flammen der Front,
         // die Fahne und ihre DECKUNG: der dichteste Strahl quer zum Wind durch ihre Ballen 8 m über den Flammen, 1 − Π(1 − Deckung)^g,
-        // g = (1 − ρ²)^profil die Dicke, die das Rauch-Bild im Abstand ρ (je Radius) zeichnet (RAUCH_BILD, Beer-Lambert)
+        // g = (1 − ρ²)^profil die Dicke, die das Rauch-Bild im Abstand ρ (je Radius) zeichnet (RAUCH_BILD, Beer-Lambert). Die Bühne hält
+        // die Bild-Uhr (A9) und lässt sie mit den Bildern ab der Welt-Uhr laufen: Flammen, Fahne und Strahl lesen den Wind EINER Uhr (bis
+        // w12-brand-halt stand sie auf der Wanduhr des Takts — die Fahne zog im Wind einer anderen Uhr, die Deckung streute 0,874–0,955)
         const leser = () => {
             st.brandRauch.teilchen.length = 0;
-            for (let i = 0; i < 150; i++) r._brandBild(0.1);
+            for (let i = 0; i < 150; i++) (r._bildZeit = st.spielZeit + 0.1 * i), r._brandBild(0.1);
             const [g, T, F, w] = [r._glutAmOhr(pm.x, pm.z, () => 0), st.brandRauch.teilchen, r._brandFlammen, r._windAt(pm.x, pm.z, st.spielZeit)];
             const h = F.reduce((u, f) => u + f.y / F.length, 0) + 8;
             const band = T.filter((p) => Math.abs(p.y - h) < p.s);
