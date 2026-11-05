@@ -912,35 +912,44 @@ async function brandSeite(MESS) {
         leer();
         // HALT: der Herd windauf des Flusses nächst der Mess-Wiese — längs des Strahls gegen den Wind vom Fluss aus (die Spitze läuft
         // ihn zurück): Wasser, dann nasses Bett, dann ununterbrochen trockenes Bett bis zum Herd (Boden-Feuchte ≤ 0,05, ≥ 2 Zellen
-        // hinter dem letzten nassen)
+        // hinter dem letzten nassen). DIE UHR DES HERDS ist Spieler-Wort wie Mittag: der Wind dreht mit der Welt-Uhr (phyto-core
+        // `windRichtung`, ±41°), der Spieler wartet ab der Uhr `UHR` (der Stand beim Laden, `_weltUhrNimm`) in Schritten von 10 s
+        // auf den ersten Wind, der ihm einen Herd gibt, und zündet dort. Bis w12-brand-halt las der Strahl den Wind zur Uhr, so weit das
+        // Booten lief (am Kopf 9c545df2: an der festen Uhr 1 800, 2 400, 3 600 und 7 200 s kein Herd, bei 600 s und 11 s einer)
         const [ab, d] = [(p, q) => Math.hypot(p.x - q.x, p.z - q.z), (q) => ab(q, MESS)];
-        let herd = null;
-        for (const p of fluss(MESS, 320)) {
-            const w = r._windAt(p.x, p.z, st.spielZeit);
-            const [seen, strahl] = [new Set(), []];
-            for (let D = 0; D <= 400; D += 8) {
-                const [cx, cz] = zelle(p.x - w.x * D, p.z - w.z * D);
-                if (seen.has(cx + "," + cz)) continue;
-                seen.add(cx + "," + cz);
-                const f = r._brandStoff(cx, cz);
-                const art = f ? (nass(f) ? "nass" : f.zeile.name === "gras" ? "trocken" : "laub") : r._nassAt(...xz(cx, cz)) ? "wasser" : "kein";
-                strahl.push({ cx, cz, art, boden: f ? f.boden : null });
+        const herdBei = (t, herd = null) => {
+            for (const p of fluss(MESS, 320)) {
+                const w = r._windAt(p.x, p.z, t);
+                const [seen, strahl] = [new Set(), []];
+                for (let D = 0; D <= 400; D += 8) {
+                    const [cx, cz] = zelle(p.x - w.x * D, p.z - w.z * D);
+                    if (seen.has(cx + "," + cz)) continue;
+                    seen.add(cx + "," + cz);
+                    const f = r._brandStoff(cx, cz);
+                    const art = f ? (nass(f) ? "nass" : f.zeile.name === "gras" ? "trocken" : "laub") : r._nassAt(...xz(cx, cz)) ? "wasser" : "kein";
+                    strahl.push({ cx, cz, art, boden: f ? f.boden : null });
+                }
+                // das Wasser, dann das nasse Bett, dann trockenes Bett ohne Lücke bis zum Herd — der längste trockene Lauf gewinnt
+                const n = strahl.findIndex((q) => q.art === "nass");
+                if (n < 1 || strahl[n - 1].art !== "wasser") continue;
+                let k = n;
+                while (k + 1 < strahl.length && strahl[k + 1].art === "nass") k++;
+                let j = k;
+                while (j + 1 < strahl.length && strahl[j + 1].art === "trocken") j++;
+                while (j > k && !(strahl[j].boden <= 0.05)) j--;
+                if (j > k && (!herd || j - k > herd.abstand)) herd = { c: xz(strahl[j].cx, strahl[j].cz), abstand: j - k };
             }
-            // das Wasser, dann das nasse Bett, dann trockenes Bett ohne Lücke bis zum Herd — der längste trockene Lauf gewinnt
-            const n = strahl.findIndex((q) => q.art === "nass");
-            if (n < 1 || strahl[n - 1].art !== "wasser") continue;
-            let k = n;
-            while (k + 1 < strahl.length && strahl[k + 1].art === "nass") k++;
-            let j = k;
-            while (j + 1 < strahl.length && strahl[j + 1].art === "trocken") j++;
-            while (j > k && !(strahl[j].boden <= 0.05)) j--;
-            if (j > k && (!herd || j - k > herd.abstand)) herd = { c: xz(strahl[j].cx, strahl[j].cz), abstand: j - k };
-        }
-        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (Ring " + st._activeRingRadius + ")" };
-        // die Uhr ist Spieler-Wort: der Brand läuft mittags (die Zünd-Wärme liest die Luft des Temperatur-Felds — bis w3v-brand-bild
-        // lief die Uhr, so weit das Booten brauchte, und derselbe Herd trug 0 bis 95 Aschen)
+            return herd;
+        };
+        const [UHR, boot] = [600, r3(st.spielZeit)];
+        let [herd, uhr] = [null, UHR];
+        while (boot < UHR && uhr < UHR + 700 && !(herd = herdBei(uhr))) uhr += 10;
+        if (!herd) return { fehler: `kein Wind ab ${UHR} s (gebootet bis ${boot} s) über 700 s gibt einen Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (Ring ${st._activeRingRadius})` }; // prettier-ignore
+        r._weltUhrNimm(uhr);
+        // die Uhr des Tags ist Spieler-Wort: der Brand läuft mittags (die Zünd-Wärme liest die Luft des Temperatur-Felds — bis
+        // w3v-brand-bild lief die Uhr, so weit das Booten brauchte, und derselbe Herd trug 0 bis 95 Aschen)
         const lauf = () => (r.setTimeOfDay(0.5, "regler"), r._brandEntfachen(...herd.c), brennen(3600));
-        aus.halt = Object.assign({ herd: herd.c.map(Math.round) }, (lauf(), zaehle()));
+        aus.halt = Object.assign({ herd: herd.c.map(Math.round), uhr: [boot, uhr] }, (lauf(), zaehle()));
         leer();
         r._feuchteAt = () => 0;
         lauf();
