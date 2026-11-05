@@ -1,4 +1,4 @@
-# Übergabe 05.11. abends (Konto-Woche bei 95 % um 20:50; wird bis 98 % fortgeschrieben)
+# Übergabe 05.11. abends (Konto-Woche bei 96 % um 22:00; wird bis 98 % fortgeschrieben)
 
 **Gebucht 206/330** am Kopf f5db8d90 (z235) (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v40). main = f5db8d90 bzw. neuer — `git ls-remote origin main`.
 Heute: 198 → 206. Zuletzt material.K1#1 an der Radeon 13/13, nach der Landung von w12-kronen-albedo.
@@ -30,7 +30,12 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 - **z234 ROT** war Wackeln: Fenster-Wand E Lauf, am Ufer kein Wasser gezeichnet (wie z225, FUND). Die Zweige fuhren in z235/z236 weiter.
 
 ## Ausstehende Messungen
-- OMEN GTX nach der Jagd, eingereiht: nachmessen.sh f5db8d90 "material.K1#2,material.K3#2,leib.K3#2". Ist material.K1#2 auf der GTX GRÜN, dann buchen: material.K1 Staffel 2 (+1).
+- **streaming.K1#1/K2#1** (gebucht, nur gehalten; die nächste Farm misst sie ROT = −2):
+  - Champion w12-dorf-strom e7756259, nichts geheilt.
+  - Bäume: 572 von 578 unfertigen Bäumen fehlt der Wald-Plan (`_waldPlanSteht` false).
+  - Häuser: Der Dorf-Vorlauf bemisst sich nach Strecke (Vorbereitung bei 269 m, nur ein Export zur Zeit).
+  - Ohne Dorf ist K2#1 GRÜN.
+  - Die Proben und der Befund liegen in koordination `bericht/0511-dorf-strom/`. Die Verdächtigen stehen in der Commit-Message von e7756259.
 - **leib.K3#2 ROT** an der Radeon f5db8d90: Der Sicht-Abfall unter Wasser misst 0 /m (L auf 0,5/1,5/2,5 m gleich 0,1788), der Leib-Kontrast 0,01.
   - Die Probe zog 6430 m vom Sitzungs-Ort, der Ring fiel 4 → 0. Wahrscheinlich steht die Kamera in einer Welt ohne geladenes Wasser.
   - Das ist zuerst eine Frage der Probe, dann des Spiels.
