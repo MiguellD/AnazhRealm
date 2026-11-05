@@ -1319,7 +1319,7 @@ async function starte() {
                     }
                     const schwelle = 18;
                     const rauschen = __bildRauschen(G, G2, W, H, schwelle);
-                    const { teil, misch } = __klassenTeilung(G, Os, W, H, schwelle);
+                    const { teil, misch, gemischt } = __klassenTeilung(G, Os, W, H, schwelle);
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
                     window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
@@ -1484,6 +1484,23 @@ async function starte() {
                             [K.menschTon("haarKappe"), "kappe"],
                         ]);
                         const v = new T.Vector3();
+                        // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
+                        // Bewohner mal dem Verhältnis seiner Palette zu der seiner Gestalt am Ton der Ecke (`_tonFaktor`, die Ton-Tafel)
+                        const tafel = r.state.tonTafel && r.state.tonTafel.image ? r.state.tonTafel.image : null;
+                        const albedo = (o, i) => {
+                            const c = o.geometry.attributes.color;
+                            if (!c) return null;
+                            const a = [c.getX(i), c.getY(i), c.getZ(i)];
+                            const z = o.userData && o.userData.__ton;
+                            const ta = o.geometry.attributes.aTon;
+                            if (z && tafel && ta && (z[0] || z[1])) {
+                                const t = Math.round(ta.getX(i));
+                                const zeile = (j) => tafel.data.subarray((j * tafel.width + t) * 4, (j * tafel.width + t) * 4 + 3);
+                                const [x, y] = [zeile(z[0]), zeile(z[1])];
+                                for (let ch = 0; ch < 3; ch++) a[ch] *= x[ch] / Math.max(1e-4, y[ch]);
+                            }
+                            return a;
+                        };
                         const roh = [];
                         let minY = Infinity,
                             maxY = -Infinity,
@@ -1521,6 +1538,7 @@ async function starte() {
                                         z,
                                         seite,
                                         k: kix,
+                                        a: z === "iris" ? null : albedo(o, i),
                                         w: v.clone(),
                                         d: v.distanceTo(cam.position),
                                         x: Math.floor(((ndc.x + 1) / 2) * W),
@@ -1540,19 +1558,53 @@ async function starte() {
                                 .sort(aufsteigend);
                             median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
                         }
+                        // DER STRAHL DER KAMERA ZUR IRIS (KOPF_SOLL augeFrei: „Strahl", die Lider sind das Rig): je vordere Iris-Probe,
+                        // ob der Strahl von der Kamera dieses Schusses sie erreicht, ohne Haut, Lid, Braue oder Haar des Kopfs zu kreuzen —
+                        // die Verdeckung ist Geometrie und gilt unter jedem Bildpunkt; das Bild zeigt, DASS das Auge steht (`spur`).
+                        // Bis w12-gesicht entschied das Pixel allein: an der Kamera des Spiels (6 m) trägt die Iris 1,3 Bildpunkte
+                        const decke = [];
+                        for (const [n, os] of teile)
+                            if (!/:kopf\/auge$/.test(n)) for (const o of os) if (o.isMesh && r._leibWurzel(o) === wahlLeib) decke.push(o);
+                        for (const o of decke) (o.isSkinnedMesh ? o : o.geometry).computeBoundingSphere();
+                        const strahl = new T.Raycaster();
+                        const richt = new T.Vector3();
+                        const frei = (p) => {
+                            const lang = richt.copy(p.w).sub(cam.position).length();
+                            strahl.set(cam.position, richt.divideScalar(lang));
+                            strahl.near = 0;
+                            strahl.far = lang - 1e-4;
+                            return strahl.intersectObjects(decke, false).length === 0;
+                        };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
-                            .map((p) => ({
-                                z: p.z,
-                                x: p.x,
-                                y: p.y,
-                                k: p.k,
-                                vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
-                                kalotte: p.z !== "iris" && p.w.y > yHaar,
-                            }));
+                            .map((p) => {
+                                const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
+                                return {
+                                    z: p.z,
+                                    x: p.x,
+                                    y: p.y,
+                                    k: p.k,
+                                    a: p.a,
+                                    seite: p.seite,
+                                    frei: p.z === "iris" && vorn ? frei(p) : undefined,
+                                    vorn,
+                                    kalotte: p.z !== "iris" && p.w.y > yHaar,
+                                };
+                            });
                         const haarK = namen.map((n, j) => (n === `${r._menschLeib(wahlLeib)}:kopf/hair` ? j + 1 : 0)).filter(Boolean);
                         if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
-                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
+                        // DIE SPUR DES AUGES (`gesichtMasse` augeFrei): je Teil des Auges, wo sein Fehlen das Pixel über der Schwelle
+                        // ändert — dort steht es im Bild, auch wo ein Lid den Bildpunkt mit ihm teilt (die Iris unter einem Bildpunkt)
+                        const spur = {};
+                        namen.forEach((n, j) => {
+                            if (!/:kopf\/auge$/.test(n)) return;
+                            const O = Os[j],
+                                m = new Uint8Array(W * H);
+                            for (let p = 0, i = 0; p < W * H; p++, i += 4)
+                                m[p] = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
+                            spur[j + 1] = m;
+                        });
+                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur });
                     }
                     let abstand = null;
                     if (k.abstand) {
