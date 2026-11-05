@@ -1156,8 +1156,8 @@ class AnazhRealm_studio_bruecke {
         wo = rang.wo;
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
-        // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
-        ov = this._foundryGestaltOv(presetId, seed, ov);
+        // Die Prägung des Bestellers (`_foundryGestaltOv`); die Gestalt des Orts (K20, der Solitär) trägt der Same im Kern.
+        ov = this._foundryGestaltOv(ov);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);

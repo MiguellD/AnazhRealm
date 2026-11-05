@@ -2067,12 +2067,12 @@ function buildForest() {
             seeds.push(i + 1);
         }
         // DER SOLITÄR (K20, phyto-core `solitaerGestalt`): eine Baum-Art mit V Bestand-Gestalten trägt DAZU die Gestalt V+1,
-        // gewachsen frei (`freistand`, growSkeleton liest P.freistand) — die Welt prägt sie ebenso (`_foundryGestaltOv`)
+        // gewachsen frei — der Same V+1 IST er im Kern (`treeParams`), für Bühne, Wald und Welt derselbe Baum
         const T = self.__phytoCore.solitaerGestalt(PRESETS[sp].kind, n);
         if (T) seeds.push(T);
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = sd === T ? buildInstance(sp, sd, L, { freistand: 1 }) : buildInstance(sp, sd, L);
+                const g = buildInstance(sp, sd, L);
                 g.userData.seed = sd;
                 g.userData.solitaer = sd === T;
                 return g;

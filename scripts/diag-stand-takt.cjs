@@ -1048,7 +1048,7 @@ async function brandSeite(MESS) {
         // der nächste GEWACHSENE Baum (die Zellen der Asche oben tragen den Jungwuchs ihres Walds)
         const naechster = () => baeume().filter((e) => !(e.studioOv && e.studioOv.alter)).sort((u, v) => d(u.position) - d(v.position))[0];
         const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
-            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(pr, g, ov))));
+            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(ov))));
         const S = (aus.saemling = { stufen: [] });
         const B0 = naechster();
         if (B0) {
