@@ -18,6 +18,7 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
   - Rote Zeile: „R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 6397 → 6396, gezeichnete Spalten 7345 → 7249“.
   - Täter ist w12-brand-halt (siedlung-ort.js +195 aus brand-bild); tuch-grob bestand das Gate in z234. Die Post steht in cloud-post/w12-brand-halt.md.
   - **z238** = w12-tuch-grob allein hinter z237.
+  - **z239** = w12-brand-halt 0d1b2396 (main f5db8d90 gemergt) hinter z238: lokal werk-im-wasser 2× GRÜN (R 6594 → 6594, 7477 → 7477), das CI-Rot (−96 Spalten, 1,3 % > 1 %) ist nicht nachgestellt; Verdacht `_brandBild(delta)` je Takt (stamm/dirigent-takt.js:253) vor dem Chunk-Neubau am Seerand. Fällt z239 wieder: R auf dem CI-Läufer je Chunk zählen gegen main allein.
   - Der lokale Brand-Champion kann über seinen Zweig fortsetzen. Zu brand-halt die Angaben von vorher:
   - w12-brand-halt bringt w12-brand-bild endlich nach main. Der Zweig war in z232 an einem Konflikt in diag-stand-takt gefallen.
   - Der Herd ist deterministisch, stoffe.K2#2/K5#2 headless GRÜN am Zweig. Die Bilder habe ich gesehen: Der Rauch ist jetzt eine Fahne statt einer Kugelkette.
