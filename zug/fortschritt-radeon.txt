@@ -2014,3 +2014,4 @@
 2026-11-05 06:37:16 8ef49bef-radeon ankunft.K3#1 ROT 0.7 · 12/23
 2026-11-05 06:37:20 8ef49bef-radeon ankunft.K1#1 ROT 0.7 · 13/23
 2026-11-05 06:37:26 8ef49bef-radeon ankunft.K5#1 ROT 0.7 · 14/23
+2026-11-05 06:38:57 8ef49bef-radeon profiband.K1#1 ROT 1.4 · 15/23
