@@ -288,6 +288,12 @@ function erdbauMedian(v2, grund) {
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
 //   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
 // der Punkt (x, z) im Rahmen um (cx, cz) mit der Drehung phi (reist mit `ortUrteil` als Quelltext in die Seite)
+// C2 DER ORT HÄLT DEN ZUG, NIE DAS BILD (w12-dorf-probe): an der Null-Seite lebt der Dorf-Takt ohne Haken (`ohne`: der Bau am
+// Ort ist Simulation), unter dem Haken des Orts (`false`, haushalt.json `dorfZug`) bestellt sein Takt nichts (`still`). Bis
+// w12-dorf-probe ruhte er, sobald nur der Null-Renderer stand: jede headless Probe am Messort dorf urteilte eine leere Welt
+// (0 Häuser nach 9000 Takten, mit Renderer 16).
+const dorfZugAmOrt = (c) => c.ohne && c.still;
+
 function lokal(cx, cz, phi, x, z) {
     const [c, s] = [Math.cos(phi || 0), Math.sin(phi || 0)];
     return [(x - cx) * c - (z - cz) * s, (x - cx) * s + (z - cz) * c];
@@ -1182,6 +1188,9 @@ hauptLauf(async () => {
             );
         const [Wg, Wz] = [{}, { wachstum: zeitplan }].map((o) => wachstumsGang(FC, { ...o, orte: [[1]] }));
         check("Selbst-Test W: das Gesetz hält ohne Bewohner, ein Zeitplan nicht (W2)", Wg.halt && !Wz.halt, Wz.halten);
+        // V-C2: der Ort hält den Zug — die Ruhe am Null-Renderer (vor w12-dorf-probe) und ein Takt, der unter dem Haken bestellt,
+        // fallen beim Namen
+        check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1900,11 +1909,14 @@ hauptLauf(async () => {
             wmS.seed = s0;
             res.c.seedStrom = z0 !== "" && z0 !== z1 && z0 === zellen();
             res.c.spawnClearWall = r._autoSettlementSiteOk(0, 0) === false; // die Warmup-Welt bleibt dorffrei
-            // C2 — HEADLESS-DEFAULT: Null-Renderer ohne Hook -> der Tick ruht (kein Pending).
+            // C2 — DER ORT HÄLT DEN ZUG, NIE DAS BILD (`dorfZugAmOrt`): an der Null-Seite lebt der Takt ohne Haken, unter dem
+            // Haken false (der Ort der Linse) bestellt er nichts
             const prevHook = window.__anazhAutoSettlement;
             delete window.__anazhAutoSettlement;
+            res.c.ohne = r._dorfTaktLebt();
+            window.__anazhAutoSettlement = false;
             if (cand) r._tickAutoSettlement({ x: cand.x, z: cand.z });
-            res.c.headlessQuiet = !r._autoSettlementPendingKey && !r._autoSettlementQueue;
+            res.c.still = !r._autoSettlementPendingKey && !r._autoSettlementQueue;
             // C3 — die ERZWUNGENE Dorf-Zelle (Hook an, sichern + wiederherstellen):
             // Export -> Reservierung -> budgetierte Materialisierung ueber Ticks.
             window.__anazhAutoSettlement = true;
@@ -3194,11 +3206,7 @@ hauptLauf(async () => {
         `seedStrom=${c.seedStrom}`
     );
     check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
-    check(
-        // Null-Renderer ohne Hook: kein Pending, keine Queue
-        "C2: HEADLESS-DEFAULT — der Auto-Zug ruht",
-        c.headlessQuiet === true
-    );
+    check("C2: der Ort hält den Zug, nie das Bild", dorfZugAmOrt(c), [c.ohne, c.still]);
     check(
         // Export → Reservierung → Häuser
         "C3: die erzwungene Dorf-Zelle materialisiert",

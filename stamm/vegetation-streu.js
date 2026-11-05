@@ -1644,7 +1644,7 @@ class AnazhRealm_vegetation_streu {
         this._tickArchGruppenReaper(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
-        // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
+        // budgetierte Materialisierung; der Haken des Orts hält ihn an — s. _tickAutoSettlement).
         this._tickAutoSettlement(playerPos);
         return work + promotions;
     }

@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { fehlerText, statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, nullRenderer, ortZug, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -2088,6 +2088,7 @@ hauptLauf(async () => {
     const browser = await starteBrowser({ art: ECHT ? "echt" : "standard", headless: !ECHT, frist: 900000 });
     const page = await browser.newPage();
     if (!ECHT) await nullRenderer(page);
+    await ortZug(page, "genesis"); // die Ankunft trägt ihren Dorf-Zug (haushalt genesis: er ruht) — die Linse lädt ohne `server.zeige`
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
         window.__sha = async (a) =>

@@ -89,9 +89,6 @@ hauptLauf(async () => {
             return org.apply(this, arguments);
         };
     });
-    await page.evaluateOnNewDocument((dorfZug) => {
-        if (dorfZug === false) window.__anazhAutoSettlement = false;
-    }, ORT.dorfZug);
     await server.zeige(page, 60000);
     const res = await page.evaluate(
         async (k) => {

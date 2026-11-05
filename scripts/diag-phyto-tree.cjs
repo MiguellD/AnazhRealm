@@ -11,24 +11,18 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const { ausDatei, path, vm, ENGINE_THREE } = require("./lib/welt-boot.cjs");
-const { kernKontext } = require("./lib/asset-worker-harness.cjs");
+const { vm, fadenScope, ROOT, stammLib } = require("./lib/welt-boot.cjs");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
 // aber der IIFE-Seiteneffekt setzt globalThis.__phytoCore).
-const src = ausDatei("phyto-core.js");
 require("../phyto-core.js");
 const mainCore = globalThis.__phytoCore;
-if (!mainCore || typeof mainCore.growSkeleton !== "function") {
+if (typeof mainCore?.growSkeleton !== "function") {
     throw new Error("phyto-core.js hat __phytoCore.growSkeleton nicht exportiert");
 }
-const { growSkeleton: _phytoGrowSkeleton, mulberry32 } = mainCore; // der Test-Strom ist der Strom des Kerns
-
-function grow(P, seedInt) {
-    // _phytoGrowSkeleton nutzt `this` nicht — als freie Funktion via .call(null, ...).
-    return _phytoGrowSkeleton.call(null, P, mulberry32(seedInt));
-}
+const { mulberry32 } = mainCore; // der Test-Strom ist der Strom des Kerns
+const grow = (P, seedInt) => mainCore.growSkeleton(P, mulberry32(seedInt));
 
 const eiche = () => ({
     height: 9,
@@ -47,39 +41,30 @@ const eiche = () => ({
     basalStems: 0,
     windGain: 1,
 });
-const tanne = () =>
-    Object.assign(eiche(), {
-        height: 12,
-        slim: 0.74,
-        apical: 0.9,
-        trop: 0.05,
-        conifer: true,
-        barkType: "conifer",
-        maxDepth: 4,
-        crownBase: 0.12,
-        coniferDroop: 0.22,
-    });
+const tanne = () => ({
+    ...eiche(),
+    height: 12,
+    slim: 0.74,
+    apical: 0.9,
+    trop: 0.05,
+    conifer: true,
+    barkType: "conifer",
+    maxDepth: 4,
+    crownBase: 0.12,
+    coniferDroop: 0.22,
+});
 
 const { errs, check: ok, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 // Feine Signatur: Segment-/Blatt-Zahl + trunkR + Prüfsummen über alle Segment-Endpunkte und Blätter (zwei Bäume mit
 // gleicher Zahl aber verschiedener Form ⇒ verschiedene Summe).
-const sig = (res) => {
-    let acc = 0;
-    for (const s of res.segs) acc = (acc + s.p1[0] * 13.1 + s.p1[1] * 7.7 + s.p1[2] * 3.3 + s.r1 * 101) % 1e6;
-    let lacc = 0;
-    for (const l of res.leaves) lacc = (lacc + l.pos[0] * 5.5 + l.pos[1] * 9.1 + l.scale * 71) % 1e6;
-    return (
-        res.segs.length +
-        "|" +
-        res.leaves.length +
-        "|" +
-        res.trunkR.toFixed(9) +
-        "|" +
-        acc.toFixed(6) +
-        "|" +
-        lacc.toFixed(6)
-    );
-};
+const sig = (res) =>
+    [
+        res.segs.length,
+        res.leaves.length,
+        res.trunkR.toFixed(9),
+        res.segs.reduce((a, s) => (a + s.p1[0] * 13.1 + s.p1[1] * 7.7 + s.p1[2] * 3.3 + s.r1 * 101) % 1e6, 0).toFixed(6),
+        res.leaves.reduce((a, l) => (a + l.pos[0] * 5.5 + l.pos[1] * 9.1 + l.scale * 71) % 1e6, 0).toFixed(6),
+    ].join("|");
 
 
 console.log("=== DAS NEUE KLEID K0 — Phyto-Wuchs-Kern (rein, headless) ===");
@@ -101,14 +86,14 @@ ok(
     "got=" + a1.trunkR.toFixed(5) + " exp=" + expectedR.toFixed(5)
 );
 // Ein höherer Baum bei gleicher Schlankheit ⇒ dickerer Stamm (Monotonie).
-const tall = grow(Object.assign(eiche(), { height: 18 }), 12345);
+const tall = grow({ ...eiche(), height: 18 }, 12345);
 ok(
     "McMahon: höherer Baum ⇒ dickerer Stamm",
     tall.trunkR > a1.trunkR,
     a1.trunkR.toFixed(4) + " → " + tall.trunkR.toFixed(4)
 );
 // Schlanker (höheres slim) ⇒ dünnerer Stamm bei gleicher Höhe.
-const slimmer = grow(Object.assign(eiche(), { slim: 0.85 }), 12345);
+const slimmer = grow({ ...eiche(), slim: 0.85 }, 12345);
 ok(
     "McMahon: schlanker (slim↑) ⇒ dünnerer Stamm",
     slimmer.trunkR < a1.trunkR,
@@ -123,13 +108,13 @@ const dv = grow(eiche(), 777);
 const runStart = {},
     runEnd = {};
 for (const s of dv.segs) {
-    if (runStart[s.runId] === undefined) runStart[s.runId] = s.r0;
+    runStart[s.runId] ??= s.r0;
     runEnd[s.runId] = s.r1;
 }
 const childrenOf = {};
 for (const rid in dv.runMeta) {
     const pr = dv.runMeta[rid].parentRun;
-    if (pr >= 0) (childrenOf[pr] = childrenOf[pr] || []).push(+rid);
+    if (pr >= 0) (childrenOf[pr] ||= []).push(+rid);
 }
 let checked = 0,
     violated = 0;
@@ -150,70 +135,50 @@ ok(
 );
 
 // (4) VARIANZ: N Seeds ⇒ vaste Streuung (keine zwei identisch, Segment-Zahl streut).
-const sigs = new Set();
-let minSeg = 1e9,
-    maxSeg = 0;
-for (let s = 0; s < 40; s++) {
-    const r = grow(eiche(), 1000 + s * 7);
-    sigs.add(sig(r));
-    minSeg = Math.min(minSeg, r.segs.length);
-    maxSeg = Math.max(maxSeg, r.segs.length);
-}
+const V40 = Array.from({ length: 40 }, (_, s) => grow(eiche(), 1000 + s * 7));
+const sigs = new Set(V40.map(sig));
+const [minSeg, maxSeg] = [Math.min, Math.max].map((f) => f(...V40.map((r) => r.segs.length)));
 ok("Varianz: 40 Seeds ⇒ 40 verschiedene Bäume", sigs.size === 40, sigs.size + "/40 unique");
 ok("Varianz: Segment-Zahl streut spürbar", maxSeg - minSeg > 10, "Segmente " + minSeg + "…" + maxSeg);
 
 // (5) APIKALDOMINANZ: Nadelbaum (api hoch, conifer) ⇒ schlanker + höher als breit; Eiche
 // (api niedrig, dekurrent) ⇒ breiter. Wir messen das Bounding der Segment-Endpunkte.
-function extent(res) {
-    let maxY = 0,
-        maxR = 0;
-    for (const s of res.segs) {
-        maxY = Math.max(maxY, s.p1[1]);
-        maxR = Math.max(maxR, Math.hypot(s.p1[0], s.p1[2]));
-    }
-    return { h: maxY, r: maxR, ratio: maxR / Math.max(0.1, maxY) };
-}
+const extent = (res) =>
+    Math.max(...res.segs.map((s) => Math.hypot(s.p1[0], s.p1[2]))) / Math.max(0.1, ...res.segs.map((s) => s.p1[1]));
 const eE = extent(grow(eiche(), 4242));
 const tE = extent(grow(tanne(), 4242));
 ok(
     "Apikaldominanz: Nadelbaum (exkurrent) schlanker als Eiche (dekurrent)",
-    tE.ratio < eE.ratio,
-    "Tanne w/h=" + tE.ratio.toFixed(2) + " · Eiche w/h=" + eE.ratio.toFixed(2)
+    tE < eE,
+    "Tanne w/h=" + tE.toFixed(2) + " · Eiche w/h=" + eE.toFixed(2)
 );
 
 // (6) LEAF-BUDGET: der Cap greift.
-const capped = grow(Object.assign(eiche(), { leafBudget: 50 }), 999);
+const capped = grow({ ...eiche(), leafBudget: 50 }, 999);
 ok("Blatt-Budget: Cap deckelt die Blatt-Zahl", capped.leaves.length <= 50, capped.leaves.length + " ≤ 50");
 
 // ── DIE PARITÄT ── der WORKER-Pfad: ein frischer Context, in dem `self` das globale Objekt IST (Worker-Scope).
 // Der IIFE-Root-Ausdruck `typeof self !== "undefined" ? self : ...` greift dann `self`.
-const worker = kernKontext({}); // im Worker ist self === globalThis
-vm.runInContext(src, worker, { filename: "phyto-core.js(worker)" });
-const workerCore = worker.__phytoCore;
+const workerCore = fadenScope(["phyto-core.js"]).__phytoCore; // im Faden ist self === globalThis
 
 console.log("=== DAS NEUE KLEID Welle 0 — Phyto-Core Main↔Worker-Parität ===");
-ok("Worker-Pfad exportiert __phytoCore.growSkeleton", workerCore && typeof workerCore.growSkeleton === "function");
+ok("Worker-Pfad exportiert __phytoCore.growSkeleton", typeof workerCore?.growSkeleton === "function");
 ok(
     "Beide Pfade sind SEPARATE Funktions-Instanzen (echt zwei Scopes)",
     mainCore.growSkeleton !== workerCore.growSkeleton
 );
 
-const weide = () => Object.assign(eiche(), { trop: 0.8, apical: 0.28, leafSize: 0.35 });
-const strauch = () => Object.assign(eiche(), { basalStems: 5, height: 4 });
+const weide = () => ({ ...eiche(), trop: 0.8, apical: 0.28, leafSize: 0.35 });
+const strauch = () => ({ ...eiche(), basalStems: 5, height: 4 });
 
 // Über eine Palette von Arten × Seeds: Main-Ergebnis MUSS byte-identisch zum Worker-Ergebnis sein.
-const arten = [
-    ["eiche", eiche],
-    ["tanne", tanne],
-    ["weide", weide],
-    ["strauch", strauch],
-];
+const arten = Object.entries({ eiche, tanne, weide, strauch });
 let maxDivergent = 0,
     tested = 0;
 for (const [nm, mk] of arten) {
     for (let s = 0; s < 12; s++) {
         const seed = 4242 + s * 131;
-        const rM = mainCore.growSkeleton(mk(), mulberry32(seed));
+        const rM = grow(mk(), seed);
         const rW = workerCore.growSkeleton(mk(), mulberry32(seed));
         tested++;
         if (sig(rM) !== sig(rW)) {
@@ -236,30 +201,21 @@ ok(
 // gebaut (die Engine three r184 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
 // (foundry-bruecke.js), hier ihr Ersatz — die Dials liest der Kern nur aus `__dials` (K47: kein DOM-Leser `gv` mehr).
 // Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
-// Ein Scope wie im Faden `name`: die Engine (welt-boot `ENGINE_THREE`) → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
-const kernScope = (name, bruecke) => {
-    const ctx = kernKontext({ console, THREE: ENGINE_THREE() });
-    const lies = (...p) => ausDatei(path.join(__dirname, "..", ...p));
-    vm.runInContext(src, ctx, { filename: `phyto-core.js(${name})` });
-    if (bruecke) vm.runInContext(bruecke, ctx);
-    vm.runInContext(lies("foundry-core.js"), ctx, { filename: `foundry-core.js(${name})` });
-    return ctx;
-};
-const fsb = kernScope(
-    "foundry",
+// Der Scope ist der des Fadens (welt-boot `fadenScope`: die Engine three r184 → phyto-core → foundry-core), danach die
+// Globale der Brücke (die Kerne lesen sie erst im Ruf).
+const KERNE = ["phyto-core.js", "foundry-core.js"];
+const fsb = fadenScope(KERNE);
+vm.runInContext(
     "var clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;" +
-        "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';"
+        "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';",
+    fsb
 );
 const P_ARTEN = ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz", "strauch"];
 const P_SAMEN = [1, 2, 7, 12345];
 const P_STUFEN = [0, 1, 2];
 // Vergleich Schlüssel für Schlüssel (Werte per JSON — leafShape ist ein Objekt; ein fehlender Schlüssel ist undefined).
-const pDiff = (A, B) => {
-    const out = [];
-    for (const k of new Set([...Object.keys(A), ...Object.keys(B)]))
-        if (JSON.stringify(A[k]) !== JSON.stringify(B[k])) out.push(k);
-    return out;
-};
+const pDiff = (A, B) =>
+    [...new Set([...Object.keys(A), ...Object.keys(B)])].filter((k) => JSON.stringify(A[k]) !== JSON.stringify(B[k]));
 fsb.__pZwillingArgs = { arten: P_ARTEN, samen: P_SAMEN, stufen: P_STUFEN };
 const pPaare = vm.runInContext(
     `(function () {
@@ -282,12 +238,12 @@ const pPaare = vm.runInContext(
 // Selbsttest: ein eingeschleuster Zwilling (Quirl-Abstand fehlt, Nadel-Stride anders) MUSS beim Namen fallen.
 {
     const g = JSON.parse(pPaare.find((p) => p.fall === "fichte/s1/L1").gesetz);
-    const zw = Object.assign({}, g, { _lf: g._lf + 0.3 });
+    const zw = { ...g, _lf: g._lf + 0.3 };
     delete zw.whorlSpacing;
     const d = pDiff(zw, g);
     ok(
         "P-Zwilling Selbsttest: der eingeschleuste Zwilling fällt an whorlSpacing und _lf",
-        d.length === 2 && d.includes("whorlSpacing") && d.includes("_lf"),
+        d.sort().join() === "_lf,whorlSpacing",
         d.join(",")
     );
 }
@@ -296,7 +252,7 @@ let pFaelleRot = 0;
 for (const p of pPaare) {
     const d = pDiff(JSON.parse(p.gesehen), JSON.parse(p.gesetz));
     if (d.length) pFaelleRot++;
-    for (const k of d) (pAbw[k] = pAbw[k] || []).push(p.fall);
+    for (const k of d) (pAbw[k] ||= []).push(p.fall);
 }
 for (const k of Object.keys(pAbw))
     console.log("      P-ZWILLING " + k + ": " + pAbw[k].length + " Fälle, z. B. " + pAbw[k].slice(0, 3).join(" "));
@@ -319,7 +275,7 @@ ok(
 // defined", gate:brennglas-takt fand ihn im Brennpunkt der Kern-Landform). Der Scope wird wie im Haupt-Thread gebaut
 // (three → phyto-core → foundry-core, KEINE Shell-Globale), jede Baum- und Strauch-Art je Gestalt und Stufe gewachsen.
 // Konsum-Leser: `_growTreeBlueprintRich` (Stamm) — der Stamm liest das Skelett für die Kollision.
-const hsb = kernScope("haupt");
+const hsb = fadenScope(KERNE);
 // Selbsttest: der Scope ist der des Haupt-Threads — ein Leser eines Shell-Globals fällt dort beim Namen
 ok(
     "Skelett im Haupt-Thread Selbsttest: der Scope trägt keine Shell-Globale (ein Leser von vlen bricht beim Namen)",
@@ -328,21 +284,27 @@ ok(
         hsb
     ) === true
 );
-hsb.__skelettArgs = { samen: [1, 7, 12345], stufen: [0, 1, 2] };
+// DIE JUGEND (stoffe.K5#2, w12-riesenhalm): je Baum-Art und Gestalt der Stufe 1 in jedem Alter des Jungwuchses (`SUKZESSION.jugend`
+// des Stamms) der Kronen-Fuß des jungen Skeletts (sein tiefster Blatt-Anker / seine Höhe) minus den des gewachsenen — `jugendRot`
+// nennt, wo die Krone des Jungwuchses um mehr als ein Zehntel der Höhe höher sitzt (bis w12-riesenhalm hob der Schaft-Hub die
+// Krone der jungen Tanne auf 0,54 H, gewachsen 0,36 H: die Riesenhalme der Narbe); die Mutante ist dieser Fall. Die Höhe des
+// Jungwuchses stand schon im Maß der Art (jung/gewachsen ≤ 1,008 vor und nach dem Schnitt).
+hsb.__skelettArgs = { samen: [1, 7, 12345], stufen: [0, 1, 2], jugend: stammLib.ladeKlasse(ROOT).AnazhRealm.SUKZESSION.jugend };
 const hFaelle = vm.runInContext(
     `(function () {
         const a = self.__skelettArgs, out = [];
-        for (const id of Object.keys(PRESETS)) {
-            const pre = PRESETS[id];
-            if (!pre || (pre.kind !== "tree" && pre.kind !== "shrub")) continue;
+        const fuss = (k) => Math.min(...k.nodes.leaves.map((l) => l.pos[1])) / Math.max(...k.nodes.segs.map((q) => q.p1[1]));
+        for (const [id, pre] of Object.entries(PRESETS)) {
+            if (pre.kind !== "tree" && pre.kind !== "shrub") continue;
             for (const seed of a.samen)
                 for (const lod of a.stufen) {
                     const fall = id + "/s" + seed + "/L" + lod;
                     try {
                         const s = skelettDerGestalt(id, seed, lod);
-                        out.push({ fall, segs: s && s.nodes && s.nodes.segs ? s.nodes.segs.length : 0 });
+                        const jung = pre.kind === "tree" && lod === 1 ? a.jugend.map((alter) => [alter, fuss(skelettDerGestalt(id, seed, lod, { alter })) - fuss(s)]) : [];
+                        out.push({ fall, segs: s.nodes.segs.length, jung });
                     } catch (e) {
-                        out.push({ fall, fehler: String((e && e.message) || e) });
+                        out.push({ fall, fehler: String(e?.message || e) });
                     }
                 }
         }
@@ -350,6 +312,8 @@ const hFaelle = vm.runInContext(
     })()`,
     hsb
 );
+const jugendRot = (F) => F.flatMap((f) => (f.jung || []).filter(([, d]) => d > 0.1).map(([al, d]) => `${f.fall}@${al} +${d.toFixed(2)}H`));
+ok("Jugend: die Krone nie über der gewachsenen", jugendRot([{ jung: [[0.06, 0.18]] }]).length === 1 && hFaelle.some((f) => f.jung?.length) && !jugendRot(hFaelle).length, jugendRot(hFaelle).slice(0, 3).join(" | "));
 const hRot = hFaelle.filter((f) => f.fehler || !(f.segs > 0));
 for (const f of hRot.slice(0, 6)) console.log("      SKELETT " + f.fall + ": " + (f.fehler || "0 Segmente"));
 ok(
