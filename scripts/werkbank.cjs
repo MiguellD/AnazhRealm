@@ -822,6 +822,10 @@ async function starte() {
         // — die Schalter je Plattform trägt das EINE Rezept.
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    // /status NENNT DAS PROFIL IMMER (`boot.profil`): die Proben der Punkte-Maschine hängen sich über sein DevToolsActivePort an
+    // den Browser der Sitzung — die Serie ihr benanntes, sonst das Scratch-Profil des Starters (`browser.profil`). Bis hier nannte
+    // /status ohne --serie keins (z216, w11-profil-leck): neun Stationen der Sitzung blieben an jedem Kopf UNGEMESSEN.
+    boot.profil = profil || browser.profil;
     await adapterZeile(browser);
     const page = await browser.newPage();
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
