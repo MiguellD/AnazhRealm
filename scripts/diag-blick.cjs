@@ -212,7 +212,7 @@ async function weltLauf() {
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
     const welt = async (zeit, blick, W, H) => {
-        await window.__weltDa(() => !(!r || !st));
+        await window.__weltDa(() => r && st);
         await window.__weltStehtNach(); // die Welt steht (das EINE Einschwingen, welt-boot)
         if (st.renderer._isHeadlessNull) return { fatal: "Null-Renderer — ohne echten Renderer kein Schuss" };
         // Blick: Augenhöhe in den Wald ODER auf den Boden; die Zeit über die eine Zeit-Quelle
@@ -220,7 +220,7 @@ async function weltLauf() {
         st.camera.position.set(pm.x, pm.y + 1.7, pm.z);
         st.camera.lookAt(pm.x + dx, pm.y + dy, pm.z + dx);
         st.camera.updateMatrixWorld(true);
-        if (zeit) st.world.timeOfDay = zeit / 24;
+        if (zeit) r.setTimeOfDay(zeit / 24, "regler");
         await __takte(20, 30); // echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen
         // GEMESSEN: der WebGPU-Readback liefert die Zeilen TOP-DOWN — kein Y-Flip
         return { png: __png((await window.__ausgabeAufnahme(W, H, 1)).u8, W, H) };

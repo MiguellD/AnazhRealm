@@ -2845,7 +2845,7 @@ const STUFEN_ANKER = [
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter);",
+    "treeParams({ api, delta, slim, trop, leaf }, SEED, __lod,",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -3365,20 +3365,16 @@ function main() {
         // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab, und emitTree
         // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
         const kern = ausDatei("foundry-core.js");
-        const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
+        const zweite = scanStufenWand(kern.replace(STUFEN_ANKER[0], "__lod = lod <= 1 ? 1 : lod;"));
         const ohne = scanStufenWand(
             kern
-                .replace("__lod = stufenRezept(P.kind, stufe);", "")
-                .replace(
-                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter);",
-                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre, __weltSkalaArt(CURRENT), alter);'
-                )
+                .replace(STUFEN_ANKER[2], "")
+                .replace(STUFEN_ANKER[4], STUFEN_ANKER[4].replace("__lod", 'stufenRezept("tree", __lod)'))
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
-            ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /SEED, __lod, pre, __weltSkalaArt\(CURRENT\), alter\);` steht 0×/.test(e));
+            [2, 4].every((i) => ohne.some((e) => e.includes(STUFEN_ANKER[i] + "` steht 0×")));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
