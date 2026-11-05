@@ -2299,6 +2299,13 @@
                     display: none;
                 }
             }
+            /* unter 58 em weichen die Suche (Strg+K bleibt) und die Stimme (die Einstellungen tragen sie) */
+            @container topbar (max-width: 58em) {
+                #omnibox-trigger,
+                #grok-voice-toggle {
+                    display: none;
+                }
+            }
             .tabs {
                 display: flex;
                 gap: 2px;
@@ -6355,11 +6362,12 @@
                 letter-spacing: 0.04em;
                 color: var(--ink-on-dark, #e8d4a8);
             }
-            /* Name · Schieber · Wert: der Wert so breit wie seine Ziffern (w12-menue: 34 px trugen „-0.15“ bei 16 px nicht) */
+            /* der Name über Schieber und Wert, der Wert so breit wie seine Ziffern (w12-menue: in 168 px trugen 78 + 34 px bei
+               16 px weder „Apikaldominanz“ noch „-0.15“, dem Schieber blieben 44 px) */
             .workshop-recipe-row {
                 display: grid;
-                grid-template-columns: 5em 1fr auto;
-                gap: 6px;
+                grid-template-columns: 1fr auto;
+                gap: 0 6px;
                 align-items: center;
             }
             .workshop-recipe-row label {
@@ -6375,21 +6383,21 @@
                 accent-color: var(--brass-3, #b08648);
                 cursor: pointer;
             }
-            /* die Zeile der Hülle (worlds/huelle): der Kopf ist Inhalt, die Spalten wie zuvor (Name · Schieber · Wert) */
+            /* die Zeile der Hülle (worlds/huelle): der Kopf ist Inhalt — oben der Name, darunter Schieber · Wert */
             .workshop-recipe-row .h-kopf {
                 display: contents;
             }
             .workshop-recipe-row .h-lab {
-                grid-column: 1;
+                grid-column: 1 / -1;
                 grid-row: 1;
             }
             .workshop-recipe-row input[type="range"] {
-                grid-column: 2;
-                grid-row: 1;
+                grid-column: 1;
+                grid-row: 2;
             }
             .workshop-recipe-row .h-wert {
-                grid-column: 3;
-                grid-row: 1;
+                grid-column: 2;
+                grid-row: 2;
             }
             .workshop-recipe-val {
                 font-family: "JetBrains Mono", monospace;
@@ -7604,6 +7612,16 @@
                 width: max-content;
                 min-width: 300px;
                 max-width: 64vw;
+            }
+            /* zwei Spalten Baupläne brauchen 45 em (Name · Herkunft · Griff je Zeile) — wo 64vw sie nicht tragen, eine
+               (w12-menue: an 800 px schnitt die Liste 271 Texte quer) */
+            .drawer[data-drawer="werkstatt"] {
+                container: werkstatt / inline-size;
+            }
+            @container werkstatt (max-width: 70em) {
+                #workshop-side-palette #workshop-list {
+                    grid-template-columns: minmax(0, 1fr);
+                }
             }
             #workshop-side-palette-right {
                 flex: 0 0 15.5em;

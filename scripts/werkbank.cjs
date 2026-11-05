@@ -46,8 +46,10 @@
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
 //   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
-//   node scripts/werkbank.cjs bedienung --staffel 2        K3#2: jeder sichtbare Text von HUD und Menü ≥ 16 px, die Belegung frei (der
-//                                                           Knopf „vor“, KeyO durch den Reload, der Leib ≥ 0,1 m; `taeter` · `blind`)
+//   node scripts/werkbank.cjs bedienung --staffel 2        K3#2: jeder sichtbare Text von HUD und Menü ≥ 16 px und in seinem Kasten,
+//                                                           die Belegung frei (der Knopf „vor“, KeyO durch den Reload, der Leib
+//                                                           ≥ 0,1 m; `taeter` · `blind`) — der Kasten hält ab 800 px, headless 640 x 360
+//                                                           nicht (das Ich): dort `--echt`
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
