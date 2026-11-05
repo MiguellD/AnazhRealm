@@ -2652,6 +2652,78 @@ const stationen = [
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
         quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
     },
+    {
+        kriterium: "schatten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // schatten-k1-zuwachs (w12-kontakt-zuwachs): `werkbank licht --kontakt --zuwachs` an der Platte saat-s7-platte der Prüfbühne,
+        // Uhr 0,5 und 0,3 × Ego und Third — je Pose die Gerade der 10–90-%-Breite über L (Weg Werfer → Empfänger längs des Lichts), die
+        // Scheibe (Zuwachs / 0,688) 0,9 ± 0,25 cm je m aus ≥ 75 % gültigen Kanten, der Fuß ≤ 3 cm, die Treue 0 Bytes je Uhr (EINE
+        // Aufnahme je Schuss); danach `zerlegen --nur k0` an derselben Stelle, die ms urteilt die GTX (≤ 0,3; an der Radeon steht sie in
+        // der Zahl — die Folge kennt keinen Geräte-Schalter). DAS TEMPO: Bühne und Platte einmal vor den Uhren, eine Aufnahme je Schuss —
+        // die Schleife an der Radeon 64,8 → 26,9 s (b62542c9 ↔ Zweig, drei Ringe 17,9 → 6,1 s, 84 Aufnahmen 42,5 → 44 Aufnahmen 20,3 s).
+        // DER SCHNITT IM SPIEL (`_schattenFilter`): die Breite der Sonne legt sich auf die des Bodens samt Rampe des bilinearen
+        // Vergleichs; Radeon Mittag Ego 0,503 → 0,938, Third 0,715 → 0,793, Uhr 0,3 Ego 0,788 → 0,929, Third 0,72 → 0,875 cm/m
+        probe: { sek: 45, befehl: befehlDer({
+            name: "schatten.K1#2",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "buehne", args: ["umstellen", "--ort", "buehne", "--sicht", "ego"], muss: true },
+                { name: "kontakt", args: ["licht", "--kontakt", "--zuwachs", "--uhr", "0.5,0.3"], ms: 900000 },
+                { name: "kosten", args: ["zerlegen", "--nur", "k0", "--json", "@DIR@/k0.json"], datei: "@DIR@/k0.json", ms: 900000 },
+            ],
+        }), mutiert: true },
+        env: envDer,
+        gpu: true,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            if (!j && lauf && /^\s*{/.test(String(lauf.stdout)))
+                try {
+                    j = JSON.parse(lauf.stdout);
+                } catch (_e) {
+                    j = null;
+                }
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            const k = j.schritte && j.schritte.kontakt;
+            const w = k && k.json;
+            if (j.fehler || !w) return { gruen: false, zahl: "Folge: " + String(j.fehler || (k && k.rest) || "").slice(-200) };
+            const z = ["0.5", "0.3"].flatMap((u) =>
+                ["ego", "third"].map((p) => {
+                    const q = ((w[u] || {}).posen || {})[p] || {};
+                    const [zu, fu] = [q.zuwachs || {}, (q.fuss || {}).halbschattenCm];
+                    const ok = Math.abs(zu.scheibeCmJeM - 0.9) <= 0.25 && zu.kanten >= 0.75 * zu.von && fu != null && fu <= 3 && (w[u] || {}).treueBytes === 0;
+                    return [ok, `Uhr ${u} ${p} ${zu.scheibeCmJeM} cm/m (${zu.kanten}/${zu.von} Kanten, Fuß ${fu} cm)`];
+                })
+            );
+            const kz = j.schritte.kosten || {};
+            const k0 = ((((j.dateien || {}).kosten || {}).auswertung || {}).zeilen || []).find((x) => x.id === "k0");
+            const ms = k0 ? k0.deltaMs : null;
+            const gtx = /nvidia/i.test(j.adapter || "");
+            const gruen = hw && k.exit === 0 && z.every(([ok]) => ok) && (!gtx || (kz.exit === 0 && ms != null && ms <= 0.3));
+            const treue = ["0.5", "0.3"].map((u) => (w[u] || {}).treueBytes).join("/");
+            return { gruen, zahl: z.map(([, s]) => s).join(" · ") + ` · Treue ${treue} Bytes · Kontakt-Kaskade k0 ${ms} ms${gtx ? " (GTX ≤ 0,3)" : ""}, ` + (j.adapter || "Adapter ungenannt") };
+        },
+        proben: (() => {
+            const pose = (zu, fu = 2.1) => ({ fuss: { halbschattenCm: fu, kanten: 10, von: 12 }, zuwachs: { scheibeCmJeM: zu, kanten: 44, von: 44, wegM: 9.25 } });
+            const uhr = (ego, third, treueBytes = 0) => ({ treueBytes, posen: { ego: pose(ego), third: pose(third) } });
+            const folge = (o = {}) => JSON.stringify({
+                plan: "schatten.K1#2", adapter: o.adapter || "[linse-gpu] amd/rdna-3",
+                schritte: { kontakt: { exit: 0, json: { "0.5": o.mittag || uhr(0.938, 0.793), "0.3": uhr(0.929, 0.875) } }, kosten: { exit: 0 } },
+                dateien: { kosten: { auswertung: { zeilen: [{ id: "k0", deltaMs: o.k0 == null ? 0.09 : o.k0 }] } } },
+            });
+            return [
+                { name: "Radeon (Zweig): Mittag 0,938/0,793, Uhr 0,3 0,929/0,875, Treue 0", stdout: folge(), gruen: true },
+                { name: "die Summe der Radien (b62542c9): Mittag Ego 0,503", stdout: folge({ mittag: uhr(0.503, 0.715) }), gruen: false },
+                { name: "eine zweite Aufnahme trüge: die Treue 9 Bytes", stdout: folge({ mittag: uhr(0.938, 0.793, 9) }), gruen: false },
+                { name: "GTX k0 am oberen Gipfel 0,65 ms", stdout: folge({ adapter: "[linse-gpu] nvidia/pascal", k0: 0.65 }), gruen: false },
+                { name: "swiftshader", stdout: folge({ adapter: "[linse-gpu] google/swiftshader" }), gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**", "scripts/lib/zerlege-linse.cjs"],
+        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
+    },
 
     // ───────── lod.K1 — der Umriss hält in jeder Stufe (w4-laub-saum) ─────────
     // DER SAUM AUS DEM GESETZ im Spiel-Baum (phyto-core `karteSaum` · `karteSaumMuster` in der Wahl der Stufen `impostorMips`, die
@@ -3193,14 +3265,6 @@ const stationen = [
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
 stationen.fehlt = [
-    {
-        kriterium: "schatten.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DER TÄTER BEIM NAMEN — `licht --kontakt` stellt je Uhr zweimal um (scripts/werkbank.cjs der CLI-Zweig: die Bühne, dann die Platte saat-s7-platte 461 m daneben), je Umstellen ein kalter Ring 4: an 24a0f3ef (Radeon, 3,94 min, ROT Zuwachs 0,48–0,80 cm/m gegen 0,9 ± 0,25) trugen fünf Ringe ≈ 170 s, 84 Aufnahmen bei 1920×1080 (je Schuss zwei, die erste verworfen) ≈ 52 s, zerlegen k0 ≈ 6 s. DER SCHNITT: Bühne und Platte EINMAL vor der Uhr-Schleife (die Uhr springt danach), die Mess-Wiese vor dem Deckel durch die Sitzung, L nur für die abgetasteten Pixel — geschätzt 72–91 s, mit EINER Aufnahme je Schuss (Byte-Beweis an beiden Geräten) 51–70 s. Kein Zwilling von schatten.K1#1: dessen Urteil liest den Exit des Kontakts, der Zuwachs beider Uhren trüge ihn. Die Fahrt trägt sie nicht: nach den gemessenen Deckeln (Boot 120 → 60 s, profiband.K4 45 → 29, K5 45 → 36, affekt.K1#2 33 → 10, oekologie.K4#2 33 → 31, vegetation.K2#1 15 → 14, licht.K2#1 11 → 10) und licht.K1#1 · licht.K3 · lod.K3#1 · tiere.K5#1 steht jede Karte bei 1 800 von 1 800 s. Die Station steht in koordination 32fe3ffc.",
-        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
-    },
     {
         kriterium: "lod.K3",
         staffel: 2,
