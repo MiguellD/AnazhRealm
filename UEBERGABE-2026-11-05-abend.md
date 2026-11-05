@@ -13,6 +13,7 @@ Werkzeuge:
 Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
+- **z238 GELANDET** aec13cb4 (22:09): w12-tuch-grob (haar.K4#2 headless messen).
 - **z237 GELANDET** b01cc8b8 (21:43): w12-dorf-probe, w12-proben-tempo-spiel, w12-riesenhalm. Noch nicht gemessen — nach z238/z239 die Farm `bash /tmp/claude/w3/farm-lauf.sh <main>` (CPU-Last nicht während eines echt-Jobs auf dem Radeon-Läufer), dann Radeon für die sichtbaren (riesenhalm: Jungwuchs-Gestalt), dann buchen; streaming.K1/K2 fallen dabei ehrlich (−2), stoffe.K4#1 misst jetzt ein echtes Dorf.
 - **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
 - **z236 ROT** (voll 9/18 Werk im Wasser):
