@@ -11,6 +11,8 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - `scripts/diag-takt.cjs` T9 Nah-Gang ROT an main ac85ccab (tickArchitectureCulling: „Bau hinter 30 Wartenden“ false, die Stufe hinter der Kappe true) · gate:takt (volle Batterie) · S (w12-ankunft-faden)
 
 ## Spiel
+- `scripts/diag-studio-uebergabe.cjs:207` (K) KANAL · tree: eiche Same 3 baut im Studio 6a4d96f608, in der Welt 5f941b09d3 (3 Teile je) — `--saat 2838944195` ROT am main ba87b158, die Saat zieht je Lauf neu (Date.now), `npm run check` flackert · studios, A · S (w12-menue)
+- `stamm/wasser-zellen.js:574` `_stampArchitectureSolidCellsInto` · die Wasser-Zellen des Genesis-Chunks −1,−1 veralten gegen seine Werke: main ba87b158 mit 4 × 32 Hand-Takten an der Stelle von Welle 6.C3 → beim Band C.1 V9.71 12 statt 2 Wasser-Chunks, das Band nimmt den ersten der Karte (−1,−1, nicht seinen See-Chunk), der Neubau stempelt 429 SOLID-Zellen mehr (drift 489, Playtest ROT) · Wasser, A · S–M (w12-menue)
 - Heap-Leck `nodeBuilderCache` +30,6 MB/min · profiband.K5, E · in Arbeit (funde-6a57 heil:leck)
 - Wege-Karte: erstes Zentrieren am Genesis-Ort 112 ms Haupt-Faden, Flächen ohne Band je 48-m-Umzug neu · B, E · M
 - Metropole `platzVoll: 87` — 87 Marktstände ohne Platz neben der Trasse (alle Punkte in Hausgrundrissen) · siedlung, C · Plan der Stadt · M
