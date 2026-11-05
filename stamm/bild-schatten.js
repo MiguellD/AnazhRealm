@@ -222,15 +222,19 @@ class AnazhRealm_bild_schatten {
     // zurückkommt. Der erste Schuss nach dem Lesen zeichnete darum ohne den Boden, den er eben gemessen hatte, jeder weitere mit ihm:
     // zwei Aufnahmen derselben Szene wichen ab (Radeon, Wiese 960 × 540: 487 652 von 2 073 600 Bytes, die dritte gleich der zweiten;
     // GTX lod.K2#1 547 572, lod.K5#1 2 216 057 — „EINE Aufnahme je Schuss trägt hier nicht“). Nach der Lesung stellt die EINE Regel
-    // `_rueckstrahlAn` den Schalter für die Bilder des Schusses. ZWEI Messbilder: was ein Bild dem nächsten lässt, trug im ersten
-    // noch den Schalter von vorher — erst das zweite zeichnet unter dem Boden der Szene (Radeon, Wiese: mit EINEM Messbild blieben
-    // 60 241 Bytes, mit zweien 53 336, je Kanal höchstens 2, in der oberen Bildhälfte — dieser Rest hängt nicht am Rückstrahl: 90
-    // freie Bilder vor dem ersten Schuss heben ihn auf 331 670, 6 s Warten ohne Bild lässt ihn bei 60 351).
+    // `_rueckstrahlAn` den Schalter für die Bilder des Schusses. ZWEI Messbilder: das erste zeichnet OHNE Rückstrahl (der Boden der
+    // Szene allein), das zweite unter dem Boden, den das erste maß — der Boden des Schusses hängt an keinem Boden davor (bis
+    // w12-lod-ende trug das erste den Schalter und den Boden des vorigen Schusses: Radeon, Wiese, leer → Tanne, 9 Bytes zwischen
+    // zwei Aufnahmen). Der Boden, den es misst, liegt unter den
+    // Schatten-Karten DIESES Blicks: die Aufnahme legt sie vor dem ersten Messbild neu (`neubeginn`, w12-lod-ende) — bis dahin
+    // trug er die Kaskaden, die der Lauf davor hielt (Radeon, Wiese: Boden 0,069 statt 0,095, Stamm und Laub der ersten Aufnahme
+    // 1 786 078 Bytes neben der zweiten).
     async _rueckstrahlJetzt(bild) {
         const st = this.state;
         const L = st.rueckstrahlLeser;
         if (!L || !st.rueckstrahlPass) return;
         if (L.lesung) await L.lesung;
+        L.an.value = 0;
         for (let i = 0; i < 2; i++) {
             st.rueckstrahlPass.sprung = true;
             bild();
