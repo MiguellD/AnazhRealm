@@ -1992,3 +1992,4 @@
 2026-11-05 05:06:00 8ef49bef-radeon ferne.K4#1 ROT 0.1 · 11/46
 2026-11-05 05:06:06 8ef49bef-radeon lod.K4#1 ROT 0.1 · 12/46
 2026-11-05 05:06:11 8ef49bef-radeon vegetation.K3#1 ROT 0.1 · 13/46
+2026-11-05 05:06:16 8ef49bef-radeon affekt.K4#2 ROT 0.0 · 14/46
