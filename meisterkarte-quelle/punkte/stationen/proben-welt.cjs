@@ -117,7 +117,10 @@ function sitzungTor() {
 // Leine (`_gpuLeineFrameMs`, `sammelMs`) — das erste Bild nach dem Rückruf meldete dem Regler die GANZE Fahrt als EIN Bild (fahrzeug.K2#1:
 // die Uhr von ~12 900 Takten im Muster 8–33 ms), `_perfSenseFoldFrame` faltete sie in sein Mittel und `_nexusPerfRegulate` drosselte die
 // Qualität der Welt der Sitzung für die Proben danach. Der Rückruf gibt die Leine zurück und leert den Abstand: das nächste Bild misst
-// nur seinen eigenen Takt. Der Rückruf trägt mehrfach (der Kreis ruft ihn am Urteils-Punkt und im finally).
+// nur seinen eigenen Takt. Fällt die Probe am Deckel, bleibt die Leihe in der Seite — die Grundstellung nach dem Abbruch geht durch
+// die Tür (`/reload`, eine neue Welt ohne sie). Nur fahrzeug.K2#1/#2 tragen sie: der Kreis von tiere.K5#1 im Takt ohne Bild prüfte je
+// 2 Spiel-s statt je ~3,1 und schoss darum öfter (Radeon 9c545df2 nach 80 s 296 statt 375 Spiel-s, 28 statt 22 Schuss-Paare) — er
+// fährt wie in koordination.
 function ohneBild() {
     const zurueck = leihe(r, {
         _gpuLeineFrei() {
@@ -291,49 +294,22 @@ async function bodenRollen(tor) {
 // zählt jeden Takt der Prüfung weiter) — das Urteil (≥ 3, im Blick 0, 600 Spiel-s, die Sicht) fällt gleich; nur die Zahl der Sichtungen
 // über drei fällt weg. Der Anker `__kreis` legt den Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Schüsse,
 // Sichtungen; nie am Anfang `KREIS-`, die Zeile des Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
-// DIE SPIEL-UHR VOR DER WANDUHR (w12-proben-tempo; Radeon 8ef49bef am Deckel 90 s: 465 von 1200 Spiel-s, Radeon 3ef20f9f ohne Schuss
-// 14,6 Spiel-s je s Wanduhr — die 1200 Spiel-s allein ≈ 82 s): der Kreis fragte alle 250 ms WANDUHR (`sleep(250)`), dazwischen lief der
-// Raffer an der Bild-Schleife (rAF, am VSync gerastet) und jedes seiner Bilder trug bis zu zwei gezeichnete Takte. Jetzt steht die
-// Schleife im Kreis still, und der Kreis taktet selbst (`__kreisTakte`): je URTEILS-PUNKT `JE` Takte zu TAKT_DECKEL_S (2 Spiel-s, der
-// Abstand seiner Schüsse), alle ohne Bild (die gespannte Leine, `ohneBild`) bis auf den letzten — das Bild am Punkt, an dem der Kreis
-// prüft und schießt; die Lücke nach einem Schuss nimmt er ohne Schleife (die 50 ms von `wieder`, nie ihr Neustart). Die Prüfung liegt
-// jetzt fest je 2 Spiel-s (vorher je 250 ms Wanduhr, auf der Radeon ≈ 3,7 Spiel-s): nie gröber, das Schlupfloch `imBlick` nie blinder.
 async function tierKreis(tor) {
     const n = 10;
-    const JE = 20;
     const STAFFEL = 3;
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
             'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
         ["if (!kand.some((q) => q.neu)) continue;", "if (!kand.some((q) => q.neu) || kreis.gesehen.size >= " + STAFFEL + ") continue;"],
-        ["kreis.z0 = st.spielZeit;", "kreis.z0 = st.spielZeit;\n            rend.setAnimationLoop(null);"],
-        ["await sleep(250);\n                    st.yaw = kreis.gier", "await window.__kreisTakte(takt);\n                    st.yaw = kreis.gier"],
-        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
-            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await sleep(50), (tRenderVor = null);"],
     ]);
     const page = await tor.seite();
     tor.karte();
-    await page.evaluate("window.__ohneBild = " + tor.arg[0] + "; 1");
-    await page.evaluate((n, je) => {
+    await page.evaluate((n) => {
         const r = window.anazhRealm;
         const rend = r.state.renderer;
         const Z = window.__zeitraffer || (window.__zeitraffer = { n: 0, roh: null });
         Z.n = n;
-        Z.je = je;
         Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
-        // der Takt des Kreises bis zum nächsten Urteils-Punkt: `Z.je` Takte, die Uhr der Takte läuft der Wanduhr voraus wie der Raffer
-        window.__kreisTakte = async (takt) => {
-            const zurueck = window.__ohneBild();
-            try {
-                for (let i = 0; i < Z.je; i++) {
-                    if (i === Z.je - 1) zurueck();
-                    takt((Z.t = Math.max(Z.t || 0, performance.now()) + Z.ms));
-                }
-            } finally {
-                zurueck();
-            }
-            await sleep(0);
-        };
         if (Z.roh) return;
         Z.roh = rend.setAnimationLoop;
         Z.huelle = rend.setAnimationLoop = function (cb) {
@@ -346,7 +322,7 @@ async function tierKreis(tor) {
             });
         };
         return 1;
-    }, n, JE);
+    }, n);
     await tor.ruf("/fenster", { w: 1280, h: 720 });
     try {
         for (const sicht of ["ego", "third"]) {
@@ -727,11 +703,22 @@ async function fahrWegenetz(tor) {
     // DIE FAHRT OHNE BILD (w12-proben-tempo): das Urteil liest kein Bild — Route, Takte, Tempo, Steckenbleiber und Boden zählt der
     // Sim-Schritt. Die Orte erwachen und der GT fährt unter der gespannten Leine (`ohneBild`, tor.arg[0]): jeder Takt rechnet ganz,
     // keiner zeichnet. Bis dahin zeichnete auf der Karte bis zu jeder zweite Takt der Probe (die Leine löst an jedem `sleep` der
-    // Probe, alle 4 Takte) — headless b62542c9 zählte 14 Bilder, die Radeon riss am Deckel 45 s ohne Zeile
-    await page.evaluate("window.__ohneBild = " + tor.arg[0] + "; window.__bildZurueck = window.__ohneBild(); 1");
+    // Probe, alle 4 Takte) — headless b62542c9 zählte 14 Bilder, die Radeon riss am Deckel 45 s ohne Zeile. Ohne das Argument fährt
+    // die Probe wie bisher (das A der Messung).
+    // DER FORTSCHRITT DER FAHRT (w12-proben-tempo2): alle 10 s Wanduhr eine Zeile — Spiel-s, erwachte Orte, der Weg des Fahrers auf
+    // seiner Route (`_fahrer`: s von lang, seine Sim-Takte); reißt der Deckel, nennt die letzte, wo die Fahrt stand (wie der Kreis von
+    // tiere.K5#1). Nie am Anfang `WEGENETZ`, die Zeile des Urteils
+    const zeile = setInterval(() => {
+        page.evaluate(() => {
+            const r = window.anazhRealm, Fa = r._fahrer;
+            return { spielS: Math.round(r.state.spielZeit), orte: (r._bewohnerSiedlungen || new Map()).size,
+                ...(Fa ? { s: Math.round(Fa.s), lang: Math.round(Fa.lang), takte: Fa.takte } : {}) };
+        }).then((z) => console.log("FORTSCHRITT der Fahrt nach " + ((Date.now() - t0) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
+    }, 10000);
+    if (tor.arg[0]) await page.evaluate("window.__ohneBild = " + tor.arg[0] + "; window.__bildZurueck = window.__ohneBild(); 1");
     const o = await page
         .evaluate(F.probeLeben, { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } })
-        .finally(() => page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1)));
+        .finally(() => (clearInterval(zeile), tor.arg[0] && page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1))));
     const v = o.wegenetz ? d.wegenetzVerdict(o.wegenetz) : [String(o.err || "keine Fahrt").split("\n")[0]];
     console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung`);
     console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
@@ -767,10 +754,18 @@ async function fahrVerkehr(tor) {
     const sek = Number(tor.arg[0]) || 12;
     // OHNE BILD wie die Fahrt auf dem Wegenetz (w12-proben-tempo): die Stadt gründet und fährt unter der gespannten Leine (`ohneBild`,
     // tor.arg[1]) — Stufe, Sitz und Sichtbarkeit am Steuer wählt der Takt (`_tickArchitectureLOD`, `_kompositErbt`), nie das Bild
-    await page.evaluate("window.__ohneBild = " + tor.arg[1] + "; window.__bildZurueck = window.__ohneBild(); 1");
+    // DER FORTSCHRITT wie die Fahrt auf dem Wegenetz (w12-proben-tempo2): alle 10 s Spiel-s, die Uhr der Stadt, die Orte; nie am Anfang
+    // `  ❌`/`  ✅ VK`, die Zeilen des Urteils. Ohne das Argument der Leine fährt die Probe wie bisher
+    const zeile = setInterval(() => {
+        page.evaluate(() => {
+            const r = window.anazhRealm;
+            return { spielS: Math.round(r.state.spielZeit), uhr: +(24 * r.state.timeOfDay).toFixed(2), orte: (r._bewohnerSiedlungen || new Map()).size };
+        }).then((z) => console.log("FORTSCHRITT des Verkehrs nach " + ((Date.now() - t0) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
+    }, 10000);
+    if (tor.arg[1]) await page.evaluate("window.__ohneBild = " + tor.arg[1] + "; window.__bildZurueck = window.__ohneBild(); 1");
     const o = await page
         .evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } })
-        .finally(() => page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1)));
+        .finally(() => (clearInterval(zeile), tor.arg[1] && page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1))));
     for (const h of d.VERKEHR.stunden) {
         const m = o.verkehr && o.verkehr[h];
         const v = m ? d.verkehrVerdict(m) : [String(o.err || "kein Verkehr").split("\n")[0]];
