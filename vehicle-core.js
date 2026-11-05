@@ -3824,6 +3824,7 @@
             // seine Steig-Rate ist die JETZIGE Fahrt auf der Ebene des letzten Schritts. Vorher trug z.vy die Rate von gestern:
             // jeder Sprung der Fahrt (der Stoß an den Geparkten, die Antwort der Hülle) ließ die Vertikale zurück — am Gefälle
             // hob der gestoßene GT ab (24 m/s: 0,11 m in der Luft nach 7 Schritten, gate:klang-zensus F „die Vorbeifahrt schweigt").
+            const vyAlt = z.vy; // der Boden-Stoss misst die Vertikale des Aufstands gegen den letzten Schritt (unten)
             if (!warLuft && Number.isFinite(z.steig) && Number.isFinite(z.wank)) z.vy = vBoden(z);
             const yBall = z.y + z.vy * dt - 0.5 * g * dt * dt; // wohin die Fallkurve den Wagen legt
             // Was ein Rad in einem Schritt hinaufsteigt (die Stufe + die Steig-Rate des Bodens); hoeher ist eine WAND — die
@@ -3850,7 +3851,7 @@
                 // Hub-Feder nimmt ihn als Fusspunkt-Erregung (Anteil hubBoden). Vorher folgte der Aufbau jeder Unebenheit starr
                 // (am 10°-Hang bei 9 m/s Hub 0,0044 m wie auf der Ebene). Dieselbe Groesse liest das Rumble des Wirts.
                 const vb = vBoden(eb);
-                z.bodenStoss = !warLuft && dt > 0 ? (vb - z.vy) / dt : 0;
+                z.bodenStoss = !warLuft && dt > 0 ? (vb - vyAlt) / dt : 0;
                 const hubV = Number.isFinite(z.fHubV) ? z.fHubV : 0;
                 if (warLuft) z.fHubV = hubV + Math.min(0, z.vy - g * dt - vb);
                 else if (z.bodenStoss) z.fHubV = hubV - z.bodenStoss * dt * S.hubBoden;
@@ -3993,10 +3994,13 @@
             else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * gN;
             let Fx = Math.max(-capL, Math.min(capL, Fr));
-            // Rollwiderstand (die Reibung der Zeit) und ohne Bremse und Handbremse das Schleppmoment, STETIG im Gas: der Motor
-            // trägt thr · Antrieb − (1 − thr) · Schlepp (Volllast ist netto, geschlossen bremst er; heute zusammen FAHR.rollDecel:
-            // das Ausrollen von gestern bleibt). Vorher sprang der Schlepp bei Gas 0 → 0,001 von 0,87 auf 0 m/s².
-            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (brk === 0 && !hand ? (1 - thr) * G.schlepp : 0)) * m * sgn;
+            // Rollwiderstand (die Reibung der Zeit) und das Schleppmoment, STETIG im Zug: der Motor trägt zieht · Antrieb −
+            // (1 − zieht) · Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung
+            // bleibt; heute zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang voll.
+            // Vorher sprang der Schlepp bei Gas 0 → 0,001 von 0,87 auf 0 m/s² und fiel unter der Handbremse fort (Pad-Wagen:
+            // Auslauf mit Handbremse 1,088 gegen 0,873 m/s ohne, gate:playtest leib.K5).
+            const zieht = brk > 0 && vL <= S.bremsV && motor ? 1 : thr;
+            if (Math.abs(vL) > 0.02) Fx -= (G.reibung + (1 - zieht) * G.schlepp) * m * sgn;
             // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
             // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
             // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil

@@ -53,7 +53,7 @@ function haltVerdict(m) {
     return out;
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
-// nach 10 Bildern an der Gier, Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
+// nach 10 Bildern am Ziel ihres Gesetzes (Gier + driftFolge · Drift, H3), Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
 // Gleichlauf p95, Höhe über der Ebene des Wagens p05.
 const WECHSEL = {
     stufeM: 0.2,

@@ -56,7 +56,8 @@ const WELTEN = [
     { id: "skeleton", manifest: true, wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
     { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
     { id: "terrain", manifest: true, wort: "fichte", mitgebracht: "pass" },
-    { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt },
+    // die Lehren auf Knopf (w11-fahrzeug): erst gezeichnete Maß-Schilder tragen das Sprite-Quad, das ein Neubau zerstören kann (K6)
+    { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt, vorher: "lehrenB" },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
     { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
     { id: "fachwerk", wort: "tudor", ui: { sel: "#pK", feld: "value", soll: "tudor" } },
@@ -91,8 +92,6 @@ async function probefahrt(page, fr) {
     });
     const spd = halt.erreicht ? halt.wert : 0;
     await route("werkstatt");
-    // die Lehren auf Knopf (w11-fahrzeug): erst sie zeichnen die Maß-Schilder, das Sprite-Quad des Neubaus — K6 sieht sie
-    await fr.evaluate(() => document.getElementById("lehrenB").click());
     return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
 }
 
@@ -651,6 +650,7 @@ async function pruefeWelt(page, welt, lies) {
     aus.echo = z.readys > 1;
     await zaehlerAus(page);
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
+    if (welt.vorher) await hinFrame.evaluate((id) => document.getElementById(id).click(), welt.vorher);
     await fremdBereit(page, PORT);
     const programm = welt.wort
         ? await page.evaluate((w) => r._portalParseWorldCommand(w), welt.wort)

@@ -1147,7 +1147,8 @@ async function probeLeben(expected) {
                 if (ausEgo) [wf, fv] = [Math.max(wf, Math.abs(st.camera.fov - fv)), st.camera.fov];
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
-                if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
+                // gegen das Ziel des Rigs (H3: Gier + driftFolge · Drift) — rutscht der GT quer am Hang, blickt es auf die Fahrt
+                if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f - VC.FAHR.kamera.driftFolge * st._kamChase.dF));
                 q.push([dx * Math.cos(f) - dz * Math.sin(f), tMs]);
                 if (n > 15) ruck.push(window.__ruckJeBild(q.slice(-3)));
                 const o = V.setFromMatrixColumn(M, 1).normalize();
@@ -2841,7 +2842,7 @@ function tempoSpion(VC, cam, quelle) {
 function kernTempo(VC) {
     const kern = ["chaseKamera", "chaseGreif"].filter((n) => !VC[n]);
     if (kern[0] === "chaseKamera") return { kern };
-    const [K, dt, vmax] = [VC.FAHR.kamera, 1 / 60, VC.FAHR.kamera.tempoV];
+    const K = VC.FAHR.kamera, dt = 1 / 60, vmax = K.tempoV;
     const lauf = (c, n, g, sp, q = 0) => {
         let v;
         for (let i = 0; i < n; i++)
