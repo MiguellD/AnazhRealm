@@ -1,0 +1,19 @@
+# gelaende.K2#2 an 2b8d37f3 (GTX, OMEN, Scheibe 1, 05.11. 01:01–01:19) — Quelle meisterkarte-quelle/punkte/messung/roh/2b8d37f3-gtx/gelaende.K2_2.out (312 Zeilen)
+# Fehlerzeilen der Probe (grep PROBE-FEHLER, außerhalb des Quelltexts):
+#   PROBE-FEHLER Error: /status nennt kein Profil der Werkbank |     at tor.seite ([eval]:40:28) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async wasserGraben ([eval]:102:18)
+# --- letzte 15 Zeilen ---
+                erg[teil] = { graeben: liste, fehler: String((e && e.message) || e).split("\n")[0] };
+                console.log("  " + teil + " FEHLER " + erg[teil].fehler);
+            }
+        }
+    } finally {
+        await page.evaluate((s) => (window.__loop(false), window.anazhRealm.setCameraMode(s), 1), sichtVor);
+    }
+    console.log("  (a) " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+    await cdp.detach().catch(() => {});
+    fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\koord-mess\meisterkarte-quelle\punkte\messung\roh\2b8d37f3-gtx\gelaende.K2_2.json C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\koord-mess
+PROBE-FEHLER Error: /status nennt kein Profil der Werkbank |     at tor.seite ([eval]:40:28) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async wasserGraben ([eval]:102:18)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

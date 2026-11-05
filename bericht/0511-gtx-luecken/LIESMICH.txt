@@ -1,0 +1,11 @@
+GTX-Urteilslücken am Kopf 2b8d37f3 (z216), OMEN Scheibe 1, 05.11. 01:01–01:19 — je Station die Fehlerzeilen der Probe + die letzten 15 Zeilen
+der Roh-Ausgabe (messung/roh/2b8d37f3-gtx/<id>.out).
+
+GEMEINSAME WURZEL aller sieben: die Probe findet den Browser der Werkbank-Sitzung nicht mehr über sein Profil.
+  ankunft.K1#1/#2, K2#1, K3#1, bauen.K1#2:  „kein Browser der Sitzung an :27804 (kein DevToolsActivePort unter %TEMP%/werkbank-profil-27804-*)“
+  fahrzeug.K2#1, gelaende.K2#2:            „/status nennt kein Profil der Werkbank“ (tor.seite)
+Ursache am Kopf: eebfb37f „Abgabe w11-profil-leck: jeder Browser startet am EINEN Starter (welt-boot startePuppeteer), sein Profil stirbt
+mit dem Lauf“ — scripts/werkbank.cjs an 2b8d37f3 Z. 809: `const profil = SERIE && ablage(...)`; ohne --serie gibt es KEIN
+werkbank-profil-<PORT>-* mehr (an becfdbb7 Z. 788–790 noch `path.join(os.tmpdir(), werkbank-profil-${PORT}-${Date.now()})`).
+Die Sitzungs-Werkzeuge der Punkte-Maschine (Profil-Glob bzw. /status.profil) brauchen den neuen Weg zum Browser (z. B. den
+DevTools-Endpunkt aus /status oder den Starter von welt-boot).

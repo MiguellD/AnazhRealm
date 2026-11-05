@@ -1748,3 +1748,8 @@
 2026-11-05 01:24:12 omen-kopf-2b8d37f3 Scheibe 1/2 ROT mensch.K4#1,lod.K5#1,lod.K2#1,affekt.K4#2,physik.K2#2,fahrzeug.K2#2,profiband.K1#1,profiband.K1#2 · OFFEN licht.K2#2,material.K2#1,lod.K1#1,ferne.K1#2,material.K3#2,material.K1#1,material.K1#2,licht.K1#1,licht.K3#2,gelaende.K2#2,leib.K1#2,licht.K3#1,bauen.K1#2,leib.K4#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,ankunft.K1#1,ankunft.K1#2 · 25 min · gepusht 5d28eeca9
 2026-11-05 01:24:47 omen-speicher ENTWARNUNG Commit 15.0/18.2 GB
 2026-11-05 01:25:17 omen-speicher ALARM Commit 17.5/18.2 GB - 13xchrome 2.6G, 12xclaude 2.2G, 1xOneDrive 0.7G, 85xsvchost 0.6G, 1xMsMpEng 0.5G, 99xgrep 0.4G
+2026-11-05 01:26:48 omen-speicher ENTWARNUNG Commit 14.9/18.2 GB
+2026-11-05 01:27:18 omen-speicher ALARM Commit 17.4/18.2 GB - 10xchrome 2.7G, 12xclaude 2.2G, 1xOneDrive 0.7G, 84xsvchost 0.6G, 1xMsMpEng 0.5G, 99xgrep 0.4G
+2026-11-05 01:27:49 omen-speicher ENTWARNUNG Commit 14.6/18.2 GB
+2026-11-05 01:28:19 omen-speicher ALARM Commit 16.8/18.2 GB - 12xclaude 2.2G, 9xchrome 2.0G, 1xOneDrive 0.7G, 85xsvchost 0.6G, 1xMsMpEng 0.5G, 99xgrep 0.4G
+2026-11-05 01:33:52 omen-speicher ALARM Commit 17.4/18.4 GB - 9xchrome 2.7G, 12xclaude 2.1G, 1xOneDrive 0.7G, 86xsvchost 0.6G, 1xMsMpEng 0.5G, 100xgrep 0.4G

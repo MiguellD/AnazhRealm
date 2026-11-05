@@ -1,0 +1,19 @@
+# ankunft.K1#1 an 2b8d37f3 (GTX, OMEN, Scheibe 1, 05.11. 01:01–01:19) — Quelle meisterkarte-quelle/punkte/messung/roh/2b8d37f3-gtx/ankunft.K1_1.out (398 Zeilen)
+# Fehlerzeilen der Probe (grep PROBE-FEHLER, außerhalb des Quelltexts):
+#   @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (kein DevToolsActivePort unter C:\Users\micha\AppData\Local\Temp/werkbank-profil-27804-*) |     at H.verbinde ([eval]:104:15) |     at Object.probeAnkunft [as ankunft] ([eval]:204:30) |     at probeAnkunftKalt ([eval]:390:29) |     at [eval]:187:25
+# --- letzte 15 Zeilen ---
+            await kontrolle();
+            return r;
+        };
+        await cdp.send("Tracing.start", { traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"] } });
+        return lade(page, o);
+    };
+    const j = await H.seite.ankunft(H);
+    await schliesse();
+    j.spur = spur;
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\koord-mess\meisterkarte-quelle\punkte\messung\roh\2b8d37f3-gtx\ankunft.K2_1.json 45
+@@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (kein DevToolsActivePort unter C:\Users\micha\AppData\Local\Temp/werkbank-profil-27804-*) |     at H.verbinde ([eval]:104:15) |     at Object.probeAnkunft [as ankunft] ([eval]:204:30) |     at probeAnkunftKalt ([eval]:390:29) |     at [eval]:187:25
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

@@ -1,0 +1,19 @@
+# bauen.K1#2 an 2b8d37f3 (GTX, OMEN, Scheibe 1, 05.11. 01:01–01:19) — Quelle meisterkarte-quelle/punkte/messung/roh/2b8d37f3-gtx/bauen.K1_2.out (240 Zeilen)
+# Fehlerzeilen der Probe (grep PROBE-FEHLER, außerhalb des Quelltexts):
+#   @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (kein DevToolsActivePort unter C:\Users\micha\AppData\Local\Temp/werkbank-profil-27804-*) |     at H.verbinde ([eval]:104:15) |     at probeBildWeg ([eval]:205:30) |     at [eval]:187:25
+# --- letzte 15 Zeilen ---
+        const z = e.zeiten || [];
+        console.log(
+            `  [bild] ${weg} · ${lage} · ${werk} · ${sicht} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ` +
+                `${L.PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`
+        );
+        await H.binnen(page.evaluate(() => window.__weltStehtNach()), Math.min(8000, (H.rest() - 4) * 1000));
+    }
+    offen = false;
+    Object.assign(j, await L.bauWeg(page, "ende"));
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\koord-mess\meisterkarte-quelle\punkte\messung\roh\2b8d37f3-gtx\bauen.K1_2.json 45
+@@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (kein DevToolsActivePort unter C:\Users\micha\AppData\Local\Temp/werkbank-profil-27804-*) |     at H.verbinde ([eval]:104:15) |     at probeBildWeg ([eval]:205:30) |     at [eval]:187:25
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
