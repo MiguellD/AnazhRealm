@@ -71,7 +71,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
@@ -838,10 +838,7 @@ async function starte() {
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
-    if (START_ORT && BAND.ladeSpec(START_ORT).ort.dorfZug === false)
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhAutoSettlement = false;
-        });
+    if (START_ORT) await ortZug(page, START_ORT);
     const fehler = [];
     const zerstoert = { n: 0 };
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
@@ -1021,8 +1018,7 @@ async function starte() {
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
                 }
-                if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
-                else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
+                if (o) window.__anazhAutoSettlement = o.dorfZug; // der Zug des Orts (haushalt.json `dorfZug`)
                 if (o && o.kamera) r.setCameraMode(o.kamera);
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
@@ -1635,13 +1631,16 @@ async function starte() {
                         // gezeichneten Boden, nie an Saison, Uhr oder Klasse — ein Schuss an derselben Kamera über demselben Boden (das
                         // Jahr der Vegetation: drei Jahreszeiten an EINER Pose, vegetation.K5) liest den Treffer des vorigen
                         // (`window.__abstandSpeicher`); ein Block, den der vorige nicht marschierte, marschiert jetzt. Die Matrizen der
-                        // Kamera und der Abdruck des Bodens (je Chunk Eintrag, Karte, Ziel-Karte, Stufe, Geometrie und der Stand ihrer
-                        // Lage; das Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen
-                        // den Speicher bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je
-                        // Ruf, die Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s)
+                        // Kamera und der Abdruck des Bodens (je Chunk Stufe, Netz und der INHALT seiner Karte und seiner Ziel-Karte; das
+                        // Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen den Speicher
+                        // bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je Ruf, die
+                        // Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s). DER INHALT, NIE DIE
+                        // IDENTITÄT (w12-wintergras): die Saison baut die Chunks im Band der Schneegrenze und am Pegel neu (`_schneeTakt`,
+                        // `_pegelTakt`: neue Farbe, dieselben Höhen) — der Abdruck aus Eintrag, Karte und Netz fiel mit jedem Neubau, die
+                        // Wiese des Jahrs marschierte an EINER Kamera dreimal (Radeon 79595d21: 19,2 · 17,4 · 16,4 s)
                         const abdruck = () => {
                             const a = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, st.stufeAuge?.x, st.stufeAuge?.z];
-                            for (const e of st.voxelChunks.values()) a.push(e, e.surfMap, e.surfMapZiel, e.lod, e.mesh, e.mesh?.geometry.userData.naht?.lage?.stand);
+                            for (const [k, e] of st.voxelChunks) a.push(k, e.lod, !e.mesh, e.surfMap?.join(), e.surfMapZiel?.join());
                             for (const s of st.saeulenVorlaeufig?.values() || []) a.push(s.x, s.z, s.rr, s.krone);
                             return a.concat(st.atmoUniforms?.geomorph?.value);
                         };
@@ -2814,6 +2813,9 @@ async function starte() {
                     const runden = Math.max(4, Number(b.runden) || 4);
                     const kette = ZL.KETTE.map((x) => x.uniform);
                     let last = null;
+                    // der Pool beginnt leer: die Aufnahmen einer Linse davor ließen ihn voll (Radeon nach `licht --kontakt`: Spitze
+                    // 2048/2048, die ersten Bank-Bilder der Zerlegung ohne Abfrage, STEMPEL-POOL ROT 30)
+                    await page.evaluate(() => st.renderer.resolveTimestampsAsync("render"));
                     const zw0 = await stempel();
                     if (b.selbsttest) {
                         await page.evaluate(() => {
@@ -3315,20 +3317,20 @@ hauptLauf(async () => {
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
-        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m). DIE GESETZ-PROBE DES RADIUS (schatten.K1#2) am Stamm: im
-        // `_schattenFilter` legt sich der Halbschatten der Sonne auf den Boden-Radius (Halbschatten/2 + `filterTexel`), nie max(…) —
-        // unter dem max trug der Boden jede Kante bis 4,9 m gleich breit; die Mutante (der Radius ohne Boden) macht die Probe ROT
-        const summe = (q) => !stammLib.fehlt("_schattenFilter", /\.div\(box\)\.add\(r\)/, q);
-        const fehl = LL.kontaktSelbsttest().concat(summe() && !summe((t) => stammLib.ersetze(t, "_schattenFilter", ".add(r)", "")) ? [] : ["RADIUS nicht Boden + Sonne"]);
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "5/5"}`);
+        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m — der Richter des Gesetzes im `_schattenFilter`: die Text-Probe
+        // des Radius fiel mit w12-kontakt-zuwachs, unter der alten Summe der Radien misst der Zuwachs am Mittag 0,503 cm je m, ROT beim
+        // Namen). Bühne und Platte stehen EINMAL vor den Uhren (die Uhr springt in der Sicht): je Uhr zwei Umstellen kosteten an der
+        // Radeon drei kalte Ringe, 17,9 s
+        const fehl = LL.kontaktSelbsttest();
+        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "4/4"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
         const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
+        await umstellen({ ort: "buehne", sicht: "ego" });
+        await umstellen({ x: P.position.x, z: P.position.z - 8 });
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
-            await umstellen({ ort: "buehne", sicht: "ego" });
-            await umstellen({ x: P.position.x, z: P.position.z - 8 });
             const o = { uhr, png: !!opt("--bilder"), platte: P.id };
-            const m = (welt[uhr] = (await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)).ergebnis);
+            const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)));
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }

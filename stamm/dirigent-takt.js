@@ -61,6 +61,25 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
+                // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
+                // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
+                // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
+                // Sicht (die Anzeige ist DOM, gedrosselt, und geht weiter). Die Spiel-Zeit, die er dafür nicht rechnete, rechnet der nächste Takt mit Bild (`deltaBild`: die
+                // Zeit seit dem letzten Bild, höchstens EIN Deckel `TAKT_DECKEL_S` — wie eine Pause); Haltung, Kamera und Licht lesen
+                // ihre eigene Uhr. Die Kosten folgen dem Bild, nie dem rAF: GTX an 8ef49bef, Stand-Zellen, 2–16 Takte zu 8,33 ms je Bild
+                // trugen je Takt das ganze Spiel (Wiese Ego headless 3,7 ms je Takt ohne Bild). Der Null-Renderer zeichnet jeden Takt.
+                // DER RUHENDE LOOP KENNT IHN NICHT (`_loopRuht`: wer dann tickt, ruft `_gameLoopTick` selbst — Linse, Werkbank, Bühne):
+                // sein Takt ist eine Frage, die Antwort die ganze Welt dieses Takts; die Leine hält nur sein Bild. Sonst hinge, was eine
+                // Sonde misst, an der Wanduhr der GPU — unter swiftshader gab die Leine im Gang der Kamera-Leib-Linse (20 Takte je
+                // Atem) ein bis zwei Bilder frei, die Kamera stand in 952 von 1 092 Takten still (Ruck 0), der Arm ohne Flügel-Leib
+                // blieb ungenannt (K4).
+                const zwischen = !bild && !ruht && !this._loopRuht();
+                let deltaBild = delta;
+                if (zwischen) this._bildSchuld = Math.min(AnazhRealm.TAKT_DECKEL_S, (this._bildSchuld || 0) + delta);
+                else if (this._bildSchuld) {
+                    deltaBild = Math.min(AnazhRealm.TAKT_DECKEL_S, delta + this._bildSchuld);
+                    this._bildSchuld = 0;
+                }
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`) — und mit ihm die Schwellen der Stufen
                 // (das Gesetz des Wechsels, `_stufenSchirm`: sie folgen dem Schirm, nie der Bildrate).
                 this._schirmMessen();
@@ -106,8 +125,8 @@ class AnazhRealm_dirigent_takt {
                     this.tickStatsHud(currentTime);
 
                     // ### Tag-Nacht-Zyklus ###
-                    // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
-                    this.tickDayNight(currentTime);
+                    // timeOfDay läuft jedes Bild (seine Uhr: `_lastDayNightTick`); Lights + Skybox folgen.
+                    if (!zwischen) this.tickDayNight(currentTime);
 
                     // ### Wetter-Übergang (Welle 6.G3.b) ###
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
@@ -134,8 +153,10 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
                     this._loopGroundCheck(currentTime);
-                    this._loopFrustumCulling();
-                    this._loopAnimateUfos(currentTime);
+                    if (!zwischen) {
+                        this._loopFrustumCulling();
+                        this._loopAnimateUfos(currentTime);
+                    }
                 }
 
                 // ### DAS NETZ ### — in JEDEM Takt, auch unter dem Ladeschirm: es gehört dem Mitspieler (K60, gate:mp-sync (d) —
@@ -203,8 +224,8 @@ class AnazhRealm_dirigent_takt {
                     this.pruneRecentKeywords(currentTime);
                     this.finalizePendingOutcomes(currentTime);
 
-                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                    this._loopWeatherAndGrowth(delta);
+                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth) — das Leben im Takt seines Bilds
+                    if (!zwischen) this._loopWeatherAndGrowth(deltaBild);
                 }
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
@@ -228,6 +249,8 @@ class AnazhRealm_dirigent_takt {
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
+                // ### Das Bild des Brands ### (stoffe.K2#2 — Flammen auf der Front, die Fahne des Rauchs)
+                this._brandBild(delta);
                 // ### Funken ### (halten.K2 — die Späne eines Treffers aus dem Stoff-Paar fliegen und verlöschen)
                 this._funkenTakt(delta);
 
@@ -249,12 +272,14 @@ class AnazhRealm_dirigent_takt {
                 // liest — sie las die Sim-Lage des letzten Schritts (ohne Schritt die gezeichnete des Vor-Bilds) und blickte auf
                 // den interpolierten Reiter: Lage und Blick aus zwei Quellen derselben Lage.
                 this._tickMountedMovement(delta);
-                this._loopCamera(currentTime);
+                // die Kamera ist Bild (ihre Glättung liest ihre eigene Uhr): der Zwischen-Takt wirft keinen Strahl — Genesis Third
+                // headless 0,68 ms je Takt ohne Bild (die Kugel der Third-Kamera durch das Dichtefeld)
+                if (!zwischen) this._loopCamera(currentTime);
 
-                if (!ruht) {
+                if (!ruht && !zwischen) {
                     // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
-                    // jeden Frame über sin/cos relativ zum aktuellen walkPhase
-                    // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+                    // jedes Bild über sin/cos relativ zum aktuellen walkPhase
+                    // rotiert (ihre Uhr: `animationLastTick`). Idle-Loop (atmen, hover) läuft auch im Stand.
                     this.animatePlayerSoul(currentTime);
                 }
 
@@ -264,10 +289,12 @@ class AnazhRealm_dirigent_takt {
                 this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
                 if (!ruht) {
-                    // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
-                    this.tickBuildMode();
-                    // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-                    this.tickArchitectures(currentTime);
+                    if (!zwischen) {
+                        // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+                        this.tickBuildMode();
+                        // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+                        this.tickArchitectures(currentTime);
+                    }
                     // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
                     // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
                     this.tickAffordances(delta);
@@ -508,7 +535,10 @@ class AnazhRealm_dirigent_takt {
             this._bruchMelden(
                 "HORIZONT: der Fern-Ring zählt eine Bestellung im Flug, die der Fern-Faden nicht trägt — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie"
             );
+        // die Schlange des Walds, seine Pflanz- und Saat-Wartenden, und die frischen Taten, deren erste Stufe der Nachwuchs
+        // noch malt (`_sukzessionNeu`: Narbe, Wiese, Streu und Wald der Asche)
         o.wald =
+            (this._sukzessionNeu ? this._sukzessionNeu.length : 0) +
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (this._saatOffen ? this._saatOffen.size : 0) +
@@ -528,11 +558,6 @@ class AnazhRealm_dirigent_takt {
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen
         o.huellen = this._huellenNach ? this._huellenNach.size : 0;
-        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
-        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
-        // vor dem Auge trug die Karte)
-        const gleit = st._ankunftGleit;
-        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
@@ -1744,7 +1769,7 @@ class AnazhRealm_dirigent_takt {
         setze(this._weltRegung | 0, true);
         setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
-        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): das erste Bild und jedes Bild ihres Gleitens
+        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): bis zum Bild aus der Ferne, danach am Abstand
         setze(st.lodRef);
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
@@ -1956,8 +1981,6 @@ class AnazhRealm_dirigent_takt {
         // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
         // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
         // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
-        // die Ankunft aus der Ferne gleitet je gezeichnetem Bild (`_ankunftsFerne`, B2) — vor dem Spiegel nach `uLodPerf`
-        if (this.state._ankunftGleit < AnazhRealm.ANKUNFT_GLEIT_BILDER) this.state._ankunftGleit++;
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;

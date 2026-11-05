@@ -153,7 +153,7 @@ class AnazhRealm_vegetation_wiese {
                 const pfad = this._pfadFeldAt(x, z, y);
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
                 // die Asche eines Brands (`_ascheAt`, die Boden-Decke): auf ihr steht kein Halm, bis sie nachgrünt (stoffe.K2#2)
-                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen * (1 - this._ascheAt(x, z));
+                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * NW.pfadDuennt) * gruen * (1 - this._ascheAt(x, z));
                 if (wurf >= p) continue;
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes), sein
@@ -1702,8 +1702,8 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Die Leser einer Tat folgen ihrer Sukzession, wo sich ihre Stufe änderte (`_sukzStand`: die zuletzt gemalte Stufe je Tat,
-    // kein Feld im worldMeta): die Asche malt die Boden-Decke ihrer Zelle (`_ascheMalen`), Wiese und Streu darüber bauen neu, und
-    // der Wald setzt seinen Jungwuchs in ihr (`_tatWaldMalen`); der Stubben treibt den Sämling an seinem Ort.
+    // kein Feld im worldMeta): die Asche malt ihre Narbe (`_ascheMalen`), Wiese und Streu darüber bauen neu, und der Wald setzt
+    // seinen Jungwuchs in der Fläche der Narbe (`_tatWaldMalen`); der Stubben treibt den Sämling an seinem Ort.
     _sukzessionMalen(a) {
         const st = this._sukzStand || (this._sukzStand = new WeakMap());
         const stufe = this._sukzession(a).stufe;
@@ -1713,45 +1713,47 @@ class AnazhRealm_vegetation_wiese {
         if (a.tat !== "brand") return true;
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
-        if (!this._ascheMalen(cx, cz)) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
+        if (!this._ascheMalen(cx, cz))
+            this._nahRingNeuIn((cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs);
         return true;
     }
 
-    // Der Wald am Ort einer Tat steht im Alter seines Orts (`_waldNachwuchs`): die Zelle des Brands, der Platz des Stubbens.
+    // Der Wald am Ort einer Tat steht im Alter seines Orts (`_waldNachwuchs`): die Fläche der Narbe eines Brands (ihre Zelle und
+    // die halben Zellen um sie, `_brandNarbe`), der Platz des Stubbens.
     _tatWaldMalen(a) {
         const cs = AnazhRealm.LIFE_FIELD.cell;
         if (a.tat === "faellen") return this._waldNachwuchs(a.x - 1, a.z - 1, a.x + 1, a.z + 1);
         const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
-        return a.tat === "brand" ? this._waldNachwuchs(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs) : 0;
+        return a.tat === "brand"
+            ? this._waldNachwuchs((cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs)
+            : 0;
     }
 
-    // Der Busch einer Nah-Streu-Pflanze (`_nahStreuKachel`): steht sie auf einer Asche, wächst sie erst, wenn die Sukzession der
-    // Zelle sie trägt — ihr fester Wurf `ordnung` gegen den Anteil `busch` (eine dünnere Asche ist ein Präfix der vollen).
-    // Was nicht brennt (Stein und Holz: ihre Ernte ist kein Kraut), steht durch — der Leser fragt nur die Kräuter.
+    // Der Busch einer Nah-Streu-Pflanze (`_nahStreuKachel`): steht sie in der Narbe eines Brands, wächst sie erst, wenn die
+    // Sukzession sie trägt — ihr fester Wurf `ordnung` gegen den Anteil, der am Ort steht (1 − Narbe × (1 − busch): über die
+    // Grenze der Narbe dünnt der Brand sie aus wie die Halme). Was nicht brennt (Stein und Holz: ihre Ernte ist kein Kraut),
+    // steht durch — der Leser fragt nur die Kräuter.
     _streuNachBrand(x, z, ordnung) {
-        const I = this._tatIndex();
-        const je = I.brand.length ? I.je.get(this._lifeCellKey(x, z)) : null;
-        if (!je) return true;
-        let b = 1;
-        for (const a of je) if (a.tat === "brand") b = Math.min(b, this._sukzession(a).busch);
-        return ordnung < b;
+        const n = this._tatIndex().brand.length ? this._brandNarbe(x, z) : null;
+        return !n || ordnung < 1 - n.m * (1 - n.busch);
     }
 
     // DAS ALTER DES BAUMS AN SEINEM ORT (stoffe.K5#2) ∈ [0, 1]: 1 der gewachsene Wurf des Walds, 0 kein Baum (der Stumpf vor dem
-    // Austrieb, die Zelle eines Brands vor dem Wald), dazwischen der Jungwuchs — die Stufe seiner Gestalt `SUKZESSION.jugend`
-    // (phyto-core `treeParams(…, alter)`): der Stubben eines gefällten Baums binnen ½ m treibt ihn (`stubben`), in der Zelle
-    // eines Brands wächst er mit dem Wald ihrer Sukzession (`wald`); das jüngere gilt. Dasselbe Gesetz wie Gras und Busch.
-    _baumAlter(x, z) {
+    // Austrieb, die Narbe des Brands vor dem Wald), dazwischen der Jungwuchs — die Stufe seiner Gestalt `SUKZESSION.jugend`
+    // (phyto-core `treeParams(…, alter)`): der Stubben eines gefällten Baums binnen ½ m treibt ihn (`stubben`), in der Narbe
+    // eines Brands (Narbe ≥ ½, `_brandNarbe`) wächst er mit dem Wald ihrer Sukzession (`wald`); das jüngere gilt. Dasselbe
+    // Gesetz wie Gras und Busch. `zelle` wie `_brandNarbe` (der Speicher eines Gangs).
+    _baumAlter(x, z, zelle) {
         const I = this._tatIndex();
         if (!I.n) return 1;
         const J = AnazhRealm.SUKZESSION.jugend;
         const alter = (q) => (q > 0 ? J[Math.min(J.length, Math.max(1, Math.round(q * J.length))) - 1] : 0);
         let al = 1;
         for (const a of I.je.get(this._lifeCellKey(x, z)) || [])
-            if (a.tat === "brand") al = Math.min(al, alter(this._sukzession(a).wald));
-            else if (a.tat === "faellen" && Math.hypot(a.x - x, a.z - z) <= 0.5)
+            if (a.tat === "faellen" && Math.hypot(a.x - x, a.z - z) <= 0.5)
                 al = Math.min(al, alter(this._sukzession(a).stubben));
-        return al;
+        const n = I.brand.length ? this._brandNarbe(x, z, zelle) : null;
+        return n && n.m >= 0.5 ? Math.min(al, alter(n.wald)) : al;
     }
 
     // Die Dauer einer Tat in Spielstunden: die Stunden ihrer Klasse (`TAT_NARBE`) durch den Wuchs ihres Orts. Den Wuchs misst
@@ -1776,8 +1778,20 @@ class AnazhRealm_vegetation_wiese {
             this._tatListe = L;
             this._nachwuchsFaellig = -Infinity;
             this._sukzStand = null; // eine andere Welt: jede Asche malt ihre Stufe neu
+            this._sukzessionNeu = null;
             const wk = this.state.wegeKarte;
             if (wk) for (const stufe of wk.stufen) if (stufe.zentriert) this._ascheStufeMalen(stufe);
+        }
+        // DIE FRISCHE TAT (die Asche, der Stubben): ihre erste Stufe malt der Nachwuchs, nie der Takt, der sie schrieb (der Brand
+        // kostet seine Zellen, die Sukzession ihre Fläche: Narbe, Wiese, Streu und Wald) — bis `malMs` je Bild, mindestens eine;
+        // bis w3v-brand-bild malte sie der Schritt des Brands (gate:stand-takt BRAND-ZELLEN 127 Einheiten je Zelle, je Asche 6 ms)
+        const Q = this._sukzessionNeu;
+        if (Q && Q.length) {
+            const [J, frist] = [this._tatIndex(), performance.now() + AnazhRealm.SUKZESSION.malMs];
+            let k = 0;
+            for (; k < Q.length && (!k || performance.now() < frist); k++)
+                if (J.dauer.has(Q[k]) && this._sukzessionMalen(Q[k])) this._weltRegt();
+            Q.splice(0, k);
         }
         if (!(stunde >= this._nachwuchsFaellig)) return;
         const I = this._tatIndex();
@@ -2657,7 +2671,9 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // Heilung (sein Jungwuchs, `_baumAlter`); der Stumpf eines gefällten Baums treibt ab `stubben[0]` seinen Sämling. Gezählt in
 // `stufen` Schritten je Rampe, der Jungwuchs in den Stufen seiner Gestalt: `jugend` sind die Alter, in denen er wächst
 // (phyto-core `treeParams(…, alter)`, je Alter EIN Körper und EINE Karte je Art und Gestalt), gewachsen ist er bei der Heilung.
+// Die erste Stufe einer frischen Tat malt der Nachwuchs bis `malMs` je Bild (mindestens eine Tat).
 AnazhRealm.SUKZESSION = Object.freeze({
+    malMs: 1,
     asche: Object.freeze([0.08, 0.3]),
     busch: Object.freeze([0.3, 0.6]),
     wald: Object.freeze([0.6, 1]),

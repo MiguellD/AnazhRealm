@@ -51,6 +51,19 @@ class AnazhRealm_bild_sicht {
         return this._szeneTiefeWert;
     }
 
+    // DER SAUM GEGEN DIE TIEFE (Soft Particles, w12-brand-rauch): ein durchscheinender Körper ohne Tiefe (Rauch, Flamme) läuft
+    // gegen die Szene aus, statt an ihr zu schneiden — 0 dort, wo er die Szene berührt, 1 ab `m` Metern (Knoten oder Zahl) davor,
+    // der Abstand in Metern längs der Sicht aus derselben EINEN Szenen-Tiefe, die Wasser und Feld-Pass lesen (`_szeneTiefe`).
+    _tiefenSaum(m) {
+        const T = THREE.TSL;
+        const meter = T.cameraFar.sub(T.cameraNear);
+        return T.linearDepth(this._szeneTiefe())
+            .sub(T.linearDepth(T.depth))
+            .mul(meter)
+            .div(T.max(T.float(m), T.float(1e-3)))
+            .clamp(0, 1);
+    }
+
     // DER ZUG DES TIEFEN-ABBILDS: im Hauptbild (Post-Kette oder Direktpfad — die Szene mit der Spiel-Kamera) bricht r184s
     // eigener Weg den Pass (`backend.copyFramebufferToTexture`: Pass beenden, auf demselben Encoder kopieren, mit `load` neu
     // beginnen); kopiert wird in eine 1×1-Attrappe der Szenen-Tiefe, und genau diese eine Encoder-Kopie wird zum Abbild-Pass

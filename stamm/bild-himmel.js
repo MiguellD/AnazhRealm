@@ -915,14 +915,14 @@ class AnazhRealm_bild_himmel {
     // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): das
     // Foundry-Laub/-Gras (`_foundryTreeMaterial`, die Nah-Wiese) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
-    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte; `_saisonPraesenz`): das Laub
+    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte, z Halm; `_saisonPraesenz`): das Laub
     // (`_jahrLage`) und die Karte lesen sie — die Krone fällt im Winter, treibt im Frühling aus.
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = THREE.TSL;
         this.state.seasonUniforms = {
             uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
-            uLaubPraesenz: TSL.uniform(new THREE.Vector2(1, 1)),
+            uLaubPraesenz: TSL.uniform(new THREE.Vector3(1, 1, 1)),
         };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
@@ -955,11 +955,16 @@ class AnazhRealm_bild_himmel {
     // der Blüte steht, linear zwischen denselben Stützen wie die Tönung — Sommer 1, Herbst 0,55, Winter 0,06 (die kahle Krone),
     // der Austrieb 0,72; die Blüte 0,85 im Frühling, 0,12 im Sommer. Das Studio-Gesetz zieht jedes Blatt (aType `typ.laub`) und
     // jede Blüte (`typ.bluete`) um diesen Faktor auf seine Mitte (foundry-core `injectWind`), die Welt ebenso (`_jahrLage`). Rein
-    // (ohne TSL), schreibt in `out` (x Laub, y Blüte); das Gate ruft es GPU-frei.
+    // (ohne TSL), schreibt in `out` (x Laub, y Blüte, z Halm); das Gate ruft es GPU-frei. DIE GESTALT DES HALMS (vegetation.K5#2,
+    // SAISON_GESETZ `ha`): z staucht jeden Halm der Wiese über seiner Wurzel, vor dem Wind — der Gras-Stoff der Nah-Wiese, ihre
+    // Ferne (`_halmFerne`) und das Studio (`injectWind` uHalm) lesen dieselbe Zeile: Frühling 0,7, Sommer 1, Herbst 0,8, Winter
+    // 0,35. Bis dahin stand die Winter-Wiese in voller Höhe, orange getönt (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
     _saisonPraesenz(phase, out) {
         const { a, b, k } = AnazhRealm._saisonLage(phase);
+        if (!(Number.isFinite(a.ha) && Number.isFinite(b.ha))) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.ha");
         out.x = a.pr + (b.pr - a.pr) * k;
         out.y = a.bl + (b.bl - a.bl) * k;
+        out.z = a.ha + (b.ha - a.ha) * k;
         return out;
     }
 
@@ -1214,9 +1219,10 @@ class AnazhRealm_bild_himmel {
         // Änderung (Medium, Stufe der Sonne, Mond, Auge) — Kuppel, Umgebung und Luft lesen dieselbe Himmels-Sicht.
         const atm = this._atmoSonne(sunDir.y);
         // Ein Sprung des Himmels (`_himmelSprung`, gesetzt vom Uhr-Schreiber) zeichnet Tafeln und Umgebung EINMAL sofort — an
-        // der Raten-Drossel und an der Leine vorbei.
+        // der Raten-Drossel und an der Leine vorbei — und verwirft den Boden, den der Rückstrahl unter dem alten Licht maß.
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
+        if (sprung) this._rueckstrahlSprung();
         this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
@@ -2444,11 +2450,9 @@ class AnazhRealm_bild_himmel {
         const cam = st.camera;
         const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
         st.himmelAmAuge = h;
-        const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-        const abstKarte = globalThis.__fachwerkCore.lichtAbfall(A, A.karteM);
-        const I = ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) / (k * abstKarte);
+        const I = AnazhRealm._augenLichtStaerke(h, k);
         if (!(I > 1e-4)) {
             this._augenLeuchte = null;
             return;
@@ -2469,6 +2473,25 @@ class AnazhRealm_bild_himmel {
                 phase: 0,
             });
         q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
+    }
+
+    // DIE STÄRKE DES AUGEN-LICHTS beim Himmel h am Auge und der Belichtung k (die EINE Quelle; gate:hoehlen-sicht (j) liest sie):
+    // DAS AUGE ADAPTIERT WIE DIE KAMERA (w12-unterwasser, leib.K3) — es gleicht nur 1 − `BELICHTUNG.steigung` des fehlenden Himmels
+    // aus: die Karte zeigt 2^n des Mittags, n die Stufen der Kamera am Tag (`_belichtungStufen` über der Gleitung) für das Licht h,
+    // nie unter ihrer Nacht (der tiefste Knoten von `BELICHTUNG.stufen`) — das Licht trägt, was der Himmel (h) dazu nicht trägt. Die
+    // Höhle ohne Himmel fällt so auf die lesbare Nacht der Kamera (0,22 der Karte). Bis w12-unterwasser glich es das Fehlende ganz
+    // aus (1 − h): die 18-%-Karte zeigte in jeder Höhle das Mittags-Grau, die Höhle trug keinen Licht-Abfall.
+    static _augenLichtStaerke(h, k) {
+        const B = AnazhRealm.BELICHTUNG;
+        const A = AnazhRealm.AUGEN_LICHT;
+        const n = Math.max(
+            AnazhRealm._belichtungStufen(B.gleitung[0], Math.max(h, 1e-6)),
+            B.stufen[B.stufen.length - 1][1]
+        );
+        return (
+            (Math.max(0, 2 ** n - h) * ((B.zielKarte * Math.PI) / 0.18)) /
+            (k * globalThis.__fachwerkCore.lichtAbfall(A, A.karteM))
+        );
     }
 
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
@@ -2629,17 +2652,14 @@ class AnazhRealm_bild_himmel {
     // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
     // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) und das Aerosol je Kanal nach
     // Ångström (`ATMO_GESETZ.mieAngstroem`, blau 1,34 × grün, rot 0,76 ×): blau verlischt zuerst, mit der Weglänge wird die
-    // Luft vor dem Fernen blau. Unter Wasser das Spektrum des Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis
+    // Luft vor dem Fernen blau. Unter Wasser (`wasser`: der Körper seiner Art, `WASSER_GESETZ.koerper`) die Strahl-Schwächung c
+    // je Kanal relativ zu β — rot verlischt zuerst. Bis w12-unterwasser das Spektrum der Look-Zahl `wK` (eine Absorption über der
+    // normierten Tiefe des Studio-Spiegels, nie je Meter) und ein β aus einer Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`) — das
+    // Studio zog seinen Nebel auf 0,3–7,5 m: Labor ≠ Welt. Bis
     // ferne-luft löschte die Luft grau (EIN Skalar β), bis w4-ferne-blau trug das Aerosol kein Spektrum (Spektrum
     // 0,97/1/1,09 statt 0,74/1/1,40).
-    _luftSpektrum(beta, unterWasser, out) {
-        if (unterWasser) {
-            const wK = (
-                AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
-                AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ")
-            ).wK;
-            return out.set(wK[0] / wK[1], 1, wK[2] / wK[1]);
-        }
+    _luftSpektrum(beta, wasser, out) {
+        if (wasser) return out.set(wasser.c[0] / beta, wasser.c[1] / beta, wasser.c[2] / beta);
         const M = this._atmoMedium(beta);
         const k = 1000 * beta;
         return out.set((M.betaR[0] + M.mieExt[0]) / k, (M.betaR[1] + M.mieExt[1]) / k, (M.betaR[2] + M.mieExt[2]) / k);
@@ -2678,11 +2698,13 @@ class AnazhRealm_bild_himmel {
         const klar = this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny);
         const U = this._uniformHeimatTeilen({
             beta: T.uniform(klar),
-            spektrum: T.uniform(this._luftSpektrum(klar, false, new THREE.Vector3())),
+            spektrum: T.uniform(this._luftSpektrum(klar, null, new THREE.Vector3())),
             hoehe: T.uniform(L.skalenHoeheM),
             bezugY: T.uniform(0),
             farbe: T.uniform(new THREE.Color(0, 0, 0)),
             unterWasser: T.uniform(0),
+            spiegelY: T.uniform(0),
+            abfall: T.uniform(new THREE.Vector3(0, 0, 0)),
         });
         const faktor = T.Fn(([auge, punkt]) => {
             const v = punkt.sub(auge);
@@ -2711,7 +2733,20 @@ class AnazhRealm_bild_himmel {
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
         // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
-        const mische = T.Fn(([rgb, auge, punkt]) => T.mix(rgb, farbe(auge, punkt), faktor(auge, punkt)));
+        // UNTER WASSER erreicht das Licht des Tags einen Punkt nur durch die Säule über ihm (w12-unterwasser): sein Licht trägt den
+        // Durchlass nach Beer-Lambert exp(−kd · Tiefe unter dem Spiegel der Kamera) — derselbe Abfall, den die Farbe des Mediums
+        // trägt; bis dahin lag der Grund des Sees in 3,4 m im vollen Mittag (heller als das Wasser vor ihm). Über Wasser
+        // ist der Durchlass 1 (dasselbe Bild).
+        const durchlass = T.Fn(([punkt]) =>
+            T.select(
+                U.unterWasser.greaterThan(0.5),
+                T.exp(U.abfall.mul(T.max(U.spiegelY.sub(punkt.y), 0.0)).negate()),
+                T.vec3(1)
+            )
+        );
+        const mische = T.Fn(([rgb, auge, punkt]) =>
+            T.mix(rgb.mul(durchlass(punkt)), farbe(auge, punkt), faktor(auge, punkt))
+        );
         st.scene.fogNode = T.vec4(mische(T.output.rgb, T.cameraPosition, T.positionWorld), T.output.a);
         st.luft = { U, faktor, farbe, mische };
         return st.luft;
@@ -2767,30 +2802,42 @@ class AnazhRealm_bild_himmel {
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
-                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞). Die Farbe ist das Unterwasser-
-                // Gesetz des Terrain-Studios: der Durchlass der ersten 0,3 m (WASSER_GESETZ.wK, Beer-Lambert) × das Tageslicht
-                // — die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN
-                // Atmosphäre, `_himmelsIrradianz`): mittags türkis, nachts dunkler als die Nacht darüber, im Sturm trüb.
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit
+                // (WASSER_GESETZ.koerper, je Art: der Fluss führt Schwebstoff, See und Meer stehen klar — `_hydroRiverAt`; dieselbe
+                // Zeile liest das Terrain-Studio). Die Farbe ist das Licht in der Tiefe der Kamera unter dem örtlichen Spiegel
+                // (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): Beer-Lambert exp(−kd · Tiefe) × das Tageslicht —
+                // die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN Atmosphäre,
+                // `_himmelsIrradianz`): mittags unter dem Spiegel hell, mit jedem Meter dunkler und blauer, nachts dunkler als die
+                // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~15 m). Bis w12-unterwasser
+                // trug die Farbe die festen ersten 0,3 m (Radeon: Szenen-Luma 2,5 m ÷ 0,5 m = 1,24, kein Abfall) und β eine
+                // Stamm-Sichtweite von 30 m (`LUFT.unterwasserM`): ein blauer Filter vor klarer Sicht auf Berge und Himmel.
                 const WGu =
                     AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
                     AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+                const p = cam.position;
+                const WK = WGu.koerper[this._hydroRiverAt(p.x, p.z) ? "fluss" : "see"];
+                const tiefe = Math.max(0, this._koerperWasser(p.x, p.z, p.y) - p.y);
                 const e = this._himmelsIrradianz();
                 const tagesLicht = e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : 0;
                 U.farbe.value.setRGB(
-                    Math.exp(-WGu.wK[0] * 0.3) * tagesLicht,
-                    Math.exp(-WGu.wK[1] * 0.3) * tagesLicht,
-                    Math.exp(-WGu.wK[2] * 0.3) * tagesLicht
+                    Math.exp(-WK.kd[0] * tiefe) * tagesLicht,
+                    Math.exp(-WK.kd[1] * tiefe) * tagesLicht,
+                    Math.exp(-WK.kd[2] * tiefe) * tagesLicht
                 );
-                U.beta.value = -Math.log(L.kontrast) / L.unterwasserM;
+                U.beta.value = WK.c[1];
                 U.hoehe.value = 1e9;
+                U.spiegelY.value = p.y + tiefe;
+                U.abfall.value.set(WK.kd[0], WK.kd[1], WK.kd[2]);
+                luft.wasser = WK;
             } else {
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
             }
-            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung)
-            const fuer = kameraUnterWasser ? -1 : U.beta.value;
+            // das Spektrum je neuem β und Medium (eine Rechnung des Mediums je Wechsel, nie je Anwendung; unter Wasser je Körper)
+            const wasser = kameraUnterWasser ? luft.wasser : null;
+            const fuer = wasser || U.beta.value;
             if (luft.spektrumFuer !== fuer) {
-                this._luftSpektrum(U.beta.value, kameraUnterWasser, U.spektrum.value);
+                this._luftSpektrum(U.beta.value, wasser, U.spektrum.value);
                 luft.spektrumFuer = fuer;
             }
         }
@@ -3501,7 +3548,7 @@ AnazhRealm._saisonLage = function (phase) {
     const i = Math.floor(f) % 4;
     return { SG, a: SG.stuetzen[i], b: SG.stuetzen[(i + 1) % 4], k: f - Math.floor(f) };
 };
-AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
+AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft));
 // DIE WOLKEN-SCHICHT (licht.K4, `_wolkenFeld` · `_wolkenKarte` · `_wolkenSchatten`): die Höhe der Wolke `hoeheM` — über dem
 // Auge für die Kuppel, über dem Meeresspiegel für den Wurf — die Basis des Schönwetter-Kumulus (0,6–1,5 km); 1 Einheit des groben
 // fbm ≈ 0,73 · hoeheM (580 m). Dieselbe Schicht trägt das Licht der Wolke (`_himmelSicht`). Die Karte des Wurfs: `karte`² Texel

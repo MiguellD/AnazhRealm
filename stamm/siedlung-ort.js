@@ -910,7 +910,7 @@ class AnazhRealm_siedlung_ort {
     // sonst Quellen-Liste + einmaliger Log/Flugschreiber-Stempel. Invariante: Rauch ⟺ chimney.
     // Haus-Türen: _tickHausTueren dreht nahe Häuser (< 40 m) durch DENSELBEN _tickTorFluegel.
     _updateDorfRauch(dt) {
-        // RAUCH_VIS.host = "box-lambert" — Feel .125; Box+Lambert via RAUCH_GESETZ (sprites = Redesign).
+        // RAUCH_VIS.host = "weich": das Steigen und Vergehen des Labors (RAUCH_GESETZ), gezeichnet vom EINEN Rauch-Bild der Welt
         const st = this.state;
         if (!st) return;
         let dr = st.dorfRauch;
@@ -946,17 +946,6 @@ class AnazhRealm_siedlung_ort {
                 });
             }
         }
-        // DER BRAND RAUCHT (stoffe.K2#2) aus demselben Zustand, aus dem er leuchtet und knistert: jede glühende Zelle des Felds
-        // (`brandFeld`) im Umkreis des Spielers ist eine Quelle über ihrer Mitte — sie verlischt mit ihrer Glut.
-        const pm = st.playerMesh;
-        if (pm) {
-            const R = AnazhRealm.BRAND.rauchM;
-            const [px, pz] = [pm.position.x, pm.position.z];
-            this._brandGlutUm(px, pz, R, (b) => {
-                const o = b.ort || this._brandOrt(b);
-                if ((o.x - px) * (o.x - px) + (o.z - pz) * (o.z - pz) <= R * R) quellen.push(o);
-            });
-        }
         dr.quellen = quellen;
         if (quellen.length && !this._dorfRauchLogged) {
             this._dorfRauchLogged = true;
@@ -985,92 +974,147 @@ class AnazhRealm_siedlung_ort {
         // und Welt) — fail-closed wie jeder Kern-Leser, kein Literal-Zwilling.
         const G =
             AnazhRealm.Gesetz("fachwerk:RAUCH_GESETZ", null) || AnazhRealm._kernPflichtBruch("fachwerk:RAUCH_GESETZ");
-        // Lab-Feel: pro Frame, nicht dt-skaliert (Parity worlds/fachwerk frame). Ein Teilchen ist Daten (Lage, Größe,
-        // Deckkraft); ohne Quelle entsteht keins, die lebenden steigen und vergehen weiter.
-        if (quellen.length && dr.teilchen.length < G.maxTeilchen && Math.random() < G.spawnChance) {
-            const qq = quellen[(Math.random() * quellen.length) | 0];
-            dr.teilchen.push({
-                x: qq.x,
-                y: qq.y,
-                z: qq.z,
-                s: 1,
-                vy: G.vyBase + Math.random() * G.vyRange,
-                dx: (Math.random() - 0.5) * G.dxSpread,
-                a: G.a0,
-            });
-        }
-        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): Steigen und Streuen bleiben das
-        // Gefühl des Labors je Frame, der Wind trägt jedes Teilchen mit seiner Geschwindigkeit in m/s × dt windab.
-        const s = Number.isFinite(dt) && dt > 0 ? dt : 0;
+        // DER RAUCH JE KAMIN (w12-brand-rauch): das Labor zeigt EIN Haus — RAUCH_GESETZ trägt sein Steigen, Streuen, Wachsen und
+        // Vergehen je Bild bei `RAUCH_BILD.labHz` und `maxTeilchen` je Kamin. Die Welt rechnet es in der Zeit (f = dt × labHz Bilder
+        // des Labors: dasselbe Gefühl bei jeder Bildrate — bis w12-brand-rauch stieg der Rauch an der Radeon mit 120 Hz doppelt so
+        // schnell) und gibt es den `kamine` Kaminen nächst dem Auge binnen `kamineM` (die Kosten trägt der Schirm) — bis dahin teilten
+        // sich alle Kamine der Welt die 26 Teilchen eines Hauses (das Dorf der Mess-Orte, 34 Kamine: an keinem stand Rauch).
+        // Ein Teilchen ist Daten (Lage, Größe, Deckkraft, Kamin, Same); ohne Quelle entsteht keins, die lebenden steigen weiter.
+        const W = AnazhRealm.RAUCH_BILD;
+        const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
+        const nah = auge
+            ? quellen
+                  .map((q) => [Math.hypot(q.x - auge.x, q.z - auge.z), q])
+                  .filter(([d]) => d <= W.kamineM)
+                  .sort((a, b) => a[0] - b[0])
+                  .slice(0, W.kamine)
+            : [];
+        const s = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0;
+        const f = s * W.labHz;
+        const je = this._rauchJeKamin || (this._rauchJeKamin = new Map());
+        je.clear();
+        for (const t of dr.teilchen) je.set(t.q, (je.get(t.q) || 0) + 1);
+        const p = 1 - Math.pow(1 - G.spawnChance, f);
+        for (const [, qq] of nah)
+            if ((je.get(qq.id) || 0) < G.maxTeilchen && Math.random() < p)
+                dr.teilchen.push({
+                    x: qq.x,
+                    y: qq.y,
+                    z: qq.z,
+                    s: 1,
+                    vy: G.vyBase + Math.random() * G.vyRange,
+                    dx: (Math.random() - 0.5) * G.dxSpread,
+                    a: G.a0,
+                    q: qq.id,
+                    saat: Math.random(), // das Muster des Teilchens (`_rauchZeichnen`)
+                });
+        // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
+        // seiner Geschwindigkeit in m/s × dt windab
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
             const w = this._windAt(T2.x, T2.z, this._bildZeit);
-            T2.y += T2.vy;
-            T2.x += T2.dx + w.x * w.ms * s;
+            T2.y += T2.vy * f;
+            T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
-            T2.a -= G.fade;
-            T2.s *= G.scaleMul;
+            T2.a -= G.fade * f;
+            T2.s *= Math.pow(G.scaleMul, f);
             if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
         }
-        this._dorfRauchZeichnen(G, dr.teilchen);
+        this._rauchZeichnen(G, dr.teilchen, "dorfRauchSatz", G.maxTeilchen * W.kamine);
     }
 
-    // DER RAUCH IST EIN SATZ (Welle 6): jedes Teilchen war ein eigenes Mesh mit eigenem Stoff (die Deckkraft je Kiste) —
-    // ein GPU-Befehl je Teilchen (Mess-Wiese: dorf-rauch 5 Befehle, das Gesetz trägt bis maxTeilchen 26), dazu je Teilchen
-    // Geometrie und Stoff neu und wieder entsorgt. Jetzt: EINE InstancedMesh (die matte Kiste des Labors, RAUCH_VIS
-    // "box-lambert", in der Welt rau-Standard — r184-Lambert liest scene.environment nie diffus), die Deckkraft je
-    // Instanz als Attribut. Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben unabhängig von der Reihenfolge (über
-    // a₁, a₂ symmetrisch): das Bild der von fern nach nah sortierten Einzel-Kisten, ohne Sortierung.
-    _dorfRauchZeichnen(G, teilchen) {
+    // DAS EINE RAUCH-BILD (w12-brand-rauch): Kamin (`dorfRauchSatz`, RAUCH_GESETZ des Labors) und Fahne des Brands
+    // (`brandRauchSatz`, BRAND.bild.rauch) zeichnen dasselbe Gesetz — je Satz EINE Instanz-Senke, je Teilchen eine Fläche
+    // quer zur Sicht (`_rauchStoff`), ihr Radius G.size × s, ihr Ort, und im Attribut `aRauch` (je Instanz): seine Deckung a
+    // im Kern (der Stoff liest sie als optische Dicke τ = −ln(1 − a), Beer-Lambert: Dichte × Weg, dünn am Rand), sein
+    // Same (das Muster), sein Radius in Metern (der Saum gegen die Tiefe) und sein Alter als Weg der Ausdünnung von a0 bis
+    // aKill. Bis w12-brand-rauch zeichnete der Kamin die Kiste des Labors und die Fahne facettierte Ikosaeder (fast deckend
+    // braun, Kugelketten in der Luft, eine Kugelreihe am Boden). Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben fast
+    // unabhängig von der Reihenfolge — ohne Sortierung.
+    _rauchZeichnen(G, teilchen, satz = "dorfRauchSatz", kap = G.maxTeilchen) {
         const st = this.state;
-        let R = st.dorfRauchSatz;
-        if (!R && !teilchen.length) return; // kein Rauch, kein Mesh
-        if (!R || R.cap < G.maxTeilchen || R.size !== G.size) {
+        let R = st[satz];
+        if ((!R && !teilchen.length) || typeof THREE === "undefined" || !st.scene) return; // kein Rauch, kein Mesh
+        if (!R || R.cap < kap) {
             if (R) {
                 if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
                 this._instanzAbschied(R.mesh); // die Instanz-Puffer verlassen die GPU (W6, r184s Register)
                 R.geo.dispose();
                 R.mat.dispose();
             }
-            const cap = G.maxTeilchen;
-            const geo = new THREE.BoxGeometry(G.size, G.size, G.size);
-            const alpha = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1);
-            geo.setAttribute("aRauchDeck", alpha);
-            const mat = new THREE.MeshStandardNodeMaterial({
-                color: G.color,
-                transparent: true,
-                depthWrite: false,
-                roughness: 1,
-                metalness: 0,
-            });
-            mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            const cap = kap;
+            const geo = new THREE.PlaneGeometry(2, 2);
+            const daten = new THREE.InstancedBufferAttribute(new Float32Array(4 * cap), 4);
+            geo.setAttribute("aRauch", daten);
+            const mat = this._rauchStoff(G);
             this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
-            mesh.name = "dorf-rauch";
-            mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
+            mesh.name = G.name || "dorf-rauch";
+            mesh.userData.inventar = G.inventar || mesh.name; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             AnazhRealm._instanzZahl(mesh, 0);
             st.scene.add(mesh);
-            R = st.dorfRauchSatz = { mesh, geo, mat, alpha, cap, size: G.size, m: new THREE.Matrix4() };
+            R = st[satz] = { mesh, geo, mat, daten, cap };
         }
+        // je Teilchen nur Radius und Ort in seine Matrix (die Senke beginnt mit Einheits-Matrizen, die übrigen Glieder bleiben 0)
         const n = Math.min(teilchen.length, R.cap);
-        const e = R.m.elements;
+        const [M, d, weg] = [R.mesh.instanceMatrix.array, R.daten.array, Math.max(1e-6, G.a0 - G.aKill)];
         for (let k = 0; k < n; k++) {
             const t = teilchen[k];
-            R.m.makeScale(t.s, t.s, t.s);
-            e[12] = t.x;
-            e[13] = t.y;
-            e[14] = t.z;
-            R.mesh.setMatrixAt(k, R.m);
-            R.alpha.array[k] = t.a;
+            const r = G.size * t.s;
+            const [o, i] = [16 * k, 4 * k];
+            M[o] = M[o + 5] = M[o + 10] = d[i + 2] = r;
+            M[o + 12] = t.x;
+            M[o + 13] = t.y;
+            M[o + 14] = t.z;
+            d[i] = t.a;
+            d[i + 1] = t.saat || 0;
+            d[i + 3] = Math.min(1, Math.max(0, (G.a0 - t.a) / weg));
         }
         AnazhRealm._instanzZahl(R.mesh, n);
         if (n > 0) {
             R.mesh.instanceMatrix.needsUpdate = true;
-            R.alpha.needsUpdate = true;
+            R.daten.needsUpdate = true;
             R.mesh.boundingSphere = null; // die Teilchen steigen: die Hülle folgt (three cullt die Wolke als Ganzes)
         }
+    }
+
+    // DER STOFF DES RAUCH-BILDS (`_rauchZeichnen`, RAUCH_BILD): die Fläche steht in den Achsen der Kamera (ihre Ecken ±1 längs
+    // rechts und oben, `cameraWorldMatrix`; die Instanz trägt Radius und Ort — r184 rechnet den positionNode vor der Instanz,
+    // Lehre 22). Ihre Dicke fällt zum Rand wie die Sehne einer weichen Kugel, (1 − ρ²)^profil, vom Rausch-Gesetz zerfasert —
+    // zwei Ebenen des EINEN Rausch-Atlas, versetzt um den Samen, mit dem Alter steigend (`rausch`: Skala, Hub jung/alt, Zug);
+    // die Deckung ist 1 − exp(−τ · Dicke) (Beer-Lambert) mal dem Saum gegen die Tiefe (`_tiefenSaum`, `saum` × Radius: kein Schnitt
+    // an Gras und Boden). Das Licht ist das der Welt — Sonne, Himmel und Licht-Pool auf rau-Standard (Albedo G.color) —, die
+    // Normale die einer gewölbten Scheibe zum Auge (`woelbung`): die Sonnenseite hell, die Schattenseite im Himmel.
+    _rauchStoff(G) {
+        const T = THREE.TSL;
+        const W = AnazhRealm.RAUCH_BILD;
+        const mat = new THREE.MeshStandardNodeMaterial({
+            color: G.color,
+            transparent: true,
+            depthWrite: false,
+            roughness: 1,
+            metalness: 0,
+        });
+        const D = T.attribute("aRauch", "vec4");
+        // die Dicke im Kern τ = −ln(1 − a) je Teilchen (im Vertex; die Deckung a höchstens `deckMax`)
+        const tau = T.varying(T.float(1).sub(D.x.clamp(0, W.deckMax)).log().negate());
+        mat.positionNode = T.cameraWorldMatrix.mul(T.vec4(T.positionGeometry.xy, 0, 0)).xyz;
+        const q = T.uv().mul(2).sub(1);
+        const ra = this._rauschAtlas();
+        const [skala, hub, zug] = W.rausch;
+        const p = q.mul(skala).add(T.vec2(D.y.mul(61.7), D.y.mul(29.3).sub(D.w.mul(zug))));
+        const rausch = ra.ebene(p, 3, "y").add(ra.ebene(p.mul(2.03).add(T.vec2(17.1, 5.3)), 7, "y").mul(0.5));
+        const faser = T.float(1).add(rausch.mul(D.w.mul(hub[1] - hub[0]).add(hub[0])));
+        const dicke = T.float(1).sub(q.dot(q)).max(0).pow(W.profil).mul(faser.max(0));
+        mat.opacityNode = T.float(1)
+            .sub(T.exp(tau.mul(dicke).negate()))
+            .mul(this._tiefenSaum(D.z.mul(W.saum)));
+        mat.normalNode = T.vec3(q.mul(W.woelbung), 1).normalize();
+        // jung dicht und dunkel (Ruß im Kern der Fahne), mit dem Alter heller: die Albedo × mix(dunkel, 1, Alter)
+        mat.colorNode = T.vec4(T.materialColor.mul(T.mix(T.float(W.dunkel), T.float(1), D.w)), 1);
+        return mat;
     }
 
     _tickHausTueren(currentTime) {
@@ -2099,7 +2143,7 @@ class AnazhRealm_siedlung_ort {
     // `rarity`), Seed, Größe, Anker; Wände: flach · über Wasser · spawnClearM (sonst FindSite).
     // Export async über den Foundry-Worker, Häuser budgetiert (nur `!_frameOverBudget`) über
     // `_spawnSettlementSlot`; `worldMeta.settlementCells` markiert bei Export-ANKUNFT (nie Doppel-Dorf).
-    // Headless ruht der Zug (Gate-Hook `__anazhAutoSettlement`). Unten: Zelle → {seed, nH, Anker} | null.
+    // Der Ort hält den Zug an (Haken `__anazhAutoSettlement = false`, `_dorfTaktLebt`). Unten: Zelle → {seed, nH, Anker} | null.
     // DAS RANG-GESETZ (siedlung.K2): Existenz, Anker, Stufe, Größe und Verdrängung rechnet der Kern (fachwerk `siedlungsZelle`:
     // je Raster der Stufe die Stadt seines Siegers, Pareto-Größe, kein Ort in der Reichweite eines höheren); der Wirt reicht
     // den Zell-Hash (FNV-1a über „<Welt-Same>:dorf:cx,cz") und hält das Gedächtnis je Welt-Same. `mehrM`: so viel weiter als
@@ -2574,6 +2618,8 @@ class AnazhRealm_siedlung_ort {
     async _ortMitTrasse(dp, wunsch, frei, kopf) {
         const mass = (this._ortTrasseMass = { runden: 0, versatzM: [] });
         let ort = { x: wunsch.x, z: wunsch.z };
+        // die Wahl ist unberührt, wenn es jede ihrer Runden war (`_ortWahlUnberuehrt`, `_ortReistNicht`)
+        let unberuehrt = true;
         for (; mass.runden < AnazhRealm.ORT_WAHL.trasseRunden;) {
             const plan = await this._foundryRequestSettlement(Object.assign({}, dp, { ort }), kopf);
             if (!plan || !Array.isArray(plan.slots)) return null;
@@ -2588,7 +2634,13 @@ class AnazhRealm_siedlung_ort {
             if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
                 this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
             await this._ortWahl(plan, o, false, frei);
-            if (o.x === ort.x && o.z === ort.z) return { plan, ort };
+            const U = this._ortWahlUnberuehrt;
+            const v2 = this._ortPlaene.get(AnazhRealm._ortSchluessel(plan, ort));
+            unberuehrt = unberuehrt && !!U && U.has(v2);
+            if (o.x === ort.x && o.z === ort.z) {
+                if (!unberuehrt && U) U.delete(v2);
+                return { plan, ort };
+            }
             mass.versatzM.push(+Math.hypot(o.x - ort.x, o.z - ort.z).toFixed(1));
             this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort)); // ihr Plan v2 wird nie Welt
             ort = o;
@@ -2757,7 +2809,7 @@ class AnazhRealm_siedlung_ort {
     // ihrem eigenen Takt (1×/s), nie hinter den Dorf-Akten. Bis 06.10. lagen sie im Siedlungs-Takt hinter
     // `_frameOverBudget` (und der Siedlungs-Takt im Deko-Job, der bei leerem Budget wartet): auf der echten GPU (Radeon
     // 890M, frische Welt) war das Budget in 160 von 160 Proben über 40 s überschritten — kein Ring, kein GT am Ring, der
-    // v1-Schritt 6 ohne Wagen. Headless ruht er wie der Siedlungs-Takt (der Hook führt, Gate-Treue).
+    // v1-Schritt 6 ohne Wagen. Unter dem Haken des Orts ruht er wie der Siedlungs-Takt (`_dorfTaktLebt`).
     _tickGenesisOrt(currentTime) {
         const st = this.state;
         const pm = st.playerMesh;
@@ -2993,13 +3045,13 @@ class AnazhRealm_siedlung_ort {
         return (this._genesisGitter = { plan: P, m, zellen });
     }
 
-    // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für
-    // den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf", `_weltbildLuecken`): ein Dorf, das kein Takt
-    // baut, hält kein Bild.
+    // DER DORF-TAKT LEBT, wo der Ort ihn nicht anhält: der Hook `__anazhAutoSettlement = false` (der Zustand des Messorts,
+    // haushalt.json `dorfZug`) — EIN Urteil für den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf",
+    // `_weltbildLuecken`): ein Dorf, das kein Takt baut, hält kein Bild. Der Bau am Ort ist Simulation, nie Bild: bis
+    // w12-dorf-probe ruhte der Zug auch, wenn nur der Null-Renderer stand — jede headless Probe am Messort dorf (dorfZug
+    // true) urteilte eine leere Welt (0 Häuser nach 9000 Takten; mit Renderer 16, derselbe Bau-Hash).
     _dorfTaktLebt() {
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return false;
-        return hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        return (typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined) !== false;
     }
 
     // DAS START-DORF IST FÄLLIG (EIN Urteil für den Takt und das erste Weltbild, K60-4): einmalig je Welt, solange es weder
@@ -3292,6 +3344,44 @@ class AnazhRealm_siedlung_ort {
             kern: c.kern,
             ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
         };
+    }
+    // DER ORT OHNE ÄNDERUNG IST EINE FUNKTION (speicher.K3, Gebot 7: die Datei wächst mit den Änderungen, nie mit dem Weg): das
+    // Gedächtnis `c` einer Zelle der Welt `k` ("cx,cz") reist nicht, wenn es nur trägt, was ihr Gesetz ihr gibt — Same und Zahl
+    // der Zelle (`_autoSettlementCellInfo`) und den Anker einer UNBERÜHRTEN Wahl (`_ortWahlUnberuehrt`: kein Spieler, kein
+    // Fremd-Slot, kein Kandidat vom Wirt abgewiesen, in jeder Runde der Trasse — dann wählt jedes Erwachen denselben Ort, in
+    // jeder Folge der Orte), kein Wachstum, keine Akte —, wenn seither nichts Reisendes in das Reich der Wahl kam (ein Bau des
+    // Stands `bauten`, ein Erdbau außer dem der Orte, ein Edit, eine Tat: Plan + 16 m + die Ringe der Wahl + die Probe der Zelle,
+    // um Wunsch und Anker) und wenn der Spieler nicht im Vorlauf des Orts steht (die Ankunft wartet auf den Ort, der wiederkehrt).
+    // Er erwacht beim nächsten Nahen wie beim ersten. Ohne Wahl in der Sitzung (ein Ort, der aus dem Stand wiederkam) oder bei
+    // kaltem Buch reist er. Leser: die Stand-Zeile worldMeta.
+    _ortReistNicht(k, c, bauten) {
+        if (!/^-?\d+,-?\d+$/.test(k) || !c || typeof c !== "object") return false;
+        for (const f in c)
+            if (c[f] !== undefined && !["seed", "nH", "x", "z", "wx", "wz", "ort"].includes(f)) return false;
+        const [cx, cz] = k.split(",").map(Number);
+        const [info, SG] = [this._autoSettlementCellInfo(cx, cz), AnazhRealm._siedlungGesetz()];
+        const v2 = this._ortPlaene && this._ortPlaene.get(c.ort);
+        const U = this._ortWahlUnberuehrt;
+        if (!info || !SG || !v2 || !Array.isArray(v2.slots) || !U || !U.has(v2)) return false;
+        if (info.seed !== c.seed || info.nH !== c.nH) return false;
+        if (!(c.x === c.wx && c.z === c.wz && c.ort === AnazhRealm._ortSchluessel(c, c))) return false;
+        const [A, W, wm] = [AnazhRealm.AUTO_SETTLEMENT, AnazhRealm.ORT_WAHL, this.state.worldMeta || {}];
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const vor = A.nearM + info.mehrM + A.vorlaufM;
+        if (pm && (pm.x - c.x) ** 2 + (pm.z - c.z) ** 2 <= vor * vor) return false;
+        let reich = 0;
+        for (const s of v2.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        const R = reich + W.ringe * W.schrittM + SG.cellM * Math.max(...A.siteProbeR);
+        const [x0, x1] = [Math.min(c.x, info.x) - R, Math.max(c.x, info.x) + R];
+        const [z0, z1] = [Math.min(c.z, info.z) - R, Math.max(c.z, info.z) + R];
+        const drin = (x, z) => x >= x0 && x <= x1 && z >= z0 && z <= z1;
+        for (const e of bauten || AnazhRealm.STAND_LEER)
+            if (e && e.position && drin(e.position.x, e.position.z)) return false;
+        for (const key in wm.erdbau || {})
+            if (!key.startsWith("ort:") && [].concat(wm.erdbau[key] || []).some((p) => p && drin(p.cx, p.cz)))
+                return false;
+        for (const a of wm.taten || AnazhRealm.STAND_LEER) if (a && drin(a.x, a.z)) return false;
+        return !this._voxelEditsImKasten(x0, x1, z0, z1).length;
     }
     // DAS HAUS WIRD KERN EINES RINGS (siedlung.K4 Staffel 2): legt ein gesetztes Haus seinen Grund (die Platte p, `haus:`) im Reich
     // eines wachsenden Orts (`reich`: seine Slots + 16 m wie die Ort-Wahl), trägt dessen Gedächtnis die Akte `kern` — die Platte
@@ -3858,3 +3948,20 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // eine Zeile der Tafel, keine aufgelöste
+// DAS RAUCH-BILD (w12-brand-rauch, `_rauchZeichnen`/`_rauchStoff`): EIN Gesetz für jeden Rauch der Welt — der Kamin rechnet das Gefühl des
+// Labors (RAUCH_GESETZ je Bild) bei `labHz` in der Zeit und raucht an den `kamine` Kaminen nächst dem Auge binnen `kamineM`; die Dicke eines Teilchens fällt
+// zum Rand mit (1 − ρ²)^`profil` (die Sehne einer weichen Kugel, 0 am Rand), das Rausch-Gesetz zerfasert sie (`rausch`: Skala je
+// Radius, Hub [jung, ausgedünnt] und Zug des Musters über das Alter), der Saum gegen die Szene ist `saum` × Radius, die Normale
+// wölbt sich um `woelbung` zum Rand, die Albedo steigt mit dem Alter von `dunkel` auf 1 (jung dicht und rußig), die Deckung im Kern höchstens
+// `deckMax` (τ endlich).
+AnazhRealm.RAUCH_BILD = Object.freeze({
+    labHz: 60,
+    kamine: 8,
+    kamineM: 160,
+    profil: 2,
+    rausch: Object.freeze([1.1, Object.freeze([1, 1.2]), 1.5]),
+    saum: 0.5,
+    woelbung: 0.35,
+    dunkel: 0.8,
+    deckMax: 0.995,
+});

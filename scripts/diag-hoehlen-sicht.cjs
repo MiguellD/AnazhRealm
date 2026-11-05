@@ -1302,7 +1302,6 @@ const server = statikServer();
             // sammelt (sichtbar, in den Ebenen der Kamera)
             {
                 const A = AnazhRealm.AUGEN_LICHT;
-                const B = AnazhRealm.BELICHTUNG;
                 const lichtAm = (p) => {
                     cam.position.set(p[0], p[1], p[2]);
                     cam.updateMatrixWorld(true);
@@ -1314,11 +1313,8 @@ const server = statikServer();
                         r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-                    const soll =
-                        A && Number.isFinite(h)
-                            ? ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) /
-                              (k * window.__fachwerkCore.lichtAbfall(A, A.karteM))
-                            : null;
+                    // das Gesetz des Auges: die EINE Stärke des Stamms (`_augenLichtStaerke`: das Auge adaptiert wie die Kamera)
+                    const soll = A && Number.isFinite(h) ? AnazhRealm._augenLichtStaerke(h, k) : null;
                     // die Blendung: die Wand in 0,3 m gegen die Karte in 2 m, nach dem EINEN Gesetz (fachwerk `lichtAbfall`)
                     const LA = window.__fachwerkCore.lichtAbfall;
                     const blendung = A ? LA(A, 0.3) / LA(A, 2) : null;

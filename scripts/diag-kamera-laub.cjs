@@ -262,7 +262,6 @@ async function leibStrafe(k) {
     const [st, mass] = [r.state, (0, eval)(`(${k.mass})`)];
     const rend = st.renderer;
     await r._foundryAwaitBook(45000);
-    if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
     r.setCameraMode("third");
     [st.yaw, st.pitch] = [Math.atan2(k.blick.x - k.x, k.blick.z - k.z), 0];
     let t = performance.now();
@@ -511,12 +510,8 @@ async function leibWiese(arg) {
     try {
         await r._foundryAwaitBook(45000);
         out.fehlt = await L.hin(arg.x, arg.z, 60000);
-        // DIE ANKUNFT HERGESTELLT (B2): die Linse taktet als Gerät mit 8–33 ms je Bild (MUSTER) — dort sind die 90 Bilder der
-        // Ankunft in < 3 s gezeichnet; unter swiftshader kostet jedes 1,8–3,3 s, die Linse zeichnet ohne Animations-Schleife
-        // unter der GPU-Leine (29.10.: 4 Bilder in 4 400 Takten, Ferne 43,5, seit lod.K5 das Haus des Gangs auf L2 ohne Flügel,
-        // der Schmuggel blind; das Abwarten riss an der Frist der Seite, 900 s). Ab hier wählt der Stamm jede Stufe am Abstand
-        // (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4) messen die angekommene Welt.
-        if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
+        // ab dem Weltbild wählt der Stamm jede Stufe am Abstand (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4)
+        // messen die angekommene Welt
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
@@ -730,7 +725,7 @@ async function leibGang(G) {
                 const z3 = (o) => [+o.x.toFixed(2), +o.y.toFixed(2), +o.z.toFixed(2)];
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
                 if (n % G.nahJe === 0) {
-                    const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, x: p.x, z: p.z, r: 14 }, neu: n === G.nahJe });
+                    const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, r: 4 }, neu: n === G.nahJe });
                     if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
                 }
                 if (n % 20 === 0) await sleep(0);
@@ -1195,9 +1190,7 @@ hauptLauf(async () => {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     if (!BILD) await nullRenderer(page);
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
-    });
+    // der Dorf-Zug ruht (die Häuser der Mess-Wiese setzt die Linse fest): die Ankunft trägt ihn (`server.zeige`, haushalt genesis)
     // DER START DER WELT — die EINE Stelle jeder Seite der Linse, auch der Prüfbühne und des Körper-Studios (CI 26./27.10.,
     // swiftshader: 43–50 kalte Programme an der Mess-Wiese, der Regen der Front seit fk2-uhr 71 s, der Reload riss nach 60 s
     // hinter `renderPipeline_spiegel:strahl`, gezeichnet vom rAF-Loop zwischen zwei Aufrufen). Auf dem CPU-Raster das Holz

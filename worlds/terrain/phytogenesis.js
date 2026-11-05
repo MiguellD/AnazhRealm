@@ -1059,6 +1059,12 @@ function waterSurfaceAt(x, z) {
     if (s[0] < W.SW) return s[1];
     return null;
 }
+// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper, w12-unterwasser): der Bach fuehrt Schwebstoff, Teich und Meer stehen klar
+function waterArtAt(x, z) {
+    const W = water();
+    const teich = Math.hypot(x - W.pondLo.x, z - W.pondLo.z) < W.pondLo.rs || Math.hypot(x - W.pondHi.x, z - W.pondHi.z) < W.pondHi.rs;
+    return !teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? "fluss" : "see";
+}
 function waterDepress(x, z) {
     const W = water();
     let d = 0;
@@ -2067,12 +2073,12 @@ function buildForest() {
             seeds.push(i + 1);
         }
         // DER SOLITÄR (K20, phyto-core `solitaerGestalt`): eine Baum-Art mit V Bestand-Gestalten trägt DAZU die Gestalt V+1,
-        // gewachsen frei (`freistand`, growSkeleton liest P.freistand) — die Welt prägt sie ebenso (`_foundryGestaltOv`)
+        // gewachsen frei — der Same V+1 IST er im Kern (`treeParams`), für Bühne, Wald und Welt derselbe Baum
         const T = self.__phytoCore.solitaerGestalt(PRESETS[sp].kind, n);
         if (T) seeds.push(T);
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = sd === T ? buildInstance(sp, sd, L, { freistand: 1 }) : buildInstance(sp, sd, L);
+                const g = buildInstance(sp, sd, L);
                 g.userData.seed = sd;
                 g.userData.solitaer = sd === T;
                 return g;
@@ -3274,6 +3280,7 @@ const _rN = new THREE.Vector3(0, 1, 0),
 // Sonne folgt einem echten Bogen (Auf-/Untergang aus Tageslaenge je Jahreszeit), Himmel/Licht/Dunst/Laub leiten sich ab.
 let WTIME = 10.0; // Tageszeit 0..24 h
 let WSEASON = 0.28; // 0 Fruehling · .25 Sommer · .5 Herbst · .75 Winter (kontinuierlich)
+let halmTarget = 1; // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`, seasonColors) — die Welt liest dieselbe Zeile
 let WWEATHER = "klar"; // klar | bewoelkt | nebel | regen | sturm — die Zeilen von WX_GESETZ
 let WPLAY = false,
     WSPEED = 1.2; // Zeit-Autoplay (Stunden pro Sekunde)
@@ -3367,6 +3374,7 @@ function seasonColors(t) {
     seasonAccent.set(seq[i].ac).lerp(_w1.set(seq[j].ac), k);
     presenceTarget = lerp(seq[i].pr, seq[j].pr, k);
     bloomTarget = lerp(seq[i].bl, seq[j].bl, k);
+    halmTarget = lerp(seq[i].ha, seq[j].ha, k);
 }
 function worldRebuild() {
     if (forestMode) {
@@ -3518,12 +3526,14 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            const _uwK = WASSER_GESETZ.wK; // W10: die EINE Absorption (Gesetzbuch) — Shader und Unterwasser-Nebel lesen dieselbe Zeile
-            _w3.setRGB(Math.exp(-_uwK[0] * 0.3), Math.exp(-_uwK[1] * 0.3), Math.exp(-_uwK[2] * 0.3)).multiplyScalar(dl);
+            // W10 + w12-unterwasser: die EINE Wasser-Wahrheit (WASSER_GESETZ.koerper je Art, dieselbe Zeile wie die Welt, stamm/bild-himmel.js): die Farbe ist das Licht in der Tiefe der Kamera unter dem Spiegel (Beer-Lambert exp(-kd*Tiefe)), die Sicht endet am 550-nm-Kanal der Strahl-Schwaechung c nach Koschmieder (ATMO_GESETZ.luft.kontrast) — bis dahin die festen ersten 0,3 m der Look-Zahl wK und ein Nebel 0,3–7,5 m, die Welt sah 30 m
+            const _uw = WASSER_GESETZ.koerper[waterArtAt(camera.position.x, camera.position.z)],
+                _uwT = _ws - camera.position.y;
+            _w3.setRGB(Math.exp(-_uw.kd[0] * _uwT), Math.exp(-_uw.kd[1] * _uwT), Math.exp(-_uw.kd[2] * _uwT)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);
             if (scene.background && scene.background.isColor) scene.background.copy(_w3);
-            scene.fog.near = 0.3;
-            scene.fog.far = 7.5;
+            scene.fog.near = 0;
+            scene.fog.far = -Math.log(ATMO_GESETZ.luft.kontrast) / _uw.c[1];
         } else {
             scene.fog.near = _sightDist * 0.35;
             scene.fog.far = _sightDist;
@@ -3835,6 +3845,7 @@ function animate() {
     WIND.uWindStrength.value += (Math.max(windTarget, wxWind) - WIND.uWindStrength.value) * 0.04;
     SEASON.uLeafPresence.value += (presenceTarget - SEASON.uLeafPresence.value) * 0.06;
     SEASON.uBloom.value += (bloomTarget - SEASON.uBloom.value) * 0.06;
+    SEASON.uHalm.value += (halmTarget - SEASON.uHalm.value) * 0.06;
     if (_rain) {
         const rm = _rain.material,
             top = clamp(wxRain * REGEN_GESETZ.deckung, 0, REGEN_GESETZ.deckung);

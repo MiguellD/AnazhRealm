@@ -1387,7 +1387,7 @@ class AnazhRealm_dienst {
         // letzten Stand änderte (`_standAenderung`, per Transfer); er setzt das JSON zusammen und schreibt es in EINER
         // Transaktion samt .bak. Bis speicher-faden baute jeder Ruf den ganzen Stand, serialisierte und schrieb ihn zweimal
         // im Haupt-Faden (IndexedDB und das Abbild im localStorage): je Ruf p50 4,0 ms in der frischen Welt (headless).
-        this._standSichern(worldId, Date.now(), takt);
+        this._standSichern(worldId, takt);
         if (this._aktivZeiger !== worldId) this.activeWorldSet(worldId);
         const lastVersion = this.state.versionHistory[this.state.versionHistory.length - 1];
         if (lastVersion !== this.state.currentVersion) {
