@@ -721,15 +721,22 @@ class AnazhRealm_bild_kosten {
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
-            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
-                const stufe = STUFE[(R.i / 3) | 0];
-                const shader = SHADER[R.i % 3];
-                b.setBuildStage(stufe);
-                if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
-                    b.flowNodeFromShaderStage("vertex", b.context.position);
-                b.setShaderStage(shader);
-                for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
-                arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+            // DER GANG BIS ZUR FRIST: derselbe Bau geht im Aufruf Schritt für Schritt weiter, solange die Frist der Aufgabe trägt —
+            // bis z224 ging jeder Aufruf genau EINEN Schritt (ein Graph brauchte 8–10 Bilder: im Spiel 150 ms, unter dem Ladeschirm
+            // an langsamer GPU, ein Lade-Bild alle 2–3 s, 20 s; im Fenster der Erst-Zeichnungs-Wand 10 statt 20 Bauten)
+            for (;;) {
+                for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+                    const stufe = STUFE[(R.i / 3) | 0];
+                    const shader = SHADER[R.i % 3];
+                    b.setBuildStage(stufe);
+                    if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
+                        b.flowNodeFromShaderStage("vertex", b.context.position);
+                    b.setShaderStage(shader);
+                    for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
+                    arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+                }
+                if (!arbeit || performance.now() >= E.rateFrist) break;
+                arbeit = false;
             }
             [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
             // EIN KNOTEN-BAU, ZWEI WEGE: `bauN`/`bauMs` zählen den Bau am Stück und den in Raten (die Kalt-Zeile, der Flugschreiber

@@ -629,14 +629,18 @@ class AnazhRealm_dirigent_takt {
     // DER BAU WARTET (w12-ankunft-faden): das Lade-Bild baut nur bis zu seiner Frist (`_ladeFrist`, `_knotenRate`) — schob es einen
     // Knoten-Bau auf (`verschoben` der Erst-Zeichnung wuchs), kommt das nächste nach EINEM Takt ohne Bild, nicht nach LADE_BILD_MS:
     // die Welt behält jeden zweiten Takt, der Bau seinen Durchsatz. Der erste Takt des Ladeschirms zeichnet nicht (bis hier trug er
-    // jede Erst-Arbeit der Welt zugleich: Ort, Himmel, Horizont und das erste Bild in einer Aufgabe).
+    // jede Erst-Arbeit der Welt zugleich: Ort, Himmel, Horizont und das erste Bild in einer Aufgabe). Hält die GPU-Leine das
+    // fällige Bild, wartet der aufgeschobene Bau mit: `bauLuecke` ist die Zeit, die er seit dem Lade-Bild, das ihn aufschob, wartete
+    // (0 ohne Aufschub) — seine Frist im nächsten Lade-Bild holt sie nach (`_ladeFrist`).
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
         const E = this._erstZeichnung;
-        const bau = L.ladeBild !== undefined && !!E && E.verschoben > L.bauVerschoben && L.ladeAus > L.ladeAusBild;
+        const wartet = L.ladeBild !== undefined && !!E && E.verschoben > L.bauVerschoben;
+        const bau = wartet && L.ladeAus > L.ladeAusBild;
         if (L.ladeBild === undefined) L.ladeBild = jetzt - AnazhRealm.LADE_BILD_MS;
         else if (bau || jetzt - L.ladeBild >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+            L.bauLuecke = wartet ? jetzt - L.ladeBild : 0;
             [L.ladeBild, L.bauVerschoben, L.ladeAusBild] = [jetzt, E ? E.verschoben : 0, L.ladeAus || 0];
             return true;
         }
@@ -1627,11 +1631,18 @@ class AnazhRealm_dirigent_takt {
     // (`_ladeBildTakt`), gibt sie dem Knoten-Bau der Erst-Zeichnung (`_knotenRate`, `bild` true) — die Leser der Welt tragen dort nur
     // ihre Kappe (−∞), ihre Arbeit gehört den Takten ohne Bild. Bis dahin trug ein Lade-Bild beides, die Welt bis zur Frist und danach
     // je Render-Aufruf den Bau am Stück bis LADE_TAKT_MS (Radeon kalt: längste Aufgabe vor der Kontrolle 866–1 075 ms).
+    // DER BAU HOLT NACH, WAS ER WARTETE: die Welt trägt LADE_TAKT_MS je Takt, der Bau seine Frist je Lade-Bild — hält die GPU-Leine
+    // das Bild (swiftshader: ein Lade-Bild alle 2–3 s), verhungerte er, während die Takte ohne Bild die CPU leer liefen (z224: 20
+    // Knoten-Bauten nach 43 statt 29 s, im Fenster der Erst-Zeichnungs-Wand 10 statt 20, die Uploads 0,5 MB). Darum trägt seine Frist
+    // die Hälfte der Zeit, die er seit seinem Aufschub wartete (`bauLuecke`, `_ladeBildFaellig`), mindestens LADE_TAKT_MS, höchstens
+    // LADE_BILD_MS — an schneller GPU (das nächste Bild nach EINEM Takt) bleibt es LADE_TAKT_MS.
     _ladeFrist(bild = false) {
         if (!this._ladeTakt()) return -Infinity;
         if (this._ladeBildTakt && !bild) return -Infinity;
         if (this._ladeFristBis == null) {
-            this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
+            const L = this._ladeBildTakt && this._gpuLeine;
+            const nach = L ? Math.min((L.bauLuecke || 0) / 2, AnazhRealm.LADE_BILD_MS) : 0;
+            this._ladeFristBis = performance.now() + Math.max(AnazhRealm.LADE_TAKT_MS, nach);
             Promise.resolve().then(() => (this._ladeFristBis = null));
         }
         return this._ladeFristBis;
