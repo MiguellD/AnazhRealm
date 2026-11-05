@@ -2123,3 +2123,4 @@
 2026-11-05 16:02:31 vp-merge-3 ankunft.K1#1 ROT 0.8 · 2/3
 2026-11-05 16:02:36 vp-merge-3 ankunft.K5#1 ROT 0.8 · 3/3
 2026-11-05 16:03:55 vp-merge-3 ENDE 0 grün / 3 rot · 3.9 min
+2026-11-05 16:07:53 vp-main-3 START 3 Stationen
