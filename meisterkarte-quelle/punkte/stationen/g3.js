@@ -302,6 +302,12 @@ const DIEL = [0.0123, 0.871, "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): D
 const BAENDER = {
     rinde: [0.07, 0.12, "Karte material (aaaa): Rinde 0,07–0,12"],
     laub: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26"],
+    // Birke und Fichte messen den ganzen Baum (Stamm und Krone, ohne Stoff-Wahl — ihre Stufen-Zeilen und die Karte folgen ihnen,
+    // material.K3#2); die Fläche ihrer Zeile ist das Laub: Radeon am Kopf bbca6407 je Fläche getrennt, Birke Laub 43 971 Pixel
+    // (Y 0,2977) gegen Rinde 5 250 (0,2495), Fichte Laub 33 189 (0,0961) gegen Rinde 4 340 (0,0829) — das Band der Karte für das Laub
+    birke: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26 (die Zeile misst den Baum, ihre Fläche ist das Laub)"],
+    fichte: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26 (die Zeile misst den Baum, ihre Fläche ist das Laub)"],
+    haar: [0.01, 0.3, "spec/abnahme/soll-tafel.json haar (albedo): Keratin mit Melanin, Schwarz 0,01 bis Blond, Rand der Tafel 0,30"],
     fels: [0.1, 0.3, "Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],
     boden: DIEL,
     haus: DIEL,
