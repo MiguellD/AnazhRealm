@@ -463,7 +463,7 @@ class AnazhRealm_vegetation_streu {
     _streuZelleWartet(region) {
         region._deferredFoundry = true;
         region._wartenN = (region._wartenN | 0) + 1;
-        if ((this._zusagenN | 0) === this._wartendN && this._rangImBild(this._wartendOrt || 0))
+        if ((this._zusagenN | 0) === this._wartendN && this._rangImBlick(this._wartendOrt || 0))
             region._bildLuecke = true;
     }
 
@@ -482,7 +482,8 @@ class AnazhRealm_vegetation_streu {
         region._geweckt = false;
         const alle = zusagen ? [...zusagen] : [];
         const bild = alle.filter(([, rang]) => this._rangImBild(rang));
-        region._bildWartet = bild.length > 0 || !!region._bildLuecke;
+        // die Lücke im Blick fragt den Blick (`_rangImBlick`), nie den Rang: nach dem Bild nimmt der Rang alles hinein
+        region._bildWartet = alle.some(([, rang]) => this._rangImBlick(rang)) || !!region._bildLuecke;
         const warten = (bild.length ? bild : alle).map(([z]) => z);
         const kam = () => {
             region._geweckt = true;
@@ -1096,8 +1097,8 @@ class AnazhRealm_vegetation_streu {
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
         if (!map || !playerPos) return 0; // eine leere Karte geht durch die Wache (Runde 0), nie an ihr vorbei
-        // in der Ankunft aus der Ferne (B2) folgt der Fernwald der gleitenden Maske im selben Schritt wie die Bauten
-        if (this._ankunftsFerne() > 1) {
+        // in der Ankunft (vor dem Weltbild: aus der Ferne, dann am Abstand) folgt der Fernwald im selben Schritt wie die Bauten
+        if (!this.state._weltbildDa) {
             maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);
             maxScan = Math.max(maxScan, AnazhRealm.ANKUNFT_TAKT.streuScan);
         }
@@ -1488,8 +1489,9 @@ class AnazhRealm_vegetation_streu {
     // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
     // ohne ein einziges Wald-Stück. Ohne Spieler-Ort steht keine.
     // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`); `zaehlt` (optional,
-    // (rx, rz) → bool) nimmt nur diese Regionen (das erste Weltbild: die im Blick, B3d).
-    _streuWartet(p, liste, zaehlt) {
+    // (rx, rz) → bool) nimmt nur diese Regionen (das erste Weltbild: die im Blick, B3d); `blick`: die Lücke im Blick — eine
+    // aufgeschobene Region zählt nur, wenn sie auf etwas im Blick wartet (`_bildWartet`), auch nach dem Bild.
+    _streuWartet(p, liste, zaehlt, blick) {
         const SC = AnazhRealm.SCATTER;
         if (!p) {
             if (liste) liste.push("kein Spieler-Ort");
@@ -1503,7 +1505,7 @@ class AnazhRealm_vegetation_streu {
                 const rx = rx0 + dx;
                 const rz = rz0 + dz;
                 if (!this._streuRegionInReichweite(rx, rz, p) || (zaehlt && !zaehlt(rx, rz))) continue;
-                const grund = this._streuRegionWartet(`${rx},${rz}`);
+                const grund = this._streuRegionWartet(`${rx},${rz}`, blick);
                 if (!grund) continue;
                 warten++;
                 if (liste) liste.push(`${rx},${rz} ${grund}`);
@@ -1515,12 +1517,12 @@ class AnazhRealm_vegetation_streu {
     // wartet auf ihr Asset (`_deferredFoundry`, der Nachschub baut sie nach der Lieferung neu) oder trägt eine offene
     // Scheibe (`_cont`). Jeder Leser fragt hier, keiner liest die Marken selbst. Vor dem ersten Weltbild wartet eine
     // aufgeschobene Region nur, wenn ihr Wecker im Bild der Ankunft wartet (`_bildWartet`, B-Blick) — ihre Lücke außer Blick
-    // füllt der Neubau nach dem Bild.
-    _streuRegionWartet(rk) {
+    // füllt der Neubau nach dem Bild. `blick`: die Lücke im Blick (`_weltbildLuecken`) fragt die Marke auch nach dem Bild.
+    _streuRegionWartet(rk, blick) {
         const regionen = this.state.scatterRegions;
         const reg = regionen ? regionen.get(rk) : null;
         if (!reg) return "fehlt";
-        if (reg._deferredFoundry && (reg._bildWartet !== false || this.state._weltbildDa))
+        if (reg._deferredFoundry && (reg._bildWartet !== false || (!blick && this.state._weltbildDa)))
             return "wartet auf ihr Asset";
         if (reg._cont) return "Scheibe offen";
         return null;

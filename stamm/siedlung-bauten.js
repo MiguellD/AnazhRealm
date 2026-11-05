@@ -141,8 +141,8 @@ class AnazhRealm_siedlung_bauten {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
-        // in der Ankunft aus der Ferne (B2: vor dem Bild und im Gleiten) wechselt die Wahl mit der Maske Schritt (`uLodPerf`)
-        if (this._ankunftsFerne() > 1) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
+        // in der Ankunft (vor dem Weltbild: aus der Ferne, dann am Abstand) wechselt die Wahl im Takt der Ankunft
+        if (!this.state._weltbildDa) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
         // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
@@ -190,6 +190,16 @@ class AnazhRealm_siedlung_bauten {
         return bewegt + z.switches;
     }
 
+    // Wählt der Takt die Stufe dieses Eintrags (`_archStufeUrteil`)? Instanziert und ein Baum (Art und Variante) oder platzierte
+    // Studio-Architektur (instFoundry) — sonst behält ein Haus im Cull-Radius seine Bau-Stufe für immer (~75k Tris/Haus auch bei
+    // 120 m). Eligibility ist daten-getrieben; die Stufen je Art bleiben kindStages in _foundryFlattenFor (kein kind-Literal).
+    // Zweiter Leser: die Lücke der Ankunft (`_stufeOffen`) wartet nur auf eine Stufe, die der Takt wählt.
+    _archStufeWaehlt(entry) {
+        const atmo = this.state.atmosphere;
+        if (!entry || !entry.instanced || (atmo && atmo.treeLOD === false)) return false;
+        return (!!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex)) || entry.instFoundry === true;
+    }
+
     // Der Zähler eines Gangs der Stufen-Wahl (Wechsel · Regung · Offene), je Gang genullt — EIN Objekt, keine Last je Bild.
     _archStufeZaehler() {
         const z = this._archStufeZ || (this._archStufeZ = { switches: 0, regung: 0, offen: 0 });
@@ -201,13 +211,9 @@ class AnazhRealm_siedlung_bauten {
     // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Verdeckung, Vorlauf, Band-Pflege, Wechsel. `z` zählt
     // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt).
     _archStufeUrteil(entry, pm, occlOn, z) {
-        if (!entry.instanced) return;
+        if (!this._archStufeWaehlt(entry)) return;
         const st = this.state;
-        // Auch platzierte Studio-Architektur (instFoundry) tickt LOD — sonst behält ein Haus im Cull-Radius
-        // seine Bau-Stufe für immer (~75k Tris/Haus auch bei 120 m). Eligibility ist daten-getrieben; die
-        // Stufen je Art bleiben kindStages in _foundryFlattenFor (kein kind-Literal).
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        if (!treeLike && entry.instFoundry !== true) return;
         // der Abstand der Bahn (der EINE Rang, w7-rang): die Stufe, die die Bahn binnen des Vorlaufs verlangt, steht vor ihr
         const dist = this._bedarfAbstand(entry.position.x, entry.position.z, pm);
         // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
