@@ -1,7 +1,7 @@
 {
  "sha": "bbca6407aa49bf5551e6216dac77a33d59d7ecbf",
  "geraet": "gtx",
- "zeit": "2026-11-05T17:14:30.899Z",
+ "zeit": "2026-11-05T17:41:35.916Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K5#1": {
@@ -320,6 +320,34 @@
    "bahn": "sitzung",
    "zwilling": "profiband.K1#1",
    "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.24 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.50°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "exit": 0,
+   "minuten": 0.63,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.24 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.50°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 38,
+   "zeit": "2026-11-05T17:37:20.808Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 15.7 m: 43 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (108 px) · 44.5 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (23 px) · 44 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 3 Rinde baum_birke in 27.65 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 48.97 m · Luma 71.9 σ 41.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.189 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts",
+   "exit": 0,
+   "minuten": 1.17,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 15.7 m: 43 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (108 px) · 44.5 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (23 px) · 44 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 3 Rinde baum_birke in 27.65 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 48.97 m · Luma 71.9 σ 41.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.189 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts",
+   "gpu": "nvidia/pascal",
+   "s": 70,
+   "zeit": "2026-11-05T17:37:58.890Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -570,158 +598,138 @@
    "bahn": "sitzung",
    "zwilling": "studios.K2#2",
    "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.5 s)",
+   "s": 45.2,
+   "zeit": "2026-11-05T17:39:23.439Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.4 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.189 · Bühne summe)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.4 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.189 · Bühne summe)",
+   "s": 45.2,
+   "zeit": "2026-11-05T17:40:31.705Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– · portale 94.7 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (88.5 s)",
+   "exit": 3,
+   "minuten": 1.49,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– · portale 94.7 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (88.5 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 89.5,
+   "zeit": "2026-11-05T17:41:35.916Z",
+   "abdruck": "82b38a5811d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– · portale 94.7 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (88.5 s)",
+   "exit": 3,
+   "minuten": 1.49,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 83.5 %/– · portale 94.7 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (88.5 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 89.5,
+   "zeit": "2026-11-05T17:41:35.916Z",
+   "abdruck": "968f1ccf5262",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-05T17:02:38.849Z",
+  "start": "2026-11-05T17:34:02.935Z",
   "port": 7804,
-  "warten": 0.02,
+  "warten": 2.71,
   "bootS": 7.3,
   "grundstellungS": [
-   7.7,
    0.1,
-   4.1,
-   5.2,
-   4.3,
-   4.4
+   6.5,
+   2.9
   ],
-  "proben": 11,
+  "proben": 5,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "mensch.K4#1",
-    "s": 18.6,
-    "takte": 839,
+    "vor": "vegetation.K1#1",
+    "s": 27.5,
+    "takte": 701,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 6,
-    "takte": 335,
-    "chunks": 95,
-    "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K5#1",
-    "s": 21.5,
-    "takte": 581,
+    "vor": "vegetation.K4#2",
+    "s": 14.4,
+    "takte": 610,
     "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 15.3,
-    "takte": 705,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "buehne",
-    "vor": "schatten.K1#2",
-    "s": 13.6,
-    "takte": 594,
-    "chunks": 84,
     "nach": "der Grundstellung"
    },
    {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 18.6,
-    "takte": 637,
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 16.5,
+    "takte": 897,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 18.9,
-    "takte": 690,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 17.2,
-    "takte": 700,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 17.4,
-    "takte": 751,
+    "vor": "studios.K4#1",
+    "s": 16,
+    "takte": 868,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "profiband.K1#1",
-    "wege": "wege +6 [152.6,505.5,647.4,926.8/347] [234.5,504.5,580.5,843.3/335] [239.3,559.1,507,832.5/12] …",
-    "s": 4.4
-   }
-  ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 10
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +6 (−0)"
-   }
-  ],
-  "ciBlicke": 12,
+  "wegeTueren": [],
+  "ciBlicke": 6,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 985,
-   "frameP95": 66.68,
-   "taktP95": 63.56,
-   "vramMax": 159.7,
-   "seiten": 6,
-   "marken": 2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 3,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "profiband.K1#1",
-     "m": 1112,
+     "probe": "tiere.K1#2",
+     "m": 327,
      "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 590,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "schatten.K1#2",
-     "m": 459,
-     "ringVor": 4,
-     "ringMin": 1
+     "ringMin": -1
     }
    ],
-   "zapfen": 727,
-   "luecken": 2,
+   "zapfen": 313,
+   "luecken": 3,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 791.2,
-  "minuten": 13.26
+  "fahrtS": 379.9,
+  "minuten": 9.11
  }
 }
