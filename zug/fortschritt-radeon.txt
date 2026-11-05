@@ -2048,3 +2048,14 @@
 2026-11-05 08:42:44 b62542c9-radeon speicher.K4#2 GRÜN 0.6 · 2/2
 2026-11-05 08:44:14 b62542c9-radeon ENDE 1 grün / 1 rot · 6.5 min
 2026-11-05 08:44:18 5322b4d2-radeon START 1 Stationen
+2026-11-05 08:45:37 5322b4d2-radeon ankunft.K2#1 GRÜN 0.8 · 1/1
+2026-11-05 08:47:07 5322b4d2-radeon ENDE 1 grün / 0 rot · 3.8 min
+2026-11-05 08:49:22 b62542c9-radeon START 1 Stationen
+2026-11-05 08:50:41 b62542c9-radeon ankunft.K2#1 ROT 0.7 · 1/1
+2026-11-05 08:52:12 b62542c9-radeon ENDE 0 grün / 1 rot · 2.8 min
+2026-11-05 08:52:26 b62542c9-radeon START 1 Stationen
+2026-11-05 08:54:26 b62542c9-radeon tiere.K1#2 ROT 1.2 · 1/1
+2026-11-05 08:55:56 b62542c9-radeon ENDE 0 grün / 1 rot · 4.5 min
+2026-11-05 08:55:57 5322b4d2-radeon START 1 Stationen
+2026-11-05 08:57:14 5322b4d2-radeon ankunft.K2#1 GRÜN 0.7 · 1/1
+2026-11-05 08:58:44 5322b4d2-radeon ENDE 1 grün / 0 rot · 3.8 min

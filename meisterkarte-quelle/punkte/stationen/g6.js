@@ -3818,7 +3818,11 @@ module.exports = [
         // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
         // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
         // Das Neuladen ist /reload im warmen Browser der Sitzung. Bis 29.10. speicher-zwei `bild` mit eigenem Boot (ea07267e 3,25 min).
-        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true, },
+        // DIE AUSNAHME (w12-proben-s): die Wiederkehr ist ein Boot — das Neuladen der Seite und danach das Ufer, bis das Wasser wieder
+        // zeichnet; Radeon b62542c9 35 s am Ort vor dem Deckel, die GTX riss 45 s nur mit der Reise von 1147 m (vor w12-proben-frist),
+        // seitdem ohne Zahl. Der Deckel je Karte in deckel.json (GTX: das Gesetz, bis sie misst)
+        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true,
+            ausnahme: "die Wiederkehr: ein Neuladen der Seite und zweimal das Ufer, bis das Wasser zeichnet — Radeon 35 s" },
         gpu: true,
         zeit: false,
         minuten: 1,
