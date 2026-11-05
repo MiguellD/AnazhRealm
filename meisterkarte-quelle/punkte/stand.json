@@ -3,16 +3,15 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.37 dB, Nachbar 0 dB, Stempel 0/0 an b62542c9 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 2674ff9a radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 10770eb5 gtx",
+   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an c8292dd3 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 2674ff9a radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 10770eb5 gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.37 dB, Nachbar 0 dB, Stempel 0/0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-weltakt-wache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "zahl": "δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "affekt.K1#2",
@@ -44,23 +43,22 @@
      "gruen": true,
      "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Pfad seit der Messung geändert (R6: phyto-core.js)",
      "gehalten": true
     }
    ]
   },
   "affekt.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G an b62542c9 headless",
+   "beleg": "Maschine: value > 0 echt 0.476 → 0.832 · gemischt 0.343 → 0.667 · stumm 0.000 → 0.000 · erneuert echt 86/94 mit value > 0, 0/53 ohne, gemischt 9/21 mit value > 0, 0/38 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O an c8292dd3 headless",
    "stationen": [
     {
      "id": "affekt.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/werkbank.cjs)",
-     "gehalten": true
+     "zahl": "value > 0 echt 0.476 → 0.832 · gemischt 0.343 → 0.667 · stumm 0.000 → 0.000 · erneuert echt 86/94 mit value > 0, 0/53 ohne, gemischt 9/21 mit value > 0, 0/38 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -74,7 +72,7 @@
      "gruen": true,
      "zahl": "30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":289,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":185}, verworfen 115",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-takt.js, stamm/kreatur-leben.js)",
+     "grund": "Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
      "gehalten": true
     },
     {
@@ -368,7 +366,7 @@
   },
   "fahrzeug.K1": {
    "punkte": 2,
-   "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an b62542c9 headless · gehalten: (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0 an b62542c9 headless",
+   "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an b62542c9 headless · (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0 an c8292dd3 headless",
    "stationen": [
     {
      "id": "fahrzeug.K1#1",
@@ -383,9 +381,8 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +13)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -541,25 +538,23 @@
   },
   "feld.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an b62542c9 headless · gehalten: Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an b62542c9 headless",
+   "beleg": "Maschine: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an c8292dd3 headless · Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an c8292dd3 headless",
    "stationen": [
     {
      "id": "feld.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +13)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "feld.K1#2",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +13)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -790,7 +785,7 @@
   },
   "gelaende.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an b62542c9 headless · gehalten: 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an b62542c9 headless",
+   "beleg": "Maschine: gehalten: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an b62542c9 headless · 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an c8292dd3 headless",
    "stationen": [
     {
      "id": "gelaende.K1#1",
@@ -806,9 +801,8 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +12)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -1411,16 +1405,15 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an c8292dd3 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
    "stationen": [
     {
      "id": "klang.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "zahl": "Welt-Abfragen je Takt vor {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "klang.K5#2",
@@ -1528,16 +1521,15 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.011 / Kamera 0.019 m (p95 0.0029 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an b62542c9 headless — offen: leib.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: ego: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0028 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0 an c8292dd3 headless — offen: leib.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "leib.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.011 / Kamera 0.019 m (p95 0.0029 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
-     "gehalten": true
+     "zahl": "ego: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0028 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -1585,25 +1577,23 @@
   },
   "leib.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000 an b62542c9 headless · gehalten: ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an b62542c9 headless",
+   "beleg": "Maschine: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000 an c8292dd3 headless · ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an c8292dd3 headless",
    "stationen": [
     {
      "id": "leib.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "zahl": "✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "leib.K5#2",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "zahl": "✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -2497,16 +2487,15 @@
   },
   "physik.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an b62542c9 headless",
+   "beleg": "Maschine: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an c8292dd3 headless",
    "stationen": [
     {
      "id": "physik.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
@@ -3055,16 +3044,15 @@
   },
   "siedlung.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an b62542c9 headless — offen: siedlung.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · siedlung.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an c8292dd3 headless — offen: siedlung.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · siedlung.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "siedlung.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +6)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "siedlung.K4#2",
@@ -3434,16 +3422,15 @@
   },
   "stoffe.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · streuSatz nord 0.013/sued 0.017/oben 0.021 · formationenSatz nord 0.001/sued 0.002/oben 0.001 · 2 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an b62542c9 headless · gehalten: Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload) an b62542c9 headless",
+   "beleg": "Maschine: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0/sued 0/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an c8292dd3 headless · gehalten: Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload) an b62542c9 headless",
    "stationen": [
     {
      "id": "stoffe.K4#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · streuSatz nord 0.013/sued 0.017/oben 0.021 · formationenSatz nord 0.001/sued 0.002/oben 0.001 · 2 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1)",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
-     "gehalten": true
+     "zahl": "Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0/sued 0/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1)",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "stoffe.K4#2",
@@ -4265,31 +4252,29 @@
   },
   "wetter.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m) an b62542c9 headless — offen: wetter.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m) an c8292dd3 headless — offen: wetter.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "wetter.K4#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m)",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     }
    ]
   },
   "wetter.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an b62542c9 headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an b62542c9 headless",
+   "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an c8292dd3 headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an b62542c9 headless",
    "stationen": [
     {
      "id": "wetter.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
-     "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kopplung.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
-     "gehalten": true
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": null
     },
     {
      "id": "wetter.K5#2",
@@ -4306,16 +4291,15 @@
  "pflichtJe": {
   "pflicht.C": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: ROT: C 10 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m) · 23 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m) an c8292dd3",
    "stationen": [
     {
      "id": "pflicht.C#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "C 10 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m) · 23 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m)",
+     "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+     "grund": "ROT: C 10 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m) · 23 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m (Wagen undefined; Soll ≥ 30 m)"
     }
    ]
   },
@@ -4348,8 +4332,8 @@
  },
  "rueckfall": [],
  "kopfVoll": "bf55b24a80ced839fd30293942ff2cb27dbddcc2",
- "zeit": "2026-11-05T14:24:20.730Z",
- "vorher": "c8292dd3",
+ "zeit": "2026-11-05T14:33:05.818Z",
+ "vorher": "bf55b24a",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4461,7 +4445,7 @@
      {
       "station": "pflicht.C#1",
       "geraet": "headless",
-      "zeile": "ungemessen (R10)"
+      "zeile": "ROT: C 10 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m "
      }
     ],
     "ohneRichter": [

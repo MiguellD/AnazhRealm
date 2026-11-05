@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "bf55b24a",
-    "zeit": "2026-11-05T14:24:20.730Z",
+    "zeit": "2026-11-05T14:33:05.818Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -282,7 +282,7 @@
           {
             "station": "pflicht.C#1",
             "geraet": "headless",
-            "zeile": "ungemessen (R10)"
+            "zeile": "ROT: C 10 Uhr ROT: Wagen mit Bewohner am Steuer undefined in Probe undefined (Soll ≥ 20 in jeder; nicht: []) · gemessen 600 s, undefined volle Minuten (Soll 10) · abseits der Trasse undefined von undefined Proben null · in 60 s undefined m "
           }
         ],
         "ohneRichter": [
@@ -480,7 +480,7 @@
           "punkte": 2,
           "staffel": "1 = die 2D-Form (hoehe, flussLaeufe) ist EINE Quelle, Studio-Plan = Welt byte-gleich · 2 = auch dichte, editForm und Wasser-Spiegel im Kern, jede Mutation der festen Liste zieht Stamm-Leser UND Worker-Feld",
           "messung": "Konsum-Probe (gate:worker-dichte umgebaut, Node + Null-Renderer, ≤ 1 min): 10⁵ Zufalls-Punkte mit Höhle, Kanal, See-Becken und 20 Edits; dichte, editForm und Spiegel aus Stamm-Leser, Worker-Feld und Kern: maxDiff 0. Die Mutations-Liste ist fest benannt: Edit-Stärke, Edit-Radius, Dichte-Versatz, See-Spiegel — jede ändert den Ausgang von Stamm-Leser UND Worker-Feld (Punkt-Diff ≠ 0). `__consumes` allein zählt nicht, es beweist nur den Aufruf.",
-          "beleg": "Maschine: gehalten: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an b62542c9 headless · gehalten: 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an b62542c9 headless",
+          "beleg": "Maschine: gehalten: Welt = Studio byte-gleich (Makro b91513103dff4c9c), Statistik gleich, 18 Regler, tot 0, Selbsttest sieht an b62542c9 headless · 100000 Punkte, 300 Edits, ≠ Kern 0 (maxDiff 0), 4/4 Mutationen ziehen Stamm-Leser und Worker-Feld, Selbsttest sieht an c8292dd3 headless",
           "schlupfloch": "Karte 1.0 maß Zwillings-Marken im Text (166 → 0): Umbenennen hätte 2 Punkte gezahlt, ohne dass ein Byte Verhalten fällt. Jetzt urteilt nur Verhalten: der Punkt-Diff gegen den Kern plus die FESTE Mutations-Liste — eine 2D-Mutation (hoehe) allein besteht nicht, und ein Leser, der die Kern-Funktion ruft und das Ergebnis verwirft, fällt an der Mutation (Befund B07).",
           "maschine": true
         },
@@ -611,7 +611,7 @@
           "punkte": 1,
           "staffel": "1 = Schnee-Deckung ≥ 60 % über der Schneegrenze der Saison UND der Fuß sinkt ≥ 5 cm ein, an einer Pose · 2 = die Spur bleibt, die Schneegrenze folgt temperaturAt(Höhe, Saison, Uhr), Ego/Third, beide Geräte",
           "messung": "Spielgang-Station winter (Saison als Spieler-Wort, Spielzeit-Sprung 10 Tage). Eis und Schmelze zählen Stoffe K3, der Laubfall Vegetation K5.",
-          "beleg": "Maschine: gehalten: Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m) an b62542c9 headless — offen: wetter.K4#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: Winter Tag 40 an -280.4/-1045.6 (27.612 m, Versatz -160): Deckung 1 aus 317 Proben, der Fuß 0.204 m unter dem Boden (Schnee 1) · Sommer an der Wiese -0.01 m (Schnee 0, Versatz 0) (Soll Deckung ≥ 0,6, Fuß ≥ 0,05 m, ohne Schnee ≤ 0,01 m) an c8292dd3 headless — offen: wetter.K4#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein weißer Winter-Multiplikator ergäbe „Deckung“ aus der Farbe: die Tiefe (der Fuß sinkt, die Spur bleibt) ist Pflicht schon für 1 (B14).",
           "aenderung": "Eis → Stoffe K3, Laub → Vegetation K5 (B15, V24): je EIN Heim.",
           "maschine": true
@@ -621,7 +621,7 @@
           "punkte": 2,
           "staffel": "1 = EIN Term, global, die Richtung aus der Saat am Verhalten gemessen · 2 = Lee −40 %, Tal-Düse +20 %, und jeder Leser außer Pflanze und Ohr (Wasser-Kräusel, Regen-Drift, Tuch, Feuer, Wagen-Seitenkraft) liest dieselbe Funktion (Mutation)",
           "messung": "Konsum-Probe `_windAt(x,z,t)` mit Mutation je Leser; hinter einem Kamm fällt die Böen-Amplitude um 40 %, in der Tal-Düse steigt sie um 20 %. Die sichtbare Böe zählt Vegetation K2, gesehen = gehört Klang K2.",
-          "beleg": "Maschine: gehalten: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an b62542c9 headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an b62542c9 headless",
+          "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an c8292dd3 headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an b62542c9 headless",
           "schlupfloch": "Ein zweiter Wind-Term für das Gelände wäre ein Zwilling: die Probe zählt Leser derselben Funktion und mutiert sie.",
           "aenderung": "Der Wind stand dreimal (Wetter K5, Vegetation K2 mit Klang-Teil, Klang K2) — je EIN Heim (B16, V25).",
           "maschine": true
@@ -737,7 +737,7 @@
           "punkte": 1,
           "staffel": "1 = ein Stoß von 200 N für 0,2 s beim Gehen führt zu Ausfallschritt und Erholung ≤ 1,5 s ohne Sturz, an einem Gerät · 2 = über einer Schwelle Sturz → Ragdoll → Aufstehen in eine Pose, die Treffer-Reaktion folgt der Impuls-Richtung (r ≥ 0,8), für Spieler, Tier und Mensch, beide Geräte",
           "messung": "werkbank eval + bild, Ego und Third; die Mutation der Leib-Masse ändert die Reaktion; Labor = Welt über koerper-core.",
-          "beleg": "Maschine: gehalten: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an b62542c9 headless",
+          "beleg": "Maschine: 200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz) an c8292dd3 headless",
           "schlupfloch": "Eine abgespielte Stolper-Animation sähe richtig aus: die Reaktion muss der Impuls-Richtung und der Leib-Masse folgen (Mutation).",
           "aenderung": "Neu (V07). Die Fahrdynamik der Synthese-K5 wohnt in Fahrzeug K1 (V28).",
           "maschine": true
@@ -859,7 +859,7 @@
           "punkte": 2,
           "staffel": "1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage · 2 = Holz-Sättigung −30 %, Eisen im Regen Farbton 20–30° (Rost), Moos auf nassen Nordflächen, ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %), über den Reload",
           "messung": "werkbank bild im Dorf nach 30 Spieltagen (Ego, beide Geräte); gate:reload-treue hält das Alter.",
-          "beleg": "Maschine: gehalten: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · streuSatz nord 0.013/sued 0.017/oben 0.021 · formationenSatz nord 0.001/sued 0.002/oben 0.001 · 2 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an b62542c9 headless · gehalten: Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload) an b62542c9 headless",
+          "beleg": "Maschine: Tag 30, 14 Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.028/sued 0.007/oben 0.015 · formationenSatz nord 0/sued 0/oben 0.001 · bodenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1) an c8292dd3 headless · gehalten: Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.031 (grünt 0.023), süd Δ nass 0.000, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload) an b62542c9 headless",
           "schlupfloch": "Den Regler nach Spielzeit hochzudrehen ließe alles gleich altern: die Abhängigkeit von Nässe und Lage (Nordseite, Regen-Treffer, Dach-Schutz) ist Pflicht.",
           "aenderung": "Synthese gab 1 für den statischen Regler (Existenz) → 0 (B20).",
           "maschine": true
@@ -962,7 +962,7 @@
           "punkte": 2,
           "staffel": "1 = Tiefe 2–3 mit Festhalte-Probe · 2 = Tiefe ≥ 4",
           "messung": "Spielgang-Station Sturm (werkbank, 20 min Spielzeit per Sprung, Ego): gezählt werden die Teilsysteme, deren beobachtbarer Zustand sich zur LAUFZEIT ändert UND die den Zustand ihres Vorgängers lesen; Festhalte-Probe: wird der Vorgänger festgehalten, bleibt der Nachfolger stehen. Ein Glied, das nur zur Genese liest, zählt nicht.",
-          "beleg": "Maschine: gehalten: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an b62542c9 headless · gehalten: Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an b62542c9 headless",
+          "beleg": "Maschine: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an c8292dd3 headless · Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an c8292dd3 headless",
           "schlupfloch": "Mehr Leser an die Ursache zu hängen (Stern) hebt die Zahl, nicht die Tiefe: nur ein Glied, das beim Festhalten seines Vorgängers stehen bleibt, zählt.",
           "aenderung": "Die „Tiefe 2“ der Synthese war aus Commit-Messages gelesen → 0 (B22).",
           "maschine": true
@@ -1504,7 +1504,7 @@
           "punkte": 2,
           "staffel": "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose · 2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
           "messung": "Spielgang-Sequenz über werkbank eval mit echten Verben (pflegen, fällen, töten), 10× in 5 min; δ aus der Situation (lebendig + HP, `_playerSituationWohl`), nie aus der Emotion; Antwort im Ausgabe-Pfad binnen 2 s.",
-          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.37 dB, Nachbar 0 dB, Stempel 0/0 an b62542c9 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 2674ff9a radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 10770eb5 gtx",
+          "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an c8292dd3 headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 2674ff9a radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 10770eb5 gtx",
           "schlupfloch": "„ΔE ≥ 2 am Spieler“ erfüllte der globale Tint, ohne Ort — die Täuschung, die Feld K5 verbietet (B32): er trägt 0; die Emotion direkt zu stempeln täuscht ebenso.",
           "aenderung": "Aus Leben-Feld K4; die Antwort muss örtlich sein (B32).",
           "maschine": true
@@ -1524,7 +1524,7 @@
           "punkte": 1,
           "staffel": "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ · 2 = ≥ 70 % der Feuer an Zellen unter dem Median von lebendig, ≥ 1 Wirkung je 5 Spielminuten im Blick (Leser aus Feld K5), _tickWorldRules ≤ 0,2 ms, 0 verbotene Ops, beide Geräte",
           "messung": "werkbank lauf mit Nexus an und Zeitraffer ×10 (30 Spielminuten ≈ 3 min), Mutations-Gegenlauf mit gemischtem δ; Kosten über werkbank takt.",
-          "beleg": "Maschine: gehalten: value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G an b62542c9 headless",
+          "beleg": "Maschine: value > 0 echt 0.476 → 0.832 · gemischt 0.343 → 0.667 · stumm 0.000 → 0.000 · erneuert echt 86/94 mit value > 0, 0/53 ohne, gemischt 9/21 mit value > 0, 0/38 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O an c8292dd3 headless",
           "schlupfloch": "Ein Zähler erneuerter Regeln stiege auch bei zufälliger Wertung: der Gegenlauf mit gemischtem δ. Ein Nexus, der ständig Wetter wechselt, ist sichtbar, nicht wertvoll: Lokalität und Budget.",
           "aenderung": "Dreimal gezählt (Physik-Feld K4, Leben-Feld K5, KI K4) mit drei Soll für EINE Gleichung → EIN Heim hier (B01, V14).",
           "maschine": true
@@ -3138,7 +3138,7 @@
           "punkte": 2,
           "staffel": "1 = (a) Seitenkraft mit Spitze bei 6–10° Schlupf und ≥ 15 % Abfall ODER (b) μ je Boden aus der EINEN Stoff-Zeile IN DER WELT gemessen (Bremsweg 50 → 0 km/h Gras/Weg ≥ 1,5×) · 2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m",
           "messung": "gate:fahr-leben, neuer Teil K7 Reifen (K6 heißt schon Verwindung, `scripts/diag-fahr-leben.cjs:294/324`), Node ≤ 1 min; der Bremsweg auf zwei Böden IN DER WELT (Konsum), nie nur in der Garage. Das Gamepad zählt Leib K5.",
-          "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an b62542c9 headless · gehalten: (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0 an b62542c9 headless",
+          "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an b62542c9 headless · (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 3.3306690738754696e-16 m (198 Schritte) · Exit 0 an c8292dd3 headless",
           "schlupfloch": "Die Pacejka-Kurve in den Kern legen, während die Welt μ konstant weiterreicht: der Bremsweg wird in der Welt gemessen. Ein Grip-Faktor je Boden-Name im Wirt wäre ein Zwilling der Stoff-Zeile: μ kommt aus derselben Zeile, die Farbe und Masse trägt.",
           "aenderung": "EIN Heim der Fahrdynamik (Physik K5 fiel; V28). Die 1 der Synthese galt Labor = Welt ohne Staffel (B02, B17) → 0. Neuer Teil-Name K7 statt des besetzten K6 (B17).",
           "maschine": true
@@ -3271,7 +3271,7 @@
           "punkte": 1,
           "staffel": "1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export · 2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
           "messung": "diag-settlement Teil J (Jahresringe, Überdeckung je Slot); Teil W über Ereignis-Takte für das Wachstum.",
-          "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an b62542c9 headless — offen: siedlung.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · siedlung.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an c8292dd3 headless — offen: siedlung.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · siedlung.K4#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Ein Label je Epoche statt Überdeckung: die Jahresringe messen, welche Slots erhalten bleiben; ein Zeitplan, der Häuser setzt, ist kein Wachstum aus Bewohnern (die Mutation wohl → 0 hält es an).",
           "aenderung": "Neu: Spieler-Bauen (Synthese-K4) wohnt in Bauen K2–K4 (B53, V18); frei wurde das Jahrhundert des Schöpfers (V10).",
           "maschine": true
@@ -3364,7 +3364,7 @@
           "punkte": 1,
           "staffel": "1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte",
           "messung": "Spielgang-Station see (1816/−6168): Kamera-Bahn und Leib-Lage je Frame beim Übergang; Unterwasser-Luma gegen Tiefe; Höhle über gate:hoehlen-sicht als Mechanik plus Bild.",
-          "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.011 / Kamera 0.019 m (p95 0.0029 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an b62542c9 headless — offen: leib.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: ego: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0028 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0 an c8292dd3 headless — offen: leib.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Ein blauer Filter unter dem Spiegel wäre Kulisse: der Sicht-Abfall nach Tiefe aus der Wasser-Wahrheit.",
           "aenderung": "Neu (V02; Sicht-Räume aus der Fehlliste B).",
           "maschine": true
@@ -3384,7 +3384,7 @@
           "punkte": 2,
           "staffel": "1 = Gehen, Kamera und Fahren analog über den Achs-Wert (Lenkwinkel stetig) · 2 = jedes Verb, Rumble aus dem Zustand, Belegung frei",
           "messung": "Station leib mit simuliertem Gamepad (Achs-Folge als Eingabe-Quelle), Lenkwinkel und Leib-Tempo gegen den Achs-Wert.",
-          "beleg": "Maschine: gehalten: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000 an b62542c9 headless · gehalten: ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.356 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an b62542c9 headless",
+          "beleg": "Maschine: ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000 an c8292dd3 headless · ✅ jedes Verb liest NUR die Tafel — rohe Tasten-Leser []; SELBSTTEST Zwilling-Leser ROT | ✅ Gehen ∝ Auslenkung 0.000/0.279/0.628/1.187 m/s (W 1.187/1.000, Sprint 5.342), Blick ∝ Stick -0.265/-0.500/-0.333 rad, die Maus in derselben Tafel | ✅ Fahren: Lenkwinkel -0.122/-0.275/-0.519, Gas 0.331/0.793/1.416 m/s, Auslauf 0.806/1.244 m/s ohne/mit Handbremse, Rumble 1.000 | ✅ jeder Knopf über _verbTaste (ohne [], {\"tor\":3,\"toggleMountAtPlayer\":1,\"swapHands\":1,\"tryMousePlace\":1,\"tryMouseBreak\":1,\"setZoomActive\":2,\"setCameraMode\":1,\"toggleInventoryOverlay\":1,\"confirmBuild\":1,\"selectHotbarSlot\":2}), Belegung Pad3/Pad0/Pad11 frei, Rumble 0.000/0.084 ruhig → Treffer an c8292dd3 headless",
           "schlupfloch": "Ein Achs-Wert, der auf 0/1 gerundet wird, besteht „Gamepad an“: die Stetigkeit über den Achs-Wert.",
           "aenderung": "Aus Fahrzeug K1(d) umgezogen (B17, V02).",
           "maschine": true
@@ -4143,7 +4143,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
+          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an c8292dd3 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Pfad seit der Messung geändert (R6: stamm/kreatur-leben.js)",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
