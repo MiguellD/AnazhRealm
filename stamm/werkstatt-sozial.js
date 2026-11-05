@@ -218,7 +218,7 @@ class AnazhRealm_werkstatt_sozial {
         });
         const line2 = document.createElement("div");
         line2.style.marginTop = "0.35em";
-        line2.style.fontSize = "0.88em";
+        line2.style.fontSize = "max(var(--schrift-min), 0.88em)";
         const url = hostInfo.url || "?";
         const room = hostInfo.roomId ? hostInfo.roomId.slice(0, 8) + "…" : "?";
         line2.textContent = this._t("sozial.host-raum", { url, raum: room });

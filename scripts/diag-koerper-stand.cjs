@@ -949,7 +949,7 @@ async function rollen(n) {
             for (let k = 0; k < 30; k++) takt(); // der Leib steht am neuen Ort, bevor er geht (kein Lock der Bahn davor)
             let [i, k, x0, z0, h0, stecken] = [0, 0, x, z, 0, 0];
             const vor = () => (P.x - x0) * Math.sin(s.yaw) + (P.z - z0) * Math.cos(s.yaw);
-            [s.yaw, s.keys.w] = [wege[0][0], true];
+            [s.yaw, halt.vor] = [wege[0][0], true];
             const a = gehen((a) => {
                 if (++k % 30 === 0) [stecken, h0] = [stecken + (vor() - h0 < 0.15), vor()];
                 if (vor() >= wege[i % wege.length][1])
@@ -959,7 +959,7 @@ async function rollen(n) {
                 for (const [j, l] of ik ? [ik.lockL, ik.lockR].entries() : [])
                     if (l.on && zaehlt(l) && (v.y = fuss(j)) !== null) a.push(v.y);
             });
-            s.keys.w = false;
+            halt.vor = false;
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
@@ -1016,7 +1016,7 @@ async function rollen(n) {
                 }
                 return t;
             };
-            s.keys.w = true;
+            halt.vor = true;
             R.rad = mass(
                 gehen((a) => {
                     const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
@@ -1034,7 +1034,7 @@ async function rollen(n) {
                     }
                 })
             );
-            s.keys.w = false;
+            halt.vor = false;
             streuJetzt();
             r.dismountArchitecture();
             r.removeArchitecture(e);
@@ -1086,15 +1086,15 @@ async function rollen(n) {
             const L = Object.getPrototypeOf(r);
             [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * L._sprungKraft.call(r)];
             setz();
-            [s.keys.w, s.keys.shift, s.yaw] = [true, true, 0];
+            [halt.vor, halt.sprint, s.yaw] = [true, true, 0];
             for (let k = 0; k < 120; k++) takt();
             const [y0, x0, z0] = [y(), P.x, P.z];
-            s.keys[" "] = true;
-            for (let k = 0; k < 300 && (!k || s.isJumping); k++, s.keys[" "] = false) {
+            halt.jump = true;
+            for (let k = 0; k < 300 && (!k || s.isJumping); k++, halt.jump = false) {
                 takt();
                 y().forEach((h, i) => (j.hub[i] = Math.max(j.hub[i], h - y0[i])));
             }
-            [s.keys.w, s.keys.shift, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
+            [halt.vor, halt.sprint, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
             delete r._leibMasse;
             delete r._sprungKraft;
             return j;

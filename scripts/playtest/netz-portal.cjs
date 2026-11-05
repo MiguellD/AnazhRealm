@@ -1344,10 +1344,10 @@ async function checkBandW12WorldPortal({ page, check }) {
         out.loopFreezesInPortal = framesInPortal === framesBefore;
 
         // exitPortal räumt Overlay + Tasten-Zustand.
-        st.keys.w = true;
+        halt.vor = true;
         const exitRes = r.exitPortal();
         out.exitDisposesOverlay = !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
-        out.exitClearsKeys = !st.keys.w;
+        out.exitClearsKeys = !halt.vor;
 
         // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
         r._gameLoopTick(performance.now());

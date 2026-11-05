@@ -434,10 +434,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         "KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check(
-        "(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
-        res.domHistoryControls
-    );
+    check("(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
 }
 
 // Re-Kalibrierung: (1) das Spektrum SPREIZT (nicht 1/1/1) + führt mit der richtigen Rolle,
@@ -581,10 +578,7 @@ async function checkBandV1790Recalibration({ page, check }) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check(
-        "Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
-        res.cssHistory
-    );
+    check("Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
 }
 
 async function checkBandWelle6Keybindings({ page, check }) {
@@ -815,148 +809,42 @@ async function checkBandWelle6Keybindings({ page, check }) {
         check("Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her", wave6c3V2Results.afterResetMentionsRMB);
     }
 
-    // ### Tastenbelegung (Keybindings) ###
-    // Sechs Aktionen rebindable: break, place, confirmBuild, inventory, cancelBuild, jump.
-    // Konflikt-Auflösung über Swap; persistiert in localStorage.
-    const wave6c3Results = await safeEvaluate(page, () => {
-        const out = {};
-        // Statische Konstanten
-        out.hasDefaults =
-            AnazhRealm.DEFAULT_KEYBINDINGS &&
-            typeof AnazhRealm.DEFAULT_KEYBINDINGS === "object" &&
-            Object.isFrozen(AnazhRealm.DEFAULT_KEYBINDINGS);
-        // 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
-        out.hasActions = Array.isArray(AnazhRealm.KEYBINDING_ACTIONS) && AnazhRealm.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
-        out.hasLabels = AnazhRealm.KEYBINDING_LABELS && Object.isFrozen(AnazhRealm.KEYBINDING_LABELS);
-        const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
-        out.actionsCorrect = expectedActions.every((a) => AnazhRealm.KEYBINDING_ACTIONS.includes(a));
-        // Defaults sind Minecraft-Konvention
-        out.defaultBreakIsMouse0 = AnazhRealm.DEFAULT_KEYBINDINGS.break === "Mouse0";
-        out.defaultPlaceIsMouse2 = AnazhRealm.DEFAULT_KEYBINDINGS.place === "Mouse2";
-        out.defaultConfirmBuildIsKeyF = AnazhRealm.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
-        out.defaultInventoryIsTab = AnazhRealm.DEFAULT_KEYBINDINGS.inventory === "Tab";
-
-        // State init
-        out.hasKeybindingsState = st.keybindings && typeof st.keybindings === "object";
-        out.keybindRebindInitNull = st.keybindRebind === null;
-
-        // setKeybinding ändert state
-        const before = st.keybindings.confirmBuild;
-        const setOk = r.setKeybinding("confirmBuild", "KeyG");
-        out.setKeybindingWorks = setOk === true && st.keybindings.confirmBuild === "KeyG";
-
-        // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
-        // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
-        // (das war place's Default).
-        const oldPlace = st.keybindings.place;
-        r.setKeybinding("place", "KeyG");
-        out.swapHappened = st.keybindings.place === "KeyG" && st.keybindings.confirmBuild === oldPlace;
-
-        // Reset auf Defaults
-        r.resetKeybindings();
-        out.resetRestoresDefaults =
-            st.keybindings.break === "Mouse0" &&
-            st.keybindings.place === "Mouse2" &&
-            st.keybindings.confirmBuild === "KeyF" &&
-            st.keybindings.confirmBuild === before; // before war auch der Default
-
-        // setKeybinding-Validierung: unbekannte Aktion → false
-        out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
-        out.setRejectsEmptyCode = r.setKeybinding("break", "") === false;
-
-        // _actionForBindingCode reverse-lookup
-        out.actionForMouse0 = r._actionForBindingCode("Mouse0") === "break";
-        out.actionForMouse2 = r._actionForBindingCode("Mouse2") === "place";
-        out.actionForKeyF = r._actionForBindingCode("KeyF") === "confirmBuild";
-        out.actionForUnbound = r._actionForBindingCode("KeyZ") === null;
-
-        // _eventToBindingCode
-        const mouseEvt = { type: "mousedown", button: 0 };
-        const mouseEvt2 = { type: "mousedown", button: 2 };
-        const keyEvt = { type: "keydown", code: "KeyG" };
-        out.codeForMouseDownLMB = r._eventToBindingCode(mouseEvt) === "Mouse0";
-        out.codeForMouseDownRMB = r._eventToBindingCode(mouseEvt2) === "Mouse2";
-        out.codeForKeyDown = r._eventToBindingCode(keyEvt) === "KeyG";
-
-        // beginKeybindRebind setzt state, cancel räumt auf
-        r.beginKeybindRebind("break");
-        out.rebindActive = st.keybindRebind && st.keybindRebind.action === "break";
-        r.cancelKeybindRebind();
-        out.rebindCancelClears = st.keybindRebind === null;
-
-        // _completeKeybindRebind ändert die Bindung
-        r.beginKeybindRebind("jump");
-        r._completeKeybindRebind("KeyJ");
-        out.completeBindsCode = st.keybindings.jump === "KeyJ";
-        // Escape im Rebind-Modus → Abbruch (Binding bleibt)
+    // ### DIE EINE TASTEN-TAFEL und DIE KLEINSTE SCHRIFT (spielgang.K3#2, die Wand der CI zu `werkbank bedienung --staffel 2`) ###
+    // Dieselbe Seiten-Probe wie am Gerät (`__bedienung2`, scripts/lib/welt-boot.cjs): jeder sichtbare Text von HUD, Ich und jeder
+    // Schublade ≥ 16 px (ein gepflanzter 14-px-Text in der Hotbar muss genannt sein); der Knopf „vor“ der Belegung und KeyO als
+    // KeyboardEvent legen das Vorwärts um, die Platte trägt es durch den Reload (`_loadKeybindings`, wie der Konstruktor), KeyO
+    // bewegt den Leib ≥ 0,1 m, W nicht mehr — ein festverdrahtetes W (Mutant im Lauf) muss ROT fallen. Dazu der Tausch bei
+    // Konflikt, Esc im Fangen, die Liste der Belegung (je Aktion ein Knopf) und der Name einer Liste von Tasten.
+    const tafel = await safeEvaluate(page, async () => {
+        const vor = await __bedienung2();
+        st.keybindings = r._loadKeybindings();
+        const o = await __bedienung2(vor);
+        r.setKeybinding("confirmBuild", "Mouse2");
+        o.tausch = st.keybindings.place === "KeyF";
         r.beginKeybindRebind("jump");
         r._completeKeybindRebind("Escape");
-        out.escCancelsRebind = st.keybindRebind === null && st.keybindings.jump === "KeyJ";
-
-        // _formatBindingCode pretty-print
-        out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
-        out.formatMouse2 = r._formatBindingCode("Mouse2") === "Rechte Maustaste";
-        out.formatSpace = r._formatBindingCode("Space") === "Leertaste";
-        out.formatKeyF = r._formatBindingCode("KeyF") === "F";
-
-        // UI: Section + Liste + Reset-Button im DOM
-        out.sectionInDom = !!document.getElementById("keybindings-section");
-        out.listInDom = !!document.getElementById("keybindings-list");
-        out.resetInDom = !!document.getElementById("keybindings-reset");
-        // je Aktion eine Zeile: 13 der Tastatur + 8, die nur das Gamepad frei bindet (leib.K5)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 21;
-        // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
-
-        // Reset für nachfolgende Tests
+        o.escHaelt = st.keybindRebind === null && st.keybindings.jump === "Space";
+        o.knoepfe =
+            document.querySelectorAll(".keybind-rebind[data-action]").length === AnazhRealm.KEYBINDING_ACTIONS.length;
+        o.name = r._formatBindingCode(AnazhRealm.DEFAULT_KEYBINDINGS.vor) === "W / ↑";
         r.resetKeybindings();
-        st.keybindRebind = null;
-
-        return out;
+        return o;
     });
-
-    if (erreichbar(check, "Welle 6.C3: Tests laufen", wave6c3Results)) {
-        check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
+    if (erreichbar(check, "K3#2: die Probe der Bedienung läuft", tafel)) {
         check(
-            "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
-            wave6c3Results.hasActions
+            `K3#2: Schrift und Tasten im Gesetz (KeyO ${tafel.neuM} m, W ${tafel.altM} m)`,
+            !tafel.taeter.length,
+            tafel.taeter.slice(0, 4).join(" | ")
         );
-        check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
         check(
-            "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
-            wave6c3Results.actionsCorrect
+            "K3#2: der Selbsttest im Lauf nennt den 14-px-Text und das festverdrahtete W",
+            !tafel.blind.length,
+            tafel.blind.join(" | ")
         );
-        check("Welle 6.C3: Default break === Mouse0 (LMB)", wave6c3Results.defaultBreakIsMouse0);
-        check("Welle 6.C3: Default place === Mouse2 (RMB)", wave6c3Results.defaultPlaceIsMouse2);
-        check("Welle 6.C3: Default confirmBuild === KeyF", wave6c3Results.defaultConfirmBuildIsKeyF);
-        check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
-        check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
-        check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-        check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
-        check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
-        check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
-        check("Welle 6.C3: setKeybinding lehnt unbekannte Aktion ab", wave6c3Results.setRejectsUnknownAction);
-        check("Welle 6.C3: setKeybinding lehnt leeren Code ab", wave6c3Results.setRejectsEmptyCode);
-        check("Welle 6.C3: actionFor Mouse0 → break", wave6c3Results.actionForMouse0);
-        check("Welle 6.C3: actionFor Mouse2 → place", wave6c3Results.actionForMouse2);
-        check("Welle 6.C3: actionFor KeyF → confirmBuild", wave6c3Results.actionForKeyF);
-        check("Welle 6.C3: actionFor ungebundener Code → null", wave6c3Results.actionForUnbound);
-        check("Welle 6.C3: eventToCode MouseEvent LMB → Mouse0", wave6c3Results.codeForMouseDownLMB);
-        check("Welle 6.C3: eventToCode MouseEvent RMB → Mouse2", wave6c3Results.codeForMouseDownRMB);
-        check("Welle 6.C3: eventToCode KeyboardEvent → event.code", wave6c3Results.codeForKeyDown);
-        check("Welle 6.C3: beginKeybindRebind setzt state.keybindRebind", wave6c3Results.rebindActive);
-        check("Welle 6.C3: cancelKeybindRebind räumt auf", wave6c3Results.rebindCancelClears);
-        check("Welle 6.C3: _completeKeybindRebind bindet neuen Code", wave6c3Results.completeBindsCode);
-        check("Welle 6.C3: Escape im Rebind-Modus → Abbruch (kein Binding-Wechsel)", wave6c3Results.escCancelsRebind);
-        check("Welle 6.C3: format Mouse0 → 'Linke Maustaste'", wave6c3Results.formatMouse0);
-        check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
-        check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
-        check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
-        check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
-        check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
-        check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
-        check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+        check(
+            "K3#2: Konflikt tauscht, Esc im Fangen hält, je Aktion ein Knopf, W / ↑",
+            tafel.tausch && tafel.escHaelt && tafel.knoepfe && tafel.name
+        );
     }
 }
 
@@ -1593,10 +1481,7 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
         const mk = (mat) => ({
             name: "__m1band",
             builtIn: false,
-            parts: [
-                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
-                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", mat, 0, 0.5, 0, 1, 1, 1), __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1)],
         });
         try {
             // (1) der SUBSTANZ-VORSCHLAG konsumiert die Stärke-Wahrheit: das

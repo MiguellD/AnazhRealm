@@ -1154,9 +1154,9 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.taste = m;
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
-        m.gedrueckt = st.keys.w === true;
+        m.gedrueckt = halt.vor === true;
         window.dispatchEvent(new Event("blur"));
-        m.nachBlur = st.keys.w === true;
+        m.nachBlur = halt.vor === true;
         window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
         m.gestartet = true;
     } catch (e) {

@@ -442,7 +442,7 @@ async function tempo(K) {
     const KAD = (kad) => (kad === "deckel" ? A.TAKT_DECKEL_S : 1 / kad) * 1000;
     let tMs = performance.now();
     const takt = (ms) => r._gameLoopTick((tMs += ms));
-    const tasten = (w, sprint) => Object.assign(st.keys, { w: !!w, shift: !!sprint });
+    const tasten = (w, sprint) => Object.assign(halt, { vor: !!w, sprint: !!sprint });
     const aus = { zeilen: [], bild: K.BILD };
     // DER LEBENSZYKLUS RUHT (Ökologie K1/K2): sein Riss und sein Hungertod nahmen der Probe den stehenden Bären, die Mitte ging
     // durch den Leichnam (heim-z29b: fuchs @60 → baer, 0,34 m) — ein Hindernis, das dennoch fällt, nennt der Lauf

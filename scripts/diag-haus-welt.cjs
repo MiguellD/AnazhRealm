@@ -478,7 +478,6 @@ async function proben(phasen) {
             keller: !!kf,
             dach: auf.some((f) => f.atLevel === "attic"),
         });
-        s.keys = s.keys || {};
         const eg = dm.levelsY[0];
         const xm = (f) => (f.x0 + f.x1) / 2;
         const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.4);
@@ -487,8 +486,8 @@ async function proben(phasen) {
             const w = welt(e, lx, lz);
             let kl = 0;
             for (let k = 0, ruhe = 0; ruhe < 10; k++) {
-                s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
-                if (!s.keys.w) ruhe++;
+                halt.vor = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                if (!halt.vor) ruhe++;
                 // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
                 let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                 const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
@@ -635,12 +634,12 @@ async function proben(phasen) {
         stell(wv.x, base + 0.75 + FUSS, wv.z);
         let [wy, wmax] = [0, -Infinity];
         for (let k = 0; k < 120; k++) {
-            [s.keys.w, s.yaw] = [k >= 30, Math.atan2(wz.x - wv.x, wz.z - wv.z)];
+            [halt.vor, s.yaw] = [k >= 30, Math.atan2(wz.x - wv.x, wz.z - wv.z)];
             r._stepFixedSim((t += DT), DT);
             if (k === 29) wy = pm.position.y;
             if (k >= 29) wmax = Math.max(wmax, pm.position.y);
         }
-        [s.keys.w, g.wand] = [false, rund(wmax - wy)];
+        [halt.vor, g.wand] = [false, rund(wmax - wy)];
     }
     // W9 (Kopf): Erde 5 cm über der Diele, Raster 0,25 m; `--bild`: je Box zwei Blicke aus dem Ausgabe-Pfad (Halm-Pixel gegen
     // das Bild ohne die Büschel der Box, Boden-Pixel aus der Maske des Boden-Satzes), artifacts/haus-welt/grund-*.png
@@ -1671,13 +1670,12 @@ async function proben(phasen) {
                 // der Weg wird verfolgt: der Körper bleibt über dem Boden unter ihm (dem Gelände-Gesetz, auf Podest und Diele der
                 // Haus-Basis) — höchstens eine Stufe darüber vor der Schwelle (nie über eine Mauer), nie darunter (nie in ein Loch)
                 const base = e.position.y - 0.5;
-                s.keys = s.keys || {};
                 for (const [lx, lz] of wegpunkte) {
                     const q = welt(e, lx, lz);
                     for (let k = 0; k < 500; k++) {
                         if (Math.hypot(q.x - pm.position.x, q.z - pm.position.z) < 0.2) break;
                         s.yaw = Math.atan2(q.x - pm.position.x, q.z - pm.position.z);
-                        s.keys.w = true;
+                        halt.vor = true;
                         r._stepFixedSim((t += DT), DT);
                         const lq = lokal(e, pm.position.x, pm.position.z);
                         const gel = hh(pm.position.x, pm.position.z);
@@ -1695,7 +1693,7 @@ async function proben(phasen) {
                             w.tiefFeld = r._fieldSolid(pm.position.x, gel - 0.3, pm.position.z) ? "solide" : "Luft";
                         }
                     }
-                    s.keys.w = false;
+                    halt.vor = false;
                     for (let k = 0; k < 10; k++) r._stepFixedSim((t += DT), DT);
                 }
                 return rund(lokal(e, pm.position.x, pm.position.z).z - tu.z);

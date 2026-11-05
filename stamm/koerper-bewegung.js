@@ -2213,28 +2213,29 @@ class AnazhRealm_koerper_bewegung {
     }
 
     // ═══ DIE VERB-TAFEL (leib.K5, Meisterkarte Leib H) ═══
-    // Jede Eingabe schreibt in die EINE Tafel `state.verbTafel`, jedes Verb liest NUR sie: die Tastatur (`state.keys` roh, der
-    // keydown-Hörer in init), die Maus (Blick und Knöpfe) und das Gamepad (`_eingabeTakt`). Analog, wo das Verb analog ist — das
-    // Gehen stufenlos aus der Stick-Auslenkung hinter der Totzone, Lenken und Gas der Fahrt, die Kamera-Kugel —, digital, wo es
-    // digital ist: jede Aktion geht durch den EINEN Auslöser `_verbTaste`. Vorher las jedes Verb `state.keys` selbst (11 Glieder,
-    // die Linse checkBandGamepadVerben nennt jedes beim Namen), und kein Glied las ein Gamepad.
+    // Jede Eingabe schreibt in die EINE Tafel `state.verbTafel`, jedes Verb liest NUR sie: die Tastatur (über die EINE
+    // Tasten-Tafel `state.keybindings` an den Auslöser), die Maus (Blick und Knöpfe) und das Gamepad (`_eingabeTakt`). Analog, wo
+    // das Verb analog ist — das Gehen stufenlos aus der Stick-Auslenkung hinter der Totzone, Lenken und Gas der Fahrt, die
+    // Kamera-Kugel —, digital, wo es digital ist: jede Aktion geht durch den EINEN Auslöser `_verbTaste`. Vorher las jedes Verb
+    // `state.keys` selbst (11 Glieder, die Linse checkBandGamepadVerben nennt jedes beim Namen), und kein Glied las ein Gamepad.
 
-    // Der Sammler am Kopf jedes Sim-Schritts (`_stepFixedSim`): Tastatur und Pad dieses Bilds → die analogen und gehaltenen Verben
-    // der Tafel. Replay und Lockstep setzen die Tafel selbst und fahren denselben Schritt ohne ihn.
+    // Der Sammler am Kopf jedes Sim-Schritts (`_stepFixedSim`): das Halten der Aktionen (`gehalten`, Tastatur und Pad-Knöpfe) und
+    // die Sticks dieses Bilds → die analogen und gehaltenen Verben der Tafel; die Fahrt liest dieselben Aktionen (`FAHR_TASTEN`).
+    // Replay und Lockstep setzen die Tafel selbst und fahren denselben Schritt ohne ihn.
     _verbTafelSammeln() {
         const st = this.state;
-        const [T, k, p, FT] = [st.verbTafel, st.keys, st._pad, AnazhRealm.FAHR_TASTEN];
+        const [T, p, FT] = [st.verbTafel, st._pad, AnazhRealm.FAHR_TASTEN];
         const g = T.gehalten;
-        const achse = (plus, minus, pad) => Math.max(-1, Math.min(1, (plus ? 1 : 0) - (minus ? 1 : 0) + pad));
-        T.vor = achse(k.w, k.s, p ? -p.ly : 0);
-        T.quer = achse(k.a, k.d, p ? -p.lx : 0);
-        T.sprint = !!(k.shift || g.sprint);
-        T.sprung = !!(k[" "] || g.jump);
-        T.rutsch = !!(k.c || g.rutschen);
-        T.gas = Math.max(k[FT.gas.tasten[0]] ? 1 : 0, p ? p.rt : 0);
-        T.bremse = Math.max(k[FT.bremse.tasten[0]] ? 1 : 0, p ? p.lt : 0);
-        T.lenken = achse(k[FT.lenken.tasten[0]], k[FT.lenken.tasten[1]], p ? -p.lx : 0);
-        T.handbremse = !!(k[FT.handbremse.tasten[0]] || g.handbremse);
+        const achse = (plus, minus, pad) => Math.max(-1, Math.min(1, (g[plus] ? 1 : 0) - (g[minus] ? 1 : 0) + pad));
+        T.vor = achse("vor", "zurueck", p ? -p.ly : 0);
+        T.quer = achse("links", "rechts", p ? -p.lx : 0);
+        T.sprint = !!g.sprint;
+        T.sprung = !!g.jump;
+        T.rutsch = !!g.rutschen;
+        T.gas = Math.max(g[FT.gas.aktion] ? 1 : 0, p ? p.rt : 0);
+        T.bremse = Math.max(g[FT.bremse.aktion] ? 1 : 0, p ? p.lt : 0);
+        T.lenken = achse(...FT.lenken.aktionen, p ? -p.lx : 0);
+        T.handbremse = !!(g[FT.handbremse.aktion] || g.handbremse);
         if (this._fahrer) this._fahrerSchritt(T); // der Fahrer am Steuer schreibt dieselben Felder (fahrzeug.K2)
     }
 
@@ -2286,14 +2287,14 @@ class AnazhRealm_koerper_bewegung {
         }
     }
 
-    // Die Taste → ihre Aktion: die freie Belegung (`state.keybindings`), die festen Tasten (TASTEN_FEST: E, Z, H, Esc), die Ziffern 1–9
-    // (Hotbar-Slots) und eine DSL-Fähigkeit unter ihrem Tasten-Namen (rule).
+    // Die Taste → ihre Aktion: die freie Belegung (`state.keybindings`, die EINE Tasten-Tafel — Gehen, Sprint, Sprung, Rutschen,
+    // E · Z · H, die Hotbar-Slots 1–9 und jede Schublade), Esc als das Zurück (TASTEN_FEST) und eine DSL-Fähigkeit unter ihrem
+    // Tasten-Namen (rule: die Welt bindet sie, nicht der Spieler).
     _tastenAktion(event) {
         const name = String(event.key || "").toLowerCase();
         return (
             this._actionForBindingCode(event.code) ||
             AnazhRealm.TASTEN_FEST[event.code] ||
-            (/^[1-9]$/.test(event.key) ? "slot" + (event.key - 1) : null) ||
             (name && Object.prototype.hasOwnProperty.call(this.state.abilities, name) ? name : null)
         );
     }

@@ -486,8 +486,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         const gehen = (sek, je) => {
             pm.set(P.x, boden(P.x, P.z), P.z);
             if (s.playerVel) s.playerVel.setValue(0, 0, 0);
-            const tasten = s.keys;
-            s.keys = { w: true };
+            const tasten = halt;
+            s.verbTafel.gehalten = { vor: true };
             const t0 = (s._simZeit || 0) + 1;
             let [zi, seite, aus, mark] = [0, 1, 0, [pm.x, pm.z]];
             try {
@@ -506,7 +506,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     je(k);
                 }
             } finally {
-                s.keys = tasten;
+                s.verbTafel.gehalten = tasten;
             }
         };
         const hirsch = (gebunden) => {

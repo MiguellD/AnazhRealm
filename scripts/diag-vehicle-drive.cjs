@@ -414,7 +414,7 @@ hauptLauf(async () => {
         //   lenk   — Spitze der Quer-Kinematik v·ω (in g) und der Tempo-Rest nach 2 s Einschlag (Anteil)
         try {
             const pm = r.state.playerMesh.position;
-            const keys = r.state.keys;
+            const keys = halt;
             // Die Strecke (ein Fels im Weg wäre kein Boden-Befund, und der GT
             // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
             // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
@@ -493,12 +493,12 @@ hauptLauf(async () => {
                         vEnde = sp;
                     }
                 };
-                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
-                keys.w = true;
+                for (const k of ["vor", "links", "zurueck", "rechts", "sprint"]) keys[k] = false;
+                keys.vor = true;
                 for (let i = 0; i < 150; i++) tick(false);
-                keys.a = true;
+                keys.links = true;
                 for (let i = 0; i < 120; i++) tick(true);
-                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
+                for (const k of ["vor", "links", "zurueck", "rechts", "sprint"]) keys[k] = false;
                 res.gefuehl.schwamm = !!e2._afloat;
                 res.gefuehl.achseGrad = achse;
                 // Der Kontakt ist das 75-%-Quantil des größten Rad-Spalts je Tick — ein starrer Wagen auf einer

@@ -450,7 +450,7 @@ async function probe(A) {
             { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
         );
         if (!gt) throw new Error("kein GT");
-        for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+        for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;
         return gt;
     };
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
@@ -922,7 +922,7 @@ async function probe(A) {
                 const W = gt._fahrSatz && gt._fahrSatz.wasser;
                 if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
                 const caVor = st.waterCAActive ? st.waterCAActive.size : 0;
-                st.keys.w = true;
+                halt.vor = true;
                 const spur = [];
                 let kamUnter = 0;
                 let tA = null;
@@ -944,7 +944,7 @@ async function probe(A) {
                     if (tA && tMs - tA.zeit > 4000) break;
                     if (i % 30 === 0) await sleep(0);
                 }
-                st.keys.w = false;
+                halt.vor = false;
                 const nachA = tA ? spur.filter((p) => p.t > tA.zeit) : [];
                 const drei = tA ? nachA.find((p) => p.t >= tA.zeit + 3000) : null;
                 const ansaug = {
@@ -1093,7 +1093,7 @@ async function probe(A) {
                 const fahrt = Math.atan2(furt.ux, furt.uz); // Fahrt-Richtung (sin, cos)
                 const gt = gtAn(sx, sz, fahrt);
                 aufsitzen(gt);
-                st.keys.w = true;
+                halt.vor = true;
                 const spur = [];
                 let kamUnter = 0;
                 let kamTiefe = 0;
@@ -1118,7 +1118,7 @@ async function probe(A) {
                     if (tEin && zeit - tEin.zeit > 2500) break;
                     if (i % 30 === 0) await sleep(0);
                 }
-                st.keys.w = false;
+                halt.vor = false;
                 r.dismountArchitecture();
                 if (!tEin)
                     throw new Error(

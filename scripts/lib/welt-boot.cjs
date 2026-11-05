@@ -47,8 +47,9 @@ function leihe(o, tausch) {
 // DIE EINE WELT JEDER SEITE (`r`, `st`): jede Seite trägt `r` (window.anazhRealm) und `st` (ihr Zustand, den nur der Konstruktor
 // setzt) als Getter (`WARTEN_SEITE`, vor jedem Skript) — eine Seiten-Funktion liest Welt und Zustand bei diesen Namen, ein eigenes
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
-// der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
-const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere};`;
+// der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable; `halt` sind die gehaltenen Aktionen der EINEN
+// Tasten-Tafel (`st.verbTafel.gehalten`: `halt.vor = true` hält das Vorwärts wie die Taste, die die Belegung trägt)
+const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh], ["halt", () => st && st.verbTafel.gehalten]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere};`;
 // DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
 // (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
 // oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
@@ -101,6 +102,88 @@ async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
+}
+// DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
+// Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
+// Konstruktor liest: `_loadKeybindings`). Vorher die Schrift (das HUD mit einem gepflanzten 14-px-Text, das Ich und jede Schublade
+// über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
+// nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
+// Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah.
+async function bedienung2(vor) {
+    const taste = (code, art) =>
+        window.dispatchEvent(new KeyboardEvent(art, { code, key: code.slice(3).toLowerCase() }));
+    const bilder = async (n) => {
+        for (let i = 0; i < n; i++) await __seitenTakt();
+    };
+    const taeter = (o) => [
+        ...Object.entries(o.schrift).flatMap(([t, z]) =>
+            z.klein.map((k) => `${t}: ${k.px} px — ${k.wo} „${k.text}“ (${k.n}×)`)
+        ),
+        ...(o.belegt === "KeyO" && o.platte === "KeyO" && o.nachReload === "KeyO"
+            ? []
+            : [`die Belegung trägt vor nicht (${o.belegt} · ${o.platte} · ${o.nachReload})`]),
+        ...(o.neuM >= 0.1 ? [] : [`KeyO bewegt den Leib ${o.neuM} m`]),
+        ...(o.altM < 0.1 ? [] : [`festverdrahtet: KeyW bewegt den Leib ${o.altM} m`]),
+        ...(o.standardM >= 0.1 ? [] : [`die Standard-Belegung kehrt nicht zurück (W ${o.standardM} m)`]),
+    ];
+    if (!vor) {
+        const probe = Object.assign(document.createElement("span"), { textContent: "Probe 14 px" });
+        probe.style.fontSize = "14px";
+        document.getElementById("hotbar").append(probe);
+        r._menueZeigen(null);
+        const schrift = { hud: r._schriftZensus() };
+        probe.remove();
+        const blind = schrift.hud.klein.some((z) => z.text === probe.textContent)
+            ? []
+            : ["der 14-px-Text der Hotbar fehlt im Zensus"];
+        schrift.hud.klein = schrift.hud.klein.filter((z) => z.text !== probe.textContent);
+        for (const d of [
+            document.getElementById("inventory-overlay"),
+            ...document.querySelectorAll(".drawer[data-drawer]"),
+        ]) {
+            r._menueZeigen(d.dataset.drawer || "ich");
+            await r._menueSteht();
+            await bilder(2);
+            schrift[d.dataset.drawer || "ich"] = r._schriftZensus(d);
+        }
+        r.resetKeybindings();
+        r._menueZeigen("einstellungen");
+        document.querySelector('.keybind-rebind[data-action="vor"]').click();
+        taste("KeyO", "keydown");
+        taste("KeyO", "keyup");
+        r._menueZeigen(null);
+        return {
+            schrift,
+            blind,
+            belegt: st.keybindings.vor,
+            platte: JSON.parse(localStorage.getItem("anazh.keybindings")).vor,
+        };
+    }
+    const weg = async (code) => {
+        const [x, z] = [pm.position.x, pm.position.z];
+        taste(code, "keydown");
+        await bilder(12);
+        taste(code, "keyup");
+        await bilder(20);
+        return +Math.hypot(pm.position.x - x, pm.position.z - z).toFixed(3);
+    };
+    const p0 = pm.position.clone();
+    const o = Object.assign(vor, { nachReload: st.keybindings.vor, neuM: await weg("KeyO"), altM: await weg("KeyW") });
+    const zurueck = leihe(r, {
+        _tastenAktion: (e) => (e.code === "KeyW" ? "vor" : Object.getPrototypeOf(r)._tastenAktion.call(r, e)),
+    });
+    const mutantM = await weg("KeyW");
+    zurueck();
+    r.resetKeybindings();
+    o.standardM = await weg("KeyW");
+    // der Leib steht, wo die Probe ihn fand (wer nach ihr misst, misst seine Welt)
+    [st._fixedPrevPos, st._fieldVy] = [null, 0];
+    for (const p of [pm.position, st._fixedSimPos]) if (p) p.copy(p0);
+    st.playerVel.setValue(0, 0, 0);
+    o.taeter = taeter(o);
+    if (!taeter({ ...o, altM: mutantM }).some((x) => x.startsWith("festverdrahtet")))
+        o.blind.push(`die festverdrahtete Taste W fiel nicht (${mutantM} m)`);
+    return o;
 }
 // DIE TAKTE VON HAND (`await window.__takte(n, ms)`): n Takte des Loops, je `ms` (ohne: 30) Schlaf dazwischen, ein werfender
 // Takt bricht die Reihe nicht — bis w4-verkehr-c dreimal derselbe Zwilling (diag-ankunft, diag-v1-pfad, diag-werkstatt-weg),
@@ -347,7 +430,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

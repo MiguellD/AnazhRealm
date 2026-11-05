@@ -183,9 +183,9 @@ async function probeLeben(expected) {
         delete r.tickFaunaLifecycle;
     };
     const tasten = (w, a) => {
-        for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
-        st.keys.w = !!w;
-        st.keys.a = !!a;
+        for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;
+        halt.vor = !!w;
+        halt.links = !!a;
     };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     // der ebene Abstand zweier Lagen (x, z) und das Tempo des Spielers in der Ebene
@@ -410,7 +410,7 @@ async function probeLeben(expected) {
             if (!e || !e._fahr) return {};
             const x0 = anfahren(e, K.v0, Math.PI / 2);
             let s = 0;
-            [z.spur, z.ent, st.keys.s] = [[], e, true];
+            [z.spur, z.ent, halt.zurueck] = [[], e, true];
             bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 40, quer: 4, n: 0 }; // die Bahn frei (Kiefer bei 20 m)
             bilder(K.bremsMax, () => e._fahr.vlong > bV);
             bahnWache = null;
@@ -418,7 +418,7 @@ async function probeLeben(expected) {
                 if (!(q.e && q.e.brake) || !(q.v > bV)) break;
                 s = q.x - x0;
             }
-            [z.spur, z.ent, st.keys.s] = [null, null, false];
+            [z.spur, z.ent, halt.zurueck] = [null, null, false];
             weg(e);
             return { s };
         };
@@ -532,10 +532,10 @@ async function probeLeben(expected) {
             for (let i = 0; i < B.bilder; i++) {
                 const d = n === "drift" && i >= B.driftAb;
                 tasten(true);
-                [st.keys.d, st.keys.shift, z.eLetzt] = [d, d && i < B.driftAb + 80, null];
+                [halt.rechts, halt.sprint, z.eLetzt] = [d, d && i < B.driftAb + 80, null];
                 frame(i);
                 const fz = e._fahr;
-                if (z.eLetzt) hand[2 * st.keys.shift + !!z.eLetzt.hand]++;
+                if (z.eLetzt) hand[2 * halt.sprint + !!z.eLetzt.hand]++;
                 if (i % 10 === 0 && el && ++tacho.proben) {
                     const [zahl, kmh] = [parseInt(el.textContent), Math.round(Math.abs(fz.vlong) * VC.FAHR.kmh)];
                     [tacho.unsichtbar, tacho.maxKmh] = [tacho.unsichtbar + !sichtbar(), Math.max(tacho.maxKmh, kmh)];
@@ -1121,7 +1121,7 @@ async function probeLeben(expected) {
             let [i, n, q, ausEgo, fv, wf] = [0, 0, [], false, 0, 0];
             const bild = () => {
                 const v = spielerTempo();
-                [st.keys.w, st.keys.s] = [v < 8, v > 11];
+                [halt.vor, halt.zurueck] = [v < 8, v > 11];
                 frame(i++);
                 r._archEntryWorldMatrix(e, M);
                 const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
@@ -1158,7 +1158,7 @@ async function probeLeben(expected) {
             const sicht = (s, a, d, k) => {
                 [n, q, ausEgo, fv] = [0, [], st.cameraMode === "first", st.camera.fov];
                 r.setCameraMode(s);
-                [st.keys.a, st.keys.d] = [a, d];
+                [halt.links, halt.rechts] = [a, d];
                 if (s === "third") for (let j = 0; j < k; j++) bild();
                 else {
                     let [um, g0] = [0, kurs()];
@@ -1336,10 +1336,10 @@ async function probeLeben(expected) {
             tasten(true, false);
             bilder(90);
             phase = "s";
-            for (const k of ["w", "a", "s", "d"]) st.keys[k] = false;
-            st.keys.s = true;
+            for (const k of ["vor", "links", "zurueck", "rechts"]) halt[k] = false;
+            halt.zurueck = true;
             bilder(40);
-            st.keys.s = false;
+            halt.zurueck = false;
             phase = "a";
             tasten(true, true);
             bilder(60);
@@ -1436,8 +1436,8 @@ async function probeLeben(expected) {
             gierVor = gier;
             let e = ziel - gier - 3 * dreh;
             e = Math.atan2(Math.sin(e), Math.cos(e));
-            if (e > 0.02) st.keys.a = true;
-            else if (e < -0.02) st.keys.d = true;
+            if (e > 0.02) halt.links = true;
+            else if (e < -0.02) halt.rechts = true;
         };
         if (kl) {
             bahnWache = klippenBahn(kl);

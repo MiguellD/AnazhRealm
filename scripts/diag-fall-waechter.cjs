@@ -562,8 +562,8 @@ async function probe(K) {
         await __weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
     };
     const tasten = (w) => {
-        for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
-        st.keys.w = !!w;
+        for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;
+        halt.vor = !!w;
     };
     const absteigen = () => {
         if (st.player && st.player.mountedArch != null) r.dismountArchitecture();

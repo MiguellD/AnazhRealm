@@ -1547,11 +1547,11 @@ const BRANDLAUF = process.argv.includes("--brand");
                     st.yaw = Math.atan2(cx + fach[1] - 0.4 - p0.x, cz + fach[1] - 0.4 - p0.z);
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
-                    st.keys = { w: true };
+                    st.verbTafel.gehalten = { vor: true };
                     try {
                         aus.gehen = await phase(120);
                     } finally {
-                        st.keys = {};
+                        st.verbTafel.gehalten = {};
                     }
                     const p1 = st.playerMesh.position;
                     aus.gehen.weg = +Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(2);

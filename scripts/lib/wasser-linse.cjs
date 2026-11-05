@@ -181,7 +181,7 @@ async function wasserKoerper(o = {}) {
         const g = { frames: 0, tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 0 };
         Object.assign(g, { seeFrames: 0, luft: 0, maxM: 0 });
         for (; g.frames < (o.gehFrames || 1500) && pm.position.x > mx; g.frames++) {
-            schritt({ w: true });
+            schritt({ vor: true });
             const fuss = pm.position.y - FUSS;
             const geerdet = st._fieldWasGrounded === true;
             if (geerdet && spiegel - fuss > brust + 0.05) {
@@ -253,7 +253,7 @@ async function wasserKoerper(o = {}) {
         st.yaw = -Math.PI / 2;
         let p0 = null;
         for (let i = 0; i < 240; i++) {
-            schritt({ w: true });
+            schritt({ vor: true });
             if (i === 119) p0 = pm.position.clone();
         }
         const weg = Math.hypot(pm.position.x - p0.x, pm.position.z - p0.z);
@@ -2779,8 +2779,8 @@ async function wasserLeser(o = {}) {
 function wasserLeib() {
     const [r, A] = [window.anazhRealm, window.anazhRealm.constructor];
     const [st, pm] = [r.state, r.state.playerMesh];
-    const alt = [pm.position.clone(), st.keys, r._loopFixedStep, st.camera && st.camera.position.clone(), st.yaw];
-    [r._loopFixedStep, st.keys] = [() => 0, {}];
+    const alt = [pm.position.clone(), halt, r._loopFixedStep, st.camera && st.camera.position.clone(), st.yaw];
+    [r._loopFixedStep, st.verbTafel.gehalten] = [() => 0, {}];
     let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
     const leib = {
         setze(x, y, z) {
@@ -2790,9 +2790,9 @@ function wasserLeib() {
             st.playerVel.setValue(0, 0, 0);
             return pm;
         },
-        takt: (keys) => ((st.keys = Object.assign({}, keys)), r._stepFixedSim(t, A.FIXED_DT), (st._fixedSimTime = t += A.FIXED_DT)),
+        takt: (keys) => ((st.verbTafel.gehalten = Object.assign({}, keys)), r._stepFixedSim(t, A.FIXED_DT), (st._fixedSimTime = t += A.FIXED_DT)),
         zurueck() {
-            [r._loopFixedStep, st.keys, st.yaw] = [alt[2], alt[1] || {}, alt[4]];
+            [r._loopFixedStep, st.verbTafel.gehalten, st.yaw] = [alt[2], alt[1] || {}, alt[4]];
             leib.setze(alt[0].x, alt[0].y, alt[0].z);
             if (alt[3]) (st.camera.position.copy(alt[3]), st.camera.updateMatrixWorld(true), r._applyDayNightToScene());
         },

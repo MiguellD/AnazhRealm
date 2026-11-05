@@ -1129,14 +1129,14 @@ function sichtLauf(k) {
         if (k.drehen > 0) plan.push(["drehen", k.drehen]);
         if (k.gehen > 0) plan.push(["gehen", k.gehen]);
         const naechste = () => {
-            st.keys.w = false;
+            halt.vor = false;
             const p = plan.shift();
             if (!p) return void (phase = null);
             phase = { name: p[0], frames: [] };
             phasen.push(phase);
             rest = p[1];
             tagSetzen(p[0] === "sonne" || k.tag !== "steht");
-            if (p[0] === "gehen") st.keys.w = true;
+            if (p[0] === "gehen") halt.vor = true;
         };
         let messen = false;
         // der Vorlauf: gerenderte Frames, bevor die Ruhe zählt — ein Abschnitt mit Lücken legt sich nach `dichtNach` ruhigen
@@ -1172,7 +1172,7 @@ function sichtLauf(k) {
             else await Promise.race([fertig, sleep(600000)]);
         } finally {
             rend.setAnimationLoop(null);
-            st.keys.w = false;
+            halt.vor = false;
             st.perfTargetMs = decke;
             if (tagAlt === undefined) delete st.dayLengthMinutes;
             else st.dayLengthMinutes = tagAlt;

@@ -624,7 +624,7 @@ async function messeOrt(page, name, ort, stubs) {
                     performance.now() - t0 < (sz.weg ? 3e4 : 4500) && !(um.weg >= sz.weg);
                     i++
                 ) {
-                    [st.keys.w, st.keys.s] = sz.weg ? [i % 120 < 60, i % 120 >= 60] : [];
+                    [halt.vor, halt.zurueck] = sz.weg ? [i % 120 < 60, i % 120 >= 60] : [];
                     W.takt();
                     const Q = st.vogelPool?.mesh || { count: 0 };
                     const nun = Array.from({ length: Q.count }, (_, i) => Q.instanceMatrix.array.slice(16 * i + 12, 16 * i + 15));
@@ -650,7 +650,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm.UNTERTITEL.stimme[v.name])).map((v) => v.name);
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
-                st.keys.w = st.keys.s = W.szene = false;
+                halt.vor = halt.zurueck = W.szene = false;
                 if (alt.luft) P._temperaturAt = alt.luft;
                 if (alt.lage)
                     [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
@@ -1196,7 +1196,7 @@ async function koerperSeite(m, mut) {
     const [sy, pm, gas, F] = [
         s.symphony,
         s.playerMesh,
-        A.FAHR_TASTEN.gas.tasten[0],
+        A.FAHR_TASTEN.gas.aktion,
         { motor: [], landung: [], doppler: [] },
     ];
     if (mut === "motor") r._fahrtKlangTick = () => {};
@@ -1249,13 +1249,13 @@ async function koerperSeite(m, mut) {
             stell(m.x, m.z);
             const e = await wagen(m.x + 3, m.z);
             r.mountArchitecture(e);
-            s.keys[gas] = true;
+            halt[gas] = true;
             for (let i = 0; i < 20; i++) {
                 bild(1 / 60, 12);
                 const d = await abgriff(() => r._fahrtKlangTick());
                 F.motor.push([K.fahrtUpm(e._fahr.vlong, e._fahrSatz.vmax, 0), gipfel(linie(d), 20, 1000, 1)]);
             }
-            s.keys[gas] = false;
+            halt[gas] = false;
             r.dismountArchitecture();
             r.removeArchitecture(e, { still: true });
         }
@@ -1308,7 +1308,7 @@ async function koerperSeite(m, mut) {
     } finally {
         K.fahrtAmOhr = amOhr;
         for (const g of ["_fahrtKlangTick", "_schrittKlangParams"]) delete r[g];
-        s.keys[gas] = false;
+        halt[gas] = false;
     }
     return F;
 }

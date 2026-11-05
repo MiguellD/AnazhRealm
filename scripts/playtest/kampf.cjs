@@ -80,7 +80,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
         // (7) der Hold-Tick ist gegated (ohne die gehaltene Abbau-Aktion der Verb-Tafel → nichts)
-        st.verbTafel.gehalten.break = false;
+        halt.break = false;
         const beforeTick = st.architectures.length;
         r._tickHarvest();
         out.tickGuarded = st.architectures.length === beforeTick;
@@ -99,7 +99,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         for (const a of [aHand, aTool]) if (a && st.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
-        st.verbTafel.gehalten.break = false;
+        halt.break = false;
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);

@@ -2315,6 +2315,7 @@ class AnazhRealm_werkstatt_hud {
     // Standard-Tastatur (Medien-, Eingabe-Methoden-Tasten), auf den der Spieler selbst umband, zeigt den Namen, den sein Gerät
     // ihm gibt — wie der Name, den ein Spieler vergibt.
     _formatBindingCode(code) {
+        if (Array.isArray(code)) return code.length ? code.map((c) => this._formatBindingCode(c)).join(" / ") : "—";
         if (!code) return "—";
         const name = {
             Mouse0: "hud.maus-links",
@@ -2634,9 +2635,9 @@ class AnazhRealm_werkstatt_hud {
             lead.style.cssText = "margin:0 0 16px;font-size:16px;color:#e8d2b4;";
             const how = document.createElement("p");
             how.textContent = this._t("hud.gate-wie");
-            how.style.cssText = "margin:0 0 8px;font-size:15px;color:#ffce96;font-weight:600;";
+            how.style.cssText = "margin:0 0 8px;font-size:var(--schrift-min);color:#ffce96;font-weight:600;";
             const list = document.createElement("ul");
-            list.style.cssText = "margin:0 0 18px;padding-left:20px;font-size:15px;color:#e2cba8;";
+            list.style.cssText = "margin:0 0 18px;padding-left:20px;font-size:var(--schrift-min);color:#e2cba8;";
             const rows = [this._t("hud.gate-chrome"), this._t("hud.gate-safari"), this._t("hud.gate-firefox")];
             for (const t of rows) {
                 const li = document.createElement("li");
@@ -2650,10 +2651,10 @@ class AnazhRealm_werkstatt_hud {
             link.rel = "noopener noreferrer";
             link.textContent = this._t("hud.gate-link");
             link.style.cssText =
-                "display:inline-block;color:#ff9a52;text-decoration:none;font-size:14px;border-bottom:1px solid #ff9a52;";
+                "display:inline-block;color:#ff9a52;text-decoration:none;font-size:var(--schrift-min);border-bottom:1px solid #ff9a52;";
             const foot = document.createElement("p");
             foot.textContent = this._t("hud.gate-fuss");
-            foot.style.cssText = "margin:18px 0 0;font-size:13px;color:#b89a78;font-style:italic;";
+            foot.style.cssText = "margin:18px 0 0;font-size:var(--schrift-min);color:#b89a78;font-style:italic;";
             card.appendChild(title);
             card.appendChild(lead);
             card.appendChild(how);
@@ -2741,6 +2742,75 @@ class AnazhRealm_werkstatt_hud {
         for (const a of el.getAnimations({ subtree: true }))
             if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
         el.hidden = true;
+    }
+
+    // DIE KLEINSTE SCHRIFT IM BILD (spielgang.K3#2, das Gesetz `--schrift-min` in index.html): jeder sichtbare Text unter
+    // `wurzel` (ein Element, sonst die Seite) — jeder Text-Knoten und jedes ::before/::after mit Inhalt, seine berechnete Größe mal
+    // dem Maßstab der transform-Kette; die gefalteten Sektionen zeigen ihren Inhalt, solange er zählt. Was unter der kleinsten
+    // Schrift liegt, steht beim Namen (Ort im Baum, Größe, Text). Der Leser: `werkbank bedienung --staffel 2` am Gerät und die
+    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], bild: [w, h] }
+    _schriftZensus(wurzel = document.body) {
+        const min = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--schrift-min"));
+        const gefaltet = [...wurzel.querySelectorAll(".collapsed")];
+        for (const s of gefaltet) s.classList.remove("collapsed");
+        const wo = (el) => {
+            const teile = [];
+            for (let e = el; e && e !== document.body && teile.length < 4; e = e.parentElement) {
+                teile.unshift(
+                    e.id
+                        ? "#" + e.id
+                        : e.tagName.toLowerCase() +
+                              [...e.classList]
+                                  .slice(0, 2)
+                                  .map((k) => "." + k)
+                                  .join("")
+                );
+                if (e.id) break;
+            }
+            return teile.join(" > ");
+        };
+        const massstab = (el) => {
+            let s = 1;
+            for (let e = el; e; e = e.parentElement) {
+                const t = window.getComputedStyle(e).transform;
+                if (t && t !== "none") s *= Math.hypot(...new window.DOMMatrix(t).toFloat64Array().slice(0, 2));
+            }
+            return s;
+        };
+        const sichtbar = (el) =>
+            el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && el.getClientRects().length > 0;
+        const [klein, aus] = [new Map(), { knoten: 0, klein: [], bild: [window.innerWidth, window.innerHeight] }];
+        const zaehle = (el, text, cs) => {
+            const px = +(parseFloat(cs.fontSize) * massstab(el)).toFixed(1);
+            aus.knoten++;
+            if (px >= min) return;
+            const k = wo(el) + "@" + px;
+            const z = klein.get(k) || { wo: wo(el), px, text: text.slice(0, 40), n: 0 };
+            z.n++;
+            klein.set(k, z);
+        };
+        const gang = document.createTreeWalker(wurzel, window.NodeFilter.SHOW_TEXT);
+        for (let t; (t = gang.nextNode());) {
+            const el = t.parentElement;
+            const r = document.createRange();
+            r.selectNodeContents(t);
+            if (
+                t.textContent.trim() &&
+                el &&
+                sichtbar(el) &&
+                [...r.getClientRects()].some((q) => q.width * q.height > 0)
+            )
+                zaehle(el, t.textContent.trim(), window.getComputedStyle(el));
+        }
+        for (const el of [wurzel, ...wurzel.querySelectorAll("*")])
+            for (const p of ["::before", "::after"]) {
+                const cs = window.getComputedStyle(el, p);
+                const inhalt = /^"(.+)"$/.exec(cs.content || "");
+                if (inhalt && inhalt[1].trim() && cs.display !== "none" && sichtbar(el)) zaehle(el, inhalt[1], cs);
+            }
+        for (const s of gefaltet) s.classList.add("collapsed");
+        aus.klein = [...klein.values()];
+        return aus;
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.

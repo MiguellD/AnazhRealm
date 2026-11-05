@@ -1669,7 +1669,7 @@ class AnazhRealm_speicher_laden {
                 link.addEventListener("click", () => this.switchToWorld(parentId, { reload: true }));
                 row.appendChild(link);
                 const meta = document.createElement("span");
-                meta.style.cssText = "opacity:0.7; font-size:0.85em;";
+                meta.style.cssText = "opacity:0.7; font-size:max(var(--schrift-min), 0.85em);";
                 meta.textContent = this._t("speicher.eltern-id", { id: parentId.slice(0, 8) });
                 row.appendChild(meta);
             } else {

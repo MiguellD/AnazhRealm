@@ -642,12 +642,12 @@ async function leibGang(G) {
                 }
                 if (n % 20 === 0) await sleep(0);
             };
-            const tasten = (k) => Object.assign(st.keys, { w: false, a: false, s: false, d: false, shift: !!sprint }, k);
+            const tasten = (k) => Object.assign(halt, { vor: false, links: false, zurueck: false, rechts: false, sprint: !!sprint }, k);
             tasten({});
             for (let j = 0; j < 10; j++) await bild("stand");
             if (senk) return g;
             q.length = 0;
-            tasten({ s: true });
+            tasten({ zurueck: true });
             for (let j = 0, still = 0, dMin = mitte(); j < 600 && still < 20; j++) {
                 await bild("rückwärts");
                 still = mitte() < dMin - 0.01 ? 0 : still + 1;
@@ -659,7 +659,7 @@ async function leibGang(G) {
             if (art.startsWith("innen")) g.drinnen = (p.x - a.d.cx) * a.n[0] + (p.z - a.d.cz) * a.n[1] < -1;
             tasten({});
             for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit");
-            tasten({ w: true });
+            tasten({ vor: true });
             for (let j = 0; j < 60; j++) await bild("vorwärts");
             tasten({});
             for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit fern");

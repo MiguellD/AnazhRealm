@@ -551,19 +551,13 @@ class AnazhRealm_dirigent_ankunft {
                 if (this._chatOeffnen()) event.preventDefault();
                 return;
             }
-            // DIE TASTATUR in die Verb-Tafel (leib.K5): die rohe Taste für den Sammler (die Pfeile schreiben die KANONISCHEN
-            // Bewegungs-Tasten über PFEIL_ALIAS), die Aktion (Belegung · feste Taste · Ziffer · Fähigkeit) an den EINEN Auslöser.
-            this.state.keys[event.key.toLowerCase()] = true;
-            const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
-            if (_pfeil) this.state.keys[_pfeil] = true;
+            // DIE TASTATUR in die Verb-Tafel (leib.K5): die Aktion der Taste (die EINE Tasten-Tafel · Esc · Fähigkeit) an den
+            // EINEN Auslöser — er hält sie (`gehalten`), der Sammler liest das Halten.
             const aktion = this._tastenAktion(event);
             if (aktion && this._verbTaste(aktion, true)) event.preventDefault();
         });
         window.addEventListener("keyup", (event) => {
-            this.state.keys[event.key.toLowerCase()] = false;
-            // FAHR-ABSCHLUSS (19.07.) — der Pfeil-Alias löst symmetrisch; das Lösen der Aktion beendet ihr Halten (Zoom, Mahlen).
-            const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
-            if (_pfeil) this.state.keys[_pfeil] = false;
+            // das Lösen der Aktion beendet ihr Halten (Gehen, Zoom, Mahlen)
             const aktion = this._tastenAktion(event);
             if (aktion) this._verbTaste(aktion, false);
         });
@@ -1576,38 +1570,24 @@ AnazhRealm._sprintMulGesetz = function () {
     if (Number.isFinite(m) && m > 0) return m;
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.sprintMul");
 };
-// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die Tasten der Fahrt, die
-// der Sammler der Verb-Tafel liest (`_verbTafelSammeln`: Gas · Bremse · Lenkung · Handbremse; E über TASTEN_FEST) und die Hilfe
-// (`_hilfeZeilen`) und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben
-// w/a/s/d über PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
+// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die Verben der Fahrt und
+// die Aktion der EINEN Tasten-Tafel (`DEFAULT_KEYBINDINGS`), deren Halten sie lesen — der Sammler der Verb-Tafel
+// (`_verbTafelSammeln`: Gas · Bremse · Lenkung · Handbremse), die Hilfe (`_hilfeZeilen`) und der Tacho (`_fahrAnzeige`) nennen
+// die Taste aus der Belegung (`_fahrTastenZeile`). Gas ist das Vorwärts, die Bremse das Rückwärts, die Lenkung links und rechts,
+// die Handbremse der Sprint: eine Umbelegung trägt Gehen und Fahrt zugleich.
 AnazhRealm.FAHR_TASTEN = Object.freeze({
-    einsteigen: Object.freeze(AnazhRealm._etikett({ code: "KeyE", zeigen: "E", etikett: ["fahrt.taste.einsteigen"] })),
-    gas: Object.freeze(
-        AnazhRealm._etikett({ tasten: Object.freeze(["w"]), zeigen: "W", etikett: ["fahrt.taste.gas"] })
-    ),
-    bremse: Object.freeze(
-        AnazhRealm._etikett({ tasten: Object.freeze(["s"]), zeigen: "S", etikett: ["fahrt.taste.bremse"] })
-    ),
+    einsteigen: Object.freeze(AnazhRealm._etikett({ aktion: "einsteigen", etikett: ["fahrt.taste.einsteigen"] })),
+    gas: Object.freeze(AnazhRealm._etikett({ aktion: "vor", etikett: ["fahrt.taste.gas"] })),
+    bremse: Object.freeze(AnazhRealm._etikett({ aktion: "zurueck", etikett: ["fahrt.taste.bremse"] })),
     lenken: Object.freeze(
-        AnazhRealm._etikett({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", etikett: ["fahrt.taste.lenken"] })
+        AnazhRealm._etikett({ aktionen: Object.freeze(["links", "rechts"]), etikett: ["fahrt.taste.lenken"] })
     ),
-    handbremse: Object.freeze(
-        AnazhRealm._etikett({ tasten: Object.freeze(["shift"]), zeigen: "Shift", etikett: ["fahrt.taste.handbremse"] })
-    ),
+    handbremse: Object.freeze(AnazhRealm._etikett({ aktion: "sprint", etikett: ["fahrt.taste.handbremse"] })),
 });
-// FAHR-ABSCHLUSS (19.07.) — die Pfeil-Tasten schreiben die kanonischen
-// Bewegungs-Tasten (die Studio-Eingabe-Wahrheit: KeyW||ArrowUp usw.); der
-// EINE Input-Chokepoint (keydown/keyup) konsumiert die Map, kein Zweit-Leser.
-AnazhRealm.PFEIL_ALIAS = Object.freeze({ ArrowUp: "w", ArrowDown: "s", ArrowLeft: "a", ArrowRight: "d" });
-// Die FESTEN TASTEN der Verb-Tafel (KeyboardEvent.code → Aktion, `_tastenAktion`): E steigt auf/ab oder betritt ein Portal, Z hält das
-// Fernglas, H blendet das HUD, Esc ist das Zurück (Bau verlassen, Inventar schließen, Portal verlassen) — auch wenn cancelBuild
-// umgebunden ist. Das Gamepad bindet dieselben Aktionen frei (PAD_BELEGUNG).
-AnazhRealm.TASTEN_FEST = Object.freeze({
-    [AnazhRealm.FAHR_TASTEN.einsteigen.code]: "einsteigen",
-    KeyZ: "zoom",
-    KeyH: "hud",
-    Escape: "cancelBuild",
-});
+// DAS ZURÜCK (KeyboardEvent.code → Aktion, `_tastenAktion`): Esc verlässt den Bau, schließt das Inventar und das Portal — auch wenn
+// cancelBuild umgebunden ist; der Browser löst mit Esc den Zeiger-Fang, keine andere Aktion kann sie tragen. Jede andere Taste
+// lebt in der freien Belegung (`DEFAULT_KEYBINDINGS`), das Gamepad bindet dieselben Aktionen frei (PAD_BELEGUNG).
+AnazhRealm.TASTEN_FEST = Object.freeze({ Escape: "cancelBuild" });
 // DAS ERSTE WELTBILD (`_ankunftsBild`): steht dieselbe Lücke so lange (ms), ohne dass etwas wächst, weicht der Ladeschirm
 // laut — das Log nennt, was fehlt (ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest).
 AnazhRealm.WELTBILD_STILL_MS = 15000;

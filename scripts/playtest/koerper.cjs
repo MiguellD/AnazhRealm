@@ -1885,7 +1885,8 @@ async function checkBandKoerperBewegung({ page, check }) {
 
 // leib.K5 — DAS GAMEPAD LENKT JEDES VERB (Meisterkarte Leib H): ein synthetisches Gamepad fährt jedes Verb durch den echten Takt,
 // gerichtet wird die Wirkung in Takten (Schlupfloch: ein auf 0/1 gerundeter Achs-Wert fällt an der Stetigkeit). Jedes Glied, das
-// `state.keys` liest, ist ROT beim Namen (frei: die Tastatur in init, der Sammler, die Tasten-Wand) — SELBSTTEST: ein Zwilling-Leser.
+// die rohe Tastatur `state.keys` liest, ist ROT beim Namen — seit w12-menue liest auch der Sammler nur das Halten der EINEN
+// Tasten-Tafel (`gehalten`), kein Glied ist frei — SELBSTTEST: ein Zwilling-Leser.
 async function checkBandGamepadVerben({ page, check }) {
     const out = await safeEvaluate(page, () => {
         const [r, fx, los, spione] = [window.anazhRealm, [], [], {}];
@@ -1895,7 +1896,7 @@ async function checkBandGamepadVerben({ page, check }) {
         const leser = () =>
             Object.getOwnPropertyNames(proto).filter((n) => {
                 const f = Object.getOwnPropertyDescriptor(proto, n).value;
-                const frei = ["constructor", "init", "_verbTafelSammeln", "_alleTastenLos"].includes(n);
+                const frei = n === "constructor";
                 return !frei && typeof f === "function" && !__fehlt(f, /\b(?:state|st|s)\.keys\b/);
             });
         o.leser = leser();
@@ -1919,7 +1920,7 @@ async function checkBandGamepadVerben({ page, check }) {
         const kn = (a) => +B[a].slice(3);
         const knopf = (i, v) => ((pad.buttons[i].pressed = v > 0.5), (pad.buttons[i].value = v));
         const druck = (i) => (knopf(i, 1), takt(1), knopf(i, 0), takt(1));
-        const ruhe = () => (pad.axes.fill(0), pad.buttons.forEach((_, i) => knopf(i, 0)), Object.keys(s.keys).forEach((k) => (s.keys[k] = false)), takt(1));
+        const ruhe = () => (pad.axes.fill(0), pad.buttons.forEach((_, i) => knopf(i, 0)), Object.keys(halt).forEach((k) => (halt[k] = false)), takt(1));
         const soll = (a) => Math.max(0, Math.min(1, (a - P.totzone) / (1 - P.totzone)));
         const nah = (x, y, tol) => Math.abs(x / y - 1) < tol;
         const v = () => Math.hypot(s.playerVel.x(), s.playerVel.z());
@@ -1949,7 +1950,7 @@ async function checkBandGamepadVerben({ page, check }) {
             const tempo = (setze) => (stellen(), setze(), takt(12), [v(), T.vor]);
             const AUS = [P.totzone * 0.6, 0.35, 0.6, 1];
             o.gehen = AUS.map((a) => tempo(() => (pad.axes[1] = -a))[0]);
-            o.taste = tempo(() => (s.keys.w = true));
+            o.taste = tempo(() => (halt.vor = true));
             o.sprint = tempo(() => ((pad.axes[1] = -1), knopf(kn("sprint"), 1)))[0];
             const v1 = o.gehen[3];
             c.gehen = v1 > 0.5 * s.speed && AUS.every((a, i) => Math.abs(o.gehen[i] / v1 - soll(a)) < 0.03) && o.taste[1] === 1 && nah(o.taste[0], v1, 0.01);

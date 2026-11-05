@@ -487,9 +487,9 @@ async function checkBandRing6Workshop({ page, check }) {
         }
         // yaw=0 → forward = (sin0,0,cos0) = +Z; W drückt vorwärts.
         const savedYaw = st.yaw;
-        const savedKeys = { ...st.keys };
+        const savedKeys = { ...halt };
         st.yaw = 0;
-        st.keys = { w: true };
+        st.verbTafel.gehalten = { vor: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
             r._gameLoopTick(performance.now());
@@ -498,7 +498,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const playerY = st.playerMesh.position.y;
         // restore Eingabe-Zustand (zustands-neutral für Folge-Bands)
         st.yaw = savedYaw;
-        st.keys = savedKeys;
+        st.verbTafel.gehalten = savedKeys;
         if (st.playerVel) {
             st.playerVel.setValue(0, 0, 0);
             st._fieldVy = 0;

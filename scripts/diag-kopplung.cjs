@@ -83,7 +83,7 @@ hauptLauf(async () => {
                 return shim;
             };
             const runTicks = (shim, n, keys, yaw) => {
-                shim.state.keys = keys || {};
+                shim.state.verbTafel.gehalten = keys || {};
                 shim.state.yaw = yaw || 0;
                 let t = 0;
                 for (let i = 0; i < n; i++) {
@@ -107,9 +107,9 @@ hauptLauf(async () => {
             const yaw45 = Math.PI / 4; // forward = (0.707, 0, 0.707) → 45° auf die Wand
             const intentProj = (p0, p1) => (p1.x - p0.x + (p1.z - p0.z)) / Math.SQRT2;
             const runWallWindow = (shim) => {
-                runTicks(shim, 180, { w: true }, yaw45); // Anlauf: sicher an der Wand
+                runTicks(shim, 180, { vor: true }, yaw45); // Anlauf: sicher an der Wand
                 const p0 = shim.state.playerMesh.position.clone();
-                runTicks(shim, 120, { w: true }, yaw45); // Mess-Fenster: 2 s an der Wand
+                runTicks(shim, 120, { vor: true }, yaw45); // Mess-Fenster: 2 s an der Wand
                 const p1 = shim.state.playerMesh.position;
                 return { proj: intentProj(p0, p1), x: p1.x, z: p1.z };
             };

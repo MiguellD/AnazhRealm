@@ -1618,10 +1618,13 @@ class AnazhRealm_feld_leben {
         ];
     }
 
-    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): die Hilfe und der Tacho.
+    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): je Verb die Taste seiner Aktion
+    // aus der Belegung (`state.keybindings`) — die Hilfe und der Tacho.
     _fahrTastenZeile() {
+        const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
+        const taste = (a) => this._formatBindingCode(kb[a]);
         return Object.values(AnazhRealm.FAHR_TASTEN)
-            .map((t) => `${t.zeigen} ${t.label}`)
+            .map((t) => `${t.aktionen ? t.aktionen.map(taste).join(" · ") : taste(t.aktion)} ${t.label}`)
             .join(" · ");
     }
 
@@ -2942,6 +2945,19 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
 // Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
 // Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
+    vor: "taste.vor",
+    zurueck: "taste.zurueck",
+    links: "taste.links",
+    rechts: "taste.rechts",
+    slot0: "taste.slot-1",
+    slot1: "taste.slot-2",
+    slot2: "taste.slot-3",
+    slot3: "taste.slot-4",
+    slot4: "taste.slot-5",
+    slot5: "taste.slot-6",
+    slot6: "taste.slot-7",
+    slot7: "taste.slot-8",
+    slot8: "taste.slot-9",
     break: "taste.abbauen",
     place: "taste.platzieren",
     confirmBuild: "taste.bauen-bestaetigen",
@@ -2955,7 +2971,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     cameraToggle: "taste.kamera",
     swapHands: "taste.hand-tauschen",
     chat: "taste.gespraech",
-    // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
+    // die Aktionen, die Tastatur und Gamepad frei binden (PAD_BELEGUNG, leib.K5)
     einsteigen: "taste.aufsitzen",
     handbremse: "taste.handbremse",
     sprint: "taste.sprinten",
