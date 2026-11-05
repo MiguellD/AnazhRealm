@@ -1619,13 +1619,22 @@ async function vegetationLauf() {
     for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
     try {
         await ruf("/fenster", { w: 1920, h: 1080 });
-        let stand = null;
+        let stand = null,
+            spiel = null;
         for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
             const n = [ort, sicht, uhr, saison, was].join("-");
-            if (stand !== ort + "|" + sicht) await ruf("/umstellen", { ort, sicht });
+            if (stand !== ort + "|" + sicht) {
+                await ruf("/umstellen", { ort, sicht });
+                spiel = null;
+            }
             stand = ort + "|" + sicht;
-            const k = (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+            // DIE KAMERA DES SPIELS JE STAND EINMAL (w12-wintergras): sie hängt am Stand, nie an Saison oder Uhr — der erste
+            // Wiesen-Schuss rechnet sie, jeder weitere am selben Stand liest sie. Bis dahin rechnete jeder Schuss 30 Takte
+            // `_loopCamera` neu, die Höhe wanderte (Radeon 8ef49bef: y 29,704 · 29,709 · 29,495), und der Marsch-Speicher der
+            // Werkbank (`__abstandSpeicher`) traf nie: jede Wiese marschierte neu (16,6–18,2 s je Schuss)
+            const k = was === "wiese" && spiel ? spiel : (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
             if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+            if (was === "wiese") spiel = k;
             const [px, py, pz, lx, ly, lz] = k;
             const wiese = was === "wiese";
             const datei = B + "-" + n + ".png";
@@ -1790,7 +1799,7 @@ function jahrUrteil(e, zeiten) {
     };
     const L = Object.fromEntries(Object.entries(w).map(([z, s]) => [z, lai(s)]));
     const P = Object.fromEntries(Object.entries(k).map(([z, s]) => [z, s.pixel]));
-    const bild = Object.values({ ...k, ...w }).every((s) => s.ok === true && posePasst(s) && s.leinwand[0] === 1920) && Object.values(k).every((s) => JSON.stringify(s.kamera) === JSON.stringify(k.sommer && k.sommer.kamera));
+    const bild = Object.values({ ...k, ...w }).every((s) => s.ok === true && posePasst(s) && s.leinwand[0] === 1920) && [k, w].every((je) => Object.values(je).every((s) => JSON.stringify(s.kamera) === JSON.stringify(je.sommer && je.sommer.kamera)));
     const krone = P.sommer >= 2000 && P.winter <= 0.3 * P.sommer && (!zeiten.includes("fruehling") || (P.fruehling > P.winter && P.fruehling < P.sommer));
     const wiese = !w.sommer || (L.sommer > 0 && L.winter <= 0.5 * L.sommer && L.fruehling > L.winter && L.fruehling < L.sommer);
     const f = (x, n = 0) => (x == null ? "—" : Number(x).toFixed(n));
@@ -1817,6 +1826,8 @@ function jahrProben(lauf, eigen) {
         { name: "der Winter färbt nur", o: { krone: { winter: { pixel: 36000 } } }, gruen: false },
         { name: "die Wiese steht im Winter", o: { wiese: { winter: { klassen: ring(500) } } }, gruen: false },
         { name: "der Winter an anderer Pose", o: { krone: { winter: { kamera: [3, 1.7, 0, 103, 1.7, 0], pose: { kamera: [3, 1.7, 0], blick: [1, 0, 0] } } } }, gruen: false },
+        // die Wiese des Jahrs an EINER Pose (w12-wintergras): eine andere Kamera im Winter misst einen anderen Boden, nie das Jahr
+        { name: "die Wiese des Winters an anderer Pose", o: { wiese: { winter: { kamera: [0, 1.5, 0, 100, 1.5, 0], pose: { kamera: [0, 1.5, 0], blick: [1, 0, 0] } } } }, gruen: false },
     ];
     if (eigen.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
     const zwei = lauf.slice(0, 2), nurZwei = eigen.every((p) => zwei.includes(p));
