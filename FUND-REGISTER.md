@@ -44,3 +44,4 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - spec/abnahme/ki-korpus.json:78 · der Bezug `gefuettert` enthält das nackte „gegeben“ und wertet „den Schlag … gegeben“ als Gabe · ki.K3 (Linse) · S
 - stamm/koerper-bewegung.js (freier Körper des Werks) · Steinplatte 4×4 m auf vier Pfosten kippt binnen 2 s, steigt 4 m und verschwindet aus state.architectures · physik.K3 · M
 - messort("dorf") baut in der Welt-Probe (Null-Renderer) 0 Häuser nach 9000 Takten · jede Probe „am Dorf“ · M
+- /tmp/claude/w3/radeon-punkte.sh (Punkte-Worktree pm) · räumt nur UNGETRACKTE Mess-Kopien weg; eine lokal geänderte, schon gebuchte Messdatei (8ef49bef-radeon.json, nur Format) blockierte den Merge von koordination, die Messung lief am alten Stand · jede Radeon-Messung (Buchung) · S
