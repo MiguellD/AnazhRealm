@@ -882,7 +882,8 @@ class AnazhRealm_siedlung_wege {
     // betritt (ein Versatz über `sprungM` ist kein Schritt; `steht` sagt der Schritt des Leibs selbst — wer springt oder
     // schwimmt, tritt nichts —, nie ein Leser des gezeichneten Bodens: jeder Peer zählt dieselben Tritte). Die Zahl erholt sich in der
     // Spielzeit (n · e^(−Δt/erholTage) — eine Funktion der Uhr, kein Takt), ihre Stufe (1 − e^(−n/tritte), gerastert auf
-    // `stufen`) ist getretene Erde in der EINEN Wege-Karte (Kanal Erde): der Boden zeigt den Pfad, Wiese und Nah-Streu lesen ihn
+    // `stufen`, sichtbar erst als Pfad: `TRITT.pfadGras`, `_trittStufe`) ist getretene Erde in der EINEN Wege-Karte (Kanal Erde):
+    // der Boden zeigt den Pfad, Wiese und Nah-Streu lesen ihn
     // über `_pfadFeldAt` — Kosten nur am Schritt in eine neue Zelle und am Sprung einer Stufe. Die Zellen leben im worldMeta
     // (`tritt`: "i,j" → [n, t]) und reisen gepackt (`_trittPacken`): der Reload und der Mitspieler (sein Geist geht durch denselben
     // Schritt) sehen denselben Pfad. Die Zahl liegt auf dem Raster des Stands (`TRITT.standN` je Tritt, `TRITT.standT` je Tag) —
@@ -912,8 +913,9 @@ class AnazhRealm_siedlung_wege {
         if (sprung || !steht) return;
         const wm = this.state.worldMeta;
         if (!wm) return;
-        // DER STAND TRÄGT NUR DEN PFAD (gate:persistence D, „1 km Gehen wächst den Stand ≤ 10 kB"): eine Zelle reist erst mit
-        // ihrer ersten Stufe; was darunter getreten ist (sichtbar nichts), zählt das flüchtige Gedächtnis `_trittSchwach`
+        // DER STAND TRÄGT NUR DEN PFAD (gate:persistence D, speicher.K3: „die Datei wächst mit den Änderungen, nie mit dem Weg"):
+        // eine Zelle reist erst mit ihrer ersten Stufe, dem Pfad (`_trittStufe`); was darunter getreten ist (sichtbar nichts),
+        // zählt das flüchtige Gedächtnis `_trittSchwach`
         const F = wm.tritt || (wm.tritt = {});
         const schwach = this._trittSchwach || (this._trittSchwach = new Map());
         const key = i + "," + j;
@@ -951,10 +953,16 @@ class AnazhRealm_siedlung_wege {
         const wm = this.state.worldMeta;
         return ((wm && wm.tag) || 0) + (Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0);
     }
-    // Die Stufe einer Zelle mit n Tritten (rein): der getretene Anteil, gerastert
+    // Die Stufe einer Zelle mit n Tritten (rein): der getretene Anteil, gerastert — sichtbar erst als PFAD (`TRITT.pfadGras`, das
+    // Gesetz von stoffe.K4): die erste Stufe, auf der die Wiese (Dichte × (1 − Stufe · `NAH_WIESE.pfadDuennt`)) höchstens
+    // `pfadGras` ihrer Halme trägt. Darunter ist die Zelle 0 — kein Boden, kein Stand: ein Weg entsteht erst durch Wiederholung, ein
+    // einmaliger Gang und ein Tier, das an seinem Ort kreist, ändern nichts, was man sieht (bis w12-tritt die erste Achtel-Stufe
+    // ab 2,7 Tritten: 5,1 km in 30 min trugen 7,4 kB Trampelpfad im Stand, jede Zelle von Tieren am Weg).
     static _trittStufe(n) {
         const T = AnazhRealm.TRITT;
-        return Math.floor((1 - Math.exp(-n / T.tritte)) * T.stufen + 1e-9) / T.stufen;
+        const stufe = Math.floor((1 - Math.exp(-n / T.tritte)) * T.stufen + 1e-9) / T.stufen;
+        const pfad = Math.ceil(((1 - T.pfadGras) / AnazhRealm.NAH_WIESE.pfadDuennt) * T.stufen - 1e-9) / T.stufen;
+        return stufe >= pfad ? stufe : 0;
     }
     // Die Form einer getretenen Zelle in der Wege-Karte: eine Scheibe von Leibes-Breite um ihre Mitte, Erde in ihrer Stufe
     _trittForm(i, j, stufe) {
@@ -991,7 +999,8 @@ class AnazhRealm_siedlung_wege {
         }
     }
     // DIE ERHOLUNG (je Welt-Tag, `_tickWegeKarte`): eine Zelle, deren Stufe fiel, wächst zu — die Nah-Stufe malt neu, Wiese und
-    // Nah-Streu wachsen über ihr nach; eine Zelle ohne Stufe fällt aus dem Stand; was der Gang der Welt seit gestern trat, wächst neu
+    // Nah-Streu wachsen über ihr nach; eine Zelle unter dem Pfad fällt aus dem Stand in das flüchtige Gedächtnis (ihre Zahl ist eine
+    // Funktion der Uhr, ein neuer Tritt zählt weiter); was der Gang der Welt seit gestern trat, wächst neu
     _trittErholen() {
         const wm = this.state.worldMeta;
         const wk = this.state.wegeKarte;
@@ -1003,6 +1012,7 @@ class AnazhRealm_siedlung_wege {
             const [n, t] = wm.tritt[key];
             const st = AnazhRealm._trittStufe(n * Math.exp(-(jetzt - t) / T.erholTage));
             if (!(st > 0)) {
+                (this._trittSchwach || (this._trittSchwach = new Map())).set(key, wm.tritt[key]);
                 delete wm.tritt[key];
                 this._trittSchrieb = (this._trittSchrieb || 0) + 1;
             }
@@ -1689,8 +1699,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_wege]);
 // Rasen-Keil grenzen ohne Naht aneinander; nur Erde und Rasen teilen den Kanal (der Rand des Wegs läuft über den Grund aus).
 // DER TRAMPELPFAD (`_tritt`): die Zelle (m), die Halbbreite der getretenen Spur (der Leib, m) und ihr weicher Rand, die Tritte, mit
 // denen 63 % der Erde stehen (ein Pfad nach einigen Dutzend Gängen), die Tage, in denen der Halm 63 % zurückholt, das Raster der
-// Stufen, der Versatz, der kein Schritt ist (m), der Takt der Uploads (ms) und das Raster des Stands: die Zahl je Achtel-Tritt
-// (die erste Stufe liegt bei 2,7 Tritten), die Zeit je Spiel-Stunde (die Erholung verschiebt sich um ≤ 2,1 ‰ der Zahl).
+// Stufen, der PFAD (stoffe.K4: „ein 100× gegangener Weg wird Pfad (Gras-Dichte −60 %)“ — der Anteil der Halme, den die Wiese auf
+// ihm höchstens trägt; die erste Stufe, die das hält, ist 6/8 bei 27,7 Tritten, `_trittStufe`), der Versatz, der kein Schritt
+// ist (m), der Takt der Uploads (ms) und das Raster des Stands: die Zahl je Achtel-Tritt, die Zeit je Spiel-Stunde (die Erholung
+// verschiebt sich um ≤ 2,1 ‰ der Zahl).
 AnazhRealm.TRITT = Object.freeze({
     zelleM: 0.5,
     halbM: 0.55,
@@ -1698,6 +1710,7 @@ AnazhRealm.TRITT = Object.freeze({
     tritte: 20,
     erholTage: 20,
     stufen: 8,
+    pfadGras: 0.4,
     sprungM: 1.5,
     uploadMs: 250,
     standN: 8,
