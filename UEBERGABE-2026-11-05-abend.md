@@ -1,4 +1,4 @@
-# Übergabe 05.11. abends (Konto-Woche bei 96 % um 22:00; wird bis 98 % fortgeschrieben)
+# Übergabe 05.11. abends (Konto-Woche bei 97 % um 23:20; Notbremse bei 98 %)
 
 **Gebucht 206/330** am Kopf f5db8d90 (z235) (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v40). main = f5db8d90 bzw. neuer — `git ls-remote origin main`.
 Heute: 198 → 206. Zuletzt material.K1#1 an der Radeon 13/13, nach der Landung von w12-kronen-albedo.
@@ -13,6 +13,7 @@ Werkzeuge:
 Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
+- **z240 ROT** (22:54, voll 10/18 Werkstatt-Weg-Linse: „L-Verben … Täter: ki · Third · Wagen × drive: kein Fahren“). main aec13cb4 allein war GRÜN, z239 fuhr leer (kein Puls). Brand-Halt fällt damit zum zweiten Mal an einem CPU-Rot. Verdacht: `_brandBild(delta)` je Takt (dirigent-takt.js:253). Der Brand-Champion arbeitet daran, Stand im Zweig w12-brand-halt.
 - **z238 GELANDET** aec13cb4 (22:09): w12-tuch-grob (haar.K4#2 headless messen).
 - **z237 GELANDET** b01cc8b8 (21:43): w12-dorf-probe, w12-proben-tempo-spiel, w12-riesenhalm. Noch nicht gemessen — nach z238/z239 die Farm `bash /tmp/claude/w3/farm-lauf.sh <main>` (CPU-Last nicht während eines echt-Jobs auf dem Radeon-Läufer), dann Radeon für die sichtbaren (riesenhalm: Jungwuchs-Gestalt), dann buchen; streaming.K1/K2 fallen dabei ehrlich (−2), stoffe.K4#1 misst jetzt ein echtes Dorf.
 - **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
@@ -33,6 +34,7 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Ausstehende Messungen
 - **streaming.K1#1/K2#1** (gebucht, nur gehalten; die nächste Farm misst sie ROT = −2):
+  - **STAND 23:20 (w12-dorf-strom b625de5b, NICHT gelandet):** Der Grund des Dorf-Vorrats liegt im Vorlauf, der zweite Ring bereitet Dörfer vor, das Wald-Gedächtnis räumt die fernsten Zellen. K2#1 baum 47–50 % → 86–87 % (Soll 95 %). K1#1 GT streut schon auf main zwischen 31 und 232; vor dem Landen ≥ 4 Läufe je Seite fahren. Nächster Verdacht: Der Vorlauf misst am Zellpunkt statt am gewählten Ort. Alles Weitere in bericht/0511-dorf-strom/LIESMICH.md.
   - **Fortsetzung 22:55 (w12-dorf-strom 6b9133c7, main aec13cb4 gemergt)**: Die Schranke des Wald-Gedächtnisses (`_forestDartRaum`, `WALD_PLAN.zellen`) räumt bei Überlauf die fernsten Zellen statt `memo.clear()`. Je 1 Lauf mit eigener Probe: K1 GT 195 → 42 Lücken, K2 baum 47,4 → 52,1 %, also weiter ROT. Hauptverdacht, ungemessen: Der Plan um einen Dorf-Baum wird erst bei der Frage nach seiner Gestalt bestellt (stamm/vegetation-baum.js:923, studio-bruecke.js:2492), auf der Wiese bestellt ihn der Pflanz-Gang vorher. Häuser: `AUTO_SETTLEMENT.vorlaufM` 160 m (siedlung-ort.js:3387) und ein Export zur Zeit, unangetastet. playtest:fast und punkte.cjs fehlen noch. ACHTUNG beim Aufräumen von /tmp/claude/w3/vp-dorf-main: Sein node_modules ist eine Verknüpfung, zuerst die Verknüpfung löschen.
   - Champion w12-dorf-strom e7756259, nichts geheilt.
   - Bäume: 572 von 578 unfertigen Bäumen fehlt der Wald-Plan (`_waldPlanSteht` false).
