@@ -1,0 +1,53 @@
+{
+ "haeuser": [
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": -39,
+   "start": false,
+   "fremd": true,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.19677734375,
+    "fehlt": [],
+    "keller": true,
+    "dach": false,
+    "wo": "keller-kopf: Fuß -1.22 → -1.02 m",
+    "x": -0.20210999999999996,
+    "z": 1.3399999999999999,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  }
+ ],
+ "phasen": [
+  "fremd"
+ ],
+ "dorfOrt": {
+  "x": -129,
+  "z": -94,
+  "hang": 0.598
+ },
+ "startOrt": {
+  "x": 0,
+  "z": 0
+ },
+ "gesamt": 24,
+ "w11": {
+  "vorher": 15,
+  "typ": "haus_italienisch",
+  "nachher": 0,
+  "byte": true,
+  "fest": 1
+ },
+ "werkstatt": true,
+ "fernOrt": {
+  "x": 212,
+  "z": 212
+ }
+}
