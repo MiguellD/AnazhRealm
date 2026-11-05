@@ -2053,3 +2053,4 @@
 2026-11-05 08:49:22 b62542c9-radeon START 1 Stationen
 2026-11-05 08:50:41 b62542c9-radeon ankunft.K2#1 ROT 0.7 · 1/1
 2026-11-05 08:52:12 b62542c9-radeon ENDE 0 grün / 1 rot · 2.8 min
+2026-11-05 08:52:26 b62542c9-radeon START 1 Stationen
