@@ -1926,12 +1926,7 @@ async function unterwasserSeite(o) {
     const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
     const schuss = async (name, leib) => {
         r._applyDayNightToScene();
-        const sp = s.scenePass, spU = sp.updateBefore;
-        let nSp = 0;
-        sp.updateBefore = function (f) { nSp++; return spU.call(this, f); };
-        let u8, k;
-        try { u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; k = s.renderer.toneMappingExposure; } finally { sp.updateBefore = spU; }
-        (aus.zaehl ||= []).push(name + ":" + nSp);
+        const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, k = s.renderer.toneMappingExposure;
         if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
         const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4) };
         if (leib) {
@@ -1969,29 +1964,6 @@ async function unterwasserSeite(o) {
             return je;
         };
         aus.ego = await reihe("first", o.tiefen, "ego");
-        {
-            const sp = s.scenePass, nf = s.renderer._nodes && s.renderer._nodes.nodeFrame, tn = s.traaNode, fehl = [];
-            let nSp = 0, nTn = 0, lrN = 0, lrF = null;
-            const spU = sp.updateBefore, tnU = tn && tn.updateBefore, eb = r._loopErrorBoundary, lr = r._loopRender;
-            sp.updateBefore = function (f) { nSp++; return spU.call(this, f); };
-            if (tn) tn.updateBefore = function (f) { nTn++; return tnU.call(this, f); };
-            r._loopErrorBoundary = function (e) { fehl.push(String((e && e.message) || e).slice(0, 200)); return eb.call(this, e); };
-            r._loopRender = function () { lrN++; try { return lr.call(this); } catch (e) { lrF = String((e && e.stack) || e).slice(0, 400); throw e; } };
-            const f0 = nf && nf.frameId, y0 = cam.position.y;
-            cam.position.y = sp0 + 3;
-            cam.updateMatrixWorld(true);
-            let b2 = null, err = null;
-            try { b2 = await schuss("diag-ueber", false); } catch (e) { err = String((e && e.stack) || e).slice(0, 400); }
-            aus.diag = { nSp, nTn, lrN, lrF, fehl: fehl.slice(0, 5), f0, f1: nf && nf.frameId, err, L: b2 && b2.L, ppFail: s.postProcessingFailed, lost: s._deviceLost, ready: s.rendererReady,
-                anlauf: tn && tn._anlauf && tn._anlauf.value, neustart: tn && tn._neustart && tn._neustart.value, sprung: s._traaR && s._traaR.sprung, skala: sp.getResolutionScale(),
-                spRT: sp.renderTarget && [sp.renderTarget.width, sp.renderTarget.height], leine: s._gpuLeine ? JSON.stringify(s._gpuLeine).slice(0, 120) : null };
-            sp.updateBefore = spU;
-            if (tn) tn.updateBefore = tnU;
-            delete r._loopErrorBoundary;
-            delete r._loopRender;
-            cam.position.y = y0;
-            cam.updateMatrixWorld(true);
-        }
         aus.third = await reihe("third", o.tiefen, "third");
         const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
         const halb = (K) => Object.assign({}, K, { kd: K.kd.map((v) => v / 2) });
