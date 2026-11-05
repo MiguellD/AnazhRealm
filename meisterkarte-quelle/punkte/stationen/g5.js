@@ -1942,12 +1942,12 @@ async function unterwasserSeite(o) {
         const sp0 = r._koerperWasser(o.see.x, o.see.z, -Infinity);
         const reihe = async (sicht, tiefen, name) => {
             r.setCameraMode(sicht);
-            let t = performance.now();
+            // der Takt der Werkbank (`__werkTakt`: die Bühne, der Takt zur Uhr der Seite, das nächste Bild) — nie eine eigene Uhr
             for (let i = 0; i < 40; i++) {
                 pm.position.set(o.see.x, sp0 - 2.2, o.see.z);
                 if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
                 [s.yaw, s.pitch, s.keys] = [-Math.PI / 2, 0, {}];
-                r._gameLoopTick((t += 16.7));
+                await window.__werkTakt();
             }
             const d = cam.position.clone().sub(pm.position), q = cam.quaternion.clone(), je = [];
             for (const z of tiefen) {
