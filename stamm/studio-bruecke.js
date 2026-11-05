@@ -452,6 +452,7 @@ class AnazhRealm_studio_bruecke {
             const clone = this._autoArtGeburt(id, rec, pol);
             if (!clone) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
             bps[name] = clone;
+            this._bauplanGeboren(clone); // der Stand fragt ihn nie neu, bis er sich regt (speicher.K2#2)
             registered++;
         }
         if (registered > 0) {
