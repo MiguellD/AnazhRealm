@@ -61,6 +61,25 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
+                // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
+                // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
+                // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
+                // Sicht (die Anzeige ist DOM, gedrosselt, und geht weiter). Die Spiel-Zeit, die er dafür nicht rechnete, rechnet der nächste Takt mit Bild (`deltaBild`: die
+                // Zeit seit dem letzten Bild, höchstens EIN Deckel `TAKT_DECKEL_S` — wie eine Pause); Haltung, Kamera und Licht lesen
+                // ihre eigene Uhr. Die Kosten folgen dem Bild, nie dem rAF: GTX an 8ef49bef, Stand-Zellen, 2–16 Takte zu 8,33 ms je Bild
+                // trugen je Takt das ganze Spiel (Wiese Ego headless 3,7 ms je Takt ohne Bild). Der Null-Renderer zeichnet jeden Takt.
+                // DER RUHENDE LOOP KENNT IHN NICHT (`_loopRuht`: wer dann tickt, ruft `_gameLoopTick` selbst — Linse, Werkbank, Bühne):
+                // sein Takt ist eine Frage, die Antwort die ganze Welt dieses Takts; die Leine hält nur sein Bild. Sonst hinge, was eine
+                // Sonde misst, an der Wanduhr der GPU — unter swiftshader gab die Leine im Gang der Kamera-Leib-Linse (20 Takte je
+                // Atem) ein bis zwei Bilder frei, die Kamera stand in 952 von 1 092 Takten still (Ruck 0), der Arm ohne Flügel-Leib
+                // blieb ungenannt (K4).
+                const zwischen = !bild && !ruht && !this._loopRuht();
+                let deltaBild = delta;
+                if (zwischen) this._bildSchuld = Math.min(AnazhRealm.TAKT_DECKEL_S, (this._bildSchuld || 0) + delta);
+                else if (this._bildSchuld) {
+                    deltaBild = Math.min(AnazhRealm.TAKT_DECKEL_S, delta + this._bildSchuld);
+                    this._bildSchuld = 0;
+                }
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`) — und mit ihm die Schwellen der Stufen
                 // (das Gesetz des Wechsels, `_stufenSchirm`: sie folgen dem Schirm, nie der Bildrate).
                 this._schirmMessen();
@@ -106,8 +125,8 @@ class AnazhRealm_dirigent_takt {
                     this.tickStatsHud(currentTime);
 
                     // ### Tag-Nacht-Zyklus ###
-                    // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
-                    this.tickDayNight(currentTime);
+                    // timeOfDay läuft jedes Bild (seine Uhr: `_lastDayNightTick`); Lights + Skybox folgen.
+                    if (!zwischen) this.tickDayNight(currentTime);
 
                     // ### Wetter-Übergang (Welle 6.G3.b) ###
                     // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
@@ -134,8 +153,10 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
                     this._loopGroundCheck(currentTime);
-                    this._loopFrustumCulling();
-                    this._loopAnimateUfos(currentTime);
+                    if (!zwischen) {
+                        this._loopFrustumCulling();
+                        this._loopAnimateUfos(currentTime);
+                    }
                 }
 
                 // ### DAS NETZ ### — in JEDEM Takt, auch unter dem Ladeschirm: es gehört dem Mitspieler (K60, gate:mp-sync (d) —
@@ -203,8 +224,8 @@ class AnazhRealm_dirigent_takt {
                     this.pruneRecentKeywords(currentTime);
                     this.finalizePendingOutcomes(currentTime);
 
-                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                    this._loopWeatherAndGrowth(delta);
+                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth) — das Leben im Takt seines Bilds
+                    if (!zwischen) this._loopWeatherAndGrowth(deltaBild);
                 }
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
@@ -249,12 +270,14 @@ class AnazhRealm_dirigent_takt {
                 // liest — sie las die Sim-Lage des letzten Schritts (ohne Schritt die gezeichnete des Vor-Bilds) und blickte auf
                 // den interpolierten Reiter: Lage und Blick aus zwei Quellen derselben Lage.
                 this._tickMountedMovement(delta);
-                this._loopCamera(currentTime);
+                // die Kamera ist Bild (ihre Glättung liest ihre eigene Uhr): der Zwischen-Takt wirft keinen Strahl — Genesis Third
+                // headless 0,68 ms je Takt ohne Bild (die Kugel der Third-Kamera durch das Dichtefeld)
+                if (!zwischen) this._loopCamera(currentTime);
 
-                if (!ruht) {
+                if (!ruht && !zwischen) {
                     // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
-                    // jeden Frame über sin/cos relativ zum aktuellen walkPhase
-                    // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+                    // jedes Bild über sin/cos relativ zum aktuellen walkPhase
+                    // rotiert (ihre Uhr: `animationLastTick`). Idle-Loop (atmen, hover) läuft auch im Stand.
                     this.animatePlayerSoul(currentTime);
                 }
 
@@ -264,10 +287,12 @@ class AnazhRealm_dirigent_takt {
                 this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
                 if (!ruht) {
-                    // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
-                    this.tickBuildMode();
-                    // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-                    this.tickArchitectures(currentTime);
+                    if (!zwischen) {
+                        // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+                        this.tickBuildMode();
+                        // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+                        this.tickArchitectures(currentTime);
+                    }
                     // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
                     // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
                     this.tickAffordances(delta);
