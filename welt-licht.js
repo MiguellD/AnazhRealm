@@ -687,7 +687,7 @@ var __weltLicht = (function () {
     // der Welt. Dieselbe Luft (der Kern: `ATMO_GESETZ`, klares Medium über dem Boden `ATMO_BODEN`), dieselben Tafeln
     // (`atmoTafeln`), dieselbe Sonne (E0 · Durchlass, `ATMO_RECHNUNG.sonne`), dieselbe Umgebung (die PMREM-Lage der
     // Equirekt-Tafel × das Licht jetzt — der Himmel, den `_spiegelUmgebung` der Welt jedem Stoff reicht; den Spiegel des Schirms
-    // trägt die Bühne nicht, sie hat kein Feld), derselbe Himmel als Grund (`himmelFarbe`), dieselbe Belichtung (Anker und Stufen
+    // trägt die Bühne nicht, sie hat kein Feld), derselbe Himmel als Grund (die Equirekt-Tafel), dieselbe Belichtung (Anker und Stufen
     // der Kamera aus der Bestrahlungs-Tafel, `belichtung`) und dieselbe Tonkurve (`BELICHTUNG.kurve`). Die Bühne steht im TAG der
     // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse Ersatz-Lichter der Nacht
     // (Hemi, Ambient, Sterne) trüge, bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am Bezug der Luft (1 m, die Höhe
@@ -745,8 +745,10 @@ var __weltLicht = (function () {
         const umgebung = new THREE.PMREMGenerator(R).fromEquirectangular(A.rtEq.texture);
         szene.environment = umgebung.texture;
         szene.environmentNode = T.pmremTexture(umgebung.texture).mul(U.toenung.mul(U.licht));
-        szene.background = null;
-        szene.backgroundNode = A.himmelFarbe(T.positionLocal.normalize());
+        // der Grund ist der Himmel: die Equirekt-Tafel (je Einheit des Lichts) × E0 — als `background` (eine Textur, kein Knoten:
+        // die Sonden schwärzen für ihre Masken `background`, ein `backgroundNode` hätte Vorrang und malte den Himmel in die Maske)
+        szene.background = A.rtEq.texture;
+        szene.backgroundIntensity = U.licht.value;
         szene.fog = null;
         // die Sonne: E0 · Durchlass am Auge, ihr Farbton der Durchlass der EINEN Luft
         const a = AR.sonne(G, M, hKm, s[1], ATMO_LUT.schritte.durchlass, [0, 0, 0]);

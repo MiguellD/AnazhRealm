@@ -176,7 +176,9 @@ function buildNeg(H,P){const g=new THREE.Group();const hz=P.spur/2;const bw=hz+0
 // ZUSTAND + AUFBAU
 // ════════════════════════════════════════════════════════════════════
 const P=Object.assign({},VC.DEFAULT_P);   // Regler-Zustand — Grundwerte aus der EINEN Kern-Quelle
-const show={frame:false,joints:false,cal:true,pkg:false,wheels:true,body:true,neg:false};
+// der Baukörper steht im Grundzustand (w12-studio-buehne): der Wagen der Welt trägt ihn hinter dem Glas (buildInstance: Baukörper ·
+// Haut · Räder) — die Bühne zeigt dieselbe Gestalt, die Lehren liegen darüber
+const show={frame:false,joints:false,cal:true,pkg:true,wheels:true,body:true,neg:false};
 // Die EINE Sicht des gebauten Wagens (Haut + Räder + Zelle/Sitze, ohne Hilfsgeometrie und Notizen): der Ergebnis-Knopf zeigt
 // sie, die Probefahrt fährt in ihr — Lehren, Gelenke und Negativraum gehören der Werkstatt (Befund 0710-2: RADSTAND, ÜH-H …
 // lagen in der Fahrt über dem Wagen, die Probefahrt erbte die Werkstatt-Ebenen).
@@ -318,7 +320,7 @@ PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className=
 const ergB=document.getElementById('ergebnis');let ergOn=false;
 ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
   if(ergOn)Object.assign(show,ERGEBNIS);
-  else     Object.assign(show,{frame:false,joints:false,cal:true, pkg:false,wheels:true,body:true,neg:false});
+  else     Object.assign(show,{frame:false,joints:false,cal:true, pkg:true,wheels:true,body:true,neg:false});
   applyVis();syncLayerButtons();};
 // Regler — die Hülle (K41): der EINE Generator aus PARAMS_BY_KIND.vehicle schreibt P in place; ein Aufbau je Bild
 // (ruheMs 0, der Zug bleibt flüssig), die Dynamik-Regler (dyn) wirken live ohne Neubau.
