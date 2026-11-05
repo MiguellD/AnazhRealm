@@ -166,7 +166,9 @@ async function bedienung2(vor) {
             platte: JSON.parse(localStorage.getItem("anazh.keybindings")).vor,
         };
     }
+    // der Weg einer Taste, gemessen ab der Ruhe des Leibs (kein Ausgleiten des vorigen Gangs zählt)
     const weg = async (code) => {
+        for (let i = 0; i < 240 && Math.hypot(st.playerVel.x(), st.playerVel.z()) > 0.01; i++) await bilder(1);
         const [x, z] = [pm.position.x, pm.position.z];
         taste(code, "keydown");
         await bilder(12);
