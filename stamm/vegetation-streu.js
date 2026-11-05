@@ -63,7 +63,10 @@ class AnazhRealm_vegetation_streu {
         this._nebenAuftrag("streu", Object.assign({ type: "streu-region" }, a)).then(
             (msg) => {
                 cont.flug = false;
-                if ((this._erdbauStand | 0) === erd) cont.darts = msg.wuerfe.map((b) => new Float64Array(b));
+                // nur ein Erdbau, der über die Region fiel, macht ihre Würfe alt (`_erdbauFielIm`, nie einer irgendwo)
+                const h = SC.regionM / 2;
+                if (!this._erdbauFielIm(erd, mx - h, mz - h, mx + h, mz + h))
+                    cont.darts = msg.wuerfe.map((b) => new Float64Array(b));
             },
             (e) => {
                 cont.flug = false;
