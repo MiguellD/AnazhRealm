@@ -304,9 +304,13 @@ const BAENDER = {
     laub: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26"],
     // Birke und Fichte messen den ganzen Baum (Stamm und Krone, ohne Stoff-Wahl — ihre Stufen-Zeilen und die Karte folgen ihnen,
     // material.K3#2); die Fläche ihrer Zeile ist das Laub: Radeon am Kopf bbca6407 je Fläche getrennt, Birke Laub 43 971 Pixel
-    // (Y 0,2977) gegen Rinde 5 250 (0,2495), Fichte Laub 33 189 (0,0961) gegen Rinde 4 340 (0,0829) — das Band der Karte für das Laub
-    birke: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26 (die Zeile misst den Baum, ihre Fläche ist das Laub)"],
-    fichte: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26 (die Zeile misst den Baum, ihre Fläche ist das Laub)"],
+    // (Y 0,2977) gegen Rinde 5 250 (0,2495), Fichte Laub 33 189 (0,0961) gegen Rinde 4 340 (0,0829) — das Band der Karte für das Laub.
+    // DIE NADEL (w12-kronen-albedo): das Laub-Band der Karte ist eine kurzwellige Kronen-Albedo (Laubwald, Gras); dieselbe Größe misst
+    // Betts & Ball 1997 (JGR 102 D24, 28901, BOREAS, Tagesmittel im Sommer) je Kronen-Typ: Gras 0,2, Espe 0,15, Nadelwald 0,083 (das
+    // Mittel von sieben Nadel-Stationen, Fichte und Kiefer) — die Nadel liegt UNTER dem Laub, eine Fichte im Laub-Band wäre ein
+    // Laubbaum. Ihr Band reicht vom BOREAS-Nadel-Mittel bis an die Laub-Kante der Espe
+    birke: [0.15, 0.26, "Karte material (aaaa): Laub/Gras 0,15–0,26 (die Zeile misst den Baum, ihre Fläche ist das Laub); Laubkrone im Sommer: Betts & Ball 1997 (JGR 102 D24, 28901, BOREAS) Espe 0,15"],
+    fichte: [0.08, 0.15, "Nadelkrone im Sommer (kurzwellig, dieselbe Größe wie das Laub-Band der Karte): Betts & Ball 1997 (JGR 102 D24, 28901, BOREAS) Nadelwald 0,083 (sieben Stationen, Fichte und Kiefer) bis Espe 0,15; Albedo-Tafel (Wikipedia: Nadelwald im Sommer 0,08 · 0,09–0,15) — die Zeile misst den Baum, ihre Fläche ist die Nadel"],
     haar: [0.01, 0.3, "spec/abnahme/soll-tafel.json haar (albedo): Keratin mit Melanin, Schwarz 0,01 bis Blond, Rand der Tafel 0,30"],
     fels: [0.1, 0.3, "Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],
     boden: DIEL,
