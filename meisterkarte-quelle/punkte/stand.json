@@ -35,7 +35,7 @@
   },
   "affekt.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49 an b62542c9 headless",
+   "beleg": "Maschine: gehalten: Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49 an b62542c9 headless",
    "stationen": [
     {
      "id": "affekt.K2#1",
@@ -43,35 +43,36 @@
      "gruen": true,
      "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 908.5 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": null
+     "grund": "Station seit der Messung geändert",
+     "gehalten": true
     }
    ]
   },
   "affekt.K3": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: ROT: value > 0 echt 0.512 → 0.604 · gemischt 0.262 → 0.643 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O an b62542c9",
+   "punkte": 1,
+   "beleg": "Maschine: value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G an b62542c9 headless",
    "stationen": [
     {
      "id": "affekt.K3#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": "value > 0 echt 0.512 → 0.604 · gemischt 0.262 → 0.643 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O",
+     "gruen": true,
+     "zahl": "value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "ROT: value > 0 echt 0.512 → 0.604 · gemischt 0.262 → 0.643 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O"
+     "grund": null
     }
    ]
   },
   "affekt.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: ROT: 30 Spielminuten, 57 Zeilen, 4 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":61,\"rule:nexus\":563,\"llm\":2,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":182} · 4 Zeilen falsch · falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile) · falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile) an b62542c9 · affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) · affekt.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
+   "punkte": 1,
+   "beleg": "Maschine: 30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":289,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":185}, verworfen 115 an b62542c9 headless — offen: affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) · affekt.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)",
    "stationen": [
     {
      "id": "affekt.K4#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": "30 Spielminuten, 57 Zeilen, 4 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":61,\"rule:nexus\":563,\"llm\":2,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":182} · 4 Zeilen falsch · falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile) · falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)",
+     "gruen": true,
+     "zahl": "30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":289,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":185}, verworfen 115",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "ROT: 30 Spielminuten, 57 Zeilen, 4 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":61,\"rule:nexus\":563,\"llm\":2,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":182} · 4 Zeilen falsch · falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile) · falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)"
+     "grund": null
     },
     {
      "id": "affekt.K4#2",
@@ -968,7 +969,7 @@
   },
   "haar.K4": {
    "punkte": 1,
-   "beleg": "Maschine: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 73.3 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.6 % (≥ 5 %), Umriss-Deckung 0.9438, die Mutante 0.0 % (≤ 0,2 %) · Leib 7262/7013/7262/7002 px (≥ 2 000), Treue 0 Bytes an b62542c9 headless — offen: haar.K4#2 headless: ROT: Tracht poncho/pants, 11122 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 44 Rufe im Gang · was der Löser trägt 0.1053 m · Durchdringung im Gang 4319 (40 von 40 Bildern; in Ruhe 86, nicht gezählt) · Labor 0 Rufe · ROT der Gang drückt 4319 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt) an b62542c9",
+   "beleg": "Maschine: 1320 mittelalter poncho/pants/boot · 1935 moderne tshirt/pants/sneaker: im Bild 73.3 % der Leib-Pixel anders (Soll ≥ 25 %), der Schnitt allein 16.6 % (≥ 5 %), Umriss-Deckung 0.9438, die Mutante 0.0 % (≤ 0,2 %) · Leib 7262/7013/7262/7002 px (≥ 2 000), Treue 0 Bytes an b62542c9 headless — offen: haar.K4#2 headless: ROT: Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 45 Rufe im Gang (Gitter-Stufe 0, 15.08 ms je Takt) · Durchdringung fein/fein 3057 (40 Bilder, Ruhe 12, trägt 0.0865 m, Mutante 7339, quer 3914) · grob/grob 543 (40 Bilder, Ruhe 6, trägt 0.0381 m, Mutante 2396, quer 835) · Labor tuchTakt 6× in 25 s · ROT der Gang drückt 3057 Tuch-Ecken der feinen Stufe hinter ihre Haut (in 40 von 40 Bildern); der Gang drückt 543 Tuch-Ecken der groben Stufe hinter ihre Haut (in 40 von 40 Bildern) an b62542c9",
    "stationen": [
     {
      "id": "haar.K4#1",
@@ -982,9 +983,9 @@
      "id": "haar.K4#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": "Tracht poncho/pants, 11122 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 44 Rufe im Gang · was der Löser trägt 0.1053 m · Durchdringung im Gang 4319 (40 von 40 Bildern; in Ruhe 86, nicht gezählt) · Labor 0 Rufe · ROT der Gang drückt 4319 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)",
+     "zahl": "Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 45 Rufe im Gang (Gitter-Stufe 0, 15.08 ms je Takt) · Durchdringung fein/fein 3057 (40 Bilder, Ruhe 12, trägt 0.0865 m, Mutante 7339, quer 3914) · grob/grob 543 (40 Bilder, Ruhe 6, trägt 0.0381 m, Mutante 2396, quer 835) · Labor tuchTakt 6× in 25 s · ROT der Gang drückt 3057 Tuch-Ecken der feinen Stufe hinter ihre Haut (in 40 von 40 Bildern); der Gang drückt 543 Tuch-Ecken der groben Stufe hinter ihre Haut (in 40 von 40 Bildern)",
      "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
-     "grund": "ROT: Tracht poncho/pants, 11122 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 44 Rufe im Gang · was der Löser trägt 0.1053 m · Durchdringung im Gang 4319 (40 von 40 Bildern; in Ruhe 86, nicht gezählt) · Labor 0 Rufe · ROT der Gang drückt 4319 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)"
+     "grund": "ROT: Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 45 Rufe im Gang (Gitter-Stufe 0, 15.08 ms je Takt) · Durchdringung fein/fein 3057 (40 Bilder, Ruhe 12, trägt 0.0865 m, Mutante 7339, quer 3914) · grob/grob 543 (40 Bilder, Ruhe 6, trägt 0.0381 m, Mutante 2396, quer 835) · Labor tuchTakt 6× in 25 s · ROT der Gang drückt 3057 Tuch-Ecken der feinen Stufe hinter ihre Haut (in 40 von 40 Bildern); der Gang drückt 543 Tuch-Ecken der groben Stufe hinter ihre Haut (in 40 von 40 Bildern)"
     }
    ]
   },
@@ -3898,7 +3899,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · vegetation.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Station seit der Messung geändert · vegetation.K1#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -3906,7 +3907,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -3915,7 +3916,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     }
    ]
@@ -4003,7 +4004,7 @@
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 191538 px · winter 19479 px → Winter 0.102 × Sommer an 2674ff9a radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) · vegetation.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Krone sommer 191538 px · winter 19479 px → Winter 0.102 × Sommer an 2674ff9a radeon · gehalten: Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer an b4bcf19c gtx — offen: vegetation.K5#2 radeon: Station seit der Messung geändert · vegetation.K5#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4011,7 +4012,7 @@
      "gruen": true,
      "zahl": "Krone sommer 191538 px · winter 19479 px → Winter 0.102 × Sommer",
      "sha": "2674ff9a403d0de252b7610c15b971dc54c5281a",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -4029,7 +4030,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -4141,6 +4142,21 @@
   }
  },
  "pflichtJe": {
+  "pflicht.C": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: pflicht.C#1 headless: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "pflicht.C#1",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "pflicht.E": {
    "punkte": 0,
    "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: ungemessen (R10) · pflicht.E#1 gtx: ungemessen (R10)",
@@ -4170,7 +4186,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
- "zeit": "2026-11-05T09:01:51.765Z",
+ "zeit": "2026-11-05T11:11:29.283Z",
  "vorher": "b62542c9",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -4272,29 +4288,22 @@
     "kriterium": "C fällt, wenn in der Stadt nH 300 bei Tag und bei Nacht mindestens 20 Wagen mit Bewohnern am Steuer 10 min lang auf den Trassen fahren — 0 Berührungen mit Leibern, Bauten und anderen Wagen, jeder Wagen erreicht sein Ziel — und dabei das Profi-Band (E) an beiden Messplätzen in Ego und Third hält.",
     "status": "ohne Richter",
     "gruen": 0,
-    "gesamt": 2,
+    "gesamt": 1,
     "prozent": 0,
     "punkte": 0,
     "max": 2,
     "kriterien": [
-     "fahrzeug.K2"
+     "pflicht.C"
     ],
     "offen": [
      {
-      "station": "fahrzeug.K2#2",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 23d19f6f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)"
-     },
-     {
-      "station": "fahrzeug.K2#2",
-      "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +1) — zuletzt an 8ef49bef: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/p"
+      "station": "pflicht.C#1",
+      "geraet": "headless",
+      "zeile": "ungemessen (R10)"
      }
     ],
     "ohneRichter": [
-     "10 min je Stunde: die Station fährt 12 s Spielzeit je Stunde (`PW.torBefehl(PW.fahrVerkehr, \"12\")`), das Gesetz VERKEHR in scripts/diag-fahr-leben.cjs verlangt 600 s",
-     "das Urteil der Station wird nie grün, solange 25°-Hang, Furt, Ego und Third ohne Probe stehen — C steht nur in ihrer Zahl („C GRÜN/ROT“)",
-     "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen"
+     "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen (Ego und Third, Radeon und GTX) — pflicht.C#1 misst headless die Welt ohne Bild"
     ]
    },
    {
