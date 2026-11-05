@@ -49,6 +49,8 @@ class AnazhRealm_klang {
         try {
             if (s.umwelt && s.umwelt.graph) s.umwelt.graph.stopAlle();
             if (s.umwelt && s.umwelt.werkstatt) s.umwelt.werkstatt.terminate();
+            const bauten = s.umwelt && s.umwelt.raumStrahl.bauten;
+            if (bauten && this._blockerWachen) this._blockerWachen.delete(bauten.wache); // die Wache des Schwenks geht mit
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
@@ -86,8 +88,20 @@ class AnazhRealm_klang {
             kern: K,
             bus,
             raum,
-            // die Raum-Strahlen am Ohr (`_raumStrahlen`): je Strahl Bau und Hang getroffen, rund um die Uhr wie der Hör-Ring
-            raumStrahl: { bau: new Uint8Array(RS), fels: new Uint8Array(RS), idx: 0 },
+            // DER SCHWENK am Ohr (`_raumStrahlen`): je Strahl Bau und Hang getroffen, das Dach (die Höhle), rund um die Uhr wie
+            // der Hör-Ring; `am` der Strahl im Gang, `o`/`ganz`/`ruht` der Ort, an dem er zuletzt ganz ging, `regung` die Welt dazu
+            raumStrahl: {
+                bau: new Uint8Array(RS),
+                fels: new Uint8Array(RS),
+                hoehle: 0,
+                idx: 0,
+                am: { k: -1, x: 0, y: 0, z: 0, fy: 0, ux: 0, uz: 0, d: 0, bau: 0, rein: true },
+                o: { x: NaN, y: NaN, z: NaN },
+                ganz: 0,
+                ruht: false,
+                regung: { w: 0, e: 0, h: 0, g: 0, s: 0 },
+                bauten: null,
+            },
             werkstatt: null,
             bestellt: 0,
             geliefert: 0,
@@ -376,7 +390,7 @@ class AnazhRealm_klang {
             boe: wind.boe,
             deckung,
             // der Raum am Ohr (klang.K3#2): Kronen, Bauten, Hang und Fels über dem Ohr — sein Nachhall (`umweltRaumNachhall`)
-            raum: this._raumAmOhr(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, deckung),
+            raum: this._raumAmOhr(um, deckung),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             // die Wärme der Grillen (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt, mit
@@ -430,11 +444,47 @@ class AnazhRealm_klang {
         const nah = this._blockerNahe(x, z, reich, -Infinity, (this._klangBauNah = this._klangBauNah || []));
         const aus = [];
         for (const e of nah) {
-            if (!e || !e.blockerAABBs || e._lodSpecies || /^(baum_|grown_)/.test(e.type || "")) continue;
+            if (!e || !e.blockerAABBs || AnazhRealm._klangWuchs(e)) continue;
             for (const b of e.blockerAABBs) if (b && Number.isFinite(b.minX)) aus.push(b);
         }
         nah.length = 0;
         return aus;
+    }
+
+    // Der Wuchs der Natur im Blocker-Netz (Bäume und Büsche: `baum_*`, `grown_*`, ein Leib der LOD-Kette) — kein Bau des Raums.
+    static _klangWuchs(e) {
+        return !!e._lodSpecies || /^(baum_|grown_)/.test(e.type || "");
+    }
+
+    // DIE BAUTEN DES SCHWENKS (`_raumStrahlen`): die Einträge des Netzes um (x, z), die ein Strahl treffen kann, ohne den Wuchs —
+    // gefragt (`_blockerNahe`) im Umkreis 2 · raum.weiteM um einen Anker und gemerkt, bis das Ohr eine weiteM vom Anker wandert,
+    // das Netz neu baut oder seine Wache sich regt (`_blockerWacheMelden`: jede Hülle, die im Rechteck ein- oder austritt oder neu
+    // gestempelt wird, auch der fahrende Wagen). Der Strahl prüft die Gemerkten mit derselben Hülle wie `_blockerNahe` an seinem
+    // Ohr: dieselbe Menge wie die Frage dort. Bis w12-klang-lage fragte jedes Bild das Netz am Waldrand der Mess-Wiese
+    // (50–66 µs je Bild, diag-klang-zensus --takt); jetzt fragt der Anker. → true, wenn er neu fragte.
+    _klangBauten(S, x, z, weiteM) {
+        const N = this._blockerNetz();
+        let B = S.bauten;
+        if (
+            B &&
+            B.gen === N.gen &&
+            B.stand === B.wache.stand &&
+            Math.abs(x - B.x) <= weiteM &&
+            Math.abs(z - B.z) <= weiteM
+        )
+            return false;
+        if (!B) {
+            B = S.bauten = { wache: { x0: 0, x1: 0, z0: 0, z1: 0, stand: 0, verkehr: true }, liste: [] };
+            (this._blockerWachen || (this._blockerWachen = new Set())).add(B.wache);
+        }
+        const reich = 2 * weiteM;
+        const nah = this._blockerNahe(x, z, reich, -Infinity, (this._klangBauNah = this._klangBauNah || []));
+        B.liste.length = 0;
+        for (const e of nah) if (e && !AnazhRealm._klangWuchs(e)) B.liste.push(e);
+        nah.length = 0;
+        Object.assign(B, { x, z, gen: N.gen, stand: B.wache.stand });
+        Object.assign(B.wache, { x0: x - reich, x1: x + reich, z0: z - reich, z1: z + reich });
+        return true;
     }
 
     // Die Strecke a → b (Welt) gegen eine Hülle: der Bruchteil t ∈ [0, 1] des ersten Eintritts oder null (Platten-Probe in x, y, z).
@@ -461,51 +511,104 @@ class AnazhRealm_klang {
         return t0;
     }
 
-    // DIE RAUM-STRAHLEN (klang.K3#2): vom Ohr (Fuß `fy` + UMWELT.raum.augeM) je Bild `n` der raum.strahlen waagerechten Strahlen, rund
-    // um die Uhr wie der Hör-Ring (`_umweltRingProbe` ruft sie mit seiner Zahl) — trifft der Strahl binnen raum.weiteM einen Bau
-    // (`_klangBauHuellen`), steigt das Gelände-Gesetz dort über das Ohr (der Hang, Stützstellen je 2,5 m)? Kosten je Bild: n Strahlen
-    // (raum.weiteM / 2,5 Gesetz-Höhen und die Hüllen im Umkreis), nie die Weltgröße; bis zum Schnitt maß die Lage alle 16 Strahlen
-    // auf einmal: 0,3–0,4 ms je Misch-Takt (Null-Renderer, w5-s2-g1).
+    // DIE RAUM-STRAHLEN (klang.K3#2) — DER SCHWENK: am Ohr (Fuß `fy` + UMWELT.raum.augeM) zuerst das Dach (die oberste Fläche des
+    // Bodens `_voxelSurfaceY` mehr als 2 m über dem Auge: die Höhle), dann die raum.strahlen waagerechten Strahlen rund um die Uhr wie
+    // der Hör-Ring — trifft der Strahl binnen raum.weiteM einen Bau (`_klangBauten`), steigt das Gelände-Gesetz dort über das Auge
+    // (der Hang, Stützstellen je 2,5 m, der erste Treffer endet ihn)? Je Bild höchstens `n` Gesetz-Höhen (UMWELT.ohr.probenJeFrame,
+    // die Zahl des Rings, `_umweltRingProbe`); ein Strahl misst vom Ohr, an dem er begann, und schreibt sein Urteil, wenn er endet —
+    // an einem Ort dieselben Bytes wie der Strahl in einem Bild. Ging der Schwenk an diesem Ohr ganz, und regt sich weder Welt noch
+    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). Kosten je Bild: n Gesetz-Höhen,
+    // nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen und das Netz im Umkreis, 0,17–0,19 ms auf dem
+    // Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage fragte das Dach selbst.
     _raumStrahlen(um, px, fy, pz, n) {
         const S = um && um.raumStrahl;
         if (!S) return;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const ey = fy + R.augeM;
-        const huellen = this._klangBauHuellen(px, pz, R.weiteM);
-        for (let k = 0; k < n; k++) {
-            const i = S.idx;
-            S.idx = (S.idx + 1) % R.strahlen;
-            const w = (i / R.strahlen) * Math.PI * 2;
-            const ux = Math.cos(w);
-            const uz = Math.sin(w);
-            const a = [px, ey, pz];
-            const b = [px + ux * R.weiteM, ey, pz + uz * R.weiteM];
-            S.bau[i] = huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null) ? 1 : 0;
-            S.fels[i] = 0;
-            for (let d = 2.5; d <= R.weiteM; d += 2.5) {
-                const h = this.getTerrainHeightAt(px + ux * d, pz + uz * d);
-                if (Number.isFinite(h) && h > ey) {
-                    S.fels[i] = 1;
-                    break;
+        const N = this._blockerNetz();
+        const r = S.regung;
+        const [w, e, h, g, s] = [
+            this._weltRegung | 0,
+            this._editGenZaehler | 0,
+            this.state.hydroTiles ? this.state.hydroTiles.size : 0,
+            N.gen,
+            S.bauten ? S.bauten.wache.stand : 0,
+        ];
+        const regt = N.beweger.size > 0 || r.w !== w || r.e !== e || r.h !== h || r.g !== g || r.s !== s;
+        if (!regt && S.ruht && S.o.x === px && S.o.y === ey && S.o.z === pz) return;
+        if (regt) {
+            Object.assign(r, { w, e, h, g, s });
+            S.ganz = 0;
+            S.am.rein = false; // der Strahl im Gang sah die alte Welt
+        }
+        S.ruht = false;
+        const a = S.am;
+        for (let budget = n; budget > 0;) {
+            if (a.k < 0) {
+                // ein neuer Strahl (k 1 … strahlen; 0 das Dach) vom Ohr dieses Bilds
+                Object.assign(a, { k: S.idx, x: px, y: ey, z: pz, fy, d: 2.5, bau: 0, rein: true });
+                if (S.o.x !== px || S.o.y !== ey || S.o.z !== pz) {
+                    Object.assign(S.o, { x: px, y: ey, z: pz });
+                    S.ganz = 0;
+                }
+                if (a.k > 0) {
+                    const wi = ((a.k - 1) / R.strahlen) * Math.PI * 2;
+                    [a.ux, a.uz] = [Math.cos(wi), Math.sin(wi)];
+                    if (this._klangBauten(S, px, pz, R.weiteM)) budget = 0; // die Frage des Ankers trägt das Bild allein
+                    a.bau = this._raumBauTrifft(S.bauten.liste, a, R.weiteM) ? 1 : 0;
                 }
             }
+            let fertig = false;
+            let fels = 0;
+            if (a.k === 0) {
+                budget--;
+                const dach = this._voxelSurfaceY(a.x, a.z);
+                S.hoehle = Number.isFinite(dach) && dach > a.fy + R.augeM + 2 ? 1 : 0;
+                fertig = true;
+            } else if (a.d > R.weiteM) fertig = true;
+            else if (budget > 0) {
+                budget--;
+                const hh = this.getTerrainHeightAt(a.x + a.ux * a.d, a.z + a.uz * a.d);
+                if (Number.isFinite(hh) && hh > a.y) [fertig, fels] = [true, 1];
+                else a.d += 2.5;
+            }
+            if (!fertig) continue;
+            if (a.k > 0) [S.bau[a.k - 1], S.fels[a.k - 1]] = [a.bau, fels];
+            if (a.rein && a.x === S.o.x && a.y === S.o.y && a.z === S.o.z && ++S.ganz > R.strahlen) S.ruht = true;
+            S.idx = (a.k + 1) % (R.strahlen + 1);
+            a.k = -1;
+            if (S.ruht) return;
         }
     }
 
-    // DER RAUM AM OHR (klang.K3#2) → { deckung, bau, fels, hoehle }: die Anteile der Raum-Strahlen (`_raumStrahlen`), die Bau bzw.
-    // Hang treffen, und Fels über dem Ohr (die oberste Fläche des Bodens `_voxelSurfaceY` mehr als 2 m über ihm: die Höhle).
-    _raumAmOhr(um, px, fy, pz, deckung) {
+    // Trifft die Strecke vom Ohr des Strahls `a` (raum.weiteM in seiner Richtung) eine Hülle der Bauten? Je Eintrag zuerst die Hülle
+    // wie `_blockerNahe` am Ohr (weiter als `weiteM` fällt er), dann jede Box (`_klangStrecke`).
+    _raumBauTrifft(liste, a, weiteM) {
+        const p = [a.x, a.y, a.z];
+        const q = [a.x + a.ux * weiteM, a.y, a.z + a.uz * weiteM];
+        for (const e of liste) {
+            const h = e._blockerHuelle;
+            if (h && (a.x < h[0] - weiteM || a.x > h[1] + weiteM || a.z < h[2] - weiteM || a.z > h[3] + weiteM))
+                continue;
+            for (const b of e.blockerAABBs || [])
+                if (b && Number.isFinite(b.minX) && AnazhRealm._klangStrecke(p, q, b) !== null) return true;
+        }
+        return false;
+    }
+
+    // DER RAUM AM OHR (klang.K3#2) → { deckung, bau, fels, hoehle }: die Anteile der Raum-Strahlen, die Bau bzw. Hang treffen, und
+    // das Dach über dem Ohr — der Stand des Schwenks (`_raumStrahlen`).
+    _raumAmOhr(um, deckung) {
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const S = um.raumStrahl;
         let bau = 0;
         let fels = 0;
         for (let i = 0; i < R.strahlen; i++) ((bau += S.bau[i]), (fels += S.fels[i]));
-        const dach = this._voxelSurfaceY(px, pz);
         return {
             deckung: Number.isFinite(deckung) ? deckung : 0,
             bau: bau / R.strahlen,
             fels: fels / R.strahlen,
-            hoehle: Number.isFinite(dach) && dach > fy + R.augeM + 2 ? 1 : 0,
+            hoehle: S.hoehle,
         };
     }
 
