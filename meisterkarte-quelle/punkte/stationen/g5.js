@@ -1926,7 +1926,12 @@ async function unterwasserSeite(o) {
     const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
     const schuss = async (name, leib) => {
         r._applyDayNightToScene();
-        const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, k = s.renderer.toneMappingExposure;
+        const sp = s.scenePass, spU = sp.updateBefore;
+        let nSp = 0;
+        sp.updateBefore = function (f) { nSp++; return spU.call(this, f); };
+        let u8, k;
+        try { u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8; k = s.renderer.toneMappingExposure; } finally { sp.updateBefore = spU; }
+        (aus.zaehl ||= []).push(name + ":" + nSp);
         if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
         const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4) };
         if (leib) {
