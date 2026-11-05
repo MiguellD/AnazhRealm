@@ -72,7 +72,7 @@ function altLandmarks(mess) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Mock trägt keine Gestalt (`kugeln: []`): die Ruhe der Arme (w11-koerper, `_armRuhe`) misst an den Kugeln des Baums und
 // läuft hier leer — ihren Kontakt misst gate:mensch-anatomie RUHE am Guss.
-const neuMorph = (p, N) => core.morphAuf({ character: N.parts.__character, parts: N.parts, base: N.base, kugeln: [] }, p);
+const neuMorph = (p, { parts, base }) => core.morphAuf({ character: parts.__character, parts, base, kugeln: [] }, p);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Mock-Rig + deterministische base-Skalen (mulberry32 — der Test-Strom).
