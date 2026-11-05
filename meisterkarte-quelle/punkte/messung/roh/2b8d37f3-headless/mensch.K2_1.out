@@ -1,0 +1,9 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":17,"third":20},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.03,"wegLeib":1801.5},"blick":{"n":159,"quote":0.925,"sektorMax":0.12},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":266,"tuer":266,"falsch":[],"aufWeg":0.9,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":202,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.37,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.967,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":165,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (186 s) — Sekunden je Probe: bewohner: 177
+
+✅ GRÜN — bewohner

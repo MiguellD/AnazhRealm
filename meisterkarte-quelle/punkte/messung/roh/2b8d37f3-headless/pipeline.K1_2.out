@@ -1,0 +1,50 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-studio-uebergabe.cjs --welt
+
+=== (K) KANAL — Saat 2835141959, 23 Arten aus PARAMS_BY_KIND ===
+  ✅ vehicle: das Werk des Studios steht byte-gleich in der Welt — gt Same 22: Studio bd26fd4f47 (12 Teile) = Welt bd26fd4f47 (12 Teile, Gestalt 22, derselbe Auftrag)
+  ✅ gate: das Werk des Studios steht byte-gleich in der Welt — drachentor Same 42: Studio 8fbe7efe26 (11 Teile) = Welt 8fbe7efe26 (11 Teile, Gestalt 42, derselbe Auftrag)
+  ✅ weapon: das Werk des Studios steht byte-gleich in der Welt — langschwert Same 15: Studio d57cb28f5c (25 Teile) = Welt d57cb28f5c (25 Teile, Gestalt 15, derselbe Auftrag)
+  ✅ arena: das Werk des Studios steht byte-gleich in der Welt — dojo Same 16: Studio 7a3d76e6fc (1 Teile) = Welt 7a3d76e6fc (1 Teile, Gestalt 16, derselbe Auftrag)
+  ✅ haus: das Werk des Studios steht byte-gleich in der Welt — alemannisch Same 12: Studio 4f87994e55 (12 Teile) = Welt 4f87994e55 (12 Teile, Gestalt 12, derselbe Auftrag)
+  ✅ ausstattung: das Werk des Studios steht byte-gleich in der Welt — feuerstelle Same 38: Studio 3172da4421 (2 Teile) = Welt 3172da4421 (2 Teile, Gestalt 38, derselbe Auftrag)
+  ✅ bank: das Werk des Studios steht byte-gleich in der Welt — sitzbank Same 30: Studio 21d41db739 (1 Teile) = Welt 21d41db739 (1 Teile, Gestalt 30, derselbe Auftrag)
+  ✅ leiter: das Werk des Studios steht byte-gleich in der Welt — podestleiter Same 33: Studio fafcc18e83 (1 Teile) = Welt fafcc18e83 (1 Teile, Gestalt 33, derselbe Auftrag)
+  ✅ bruecke: das Werk des Studios steht byte-gleich in der Welt — jochfeld Same 50: Studio 623ce394ca (1 Teile) = Welt 623ce394ca (1 Teile, Gestalt 50, derselbe Auftrag)
+  ✅ schaukel: das Werk des Studios steht byte-gleich in der Welt — doppelschaukel Same 30: Studio e7d40882d0 (2 Teile) = Welt e7d40882d0 (2 Teile, Gestalt 30, derselbe Auftrag)
+  ✅ rutsche: das Werk des Studios steht byte-gleich in der Welt — turmrutsche Same 11: Studio d560da0b4b (2 Teile) = Welt d560da0b4b (2 Teile, Gestalt 11, derselbe Auftrag)
+  ✅ klettergeruest: das Werk des Studios steht byte-gleich in der Welt — sprossengeruest Same 64: Studio 74c7f1265d (2 Teile) = Welt 74c7f1265d (2 Teile, Gestalt 64, derselbe Auftrag)
+  ✅ wippe: das Werk des Studios steht byte-gleich in der Welt — balkenwippe Same 64: Studio 2c1e5e5a07 (2 Teile) = Welt 2c1e5e5a07 (2 Teile, Gestalt 64, derselbe Auftrag)
+  ✅ reck: das Werk des Studios steht byte-gleich in der Welt — turnreck Same 9: Studio 9bea1b7492 (2 Teile) = Welt 9bea1b7492 (2 Teile, Gestalt 9, derselbe Auftrag)
+  ✅ balken: das Werk des Studios steht byte-gleich in der Welt — schwebebalken Same 61: Studio 52fd080ec9 (1 Teile) = Welt 52fd080ec9 (1 Teile, Gestalt 61, derselbe Auftrag)
+  ✅ wand: das Werk des Studios steht byte-gleich in der Welt — kletterwand Same 61: Studio dccca92f82 (1 Teile) = Welt dccca92f82 (1 Teile, Gestalt 61, derselbe Auftrag)
+  ✅ hangelleiter: das Werk des Studios steht byte-gleich in der Welt — hangelbahn Same 37: Studio 2e15f14ec6 (2 Teile) = Welt 2e15f14ec6 (2 Teile, Gestalt 37, derselbe Auftrag)
+  ✅ klang: das Werk des Studios steht byte-gleich in der Welt — blues: 7 Zeilen im Genre der Welt
+  ✅ koerper: das Werk des Studios steht byte-gleich in der Welt — mensch Same 22: Studio 1ddb45fdb5 (16 Teile) = Welt 1ddb45fdb5 (16 Teile, Gestalt 0, derselbe Auftrag)
+  ✅ kreatur: das Werk des Studios steht byte-gleich in der Welt — wolf Same 42: Studio fa66939839 (25 Teile) = Welt fa66939839 (25 Teile, Gestalt 0, derselbe Auftrag)
+  ✅ flower: das Werk des Studios steht byte-gleich in der Welt — blume Same 33: Studio ab8e613584 (1 Teile) = Welt ab8e613584 (1 Teile, Gestalt 33, derselbe Auftrag)
+  ✅ grass: das Werk des Studios steht byte-gleich in der Welt — gras Same 46: Studio 6defbbc66a (1 Teile) = Welt 6defbbc66a (1 Teile, Gestalt 46, derselbe Auftrag)
+  ✅ tree: das Werk des Studios steht byte-gleich in der Welt — eiche Same 60: Studio dbb7bf1e42 (3 Teile) = Welt dbb7bf1e42 (3 Teile, Gestalt 60, derselbe Auftrag)
+      23/23 Arten über den EINEN Kanal
+
+=== (S) SONDERWEG-WAND ===
+  ✅ nur die Hülle postet eine Übergabe — kein Studio hat einen eigenen Weg — 0 Studio-Posts
+  ✅ die Heimat leitet die Übergabe an genau EINEN Empfänger (_studioUebergabeEmpfang) — 1 Route(n)
+
+=== (W) WÄNDE ===
+  ✅ kaputte Werke fallen (fremde Art · fremdes Rezept · Riesen-Payload · Nicht-Objekt) — []
+  ✅ der Kern klemmt (height 99 → max), fremde Schlüssel · Passagiere · erfundene Wahlen · ein krummer Same fallen — {"height":1.15,"skinTone":"ebenholz"}
+
+=== SELBSTTEST — ein Sonderweg ist ROT ===
+  ✅ SELBST-TEST: der Empfänger leitet die Blume in einen eigenen Speicher → die Blume ist ROT
+  ✅ SELBST-TEST: ein Studio, das selbst postet, ist ROT bei Datei:Zeile — worlds/probe/probe.js:1
+      (K) 9.7 s
+
+=== --welt — der Konsum im echten Spiel ===
+  ✅ ohne Prägung liefern die Leser die Buch-Referenz (vor und nach der Linse)
+  ✅ die Welt nimmt das Werk des Körper-Studios an
+  ✅ der LEBENDE Avatar gießt neu und trägt die Gestalt (rot nur mit Prägung · Haut ebenholz · Größen-Faktor ≠ 1) — {"refVorher":true,"koerperAn":true,"rot":true,"haut":true,"groesse":true,"kreaturAn":true,"spawnFaktor":1.4644050835581337,"snap":true,"restore":true,"refNachher":true}
+  ✅ ein Kreatur-Spawn trägt das Werk der Gattung (size 3.5 ⇒ Welt-Gestalt ×3.5/2.4, wurf-normalisiert) — Faktor 1.4644050835581337
+  ✅ der Snapshot trägt den Prägungs-Speicher
+  ✅ der Restore läuft durch DENSELBEN Prüfer: height 99 → max, erfundene Farbe und fremdes Rezept fallen
+
+✅ GRÜN — DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich.

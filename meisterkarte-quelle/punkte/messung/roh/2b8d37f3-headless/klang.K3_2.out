@@ -1,0 +1,111 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL + ";" + AUSGABE_INSTALL); // das Orts-Gesetz und der EINE Wetter-Weg (`__wetterSetzen`)
+        };
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await erwacht();
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/2b8d37f3-headless/klang.K3_2.json 7704 function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    // DAS WETTER EINER PROBE über den EINEN Weg (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs; der Lauf baut ihn in jede
+    // Welt): er taut den Mess-Halt für DIESES Wort und hält danach wieder — ein Wort, das nicht gilt, wirft beim Namen. Bis 03.11.
+    // setzte `trocken` selbst und fror den Halt dahinter (−1e9): jedes spätere Wort fiel still (der Regen der Alter-Spur)
+    const wetter = (wort, zug) => {
+        if (window.__wetterSetzen(wort, zug) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + s.weather + ")");
+    };
+    const trocken = () => {
+        wetter("sunny");
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, wetter, trocken, r3, streu };
+} [["klangraum","async (r, T, o, G) => {\n\nreturn await (async function klangRaumProbe(r, T, o, G) {\n    const { s, A, takt, stehen, r3 } = G;\n    const K = window.__klangCore;\n    const UM = A._umweltGesetz();\n    if (!r.initSymphony()) return { fehler: \"die Symphonie startet nicht (kein Web Audio)\" };\n    const sym = s.symphony;\n    const pm = s.playerMesh;\n    const SR = 48000;\n    const H = (x, z) => r.getTerrainHeightAt(x, z);\n    const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));\n    // die Quelle: ein Leib der Welt (sonst ein Wolf, wie die Stoff-Tafel ihn setzt)\n    let tier = (s.creatures || []).find((c) => c && c.position && !(c.userData && c.userData.dying));\n    let gesetzt = null;\n    if (!tier) {\n        s.maxCreatures = (s.creatures || []).length + 1;\n        const W = o.orte.wiese;\n        tier = gesetzt = r.spawnCreatureAt(W.x, H(W.x, W.z), W.z, \"calm\", \"wolf\", { precise: true, bodySize: 1 });\n    }\n    if (!tier) return { fehler: \"kein Leib der Welt, der rufen könnte\" };\n    const t0 = tier.position.clone();\n    const alt = { ctx: sym.ctx, umwelt: sym.umwelt };\n    // der Leib lebt in der Welt, die um den Spieler streamt: fehlt er am Ort (fortgestreamt), ruft ein Wolf an der Quelle\n    const leib = (x, y, z) => {\n        if ((s.creatures || []).includes(tier)) return tier;\n        s.maxCreatures = Math.max(s.maxCreatures || 0, (s.creatures || []).length + 1);\n        const w = r.spawnCreatureAt(x, y, z, \"calm\", \"wolf\", { precise: true, bodySize: 1 });\n        if (!w) throw new Error(\"kein Leib an der Quelle (spawnCreatureAt)\");\n        if (gesetzt && (s.creatures || []).includes(gesetzt)) r.removeCreature(gesetzt);\n        return (tier = gesetzt = w);\n    };\n    const hoeren = async (ohr, quelle, art) => {\n        leib(quelle[0], quelle[2] != null ? quelle[2] : H(quelle[0], quelle[1]), quelle[1]);\n        pm.position.set(ohr[0], (ohr[2] != null ? ohr[2] : H(ohr[0], ohr[1])) + A.PLAYER_FOOT_OFFSET, ohr[1]);\n        tier.position.set(quelle[0], quelle[2] != null ? quelle[2] : H(quelle[0], quelle[1]), quelle[1]);\n        const ctx = new OfflineAudioContext(2, SR * (art === \"ruf\" ? 4 : 6), SR);\n        const um = r._umweltKlangBauen(ctx, ctx.destination, UM);\n        try {\n            sym.ctx = ctx;\n            sym.umwelt = um;\n            r._umweltRingProbe(um, pm.position.x, pm.position.z, um.ring.punkte.length);\n            r._umweltKlangTick(); // Teil 0 des Misch-Takts: die Lage am Ohr\n            r._umweltKlangTick(); // Teil 1: die Mischung\n            for (const k in UM.UMWELT.stimmen) if (um.mix && um.mix[k]) um.mix[k].db = -Infinity;\n            r._umweltKlangTick(); // Teil 2: der Graph — und was der Takt dort sonst anwendet\n            if (um.folge !== 3) throw new Error(\"der Misch-Takt lief nicht durch Lage, Mischung und Graph (folge \" + um.folge + \")\");\n            if (art === \"ruf\") {\n                const n0 = um.rufeGespielt;\n                if (!r._tierRuf(tier, \"ruhe\")) throw new Error(\"der Ruf bleibt unter der Hörschwelle\");\n                for (let i = 0; i < 600 && um.rufeGespielt === n0; i++) await warte(10);\n                if (um.rufeGespielt === n0) throw new Error(\"die Klang-Werkstatt spielte den Ruf nie\");\n            } else {\n                um.werkstatt.terminate();\n                const ruf = r._tierRuf(tier, \"ruhe\");\n                if (!ruf) throw new Error(\"der Ruf bleibt unter der Hörschwelle\");\n                const imp = new Float32Array(SR);\n                imp[0] = 1;\n                if (!um.kern.tierRufSpielen(ctx, um.bus, ruf, { sr: SR, daten: imp })) throw new Error(\"tierRufSpielen spielte nichts\");\n            }\n            const buf = await ctx.startRendering();\n            const [L, R] = [buf.getChannelData(0), buf.getChannelData(1)];\n            const e = new Float64Array(L.length);\n            let sum = 0;\n            for (let i = 0; i < L.length; i++) sum += e[i] = L[i] * L[i] + R[i] * R[i];\n            if (!(sum > 0)) throw new Error(\"das Ohr hört nichts\");\n            if (art === \"ruf\") {\n                const mono = new Float32Array(L.length);\n                for (let i = 0; i < L.length; i++) mono[i] = (L[i] + R[i]) / 2;\n                return { db: r3(10 * Math.log10(sum / L.length)), hz: Math.round(K.schwerpunkt(mono, SR)) };\n            }\n            // SCHROEDER: die rückwärts integrierte Energie in dB; −5 und −25 dB (läuft der Schwanz über den Puffer: die Steigung bis\n            // zu seinem Ende)\n            let rest = sum;\n            let t5 = null;\n            let t25 = null;\n            for (let i = 0; i < e.length && t25 === null; i++) {\n                const db = 10 * Math.log10(Math.max(rest, 1e-300) / sum);\n                if (t5 === null && db <= -5) t5 = i;\n                if (db <= -25) t25 = i;\n                rest -= e[i];\n            }\n            if (t25 === null) {\n                const dbEnde = 10 * Math.log10(Math.max(e[e.length - 1], 1e-300) / sum);\n                return { rt60: r3(t5 === null ? Infinity : (60 * (e.length - t5)) / SR / Math.max(1e-6, -dbEnde - 5)) };\n            }\n            return { rt60: r3((3 * (t25 - t5)) / SR) };\n        } finally {\n            sym.ctx = alt.ctx;\n            sym.umwelt = alt.umwelt;\n            try {\n                um.graph.stopAlle();\n                um.werkstatt && um.werkstatt.terminate();\n            } catch (_e) {}\n        }\n    };\n    const teil = async (fn) => {\n        try {\n            return await fn();\n        } catch (e) {\n            return { fehler: String((e && e.message) || e).split(\"\\n\")[0].slice(0, 200) };\n        }\n    };\n    // ein Bau: die Vereinigung seiner Hüllen (minX…maxZ, top) und die Hüllen selbst (minX…maxZ, botY…topY)\n    const bauVon = (e) => {\n        const hs = (e && e.blockerAABBs ? e.blockerAABBs : []).filter((b) => b && Number.isFinite(b.minX));\n        if (!hs.length) return null;\n        const u = { huellen: hs, minX: Math.min(...hs.map((b) => b.minX)), maxX: Math.max(...hs.map((b) => b.maxX)), minZ: Math.min(...hs.map((b) => b.minZ)), maxZ: Math.max(...hs.map((b) => b.maxZ)), top: Math.max(...hs.map((b) => b.topY)) };\n        u.cx = (u.minX + u.maxX) / 2;\n        u.cz = (u.minZ + u.maxZ) / 2;\n        return u;\n    };\n    const inBau = (B, x, z, y) => B.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ && y >= b.botY && y <= b.topY);\n    const linieFrei = (B, a, b) => {\n        for (let k = 1; k < 40; k++) {\n            const t = k / 40;\n            const x = a[0] + (b[0] - a[0]) * t;\n            const z = a[1] + (b[1] - a[1]) * t;\n            if (inBau(B, x, z, H(x, z) + 1.2)) return false;\n        }\n        return true;\n    };\n    const W = o.orte.wiese;\n    const aus = { orte: {} };\n    const HAUS = \"haus_alemannisch\";\n    const gebaut = [];\n    try {\n        // ── das Haus und die Gasse: Häuser des Bauplans der Welt (`haus_alemannisch`, `spawnArchitecture` wie jeder Bau) auf ebenem\n        // Grund nahe der Mess-Wiese — das Dorf des Haushalts wächst in der Probe nicht (0 Häuser nach 9 000 Takten, w5-s2-g1)\n        const ebene = window.__weltOrt(\"eben\", { mitte: [W.x + 60, W.z], r: 16, spanne: 2, rMax: 600 });\n        const uA = await (async () => {\n            if (!ebene) return null;\n            await stehen(ebene.x, ebene.z);\n            const e = r.spawnArchitecture(HAUS, { x: ebene.x, y: H(ebene.x, ebene.z), z: ebene.z }, { silent: true, precise: true });\n            if (e) gebaut.push(e);\n            return e && bauVon(e);\n        })();\n        aus.haus = await teil(async () => {\n            if (!ebene) throw new Error(\"kein ebener Grund (16 m, Spanne ≤ 2 m) binnen 600 m an der Mess-Wiese\");\n            if (!uA) throw new Error(\"der Bauplan \" + HAUS + \" steht nicht (spawnArchitecture)\");\n            if (!(uA.top - H(uA.cx, uA.cz) >= 2.5 && uA.maxX - uA.minX >= 4 && uA.maxZ - uA.minZ >= 4)) throw new Error(\"das Haus ist kein Haus (\" + [uA.maxX - uA.minX, uA.maxZ - uA.minZ, uA.top - H(uA.cx, uA.cz)].map(r3).join(\" × \") + \" m)\");\n            const B = uA.huellen;\n            for (const [ux, uz, h] of [[-1, 0, (uA.maxX - uA.minX) / 2], [0, 1, (uA.maxZ - uA.minZ) / 2], [0, -1, (uA.maxZ - uA.minZ) / 2], [1, 0, (uA.maxX - uA.minX) / 2]]) {\n                const ohr = [uA.cx + ux * (h + 3), uA.cz + uz * (h + 3)];\n                const hinter = [uA.cx - ux * (h + 3), uA.cz - uz * (h + 3)];\n                const d = 2 * (h + 3);\n                const frei = [ohr[0] + ux * d, ohr[1] + uz * d];\n                if (linieFrei(B, ohr, hinter) || !linieFrei(B, ohr, frei) || !r._landAt(frei[0], frei[1], 1) || !r._landAt(hinter[0], hinter[1], 1)) continue;\n                return { d: r3(d), ohr: ohr.map(r3), haus: [r3(uA.maxX - uA.minX), r3(uA.maxZ - uA.minZ), r3(uA.top - H(uA.cx, uA.cz))], frei: await hoeren(ohr, frei, \"ruf\"), hinter: await hoeren(ohr, hinter, \"ruf\") };\n            }\n            throw new Error(\"am Haus keine Achse, deren Linie durch es geht und deren Gegenrichtung frei ist\");\n        });\n        // die Gasse: ein zweites Haus 4 m neben dem ersten (längs x), das Ohr in ihrer Mitte\n        if (uA) {\n            const bx = uA.maxX + 4 + (uA.cx - uA.minX);\n            const hausB = r.spawnArchitecture(HAUS, { x: bx, y: H(bx, uA.cz), z: uA.cz }, { silent: true, precise: true });\n            if (hausB) gebaut.push(hausB);\n            const uB = hausB && bauVon(hausB);\n            if (uB && uB.minX - uA.maxX >= 2 && uB.minX - uA.maxX <= 8) aus.orte.gasse = { x: r3((uA.maxX + uB.minX) / 2), z: r3(uA.cz), breite: r3(uB.minX - uA.maxX) };\n            else aus.gasseFehler = \"das zweite Haus steht nicht 2–8 m neben dem ersten\";\n        } else aus.gasseFehler = \"kein Haus, keine Gasse\";\n        // ── der Wald: die dichteste Kronen-Karte um die Mess-Wiese (der Leser der Kronen am Ohr, wie der Zensus)\n        await stehen(W.x, W.z);\n        aus.orte.feld = { x: W.x, z: W.z };\n        let wald = null;\n        for (let gx = -240; gx <= 240; gx += 12)\n            for (let gz = -240; gz <= 240; gz += 12) {\n                const x = W.x + gx;\n                const z = W.z + gz;\n                if (!r._landAt(x, z, 1) || r._nassAt(x, z)) continue;\n                const deck = r._kronenStreuAt(x, z);\n                if (!wald || deck > wald.deckung) wald = { x, z, deckung: r3(deck) };\n            }\n        aus.orte.wald = wald && wald.deckung >= 0.5 ? wald : null;\n        if (!aus.orte.wald) aus.waldFehler = \"keine Kronen-Deckung ≥ 0,5 binnen 240 m (beste \" + (wald && wald.deckung) + \")\";\n        // ── der Hang: ein Ohr, an dem eine Richtung hinter dem Hang liegt und eine frei\n        aus.hang = await teil(async () => {\n            const linie = (ex, ez, ux, uz, d) => {\n                const ye = H(ex, ez) + 1.7;\n                const ys = H(ex + ux * d, ez + uz * d) + 0.8;\n                let m = -Infinity;\n                for (let k = 1; k < 40; k++) {\n                    const t = k / 40;\n                    m = Math.max(m, H(ex + ux * d * t, ez + uz * d * t) - (ye + (ys - ye) * t));\n                }\n                return m;\n            };\n            for (let ring = 0; ring <= 1200; ring += 60)\n                for (let k = 0; k < (ring ? 16 : 1); k++) {\n                    const ex = W.x + ring * Math.cos((k / 16) * 2 * Math.PI);\n                    const ez = W.z + ring * Math.sin((k / 16) * 2 * Math.PI);\n                    if (!r._landAt(ex, ez, 1) || r._nassAt(ex, ez)) continue;\n                    let verdeckt = null;\n                    let frei = null;\n                    for (let j = 0; j < 16; j++) {\n                        const ux = Math.cos((j / 16) * 2 * Math.PI);\n                        const uz = Math.sin((j / 16) * 2 * Math.PI);\n                        const sx = ex + ux * 40;\n                        const sz = ez + uz * 40;\n                        if (!r._landAt(sx, sz, 1) || r._nassAt(sx, sz)) continue;\n                        const m = linie(ex, ez, ux, uz, 40);\n                        if (m >= 3 && !verdeckt) verdeckt = [sx, sz, m];\n                        if (m <= -0.5 && !frei) frei = [sx, sz, m];\n                    }\n                    if (verdeckt && frei) {\n                        await stehen(ex, ez);\n                        return {\n                            ohr: [r3(ex), r3(ez)],\n                            ueberLinie: r3(verdeckt[2]),\n                            frei: await hoeren([ex, ez], frei.slice(0, 2), \"ruf\"),\n                            hinter: await hoeren([ex, ez], verdeckt.slice(0, 2), \"ruf\"),\n                        };\n                    }\n                }\n            throw new Error(\"binnen 1,2 km um die Mess-Wiese kein Ohr mit Hang und freier Richtung in 40 m\");\n        });\n        // ── die Höhle (das Orts-Gesetz)\n        const hoehle = window.__weltOrt(\"hoehle\", { fels: 3, luft: 3, R: 2.4, rMax: 3000, schritt: 12 });\n        aus.orte.hoehle = hoehle ? { x: r3(hoehle.x), z: r3(hoehle.z), grund: r3(hoehle.grund) } : null;\n        if (!hoehle) aus.hoehleFehler = \"das Orts-Gesetz findet binnen 3 km um die Mitte der Welt keine Höhle\";\n        // ── RT60 je Ort: die Quelle 1,5 m neben dem Ohr (in der Höhle auf ihrem Grund)\n        aus.rt60 = {};\n        for (const n of [\"feld\", \"wald\", \"gasse\", \"hoehle\"]) {\n            const p = aus.orte[n];\n            if (!p) continue;\n            const y = n === \"hoehle\" ? p.grund : null;\n            if (n !== \"hoehle\") await stehen(p.x, p.z);\n            else {\n                pm.position.set(p.x, y + A.PLAYER_FOOT_OFFSET + 0.05, p.z);\n                s.playerVel.setValue(0, 0, 0);\n                await window.__weltStehtNach(() => takt());\n            }\n            aus.rt60[n] = (await teil(() => hoeren([p.x, p.z, y], [p.x + 1.5, p.z, y], \"hall\"))).rt60 ?? null;\n        }\n        // ── die Mutation: Bau-Dichte am selben Ort (Feld)\n        aus.mutation = await teil(async () => {\n            const bauten = [];\n            s.blueprints._raumBlock = { parts: [{ shape: \"box\", material: \"stein\", size: { x: 4, y: 4, z: 4 }, position: { x: 0, y: 2, z: 0 } }] };\n            const reihe = [];\n            try {\n                for (const n of [0, 2, 4, 8]) {\n                    while (bauten.length < n) {\n                        const a = [0, 4, 2, 6, 1, 5, 3, 7][bauten.length] * (Math.PI / 4);\n                        const bx = W.x + 8 * Math.cos(a);\n                        const bz = W.z + 8 * Math.sin(a);\n                        bauten.push(r.spawnArchitecture(\"_raumBlock\", { x: bx, y: H(bx, bz), z: bz }, { silent: true, precise: true }));\n                    }\n                    await stehen(W.x, W.z);\n                    reihe.push({ bauten: n, rt60: (await hoeren([W.x, W.z], [W.x + 1.5, W.z], \"hall\")).rt60 });\n                }\n            } finally {\n                for (const e of bauten) if (e && s.architectures.includes(e)) r.removeArchitecture(e);\n                delete s.blueprints._raumBlock;\n            }\n            return reihe;\n        });\n    } finally {\n        sym.ctx = alt.ctx;\n        sym.umwelt = alt.umwelt;\n        tier.position.copy(t0);\n        if (gesetzt && (s.creatures || []).includes(gesetzt)) r.removeCreature(gesetzt);\n        for (const e of gebaut) if (s.architectures.includes(e)) r.removeArchitecture(e);\n    }\n    return aus;\n})(r, T, o, G);\n}",{}]]
+WELTPROBE klangraum {"orte":{"gasse":{"x":-215.1,"z":-1045.6,"breite":4},"feld":{"x":-280.4,"z":-1045.6},"wald":{"x":-520.4,"z":-1273.6,"deckung":1},"hoehle":{"x":-58.696,"z":-12.44,"grund":60.432}},"haus":{"d":12.6,"ohr":[-226.7,-1045.6],"haus":[6.6,5.6,2.9],"frei":{"db":-37.261,"hz":1122},"hinter":{"db":-48.347,"hz":657}},"hang":{"ohr":[-612.997,-907.834],"ueberLinie":4.117,"frei":{"db":-47.318,"hz":1055},"hinter":{"db":-58.212,"hz":641}},"rt60":{"feld":0.283,"wald":0.649,"gasse":1.522,"hoehle":3.195},"mutation":[{"bauten":0,"rt60":0.283},{"bauten":2,"rt60":0.517},{"bauten":4,"rt60":0.687},{"bauten":8,"rt60":1.042}],"sek":35.5}
+WELTPROBE-ENDE {"proben":["klangraum"],"fehler":[]}

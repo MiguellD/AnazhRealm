@@ -1,0 +1,65 @@
+{
+ "fusion": {
+  "ok": true,
+  "welt": "8b5853d4-b105-ad23-651f-b02632f0094d",
+  "eltern": [
+   "d778f576-cdd6-49f4-aaf0-604fb9ab41e4",
+   "b0b0b0b0-0000-4000-8000-00000000b0b0"
+  ],
+  "hier": "8b5853d4-b105-ad23-651f-b02632f0094d",
+  "imStand": [
+   "heilA",
+   "leer",
+   "heilB"
+  ]
+ },
+ "lauf": {
+  "sekunden": 30,
+  "schreibe": {
+   "carveVoxel": 0,
+   "fillVoxel": 0,
+   "_lavaGiessen": 0,
+   "terrainSteepness": 0,
+   "terrainBaseHeight": 0
+  },
+  "akten": 0,
+  "selbsttest": 1,
+  "je": {
+   "heilA": {
+    "da": true,
+    "feuer": 30,
+    "value": 0.6249,
+    "erneuert": 3,
+    "verfiel": false
+   },
+   "leer": {
+    "da": true,
+    "feuer": 8,
+    "value": 0,
+    "erneuert": 0,
+    "verfiel": true
+   },
+   "heilB": {
+    "da": true,
+    "feuer": 30,
+    "value": 0.2106,
+    "erneuert": 3,
+    "verfiel": false
+   },
+   "pflug": {
+    "da": false,
+    "feuer": 0,
+    "value": null,
+    "erneuert": 0,
+    "verfiel": false
+   },
+   "steil": {
+    "da": false,
+    "feuer": 0,
+    "value": null,
+    "erneuert": 0,
+    "verfiel": false
+   }
+  }
+ }
+}

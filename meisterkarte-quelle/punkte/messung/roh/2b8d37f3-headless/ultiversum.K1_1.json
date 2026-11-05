@@ -1,0 +1,138 @@
+{
+ "a": {
+  "welt": "53086b27-c883-4d32-b312-7f75f70b2a47",
+  "slug": "leise-weiher",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ },
+ "tor": {
+  "ok": true,
+  "a": "53086b27-c883-4d32-b312-7f75f70b2a47",
+  "b": "d09e9fa1-f90b-4707-a1aa-3f7d751caad0",
+  "merkt": true
+ },
+ "b": {
+  "welt": "d09e9fa1-f90b-4707-a1aa-3f7d751caad0",
+  "slug": "ferne",
+  "gesetz": {
+   "schwere": -3.71,
+   "rayleighTiefe": [
+    0.13,
+    0.085,
+    0.05
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "foggy",
+    "nebel": "foggy",
+    "regen": "cloudy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": 1.6
+  },
+  "g": -3.71,
+  "sprung": {
+   "y0": 29.5,
+   "hoehe": 1.54,
+   "abdruck": 3.411,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.01625,
+    0.01063,
+    0.00625
+   ],
+   "blauRot": 0.3846,
+   "sonne": [
+    1,
+    0.7955,
+    0.6071
+   ]
+  },
+  "wetter": {
+   "je": {
+    "regen>cloudy": 59,
+    "nebel>foggy": 33,
+    "bewoelkt>foggy": 59,
+    "klar>sunny": 60,
+    "sturm>stormy": 29
+   },
+   "worte": {
+    "cloudy": 59,
+    "foggy": 92,
+    "sunny": 60,
+    "stormy": 29
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 57.901,
+   "reliefErde": 30.912,
+   "verhaeltnis": 1.8731,
+   "leserRegler": 1.6
+  }
+ },
+ "heim": {
+  "ok": false,
+  "hier": "53086b27-c883-4d32-b312-7f75f70b2a47"
+ },
+ "fehler": "das Heimtor führt nicht zurück: {\"ok\":false,\"hier\":\"53086b27-c883-4d32-b312-7f75f70b2a47\"}"
+}
