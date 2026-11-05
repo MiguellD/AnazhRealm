@@ -200,13 +200,14 @@ class AnazhRealm_klang {
     // die Mischung, dann der Graph, dann die Tier-Rufe — je Bild höchstens EIN Teil des Misch-Takts, und die Höhen des Schwenks
     // (`_raumStrahlen`) nur in einem Bild ohne schweren Teil (Lage, Graph). klang.K5: alle in einem Bild trugen jedes sechste
     // Bild über 0,2 ms; bis w12-klang-lage trug das Lage-Bild die ganze Lage (0,07–0,09 ms) über den Strahlen des Bilds
-    // (diag-klang-zensus --takt).
-    _umweltKlangTick() {
+    // (diag-klang-zensus --takt). Spielte die Musik in diesem Bild (`musik`, `_lofiTick`), gehen nur die Ring-Proben.
+    _umweltKlangTick(musik) {
         const s = this.state.symphony;
         const um = s.umwelt;
         if (!um || !s.ctx || !this.state.playerMesh) return;
         const p = this.state.playerMesh.position;
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
+        if (musik) return void this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
         const jetzt = s.ctx.currentTime;
         const teil = um.folge;
         const lage = !teil && jetzt - um.letzteMischung >= O.mischSek;
@@ -919,12 +920,13 @@ class AnazhRealm_klang {
         return true;
     }
 
-    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt).
+    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt) — spielt die Musik
+    // in diesem Bild einen Teil ihrer Folge, wartet die Klang-Welt mit ihrem (EIN schwerer Teil je Bild, klang.K5).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        this._lofiTick();
-        this._umweltKlangTick();
+        const musik = this._lofiTick();
+        this._umweltKlangTick(musik);
         this._fahrtKlangTick();
     }
 
@@ -1979,13 +1981,14 @@ class AnazhRealm_klang {
 
     // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords (der letzte Einsatz + die
     // Akkord-Dauer) den Akkord der aktuellen Stufe planen, dann die nächste Stufe über _lofiNextDegree wählen. Pad, Melodie,
-    // Bass, Groove und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
+    // Bass, die zwei Hälften des Grooves und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
     // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
+    // → true, wenn das Bild einen Teil der Musik spielte (die Klang-Welt wartet dann, `symphonyTick`).
     _lofiTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
         const L = s.lofi;
-        if (L.folge && L.folge.length) return void L.folge.shift()();
+        if (L.folge && L.folge.length) return (L.folge.shift()(), true);
         const now = s.ctx.currentTime;
         const V = AnazhRealm.LOFI_VORLAUF_S;
         // der nächste Einsatz = der letzte + SEINE Dauer (gelesen, als er geplant wurde): das Feld am Ohr wird einmal je Akkord
@@ -2010,6 +2013,7 @@ class AnazhRealm_klang {
             () => this._lofiPlayGroove(durSec, t0, 1, groove),
             () => this._lofiRaum(durSec),
         ];
+        return true;
     }
 
     // Der Raum des Akkords und das Welt-Timbre — das letzte Bild seiner Folge (`_lofiTick`).
