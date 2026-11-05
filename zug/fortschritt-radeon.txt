@@ -2072,3 +2072,4 @@
 2026-11-05 12:06:06 79595d21-radeon ENDE 0 grün / 0 rot · 5.8 min
 2026-11-05 12:09:50 79595d21-radeon START 2 Stationen
 2026-11-05 12:10:44 79595d21-radeon vegetation.K5#1 GRÜN 0.3 · 1/2
+2026-11-05 12:12:03 79595d21-radeon vegetation.K5#2 GRÜN 1.3 · 2/2
