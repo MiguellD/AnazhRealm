@@ -1,0 +1,19 @@
+# fahrzeug.K2#1 an 2b8d37f3 (GTX, OMEN, Scheibe 1, 05.11. 01:01–01:19) — Quelle meisterkarte-quelle/punkte/messung/roh/2b8d37f3-gtx/fahrzeug.K2_1.out (123 Zeilen)
+# Fehlerzeilen der Probe (grep PROBE-FEHLER, außerhalb des Quelltexts):
+#   PROBE-FEHLER Error: /status nennt kein Profil der Werkbank |     at tor.seite ([eval]:40:28) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async fahrWegenetz ([eval]:108:18)
+# --- letzte 15 Zeilen ---
+    tor.karte();
+    await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
+    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    await page.evaluate(() => (window.__anazhAutoSettlement = true));
+    const t0 = Date.now();
+    const o = await page.evaluate(F.probeLeben, { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } });
+    const v = o.wegenetz ? d.wegenetzVerdict(o.wegenetz) : [String(o.err || "keine Fahrt").split("\n")[0]];
+    console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung`);
+    console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
+    if (v.length) process.exitCode = 1;
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\koord-mess\meisterkarte-quelle\punkte\messung\roh\2b8d37f3-gtx\fahrzeug.K2_1.json
+PROBE-FEHLER Error: /status nennt kein Profil der Werkbank |     at tor.seite ([eval]:40:28) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async fahrWegenetz ([eval]:108:18)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
