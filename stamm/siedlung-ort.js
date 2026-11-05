@@ -3408,12 +3408,16 @@ class AnazhRealm_siedlung_ort {
             this._autoSettlementRejected.add(key); // Zelle trägt kein Dorf (Hash, verdrängt)
             return false;
         }
-        if (nurStadt && !(info.stufe > 0)) return false;
         const ddx = info.x - playerPos.x;
         const ddz = info.z - playerPos.z;
         const d2 = ddx * ddx + ddz * ddz;
         const nah = A.nearM + info.mehrM; // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0)
         const vor = d2 > nah * nah; // noch nicht erwacht: im Vorlauf-Ring bereitet sie sich vor, ferner später
+        // DER RING 2 WECKT NUR DIE STADT, BEREITEN DARF JEDER ORT (w12-dorf-strom): der Vorlauf-Ring (`vorlaufM` vor `nah`) reicht
+        // über die Nachbar-Zellen hinaus — ein Dorf zwei Zellen weit stand in ihm, bereitete sich aber erst vor, als der Spieler
+        // die Zellgrenze kreuzte (Fahrt-Probe dorf: −4,−4 begann bei 269 m statt 420 m, sein Grund fiel in 208 m, 130 von 181
+        // Bäumen traten ohne Gestalt in den Kegel).
+        if (nurStadt && !(info.stufe > 0) && !vor) return false;
         if (vor && (d2 > (nah + A.vorlaufM) ** 2 || V.has(key) || fliegt)) return false;
         const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
         if (!site) {
