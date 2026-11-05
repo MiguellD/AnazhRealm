@@ -268,6 +268,7 @@ hauptLauf(async () => {
     Object.assign(
         m,
         await page.evaluate(() => {
+            R.setAnimationLoop(null); // die Taten bauen, nie ein Bild: die Kutsche der Probe trägt keinen Programm-Schlüssel (Lehre 26)
             const VC = __vehicleCore,
                 knopf = (z) => [...document.querySelectorAll("#ctl button")].find((b) => b.textContent === z.lab),
                 leck = (pid, kid) => {
@@ -286,29 +287,6 @@ hauptLauf(async () => {
             return { presetLeck, reglerLeck, kulturAb: !leck("limousine").length && !knopf(VC.CULTURES.toro).classList.contains("on") };
         })
     );
-    // G10 Leicht: die Bildzeit der Isometrie (Median aus 5 Bildern bis zum Ende der GPU-Arbeit) voll gegen leicht, über den Knopf
-    m.leicht = await page.evaluate(async () => {
-        projSetzen("iso");
-        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-        R.setAnimationLoop(null);
-        const zeit = async () => {
-            const t = [];
-            for (let i = 0; i < 5; i++) {
-                const a = performance.now();
-                R.render(scene, kamera());
-                await R.backend.device?.queue?.onSubmittedWorkDone?.();
-                t.push(performance.now() - a);
-            }
-            return Math.round(t.sort((a, b) => a - b)[2]);
-        };
-        const voll = await zeit();
-        document.getElementById("leichtB").click();
-        R.render(scene, kamera()); // das erste Bild ohne Schatten baut seine Programme
-        const r = { voll, leicht: await zeit(), pr: R.getPixelRatio(), schatten: key.shadow.autoUpdate };
-        document.getElementById("leichtB").click();
-        R.setAnimationLoop(animate);
-        return r;
-    });
     // G8: die Ansicht je Modus am Wagen der Zukunft — das Bild mit gegen ohne Wagen (160×90), die Befehle des Bilds. Die Pixel
     // reisen über die RENDERER-API zurück (das Ausgabe-Ziel des Renderers, Tonkurve + sRGB wie die Leinwand, `__zielLesen`): ein
     // 2D-Abzug der WebGPU-Leinwand (drawImage) las auf der CI (Linux, swiftshader ohne Vulkan-Oberfläche) ein leeres Bild —
@@ -342,6 +320,32 @@ hauptLauf(async () => {
         }
         return a;
     }, ANSICHTEN);
+    // G10 Leicht: die Bildzeit der Isometrie (Median aus 5 Bildern bis zum Ende der GPU-Arbeit) voll gegen leicht, über den Knopf —
+    // am Wagen der Zukunft, dessen Programme G8 gebaut hat (Lehre 26: zwischen G4 und G8 baute dieser Aufruf die sieben kalten
+    // Programme der Kutsche, lokal 51 s, auf der CI über die Frist der Seite: z225)
+    m.leicht = await page.evaluate(async () => {
+        R.setOutputRenderTarget(null);
+        projSetzen("iso");
+        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        R.setAnimationLoop(null);
+        const zeit = async () => {
+            const t = [];
+            for (let i = 0; i < 5; i++) {
+                const a = performance.now();
+                R.render(scene, kamera());
+                await R.backend.device?.queue?.onSubmittedWorkDone?.();
+                t.push(performance.now() - a);
+            }
+            return Math.round(t.sort((a, b) => a - b)[2]);
+        };
+        const voll = await zeit();
+        document.getElementById("leichtB").click();
+        R.render(scene, kamera()); // das erste Bild ohne Schatten baut seine Programme
+        const r = { voll, leicht: await zeit(), pr: R.getPixelRatio(), schatten: key.shadow.autoUpdate };
+        document.getElementById("leichtB").click();
+        R.setAnimationLoop(animate);
+        return r;
+    });
     await browser.close();
     server.close();
 
