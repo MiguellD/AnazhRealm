@@ -1004,6 +1004,100 @@ const weltBefehl = (proben, helfer = []) => [
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
+// wetter.K3#2 — DIE GANGLINIE JE LAUF: eine Mess-Kopie der Wasser-Linse (scripts/lib/wasser-linse.cjs) trägt die Probe hinter
+// `sturm()` (die Anker „pg.regen = sturm();“ und „pg.regen.fest = sturm().hub;“, je genau einmal im Text), eine Mess-Kopie von
+// scripts/diag-wasser-leben.cjs liest sie statt der Linse; der Block koerper läuft (Null-Renderer, Mess-Wiese), sein JSON trägt das
+// Maß in koerper.pegel.lauf. Beide Kopien fallen nach dem Lauf. Läuft im Spiel-Baum (cwd) — am main wie am Zweig: die Probe liest nur
+// Glieder, die beide tragen (die Welt-Uhr `spielZeit`, das Wort `_setWeather`, `_pegelTakt`, den Kern-Spiegel `_hydroRiverAt` /
+// `_waterLevelAt`, `flussLaeufe`, `flussAm`, `PEGEL`), nie ein Glied des Schnitts.
+function k3Ganglinie() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    // DIE PROBE (im Leib von wasserSchmelze: r, st, K, P, R): zwei Bäche um P.fluss mit A-Verhältnis ≥ 4 (das Einzugsgebiet aus dem
+    // Netz des Gesetzes, `flussLaeufe`; je Glied die Mitte seiner Bahn, centerness > 0,9 am Kern-Spiegel), ein Spieltag Sonne (der
+    // Bach läuft ab), dann 10 s Niesel (`cloudy`) als Wort des Spielers und 12 Spielstunden in 2-s-Schritten der Welt-Uhr: der Hub
+    // (`_hydroRiverAt` über dem Spiegel ohne Pegel) als Abfluss nach der Pegel-Abfluss-Beziehung des Gesetzes (Manning auf der
+    // Spende `PEGEL.spende` im Bett der Hydrosphäre) gegen denselben Lauf ohne Niesel (der Grund fällt in beiden gleich). LAG der
+    // Schwerpunkt der Ganglinie hinter dem des Regens (Spielstunden) · BILANZ das Volumen durch den Pegel gegen den Abfluss des
+    // Regens über derselben Fläche (der Niesel × `PEGEL.regen`, Beiwert der Wiese) · DÜRRE der Spiegel an Bach, Fluss und See P.see
+    // (`_waterLevelAt`) 14 Spieltage Sonne später. Welt-Uhr und Stempel kehren danach zurück.
+    const probe = () => {
+        const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+        const uhr = () => [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
+        const zu = ([t, S]) => ((st.spielZeit = t), (st.regenStempel = S && S.slice()), r._pegelTakt());
+        const [L, tagS, u] = [r._gelaende(), r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60, uhr()];
+        const ruhe = Object.create(L, { pegel: { value: null } });
+        const gl = K.flussLaeufe(L, P.fluss[0] - 800, P.fluss[1] - 800, P.fluss[0] + 800, P.fluss[1] + 800, 8)
+            .flatMap((lf) => lf.glieder.map(({ A, bahn }) => ({ A, ...bahn[bahn.length >> 1] })))
+            .filter((g) => (r._hydroRiverAt(g.x, g.z) || {}).centerness > 0.9)
+            .sort((a, b) => a.A - b.A);
+        const orte = [gl[0], gl.find((g) => g.A >= 4 * gl[0].A)];
+        if (!orte[1]) return { fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um P.fluss", glieder: gl.length };
+        const hub = () => [...orte.map((o) => r._hydroRiverAt(o.x, o.z).surfaceY - K.flussAm(ruhe, o.x, o.z).surfaceY), r._waterLevelAt(...P.see)];
+        const H = L.hydroGesetz;
+        const tf = (1 - H.spiegelFreibord) * H.kanalTiefe;
+        const Q = (h) => K.PEGEL.spende * (Math.pow(Math.max(0, 1 + h / tf), 1 / 0.6) - 1);
+        wort("sunny", 1e6);
+        zu([st.spielZeit + tagS, st.regenStempel]);
+        const eins = uhr();
+        const reihe = (puls) => {
+            zu(eins);
+            const y = [];
+            for (let k = 0; 2 * k <= tagS / 2; k++) {
+                st.spielZeit = eins[0] + 2 * k;
+                if (puls && (k === 5 || k === 10)) wort(k === 5 ? "cloudy" : "sunny", 0);
+                r._pegelTakt();
+                y.push(hub());
+            }
+            return y;
+        };
+        const [mit, ohne] = [reihe(true), reihe(false)];
+        const summe = (i, f) => mit.reduce((s, y, k) => s + (Q(y[i]) - Q(ohne[k][i])) * f(k), 0);
+        const V = [0, 1].map((i) => (summe(i, () => 1) * 2) / tagS);
+        const D = (K.PEGEL.regen * r.constructor.WEATHER_FIELD.cloudy.rain * 10) / tagS;
+        const lag = V.map((v, i) => (v > 0 ? (((summe(i, (k) => 2 * k) * 2) / tagS / v - 15) * 24) / tagS : 0));
+        zu(eins);
+        const vor = hub();
+        zu([eins[0] + 14 * tagS, eins[1]]);
+        const duerre = hub().map((y, i) => R(y - vor[i]));
+        zu(u);
+        return {
+            A: orte.map((o) => R(o.A / 1e6)),
+            lag: lag.map(R),
+            verhaeltnis: lag[0] > 0 ? R(lag[1] / lag[0]) : 0,
+            bilanz: V.map((v) => R(v / D)),
+            volumen: V.map((v, i) => [Math.round(D * orte[i].A * 10) / 10, Math.round(v * orte[i].A * 10) / 10]),
+            duerre,
+        };
+    };
+    const LI = "scripts/lib/wasser-linse.cjs";
+    const DI = "scripts/diag-wasser-leben.cjs";
+    const anker = ["        pg.regen = sturm();\n", "        pg.regen.fest = sturm().hub;\n"];
+    const req = 'require("./lib/wasser-linse.cjs")';
+    const [linse, diag] = [LI, DI].map((f) => fs.readFileSync(f, "utf8"));
+    if (anker.some((a) => linse.split(a).length !== 2) || diag.split(req).length !== 2) {
+        console.log("K3-LAUF: ein Anker fehlt oder steht doppelt (" + LI + " / " + DI + ")");
+        process.exit(3);
+    }
+    const [kl, kd] = ["scripts/lib/.k3-lauf-linse.cjs", "scripts/.k3-lauf.cjs"];
+    fs.writeFileSync(kl, linse.replace(anker[0], anker[0] + "        const __lauf = " + probe.toString() + ";\n        pg.lauf = __lauf();\n")
+        .replace(anker[1], anker[1] + "        pg.lauf.fest = __lauf().bilanz;\n"));
+    fs.writeFileSync(kd, diag.replace(req, 'require("./lib/.k3-lauf-linse.cjs")'));
+    const p = cp.spawnSync(process.execPath, [kd, "--nur", "koerper"], { encoding: "utf8", maxBuffer: 1 << 26 });
+    for (const f of [kl, kd]) fs.rmSync(f, { force: true });
+    process.stdout.write(p.stdout || "");
+    process.stderr.write(p.stderr || "");
+    process.exit(p.status === null ? 1 : p.status);
+}
+
+// die Roh-Ausgabe der Ganglinie (wetter.K3#2) für die Proben: der JSON-Block des Blocks koerper, die Ganglinie am Zweig mit `aus`
+// überschrieben
+const K3_LAUF = (aus) =>
+    JSON.stringify({ koerper: { pegel: { lauf: { A: [0.16, 0.8], lag: [1, 1.9], verhaeltnis: 1.644, bilanz: [1.006, 0.978], volumen: [[3.8, 3.9], [19.2, 18.8]], duerre: [-0.2, -0.2, -0.2], fest: [0, 0], ...aus } } } }, null, 1);
+// die Werkbank-Rümpfe der Karten-Hälfte von wetter.K3#2 (eine Zeile je Befehl, `W eval '…'`: ohne einfaches Anführungszeichen)
+const VOR_EVAL = `const s = r.state, P = [-258.4, -1132.8], f = r._hydroRiverAt(P[0], P[1]); if (!f) return { fehler: "kein Bach an " + P.join("/") }; window.__wetterSetzen("sunny"); r._naesseTakt(1e6); window.__k3Grund = s.regenStempel && s.regenStempel.slice(); const [ex, ez] = [P[0] - f.flowZ * 7, P[1] + f.flowX * 7], ey = r._voxelSurfaceY(ex, ez) + 1.7; return { vor: r._hydroRiverAt(P[0], P[1]).surfaceY, kamera: [ex, ey, ez, P[0], f.surfaceY, P[1]].map((v) => +v.toFixed(3)) };`;
+const STURM_EVAL = `const s = r.state, P = [-258.4, -1132.8]; window.__wetterSetzen("stormy"); r._naesseTakt(0); for (let k = 0; k < 240; k++) (s.spielZeit += 5), r._tickRain(); window.__wetterSetzen("sunny"); r._naesseTakt(0); r._pegelTakt(); r._drainDirtyVoxelChunks(); return { nach: r._hydroRiverAt(P[0], P[1]).surfaceY };`;
+const ZURUECK_EVAL = `const s = r.state; window.__wetterSetzen("sunny"); s.regenStempel = window.__k3Grund; r._pegelTakt(); r._drainDirtyVoxelChunks(); return { zurueck: true };`;
 const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json"];
 
 // DIE ROH-AUSGABE der Welt-Probe am main 25ac4c0c (01.11., Cloud, headless): die Proben jeder Station urteilen sie und ihre Mutanten
@@ -1658,9 +1752,9 @@ module.exports = [
     },
 
     // ── wetter.K3 ── gate:wasser-leben P4 im Block koerper (Null-Renderer, Mess-Wiese): das Wort des Spielers „Sturm", 20 min
-    // Welt-Uhr im Takt des Regens (`_tickRain` je 5 s) — der Regen des Wetter-Felds ist ein Term im Abfluss neben der Schmelze
-    // (gelaende-core `abfluss`, `regenAbfluss`: ein linearer Speicher des Einzugsgebiets), die Pegel-Tafel folgt ihm je Stufe und
-    // reist in den Faden; gemessen der Spiegel des Kerns (`_waterLevelAt`) am Bach der Mess-Wiese über dem trockenen, das Regen-
+    // Welt-Uhr im Takt des Regens (`_tickRain` je 5 s) — der Regen des Wetter-Felds fällt als Stempel auf die Welt-Uhr, gefaltet
+    // je Lag-Klasse des Laufs (gelaende-core `pegelLauf`, seit w12-pegel-lauf; davor ein Term des Felds ohne Speicher), die
+    // Pegel-Tafel folgt ihm je Stufe und reist in den Faden; gemessen der Spiegel des Kerns (`_waterLevelAt`) am Bach der Mess-Wiese über dem trockenen, das Regen-
     // Feld gehalten (der Sturm regnet nicht) hebt er nichts. An main ea07267e ROT (keine Probe: der Abfluss trug nur die Schmelze);
     // am Zweig pegel-regen df64100a +0,2 m (die Krone des Betts, `pegelTafel`), 26 Tafeln an den Faden, gehalten 0.
     {
@@ -1697,6 +1791,113 @@ module.exports = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = Pegel am Bach +≥ 0,2 m nach 20 min Sturm an einem Ort",
+    },
+
+    // ── wetter.K3 Staffel 2, die headless-Hälfte ── die Ganglinie je Lauf (`k3Ganglinie`: die Probe hinter `sturm()` in einer
+    // Mess-Kopie der Wasser-Linse, Null-Renderer, Mess-Wiese) am Kern-Spiegel per Sprung der Welt-Uhr: zwei Bäche mit A-Verhältnis
+    // ≥ 4, 10 s Niesel als Wort des Spielers, je die Ganglinie gegen denselben Lauf ohne Niesel — der Lag (Schwerpunkt hinter
+    // dem des Regens) wächst mit A, das Volumen durch den Pegel ist der Abfluss des Regens über A ±30 %, 14 Spieltage Sonne senken
+    // Bach, Fluss und See; das Regen-Feld gehalten (der Niesel regnet nicht) trägt kein Volumen. An main b62542c9 ROT (der Regen ein
+    // Term des Felds ohne Speicher: Lag −0,007 ↔ −0,007 h, Bilanz 0,064, Dürre 0); am Zweig w12-pegel-lauf GRÜN (die Faltung des
+    // Regens über die Welt-Uhr je Lag-Klasse, gelaende-core `pegelLauf`). Die Karten-Hälfte (das Bild am Bach) misst die Sitzung.
+    {
+        kriterium: "wetter.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + k3Ganglinie.toString() + ")()"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const g = b && b.koerper && b.koerper.pegel && b.koerper.pegel.lauf;
+            if (!g || g.fehler || !Array.isArray(g.A))
+                return { gruen: false, zahl: "keine Ganglinie am Bach (" + ((g && g.fehler) || "koerper.pegel.lauf fehlt") + ", Exit " + lauf.exit + ")" };
+            const im = (a, n, lo, hi) => Array.isArray(a) && a.length === n && a.every((v) => v >= lo && v <= hi);
+            const aV = g.A[0] > 0 ? g.A[1] / g.A[0] : 0;
+            const v = (g.volumen || []).map((x) => x.join(" ↔ ")).join(" / ");
+            return {
+                gruen: aV >= 4 && g.verhaeltnis > 1 && im(g.bilanz, 2, 0.7, 1.3) && im(g.duerre, 3, -Infinity, -0.005) && im(g.fest, 2, -0.1, 0.1),
+                zahl:
+                    "A " + g.A.join(" ↔ ") + " km² (×" + aV.toFixed(1) + ") · Lag " + (g.lag || []).join(" ↔ ") + " Spielstunden (Verhältnis " + g.verhaeltnis +
+                    ") · Bilanz " + (g.bilanz || []).join(" / ") + " (Regen × Fläche ↔ ΔVolumen " + v + " m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See " +
+                    (g.duerre || []).join(" / ") + " m · Regen-Feld gehalten Bilanz " + (g.fest || []).join(" / ") + " · Exit " + lauf.exit,
+            };
+        },
+        proben: [
+            { name: "die Messung am main b62542c9 (kein Lag, keine Dürre)", stdout: K3_LAUF({ A: [0.16, 0.8], lag: [-0.007, -0.007], verhaeltnis: 0, bilanz: [0.064, 0.064], duerre: [0, 0, 0], fest: [0, 0] }), gruen: false },
+            { name: "die Ganglinie am Zweig w12-pegel-lauf", stdout: K3_LAUF({}), gruen: true },
+            { name: "das Regen-Feld gehalten trägt ein Volumen (der Pegel liest das Wort, nie das Feld)", stdout: K3_LAUF({ fest: [1, 1] }), gruen: false },
+            { name: "ein Sinus auf dem Pegel (der Lag gleich, unabhängig von A)", stdout: K3_LAUF({ lag: [1, 1], verhaeltnis: 1 }), gruen: false },
+            { name: "zwei Bäche gleicher Fläche (A-Verhältnis 2)", stdout: K3_LAUF({ A: [0.4, 0.8] }), gruen: false },
+            { name: "das Volumen verdoppelt (ein Speicher, der den Regen zweimal abgibt)", stdout: K3_LAUF({ bilanz: [2, 2] }), gruen: false },
+            { name: "die Dürre hält den See", stdout: K3_LAUF({ duerre: [-0.2, -0.2, 0] }), gruen: false },
+            { name: "kein zweiter Bach um P.fluss", stdout: K3_LAUF({ fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um P.fluss" }), gruen: false },
+        ],
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = der Lag wächst mit dem Einzugsgebiet A, Volumen-Bilanz Regen × Fläche ≈ ΔVolumen ±30 %, 14 Spieltage Dürre senken",
+    },
+
+    // ── wetter.K3 Staffel 2, die Karten-Hälfte ── DAS BILD AM BACH (nach `wasserBach`, scripts/lib/wasser-linse.cjs): der Bach der
+    // Mess-Wiese (der Bach P.fluss von wetter.K3#1, −258,4/−1132,8) aus 7 m quer zu seinem Lauf, Augenhöhe 1,7 m, in 1920×1080 aus dem
+    // Ausgabe-Pfad (`bild --wahl 0`: der Schuss wartet, bis die Welt an der Pose steht) — trocken (das Wort „sonnig") und nach 20 min
+    // Sturm der Welt-Uhr im Takt des Regens, das Wetter danach klar (der Bach steht noch hoch: der Lag seines Laufs). GRÜN: der
+    // Kern-Spiegel am Bach +≥ 0,15 m, das gezeichnete Wasser (die Klassen chunk-water-* und wasserSatz) im zweiten Bild ≥ 5 % mehr
+    // Pixel, beide Bilder in Ausgabe-Größe und von ihrem Urteil getragen. Die Stempel des Regens kehren zurück, die Sitzung stellt
+    // die Welt in den Grund (mutiert). Gemessen vom Koordinator auf Radeon und GTX; die headless-Hälfte misst Lag, Bilanz und Dürre.
+    {
+        kriterium: "wetter.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 45, mutiert: true, befehl: [
+            "bash",
+            "-c",
+            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen -258.4 -1132.8 > "$D/umstellen.txt" 2>&1; W eval 'VOR' > "$D/vor.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.kamera.join(" "))' "$D/vor.txt"); echo "KAMERA $KAM"; K='^(wasserSatz|chunk-water-[a-z]+)$'; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse "$K" --datei "$D/trocken.png" > "$D/bild-trocken.txt" 2>&1; W eval 'STURM' > "$D/sturm.txt" 2>&1; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse "$K" --datei "$D/sturm.png" > "$D/bild-sturm.txt" 2>&1; E=$?; W eval 'ZURUECK' > "$D/zurueck.txt" 2>&1; echo "BILD $(tr -d '\\n' < "$D/bild-sturm.txt" | cut -c1-400)"; node -e 'const fs = require("fs"), d = process.argv[1], j = (f) => { try { const t = fs.readFileSync(d + "/" + f, "utf8"); return JSON.parse(t.slice(t.indexOf("{"))); } catch (_e) { return null; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ trocken: j("trocken.abnahme.json"), sturm: j("sturm.abnahme.json"), vor: (j("vor.txt") || {}).ergebnis || null, nach: (j("sturm.txt") || {}).ergebnis || null }))' "$D" "$A"; exit $E`.replace("VOR", VOR_EVAL).replace("STURM", STURM_EVAL).replace("ZURUECK", ZURUECK_EVAL),
+        ] },
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            if (!j || !j.trocken || !j.sturm || !j.vor || !j.nach || j.vor.fehler)
+                return { gruen: false, zahl: "kein Begleit-JSON beider Bilder am Bach (" + ((j && j.vor && j.vor.fehler) || "Exit " + lauf.exit) + ")" };
+            const px = (a) => Object.entries((a.klasse && a.klasse.klassen) || {}).reduce((n, [k, v]) => n + (/^(wasserSatz|chunk-water-)/.test(k) ? v.pixel || 0 : 0), 0);
+            const [p0, p1] = [px(j.trocken), px(j.sturm)];
+            const hub = Math.round((j.nach.nach - j.vor.vor) * 1000) / 1000;
+            const gross = [j.trocken, j.sturm].every((a) => a.bild && a.bild.w === 1920 && a.bild.h === 1080 && a.ok === true);
+            return {
+                gruen: hub >= 0.15 && p0 > 0 && p1 >= 1.05 * p0 && gross,
+                zahl: "Bach am Kern-Spiegel +" + hub + " m nach 20 min Sturm · gezeichnetes Wasser " + p0 + " → " + p1 + " px (×" + (p0 ? (p1 / p0).toFixed(2) : "—") +
+                    ") in " + [j.trocken, j.sturm].map((a) => (a.bild ? a.bild.w + "×" + a.bild.h : "?") + (a.ok === true ? "" : " ohne Urteil")).join(" / "),
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/wasser-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "index.html",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = der Lag wächst mit dem Einzugsgebiet A, Volumen-Bilanz Regen × Fläche ≈ ΔVolumen ±30 %, 14 Spieltage Dürre senken, Bild am Bach auf beiden Geräten",
     },
 
     // ── wetter.K5 ── gate:kopplung F3: die Phase am Verhalten (quer gleich, längs verschieden, die Richtung dreht mit, Saat)
@@ -2944,7 +3145,6 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: 7/7 verlangt je Stoff Albedo → Luma im Ausgabe-Bild (die Karte; headless zählt sie nie), die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
-    { kriterium: "wetter.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Bild am Bach auf beiden Geräten“ verlangt das Ausgabe-Bild beider Karten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. gelesen an 5fba36ea): der Regen ist ein linearer Speicher im Abfluss (gelaende-core `regenAbfluss`) — kein Lag aus dem Einzugsgebiet A gemessen, keine Volumen-Bilanz, keine Dürre-Probe über 14 Spieltage" },
     { kriterium: "wetter.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Ego/Third, beide Geräte“ verlangt das Ausgabe-Bild beider Karten in beiden Sichten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. an 5fba36ea, Staffel 1 ROT): der Fuß steht 0,01 m ÜBER der Decke — keine Tiefe, also keine Spur, die bleiben könnte" },
     { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „100 freie Körper ≤ 1 ms CPU an der GTX-CPU“ ist eine Zeit am Gerät, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];
