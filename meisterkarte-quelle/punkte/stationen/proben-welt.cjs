@@ -107,6 +107,31 @@ function sitzungTor() {
     return tor;
 }
 
+// DIE GESPANNTE LEINE (w12-proben-tempo; Seiten-Funktion): der Takt OHNE BILD, wie das Spiel ihn kennt — ist die GPU-Leine gespannt
+// (`_gpuLeineFrei`, stamm/dirigent-takt.js), rechnet der Takt Simulation, Eingabe, Streaming, Karten und Himmel und setzt nur
+// `_loopShadowUpdate` und `_loopRender` aus (der Weg jedes Takts, wenn die GPU zurückliegt). Die Probe leiht ihn der Welt (`leihe`, die
+// EINE Leihe der Seite) und hält den Rückruf; Renderer, Nachbearbeitung und Bäckerei bleiben unberührt — ein leeres `renderer.render`
+// (`__bildAus`) backte in der Welt der Sitzung leere Karten in den Atlas: `_tickImpostorBake` zeichnet IM TAKT über denselben Renderer
+// (`_buehneRender`). Als Text in den Befehl getragen (ein Argument von torBefehl): der Abdruck jeder Probe, die ihn trägt, sieht ihn.
+// DIE LEIHE LÄSST DEN REGLER, WIE SIE IHN FAND (w12-proben-tempo2): jeder Takt ohne Bild legt seine Wanduhr in den Bild-Abstand der
+// Leine (`_gpuLeineFrameMs`, `sammelMs`) — das erste Bild nach dem Rückruf meldete dem Regler die GANZE Fahrt als EIN Bild (fahrzeug.K2#1:
+// die Uhr von ~12 900 Takten im Muster 8–33 ms), `_perfSenseFoldFrame` faltete sie in sein Mittel und `_nexusPerfRegulate` drosselte die
+// Qualität der Welt der Sitzung für die Proben danach. Der Rückruf gibt die Leine zurück und leert den Abstand: das nächste Bild misst
+// nur seinen eigenen Takt. Der Rückruf trägt mehrfach (der Kreis ruft ihn am Urteils-Punkt und im finally).
+function ohneBild() {
+    const zurueck = leihe(r, {
+        _gpuLeineFrei() {
+            const L = this._gpuLeine;
+            if (L) (L.versuch = false), L.ausgesetzt++;
+            return false;
+        },
+    });
+    return () => {
+        zurueck();
+        if (r._gpuLeine) r._gpuLeine.sammelMs = 0;
+    };
+}
+
 // der Befehl einer Probe: das Tor, dann `fn(tor)`; ein Wurf ist ROT beim Namen (PROBE-FEHLER mit den ersten Rahmen), nie still
 function torBefehl(fn, ...arg) {
     return [
@@ -266,22 +291,49 @@ async function bodenRollen(tor) {
 // zählt jeden Takt der Prüfung weiter) — das Urteil (≥ 3, im Blick 0, 600 Spiel-s, die Sicht) fällt gleich; nur die Zahl der Sichtungen
 // über drei fällt weg. Der Anker `__kreis` legt den Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Schüsse,
 // Sichtungen; nie am Anfang `KREIS-`, die Zeile des Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
+// DIE SPIEL-UHR VOR DER WANDUHR (w12-proben-tempo; Radeon 8ef49bef am Deckel 90 s: 465 von 1200 Spiel-s, Radeon 3ef20f9f ohne Schuss
+// 14,6 Spiel-s je s Wanduhr — die 1200 Spiel-s allein ≈ 82 s): der Kreis fragte alle 250 ms WANDUHR (`sleep(250)`), dazwischen lief der
+// Raffer an der Bild-Schleife (rAF, am VSync gerastet) und jedes seiner Bilder trug bis zu zwei gezeichnete Takte. Jetzt steht die
+// Schleife im Kreis still, und der Kreis taktet selbst (`__kreisTakte`): je URTEILS-PUNKT `JE` Takte zu TAKT_DECKEL_S (2 Spiel-s, der
+// Abstand seiner Schüsse), alle ohne Bild (die gespannte Leine, `ohneBild`) bis auf den letzten — das Bild am Punkt, an dem der Kreis
+// prüft und schießt; die Lücke nach einem Schuss nimmt er ohne Schleife (die 50 ms von `wieder`, nie ihr Neustart). Die Prüfung liegt
+// jetzt fest je 2 Spiel-s (vorher je 250 ms Wanduhr, auf der Radeon ≈ 3,7 Spiel-s): nie gröber, das Schlupfloch `imBlick` nie blinder.
 async function tierKreis(tor) {
     const n = 10;
+    const JE = 20;
     const STAFFEL = 3;
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
             'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
         ["if (!kand.some((q) => q.neu)) continue;", "if (!kand.some((q) => q.neu) || kreis.gesehen.size >= " + STAFFEL + ") continue;"],
+        ["kreis.z0 = st.spielZeit;", "kreis.z0 = st.spielZeit;\n            rend.setAnimationLoop(null);"],
+        ["await sleep(250);\n                    st.yaw = kreis.gier", "await window.__kreisTakte(takt);\n                    st.yaw = kreis.gier"],
+        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
+            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await sleep(50), (tRenderVor = null);"],
     ]);
     const page = await tor.seite();
     tor.karte();
-    await page.evaluate((n) => {
+    await page.evaluate("window.__ohneBild = " + tor.arg[0] + "; 1");
+    await page.evaluate((n, je) => {
         const r = window.anazhRealm;
         const rend = r.state.renderer;
         const Z = window.__zeitraffer || (window.__zeitraffer = { n: 0, roh: null });
         Z.n = n;
+        Z.je = je;
         Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
+        // der Takt des Kreises bis zum nächsten Urteils-Punkt: `Z.je` Takte, die Uhr der Takte läuft der Wanduhr voraus wie der Raffer
+        window.__kreisTakte = async (takt) => {
+            const zurueck = window.__ohneBild();
+            try {
+                for (let i = 0; i < Z.je; i++) {
+                    if (i === Z.je - 1) zurueck();
+                    takt((Z.t = Math.max(Z.t || 0, performance.now()) + Z.ms));
+                }
+            } finally {
+                zurueck();
+            }
+            await sleep(0);
+        };
         if (Z.roh) return;
         Z.roh = rend.setAnimationLoop;
         Z.huelle = rend.setAnimationLoop = function (cb) {
@@ -294,7 +346,7 @@ async function tierKreis(tor) {
             });
         };
         return 1;
-    }, n);
+    }, n, JE);
     await tor.ruf("/fenster", { w: 1280, h: 720 });
     try {
         for (const sicht of ["ego", "third"]) {
@@ -672,7 +724,14 @@ async function fahrWegenetz(tor) {
     await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
     await page.evaluate(() => (window.__anazhAutoSettlement = true));
     const t0 = Date.now();
-    const o = await page.evaluate(F.probeLeben, { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } });
+    // DIE FAHRT OHNE BILD (w12-proben-tempo): das Urteil liest kein Bild — Route, Takte, Tempo, Steckenbleiber und Boden zählt der
+    // Sim-Schritt. Die Orte erwachen und der GT fährt unter der gespannten Leine (`ohneBild`, tor.arg[0]): jeder Takt rechnet ganz,
+    // keiner zeichnet. Bis dahin zeichnete auf der Karte bis zu jeder zweite Takt der Probe (die Leine löst an jedem `sleep` der
+    // Probe, alle 4 Takte) — headless b62542c9 zählte 14 Bilder, die Radeon riss am Deckel 45 s ohne Zeile
+    await page.evaluate("window.__ohneBild = " + tor.arg[0] + "; window.__bildZurueck = window.__ohneBild(); 1");
+    const o = await page
+        .evaluate(F.probeLeben, { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } })
+        .finally(() => page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1)));
     const v = o.wegenetz ? d.wegenetzVerdict(o.wegenetz) : [String(o.err || "keine Fahrt").split("\n")[0]];
     console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung`);
     console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
@@ -706,7 +765,12 @@ async function fahrVerkehr(tor) {
     await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
     const t0 = Date.now();
     const sek = Number(tor.arg[0]) || 12;
-    const o = await page.evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } });
+    // OHNE BILD wie die Fahrt auf dem Wegenetz (w12-proben-tempo): die Stadt gründet und fährt unter der gespannten Leine (`ohneBild`,
+    // tor.arg[1]) — Stufe, Sitz und Sichtbarkeit am Steuer wählt der Takt (`_tickArchitectureLOD`, `_kompositErbt`), nie das Bild
+    await page.evaluate("window.__ohneBild = " + tor.arg[1] + "; window.__bildZurueck = window.__ohneBild(); 1");
+    const o = await page
+        .evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } })
+        .finally(() => page.evaluate(() => (window.__bildZurueck(), delete window.__bildZurueck, 1)));
     for (const h of d.VERKEHR.stunden) {
         const m = o.verkehr && o.verkehr[h];
         const v = m ? d.verkehrVerdict(m) : [String(o.err || "kein Verkehr").split("\n")[0]];
@@ -1277,4 +1341,4 @@ function hebungScheiben(acorn, text) {
     return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung, hebungScheiben };
+module.exports = { sitzungTor, torBefehl, ohneBild, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung, hebungScheiben };

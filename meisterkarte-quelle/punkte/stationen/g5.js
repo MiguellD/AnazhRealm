@@ -4687,10 +4687,14 @@ const stationen = [
     // IN DER SITZUNG (29.10., proben-welt.cjs `fahrWegenetz`): die Seiten-Probe des Gates (`probeLeben`, `wegenetz`) in der warmen
     // Welt, der Dorf-Zug an wie das Gate vor dem Boot; die Route sind ~12 000 Sim-Schritte in den Bildern der Probe (die Welt kommt
     // je Bild) — die Ausnahme trägt sie. Kennt der Stand die Fahrt nicht, ROT beim Namen in Sekunden. Die Orte erwachen: mutiert.
+    // OHNE BILD (w12-proben-tempo; Radeon und GTX rissen den Deckel 45 s ohne Zeile): die Orte erwachen und der GT fährt unter der
+    // gespannten Leine (`ohneBild`, das Argument des Befehls) — 12 936 Takte, keiner zeichnet (die Leine löste vorher an jedem `sleep`
+    // der Probe). Headless b62542c9, A/B unter gleicher Last: 861,2 → 522,4 s, Urteil gleich (ROT Tempo 72,4 ↔ 72,5 %, 12 414 ↔ 12 405
+    // Sim-Schritte, Route 2579 m, Steckenbleiber 0) — der Rest ist der Takt des Spiels selbst (headless allein 257 s)
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
-            befehl: PW.torBefehl(PW.fahrWegenetz),
+            befehl: PW.torBefehl(PW.fahrWegenetz, String(PW.ohneBild)),
             sek: 10,
             mutiert: true,
             
@@ -4730,10 +4734,12 @@ const stationen = [
     // Namen: ROT, bis Hang, Furt und die Sichten eine Probe tragen — C selbst steht je Fahrt in der Zahl (`C GRÜN`/`C ROT`).
     // Die Stadt erwacht, die Uhr springt: mutiert. DER DECKEL geschätzt (ungemessen auf der Karte): headless 2 × 40 s in 122 s samt Boot
     // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
+    // OHNE BILD wie K2#1 (w12-proben-tempo; Radeon 71ef6a0d/25ac4c0c 49,4/55,6 s, GTX 8ef49bef am Deckel 90 s): die Stadt gründet und
+    // fährt unter der gespannten Leine. Headless b62542c9 A/B unter gleicher Last 241,9 → 229,7 s, Urteil gleich (C ROT: ohne Ziel erreicht)
     {
         kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
         probe: {
-            befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
+            befehl: PW.torBefehl(PW.fahrVerkehr, "12", String(PW.ohneBild)),
             sek: 55,
             mutiert: true,
             ausnahme: "die Metropole von stadt-voll (nH 300) gründet in der Probe, dann je Stunde (10 und 23 Uhr) 12 s Spielzeit im Takt des Spiels",
