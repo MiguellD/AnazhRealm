@@ -1,0 +1,200 @@
+{
+ "a": {
+  "welt": "c3b35971-4be8-4c85-8110-0a53b0343799",
+  "slug": "warme-hain",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ },
+ "tor": {
+  "ok": true,
+  "a": "c3b35971-4be8-4c85-8110-0a53b0343799",
+  "b": "3f6ebfd2-645c-481e-949a-c0a8fea7f72e",
+  "merkt": true
+ },
+ "b": {
+  "welt": "3f6ebfd2-645c-481e-949a-c0a8fea7f72e",
+  "slug": "ferne",
+  "gesetz": {
+   "schwere": -3.71,
+   "rayleighTiefe": [
+    0.13,
+    0.085,
+    0.05
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "foggy",
+    "nebel": "foggy",
+    "regen": "cloudy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": 1.6
+  },
+  "g": -3.71,
+  "sprung": {
+   "y0": 45.617,
+   "hoehe": 1.54,
+   "abdruck": 3.411,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.01625,
+    0.01063,
+    0.00625
+   ],
+   "blauRot": 0.3846,
+   "sonne": [
+    1,
+    0.7989,
+    0.6135
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 36,
+    "klar>sunny": 69,
+    "bewoelkt>foggy": 41,
+    "regen>cloudy": 65,
+    "sturm>stormy": 29
+   },
+   "worte": {
+    "foggy": 77,
+    "sunny": 69,
+    "cloudy": 65,
+    "stormy": 29
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 58.181,
+   "reliefErde": 31.318,
+   "verhaeltnis": 1.8578,
+   "leserRegler": 1.6
+  }
+ },
+ "heim": {
+  "ok": true,
+  "hier": "c3b35971-4be8-4c85-8110-0a53b0343799"
+ },
+ "a2": {
+  "welt": "c3b35971-4be8-4c85-8110-0a53b0343799",
+  "slug": "warme-hain",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ }
+}
