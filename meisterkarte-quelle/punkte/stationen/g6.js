@@ -440,7 +440,9 @@ const K4_PROBE = { sek: 10, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) }
 // Aussetzer über `AudioContext.playbackStats`) in der Welt der Sitzung, ihr Loop im Fenster (echt). Der Gang verdichtet: je Phase
 // `n` × 60 Bilder — gehen (W, je 60 Bilder ein Tipp A) · Fahrt im GT (W/S im Wechsel je 120 Bilder) · Nacht (Uhr 0) —, die Tasten
 // ins Fenster, gehalten bis zum Bild, nie nach der Uhr; die Aussetzer über die ganze Wiedergabe der drei Phasen. Bis 29.10.:
-// `--takt --echt --minuten 10` mit eigenem Boot (ea07267e Radeon 14,74 min).
+// `--takt --echt --minuten 10` mit eigenem Boot (ea07267e Radeon 14,74 min). Eine Geh-Phase hält W DURCHGEHEND und endet am Bild
+// UND am Weg (≥ n × 60 Bilder, ≥ `o.weg` m): bis 05.11. ließ sie W je 60 Bilder los und endete nach n × 60 Bildern — Stop-and-go
+// trug in 600 Bildern 6–9 m, die Station war rot an der Probe, nie am Spiel (w12-klang-takt).
 async function taktFahrt(quelle, m, namen, o) {
     const r = window.anazhRealm, st = r.state, rend = st.renderer;
     const taktSeite = new Function("return (" + quelle + ")")();
@@ -457,11 +459,26 @@ async function taktFahrt(quelle, m, namen, o) {
         }
         return ziel();
     };
-    const phase = async (name, n, pendeln) => {
+    const phase = async (name, n, pendeln, wegM = 0) => {
         T().start(name);
-        for (let i = 0; i < n; i++) {
-            await halte(pendeln && Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
-            if (!pendeln) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+        if (pendeln) {
+            for (let i = 0; i < n; i++) await halte(Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
+            return T().urteil(o.soll);
+        }
+        // gehen: W gehalten, bis Bild UND Weg stehen; je 60 Bilder ein Tipp A unter dem gehaltenen W; die Frist (n × 10 s, die Summe
+        // der alten Frist je 60 Bilder) bricht nur einen Hänger — dann nennt das Urteil Bilder und Weg beim Namen
+        const weg = () => T().weg - T().weg0;
+        const steht = () => T().bilder.length >= 60 * n && weg() >= wegM;
+        const t0 = performance.now();
+        const frist = () => performance.now() - t0 >= n * 10000;
+        taste("w", "keydown");
+        try {
+            for (let i = 1; !steht() && !frist(); i++) {
+                while (T().bilder.length < 60 * i && !steht() && !frist()) await warte(16);
+                if (!steht()) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+            }
+        } finally {
+            taste("w", "keyup");
         }
         return T().urteil(o.soll);
     };
@@ -473,7 +490,7 @@ async function taktFahrt(quelle, m, namen, o) {
         await phase("ein", 2);
         const a = T().audio();
         const ph = {};
-        ph.gehen = await phase("gehen", o.n);
+        ph.gehen = await phase("gehen", o.n, false, o.weg);
         const p = st.playerMesh.position;
         p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
         const e = (window.__klangGT = r.spawnArchitecture("fahrzeug_gt", { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z }, { silent: true, precise: true }));
@@ -483,7 +500,7 @@ async function taktFahrt(quelle, m, namen, o) {
         ph.fahrt.sattel = !!st.symphony.fahrt;
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
-        ph.nacht = await phase("nacht", o.n);
+        ph.nacht = await phase("nacht", o.n, false, o.weg);
         const b = T().audio();
         const aus = a && b && b.gleich ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) } : null;
         return { seite, phasen: ph, aussetzer: aus };
@@ -496,7 +513,24 @@ async function taktFahrt(quelle, m, namen, o) {
         if (st.symphony.enabled) r.disposeSymphony();
     }
 }
-// die Befunde wie die Klang-Linse (`takt`): Aussetzer, Bewegung je Phase, p95 über dem Soll, der Sattel der Fahrt
+// DAS URTEIL DES TAKTS (Node: taktLauf, der Selbsttest in punkte.cjs) — die Befunde wie die Klang-Linse (`takt`): die Uhr der Seite,
+// Bewegung je Phase, p95 über dem Soll, die Aussetzer am Ausgang, der Sattel der Fahrt. DIE UHR (05.11., w12-klang-takt): eine Seite
+// ohne Cross-Origin-Isolation bekommt `performance.now()` auf dem 100-µs-Raster — jede Klang-ms der Sitzung lag auf 0,2/0,3/0,4, jede
+// isolierte Messung bei 0,09–0,16; ihr p95 ist kein Maß, die Station ist ROT beim Täter (der Kopf des save-servers), nie am Spiel.
+function taktRot(j, soll, weg) {
+    const rot = [];
+    if (!(j.seite && j.seite.isoliert))
+        rot.push("T uhr: die Seite ist nicht cross-origin-isoliert — performance.now() auf dem 100-µs-Raster (Täter: der Kopf des Spiel-Servers, statischerKopf ohne COOP + COEP)");
+    for (const [name, z] of Object.entries(j.phasen)) {
+        if (!(z.bilder >= 300 && z.weg >= weg)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
+        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
+    }
+    const a = j.aussetzer;
+    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
+    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
+    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    return rot;
+}
 async function taktLauf(h) {
     const D = "scripts/diag-klang-zensus.cjs";
     const text = require("fs").readFileSync(D, "utf8");
@@ -504,19 +538,15 @@ async function taktLauf(h) {
     const teile = (/const TAKT_TEILE = (\[[^\]]*\]);/.exec(text) || [])[1];
     if (!(soll > 0) || !teile) throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10 }], 150000);
+    // der Weg je Phase: EINE Zahl für die Probe (die Geh-Phase läuft bis zu ihm) und das Urteil — 10 m, wie die Klang-Linse (`takt`)
+    const weg = 10;
+    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10, weg }], 150000);
     console.log("Klang-Takt:", JSON.stringify(j.seite));
-    const rot = (j.rot = []);
-    for (const [name, z] of Object.entries(j.phasen)) {
+    for (const [name, z] of Object.entries(j.phasen))
         console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
-        if (!(z.bilder >= 300 && z.weg >= 10)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
-        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
-    }
     const a = j.aussetzer;
     console.log("── Aussetzer am Ausgang: " + (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt"));
-    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
-    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
-    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    const rot = (j.rot = taktRot(j, soll, weg));
     for (const t of rot) console.log("   " + t);
     return j;
 }
@@ -810,15 +840,34 @@ async function uferSeite(quelle, opts) {
         rend.setAnimationLoop(null);
     }
 }
-async function speicherBildSeite(setzen, wasser) {
+async function speicherBildSeite(setzen, wasser, stein) {
     const r = window.anazhRealm;
     const [st, p] = [r.state, r.state.playerMesh.position];
     const ort = (vor, quer) => [p.x + Math.sin(st.yaw) * vor - Math.cos(st.yaw) * quer, p.z + Math.cos(st.yaw) * vor + Math.sin(st.yaw) * quer];
-    const [b, g] = [ort(6, -2.5), ort(9, 2.5)];
+    const g = ort(9, 2.5);
     // DER STEIN DES SPIELERS (w12-proben-s): der Bau-Modus setzt ihn (`confirmBuild`) — eine Text-id (`_newArchId`, die Marke `werk`:
     // Werk weicht keinem Räumer, `_weichtDemBau`), ein Natur-Stoff durch die Natur-Wand (`_naturSetzen`), deren Absage beim Namen steht.
     // Bis hier setzte die Probe ihn auf dem Weltgen-Pfad (`silent`, Zahlen-id, herkunft 1): basalt ist Natur, der Stand lud ihn mit
-    // werk false, ein Räumer nahm ihn nach dem Laden (Radeon 8ef49bef: nach {bau: false}) — die Probe maß die Saat, nie die Wiederkehr
+    // werk false, ein Räumer nahm ihn nach dem Laden (Radeon 8ef49bef: nach {bau: false}) — die Probe maß die Saat, nie die Wiederkehr.
+    // DER PLATZ: der nächste zum alten Platz (vor 6 m, quer −2,5 m) im Raster vor dem Spieler (vor 4–8 m, quer −6,5…+1 m), an dem das
+    // Phantom grün stünde (`_naturWand` frei). Radeon b62542c9: der alte Platz lag 1,2 m neben einem glutbrunnen der Welt (−270/−1121,
+    // seine Hülle ±1,7 m, Wand „bau“) — der Bau-Modus setzt dort keinen Stein, und genau dort räumte der Grundriss den Weltgen-Stein nach
+    // dem Laden; die Sperre des alten Platzes steht beim Namen in der Ausgabe. Das Bild danach und nach dem Laden (`stein`) urteilt an
+    // demselben Platz
+    let b = stein || null;
+    let sperre = null;
+    if (setzen) {
+        const bauten = ([x, z]) => st.architectures.filter((e) => e && e.position && !r._istNatur(e) && Math.hypot(e.position.x - x, e.position.z - z) < 40)
+            .map((e) => e.type + " " + e.position.x.toFixed(1) + "/" + e.position.z.toFixed(1)).slice(0, 3);
+        const raster = [4, 5, 6, 7, 8].flatMap((v) => [-6.5, -5, -4, -2.5, -1, 0, 1].map((q) => [v, q]));
+        const plaetze = raster.sort((u, w) => Math.hypot(u[0] - 6, u[1] + 2.5) - Math.hypot(w[0] - 6, w[1] + 2.5)).map(([v, q]) => ort(v, q));
+        const wand = plaetze.map(([x, z]) => r._naturWand("stein_block", { x, y: r._terrainMacroSurfaceY(x, z), z }, {}));
+        if (wand[0]) sperre = { wand: wand[0], bauten: bauten(plaetze[0]) };
+        if (!wand.includes(false))
+            throw new Error("(B) der Bau-Modus setzt den Stein an keinem von " + plaetze.length + " Plätzen vor dem Spieler: " + [...new Set(wand)].join(", ") + " · " + bauten(plaetze[0]).join(", "));
+        b = plaetze[wand.indexOf(false)];
+    }
+    if (!b) throw new Error("(B) kein Platz des Steins für das Bild");
     if (setzen) {
         const pos = { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] };
         const setze = () => r.spawnArchitecture("stein_block", pos, { id: r._newArchId(), rotationY: st.yaw });
@@ -848,29 +897,33 @@ async function speicherBildSeite(setzen, wasser) {
         lage: { kamera: st.camera.position.toArray().map((v) => +v.toFixed(3)), blick: [+st.yaw.toFixed(4), +st.pitch.toFixed(4)], uhr: st.timeOfDay, wetter: st.weather, bauten: st.architectures.length, edits: (st.worldMeta.voxelEdits || []).length },
         u8: b64(Uint8Array.from(u8)),
         pflicht: { bau: blick(st.architectures, b), grube: blick(st.worldMeta.voxelEdits || [], g), wasser },
+        stein: b,
+        sperre,
     };
 }
 async function speicherBildLauf(h) {
     const fs = require("fs");
     const ufer = String(require(h.path.resolve("scripts/lib/welt-boot.cjs")).uferStellen);
     const messort = require(h.path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
-    const schuss = async (setzen) => {
+    const schuss = async (setzen, stein) => {
         const u = await h.seite(uferSeite, [ufer, { messort }], 120000);
         if (u.fehler) throw new Error("(B) " + u.fehler);
-        return h.seite(speicherBildSeite, [setzen, u.wasser], 90000);
+        return h.seite(speicherBildSeite, [setzen, u.wasser, stein || null], 90000);
     };
     const A = await schuss(true);
-    const A2 = await h.seite(speicherBildSeite, [false, A.pflicht.wasser], 90000);
+    const A2 = await h.seite(speicherBildSeite, [false, A.pflicht.wasser, A.stein], 90000);
     await h.seite(async () => (window.anazhRealm.saveState(), (await window.__stand()).length));
     const reloadMs = await h.reload();
-    const B = await schuss(false);
+    const B = await schuss(false, A.stein);
     const [a, a2, b] = [A, A2, B].map((x) => Buffer.from(x.u8, "base64"));
     const L = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-    const j = { lage: { vor: A.lage, nach: B.lage }, diff: 0, rauschen: 0, vor: A.pflicht, nach: B.pflicht, reloadMs, adapter: { renderer: h.linse } };
+    const j = { lage: { vor: A.lage, nach: B.lage }, diff: 0, rauschen: 0, vor: A.pflicht, nach: B.pflicht, reloadMs, adapter: { renderer: h.linse },
+        stein: { ort: A.stein.map((v) => +v.toFixed(1)), sperre: A.sperre } };
     for (let i = 0; i < a.length; i += 4) j.diff += Math.abs(L(a, i) - L(b, i)) > 8 ? 400 / a.length : 0;
     for (let i = 0; i < a.length; i += 4) j.rauschen += Math.abs(L(a, i) - L(a2, i)) > 8 ? 400 / a.length : 0;
     for (const [k, x] of [["vor", A], ["vor2", A2], ["nach", B]]) fs.writeFileSync(h.aus.replace(/\.json$/, "") + "-" + k + ".png", Buffer.from(x.png, "base64"));
-    console.log("(B) bild-diff " + j.diff.toFixed(2) + " % nach dem Neuladen (" + reloadMs + " ms), Rauschen " + j.rauschen.toFixed(2) + " %, Pflicht vor " + JSON.stringify(j.vor) + " · nach " + JSON.stringify(j.nach));
+    console.log("(B) bild-diff " + j.diff.toFixed(2) + " % nach dem Neuladen (" + reloadMs + " ms), Rauschen " + j.rauschen.toFixed(2) + " %, Pflicht vor " + JSON.stringify(j.vor) + " · nach " + JSON.stringify(j.nach) +
+        " · Stein des Spielers " + JSON.stringify(j.stein));
     return j;
 }
 const HYDRO_PFAD = [
@@ -3486,7 +3539,7 @@ module.exports = [
         // EINEN Fahrt ≤ 30 min): 0 Aussetzer über die ganze Wiedergabe der drei Phasen (≥ 15 s) statt 10 min an der Uhr — die 10 min
         // der Staffel nennt die Zahl, der Schöpfer entscheidet ihren Text. Bis 29.10. `--takt --echt --minuten 10` mit eigenem Boot
         // (ea07267e Radeon 14,74 min).
-        probe: { sek: 10, befehl: sitzungBefehl(taktLauf, [taktFahrt]), mutiert: true, },
+        probe: { sek: 10, befehl: sitzungBefehl(taktLauf, [taktFahrt, taktRot]), mutiert: true, },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -3524,6 +3577,7 @@ module.exports = [
             "scripts/lib/vram-abgriff.cjs",
             "scripts/lib/draw-zaehler.cjs",
             "scripts/werkbank.cjs",
+            "save-server.js",
         ],
         quelle: "2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
     },
@@ -3764,7 +3818,11 @@ module.exports = [
         // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
         // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
         // Das Neuladen ist /reload im warmen Browser der Sitzung. Bis 29.10. speicher-zwei `bild` mit eigenem Boot (ea07267e 3,25 min).
-        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true, },
+        // DIE AUSNAHME (w12-proben-s): die Wiederkehr ist ein Boot — das Neuladen der Seite und danach das Ufer, bis das Wasser wieder
+        // zeichnet; Radeon b62542c9 35 s am Ort vor dem Deckel, die GTX riss 45 s nur mit der Reise von 1147 m (vor w12-proben-frist),
+        // seitdem ohne Zahl. Der Deckel je Karte in deckel.json (GTX: das Gesetz, bis sie misst)
+        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true,
+            ausnahme: "die Wiederkehr: ein Neuladen der Seite und zweimal das Ufer, bis das Wasser zeichnet — Radeon 35 s" },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -3845,6 +3903,7 @@ module.exports = [
 // die EINE Probe der Ankunft für ihre Zwillinge in stationen/g4.js (pipeline.K4#1/#2)
 module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
 module.exports.pbSchrittTraegt = pbSchrittTraegt;
+module.exports.taktRot = taktRot;
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 // DIE FAHRT (p3-stationen-g456, 01.11.): die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s (FAHRT_MAX_S, samt Boot) —

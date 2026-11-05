@@ -1,0 +1,109 @@
+{
+ "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T07:53:17.300Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "1.17 % Lücke nach 0.7 s bis zur Ruhe der Foundry · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.60 s von außen (Eigenmeldung 11.11 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: 1.17 % Lücke nach 0.7 s bis zur Ruhe der Foundry · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.60 s von außen (Eigenmeldung 11.11 s) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 44.2,
+   "zeit": "2026-11-05T07:49:57.423Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 15.63 s von außen (Eigenmeldung 14.64 s), Bild 3.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: t(Kontrolle) kalt 15.63 s von außen (Eigenmeldung 14.64 s), Bild 3.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 50,
+   "zeit": "2026-11-05T07:12:26.632Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 14.5 m: 43.1 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (34 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Laub grown_busch_hazel_v1 in 28.33 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 44.13 m · Luma 67.9 σ 39.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.186 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts · 44 m 5/5 fliehen, 1 sichtbar, 1 Fleck(en) (67 px)",
+   "exit": 0,
+   "minuten": 1.16,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 14.5 m: 43.1 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (34 px) · 42.9 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Laub grown_busch_hazel_v1 in 28.33 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 44.13 m · Luma 67.9 σ 39.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.186 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts · 44 m 5/5 fliehen, 1 sichtbar, 1 Fleck(en) (67 px)",
+   "gpu": "amd/rdna-3",
+   "s": 69.3,
+   "zeit": "2026-11-05T07:53:17.300Z",
+   "abdruck": "ce108cf7a03c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": true,
+   "zahl": "bild-diff 0.44 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "gpu": "amd/rdna-3",
+   "s": 34.6,
+   "zeit": "2026-11-05T07:42:09.525Z",
+   "abdruck": "cf5db34c59c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T07:52:26.765Z",
+  "port": 7804,
+  "warten": 0.16,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 32,
+    "takte": 932,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "tiere.K1#2",
+     "m": 326,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 98,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 110.2,
+  "minuten": 2.09
+ }
+}

@@ -3,11 +3,11 @@
   "kopf": "b62542c9",
   "version": "V18.546.186",
   "skala": "2.0",
-  "summe": 198,
+  "summe": 199,
   "max": 330,
   "maschine": {
     "kopf": "b62542c9",
-    "zeit": "2026-11-05T06:39:42.641Z",
+    "zeit": "2026-11-05T09:01:51.765Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -245,7 +245,7 @@
           {
             "station": "ankunft.K1#1",
             "geraet": "radeon",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs)"
+            "zeile": "ROT: t(Kontrolle) kalt 15.63 s von außen (Eigenmeldung 14.64 s), Bild 3.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt"
           },
           {
             "station": "ankunft.K1#1",
@@ -454,7 +454,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 22,
+      "summe": 23,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -1190,7 +1190,7 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an b62542c9 headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an 6a571e3b: die Fahrt riss 1800 s (in physik.K2#2) — offen, UNGEMESSEN · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+          "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an b62542c9 headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 15.7 m: 43 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (98 px) · 44.5 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (37 px) · 44 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von an Punkt 3 Rinde baum_birke in 27.65 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 48.97 m · Luma 71.9 σ 41.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.186 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts an b62542c9",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
@@ -3772,7 +3772,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) · ankunft.K1#1 gtx: ungemessen (R10) · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ROT: t(Kontrolle) kalt 15.63 s von außen (Eigenmeldung 14.64 s), Bild 3.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3 an b62542c9 · ankunft.K1#1 gtx: ungemessen (R10) · ankunft.K1#2 radeon: ungemessen (R10) · ankunft.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
@@ -3781,7 +3781,7 @@
           "punkte": 0,
           "staffel": "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte",
           "messung": "Spielgang-Station ankunft: Ausgabe-Bild bei t(Kontrolle von außen) gegen dieselbe Pose nach 60 s Ruhe (`bild-diff.cjs`; Lücke = offener Bedarf im Bild plus Pixel-Diff), dazu 180°-Drehung nach 2 s und Blick aus 30 m.",
-          "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) · ankunft.K2#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: ROT: 1.17 % Lücke nach 0.7 s bis zur Ruhe der Foundry · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.60 s von außen (Eigenmeldung 11.11 s) · [linse-gpu] amd/rdna-3 an b62542c9 · ankunft.K2#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Die Ankunfts-Pose auf Himmel richten oder alles außer Blick hinter die Kontrolle schieben: die Pose ist die des Spawns, die 180°-Drehung nach 2 s zählt mit demselben Soll.",
           "aenderung": "Die 1 der Synthese stand auf Bildern zur Zeit der Eigenmeldung (B65) → 0; die Messung von außen steht als Messschuld M10.",
           "maschine": true
@@ -4150,7 +4150,7 @@
           "punkte": 1,
           "staffel": "1 = die Kosten sind an das Hörbare gebunden (gemessen) · 2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
           "messung": "Zensus (K): Welt-Abfragen des Klang-Takts bei 4000 fernen Bauten und 200 Fluss-Läufen; Profil in Bewegung; Aussetzer-Zähler am AudioContext.",
-          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 23d19f6f: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+          "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":12.2,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.38} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":12.22,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an b62542c9 headless · gehalten: Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 602 s Wiedergabe (0 s still) (Exit 0) an b3f9ae95 gtx — offen: klang.K5#2 radeon: Station seit der Messung geändert",
           "schlupfloch": "Stummschalten spart alles: K1 und K4 gelten in derselben Sitzung.",
           "maschine": true
         }
@@ -4196,7 +4196,7 @@
       "key": "speicher",
       "titel": "Speicher und Persistenz",
       "gruppe": "fundament",
-      "punkte": 6,
+      "punkte": 7,
       "pfad": "v1 (nichts geht verloren) · E (kein Frame)",
       "dateien": "`stamm/dienst.js` (saveState) · `stamm/speicher-*.js` (Snapshot, Laden, Welten, Migration) · `save-server.js` · `scripts/diag-persistence.cjs`",
       "aaaa": "Nichts geht verloren: ein Absturz an jedem beliebigen Punkt kostet höchstens 10 s Spiel, und kein Stand ist je halb. Speichern kostet keinen Frame (≤ 0,1 ms je Bild, die Arbeit läuft im Worker). Die Datei wächst mit den Änderungen, nie mit dem Weg (Welt = Seed + Edits + Leben). Nach dem Neuladen steht dasselbe Bild (≤ 1 % Diff), und ein Stand von vor 10 Versionen lädt ohne Verlust. **Wo wir die Besten schlagen:** Minecraft speichert jeden besuchten Chunk, Bethesda schleppt ChangeForms mit; bei uns ist alles Unberührte das Gesetz selbst — eine Welt ohne Edit ist nach 100 km Wanderung so groß wie am ersten Tag.",
@@ -4238,10 +4238,10 @@
         },
         {
           "name": "Die Wiederkehr zeigt dieselbe Welt",
-          "punkte": 1,
+          "punkte": 2,
           "staffel": "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
           "messung": "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
-          "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 123/123 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 123/123 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 123/123 | ✅ Dichte über den Reload: Linie 736 Löcher, 0 korrupt an b62542c9 headless — offen: speicher.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/werkbank.cjs) — zuletzt an 23d19f6f: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · speicher.K4#2 gtx: Station seit der Messung geändert — zuletzt an 8ef49bef: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+          "beleg": "Maschine: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 123/123 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 123/123 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 123/123 | ✅ Dichte über den Reload: Linie 736 Löcher, 0 korrupt an b62542c9 headless · bild-diff 0.44 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3 an b62542c9 radeon · bild-diff 0.71 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal an b62542c9 gtx",
           "schlupfloch": "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild.",
           "maschine": true
         },
@@ -4763,7 +4763,7 @@
     {
       "stand": "2026-11-05",
       "kopf": "b62542c9",
-      "summe": 198,
+      "summe": 199,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
