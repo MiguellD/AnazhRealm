@@ -598,11 +598,10 @@ class AnazhRealm_netz_portal {
         if (ziel && localStorage.getItem(this.worldStorageKey(ziel))) {
             const ht = hier.heimTor;
             if (ht && ht.weltId === ziel)
-                this.journalAppendOnce(
-                    `weltTorHeim:${ziel}`,
-                    "portal",
-                    AnazhRealm._datum(this._t("portal.ultiversum.zurueck", { welt: String(ht.label || ziel) }))
-                );
+                this.journalAppendOnce(`weltTorHeim:${ziel}`, "portal", [
+                    "portal.ultiversum.zurueck",
+                    { welt: String(ht.label || ziel) },
+                ]);
             this.saveState();
             this.log(`Welt-Tor: zurück in die Welt ${ziel.slice(0, 8)}…`, "INFO");
             this._weltWechsel(ziel);
@@ -621,10 +620,13 @@ class AnazhRealm_netz_portal {
         const welt = this._t(`ultiversum.${name}`);
         this.log(`Welt-Tor: „${welt}" wird geboren (${meta.worldId.slice(0, 8)}…)`, "INFO");
         const ab = this._weltBetreten(snap, null, {
+            // das Zeugnis ist eine Zeile der Tafel (spielgang.K5): bis w12-heimtor trug es `text`, `_weltBetreten` schrieb daraus
+            // `t = [undefined]` ins Tagebuch der alten Welt — die Rückkehr las es (`_tIn` warf), der Tausch brach (ultiversum.K1)
             zeugnisA: {
                 key: `weltTor:${meta.worldId}`,
                 type: "portal",
-                text: this._t("portal.ultiversum.geboren", { welt }),
+                schluessel: "portal.ultiversum.geboren",
+                werte: { welt: [`ultiversum.${name}`] },
             },
         });
         return { ...ab, geboren: true };
