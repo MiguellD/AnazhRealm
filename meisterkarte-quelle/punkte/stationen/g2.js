@@ -47,11 +47,9 @@ async function vegetationK4Seite(H) {
     console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
     return 0;
 }
-// DIE AUSNAHME (w12-proben-frist): das Start-Dorf erwacht am Genesis-Ort in Raten, dann 112 Aufnahmen (43 Häuser je Box-Blick, Third,
-// Gegenprobe, Wasser) — GTX ≥ 90 s in der Eich-Fahrt, Radeon 8ef49bef an 45 s nach dem Einschwingen (welt 0,9 s) ohne Grund-Zeile
 const VEGETATION_K4 = seiteProbe(33, vegetationK4Seite, {
     mutiert: true,
-    ausnahme: "das Start-Dorf erwacht in Raten, dann 112 Aufnahmen an 43 Häusern, Third, Gegenprobe und Wasser",
+    
 });
 
 // R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
