@@ -15,7 +15,7 @@
 "use strict";
 
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib, os, ENGINE_MODUL, ENGINE_THREE } = require("./lib/welt-boot.cjs");
+const { loesche, tempNeu, hauptLauf, urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib, ENGINE_MODUL, ENGINE_THREE } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
@@ -31,7 +31,7 @@ function check(ok, label) {
 // --selftest (Node-pur): ein korruptes Pack-Artefakt MUSS rot vergleichen.
 async function selftest() {
     console.log("=== PACK-CONTRACT SELBST-TEST (der Detektor feuert) ===");
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pack-selftest-"));
+    const tmp = tempNeu("pack-selftest");
     try {
         // Synthetischer „Live-Reply": kleine bekannte Puffer, sha256 in Node als Browser-Wahrheit.
         const pos = Buffer.from(new Float32Array([0.5, -1.25, 3.75, 2, 4, 8]).buffer);
@@ -86,7 +86,7 @@ async function selftest() {
             `gekürzter Puffer → rot (${d2[0] || "kein Diff!"})`
         );
     } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
+        loesche(tmp);
     }
     // der Boot-Lauf ist nicht vakuös: ein Manifest ohne core.bruecke lässt Laden und Stempel rot werden
     const ohne = JSON.stringify(PK.readManifest(PK.ROOT).map((c) => Object.assign({}, c, { bruecke: undefined })));
@@ -191,7 +191,7 @@ async function main() {
     // (d) DER ROUNDTRIP-BEWEIS + der Hook VERHALTENS-bewiesen (ein Preset, lod 2 — klein).
     const manifest = PK.readManifest(PK.ROOT);
     const realm = await PK.bootRealm(PORT);
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pack-gate-"));
+    const tmp = tempNeu("pack-gate");
     try {
         const rd = await PK.waitFoundryReady(realm.page);
         check(rd.ready && rd.recipeCount > 0, `Foundry ready (${rd.readyMs} ms) + Rezepte (${rd.recipeCount})`);
@@ -243,7 +243,7 @@ async function main() {
                 (diffs.length ? ` (${diffs[0]})` : "")
         );
     } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
+        loesche(tmp);
         await realm.close();
     }
 

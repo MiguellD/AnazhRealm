@@ -475,12 +475,10 @@ async function checkBandVoxelTerrainCore({ page, check }) {
             if (origJournalSeen) st.worldJournal.seen = origJournalSeen;
         }
 
-        // Welt-Feld-Farbe + Naht-Skirt
+        // Welt-Feld-Farbe (den Naht-Skirt misst die Skirt-Naht in feld-leben an den vier Chunks am Ursprung: geteilte Vertices)
         let anyColorAttr = false;
         let colorMin = 1;
         let colorMax = 0;
-        let skirtProven = false;
-        const cfg0 = r._voxelChunkConfig();
         for (const e of st.voxelChunks.values()) {
             if (!e || !e.mesh || !e.mesh.geometry) continue;
             const col = e.mesh.geometry.getAttribute("color");
@@ -492,14 +490,9 @@ async function checkBandVoxelTerrainCore({ page, check }) {
                     if (rr > colorMax) colorMax = rr;
                 }
             }
-            const g = e.mesh.geometry;
-            g.computeBoundingBox();
-            const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
-            if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
         }
         out.voxelHasFieldColors = anyColorAttr;
         out.voxelColorVaries = colorMax - colorMin > 0.05;
-        out.voxelSkirt = skirtProven;
 
         // Streaming: alles abräumen, ein Tick baut wieder auf.
         for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
@@ -603,10 +596,6 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         check(
             "Voxel P2b-Politur: die Voxel-Farben variieren über die Welt (keine Mono-Biom-Fläche)",
             voxelP2bResults.voxelColorVaries
-        );
-        check(
-            "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
-            voxelP2bResults.voxelSkirt
         );
         check(
             "Welle E (E1): die LOD-Pyramide-Config ist LOD-invariant (LOD2 dim6/step7.2, LOD3 dim3/step14.4; span 43.2 m / 417.6 m)",

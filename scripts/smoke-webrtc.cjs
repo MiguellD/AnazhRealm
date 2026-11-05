@@ -11,7 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, waitFor, hauptLauf, pruefer, zweiImMesh, path, fs } = require("./lib/welt-boot.cjs");
+const { loesche, starteBrowser, ROOT, waitFor, hauptLauf, pruefer, zweiImMesh, path, fs } = require("./lib/welt-boot.cjs");
 
 // Die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie 4312/4313,
 // die Server des Schöpfers.
@@ -335,7 +335,7 @@ hauptLauf(async () => {
         // (der save-server schreibt worlds/<id>/); B hat sie nicht und holt
         // ihr Bündel peer-to-peer über das Mesh. B's customWorlds bekommt den
         // Eintrag — die Welt reiste über das Mesh, ohne Repo, ohne GitHub.
-        fs.rmSync(W16_DIR, { recursive: true, force: true });
+        loesche(W16_DIR);
         const w16Vendor = await pageA.evaluate(async (id) => {
             return r.vendorWorldBundle({
                 worldId: id,
@@ -438,7 +438,7 @@ hauptLauf(async () => {
         // Mesh. Beide Seiten betreten dasselbe Multiplayer-Portal (eine Test-
         // Welt mit dem Transport-Shim); A's ws-send erscheint bei B als
         // ws-recv — das Mesh IST der Server, kein echter Server existiert.
-        fs.rmSync(W17_DIR, { recursive: true, force: true });
+        loesche(W17_DIR);
         fs.mkdirSync(W17_DIR, { recursive: true });
         fs.writeFileSync(path.join(W17_DIR, "index.html"), W17_WORLD_HTML, "utf8");
         const SUBWORLD_PATH = `worlds/${W17_ID}/index.html`;
@@ -508,7 +508,7 @@ hauptLauf(async () => {
         // verborgenen Server-Kontext-iframe aus, das Mesh trägt den Verkehr.
         // A ist Host, B ist Gast. Die Server-JS rechnet eine laufende Summe —
         // ein Wert, den ein blosser Relay nicht erzeugen könnte.
-        fs.rmSync(W17JS_DIR, { recursive: true, force: true });
+        loesche(W17JS_DIR);
         fs.mkdirSync(W17JS_DIR, { recursive: true });
         fs.writeFileSync(path.join(W17JS_DIR, "index.html"), W17JS_WORLD_HTML, "utf8");
         const JSCOMPUTE_PATH = `worlds/${W17JS_ID}/index.html`;
@@ -607,9 +607,9 @@ hauptLauf(async () => {
     } finally {
         await mesh.ende();
         // die Test-Welt-Verzeichnisse wegräumen.
-        fs.rmSync(W16_DIR, { recursive: true, force: true });
-        fs.rmSync(W17_DIR, { recursive: true, force: true });
-        fs.rmSync(W17JS_DIR, { recursive: true, force: true });
+        loesche(W16_DIR);
+        loesche(W17_DIR);
+        loesche(W17JS_DIR);
     }
 
     console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);

@@ -489,6 +489,293 @@ class AnazhRealm_gelaende_fern {
         k.tex.needsUpdate = true;
     }
 
+    // ===== DIE KAMM-KRONE (ferne.K3, w10-ferne) =====
+    // Der Wald der Ferne trägt seinen Umriss: die Bäume DESSELBEN Bestands (phyto-core `forestKammKronen` über `planForestCell`
+    // und `forestStehende`), deren Krone über den Kamm in den Himmel ragt, gerechnet im Feld-Faden (`kammKrone`, nach dem
+    // ersten Weltbild, je Anker des Rings) und gezeichnet als EIN Netz (EIN Befehl): je Baum der Umriss seiner Krone — die
+    // Laub-Krone eine Ellipse über [Ansatz, Wipfel] mit dem Radius T des Plans, die Nadel-Krone ein Kegel —, dem Anker
+    // zugewandt, in der Studio-Laubfarbe seiner Art × der Selbstbeschattung der Krone × der Saison (dieselben Zahlen wie das
+    // Kronendach des Rings, `_fernFarbeTeile`). Bis w10 stand der Wald jenseits der Karte (384 m) nur als Farbe auf dem Ring:
+    // der Kamm war die glatte Linie des Gesetzes (Radeon 2674ff9a: Kohärenz 0,8669, Schwankung 1,51 m, Relief −2 m).
+    // Kosten an Schirm + Änderung (Gebot 7): nur die Kronen, die den Umriss tragen, neu nur mit dem Anker; vor dem Bild nie.
+    // Ring-Besitz: der Takt in `_tickFernRing`, der Abschied in `_fernRingDispose`.
+
+    // Der Auftrag an den Faden (auch die Linse `diag-kamm-krone` rechnet mit ihm): der Anker, die Augen, das Band, der Same
+    // und der Stand des Walds, die Auto-Arten des Buchs und die Krone jeder Art. `fenster` überschreibt (azVon/azBis).
+    _kammKroneAuftrag(ax, az, fenster) {
+        const K = AnazhRealm.KAMM_KRONE;
+        return Object.assign(
+            {
+                ax,
+                az,
+                augen: K.augen,
+                dVon: AnazhRealm.SCATTER.outerM,
+                dBis: K.dBis,
+                azN: K.azN,
+                marsch: K.marsch,
+                hMax: K.hMax,
+                tiefeM: K.tiefeM,
+                saumM: K.saumM,
+                seedInt: this._forestSeedInt(),
+                stand: this._waldStandSchluessel(),
+                extras: this._forestExtraSpecies(),
+                arten: this._kammKroneArten(),
+            },
+            fenster || null
+        );
+    }
+
+    // DIE KRONE JEDER ART des Walds (Host-Namen der Kronen-Tafel `FOREST.crown`, dazu die Auto-Arten des Buchs): die
+    // Wipfel-Höhe der Größe 1 (`hoeheM` des Phänotyps, das Welt-Maß K20), der Kronen-Ansatz als Anteil der Höhe — der
+    // Laubbaum im Bestand trägt seine Krone über BESTAND.krone (der Hub des Schafts, T2), sonst `crownBase` des Phänotyps —
+    // und ob sie eine Nadel-Krone ist. Eine Art ohne Welt-Maß trägt keine Kamm-Krone (sie fehlt der Tafel).
+    _kammKroneArten() {
+        const pc = globalThis.__phytoCore;
+        const B = pc.BESTAND;
+        const out = {};
+        const arten = new Set(Object.keys(AnazhRealm.FOREST.crown));
+        for (const x of this._forestExtraSpecies() || []) if (x && x.name) arten.add(x.name);
+        for (const sp of arten) {
+            const a = this._phytoArt(sp);
+            const d = a && pc.artPhaenotyp(a.rec.s, a.rec);
+            if (!d || !(d.hoeheM > 0) || d.kind !== "tree") continue;
+            const bestand = !d.conifer && d.hd >= B.hd;
+            out[sp] = { h: d.hoeheM, ansatz: bestand ? 1 - B.krone : d.crownBase || 0, nadel: !!d.conifer };
+        }
+        return out;
+    }
+
+    // DER TAKT (Ring-Besitz): nach dem ersten Weltbild bestellt er die Kamm-Krone je Anker des Rings in `sektoren` Sektoren beim
+    // Kamm-Faden (`_fernAuftrag("kamm")`, ein eigener Faden: nie hinter Ring, Feld und Horizont), EINEN zur Zeit, den des Blicks
+    // zuerst, dann nach Winkel-Abstand; jede Antwort baut das EINE Netz aus allen Sektoren des Ankers neu (`_kammKroneBau`). Ein
+    // neuer Anker verwirft den alten Stand (das Gedächtnis des Plans im Faden trägt die Zellen weiter). Die Saison färbt nach.
+    _kammKroneTakt(fr) {
+        const st = this.state;
+        let kk = st.kammKrone;
+        if (!kk)
+            kk = st.kammKrone = {
+                mesh: null,
+                stoff: null,
+                anker: null,
+                sektoren: null,
+                flug: false,
+                gen: 0,
+                saison: null,
+                laub: null,
+            };
+        if (kk.mesh) this._kammKroneSaison(kk);
+        if (kk.flug || !st._weltbildDa || !fr.ready) return;
+        const K = AnazhRealm.KAMM_KRONE;
+        if (!kk.anker || kk.anker[0] !== fr.anchorX || kk.anker[1] !== fr.anchorZ) {
+            kk.anker = [fr.anchorX, fr.anchorZ];
+            kk.sektoren = new Array(K.sektoren).fill(null);
+        }
+        // der nächste Sektor: der offene mit dem kleinsten Winkel zum Blick der Kamera
+        const cam = st.camera;
+        let blick = 0;
+        if (cam) {
+            const e = cam.matrixWorld.elements;
+            blick = Math.atan2(-e[8], -e[10]);
+        }
+        const breite = (2 * Math.PI) / K.sektoren;
+        let wahl = -1;
+        let best = Infinity;
+        for (let i = 0; i < K.sektoren; i++) {
+            if (kk.sektoren[i]) continue;
+            let d = (i + 0.5) * breite - blick;
+            d = Math.abs(d - 2 * Math.PI * Math.round(d / (2 * Math.PI)));
+            if (d < best) [best, wahl] = [d, i];
+        }
+        if (wahl < 0) return;
+        const anker = kk.anker;
+        const gen = kk.gen;
+        const fenster = { azVon: wahl * breite, azBis: (wahl + 1) * breite, azN: Math.round(K.azN / K.sektoren) };
+        kk.flug = true;
+        this._fernAuftrag("kamm", this._kammKroneAuftrag(anker[0], anker[1], fenster))
+            .then((a) => {
+                if (st.kammKrone !== kk || kk.gen !== gen) return;
+                kk.flug = false;
+                if (kk.anker !== anker) return; // ein neuer Anker kam, während der Sektor rechnete
+                kk.sektoren[wahl] = a;
+                this._kammKroneBau(kk, anker);
+            })
+            .catch((e) => {
+                if (st.kammKrone === kk && kk.gen === gen) kk.flug = false;
+                this._stoffBruch("die Kamm-Krone (der Umriss des Walds im Kamm-Faden)", e);
+            });
+    }
+
+    // DAS NETZ DER KAMM-KRONE aus der Antwort des Fadens: je Baum der Umriss seiner Krone in der Ebene quer zum Anker (der
+    // Fuß der Krone in ihrer Mitte, die Normale der Kronen-Kugel: nach außen in der Ebene und zum Anker), die Farbe der Art.
+    _kammKroneBau(kk, anker) {
+        const st = this.state;
+        const F = globalThis.__phytoCore.KAMM_FELDER;
+        const K = AnazhRealm.KAMM_KRONE;
+        // die Sektoren des Ankers in EIN Feld, ihre Arten in EINE Liste
+        const arten = [];
+        const teile = [];
+        let n = 0;
+        let ms = 0;
+        for (const a of kk.sektoren) {
+            if (!a) continue;
+            const map = a.arten.map((sp) => {
+                let i = arten.indexOf(sp);
+                if (i < 0) i = arten.push(sp) - 1;
+                return i;
+            });
+            teile.push([a.baeume, map]);
+            n += (a.baeume.length / F) | 0;
+            ms += a.ms || 0;
+        }
+        const B = new Float64Array(n * F);
+        let o0 = 0;
+        for (const [b, map] of teile) {
+            B.set(b, o0);
+            for (let o = o0; o < o0 + b.length; o += F) B[o + 7] = map[B[o + 7]];
+            o0 += b.length;
+        }
+        const laub = this._kammKroneLaub(arten);
+        const nv = n * (K.ellipse + 1);
+        const pos = new Float32Array(nv * 3);
+        const nor = new Float32Array(nv * 3);
+        const art = new Uint8Array(nv);
+        const idx = [];
+        let v = 0;
+        for (let b = 0; b < n; b++) {
+            const o = b * F;
+            const [x, z, y, hoch, T, ansatz, nadel, ai] = [
+                B[o],
+                B[o + 1],
+                B[o + 2],
+                B[o + 3],
+                B[o + 4],
+                B[o + 5],
+                B[o + 6],
+                B[o + 7],
+            ];
+            const zx = anker[0] - x;
+            const zz = anker[1] - z;
+            const l = Math.hypot(zx, zz) || 1;
+            const [ux, uz] = [zx / l, zz / l]; // zum Anker
+            const [qx, qz] = [-uz, ux]; // quer
+            const kh = hoch * (1 - ansatz);
+            const ym = y + hoch * ansatz + kh / 2; // die Mitte der Krone
+            const v0 = v;
+            const setz = (lq, ly) => {
+                const k = v * 3;
+                pos[k] = x + qx * lq;
+                pos[k + 1] = ym + ly;
+                pos[k + 2] = z + qz * lq;
+                const [ox, oy] = [lq / Math.max(T, 1e-3), ly / Math.max(kh / 2, 1e-3)];
+                const nx = qx * ox * 0.8 + ux * 0.6;
+                const ny = oy * 0.8 + 0.2;
+                const nz = qz * ox * 0.8 + uz * 0.6;
+                const s = 1 / (Math.hypot(nx, ny, nz) || 1);
+                [nor[k], nor[k + 1], nor[k + 2]] = [nx * s, ny * s, nz * s];
+                art[v] = ai;
+                v++;
+            };
+            setz(0, 0);
+            for (let i = 0; i < K.ellipse; i++) {
+                const t = i / K.ellipse;
+                if (nadel) {
+                    // der Kegel: der Umfang des Dreiecks (Wipfel → Ansatz links → Ansatz rechts), gleich geteilt
+                    const e = 3 * t;
+                    const k = Math.floor(e);
+                    const f = e - k;
+                    const P = [
+                        [0, kh / 2],
+                        [-T, -kh / 2],
+                        [T, -kh / 2],
+                        [0, kh / 2],
+                    ];
+                    setz(P[k][0] + (P[k + 1][0] - P[k][0]) * f, P[k][1] + (P[k + 1][1] - P[k][1]) * f);
+                } else setz(Math.cos(2 * Math.PI * t) * T, Math.sin(2 * Math.PI * t) * (kh / 2));
+            }
+            for (let i = 0; i < K.ellipse; i++) idx.push(v0, v0 + 1 + i, v0 + 1 + ((i + 1) % K.ellipse));
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
+        geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+        geo.computeBoundingSphere();
+        geo.userData.kammArt = art;
+        if (!kk.stoff)
+            kk.stoff = this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide });
+        if (kk.mesh) {
+            if (st.scene) st.scene.remove(kk.mesh);
+            this._queueGeometryDispose(kk.mesh.geometry);
+        }
+        const mesh = new THREE.Mesh(geo, kk.stoff);
+        mesh.name = "kamm-krone";
+        mesh.frustumCulled = false; // die Krone umgibt den Anker ringsum
+        mesh.matrixAutoUpdate = false; // die Ecken sind Welt-Koordinaten
+        mesh.castShadow = false; // jenseits der Kaskaden; die Sonnen-Sicht (Horizont-Karte) trägt ihren Schatten
+        mesh.receiveShadow = true;
+        mesh.userData.zeichenSchicht = "fern";
+        mesh.userData.inventar = "kamm-krone";
+        kk.mesh = mesh;
+        kk.laub = laub;
+        kk.saison = null;
+        kk.baeume = n;
+        kk.ms = ms;
+        this._kammKroneSaison(kk);
+        if (st.scene) st.scene.add(mesh);
+    }
+
+    // Die Farbe je Art der Antwort: die Studio-Laubfarbe linear (`_fernLaubLinear` für die fünf Wald-Arten, sonst der Phänotyp
+    // der Art) × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`, wie das Kronendach des Rings).
+    _kammKroneLaub(arten) {
+        const fuenf = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"];
+        const L = this._fernLaubLinear();
+        const S = AnazhRealm.FERN_FARBE.kronenSchatten;
+        const c = new THREE.Color();
+        return arten.map((sp) => {
+            const i = fuenf.indexOf(sp);
+            let rgb = i >= 0 ? L[i] : null;
+            if (!rgb) {
+                const a = this._phytoArt(sp);
+                const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
+                if (!d || !Number.isFinite(d.leafCol)) throw new Error("Kamm-Krone: Studio-Laubfarbe fehlt für " + sp);
+                c.setHex(d.leafCol);
+                rgb = [c.r, c.g, c.b];
+            }
+            return [rgb[0] * S, rgb[1] * S, rgb[2] * S];
+        });
+    }
+
+    // Die Saison der Krone (der CPU-Spiegel `_fernSaison`, wie das Feld): neu gefärbt, wenn sie um `saisonSchritt` wandert.
+    _kammKroneSaison(kk) {
+        const s = this._fernSaison(this._kammSaisonV || (this._kammSaisonV = { r: 1, g: 1, b: 1 }));
+        const alt = kk.saison;
+        const K = AnazhRealm.KAMM_KRONE;
+        if (alt && Math.max(Math.abs(alt.r - s.r), Math.abs(alt.g - s.g), Math.abs(alt.b - s.b)) < K.saisonSchritt)
+            return;
+        kk.saison = { r: s.r, g: s.g, b: s.b };
+        const geo = kk.mesh.geometry;
+        const art = geo.userData.kammArt;
+        const col = geo.attributes.color;
+        for (let i = 0; i < art.length; i++) {
+            const L = kk.laub[art[i]];
+            col.setXYZ(i, L[0] * s.r, L[1] * s.g, L[2] * s.b);
+        }
+        col.needsUpdate = true;
+    }
+
+    // Der Abschied (Ring-Besitz, `_fernRingDispose`): Netz, Stoff, der Auftrag im Flug fällt (`gen`).
+    _kammKroneDispose() {
+        const kk = this.state.kammKrone;
+        if (!kk) return;
+        kk.gen++;
+        if (kk.mesh) {
+            if (this.state.scene) this.state.scene.remove(kk.mesh);
+            this._queueGeometryDispose(kk.mesh.geometry);
+        }
+        if (kk.stoff) kk.stoff.dispose();
+        this.state.kammKrone = null;
+    }
+
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
     // linear nach dem FARB-GESETZ (das Paletten-Hex ist eine sRGB-Absicht; THREE.Color wandelt). Einmal je Sitzung —
     // ohne Studio-Laub bricht die Fern-Farbe laut.
@@ -1614,6 +1901,26 @@ AnazhRealm.FERN_RING = Object.freeze({
     anchorQuant: 24,
     scheibe: 512,
     scheibenImFlug: 3,
+});
+// DIE KAMM-KRONE (ferne.K3, `_kammKroneTakt`): die Augen über dem Grund des Ankers, für die der Umriss gilt (m: der Spieler,
+// die Schulter der dritten Person, der Blick vom Hügel und vom Turm — ein Baum trägt, wenn er einem von ihnen den Himmel nimmt);
+// das Band bis `dBis` m (ab dem Karten-Horizont `SCATTER.outerM`, davor zeichnet der Wald selbst); `azN` Azimute im Marsch des
+// Kreises in `sektoren` Aufträgen (der Blick zuerst; Radeon-unabhängig gemessen am Gesetz: 76° ≈ 28 s im Faden, node);
+// Gesetzes (Faktor `marsch` ab 40 m), die Zone des Kamms ± `tiefeM` längs des Strahls, darin `hMax` die höchste Krone, die den
+// Kamm erreichen kann (das Band), `saumM` der Saum unter
+// dem Kamm, in dem eine Krone noch zählt (sie schließt die Linie unter der Lücke); `ellipse` Ecken je Umriss; die Saison
+// färbt nach ab `saisonSchritt` Wanderung je Kanal.
+AnazhRealm.KAMM_KRONE = Object.freeze({
+    augen: Object.freeze([2, 25, 60, 120]),
+    dBis: 6000,
+    azN: 1024,
+    marsch: 1.05,
+    hMax: 45,
+    tiefeM: 48,
+    saumM: 2,
+    ellipse: 8,
+    sektoren: 8,
+    saisonSchritt: 0.01,
 });
 AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;

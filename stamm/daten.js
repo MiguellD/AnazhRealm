@@ -443,14 +443,6 @@ class AnazhRealm_daten {
         return this._einmal("TERRAIN_AO", Object.freeze({ strength: 0.4, cap: 0.18 }));
     }
 
-    // Eingefrorener 2.5D-Lichtungs-Wert (der eine Tuning-Hebel). NUR die Shading-Normale (Material-
-    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie. Der Schatten-Versatz liest dieselbe End-Normale:
-    // r184 schiebt die Probe um `normalWorld` × normalBias, und `normalWorld` IST die Normale dieses normalNode (setupNormal) —
-    // bei 1,0 zeigt der Versatz (`_schattenBias`, 0,5 Texel) auch am Hang senkrecht nach oben, nie entlang der Fläche.
-    static get TERRAIN_NORMAL_FLATTEN() {
-        return 1.0;
-    }
-
     // Die Boden-Karte (`_bodenKarteAusMesh`) teilt den Voxel-Schritt in so viele Gitter-Abstände (LOD 0: 1,8 m / 4 =
     // 0,45 m) — fein genug, dass die bilineare Lesung der Dreiecks-Fläche auf ≤ 2 cm folgt (Median).
     static get BODEN_KARTE_TEILUNG() {
@@ -475,6 +467,14 @@ class AnazhRealm_daten {
     // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
     // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
+    // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
+    // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
+    // Deckung bis zum Rand der festen Ringe (40 m), dahinter fällt sie mit d^−3,25 — eine Spur steiler als das Gesetz des
+    // Schirms der Streckung (d^−3, die Büschel je Pixel gleich), damit die Ferne nicht mehr Büschel zählt als zuvor (Σ 1330 →
+    // 1319 je Zelle; der Sicht-Satz trägt den CPU-Takt, E): die Büschel je Pixel bleiben jenseits der Übergabe ≤ 1,67× (der
+    // Sprung der Streckung zwischen ~34 und 40 m) — weniger, größere Büschel statt eines Saums. Modell der Station
+    // (flache Wiese, Third 2,43 m, Nilson je Ring): 20–40 m 1,29 → 1,73; die Wand gate:profiband P-Ferne.
     // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
     // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
     // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
@@ -499,8 +499,8 @@ class AnazhRealm_daten {
                     kachel: 12,
                     bis: 200,
                     saum: 20,
-                    voll: 21,
-                    fall: 1.5,
+                    voll: 40,
+                    fall: 3.25,
                     streck: 3,
                     streckMax: 14,
                     rand: 0.2,
@@ -627,9 +627,9 @@ class AnazhRealm_daten {
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
                 kavitaet: 0.7, // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung
                 korn: 1.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller, mittelfrei
-                // Kipp-Stärke subtil halten: da TERRAIN_NORMAL_FLATTEN=1.0 voll flacht, ist der Bump die EINZIGE
-                // Normal-Variation — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze pro
-                // Makro-Facette. 0.24 = 13° moduliert echtes Mikro-Relief; das Albedo-Korn trägt die feine Textur.
+                // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
+                // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
+                // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
                 strength: 0.24, // Kipp-Stärke der Normale (subtil — 13° statt 23°; der Haupt-Balance-Knopf)
                 strength2: 0.1, // Stärke der zweiten Oktave
                 // Die EINE Mikro-Detail-LOD-Quelle: Distanz-Fade von Bump UND feinem Korn; Terrain (`_lod`) und

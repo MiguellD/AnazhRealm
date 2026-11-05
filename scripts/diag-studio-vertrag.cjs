@@ -1,4 +1,4 @@
-const { ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
+const { fehlerText, ausDatei, path, fs, stammLib, vm, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -943,7 +943,7 @@ function validateManifest(m, kern) {
         try {
             m = loadCore(entry);
         } catch (e) {
-            check(`${entry.file}: lädt im vm (THREE-Stub)`, false, (e && e.message) || String(e));
+            check(`${entry.file}: lädt im vm (THREE-Stub)`, false, fehlerText(e));
             continue;
         }
         const funktionsKern = m.funktion || entry.funktion === true;

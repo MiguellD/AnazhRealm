@@ -153,13 +153,20 @@ async function proben(phasen) {
         }
     };
     // DAS WARTEN IM EREIGNIS (welt-boot `__deckel`): Takt um Takt, bis `bis()` gilt — der Deckel zählt nur Takte, in denen die
-    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl; `ms` Pause je Gang
-    const warteBis = async (bis, n, max, ms) => {
+    // Welt nichts offen hat (`_weltOffen`): unter Last wartet die Probe auf den Bau, nie auf eine Takt-Zahl.
+    // „Der Bau steht nicht" (der Deckel voll, die Welt ruht) ist ein Befund (false); eine Welt, die offen steht, ohne sich zu
+    // rühren, wirft beim Namen. Bis w11-wackler brach zudem eine Gang-Zahl (4 × max = 480) das Warten, auch während die Welt
+    // baute (das Dorf im Flug hält `_weltOffen` offen): unter Last (4 Welten parallel + 16 Last-Fäden) braucht das Dorf 60–678
+    // Gänge, die Schranke schnitt es ab, und jede Probe am Haus fuhr blind (Selbsttest kihain in Teil 1, obb in Teil 2); das
+    // ferne Dorf schlief dafür 100 ms je Gang.
+    const warteBis = async (bis, n, max) => {
         let ja = false;
         try {
-            for (let k = 0, weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter() && k++ < 4 * max;)
-                await pumpe(n).then(() => ms && sleep(ms));
-        } catch {}
+            for (const weiter = window.__deckel("haus-welt", max); !(ja = bis()) && weiter(); )
+                await pumpe(n);
+        } catch (f) {
+            if (/^DIE WELT HÄNGT/.test(f.message)) throw f;
+        }
         return ja;
     };
     // DIE RUHE AM ORT (x, z): sein Chunk steht, die Wald-Schlange ist leer, die Nah-Streu hat jede gewollte Kachel gebaut
@@ -1467,7 +1474,7 @@ async function proben(phasen) {
         );
         const fernHaeuser = () =>
             s.architectures.filter((e) => !vorDorf.has(e) && e.type && e.type.startsWith("haus_") && e.fundament);
-        await warteBis(() => fernSteht, 4, 120, 100);
+        await warteBis(() => fernSteht, 4, 120);
         const FH = fernHaeuser();
         o.w4b = { haeuser: FH.length, streuVorher: { steht: streuSteht(), zellen: vorZellen }, fern: streuImHaus(FH) };
         // unter den Häusern: die Zellen, die das Haus geräumt hat, und die, die noch leben (ohne Zellen dort ist W4b blind)
@@ -1878,6 +1885,9 @@ function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
     const P = new Set(o.phasen);
+    // das Dorf 7/18 trägt jede Probe am Haus (W4 W8 W9 W10): ohne Haus ist sie blind, nie grün
+    if (!(o.gesamt >= 1))
+        f.push(`Aufbau: das Dorf 7/18 trägt ${o.gesamt} Häuser — jede Probe am Haus ist blind`);
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
         if (!(hs.length >= 6)) f.push(`Aufbau: ${hs.length} Häuser geprüft (Soll ≥ 6)`);

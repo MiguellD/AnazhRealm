@@ -1373,7 +1373,7 @@ async function probeLeben(expected) {
                     const v = fn();
                     return v === null || v === undefined ? "null" : "wert";
                 } catch (e) {
-                    const msg = String((e && e.message) || e);
+                    const msg = fehlerText(e);
                     return /KERN-PFLICHT/.test(msg) ? "bruch" : "fehler " + msg.slice(0, 80);
                 }
             };

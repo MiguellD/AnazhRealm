@@ -16,6 +16,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
@@ -430,7 +431,18 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER RAHMEN EINER BOX (`rahmen(b)`, in jeder Seite als `window.rahmen`, `WARTEN_SEITE`): ihre OBB, sonst die achsgleiche im
+// selben Maß wie `_boxAbstand2` (Mitte, Achsen c/s, Halb-Maße) — die Linsen der Blocker (kollision-bild, kreatur-leben, werk-im-wasser)
+const rahmen = (b) =>
+    b.obb || {
+        cx: (b.minX + b.maxX) / 2,
+        cz: (b.minZ + b.maxZ) / 2,
+        c: 1,
+        s: 0,
+        hx: (b.maxX - b.minX) / 2,
+        hz: (b.maxZ - b.minZ) / 2,
+    };
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -564,8 +576,7 @@ const GPU_REZEPTE = ["linse", "webgl", "echt"];
 function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
-    const o = { headless };
-    if (profil != null) o.userDataDir = profil;
+    const o = { headless, userDataDir: profil };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
     if (dumpio != null) o.dumpio = dumpio;
@@ -826,7 +837,7 @@ async function akteAnlegen(page, b) {
             return o.apply(this, a).then(
                 (v) => (A.offen.delete(auf), v),
                 async (e) => {
-                    const msg = e?.message || String(e);
+                    const msg = fehlerText(e);
                     if (e?.name === "TimeoutError" || /timed out/i.test(msg))
                         await akte(
                             page,
@@ -916,7 +927,7 @@ function faedenProbe(pid) {
     try {
         for (const t of fs.readdirSync(`/proc/${pid}/task`)) {
             try {
-                const st = fs.readFileSync(`/proc/${pid}/task/${t}/stat`, "utf8");
+                const st = ausDatei(`/proc/${pid}/task/${t}/stat`);
                 const rest = st.slice(st.lastIndexOf(")") + 2).split(" ");
                 m.set(t, {
                     name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")),
@@ -993,9 +1004,72 @@ async function akte(page, grund) {
     return eintrag;
 }
 
+// DAS PROFIL JE START (w11-profil-leck): ohne eigenes Profil legte puppeteer `puppeteer_dev_chrome_profile-*` an, die Werkbank
+// `werkbank-profil-*` — ein abgebrochener Lauf ließ es liegen (OMEN 04.11. 18:28: 201 + 131 Profile, ~32 GB, C: bei 0 MB, Push
+// und echt-Job fielen). JEDER Browser startet hier (`startePuppeteer`: starteBrowser und die Werkbank): ohne `userDataDir` ein
+// Scratch-Profil `anazh-profil-<PID des Besitzers>-*` (`tempNeu`), das mit `browser.close()`, am Prozess-Ende (auch nach einem
+// Wurf; puppeteers Exit-Wache tötet Chrome vorher) und bei SIGINT/SIGTERM/SIGHUP stirbt. Ein harter Kill lässt nichts laufen:
+// darum FEGT jeder Start die Profile toter Läufe — Besitzer tot (die Alt-Namen tragen keinen: tot),
+// älter als 10 min und kein Chrome hält es (`haelt`: die offene `lockfile` eines Windows-Chrome lässt sich nicht löschen — ein
+// Alt-Profil ohne Besitzer eines lebenden Laufs; ein `rmSync` auf ein gehaltenes löschte es halb). Ein lebender Lauf behält sein Profil.
+const lebt = (pid) => {
+    try {
+        return process.kill(pid, 0);
+    } catch (e) {
+        return e.code === "EPERM";
+    }
+};
+const haelt = (d) => {
+    try {
+        fs.unlinkSync(path.join(d, "lockfile"));
+    } catch (e) {
+        return e.code !== "ENOENT";
+    }
+};
+// Löschen mit Geduld: ein eben getöteter Chrome (taskkill /T /F kehrt vor dem Ende seiner Kinder zurück) hält seine Dateien noch
+// Augenblicke (EPERM), `maxRetries` wiederholt EPERM nicht (Node 24: der Wurf nach 1 ms) — synchron, das Prozess-Ende wartet nicht;
+// nach 5 s steht der Rest beim Namen im Log (ein Profil fegt der nächste Start)
+function loesche(d, mal = 50) {
+    try {
+        fs.rmSync(d, { recursive: true, force: true });
+    } catch (e) {
+        if (!mal) return console.log(`[welt-boot] bleibt liegen: ${fehlerText(e)}`);
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+        loesche(d, mal - 1);
+    }
+}
+function profileFegen(tmp = os.tmpdir()) {
+    for (const n of fs.readdirSync(tmp)) {
+        const [d, m] = [path.join(tmp, n), /^(?:anazh-(\d+)-|werkbank-profil-|puppeteer_dev_)/.exec(n)];
+        try {
+            // EIN Versuch ohne Geduld: der Chrome eines toten Laufs ist seit 10 min tot — was dann noch hält (Virenscanner, ein
+            // fremder Griff), hielt mit Geduld JEDEN Start 5 s je Profil an und steht hier beim Namen im Log
+            if (m && !lebt(+m[1]) && Date.now() - fs.statSync(d).mtimeMs > 6e5 && !haelt(d)) loesche(d, 0);
+        } catch {
+            // ein Profil, das ein zweiter Starter im selben Augenblick fegt, oder eine Datei, die der Virenscanner hält: der nächste Start
+        }
+    }
+}
+const tempNeu = (name = "profil", pid = process.pid) => fs.mkdtempSync(path.join(os.tmpdir(), `anazh-${pid}-${name}-`));
+const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
+async function startePuppeteer(o) {
+    profileFegen();
+    if (o.userDataDir) return require("puppeteer").launch(o);
+    const d = tempNeu();
+    const weg = () => loesche(d);
+    const browser = await require("puppeteer")
+        .launch({ ...o, userDataDir: d })
+        .catch((e) => (weg(), Promise.reject(e)));
+    process.on("exit", weg);
+    for (const s of ["SIGINT", "SIGTERM", "SIGHUP"]) process.off(s, signalEnde).on(s, signalEnde);
+    const zu = browser.close.bind(browser);
+    browser.close = (...a) => zu(...a).then((x) => (process.off("exit", weg), weg(), x));
+    browser.profil = d;
+    return browser;
+}
+
 // Der Browser über die EINE Weiche, jede Seite am Fehler-Sammler, die Linse nennt ihren Adapter.
 async function starteBrowser(opts = {}) {
-    const puppeteer = require("puppeteer");
     if (opts.erwartet) sammlung.erwartet = opts.erwartet;
     wacheAnProzessEnde();
     if (process.env.CI_KLASSE === "cpu" && GPU_REZEPTE.includes(opts.art))
@@ -1003,7 +1077,7 @@ async function starteBrowser(opts = {}) {
             "klasse",
             `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört in eine GPU-Gruppe (check.yml matrix.klasse)`
         );
-    const browser = await puppeteer.launch(browserOptionen(opts));
+    const browser = await startePuppeteer(browserOptionen(opts));
     // die Stall-Akte des Browsers: Stderr-Ring (Chrome, GPU-Prozess), Browser-Sitzung für CPU je Prozess, die Schwelle
     const b = {
         stderr: [],
@@ -1154,6 +1228,16 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 
 // DER LESER IM BLICK (Seite): der Spieler am Bach der Mess-Wiese, zurück, sobald das Wasser ZEICHNET, das Tiefen-Abbild gezogen
 // ist und das Weltbild steht (`welt`: nur diese Terme); `kappe`: die Pixel-Kappe des Holzes.
+// DIE POST-KETTE STEHT (diag-post-kette, diag-ziel-zensus): der erste Frame mit bereitem Renderer und Kette; ohne
+// WebGPU-Backend wirft sie mit dem Grund der Linse (`blind`), sonst nennt sie die Wartezeit im Lauf-Log
+async function postKetteBereit(page, log, blind) {
+    const ms = await page.evaluate(async (t0 = performance.now()) => {
+        await __weltDa((w, s = w.state) => !!(s?.rendererReady && s.renderer?.backend && s.postProcessing && s.camera));
+        return st.renderer.backend.isWebGPUBackend === true ? performance.now() - t0 : -1;
+    });
+    if (ms < 0) throw new Error("kein WebGPU-Backend — " + blind);
+    log(`Renderer und Post-Kette bereit nach ${Math.round(ms / 1000)} s`);
+}
 async function uferStellen(opts) {
     await window.__weltDa(
         (w) =>
@@ -1636,7 +1720,7 @@ module.exports = {
     path,
     stammLib,
     crypto: require("crypto"),
-    os: require("os"),
+    os,
     vm: require("vm"),
     studioKern,
     fadenScope,
@@ -1650,12 +1734,18 @@ module.exports = {
     pngDatei,
     statikServer,
     starteBrowser,
+    startePuppeteer,
+    tempNeu,
+    lebt,
+    loesche,
     warteAufWelt,
     nullRenderer,
     nullSeite,
     halteBis,
     buehne,
     uferStellen,
+    postKetteBereit,
+    rahmen,
     pruefer,
     taeterFaelle,
     abwandlung,
@@ -1801,67 +1891,79 @@ async function selbsttest() {
     const seitenNamen = new Set(CODE_OF_SEITE.match(/(?<=window\.)\w+(?= = )/g));
     const vonHand = (c) => [...new Set(c.match(/(?<=window\.)\w+(?= *=[^=])/g))].filter((n) => seitenNamen.has(n));
     const namen = code.filter(([, c]) => vonHand(c).length).map(([f, c]) => `${f} (${vonHand(c)})`);
+    // DIE WAND JE ZWILLING (EINE Form): die Träger im Code sind genau `fremd` (FREMD tragen ihn bis zum Schnitt ihres Besitzers, ein
+    // geheilter Eintrag macht die Liste ROT, bis er fällt), beide gepflanzten Proben fassen, die saubere nicht
+    const wand = (name, zw, fremd, gepflanzt, sauber) => {
+        const t = code.flatMap(([f, c]) => (zw(c) ? [f] : [])).join(", ");
+        const n = gepflanzt.filter(zw).length;
+        return [t === fremd && n === 2 && !zw(sauber), `${name}: ${t} (FREMD ${fremd}) · gepflanzt ${n}/2 gefasst`];
+    };
     // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
-    // lausche/zeige; FREMD tragen ihn bis zum Schnitt ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt)
-    const adressZwilling = (c) =>
-        /statikServer\(/.test(c) &&
-        /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c);
-    const adressen = code
-        .filter(([, c]) => adressZwilling(c))
-        .map(([f]) => f)
-        .join(", ");
-    const FREMD = "werkbank.cjs";
-    const gepflanzt = [
-        "statikServer(); await new Promise((r) => s.listen(1, r));",
-        "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",
-    ].filter(adressZwilling).length;
+    // lausche/zeige
+    const adressWand = wand(
+        "eigene Server-Starts/Welt-Adressen neben lausche/zeige",
+        (c) => /statikServer\(/.test(c) && /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c),
+        "werkbank.cjs",
+        ["statikServer(); await new Promise((r) => s.listen(1, r));", "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);"],
+        "statikServer(); await s.lausche(1); s.zeige(p, 1);"
+    );
     // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
-    // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
-    const faengerZwilling = (c) =>
-        /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c);
-    const faenger = code
-        .filter(([, c]) => faengerZwilling(c))
-        .map(([f]) => f)
-        .join(", ");
-    const FAENGER_FREMD = "ci-kopf.cjs";
-    const gefangen = [
-        "(async () => {})().catch((e) => { console.error(e); process.exit(1); });",
-        "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });",
-    ].filter(faengerZwilling).length;
+    // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout
+    const faengerWand = wand(
+        "eigene Absturz-Fänger neben hauptLauf",
+        (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c),
+        "ci-kopf.cjs",
+        ["(async () => {})().catch((e) => { console.error(e); process.exit(1); });", "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });"],
+        "hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);"
+    );
     // DIE SCHLAF-WAND: schläft ein Skript mit eigenem Versprechen (`new Promise((r) => setTimeout(r, ms))`, in Node wie in der
-    // Seite), ist das ein Zwilling von sleep; am Token-Strom, Strings (gepflanzte Stamm-Proben) zählen nicht; FREMD tragen ihn bis
-    // zum Schnitt ihres Besitzers, ci-kopf.cjs fährt allein im sparse-checkout
-    const schlafZwilling = (c) =>
-        /new Promise \( (?:\( )?(\w+) (?:\) )?=> (?:\{ )?setTimeout \( \1 (?:, (?:[^\s(),{};]+ |\( [^()]*\) )+)?\) (?:; )?(?:\} )?\)/.test(
-            [...require("acorn").tokenizer(c, { ecmaVersion: "latest", allowHashBang: true })]
-                .map((k) => (/^(string|template|regexp)$/.test(k.type.label) ? "S" : c.slice(k.start, k.end)))
-                .join(" ")
-        );
-    const schlaefer = code
-        .filter(([, c]) => schlafZwilling(c))
-        .map(([f]) => f)
-        .join(", ");
-    const SCHLAF_FREMD = "ci-kopf.cjs";
-    const geschlafen = [
-        "await new Promise((r) => setTimeout(r, 50));",
-        "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
-    ].filter(schlafZwilling).length;
+    // Seite), ist das ein Zwilling von sleep; am Token-Strom, Strings (gepflanzte Stamm-Proben) zählen nicht; ci-kopf.cjs fährt
+    // allein im sparse-checkout
+    const schlafWand = wand(
+        "eigene Schlafe neben sleep",
+        (c) =>
+            /new Promise \( (?:\( )?(\w+) (?:\) )?=> (?:\{ )?setTimeout \( \1 (?:, (?:[^\s(),{};]+ |\( [^()]*\) )+)?\) (?:; )?(?:\} )?\)/.test(
+                [...require("acorn").tokenizer(c, { ecmaVersion: "latest", allowHashBang: true })]
+                    .map((k) => (/^(string|template|regexp)$/.test(k.type.label) ? "S" : c.slice(k.start, k.end)))
+                    .join(" ")
+            ),
+        "ci-kopf.cjs",
+        ["await new Promise((r) => setTimeout(r, 50));", "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });"],
+        '"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));'
+    );
     // DIE TÜR-WAND: setzt ein Skript den Aktiv-Zeiger selbst (`activeWorldSet`), ist das ein Zwilling der EINEN Tür (`weltTor`); die
     // Proben der Datenschicht prüfen den Zeiger selbst und laden nie neu
-    const tuerZwilling = (c) => /\.activeWorldSet\(/.test(c);
-    const tueren = code
-        .filter(([, c]) => tuerZwilling(c))
-        .map(([f]) => f)
-        .join(", ");
-    const DATENSCHICHT = "playtest/netz-p2p.cjs, playtest/speicher.cjs";
-    const gesetzt = [
-        "r.importWorldBeside(j); r.activeWorldSet(id);",
-        "window.anazhRealm.activeWorldSet(res.worldId);",
-    ].filter(tuerZwilling).length;
-    const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
-    const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
+    const tuerWand = wand(
+        "eigene Welt-Wechsel neben weltTor (der Zeiger von Hand)",
+        (c) => /\.activeWorldSet\(/.test(c),
+        "playtest/netz-p2p.cjs, playtest/speicher.cjs",
+        ["r.importWorldBeside(j); r.activeWorldSet(id);", "window.anazhRealm.activeWorldSet(res.worldId);"],
+        "await weltTor(page, json);"
+    );
+    // EIN KIND der Linse: `rumpf` im hauptLauf eines eigenen Prozesses (`nach` hinter dem Rumpf)
+    const kind = (rumpf, nach = "") =>
+        require("child_process").spawnSync(process.execPath, ["-e", `const w = require(${JSON.stringify(__filename)}); w.hauptLauf(async () => { ${rumpf} }${nach})`], { encoding: "utf8" });
+    const sturz = kind('throw new Error("__sturz");', ', () => console.error("__zuletzt")');
+    // DAS PROFIL JE START (w11-profil-leck): der Selbsttest-Browser trägt seinen Besitzer und lässt nach close() nichts liegen; ein
+    // Kind lässt nach Wurf und Signal nichts liegen, die MUTANTE ohne Aufräumen (`fs.rmSync` stumm) ihres; der Feger nimmt das
+    // Profil eines toten Laufs (älter als 10 min), nie das eines lebenden oder ein junges
+    const eigen = browser.profil;
     await browser.close();
     server.close();
+    // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
+    // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
+    const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
+        (c) => kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`).stdout.match(/^PROFIL (.+)$/m)?.[1]
+    );
+    const liegen = [mutante, ...kinder].map((d) => !/anazh-/.test(d) || fs.existsSync(d));
+    loesche(mutante);
+    const [tot, lebend, jung] = [tempNeu("profil", 2147483600), tempNeu(), tempNeu("profil", 2147483600)];
+    const alt = new Date(Date.now() - 66e4);
+    for (const d of [tot, lebend]) fs.utimesSync(d, alt, alt);
+    profileFegen();
+    const nach = [tot, lebend, jung].map((d) => fs.existsSync(d));
+    for (const d of [lebend, jung]) loesche(d);
+    const profil = `${path.basename(eigen).startsWith(`anazh-${process.pid}-`)},${fs.existsSync(eigen)} ${liegen} ${nach}`;
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
     // die eigenen Ports der Linsen sind nie 4312/4313
     const besetzt = require("net").createServer();
@@ -1876,6 +1978,10 @@ async function selbsttest() {
     besetzt.close();
     const urteile = [
         [
+            profil === "true,false true,false,false false,true,true",
+            `Profil je Start (Besitzer, liegt nach close() · nach Mutante/Wurf/Signal · nach dem Fegen tot/lebend/jung): ${profil}`,
+        ],
+        [
             /^pageerror: Error: __seitenWurf/.test(wurf[0]),
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
@@ -1886,34 +1992,15 @@ async function selbsttest() {
                 `${vonHand("window.__deckel = 1; (window.__weltDa = r); window.sleep == r;")}` === "__deckel,__weltDa",
             `Namen der ${seitenNamen.size} Seiten-Werkzeuge von Hand gesetzt: ${namen.join(", ") || "keiner"} · gepflanzt 2/2 gefasst`,
         ],
+        adressWand,
+        faengerWand,
         [
-            adressen === FREMD &&
-                gepflanzt === 2 &&
-                !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
-            `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
+            sturz.status === 2 && /^-e ABSTURZ: Error: __sturz/.test(sturz.stderr) && /__zuletzt/.test(sturz.stderr),
+            `Sturz Exit ${sturz.status}: ${sturz.stderr.split("\n")[0]}`,
         ],
-        [
-            faenger === FAENGER_FREMD &&
-                gefangen === 2 &&
-                !faengerZwilling("hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);") &&
-                sturz.status === 2 &&
-                /^-e ABSTURZ: Error: __sturz/.test(sturz.stderr) &&
-                /__zuletzt/.test(sturz.stderr),
-            `eigene Absturz-Fänger neben hauptLauf: ${faenger} (FREMD ${FAENGER_FREMD}) · gepflanzt ${gefangen}/2 gefasst · Sturz Exit ${sturz.status}: ${sturz.stderr.split("\n")[0]}`,
-        ],
-        [
-            schlaefer === SCHLAF_FREMD &&
-                geschlafen === 2 &&
-                !schlafZwilling(
-                    '"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));'
-                ) &&
-                seitenSchlaf === String(sleep),
-            `eigene Schlafe neben sleep: ${schlaefer} (FREMD ${SCHLAF_FREMD}) · gepflanzt ${geschlafen}/2 gefasst · die Seite schläft mit ${seitenSchlaf}`,
-        ],
-        [
-            tueren === DATENSCHICHT && gesetzt === 2 && !tuerZwilling("await weltTor(page, json);"),
-            `eigene Welt-Wechsel neben weltTor (der Zeiger von Hand): ${tueren} (DATENSCHICHT ${DATENSCHICHT}) · gepflanzt ${gesetzt}/2 gefasst`,
-        ],
+        schlafWand,
+        [seitenSchlaf === String(sleep), `die Seite schläft mit ${seitenSchlaf}`],
+        tuerWand,
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&

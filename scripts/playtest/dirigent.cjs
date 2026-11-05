@@ -861,7 +861,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
             if (jaeger) r.removeCreature(jaeger);
             if (beute) r.removeCreature(beute);
         } catch (e) {
-            out.a3Error = String((e && e.message) || e);
+            out.a3Error = fehlerText(e);
         } finally {
             st.creatures = savedCreatures;
             r.setGameMode(savedMode);
@@ -930,7 +930,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
             // Cleanup
             delete st.blueprints[bpName];
         } catch (e) {
-            out.a4Error = String(e && (e.message || e));
+            out.a4Error = fehlerText(e);
         } finally {
             r.setGameMode(sm);
             // exakt restaurieren, damit

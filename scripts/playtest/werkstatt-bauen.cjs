@@ -434,7 +434,10 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         "KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check("(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
+    check(
+        "(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
+        res.domHistoryControls
+    );
 }
 
 // Re-Kalibrierung: (1) das Spektrum SPREIZT (nicht 1/1/1) + führt mit der richtigen Rolle,
@@ -578,7 +581,10 @@ async function checkBandV1790Recalibration({ page, check }) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check("Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
+    check(
+        "Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
+        res.cssHistory
+    );
 }
 
 async function checkBandWelle6Keybindings({ page, check }) {
@@ -1481,7 +1487,10 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
         const mk = (mat) => ({
             name: "__m1band",
             builtIn: false,
-            parts: [__teil("box", mat, 0, 0.5, 0, 1, 1, 1), __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1)],
+            parts: [
+                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
+                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
+            ],
         });
         try {
             // (1) der SUBSTANZ-VORSCHLAG konsumiert die Stärke-Wahrheit: das
