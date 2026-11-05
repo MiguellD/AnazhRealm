@@ -1,0 +1,11 @@
+Punkte-Maschine: 2 Station(en) in 2 Läufen auf radeon am 9c545df2 · Sitzung 2 Proben in EINER Welt (Deckel Σ 2 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon)
+  SITZUNG radeon · die Welt steht nach 5.8 s (Schloss nach 0.1 min) · 2 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 79 Größen in 0 s
+  SITZUNG Ort wiese vor fahrzeug.K2#1: 19.4 s (697 Takte, 81 Chunks)
+  OFFEN fahrzeug.K2#1 · Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT der Fahrt nach 40.0 s Wanduhr: {"spielS":39,"orte":5}) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 6.9 s (im Spiel 16.5 ms, durch die Tür)
+  SITZUNG Ort wiese vor fahrzeug.K2#2: 15.6 s (601 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Verkehrs nach 80.0 s Wanduhr: {"spielS":145,"uhr":10.89,"orte":1}) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): fahrzeug.K2#2 1863 m (Ring 4 → -1), fahrzeug.K2#1 1618 m (Ring 4 → -1)
+  SITZUNG Fahrt 186.8 s (Soll ≤ 1800 s) · 2 Proben · Grundstellung 1×
+→ meisterkarte-quelle\punkte\messung\9c545df2-radeon.json
