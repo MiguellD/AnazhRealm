@@ -915,14 +915,14 @@ class AnazhRealm_bild_himmel {
     // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): das
     // Foundry-Laub/-Gras (`_foundryTreeMaterial`, die Nah-Wiese) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
-    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte; `_saisonPraesenz`): das Laub
+    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte, z Halm; `_saisonPraesenz`): das Laub
     // (`_jahrLage`) und die Karte lesen sie — die Krone fällt im Winter, treibt im Frühling aus.
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = THREE.TSL;
         this.state.seasonUniforms = {
             uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
-            uLaubPraesenz: TSL.uniform(new THREE.Vector2(1, 1)),
+            uLaubPraesenz: TSL.uniform(new THREE.Vector3(1, 1, 1)),
         };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
@@ -955,11 +955,16 @@ class AnazhRealm_bild_himmel {
     // der Blüte steht, linear zwischen denselben Stützen wie die Tönung — Sommer 1, Herbst 0,55, Winter 0,06 (die kahle Krone),
     // der Austrieb 0,72; die Blüte 0,85 im Frühling, 0,12 im Sommer. Das Studio-Gesetz zieht jedes Blatt (aType `typ.laub`) und
     // jede Blüte (`typ.bluete`) um diesen Faktor auf seine Mitte (foundry-core `injectWind`), die Welt ebenso (`_jahrLage`). Rein
-    // (ohne TSL), schreibt in `out` (x Laub, y Blüte); das Gate ruft es GPU-frei.
+    // (ohne TSL), schreibt in `out` (x Laub, y Blüte, z Halm); das Gate ruft es GPU-frei. DIE GESTALT DES HALMS (vegetation.K5#2,
+    // SAISON_GESETZ `ha`): z staucht jeden Halm der Wiese über seiner Wurzel, vor dem Wind — der Gras-Stoff der Nah-Wiese, ihre
+    // Ferne (`_halmFerne`) und das Studio (`injectWind` uHalm) lesen dieselbe Zeile: Frühling 0,7, Sommer 1, Herbst 0,8, Winter
+    // 0,35. Bis dahin stand die Winter-Wiese in voller Höhe, orange getönt (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
     _saisonPraesenz(phase, out) {
         const { a, b, k } = AnazhRealm._saisonLage(phase);
+        if (!(Number.isFinite(a.ha) && Number.isFinite(b.ha))) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.ha");
         out.x = a.pr + (b.pr - a.pr) * k;
         out.y = a.bl + (b.bl - a.bl) * k;
+        out.z = a.ha + (b.ha - a.ha) * k;
         return out;
     }
 
