@@ -210,27 +210,12 @@ function herdeSzene(r, T, o) {
     // die Alarm-Kette läuft (≤ 1 s), dann eine halbe Sekunde Flucht: jedes Glied flieht im ersten Schuss
     for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
     for (let k = 0; k < 30; k++) takt();
-    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht), das Auge Ego — der Hang zeigt die Herde im Profil; die
-    // Blick-Wahl dreht von dort, bis jedes Glied frei steht. Die tiefere Seite zuerst, wenn das Gelände von ihr jedes Glied zeigt
-    // (der Strahl des Auges zum Rumpf — halbwegs zwischen Fuß und Leib-Mitte — bleibt über dem Gesetz der Höhe), sonst die höhere.
-    // Radeon b62542c9 (w12-proben-s) am gewölbten Hang 21,8° −522/−848: von der tieferen Seite verdeckte die Kuppe zwei Rümpfe
-    // (je 12 px, nur Kopf und Geweih über ihr), die Blick-Wahl prüft je Glied nur die Leib-Mitte und nahm die Pose
+    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht) auf der tieferen Seite, das Auge Ego — der Hang zeigt die
+    // Herde im Profil; die Blick-Wahl dreht von dort, bis jedes Glied frei steht
     const m = mitte(lebend());
-    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 })).sort((a, b) => H(a.x, a.z) - H(b.x, b.z));
-    const zeigt = (a) => {
-        const ey = H(a.x, a.z) + A.EGO_AUGE_M;
-        return lebend().every((c) => {
-            const [x, y, z] = leibMitte(c);
-            const ty = (y + c.position.y) / 2;
-            const n = Math.ceil(Math.hypot(x - a.x, z - a.z));
-            for (let i = 1; i < n; i++) if (H(a.x + ((x - a.x) * i) / n, a.z + ((z - a.z) * i) / n) > ey + ((ty - ey) * i) / n) return false;
-            return true;
-        });
-    };
-    const sicht = seiten.map(zeigt);
-    Z.auge = seiten[sicht[0] || !sicht[1] ? 0 : 1];
-    const standort = { seite: Z.auge === seiten[0] ? "tiefer" : "höher", zeigt: sicht };
-    return Object.assign(pose(), { hang: lage, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1), standort });
+    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
+    Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
+    return Object.assign(pose(), { hang: lage, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
 // Glieder der Herde. Je Glied die Tier-Pixel im Kreis seines Leibs am Schirm (Mitte über der Lage um die halbe Höhe seiner Box,
@@ -3522,9 +3507,9 @@ const stationen = [
         // (16 s). 41 s, über dem Gesetz der Zahl, bis die Schüsse der Herde fallen
         // DIE AUSNAHME (w12-proben-s): der Hang, an dem der Wurf trägt (das Geburts-Prädikat, `herdeSzene`), liegt an keinem Messort im
         // warmen Ring — die Suche in der Welt b62542c9: Wiese 312 m (6 757 von 7 351 Orten ohne 15–30°), Genesis 252 m, Dorf 264 m; die
-        // drei Schüsse stehen dort im kalten Ring (Radeon b62542c9 je Schuss 16–21 s, riss 45 s vor dem dritten). Der Deckel je Karte in
-        // deckel.json
-        probe: { sek: 41, ausnahme: "die Herde am Hang 300 m von der Mess-Wiese (der nächste, an dem der Wurf trägt) mit drei Schüssen im kalten Ring", befehl: [
+        // drei Schüsse stehen dort im kalten Ring (Radeon b62542c9: die Probe herde 10,5 s, die Szene 0,1 s, Schuss 1 samt Ring 24–32 s,
+        // Schuss 2 12–17 s, Schuss 3 7–15 s — gesamt 59 s und 69 s). Der Deckel je Karte in deckel.json
+        probe: { sek: 41, ausnahme: "die Herde am Hang 300 m von der Mess-Wiese (der nächste, an dem der Wurf trägt), drei Schüsse im kalten Ring — Radeon 59–69 s", befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
