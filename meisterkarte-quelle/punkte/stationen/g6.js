@@ -513,7 +513,24 @@ async function taktFahrt(quelle, m, namen, o) {
         if (st.symphony.enabled) r.disposeSymphony();
     }
 }
-// die Befunde wie die Klang-Linse (`takt`): Aussetzer, Bewegung je Phase, p95 über dem Soll, der Sattel der Fahrt
+// DAS URTEIL DES TAKTS (Node: taktLauf, der Selbsttest in punkte.cjs) — die Befunde wie die Klang-Linse (`takt`): die Uhr der Seite,
+// Bewegung je Phase, p95 über dem Soll, die Aussetzer am Ausgang, der Sattel der Fahrt. DIE UHR (05.11., w12-klang-takt): eine Seite
+// ohne Cross-Origin-Isolation bekommt `performance.now()` auf dem 100-µs-Raster — jede Klang-ms der Sitzung lag auf 0,2/0,3/0,4, jede
+// isolierte Messung bei 0,09–0,16; ihr p95 ist kein Maß, die Station ist ROT beim Täter (der Kopf des save-servers), nie am Spiel.
+function taktRot(j, soll, weg) {
+    const rot = [];
+    if (!(j.seite && j.seite.isoliert))
+        rot.push("T uhr: die Seite ist nicht cross-origin-isoliert — performance.now() auf dem 100-µs-Raster (Täter: der Kopf des Spiel-Servers, statischerKopf ohne COOP + COEP)");
+    for (const [name, z] of Object.entries(j.phasen)) {
+        if (!(z.bilder >= 300 && z.weg >= weg)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
+        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
+    }
+    const a = j.aussetzer;
+    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
+    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
+    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    return rot;
+}
 async function taktLauf(h) {
     const D = "scripts/diag-klang-zensus.cjs";
     const text = require("fs").readFileSync(D, "utf8");
@@ -525,17 +542,11 @@ async function taktLauf(h) {
     const weg = 10;
     const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10, weg }], 150000);
     console.log("Klang-Takt:", JSON.stringify(j.seite));
-    const rot = (j.rot = []);
-    for (const [name, z] of Object.entries(j.phasen)) {
+    for (const [name, z] of Object.entries(j.phasen))
         console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
-        if (!(z.bilder >= 300 && z.weg >= weg)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
-        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
-    }
     const a = j.aussetzer;
     console.log("── Aussetzer am Ausgang: " + (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt"));
-    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
-    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
-    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    const rot = (j.rot = taktRot(j, soll, weg));
     for (const t of rot) console.log("   " + t);
     return j;
 }
@@ -3528,7 +3539,7 @@ module.exports = [
         // EINEN Fahrt ≤ 30 min): 0 Aussetzer über die ganze Wiedergabe der drei Phasen (≥ 15 s) statt 10 min an der Uhr — die 10 min
         // der Staffel nennt die Zahl, der Schöpfer entscheidet ihren Text. Bis 29.10. `--takt --echt --minuten 10` mit eigenem Boot
         // (ea07267e Radeon 14,74 min).
-        probe: { sek: 10, befehl: sitzungBefehl(taktLauf, [taktFahrt]), mutiert: true, },
+        probe: { sek: 10, befehl: sitzungBefehl(taktLauf, [taktFahrt, taktRot]), mutiert: true, },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -3566,6 +3577,7 @@ module.exports = [
             "scripts/lib/vram-abgriff.cjs",
             "scripts/lib/draw-zaehler.cjs",
             "scripts/werkbank.cjs",
+            "save-server.js",
         ],
         quelle: "2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
     },
@@ -3887,6 +3899,7 @@ module.exports = [
 // die EINE Probe der Ankunft für ihre Zwillinge in stationen/g4.js (pipeline.K4#1/#2)
 module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
 module.exports.pbSchrittTraegt = pbSchrittTraegt;
+module.exports.taktRot = taktRot;
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 // DIE FAHRT (p3-stationen-g456, 01.11.): die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s (FAHRT_MAX_S, samt Boot) —

@@ -3995,6 +3995,18 @@ async function selbsttest(o = {}) {
             t(["band:wiese-third", "wiese-third-steht"], 80, 6, 84) && !t(["band:wiese-third", "wiese-third-steht"], 76, 18, 84) && !t(["wiese-fahrt"], 80, 8, 84) &&
                 t(["wiese-fahrt"], 70, 8, 84) && !t(["band:dorf-ego"], 84, 1, 84));
     }
+    // DIE UHR DES TAKTS (stationen/g6.js taktRot, klang.K5#2, w12-klang-takt): eine Seite ohne Cross-Origin-Isolation (performance.now() auf
+    // dem 100-µs-Raster, die Sitzung bis 05.11.) ist ROT beim Täter, ehe ein p95 zählt; eine Geh-Phase unter 10 m ist ROT beim Weg (das
+    // Stop-and-go trug 6–9 m); die isolierte, bewegte Fahrt ist GRÜN
+    {
+        const t = require(path.join(DIR, "stationen", "g6.js")).taktRot;
+        const P = (weg) => ({ bilder: 600, weg, p95: 0.12, max: 0.3, traeger: [] });
+        const j = (iso, weg) => ({ seite: { isoliert: iso }, phasen: { gehen: P(weg), fahrt: { ...P(30), sattel: true }, nacht: P(11) }, aussetzer: { n: 0, still: 0, s: 40 } });
+        const [ok, uhr, kurz] = [t(j(true, 14), 0.2, 10), t(j(false, 14), 0.2, 10), t(j(true, 8), 0.2, 10)];
+        pruef("UHR DES TAKTS die nicht isolierte Seite ROT beim Kopf des save-servers, 8 m Gehen ROT beim Weg, isoliert und bewegt GRÜN",
+            !ok.length && uhr.length === 1 && /^T uhr: .*statischerKopf/.test(uhr[0]) && kurz.length === 1 && /^T gehen: 600 Bilder, 8 m/.test(kurz[0]),
+            JSON.stringify([ok, uhr, kurz]));
+    }
     b = buchen("kopf", [s1, s2], m2, (sha) => (sha === "b2" ? ["stamm/wasser-hydro.js"] : ["docs/x.md"]), h);
     pruef("BUCHUNG R6 Pfad geändert → GTX alt → 1", b.je["gelaende.K4"].punkte === 1 && /R6/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     // DIE RATSCHE: das GRÜN der letzten Buchung hält ohne frische Messung, ein frisches ROT nimmt es beim Namen, die Wand PFAD hält nie
