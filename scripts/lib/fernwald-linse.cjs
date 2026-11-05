@@ -105,7 +105,6 @@ function fernwaldLinse(opts) {
             let auf = null;
             for (let i = 0; i < 3; i++) {
                 if (st.fernRing) r._tickFeldPass(st.fernRing);
-                r._schattenAlleNeu();
                 auf = await window.__ausgabeAufnahme(W, H, 1);
             }
             return new Uint8Array(auf.u8);
