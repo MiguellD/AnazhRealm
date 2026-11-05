@@ -1889,7 +1889,7 @@ const LEIB_K3_PROBEN = (() => {
 // K(z) = −ln(L(z) ÷ L(0,5 m)) ÷ (z − 0,5 m) in 1,5 und 2,5 m liegt im Band der Soll-Tafel (Klasse wasser, `sichtAbfall`, gelesen im
 // Spiel-Baum am SHA) — die REF der Literatur, unabhängig vom Gesetz der Welt: kd klarer Binnenseen (Secchi 3–10 m, kd ≈ 1,7 ÷ Secchi,
 // Poole & Atkins 1929). Der eigene LEIB in Third 0,5 m: der Weber-Kontrast seines Bildpunkts (das Fenster am projizierten Leib) gegen
-// das Wasser 40 px daneben, Soll ≥ 0,15. Im selben Lauf die MUTANTE „kd halbiert“ (das Gesetz des Wassers in der Seite, Ego 0,5 und
+// das Wasser 40 px daneben, Soll ≥ 0,05 (Duntley: Sichtweite unter Wasser endet bei Kontrast 0,02; erkennbar statt nur entdeckt × 2,5). Im selben Lauf die MUTANTE „kd halbiert“ (das Gesetz des Wassers in der Seite, Ego 0,5 und
 // 2,5 m): ihr Abfall muss unter ¾ des gemessenen fallen, sonst liest das Bild das Gesetz
 // nicht (ROT). (2) DIE HÖHLE am Ort von gate:hoehlen-sicht (−1041/−738, die Welt dort eingeschwungen): im Umkreis ±40 m die höchste
 // Luft unter Fels (das Feld `_fieldDensityAt` auf dem Gitter der Stufe 0), das Auge in ihrer Mitte, der Blick in ihren längsten freien
@@ -2047,10 +2047,10 @@ async function probeUnterwasser(H) {
     return j;
 }
 const UNTERWASSER_PROBE = probeBefehl(probeUnterwasser, 45, { UNTER: unterwasserSeite });
-// die Mutante „kd halbiert“ verschiebt den Abfall unter ¾ des gemessenen (Soll ½); der eigene Leib in Third 0,5 m hebt sich um ≥ 15 %
+// die Mutante „kd halbiert“ verschiebt den Abfall unter ¾ des gemessenen (Soll ½); der eigene Leib in Third 0,5 m hebt sich um ≥ 5 %
 // (Weber-Kontrast gegen das Wasser neben ihm) vom Medium ab; die Höhle zwei Blenden um ihre Nacht
 const UNTERWASSER_MUTANTE = 0.75;
-const LEIB_KONTRAST = 0.15;
+const LEIB_KONTRAST = 0.05;
 const HOEHLE_BLENDEN = 2;
 // das Urteil über die Zeile `LEIB_K3_BILD {…}`: je Sicht der Abfall K in 1,5 und 2,5 m im Band der Soll-Tafel (die REF der Literatur,
 // unabhängig vom Gesetz: kd klarer Seen), die Mutante, der Leib in Third, die Höhle
