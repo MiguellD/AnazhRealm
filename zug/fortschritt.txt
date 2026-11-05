@@ -1966,3 +1966,4 @@
 2026-11-05 20:07:06 omen-z233 4adff50e w12-dorf-probe werk-im-wasser ROT 21 min
 2026-11-05 20:07:20 omen-speicher ENTWARNUNG Commit 14.6/18.2 GB
 2026-11-05 20:07:52 omen-z233 START 4 Köpfe gate:werk-im-wasser (CI=true, CI_KLASSE=cpu)
+2026-11-05 20:09:20 omen-speicher ALARM Commit 16.6/18.2 GB - 12xclaude 2.1G, 9xchrome 1.8G, 7xDropbox 0.7G, 87xsvchost 0.6G, 1xMsMpEng 0.5G, 1xOverlayHelper 0.4G
