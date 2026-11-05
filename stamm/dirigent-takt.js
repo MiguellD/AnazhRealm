@@ -528,11 +528,6 @@ class AnazhRealm_dirigent_takt {
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen
         o.huellen = this._huellenNach ? this._huellenNach.size : 0;
-        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
-        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
-        // vor dem Auge trug die Karte)
-        const gleit = st._ankunftGleit;
-        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
@@ -1743,7 +1738,7 @@ class AnazhRealm_dirigent_takt {
         setze(this._weltRegung | 0, true);
         setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
-        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): das erste Bild und jedes Bild ihres Gleitens
+        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): bis zum Bild aus der Ferne, danach am Abstand
         setze(st.lodRef);
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
@@ -1955,8 +1950,6 @@ class AnazhRealm_dirigent_takt {
         // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
         // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
         // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
-        // die Ankunft aus der Ferne gleitet je gezeichnetem Bild (`_ankunftsFerne`, B2) — vor dem Spiegel nach `uLodPerf`
-        if (this.state._ankunftGleit < AnazhRealm.ANKUNFT_GLEIT_BILDER) this.state._ankunftGleit++;
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;

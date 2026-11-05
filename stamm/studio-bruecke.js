@@ -2502,8 +2502,10 @@ class AnazhRealm_studio_bruecke {
         // Bedarf-Stempel für den Karten-Takt (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
         // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
         if (!z.gebacken) {
-            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && (entry.position || entry.wo));
+            const wo = wer ? wer.wo : entry && (entry.position || entry.wo);
+            const d2 = this._foundryAuftragD2(wo);
             if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
+            if (z._imBlick !== true) z._imBlick = this._rangImBlick(wo); // die Lücke im Blick (`_weltbildLuecken`)
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
