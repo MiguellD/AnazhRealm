@@ -29,13 +29,11 @@
   {
    "id": "C",
    "titel": "Verkehr",
-   "stationen": ["fahrzeug.K2#2"],
+   "stationen": ["pflicht.C#1"],
    "ohneRichter": [
-    "10 min je Stunde: die Station fährt 12 s Spielzeit je Stunde (`PW.torBefehl(PW.fahrVerkehr, \"12\")`), das Gesetz VERKEHR in scripts/diag-fahr-leben.cjs verlangt 600 s",
-    "das Urteil der Station wird nie grün, solange 25°-Hang, Furt, Ego und Third ohne Probe stehen — C steht nur in ihrer Zahl („C GRÜN/ROT“)",
-    "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen"
+    "das Profi-Band (E) im Verkehr: keine Zelle des Bands fährt in der belebten Stadt nH 300 mit Wagen (Ego und Third, Radeon und GTX) — pflicht.C#1 misst headless die Welt ohne Bild"
    ],
-   "geprueft": "fahrzeug.K2#2 (stationen/g5.js): die VK-Zeilen „PFLICHT-OFFEN C“ um 10 und 23 Uhr — Wagen ≥ 20 mit Fahrer, Ziel erreicht, 0 Berührung mit Leib, Wagen, Bau (diag-fahr-leben VERKEHR)"
+   "geprueft": "pflicht.C#1 (Pflicht-Richter ohne Punkte, stationen/g5.js, headless, w12-verkehr 05.11.): gate:fahr-leben --verkehr an stadt-voll (nH 300) um 10 und 23 Uhr je 600 s und 10 volle Minuten — in jeder Probe ≥ 20 Wagen mit einem Bewohner am Steuer (im Bild gezeichnet), jede Probe eines Fahrenden auf der Trasse (der Boden, den die Stadt als Weg malt: `_aufWeg`, der EINE Leser der Wege-Karte), je Wagen und Minute ≥ 30 m, 0 Berührung und 0 Stoß mit Leib, Bau, Wagen, jeder Wagen am Ziel (PFLICHT_C). Gefallen sind die zwei Teile ohne Richter von fahrzeug.K2#2 (12 s statt 10 min; das Urteil an Hang, Furt und Sichten gebunden): fahrzeug.K2#2 misst C weiter als Teil seiner Staffel 2, trägt den Eintrag aber nicht mehr"
   },
   {
    "id": "E",

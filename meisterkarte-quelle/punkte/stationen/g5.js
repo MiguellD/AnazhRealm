@@ -4503,7 +4503,90 @@ const stationen = [
         pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "spec/profiband/haushalt.json"],
         quelle: "2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
     },
+
+    // ───────── pflicht.C#1 — DER RICHTER VON PFLICHT-OFFEN C, ohne Punkte (w12-verkehr, 05.11.) ─────────
+    // Bis hier maß C nur fahrzeug.K2#2: 12 s je Stunde in der Sitzung, ihr Urteil an Hang, Furt und Sichten gebunden — C stand
+    // „ohne Richter“. Das Soll ist der Satz des Schöpfers (docs/PFLICHT-OFFEN.md C, 25.10.: „in der Stadt nH 300 bei Tag und bei
+    // Nacht mindestens 20 Wagen mit Bewohnern am Steuer 10 min lang auf den Trassen — 0 Berührungen mit Leibern, Bauten und anderen
+    // Wagen, jeder Wagen erreicht sein Ziel“), gelesen als Zahlen (PFLICHT_C): die Metropole des Messorts stadt-voll („dorf 7 300“,
+    // ihr Gesetz nennt 20 Wagen: je 15 Häuser einer) um 10 und 23 Uhr je ≥ 600 s und 10 volle Minuten; in JEDER Probe ≥ 20 fahrende
+    // Wagen mit einem Bewohner am Steuer, und wer im Bild fährt, zeigt ihn; jede Probe eines Fahrenden auf der Trasse (dem Boden, den
+    // die Stadt als Weg malt — der EINE Leser der Wege-Karte `_aufWeg`, den die Natur-Wand liest); je Wagen und Minute ≥ 30 m (wer
+    // fährt, steht keine Minute); 0 Berührung und 0 Stoß mit Leib, Bau und Wagen; jeder Wagen kam in der Stunde an einem Ziel an. Die
+    // Probe ist die Linse VK (gate:fahr-leben --verkehr, headless — die Welt ohne Bild, die Mechanik; das Profi-Band im Verkehr misst
+    // sie nie, es steht in pflicht.json C „ohne Richter“). Ihr Selbsttest im Spiel-Baum: `--verkehr --taeter` (Wagen 0 ohne Fahrer,
+    // Wagen 1 neben der Trasse, je beim Namen). Vorher (main b62542c9, 05.11.): die Linse kennt die Maße des Richters nicht — ROT beim
+    // Namen „Wagen mit Bewohner am Steuer undefined“; das übrige Kriterium hielt dort (20/20, 140 und 144 Ankünfte, 0 Berührungen).
+    // Der erste Lauf des Richters nannte um 23 Uhr „am Steuer [19,132,[19,"steht"]]“: die Probe hieß die Stadt vor dem ersten Bild
+    // nach dem Sprung der Uhr bereit, Wagen 19 stand, bis sein Nachtfahrer ankam — geschnitten in der Probe (erst ein Bild).
+    {
+        kriterium: "pflicht.C",
+        pflicht: true,
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--verkehr"],
+        env: { FAHR_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => pflichtCUrteil(lauf),
+        proben: pflichtCProben(),
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/gelaende-kollision.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "spec/profiband/haushalt.json"],
+        quelle: "PFLICHT-OFFEN C = in der Stadt nH 300 um 10 und 23 Uhr je 10 min in jeder Probe ≥ 20 Wagen mit Bewohnern am Steuer auf der Trasse, je Wagen und Minute ≥ 30 m, 0 Berührung mit Leib, Bau und Wagen, jeder Wagen am Ziel",
+    },
 ];
+
+// DAS SOLL VON PFLICHT-OFFEN C (pflicht.C#1) aus dem Satz des Schöpfers: Tag und Nacht, 20 Wagen, 10 min, wer fährt, steht keine Minute
+const PFLICHT_C = { stunden: [10, 23], wagen: 20, sek: 600, minuten: 10, weg60M: 30 };
+function pflichtCUrteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const J = jsonZeile(t, /^VERKEHR {/);
+    if (!J) return { gruen: false, zahl: "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.split("\n").find((z) => /PROBE-FEHLER|❌/.test(z)) || "die Linse sprach nicht").trim().slice(0, 200) };
+    const C = PFLICHT_C;
+    const je = C.stunden.map((h) => {
+        const m = J[h];
+        if (!m) return h + " Uhr ROT: keine Messung";
+        // die Maße der Linse: amSteuer [die wenigsten in einer Probe, die Probe, wer nicht fuhr …], trasse [Proben, abseits, Orte],
+        // weg60 [der kürzeste Weg einer vollen Minute, Wagen, Minuten]
+        const [b, s, z] = [m.beruehrt || {}, m.stoss || {}, m.ziele || {}];
+        const [st, tr, w] = [m.amSteuer || [], m.trasse || [], m.weg60 || []];
+        const fehl = [
+            [m.soll >= C.wagen, "die Stadt fährt nach ihrem Gesetz " + m.soll + " Wagen (Soll ≥ " + C.wagen + ": nH 300)"],
+            [st[0] >= C.wagen, "Wagen mit Bewohner am Steuer " + JSON.stringify(st[0]) + " in Probe " + st[1] + " (Soll ≥ " + C.wagen + " in jeder; nicht: " + JSON.stringify(st.slice(2)) + ")"],
+            [!(m.stufe || {}).ohneFahrer, "im Bild ohne gezeichneten Fahrer " + (m.stufe || {}).ohneFahrer],
+            [m.sek >= C.sek && w[2] >= C.minuten, "gemessen " + m.sek + " s, " + w[2] + " volle Minuten (Soll " + C.minuten + ")"],
+            [tr[0] > 0 && tr[1] === 0, "abseits der Trasse " + tr[1] + " von " + tr[0] + " Proben " + JSON.stringify(tr[2] || null)],
+            [w[0] >= C.weg60M, "in 60 s " + w[0] + " m (Wagen " + w[1] + "; Soll ≥ " + C.weg60M + " m)"],
+            [!b.leib && !b.bau && !b.wagen && !s.leib && !s.bau && !s.wagen, "Berührung Leib " + b.leib + " · Bau " + b.bau + " · Wagen " + b.wagen + " · Stoß " + JSON.stringify(s)],
+            [Array.isArray(z.ohne) && !z.ohne.length, "ohne Ziel erreicht: Wagen " + JSON.stringify(z.ohne)],
+        ].filter(([ok]) => !ok).map(([, n]) => n);
+        return h + " Uhr " + (fehl.length ? "ROT: " + fehl.join(" · ")
+            : "GRÜN: " + st[0] + " am Steuer in jeder Probe, Trasse " + tr[0] + "/" + tr[0] + ", Minute ≥ " + w[0] + " m, " + z.erreicht + " Ankünfte, 0 Berührung");
+    });
+    return { gruen: je.every((x) => / GRÜN: /.test(x)), zahl: "C " + je.join(" · ") };
+}
+// die Roh-Ausgaben des Richters: eine gesunde Messung und je Bruch des Satzes ein Mutant — der Wagen ohne Fahrer und der Wagen
+// abseits der Trasse zuerst (die Täter des Auftrags), dann Minute, Dauer, Berührung, Nacht und der Stand vor dem Richter
+function pflichtCProben() {
+    const g = { soll: 20, amSteuer: [20, 0], sek: 600, stufe: { ohneFahrer: 0 }, trasse: [180000, 0, []], weg60: [189, 3, 11],
+        beruehrt: { leib: 0, bau: 0, wagen: 0 }, stoss: { wagen: 0, bau: 0, leib: 0 }, ziele: { erreicht: 142, ohne: [] } };
+    const zeile = (an10 = {}, an23 = {}, ohne) => {
+        const J = { 10: { ...g, ...an10 }, 23: { ...g, ...an23 } };
+        if (ohne) delete J[ohne];
+        return "  ✅ VK (PFLICHT-OFFEN C) der Verkehr der Stadt um 10 Uhr\nVERKEHR " + JSON.stringify(J);
+    };
+    return [
+        { name: "Tag und Nacht nach dem Satz", stdout: zeile(), gruen: true },
+        { name: "ein Wagen ohne Fahrer um 23 Uhr", stdout: zeile({}, { amSteuer: [19, 0, [0, "faehrt", "nachtfahrer", true]] }), gruen: false },
+        { name: "ein Wagen abseits der Trasse um 10 Uhr", stdout: zeile({ trasse: [21000, 372, [[1, 926, 305, 104]]] }), gruen: false },
+        { name: "ein Wagen steht eine Minute", stdout: zeile({ weg60: [0, 3, 11] }), gruen: false },
+        { name: "12 s statt 10 min (die Probe der Sitzung)", stdout: zeile({ sek: 12, weg60: [null, 0, 0] }), gruen: false },
+        { name: "Wagen in Wagen", stdout: zeile({ beruehrt: { leib: 0, bau: 0, wagen: 2 } }), gruen: false },
+        { name: "die Nacht fehlt", stdout: zeile({}, {}, "23"), gruen: false },
+        { name: "der Stand vor dem Richter: die Linse kennt seine Maße nicht", stdout: zeile({ amSteuer: undefined, trasse: undefined, weg60: undefined }), gruen: false },
+        { name: "keine VERKEHR-Zeile", stdout: "  ❌ VK (PFLICHT-OFFEN C) der Verkehr der Stadt um 10 Uhr — PROBE-FEHLER", gruen: false },
+    ];
+}
 
 module.exports = stationen;
 module.exports.spurAufnahme = spurAufnahme; // die Aufnahme der Spur von Hand (spielgang.K1#1)
