@@ -2052,7 +2052,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 r._disposeScatterRegion(key);
             }
         } catch (e) {
-            storno.threw = String((e && e.message) || e);
+            storno.threw = fehlerText(e);
         }
         o.storno = storno;
         // ── (5) DER WECKER: jede Baum-Zelle wartet auf zwei Zusagen (ihr Wurf hält seinen Platz, `_scatterPass`), eine fremde
@@ -2099,7 +2099,7 @@ async function checkBandScatterScheibe({ page, check }) {
             wecker.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === snap5;
             clean();
         } catch (e) {
-            wecker.threw = String((e && e.message) || e);
+            wecker.threw = fehlerText(e);
         }
         o.wecker = wecker;
         // ── (6) DER STOFF DES WALDS: die Gestalt der Streu wartet auf die Darts des Fadens ──
@@ -2164,7 +2164,7 @@ async function checkBandScatterScheibe({ page, check }) {
             }
             clean();
         } catch (e) {
-            stoff.threw = String((e && e.message) || e);
+            stoff.threw = fehlerText(e);
         }
         o.stoff = stoff;
         return o;

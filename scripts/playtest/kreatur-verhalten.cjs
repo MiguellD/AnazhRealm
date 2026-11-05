@@ -2772,7 +2772,7 @@ async function checkBandKreaturKosten({ page, check }) {
                     try {
                         r._loopRender();
                     } catch (e) {
-                        fehler = String((e && e.message) || e).slice(0, 120);
+                        fehler = fehlerText(e).slice(0, 120);
                     }
                     delete r._ruheImBild;
                     return { ruhteVorher, ruht: u._ruht === true, gerufen, fehler };

@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -605,7 +605,7 @@ hauptLauf(async () => {
                             grund += ` L${e._lodLevel}`;
                         }
                     } catch (err) {
-                        grund = "wurf " + String(err.message || err).slice(0, 40);
+                        grund = "wurf " + fehlerText(err).slice(0, 40);
                     }
                     const k = `${e.type} (${grund})`;
                     warum[k] = (warum[k] || 0) + 1;
@@ -647,7 +647,7 @@ hauptLauf(async () => {
             s = await page.evaluate(SCHUSS_FN, kam);
         } catch (e) {
             const linse = await page.evaluate(() => window.__uploadLinse || []).catch(() => []);
-            s = { ok: false, grund: `Render-Wurf: ${String(e.message || e).split("\n")[0]}` };
+            s = { ok: false, grund: `Render-Wurf: ${fehlerText(e).split("\n")[0]}` };
             if (linse.length) s.grund += ` · Upload-Linse: ${[...new Set(linse)].slice(0, 4).join(" | ")}`;
         }
         if (!s.ok) {

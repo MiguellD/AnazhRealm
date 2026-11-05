@@ -265,6 +265,9 @@ function werkVerdict(m) {
         out.push(
             `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
         );
+    // Der Gast des Vorbaus (`_vorbauGast`) nimmt keinen Raum: kein Teil im Freiraum der Pose.
+    const vf = m.vorbauFrei || [];
+    if (!vf.length || vf.some((g) => g.endsWith("raum"))) out.push(`der Vorbau im Freiraum der Pose: ${vf.join(" · ") || "kein Gast"}`);
     // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst.
     if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
         out.push(
@@ -549,7 +552,7 @@ async function probe(argW) {
     });
 
     // ── Der Same des Werks: das gesetzte Werk ist das Phantom, auch beim Mitspieler ──
-    await abschnitt("werk", {}, async (m) => {
+    await abschnitt("werk", { vorbauFrei: [] }, async (m) => {
         const NAME = "baum_eiche";
         const preset = r._foundryPresetForEntry({ type: NAME });
         // Die Gestalt eines Phantoms: der Schlüssel seiner Studio-Gruppe im Foundry-Cache; die eines Werks: ihr Schlüssel aus
@@ -582,9 +585,27 @@ async function probe(argW) {
             // Planer der Bedienung) fragt jeden Hotbar-Bauplan nach seinem Studio-Geist — er ändert das Welt-Gedächtnis
             // (`worldMeta.bauSame`) nicht. Befund 1e90e7cd: er zog je Hotbar-Art den nächsten Samen, der nächste Wagen der Welt stand
             // in einer anderen Gestalt (Lack Metall 0,7 → 0, material.K4).
+            // DER GAST NIMMT KEINEN RAUM (w11-vorbau-frei, `_vorbauGast`): je Bauplan der Hotbar (Tor, Haus, Wagen, Eiche … der
+            // Befunde haar.K1#1 · haar.K2#1 · vegetation.K2#1, „vorbau:tor_drachentor 20,1 %") steht ein Gast, je Takt (das EINE
+            // Warten `__gebautNach`) gemessen und entlassen wie in `_geistVorbau` (der Null-Renderer baut ihn nie): sein Name, und
+            // trägt seine Hülle Raum (> 1 mm) im Freiraum der Pose (2 m um den Leib, der Nah-Radius der Abnahme), „im Freiraum".
             r._geistVorbauStand = undefined;
-            const vorbauRein = JSON.stringify(st.worldMeta.bauSame) === (r._geistVorbau(), JSON.stringify(st.worldMeta.bauSame));
-            r._geistVorbauStand.gast?.gruppe.removeFromParent();
+            const same0 = JSON.stringify(st.worldMeta.bauSame);
+            let alle;
+            await __gebautNach("die Gäste des Vorbaus", {
+                bau: () => {
+                    for (let V; (alle = r._geistVorbau()), (V = r._geistVorbauStand).gast; V.gast = null) {
+                        const [g, b] = [V.gast.gruppe, new window.THREE.Box3()];
+                        const raum = b.setFromObject(g).min.distanceTo(b.max) > 1e-3 && b.distanceToPoint(st.playerMesh.position) < 2;
+                        m.vorbauFrei.push(g.name + (raum ? " im Freiraum" : ""));
+                        r._disposeSoulGroup(g.removeFromParent());
+                        V.fertig.add(V.gast.name);
+                    }
+                },
+                fertig: () => alle,
+                max: 600,
+            });
+            const vorbauRein = same0 === JSON.stringify(st.worldMeta.bauSame);
             // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
             stelle();
             st.yaw = Math.atan2(frei.x - M.x, frei.z - M.z) + 0.7;
@@ -1512,6 +1533,7 @@ hauptLauf(async () => {
             mindest: 7.4,
             naechsterSame: 2034871155,
             huelleReicht: 1.1,
+            vorbauFrei: ["vorbau:fahrzeug_gt"],
             konsum: { "_workshopFoundryPreviewGroup → _werkSame": true, "_heldFoundryGroup → _werkSame": true, "_buildStudioPlacementGhost → _phantomWerk am Ort": true, "_geistVorbau rein": true },
             stumm: [],
         };
@@ -1547,6 +1569,9 @@ hauptLauf(async () => {
             [mitK({ huelleReicht: 10.3 }), "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m"],
             // der Vorbau zieht den Samen des Wagens (Befund 1e90e7cd, material.K4)
             [mitK({ konsum: { ...gesundK.konsum, "_geistVorbau rein": false } }), "Konsum: _geistVorbau rein"],
+            // der Geist des Vorbaus in voller Größe am Spieler (Befund haar.K2#1 Radeon „vorbau:fahrzeug_gt 27,8 %"), kein Gast
+            [mitK({ vorbauFrei: ["vorbau:fahrzeug_gt im Freiraum"] }), "der Vorbau im Freiraum der Pose: vorbau:fahrzeug_gt im Freiraum"],
+            [mitK({ vorbauFrei: [] }), "der Vorbau im Freiraum der Pose: kein Gast"],
         ]);
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {
@@ -1740,7 +1765,7 @@ hauptLauf(async () => {
             werkVerdict(km),
             "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
             () =>
-                `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}`
+                `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload} · Vorbau im Freiraum ${km.vorbauFrei}`
         );
         const bm = out.brenn || {};
         const bp_ = bm.plattform || {};

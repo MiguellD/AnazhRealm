@@ -394,7 +394,7 @@
         var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
         // K57: die Kalotten-Schale IST die Haar-Kappe des Stils (die Strähnen wurzeln auf dem Volumen; vorher eine eigene
         // Schale, deren Vorderseite auf Stirnhöhe lag — die Strähnen stachen als Punkte aus der Stirn)
-        var kap = haarKappe({ hairStyle: HAAR_KAPPE[stil] ? stil : "mittel" })[0];
+        var kap = haarKappe({ hairStyle: HAAR_KAPPE[stil] ? stil : "mittel", hairVol: voll })[0];
         var K = kap.c, // Kalotten-Schale (Zentrum · Radius · Skala)
             KR = kap.r,
             KS = kap.sc;
@@ -890,6 +890,26 @@
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
+    // DAS FETT-DEPOT (studios.K1, der Regler mass „Masse (Fett)" — die Fülle des Leibs wie der Körper-Regler eines Character-
+    // Creators): labMorph (eingefroren) wächst die Muskel-Primitive UNTER der Haut; die Hülle der Haut glättet ihr Wachsen weg
+    // (am Bild 0,68 % für mass 0 → 1, die Hose schrumpfte sogar). Die Fülle ist das Unterhaut-Fett ÜBER ihnen: je Gelenk der Haut
+    // seine Dicke in Körper-Einheiten (1 E ≈ 0,3 m) je Einheit Fett (totalFat aus labMorph) über dem Mittel der START_PARAMS —
+    // Rumpf und Becken tragen das Depot, Oberschenkel und Oberarm weniger, Unterarm und Wade wenig, Kopf, Hand und Fuß keins;
+    // `bauch` hebt die Vorderseite von Rumpf und Becken (das Bauch-Depot: × 1 + bauch · Normale vorn). Bei mass 1 trägt der
+    // Bauch ~6 cm, die Flanke ~3,5 cm, der Oberschenkel ~3 cm; mass 0 nimmt ~3 cm vom Bauch. Der Ofen schiebt jede Ecke jeder
+    // Hülle um Σ Gewicht × Dicke entlang ihrer Normale (foundry-core `__fettDepot`); das Mittel trägt kein Depot (Byte für Byte).
+    // prettier-ignore
+    var MENSCH_FETT = Object.freeze({
+        gelenk: Object.freeze({ mensch: 0.2, torso: 0.18, hip1: 0.16, "hip-1": 0.16, arm1: 0.1, "arm-1": 0.1, elbow1: 0.05,
+            "elbow-1": 0.05, knee1: 0.07, "knee-1": 0.07 }),
+        bauch: 0.8,
+        vorn: Object.freeze(["mensch", "torso"]),
+    });
+    // Das Depot eines Menschen: d = totalFat(dials) − totalFat(START_PARAMS) und die Tafel; null, wo d = 0 (das Mittel).
+    function fettDepot(dials) {
+        var d = labMorph(Object.assign({}, START_PARAMS, dials || {})).totalFat - labMorph(START_PARAMS).totalFat;
+        return d ? { d: d, gelenk: MENSCH_FETT.gelenk, bauch: MENSCH_FETT.bauch, vorn: MENSCH_FETT.vorn } : null;
+    }
     // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
     // handL = Hand-Länge (Handgelenk bis Fingerspitze, 0,108 Hk) · handB = Mittelhand-Breite ohne Daumen (0,047) ·
     // handgelenk = Breite am Handgelenk (0,033) · unterarm = Unterarm-Breite / Oberarm-Breite (0,8–1,0) · kopfH = Kinn bis
@@ -998,6 +1018,11 @@
         locken: [0.14, 0.05, 0.07], afro: [0.24, 0.04, 0.05], zopf: [0.05, 0.065, 0.06], dutt: [0.05, 0.065, 0.06],
         undercut: [0.07, 0.11, 0.04],
     });
+    // DAS HAAR-VOLUMEN (studios.K1, der Regler hairVol): das Volumen ist die Dicke der Kappe über dem Schädel — je Einheit über
+    // dem Mittel 1 trägt sie HAAR_VOLUMEN Schädel-Radien mehr (das flach gelegte Haar 0,5 liegt fast am Schädel, das volle 2
+    // steht ~2,5 cm über dem Mittel), nie unter dem Schädel. Bei 1 ist die Kappe die des Stils, Byte für Byte; die Strähnen
+    // (haarStreu) wurzeln auf DERSELBEN Kappe. Bis studios.K1 trug hairVol nur die Zahl der Strähnen (das Bild 0,45 %).
+    var HAAR_VOLUMEN = 0.2;
     function haarKappe(d) {
         var t = HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
         if (!t) return []; // glatze
@@ -1005,12 +1030,14 @@
             r = P.skullBaseR * 1.03,
             SH = MENSCH_GESTALT.schaedel.hoch;
         var sy = 1.12 + SH / (2 * r);
+        var voll = Math.max(0.3, d && typeof d.hairVol === "number" ? d.hairVol : 1.0);
+        var dk = Math.max(0, t[0] + (voll - 1) * HAAR_VOLUMEN);
         var ansatz = gesichtWert(d, "haaransatz") || 0; // mensch.K4: der Haar-Ansatz aus dem Genom (GESICHT_GENOM)
         // DIE KAPPE STEHT NIE VOR DEM SCHÄDEL (mensch.K4, die Menge trägt jeden Stil): ihre Front r·(1 + dicke) − zurueck liegt
         // höchstens auf seiner Front r — afro (dicke 0,24, zurueck 0,05) stand 0,046 vor ihr, die Kopf-Haut wuchs über die Augen
         // (augeFrei 0,40); jeder andere Stil liegt dahinter und bleibt byte-gleich
-        var z = Math.max(t[2], t[0] * r);
-        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
+        var z = Math.max(t[2], dk * r); // die Front aus der Dicke samt Fülle (studios.K1 hairVol)
+        return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + dk, sy + dk, 1 + dk] }];
     }
 
     // DIE TÖNE DES MENSCHEN (mensch.K4, rein additiv) — DIE FARBE FOLGT DEM SAMEN. Jede Ecke eines gegossenen Menschen trägt
@@ -5422,6 +5449,10 @@
         KOPF_SOLL: KOPF_SOLL,
         kopfToene: kopfToene,
         haarKappe: haarKappe,
+        HAAR_VOLUMEN: HAAR_VOLUMEN,
+        // studios.K1 — die Fülle des Leibs (der Regler mass): das Unterhaut-Fett je Gelenk (Leser: der Mensch-Guss)
+        MENSCH_FETT: MENSCH_FETT,
+        fettDepot: fettDepot,
         // mensch.K4 — das Gesicht aus dem Genom: die Bereiche der vier Achsen (Leser: der Genom-Roller des Wirts, die Linsen)
         GESICHT_GENOM: GESICHT_GENOM,
         // mensch.K4 — die Schnitte mit Volumen (je Stil die Kappe): die Gestalten einer Siedlung wählen aus ihnen

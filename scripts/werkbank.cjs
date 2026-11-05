@@ -71,10 +71,12 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
+// die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
+const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
 const { ZAEHLER_INSTALL, FALTE_INSTALL, gangLauf } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
@@ -343,11 +345,12 @@ function lauf(k) {
                     }
                     if (!kand.some((q) => q.neu)) continue;
                     naechst = s + 2;
-                    kreis.halt = ++kreis.schuesse;
+                    rend.setAnimationLoop(null);
+                    kreis.schuesse++;
                     const G = [await schuss(), await schuss()];
                     r.toggleCreatures(false);
                     const O = await schuss().finally(() => r.toggleCreatures(true));
-                    kreis.halt = 0;
+                    await wieder();
                     const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
@@ -361,9 +364,7 @@ function lauf(k) {
                 taste("keyup");
             }
         };
-        rend.setAnimationLoop((t) => {
-            // die Schüsse der Sichtung halten die Welt: kein Takt, die Spiel-Uhr steht, die Lücke ist kein Frame
-            if (kreis && kreis.halt) return void (tRenderVor = null);
+        const takt = (t) => {
             // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
             const spur = messen && k.spur;
             if (spur) performance.mark("anazh-takt");
@@ -435,7 +436,19 @@ function lauf(k) {
             }
             proben.push(p);
             if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
-        });
+        };
+        rend.setAnimationLoop(takt);
+        // DIE WELT RUHT, WÄHREND DAS INSTRUMENT ARBEITET (die Schüsse der Sichtung, der Anlauf der Spur): die Schleife steht
+        // (`setAnimationLoop(null)`), niemand zeichnet, und `wieder` nimmt sie wieder auf — die Lücke ist kein Frame, weder im Lauf
+        // (`tRenderVor`) noch im Strom der Sitzung (sein Haken beginnt mit jeder neuen Schleife neu). Bis w11-stoss hielt die
+        // Sichtung nur den Takt an (er kehrte ohne Bild zurück): der Strom zählte die Lücke ins nächste Bild. Hielt das Instrument
+        // den Faden, während ein Bild schon begonnen hatte, liegt dessen rAF-Stempel VOR der Lücke (Radeon: Bild-Beginn 51 164,
+        // Rückruf 51 921) — 50 ms ohne Schleife tragen ihn ab, erst danach zeichnet sie wieder.
+        const wieder = async () => {
+            await sleep(50);
+            tRenderVor = null;
+            rend.setAnimationLoop(takt);
+        };
         try {
             if (fahrt) {
                 const { x, z } = st.playerMesh.position;
@@ -480,7 +493,15 @@ function lauf(k) {
             const v0 = Object.assign({}, window.__vram);
             const wache = window.__stempelWache;
             const s0 = wache();
-            if (k.spur) await __spurAn();
+            // DAS INSTRUMENT LÄUFT AN (w11-stoss): `Tracing.start` mit dem Stich-Profiler (PROBEN, `disabled-by-default-v8.cpu_profiler`)
+            // schreibt beim Anlauf jeden übersetzten Code der Seite ins Profil — der Haupt-Faden stand dabei 343–502 ms (Radeon, 18 von
+            // 18 Fenstern der Sitzungen 10770eb5 … f69a7305; GTX bis 825 ms) im Takt, den der Strom der Sitzung als Bild zählt: das
+            // größte Bild jedes profiband.K4-Fensters war die Linse selbst. Ohne Schleife steht der Anlauf in keinem Bild.
+            if (k.spur) {
+                rend.setAnimationLoop(null);
+                await __spurAn();
+                await wieder();
+            }
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = ERST.map((x) => E[x] || 0), probe = [];
@@ -773,7 +794,6 @@ function bandProben(k) {
 
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
-    const puppeteer = require("puppeteer");
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const seiten = statikServer();
     if (ECHT) {
@@ -784,17 +804,16 @@ async function starte() {
         if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
     } else await seiten.lausche(SEITEN_PORT);
     // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
-    // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
-    const profil = SERIE
-        ? ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"))
-        : path.join(require("os").tmpdir(), `werkbank-profil-${PORT}-${Date.now()}`);
-    const serieNeu = !fs.existsSync(profil);
-    fs.mkdirSync(profil, { recursive: true });
+    // Erst-Boot-Zahl („17 von 319 von der Platte"). Benannt (`--serie`) unter der Ablage, sonst das Scratch-Profil des EINEN
+    // Starters (welt-boot `startePuppeteer`: es stirbt mit dem Browser, am Prozess-Ende und am Signal, ein toter Lauf wird gefegt).
+    const profil = SERIE && ablage("profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"));
+    const serieNeu = !SERIE || !fs.existsSync(profil);
+    if (SERIE) fs.mkdirSync(profil, { recursive: true });
     const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
-    const browser = await puppeteer.launch({
+    const browser = await startePuppeteer({
         headless: !ECHT,
         userDataDir: profil,
         protocolTimeout: 10800000,
@@ -825,10 +844,10 @@ async function starte() {
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
     // `__stempelWache` (scripts/lib/zerlege-linse.cjs), die Warnung belegt, dass es geschah.
     const stempelWarnung = { n: 0 };
-    page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
+    page.on("pageerror", (e) => fehler.push(fehlerText(e).split("\n")[0]));
     // Der Tod der Seite beim NAMEN: jedes Ende (Absturz, Schließen, Navigation) landet mit Uhrzeit im Werkbank-Log.
     const tod = (was) => console.log(`[seite] ${new Date().toISOString()} ${was}`);
-    page.on("error", (e) => tod("ABSTURZ " + ((e && e.message) || e)));
+    page.on("error", (e) => tod("ABSTURZ " + (fehlerText(e))));
     page.on("close", () => tod("GESCHLOSSEN"));
     page.on("framenavigated", (f) => {
         if (f === page.mainFrame()) tod("navigiert " + f.url());
@@ -1176,7 +1195,6 @@ async function starte() {
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
-            window.__letzteAufnahme = auf.u8;
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
             const spiegel = (window.__letzteSpiegel = k.klasse ? await __spiegelDaten() : null);
             const u8 = auf.u8,
@@ -2982,21 +3000,15 @@ async function starte() {
                     steuer.close();
                     // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
                     // (ERR_HTTP_HEADERS_SENT) und riss den Prozess ohne Chrome-Abbau herunter.
-                    await browser.close().catch((e) => tod("close: " + ((e && e.message) || e)));
-                    // Das Scratch-Profil stirbt mit der Serie; ein benanntes (`--serie`) bleibt für den nächsten Start.
-                    if (!SERIE)
-                        try {
-                            fs.rmSync(profil, { recursive: true, force: true, maxRetries: 5 });
-                        } catch (e) {
-                            tod("Profil bleibt liegen: " + ((e && e.message) || e));
-                        }
+                    // das Scratch-Profil stirbt mit dem Browser (welt-boot `startePuppeteer`), ein benanntes (`--serie`) bleibt
+                    await browser.close().catch((e) => tod("close: " + (fehlerText(e))));
                     process.exit(0);
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
             } catch (e) {
                 // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
                 send({
-                    fehler: String((e && e.message) || e).split("\n")[0],
+                    fehler: fehlerText(e).split("\n")[0],
                     stapel: String((e && e.stack) || "")
                         .split("\n")
                         .slice(1, 5)
@@ -3275,7 +3287,7 @@ hauptLauf(async () => {
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
-        const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+        const fehl = istSoll(f);
         console.log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const halt = await eigeneWelt();
@@ -3313,7 +3325,6 @@ hauptLauf(async () => {
         // zu Mittag dazu vom Gipfel (das Höchste des Gesetzes binnen 3 km, Auge 40 m); das Urteil `luftTiefeUrteil` gegen die
         // externe Referenz spec/farbe/luft-referenz.json. `--wetter <wort>` misst nur vom Hügel die Sicht im Wetter (Ferne K5),
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
-        const LL = require("./lib/licht-linsen.cjs");
         const ref = jsonLesen(path.join(__dirname, "../spec/farbe/luft-referenz.json"));
         const fehl = LL.luftTiefeSelbsttest(ref);
         selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT");
@@ -3399,7 +3410,7 @@ hauptLauf(async () => {
                 [LL.kronenObenUrteil({}).urteil, "ROT"],
                 ...LL.tagKurveSelbsttest(),
             ];
-            const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+            const fehl = istSoll(f);
             endeMit(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`, !fehl.length);
         }
         const welt = {};

@@ -21,7 +21,7 @@
 //   node scripts/format-teile.cjs [--selftest] <datei …>       (npm run format:check)
 "use strict";
 const { Worker, isMainThread, parentPort } = require("worker_threads");
-const { hauptLauf, selbsttestEnde, ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
+const { fehlerText, hauptLauf, selbsttestEnde, ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 
 const TEIL_BYTES = 160 * 1024;
 
@@ -194,7 +194,7 @@ if (!isMainThread) {
         try {
             parentPort.postMessage({ nr, abweichung: await pruefeTeil(prettier, teil, optionen) });
         } catch (e) {
-            parentPort.postMessage({ nr, fehler: String((e && e.message) || e).split("\n")[0] });
+            parentPort.postMessage({ nr, fehler: fehlerText(e).split("\n")[0] });
         }
     });
     return;

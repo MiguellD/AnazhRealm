@@ -17,9 +17,7 @@
         "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert an KEINEM Rezept seiner Art (erste Stufe, min und max) das Bild des Werks bewegt (bauBild: ab 1 % der Gestalt-Pixel mit ΔLuma > 18, nie der Hash allein) und den kein Leser der Welt sieht (Membran · Ritt · Ohr) — gemessen am Kanal der Werkstatt-Vorschau (build-asset mit ov, Seed 1; MESHFREI über den Host-Ofen). Schlüssel kern:art:id, Wert = der Befund.",
         "soll": 0,
         "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
-        "tot": {
-            "koerper:koerper:hairVol": "Bild höchstens 0,61 %: die Strähnen-Dicke 0,5 → 2 verschiebt die Haar-Hülle kaum"
-        }
+        "tot": {}
     },
     "reglerGesetz": {
         "zweck": "DIE GESETZ-WERTE (Vertrag B4 `uniform: true`, studios.K1): die Zeile bewegt an keinem Rezept ihrer Art ein Bau- bzw. Guss-Byte (der Byte-Beweis von gate:regler-wirkt, gate:studio-vertrag liest ihn) und wirkt an ihrem Leser der Welt (Membran · Ritt · Ohr). Schlüssel kern:art:id, Wert = der Leser; eine uniform-Zeile ohne Eintrag ist rot, ein Eintrag, dessen Bau sich bewegt, ebenso.",
