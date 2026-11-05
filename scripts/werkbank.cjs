@@ -1569,12 +1569,16 @@ async function starte() {
                         for (const o of decke) (o.isSkinnedMesh ? o : o.geometry).computeBoundingSphere();
                         const strahl = new T.Raycaster();
                         const richt = new T.Vector3();
+                        // der Täter beim Namen: je verdeckte Probe die Klasse des ersten Treffers (Lid und Haut, Haar und Braue)
+                        const decktZu = {};
                         const frei = (p) => {
                             const lang = richt.copy(p.w).sub(cam.position).length();
                             strahl.set(cam.position, richt.divideScalar(lang));
                             strahl.near = 0;
                             strahl.far = lang - 1e-4;
-                            return strahl.intersectObjects(decke, false).length === 0;
+                            const [h] = strahl.intersectObjects(decke, false);
+                            if (h) decktZu[r._kopfKlasse(h.object)[1]] = (decktZu[r._kopfKlasse(h.object)[1]] || 0) + 1;
+                            return !h;
                         };
                         const proben = roh
                             .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
@@ -1605,7 +1609,7 @@ async function starte() {
                                 m[p] = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
                             spur[j + 1] = m;
                         });
-                        gesicht = K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur });
+                        gesicht = Object.assign(K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur }), { irisDecke: decktZu });
                     }
                     let abstand = null;
                     if (k.abstand) {

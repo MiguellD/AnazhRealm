@@ -868,6 +868,13 @@
     //     las sein Sims noch L* 25 und gewann den Bildpunkt unter der Iris) · auge.zurueck 0,04 → 0,03 (der Augapfel 2 mm vor,
     //     augenVorstand 0,024 → 0,032: auf 6 m deckte die Haut des inneren Augenwinkels zwei der sechs Bildpunkte der Iris,
     //     augeFrei 0,76) · kopfHaut.mundSpalt 0,35 → 0,45 (die Mund-Linie trägt auf 6 m einen Bildpunkt).
+    //   w12-gesicht (das Gesicht im Bild misst unter seinem Licht, auf 6 m sind Lippe und Höhle unaufgelöst — kein Zug des Gesichts
+    //     wird mehr für den Bildpunkt auf 6 m verzerrt): auge.lid [0,045, 0,035] → [0,03, 0,025] — das Oberlid liegt am oberen
+    //     Rand der Iris, das Unterlid an ihrem unteren (vorher Sklera rings um die Iris: der Starr-Blick, Lid-Spalt 0,128 über
+    //     einer Iris von 0,112); augeFrei am Strahl der Kamera bleibt 1 (0,7 m und die Kamera des Spiels, Radeon, 4 von 4 Schüssen;
+    //     [0,02, 0,02] las an der Kamera des Spiels 1 von 7 Schüssen 0,754) · kopfHaut.mundSpalt 0,45 → 0,15: die Lippen sind
+    //     geschlossen, die Mund-Linie ein Strich — die Spalte trug 45 % der Lippen-Ecken als dunkle Innenlippe, das Bild zeigte
+    //     ein Loch (0,7 m lippeA 1,5–2,5 unter dem Licht des Gesichts).
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -875,7 +882,7 @@
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.045, 0.035]),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.06, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08 }),
@@ -885,7 +892,7 @@
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.45, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
@@ -962,9 +969,12 @@
     // die dunkle ROTE Innenlippe (`mundLinie`, je Kanal ein Anteil der Lippe; vorher [0,25, 0,2, 0,2] — dunkel ohne Rot; 0,4 →
     // 0,6 im Rot: im Schatten der Nase trug der Mund auf 6 m nur Δa* 1,8 über der Wange, Soll ≥ 4; 0,75 hob Δa* auf 3,7 und
     // ΔL* auf −3,3 — Rot und Dunkel des Munds tauschen auf 6 m gegeneinander) · die Lippe
-    // −11 → −13 (auf 6 m mischt jeder Bildpunkt des Munds die Wange hinein: −11 las −2,7 gegen die Wange, Soll ≤ −4)
+    // −11 → −13 (auf 6 m mischt jeder Bildpunkt des Munds die Wange hinein: −11 las −2,7 gegen die Wange, Soll ≤ −4).
+    // w12-gesicht: die Lippe −13 → −7 (ΔL*): die dunkle Lippe der dunklen Haut trägt im Schatten weniger Licht als der neutrale
+    // Glanz der Haut über ihr — ihr Rot ging unter (0,7 m unter dem Licht des Gesichts lippeA 3,45 bei −13 · 3,7–5,7 bei −9 ·
+    // 6,5–7,2 bei −7, lippeL −6,4 bis −7,2; Radeon, Mahagoni) — dunkler und röter bleibt sie (Farkas ΔL* −8…−12 liegt im Bild)
     var KOPF_TON = Object.freeze({
-        lippe: Object.freeze([-13, 13, 2]),
+        lippe: Object.freeze([-7, 13, 2]),
         hoehle: Object.freeze([-8, 5, 1]),
         braue: Object.freeze({ deckung: 0.75 }),
         mundLinie: Object.freeze([0.6, 0.2, 0.2]),
