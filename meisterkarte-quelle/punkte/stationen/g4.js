@@ -1596,7 +1596,10 @@ const alle = [
         kriterium: "bauen.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...BILD_PROBE, mutiert: true,  sek: 10 },
+        // DIE AUSNAHME (w12-proben-frist): acht Bau-Läufe über echte Eingaben, je Werk der erste kalt (die Linse räumt seine Körper aus der
+        // Foundry, sie baut sie neu) — GTX e0139769 in der Eich-Fahrt 50,2 s für alle acht (ROT 0/8), Radeon 8ef49bef an der Frist 39 s im
+        // ersten Lauf (werkstatt · schöpfer · Eiche · Ego kalt)
+        probe: { ...BILD_PROBE, mutiert: true, sek: 10, ausnahme: "acht Bau-Läufe über echte Eingaben, je Werk der erste kalt aus der leeren Foundry: GTX 50,2 s" },
         gpu: true,
         zeit: true,
         minuten: 1,

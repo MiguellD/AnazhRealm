@@ -1530,7 +1530,12 @@ async function startDorfInnen(o) {
                     // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
                     let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                     const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
-                    if (s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
+                    // das Wandkontakt-Fenster aus dem Leib-Gesetz des Kerns, wie die Linse (diag-haus-welt `leibGesetz().parkour`; seit
+                    // w4-koerper-park fiel `_parkourGesetz` des Stamms — w12-proben-frist, Radeon 8ef49bef: „A._parkourGesetz is not a
+                    // function“ in jedem der 18 Häuser); ein Stand davor liest den Stamm
+                    const KC = window.__koerperCore;
+                    const frischeSec = (KC && KC.leibGesetz ? KC.leibGesetz().parkour : A._parkourGesetz()).kontaktFrischeSec;
+                    if (s._simZeit - s._wandKontaktAt < frischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
                         [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];
                     s.yaw = Math.atan2(dx, dz);
                     const y0 = pm.position.y;
@@ -2986,7 +2991,10 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         probe: {  ...sitzung(90,
             "A=$(cygpath -m '{AUS}')",
-            "teil W node scripts/diag-settlement.cjs --nur-w",
+            // TEIL W NEBEN DER WELT (w12-proben-frist): das Wachstums-Gesetz rechnet in Node ohne Welt (fachwerk-core, 14,8 s CPU) —
+            // es läuft, während die Welt ihren Ort sucht, und seine Zeilen stehen am Ende unter derselben Marke W (das Urteil liest
+            // W1/W2 wo immer sie stehen; die Falle am Ende wartet auf ihn, auch nach einem frühen exit); bis hier stand die Welt 15 s still, bevor sie den Ort suchte (Radeon 8ef49bef: Deckel 45 s an UHR)
+            "node scripts/diag-settlement.cjs --nur-w > \"$L/teil-w.txt\" 2>&1 & WPID=$!; trap 'wait $WPID; WX=$?; echo \"@@PUNKTE@@ W\"; cat \"$L/teil-w.txt\"; echo \"@@PUNKTE@@ EXIT $WX\"' EXIT",
             "boot",
             "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
             K4_SCHRITT("ort", K4_ORT, 120),
@@ -3008,7 +3016,9 @@ const stationen = [
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
         // mutiert (w4-linsen-a): der Ort von 1320, sein Haus und 1500 s Welt-Uhr bleiben — ohne das Wort stellte die Sitzung danach nicht
         // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
-        ), mutiert: true, sek: 33 },
+        // DIE AUSNAHME (w12-proben-frist): der Ort von 1320 am Rand, drei Wege zum Hügel (592 m, der Ring im Deckel), 1500 s Welt-Uhr des
+        // Wachstums und das Bild vom Hügel — Radeon 8ef49bef stand nach 45 s bei UHR (dem dritten von sechs Schritten, Teil W 14,8 s davor)
+        ), mutiert: true, sek: 33, ausnahme: "der Ort am Rand, drei Wege zum Hügel (592 m), 1500 s Welt-Uhr des Wachstums und das Bild vom Hügel" },
         gpu: true,
         zeit: false,
         minuten: 12,
