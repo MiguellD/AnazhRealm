@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -273,16 +273,7 @@ function rundungProbe() {
     let out = {};
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
-        const bereit = await page.evaluate(async () => {
-            const t0 = performance.now();
-            await __weltDa((r) => {
-                const st = r.state;
-                return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
-            });
-            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
-        });
-        if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — der Zensus liest GPU-Befehle, die Wand wäre blind");
-        log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
+        await postKetteBereit(page, log, "der Zensus liest GPU-Befehle, die Wand wäre blind");
         // DER LESER IM BLICK: das Wasser am Bach der Mess-Wiese zeichnet — die Szenen-Tiefe steht mit ihrem Leser im Zensus
         const ufer = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler });
         if (ufer.fehler) throw new Error(ufer.fehler);

@@ -16,7 +16,7 @@
 //     Eltern oder als Zwilling auftaucht — je Teil Quelle auf Datei:Zeile und Leser, kein toter Knoten, die Bibliothek der
 //     Werkstatt trägt jeden Knoten (auch nach einem Tausch bei gleicher Zahl: der Merker liest den Stand, nie die Zahl), ihr
 //     Griff setzt den Meilenstein, das Wort der KI trifft jeden Knoten.
-const { statikServer,
+const { fehlerText, statikServer,
     starteBrowser,
     nullRenderer,
     startProc,
@@ -371,7 +371,7 @@ hauptLauf(async () => {
             e.ki
         );
     } catch (x) {
-        e.fehler = String((x && x.message) || x);
+        e.fehler = fehlerText(x);
     }
     // die Zahl: wie oft der Wirt (Stamm, Seite, Manifest, Kerne, Brücke) die Art nennt
     const wirt = [

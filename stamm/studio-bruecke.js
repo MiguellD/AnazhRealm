@@ -63,6 +63,11 @@ class AnazhRealm_studio_bruecke {
             // DER WIRT DER KARTE (pipeline.K4 Stufe 2): die Karte zeichnet der Welt-Renderer — ihr Gesetz neben dem ihrer Art
             // sind der Stamm und die Engine (r184 aus der Import-Karte); die Schale stempelt jede Karte der Platte mit ihnen
             const karte = typeof document !== "undefined" && document.querySelector('script[type="importmap"]');
+            // die Module der Import-Karte, aufgelöst wie die Welt sie lädt: die Engine des Fadens (Manifest `engine`) und
+            // der Stempel des Wirts lesen DIESE Liste
+            const module = {};
+            for (const [n, u] of Object.entries(karte ? JSON.parse(karte.textContent).imports || {} : {}))
+                module[n] = new URL(u, location.href).href;
             const start = {
                 v: "?v=" + AnazhRealm.VERSION,
                 base: typeof window !== "undefined" && window.location ? window.location.href : "",
@@ -71,24 +76,33 @@ class AnazhRealm_studio_bruecke {
                 jahr: Object.values(AnazhRealm._saisonGesetz().typ),
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
+                module,
+                // DIE BÜCHER DES SPIELERS (ultiversum.K4): die Gesetzbücher der Bibliothek, gesiebt an der Sperrliste — der
+                // Faden prüft ihre Signatur selbst und hängt sie an die EINE Liste der Kerne (`_foundryStart`)
+                buecher: this._bibliothekBuecher(),
+                buchMax: AnazhRealm.BIBLIOTHEK.buch,
                 wirt: karte
                     ? [...document.querySelectorAll("script[src]")]
                           .map((s) => s.src)
                           .filter((u) => /\/stamm\//.test(u))
-                          .concat(
-                              Object.values(JSON.parse(karte.textContent).imports || {}).map(
-                                  (u) => new URL(u, location.href).href
-                              )
-                          )
+                          .concat(Object.values(module))
                     : [],
             };
+            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs)
+            const fn = (m) => {
+                const q = m.toString();
+                return q.startsWith("async ") ? "async function " + q.slice(6) : "function " + q;
+            };
             const boot =
-                "(function " +
-                AnazhRealm._foundryStart.toString() +
+                "(" +
+                fn(AnazhRealm._foundryStart) +
                 ")(" +
-                JSON.stringify(start) +
-                ",function " +
-                AnazhRealm._foundrySchale.toString() +
+                [
+                    JSON.stringify(start),
+                    fn(AnazhRealm._foundrySchale),
+                    fn(AnazhRealm._ed25519Pruefe),
+                    fn(AnazhRealm._buchAuspacke),
+                ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
             // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt — der Faden
@@ -142,7 +156,10 @@ class AnazhRealm_studio_bruecke {
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
     // sind disjunkt.
     _foundryAntwort(f, m) {
-        if (m.type === "asset") {
+        // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden) — laut, je Faden
+        if (m.type === "buch-abgewiesen")
+            this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
+        else if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
@@ -588,38 +605,151 @@ class AnazhRealm_studio_bruecke {
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
-    // nichts außerhalb seines Rumpfs zu. Er liest das Kern-Manifest selbst (synchron: im Faden wartet niemand darauf; ALLES
-    // aus cores.manifest.json, EINE Quelle, ?v= Pflicht), stellt die Transport-Schale VOR das Studio (ihr Kanal-Hörer steht
-    // zuerst) und lädt die lib der Kerne (three r128 + die Geometrie-Helfer, keine Labor-Szene) → die Kerne in Manifest-Folge
-    // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
+    // nichts außerhalb seines Rumpfs zu. DER FADEN RECHNET AUF DER ENGINE DER WELT (w5-pipeline, pipeline.K5): die Kerne
+    // lesen `THREE` — das ist das Modul, das die Import-Karte der Welt für den Namen ihres Manifest-Felds `engine` nennt
+    // (`b.module`, aufgelöst im Haupt-Faden; three r184, dieselbe URL, derselbe Cache), geholt per `import()`; keine zweite
+    // three im Faden, kein Addon. Die Farbe trägt kein ColorManagement: die Kerne rechnen ihr FARB-GESETZ selbst (die
+    // sRGB-Kurve beim Bau, wie unter r128, das keines kannte) — die Komponente ist, was der Kern setzt. Das Kern-Manifest
+    // kommt per fetch (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht; kein synchrones XHR). Bis Engine und
+    // Kerne stehen, HÄLT der Faden jede Nachricht (der erste Hörer, `halte`) und reicht sie danach in ihrer Folge weiter —
+    // dann steht die Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) und die Kerne laden in Manifest-Folge
+    // (phyto- VOR foundry-core), danach die Bücher des Spielers → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
     // (die Blob-URL hat keine Basis). Die Platte stempelt jede Lieferung mit dem Gesetz-SHA ihrer Kerne: je Kern seine
-    // Quellen (scripts · lib · bruecke — die Brücke trägt `__extractAssetMesh`), nie die Labor-Shell;
-    // die Basis ist der Kern der Brücke. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
-    static _foundryStart(b, schale) {
+    // Quellen (scripts · engine · bruecke — die Brücke trägt `__extractAssetMesh`), nie die Labor-Shell; die Basis ist der
+    // Kern der Brücke. Ein Manifest ohne Kern, eine Engine ohne Modul der Karte, ein Ladefehler brechen laut (`worker.onerror`).
+    // DIE EINE LISTE DER KERNE (ultiversum.K4): das Manifest des Servers ⊕ die Gesetzbücher des Spielers (`b.buecher`, aus der
+    // Bibliothek, gesiebt an der Sperrliste) — je Buch prüft der Faden die Signatur über die signierten Bytes (`pruefe`, die
+    // EINE Ed25519-Prüfung des Wirts), packt es aus (`auspacken`, gedeckelt `b.buchMax`) und lädt es nach den Kernen des
+    // Servers als Blob; sein Namensraum ist der EINE `__<art>Core` seines Quelltexts, den kein Kern des Servers trägt — der
+    // Lauf bestätigt ihn, kein Kern des Servers darf sich dabei ändern. Seine Zeile (id · ns · scripts) steht in der Liste
+    // wie jede des Servers, VOR der Schale: die Schale stempelt es,
+    // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
+    // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
+    static _foundryStart(b, schale, pruefe, auspacken) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
-        const x = new W.XMLHttpRequest();
-        x.open("GET", url("cores.manifest.json"), false);
-        x.send();
-        const manifest = JSON.parse(x.responseText);
-        if (!Array.isArray(manifest) || !manifest.length)
-            throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-        const liste = (feld, kerne = manifest) => {
-            const out = [];
-            for (const core of kerne)
-                for (const s of [].concat((core && core[feld]) || [])) if (typeof s === "string" && s) out.push(url(s));
-            return out;
+        const gehalten = [];
+        const halte = (ev) => {
+            ev.stopImmediatePropagation();
+            gehalten.push(ev.data);
         };
-        const kerne = manifest.map((c) => ({
-            id: c.id || c.ns,
-            ns: c.ns || null,
-            basis: !!c.bruecke,
-            urls: ["scripts", "lib", "bruecke"].flatMap((feld) => liste(feld, [c])),
-        }));
-        schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
-        W.__PHYTO_FOUNDRY_WORKER = true;
-        W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-        W.importScripts(...liste("lib").concat(liste("scripts"), liste("bruecke"))); // die Brücke startet sich selbst
+        W.addEventListener("message", halte);
+        const engine = (c) => {
+            if (!c || !c.engine) return null;
+            const u = b.module && b.module[c.engine];
+            if (!u)
+                throw new Error(
+                    "STOFF: die Foundry bootet nicht — die Import-Karte der Welt nennt kein Modul „" + c.engine + "“"
+                );
+            return u;
+        };
+        fetch(url("cores.manifest.json"))
+            .then((r) => {
+                if (!r.ok) throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest antwortet " + r.status);
+                return r.json();
+            })
+            .then((manifest) => {
+                if (!Array.isArray(manifest) || !manifest.length)
+                    throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
+                // eine Bibliothek neben den Kernen (`lib`, bis w5-pipeline three r128 + BufferGeometryUtils) wäre eine zweite
+                // Engine im Faden — sie bricht beim Namen, nie still übergangen
+                const lib = manifest.filter((c) => c && c.lib).map((c) => c.id || c.ns);
+                if (lib.length)
+                    throw new Error(
+                        "STOFF: die Foundry bootet nicht — das Kern-Manifest trägt lib (" + lib.join(", ") + ")"
+                    );
+                const motoren = [...new Set(manifest.map(engine).filter(Boolean))];
+                if (motoren.length !== 1)
+                    throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
+                return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);
+            })
+            .then(([manifest, T, motor]) =>
+                Promise.all(
+                    (b.buecher || []).map((e) =>
+                        pruefe(e.kanon, e.sig, e.autor)
+                            .then((ok) => (ok ? auspacken(JSON.parse(e.kanon).buch, b.buchMax) : false))
+                            .catch(() => null)
+                            .then((quelle) => [e, quelle])
+                    )
+                ).then((buecher) => [manifest, T, motor, buecher])
+            )
+            .then(([server, T, motor, buecher]) => {
+                const manifest = server.slice();
+                const liste = (feld, kerne = manifest) => {
+                    const out = [];
+                    for (const core of kerne)
+                        for (const s of [].concat((core && core[feld]) || []))
+                            if (typeof s === "string" && s) out.push(url(s));
+                    return out;
+                };
+                // DIE BÜCHER DES SPIELERS in die EINE Liste: ein Buch nennt seinen Namensraum selbst — der EINE `__<art>Core`
+                // seines Quelltexts, den kein Kern des Servers trägt; seine Zeile steht VOR der Schale (ihr Stempel liest sie)
+                const ab = (e, grund) => W.postMessage({ type: "buch-abgewiesen", code: e.code, grund });
+                const vergeben = new Set(manifest.flatMap((c) => [c.id, c.ns]).filter(Boolean));
+                const zeilen = [];
+                for (const [e, quelle] of buecher) {
+                    if (typeof quelle !== "string") {
+                        ab(e, quelle === false ? "signatur" : "auspacken");
+                        continue;
+                    }
+                    const ns = [...new Set(quelle.match(/\b__[A-Za-z]\w*Core\b/g) || [])].filter(
+                        (n) => !vergeben.has(n)
+                    );
+                    const id = ns.length === 1 ? ns[0].slice(2, -4) : null;
+                    if (!id || vergeben.has(id)) {
+                        ab(e, "namensraum (" + ns.length + " freie __…Core)");
+                        continue;
+                    }
+                    [id, ns[0]].forEach((n) => vergeben.add(n));
+                    const u = URL.createObjectURL(new Blob([quelle], { type: "text/javascript" }));
+                    zeilen.push([e, { id, ns: ns[0], scripts: [u], buch: e.code }]);
+                    manifest.push(zeilen[zeilen.length - 1][1]);
+                }
+                const kerne = manifest.map((c) => ({
+                    id: c.id || c.ns,
+                    ns: c.ns || null,
+                    basis: !!c.bruecke,
+                    urls: c.buch
+                        ? c.scripts.slice()
+                        : liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
+                }));
+                schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+                T.ColorManagement.enabled = false;
+                W.THREE = Object.assign({}, T);
+                W.__PHYTO_FOUNDRY_WORKER = true;
+                W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
+                W.importScripts(...liste("scripts", server));
+                // je Buch der Lauf als Richter: es lädt, setzt seinen Namensraum und lässt jeden stehenden Kern, wie er war —
+                // sonst fällt es beim Namen, seine Zeile verlässt die Liste, der Kern steht wieder
+                for (const [e, zeile] of zeilen) {
+                    const vorher = Object.keys(W)
+                        .filter((k) => /^__\w+Core$/.test(k))
+                        .map((k) => [k, W[k]]);
+                    let grund = null;
+                    try {
+                        W.importScripts(zeile.scripts[0]);
+                    } catch (err) {
+                        grund = "laden: " + String((err && err.message) || err).slice(0, 120);
+                    }
+                    const fremd = vorher.filter(([k, v]) => W[k] !== v);
+                    if (!grund && fremd.length) grund = "überschreibt " + fremd.map(([k]) => k).join(", ");
+                    if (!grund && (!W[zeile.ns] || typeof W[zeile.ns] !== "object"))
+                        grund = "namensraum (" + zeile.ns + " steht nicht)";
+                    if (!grund) continue;
+                    for (const [k, v] of fremd) W[k] = v;
+                    delete W[zeile.ns];
+                    manifest.splice(manifest.indexOf(zeile), 1);
+                    ab(e, grund);
+                }
+                W.importScripts(...liste("bruecke")); // die Brücke startet sich selbst
+                W.removeEventListener("message", halte);
+                for (const data of gehalten.splice(0)) W.dispatchEvent(new W.MessageEvent("message", { data }));
+            })
+            .catch((e) =>
+                setTimeout(() => {
+                    throw e;
+                })
+            );
     }
     // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
     // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den

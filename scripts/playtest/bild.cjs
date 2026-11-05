@@ -575,9 +575,9 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
         out.terrainColorNodeError = _zTerr.brueche[0] || null;
         const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
-        // Die 2.5D-Lichtung flacht nur die SHADING-Normale (normalNode, eingefrorene Konstante); die
-        // GEOMETRIE behält die echte Normale (Schatten-Bias-Vertrag — gebackene Normalen = Akne an Hängen).
-        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
+        // Die Licht-Normale des Bodens ist seine WAHRE Normale (ferne.K4, w10-ferne: die 2.5D-Lichtung ist gefallen) — der
+        // normalNode trägt die Geometrie-Normale mit dem Mikro-Relief, keine Mischung zur Senkrechten (kein `terrainFlatten`).
+        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode) && !("terrainFlatten" in st.atmoUniforms);
         // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
         // (mindestens ein gesampelter Vertex weicht von up ab) — ein
         // up-gebackenes Normal-Attribut wäre die Akne-Regression.
@@ -657,14 +657,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         const cvRet = r.setColorVariation(0);
         out.colorVarSetter =
             cvRet === 0 && st.atmosphere.colorVar === 0 && st.atmoUniforms && st.atmoUniforms.tintScale.value === 0;
-        // B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
-        // die Wahrheit lebt als statische Konstante (Worker-Mirror-Vertrag).
-        out.terrainFlattenSetter =
-            typeof r.setTerrainFlatten === "undefined" &&
-            Number.isFinite(AnazhRealm.TERRAIN_NORMAL_FLATTEN) &&
-            !!(st.atmoUniforms && st.atmoUniforms.terrainFlatten) &&
-            Math.abs(st.atmoUniforms.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
-            !document.getElementById("slider-flatten");
         out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
         // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
         // (mein Headroom-Check hat cavityAO/triplanar verändert).
@@ -714,7 +706,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             v828Results.structDynamicColorPreserved
         );
         check(
-            "B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
+            "ferne.K4: die Licht-Normale des Bodens ist seine wahre Normale (keine 2.5D-Lichtung, kein terrainFlatten)",
             v828Results.terrainNormalFlatten
         );
         check(
@@ -741,10 +733,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             v828Results.colorVarSetter
         );
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
-        check(
-            "B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
-            v828Results.terrainFlattenSetter
-        );
         check(
             "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
             v828Results.sliderHeadroom

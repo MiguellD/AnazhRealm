@@ -2728,6 +2728,8 @@ class AnazhRealm_bild_sicht {
         this._tickFeldPass(fr);
         // DIE FERN-KRONE DES NAHEN BODENS: wechselt das Quadrat, bestellt sie ihre Karte beim Fern-Faden.
         this._fernKroneNahTakt();
+        // DIE KAMM-KRONE (ferne.K3): der Wald trägt den Umriss der Ferne — je Anker bestellt beim Feld-Faden.
+        this._kammKroneTakt(fr);
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
         // alte far wieder her.
@@ -2753,6 +2755,7 @@ class AnazhRealm_bild_sicht {
     // (der Tick baut die neue Welt lazy nach).
     _fernRingDispose() {
         this._feldPassDispose(); // der Pass ist Ring-Besitz — er fällt mit
+        this._kammKroneDispose(); // die Kamm-Krone ebenso (ihr Anker ist der des Rings)
         this._fernMemoGen = (this._fernMemoGen | 0) + 1; // die Fern-Farben gehören der Welt, die den Ring trug (das Gedächtnis des Fern-Fadens)
         const fr = this.state.fernRing;
         if (!fr) return;

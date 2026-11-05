@@ -1566,9 +1566,7 @@
             off = (P.seed || 0) * 13.7;
         const detail = Math.max(1, (P.detail || 4) - 1);
         let geo = THREE.IcosahedronGeometry ? new THREE.IcosahedronGeometry(1, detail) : null;
-        if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeVertices) {
-            geo = THREE.BufferGeometryUtils.mergeVertices(geo);
-        }
+        geo = eckenVerschmelzen(geo); // die Ecken teilen sich (w5-pipeline: das Gesetz, kein Addon — bis hier nur, wo eines geladen war)
         const pos = geo.attributes.position,
             n = pos.count;
         const idxAttr = geo.index;
@@ -2251,6 +2249,109 @@
         return m;
     }
 
+    // DAS VERSCHMELZEN DER KERNE (w5-pipeline, pipeline.K5): die Kerne bauen auf der Engine der Welt (three r184 im
+    // Foundry-Faden wie im Haupt-Faden) und hängen an keinem Addon — r128 hieß es mergeBufferGeometries, r184
+    // mergeGeometries, und das Addon ist in keinem der beiden Fäden geladen. Das Gesetz ist die Rechnung, die jede
+    // Golden-Stufe trägt (spec/asset-contract/v1, gemünzt unter r128 BufferGeometryUtils): die Attribute Teil um Teil
+    // hintereinander (Typ, itemSize, normalized je Name gleich), der Index um die Ecken davor versetzt, `mergedUserData`
+    // die userData der Teile. Ungleiche Teile (Index, Namen, Zahl) brechen laut beim Namen.
+    function geoVerschmelzen(geos) {
+        const T = root.THREE;
+        const mitIndex = geos[0].index !== null;
+        const namen = Object.keys(geos[0].attributes);
+        const aus = new T.BufferGeometry();
+        const ud = (aus.userData.mergedUserData = []);
+        for (let i = 0; i < geos.length; i++) {
+            const g = geos[i];
+            const n = Object.keys(g.attributes);
+            if ((g.index !== null) !== mitIndex || n.length !== namen.length || n.some((k) => !namen.includes(k)))
+                throw new Error(
+                    "VERSCHMELZEN: Teil " + i + " trägt andere Attribute/Index als Teil 0 (" + n.join(",") + ")"
+                );
+            if (Object.keys(g.morphAttributes).length)
+                throw new Error("VERSCHMELZEN: Teil " + i + " trägt Morph-Attribute");
+            ud.push(g.userData);
+        }
+        if (mitIndex) {
+            const idx = [];
+            let vor = 0;
+            for (const g of geos) {
+                const a = g.index.array;
+                for (let j = 0; j < g.index.count; j++) idx.push(a[j] + vor);
+                vor += g.attributes.position.count;
+            }
+            aus.setIndex(idx);
+        }
+        for (const k of namen) {
+            const a0 = geos[0].attributes[k];
+            let n = 0;
+            for (const g of geos) {
+                const a = g.attributes[k];
+                if (
+                    a.isInterleavedBufferAttribute ||
+                    a.array.constructor !== a0.array.constructor ||
+                    a.itemSize !== a0.itemSize ||
+                    a.normalized !== a0.normalized
+                )
+                    throw new Error("VERSCHMELZEN: das Attribut " + k + " ist ungleich gebaut");
+                n += a.array.length;
+            }
+            const arr = new a0.array.constructor(n);
+            let o = 0;
+            for (const g of geos) {
+                arr.set(g.attributes[k].array, o);
+                o += g.attributes[k].array.length;
+            }
+            aus.setAttribute(k, new T.BufferAttribute(arr, a0.itemSize, a0.normalized));
+        }
+        return aus;
+    }
+    // Gleiche Ecken teilen einen Index (das Gesetz der Golden-Stufen, r128 mergeVertices): je Ecke ein Schlüssel aus
+    // jedem Attribut-Wert × 10^log10(1/tol), ganzzahlig abgeschnitten (~~), die erste Ecke eines Schlüssels gewinnt; gelesen
+    // wird das rohe Array (r184 `getX` entnormalisiert, r128 nie).
+    function eckenVerschmelzen(geo, tol) {
+        const T = root.THREE;
+        tol = Math.max(tol == null ? 1e-4 : tol, Number.EPSILON);
+        const mul = Math.pow(10, Math.log10(1 / tol));
+        const ix = geo.getIndex();
+        const namen = Object.keys(geo.attributes);
+        if (Object.keys(geo.morphAttributes).length) throw new Error("VERSCHMELZEN: Morph-Attribute an den Ecken");
+        const n = ix ? ix.count : geo.attributes.position.count;
+        const neu = {};
+        for (const k of namen) {
+            if (geo.attributes[k].isInterleavedBufferAttribute)
+                throw new Error("VERSCHMELZEN: " + k + " ist verschränkt");
+            neu[k] = [];
+        }
+        const schluessel = {};
+        const idx = [];
+        let naechste = 0;
+        for (let i = 0; i < n; i++) {
+            const e = ix ? ix.array[i] : i;
+            let h = "";
+            for (const k of namen) {
+                const a = geo.attributes[k];
+                for (let c = 0; c < a.itemSize; c++) h += `${~~(a.array[e * a.itemSize + c] * mul)},`;
+            }
+            if (h in schluessel) idx.push(schluessel[h]);
+            else {
+                for (const k of namen) {
+                    const a = geo.attributes[k];
+                    for (let c = 0; c < a.itemSize; c++) neu[k].push(a.array[e * a.itemSize + c]);
+                }
+                schluessel[h] = naechste;
+                idx.push(naechste++);
+            }
+        }
+        const aus = geo.clone();
+        for (const k of namen) {
+            const a = geo.attributes[k];
+            aus.setAttribute(k, new T.BufferAttribute(new a.array.constructor(neu[k]), a.itemSize, a.normalized));
+        }
+        aus.setIndex(idx);
+        return aus;
+    }
+
     // ===================== DER WALD-PLAN (Vorlagen-Ökologie, „Drähte statt Kopien" 08.07.) =====================
     // Die Pflanz-LOGIK des Waldes (Poisson-Darts · Stand-Dichte · Arten-Nische · reverse-J-
     // Größe · Mammut-Promotion) lebt EINMAL hier — im Vorlagen-Kern, neben den Rezepten, die
@@ -2783,6 +2884,155 @@
         for (let k = 0; k < own.length; k++) if (forestSteht(own[k], gx, gz, geboren, pk)) out.push(own[k]);
         return out;
     }
+
+    // DIE KAMM-KRONE (ferne.K3, w10-ferne): die Bäume DESSELBEN Bestands (`planForestCell` → `forestStehende`), deren Krone über
+    // den Kamm in den Himmel ragt — der Umriss der Ferne, wie ihn ein Auge über dem Anker (ax, az) sieht. Bis w10 trug die Ferne
+    // den Wald nur als Farbe (das Kronendach des Rings): der Kamm in 0,4–4 km war die glatte Linie des Gesetzes (Radeon 2674ff9a:
+    // Kohärenz 0,8669, REF real-mischwald 0,160). Rein, ohne rng außer dem des Plans:
+    //   DER MARSCH je Azimut (azN über [azVon, azBis)): das Gesetz `hoehe` von 40 m bis dBis (Faktor `marsch`), je Auge (Höhe über
+    //     `grundY`, Liste `augen`) der höchste Winkel Θ (der Kamm, den das Auge gegen den Himmel sieht);
+    //   DAS BAND: die Zone des Kamms je Auge (± tiefeM um den Punkt des höchsten Winkels, der Kamm in [dVon, dBis]), darin, wo ein
+    //     Baum der Höhe hMax den Kamm erreicht (θ(d) + hMax/d ≥ Θ) — im Schritt der Zelle, je Probe die Zelle und quer ihre
+    //     Nachbarn bis zur halben Azimut-Breite;
+    //   DER BESTAND der Band-Zellen: `geboren(cx, cz)` (der Plan des Rufers, sein Gedächtnis) und das EINE Urteil der
+    //     Kronen-Schüchternheit (`forestStehende`, Packung pk);
+    //   DER UMRISS: je stehendem Dart die Krone seiner Art (`art(sp)` → { h: Wipfel-Höhe der Größe 1 in m, ansatz: Kronen-Ansatz
+    //     als Anteil der Höhe, nadel }) × seine Größe s, ihr Radius T des Plans; er bleibt, wenn sein Wipfel für ein Auge über
+    //     Θ − `saumM`/d steht (er trägt den Umriss gegen den Himmel).
+    // Zurück: { baeume: Float64Array je Baum [x, z, y (Fuß), H, T, ansatz, nadel, artIdx], arten, zellen, rufe }.
+    function forestKammKronen(o) {
+        const azVon = o.azVon || 0;
+        const azBis = o.azBis == null ? 2 * Math.PI : o.azBis;
+        const nAz = o.azN;
+        const dAz = (azBis - azVon) / nAz;
+        const augen = o.augen;
+        const nA = augen.length;
+        const cell = o.cell;
+        let rufe = 0;
+        const H = (x, z) => (rufe++, o.hoehe(x, z));
+        const ds = [];
+        for (let d = 40; d <= o.dBis; d *= o.marsch) ds.push(d);
+        const theta = new Float64Array(nAz * nA).fill(-Infinity);
+        const zellen = new Map();
+        const markiere = (x, z, quer, ux, uz) => {
+            const n = Math.ceil(quer / cell);
+            for (let k = -n; k <= n; k++) {
+                const px = x + ux * k * (quer / Math.max(1, n));
+                const pz = z + uz * k * (quer / Math.max(1, n));
+                const cx = Math.floor(px / cell);
+                const cz = Math.floor(pz / cell);
+                zellen.set(cx * 1048576 + cz, [cx, cz]);
+            }
+        };
+        const prof = new Float64Array(ds.length);
+        for (let i = 0; i < nAz; i++) {
+            const a = azVon + (i + 0.5) * dAz;
+            const [sx, sz] = [Math.sin(a), Math.cos(a)];
+            for (let k = 0; k < ds.length; k++) prof[k] = H(o.ax + sx * ds[k], o.az + sz * ds[k]);
+            for (let e = 0; e < nA; e++) {
+                const y = o.grundY + augen[e];
+                let T = -Infinity;
+                for (let k = 0; k < ds.length; k++) T = Math.max(T, (prof[k] - y) / ds[k]);
+                theta[i * nA + e] = T;
+            }
+            // DAS BAND je Auge: die Zone des Kamms (der Punkt des höchsten Winkels d*, ± `tiefeM` längs des Strahls), in ihr fein im
+            // Schritt der Zelle die Proben, deren Baum der Höhe hMax den Kamm erreicht (θ(d) + hMax/d ≥ Θ); ein Kamm vor dVon
+            // (der Wald selbst zeichnet ihn) oder jenseits dBis trägt keine Kamm-Krone
+            for (let e = 0; e < nA; e++) {
+                const y = o.grundY + augen[e];
+                let ks = 0;
+                for (let k = 1; k < ds.length; k++) if ((prof[k] - y) / ds[k] > (prof[ks] - y) / ds[ks]) ks = k;
+                const dk = ds[ks];
+                if (dk < o.dVon || dk > o.dBis) continue;
+                for (let q = Math.max(o.dVon, dk - o.tiefeM); q <= Math.min(o.dBis, dk + o.tiefeM); q += cell) {
+                    const [x, z] = [o.ax + sx * q, o.az + sz * q];
+                    if ((H(x, z) - y + o.hMax) / q >= theta[i * nA + e])
+                        markiere(x, z, Math.max(cell, 0.5 * q * dAz), sz, -sx);
+                }
+            }
+        }
+        // der Bestand der Band-Zellen und der Umriss jeder Krone; zuerst je Auge und feinem Azimut (`fein` je Azimut des Marschs)
+        // der höchste Wipfel-Winkel aller Kandidaten — es bleibt, wer in einem Fach eines Auges den Umriss trägt (bis `saumM` unter
+        // dem höchsten), nie die Krone, die hinter einer anderen steht
+        const fein = o.fein || 4;
+        const nF = nAz * fein;
+        const kand = [];
+        const umriss = new Float64Array(nF * nA).fill(-Infinity);
+        // je Fach, das die Krone deckt, die Höhe ihres Umrisses dort (Laub: die Ellipse über [Ansatz, Wipfel], Nadel: der Kegel),
+        // als Winkel über dem Auge e
+        const fach = (k, e, f) => {
+            const { t, d } = k;
+            let a = Math.atan2(t.x - o.ax, t.z - o.az) - azVon;
+            a -= 2 * Math.PI * Math.floor(a / (2 * Math.PI));
+            const b = dAz / fein;
+            const mitte = a / b;
+            const halb = t.T / d / b;
+            const y0 = t.surfaceY + k.hoch * k.p.ansatz;
+            const kh = k.hoch - k.hoch * k.p.ansatz;
+            for (let j = Math.floor(mitte - halb); j <= Math.floor(mitte + halb); j++) {
+                if (j < 0 || j >= nF) continue;
+                const v = Math.min(1, Math.abs((j + 0.5 - mitte) * b * d) / t.T);
+                const top = k.p.nadel ? y0 + kh * (1 - v) : y0 + kh / 2 + (kh / 2) * Math.sqrt(1 - v * v);
+                f(j * nA + e, (top - o.grundY - augen[e]) / d);
+            }
+        };
+        const arten = [];
+        const artIdx = new Map();
+        const aus = [];
+        const AP = new Map();
+        for (const [cx, cz] of zellen.values()) {
+            const stehen = forestStehende(cx, cz, o.geboren, o.pk);
+            for (let j = 0; j < stehen.length; j++) {
+                const t = stehen[j];
+                let p = AP.get(t.sp);
+                if (p === undefined) {
+                    p = o.art(t.sp) || null;
+                    AP.set(t.sp, p);
+                }
+                if (!p || !(p.h > 0) || !Number.isFinite(t.surfaceY)) continue;
+                const hoch = p.h * t.s;
+                const dx = t.x - o.ax;
+                const dz = t.z - o.az;
+                const d = Math.hypot(dx, dz);
+                if (d < o.dVon || d > o.dBis) continue;
+                let a = Math.atan2(dx, dz) - azVon;
+                a -= 2 * Math.PI * Math.floor(a / (2 * Math.PI));
+                const f = a / dAz - 0.5;
+                const i0 = Math.floor(f);
+                const w = f - i0;
+                const i1 = i0 + 1;
+                const inA = (i) => i >= 0 && i < nAz;
+                let traegt = false;
+                for (let e = 0; e < nA && !traegt; e++) {
+                    const T0 = inA(i0) ? theta[i0 * nA + e] : inA(i1) ? theta[i1 * nA + e] : NaN;
+                    const T1 = inA(i1) ? theta[i1 * nA + e] : T0;
+                    if (!Number.isFinite(T0)) continue;
+                    traegt = (t.surfaceY + hoch - o.grundY - augen[e] + (o.saumM || 0)) / d >= T0 + (T1 - T0) * w;
+                }
+                if (!traegt) continue;
+                const k = { t, p, hoch, d };
+                for (let e = 0; e < nA; e++) fach(k, e, (q, w) => (umriss[q] = Math.max(umriss[q], w)));
+                kand.push(k);
+            }
+        }
+        for (const k of kand) {
+            let traegt = false;
+            for (let e = 0; e < nA && !traegt; e++)
+                fach(k, e, (q, w) => (traegt = traegt || w >= umriss[q] - (o.saumM || 0) / k.d));
+            if (!traegt) continue;
+            const { t, p } = k;
+            let ai = artIdx.get(t.sp);
+            if (ai === undefined) {
+                ai = arten.length;
+                arten.push(t.sp);
+                artIdx.set(t.sp, ai);
+            }
+            aus.push(t.x, t.z, t.surfaceY, k.hoch, t.T, p.ansatz, p.nadel ? 1 : 0, ai);
+        }
+        return { baeume: new Float64Array(aus), arten, zellen: zellen.size, rufe, kandidaten: kand.length };
+    }
+    // die Felder eines Baums der Kamm-Krone (forestKammKronen `baeume`)
+    const KAMM_FELDER = 8;
 
     // SCATTER_STRATUM — ecology axes only (floor / scaleBase / scaleVar / slopeMax).
     // Host SCATTER.layers READ these; cellM/cap/kind/promotable/densityScale stay Host perf.
@@ -5482,6 +5732,8 @@
         karteTiefe: karteTiefe, // w4-laub-karte — die Tiefe je Texel der Karte (vor/hinter der Mitte des Rahmens) über einer Algebra
         karteTiefeVersatz: karteTiefeVersatz, // ihr Rückweg: der Versatz in Metern der Vorlage
         scanRadialXZ: scanRadialXZ,
+        geoVerschmelzen: geoVerschmelzen, // w5-pipeline — die Teile hintereinander (das Gesetz der Golden-Stufen, kein Addon)
+        eckenVerschmelzen: eckenVerschmelzen, // w5-pipeline — gleiche Ecken teilen einen Index
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
@@ -5512,6 +5764,8 @@
         FOREST_URTEIL_REIHE: FOREST_URTEIL_REIHE, // w4-b-pflanzen — die Reihe des Urteils: die eigene Zelle, Ring 1, Ring 2
         forestSteht: forestSteht, // w4-b-pflanzen — DAS EINE Urteil der Kronen-Schüchternheit (Wald-Faden und Wirt)
         forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
+        forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt
+        KAMM_FELDER: KAMM_FELDER,
         planForestCell: planForestCell,
         growSkeleton: growSkeleton,
         genomStrom: genomStrom, // w4-b-pflanzen — der Sub-Strom eines Genoms (xorshift32 über dem FNV-Zustand seines Namens)

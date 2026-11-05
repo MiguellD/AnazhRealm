@@ -562,7 +562,7 @@ hauptLauf(async () => {
             if (hE) r._weltFeldFrei(hE);
             if (hS) r._weltFeldFrei(hS);
         } catch (e8b) {
-            res.einErr = String((e8b && e8b.message) || e8b);
+            res.einErr = fehlerText(e8b);
         }
         // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff =====
         // Der Bestand steht still (2 s ohne neuen Chunk), dann baut der Ring SYNCHRON neu (kein await: kein Chunk kommt

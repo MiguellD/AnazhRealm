@@ -475,7 +475,7 @@ hauptLauf(async () => {
                 fern.leckB = b.leck;
             }
         } catch (e) {
-            fern.err = String((e && e.message) || e);
+            fern.err = fehlerText(e);
         }
         res.f = fern;
         return res;

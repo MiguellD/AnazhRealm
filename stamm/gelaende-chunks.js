@@ -460,7 +460,7 @@ class AnazhRealm_gelaende_chunks {
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            art === "feld" || art === "gitter" ? "feld" : "fern",
+            art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
             Object.assign(
                 { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
                 msg

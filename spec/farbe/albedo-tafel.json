@@ -969,12 +969,12 @@
                 "labor": {
                     "Y": 0.0117,
                     "rgb": "0.0213/0.0095/0.0048",
-                    "pixel": 231238
+                    "pixel": 263291
                 },
                 "welt": {
                     "Y": 0.0117,
                     "rgb": "0.0213/0.0095/0.0048",
-                    "pixel": 44318,
+                    "pixel": 44316,
                     "stufen": []
                 },
                 "verhaeltnis": 1
@@ -982,38 +982,38 @@
             "ratsche": 0,
             "gemessen": {
                 "labor": {
-                    "datum": "2026-11-01T21:09:40.665Z",
+                    "datum": "2026-11-04T17:13:32.508Z",
                     "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
                     "echt": true,
-                    "version": "18.546.160",
-                    "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
+                    "version": "18.546.179",
+                    "sha": "4ef6370e101ed2016cfcccd5ff3a3f0fb1b70345",
                     "quellen": {
-                        "koerper-core.js": "c:1346c56d163ceac6",
-                        "foundry-core.js": "c:efe0f4ee6c1dc556",
-                        "stamm/stoff-material.js": "c:0000000000000000",
-                        "stamm/studio-bruecke.js": "c:0000000000000000",
-                        "stamm/studio-stoff.js": "c:0000000000000000",
-                        "stamm/koerper-leib.js": "c:0000000000000000"
+                        "koerper-core.js": "c:b70902b2e416b42b",
+                        "foundry-core.js": "c:5e63dfdb22536599",
+                        "stamm/stoff-material.js": "c:794fd3b6c552eb4a",
+                        "stamm/studio-bruecke.js": "c:d7b5c817c724b600",
+                        "stamm/studio-stoff.js": "c:933e954e9b2a58e5",
+                        "stamm/koerper-leib.js": "c:490146777f1af25b"
                     }
                 },
                 "welt": {
-                    "datum": "2026-11-01T21:11:59.307Z",
+                    "datum": "2026-11-04T17:13:11.040Z",
                     "geraet": "amd rdna-3",
-                    "ort": "genesis",
+                    "ort": null,
                     "spieler": [
                         0,
                         0
                     ],
                     "echt": true,
-                    "version": "18.546.160",
-                    "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
+                    "version": "18.546.179",
+                    "sha": "4ef6370e101ed2016cfcccd5ff3a3f0fb1b70345",
                     "quellen": {
-                        "koerper-core.js": "c:1346c56d163ceac6",
-                        "foundry-core.js": "c:efe0f4ee6c1dc556",
-                        "stamm/stoff-material.js": "c:0000000000000000",
-                        "stamm/studio-bruecke.js": "c:0000000000000000",
-                        "stamm/studio-stoff.js": "c:0000000000000000",
-                        "stamm/koerper-leib.js": "c:0000000000000000"
+                        "koerper-core.js": "c:b70902b2e416b42b",
+                        "foundry-core.js": "c:5e63dfdb22536599",
+                        "stamm/stoff-material.js": "c:794fd3b6c552eb4a",
+                        "stamm/studio-bruecke.js": "c:d7b5c817c724b600",
+                        "stamm/studio-stoff.js": "c:933e954e9b2a58e5",
+                        "stamm/koerper-leib.js": "c:490146777f1af25b"
                     }
                 }
             }

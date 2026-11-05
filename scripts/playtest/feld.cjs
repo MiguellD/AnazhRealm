@@ -1204,6 +1204,7 @@ async function checkBandV1740LlmRules({ page, check }) {
 // (einmal, idempotent über die Signatur; Nexus-Regeln nicht). Geprüft nach echtem Feuern.
 async function checkBandV1741RuleThread({ page, check }) {
     const res = await page.evaluate(() => {
+        const regen = () => r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -1223,7 +1224,7 @@ async function checkBandV1741RuleThread({ page, check }) {
 
         // --- (2) DOM-KONSUM: nach echtem Feuern zeigt der Namen-Span „⚡ feuert" + pulst ---
         st.worldRules.length = 0;
-        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        regen();
         const domRule = st.worldRules.find((x) => x.source === "human");
         st.weather = "rainy";
         domRule.lastFired = -Infinity;
@@ -1239,7 +1240,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         //         die Signatur VON SELBST (kein manueller Reset → die 0.4-s-Render-
         //         Schleife pickt es auf, der Puls ist sichtbar) ---
         st.worldRules.length = 0;
-        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        regen();
         const sigRule = st.worldRules.find((x) => x.source === "human");
         r._statusRefs.worldrulesSignature = "";
         r.renderWorldRulesList(); // rendert „ruht"
@@ -1254,7 +1255,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         // --- (4) Journal-Erwachen: erstes Feuern einer MENSCH-Regel schreibt eine
         //         Welt-Erinnerung („Dein Gesetz erwachte — ...") ---
         st.worldRules.length = 0;
-        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        regen();
         const hRule = st.worldRules.find((x) => x.source === "human");
         delete st.worldJournal.seen["ruleAwoke:" + hRule._sig]; // sicherstellen: noch nicht erwacht
         const jBefore = st.worldJournal.entries.length;
@@ -1271,7 +1272,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         //         Akkus, fires zurück auf 0→1) + gefeuert schreibt KEINE zweite
         //         Erinnerung (seen[ruleAwoke:sig] hält über die Regel-Instanz hinweg) ---
         st.worldRules.length = 0;
-        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
+        regen();
         const hRule2 = st.worldRules.find((x) => x.source === "human"); // gleiche Signatur
         const jBefore2 = st.worldJournal.entries.length;
         st.worldRules = [hRule2];

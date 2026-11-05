@@ -23,7 +23,7 @@
 //              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
-const { ausDatei, path, fs, stammLib, vm, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
+const { loesche, tempNeu, ausDatei, path, fs, stammLib, vm, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
 /* global process, console */
 const acorn = require("acorn");
 
@@ -318,8 +318,7 @@ function finde(root, rx) {
 
 // ── Selbsttest: je Regel ein Fixture, das ROT wird ──────────────────────────────────────────────────────────────
 function selbsttest() {
-    const os = require("os");
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-ratsche-"));
+    const tmp = tempNeu("atlas-ratsche");
     const R = { decke_zeilen: 40 };
     const karte = {
         ordnung: [
@@ -453,7 +452,7 @@ function selbsttest() {
         console.log(`${fok ? "  ok " : "  ROT"} --find: _gameLoopTick (zugewiesen), treeParams (Kern), haus (Gesetzbuch) — ${f.replace(/\s+/g, " ")}`);
         if (!fok) rot++;
     } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
+        loesche(tmp);
     }
     return rot;
 }

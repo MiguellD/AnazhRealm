@@ -1,12 +1,13 @@
 // ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe, deren Kopf
 // auf main gelandet ist (derselbe run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
-// ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er verteilt die
-// Voll-Gruppen je Klasse und je echt-Schritt die Frist timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉).
+// ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er nimmt aus dem
+// Puls, was eine Gruppe über ihren Deckel trägt, verteilt die Voll-Gruppen je Klasse und je echt-Schritt die Frist
+// timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉).
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
 "use strict";
 const { execSync, spawnSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
 const { hauptLauf, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
@@ -16,8 +17,8 @@ const AUS = "spec/ci/ci-zeiten.json";
 const [JE_SCHRITT, HOECHSTENS] = [7, 40]; // Messungen je Schritt; Läufe höchstens
 const VORBEREITUNG =
     /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Urteil der Gruppe|Post Run |Complete job)/;
-// die Jobs und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", „echt (…)" → „echt")
-const GRUPPE = /^(puls|voll|kopf|echt)(?: (\d+)\/\d+)?/;
+// die Jobs und ihre Art („voll 16/18 gpu" → voll, „echt (…)" → echt)
+const GRUPPE = /^(puls|voll|kopf|echt)\b/;
 
 const sek = (a, b) => (a && b ? (new Date(b) - new Date(a)) / 1000 : null);
 const sortiert = (a) => [...a].sort(aufsteigend);
@@ -51,7 +52,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
     const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed" && gelandet(r.head_sha);
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
-    const [vorb, ymlAm, ort, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Map(), new Set()];
+    const [vorb, ymlAm, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Set()];
     let [kopf, gelesen, gemessen] = [null, 0, 0];
     for (const r of neueste) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.sonst.length >= 25) break;
@@ -69,7 +70,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
             // ein Wiederholungs-Versuch trägt die Jobs des vorigen mit (derselbe Start): einmal gezählt
             if (!g || gesehen.has(job.name + job.started_at)) continue;
             gesehen.add(job.name + job.started_at);
-            const [key, echt] = [g[2] ? `${g[1]} ${g[2]}` : g[1], g[1] === "echt"];
+            const echt = g[1] === "echt";
             let v = sek(job.started_at, job.completed_at);
             const deckel = 60 * Number((jobsDamals[g[1]] || {})["timeout-minutes"]);
             const amDeckel = job.conclusion === "cancelled" && v >= deckel - 60;
@@ -83,7 +84,6 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
                 if (!n || !zaehlt || proben.get(n[0]).length >= JE_SCHRITT) continue;
                 proben.get(n[0]).push(t);
                 [kopf, gemessen] = [kopf || r.head_sha, gemessen + 1];
-                if (!ort.has(n[0])) ort.set(n[0], key);
             }
             // die Vorbereitung nur am grünen Job
             const vb = vorb[echt ? "echt" : "sonst"];
@@ -97,10 +97,9 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
             schritte[n] = {
                 s: Math.round(x.echt ? Math.min(...p) : (x.voll ? p90 : median)(p)),
                 n: p.length,
-                gruppe: ort.get(n),
                 ...(x.echt ? { p90: Math.round(p90(p)), max: Math.round(Math.max(...p)) } : {}),
             };
-        else if (alt.schritte && alt.schritte[n] && alt.schritte[n].geschaetzt) schritte[n] = alt.schritte[n];
+        else if (alt.schritte?.[n]?.geschaetzt) schritte[n] = alt.schritte[n];
         else ohne.push(n);
     }
     if (!gemessen || !Object.keys(schritte).length)
@@ -123,8 +122,32 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
 function verteile(jetzt, out) {
     const skripte = jsonLesen("package.json").scripts || {};
     const { schritte } = out;
+    const z = (s) => schritte[s.name]?.s || 0;
+    // DER PULS HÄLT SEINEN DECKEL SELBST (z212: die Mensch-Anatomie stieg mit w7-gesicht — jeder Haar-Stil an beiden Rändern
+    // des Genoms ganz gegossen — von 21 auf 80 s Median, „puls 2/2" trug 2,6 min gegen den Deckel 2,0): trägt eine Puls-Gruppe
+    // mit Mitfahrern samt Vorbereitung mehr als PULS_S (dieselbe Waage wie gate:ci-deckung (T)), wandert ihr schwerster
+    // Schritt in die volle Stufe — dieselbe Messung, nur ihr Platz —, bis die Gruppe den Deckel hält; ein Schritt allein
+    // bleibt (er ist der Puls). Der Schritt (sein `- name:` und die Zeilen tiefer) zieht hinter den letzten Gruppen-Schritt
+    // von voll, die Verteilung unten gibt ihm seine Gruppe.
+    const Z = ausDatei(path.join(root, WORKFLOW)).split("\n");
+    const ende = (a) => {
+        while (/^( {13,}\S|\s*$)/.test(Z[++a]));
+        return a;
+    };
+    for (const g of jetzt.jobs.puls.strategy.matrix.gruppe) {
+        const rest = jetzt.jobs.puls.steps.filter((s) => String(s.if).endsWith("== " + g)).sort((a, b) => z(b) - z(a));
+        while (rest.length > 1 && ueber(rest.reduce((a, s) => a + z(s), out.vorbereitung_s), PULS_S)) {
+            const n = rest.shift().name;
+            const a = Z.indexOf("            - name: " + n);
+            if (a < 0) throw new Error("keine Zeile im Puls: " + n);
+            const teil = Z.splice(a, ende(a) - a);
+            Z.splice(ende(Z.findLastIndex((x) => /matrix\.gruppe == \d+$/.test(x))), 0, ...teil);
+            console.log(`  puls ${g} → voll: „${n}"`);
+        }
+    }
+    let yml = Z.join("\n");
+    jetzt = yaml.load(yml);
     const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
-    const z = (s) => schritte[s.name].s;
     const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
     const packe = (gs, k) => {
         const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
@@ -155,26 +178,14 @@ function verteile(jetzt, out) {
                         const neu = Math.max(h.s - d, l.s + d);
                         if (l !== h && d > 0 && frei && neu < (zug ? zug.neu : h.s)) zug = { l, a, b, neu };
                     }
-            const zuege = zug
-                ? [
-                      [h, zug.a, -1],
-                      [zug.l, zug.a, 1],
-                  ].concat(
-                      zug.b
-                          ? [
-                                [zug.l, zug.b, -1],
-                                [h, zug.b, 1],
-                            ]
-                          : []
-                  )
-                : [];
+            const zuege = zug ? [[h, zug.a, -1], [zug.l, zug.a, 1], ...(zug.b ? [[zug.l, zug.b, -1], [h, zug.b, 1]] : [])] : []; // prettier-ignore
             for (const [g, s, vz] of zuege) lege(g, s, vz);
         }
         return last;
     };
     // ein bedingter Schritt läuft als CPU (die Weiche urteilt zur Laufzeit)
     const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
-    const frei = LAEUFER_PLAETZE - (((jetzt.jobs.puls.strategy || {}).matrix || {}).gruppe || [1]).length;
+    const frei = LAEUFER_PLAETZE - jetzt.jobs.puls.strategy.matrix.gruppe.length;
     let best = null;
     for (let kc = 1; kc < frei; kc++) {
         const a = packe(
@@ -185,16 +196,10 @@ function verteile(jetzt, out) {
         const max = Math.max(...g.map((x) => (x.n.length > 1 ? x.s : 0)));
         if (!best || max < best.max) best = { max, g };
     }
-    for (const [i, g, gross = g.n.find((s) => z(s) > GROSS_S)] of best.g.map((g, i) => [i, g]))
-        console.log(
-            `  voll ${i + 1}/${best.g.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte` +
-                (gross ? ` · über ${GROSS_S / 60} min (eigene Karte): „${gross.name}"` : "")
-        );
     const nr = new Map(best.g.flatMap((g, i) => g.n.map((s) => [s, i + 1])));
     const neu = jetzt.jobs.voll.steps
         .filter((s) => /matrix\.gruppe == \d+$/.test(String(s.if)))
         .map((s) => nr.get(s));
-    let yml = ausDatei(path.join(root, WORKFLOW));
     const block = (job) => {
         const von = yml.indexOf(`\n    ${job}:\n`);
         return [von, von + 1 + yml.slice(von + 1).search(/\n {4}[\w-]+:\n|$/)];

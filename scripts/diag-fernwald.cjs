@@ -177,7 +177,7 @@ hauptLauf(async () => {
                         gemerkt: !!ortEintrag(KX, KZ, 7),
                     };
                 } catch (err) {
-                    vorWelt = { fehler: String((err && err.message) || err).split("\n")[0] };
+                    vorWelt = { fehler: fehlerText(err).split("\n")[0] };
                 } finally {
                     st.hydrosphere = h;
                 }
@@ -253,7 +253,7 @@ hauptLauf(async () => {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (e) {
-                    if (!taktFehler) taktFehler = String((e && e.message) || e).split("\n")[0];
+                    if (!taktFehler) taktFehler = fehlerText(e).split("\n")[0];
                 }
                 await sleep(0);
             }

@@ -86,5 +86,10 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
 const LAEUFER_PLAETZE = 20;
 // DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
 const GROSS_S = 300;
+// DER DECKEL DES PULSES: 2 min je Push samt Vorbereitung — die EINE Zahl für die Waage (gate:ci-deckung) und das Verteilen
+// (ci-zeiten.cjs nimmt, was eine Puls-Gruppe darüber trägt, in die volle Stufe); gewogen in Zehntel-Minuten, der Einheit der
+// Anzeige (ein Job-Median streut über die Läufe ±10 s)
+const PULS_S = 120;
+const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
 
-module.exports = { GPU_REZEPTE, GROSS_S, LAEUFER_PLAETZE, befehle, klasseDesLaufs };
+module.exports = { GROSS_S, LAEUFER_PLAETZE, PULS_S, klasseDesLaufs, ueber };

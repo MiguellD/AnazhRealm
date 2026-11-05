@@ -563,9 +563,6 @@ class AnazhRealm_stoff_material {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = THREE.TSL;
         this.state.atmoUniforms = {
-            // 2.5D-Lichtung als Konsolen-Hebel (Init aus der Konstante, NICHT persistiert, render-only):
-            //   anazhRealm.state.atmoUniforms.terrainFlatten.value = 0.7
-            terrainFlatten: TSL.uniform(AnazhRealm.TERRAIN_NORMAL_FLATTEN),
             // M7 (V18.160, Befund 21) — die Mikro-Struktur als LEBENDIGER Hebel:
             // vorher war AERIAL.microStrength als KONSTANTE in den Tree gebacken
             // (ein Settings-Slider wäre der tote Knopf, V18.65-Klasse) → Uniform.
@@ -1596,39 +1593,32 @@ class AnazhRealm_stoff_material {
                     "outputNode",
                 ]);
         }
-        // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
-        // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
-        // voll sonnen-lit, ACES wüsche die Krone teal/weiß.
+        // DIE LICHT-NORMALE DES BODENS IST SEINE WAHRE NORMALE (ferne.K4, w10-ferne): der Hang zur Sonne nimmt ihr Licht nach N·L,
+        // der abgewandte nicht — nah (der Chunk: −∇d der Dichte, `_voxelGradientNormals`), fern (der Ring: die Normale seiner
+        // Masche) und im Feld-Pass (`_weltLicht().at(n)`) dieselbe Physik. Bis w10 mischte die 2,5D-Lichtung (TERRAIN_NORMAL_FLATTEN
+        // 1,0, V17.109 gegen die Rauten-Facetten von `computeVertexNormals`, die seit den Gradienten-Normalen nicht mehr bestehen)
+        // jede Boden-Normale zur Senkrechten: jeder Hang nahm das Licht einer Ebene, bei Sonne 5° sin 5° = 0,087 des Richtlichts,
+        // ob er zur Sonne stand oder nicht (Radeon 2674ff9a ferne.K4: Schatten-/Lichthang 0,7162, Soll ≤ 0,4; der Feld-Pass
+        // jenseits 8 km rechnete schon die wahre Normale — zwei Lichtungen für EINEN Boden).
+        // Vegetation (pflanzenStoff) und Fels (vertexColorAlbedo) tragen ihre eigene Normale (unten nicht berührt).
         let _mikroH = null; // die Höhe des Mikro-Reliefs (`_mikroStoff`: Kavität auf der Himmels-Sicht, Korn in der Albedo)
         if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
-                const _aun = this._ensureAtmoUniforms();
                 {
-                    const _up = _Tn.vec3(0.0, 1.0, 0.0);
-                    const _flat = _aun.terrainFlatten;
-                    // DIE GEOMETRIE-NORMALE DIESES GRAPHEN ist `normalWorldGeometry` × Flächen-Vorzeichen, nie r184s
-                    // `normalWorld`: das ist EINE Variable je Programm, und las dieser normalNode (er baut in der
-                    // NORMAL-Stufe) sie zuerst, übernahmen der Schatten-Lookup (normalBias), das Halbkugel- und das
-                    // Umgebungslicht ihre NORMAL-Fassung — die Geometrie-Normale mit Flächen-Vorzeichen. Die Boden-
-                    // Dreiecke zeigen oben ihre Rückseite (DoubleSide), die Normale zeigte nach unten, der normalBias schob
-                    // die Probe 1 m in den Boden. Welche Fassung ein Programm bekam, hing an seiner Bau-Reihenfolge
-                    // (echte GPU, Mess-Wiese, Zweit-Boot nach kurzem Erst-Boot: 4 von 5 Läufen dunkel, Boden-Helligkeit
-                    // 68 statt 133 — gate:altlasten Normal-Wand). Derselbe Wert wie vorher, `normalWorld` baut nur die
-                    // Licht-Stufe (die End-Normale aus diesem normalNode).
+                    // DIE GEOMETRIE-NORMALE DIESES GRAPHEN ist `normalWorldGeometry`, nie r184s `normalWorld`: das ist EINE
+                    // Variable je Programm, und las dieser normalNode (er baut in der NORMAL-Stufe) sie zuerst, übernahmen der
+                    // Schatten-Lookup (normalBias), das Halbkugel- und das Umgebungslicht ihre NORMAL-Fassung — die
+                    // Geometrie-Normale mit Flächen-Vorzeichen (gate:altlasten Normal-Wand). OHNE Flächen-Vorzeichen: jede
+                    // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y, die Insel −∇d),
+                    // die Windung des Netzes kennt die Seite der Luft nicht — die Boden-Dreiecke zeigen oben ihre Rückseite
+                    // (DoubleSide), × faceDirection zeigte die Normale dort nach unten.
                     // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe
                     const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;
-                    const _nGeo = _nWG.mul(_Tn.faceDirection);
-                    // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
-                    // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
-                    // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
-                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, gelaende-core `himmelsSicht`)
-                    // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
-                    // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
-                    // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
-                    const _hS = opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null;
-                    let _baseN = _hS ? _Tn.mix(_nWG, _up, _flat.mul(_hS)) : _Tn.mix(_nGeo, _up, _flat);
-                    const _nWahr = _hS ? _nWG : _nGeo; // die wahre Normale (Steile des Reliefs, Zuwendung des Schattens)
+                    // die wahre Normale (die Licht-Normale, die Steile des Reliefs, die Zuwendung des Schattens) — in der Höhle
+                    // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben)
+                    const _nWahr = _nWG;
+                    let _baseN = _nWahr;
                     // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
                     // die geflattete Normale entgegen dem Gradienten, LOD-gegated.
                     {
@@ -1637,8 +1627,8 @@ class AnazhRealm_stoff_material {
                         // Bump NUR auf flachem Boden (auf steilen Wänden ist xz-Höhen-Noise sinnlos). Schwellen (0.55, 0.85)
                         // sind gemessen (`diag-bump-flatdist`, top-surface-gefiltert): flache Wiese liegt bei ny 0.90–0.98 →
                         // voller Bump > 0.85, aus unter 0.55. Tiefere Schwellen schöben den Bump auf 32–52°-Hänge zurück.
-                        // Die Steile liest die WAHRE Normale (in die Luft, `_nWahr`): unter der Himmels-Sicht zeigt `_nGeo` auf der
-                        // Oberseite nach unten (DoubleSide, die Rückseite) — dort stand das Tor bis material.K2 auf 0, das Relief
+                        // Die Steile liest die WAHRE Normale (in die Luft, `_nWahr`): unter der Himmels-Sicht zeigte die
+                        // Geometrie-Normale × Flächen-Vorzeichen auf der Oberseite nach unten (DoubleSide, die Rückseite) — dort stand das Tor bis material.K2 auf 0, das Relief
                         // erreichte keinen Pixel der Wiese (Armlänge 0,5 und 1 m byte-gleich ohne es, Radeon).
                         const _flatGate = _Tn.smoothstep(_Tn.float(0.55), _Tn.float(0.85), _nWahr.y).clamp(0.0, 1.0);
                         const _lod = _Tn
@@ -1682,8 +1672,9 @@ class AnazhRealm_stoff_material {
                 throw this._stoffBruch("die Boden-Normale (Flatten · Relief · Zuwendung)", _e);
             }
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
-            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
-            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
+            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz). Dazu die Kontakt-Verdeckung der
+            // Dinge auf ihm (schatten.K3, `_kontaktVerdeckung`: der Fuß, der Sockel, der Stamm nehmen dem Boden den Himmel).
+            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel.mul(this._kontaktVerdeckung());
             if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
@@ -3004,13 +2995,44 @@ class AnazhRealm_stoff_material {
     // DAS RAUSCHEN DER BLENDE: Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN (52.9829189 · 0.06711056 ·
     // 0.00583715; foundry-core.js Z.212), zeitlich über uDitherT — EIN Knoten-Bauer für die Durchsicht, das Laub-Band und den
     // Ring der Karte (lod.K3). `versatz` n schiebt das Raster um n · 5,588 px (die Ring-Wahl, unkorreliert mit der Blende).
+    // IN DER KASKADE STEHT DIE BLENDE AN DER WELT (schatten.K2): der Schatten-Pass liest die Blende über colorNode.a (Lehre 26) —
+    // mit der Rotation je Bild (`uDitherT`, `_loopRender`) und dem Pixel der Karte als Schlüssel trug JEDER Kaskaden-Render eines
+    // überblendenden Werfers (Stufen-Band, Ring der Karte) ein anderes Loch-Muster, und jede Neulage der Box (die nahe Kaskade beim
+    // Gehen 6–22 Mal in 2 s) schob es gegen die Welt: der Boden unter dem Werfer flackerte in ruhender
+    // Welt. In der Kaskade (orthographisch, m[3][3] = 1 — dieselbe Weiche wie `_laubVersatz`) dreht sie nicht, und ihr Schlüssel
+    // ist der Index des Welt-Rasters der Kaskade (Spalte + Ursprung, Ursprung − Zeile; `_kaskadeFit` legt den Ursprung,
+    // `_blendeRaster` reicht ihn je Pass), modulo `BLENDE_RASTER`: dasselbe Texel der Welt trägt in jedem Render dieselbe Schwelle.
     _ditherIGN(T, versatz) {
-        const fc = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        const fc0 = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        const P = AnazhRealm.BLENDE_RASTER;
+        const R = this._blendeRaster();
+        const welt = T.vec2(T.floor(fc0.x).add(R.x), R.y.add(16 * P).sub(T.floor(fc0.y)))
+            .mod(P)
+            .add(0.5);
+        const kaskade = T.cameraProjectionMatrix.element(3).w.greaterThan(0.5);
+        const fc = kaskade.select(welt, fc0);
         return T.fract(
             T.float(52.9829189)
                 .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
-                .add(this._ensureLodUniforms().uDitherT)
+                .add(kaskade.select(T.float(0), this._ensureLodUniforms().uDitherT))
         );
+    }
+
+    // DER URSPRUNG DES WELT-RASTERS je Pass (`_ditherIGN`): EINE Uniform der Render-Gruppe, gestellt je Render aus der Kamera des
+    // Passes — eine Kaskade reicht den Ursprung ihrer Box (`_kaskadeFit`, `raster`), jede andere Kamera 0.
+    _blendeRaster() {
+        if (this._blendeRasterU) return this._blendeRasterU;
+        const T = THREE.TSL;
+        const v = new THREE.Vector2();
+        this._blendeRasterU = T.uniform(v)
+            .setGroup(T.renderGroup)
+            .onRenderUpdate((frame) => {
+                const csm = this.state.csmNode;
+                const k = frame && frame.camera ? this._schattenKameraIndex(frame.camera) : -1;
+                const f = k >= 0 && csm && csm._anazhFit ? csm._anazhFit[k] : null;
+                return f && f.raster ? v.set(f.raster[0], f.raster[1]) : v.set(0, 0);
+            });
+        return this._blendeRasterU;
     }
 
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
@@ -3035,7 +3057,9 @@ class AnazhRealm_stoff_material {
             ]
                 .filter((k) => !_lu[k])
                 .concat(
-                    ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
+                    ["float", "fract", "screenCoordinate", "cameraProjectionMatrix", "step", "mix"]
+                        .filter((k) => !T[k])
+                        .map((k) => "TSL." + k)
                 );
             if (_fehlt.length) throw this._blendeBruch("es fehlt " + _fehlt.join(" · "));
             // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
@@ -3044,14 +3068,9 @@ class AnazhRealm_stoff_material {
             const _edge0 = _lu.uLodD0.sub(_lu.uLodFade0); // D0 − FADE0
             const _fadeW = _lu.uLodFade.max(T.float(1e-3));
             const _fadeW0 = _lu.uLodFade0.max(T.float(1e-3));
-            // _dh — Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN
-            // (52.9829189 · 0.06711056 · 0.00583715; foundry-core.js Z.212).
-            const _fc = T.screenCoordinate;
-            const _dh = T.fract(
-                T.float(52.9829189)
-                    .mul(T.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
-                    .add(_lu.uDitherT)
-            );
+            // _dh — das EINE Rauschen der Blende (`_ditherIGN`, BYTE-GENAU __phytoCore.lodDitherIGN; in der Kaskade am
+            // Welt-Raster, schatten.K2) — bis w5-kontakt stand hier sein Zwilling mit dem Pixel der Karte und der Rotation.
+            const _dh = this._ditherIGN(T, 0);
             if (opts && opts.impostor === true) {
                 // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
@@ -3388,7 +3407,7 @@ class AnazhRealm_stoff_material {
     }
 
     // (V18.106 — B3: setTerrainFlatten ist GESCHNITTEN — die 2.5D-Lichtung ist
-    // in die Geometrie gebacken [TERRAIN_NORMAL_FLATTEN], der Slider weicht.)
+    // gefallen, ferne.K4 — der Boden lichtet nach seiner wahren Normale.)
 
     // V17.104-Regler — die Farb-Variation (V17.12-Makro-Tint-Stärke, 0..1). 0 = reine
     // Basisfarbe (testet, ob die warm/kühl-Patches die „zwei Basisfarben" sind, die

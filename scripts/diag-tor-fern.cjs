@@ -4,7 +4,7 @@
 // baut; die feinen Teile tragen die Rolle "wurf" (nur die Stufe 3 wirft sie), die Fernform des Welt-March liest
 // höchstens 24 Teile der Rolle "sicht" (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je
 // Pixel über alle Teile seines Eintrags). Die Linse misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7
-// Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node, worlds/terrain/lib/three-r128.min.js + porta-core.js) und
+// Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node, die Engine des Fadens three r184 + porta-core.js) und
 // mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
 //
 //   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);

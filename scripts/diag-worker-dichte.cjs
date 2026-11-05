@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben, jsonKlon, ausDatei, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const liesText = (datei) => ausDatei(datei);
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -1449,7 +1449,7 @@ async function studioProbe(page) {
                 befunde.push("SELBSTTEST: die Preset-Wand sieht ein Preset außerhalb des Korridors nicht");
         }
     } catch (e) {
-        if (!befunde.length) befunde.push(String((e && e.message) || e));
+        if (!befunde.length) befunde.push(fehlerText(e));
     }
     out.sekunden = Math.round((Date.now() - t0) / 1000);
     if (JSON_AUS) jsonSchreiben(JSON_AUS, out);

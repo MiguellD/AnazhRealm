@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei, path, fs, os, argOpt, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
+const { loesche, tempNeu, ausDatei, path, fs, argOpt, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
 /* global process, console */
 // scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
@@ -142,7 +142,7 @@ function setzeStamm(root, T, form) {
     const dir = path.join(root, stamm.DIR);
     if (form === "datei") {
         if (fs.existsSync(dir)) gitOk(root, ["rm", "-r", "-q", "-f", "--ignore-unmatch", stamm.DIR]);
-        fs.rmSync(dir, { recursive: true, force: true });
+        loesche(dir);
         fs.writeFileSync(alt, T);
         tags([stamm.ALT]); // ein Zonen-Zweig auf ein Datei-Ziel: EIN Tag
         git(root, ["add", "--", stamm.ALT, "index.html"]);
@@ -276,7 +276,7 @@ function selbsttest() {
     const pruef = stamm.pruefZaehler();
     const ziel = "origin/integ-probe";
     const K = stamm.karteVon(ROOT);
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-rehome-klon-"));
+    const tmp = tempNeu("stamm-rehome-klon");
     try {
         // (A) der Probe-Umzug im geteilten Klon (die Zeilen-Enden wie das Repo: core.autocrlf=false)
         const klon = path.join(tmp, "k");
@@ -380,7 +380,7 @@ function selbsttest() {
     } catch (e) {
         pruef("(A–E) lief durch", false, e.stack);
     } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
+        loesche(tmp);
     }
     return pruef.ende("stamm-rehome");
 }

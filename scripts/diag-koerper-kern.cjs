@@ -70,7 +70,9 @@ function altLandmarks(mess) {
 // trug die Linse hier eine Abschrift von dessen Rumpf (byte-gleich, 2 282 Zeichen) — ein Zwilling, der den echten Leser
 // nie las.
 // ────────────────────────────────────────────────────────────────────────────
-const neuMorph = (p, N) => core.morphAuf({ character: N.parts.__character, parts: N.parts, base: N.base }, p);
+// Der Mock trägt keine Gestalt (`kugeln: []`): die Ruhe der Arme (w11-koerper, `_armRuhe`) misst an den Kugeln des Baums und
+// läuft hier leer — ihren Kontakt misst gate:mensch-anatomie RUHE am Guss.
+const neuMorph = (p, { parts, base }) => core.morphAuf({ character: parts.__character, parts, base, kugeln: [] }, p);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Mock-Rig + deterministische base-Skalen (mulberry32 — der Test-Strom).
@@ -113,11 +115,13 @@ function snapshot(parts) {
 // ────────────────────────────────────────────────────────────────────────────
 // Der Vergleich (EXAKT — Object.is; 0 Abweichungen sind das Gesetz).
 // ────────────────────────────────────────────────────────────────────────────
+// Der Selbsttest zählt seine Injektionen, ohne „⛔“ zu drucken (w10-figur: der Puls von dc82a268 las die Mutante quad1 +1e-9,
+// „Gitter … Wert[401]“, als gekippten Byte-Vertrag) — jede „⛔“-Zeile ist ein echter Bruch.
 function runVergleich(morphFn, labPropFn, labLandmarksFn) {
     const dials = ["height", "mass", "tone", "age", "gender", "arms"].map((id) => core.PARAMS_BY_KIND.koerper.find((d) => d.id === id));
 
     let diffs = 0, values = 0, points = 0;
-    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
+    const vgl = (a, n, z) => (values++, !Object.is(a, n) && ++diffs < 5 && !SELBSTTEST && console.log(`  ⛔ ${z}: alt=${a} neu=${n}`));
 
     // (1) Proportionen — 28 Konstanten, alt vs neu.
     const ap = altProportionen(), np = labPropFn();
@@ -230,9 +234,7 @@ function stossUrteil(C, mutante = null) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-const selftest = SELBSTTEST;
-
-if (selftest) {
+if (SELBSTTEST) {
     // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
     let fails = 0;
     const morphMut = (p, N) => { neuMorph(p, N); N.parts.quad1.scale.x += 1e-9; };

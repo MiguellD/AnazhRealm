@@ -296,26 +296,33 @@ class AnazhRealm_netz_identitaet {
     }
 
     // Prüft eine Signatur gegen einen ÖFFENTLICHEN Schlüssel (Hex). Verifiziert
-    // damit jedes Autors Werk, nicht nur das eigene — Phase 3 baut hierauf.
-    // Defensiv: ungültige Eingabe → false, nie ein Wurf.
+    // damit jedes Autors Werk, nicht nur das eigene — Phase 3 baut hierauf. Die Prüfung ist EINE (`_ed25519Pruefe`).
     async _vibeVerify(message, signatureHex, publicKeyHex) {
+        return AnazhRealm._ed25519Pruefe(message, signatureHex, publicKeyHex);
+    }
+
+    // DIE EINE PRÜFUNG einer Ed25519-Signatur (Hex): der Wirt ruft sie (`_vibeVerify`), der Foundry-Faden trägt sie als
+    // Quelltext (`_foundryStart`: die Gesetzbücher der Bibliothek) — sie greift auf nichts außerhalb ihres Rumpfs zu.
+    // Defensiv: ungültige Eingabe → false, nie ein Wurf.
+    static async _ed25519Pruefe(message, signatureHex, publicKeyHex) {
         if (typeof crypto === "undefined" || !crypto.subtle) return false;
         if (typeof signatureHex !== "string" || typeof publicKeyHex !== "string") return false;
         if (!/^[0-9a-f]+$/i.test(signatureHex) || !/^[0-9a-f]{64}$/i.test(publicKeyHex)) return false;
+        const bytes = (hex) => new Uint8Array((hex.match(/../g) || []).map((x) => parseInt(x, 16)));
         try {
+            const x = btoa(String.fromCharCode(...bytes(publicKeyHex)))
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_")
+                .replace(/=+$/, "");
             const publicKey = await crypto.subtle.importKey(
                 "jwk",
-                {
-                    kty: "OKP",
-                    crv: "Ed25519",
-                    x: this._vibeBytesToB64u(this._vibeHexToBytes(publicKeyHex)),
-                },
+                { kty: "OKP", crv: "Ed25519", x },
                 { name: "Ed25519" },
                 true,
                 ["verify"]
             );
             const data = new TextEncoder().encode(String(message));
-            return await crypto.subtle.verify({ name: "Ed25519" }, publicKey, this._vibeHexToBytes(signatureHex), data);
+            return await crypto.subtle.verify({ name: "Ed25519" }, publicKey, bytes(signatureHex), data);
         } catch {
             return false;
         }
@@ -605,10 +612,11 @@ class AnazhRealm_netz_identitaet {
         return !!bp && !bp.builtIn && !bp._foundryAutoSpecies && Array.isArray(bp.parts);
     }
 
-    // Die signierte Fracht einer Hülle in fester Reihe: das Programm (Werk, Regel) oder das Gesetz (Welt) und die Herkunft
-    // (`provenance`, der Fork eines Eintrags der Bibliothek) — ein Werk ohne Herkunft signiert byte-gleich wie seit v1.
+    // Die signierte Fracht einer Hülle in fester Reihe: das Programm (Werk, Regel), das Gesetz (Welt) oder das Buch (ein
+    // Gesetzbuch, gepackt) und die Herkunft (`provenance`, der Fork eines Eintrags der Bibliothek) — ein Werk ohne Herkunft
+    // und ohne Buch signiert byte-gleich wie seit v1.
     _werkKanon(h) {
-        return JSON.stringify({ v: 1, programm: h.programm, gesetz: h.gesetz, provenance: h.provenance });
+        return JSON.stringify({ v: 1, programm: h.programm, gesetz: h.gesetz, buch: h.buch, provenance: h.provenance });
     }
 
     // Versiegelt eine Fracht mit dem Vibe-Pass → EIN Code (`_werkHuelle`). Die Signatur deckt `_werkKanon`.
@@ -791,9 +799,14 @@ class AnazhRealm_netz_identitaet {
         return this.state.bibliothek;
     }
 
-    // Die Fracht eines Eintrags je Art (null: die Quelle fehlt) — die Regel als ihr Programm (`rule`), in der Welt wie allein.
+    // Die Fracht eines Eintrags je Art (null: die Quelle fehlt) — die Regel als ihr Programm (`rule`), in der Welt wie allein;
+    // ein Gesetzbuch (ultiversum.K4) als sein Quelltext, gepackt (`_buchPacke`: das Versprechen seiner Fracht).
     _bibliothekFracht(art, quelle) {
         const regel = (r) => ["rule", r.cond, r.effect, { everySec: r.everySec, ttlSec: r.ttlSec }];
+        if (art === "gesetzbuch")
+            return typeof quelle === "string" && quelle
+                ? AnazhRealm._buchPacke(quelle).then((buch) => ({ buch }))
+                : null;
         if (art === "bauplan") return this.state.blueprints[quelle] ? { programm: this._werkReise(quelle) } : null;
         if (art === "regel") {
             const r = (this.state.worldRules || []).find((x) => x.id === quelle);
@@ -833,8 +846,12 @@ class AnazhRealm_netz_identitaet {
         const art =
             h.gesetz && typeof h.gesetz === "object" && !p
                 ? "welt"
-                : { rule: "regel", spawn_blueprint: "bauplan" }[kopf] || null;
+                : typeof h.buch === "string" && !p && !h.gesetz
+                  ? "gesetzbuch"
+                  : { rule: "regel", spawn_blueprint: "bauplan" }[kopf] || null;
         if (!art) return { ok: false, grund: "art" };
+        if (art === "gesetzbuch" && (await AnazhRealm._buchAuspacke(h.buch, AnazhRealm.BIBLIOTHEK.buch)) == null)
+            return { ok: false, grund: "buch" };
         if (!(await this._vibeVerify(this._werkKanon(h), h.sig, h.autor))) return { ok: false, grund: "signatur" };
         if (this._artifactProvenanceTainted({ authorPubKey: h.autor, provenance: h.provenance }))
             return { ok: false, grund: "rueckruf" };
@@ -866,16 +883,21 @@ class AnazhRealm_netz_identitaet {
         return res.ok && res.code !== code ? { ok: false, grund: "code" } : res;
     }
 
-    // DIE GESTE DES ABLEGENS: ein Gesetz der Welt (art welt · regel mit der Regel-Id · bauplan mit dem Namen) wird signiert
-    // Eintrag — durch die EINE souveräne Geste. { ok, code, art, bytes } | { ok:false, grund }.
+    // DIE GESTE DES ABLEGENS: ein Gesetz der Welt (art welt · regel mit der Regel-Id · bauplan mit dem Namen · gesetzbuch mit
+    // seinem Quelltext) wird signiert Eintrag — durch die EINE souveräne Geste. { ok, code, art, bytes } | { ok:false, grund }.
     async bibliothekLege(art, quelle, opts) {
-        const fracht = this._bibliothekFracht(art, quelle);
+        const fracht = await this._bibliothekFracht(art, quelle);
         return fracht
             ? this._bibliothekSiegeln(
                   fracht,
                   this._t("pass.bibliothek.eintrag", {
                       art: String(art),
-                      quelle: String(quelle ?? this._t("pass.bibliothek.diese-welt")),
+                      // ein Gesetzbuch nennt die Geste mit seiner Größe, nie mit seinem ganzen Quelltext
+                      quelle: String(
+                          art === "gesetzbuch"
+                              ? new TextEncoder().encode(quelle).length + " B"
+                              : (quelle ?? this._t("pass.bibliothek.diese-welt"))
+                      ),
                   }),
                   opts
               )
@@ -887,11 +909,81 @@ class AnazhRealm_netz_identitaet {
     async bibliothekForke(code, aendere, opts) {
         const alt = await this.bibliothekFinde(code);
         if (!alt.ok) return alt;
-        const { programm, gesetz, provenance } = JSON.parse(this._bibliothek()[code]);
+        const { programm, gesetz, buch, provenance } = JSON.parse(this._bibliothek()[code]);
         const kette = [...this._sanitizeProvenance(provenance), { by: alt.eintrag.autor, at: Date.now(), code }];
-        const fracht = { programm, gesetz, provenance: kette };
+        const fracht = { programm, gesetz, buch, provenance: kette };
         if (aendere) aendere(fracht);
         return this._bibliothekSiegeln(fracht, this._t("pass.bibliothek.fork", { code: code.slice(0, 12) }), opts);
+    }
+
+    // DIE BÜCHER DER BIBLIOTHEK für den EINEN Kern-Weg (ultiversum.K4): je Eintrag der Art gesetzbuch seine signierten Bytes
+    // (`_werkKanon`), Signatur und Autor — gesiebt an der Sperrliste fremder Welten (`_artifactProvenanceTainted`, laut beim
+    // Code). Die Signatur prüft der Foundry-Faden selbst (`_foundryStart`): er glaubt nur den signierten Bytes.
+    _bibliothekBuecher() {
+        const out = [];
+        const verz = this._bibliothek();
+        for (const code of Object.keys(verz).sort()) {
+            let h = null;
+            try {
+                h = JSON.parse(verz[code]);
+            } catch {
+                h = null;
+            }
+            if (!h || typeof h !== "object" || typeof h.buch !== "string" || h.programm || h.gesetz) continue;
+            if (this._artifactProvenanceTainted({ authorPubKey: h.autor, provenance: h.provenance })) {
+                this.log(
+                    `GESETZBUCH ${code.slice(0, 16)} fällt an der Sperrliste (zurückgerufener Schlüssel)`,
+                    "ERROR"
+                );
+                continue;
+            }
+            out.push({ code, kanon: this._werkKanon(h), sig: h.sig, autor: h.autor });
+        }
+        return out;
+    }
+
+    // DAS GESETZBUCH REIST GEPACKT (ultiversum.K4): sein Quelltext deflate-raw, base64 — die Hülle bleibt unter der EINEN Decke
+    // der Bibliothek (`BIBLIOTHEK.max`), die Signatur deckt die gepackten Bytes (`_werkKanon`). Das Auspacken (`_buchAuspacke`)
+    // ist EINE Funktion für Eingang und Foundry-Faden (Quelltext im Boot-Blob), gedeckelt (`BIBLIOTHEK.buch` Bytes: keine Bombe).
+    static async _buchPacke(text) {
+        const strom = new Blob([String(text)]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+        const roh = new Uint8Array(await new Response(strom).arrayBuffer());
+        let bin = "";
+        for (let i = 0; i < roh.length; i += 0x8000) bin += String.fromCharCode(...roh.subarray(i, i + 0x8000));
+        return btoa(bin);
+    }
+
+    // Packt ein Buch aus — der Quelltext oder null (kein base64, kein deflate, kein UTF-8, über der Decke `max`). Greift auf
+    // nichts außerhalb seines Rumpfs zu (läuft auch im Foundry-Faden).
+    static async _buchAuspacke(b64, max) {
+        if (typeof b64 !== "string" || !b64 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) return null;
+        try {
+            const bin = atob(b64);
+            const roh = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) roh[i] = bin.charCodeAt(i);
+            const leser = new Blob([roh]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+            const teile = [];
+            let n = 0;
+            for (;;) {
+                const { done, value } = await leser.read();
+                if (done) break;
+                n += value.length;
+                if (n > max) {
+                    leser.cancel().catch(() => {});
+                    return null;
+                }
+                teile.push(value);
+            }
+            const alles = new Uint8Array(n);
+            let o = 0;
+            for (const t of teile) {
+                alles.set(t, o);
+                o += t.length;
+            }
+            return new TextDecoder("utf-8", { fatal: true }).decode(alles);
+        } catch {
+            return null;
+        }
     }
 
     async _bibliothekSiegeln(fracht, was, opts) {
@@ -2417,8 +2509,9 @@ AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
 // DIE WAND DES MITTRAGENS (`pinCurrentWorld`): ein Stand über 256 KiB fällt; die Waage der Playtest-Welt (Playtest Φ5 Q15b) hält 30 % Luft
 AnazhRealm.PIN_WAND = 256 * 1024;
-// DIE BIBLIOTHEK: die Decke je Eintrag (Bytes der Hülle — ein Gesetz wiegt Kilobytes, ein Mesh nie) und ihr Speicher-Schlüssel.
-AnazhRealm.BIBLIOTHEK = Object.freeze({ max: 8192, speicher: "anazh.bibliothek" });
+// DIE BIBLIOTHEK: die Decke je Eintrag (Bytes der Hülle — ein Gesetz wiegt Kilobytes, ein Mesh nie), die Decke eines
+// ausgepackten Gesetzbuchs (`buch`, Bytes des Quelltexts) und ihr Speicher-Schlüssel.
+AnazhRealm.BIBLIOTHEK = Object.freeze({ max: 8192, buch: 65536, speicher: "anazh.bibliothek" });
 // DER WERK-CODE (Teilen in EINER Geste, Werk und Welt): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des
 // Empfängers und je Wand der Satz des Spielers (`empfangeWerk` nennt jede Absage beim Namen — der Schlüssel ist der Kopf des Grunds).
 AnazhRealm.WERK_CODE = Object.freeze({

@@ -11,7 +11,8 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const { ausDatei, path, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, vm, ENGINE_THREE } = require("./lib/welt-boot.cjs");
+const { kernKontext } = require("./lib/asset-worker-harness.cjs");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
@@ -186,11 +187,9 @@ ok("Blatt-Budget: Cap deckelt die Blatt-Zahl", capped.leaves.length <= 50, cappe
 
 // ── DIE PARITÄT ── der WORKER-Pfad: ein frischer Context, in dem `self` das globale Objekt IST (Worker-Scope).
 // Der IIFE-Root-Ausdruck `typeof self !== "undefined" ? self : ...` greift dann `self`.
-const workerSandbox = {};
-workerSandbox.self = workerSandbox; // im Worker ist self === globalThis
-const workerCtx = vm.createContext(workerSandbox);
-vm.runInContext(src, workerCtx, { filename: "phyto-core.js(worker)" });
-const workerCore = workerSandbox.self.__phytoCore;
+const worker = kernKontext({}); // im Worker ist self === globalThis
+vm.runInContext(src, worker, { filename: "phyto-core.js(worker)" });
+const workerCore = worker.__phytoCore;
 
 console.log("=== DAS NEUE KLEID Welle 0 — Phyto-Core Main↔Worker-Parität ===");
 ok("Worker-Pfad exportiert __phytoCore.growSkeleton", workerCore && typeof workerCore.growSkeleton === "function");
@@ -234,22 +233,19 @@ ok(
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
-// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
+// gebaut (die Engine three r184 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
 // (foundry-bruecke.js), hier ihr Ersatz — die Dials liest der Kern nur aus `__dials` (K47: kein DOM-Leser `gv` mehr).
 // Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
-// Ein Scope wie im Faden `name`: three-r128 → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
+// Ein Scope wie im Faden `name`: die Engine (welt-boot `ENGINE_THREE`) → phyto-core → (`bruecke`, die Globale der Brücke) → foundry-core.
 const kernScope = (name, bruecke) => {
-    const sb = { console, performance: { now: () => 0 } };
-    sb.self = sb.globalThis = sb;
-    const ctx = vm.createContext(sb);
+    const ctx = kernKontext({ console, THREE: ENGINE_THREE() });
     const lies = (...p) => ausDatei(path.join(__dirname, "..", ...p));
-    vm.runInContext(lies("worlds", "terrain", "lib", "three-r128.min.js"), ctx, { filename: "three-r128" });
     vm.runInContext(src, ctx, { filename: `phyto-core.js(${name})` });
     if (bruecke) vm.runInContext(bruecke, ctx);
     vm.runInContext(lies("foundry-core.js"), ctx, { filename: `foundry-core.js(${name})` });
-    return [sb, ctx];
+    return ctx;
 };
-const [fsb, fctx] = kernScope(
+const fsb = kernScope(
     "foundry",
     "var clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;" +
         "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';"
@@ -281,7 +277,7 @@ const pPaare = vm.runInContext(
         }
         return out;
     })()`,
-    fctx
+    fsb
 );
 // Selbsttest: ein eingeschleuster Zwilling (Quirl-Abstand fehlt, Nadel-Stride anders) MUSS beim Namen fallen.
 {
@@ -323,13 +319,13 @@ ok(
 // defined", gate:brennglas-takt fand ihn im Brennpunkt der Kern-Landform). Der Scope wird wie im Haupt-Thread gebaut
 // (three → phyto-core → foundry-core, KEINE Shell-Globale), jede Baum- und Strauch-Art je Gestalt und Stufe gewachsen.
 // Konsum-Leser: `_growTreeBlueprintRich` (Stamm) — der Stamm liest das Skelett für die Kollision.
-const [hsb, hctx] = kernScope("haupt");
+const hsb = kernScope("haupt");
 // Selbsttest: der Scope ist der des Haupt-Threads — ein Leser eines Shell-Globals fällt dort beim Namen
 ok(
     "Skelett im Haupt-Thread Selbsttest: der Scope trägt keine Shell-Globale (ein Leser von vlen bricht beim Namen)",
     vm.runInContext(
         "(function () { try { vlen([1, 0, 0]); return false; } catch (e) { return /vlen/.test(String(e && e.message)); } })()",
-        hctx
+        hsb
     ) === true
 );
 hsb.__skelettArgs = { samen: [1, 7, 12345], stufen: [0, 1, 2] };
@@ -352,7 +348,7 @@ const hFaelle = vm.runInContext(
         }
         return out;
     })()`,
-    hctx
+    hsb
 );
 const hRot = hFaelle.filter((f) => f.fehler || !(f.segs > 0));
 for (const f of hRot.slice(0, 6)) console.log("      SKELETT " + f.fall + ": " + (f.fehler || "0 Segmente"));

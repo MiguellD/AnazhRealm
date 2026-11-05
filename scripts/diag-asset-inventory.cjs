@@ -441,15 +441,10 @@ hauptLauf(async () => {
                 fake5.name = "siedlung-zaun";
                 st.scene.add(fake5);
                 injected.push(fake5);
-                const mitKennung =
-                    typeof AnazhRealm._poolKennung === "function"
-                        ? AnazhRealm._poolKennung(new THREE.InstancedMesh(geo, mat, 3), "siedlung-zaun")
-                        : null;
-                if (mitKennung) {
-                    mitKennung.count = 3;
-                    st.scene.add(mitKennung);
-                    injected.push(mitKennung);
-                }
+                const mitKennung = AnazhRealm._poolKennung(new THREE.InstancedMesh(geo, mat, 3), "siedlung-zaun");
+                mitKennung.count = 3;
+                st.scene.add(mitKennung);
+                injected.push(mitKennung);
                 // meshKeys ist ein Schnappschuss von VOR der Injektion → fake1 fällt (wie
                 // fake2) in den Fail-Closed-Fallback: fake1–fake3 + der Tuft-Fake MÜSSEN als
                 // +4 Verletzungen zählen. Der Namens-Regel-Pfad (Grammatik-Baum-Key →

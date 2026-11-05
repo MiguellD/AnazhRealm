@@ -18,8 +18,8 @@
 // (05.10.) wählt der Same den Lack der Gestalt aus dem LACK_GESETZ (`lackIndex`) —
 // der bewusste Golden-Re-Mint von spec/asset-contract/v3 (cv:3), kein Drift.
 //
-// THREE ist zur Laufzeit global (Browser: worlds/terrain/lib/three-r128.min.js
-// VOR diesem Skript; Node-Gate: global.THREE vor require). Der Manifest-Teil
+// THREE ist zur Laufzeit global (Garage und Foundry-Faden: die Engine der Welt, three r184 aus ihrer Import-Karte;
+// Node-Gate: global.THREE vor require, welt-boot `ENGINE_THREE`). Der Manifest-Teil
 // (Daten + Funktions-Definitionen) läuft THREE-frei (Validator-vm mit Stub).
 (function (root) {
     "use strict";

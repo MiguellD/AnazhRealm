@@ -398,6 +398,45 @@ class AnazhRealm_siedlung_wege {
         return q >= 1 ? 1 : q * q * (3 - 2 * q);
     }
 
+    // DER SCHUB EINER KARTE um (di, dj) Texel (der Umzug ihres Fensters): neu[j][i] = alt[j + dj][i + di] je `k` Kanälen, was keine
+    // Quelle hat, wird `leer`; der Rahmen außerhalb [a, b] bleibt `leer` (der Rand-Texel der Wege-Karte). → die Streifen in [a, b]
+    // ([i0, i1, j0, j1], geleert), deren Quelle außerhalb lag — die Spalten über die volle Höhe, die Zeilen ohne sie (keine Ecke
+    // doppelt) —, oder null bei einem Sprung über das Fenster (dann malt der Aufrufer ganz). Die Zeilen-Folge folgt dem Vorzeichen
+    // (nie eine Quelle überschreiben), dieselbe Regel wie der Kronen-Umzug (`_kronenStreuUmzug`). Leser: die Wege und die Flüsse.
+    static _karteSchieben(d, N, k, di, dj, a, b, leer) {
+        if (Math.abs(di) > b - a || Math.abs(dj) > b - a) return null;
+        const len = N - Math.abs(di);
+        const src0 = Math.max(0, di);
+        const dst0 = Math.max(0, -di);
+        for (let n = 0; n < N; n++) {
+            const j = dj >= 0 ? n : N - 1 - n;
+            const sj = j + dj;
+            if (sj < 0 || sj >= N) {
+                d.fill(leer, j * N * k, (j + 1) * N * k);
+                continue;
+            }
+            if (di !== 0 || dj !== 0) d.copyWithin((j * N + dst0) * k, (sj * N + src0) * k, (sj * N + src0 + len) * k);
+            if (di > 0) d.fill(leer, (j * N + len) * k, (j + 1) * N * k);
+            else if (di < 0) d.fill(leer, j * N * k, (j * N + dst0) * k);
+        }
+        // der Rahmen außerhalb [a, b] (er trug nach dem Schub Bytes von innen)
+        for (let j = 0; j < N; j++)
+            if (j < a || j > b) d.fill(leer, j * N * k, (j + 1) * N * k);
+            else {
+                d.fill(leer, j * N * k, (j * N + a) * k);
+                d.fill(leer, (j * N + b + 1) * k, (j + 1) * N * k);
+            }
+        const streifen = [];
+        if (di > 0) streifen.push([Math.max(a, b - di + 1), b, a, b]);
+        else if (di < 0) streifen.push([a, Math.min(b, a - di - 1), a, b]);
+        const [zi0, zi1] = [di < 0 ? a - di : a, di > 0 ? b - di : b];
+        if (dj > 0 && zi0 <= zi1) streifen.push([zi0, zi1, Math.max(a, b - dj + 1), b]);
+        else if (dj < 0 && zi0 <= zi1) streifen.push([zi0, zi1, a, Math.min(b, a - dj - 1)]);
+        for (const [i0, i1, j0, j1] of streifen)
+            for (let j = j0; j <= j1; j++) d.fill(leer, (j * N + i0) * k, (j * N + i1 + 1) * k);
+        return streifen;
+    }
+
     // Die Grenze der NAH-Stufe als Bruchteil ihres Fensters (relativ zur Mitte, je Achse): zwei Texel vor dem Rand,
     // damit die bilineare Probe nie den leeren Rand-Texel liest. CPU-Leser und Boden-Shader lesen dieselbe Zahl.
     static _wegeStufeNah(N) {
@@ -412,8 +451,9 @@ class AnazhRealm_siedlung_wege {
     // Maximum. DIE DECKENDE FORM (`deckt`, der Grund der Häuser): in ihr liest jede bilineare Probe (Shader und
     // `_wegeFeldAt`) volle Erde — der Kasten wächst um die Spanne der Probe (je Welt-Achse ein Texel, in seinen Rahmen
     // gedreht t · (|cos φ| + |sin φ|)) und seinen weichen Rand (½ Texel der Stufe, nie der Feldweg-Boden `randMinM`): der
-    // Übergang liegt ganz vor der Wand, wo die Büschel ohnehin ihre Reichweite halten (`erdbauGrund`).
-    _wegeKarteMale(stufe, f) {
+    // Übergang liegt ganz vor der Wand, wo die Büschel ohnehin ihre Reichweite halten (`erdbauGrund`). `c` (optional,
+    // [i0, i1, j0, j1] in Texeln): nur dieses Rechteck — der Streifen eines Umzugs (`_karteSchieben`).
+    _wegeKarteMale(stufe, f, c) {
         if (f.kanal < 0) return; // eine Fläche ohne Boden-Kanal (der Gras-Anger) bleibt Wiese
         const S = stufe.S;
         const N = stufe.N;
@@ -432,10 +472,10 @@ class AnazhRealm_siedlung_wege {
         const maxX = Math.max(f.ax, f.bx) + ausdehnung;
         const minZ = Math.min(f.az, f.bz) - ausdehnung;
         const maxZ = Math.max(f.az, f.bz) + ausdehnung;
-        const i0 = Math.max(1, Math.floor((minX - x0w) / t));
-        const i1 = Math.min(N - 2, Math.ceil((maxX - x0w) / t));
-        const j0 = Math.max(1, Math.floor((minZ - z0w) / t));
-        const j1 = Math.min(N - 2, Math.ceil((maxZ - z0w) / t));
+        const i0 = Math.max(c ? c[0] : 1, Math.floor((minX - x0w) / t));
+        const i1 = Math.min(c ? c[1] : N - 2, Math.ceil((maxX - x0w) / t));
+        const j0 = Math.max(c ? c[2] : 1, Math.floor((minZ - z0w) / t));
+        const j1 = Math.min(c ? c[3] : N - 2, Math.ceil((maxZ - z0w) / t));
         if (i1 < i0 || j1 < j0) return;
         // Der EINE Maler hält die Leer-Marke: jede gemalte Form (Siedlung, Trittfläche, Fenster-Umzug) macht die Stufe
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
@@ -474,15 +514,20 @@ class AnazhRealm_siedlung_wege {
         for (const stufe of wk.stufen) {
             const S = stufe.S;
             if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
-                stufe.fluss.hydroN = -1; // das Fenster zog um: die Flüsse neu
                 const war = stufe.zentriert ? [stufe.mitteX, stufe.mitteZ] : null;
                 const raster = S.texelM * 16;
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
                 stufe.mitteZ = Math.round(playerPos.z / raster) * raster;
                 stufe.zentriert = true;
-                this._wegeStufeMalen(stufe);
+                // DER UMZUG SCHIEBT (w11-stoss): Wege und Flüsse tragen ihr Bild um den Versatz und malen nur die freigelegten
+                // Streifen (`_karteSchieben`), wie die Kronen-Streu (`_kronenStreuUmzug`) — bis hier malte jeder Umzug beide
+                // Karten ganz neu (1024² Texel, je Texel jede Form im Fenster): ein Bild von 125–285 ms im Gehen und Fahren
+                // (Radeon, profiband.K4, `_tickWegeKarte › _wegeStufeMalen › _wegeKarteMale`, zoneRand des Gesetzbuchs).
+                this._wegeStufeMalen(stufe, war);
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
+                if (war && stufe.fluss.hydroN === hydroN) this._flussKarteMalen(stufe, hydroN, war);
+                else stufe.fluss.hydroN = -1; // ohne Bild (oder mit neuer Kachel) die Flüsse ganz neu
             } else if (stufe.grundNeu) {
                 // ein Haus legte seinen Grund (S4): die Stufe malt ihre Flächen neu (die Flüsse tragen eigene Bytes)
                 this._wegeStufeMalen(stufe);
@@ -525,13 +570,20 @@ class AnazhRealm_siedlung_wege {
     // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
     // (der Kanal `kanal`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
     // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
-    _flussKarteMalen(stufe, hydroN) {
+    // Mit `war` (die alte Mitte) schiebt sie ihr Bild um den Umzug und malt nur die freigelegten Streifen (`_karteSchieben`).
+    _flussKarteMalen(stufe, hydroN, war) {
         const fl = stufe.fluss;
-        fl.daten.fill(0);
-        fl.hydroN = hydroN;
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
+        let streifen = war
+            ? AnazhRealm._karteSchieben(fl.daten, N, 1, Math.round((stufe.mitteX - war[0]) / t), Math.round((stufe.mitteZ - war[1]) / t), 0, N - 1, 0) // prettier-ignore
+            : null;
+        if (!streifen) {
+            fl.daten.fill(0);
+            streifen = [[0, N - 1, 0, N - 1]];
+        }
+        fl.hydroN = hydroN;
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const st = this.state;
@@ -549,27 +601,29 @@ class AnazhRealm_siedlung_wege {
                 const hwA = seg[o + 4];
                 const hwB = seg[o + 5];
                 const r = Math.max(hwA, hwB) + t;
-                const i0 = Math.max(0, Math.floor((Math.min(ax, bx) - r - x0w) / t));
-                const i1 = Math.min(N - 1, Math.ceil((Math.max(ax, bx) + r - x0w) / t));
-                const j0 = Math.max(0, Math.floor((Math.min(az, bz) - r - z0w) / t));
-                const j1 = Math.min(N - 1, Math.ceil((Math.max(az, bz) + r - z0w) / t));
-                if (i1 < i0 || j1 < j0) continue;
                 const ex = bx - ax;
                 const ez = bz - az;
                 const len2 = ex * ex + ez * ez || 1;
-                for (let j = j0; j <= j1; j++) {
-                    const pz = z0w + (j + 0.5) * t;
-                    for (let i = i0; i <= i1; i++) {
-                        const px = x0w + (i + 0.5) * t;
-                        let u = ((px - ax) * ex + (pz - az) * ez) / len2;
-                        u = u < 0 ? 0 : u > 1 ? 1 : u;
-                        const d = Math.hypot(px - (ax + ex * u), pz - (az + ez * u));
-                        const hw = hwA + (hwB - hwA) * u;
-                        const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
-                        if (c <= 0) continue;
-                        const v = Math.round(Math.min(1, c) * 255);
-                        const k = j * N + i;
-                        if (v > daten[k]) daten[k] = v;
+                for (const q of streifen) {
+                    const i0 = Math.max(q[0], Math.floor((Math.min(ax, bx) - r - x0w) / t));
+                    const i1 = Math.min(q[1], Math.ceil((Math.max(ax, bx) + r - x0w) / t));
+                    const j0 = Math.max(q[2], Math.floor((Math.min(az, bz) - r - z0w) / t));
+                    const j1 = Math.min(q[3], Math.ceil((Math.max(az, bz) + r - z0w) / t));
+                    if (i1 < i0 || j1 < j0) continue;
+                    for (let j = j0; j <= j1; j++) {
+                        const pz = z0w + (j + 0.5) * t;
+                        for (let i = i0; i <= i1; i++) {
+                            const px = x0w + (i + 0.5) * t;
+                            let u = ((px - ax) * ex + (pz - az) * ez) / len2;
+                            u = u < 0 ? 0 : u > 1 ? 1 : u;
+                            const d = Math.hypot(px - (ax + ex * u), pz - (az + ez * u));
+                            const hw = hwA + (hwB - hwA) * u;
+                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                            if (c <= 0) continue;
+                            const v = Math.round(Math.min(1, c) * 255);
+                            const k = j * N + i;
+                            if (v > daten[k]) daten[k] = v;
+                        }
                     }
                 }
             }
@@ -600,21 +654,33 @@ class AnazhRealm_siedlung_wege {
     // Die Wege EINER zentrierten Stufe neu malen — der EINE Neu-Maler für Umzug und Abbau: leeren, die Formen der
     // Siedlungen im Fenster malen (die Hülle verwirft ferne in O(1)), EIN Upload, wenn sich etwas ändert. Eine leere
     // Karte bleibt leer — kein Upload ohne Weg (der Umzug kommt auch für die Kronen). Die Marke setzt allein der Maler
-    // (`_wegeKarteMale`): was er seit dem letzten Upload malte, geht leer hoch.
-    _wegeStufeMalen(stufe) {
+    // (`_wegeKarteMale`): was er seit dem letzten Upload malte, geht leer hoch. Mit `war` (die alte Mitte, der Umzug) schiebt er
+    // das Bild um den Versatz und malt nur die freigelegten Streifen (`_karteSchieben`): jede Form trägt je Texel denselben Wert
+    // aus seiner Welt-Lage, die Mischung (je Art das Maximum, die positive schlägt die negative) kennt keine Reihenfolge — der
+    // Schub trägt dieselben Bytes wie ein Neu-Malen, die Kosten binden an den Streifen statt an das Fenster.
+    _wegeStufeMalen(stufe, war) {
         const S = stufe.S;
+        const N = stufe.N;
+        const nul = AnazhRealm.WEGE_KARTE.null;
         const warLeer = stufe.wegeLeer === true;
-        stufe.daten.fill(AnazhRealm.WEGE_KARTE.null);
-        stufe.wegeLeer = true;
+        const t = S.texelM;
+        let streifen = war
+            ? AnazhRealm._karteSchieben(stufe.daten, N, 2, Math.round((stufe.mitteX - war[0]) / t), Math.round((stufe.mitteZ - war[1]) / t), 1, N - 2, nul) // prettier-ignore
+            : null;
+        if (!streifen) {
+            stufe.daten.fill(nul);
+            stufe.wegeLeer = true;
+            streifen = [[1, N - 2, 1, N - 2]];
+        }
         const h = S.fensterM / 2 + S.randMinM + AnazhRealm.WEGE_KARTE.randM;
         for (const sd of this.state.wegeKarte.siedlungen) {
             if (sd.x1 < stufe.mitteX - h || sd.x0 > stufe.mitteX + h) continue;
             if (sd.z1 < stufe.mitteZ - h || sd.z0 > stufe.mitteZ + h) continue;
-            for (const f of sd.formen) this._wegeKarteMale(stufe, f);
+            for (const f of sd.formen) for (const c of streifen) this._wegeKarteMale(stufe, f, c);
         }
         // DER TRAMPELPFAD (stoffe.K4, `_tritt`): die Nah-Stufe malt jede getretene Zelle in ihrer Stufe von heute (die Ferne trägt
         // 2-m-Texel, ein Pfad von Leibes-Breite zerfiele dort in Punkte)
-        if (stufe === this.state.wegeKarte.stufen[0]) this._trittMalen(stufe);
+        if (stufe === this.state.wegeKarte.stufen[0]) this._trittMalen(stufe, war && streifen, war);
         // DER GRUND DER HÄUSER IST ERDE (S4): jede Box des Körper-Satzes, deren Boden der Grund ist (boden 0: der Turm, das Rund,
         // das Pfahlhaus; der Erdbau `grund`, gelaende-core), malt Kanal 0 DECKEND (`deckt`) — der Halm des Boden-Stoffs liest in
         // der GANZEN Box Erde statt Wiese; wo das Haus seinen Boden zeichnet, fällt der gezeichnete Boden (`erdbauSchnitt`),
@@ -633,19 +699,8 @@ class AnazhRealm_siedlung_wege {
                     const az = g.cz - lx * g.s + lz * g.c;
                     const phi = Math.atan2(g.s, g.c);
                     const [ex, ez] = [(b[1] - b[0]) / 2, (b[3] - b[2]) / 2];
-                    this._wegeKarteMale(stufe, {
-                        typ: "kasten",
-                        kanal: 0,
-                        ax,
-                        az,
-                        bx: ax,
-                        bz: az,
-                        ex,
-                        ez,
-                        phi,
-                        halb: 0,
-                        deckt: true,
-                    });
+                    const form = { typ: "kasten", kanal: 0, ax, az, bx: ax, bz: az, ex, ez, phi, halb: 0, deckt: true };
+                    for (const c of streifen) this._wegeKarteMale(stufe, form, c);
                 }
             }
         if (!warLeer || !stufe.wegeLeer) this._wegeSchichtHoch(stufe.tex, stufe.schicht);
@@ -907,24 +962,32 @@ class AnazhRealm_siedlung_wege {
         const [x, z] = [(i + 0.5) * T.zelleM, (j + 0.5) * T.zelleM];
         return { typ: "segment", kanal: 0, ax: x, az: z, bx: x, bz: z, halb: T.halbM, rand: T.randM, wert: stufe };
     }
-    // Der Maler der Nah-Stufe (`_wegeStufeMalen`): jede Zelle im Fenster in ihrer Stufe von heute
-    _trittMalen(stufe) {
+    // Der Maler der Nah-Stufe (`_wegeStufeMalen`): jede Zelle im Fenster in ihrer Stufe von heute. Im Umzug (`streifen`, die alte
+    // Mitte `war`) nur die Streifen — eine Zelle, deren Mitte erst jetzt ins Fenster kam, ganz (ihr Rand reicht ins geschobene Bild).
+    _trittMalen(stufe, streifen, war) {
         const wm = this.state.worldMeta;
         const wk = this.state.wegeKarte;
-        wk.trittGemalt.clear();
+        if (!streifen) wk.trittGemalt.clear();
         if (!wm || !wm.tritt) return;
         const T = AnazhRealm.TRITT;
         const jetzt = this._trittJetzt();
         const h = stufe.S.fensterM / 2;
+        const drin = (x, z, mx, mz) => Math.abs(x - mx) <= h && Math.abs(z - mz) <= h;
         for (const key in wm.tritt) {
             const [n, t] = wm.tritt[key];
             const st = AnazhRealm._trittStufe(n * Math.exp(-(jetzt - t) / T.erholTage));
             if (!(st > 0)) continue;
             const [i, j] = key.split(",").map(Number);
-            if (Math.abs((i + 0.5) * T.zelleM - stufe.mitteX) > h || Math.abs((j + 0.5) * T.zelleM - stufe.mitteZ) > h)
-                continue;
-            this._wegeKarteMale(stufe, this._trittForm(i, j, st));
-            wk.trittGemalt.set(key, st);
+            const [x, z] = [(i + 0.5) * T.zelleM, (j + 0.5) * T.zelleM];
+            if (!drin(x, z, stufe.mitteX, stufe.mitteZ)) continue;
+            const form = this._trittForm(i, j, st);
+            if (!streifen || !drin(x, z, war[0], war[1])) {
+                this._wegeKarteMale(stufe, form);
+                wk.trittGemalt.set(key, st);
+            } else {
+                for (const c of streifen) this._wegeKarteMale(stufe, form, c);
+                wk.trittGemalt.set(key, Math.max(st, wk.trittGemalt.get(key) || 0));
+            }
         }
     }
     // DIE ERHOLUNG (je Welt-Tag, `_tickWegeKarte`): eine Zelle, deren Stufe fiel, wächst zu — die Nah-Stufe malt neu, Wiese und

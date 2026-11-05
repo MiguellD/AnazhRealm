@@ -25,7 +25,7 @@ const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 const WUERFE = [];
 async function safeEvaluate(page, fn, ...args) {
     return await page.evaluate(fn, ...args).catch((e) => {
-        const m = String((e && e.message) || e).slice(0, 300);
+        const m = fehlerText(e).slice(0, 300);
         console.log(`  ❌ [safeEvaluate] ${m}`);
         WUERFE.push(`[safeEvaluate] ${m.split("\n")[0]}`);
         return null;

@@ -572,14 +572,7 @@ async function probe(A) {
             if (!/^haus_/.test(h.type) || !h._hausHuelle) continue;
             for (const b of h.blockerAABBs || []) {
                 if (!b || !Number.isFinite(b.botY) || b.botY > h.position.y - 0.5 + 0.6) continue;
-                const o = b.obb || {
-                    cx: (b.minX + b.maxX) / 2,
-                    cz: (b.minZ + b.maxZ) / 2,
-                    c: 1,
-                    s: 0,
-                    hx: (b.maxX - b.minX) / 2,
-                    hz: (b.maxZ - b.minZ) / 2,
-                };
+                const o = rahmen(b);
                 const dx = e.position.x - o.cx;
                 const dz = e.position.z - o.cz;
                 const lx = Math.abs(dx * o.c - dz * o.s) - o.hx;
@@ -622,14 +615,7 @@ async function probe(A) {
             let nass = 0;
             let n = 0;
             for (const b of boxen) {
-                const o = b.obb || {
-                    cx: (b.minX + b.maxX) / 2,
-                    cz: (b.minZ + b.maxZ) / 2,
-                    c: 1,
-                    s: 0,
-                    hx: (b.maxX - b.minX) / 2,
-                    hz: (b.maxZ - b.minZ) / 2,
-                };
+                const o = rahmen(b);
                 const ni = Math.max(1, Math.ceil(2 * o.hx));
                 const nj = Math.max(1, Math.ceil(2 * o.hz));
                 for (let i = 0; i <= ni; i++)
@@ -1291,10 +1277,10 @@ async function probe(A) {
                 };
                 const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
                     const vorA = new Set(st.architectures);
-                    const vorK = st.creatures.length;
+                    const vorK = new Set(st.creatures); // je Leib: weicht an der Kappe ein Tier des Bestands, bleibt die Zahl gleich
                     const chat = sprich(satz);
                     const neuA = neueWerke(vorA);
-                    const gesetzt = setzen === "kreatur" ? st.creatures.length - vorK : neuA.length;
+                    const gesetzt = setzen === "kreatur" ? st.creatures.filter((c) => !vorK.has(c)).length : neuA.length;
                     E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
                     for (const e of neuA) r.removeArchitecture(e);
                 };
@@ -2138,8 +2124,8 @@ function selbsttest() {
             "Wurzel sagt still ab (die Obergrenze)",
             (s) =>
                 s.replace(
-                    'if (this.state.creatures.length >= this.state.maxCreatures) return nein("obergrenze");',
-                    "if (this.state.creatures.length >= this.state.maxCreatures) return null;"
+                    '!(weicht = this._bestandWeicht()))\n            return nein("obergrenze");',
+                    "!(weicht = this._bestandWeicht()))\n            return null;"
                 ),
             /die Wurzel `spawnCreatureAt` sagt still ab/,
         ],
@@ -2159,11 +2145,8 @@ function selbsttest() {
     const vm = require("vm");
     const kernSrc = ausDatei("vehicle-core.js");
     const kernLaden = (s) => {
-        const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
-        for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
-        ctx.globalThis = ctx;
+        const ctx = require("./lib/asset-worker-harness.cjs").kernKontext({ console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN, Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array }); // prettier-ignore
         ctx.window = ctx;
-        vm.createContext(ctx);
         vm.runInContext(s, ctx);
         return ctx.__vehicleCore;
     };

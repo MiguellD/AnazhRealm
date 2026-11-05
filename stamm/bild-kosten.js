@@ -1444,8 +1444,12 @@ class AnazhRealm_bild_kosten {
                                 });
                             }
                         const jetzt = summeC.div(max(summeW, 1e-5)).toVar();
-                        // die Bewegung des nächsten Texels (NDC → UV), die Geschichte an ihrer Stelle im Vorbild
-                        const versatz = this.velocityNode.load(nahT.add(0.5)).xy.mul(vec2(0.5, -0.5)).toVar();
+                        // die Bewegung des nächsten Texels (NDC → UV; gehört die Mitte dem getragenen Leib, ihre —
+                        // `_traaKameraBewegung`), die Geschichte an ihrer Stelle im Vorbild
+                        const versatz = this.velocityNode
+                            .load(nahT.add(0.5), zelle.clamp(vec2(0), hoch).add(0.5))
+                            .xy.mul(vec2(0.5, -0.5))
+                            .toVar();
                         const gUV = uvA.sub(versatz).toVar();
                         const hist = geschichte.sample(gUV).toVar();
                         const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
@@ -1954,23 +1958,234 @@ class AnazhRealm_bild_kosten {
     // (previousModelWorldMatrix) schreibt die Diät (_diaetRefresh) nur, wenn sich das Objekt ändert (equals) —
     // der ganze stehende Wald hätte die Bewegung seines letzten Refreshs getragen. Was sich selbst bewegt (Tiere, Wind),
     // fängt die Varianz-Klemme der Geschichte.
+    // DER LEIB, DEN DIE KAMERA TRÄGT (w12-leib-sicht, Befund des Schöpfers 05.11.: am Prüfplatz wurde der eigene Leib beim
+    // Seitwärtsgehen durchsichtig): die Welt ist statisch, der Leib des Spielers nicht — er geht MIT der Kamera, steht am Schirm
+    // fast still, und die Kamera-Bewegung holte seine Geschichte vom Grund daneben (Radeon, Prüfplatz Third, Strafe: 5–7 % der
+    // Leib-Pixel über halb durchsichtig, das Haar ganz). Darum trägt das Feld die TEILE DES GETRAGENEN LEIBS (`_traegerTeile`):
+    // je Teil eine Box im Raum seines Ankers (Knochen oder Gerät) und seine eigene Reprojektion PV_vor · W_vor · W⁻¹ · PV⁻¹
+    // (`_traegerTakt`, je Frame in float64 gefaltet, die Lage relativ zum Auge). Ein Pixel, dessen Punkt (Tiefe, PV⁻¹) in einer
+    // Box liegt, folgt seinem Anker; jeder andere der Kamera wie bisher.
     _traaKameraBewegung(TSL, tiefe) {
-        const { vec2, vec4 } = TSL;
+        const { vec2, vec3, vec4, float, int, dot, abs, If, Loop, Break } = TSL;
         const R = TSL.uniform(new THREE.Matrix4());
-        this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true };
+        const N = AnazhRealm.TRAEGER.teile;
+        const tr = {
+            Q: TSL.uniform(new THREE.Matrix4()), // Clip des Frames → Welt relativ zum Auge
+            zeilen: TSL.uniformArray(
+                Array.from({ length: 8 * N }, () => new THREE.Vector4()),
+                "vec4"
+            ), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
+            zahl: TSL.uniform(0, "int"),
+            kugel: TSL.uniform(new THREE.Vector4(0, 0, 0, -1)), // die Kugel um alle Boxen (relativ zum Auge), w < 0: keine
+            liste: [],
+            vorW: new WeakMap(),
+            jetztInv: new THREE.Matrix4(),
+            m: new THREE.Matrix4(),
+            t: new THREE.Matrix4(),
+            v: new THREE.Vector3(),
+            box: new THREE.Box3(),
+        };
+        this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true, traeger: tr };
         // Die Tiefen-Textur trägt [0, 1]; die NDC-Tiefe der Projektion ist es nur im WebGPU-Raum. Im WebGL2-Raum
         // (forceWebGL, gate:webgl-probe) liegt sie in [−1, 1]: z = 2·Tiefe − 1, sonst reprojiziert jeder Pixel beim
         // Laufen an die falsche Stelle (Schlieren). Die Textur-Zeilen dreht TSL je Rückend selbst (load, isFlipY).
         const webgpuRaum = this.state.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        // die Bewegung eines Texels: die Kamera, oder liegt sein Punkt in einer Box des getragenen Leibs, ihr Anker
+        const bewegung = (texel) => {
+            const uvT = texel.div(vec2(tiefe.size()));
+            const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
+            const d = tiefe.load(texel).r;
+            const clip = vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1).toVar();
+            const vor = R.mul(clip).toVar();
+            const getragen = float(0).toVar();
+            const p4 = tr.Q.mul(clip);
+            const p = vec4(p4.xyz.div(p4.w), 1).toVar();
+            If(p.xyz.sub(tr.kugel.xyz).length().lessThan(tr.kugel.w), () => {
+                Loop({ start: int(0), end: tr.zahl, type: "int", condition: "<" }, ({ i }) => {
+                    const zeile = (k) => tr.zeilen.element(i.mul(8).add(k));
+                    const q = vec3(dot(zeile(0), p), dot(zeile(1), p), dot(zeile(2), p));
+                    If(abs(q).lessThanEqual(zeile(3).xyz).all(), () => {
+                        vor.assign(
+                            vec4(dot(zeile(4), clip), dot(zeile(5), clip), dot(zeile(6), clip), dot(zeile(7), clip))
+                        );
+                        getragen.assign(1);
+                        Break();
+                    });
+                });
+            });
+            return { bew: ndc.sub(vor.xy.div(vor.w)), getragen };
+        };
+        // `load(texel, mitte)`: die Bewegung am Texel der Wahl (der Resolve reicht den nächsten im 3×3 — die Kante eines Bewegten
+        // trägt seine Bewegung in den Grund) — gehört die MITTE selbst dem getragenen Leib, ihre: am Fuß liegt der Boden VOR dem
+        // Schuh näher am Auge, der nächste Texel war Boden, und der Schuh folgte der Kamera (Radeon, Prüfplatz: die Sohlen hell
+        // in der Karte der Durchsicht).
         return {
-            load: (texel) => {
-                const uvT = texel.div(vec2(tiefe.size()));
-                const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
-                const d = tiefe.load(texel).r;
-                const vor = R.mul(vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1));
-                return ndc.sub(vor.xy.div(vor.w));
+            load: (texel, mitte) => {
+                const n = bewegung(texel);
+                if (!mitte) return n.bew;
+                const m = bewegung(mitte);
+                return m.getragen.greaterThan(0.5).select(m.bew, n.bew);
             },
         };
+    }
+
+    // DER TAKT DES GETRAGENEN LEIBS (`_traaKameraBewegung`, aus `_traaReprojektion` je gerendertem Frame): die Teile dieses
+    // Frames (`_traegerTeile`) in die Zeilen des Felds — je Teil die Box-Matrix (W · T(Mitte))⁻¹ · T(Auge), die Halbachsen und
+    // die Reprojektion PV_vor · W_vor · W⁻¹ · PV_jetzt⁻¹ (W_vor die Welt-Matrix des Ankers im letzten Frame; nach einem Sprung
+    // des Auges sein Jetzt), dazu die Kugel um alle Boxen. Mehr Teile als TRAEGER.teile fallen LAUT (`_bruchMelden`).
+    _traegerTakt(z, cx, cy, cz) {
+        const tr = z.traeger;
+        const inv = tr.jetztInv.copy(z.jetzt).invert();
+        tr.Q.value.makeTranslation(-cx, -cy, -cz).multiply(inv);
+        const teile = this._traegerTeile(tr.liste);
+        const A = tr.zeilen.array;
+        const N = AnazhRealm.TRAEGER.teile;
+        const zeilen = (m, k, n) => {
+            const e = m.elements;
+            for (let i = 0; i < n; i++) A[k + i].set(e[i], e[4 + i], e[8 + i], e[12 + i]);
+        };
+        tr.box.makeEmpty();
+        if (teile.length > N && !tr.zuViel) {
+            tr.zuViel = true;
+            this._bruchMelden(`TRÄGER: ${teile.length} Teile des Leibs > ${N} — der Rest folgt der Kamera`);
+        }
+        const n = Math.min(N, teile.length);
+        for (let k = 0; k < n; k++) {
+            const t = teile[k];
+            const W = t.anker.matrixWorld;
+            zeilen(
+                tr.m
+                    .makeTranslation(t.c.x, t.c.y, t.c.z)
+                    .premultiply(W)
+                    .invert()
+                    .multiply(tr.t.makeTranslation(cx, cy, cz)),
+                8 * k,
+                3
+            );
+            A[8 * k + 3].set(t.h.x, t.h.y, t.h.z, 0);
+            let wv = tr.vorW.get(t.anker);
+            if (!wv) tr.vorW.set(t.anker, (wv = W.clone()));
+            else if (z.sprung) wv.copy(W);
+            zeilen(tr.m.copy(W).invert().premultiply(wv).premultiply(z.vor).multiply(inv), 8 * k + 4, 4);
+            wv.copy(W);
+            const r = W.getMaxScaleOnAxis() * t.h.length();
+            tr.v.copy(t.c).applyMatrix4(W);
+            tr.v.x -= cx;
+            tr.v.y -= cy;
+            tr.v.z -= cz;
+            tr.box.expandByPoint(tr.v.addScalar(r));
+            tr.box.expandByPoint(tr.v.addScalar(-2 * r));
+        }
+        tr.zahl.value = n;
+        if (!n) tr.kugel.value.w = -1;
+        else {
+            tr.box.getCenter(tr.v);
+            tr.kugel.value.set(tr.v.x, tr.v.y, tr.v.z, 0.5 * tr.box.max.distanceTo(tr.box.min));
+        }
+    }
+
+    // DIE TEILE DES GETRAGENEN LEIBS dieses Frames (`_traegerTakt`): der Leib des Spielers, wie ihn das Auge der Haupt-Kamera sieht —
+    // je Knochen die Box aus Haut, Kleid und Haar beider Stufen (`_traegerPassung`; die Stufe schaltet nur ihre Gruppe, B5 und
+    // `_gelenkStufe`), nur wenn eines ihrer Meshes sichtbar auf einer Ebene der Kamera liegt (Ego nimmt den Leib aus Ebene 0,
+    // `_applyEgoSicht`), und das Gerät in der Hand (`heldMesh`) als Box seiner Gestalt (`_traegerStarr`). Ein Leib, der nicht in der
+    // Szene hängt oder verborgen ist (der Ritt in der Kabine), trägt nichts. Die Welt-Matrizen dieses Frames stellt `_leibMatrix` (die
+    // Kamera stand schon, der Leib ging in diesem Takt). Die Radeon am Prüfplatz zeigte beim Strafe ohne die Grobstufe den Leib in 5 von
+    // 8 Bildern durchsichtig, solange die Ankunft die Stufe wählte (gate:kamera-leib:echt).
+    _traegerTeile(out) {
+        out.length = 0;
+        const pm = this.state.playerMesh;
+        const cam = this.state.camera;
+        if (!pm || !cam || pm.visible === false) return out;
+        let wurzel = pm;
+        while (wurzel.parent) wurzel = wurzel.parent;
+        if (wurzel !== this.state.scene) return out;
+        // das Auge sieht ein Mesh, wenn es und jeder Ahn bis zum Leib sichtbar sind (die Stufe schaltet ihre Gruppe) und es auf
+        // einer Ebene der Kamera liegt
+        const sieht = (m) => {
+            for (let o = m; o && o !== pm; o = o.parent) if (o.visible === false) return false;
+            return m.layers.test(cam.layers);
+        };
+        const held = pm.userData.heldMesh;
+        for (const t of [...this._traegerPassung(pm), ...(held ? [this._traegerStarr(held)] : [])])
+            if (t && t.meshes.some(sieht)) out.push(t);
+        if (out.length) this._leibMatrix(pm);
+        return out;
+    }
+
+    // DIE PASSUNG DES LEIBS (EINMAL je Leib, `_traegerTeile`): jede Ecke von Haut, Kleid und Haar beider Stufen (die Vorlage des Tuchs,
+    // seine Ruhe-Lage) im Raum ihres stärksten Knochens — boneInverse · bindMatrix · Ecke (r184 AttachedBindMode: die Welt ist
+    // Knochen-Welt · dieser Punkt) —, je Knochen die Box darum, um TRAEGER.saumM (in Welt-Metern) geweitet: Gelenk-Mischung und
+    // Tuch weichen um Zentimeter von der Starre ihres Knochens ab. Rückgabe [{ anker, c, h, meshes }].
+    _traegerPassung(leib) {
+        const memo = this._traegerMemo || (this._traegerMemo = new WeakMap());
+        let P = memo.get(leib);
+        if (P) return P;
+        const v = new THREE.Vector3();
+        const je = new Map();
+        leib.updateMatrixWorld(true);
+        leib.traverse((m) => {
+            if (!m.isSkinnedMesh || !m.skeleton) return;
+            const geo = (m.userData && m.userData.__tuchVorlage) || m.geometry;
+            const pos = geo.attributes.position;
+            const si = geo.attributes.skinIndex;
+            const sw = geo.attributes.skinWeight;
+            if (!pos || !si || !sw) return;
+            const S = m.skeleton;
+            for (let i = 0; i < pos.count; i++) {
+                let b = 0;
+                let w = -1;
+                for (let c = 0; c < 4; c++) {
+                    const x = sw.getComponent(i, c);
+                    if (x > w) {
+                        w = x;
+                        b = si.getComponent(i, c);
+                    }
+                }
+                const knochen = S.bones[b];
+                if (!knochen) continue;
+                v.fromBufferAttribute(pos, i).applyMatrix4(m.bindMatrix).applyMatrix4(S.boneInverses[b]);
+                let e = je.get(knochen);
+                if (!e) je.set(knochen, (e = { anker: knochen, box: new THREE.Box3(), meshes: new Set() }));
+                e.box.expandByPoint(v);
+                e.meshes.add(m);
+            }
+        });
+        P = [];
+        for (const e of je.values()) P.push(this._traegerBox(e.anker, e.box, [...e.meshes]));
+        memo.set(leib, P);
+        return P;
+    }
+
+    // EIN STARRES TEIL des getragenen Leibs (das Gerät in der Hand): die Box seiner Gestalt im eigenen Raum, EINMAL je Objekt
+    _traegerStarr(held) {
+        const memo = this._traegerMemo || (this._traegerMemo = new WeakMap());
+        if (memo.has(held)) return memo.get(held);
+        held.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(held.matrixWorld).invert();
+        const box = new THREE.Box3();
+        const b = new THREE.Box3();
+        const meshes = [];
+        held.traverse((m) => {
+            if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return;
+            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+            box.union(
+                b.copy(m.geometry.boundingBox).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld))
+            );
+            meshes.push(m);
+        });
+        const t = meshes.length ? this._traegerBox(held, box, meshes) : null;
+        memo.set(held, t);
+        return t;
+    }
+
+    // Ein Teil: Mitte und Halbachsen der Box im Raum des Ankers, der Saum in Welt-Metern über die Skala des Ankers
+    _traegerBox(anker, box, meshes) {
+        const s = Math.max(1e-3, anker.matrixWorld.getMaxScaleOnAxis());
+        const h = box
+            .getSize(new THREE.Vector3())
+            .multiplyScalar(0.5)
+            .addScalar(AnazhRealm.TRAEGER.saumM / s);
+        return { anker, c: box.getCenter(new THREE.Vector3()), h, meshes };
     }
 
     // Die Reprojektion des Frames: vor dem Post-Render (die Kamera trägt noch keinen TRAA-Versatz, der lebt nur
@@ -1992,6 +2207,7 @@ class AnazhRealm_bild_kosten {
             z.neu = false;
         }
         z.R.value.copy(z.jetzt).invert().premultiply(z.vor);
+        this._traegerTakt(z, e[12], e[13], e[14]);
     }
 
     // DER SPRUNG DES AUGES (K68, A9-n2) — EIN Maß für jedes Gedächtnis des Blicks: springt das Auge seit dem letzten Blick des
@@ -3138,6 +3354,10 @@ AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER GETRAGENE LEIB der zeitlichen Auflösung (`_traaKameraBewegung`, `_traegerTeile`): höchstens `teile` Boxen (der Mensch trägt
+// je Knochen eine, ~15, dazu das Gerät in der Hand); `saumM` weitet jede Box (Gelenk-Mischung und Tuch weichen von der Starre
+// ihres Knochens ab).
+AnazhRealm.TRAEGER = Object.freeze({ teile: 24, saumM: 0.03 });
 // Der Takt des GPU-Kehraus (`_gpuKehraus`): je Gang Graph + r184-Register (nach dem Kehraus beide nur das Bild); was zwischen
 // zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
 AnazhRealm.GPU_KEHRAUS_MS = 2000;

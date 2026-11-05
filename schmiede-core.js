@@ -36,9 +36,9 @@
 // (die Referenz-Absicht des Lab-Startzustands); die volle Absichts-Matrix reist als
 // BANDS-Daten + evalLehren/messen (M3: der Export der SELBEN Formeln, die das Lab zeigt).
 //
-// THREE ist zur Laufzeit global (Browser: CDN r128 VOR diesem Skript; Worker:
-// worlds/terrain/lib/three-r128.min.js via importScripts; Node-Gate: global.THREE vor
-// require). Der Manifest-Teil (Daten + Funktions-Definitionen) läuft THREE-frei
+// THREE ist zur Laufzeit global (Labor: worlds/terrain/lib/three-r128.min.js VOR diesem Skript; Foundry-Faden: die
+// Engine der Welt, three r184 aus ihrer Import-Karte, `_foundryStart`; Node-Gate: global.THREE vor
+// require, welt-boot `ENGINE_THREE`). Der Manifest-Teil (Daten + Funktions-Definitionen) läuft THREE-frei
 // (Validator-vm mit Stub) — kein THREE-Aufruf auf Top-Level (Materialien lazy).
 (function (root) {
     "use strict";

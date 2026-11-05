@@ -1009,7 +1009,7 @@ async function runPartB() {
                         };
                         r._scatterRegion(Math.floor(px / A.SCATTER.regionM), Math.floor(pz / A.SCATTER.regionM), st.playerMesh.position);
                     } catch (e) {
-                        o.err = String((e && e.message) || e);
+                        o.err = fehlerText(e);
                     } finally {
                         delete r._lodAuge;
                         delete r._scatterMaterializeCell;
@@ -1243,7 +1243,7 @@ async function runPartB() {
             res.still = !!m;
             res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
         } catch (e) {
-            res.bruch = String((e && e.message) || e);
+            res.bruch = fehlerText(e);
             res.blende = !!(e && e.blende === true);
         }
         st.lodUniforms = alt;

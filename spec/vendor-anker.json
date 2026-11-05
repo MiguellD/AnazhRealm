@@ -1233,5 +1233,22 @@
                 "organ": "_knotenRate"
             }
         ]
+    },
+    {
+        "warum": "DIE KONTAKT-VERDECKUNG trägt NUR das indirekte Licht (schatten.K3, `_kontaktVerdeckung` im aoNode des Bodens): AONode schreibt in context.ambientOcclusion, das Physical-Modell multipliziert es in indirectDiffuse und indirectSpecular, die direkten Lichter lesen es nie",
+        "anker": [
+            {
+                "sub": "setup(e){e.context.ambientOcclusion.mulAssign(this.aoNode)}",
+                "organ": "_kontaktVerdeckung (aoNode → ambientOcclusion)"
+            },
+            {
+                "sub": "indirect(e){this.indirectDiffuse(e),this.indirectSpecular(e),this.ambientOcclusion(e)}",
+                "organ": "_kontaktVerdeckung (die Verdeckung im indirekten Zweig)"
+            },
+            {
+                "sub": "ambientOcclusion(e){const{ambientOcclusion:t,reflectedLight:r}=e.context",
+                "organ": "_kontaktVerdeckung (indirectDiffuse · indirectSpecular)"
+            }
+        ]
     }
 ]

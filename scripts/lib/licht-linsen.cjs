@@ -2601,9 +2601,9 @@ function naesseSicht(o) {
         };
         const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
-        const dicht = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
+        const dicht = AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1);
         // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
-        const poroes = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.8, 0, 1) : null;
+        const poroes = AnazhRealm._naesseGesetz(A, 0.4, 0.8, 0, 1);
         return {
             ort: o.ort,
             haus: e && e.type,
@@ -2690,7 +2690,7 @@ function kontaktSicht(o) {
             return c.map((v) => v * k + (m < 0.04 ? x - 6.25 * x * x : 0.04));
         };
         const schuss = async () => {
-            for (let i = 0; i < 2; i++) r._schattenAlleNeu(), (o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+            for (let i = 0; i < 2; i++) o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             const L = new Float32Array(W * H);
             for (let i = 0; i < W * H; i++) {
                 const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);

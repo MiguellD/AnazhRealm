@@ -170,7 +170,6 @@ hauptLauf(async () => {
             +(b.botY - entry.position.y).toFixed(6),
             +(b.topY - entry.position.y).toFixed(6),
         ]);
-        window.__wa3Entry = entry;
         return res;
     });
 

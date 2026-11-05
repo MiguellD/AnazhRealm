@@ -992,7 +992,7 @@ async function checkBandWelle6DSoul({ page, check }) {
     const wave6dResults = await safeEvaluate(page, () => {
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
+        const C = AnazhRealm;
         if (!C || !C.STAT_FROM_TAGS) return null;
         const out = {};
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
@@ -1320,7 +1320,7 @@ async function checkBandWelle6DSoul({ page, check }) {
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
+        const C = AnazhRealm;
         const out = {};
         // Konstanten + Methoden
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
@@ -1466,7 +1466,7 @@ async function checkBandWelle6DSoul({ page, check }) {
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
     const wave6d3aResults = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
+        const C = AnazhRealm;
         const out = {};
         // Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
@@ -1611,7 +1611,7 @@ async function checkBandWelle6DSoul({ page, check }) {
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
+        const C = AnazhRealm;
         const out = {};
         out.hasBoostsField = Array.isArray(st.player.boosts);
         out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
@@ -1668,7 +1668,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         out.magicResistIncreased = aweBoost ? st.player.stats.magicResist > baselineStats.magicResist : false;
 
         // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
-        const vorArch = new Set(st.architectures);
+        const bautenZurueck = __bautenSeit();
         const savedPos = {
             x: st.playerMesh.position.x,
             y: st.playerMesh.position.y,
@@ -1713,7 +1713,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         out.resonanceNotTriggeredFar = !resBoost2;
 
         // Cleanup
-        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        bautenZurueck();
         delete st.blueprints.wave6d2_resonator;
         st.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
         st.player.boosts = [];

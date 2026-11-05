@@ -34,7 +34,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -836,7 +836,7 @@ async function probe(arg) {
                         [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue] = mD; // prettier-ignore
                     } else k.dorf.ohne = m.ohneFall.dorfFaellig;
                 } catch (e) {
-                    k.fehler = String((e && e.message) || e);
+                    k.fehler = fehlerText(e);
                 } finally {
                     zurueck();
                     Object.assign(st, { _weltbildDa: merk.da || performance.now(), cameraMode: merk.mode });

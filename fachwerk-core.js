@@ -57,9 +57,9 @@
 //       im Worker, die Welt liest nur ihn) bzw. in der Toenung des Stoffs (tintM). Durchs
 //       Portal reist keine Karte; der Vertrags-Mesh trägt je Rolle den EINEN Stoff.
 //
-// THREE ist zur Laufzeit global (Browser: CDN r128 VOR diesem Skript; Worker:
-// worlds/terrain/lib/three-r128.min.js via importScripts; Node-Gate: global.THREE vor
-// require). Der Manifest-Teil (Daten + Funktions-Definitionen) läuft THREE-frei
+// THREE ist zur Laufzeit global (Labor: worlds/terrain/lib/three-r128.min.js VOR diesem Skript; Foundry-Faden: die
+// Engine der Welt, three r184 aus ihrer Import-Karte, `_foundryStart`; Node-Gate: global.THREE vor
+// require, welt-boot `ENGINE_THREE`). Der Manifest-Teil (Daten + Funktions-Definitionen) läuft THREE-frei
 // (Validator-vm mit Stub) — kein THREE-Aufruf auf Top-Level (Materialien lazy, die
 // Textur-Bäcker sind document-gegated [try/catch → null: Worker/Node bauen kartenlos,
 // die Vertex-Farben tragen den Look]).
