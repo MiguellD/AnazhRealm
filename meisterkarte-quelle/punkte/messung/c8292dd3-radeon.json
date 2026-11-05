@@ -1,0 +1,124 @@
+{
+ "sha": "c8292dd3ec1eb8cb4ecdb9da30f88ab679a4903c",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T13:24:34.461Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 191410 px · winter 20532 px → Winter 0.107 × Sommer",
+   "exit": 0,
+   "minuten": 0.32,
+   "gpu": "amd/rdna-3",
+   "s": 19.1,
+   "zeit": "2026-11-05T13:22:30.037Z",
+   "abdruck": "d7b5679f761c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 191410 px · winter 20533 px · fruehling 148957 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "amd/rdna-3",
+   "s": 62.6,
+   "zeit": "2026-11-05T13:22:49.203Z",
+   "abdruck": "3d56669bb478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.3 · fahrt 0.4 · nacht 0.29 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: Klang-Takt p95 gehen 0.3 · fahrt 0.4 · nacht 0.29 ms · Aussetzer 0 in 28 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "amd/rdna-3",
+   "s": 32.4,
+   "zeit": "2026-11-05T13:23:51.859Z",
+   "abdruck": "c2da80ea4dcf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": true,
+   "zahl": "0.02 % Lücke nach 1.5 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.8,
+   "gpu": "amd/rdna-3",
+   "s": 47.9,
+   "zeit": "2026-11-05T13:24:34.461Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.8,
+   "grund": "ROT: t(Kontrolle) kalt 13.24 s von außen (Eigenmeldung 12.22 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 47.9,
+   "zeit": "2026-11-05T13:24:34.461Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T13:21:21.056Z",
+  "port": 7804,
+  "warten": 0.53,
+  "bootS": 7,
+  "grundstellungS": [
+   0.1
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#1",
+    "s": 26.4,
+    "takte": 815,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 10.1,
+    "takte": 668,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1335,
+   "frameP95": 100.51,
+   "taktP95": 56.55,
+   "vramMax": 137.9,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 203,
+   "luecken": 3,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 209.7,
+  "minuten": 4.12
+ }
+}
