@@ -233,6 +233,11 @@ async function weltProbeLauf() {
                     await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
                     await erwacht();
                 }
+                // DER ORT STELLT SEINEN DORF-ZUG (w12-dorf-probe): je Probe der Zustand ihres Messorts (`o.ort`, sonst die Wiese) aus dem
+                // Haushalt (`dorfZug`, derselbe Haken wie `werkbank umstellen`), vor ihrem ersten Takt — am Dorf läuft der Zug, an der
+                // Wiese ruht er. Bis dahin stellte die Probe ihn nie: headless ruhte er überall (der Null-Renderer hielt ihn an), am Dorf
+                // urteilte jede Probe eine leere Welt (0 Häuser nach 9000 Takten), mit Renderer wüchse an der Wiese ein Dorf (−1,−5).
+                await seite.evaluate((z) => (window.__anazhAutoSettlement = z), orte[(o && o.ort) || "wiese"].dorfZug);
                 e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
             } catch (x) {
                 e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
@@ -512,12 +517,18 @@ function feldUrteil(e) {
 // (`_taeterKlasse`, ohne Himmel, Wasser und Leiber) und LAGE der Fläche (die Welt-Normale: nord −z, süd +z, oben +y) gemittelt; vorher
 // (zweimal: das Rauschen) und nach einem Spielzeit-Sprung von 30 Tagen (das Wetter läuft frei), jedes Mal trocken in Ruhe zu Mittag
 // (die Nässe des Regens zählt wetter.K2, nie das Alter). Die Δ je Klasse und Lage (größter Kanal, linear).
+// DAS DORF DES MESSORTS (w12-dorf-probe): am Messort läuft der Dorf-Zug (die Probe trägt `ort: "dorf"`); der Zug rückt den Plan vor
+// den Spieler, seine Häuser stehen 104–190 m vom Messpunkt (−841/−861) — die Probe tritt darum nach dem Wachsen in die Mitte des
+// nächsten Orts (`settlementCells`) und zählt die Häuser im Umkreis. Bis dahin las sie 60 m um den Messpunkt: kein Haus, auch mit Zug.
 async function alterProbe(r, T, o, G) {
     const { s, takt, stehen, tage, trocken, r3 } = G;
     const D = o.orte.dorf;
     s.autoSeason = false;
     r.setSeason("sommer");
     await stehen(D.x, D.z);
+    const fern = (c) => Math.hypot(c.x - D.x, c.z - D.z);
+    const O = Object.values((s.worldMeta && s.worldMeta.settlementCells) || {}).filter((c) => c && Number.isFinite(c.x)).sort((a, b) => fern(a) - fern(b))[0] || D;
+    await stehen(O.x, O.z);
     const lies = () => {
         const aus = {};
         const c = new T.Color();
@@ -569,7 +580,7 @@ async function alterProbe(r, T, o, G) {
     const zwei = lies();
     tage(30);
     trocken();
-    await stehen(D.x, D.z);
+    await stehen(O.x, O.z);
     const nach = lies();
     const tag = (s.worldMeta && s.worldMeta.tag) || 0;
     const delta = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((k) => Math.abs(b[k] - a[k]))) : null);
@@ -581,9 +592,11 @@ async function alterProbe(r, T, o, G) {
         const rausch = Math.max(0, ...Object.keys(d).map((l) => delta(vor[kl][l], zwei[kl] && zwei[kl][l]) || 0));
         if (Object.keys(d).length) je[kl] = Object.assign(d, { rausch: r3(rausch) });
     }
-    return { dorf: [D.x, D.z], tag, klassen: Object.keys(je).length, je };
+    const haeuser = (s.architectures || []).filter((e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - O.x, e.position.z - O.z) <= 60).length;
+    return { dorf: [D.x, D.z], ort: [r3(O.x), r3(O.z)], haeuser, tag, klassen: Object.keys(je).length, je };
 }
-// das Urteil (stoffe.K4#1): ≥ 1 Klasse ändert ihre Albedo nach 30 Tagen messbar (größter Kanal ≥ 0,02 über ihrem Rauschen) und
+// das Urteil (stoffe.K4#1): im Kreis steht ≥ 1 Haus des Dorfs (sonst urteilt die Probe eine leere Welt, w12-dorf-probe), und
+// ≥ 1 Klasse ändert ihre Albedo nach 30 Tagen messbar (größter Kanal ≥ 0,02 über ihrem Rauschen) und
 // abhängig von der Lage (die Lagen der Klasse weichen um ≥ die Hälfte der größten ab) — ein Regler, der alles gleich altern ließe
 // (Schlupfloch der Staffel), ist ROT
 function alterUrteil(e) {
@@ -598,8 +611,8 @@ function alterUrteil(e) {
     const lage = altert.filter((x) => x.lagen >= 2 && x.spanne >= 0.5 * x.max);
     const z = (x) => x.kl + " " + ["nord", "sued", "oben"].filter((l) => x.d[l] != null).map((l) => l + " " + x.d[l]).join("/");
     return {
-        gruen: lage.length > 0 && e.tag >= 30,
-        zahl: "Tag " + e.tag + ", " + liste.length + " Klassen im Umkreis 60 m des Dorfs · größte Δ der Albedo nach 30 Tagen: " +
+        gruen: lage.length > 0 && e.tag >= 30 && e.haeuser > 0,
+        zahl: "Tag " + e.tag + ", " + (e.haeuser || 0) + " Häuser und " + liste.length + " Klassen im Umkreis 60 m des Dorfs" + (e.ort ? " (Ort " + e.ort.join("/") + ")" : "") + (e.haeuser > 0 ? "" : " · ROT kein Haus im Kreis") + " · größte Δ der Albedo nach 30 Tagen: " +
             (liste.slice(0, 3).map(z).join(" · ") || "keine") + " · " + altert.length + " altern (≥ 0,02), " + lage.length + " nach Lage (Soll ≥ 1)",
     };
 }
@@ -1002,7 +1015,7 @@ const weltBefehl = (proben, helfer = []) => [
     JSON.stringify(proben.map(([n, f, o]) => [n, "async (r, T, o, G) => {\n" + helfer.map(String).join("\n") + "\nreturn await (" + f + ")(r, T, o, G);\n}", o || {}])),
 ];
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
-const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe], ["schnee", schneeProbe]]);
+const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe, { ort: "dorf" }], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
 // wetter.K3#2 — DIE GANGLINIE JE LAUF: eine Mess-Kopie der Wasser-Linse (scripts/lib/wasser-linse.cjs) trägt die Probe hinter
 // `sturm()` (die Anker „pg.regen = sturm();“ und „pg.regen.fest = sturm().hub;“, je genau einmal im Text), eine Mess-Kopie von
@@ -3090,9 +3103,10 @@ module.exports = [
         urteil: (j, lauf) => alterUrteil(weltZeile(j, lauf, "alter")),
         proben: [
             { name: "die Messung am main 25ac4c0c", stdout: weltRoh("alter", (x) => x), gruen: false },
-            { name: "Moos auf den Nordflächen des Baus", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), x)), gruen: true },
-            { name: "ein Regler nach Spielzeit (alles altert gleich)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.05, sued: 0.05, oben: 0.05, rausch: 0 }), x)), gruen: false },
-            { name: "kein Sprung (Tag 0)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), (x.tag = 0), x)), gruen: false },
+            { name: "Moos auf den Nordflächen des Baus", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), (x.haeuser = 12), x)), gruen: true },
+            { name: "Moos am Messpunkt ohne ein Haus im Kreis (die leere Welt vor w12-dorf-probe)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), (x.haeuser = 0), x)), gruen: false },
+            { name: "ein Regler nach Spielzeit (alles altert gleich)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.05, sued: 0.05, oben: 0.05, rausch: 0 }), (x.haeuser = 12), x)), gruen: false },
+            { name: "kein Sprung (Tag 0)", stdout: weltRoh("alter", (x) => ((x.je.bauSatz = { nord: 0.06, sued: 0.01, oben: 0.02, rausch: 0 }), (x.haeuser = 12), (x.tag = 0), x)), gruen: false },
         ],
         pfad: ["stamm/stoff-*.js", "stamm/bau-*.js", "stamm/gelaende-*.js", "stamm/siedlung-*.js", "stamm/bild-himmel.js", "fachwerk-core.js", "gelaende-core.js", ...WELT_PFAD],
         quelle: "1 = nach einem Spielzeit-Sprung von 30 Tagen ändert sich ≥ 1 Stoff messbar im Bild, abhängig von Nässe oder Lage",
