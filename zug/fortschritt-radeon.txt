@@ -1930,3 +1930,4 @@
 2026-11-05 00:58:26 ab884210-radeon siedlung.K5#1 GRÜN 0.3 · 1/1
 2026-11-05 00:59:56 ab884210-radeon ENDE 1 grün / 0 rot · 6.8 min
 2026-11-05 01:00:11 f89555fb-radeon START 3 Stationen
+2026-11-05 01:02:01 f89555fb-radeon lod.K5#1 ROT 0.4 · 1/3
