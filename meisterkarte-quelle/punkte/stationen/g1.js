@@ -1132,6 +1132,9 @@ module.exports = [
     // IN DER SITZUNG (29.10.): EINE Probe für Staffel 1 und 2 (`K2_PROBE`, Zwillinge — die Sitzung fährt sie einmal), die Bahn von
     // m2-graben.cjs in der warmen Welt (stationen/proben-welt.cjs `wasserGraben`): Third an zwei Saaten statt fünf, 3 s Spur je Graben
     // statt 4,3 s. Bis 29.10. jede Staffel ihr eigener Boot über die Harness (Radeon b3f9ae95: 2,28 und 3,83 min Arbeit).
+    // DER GRABEN-FLUSS (w12-proben-tempo): die Gräben liegen am Fluss der Wiese, 35 Punkte hinter ihrem Fluss-Ort (≥ 120 m hinter dem
+    // Damm von (b)) statt 500–780 m stromab des Punkts nächst Genesis (≥ 1,3 km von der Wiese) — dort stand die Welt der Sitzung nie, und
+    // die Radeon riss den Deckel 90 s an jedem Kopf ohne eine GRABEN-Zeile (8ef49bef nach „(b)(d) 8.5 s"). Urteil und Schwellen gleich.
     {
         kriterium: "gelaende.K2",
         staffel: 1,

@@ -534,21 +534,35 @@ async function probeStudios(H) {
         close: () => {},
     };
     // jede Seite im Fenster der Linse (starteBrowser ohne viewport: puppeteer 800 × 600) — die Zeit je Griff hängt an der Fläche.
-    // Je Studio zwei Seiten (der Besuch, das Neuladen), jede mit der Uhr der Probe: die Sekunden je Studio stehen zwischen den
-    // ⏱-Zeilen (swiftshader 6a571e3b: fachwerk 45,5 s, koerperstudio 54,9 s von 161 s — ihr Neubau 2,9–4,1 s je Griff)
+    // DIE EINE SEITE (w12-proben-tempo; Radeon 8ef49bef: 7 von 8 Studios in der Frist 84 s, ≈ 12 s je Studio): die Linse fordert je
+    // Studio zwei Seiten (den Besuch, das Neuladen — `browser.newPage`, danach `page.close`), sechzehn Tabs je Gang. Jetzt trägt EINE
+    // Seite den Gang: `newPage` gibt sie, ihr `close` hält sie (der Abbau der Probe schließt sie), die Studios wechseln in ihr, und das
+    // Neuladen navigiert sie neu auf dieselbe Herkunft (derselbe localStorage — die Persistenz, die H7 urteilt). Die Uhr der Probe je
+    // Studio steht zwischen den ⏱-Zeilen (swiftshader 6a571e3b: fachwerk 45,5 s, koerperstudio 54,9 s von 161 s — ihr Neubau 2,9–4,1 s
+    // je Griff)
+    let eine = null;
     const neueSeite = async () => {
-        H.zeile("neue Seite der Linse");
-        const p = await browser.newPage();
-        await p.setViewport({ width: 800, height: 600 });
-        return p;
+        if (eine) return eine;
+        H.zeile("die eine Seite der Linse");
+        eine = await browser.newPage();
+        await eine.setViewport({ width: 800, height: 600 });
+        eine.close = async () => {};
+        return eine;
     };
     const derSitzung = { newPage: neueSeite, close: async () => {}, adapter };
+    // DIE RUHE STATT DER UHR: nach dem Laden wartete die Linse 1,5 s Wanduhr je Studio (`sleep(1500)`, 12 s im Gang), ehe H3 den
+    // ersten Schieber der Sitzung zieht — jetzt, bis die Hülle ihre Sitzung von zuletzt geladen hat (`gang().geladen`, das Warten des
+    // Neuladens), höchstens die 1,5 s von bisher (eine Seite ohne Hülle wartet wie zuvor)
     const L = H.linse("scripts/diag-studio-huelle.cjs", ["gang", "GRIFFE"], {
         argv: ["--engine"],
         stumm: { statikServer: () => server, starteBrowser: async () => derSitzung },
         ersetze: [
             ['const NEBENWELTEN = ["skeleton", "fluid", "translated"];', "const NEBENWELTEN = [];"],
             ["const GRIFFE = 20;", "const GRIFFE = 5;"],
+            ["await sleep(1500);",
+                "for (const t0 = Date.now(); Date.now() - t0 < 1500 && !(await page.evaluate(() => !!(window.AnazhHuelle && AnazhHuelle.gang().geladen))); ) await sleep(50);"],
+            ['const neu = async () => (await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);',
+                'const neu = async () => (await s.zeige(page, 90000, seite(id), "load"), page);'],
         ],
     });
     await L.gang();

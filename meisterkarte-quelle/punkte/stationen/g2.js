@@ -4346,12 +4346,16 @@ const stationen = [
     // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt
     // Radeon 1,98 gegen GTX 3,25 ms, 715754fc). DER DECKEL DER ARBEIT (geschätzt, ungemessen in der Sitzung): 12 000 Takte zu 0,1 Spiel-s,
     // ≤ 2 Bilder je Raffer-Bild unter der GPU-Leine, die Sichtung bis zur Staffel, Third am selben Ort — 55 s
+    // DIE SPIEL-UHR VOR DER WANDUHR (w12-proben-tempo): Radeon 8ef49bef am Deckel 90 s bei 465 Spiel-s (Radeon 3ef20f9f ohne Schuss 14,6
+    // Spiel-s je s Wanduhr: die Prüfung je 250 ms Wanduhr, der Raffer am VSync, bis zu zwei Bilder je Raffer-Bild). Jetzt taktet der Kreis
+    // selbst: je Urteils-Punkt 20 Takte (2 Spiel-s), 19 ohne Bild unter der gespannten Leine (`ohneBild`, das Argument des Befehls), das
+    // Bild am Punkt, geschossen nur dort (proben-welt.cjs `tierKreis`, `__kreisTakte`)
     {
         kriterium: "tiere.K5",
         staffel: 1,
         geraet: "radeon",
         probe: {
-            befehl: PW.torBefehl(PW.tierKreis),
+            befehl: PW.torBefehl(PW.tierKreis, String(PW.ohneBild)),
             sek: 55,
             ausnahme: "1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) im Zeitraffer der Schleife, die Sichtung bis zur Staffel — die Arbeit, nie das Einschwingen",
             mutiert: false,
