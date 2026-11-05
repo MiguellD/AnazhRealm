@@ -121,6 +121,23 @@
                 --hope: #7bd389;
                 --peace: #88e1e1;
                 --chaos: #e94c89;
+                /* DAS PERGAMENT (spielgang.K3) — EINE Quelle jeder Pergament-Tafel (das Ich, die Schubladen, die Hilfe,
+                   `.parchment`, der Rahmen `.frame-edge`): der Grund in drei Schichten und die vier Eck-Nieten, jede Niete
+                   nur auf ihrer Kachel von 8 × 8 px. Vorher stand der Grund in fünf Kopien, und jede Niete war ein Verlauf
+                   über die GANZE Tafel — sieben vollflächige Schichten je Bild des Ich (1896 × 996 px). Headless am
+                   Null-Renderer, Tab · Tab · I · Esc in fünf Runden: das Bild nach der Taste 80 → 48–64 ms im Median. */
+                --pergament:
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                --pergament-nieten:
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) 8px 8px / 8px 8px no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) calc(100% - 8px) 8px / 8px 8px
+                        no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) 8px calc(100% - 8px) / 8px 8px
+                        no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) calc(100% - 8px)
+                        calc(100% - 8px) / 8px 8px no-repeat;
                 /* Schatten */
                 --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
                 /* Semantische Aliase — resolvern am Use-Site. */
@@ -139,10 +156,7 @@
            übersetzt 100–250 ms im GPU-Prozess, Radeon), ein Pergament-Fenster wartete darauf. rgba(70,29,0,0.152)
            malt dasselbe über dem Pergament-Grund: höchstens 0,8 Stufen Abstand (Mittel 0,24) bei 1896×996 wie 300×996. */
             .parchment {
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament);
                 position: relative;
                 color: var(--parch-ink);
             }
@@ -195,11 +209,7 @@
                 position: absolute;
                 inset: 0;
                 border-radius: inherit;
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
+                background: var(--pergament-nieten);
             }
 
             body {
@@ -826,14 +836,7 @@
                 /* V18.58 — das Ich teilt die PERGAMENT-Sprache der Drawer (Werkstatt/Hof): heller Grund, EINE
                    dunkle Bühnen-Insel. Vorher war der Overlay-Grund dunkel — aber die Inhalte (Slots/Emotion/
                    Rezepte) tragen DUNKLEN Text (--parch-ink*) → dunkel-auf-dunkel-Mush. Jetzt crisp wie die Räume. */
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament-nieten), var(--pergament);
                 border-radius: 12px;
                 /* der geteilte Drawer-Rahmen (1:1 aus .drawer) — Eisen/Messing-Inset-Ringe. */
                 box-shadow:
@@ -2397,14 +2400,7 @@
                    ::before mit dem Inhalt weg; das Element selbst behält
                    Background fix beim Scroll (CSS-Standard). Plus Corner-
                    Dots als zusätzliche background-image-Layer. */
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament-nieten), var(--pergament);
                 /* Border-Ringe direkt als inset box-shadow — bleibt fest am
                    Element, nicht im scroll-flow. */
                 box-shadow:
@@ -8035,10 +8031,7 @@
                 width: 90%;
                 max-width: 720px;
                 max-height: 85vh;
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament);
                 color: var(--parch-ink);
                 z-index: 100;
                 padding: 28px 32px;

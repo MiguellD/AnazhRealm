@@ -474,41 +474,17 @@ class AnazhRealm_werkstatt_hof {
         return true;
     }
 
+    // Das Ich (Tab): offen → zu, sonst zeigt es sich — über den EINEN Schalter (`_menueZeigen`), der Rest kommt nach dem ersten
+    // Bild. Wie in jedem Survival-Spiel löst das Öffnen den Zeiger (Drag&Drop braucht absolute Maus-Koordinaten, der Lock liefert
+    // nur Deltas) und lässt die Tasten gehalten (WASD läuft weiter); das Schließen fängt ihn nicht neu — der Spieler klickt die
+    // Leinwand.
     toggleInventoryOverlay(force) {
         if (typeof document === "undefined") return;
         const el = document.getElementById("inventory-overlay");
         if (!el) return;
         const open = typeof force === "boolean" ? force : el.hasAttribute("hidden");
-        if (open) {
-            el.removeAttribute("hidden");
-            this.state.inventoryOpen = true;
-            document.body.classList.add("inventory-open");
-            this.renderInventoryUI();
-            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1)
-            const rezepte = document.getElementById("inventory-recipes");
-            if (rezepte) rezepte.scrollTop = 0;
-            // V18.57 Ich-Bogen — die Selbst-Bühne + das Spec-Sheet (das Werkstatt-/Hof-Muster auf das Selbst).
-            if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(true);
-            // === UX-Konvention wie Minecraft / jedes Survival-Spiel ===
-            // Inventar offen → Pointer-Lock lösen: HTML5-Drag&Drop braucht absolute Maus-Koordinaten, der Lock
-            // liefert nur Deltas → dragstart feuert sonst nicht zuverlässig.
-            try {
-                if (document.pointerLockElement) document.exitPointerLock();
-            } catch {
-                /* defensive */
-            }
-            // KEINE keys-Clear — Minecraft-Konvention: WASD bleibt aktiv,
-            // Spieler bewegt sich auch mit offenem Inventar weiter. Nur
-            // die Maus-Look-Steuerung ist über exitPointerLock gesperrt.
-        } else {
-            this._uiVerbergen(el); // [hidden] ohne laufende Animation im gefrorenen Baum (spielgang.K3)
-            this.state.inventoryOpen = false;
-            document.body.classList.remove("inventory-open");
-            this.state.inventorySelected = null;
-            if (typeof this._ichHandleOverlay === "function") this._ichHandleOverlay(false);
-            // Bewusst KEIN re-lock — Spieler klickt Canvas um wieder
-            // in Blick-Steuerung zu gehen (Minecraft-Konvention).
-        }
+        if (open) this._menueZeigen("ich");
+        else if (this.state.inventoryOpen || !el.hidden) this._menueZeigen(null);
     }
 
     // Kreaturen-Drawer-UI: Spawn mit Form-Wahl + Liste der lebenden Kreaturen (Name, Form, Task).
@@ -1392,22 +1368,22 @@ class AnazhRealm_werkstatt_hof {
         }
     }
 
-    // Overlay-Hook (Zwilling zu _hofHandleDrawerChange): die Bühne + das Spec-Sheet leben nur bei offenem Ich.
+    // Die Bühne des Ich lebt nur bei offenem Ich: `_ichHandleOverlay(false)` lässt sie ruhen (jeder Schalter, `_menueZeigen`),
+    // `_ichBuehneAn` zeigt den Leib und startet ihren Takt (die letzte Scheibe des Nachbaus, nach dem ersten Bild des Ich).
     _ichHandleOverlay(open) {
-        if (open) {
-            // frische Werte (equip-gefaltet) — recompute setzt player.stats + statTags, die das Spec-Sheet liest.
-            if (typeof this.recomputePlayerStats === "function") this.recomputePlayerStats();
-            this._ichRenderSpecSheet();
-            const stage = this._ichEnsureStage();
-            if (stage) {
-                stage.active = true;
-                this._ichStageShow((this.state.player && this.state.player.soul) || "human");
-                this._ichStartRAF();
-            }
-        } else if (this.state.ichStage) {
+        if (open) this._ichBuehneAn();
+        else if (this.state.ichStage) {
             this.state.ichStage.active = false;
             this._ichStopRAF();
         }
+    }
+
+    _ichBuehneAn() {
+        const stage = this._ichEnsureStage();
+        if (!stage) return;
+        stage.active = true;
+        this._ichStageShow((this.state.player && this.state.player.soul) || "human");
+        this._ichStartRAF();
     }
 
     // DER VORBAU DER ICH-BÜHNE (spielgang.K3, aus `_vorbauBedienung`): Tab öffnet die Bühne, und ihr erster Render baute die

@@ -616,85 +616,112 @@ class AnazhRealm_werkstatt_hud {
         obs.observe(out, { childList: true });
     }
 
-    // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
-    // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
-    // Welle 6.X.4 V8.15 Punkt 15 — öffentliche toggleDrawer-Methode für
-    // Keyboard-Shortcuts (M/K/P/B/I). Wenn der Drawer schon offen ist,
-    // wird er geschlossen; sonst geöffnet (single-active-pattern).
+    // Die Taste einer Schublade (K/P/B/I, `_verbTaste`): ist sie offen, schließt sie, sonst zeigt sie sich — über den EINEN
+    // Schalter (`_menueZeigen`), wie ihr Reiter.
     toggleDrawer(name) {
         if (typeof document === "undefined") return;
         const drawer = document.querySelector(`.drawer[data-drawer="${name}"]`);
         if (!drawer) return;
-        const isOpen = !drawer.hidden;
-        if (isOpen) {
-            this.closeAllDrawers();
-            return;
-        }
-        // Drawer öffnen — sync Tabs + Drawer-Status
-        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
-        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
-        for (const tab of tabs) {
-            const isActive = tab.getAttribute("data-tab") === name;
-            tab.classList.toggle("active", isActive);
-            tab.setAttribute("aria-selected", isActive ? "true" : "false");
-        }
-        for (const d of drawers) {
-            d.hidden = d.getAttribute("data-drawer") !== name;
-        }
-        this.state.uiActiveDrawer = name;
-        this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
-        // toggleDrawer ruft den Werkstatt-Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start) —
-        // sonst bleiben Drawer-Shortcuts/API-Calls ohne Preview (state.workshop.preview === null).
-        if (typeof this._workshopHandleDrawerChange === "function") {
-            this._workshopHandleDrawerChange(name);
-        }
-        if (typeof this._hofHandleDrawerChange === "function") {
-            this._hofHandleDrawerChange(name);
-        }
-        if (typeof this._feedHandleDrawerChange === "function") {
-            this._feedHandleDrawerChange(name);
-        }
+        if (!drawer.hidden) this.closeAllDrawers();
+        else this._menueZeigen(name);
     }
 
-    // closeAllDrawers schließt alle (für Help-Klick + ESC).
+    // DAS MENÜ ZEIGT SICH IN EINEM BILD (spielgang.K3) — der EINE Schalter jeder Tafel: das Ich (`ziel` "ich": Tab, sein Reiter
+    // „spieler") und jede Schublade (ihr Name: ihre Taste, ihr Reiter); null verbirgt jede (Esc, das Zurück, der Schließ-Knopf).
+    // Offen ist höchstens EINE Tafel. Im Hörer läuft nur der Schalter — [hidden], die Reiter, der Zustand, der freie Zeiger, jede
+    // Bühne ruht —; was die Tafel füllt (Habe, Spec-Sheet und Bühne des Ich, Liste und Vorschau der Werkstatt, Listen und Bühne
+    // des Hofs, die Bibliothek), kommt nach ihrem ersten Bild, je Bild EINE Scheibe (`_menueNachbau`). Vorher öffnete jeder der
+    // vier Öffner (Taste, Reiter, Tab, Esc) mit eigenem Bau im Hörer: headless am Null-Renderer, Tab · Tab · I · Esc in fünf
+    // Runden, hielt das erste Tab den Hörer 99 ms (Rezeptbuch 29 ms, Bauplan-Massen 29 ms, Spec-Sheet, Bühne), jedes weitere
+    // 6–7 ms, davon 4,5 ms ein erzwungenes Layout (das Rezeptbuch nach oben gerollt im Öffnen).
+    _menueZeigen(ziel) {
+        if (typeof document === "undefined") return;
+        const st = this.state;
+        const ich = document.getElementById("inventory-overlay");
+        const ichAuf = ziel === "ich";
+        if (ich && !ichAuf && !ich.hidden) {
+            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1): gerollt beim Verbergen, solange sein Layout steht
+            const rezepte = document.getElementById("inventory-recipes");
+            if (rezepte) rezepte.scrollTop = 0;
+            this._uiVerbergen(ich); // [hidden] ohne laufende Animation im gefrorenen Baum
+            st.inventorySelected = null;
+        } else if (ich && ichAuf) ich.hidden = false;
+        st.inventoryOpen = !!ich && ichAuf;
+        document.body.classList.toggle("inventory-open", st.inventoryOpen);
+        const reiter = ichAuf ? "spieler" : ziel;
+        for (const tab of document.querySelectorAll("#topbar .tab")) {
+            const an = tab.getAttribute("data-tab") === reiter;
+            tab.classList.toggle("active", an);
+            tab.setAttribute("aria-selected", an ? "true" : "false");
+        }
+        for (const d of document.querySelectorAll(".drawer[data-drawer]"))
+            d.hidden = d.getAttribute("data-drawer") !== ziel;
+        st.uiActiveDrawer = !ziel || ichAuf ? null : ziel;
+        // jede Bühne ruht im Schalter (ihr Takt hält an); die der gezeigten Tafel läuft nach deren erstem Bild an
+        this._ichHandleOverlay(false);
+        this._workshopHandleDrawerChange(null);
+        this._hofHandleDrawerChange(null);
+        this._feedHandleDrawerChange(null);
+        if (ziel) this._uiZeigerFrei(); // die Tafel gehört der Maus (Welle L, V-D2)
+        this._menueNachbau(ziel);
+    }
+
+    // DER NACHBAU DER TAFEL (spielgang.K3, aus `_menueZeigen`): was die eben gezeigte Tafel füllt, nach ihrem ersten Bild, je
+    // Bild EINE Scheibe — ein Bild läuft (`requestAnimationFrame`), die Scheibe ist die Aufgabe nach ihm (`setTimeout`), keine
+    // fällt in den Hörer einer Taste und keine in das Bild, das die Tafel zeigt. Ein neuer Schalter verwirft, was für die alte
+    // Tafel noch ansteht; `_menueSteht()` verspricht das Ende des laufenden Nachbaus. Eine Scheibe, die wirft, bricht laut
+    // (der Fehler der Seite), der Nachbau geht weiter.
+    _menueNachbau(ziel) {
+        const N = this._menueStand || (this._menueStand = { n: 0, fertig: Promise.resolve(), ende: null });
+        const n = ++N.n;
+        const scheiben =
+            {
+                ich: [
+                    () => this.renderInventoryUI(), // Habe, Rüstung, Rezeptbuch (es baut nur, was sich änderte)
+                    () => (this.recomputePlayerStats(), this._ichRenderSpecSheet()), // frische Werte, equip-gefaltet
+                    () => this._ichBuehneAn(),
+                ],
+                werkstatt: [() => this._workshopHandleDrawerChange("werkstatt")],
+                kreaturen: [() => this._hofHandleDrawerChange("kreaturen")],
+                bibliothek: [
+                    () => this.updateWorldInfo(),
+                    () => this.renderLibraryUI(),
+                    () => this._feedHandleDrawerChange("bibliothek"),
+                ],
+            }[ziel] || [];
+        if (N.ende) N.ende();
+        N.fertig = new Promise((ok) => (N.ende = ok));
+        const weiter = () => {
+            if (N.n !== n) return;
+            if (!scheiben.length) return (N.ende(), (N.ende = null));
+            requestAnimationFrame(() =>
+                setTimeout(() => {
+                    if (N.n !== n) return;
+                    try {
+                        scheiben.shift()();
+                    } finally {
+                        weiter();
+                    }
+                }, 0)
+            );
+        };
+        weiter();
+    }
+
+    // Das Ende des laufenden Nachbaus der Tafel (`_menueNachbau`): wer nach dem Öffnen liest, was die Tafel füllt, wartet darauf.
+    _menueSteht() {
+        return this._menueStand ? this._menueStand.fertig : Promise.resolve();
+    }
+
+    // Die Reiter der Topbar, ihre Schließ-Knöpfe und Esc — jeder schaltet über `_menueZeigen` (der Reiter „spieler" ist das Ich).
     initTopbar() {
         const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
         const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
         if (tabs.length === 0 || drawers.length === 0) return;
-
-        const openDrawer = (name) => {
-            for (const tab of tabs) {
-                const isActive = tab.getAttribute("data-tab") === name;
-                tab.classList.toggle("active", isActive);
-                tab.setAttribute("aria-selected", isActive ? "true" : "false");
-            }
-            // UI-Putz: der "Ich"-Tab (data-tab="spieler") öffnet das zentrierte Inventar-
-            // Overlay (das vereinte Habe + Charakter + Rezeptbuch, wie Minecraft), keinen
-            // Seiten-Drawer. Jeder andere Tab schließt das Overlay wieder.
-            if (name === "spieler") {
-                for (const drawer of drawers) drawer.hidden = true;
-                if (typeof this.toggleInventoryOverlay === "function") this.toggleInventoryOverlay(true);
-                return;
-            }
-            if (typeof this.toggleInventoryOverlay === "function" && this.state && this.state.inventoryOpen) {
-                this.toggleInventoryOverlay(false);
-            }
-            for (const drawer of drawers) {
-                const isThis = drawer.getAttribute("data-drawer") === name;
-                drawer.hidden = !isThis;
-            }
-            this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
-            // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
-            // Sektionen (Stammbaum/Tagebuch/Andere Welten) + die Welten-Liste.
-            if (name === "bibliothek") {
-                if (typeof this.updateWorldInfo === "function") this.updateWorldInfo();
-                if (typeof this.renderLibraryUI === "function") this.renderLibraryUI();
-            }
-        };
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
                 const name = tab.getAttribute("data-tab");
-                if (name) openDrawer(name);
+                if (name) this._menueZeigen(name === "spieler" ? "ich" : name);
             });
         }
         // Close-Buttons schließen den eigenen Drawer und entaktivieren den Tab.
@@ -709,23 +736,6 @@ class AnazhRealm_werkstatt_hud {
         // offen, kein Tab aktiv = der WOW-Start). state.uiActiveDrawer trackt den aktuellen
         // Tab (null = die Welt), damit Tests + spätere Save-Persistenz darauf greifen können.
         this.state.uiActiveDrawer = null;
-        // Tab-Klicks loggen indirekt über uiActiveDrawer. Jeder Tab-Klick informiert die Werkstatt:
-        // Preview-Renderer an (Werkstatt offen) oder pausiert (anderer Tab).
-        for (const tab of tabs) {
-            tab.addEventListener("click", () => {
-                const name = tab.getAttribute("data-tab");
-                if (name) this.state.uiActiveDrawer = name;
-                if (typeof this._workshopHandleDrawerChange === "function") {
-                    this._workshopHandleDrawerChange(name);
-                }
-                if (typeof this._hofHandleDrawerChange === "function") {
-                    this._hofHandleDrawerChange(name);
-                }
-                if (typeof this._feedHandleDrawerChange === "function") {
-                    this._feedHandleDrawerChange(name);
-                }
-            });
-        }
         // P12 (UI-Putz §1.5) — der geteilte Overlay-Hebel verdrahtet (einmal, delegiert).
         this._installHelpPopovers();
         // V18.45 — die Omnibox (Ctrl/Cmd+K): der EINE beschwörbare Ort für jede Absicht.
@@ -1114,26 +1124,8 @@ class AnazhRealm_werkstatt_hud {
             }
             return;
         }
-        const tabs = document.querySelectorAll("#topbar .tab");
-        for (const tab of tabs) {
-            tab.classList.remove("active");
-            tab.setAttribute("aria-selected", "false");
-        }
-        for (const drawer of document.querySelectorAll(".drawer[data-drawer]")) {
-            drawer.hidden = true;
-        }
-        this.state.uiActiveDrawer = null;
-        // Welle 6.B Phase 1: Werkstatt-Preview pausieren (Renderer bleibt
-        // alloziert für schnelles Re-Open, aber RAF-Loop stoppt).
-        if (typeof this._workshopHandleDrawerChange === "function") {
-            this._workshopHandleDrawerChange(null);
-        }
-        if (typeof this._hofHandleDrawerChange === "function") {
-            this._hofHandleDrawerChange(null);
-        }
-        if (typeof this._feedHandleDrawerChange === "function") {
-            this._feedHandleDrawerChange(null);
-        }
+        // jede Tafel fällt (der EINE Schalter): die Bühnen ruhen, ihre Renderer bleiben für das nächste Öffnen
+        this._menueZeigen(null);
     }
 
     // Resize-Handles: Konsole „tr" (wächst nach oben, bottom-Anker), Drawer „b" (nur Höhe).
