@@ -1631,32 +1631,38 @@ class AnazhRealm_koerper_fahrt {
     _fahrHaft(fz) {
         const n = Math.min(1, Math.max(0, this.state.naesse || 0));
         // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
-        // Wagen `HAFT_MERK_M` weiter ist, die Nässe oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je
-        // Schritt neu (der Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms)
+        // Wagen `HAFT_MERK_M` weiter ist oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je Schritt neu (der
+        // Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms). Er trägt μ trocken und voll nass: die Zeile ist linear in der
+        // Nässe, und die Gewichte des Bodens hängen nicht an ihr — so mischt die Nässe beide, gleich der Rechnung bis auf die Rundung. Bis
+        // pflicht.C#1 merkte er die Nässe selbst: sie läuft nach jedem Wort des Wetters Bild für Bild zu ihrem Ziel
+        // (`_naesseTakt`), und jeder Ruf fragte den Boden neu (stadt-voll 10 Uhr: 0,41 ms je Bild für 20 Wagen)
         const st = AnazhRealm._stoffStand || 0;
-        const M = fz._haft;
+        let M = fz._haft;
         if (
-            M &&
-            M.n === n &&
-            M.st === st &&
-            Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M &&
-            Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M
-        )
-            return M.mu;
-        const mu = (stoff) => {
-            const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
-            if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * n;
-            this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
-            return 1;
-        };
-        const aus = {};
-        const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
-        const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
-        let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
-        if (gruen > 0) m += (mu("gras") - m) * gruen;
-        if (pfad > 0) m += (mu("erde") - m) * pfad;
-        fz._haft = { x: fz.x, z: fz.z, n, st, mu: m };
-        return m;
+            !M ||
+            M.st !== st ||
+            !(Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M) ||
+            !(Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M)
+        ) {
+            const mu = (stoff, k) => {
+                const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
+                if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * k;
+                this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
+                return 1;
+            };
+            const aus = {};
+            const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
+            const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
+            const grund = this._terrainMaterialAt(fz.x, fz.z, fz.y);
+            const bei = (k) => {
+                let m = mu(grund, k);
+                if (gruen > 0) m += (mu("gras", k) - m) * gruen;
+                if (pfad > 0) m += (mu("erde", k) - m) * pfad;
+                return m;
+            };
+            M = fz._haft = { x: fz.x, z: fz.z, st, trocken: bei(0), nass: bei(1) };
+        }
+        return M.trocken + (M.nass - M.trocken) * n;
     }
 
     // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der

@@ -215,6 +215,13 @@ class AnazhRealm_siedlung_verkehr {
                     ],
                     w: VG.parkB,
                 });
+                // DER BOGEN ZWISCHEN PLATZ UND KREIS trägt Weg wie Ring und Platz (aus ihm, in ihn: je seine Sehne mit dem Rand des
+                // Rings, der den Pfeil des Bogens, R·(1 − cos 22,5°) = 0,42 m, trägt) — bis pflicht.C#1 fuhr, wer ausparkte, über
+                // ungemalten Boden (stadt-voll 23 Uhr: Wagen 5, 14 und 16 je 9 m von der Mitte ihrer Wende, `_aufWeg` nein)
+                for (const s of [1, -1]) {
+                    const { B } = this._verkehrPlatzBogen(w, p, s);
+                    flaechen.roads.push({ pts: [{ x: p.x, z: p.z }, B[B.length - 1]], w: 2 * VG.halbM + VG.ringRandM });
+                }
             }
         }
         this._stlWegeBuild(flaechen, { x: 0, z: 0 }, "verkehr:" + S.key);
@@ -894,26 +901,8 @@ class AnazhRealm_siedlung_verkehr {
             d -= Math.floor(d / (2 * Math.PI)) * 2 * Math.PI;
             return d;
         };
-        // der Bogen vom Platz (vorwärts, s = 1; rückwärts, s = −1) zur Seite der Mitte, bis 45° oder bis er den Kreis trifft
-        const R = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
         const [tx, tz] = [Math.sin(pk.fahrt), Math.cos(pk.fahrt)];
-        const innen = -tz * (w.x - pk.x) + tx * (w.z - pk.z) > 0 ? 1 : -1;
-        const [nx, nz] = [-tz * innen, tx * innen];
-        const bogen = (s) => {
-            const B = [];
-            const n = Math.ceil((Math.PI / 4) * R);
-            for (let k = 1; k <= n; k++) {
-                const f = (k * Math.PI) / 4 / n;
-                const q = {
-                    x: pk.x + nx * R * (1 - Math.cos(f)) + s * tx * R * Math.sin(f),
-                    z: pk.z + nz * R * (1 - Math.cos(f)) + s * tz * R * Math.sin(f),
-                };
-                B.push(q);
-                if (Math.hypot(q.x - w.x, q.z - w.z) <= w.r) break;
-            }
-            const q = B[B.length - 1];
-            return { B, a: Math.atan2(q.z - w.z, q.x - w.x) };
-        };
+        const bogen = (s) => this._verkehrPlatzBogen(w, pk, s);
         const schritt = AnazhRealm.VERKEHR.platzBogenM / w.r;
         const pts = [];
         if (m.art === "aus") {
@@ -933,6 +922,30 @@ class AnazhRealm_siedlung_verkehr {
         pts.push({ x: pk.x, z: pk.z });
         pts.push({ x: pk.x + tx * 0.6, z: pk.z + tz * 0.6 });
         return pts;
+    }
+
+    // DER BOGEN ZWISCHEN PLATZ UND KREIS (die Wende `w`, der Platz `pk`): vom Platz (vorwärts, s = 1: aus ihm; rückwärts, s = −1:
+    // in ihn) der Bogen seines Wendekreises (`kurveR`) zur Seite der Mitte, bis 45° oder bis er den Kreis trifft — { B: seine
+    // Punkte, a: der Winkel am Kreis }. Leser: die Züge aus dem Platz und in ihn (`_verkehrZugPunkte`) und der Boden der Wende
+    // (`_verkehrAnlegen`: er trägt Weg wie Ring und Platz).
+    _verkehrPlatzBogen(w, pk, s) {
+        const R = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
+        const [tx, tz] = [Math.sin(pk.fahrt), Math.cos(pk.fahrt)];
+        const innen = -tz * (w.x - pk.x) + tx * (w.z - pk.z) > 0 ? 1 : -1;
+        const [nx, nz] = [-tz * innen, tx * innen];
+        const B = [];
+        const n = Math.ceil((Math.PI / 4) * R);
+        for (let k = 1; k <= n; k++) {
+            const f = (k * Math.PI) / 4 / n;
+            const q = {
+                x: pk.x + nx * R * (1 - Math.cos(f)) + s * tx * R * Math.sin(f),
+                z: pk.z + nz * R * (1 - Math.cos(f)) + s * tz * R * Math.sin(f),
+            };
+            B.push(q);
+            if (Math.hypot(q.x - w.x, q.z - w.z) <= w.r) break;
+        }
+        const q = B[B.length - 1];
+        return { B, a: Math.atan2(q.z - w.z, q.x - w.x) };
     }
 
     // DIE GEFAHRENE SPUR einer Strecke in der Richtung `dir` (0: von a nach b) — DER ABZWEIG DER WENDE (fachwerk `verkehrsNetz`:
