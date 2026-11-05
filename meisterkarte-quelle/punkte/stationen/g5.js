@@ -4518,7 +4518,10 @@ const stationen = [
     // Wagen 1 neben der Trasse, je beim Namen). Vorher (main b62542c9, 05.11.): die Linse kennt die Maße des Richters nicht — ROT beim
     // Namen „Wagen mit Bewohner am Steuer undefined“; das übrige Kriterium hielt dort (20/20, 140 und 144 Ankünfte, 0 Berührungen).
     // Der erste Lauf des Richters nannte um 23 Uhr „am Steuer [19,132,[19,"steht"]]“: die Probe hieß die Stadt vor dem ersten Bild
-    // nach dem Sprung der Uhr bereit, Wagen 19 stand, bis sein Nachtfahrer ankam — geschnitten in der Probe (erst ein Bild).
+    // nach dem Sprung der Uhr bereit, Wagen 19 stand, bis sein Nachtfahrer ankam — geschnitten in der Probe (erst ein Bild). Der
+    // zweite nannte um 23 Uhr „abseits der Trasse [180000,20,[[5,667,410,…“: wer nach dem Schichtwechsel ausparkte, fuhr 9 m von der
+    // Mitte seiner Wende über ungemalten Boden — der Bogen zwischen Platz und Kreis trug keinen Weg, geschnitten im Spiel
+    // (`_verkehrPlatzBogen`, w12-verkehr).
     {
         kriterium: "pflicht.C",
         pflicht: true,
