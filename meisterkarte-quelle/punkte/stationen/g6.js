@@ -440,7 +440,9 @@ const K4_PROBE = { sek: 10, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) }
 // Aussetzer über `AudioContext.playbackStats`) in der Welt der Sitzung, ihr Loop im Fenster (echt). Der Gang verdichtet: je Phase
 // `n` × 60 Bilder — gehen (W, je 60 Bilder ein Tipp A) · Fahrt im GT (W/S im Wechsel je 120 Bilder) · Nacht (Uhr 0) —, die Tasten
 // ins Fenster, gehalten bis zum Bild, nie nach der Uhr; die Aussetzer über die ganze Wiedergabe der drei Phasen. Bis 29.10.:
-// `--takt --echt --minuten 10` mit eigenem Boot (ea07267e Radeon 14,74 min).
+// `--takt --echt --minuten 10` mit eigenem Boot (ea07267e Radeon 14,74 min). Eine Geh-Phase hält W DURCHGEHEND und endet am Bild
+// UND am Weg (≥ n × 60 Bilder, ≥ `o.weg` m): bis 05.11. ließ sie W je 60 Bilder los und endete nach n × 60 Bildern — Stop-and-go
+// trug in 600 Bildern 6–9 m, die Station war rot an der Probe, nie am Spiel (w12-klang-takt).
 async function taktFahrt(quelle, m, namen, o) {
     const r = window.anazhRealm, st = r.state, rend = st.renderer;
     const taktSeite = new Function("return (" + quelle + ")")();
@@ -457,11 +459,26 @@ async function taktFahrt(quelle, m, namen, o) {
         }
         return ziel();
     };
-    const phase = async (name, n, pendeln) => {
+    const phase = async (name, n, pendeln, wegM = 0) => {
         T().start(name);
-        for (let i = 0; i < n; i++) {
-            await halte(pendeln && Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
-            if (!pendeln) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+        if (pendeln) {
+            for (let i = 0; i < n; i++) await halte(Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
+            return T().urteil(o.soll);
+        }
+        // gehen: W gehalten, bis Bild UND Weg stehen; je 60 Bilder ein Tipp A unter dem gehaltenen W; die Frist (n × 10 s, die Summe
+        // der alten Frist je 60 Bilder) bricht nur einen Hänger — dann nennt das Urteil Bilder und Weg beim Namen
+        const weg = () => T().weg - T().weg0;
+        const steht = () => T().bilder.length >= 60 * n && weg() >= wegM;
+        const t0 = performance.now();
+        const frist = () => performance.now() - t0 >= n * 10000;
+        taste("w", "keydown");
+        try {
+            for (let i = 1; !steht() && !frist(); i++) {
+                while (T().bilder.length < 60 * i && !steht() && !frist()) await warte(16);
+                if (!steht()) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+            }
+        } finally {
+            taste("w", "keyup");
         }
         return T().urteil(o.soll);
     };
@@ -473,7 +490,7 @@ async function taktFahrt(quelle, m, namen, o) {
         await phase("ein", 2);
         const a = T().audio();
         const ph = {};
-        ph.gehen = await phase("gehen", o.n);
+        ph.gehen = await phase("gehen", o.n, false, o.weg);
         const p = st.playerMesh.position;
         p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
         const e = (window.__klangGT = r.spawnArchitecture("fahrzeug_gt", { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z }, { silent: true, precise: true }));
@@ -483,7 +500,7 @@ async function taktFahrt(quelle, m, namen, o) {
         ph.fahrt.sattel = !!st.symphony.fahrt;
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
-        ph.nacht = await phase("nacht", o.n);
+        ph.nacht = await phase("nacht", o.n, false, o.weg);
         const b = T().audio();
         const aus = a && b && b.gleich ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) } : null;
         return { seite, phasen: ph, aussetzer: aus };
@@ -504,12 +521,14 @@ async function taktLauf(h) {
     const teile = (/const TAKT_TEILE = (\[[^\]]*\]);/.exec(text) || [])[1];
     if (!(soll > 0) || !teile) throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10 }], 150000);
+    // der Weg je Phase: EINE Zahl für die Probe (die Geh-Phase läuft bis zu ihm) und das Urteil — 10 m, wie die Klang-Linse (`takt`)
+    const weg = 10;
+    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10, weg }], 150000);
     console.log("Klang-Takt:", JSON.stringify(j.seite));
     const rot = (j.rot = []);
     for (const [name, z] of Object.entries(j.phasen)) {
         console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
-        if (!(z.bilder >= 300 && z.weg >= 10)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
+        if (!(z.bilder >= 300 && z.weg >= weg)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
         else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
     }
     const a = j.aussetzer;
