@@ -235,6 +235,11 @@
             textarea {
                 font-size: max(var(--schrift-min), 1em);
             }
+            /* eine Auswahl misst ihre längste Option — in ihrer Tafel nie breiter als ihr Kasten (w12-menue: der Anbieter
+               der Begleiter-Stimme ragte bei 16 px 42 px aus seiner Spalte); was sie zeigt, misst der Schrift-Zensus */
+            select {
+                max-width: 100%;
+            }
 
             /* Webkit-Scrollbars: schmale Brass-Spur statt heller System-Default.
            Greift auf alle scrollbaren Container (Drawer, Konsole, Listen). */
@@ -580,8 +585,10 @@
             /* V8.17 — Chat oben-bündig (nimmt den verfügbaren Platz), Logbuch
                unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
                Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
+            /* aus dem Inhalt, nie aus null (w12-menue): die Konsole wächst mit ihm bis 50vh — eine Basis 0 bei min-height 0
+               legte den Chat auf 0 px, sein Label, das Logbuch und die Eingabe lagen übereinander */
             #console-chat-section {
-                flex: 1 1 0;
+                flex: 1 1 auto;
                 min-height: 0;
             }
             /* V8.36 — eingeklappt: nur das Label, am Boden der Konsole.
@@ -594,7 +601,7 @@
                 min-height: 0;
             }
             #console-log-section:has(#log:not([hidden])) {
-                flex: 1 1 0;
+                flex: 1 1 auto;
                 margin-top: 0;
             }
             #console-log-section #log:not([hidden]) {
@@ -1806,7 +1813,6 @@
                 display: flex;
                 gap: 4px;
                 align-items: center;
-                margin-left: 12px;
             }
             .latch {
                 background: linear-gradient(180deg, var(--iron-1), var(--iron-3));
@@ -2217,6 +2223,9 @@
                     inset 0 0 0 9px rgba(0, 0, 0, 0.35);
                 z-index: 6;
                 display: flex;
+                /* die Leiste misst in ihrer Schrift (w12-menue): bei 16 px ragte „Sicht: 1st“ an 1280 px um 31 px aus ihr */
+                font-size: var(--schrift-min);
+                container: topbar / inline-size;
             }
             #topbar::before {
                 /* Holz-Faser-Textur */
@@ -2236,7 +2245,7 @@
                 display: flex;
                 align-items: center;
                 padding: 0 22px;
-                gap: 18px;
+                gap: 0.75em;
                 z-index: 1;
             }
             #topbar .title {
@@ -2262,13 +2271,31 @@
                 letter-spacing: 0.04em;
                 font-weight: 400;
             }
-            @media (max-width: 1280px) {
+            /* was die Leiste nicht mehr trägt, weicht — gemessen in ihrer Schrift (die Zeile trägt alles in 89 em, ohne
+               Untertitel 83 em, ohne Version 77 em, mit engen Reitern 72 em, ohne Titel 62 em): erst der Untertitel, dann
+               die Version, dann der Atem der Reiter, zuletzt der Titel */
+            @container topbar (max-width: 89em) {
                 #topbar .title .sub {
                     display: none;
                 }
             }
-            @media (max-width: 1100px) {
+            @container topbar (max-width: 83em) {
                 #topbar .title .version {
+                    display: none;
+                }
+            }
+            @container topbar (max-width: 77em) {
+                #topbar .tab {
+                    letter-spacing: 0.02em;
+                    padding-inline: 0.4em;
+                }
+                #topbar .latch {
+                    letter-spacing: 0;
+                    padding-inline: 0.35em;
+                }
+            }
+            @container topbar (max-width: 72em) {
+                #topbar .title {
                     display: none;
                 }
             }
@@ -2287,7 +2314,7 @@
                 color: #d8c08a;
                 background: transparent;
                 border: none;
-                padding: 8px 12px;
+                padding: 8px 0.7em;
                 cursor: pointer;
                 border-radius: 4px;
                 position: relative;
@@ -2739,9 +2766,11 @@
                 gap: 6px;
                 margin-bottom: 4px;
             }
+            /* Name und Wert in der Schrift gemessen (w12-menue): 60 und 30 px trugen „Ehrfurcht“ (66 px) und „0.00“ (38 px)
+               bei 16 px nicht — der Name 5 em, der Wert 5 Zeichen der Mono („-0.15“) */
             #inventory-overlay .emotion .name,
             .hof-emotion-rows .emotion .name {
-                width: 60px;
+                flex: 0 0 5em;
                 font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 text-transform: capitalize;
@@ -2765,7 +2794,7 @@
             }
             #inventory-overlay .emotion .value,
             .hof-emotion-rows .emotion .value {
-                width: 30px;
+                flex: 0 0 5ch;
                 text-align: right;
                 font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
@@ -3056,6 +3085,7 @@
             }
             .drawer .ability-row .ability-head {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 gap: 6px;
             }
@@ -3359,9 +3389,11 @@
             }
             /* V18.55 Hof-Bühne — EIN kohärenter dunkler STAR (Bühne + Spec-Sheet auf demselben dunklen Grund,
                wie der Werkstatt-Viewer + sein Spec-Sheet): Canvas links, das geteilte .spec-sheet rechts. */
+            /* die Bühne und ihr Spec-Sheet nebeneinander, wo beide passen, sonst untereinander (w12-menue: bei 16 px trug die
+               Spalte des Orchesters neben 300 px Bühne 29 px Spec — jede Zeile ragte über die Bühne) */
             .hof-stage {
                 display: grid;
-                grid-template-columns: 300px 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
                 gap: 16px;
                 align-items: stretch;
                 margin: 2px 0 14px 0;
@@ -3375,6 +3407,7 @@
                 height: 300px;
                 display: block;
                 align-self: center;
+                justify-self: center;
                 background: #171019;
                 border: 1px solid var(--brass-2, #6f5a30);
                 border-radius: 10px;
@@ -3795,12 +3828,13 @@
                 border-color: var(--brass-1);
                 font-weight: 600;
             }
-            /* V18.48 Hof-C — der kompakte „Auftrag ▾"-Select pro Wesen (Sammle/Baue inline). */
+            /* V18.48 Hof-C — der kompakte „Auftrag ▾"-Select pro Wesen (Sammle/Baue inline). So breit wie seine Wahl
+               (field-sizing), nie wie die längste Option — 96 px schnitten „⚒ Auftrag…“ bei 16 px zu „AUFTRAC“ (w12-menue). */
             .creature-list .creature-order-select {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: var(--schrift-min);
                 padding: 2px 4px;
-                max-width: 96px;
+                field-sizing: content;
                 background: rgba(120, 80, 30, 0.12);
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
@@ -4920,8 +4954,11 @@
                 padding: 2px 4px;
             }
             /* Welle 6.X.4 D2 — Slider-Row (Master + Pings + Render-Ring). */
+            /* Name · Schieber · Wert: der Name nie gestaucht, der Schieber bricht in die nächste Zeile, wenn beide nicht
+               nebeneinander passen (w12-menue: „Umgebungsgeräusche“ 201 px stand in 174) */
             .drawer .slider-row {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 gap: 6px;
                 padding: 3px 6px;
@@ -4931,21 +4968,22 @@
                 border-radius: 3px;
             }
             .drawer .slider-row label {
+                flex: 0 0 auto;
                 font-family: "Cinzel", Georgia, serif;
                 font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 letter-spacing: 0.04em;
-                min-width: 90px;
+                min-width: 6em;
             }
             .drawer .slider-row input[type="range"] {
-                flex: 1;
+                flex: 1 1 4em;
                 accent-color: var(--brass-2, #b48c50);
             }
             .drawer .slider-row .slider-value {
                 font-family: "JetBrains Mono", monospace;
                 font-size: var(--schrift-min);
                 color: var(--parch-ink);
-                min-width: 36px;
+                min-width: 4ch;
                 text-align: right;
             }
             /* Welle 6.X.4 F1 — Identity-Row (Begleiter-/Spieler-Name). */
@@ -5180,18 +5218,24 @@
             }
             /* V18.51 Hof-E — ZWEI ZONEN (ORCHESTER Star, wide | PARTITUR), content-first nach dem
                Dirigenten-Modell (statt des gleichrangigen 3-Spalten-Stapels). */
+            /* zwei Zonen, wo die Partitur ihre Zeile trägt (26 em: Name · Quelle · permanent · drei Knöpfe), sonst eine —
+               gemessen in der Schrift der Schublade (w12-menue: bei 16 px stand die Partitur an 1024 px 188 px über dem Rand,
+               ihre längste Chronik-Zeile ohne Umbruch spannte die Spalte) */
+            .drawer[data-drawer="kreaturen"] {
+                container: hof / inline-size;
+            }
             .drawer[data-drawer="kreaturen"] .drawer-scroll {
                 display: grid;
-                grid-template-columns: 1.7fr 1fr;
+                grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
                 gap: 0 22px;
                 align-items: start;
             }
             .drawer[data-drawer="kreaturen"] .drawer-scroll > .section {
                 margin: 0 0 6px 0;
             }
-            @media (max-width: 1000px) {
+            @container hof (max-width: 72em) {
                 .drawer[data-drawer="kreaturen"] .drawer-scroll {
-                    grid-template-columns: 1fr;
+                    grid-template-columns: minmax(0, 1fr);
                 }
             }
             .hof-orchester h3,
@@ -5723,20 +5767,21 @@
             }
             /* RECHTS — der Schöpfen-Block: die häufigen 1-Klick-Akte (3er-Block) prominent, die fremde-Welt-
                Power-Werkzeuge als Akkordeon darunter (progressive disclosure). */
-            /* der 3er-Block — exakte Drittel via Grid + box-sizing, damit „Empfangen" nicht über den Rahmen läuft. */
+            /* der 3er-Block — jeder Knopf so breit wie sein Wort, die Zeile bricht um, was nicht passt (w12-menue: exakte
+               Drittel schoben bei 16 px „Verschmelzen“ in „Empfangen“). */
             .feed-3block {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                display: flex;
+                flex-wrap: wrap;
                 gap: 5px;
                 margin-bottom: 8px;
             }
             .feed-3btn {
+                flex: 1 1 auto;
                 font-family: "Cinzel", Georgia, serif;
                 font-size: var(--schrift-min);
                 letter-spacing: 0;
                 line-height: 1.2;
-                padding: 7px 3px;
-                min-width: 0;
+                padding: 7px 6px;
                 box-sizing: border-box;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
                 color: var(--parch-ink, #2b1a08);
@@ -5811,7 +5856,7 @@
             .feed-tool-glyph {
                 color: var(--brass-1, #b88a50);
                 font-size: var(--schrift-min);
-                width: 15px;
+                width: 1.25em;
                 text-align: center;
                 flex: 0 0 auto;
             }
@@ -6310,9 +6355,10 @@
                 letter-spacing: 0.04em;
                 color: var(--ink-on-dark, #e8d4a8);
             }
+            /* Name · Schieber · Wert: der Wert so breit wie seine Ziffern (w12-menue: 34 px trugen „-0.15“ bei 16 px nicht) */
             .workshop-recipe-row {
                 display: grid;
-                grid-template-columns: 78px 1fr 34px;
+                grid-template-columns: 5em 1fr auto;
                 gap: 6px;
                 align-items: center;
             }
@@ -6348,6 +6394,7 @@
             .workshop-recipe-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: var(--schrift-min);
+                min-width: 5ch;
                 text-align: right;
                 color: var(--ink-on-dark, #e8d4a8);
             }
@@ -6791,6 +6838,10 @@
                 flex-wrap: wrap;
                 min-width: 0;
             }
+            /* die Stimmung des Wesens bricht im Sheet um, wo es schmal steht (w12-menue); in der Liste bleibt sie eine Pille */
+            .spec-id .creature-mood {
+                white-space: normal;
+            }
             .spec-role-chip {
                 font-size: var(--schrift-min);
                 padding: 3px 11px;
@@ -6823,10 +6874,11 @@
                 color: var(--ink-on-dark);
                 font-size: var(--schrift-min);
             }
-            /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte). */
+            /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte), je mindestens 15 em (der Balken: Name 7,5 em ·
+               Wert 4,5 em · Spur) — schmaler fällt das Sheet in eine Spalte, keine Zeile ragt in die Nachbarin (w12-menue) */
             .spec-body {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 15em), 1fr));
                 gap: 6px 34px;
                 align-items: start;
             }
@@ -7528,8 +7580,10 @@
                50% breiter (132→200px) damit Materialien als 3×4 statt 2×6
                rendern und Tool-Karten mehr Atem haben. Material-Cards-Grid
                wechselt automatisch auf 3 Spalten dank flex-wrap im Container. */
+            /* die Breiten der Paletten aus der Schrift (w12-menue): links zwei Form-Karten (Pyramide 5,6 em), rechts zwei
+               Material-Karten (7,5 em) */
             #workshop-side-palette {
-                flex: 0 0 168px;
+                flex: 0 0 12em;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -7552,7 +7606,7 @@
                 max-width: 64vw;
             }
             #workshop-side-palette-right {
-                flex: 0 0 200px;
+                flex: 0 0 15.5em;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -7581,7 +7635,7 @@
             /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
             #workshop-shape-palette {
                 display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(5.75em, 1fr));
                 gap: 3px;
             }
             .workshop-shape-card {
@@ -7669,10 +7723,16 @@
             /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources.
                V8.17 — 3 Spalten statt 2 wegen breiterer rechter Side-Palette
                (Schöpfer-Wunsch Punkt 19). Materialien rendern als 3×4 statt 2×6. */
-            #workshop-material-palette,
             #workshop-color-palette {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
+                gap: 3px;
+            }
+            /* die Material-Karten im Raster ihrer Schrift (w12-menue): 3 Spalten in 200 px schnitten bei 16 px 7 von 15 Namen
+               („KNOCH“, „SCHUPP“) — eine Karte trägt Glyphe und Namen (⌘ Knochen 7 em), die rechte Palette zwei Spalten */
+            #workshop-material-palette {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr));
                 gap: 3px;
             }
             .workshop-material-card,
@@ -7714,7 +7774,7 @@
             .workshop-material-card .mat-glyph {
                 font-size: var(--schrift-min);
                 line-height: 1;
-                min-width: 14px;
+                min-width: 1.25em;
                 text-align: center;
                 margin-right: 4px;
                 text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);

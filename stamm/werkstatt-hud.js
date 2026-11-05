@@ -2763,11 +2763,13 @@ class AnazhRealm_werkstatt_hud {
     // das Bild ist der Schirm der Welt (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der
     // Spieler die Schrift liest.
     // DER TEXT IN SEINEM KASTEN (`ueber`, w12-menue): die 16-px-Schrift schnitt in ihren alten Kästen 32 Texte ab (Radeon
-    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“). Jeder gezählte Text steht beim Namen, wenn sein Kasten (der
-    // nächste Vorfahr, der kein Inline ist) breiter oder höher geschrieben ist, als er misst (scrollWidth > clientWidth), oder
-    // wenn ein Vorfahr mit overflow ihn schneidet — ein Roll-Kasten nur quer, längs rollt er —; ein Auslassen mit „…“
-    // (text-overflow: ellipsis) ist gelesen und gilt. Ein <select> zeigt seine Wahl ohne Text-Knoten: sein Klon ohne Breite
-    // misst die Breite, die sie braucht.
+    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“). Jeder gezählte Text steht beim Namen, wenn eines seiner
+    // Rechtecke aus einem Kasten der Kette ragt — sein eigener (der nächste Vorfahr, der kein Inline ist), dann jeder Vorfahr bis
+    // zur Seite oder bis zum ersten, der außer Fluss liegt (absolute, fixed): quer sein Rechteck, längs sein Geviert (1 em um
+    // die Mitte — das Rechteck einer Zeile trägt den Raum ihrer Schrift, Cinzel 22 px bei 16 px), je um 1 px. Ein Roll-Kasten
+    // rollt längs, quer gilt er;
+    // ein Auslassen mit „…“ (text-overflow: ellipsis) ist gelesen und gilt. Ein <select> zeigt seine Wahl ohne Text-Knoten: sein
+    // Klon ohne Breite misst die Breite, die sie braucht, sein Kasten ragt wie jeder.
     _schriftZensus(wurzel = document.body) {
         const min = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--schrift-min"));
         const gefaltet = [...wurzel.querySelectorAll(".collapsed")];
@@ -2806,28 +2808,31 @@ class AnazhRealm_werkstatt_hud {
         const schneidet = (el, rechtecke, eigen) => {
             let k = el;
             while (k.parentElement && /^(inline|contents)$/.test(css(k).display)) k = k.parentElement;
-            const cs = css(k);
-            if (!ausgelassen(cs) && !/auto|scroll/.test(cs.overflowX) && k.scrollWidth > k.clientWidth + 1)
-                return `breit ${k.scrollWidth} > ${k.clientWidth} px`;
-            if (!/auto|scroll/.test(cs.overflowY) && k.scrollHeight > k.clientHeight + 1)
-                return `hoch ${k.scrollHeight} > ${k.clientHeight} px`;
+            const em = parseFloat(css(k).fontSize);
             let laengs = true;
-            // ein Kasten schneidet nie seinen eigenen Rand (ein ::before, ein <select>: ihr Rechteck ist der Kasten)
+            // ein Kasten ragt nie aus seinem eigenen Rand (ein ::before, ein <select>: ihr Rechteck ist der Kasten)
             for (let a = eigen ? k.parentElement : k; a && a !== document.body; a = a.parentElement) {
-                const ac = a === k ? cs : css(a);
+                const ac = css(a);
+                if (/^(inline|contents)$/.test(ac.display)) continue;
                 if (ausgelassen(ac)) return null;
-                const [quer, hoch] = [ac.overflowX !== "visible", laengs && /hidden|clip/.test(ac.overflowY)];
-                if (quer || hoch) {
-                    const c = a.getBoundingClientRect();
-                    const [l, o] = [c.left + a.clientLeft, c.top + a.clientTop];
-                    for (const r of rechtecke) {
-                        if (quer && (r.left < l - 1 || r.right > l + a.clientWidth + 1))
-                            return `geschnitten quer von ${wo(a)}`;
-                        if (hoch && (r.top < o - 1 || r.bottom > o + a.clientHeight + 1))
-                            return `geschnitten längs von ${wo(a)}`;
-                    }
+                const rollt = /auto|scroll/.test(ac.overflowY);
+                if (rollt) laengs = false;
+                const c = a.getBoundingClientRect();
+                const [l, o] = [c.left + a.clientLeft, c.top + a.clientTop];
+                const wie =
+                    a === k
+                        ? "aus seinem Kasten"
+                        : ac.overflowX === "visible"
+                          ? `aus ${wo(a)}`
+                          : `geschnitten von ${wo(a)}`;
+                for (const r of rechtecke) {
+                    if (r.left < l - 1 || r.right > l + a.clientWidth + 1)
+                        return `ragt quer ${wie} (${Math.round(r.width)} px in ${a.clientWidth})`;
+                    const mitte = r.top + r.height / 2;
+                    if (laengs && (mitte - em / 2 < o - 1 || mitte + em / 2 > o + a.clientHeight + 1))
+                        return `ragt längs ${wie} (${Math.round(r.height)} px in ${a.clientHeight})`;
                 }
-                if (/auto|scroll/.test(ac.overflowY)) laengs = false;
+                if (/absolute|fixed/.test(ac.position)) return null;
             }
             return null;
         };
