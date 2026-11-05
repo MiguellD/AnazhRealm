@@ -1,5 +1,16 @@
-# Übergabe 05.11. abends (Konto-Woche bei 97 % um 23:20; Notbremse bei 98 %)
+# Übergabe 05.11. abends (Notbremse 06.11. 00:30 bei 97 %)
 
+
+**ENDSTAND 06.11. 00:30 — ZUERST:**
+- main = 3f1d4a5b (z241, brand-halt mit brand-bild). Gebucht bleiben **206** am f5db8d90.
+- Farm am 3f1d4a5b: 135 grün / 11 rot, Datei `meisterkarte-quelle/punkte/messung/3f1d4a5b-headless.json` in koordination. Der Push auf punkte-maschine scheiterte an GitHub „fatal error in commit_refs“.
+- buche.sh am 3f1d4a5b würde **204** buchen, ich habe NICHT gebucht. +2: stoffe.K2#2, haar.K4#2. Fälle:
+  - streaming.K1/K2 −2: ehrlich, Dorf-Fahrt, Fix auf w12-dorf-strom bei 87 %.
+  - stoffe.K4 2→0: ehrlich. K4#1 misst jetzt das echte Dorf, 16 Häuser altern in 30 Tagen nicht (Δ 0,001).
+  - luftwasser.K3#2 2→1: Unter Wasser sieht man am Bach nur 1,1 m, darum 0 von 16 Fischen im Bild. Folge von z235, der Bach bekam den trüben Fluss-Wert. Klären: Ein Bach ist klar (Secchi), dann die Art des Wassers im Spiel heilen.
+  - feld.K3#2 2→1: „Ruhe 60 s: wasser 0 · regen 0 …“, Ursache ungeklärt (brand-halt `_brandBild` oder Wackeln?).
+- Erst diese zwei klären, dann `BUCHE_KOPF=3f1d4a5b… BUCHE_FALL=1 buche.sh` für die echten Fälle und das Artifact neu veröffentlichen.
+- Notbremse-Skript NICHT gefahren: Es würde einen WIP-Commit auf main pushen (lokale scripts/werkbank.cjs im Haupt-Checkout). Alles aus dieser Sitzung ist gepusht, kein Agent läuft.
 **Gebucht 206/330** am Kopf f5db8d90 (z235) (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v40). main = f5db8d90 bzw. neuer — `git ls-remote origin main`.
 Heute: 198 → 206. Zuletzt material.K1#1 an der Radeon 13/13, nach der Landung von w12-kronen-albedo.
 
