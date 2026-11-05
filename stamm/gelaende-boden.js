@@ -1006,6 +1006,8 @@ class AnazhRealm_gelaende_boden {
     }
     // Der Faden rechnet mit den Fremd-Slots um den Ort (`_ortFest`: die gesetzten Häuser, um die der Plan seine Wege legt, bauen.K2
     // Staffel 2); `ohne` [von, bis): die Stellen des Erdbaus, die die Höhe nicht trägt (der eigene des Orts, `_ortNeuPlanen`).
+    // DIE UNBERÜHRTE WAHL (speicher.K3, `_ortReistNicht`): fragte die Wahl keinen Spieler, keinen Fremd-Slot und wies der Wirt
+    // keinen Kandidaten ab, ist ihr Plan v2 eine Funktion von Saat und Gesetz — er steht in `_ortWahlUnberuehrt`.
     async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
@@ -1022,9 +1024,12 @@ class AnazhRealm_gelaende_boden {
                     `ORT: das Wasser um ${Math.round(origin.x)}/${Math.round(origin.z)} kam nicht aus dem Faden`
                 );
         }
+        let unberuehrt = !fest;
         for (let ab = 0, wand = -1; ;) {
             const pm = frei === undefined ? this.state.playerMesh && this.state.playerMesh.position : frei;
             const raster = this._ortRaster(plan);
+            const festSlots = this._ortFest(origin, suche);
+            if (pm || festSlots.length) unberuehrt = false;
             const r = await this._nebenAuftrag(
                 "ort",
                 {
@@ -1037,7 +1042,7 @@ class AnazhRealm_gelaende_boden {
                     M: AnazhRealm.WERK_LAND_M,
                     spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
-                    fest: this._ortFest(origin, suche),
+                    fest: festSlots,
                     ohne,
                 },
                 [raster.lx.buffer, raster.lz.buffer]
@@ -1057,10 +1062,12 @@ class AnazhRealm_gelaende_boden {
             }
             if (r.wand) {
                 mass.abstandM = r.abstandM;
+                if (unberuehrt) (this._ortWahlUnberuehrt || (this._ortWahlUnberuehrt = new WeakSet())).add(r.v2);
                 return r.v2;
             }
             const t0 = performance.now();
             const traegt = this._ortTraegtWirt(r.v2, pm);
+            if (!traegt) unberuehrt = false;
             mass.maxMs = Math.max(mass.maxMs, performance.now() - t0);
             ab = traegt ? r.index : r.index + 1;
             wand = traegt ? r.index : -1;

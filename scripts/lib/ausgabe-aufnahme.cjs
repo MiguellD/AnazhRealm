@@ -815,28 +815,14 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Loop standen die Ringe noch um die VORIGE Kamera — die Aufnahme schwingt sie für diese ein (Kachel um
             // Kachel, bis keine mehr fehlt; A9-n2: die Streu trug die Armlänge des vorigen Schusses).
             for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
-            // DIE ERST-ZEICHNUNG (`_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
-            // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
-            // erfüllt sich kein Versprechen. Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
-            // für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt und keine Pipeline offen ist. Steht die
-            // Erst-Zeichnung 120 s ohne Fortschritt (kein Bau, keine Pipeline wird bereit; `opt.erstFristMs`, die Wand prüft mit
-            // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene
-            // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis.
-            const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");
-            // DER RÜCKSTRAHL DIESER SZENE (schatten.K4, `_rueckstrahlJetzt`): seine Lesung kommt ein Bild nach der Messung zurück —
-            // der Schuss wartet auf sie, sonst trüge er den Boden des vorigen Schusses (vor dem Neubeginn der Geschichte unten)
-            await r._rueckstrahlJetzt(frame);
-            // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
-            // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
-            // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
-            // Nach dem Sprung läuft die Geschichte als MITTEL an (K68, `_zeitAufloesung` `_anlauf`): jeder der 32 Frames
-            // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames. JEDER Schuss
-            // beginnt Folge, Geschichte und Dither-Phase von vorn (A8-n1; bis dahin nur mit `opt.fest`, K63-n1): die Geschichte
-            // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
-            // sind dasselbe Bild.
-            // DER HALTER (`__halten`): der Spiegel-Pass steht in den gezählten Frames, offen (`__offen` zitter) läuft die Folge weiter
-            window.__halten(["spiegel"]);
-            if (!window.__offen?.has("zitter")) {
+            // DER NEUBEGINN DER FOLGE (die Schatten-Karten neu; Versatz, Geschichte, Dither-Phase — offen `__offen` zitter läuft
+            // die Folge weiter): vor dem Bild des Rückstrahls und vor den gezählten Frames. Das Bild, an dem der Rückstrahl den Boden
+            // misst, trug bis w12-lod-ende die Kaskaden, die der Lauf vor dem Schuss hielt (`_kaskadeHaelt`): der Boden der ersten
+            // Aufnahme lag unter fremden Schatten (Radeon, Wiese: 0,069 statt 0,095), Stamm und Laub trugen ihn — zwei Aufnahmen
+            // derselben Szene wichen in 1 786 078 Bytes ab, die zweite gleich der dritten
+            const neubeginn = () => {
+                r._schattenAlleNeu();
+                if (window.__offen?.has("zitter")) return;
                 const tn = st.traaNode;
                 if (tn) {
                     tn._jitterIndex = 0;
@@ -847,10 +833,34 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (st._traaR) st._traaR.neu = true;
                 const lu = st.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
-            }
+            };
+            // DIE ERST-ZEICHNUNG (`_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
+            // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
+            // erfüllt sich kein Versprechen. Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
+            // für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt und keine Pipeline offen ist. Steht die
+            // Erst-Zeichnung 120 s ohne Fortschritt (kein Bau, keine Pipeline wird bereit; `opt.erstFristMs`, die Wand prüft mit
+            // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene
+            // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis.
+            // Sie ruht unter den Schatten-Karten DIESES Blicks (der Neubeginn): die Werfer, die erst die frische Box wählt, bauen hier
+            neubeginn();
+            const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");
+            // DER RÜCKSTRAHL DIESER SZENE (schatten.K4, `_rueckstrahlJetzt`): seine Lesung kommt ein Bild nach der Messung zurück —
+            // der Schuss wartet auf sie, sonst trüge er den Boden des vorigen Schusses; sein Schalter steht danach für die Bilder des
+            // Schusses (w10-treue: der erste Schuss nach dem Lesen zeichnete ohne den eben gemessenen Boden)
+            await r._rueckstrahlJetzt(() => (neubeginn(), frame()));
+            // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
+            // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
+            // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
+            // Nach dem Sprung läuft die Geschichte als MITTEL an (K68, `_zeitAufloesung` `_anlauf`): jeder der 32 Frames
+            // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames. JEDER Schuss
+            // beginnt Folge, Geschichte und Dither-Phase von vorn (A8-n1; bis dahin nur mit `opt.fest`, K63-n1): die Geschichte
+            // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
+            // sind dasselbe Bild.
+            // DER HALTER (`__halten`): der Spiegel-Pass steht in den gezählten Frames, offen (`__offen` zitter) läuft die Folge weiter
             // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
             // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
-            r._schattenAlleNeu();
+            window.__halten(["spiegel"]);
+            neubeginn();
             window.__imSchuss = 1;
             // DIE TIEFE ALLEIN (`opt.tiefe`: der Arm von `werkbank bild --arm` sucht in ihr die Klasse): die Tiefe trägt keine
             // Geschichte — EIN Bild nach dem Neubeginn der Folge, mit dem Versatz jedes Neubeginns (zwei Tiefen unterscheiden

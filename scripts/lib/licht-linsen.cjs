@@ -2689,20 +2689,21 @@ function kontaktSicht(o) {
             const x = Math.sqrt(m / 6.25);
             return c.map((v) => v * k + (m < 0.04 ? x - 6.25 * x * x : 0.04));
         };
+        // EINE Aufnahme je Schuss, die Treue einmal je Uhr: der Schuss nach dem ersten Bild ohne Sonne (Kamera, Sonne und
+        // Pfosten gewechselt) ein zweites Mal — die zwei Bilder sind Byte für Byte gleich, oder die Linse bricht beim Namen (bis
+        // w12-kontakt-zuwachs zwei Aufnahmen je Schuss: 84 Aufnahmen 42,5 s an der Radeon); L nur an den abgetasteten Pixeln
+        const aufnahme = async () => (o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+        let zahl = 0;
         const schuss = async () => {
-            for (let i = 0; i < 2; i++) r._schattenAlleNeu(), (o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
-            const L = new Float32Array(W * H);
-            for (let i = 0; i < W * H; i++) {
-                const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
-                L[i] = luma709(c) / rend.toneMappingExposure;
-            }
-            return L;
+            const u8 = await aufnahme();
+            if (++zahl === 4 && (aus.treueBytes = (await aufnahme()).reduce((n, x, i) => n + (x !== u8[i]), 0))) throw new Error(`die Treue: ${aus.treueBytes} Bytes`);
+            return (i) => luma709(zurueck([lin[u8[4 * i]], lin[u8[4 * i + 1]], lin[u8[4 * i + 2]]])) / rend.toneMappingExposure;
         };
         const v = new T.Vector3();
         const probe = (L) => {
             const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
             const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
-            const g = (i, j) => L[(y0 + j) * W + x0 + i];
+            const g = (i, j) => L((y0 + j) * W + x0 + i);
             return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
         };
         const aus = { uhr: o.uhr, sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), schattenM: +laenge.toFixed(2), posen: {} };

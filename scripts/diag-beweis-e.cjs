@@ -124,9 +124,6 @@ const SCHUSS_FN = async (kam) => {
         if (st.fernRing) r._tickFeldPass(st.fernRing);
     } catch {}
     if (st.playerMesh) st.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
-    // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
-    // die neue Kamera veraltet.
-    r._schattenAlleNeu();
     // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, Tonkurve + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
     const auf = await window.__ausgabeAufnahme(640, 360, 1);

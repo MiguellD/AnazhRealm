@@ -148,7 +148,7 @@ class AnazhRealm_koerper_fahrt {
     // beschleunigen sein Ziel unter `ruheA`, in m/s²), schläft der Löser selbst (`tuchTakt`). Sonst ruht das Tuch in der Pose
     // (`tuchRuhe`: die Ruhe-Lage, der Zustand fällt). Bis w6-weiches rechnete jeder Takt der Bewohner sein Tuch nach der Spielzeit:
     // die Probe des Bewohner-Tags (DT 0,1 s, 24 Spielstunden) trug ~9 min Tuch (Kreatur-Linse Teil 1 main 111 s, mit dem Tuch 643 s,
-    // jetzt 111 s), und der stehende Bewohner schlief nie (3,6 ms je Bild bei zwei nahen, jetzt 0,26). Das Gitter des Lösers ist das Tuch der Grobstufe, die feine Stufe folgt ihm; das Gitter (Kanten,
+    // jetzt 111 s), und der stehende Bewohner schlief nie (3,6 ms je Bild bei zwei nahen, jetzt 0,26). Das Gitter des Lösers ist das Tuch der feinen Stufe (die das Bild trägt), die grobe folgt ihm; das Gitter (Kanten,
     // Massen, Folger) entsteht je Vorlage EINMAL (`_tuchGitter`, die Leiber derselben Tracht teilen es). Jedes Tuch-Mesh trägt
     // solange seine EIGENE Positions-Spalte (die übrigen Spalten und der Index bleiben die der Vorlage) — fällt der Zustand, kehrt
     // die Geometrie der Vorlage zurück, die eigene Spalte nimmt der GPU-Kehraus.
@@ -240,9 +240,10 @@ class AnazhRealm_koerper_fahrt {
         if (dt === 0 && u._tuchT != null) return;
         if (dt > 0 && dt < TG.taktS - 1e-6) return;
         u._tuchT = t;
-        // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen)
+        // die Welt-Matrizen dieses Takts (die Pose steht; der Löser liest die Knochen); die Stufe seines Gitters wählt der Schirm
+        // (Bildpunkte je Meter am Leib)
         this._leibMatrix(group);
-        KC.tuchTakt(u._tuch, dt);
+        KC.tuchTakt(u._tuch, dt, pxJeM / Math.sqrt(d2));
     }
     // Die Tuch-Meshes eines Leibs, einmal gesucht: die Grobstufe ist das Gitter des Lösers, die feine folgt ihm (ein Leib ohne
     // Tuch kostet ab hier nichts mehr). false: kein Gelenk-Leib oder kein Tuch.
@@ -259,13 +260,14 @@ class AnazhRealm_koerper_fahrt {
         const fein = stoff(G.nah);
         const grob = stoff(G.fern);
         if (!fein.length && !grob.length) return !(u._tuchKein = true);
-        u._tuchTeile = { sim: grob.length ? grob : fein, folge: grob.length ? fein : [], auge: fein[0] || grob[0] };
+        u._tuchTeile = { sim: fein.length ? fein : grob, folge: fein.length ? grob : [], auge: fein[0] || grob[0] };
         return true;
     }
-    // Die Haut des Leibs, wie sie jetzt hängt (beide Stufen: die Kollision des Tuchs)
+    // Die Haut des Leibs, wie sie jetzt hängt: die der feinen Stufe (das Tuch rechnet nur, solange sie das Bild trägt — seine
+    // Kollision ist die Haut, über der es gezeichnet wird)
     _tuchHaut(group) {
         const haut = [];
-        group.traverse(
+        group.userData._gelenk.nah.traverse(
             (n) => n.isSkinnedMesh && n.userData.__seh === "haut" && n.userData.__klasse === "haut" && haut.push(n)
         );
         return haut;

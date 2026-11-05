@@ -2118,8 +2118,12 @@
     // P-Vektor für `growSkeleton` und die Bau-Stufen (foundry-core `deriveParamsPlant` delegiert hierher, Studio und
     // Foundry-Worker lesen ihn). Die Zieh-Reihenfolge ist die der Vorlage: 3 Farb-Würfe, der Wuchs-Strom, die Phase,
     // danach nur beim Totholz die Bruch-Höhe — derselbe Same ⇒ dieselbe Gestalt. `alter` (stoffe.K5#2, optional): die
-    // Jugend-Gestalt desselben Individuums (JUGEND unten); ohne sie der gewachsene Baum, byte-gleich.
-    function treeParams(dials, seedInt, stufe, art, weltSkala, alter) {
+    // Jugend-Gestalt desselben Individuums (JUGEND unten); ohne sie der gewachsene Baum, byte-gleich. `gestalten` (K20,
+    // optional): die Bestand-Gestalten V der Art (lod.budget.gestalten, die Render-Zeile trägt der Wirt) — der Same V+1 IST
+    // ihr Solitär (`solitaerGestalt`) und wächst frei, für jeden Leser derselbe Baum: Bühne, Werk und Wald des Studios, die
+    // Welt, ihr Bäcker der Karte und der gefühlte Baum (bis w12-eiche-same prägte ihn der Wirt, die Bühne nie: die Eiche
+    // Same 3 stand im Studio als Bestand, in der Welt als Solitär). Ohne `gestalten` kein Solitär, byte-gleich.
+    function treeParams(dials, seedInt, stufe, art, weltSkala, alter, gestalten) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
         const api = dials.api,
@@ -2197,6 +2201,8 @@
                 Math.round(P.maxDepth * (JUGEND.tiefeAb + (1 - JUGEND.tiefeAb) * alter))
             );
         }
+        const T = solitaerGestalt(art && art.kind, gestalten);
+        if (T && Math.floor(seedInt) === T) P.freistand = 1;
         return P;
     }
     const JUGEND = Object.freeze({ tiefe: 3, tiefeAb: 0.5 });
@@ -2394,8 +2400,9 @@
     // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
     // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
     const BESTAND = Object.freeze({ hd: 40, seitenast: 0.6, krone: 0.6 });
-    // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: der Wirt
-    // (`_foundryGestalten`, `_foundryGestaltOv`), gate:asset-contract (jede Gestalt der Welt unter ihrer Zeile).
+    // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: die Ableitung
+    // (`treeParams`: der Same V+1 wächst frei), der Wirt (`_foundryGestalten`, `_ortWaehlt`), gate:asset-contract (jede
+    // Gestalt der Welt unter ihrer Zeile).
     function solitaerGestalt(kind, V) {
         return kind === "tree" && Number.isInteger(V) && V >= FREISTAND.ab ? V + 1 : 0;
     }

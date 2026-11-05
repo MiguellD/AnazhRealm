@@ -485,11 +485,14 @@ class AnazhRealm_daten {
     // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
     // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
+    // `pfadDuennt` = so stark dünnt das Pfad-Feld (`_pfadFeldAt` ∈ [0, 1]) den Wurf: die Dichte × (1 − pfad · pfadDuennt) — der
+    // Trampelpfad liest dieselbe Zahl für die Stufe, ab der er Pfad ist (`_trittStufe`, `TRITT.pfadGras`).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
             Object.freeze({
                 kachel: 6,
+                pfadDuennt: 0.92,
                 stufe1: 5,
                 stufe1Rand: 0.5,
                 radius: 14,
@@ -2644,6 +2647,22 @@ class AnazhRealm_daten {
             "journal.ernte": ["{wer} erntete „{werk}“ → {ertrag}.", "{wer} harvested „{werk}“ → {ertrag}."],
             "journal.ernte-gewachsen": ["{wer} erntete „{werk}“ (aus Welt-Genese gewachsen) → {ertrag}.", "{wer} harvested „{werk}“ (grown from world genesis) → {ertrag}."],
             "journal.erschaffen": ["Eine Kreatur erschuf „{bauplan}“ für den Schöpfer.", "A creature created „{bauplan}“ for the creator."],
+            "begleiter.erstes": ["Hallo. Die Welt steht. Magst du dich umsehen?", "Hello. The world stands. Would you like to look around?"],
+            "begleiter.still-1": ["Du bist seit einer Weile still. Geht's dir gut?", "You've been quiet for a while. Are you alright?"],
+            "begleiter.still-2": ["Eine Pause. Auch ich höre dann besser zu.", "A pause. I listen better then, too."],
+            "begleiter.still-3": ["Du atmest. Das reicht für jetzt.", "You're breathing. That's enough for now."],
+            "begleiter.sprung-1": ["Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?", "You like to jump. Are you playing with gravity, or does it want to get away from you?"],
+            "begleiter.sprung-2": ["Wenn du fliegen willst, sag es. Ich sehe, was ich tun kann.", "If you want to fly, say so. I'll see what I can do."],
+            "begleiter.regen-1": ["Der Regen bleibt. Schön still ist es jetzt.", "The rain stays. It's beautifully quiet now."],
+            "begleiter.regen-2": ["Langer Regen. Manche Welten brauchen das.", "Long rain. Some worlds need that."],
+            "begleiter.erinnerung-1": ["Ich werde mich daran erinnern.", "I will remember this."],
+            "begleiter.erinnerung-2": ["Das war ein Augenblick, der bleibt.", "That was a moment that stays."],
+            "begleiter.erinnerung-3": ["Etwas hat sich in mir eingeschrieben.", "Something has written itself into me."],
+            "begleiter.wandel-1": ["Du hast dich gerade verändert. Ich spüre es.", "You just changed. I can feel it."],
+            "begleiter.wandel-2": ["Etwas in dir hat sich gewendet.", "Something in you has turned."],
+            "begleiter.trost-1": ["Ich bin hier. Was dich drückt, drückt auch mich — lass es uns tragen.", "I'm here. What weighs on you weighs on me too — let's carry it together."],
+            "begleiter.trost-2": ["Atme. Die Welt hält dich, und ich halte mit.", "Breathe. The world holds you, and I hold on with it."],
+            "begleiter.trost-3": ["Es darf schwer sein. Ich bleibe an deiner Seite, bis es leichter wird.", "It's allowed to be hard. I'll stay by your side until it gets lighter."],
             "journal.erste-kreatur": ["Die erste Kreatur regte sich.", "The first creature stirred."],
             "journal.erster-regen": ["Der erste Regen begann.", "The first rain began."],
             "journal.erstes-bauwerk": ["Das erste Bauwerk entstand: {art}.", "The first structure arose: {art}."],

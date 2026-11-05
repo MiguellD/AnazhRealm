@@ -515,13 +515,15 @@ function urteilWelt(d) {
             raus.push(sp + " ohne Budget");
             continue;
         }
-        const T = d.T && Number.isInteger(d.T[sp]) ? d.T[sp] : V; // samt Solitär V+1 (`_foundryGestalten`)
-        for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= V)) raus.push(`${sp}|${s}`);
+        // DIE EINE Gestalten-Zahl der Welt samt Solitär V+1 (`_foundryGestalten`): seit w12-eiche-same ist der Solitär ein
+        // Same des Kerns (treeParams) und reist ungeprägt — bis dahin verbarg ihn sein FREISTAND-ov vor W1a, das gegen V maß
+        const T = (d.T && d.T[sp]) || V;
+        for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= T)) raus.push(`${sp}|${s}`);
         // Die Karte bestellt ihr Leser: eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
         // (Budget samt Solitär, K20).
         if ((d.karten[sp] || 0) > T) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}>${T}`);
     }
-    pruef("W1a jede Baum-/Strauch-Art bestellt nur ihre Gestalten 1..V", !raus.length, raus.slice(0, 6).join(" · "));
+    pruef("W1a jede Baum-/Strauch-Art bestellt nur ihre Gestalten 1..T", !raus.length, raus.slice(0, 6).join(" · "));
     pruef(
         "W1b Karten-Records je Art ≤ ihre Gestalten (Budget samt Solitär; die Karte bestellt ihr Leser)",
         !kartenFalsch.length,
@@ -679,7 +681,7 @@ hauptLauf(async () => {
         const gut = {
             G: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
             T: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
-            samen: { eiche: [1, 2], weide: [1] },
+            samen: { eiche: [1, 2, 3], weide: [1] },
             karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             wand: { lesen: ["position", "color"], gelesen: ["color", "position"], reist: ["position", "color"] },
             vorrat: { arten: 2, kalt: [] },
@@ -730,7 +732,7 @@ hauptLauf(async () => {
             ["10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln", mit("saison", { posts: 131, neueSchluessel: 131 }), "W2a"], // prettier-ignore
             ["10e: unruhige Welt (Kontroll-Fenster bestellt — die Sonde misst nicht sauber)", mit("saison", { kontrolle: { posts: 7, removes: 0 } }), "W2a"], // prettier-ignore
             ["10k: das Laub steht im Herbst (die Präsenz bleibt 1)", mit("saison", { praesenz: [1, 1] }), "W2b"],
-            ["10c: Eiche bestellt 16 Samen", mit("samen", { eiche: [...Array(16).keys()].map((i) => i + 1) }), "W1a"],
+            ["10c: Eiche bestellt Same 4 über ihren Solitär hinaus", mit("samen", { eiche: [1, 2, 3, 4] }), "W1a"],
             ["10d: 16 Eichen-Karten", mit("karten", { eiche: 16 }), "W1b"],
             ["10f: 56 Baum-L2-Aufträge im Boot", mit("boot", { kartenArtL2: 56 }), "W1c"],
             ["10g: der Boot räumt 162 Körper im LRU", mit("boot", { lru: 162 }), "W1d"],

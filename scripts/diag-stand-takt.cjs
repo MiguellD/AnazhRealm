@@ -528,7 +528,6 @@ function selbsttest() {
             ["fixWach=", "Sprung"],
             /FIXPUNKT: die Welt hieß stehend — Sprung/,
         ],
-        ["die Ankunft gleitet, die Welt steht (die Basis)", ["fixWach=", "Gleite"], /stehend — Gleite/],
         ["die Sonde ohne Bestand", ["sonde.vor=", "Rinde baum_tanne"], /SONDE: .* trifft Rinde/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
@@ -1048,7 +1047,7 @@ async function brandSeite(MESS) {
         // der nächste GEWACHSENE Baum (die Zellen der Asche oben tragen den Jungwuchs ihres Walds)
         const naechster = () => baeume().filter((e) => !(e.studioOv && e.studioOv.alter)).sort((u, v) => d(u.position) - d(v.position))[0];
         const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
-            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(pr, g, ov))));
+            [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(ov))));
         const S = (aus.saemling = { stufen: [] });
         const B0 = naechster();
         if (B0) {
@@ -1293,11 +1292,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 // (1 mm): nach einem Takt stehen Stufen-Wahl und Streu mitten in der Runde. L1→L2 × 0,8 und zurück: nach dem Stand
                 // gehen 150 Takte ohne Eingabe keinen Fege-Takt mehr.
                 // Ein Sprung des Auges (die Kamera einer Sonde, 40 m) ohne Takt: die Stufen-Wahl ginge im nächsten eine Runde.
-                // Die Ankunft gleitet noch (B2, ein Bild von 90): jede Stufen-Wahl misst weiter, als das Auge steht.
-                const [K, stand, gleit] = [st.camera.position, r._weltSteht(), st._ankunftGleit];
-                st._ankunftGleit = 0;
-                aus.fixWach = stand && r._weltSteht() && "Gleite";
-                st._ankunftGleit = gleit;
+                const [K, stand] = [st.camera.position, r._weltSteht()];
                 const h = st.camera.getWorldDirection(K.clone()).multiplyScalar(-60).add(K);
                 r._passSicht(st.camera, false);
                 r._passSicht(st.camera, true);
@@ -2428,7 +2423,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         : `wach ${simZeile(w.wach)} — nachher ${simZeile(w.nachher)}`)
         );
     console.log(`  Wach (ein kalter Bau): ${befund.wach} · Dorf ${JSON.stringify(befund.dorf)}`);
-    if ("fixWach" in befund) console.log(`  Fixpunkt Gleite · Sprung 40 m · Weckruf 1 mm: ${befund.fixWach || "steht nicht"}`);
+    if ("fixWach" in befund) console.log(`  Fixpunkt Sprung 40 m · Weckruf 1 mm: ${befund.fixWach || "steht nicht"}`);
     for (const [i, F] of (befund.fix || []).entries())
         console.log(
             `  Fixpunkt ${i ? "L1→L2 zurück" : "L1→L2 × 0,8"}: ${F.fehler || `${F.wirkte} Wirkungen, die Welt steht nach ${F.takte} ` +

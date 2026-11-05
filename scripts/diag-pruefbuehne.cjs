@@ -1238,7 +1238,6 @@ async function lichtLauf() {
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
                         // der Schein übersetzt nichts (dieselben Programme, nur Uniform-Werte): EINE Aufnahme mit ihren 32 Warm-Frames
                         for (let i = 0; i < (schein ? 1 : 2); i++) {
-                            r._schattenAlleNeu();
                             auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
@@ -1378,7 +1377,6 @@ async function lichtLauf() {
                 : null;
             try {
                 for (let i = 0; i < 2; i++) {
-                    r._schattenAlleNeu();
                     auf = await window.__ausgabeAufnahme(960, 540, 1);
                 }
             } finally {
@@ -1394,7 +1392,6 @@ async function lichtLauf() {
             const nahLos6 = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM + 6) : null;
             try {
                 for (let i = 0; i < 2; i++) {
-                    r._schattenAlleNeu();
                     auf = await window.__ausgabeAufnahme(960, 540, 1);
                 }
             } finally {
