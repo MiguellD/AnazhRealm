@@ -477,11 +477,14 @@ class AnazhRealm_daten {
     // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
     // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
+    // `pfadDuennt` = so stark dünnt das Pfad-Feld (`_pfadFeldAt` ∈ [0, 1]) den Wurf: die Dichte × (1 − pfad · pfadDuennt) — der
+    // Trampelpfad liest dieselbe Zahl für die Stufe, ab der er Pfad ist (`_trittStufe`, `TRITT.pfadGras`).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
             Object.freeze({
                 kachel: 6,
+                pfadDuennt: 0.92,
                 stufe1: 5,
                 stufe1Rand: 0.5,
                 radius: 14,

@@ -153,7 +153,7 @@ class AnazhRealm_vegetation_wiese {
                 const pfad = this._pfadFeldAt(x, z, y);
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
                 // die Asche eines Brands (`_ascheAt`, die Boden-Decke): auf ihr steht kein Halm, bis sie nachgrünt (stoffe.K2#2)
-                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen * (1 - this._ascheAt(x, z));
+                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * NW.pfadDuennt) * gruen * (1 - this._ascheAt(x, z));
                 if (wurf >= p) continue;
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes), sein
