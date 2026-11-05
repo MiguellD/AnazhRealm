@@ -106,8 +106,8 @@ async function seitenTakt() {
 }
 // DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
 // Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
-// Konstruktor liest: `_loadKeybindings`). Vorher die Schrift (das HUD mit einem gepflanzten 14-px-Text, das Ich und jede Schublade
-// über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
+// Konstruktor liest: `_loadKeybindings`). Vorher die Schrift, ihre Größe und ihr Kasten (das HUD mit einem gepflanzten 14-px-Text
+// und einem 2 em engen Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
 // nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
 // Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah. Ein Bild ist am Gerät ein Bild
 // des laufenden Loops, am Null-Renderer EIN Sim-Schritt des Leibs (`_loopFixedStep`: Sammler, Bewegung, Physik) — die Probe
@@ -123,9 +123,10 @@ async function bedienung2(vor) {
             else await new Promise(requestAnimationFrame);
     };
     const taeter = (o) => [
-        ...Object.entries(o.schrift).flatMap(([t, z]) =>
-            z.klein.map((k) => `${t}: ${k.px} px — ${k.wo} „${k.text}“ (${k.n}×)`)
-        ),
+        ...Object.entries(o.schrift).flatMap(([t, z]) => [
+            ...z.klein.map((k) => `${t}: ${k.px} px — ${k.wo} „${k.text}“ (${k.n}×)`),
+            ...z.ueber.map((k) => `${t}: aus dem Kasten — ${k.wo} „${k.text}“ ${k.grund} (${k.n}×)`),
+        ]),
         ...(o.belegt === "KeyO" && o.platte === "KeyO" && o.nachReload === "KeyO"
             ? []
             : [`die Belegung trägt vor nicht (${o.belegt} · ${o.platte} · ${o.nachReload})`]),
@@ -136,14 +137,24 @@ async function bedienung2(vor) {
     if (!vor) {
         const probe = Object.assign(document.createElement("span"), { textContent: "Probe 14 px" });
         probe.style.fontSize = "14px";
-        document.getElementById("hotbar").append(probe);
+        // der zu enge Kasten: 2 em breit, der Text schneidet ohne „…“ ab
+        const eng = Object.assign(document.createElement("span"), { textContent: "Probe Kasten zu eng" });
+        eng.style.cssText = "display: inline-block; width: 2em; overflow: hidden; white-space: nowrap";
+        document.getElementById("hotbar").append(probe, eng);
         r._menueZeigen(null);
         const schrift = { hud: r._schriftZensus() };
         probe.remove();
-        const blind = schrift.hud.klein.some((z) => z.text === probe.textContent)
-            ? []
-            : ["der 14-px-Text der Hotbar fehlt im Zensus"];
+        eng.remove();
+        const blind = [
+            ...(schrift.hud.klein.some((z) => z.text === probe.textContent)
+                ? []
+                : ["der 14-px-Text der Hotbar fehlt im Zensus"]),
+            ...(schrift.hud.ueber.some((z) => z.text === eng.textContent)
+                ? []
+                : ["der zu enge Kasten der Hotbar fehlt im Zensus"]),
+        ];
         schrift.hud.klein = schrift.hud.klein.filter((z) => z.text !== probe.textContent);
+        schrift.hud.ueber = schrift.hud.ueber.filter((z) => z.text !== eng.textContent);
         for (const d of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),

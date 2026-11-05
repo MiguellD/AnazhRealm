@@ -2759,8 +2759,15 @@ class AnazhRealm_werkstatt_hud {
     // `wurzel` (ein Element, sonst die Seite) — jeder Text-Knoten und jedes ::before/::after mit Inhalt, seine berechnete Größe mal
     // dem Maßstab der transform-Kette; die gefalteten Sektionen zeigen ihren Inhalt, solange er zählt. Was unter der kleinsten
     // Schrift liegt, steht beim Namen (Ort im Baum, Größe, Text). Der Leser: `werkbank bedienung --staffel 2` am Gerät und die
-    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], bild: [w, h] } — das Bild ist der Schirm der Welt
-    // (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der Spieler die Schrift liest.
+    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], ueber: [{ wo, text, grund, n }], bild: [w, h] } —
+    // das Bild ist der Schirm der Welt (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der
+    // Spieler die Schrift liest.
+    // DER TEXT IN SEINEM KASTEN (`ueber`, w12-menue): die 16-px-Schrift schnitt in ihren alten Kästen 32 Texte ab (Radeon
+    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“). Jeder gezählte Text steht beim Namen, wenn sein Kasten (der
+    // nächste Vorfahr, der kein Inline ist) breiter oder höher geschrieben ist, als er misst (scrollWidth > clientWidth), oder
+    // wenn ein Vorfahr mit overflow ihn schneidet — ein Roll-Kasten nur quer, längs rollt er —; ein Auslassen mit „…“
+    // (text-overflow: ellipsis) ist gelesen und gilt. Ein <select> zeigt seine Wahl ohne Text-Knoten: sein Klon ohne Breite
+    // misst die Breite, die sie braucht.
     _schriftZensus(wurzel = document.body) {
         const min = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--schrift-min"));
         const gefaltet = [...wurzel.querySelectorAll(".collapsed")];
@@ -2792,10 +2799,48 @@ class AnazhRealm_werkstatt_hud {
         const sichtbar = (el) =>
             el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && el.getClientRects().length > 0;
         const schirm = this._schirm();
-        const [klein, aus] = [new Map(), { knoten: 0, klein: [], bild: [schirm.breite, schirm.hoehe] }];
-        const zaehle = (el, text, cs) => {
+        const [klein, ueber] = [new Map(), new Map()];
+        const aus = { knoten: 0, klein: [], ueber: [], bild: [schirm.breite, schirm.hoehe] };
+        const css = (el) => window.getComputedStyle(el);
+        const ausgelassen = (cs) => cs.textOverflow === "ellipsis" && cs.overflowX !== "visible";
+        const schneidet = (el, rechtecke, eigen) => {
+            let k = el;
+            while (k.parentElement && /^(inline|contents)$/.test(css(k).display)) k = k.parentElement;
+            const cs = css(k);
+            if (!ausgelassen(cs) && !/auto|scroll/.test(cs.overflowX) && k.scrollWidth > k.clientWidth + 1)
+                return `breit ${k.scrollWidth} > ${k.clientWidth} px`;
+            if (!/auto|scroll/.test(cs.overflowY) && k.scrollHeight > k.clientHeight + 1)
+                return `hoch ${k.scrollHeight} > ${k.clientHeight} px`;
+            let laengs = true;
+            // ein Kasten schneidet nie seinen eigenen Rand (ein ::before, ein <select>: ihr Rechteck ist der Kasten)
+            for (let a = eigen ? k.parentElement : k; a && a !== document.body; a = a.parentElement) {
+                const ac = a === k ? cs : css(a);
+                if (ausgelassen(ac)) return null;
+                const [quer, hoch] = [ac.overflowX !== "visible", laengs && /hidden|clip/.test(ac.overflowY)];
+                if (quer || hoch) {
+                    const c = a.getBoundingClientRect();
+                    const [l, o] = [c.left + a.clientLeft, c.top + a.clientTop];
+                    for (const r of rechtecke) {
+                        if (quer && (r.left < l - 1 || r.right > l + a.clientWidth + 1))
+                            return `geschnitten quer von ${wo(a)}`;
+                        if (hoch && (r.top < o - 1 || r.bottom > o + a.clientHeight + 1))
+                            return `geschnitten längs von ${wo(a)}`;
+                    }
+                }
+                if (/auto|scroll/.test(ac.overflowY)) laengs = false;
+            }
+            return null;
+        };
+        const zaehle = (el, text, cs, rechtecke = null) => {
             const px = +(parseFloat(cs.fontSize) * massstab(el)).toFixed(1);
             aus.knoten++;
+            const grund = schneidet(el, rechtecke || [...el.getClientRects()], !rechtecke);
+            if (grund) {
+                const k = wo(el) + "|" + grund;
+                const z = ueber.get(k) || { wo: wo(el), text: text.slice(0, 40), grund, n: 0 };
+                z.n++;
+                ueber.set(k, z);
+            }
             if (px >= min) return;
             const k = wo(el) + "@" + px;
             const z = klein.get(k) || { wo: wo(el), px, text: text.slice(0, 40), n: 0 };
@@ -2805,15 +2850,11 @@ class AnazhRealm_werkstatt_hud {
         const gang = document.createTreeWalker(wurzel, window.NodeFilter.SHOW_TEXT);
         for (let t; (t = gang.nextNode());) {
             const el = t.parentElement;
+            if (!t.textContent.trim() || !el || el.closest("select") || !sichtbar(el)) continue;
             const r = document.createRange();
             r.selectNodeContents(t);
-            if (
-                t.textContent.trim() &&
-                el &&
-                sichtbar(el) &&
-                [...r.getClientRects()].some((q) => q.width * q.height > 0)
-            )
-                zaehle(el, t.textContent.trim(), window.getComputedStyle(el));
+            const rechtecke = [...r.getClientRects()].filter((q) => q.width * q.height > 0);
+            if (rechtecke.length) zaehle(el, t.textContent.trim(), css(el), rechtecke);
         }
         for (const el of [wurzel, ...wurzel.querySelectorAll("*")])
             for (const p of ["::before", "::after"]) {
@@ -2821,8 +2862,28 @@ class AnazhRealm_werkstatt_hud {
                 const inhalt = /^"(.+)"$/.exec(cs.content || "");
                 if (inhalt && inhalt[1].trim() && cs.display !== "none" && sichtbar(el)) zaehle(el, inhalt[1], cs);
             }
+        // die Wahl eines <select>: sein Klon ohne Breite neben ihm misst, was sie braucht
+        for (const s of wurzel.querySelectorAll("select")) {
+            const o = s.options[s.selectedIndex];
+            if (!o || !o.text.trim() || !sichtbar(s)) continue;
+            const klon = s.cloneNode(false);
+            klon.append(o.cloneNode(true));
+            klon.style.cssText = "position:absolute;visibility:hidden;width:auto;min-width:0;max-width:none";
+            s.after(klon);
+            const braucht = klon.offsetWidth;
+            klon.remove();
+            zaehle(s, o.text.trim(), css(s));
+            if (braucht > s.offsetWidth + 1) {
+                const k = wo(s) + "|wahl";
+                const grund = `die Wahl braucht ${braucht} > ${s.offsetWidth} px`;
+                const z = ueber.get(k) || { wo: wo(s), text: o.text.trim().slice(0, 40), grund, n: 0 };
+                z.n++;
+                ueber.set(k, z);
+            }
+        }
         for (const s of gefaltet) s.classList.add("collapsed");
         aus.klein = [...klein.values()];
+        aus.ueber = [...ueber.values()];
         return aus;
     }
 

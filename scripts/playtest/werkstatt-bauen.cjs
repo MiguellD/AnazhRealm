@@ -817,7 +817,8 @@ async function checkBandWelle6Keybindings({ page, check }) {
 
     // ### DIE EINE TASTEN-TAFEL und DIE KLEINSTE SCHRIFT (spielgang.K3#2, die Wand der CI zu `werkbank bedienung --staffel 2`) ###
     // Dieselbe Seiten-Probe wie am Gerät (`__bedienung2`, scripts/lib/welt-boot.cjs): jeder sichtbare Text von HUD, Ich und jeder
-    // Schublade ≥ 16 px (ein gepflanzter 14-px-Text in der Hotbar muss genannt sein); der Knopf „vor“ der Belegung und KeyO als
+    // Schublade ≥ 16 px und in seinem Kasten (ein gepflanzter 14-px-Text und ein 2 em enger Kasten in der Hotbar müssen genannt
+    // sein); der Knopf „vor“ der Belegung und KeyO als
     // KeyboardEvent legen das Vorwärts um, die Platte trägt es durch den Reload (`_loadKeybindings`, wie der Konstruktor), KeyO
     // bewegt den Leib ≥ 0,1 m, W nicht mehr — ein festverdrahtetes W (Mutant im Lauf) muss ROT fallen. Dazu der Tausch bei
     // Konflikt, Esc im Fangen, die Liste der Belegung (je Aktion ein Knopf) und der Name einer Liste von Tasten.
@@ -843,7 +844,7 @@ async function checkBandWelle6Keybindings({ page, check }) {
             tafel.taeter.slice(0, 4).join(" | ")
         );
         check(
-            "K3#2: der Selbsttest im Lauf nennt den 14-px-Text und das festverdrahtete W",
+            "K3#2: der Selbsttest im Lauf nennt den 14-px-Text, den engen Kasten und das festverdrahtete W",
             !tafel.blind.length,
             tafel.blind.join(" | ")
         );
