@@ -160,14 +160,8 @@ class AnazhRealm_bild_schatten {
     _rueckstrahlZeichne() {
         const st = this.state;
         const L = this._rueckstrahlLeser();
-        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) {
-            L.an.value = 0;
-            return;
-        }
-        // DIE DECKE ÜBER DEM AUGE (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel —
-        // steht das Auge unter einer Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen
-        // heller als in der Sonne (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
-        L.an.value = L.gelesen && !this._augeUnterDach() ? 1 : 0;
+        L.an.value = this._rueckstrahlAn(L);
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return;
         try {
             const P = this._rueckstrahlPass();
             const cam = st.camera;
@@ -224,14 +218,39 @@ class AnazhRealm_bild_schatten {
     // `bild` misst den Boden der Szene, die jetzt gilt, und die Lesung kommt zurück, bevor der Schuss zählt. Bis dahin trug jeder
     // Schuss den Boden des vorigen (gate:naesse:echt, Dorf: der nasse Schuss den frischen Boden, der Schuss ohne Schliere den
     // nassen — 510 Punkte innen trennten zwei Bilder derselben Nässe). Ohne Pass (Holz ohne Szenen-Pass) misst niemand.
+    // DER BODEN GILT AB DEM NÄCHSTEN BILD (w10-treue, 04.11.): `an` stellt das Bild der Messung an seinem Ende — BEVOR seine Lesung
+    // zurückkommt. Der erste Schuss nach dem Lesen zeichnete darum ohne den Boden, den er eben gemessen hatte, jeder weitere mit ihm:
+    // zwei Aufnahmen derselben Szene wichen ab (Radeon, Wiese 960 × 540: 487 652 von 2 073 600 Bytes, die dritte gleich der zweiten;
+    // GTX lod.K2#1 547 572, lod.K5#1 2 216 057 — „EINE Aufnahme je Schuss trägt hier nicht“). Nach der Lesung stellt die EINE Regel
+    // `_rueckstrahlAn` den Schalter für die Bilder des Schusses. ZWEI Messbilder: das erste zeichnet OHNE Rückstrahl (der Boden der
+    // Szene allein), das zweite unter dem Boden, den das erste maß — der Boden des Schusses hängt an keinem Boden davor (bis
+    // w12-lod-ende trug das erste den Schalter und den Boden des vorigen Schusses: Radeon, Wiese, leer → Tanne, 9 Bytes zwischen
+    // zwei Aufnahmen). Der Boden, den es misst, liegt unter den
+    // Schatten-Karten DIESES Blicks: die Aufnahme legt sie vor dem ersten Messbild neu (`neubeginn`, w12-lod-ende) — bis dahin
+    // trug er die Kaskaden, die der Lauf davor hielt (Radeon, Wiese: Boden 0,069 statt 0,095, Stamm und Laub der ersten Aufnahme
+    // 1 786 078 Bytes neben der zweiten).
     async _rueckstrahlJetzt(bild) {
         const st = this.state;
         const L = st.rueckstrahlLeser;
         if (!L || !st.rueckstrahlPass) return;
         if (L.lesung) await L.lesung;
-        st.rueckstrahlPass.sprung = true;
-        bild();
-        if (L.lesung) await L.lesung;
+        L.an.value = 0;
+        for (let i = 0; i < 2; i++) {
+            st.rueckstrahlPass.sprung = true;
+            bild();
+            if (L.lesung) await L.lesung;
+            L.an.value = this._rueckstrahlAn(L);
+        }
+    }
+    // DER SCHALTER DES RÜCKSTRAHLS (die EINE Regel, `_rueckstrahlZeichne` je Bild und `_rueckstrahlJetzt` nach der Lesung): an erst,
+    // wenn ein Boden gelesen ist; ohne Szenen-Pass, ohne Umgebung oder nach einem Bruch nie. DIE DECKE ÜBER DEM AUGE
+    // (`_augeUnterDach`, je Takt): der Rückstrahl ist das Licht des Bodens unter dem offenen Himmel — steht das Auge unter einer
+    // Decke, ruht er. Bis dahin nahm der Innenraum des Dorf-Hauses den gemessenen Boden: im Regen heller als in der Sonne
+    // (gate:naesse:echt Regenbild 1,065 > 1, GTX), 8 861 Regen-Punkte innen
+    _rueckstrahlAn(L) {
+        const st = this.state;
+        if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return 0;
+        return L.gelesen && !this._augeUnterDach() ? 1 : 0;
     }
 
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
