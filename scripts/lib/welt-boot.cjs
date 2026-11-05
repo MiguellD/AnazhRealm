@@ -232,6 +232,19 @@ async function weltDa(bed) {
     window.__weltDaWartet = null;
     return r;
 }
+// DIE GRÜNDUNG DES ORTS (haushalt.json `gruendung`, `await window.__gruenden(g, takt)`): der Spieler, am Anlauf mit dem Blick des
+// Orts, sagt sein Wort wie im Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte
+// mit der Welt); eine Welt, die sie trägt, gründet nicht neu. Leser: werkbank `umstellen --ort` und der Richter des Verkehrs
+// (gate:fahr-leben --verkehr) — bis w12-verkehr stellte er die Stadt mit `spawnSettlement` an den Anker der Spec (836,2/438,5: 295
+// Häuser, vier Wenden) und maß nie die Stadt, die das Wort gründet (836,09/438,24: 300 Häuser, eine Wende, 7 von 20 Wagen)
+async function gruenden(g, takt) {
+    const same = g.wort.split(" ")[1];
+    const zellen = () => Object.values(st.worldMeta.settlementCells || {});
+    const steht = () => zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
+    if (!steht()) r._chatDispatchLegacyCommand(g.wort, [], () => {});
+    for (const weiter = window.__deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await takt();
+    if (!steht()) throw new Error(`„${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
+}
 // DIE FARBEN EINER GESTALT (`window.__farben(g)`): je Mesh die erste Vertex-Farbe auf drei Stellen; `window.__lin(hex)` schreibt
 // eine Farbe der Tafel (sRGB-Hex) linear in derselben Form. Bis w6-spielgang-decke trugen p2p-gestalt und studio-uebergabe je beide.
 function farben(g) {
@@ -359,7 +372,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__gruenden = ${gruenden}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

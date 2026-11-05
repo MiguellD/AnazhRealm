@@ -497,7 +497,7 @@ class AnazhRealm_siedlung_verkehr {
             return false;
         }
         const { vc } = AnazhRealm._fahrSchrittGesetz();
-        e._rideYaw = p.fahrt;
+        [e._rideYaw, e._sitzHeight] = [p.fahrt, this._sitzHoehe(e)]; // der Ursprung seines Fahrers: der Sitz des Gesetzes
         const fz = (e._fahr = vc.fahrZustand(p.x, p.z, p.fahrt - Math.PI / 2));
         vc.fahrStand(fz, G, this._fahrBoden(e), 0);
         if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
