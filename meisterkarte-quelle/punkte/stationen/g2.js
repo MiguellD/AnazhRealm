@@ -5213,9 +5213,11 @@ const stationen = [
     // Im Stand umkreist die Third-Kamera den Leib frei (`_loopCamera`: er dreht erst beim Gehen, Springen, Reiten oder einer
     // gehaltenen Aktion auf die Gier). Die Pose des Spiels: an der Mess-Wiese in Third die Gier um π gedreht, 30 Bilder des
     // echten Takts — der Leib bleibt (`leib` ≤ 0,01 rad), die Kamera steht vor dem Gesicht (`vorn`); dann die Soll-Tafel
-    // mensch-kopf aus dieser Pose: die Kamera im Abstand der Third-Kamera (`cameraThirdDistance`) vor dem Kopf
-    // (`werkbank bild --gesicht <d>`), die Klasse spieler:kopf/ (abnahme-urteil `sollTafelUrteil`, KOPF_SOLL im Bild). Die Tafel
-    // trägt keine REF dieser Klasse (die Kopf-Züge stehen im Gesetz): ihr Pfad fällt aus der Liste. GPU: an der Station.
+    // mensch-kopf aus dieser Pose: an DER Kamera, die `_loopCamera` setzte (`kam`: ihr Ort und ihr Blick, die Schulter und die
+    // Höhe des Arms mit), die Klasse spieler:kopf/ (abnahme-urteil `sollTafelUrteil`, KOPF_SOLL im Bild). Bis w12-gesicht stand
+    // eine zweite Kamera `cameraThirdDistance` waagrecht vor dem Kopf (`werkbank bild --gesicht <d>`) — die des Spiels steht
+    // 1,2 m höher und 0,6 m zur Schulter (Meisterkarte: „Kamera aus `_loopCamera`"). Die Tafel trägt keine REF dieser Klasse
+    // (die Kopf-Züge stehen im Gesetz): ihr Pfad fällt aus der Liste. GPU: an der Station.
     (() => {
         const st = sollKlasseStation({
             kriterium: "mensch.K4",
@@ -5224,9 +5226,9 @@ const stationen = [
             klasse: "^spieler:kopf/",
             vorher: [
                 "node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1",
-                "K=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh, y0 = pm.rotation.y; s.yaw = y0 + Math.PI; for (let i = 0; i < 30; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(30); } let k = null; pm.traverse((o) => { if (!k && o.name === \"head\") k = o; }); const h = k.getWorldPosition(new T.Vector3()), fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion())), c = s.camera.position; return { leib: +Math.abs(Math.atan2(Math.sin(pm.rotation.y - y0), Math.cos(pm.rotation.y - y0))).toFixed(3), vorn: (c.x - h.x) * fw.x + (c.z - h.z) * fw.z > 0, abstand: +h.distanceTo(c).toFixed(2), d: s.cameraThirdDistance };' | erg); echo \"KAMERA $K\"",
+                "K=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh, y0 = pm.rotation.y; s.yaw = y0 + Math.PI; for (let i = 0; i < 30; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(30); } let k = null; pm.traverse((o) => { if (!k && o.name === \"head\") k = o; }); const h = k.getWorldPosition(new T.Vector3()), fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion())), c = s.camera.position, b = c.clone().addScaledVector(s.camera.getWorldDirection(new T.Vector3()), s.cameraThirdDistance); return { leib: +Math.abs(Math.atan2(Math.sin(pm.rotation.y - y0), Math.cos(pm.rotation.y - y0))).toFixed(3), vorn: (c.x - h.x) * fw.x + (c.z - h.z) * fw.z > 0, abstand: +h.distanceTo(c).toFixed(2), d: s.cameraThirdDistance, kam: [c.x, c.y, c.z, b.x, b.y, b.z].map((x) => +x.toFixed(4)) };' | erg); echo \"KAMERA $K\"",
             ],
-            schuesse: { third: "0 0 0 0 0 0 --gesicht \"$(node -e 'console.log(JSON.parse(process.argv[1]).d)' \"$K\")\" --spieler" },
+            schuesse: { third: "$(node -e 'console.log(JSON.parse(process.argv[1]).kam.join(\" \"))' \"$K\") --spieler" },
             pfad: ["koerper-core.js", "foundry-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js"],
             quelle: "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf",
         });
