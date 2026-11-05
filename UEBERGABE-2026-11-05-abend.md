@@ -33,6 +33,7 @@ Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Ausstehende Messungen
 - **streaming.K1#1/K2#1** (gebucht, nur gehalten; die nächste Farm misst sie ROT = −2):
+  - **Fortsetzung 22:55 (w12-dorf-strom 6b9133c7, main aec13cb4 gemergt)**: Die Schranke des Wald-Gedächtnisses (`_forestDartRaum`, `WALD_PLAN.zellen`) räumt bei Überlauf die fernsten Zellen statt `memo.clear()`. Je 1 Lauf mit eigener Probe: K1 GT 195 → 42 Lücken, K2 baum 47,4 → 52,1 %, also weiter ROT. Hauptverdacht, ungemessen: Der Plan um einen Dorf-Baum wird erst bei der Frage nach seiner Gestalt bestellt (stamm/vegetation-baum.js:923, studio-bruecke.js:2492), auf der Wiese bestellt ihn der Pflanz-Gang vorher. Häuser: `AUTO_SETTLEMENT.vorlaufM` 160 m (siedlung-ort.js:3387) und ein Export zur Zeit, unangetastet. playtest:fast und punkte.cjs fehlen noch. ACHTUNG beim Aufräumen von /tmp/claude/w3/vp-dorf-main: Sein node_modules ist eine Verknüpfung, zuerst die Verknüpfung löschen.
   - Champion w12-dorf-strom e7756259, nichts geheilt.
   - Bäume: 572 von 578 unfertigen Bäumen fehlt der Wald-Plan (`_waldPlanSteht` false).
   - Häuser: Der Dorf-Vorlauf bemisst sich nach Strecke (Vorbereitung bei 269 m, nur ein Export zur Zeit).
