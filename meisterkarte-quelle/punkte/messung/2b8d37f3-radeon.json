@@ -1,0 +1,59 @@
+{
+ "sha": "2b8d37f3c627dac40453c767a170d3f6932e432a",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T23:44:18.480Z",
+ "host": "MiguellD",
+ "je": {
+  "ferne.K3#1": {
+   "gruen": true,
+   "zahl": "Kohärenz 0.2444 über 187 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 7.482 m über 181 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 20.9878 m, Azimut 180° · Ort [-841,-861] · 1.77 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.7,
+   "zeit": "2026-11-04T23:44:18.480Z",
+   "abdruck": "692b53b0701d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T23:42:58.153Z",
+  "port": 7804,
+  "warten": 0.72,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "ferne.K3#1",
+    "s": 28.6,
+    "takte": 840,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 45,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 47,
+  "minuten": 1.62
+ }
+}
