@@ -1,0 +1,35 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-stand-takt.cjs
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+  ring: 81
+  architekturen: 2284
+  wach: "DIE WELT STEHT NICHT nach 60 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 60 Takten — die Welt hat nichts mehr offen)"
+  bisRuhe: 41
+  ruhe: "30 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"
+  sonde: {"name":"Ziel","imBild":false,"ndc":[0,0.118],"frei":false,"vor":"Gelände","vorAbstand":33.55,"abstand":60.25}
+  fixWach: false
+  fix: [{"takte":46,"wirkte":4,"nach":"150 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"},{"takte":50,"wirkte":5,"nach":"150 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"}]
+  bruch: "51 Frames · Σ 168754 · strom 82 51/1 · archLod 2186.2 13056/2284 · archCull 284 51/1 · streuLod 479.71 8160/1615 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528"
+  taeter: {"je":{"archLod":{"stelle":2283,"runde":2284,"gefundenBei":2304},"streuLod":{"stelle":1532,"runde":1615,"gefundenBei":1600},"deckWache":{"stelle":6527,"runde":6528,"gefundenBei":6528}},"phase":"51 Frames · Σ 168673 · strom 82 51/1 · archLod 2184.59 13056/2284 wirkt 1 · archCull 284 51/1 · streuLod 479.73 8160/1615 wirkt 1 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528 wirkt 1"}
+  wecken: {"eintrag":true,"phase":"30 Frames · Σ 79127 · strom 0 · archLod 2180.37 wirkt 2 · archCull 28.63 · streuLod 319.8 · nahStreu 104.77 wirkt 13 · nahWiese 4 wirkt 13 · deckWache 0","versorgt":true,"stufe":0,"bisRuhe":32,"nachher":"20 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0","treue":"51 Frames · Σ 168865 · strom 82 51/1 · archLod 2188.37 13056/2285 · archCull 284 51/1 · streuLod 479.71 8160/1615 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528","regler":"10 Frames · Σ 27182 · strom 0 · archLod 2170.6 · archCull 53 wirkt 1 · streuLod 479.7 · nahStreu 14.1 · nahWiese 0.8 · deckWache 0","wahrnehmung":"4 Frames · Σ 12099 · strom 0 · archLod 2436.5 · archCull 71 · streuLod 480 · nahStreu 35.25 · nahWiese 2 · deckWache 0"}
+  gehen: "120 Frames · Σ 279860 · strom 0 · archLod 1867.83 wirkt 9 · archCull 32.92 wirkt 3 · streuLod 355.77 · nahStreu 74.51 wirkt 56 · nahWiese 1.13 wirkt 8 · deckWache 0"
+  stufe: {"wechsel":2,"takte":{"strom":0,"archLod":0,"archCull":0,"streuLod":0,"nahStreu":282,"nahWiese":144,"deckWache":0},"rufe":{"_lodTreeVisHeight":0,"_forestStehtFrei":0,"_forestCellDarts":0},"wuchs":0}
+  ort: {"ort":[-197,-1071],"fern":240,"takte":60,"standVor":1,"stand":{"key":"-11,-25","vor":"1|0","nach":"1|0","gleich":true},"gelegt":true,"standNach":1,"darts":{"fern":1251,"gehalten":1251},"chunks":{"basis":{"fern":0,"gehalten":0},"dichte":{"fern":0,"gehalten":0},"mesh":{"fern":0,"gehalten":0}},"plan":0,"maxTaktMs":12.8,"raeumung":{"abbau":5,"saves":0,"saveMs":0},"kamin":{"kultur":"alemannisch","gesetzt":true,"bau":0,"ms":0},"wald":{"gesetzt":true,"ort":[-197,-651],"synchron":0,"ms":0,"takte":9,"gestalt":2,"imTakt":0,"maxTaktZellen":0,"maxTaktMs":0},"satzHaus":{"kultur":"alemannisch","gesetzt":true,"takte":42,"gruppen":5,"ecken":6116,"bloecke":5,"frischKB":0},"amSpieler":{"ort":[-293,-1071],"gelegt":true,"dirty":4,"takte":28,"heil":true,"sync":[]}}
+  strom: {"x":319.6,"z":-1045.6,"takte":38,"spielerChunk":true,"wald":{"imJob":2302,"aussen":0,"ms":0,"taeter":null,"maxTakt":0}}
+  nachschub: {"takte":0,"schlange":0,"foundry":0,"warten":[]}
+  schuld: {"abgewiesen":3635,"grund":"Felder offen 1155","takte":669,"rest":0}
+  dorf: {"placed":16,"steht":5030}
+  fuehrung: {"x":604,"z":-578,"abstand":1044,"takte":80,"steht":true}
+  taktFehler: []
+  pageErrors: []
+  Sim-Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 7195
+  Sim-Wecken saison: wach wasser 0 · regen 0 · saison 1248 (_gelaende 619, _temperaturFeld 616, _voxelZustandPost 2, _ensureSeasonUniforms 1) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken regen: wach wasser 0 · regen 90 (_weatherFieldFor 20, _gelaende 10, _naesseTakt 5, _ensureAtmoUniforms 5) · saison 1098 (_gelaende 544, _temperaturFeld 541, _voxelZustandPost 2, _ensureSeasonUniforms 1) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 657 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 12 (_voxelChunkConfig 3, ·pendingFoliageChunks 2, _foliageChunkInRadius 2, _bedarfVoraus 2) · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken nachwuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 5 (_tatIndex 1, ·worldMeta.taten 1, _weltRegt 1, _nahStreuTat 1) · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 12 (_voxelChunkConfig 3, ·pendingFoliageChunks 2, _foliageChunkInRadius 2, _bedarfVoraus 2) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 — wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 2160
+  Sim-Wecken brand: {"zellen":56,"einheiten":19.5,"start":true,"mit":0.875,"koepfe":18,"gegen":0.026,"alle":1.05,"ohneWind":0.041,"lebVor":0.839,"glut":0.68,"licht":true,"regenS":20,"brennt":0,"lebNach":0.82,"asche":42} — nachher wasser 0 · regen 10 (_weatherFieldFor 3, _naesseTakt 1, _ensureAtmoUniforms 1, _dachTakt 1) · saison 0 · nachwuchs 1144 (_tatIndex 191, _brandZelle 89, _forestGesetzWahr 63, _forestDartStand 63) · wuchs 144 (_voxelChunkConfig 36, ·pendingFoliageChunks 24, _foliageChunkInRadius 24, _bedarfVoraus 24) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wasser: {"ort":[-396,-878],"takte":[1,1],"gehalten":[0,0],"bewegt":[0,0],"chunks":9}
+
+--- stderr ---
+
+❌ ROT — 1 Verletzung(en): BRAND-ASCHE: 42 Aschen, lebendig am Herd 0.839 → 0.82
