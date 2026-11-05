@@ -751,14 +751,8 @@ async function kernProbe(page, url) {
 //   --realismus [--json datei] [--selftest]   Selbsttest: eine Eier-Karton-Störung (±3 m, λ 80 m) MUSS die Senken rot färben
 const REALISMUS_SAATEN = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
 function gelaendeKern(wurzel) {
-    const vm = require("vm");
-    const ctx = { console, Math, Float64Array, Float32Array, Int32Array, Uint8Array, Uint32Array, Map, Set, Object };
-    ctx.self = ctx;
-    ctx.window = ctx;
-    vm.createContext(ctx);
-    vm.runInContext(ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), ctx);
-    vm.runInContext(kernQuelle(wurzel), ctx);
-    return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
+    const c = require("./lib/asset-worker-harness.cjs").kernAusText([ausDatei(path.join(wurzel, "vendor", "simplex-noise.js")), kernQuelle(wurzel)]);
+    return { G: c.__gelaendeCore, SimplexNoise: c.SimplexNoise };
 }
 // Die Lage einer frisch geborenen Welt der Saat: der Grund und die Lage-Rechnung aus DIESEM Kern (`GRUND`, `lageAus`),
 // das Gesetz (Erbgut-Normalform, Rausch) aus der gemessenen Wurzel.

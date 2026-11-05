@@ -16,12 +16,14 @@
 //   G10 der Schirm (04.11.): im Standard belegt die Leiste ≤ 15 % des Schirms (vorher 51 %), am Wagen steht kein Schild; „Lehren"
 //      bringt Tafel und Maß-Schilder, „Leicht" (`?leicht`) halbe Auflösung, der Schatten-Pass ruht (≥ 40 % weniger Bildzeit).
 //   G9 die Zeit-Achse (04.11., Node am Kern): vmax folgt der Technik der Stufe (Schlitten · Ochsenkarren < Kutsche < Motorwagen
-//      < heute < Zukunft je Gattung, Bänder km/h), der Lack der Leiste färbt den Körper jeder Stufe, jeder Regler wirkt in jeder.
+//      < heute < Zukunft je Gattung, Bänder km/h), der Lack der Leiste färbt den Körper jeder Stufe, jeder Regler wirkt in jeder,
+//      jede Gattung fährt heute ihr eigenes Tempo (H7, vorher gate:vehicle-drive A3).
 //   node scripts/diag-garage-labor.cjs [--selftest | --epoche]          Port: GARAGE_LABOR_PORT (Standard 4414)
 /* eslint-disable no-undef */
 "use strict";
 const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, studioKern, ausDatei, jsonLesen } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
+const { kernAusText } = require("./lib/asset-worker-harness.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const { errs, check } = pruefer();
@@ -90,20 +92,10 @@ function epocheVerdict(e) {
         for (const id in e.farbe) if (!(e.farbe[id][g] > 0.02)) out.push(`farbe ${id} ${g}: Δ ${e.farbe[id][g]}`);
     }
     for (const id in e.tot) for (const r of e.tot[id]) out.push(`regler ${id}: ${r} wirkt nicht`);
+    // jede Gattung ihr Antrieb (H7, bis w12-fahrzeug-decke gate:vehicle-drive A3: GT ≠ Supersport in zwei Skalaren)
+    const h = Object.values(e.kmh.heute);
+    if (new Set(h).size < h.length) out.push(`gattung heute ${h} km/h`);
     return out;
-}
-// die Kern-Mutanten (vm, ohne Browser): der echte Kern mit einem eingeschmuggelten Täter je Klasse — der Körper der Zeit ersetzt
-// den Lack · EIN Antrieb für jede Zeit · die Gestalt der Zeit ohne den Schnitt der Flanke
-const ZEIT_MUTANTEN = [
-    ["epocheKoerper(E.koerper, lack) : lack", "epocheStoff(E.koerper) : lack", /^farbe zukunft/],
-    ["            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/],
-    ["        if (topo) taperBody(", "        if (false) taperBody(", /^regler kutsche: taille/],
-];
-function kernLaden(src, ns = "__vehicleCore") {
-    const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN, THREE: global.THREE, Float32Array, Uint16Array, Uint32Array };
-    ctx.globalThis = ctx.window = ctx;
-    require("vm").runInNewContext(src, ctx);
-    return ctx[ns];
 }
 
 // ── G11 DIE PRÜFSTRECKE (w11-fahrzeug, Node; Eintrag F): der Wagen der Bühne (spec/pruefbuehne/strecke.json `soll.gattung`) fährt
@@ -139,10 +131,22 @@ function streckeVerdict({ soll, r, gleich }) {
     if (!gleich) out.push("wiederholung: zwei Läufe, zwei Spuren");
     return out;
 }
-const STRECKE_MUTANTEN = [
-    ["gelaende-core.js", "__gelaendeCore", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/],
-    ["vehicle-core.js", "__vehicleCore", "const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/],
+// DIE KERN-MUTANTEN (vm, ohne Browser; der EINE Lader `kernAusText`): je Klasse ein eingeschmuggelter Täter im echten Kern, die
+// Linse nennt ihn ROT — G9: der Körper der Zeit ersetzt den Lack · EIN Antrieb für jede Zeit · die Gestalt der Zeit ohne den
+// Schnitt der Flanke · EIN Rezept für jede Gattung; G11: die Bahn ohne Überhöhung · die Normalkraft ohne v·ω · der Zufall in der
+// Prüffahrt (zwei Läufe, zwei Spuren; bis w12-fahrzeug-decke kippte der Selbsttest dafür nur das Urteil-Flag)
+const G9 = (K) => epocheVerdict(epocheMessen(K.__vehicleCore)),
+    G11 = (K) => streckeVerdict(streckeMessen(K.__vehicleCore, K.__gelaendeCore));
+const MUTANTEN = [
+    ["vehicle", "epocheKoerper(E.koerper, lack) : lack", "epocheStoff(E.koerper) : lack", /^farbe zukunft/, G9],
+    ["vehicle", "            Z = (E && E.antrieb) || {};", "            Z = {};", /^ordnung|^band/, G9],
+    ["vehicle", "        if (topo) taperBody(", "        if (false) taperBody(", /^regler kutsche: taille/, G9],
+    ["vehicle", "        const pre = PRESETS[id];", "        const pre = PRESETS.gt;", /^gattung/, G9],
+    ["gelaende", "const BANK = mittel(mittel(ZIEL_BANK));", "const BANK = new Float64Array(N);", /^ueberhoehung/, G11],
+    ["vehicle", "const gN = Math.max(0, g * cosN - z.vlong * z.yawRate * Math.sin(z.wank || 0));", "const gN = g * cosN;", /^runde|^ablage|^kurve/, G11],
+    ["vehicle", "boden, dt);\n            t += dt;", "boden, dt);\n            z.x += Math.random() * 1e-3;\n            t += dt;", /^wiederholung/, G11],
 ];
+const kerne = () => ({ __vehicleCore: studioKern("vehicle-core.js", "__vehicleCore"), __gelaendeCore: studioKern("gelaende-core.js", "__gelaendeCore") });
 
 const server = statikServer({ start: "/worlds/garage/index.html" });
 
@@ -174,31 +178,22 @@ hauptLauf(async () => {
             const v = laborVerdict({ ...gesund, ...bruch });
             check(`Selbst-Test ${JSON.stringify(bruch).slice(0, 60)} → ${soll}`, v[0]?.startsWith(soll), v.join(" · "));
         }
-        // G9 am Kern: je Klasse ein eingeschmuggelter Täter im echten vehicle-core (vm) — die Linse nennt ihn ROT
-        studioKern("vehicle-core.js", "__vehicleCore"); // THREE r128 für den Bau in Node
-        const kernSrc = ausDatei("vehicle-core.js");
-        for (const [a, b, muss] of ZEIT_MUTANTEN) {
-            const v = kernSrc.split(a).length === 2 ? epocheVerdict(epocheMessen(kernLaden(kernSrc.replace(a, b)))) : [`Anker fehlt: ${a}`];
-            check(`Selbst-Test G9 Kern-Mutante ${muss}`, v.some((t) => muss.test(t)), v.slice(0, 3).join(" · "));
+        const echt = kerne();
+        for (const [k, a, b, muss, U] of MUTANTEN) {
+            const [src, ns] = [ausDatei(`${k}-core.js`), `__${k}Core`],
+                v = src.split(a).length === 2 ? U({ ...echt, [ns]: kernAusText(src.replace(a, b), ns) }) : [`Anker fehlt: ${a}`];
+            check(`Selbst-Test Kern-Mutante ${k} ${muss}`, v.some((t) => muss.test(t)), v.slice(0, 3).join(" · "));
         }
-        for (const [datei, ns, a, b, muss] of STRECKE_MUTANTEN) {
-            const src = ausDatei(datei),
-                kern = { __gelaendeCore: studioKern("gelaende-core.js", "__gelaendeCore"), __vehicleCore: studioKern("vehicle-core.js", "__vehicleCore") };
-            kern[ns] = src.split(a).length === 2 ? kernLaden(src.replace(a, b), ns) : null;
-            const v = kern[ns] ? streckeVerdict(streckeMessen(kern.__vehicleCore, kern.__gelaendeCore)) : [`Anker fehlt: ${a}`];
-            check(`Selbst-Test G11 Kern-Mutante ${muss}`, v.some((t) => muss.test(t)), v.slice(0, 3).join(" · "));
-        }
-        const st = streckeMessen(studioKern("vehicle-core.js", "__vehicleCore"), studioKern("gelaende-core.js", "__gelaendeCore"));
-        check("Selbst-Test G11 wiederholung", streckeVerdict({ ...st, gleich: false }).some((t) => t.startsWith("wiederholung")));
         selbsttestEnde(errs, "die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren, jeden Modus der Ansicht und die Zeit-Achse beim Namen.");
         process.exit(0);
     }
 
     // G9 zuerst (Node, der Kern, den die Garage liest; `--epoche` misst nur sie)
-    const zeit = epocheMessen(studioKern("vehicle-core.js", "__vehicleCore")),
+    const K = kerne(),
+        zeit = epocheMessen(K.__vehicleCore),
         v9 = epocheVerdict(zeit);
     check("G9 die Zeit-Achse (km/h je Stufe × Gattung)", !v9.length, `${JSON.stringify(zeit.kmh)} ${v9.slice(0, 6).join(" · ")}`);
-    const strecke = streckeMessen(studioKern("vehicle-core.js", "__vehicleCore"), studioKern("gelaende-core.js", "__gelaendeCore")),
+    const strecke = streckeMessen(K.__vehicleCore, K.__gelaendeCore),
         v11 = streckeVerdict(strecke);
     check("G11 die Prüfstrecke (die fliegende Runde)", !v11.length, `${JSON.stringify(strecke.r)} ${v11.join(" · ")}`);
     if (process.argv.includes("--epoche")) {

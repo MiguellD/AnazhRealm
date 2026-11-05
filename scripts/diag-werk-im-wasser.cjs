@@ -1593,22 +1593,20 @@ async function probe(A) {
         if (!A.nur)
             try {
                 r.spawnArchitecture = spawnAlt;
-                const ruft = (o, m, lief, args) => {
-                    const eigen = Object.prototype.hasOwnProperty.call(r, lief);
-                    const alt = r[lief];
-                    let n = 0;
-                    r[lief] = function () {
-                        n++;
-                        return alt.apply(this, arguments);
-                    };
+                // der Tausch über die EINE Leihe (`leihe`, welt-boot; bis w12-fahrzeug-decke ein eigenes hasOwnProperty-Merken)
+                const ruft = (o, m, lief, args, n = 0, alt = r[lief]) => {
+                    const zurueck = leihe(r, {
+                        [lief]: function () {
+                            n++;
+                            return alt.apply(this, arguments);
+                        },
+                    });
                     try {
                         o[m](...args);
                     } catch {
                         /* ein Wurf NACH dem Ruf entwertet den Konsum nicht */
-                    } finally {
-                        if (eigen) r[lief] = alt;
-                        else delete r[lief];
                     }
+                    zurueck();
                     return n > 0;
                 };
                 const X = st.playerMesh.position.x,
@@ -2142,14 +2140,7 @@ function selbsttest() {
     const giftFall = (art) => ([name, z, muss]) => ({ name: `${art}: ${name}`, z, muss });
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
-    const vm = require("vm");
     const kernSrc = ausDatei("vehicle-core.js");
-    const kernLaden = (s) => {
-        const ctx = require("./lib/asset-worker-harness.cjs").kernKontext({ console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN, Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array }); // prettier-ignore
-        ctx.window = ctx;
-        vm.runInContext(s, ctx);
-        return ctx.__vehicleCore;
-    };
     taeterFaelle([{ name: "der echte Kern", z: (s) => s }, ...[
         [
             "Wasser-Term ohne Widerstand",
@@ -2163,7 +2154,7 @@ function selbsttest() {
                     "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
                     "else if (!motor && dt > 0) Fr -= 0;"
                 ),
-            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.33 m\/s weiter/,
+            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.38 m\/s weiter/,
         ],
         [
             "das Gas wirkt am stehenden Motor (keine Ruhe unter Vollgas)",
@@ -2174,7 +2165,7 @@ function selbsttest() {
                 ),
             /K4 über der Ansaugung/,
         ],
-    ].map(giftFall("Kern"))], (gift) => kernUrteil(kernLaden(gift(kernSrc))), { fehler });
+    ].map(giftFall("Kern"))], (gift) => kernUrteil(require("./lib/asset-worker-harness.cjs").kernAusText(gift(kernSrc), "__vehicleCore")), { fehler });
     selbsttestEnde(fehler, "Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.");
     process.exit(0);
 }

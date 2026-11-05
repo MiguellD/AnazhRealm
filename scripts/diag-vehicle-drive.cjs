@@ -1,6 +1,12 @@
 // diag-vehicle-drive.cjs — DAS LAB-FAHRPROFIL FÜHRT: die drive-Reise Lab-Formel → Buch → Host-Profil, ohne zweiten
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
+// Gefallen in w12-fahrzeug-decke (Zwillinge, die Messung lebt weiter): A1 (kein FAHR-Literal, kein carPhys in der Shell) steht
+// in der Rückkehr-Wand gate:altlasten · A3 und B-b/H7 (GT ≠ Supersport) richtet gate:garage-labor G9 an der Fahrt: jede Gattung
+// ihr Tempo · B-c die Emergenz war ein Literal-Zwilling von FAHR.hostEmergent, das Profil aus der Substanz misst der Playtest
+// (gelaende-boden V18150Ride), die Absenz des Alt-Wagens der Playtest (werkstatt Rezept-Katalog c) · B-e das Fahr-Gefühl:
+// Achse, v·ω und Schwimmwinkel am Kern gate:fahr-leben K9 (die Welt fährt ihn, S1 Labor = Welt; das Bild folgt der Gier,
+// V18150Ride), der Rad-Kontakt Station R (p75 ≤ 0,03 m statt 0,12).
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const {
     statikServer,
@@ -10,7 +16,6 @@ const {
     wandEnde,
     selbsttestEnde,
     studioKern,
-    jsonKlon,
     fehlerText,
     SELBSTTEST,
     stammLib,
@@ -31,10 +36,6 @@ function driveDiverges(fp, expected) {
     if (!fp || !fp.spring || fp.spring.k !== expected.spring.k || fp.spring.c !== expected.spring.c) out.push("spring");
     return out;
 }
-// H7-Zaehlung: wie viele Skalare unterscheiden zwei Profile? (bewusst OHNE spring)
-function scalarDiffs(a, b) {
-    return DRIVE_KEYS.filter((k) => a && b && Number.isFinite(a[k]) && Number.isFinite(b[k]) && a[k] !== b[k]);
-}
 
 // ── B2 — DAS FAHR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test lesen sie —
 // die Linse ist beweisbar nicht-vakuoes). Rueckgabe: Liste der Verstoesse (leer = gruen).
@@ -43,9 +44,9 @@ function driveVerdict(d) {
     if (!d || d.spawned !== true) out.push("spawn");
     if (!d || d.mounted !== true) out.push("mount");
     if (!d || !(d.dist > 1)) out.push("dist<=1m"); // die stehende Probe: > 1 m nach N Fahr-Ticks
-    if (!d || d.seated !== true) out.push("seat"); // der Spieler sitzt darauf
+    // der Reiter auf dem Sitz (jeder Sim-Schritt, ±0,05 m: gate:fahr-leben `inDerLuft`) und nie gegen sein eigenes Gefährt (der
+    // riddenId-Skip: Playtest V18150Ride `collisionRests`) — beide standen hier bis w12-fahrzeug-decke ein zweites Mal
     if (!d || !Number.isFinite(d.blockerMax) || d.blockerMax > 8) out.push("blocker");
-    if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
     if (!d || d.flatFoundry !== true || d.flatBauplan !== true) out.push("flat"); // die EINE Flat-Quelle der Instanz
     if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
     // DONOR-ABSCHIED: Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
@@ -53,20 +54,6 @@ function driveVerdict(d) {
     // Box KANN das nicht liefern). Beide beweisen KONSUM des Kerns + ABSENZ des Donors.
     if (!d || d.sitzKern !== true) out.push("sitzKern");
     if (!d || d.huelleKern !== true) out.push("huelleKern");
-    return out;
-}
-
-// ── B-e (W5) — DAS FAHR-GEFÜHL-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test), je Täter des Welt-Ritts eine Zahl:
-//   achse ≤ 10° der Wagen fährt in seine Bug-Richtung · kontakt ≤ 0,12 m die Räder stehen auf dem Boden · lenk ≤ 1,8 g
-//   die Quer-Kinematik v·ω bleibt in der Reifen-Grenze · schwimm ≤ 40° im vollen Einschlag läuft er nicht quer.
-const FAHR_GEFUEHL = { achseGrad: 10, kontaktM: 0.12, lenkSpitzeG: 1.8, schwimmGrad: 40 };
-function fahrGefuehlVerdict(g) {
-    const out = [];
-    if (!g || g.spawned !== true) return ["spawn"];
-    if (!(g.achseGrad <= FAHR_GEFUEHL.achseGrad)) out.push(`achse ${(g.achseGrad || 0).toFixed(1)}°`);
-    if (!(g.kontaktM <= FAHR_GEFUEHL.kontaktM)) out.push(`kontakt ${(g.kontaktM || 0).toFixed(3)} m`);
-    if (!(g.lenkSpitzeG <= FAHR_GEFUEHL.lenkSpitzeG)) out.push(`lenk ${(g.lenkSpitzeG || 0).toFixed(2)} g`);
-    if (!(g.schwimmGrad <= FAHR_GEFUEHL.schwimmGrad)) out.push(`schwimm ${(g.schwimmGrad || 0).toFixed(1)}°`);
     return out;
 }
 
@@ -90,26 +77,6 @@ function expectedFor(presetId) {
 
 // ===== TEIL A: die statischen Absenzen (Node, kommentarfrei) — die Präsenzen (Kern-Export, Brücke, Steckplatz, die Bindung
 // des Ritts an den Chokepoint, Kern-Sitz und Kern-Hülle) beweisen A2/A3 und der lebende Draht B-a … B-d =====
-// Jede Absenz über den EINEN Helfer (stammLib.fehlt, der Täter beim Namen); `garage` wandelt die Shell (Selbsttest-Vor-Stand).
-function staticLaws(garage) {
-    const out = [];
-    const fehlt = (name, ...a) => out.push([name, stammLib.fehlt(...a), stammLib.fehlt.wo]);
-    fehlt(
-        "A1: die Shell trägt kein eigenes FAHR-Literal und kein eigenes carPhys (sie liest VC.FAHR)",
-        null,
-        /maxSteer\s*:|function\s+carPhys/,
-        { datei: "worlds/garage/garage.js", wandel: garage }
-    );
-    // A4 (kein Namensraum-Literal in der Brücke) hält die Verfassung (gate:constitution N2) — EINE Wand, kein Zwilling.
-    // N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
-    fehlt(
-        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
-        { ausser: "_loopPlayerMovement" },
-        /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/
-    );
-    return out;
-}
-
 hauptLauf(async () => {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
@@ -120,45 +87,23 @@ hauptLauf(async () => {
         check("Selbst-Test 1: verfaelschtes topSpeedMul → Divergenz erkannt", driveDiverges(bad1, exp).length >= 1);
         const bad2 = Object.assign({}, exp, { kBrake: exp.kAcc }); // kBrake auf kAcc gefaelscht (die Formel-Verwechslung)
         check("Selbst-Test 2: verfaelschtes kBrake → Divergenz erkannt", driveDiverges(bad2, exp).length >= 1);
-        // V2: eine Shell mit EIGENEM FAHR-Literal (der Rueckfall vor den N6.1-Umzug) → A1 feuert.
-        const brokenShell = (t) =>
-            t.replace(
-                /const FAHR\s*=\s*VC\.FAHR[^\n]*/,
-                "const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};"
-            );
-        const a1 = staticLaws(brokenShell).filter((l) => l[0].startsWith("A1"));
-        check(
-            "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
-            a1.some((l) => l[1] === false)
-        );
         // V3–V7: jedes Verdikt schweigt am gesunden Stand und nennt je gebrochenem Wert EINEN Täter — die Fahr-Probe (B2: der Eintrag
-        // bleibt stehen; DONOR: der Rückfall auf Donor-Sitz/-Hülle), das FAHR-GEFÜHL (B-e, W5: quer 90°, Räder 0,48 m im Boden,
-        // Aufdrehen 4,2 rad/s bei 8 m/s, Schwimmwinkel 70°) und der STAND (B-f, W5: waagrecht am Hang, Rad 0,49 m frei; keine Probe)
+        // bleibt stehen; DONOR: der Rückfall auf Donor-Sitz/-Hülle) und der STAND (B-f, W5: waagrecht am Hang, Rad 0,49 m frei;
+        // keine Probe). Die Shell mit eigenem FAHR-Literal macht der Selbsttest von gate:altlasten rot (ein Token wie jeder).
         const fahrt = {
                 spawned: true,
                 mounted: true,
                 dist: 14.4,
-                seated: true,
                 blockerMax: 2.1,
-                riderSkip: true,
                 flatFoundry: true,
                 flatBauplan: true,
                 snapDist: 14.4,
                 sitzKern: true,
                 huelleKern: true,
             },
-            gefuehl = { spawned: true, achseGrad: 2.1, kontaktM: 0.03, lenkSpitzeG: 1.45, schwimmGrad: 6 },
             stand = { proben: 6, spaltM: 0.05 };
         for (const [V, basis, ...brueche] of [
             [driveVerdict, fahrt, { dist: 0, snapDist: 0 }, { sitzKern: false }, { huelleKern: false }],
-            [
-                fahrGefuehlVerdict,
-                gefuehl,
-                { achseGrad: 90 },
-                { kontaktM: 0.48 },
-                { lenkSpitzeG: 3.4 },
-                { schwimmGrad: 70 },
-            ],
             [standVerdict, stand, { spaltM: 0.49 }, { proben: 0 }],
         ])
             for (const b of [{}, ...brueche]) {
@@ -170,19 +115,19 @@ hauptLauf(async () => {
     }
 
     console.log("=== N6/H7 — TEIL A: Formel + Paritaet + ein Pfad (Node) ===");
-    for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
+    // Die Absenz über den EINEN Helfer (stammLib.fehlt, der Täter beim Namen). A1 (die Shell ohne FAHR-Literal und carPhys) steht
+    // in gate:altlasten; A4 (kein Namensraum-Literal in der Brücke) hält die Verfassung (gate:constitution N2) — EINE Wand, kein
+    // Zwilling. N6.4 — EIN Bewegungs-Pfad: die ride-Skalare liest NUR der Bewegungs-Schritt (_loopPlayerMovement).
+    check(
+        "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
+        stammLib.fehlt({ ausser: "_loopPlayerMovement" }, /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/),
+        stammLib.fehlt.wo
+    );
 
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —
-    // die Probefahrt liest exportDrive selbst (Welle L), das Antriebs-Gesetz richtet gate:garage-labor G9 an der Fahrt.
-    // A3 (H7 numerisch) — GT vs Supersport: mindestens zwei drive-Skalare verschieden.
+    // die Probefahrt liest exportDrive selbst (Welle L), das Antriebs-Gesetz richtet gate:garage-labor G9 an der Fahrt; dort
+    // steht seit w12-fahrzeug-decke auch A3/H7 (jede Gattung ihr eigenes Tempo, vorher: GT ≠ Supersport in zwei Skalaren).
     const gtExp = expectedFor("gt");
-    const ssExp = expectedFor("supersport");
-    const diffs = scalarDiffs(gtExp, ssExp);
-    check(
-        "A3/H7: GT vs Supersport — >=2 drive-Skalare messbar verschieden (Lab-Formel, kein Emergenz-Zufall)",
-        diffs.length >= 2,
-        `${diffs.join(",")} | GT kAcc=${gtExp.kAcc.toFixed(4)} SS kAcc=${ssExp.kAcc.toFixed(4)}`
-    );
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await server.lausche(0);
@@ -190,12 +135,8 @@ hauptLauf(async () => {
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await server.zeige(page, 30000);
 
-    // B-e fährt an der MESS-WIESE (spec/profiband/haushalt.json, Messort `wiese`) — der Spawn liegt im Gebirge (Stufen
-    // bis 24 m).
-    const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
-    const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
-    const out = await page.evaluate(async (expected) => {
-        const res = { book: {}, prof: {}, emerg: {} };
+    const out = await page.evaluate(async () => {
+        const res = { book: {} };
         await __weltDa();
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
@@ -220,50 +161,12 @@ hauptLauf(async () => {
         } catch (e) {
             res.bookErr = fehlerText(e);
         }
-        // ===== B-c: das Host-Profil — Lab fuehrt (fahrzeug_gt) · Emergenz bleibt (fahrzeug_wagen) =====
+        // ===== B-c: das Host-Profil — Lab fuehrt (fahrzeug_gt). Die Emergenz aus der Substanz misst der Playtest (gelaende-boden
+        // V18150Ride; hier stand bis w12-fahrzeug-decke ein Literal-Zwilling der Formel von FAHR.hostEmergent), die Absenz des
+        // Alt-Wagens der Playtest werkstatt (Rezept-Katalog c) =====
         try {
             const pGt = r._vehicleProfile({ type: "fahrzeug_gt" });
-            res.prof.gt = pGt ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake } : null;
-            // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
-            // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
-            // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
-            const KS = r.constructor.KIND_SUBSTANCE || {};
-            const sub = KS.fahrzeug_wagen;
-            res.prof.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
-            res.prof.substanzParts = sub && Array.isArray(sub.parts) ? sub.parts.length : 0;
-            delete r.state.blueprints._drive_probe_wagen;
-            r.state.blueprints._drive_probe_wagen = {
-                name: "_drive_probe_wagen",
-                parts: jsonKlon(sub.parts),
-                connections: jsonKlon(sub.connections || []),
-            };
-            const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
-            res.prof.wagen = pWg ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake } : null;
-            // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
-            // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
-            res.prof.wagenPreset = r._foundryPresetFor("fahrzeug_wagen");
-            res.prof.wagenHasRecipe = !!(f.recipes && res.prof.wagenPreset && f.recipes[res.prof.wagenPreset]);
-            // Die EMERGENTE Formel NACHGERECHNET (byte-gleich zur _vehicleProfile-Emergenz):
-            const bp = r.state.blueprints._drive_probe_wagen;
-            const roles =
-                bp && Array.isArray(bp.parts) && bp.parts.length >= 2
-                    ? r.computeMotionRoles(bp.parts, bp.connections)
-                    : null;
-            let rad = 0,
-                bein = 0;
-            if (roles)
-                for (const ro of roles) {
-                    if (ro && ro.role === "rad") rad++;
-                    else if (ro && ro.role === "bein") bein++;
-                }
-            const mass = bp ? Math.max(0.6, Math.min(2.5, r._compoundSizeFactor(bp))) : 1;
-            res.emerg = {
-                topSpeedMul: 1 + Math.min(0.6, rad * 0.12) + (rad === 0 && bein >= 2 ? 0.15 : 0),
-                kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
-                kBrake: rad > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
-            };
-            res.emerg.radCount = rad;
-            delete r.state.blueprints._drive_probe_wagen; // Aufraeumen (die Probe hinterlaesst nichts)
+            res.gt = pGt && { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake };
         } catch (e) {
             res.profErr = fehlerText(e);
         }
@@ -278,14 +181,12 @@ hauptLauf(async () => {
                 await __gebautNach(entry);
                 res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
                 // KONSUM: die Instanz zieht über die EINE Flat-Quelle mit — die Foundry-Gestalt, ohne Foundry der Bauplan
-                const ruft = (k) => {
-                    const f0 = r[k];
-                    let n = 0;
-                    r[k] = (...a) => (n++, f0.apply(r, a));
+                const ruft = (k, n = 0, f0 = r[k]) => {
+                    const zurueck = leihe(r, { [k]: (...a) => (n++, f0.apply(r, a)) }); // die EINE Leihe (welt-boot)
                     try {
                         r._archInstanceUpdate(entry);
                     } finally {
-                        delete r[k];
+                        zurueck();
                     }
                     return n > 0;
                 };
@@ -327,10 +228,7 @@ hauptLauf(async () => {
                             mxZ = Math.max(mxZ, b.maxZ);
                         }
                         const span = Math.max(mxX - mnX, mxZ - mnZ);
-                        const soll = (drv.huelle.noseX - drv.huelle.tailX) * sc;
-                        res.drive.blockerSpan = span;
-                        res.drive.huelleSoll = soll;
-                        res.drive.huelleKern = span > 3 && Math.abs(span - soll) < 0.05;
+                        res.drive.huelleKern = span > 3 && Math.abs(span - (drv.huelle.noseX - drv.huelle.tailX) * sc) < 0.05;
                     }
                 } catch (eD) {
                     res.drive.donorErr = fehlerText(eD);
@@ -343,13 +241,7 @@ hauptLauf(async () => {
                     r._tickMountedMovement(0.05);
                 }
                 res.drive.dist = Math.hypot(entry.position.x - m0.x, entry.position.z - m0.z);
-                // Der Sitz misst von der BASIS (position.y − 0.5 — die Platzierungs-Konvention der Instanz-Matrix).
-                res.drive.seated =
-                    r.state.player.mountedArch === entry.id &&
-                    Number.isFinite(entry._sitzHeight) &&
-                    Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.06;
-                // Blocker folgen (max. Zentrums-Abstand aller Boxen zur neuen Position) +
-                // blocken den eigenen Reiter nie (der riddenId-Skip im Kapsel-Chokepoint).
+                // Blocker folgen (max. Zentrums-Abstand aller Boxen zur neuen Position).
                 if (entry.blockerAABBs) {
                     let bMax = 0;
                     for (const b of entry.blockerAABBs) {
@@ -359,21 +251,6 @@ hauptLauf(async () => {
                     }
                     res.drive.blockerMax = bMax;
                 }
-                // der Reiter stößt nie an sein eigenes Gefährt: mit und ohne dessen Boxen dasselbe, ungeritten wirkt es
-                const fy = entry.position.y;
-                const kapsel = () => {
-                    const p = { x: entry.position.x, z: entry.position.z };
-                    return [p.x, p.z, r._stepCharacterStructures(p, fy, fy + 1.7, 0.35, null, null)].join();
-                };
-                const mit = kapsel();
-                const bx = entry.blockerAABBs;
-                entry.blockerAABBs = null;
-                const ohne = kapsel();
-                entry.blockerAABBs = bx;
-                r.state.player.mountedArch = null;
-                const fremd = kapsel();
-                r.state.player.mountedArch = entry.id;
-                res.drive.riderSkip = mit === ohne && fremd !== mit;
                 // Persistenz: der Snapshot traegt die GEFAHRENE Position (wie jede Architektur-Bewegung).
                 const snap = r.buildStateSnapshot();
                 const se =
@@ -389,120 +266,6 @@ hauptLauf(async () => {
             }
         } catch (e) {
             res.driveErr = fehlerText(e);
-        }
-        // ===== B-e (W5 Gegenstände): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
-        // Der GT fährt durch den echten Sim-Schritt `_stepFixedSim` (Kapsel · Bewegung · Ritt-Sitz, 60 Hz) + den Frame-Tick:
-        // 90 Ticks Gas geradeaus, dann 120 Ticks voller Lenk-Einschlag. Gemessen an der GERENDERTEN Matrix
-        // (`_archEntryWorldMatrix`) und am Gesetz (exportDrive.huelle):
-        //   achse  — der Winkel zwischen der Bug-Achse des Templates (+x) und der Fahrt (Grad, Geradeaus-Ticks v > 3)
-        //   kontakt — die vier Aufstandspunkte (fAx/rAx × ±Spur/2, y = 0) gegen den Boden (m, |max| über alle Ticks)
-        //   lenk   — Spitze der Quer-Kinematik v·ω (in g) und der Tempo-Rest nach 2 s Einschlag (Anteil)
-        try {
-            const pm = r.state.playerMesh.position;
-            const keys = r.state.keys;
-            // Die Strecke (ein Fels im Weg wäre kein Boden-Befund, und der GT
-            // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
-            // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
-            // der kleinsten Stufe (die Welt ist hügelig: 30 % Steigung findet sich auf jeder 72-m-Geraden).
-            const start = window.__strecke(expected.messort, 4);
-            res.gefuehl = { spawned: false, start };
-            if (!start) throw new Error("keine trockene Strecke um die Mess-Wiese");
-            pm.set(start.x, r.getTerrainHeightAt(start.x, start.z) + 1, start.z);
-            const e2 = r.spawnArchitecture(
-                "fahrzeug_gt",
-                { x: start.x, y: r.getTerrainHeightAt(start.x, start.z) + 0.5, z: start.z },
-                { silent: true, precise: true, rotationY: 0 }
-            );
-            res.gefuehl.spawned = !!e2;
-            if (e2) {
-                await __gebautNach(e2);
-                r.mountArchitecture(e2);
-                const fzg = r._fahrzeugGesetzFor(e2);
-                const h = fzg.drive.huelle;
-                const G = fzg.drive.zweispur.G * fzg.drive.zweispur.maxGrip * fzg.drive.zweispur.grip;
-                const M = new THREE.Matrix4();
-                const v3 = new THREE.Vector3();
-                const dt = 1 / 60;
-                let t = 1000;
-                let achse = 0;
-                let kontakt = 0;
-                const spalte = [];
-                let schwimm = 0;
-                let lenkSpitze = 0;
-                let vStart = null;
-                let vEnde = 0;
-                const tick = (lenk) => {
-                    t += dt;
-                    // der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
-                    // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
-                    r._stepFixedSim(t, dt);
-                    const v = r.state.playerVel;
-                    r._tickMountedMovement(dt);
-                    r._archEntryWorldMatrix(e2, M);
-                    const sp = Math.hypot(v.x(), v.z());
-                    let spaltTick = 0;
-                    for (const ax of [h.fAx, h.rAx])
-                        for (const sz of [-1, 1]) {
-                            v3.set(ax, 0, (sz * h.spur) / 2).applyMatrix4(M);
-                            const spalt = Math.abs(v3.y - r.getTerrainHeightAt(v3.x, v3.z));
-                            spaltTick = Math.max(spaltTick, spalt);
-                            if (spalt > kontakt) {
-                                kontakt = spalt;
-                                // der Tick des größten Spalts beim Namen (Phase · schwimmend · Nick/Wank)
-                                res.gefuehl.kontaktBei = {
-                                    tick: Math.round((t - 1000) / dt),
-                                    lenk,
-                                    schwimmt: !!e2._afloat,
-                                    nick: +(e2._rideTerrainPitch || 0).toFixed(3),
-                                    wank: +(e2._rideRoll || 0).toFixed(3),
-                                    weg: +Math.hypot(pm.x - start.x, pm.z - start.z).toFixed(1),
-                                    boden: [-4, 0, 4].map((d) => +r.getTerrainHeightAt(pm.x + d, pm.z).toFixed(2)),
-                                };
-                            }
-                        }
-                    spalte.push(spaltTick);
-                    // Der Winkel zwischen Bug-Achse und Fahrt: geradeaus die ACHSE, im Einschlag der SCHWIMMWINKEL
-                    // (ein haftender Wagen bleibt unter 10°, ein aufdrehender läuft quer).
-                    let winkel = null;
-                    if (sp > 3) {
-                        v3.set(1, 0, 0).transformDirection(M);
-                        const c = (v3.x * v.x() + v3.z * v.z()) / Math.max(1e-6, Math.hypot(v3.x, v3.z) * sp);
-                        winkel = (Math.acos(Math.max(-1, Math.min(1, c))) * 180) / Math.PI;
-                    }
-                    if (!lenk && winkel !== null) achse = Math.max(achse, winkel);
-                    if (lenk) {
-                        if (vStart === null) vStart = sp;
-                        const f = e2._fahr || {};
-                        lenkSpitze = Math.max(lenkSpitze, Math.abs((f.yawRate || 0) * sp) / G);
-                        if (winkel !== null) schwimm = Math.max(schwimm, winkel);
-                        vEnde = sp;
-                    }
-                };
-                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
-                keys.w = true;
-                for (let i = 0; i < 150; i++) tick(false);
-                keys.a = true;
-                for (let i = 0; i < 120; i++) tick(true);
-                for (const k of ["w", "a", "s", "d", "shift"]) keys[k] = false;
-                res.gefuehl.schwamm = !!e2._afloat;
-                res.gefuehl.achseGrad = achse;
-                // Der Kontakt ist das 75-%-Quantil des größten Rad-Spalts je Tick — ein starrer Wagen auf einer
-                // 2-m-Stufe des Hügels hebt kurz ein Rad (das Maximum reist als Befund mit), das Versinken der alten
-                // Basis (0,48 m) und das Schweben aus max() + Nick lagen auf JEDEM Tick.
-                spalte.sort(aufsteigend);
-                res.gefuehl.kontaktM = spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity;
-                res.gefuehl.kontaktMax = kontakt;
-                res.gefuehl.lenkSpitzeG = lenkSpitze;
-                res.gefuehl.schwimmGrad = schwimm;
-                res.gefuehl.tempoRest = vStart > 0 ? vEnde / vStart : 0;
-                res.gefuehl.vStart = vStart;
-                r.dismountArchitecture();
-                r.removeArchitecture(e2);
-                if (r.state.playerVel) r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
-            }
-        } catch (e) {
-            res.gefuehlErr = fehlerText(e);
         }
         // ===== B-f (W5 Gegenstände): DER STAND AM HANG =====
         // Je Hang-Probe (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der Spawn-Pfad wie
@@ -546,89 +309,36 @@ hauptLauf(async () => {
         } catch (e) {
             res.standErr = fehlerText(e);
         }
-        void expected;
         return res;
-    }, nodeExpected);
+    });
 
     await browser.close();
     server.close();
 
-    // B-a: 5/5 Fahrzeug-Presets tragen ein finites fahrprofil.
-    const bookIds = Object.keys(out.book || {});
-    const withFp = bookIds.filter(
-        (id) =>
-            out.book[id] &&
-            Number.isFinite(out.book[id].topSpeedMul) &&
-            Number.isFinite(out.book[id].kAcc) &&
-            Number.isFinite(out.book[id].kBrake)
-    );
+    // B-a/B-b: JEDES Fahrzeug-Rezept trägt im LIVE-Buch sein fahrprofil BIT-EXAKT == Node-exportDrive (durch Worker + Ingest;
+    // bis w12-fahrzeug-decke zwei Zeilen: 5/5 finite, bit-exakt nur gt + supersport)
+    const abw = Object.keys(VC.PRESETS).flatMap((id) => driveDiverges(out.book[id], expectedFor(id)).map((k) => `${id}.${k}`));
     check(
-        "B-a: das LIVE-Buch traegt fahrprofil je Fahrzeug-Preset (5/5, finite Skalare)",
-        bookIds.length === 5 && withFp.length === 5,
-        out.bookErr || `${withFp.length}/${bookIds.length}`
-    );
-    // B-b: GT vs Supersport im LIVE-Buch — verschieden UND bit-exakt == der Node-Formel.
-    const liveGt = out.book.gt;
-    const liveSs = out.book.supersport;
-    const liveDiffs = liveGt && liveSs ? scalarDiffs(liveGt, liveSs) : [];
-    check(
-        "B-b/H7: GT vs Supersport im LIVE-Buch — >=2 drive-Skalare verschieden",
-        liveDiffs.length >= 2,
-        liveDiffs.join(",")
-    );
-    check(
-        "B-b: die Lab-Werte reisten BIT-EXAKT durch Worker+Ingest (Buch == Node-exportDrive, gt+supersport)",
-        !!liveGt && !!liveSs && driveDiverges(liveGt, gtExp).length === 0 && driveDiverges(liveSs, ssExp).length === 0,
-        liveGt ? driveDiverges(liveGt, gtExp).join(",") : "kein gt im Buch"
+        "B-a/B-b: jedes Fahrzeug-Rezept reiste BIT-EXAKT durch Worker+Ingest (Buch == Node-exportDrive)",
+        !abw.length,
+        out.bookErr || abw.join(",") || Object.keys(out.book).join(",")
     );
     // B-c: das Host-Profil.
-    const pg = out.prof.gt;
+    const pg = out.gt;
     check(
         "B-c: _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (topSpeedMul/kAcc/kBrake === exportDrive)",
         !!pg && pg.topSpeedMul === gtExp.topSpeedMul && pg.kAcc === gtExp.kAcc && pg.kBrake === gtExp.kBrake,
         out.profErr || (pg ? `kAcc=${pg.kAcc}` : "kein Profil")
     );
-    const pw = out.prof.wagen;
-    check(
-        "B-c: der Alt-Blueprint fahrzeug_wagen ist ABWESEND — die Substanz-Tabelle traegt 17 Parts (AUSLÖSCHUNGS-WELLE)",
-        out.prof.wagenAbsent === true && out.prof.substanzParts === 17,
-        `absent=${out.prof.wagenAbsent} substanzParts=${out.prof.substanzParts}`
-    );
-    check(
-        "B-c: fahrzeug_wagen loest auf KEIN Buch-Rezept (null — der Substanz-Pfad, 0-Regress-Praemisse)",
-        out.prof.wagenPreset === null && out.prof.wagenHasRecipe === false,
-        `${out.prof.wagenPreset} · imBuch=${out.prof.wagenHasRecipe}`
-    );
-    check(
-        "B-c: _vehicleProfile(Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen) traegt die EMERGENZ byte-gleich (nachgerechnet, 4 Raeder leben in der Substanz)",
-        !!pw &&
-            !!out.emerg &&
-            pw.topSpeedMul === out.emerg.topSpeedMul &&
-            pw.kAcc === out.emerg.kAcc &&
-            pw.kBrake === out.emerg.kBrake &&
-            out.emerg.radCount === 4,
-        pw
-            ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc} rad=${out.emerg && out.emerg.radCount}`
-            : "kein Profil"
-    );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const dv = driveVerdict(out.drive);
     check(
-        "B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Spieler sitzt darauf · Blocker ziehen mit · Snapshot traegt es",
+        "B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Blocker ziehen mit · Snapshot traegt es",
         dv.length === 0,
         out.driveErr ||
             (out.drive
                 ? `kind=${out.drive.visualKind} dist=${(out.drive.dist || 0).toFixed(2)}m${dv.length ? " fehlt:" + dv.join(",") : ""}`
                 : "keine Probe")
-    );
-    // B-e (W5): das Fahr-Gefühl im echten Bewegungs-Pfad — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
-    const gv = fahrGefuehlVerdict(out.gefuehl);
-    const g = out.gefuehl || {};
-    check(
-        "B-e/W5: FAHR-GEFÜHL — der GT fährt in seine Bug-Richtung, die Räder stehen auf dem Boden, der volle Einschlag bleibt in der Reifen-Grenze",
-        gv.length === 0,
-        out.gefuehlErr ||
-            `achse ${(g.achseGrad || 0).toFixed(1)}° · kontakt ${(g.kontaktM || 0).toFixed(3)} m (p75, max ${(g.kontaktMax || 0).toFixed(2)}) · lenk ${(g.lenkSpitzeG || 0).toFixed(2)} g · schwimm ${(g.schwimmGrad || 0).toFixed(1)}° · tempo ${((g.tempoRest || 0) * 100).toFixed(0)} % von ${(g.vStart || 0).toFixed(1)} m/s${gv.length ? " — Täter: " + gv.join(", ") + " · größter Spalt " + JSON.stringify(g.kontaktBei || null) : ""}`
     );
     // B-f (W5): der Stand am Hang — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
     const sv = standVerdict(out.stand);
@@ -642,6 +352,6 @@ hauptLauf(async () => {
 
     wandEnde(
         errs,
-        "DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad."
+        "DAS LAB-FAHRPROFIL FÜHRT (N6): die Bruecke rechnet exportDrive beim Buch-Bau bit-exakt, _vehicleProfile faehrt die Lab-Werte, der Bewegungs-Loop ist EIN Pfad."
     );
 });

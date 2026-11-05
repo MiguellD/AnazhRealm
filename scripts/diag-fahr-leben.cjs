@@ -239,8 +239,22 @@ function kernProbe(VC) {
         !v8.length,
         `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
     ]);
+    const [G9, m9] = [gesetzVon(VC, "gt"), { achse: 0, lenk: 0, schwimm: 0 }];
+    lauf("gt", () => 0, 270, (i, z) => {
+        const w = +((Math.abs(Math.atan2(z.vlat, z.vlong)) * 180) / Math.PI).toFixed(1);
+        if (i < 150) m9.achse = Math.max(m9.achse, w);
+        else [m9.schwimm, m9.lenk] = [Math.max(m9.schwimm, w), Math.max(m9.lenk, +(Math.abs(z.yawRate * z.speed) / (G9.g * G9.maxGrip * G9.grip)).toFixed(2))];
+        return { throttle: 1, steer: +(i >= 150) };
+    });
+    out.push(["K9 Fahr-Gefühl: Gas, dann voller Einschlag — Fahrt an der Bug-Achse ≤ 10°, v·ω ≤ 1,8 g·μ, Schwimmwinkel ≤ 40°", !gefuehlVerdict(m9).length, JSON.stringify(m9)]);
     return out;
 }
+// K9 DAS FAHR-GEFÜHL AM KERN (bis w12-fahrzeug-decke gate:vehicle-drive B-e am Ritt der Welt — die Welt fährt diesen Schritt,
+// S1 Labor = Welt; das Bild folgt der Gier: Playtest V18150Ride; der Rad-Kontakt: Station R, p75 ≤ 0,03 m): der GT 150 Schritte
+// Gas geradeaus, dann 120 mit vollem Einschlag — achse die Fahrt an der Bug-Achse · lenk die Quer-Kinematik v·ω in der
+// Reifen-Grenze g·μ · schwimm im vollen Einschlag läuft er nicht quer.
+const GEFUEHL = { achse: 10, lenk: 1.8, schwimm: 40 };
+const gefuehlVerdict = (m) => Object.keys(GEFUEHL).filter((k) => !(m[k] <= GEFUEHL[k])).map((k) => `${k} ${m[k]}`);
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
 // der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
 // 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(gras) halb in der Stoff-Zeile (`zeile`) ──
@@ -2289,6 +2303,9 @@ hauptLauf(async () => {
                     sAlt.some((t) => /vmax 800 U\/min ≠ Begrenzer/.test(t)),
                     sAlt.slice(0, 2).join(" · ")
                 );
+                // K9 (wie bis dahin gate:vehicle-drive B-e): quer 90°, Aufdrehen 3,4 g·μ, Schwimmwinkel 70° — jeder beim Namen
+                const v9 = [{ achse: 2.1, lenk: 1.45, schwimm: 6 }, { achse: 90, lenk: 3.4, schwimm: 70 }].map(gefuehlVerdict);
+                check("Selbst-Test K9: quer, Aufdrehen, Schwimmen → beim Namen", v9.join("|") === "|achse 90,lenk 3.4,schwimm 70", v9.join("|"));
                 // K8: der Kern verstimmt; Kosten, keine Achse
                 const R8 = VCs.FAHR.reifen;
                 const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
