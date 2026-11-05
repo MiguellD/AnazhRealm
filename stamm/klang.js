@@ -71,9 +71,11 @@ class AnazhRealm_klang {
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
     // Hör-Ring (Ufer) · der Kanal des Flusses · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
-    // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
-    // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
-    // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
+    // UMWELT.ohr.probenJeFrame Ring-Proben und ebenso viele Gesetz-Höhen des Raum-Schwenks (`_raumStrahlen`, nur in einem Bild
+    // ohne schweren Teil, im Stand ruht er), die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt
+    // ohr.mischSek — je Bild EIN Teil (`_umweltKlangTick`); Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße.
+    // Gerechnet wird in der KLANG-WERKSTATT (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linsen:
+    // gate:klang-zensus, der Klang-Takt `diag-klang-zensus --takt`.
     _umweltKlangBauen(ctx, masterGain, UM) {
         const K = UM.kern;
         const O = UM.UMWELT.ohr;
