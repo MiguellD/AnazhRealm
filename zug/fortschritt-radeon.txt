@@ -2030,3 +2030,4 @@
 2026-11-05 08:14:47 b62542c9-radeon ENDE 0 grün / 2 rot · 3.0 min
 2026-11-05 08:16:58 b62542c9-radeon START 2 Stationen
 2026-11-05 08:20:13 b62542c9-radeon ENDE 0 grün / 0 rot · 3.3 min
+2026-11-05 08:21:09 ae066b23-radeon START 2 Stationen
