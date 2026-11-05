@@ -1,68 +1,71 @@
-# Übergabe 05.11. abends (Konto-Woche bei 93 % um 19:40; wird bis 98 % fortgeschrieben)
+# Übergabe 05.11. abends (Konto-Woche bei 95 % um 20:50; wird bis 98 % fortgeschrieben)
 
-**Gebucht 205/330** am Kopf 9c545df2 (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v39), main = 9c545df2 (z232) bzw. neuer — `git ls-remote origin main`.
-Heute: 198 → 205 (zuletzt schatten.K1 durch die GTX allein). Offen zum Buchen: stoffe.K2#2/K5#2 headless (Farm farm-9c54).
+**Gebucht 206/330** am Kopf f5db8d90 (z235) (Artifact https://claude.ai/artifact/Un9gX5VgRzYy77kzKUGeM2 v40). main = f5db8d90 bzw. neuer — `git ls-remote origin main`.
+Heute: 198 → 206. Zuletzt material.K1#1 an der Radeon 13/13, nach der Landung von w12-kronen-albedo.
+
 Werkzeuge:
-- Buchung: `BUCHE_KOPF=<sha40> bash artifacts/profiband/werkzeug/buche.sh`
-- Züge: `cd /tmp/claude/w3 && bash zug-schlange6.sh <vor> "<id>:<zweige>"` (EINE Instanz je Zug; Prozesse prüfen mit `Get-CimInstance Win32_Process` schlange|sammler|fahre.sh)
-- Radeon: `bash /tmp/claude/w3/radeon-punkte.sh <sha40> --nur "<id,id>"`
-- Farm: `bash /tmp/claude/w3/farm-lauf.sh <sha40>`
-- OMEN per RC „Koordinator Meldung“
-Log: /tmp/claude/w3/offen-w6.txt Einträge 119–157.
+- Buchung: `BUCHE_KOPF=<sha40> bash artifacts/profiband/werkzeug/buche.sh`, danach das Artifact neu veröffentlichen.
+- Züge: `cd /tmp/claude/w3 && bash zug-schlange6.sh <vor> "<id>:<zweige>"` (EINE Instanz je Zug).
+- Radeon: `bash /tmp/claude/w3/radeon-punkte.sh <sha40> --nur "<id,id>"`. Nur Radeon-IDs angeben, sonst Exit 2. Die Datei aus pm nach koordination kopieren.
+- Farm: `bash /tmp/claude/w3/farm-lauf.sh <sha40>`.
+- OMEN per RC „Koordinator Meldung“.
+
+Log: /tmp/claude/w3/offen-w6.txt Einträge 119–164.
 
 ## Züge
-- **z233 ROT** (voll 9/18 Werk im Wasser: „Kreaturen an der Obergrenze (3 frei) setzte 10 von 10 — der Fehl-Grund griff nicht“).
-  - Die OMEN jagt seit 19:16 mit `gate:werk-im-wasser` je Kopf: dorf-probe 4adff50e → pegel-lauf 43584419 → proben-tempo-spiel e47e2714 → riesenhalm c1667e94.
-  - Ihre Zeilen stehen in koordination `zug/fortschritt.txt`.
-  - Täter → seine Zeile in seinen Briefkasten `cloud-post/<zweig>.md`. Die Unschuldigen fahren im nächsten Zug.
-- **z234 fährt** (seit 19:28): w12-tuch-grob bc1013ec + w12-albedo-tafel b9666905.
-  - w12-unterwasser b5aa8779 fiel an der STATIK-Kette, ohne eigenen Fehler. Allein ist er GRÜN (Prüf +92 / Spiel +493 Atome, `diag-betriebsgesetz --grund <abzweig>`).
-  - Grund: Tuch-grob streicht Spiel-Code. Die Wachstums-Wand misst den Push als Summe, damit kamen alle drei zusammen auf Prüf +42 / Spiel +53 (erlaubt 26).
-  - Unterwasser fährt deshalb im nächsten Zug ohne Tuch.
-- **z235 (nächster)**: w12-unterwasser b5aa8779, w12-kronen-albedo 7a5fb4c1, w12-takt-band f5547a39 (Abgabe 19:30, K06), dazu die Unschuldigen aus z233.
-  - w12-kronen-albedo trägt den Merge von w12-albedo-tafel. Fällt z234 an der Albedo-Tafel, fällt kronen mit.
-  - Die Bilder der Kronen habe ich selbst gesehen: Die Birke ist eine Spur weniger grell, ihre Krone bleibt hellgrün (`/tmp/claude/w3/kronen-bilder/{vorher,nachher}`).
-- Nach den Landungen messen:
-  - Radeon: material.K1/K3 (K1#1 an der Radeon 13/13 am Zweig) und leib.K3#2
-  - GTX: leib.K3#2
-  - headless: haar.K4#2, wetter.K3#2
-  - Danach buchen.
+- **z235 GELANDET** f5db8d90: w12-unterwasser, w12-kronen-albedo (mit w12-albedo-tafel), w12-takt-band (K06-Wurzel, Bild je Frame im Null-Renderer Wiese Ego 13,9/17,9 → 4,0/6,3 ms).
+- **z236 sammelt/fährt**: w12-brand-halt 8e74bee4 + w12-tuch-grob bc1013ec.
+  - w12-brand-halt bringt w12-brand-bild endlich nach main. Der Zweig war in z232 an einem Konflikt in diag-stand-takt gefallen.
+  - Der Herd ist deterministisch, stoffe.K2#2/K5#2 headless GRÜN am Zweig. Die Bilder habe ich gesehen: Der Rauch ist jetzt eine Fahne statt einer Kugelkette.
+  - Nach der Landung: Farm, dann buchen (+2).
+- **z233-Jagd (OMEN)**:
+  - 4adff50e dorf-probe ist UNSCHULDIG (werk-im-wasser GRÜN 4 min).
+  - Es folgen pegel-lauf 43584419, proben-tempo-spiel e47e2714, riesenhalm c1667e94.
+  - Den Täter in seinen Briefkasten melden. Die Unschuldigen fahren als z237 hinter z236.
+- **z234 ROT** war Wackeln: Fenster-Wand E Lauf, am Ufer kein Wasser gezeichnet (wie z225, FUND). Die Zweige fuhren in z235/z236 weiter.
 
-## Stationen in koordination (heute gemergt)
-- g2-proben, kontakt, pegel, dorf-probe (stoffe.K4#1 verlangt Häuser > 0 und braucht den Spiel-Teil w12-dorf-probe), albedo-station, unterwasser (Leib-Kontrast 0,05 nach Duntley), kronen-station (Fichte gegen das Nadel-Band 0,08–0,15, Betts & Ball 1997).
-- **proben-tempo zurückgenommen** (456ec1fd): Die Fahrt ohne Bild riss in der gemeinsamen Welt streaming.K1/K2.
-  - Die Neufassung läuft lokal als Champion auf dem Zweig **w12-proben-tempo2**, mit WIP stündlich.
-  - Sie gilt nur für tiere.K5/fahrzeug.K2 und benennt den Mechanismus des Lecks.
-  - Ist sie unfertig: vom gepushten Stand übernehmen, die headless-Zahlen vorher ↔ nachher stehen in den Commits.
+## Ausstehende Messungen
+- OMEN GTX nach der Jagd, eingereiht: nachmessen.sh f5db8d90 "material.K1#2,material.K3#2,leib.K3#2". Ist material.K1#2 auf der GTX GRÜN, dann buchen: material.K1 Staffel 2 (+1).
+- **leib.K3#2 ROT** an der Radeon f5db8d90: Der Sicht-Abfall unter Wasser misst 0 /m (L auf 0,5/1,5/2,5 m gleich 0,1788), der Leib-Kontrast 0,01.
+  - Die Probe zog 6430 m vom Sitzungs-Ort, der Ring fiel 4 → 0. Wahrscheinlich steht die Kamera in einer Welt ohne geladenes Wasser.
+  - Das ist zuerst eine Frage der Probe, dann des Spiels.
+- material.K3#2 ROT: Karte zu L1 bei Birke 0,939 und Fichte 1,12–1,17 (Soll 0,95–1,05).
+
+## Stationen in koordination
+- Heute gemergt: g2-proben, kontakt, pegel, dorf-probe, albedo, unterwasser, kronen (Nadel-Band 0,08–0,15), laub-kante (nennt den Verdecker), brand-halt (Kommentare).
+- **streaming.K1#1/K2#1 sind headless ROT seit der dorf-probe-Station 834b272a.** Die Fahrt läuft mit `ort: "dorf"`, die Orte wachsen während der Fahrt (Bäume 1135 statt 708). NICHT proben-tempo: Meine Rücknahme 456ec1fd traf das falsche Commit. Die nächste Farm misst sie ROT, also zuerst heilen (FUND-REGISTER).
+- **w12-proben-tempo2** 174365e5 (nicht gemergt):
+  - Die Leihe ohne Bild leert jetzt `sammelMs`. fahrzeug.K2 fährt mit der Leine (+23 % Spiel-s), die Streaming-Abdrücke bleiben byte-gleich.
+  - Es gibt KEINE Punkte: fahrzeug.K2 (~290 s) und tiere.K5 (≥ 126 s) tragen ihren Deckel durch die Spiel-Takte.
+  - Strecke oder Spielzeit zu kürzen wäre ein Schnitt am Urteil, also Sache des Schöpfers.
 
 ## Cloud (Start 05.11. ~19:00, WIP stündlich gepusht — vom gepushten Stand integrieren)
-Stand 19:40: klang-lage und w11-fahrzeug pushen noch, takt-band hat abgegeben, menue/verkehr/ankunft-faden/studio-buehne stehen auf WIP.
-
 | Sitzung | Zweig | Auftrag (Briefkasten cloud-post/…) |
 |---|---|---|
 | w12-klang-lage | w12-klang-lage | klang.K5#2 `_umweltLage` (w12-klang-takt.md) |
-| w12-takt-k06 | w12-takt-band | K06 Schmuggel-Arm (w12-takt-band.md) — Abgabe f5547a39 |
+| w12-takt-k06 | w12-takt-band | GELANDET in z235 |
 | w12-menue-layout | w12-menue | 16 px ohne Abschneiden + Linse (w12-menue.md) |
 | w12-verkehr-richter | w12-verkehr | Richter zählt 20 Wagen/Abstand/Sitz, GRÜN aus PFLICHT-OFFEN raus (w12-verkehr.md) |
 | w12-ankunft-b | w12-ankunft-faden | Summe UND t(Kontrolle) fallen (w12-ankunft-faden.md) |
 | w12-fahrzeug-heil | w11-fahrzeug | 7 rote Linsen aus z225 (w12-fahrzeug-decke.md) |
 | w12-buehne-lack | w12-studio-buehne | Lack spiegelt den Himmel (w12-studio-buehne.md) |
 
-Jede sichtbare Abgabe braucht vor dem Zug ein Radeon-Bild (Vorprüfung). Heute fielen dabei auf: Das Menü schnitt Text ab, der Verkehr-Richter war zu weich, der Ankunft-Faden war langsamer.
-
-## Lokal (Radeon)
-- w12-laub-kante (lod.K1#1 = PFLICHT A laub-kante) läuft noch.
-- w12-proben-tempo2 (siehe oben).
+Jede sichtbare Abgabe braucht vor dem Zug ein Radeon-Bild (Vorprüfung).
 
 ## Offen / Funde (FUND-REGISTER.md)
-- LLM-Stationen: Die Farm misst ki.K1#2/ki.K4#1 mit dem CPU-Modell (p95 59 s) rot. Lokal mit Ollama (GPU) nachmessen, dann kommen ki.K1 2 und ki.K4 1 zurück.
-- Werkzeug:
-  - Sitzungs-Wechsel buehne→buehne nach schatten.K1#1 (K1#2 nur allein messen)
-  - gate:fenster-wechsel: der ES-Selbsttest wackelt
-  - Streckung der Fern-Wiese nur nach Abstand (vegetation.K1#1)
-  - tanne@0,05: Karte unter Feuer (licht.K3#1)
-  - OMEN: HP-Dienst apphelpercap (Entscheidung des Schöpfers)
-- Neu aus kronen:
-  - `foundry-core.js:2544`: Die Nadeln der L2 lesen eine feste Fichten-Farbe (Zwilling für Mammut und Tanne).
-  - material.K3#2: Die Fichte wackelt bei Uhr 0,27 trotz byte-gleicher Läufe.
-- Die STATIK-Kette des Sammlers misst wie der CI-Push die Summe. Ein Zweig, der Spiel-Code streicht, gehört nie in einen Zug mit spec-schweren Zweigen.
+- **lod.K1#1 / PFLICHT A laub-kante**: Der Fehler liegt in der Gestalt, nicht im Karten-Gesetz. Karte → L1-Gestalt an derselben Pose:
+
+  | Art | Karte | L1-Gestalt |
+  |---|---|---|
+  | Strauch | 0,47 | 0,40 |
+  | Birke | 0,34 | 0,39 |
+  | Eiche | 0,25 | 0,27 |
+
+  Soll ist ≤ 0,22. Grün nur über eine neue Kronen-Gestalt (L0) dieser drei Arten.
+- **Brand**: Front und Flammen lesen die Welt-Uhr, Fahne und Gras die Bild-Uhr (zwei Winde nach dem Laden eines Stands). Die Deckung liegt mit 0,91 knapp über der Schwelle 0,9.
+- LLM-Stationen per Ollama.
+- Fenster-Wand: Wackeln des Wassers am Ufer.
+- Grundstellung setzt den Regler (`perfSense`/`loadScale`) nie zurück.
+- `foundry-core.js:2544`: Die Nadel der L2 hat eine feste Fichten-Farbe.
+- OMEN: HP-Dienst apphelpercap (Entscheidung des Schöpfers).
+- Die STATIK-Kette misst wie der CI-Push die SUMME: Ein Zweig, der Spiel-Code streicht, fährt nie mit spec-schweren Zweigen.
