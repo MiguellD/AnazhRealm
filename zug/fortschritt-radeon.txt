@@ -1978,3 +1978,24 @@
 2026-11-05 03:28:49 b8bc6e0c-radeon START 1 Stationen
 2026-11-05 03:29:43 b8bc6e0c-radeon mensch.K4#1 ROT 0.4 · 1/1
 2026-11-05 03:31:13 b8bc6e0c-radeon ENDE 0 grün / 1 rot · 2.4 min
+2026-11-05 04:55:40 8ef49bef-radeon START 46 Stationen
+2026-11-05 04:56:22 8ef49bef-radeon profiband.K4#1 ROT 0.5 · 1/46
+2026-11-05 04:56:29 8ef49bef-radeon profiband.K4#2 ROT 0.5 · 2/46
+2026-11-05 04:58:49 8ef49bef-radeon mensch.K4#1 ROT 0.3 · 3/46
+2026-11-05 04:59:10 8ef49bef-radeon vegetation.K1#1 ROT 0.3 · 4/46
+2026-11-05 05:00:55 8ef49bef-radeon licht.K2#2 ROT 0.7 · 5/46
+2026-11-05 05:02:40 8ef49bef-radeon lod.K1#1 ROT 0.7 · 6/46
+2026-11-05 05:03:02 8ef49bef-radeon lod.K5#1 ROT 0.4 · 7/46
+2026-11-05 05:03:20 8ef49bef-radeon lod.K2#1 ROT 0.3 · 8/46
+2026-11-05 05:03:34 8ef49bef-radeon spielgang.K3#1 GRÜN 0.2 · 9/46
+2026-11-05 05:05:55 8ef49bef-radeon schatten.K3#1 GRÜN 0.1 · 10/46
+2026-11-05 05:06:00 8ef49bef-radeon ferne.K4#1 ROT 0.1 · 11/46
+2026-11-05 05:06:06 8ef49bef-radeon lod.K4#1 ROT 0.1 · 12/46
+2026-11-05 05:06:11 8ef49bef-radeon vegetation.K3#1 ROT 0.1 · 13/46
+2026-11-05 05:06:16 8ef49bef-radeon affekt.K4#2 ROT 0.0 · 14/46
+2026-11-05 05:06:22 8ef49bef-radeon profiband.K5#1 ROT 0.3 · 15/46
+2026-11-05 05:07:38 8ef49bef-radeon physik.K2#2 ROT 0.1 · 16/46
+2026-11-05 05:10:25 8ef49bef-radeon licht.K3#1 ROT 0.5 · 17/46
+2026-11-05 05:11:17 8ef49bef-radeon tiere.K1#2 ROT 0.6 · 18/46
+2026-11-05 05:11:55 8ef49bef-radeon tiere.K3#2 GRÜN 0.5 · 19/46
+2026-11-05 05:24:59 8ef49bef-radeon ENDE 3 grün / 16 rot · 29.3 min
