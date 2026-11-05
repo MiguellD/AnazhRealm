@@ -1530,10 +1530,10 @@ class AnazhRealm_klang {
     // das Rascheln), die Nacht nimmt Snare und Hihats zurück (ganz Nacht: aus, der Kick bleibt leiser als Herzschlag).
     // DIE FILTER DES GROOVE sind je Akkord-Dauer EINE: Klick-, Snare- und Hihat-Hochpass (`_lofiTrommelFilter`) — vorher baute
     // jeder Schlag seinen eigenen und jedes Hihat las das Feld am Ohr (`auraAt`) neu (klang.K5: der Groove trug den Klang-Takt).
-    // DAS VIERTEL (`viertel` 0 … 3, sonst der ganze Takt): je Viertel ein Bild der Folge (`_lofiTick`), alle aus derselben Lage `g`,
-    // die das erste liest (Muster, Schicht, Swing, Filter) — dieselben Schläge auf denselben Einsätzen. klang.K5: der ganze Groove
-    // in einem Bild trug 0,1–0,18 ms, eine Hälfte noch 0,09–0,11 (Null-Renderer, diag-klang-zensus --takt).
-    _lofiPlayGroove(durSec, t0, viertel, g = {}) {
+    // DIE HÄLFTE (`haelfte` 0 · 1, sonst der ganze Takt): je Hälfte ein Bild der Folge (`_lofiTick`), beide aus derselben Lage `g`,
+    // die die erste liest (Muster, Schicht, Swing, Filter) — dieselben Schläge auf denselben Einsätzen. klang.K5: der ganze Groove
+    // in einem Bild trug 0,1–0,18 ms (Null-Renderer, diag-klang-zensus --takt).
+    _lofiPlayGroove(durSec, t0, haelfte, g = {}) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const STEPS = 8;
@@ -1552,9 +1552,8 @@ class AnazhRealm_klang {
             Object.assign(g, { stepDur: durSec / STEPS, now, pat, peace, swing, tag, kick, regen, F });
         }
         const { stepDur, now, pat, peace, swing, tag, kick, regen, F } = g;
-        const [von, bis] = [0, 1, 2, 3].includes(viertel)
-            ? [(viertel * STEPS) / 4, ((viertel + 1) * STEPS) / 4]
-            : [0, STEPS];
+        const [von, bis] =
+            haelfte === 0 || haelfte === 1 ? [(haelfte * STEPS) / 2, ((haelfte + 1) * STEPS) / 2] : [0, STEPS];
         for (let step = von; step < bis; step++) {
             const t = now + this._grooveStepTime(step, stepDur, swing);
             if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, kick, F.klick);
@@ -1982,7 +1981,7 @@ class AnazhRealm_klang {
 
     // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords (der letzte Einsatz + die
     // Akkord-Dauer) den Akkord der aktuellen Stufe planen, dann die nächste Stufe über _lofiNextDegree wählen. Pad, Melodie,
-    // Bass, die vier Viertel des Grooves und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
+    // Bass, die zwei Hälften des Grooves und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
     // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
     // → true, wenn das Bild einen Teil der Musik spielte (die Klang-Welt wartet dann, `symphonyTick`).
     _lofiTick() {
@@ -2006,11 +2005,12 @@ class AnazhRealm_klang {
         L.degree = this._lofiNextDegree(degree);
         this._lofiPlayChord(this._lofiChordFromDegree(degree), t0, durSec);
         this._untertitel("musik", "lofi", null, 0);
-        const groove = {}; // die Lage des Grooves, die sein erstes Viertel liest
+        const groove = {}; // die Lage des Grooves, die seine erste Hälfte liest
         L.folge = [
             () => this._lofiPlayMelody(degree, durSec, t0),
             () => this._lofiPlayBass(degree, durSec, t0),
-            ...[0, 1, 2, 3].map((k) => () => this._lofiPlayGroove(durSec, t0, k, groove)),
+            () => this._lofiPlayGroove(durSec, t0, 0, groove),
+            () => this._lofiPlayGroove(durSec, t0, 1, groove),
             () => this._lofiRaum(durSec),
         ];
         return true;
