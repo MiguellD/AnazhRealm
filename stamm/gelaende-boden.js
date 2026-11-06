@@ -896,6 +896,7 @@ class AnazhRealm_gelaende_boden {
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
         const genKarte = this._chunkGenKarte || (this._chunkGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        this._freiWeckenIn(x0 - R, x1 + R, z0 - R, z1 + R); // was über dem Edit ruht, wacht auf und fragt seinen Grund neu
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();

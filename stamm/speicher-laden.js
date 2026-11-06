@@ -819,6 +819,9 @@ class AnazhRealm_speicher_laden {
             id: a.id,
             // W-H (V18.179) — die Pro-Instanz-Yaw reist durch den Reload mit.
             rotationY: Number.isFinite(a.rotationY) ? a.rotationY : 0,
+            // der freie Körper liegt, wie er lag: Drehung und Schlaf (physik.K3, `_freiKoerperSetzen`)
+            drehung: a.drehung,
+            ruht: a.ruht === true,
             // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): die expliziten
             // Tint-Werte reisen mit (Welt-Identität). spawnArchitecture
             // priorisiert opts.tintH/S/V vor seed-Berechnung.

@@ -1441,6 +1441,9 @@ class AnazhRealm_speicher_welten {
                             a.chimney,
                             a.portalMeta,
                             m.boden,
+                            // der freie Körper (physik.K3): seine Drehung und sein Schlaf (`_freiKoerperSetzen` liest beide)
+                            ...(a._frei ? a._frei.q : AnazhRealm.FREI_OHNE_DREHUNG),
+                            a._frei ? a._frei.schlaf : null,
                         ];
                     },
                     glied: (a) => ({
@@ -1458,6 +1461,15 @@ class AnazhRealm_speicher_welten {
                         // Reload (sonst rasten geladene Bäume auf Identity zurück → der
                         // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
                         ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
+                        // DER FREIE KÖRPER (physik.K3, die Trümmer eines Einsturzes, Kiste und Fass): seine volle Drehung (die Quaternion
+                        // [w, x, y, z], 6 Stellen) und ob er schläft — bis w15-einsturz trug der Stand nur Lage und Gier, und eine
+                        // gekippte Kiste stand nach dem Reload aufrecht
+                        ...(a._frei
+                            ? {
+                                  drehung: Array.from(a._frei.q, (x) => Math.round(x * 1e6) / 1e6),
+                                  ...(a._frei.schlaf ? { ruht: true } : {}),
+                              }
+                            : {}),
                         // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
                         // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
                         ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),

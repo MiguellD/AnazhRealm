@@ -812,6 +812,9 @@ class AnazhRealm_werkstatt_bauen {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        // was auf ihm ruht, wacht auf (ein freier Körper auf dem Pfosten, die Kiste auf der Kiste, `_freiWeckenIn`)
+        const h = entry._blockerHuelle;
+        if (h && this._freiImTakt) this._freiWeckenIn(h[0], h[1], h[2], h[3]);
         // der Grundriss eines Baus fällt mit ihm — am Ort (`_grundrissFaellt`)
         const fp = this._grundrissVon(entry);
         if (fp) {
