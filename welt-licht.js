@@ -823,7 +823,8 @@ var __weltLicht = (function () {
     // DIE LEINE DER BÜHNE (wie die Welt, stamm/dirigent-takt.js `_gpuLeineFrei`): jedes gezeichnete Bild meldet die Arbeit davor an die
     // Queue; sind GPU_FRAMES_IM_FLUG Meldungen offen, zeichnet die Bühne nicht (der Aufrufer fragt im nächsten Takt wieder). Ohne sie
     // lief die Garage ihrer GPU beliebig voraus — auf dem CPU-Raster der CI (z259, Linux-swiftshader) stand ihre Schlange 25 s lang,
-    // jeder Pipeline-Bau und jedes Lesen wartete dahinter, die Labor-Linse riss in G8 nach 120 s.
+    // jeder Pipeline-Bau und jedes Lesen wartete dahinter, die Labor-Linse riss in G8 nach 120 s. GEMESSEN (06.11., derselbe Läufer,
+    // ubuntu-latest swiftshader): mit der Leine läuft die Labor-Linse in 32 s GRÜN (ohne: Riss nach 120 s), die Portal-Konformanz GRÜN.
     function buehneZeichnet(B, szene, R) {
         if (!B || B.belichtung == null) return false;
         const q = R.backend && R.backend.device ? R.backend.device.queue : null;
