@@ -159,9 +159,8 @@ async function checkBandHydrosphere({ page, check }) {
             const cj = (cellIdx / hydro.dim) | 0;
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-            // der Füllstand trägt den Pegel des Sees (Schmelze und Regen, gelaende-core `pegelHub`, wetter.K3)
-            const hub = window.__gelaendeCore.pegelHub(r._gelaende(), renderedLk.level);
-            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level - hub) < 0.01;
+            // der Füllstand trägt den Pegel des Sees in der Klasse seines Laufs (Schmelze, Regen und Dürre, gelaende-core `koerperY`)
+            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - window.__gelaendeCore.koerperY(r._gelaende(), hydro, cellIdx)) < 0.01;
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert den See-Wasserspiegel, nicht den Meeresspiegel.
             const cellsSet = new Set(renderedLk.cells);
             let ringChecked = false;
@@ -1510,8 +1509,8 @@ async function checkBandWasserWahrheit({ page, check }) {
             gesehen.add(h);
             if (h && h.ready && h.water && h.water.waterKind) {
                 const wK = h.water.waterKind;
-                // der Spiegel der Zelle wie im Kern (`koerperY`): der See trägt den Pegel (Schmelze und Regen, wetter.K3)
-                const wY = Array.from(h.water.waterY, (y, i) => (wK[i] === 2 ? y + window.__gelaendeCore.pegelHub(r._gelaende(), y) : y));
+                // der Spiegel der Zelle, der Leser des Kerns (`koerperY`): der See trägt den Pegel seines Laufs (wetter.K3)
+                const wY = Array.from(wK, (_, i) => window.__gelaendeCore.koerperY(r._gelaende(), h, i));
                 const hd = h.dim;
                 outer: for (let cj = 1; cj < hd - 1; cj++) {
                     for (let ci = 1; ci < hd - 1; ci++) {

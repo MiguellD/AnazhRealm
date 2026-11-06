@@ -7,10 +7,11 @@
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera) {
+// Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
+// decke, kamera, ab und jeder Helfer der Proben sind dort im Gültigkeitsbereich — keine zweite Liste.
+async function lebenBuehnen() {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
-    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -73,7 +74,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     R.abstand.push(ab(c.position, pm));
                 }
                 R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
             erinnert[rolle] = {
                 medianM: +quantil(R.abstand, 0.5).toFixed(2),
@@ -117,7 +118,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     for (const c of herde) if (zelle(c.position.x, c.position.z, mx, mz)) drin++;
                 }
                 ort[gegen ? "gegenlauf" : "riss"].push(+(drin / 5400 / herde.length).toFixed(3));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
         const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
@@ -192,7 +193,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 if (je.alle > 3 * K + 10 && ++kappe) break;
                 n.push(je);
             }
-            for (const c of s.creatures.slice()) r.removeCreature(c);
+            leer();
             const mittel = (a, b, g) =>
                 +(n.slice(a, b).reduce((p, je) => p + (je[g || "alle"] || 0), 0) / (b - a)).toFixed(2);
             return { kappe, mittel, tod, ms, nah };
@@ -881,8 +882,6 @@ function lebenUrteil(name, z, soll) {
         );
         soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
         soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
-    }
-    if (name === "lebensraum")
         for (const [wo, L] of [
             ["", z],
             ["Gegenprobe ", z.gegen || { fehler: "die Gegenprobe in einer Welt anderer Saat lief nicht" }],
@@ -897,7 +896,6 @@ function lebenUrteil(name, z, soll) {
                     `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
-    if (name === "lebensraum") {
         const gb = (z.gegen && z.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
         const [F, N] = ["fluss", "sonst"].map((k) => [z.baer[k][0] + gb[k][0], z.baer[k][1] + gb[k][1]]);
         soll(
@@ -934,7 +932,7 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera);`,
+    BUEHNEN: `await (${lebenQuelle})();`,
     PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
