@@ -1,0 +1,112 @@
+{
+ "proben": {
+  "tuch": {
+   "loeser": [
+    "xpbdSchritt",
+    "xpbdKette",
+    "tuchGitter",
+    "tuchZustand",
+    "tuchTakt",
+    "tuchRuhe",
+    "tuchDrapieren"
+   ],
+   "rufe": {
+    "xpbdSchritt": 0,
+    "xpbdKette": 0,
+    "tuchGitter": 2,
+    "tuchZustand": 2,
+    "tuchTakt": 80,
+    "tuchRuhe": 1,
+    "tuchDrapieren": 2
+   },
+   "kleidung": {
+    "top": "poncho",
+    "bottom": "pants",
+    "shoes": "boot",
+    "farben": [
+     "sand",
+     "olive",
+     "grey",
+     "mustard",
+     "burgundy"
+    ]
+   },
+   "teile": [
+    "fein:haar",
+    "fein:haut*",
+    "fein:stoff*",
+    "fein:*",
+    "grob:haut*",
+    "grob:auge*",
+    "grob:haar*",
+    "grob:stoff*"
+   ],
+   "ruhe": {
+    "fein": 12,
+    "querfein": 89,
+    "grob": 6,
+    "quergrob": 35
+   },
+   "rufeImGang": {
+    "xpbdSchritt": 0,
+    "xpbdKette": 0,
+    "tuchGitter": 2,
+    "tuchZustand": 2,
+    "tuchTakt": 80,
+    "tuchRuhe": 1,
+    "tuchDrapieren": 2
+   },
+   "gang": {
+    "fein": {
+     "durchdringung": 0,
+     "bilderMitDurchdringung": 0,
+     "quer": 2183,
+     "ecken": 8245,
+     "gitter": {
+      "stufe": 0,
+      "msMittel": 11.46
+     },
+     "loeserTraegtM": 0.1036
+    },
+    "grob": {
+     "durchdringung": 0,
+     "bilderMitDurchdringung": 0,
+     "quer": 597,
+     "ecken": 2877,
+     "loeserTraegtM": 0.0717
+    }
+   },
+   "stillgelegt": {
+    "fein": {
+     "durchdringung": 7339,
+     "bilderMitDurchdringung": 40,
+     "quer": 5093,
+     "ecken": 8245
+    },
+    "grob": {
+     "durchdringung": 2396,
+     "bilderMitDurchdringung": 40,
+     "quer": 1882,
+     "ecken": 2877
+    }
+   },
+   "sek": 50,
+   "labor": {
+    "kern": true,
+    "webgl": true,
+    "rufe": {
+     "xpbdSchritt": 0,
+     "xpbdKette": 0,
+     "tuchGitter": 0,
+     "tuchZustand": 0,
+     "tuchTakt": 3,
+     "tuchRuhe": 0,
+     "tuchDrapieren": 0
+    },
+    "fehler": null,
+    "sek": 9.9
+   }
+  }
+ },
+ "fehler": []
+}

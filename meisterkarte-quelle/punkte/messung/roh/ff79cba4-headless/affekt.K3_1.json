@@ -1,0 +1,1322 @@
+{
+ "art": "nexus",
+ "laeufe": [
+  {
+   "mutante": null,
+   "saat": 0,
+   "erstes": [
+    13,
+    29
+   ],
+   "letztes": [
+    6,
+    19
+   ],
+   "dritteln": [
+    [
+     13,
+     16,
+     0,
+     13,
+     23
+    ],
+    [
+     34,
+     12,
+     0,
+     34,
+     39
+    ],
+    [
+     6,
+     13,
+     0,
+     6,
+     7
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 10,
+     "erneuert": 3,
+     "plusErneuert": 3,
+     "plus": 3,
+     "minusErneuert": 0,
+     "minus": 7,
+     "ungemessen": 2,
+     "fitness": 0.438
+    },
+    {
+     "n": 19,
+     "erneuert": 10,
+     "plusErneuert": 10,
+     "plus": 15,
+     "minusErneuert": 0,
+     "minus": 4,
+     "ungemessen": 2,
+     "fitness": 0.448
+    },
+    {
+     "n": 9,
+     "erneuert": 1,
+     "plusErneuert": 1,
+     "plus": 1,
+     "minusErneuert": 0,
+     "minus": 8,
+     "ungemessen": 6,
+     "fitness": 0.178
+    }
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/1 0/2 0/1 0/2 0/0 0/0 1/1 1/1 1/2 1/3 1/3 1/2 1/1 1/1 2/2 3/3 3/3 2/2 2/2 2/2 2/2 3/3 4/4 4/4 4/6 2/3 2/3 2/2 2/2 0/1 0/1 0/0 0/1 0/1 0/2 0/2 0/1 0/1 0/1 0/1 0/2 0/1 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/1 1/1 1/2 1/2 1/2 1/2 1/1",
+   "taten": 32,
+   "gesprochen": 4,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südöstlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 des Nexus; dazu 13 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 0,
+   "erstes": [
+    1,
+    8
+   ],
+   "letztes": [
+    6,
+    7
+   ],
+   "dritteln": [
+    [
+     1,
+     7,
+     0,
+     1,
+     3
+    ],
+    [
+     0,
+     3,
+     2,
+     0,
+     2
+    ],
+    [
+     6,
+     1,
+     0,
+     6,
+     6
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 4,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 1,
+     "minusErneuert": 0,
+     "minus": 3,
+     "ungemessen": 2,
+     "fitness": 0.246
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.245
+    },
+    {
+     "n": 2,
+     "erneuert": 2,
+     "plusErneuert": 2,
+     "plus": 2,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": 0.534
+    }
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 6,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 13 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 13 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 0,
+   "erstes": [
+    0,
+    8
+   ],
+   "letztes": [
+    0,
+    0
+   ],
+   "dritteln": [
+    [
+     0,
+     8,
+     0,
+     0,
+     3
+    ],
+    [
+     0,
+     5,
+     0,
+     0,
+     2
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 4,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 4,
+     "ungemessen": 2,
+     "fitness": 0.245
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.245
+    },
+    {
+     "n": 0,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": null
+    }
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 12,
+   "zeilen": [
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.7. (Gesetz Nr. 11 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.7. (Gesetz Nr. 11 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 1,
+   "erstes": [
+    0,
+    17
+   ],
+   "letztes": [
+    8,
+    11
+   ],
+   "dritteln": [
+    [
+     0,
+     17,
+     0,
+     0,
+     7
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     8,
+     3,
+     0,
+     8,
+     8
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 6,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 6,
+     "ungemessen": 3,
+     "fitness": 0.082
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0
+    },
+    {
+     "n": 4,
+     "erneuert": 3,
+     "plusErneuert": 3,
+     "plus": 3,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0.513
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 8,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 76 m südlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 1,
+   "erstes": [
+    0,
+    17
+   ],
+   "letztes": [
+    7,
+    10
+   ],
+   "dritteln": [
+    [
+     0,
+     17,
+     0,
+     0,
+     7
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     7,
+     3,
+     0,
+     7,
+     7
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 6,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 6,
+     "ungemessen": 3,
+     "fitness": 0.082
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0
+    },
+    {
+     "n": 4,
+     "erneuert": 2,
+     "plusErneuert": 2,
+     "plus": 3,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0.414
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 0/0",
+   "taten": 32,
+   "gesprochen": 8,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 1,
+   "erstes": [
+    0,
+    17
+   ],
+   "letztes": [
+    0,
+    5
+   ],
+   "dritteln": [
+    [
+     0,
+     17,
+     0,
+     0,
+     7
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     5,
+     0,
+     0,
+     2
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 6,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 6,
+     "ungemessen": 3,
+     "fitness": 0.082
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.243
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/2 0/1 0/1 0/2 0/2 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 15,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 76 m südwestlich von dir, weil Zufall ≤ 0.58. (Gesetz Nr. 15 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 2,
+   "erstes": [
+    24,
+    31
+   ],
+   "letztes": [
+    4,
+    7
+   ],
+   "dritteln": [
+    [
+     24,
+     7,
+     0,
+     24,
+     24
+    ],
+    [
+     5,
+     4,
+     0,
+     5,
+     5
+    ],
+    [
+     4,
+     3,
+     0,
+     4,
+     4
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 18,
+     "erneuert": 14,
+     "plusErneuert": 14,
+     "plus": 16,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 2,
+     "fitness": 0.487
+    },
+    {
+     "n": 7,
+     "erneuert": 4,
+     "plusErneuert": 4,
+     "plus": 5,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 2,
+     "fitness": 0.415
+    },
+    {
+     "n": 3,
+     "erneuert": 1,
+     "plusErneuert": 1,
+     "plus": 1,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 2,
+     "fitness": 0.181
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 2/2 2/2 2/3 2/3 2/2 2/2 2/2 2/2 1/1 2/2 2/2 1/1 1/1 1/1 1/2 1/2 1/1 1/1 1/1 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 8,
+   "zeilen": []
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 2,
+   "erstes": [
+    10,
+    16
+   ],
+   "letztes": [
+    2,
+    3
+   ],
+   "dritteln": [
+    [
+     10,
+     6,
+     0,
+     10,
+     10
+    ],
+    [
+     0,
+     3,
+     2,
+     0,
+     2
+    ],
+    [
+     2,
+     1,
+     0,
+     2,
+     2
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 9,
+     "erneuert": 3,
+     "plusErneuert": 3,
+     "plus": 7,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 2,
+     "fitness": 0.339
+    },
+    {
+     "n": 3,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 3,
+     "ungemessen": 2,
+     "fitness": 0.133
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 1,
+     "fitness": 0
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 1/1 0/0 0/1 0/0 0/0 1/1 1/1 1/1 1/1 2/2 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 0,
+   "zeilen": []
+  },
+  {
+   "mutante": "aus",
+   "saat": 2,
+   "erstes": [
+    0,
+    9
+   ],
+   "letztes": [
+    0,
+    4
+   ],
+   "dritteln": [
+    [
+     0,
+     9,
+     0,
+     0,
+     3
+    ],
+    [
+     0,
+     4,
+     0,
+     0,
+     2
+    ],
+    [
+     0,
+     4,
+     0,
+     0,
+     2
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 2,
+     "fitness": 0.29
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.135
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.234
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/1 0/1 0/1 0/0 0/1 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 6,
+   "zeilen": []
+  },
+  {
+   "mutante": null,
+   "saat": 3,
+   "erstes": [
+    3,
+    11
+   ],
+   "letztes": [
+    3,
+    4
+   ],
+   "dritteln": [
+    [
+     3,
+     8,
+     0,
+     3,
+     3
+    ],
+    [
+     4,
+     3,
+     0,
+     4,
+     4
+    ],
+    [
+     3,
+     1,
+     0,
+     3,
+     3
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 4,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 4,
+     "ungemessen": 3,
+     "fitness": 0.122
+    },
+    {
+     "n": 3,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 3,
+     "ungemessen": 1,
+     "fitness": 0.321
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.489
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/1 1/1 1/1 1/2 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 0/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 0/0 0/0 0/0 0/0 0/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 12,
+   "zeilen": [
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 3,
+   "erstes": [
+    4,
+    13
+   ],
+   "letztes": [
+    4,
+    6
+   ],
+   "dritteln": [
+    [
+     4,
+     9,
+     0,
+     4,
+     4
+    ],
+    [
+     7,
+     1,
+     0,
+     7,
+     7
+    ],
+    [
+     4,
+     2,
+     0,
+     4,
+     4
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 3,
+     "fitness": 0.195
+    },
+    {
+     "n": 3,
+     "erneuert": 1,
+     "plusErneuert": 1,
+     "plus": 2,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.338
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.47
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/1 1/1 1/1 1/3 1/2 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 13,
+   "zeilen": [
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 3,
+   "erstes": [
+    0,
+    13
+   ],
+   "letztes": [
+    0,
+    6
+   ],
+   "dritteln": [
+    [
+     0,
+     13,
+     0,
+     0,
+     4
+    ],
+    [
+     0,
+     5,
+     0,
+     0,
+     4
+    ],
+    [
+     0,
+     6,
+     0,
+     0,
+     4
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 3,
+     "fitness": 0.196
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 0,
+     "fitness": 0.479
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.495
+    }
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/3 0/2 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 13,
+   "zeilen": [
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus wünscht sich das Wetter „klar“ — überall, weil Zufall ≤ 0.44. (Gesetz Nr. 15 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 4,
+   "erstes": [
+    2,
+    9
+   ],
+   "letztes": [
+    19,
+    19
+   ],
+   "dritteln": [
+    [
+     2,
+     7,
+     0,
+     2,
+     3
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     19,
+     0,
+     0,
+     19,
+     19
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 3,
+     "fitness": 0.174
+    },
+    {
+     "n": 0,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": null
+    },
+    {
+     "n": 8,
+     "erneuert": 8,
+     "plusErneuert": 8,
+     "plus": 8,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": 0.589
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 0/1 0/1 1/1 1/1 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 2/2 2/2",
+   "taten": 32,
+   "gesprochen": 2,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südwestlich von dir, weil Zufall ≤ 0.764. (Gesetz Nr. 13 des Nexus; dazu 15 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südwestlich von dir, weil Zufall ≤ 0.68. (Gesetz Nr. 12 des Nexus; dazu 17 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 4,
+   "erstes": [
+    4,
+    14
+   ],
+   "letztes": [
+    5,
+    7
+   ],
+   "dritteln": [
+    [
+     4,
+     10,
+     0,
+     4,
+     5
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     5,
+     2,
+     0,
+     5,
+     5
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 7,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 1,
+     "minusErneuert": 0,
+     "minus": 6,
+     "ungemessen": 4,
+     "fitness": 0.186
+    },
+    {
+     "n": 0,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": null
+    },
+    {
+     "n": 3,
+     "erneuert": 2,
+     "plusErneuert": 2,
+     "plus": 3,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": 0.513
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 0/1 0/1 1/1 1/1 0/0 0/0 0/1 0/1 0/0 0/1 0/2 1/2 1/2 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 9,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südwestlich von dir, weil Zufall ≤ 0.68. (Gesetz Nr. 14 des Nexus; dazu 10 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südwestlich von dir, weil Zufall ≤ 0.68. (Gesetz Nr. 14 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 4,
+   "erstes": [
+    0,
+    9
+   ],
+   "letztes": [
+    0,
+    4
+   ],
+   "dritteln": [
+    [
+     0,
+     9,
+     0,
+     0,
+     3
+    ],
+    [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     4,
+     0,
+     0,
+     2
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 3,
+     "fitness": 0.173
+    },
+    {
+     "n": 0,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 0,
+     "ungemessen": 0,
+     "fitness": null
+    },
+    {
+     "n": 1,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.488
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 0/1 0/1 0/1 0/1 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 12,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südöstlich von dir, weil Zufall ≤ 0.68. (Gesetz Nr. 12 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 45 m südlich von dir, weil Zufall ≤ 0.68. (Gesetz Nr. 12 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 5,
+   "erstes": [
+    5,
+    9
+   ],
+   "letztes": [
+    47,
+    50
+   ],
+   "dritteln": [
+    [
+     5,
+     4,
+     0,
+     5,
+     5
+    ],
+    [
+     22,
+     0,
+     0,
+     22,
+     22
+    ],
+    [
+     47,
+     3,
+     0,
+     47,
+     47
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 2,
+     "fitness": 0.256
+    },
+    {
+     "n": 9,
+     "erneuert": 8,
+     "plusErneuert": 8,
+     "plus": 8,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.587
+    },
+    {
+     "n": 22,
+     "erneuert": 19,
+     "plusErneuert": 19,
+     "plus": 20,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 1,
+     "fitness": 0.496
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 1/2 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 0/0 1/1 0/0 0/0 1/1 1/1 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 2/2 2/2 2/2 2/2 2/2 2/2 2/2 2/3 3/3 3/3 2/2 2/2 2/2 2/2 2/3 2/2 2/2 2/2 2/2 3/4 4/4 3/3 3/3",
+   "taten": 32,
+   "gesprochen": 1,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil Zufall ≤ 0.54. (Gesetz Nr. 13 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 5,
+   "erstes": [
+    5,
+    9
+   ],
+   "letztes": [
+    4,
+    8
+   ],
+   "dritteln": [
+    [
+     5,
+     4,
+     0,
+     5,
+     5
+    ],
+    [
+     8,
+     0,
+     0,
+     8,
+     8
+    ],
+    [
+     4,
+     4,
+     0,
+     4,
+     4
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 2,
+     "fitness": 0.266
+    },
+    {
+     "n": 3,
+     "erneuert": 1,
+     "plusErneuert": 1,
+     "plus": 2,
+     "minusErneuert": 0,
+     "minus": 1,
+     "ungemessen": 0,
+     "fitness": 0.506
+    },
+    {
+     "n": 5,
+     "erneuert": 1,
+     "plusErneuert": 1,
+     "plus": 3,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 2,
+     "fitness": 0.293
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 1/2 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 1/1 0/0 1/1 0/0 0/0 1/1 1/1 0/0 1/1 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/2 0/1 0/1 0/0",
+   "taten": 32,
+   "gesprochen": 9,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 53 m südlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 14 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 5,
+   "erstes": [
+    0,
+    9
+   ],
+   "letztes": [
+    0,
+    8
+   ],
+   "dritteln": [
+    [
+     0,
+     9,
+     0,
+     0,
+     5
+    ],
+    [
+     0,
+     6,
+     0,
+     0,
+     6
+    ],
+    [
+     0,
+     8,
+     0,
+     0,
+     3
+    ]
+   ],
+   "endeDrittel": [
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 2,
+     "fitness": 0.236
+    },
+    {
+     "n": 2,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 2,
+     "ungemessen": 0,
+     "fitness": 0.49
+    },
+    {
+     "n": 5,
+     "erneuert": 0,
+     "plusErneuert": 0,
+     "plus": 0,
+     "minusErneuert": 0,
+     "minus": 5,
+     "ungemessen": 2,
+     "fitness": 0.293
+    }
+   ],
+   "verlauf": "0/0 0/0 0/1 0/2 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/1 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/2 0/1 0/1 0/0",
+   "taten": 32,
+   "gesprochen": 8,
+   "zeilen": []
+  }
+ ]
+}
