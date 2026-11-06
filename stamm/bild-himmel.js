@@ -1004,17 +1004,7 @@ class AnazhRealm_bild_himmel {
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name) {
-        const map = {
-            fruehling: "spring",
-            frühling: "spring",
-            spring: "spring",
-            sommer: "summer",
-            summer: "summer",
-            herbst: "autumn",
-            autumn: "autumn",
-            winter: "winter",
-        };
-        const key = map[String(name || "").toLowerCase()];
+        const key = AnazhRealm.JAHRESZEITEN[String(name || "").toLowerCase()];
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
@@ -3697,3 +3687,16 @@ AnazhRealm.SKY_ENV_REGEN_MIN_MS = 500;
 // Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
 // 8-bit-Stufe ist sie unsichtbar.
 AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
+// DIE WÖRTER DER JAHRESZEIT (ki.K5): EINE Tafel für `setSeason` und das Gesetz der Werte der DSL (`AnazhRealm.DSL_WERTE`,
+// die KI liest sie im Prompt) — bis ki.K5 kannte die KI die Jahreszeiten nur aus einem Beispiel und schrieb für „verwandle die
+// welt in einen winter" ["weather","stormy"].
+AnazhRealm.JAHRESZEITEN = Object.freeze({
+    fruehling: "spring",
+    frühling: "spring",
+    spring: "spring",
+    sommer: "summer",
+    summer: "summer",
+    herbst: "autumn",
+    autumn: "autumn",
+    winter: "winter",
+});
