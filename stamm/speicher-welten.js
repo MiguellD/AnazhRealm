@@ -1312,9 +1312,11 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
-            // Die Stempel des Regens reisen (wetter.K3, `_regenStempel`): der Pegel ist ihre Funktion zur Welt-Uhr — nach dem Reload
-            // fällt der Bach weiter, wie er fiel, und die Dürre hält
-            ["regenStempel", () => (Array.isArray(st().regenStempel) ? st().regenStempel.slice() : null)],
+            // DER ZUSTAND DES PEGELS reist, nie die Stempel des Regens (wetter.K3, speicher.K3, `_pegelZustand`): der Regen der
+            // Sitzung gefaltet in die Speicher des Gesetzes zur Uhr des Stands — 50 Zahlen, wie lange es auch regnete (Gebot 7).
+            // Nach dem Reload fällt der Bach weiter, wie er fiel, und die Dürre hält. Ein Augenblick wie die Uhr: er ist ihre
+            // Funktion bis zum nächsten Regen.
+            ["pegelZustand", () => this._pegelZustand(), { augenblick: true }],
             // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
             ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
@@ -3419,7 +3421,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "voxelWorkerReady",
         "voxelWorkerNextRequestId",
         "voxelWorkerStateGen",
-        "keys",
         "verbTafel",
         "padBelegung",
         "keybindings",

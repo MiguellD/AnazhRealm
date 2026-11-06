@@ -184,7 +184,6 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            keys: {}, // die Tastatur roh (event.key klein) — gelesen NUR vom Sammler der Verb-Tafel
             // DIE VERB-TAFEL (leib.K5): Tastatur, Maus und Gamepad schreiben hinein, jedes Verb liest NUR sie (`_verbTafelSammeln`).
             // Analog: vor/quer (−1..1, quer + = links), gas/bremse (0..1), lenken (−1..1, + = links), der Blick seit dem letzten
             // Bild (rad). Digital: sprint · sprung · rutsch · handbremse und `gehalten` (Aktion → gedrückt, der EINE Auslöser).
@@ -353,7 +352,7 @@ class AnazhRealm {
                 // (waterfallSteep V18.111 gefallen — die A4-Plane ist geschnitten)
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
-                shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckte damals >~150 m (bis V18.530) → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Der Perf-Regler skaliert darunter (PERF_SHADOW_RANGE_MIN).
+                shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckte damals >~150 m (bis V18.530) → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Ein Rand, kein Stellglied des Reglers (w14-lod-uebergang).
                 shadowBias: 1.0, // der Hebel auf das Bias-Gesetz der Kaskaden (_schattenBias: 1 = 0,5 / 0,75 Texel; Akne ↔ Peter-Panning)
                 // LOD-Schalter der Bäume (Browser-Toggle); false → _tickArchitectureLOD läuft im No-Op-Pfad,
                 // alle Bäume bleiben LOD0.
@@ -1847,7 +1846,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.199";
+AnazhRealm.VERSION = "18.546.202";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

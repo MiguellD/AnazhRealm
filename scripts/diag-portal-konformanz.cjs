@@ -80,16 +80,9 @@ async function probefahrt(page, fr) {
         return !!h && getComputedStyle(h).display !== "none";
     });
     // W hält, bis der Tacho steigt — nie nach der Uhr (gate:apparat Klinge 5: auf dem CPU-Raster kommen in 1,6 s wenige Frames)
-    const halt = await halteBis(fr, {
-        druck: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))),
-        los: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))),
-        ziel: () => {
-            const el = document.querySelector("#hud #spd");
-            const v = el ? parseInt(el.textContent, 10) : 0;
-            return v > 0 ? v : false;
-        },
-        frist: 30000,
-    });
+    const w = (art) => () => fr.evaluate((art) => window.dispatchEvent(new KeyboardEvent(art, { code: "KeyW" })), art);
+    // der Tacho in km/h (ganzzahlig): steht er über 0, ist er der Wert, sonst false
+    const halt = await halteBis(fr, { druck: w("keydown"), los: w("keyup"), ziel: () => +(document.querySelector("#hud #spd") || {}).textContent || false, frist: 30000 });
     const spd = halt.erreicht ? halt.wert : 0;
     await route("werkstatt");
     return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
@@ -99,10 +92,7 @@ async function probefahrt(page, fr) {
 // meldet keinen Rückfall (WebGL2 + HalfFloat-Ziele stehen), und das Bild im Portal bewegt sich (zwei Aufnahmen des
 // Overlay-iframe unterscheiden sich).
 async function stromZeichnet(page, fr) {
-    const hud = await fr.evaluate(() => {
-        const h = document.getElementById("hud-line");
-        return h ? h.textContent : "";
-    });
+    const hud = await fr.evaluate(() => (document.getElementById("hud-line") || {}).textContent || "");
     const rueckfall = /konnte nicht starten|Render-Fehler/.test(hud);
     const el = await page.$("#portal-overlay iframe.portal-frame");
     const a = await el.screenshot({ encoding: "base64" });
@@ -379,12 +369,12 @@ async function betreten(page, welt) {
         UEBERSETZT
     );
     if (!b.weg) return b;
-    // W gehalten, die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: jedes Tor des Rings ist
+    // vor gehalten (die Aktion der EINEN Tasten-Tafel, `halt`), die Probe taktet die Heimat (headless taktet sie nicht selbst), bis das Tor aufgeht: jedes Tor des Rings ist
     // eine porta-Gestalt (`weg` = die Gestalt, die der Wirt aus dem Gesetzbuch liest, `_torGesetzFor`), der Weg führt durch
     // ihre Apertur — der E-Weg der Teile-Tore fiel mit ihnen (w4-tore-teile); ein Tor ohne Gesetz ist rot beim Namen (oben)
     await halteBis(page, {
-        druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
-        los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
+        druck: () => page.evaluate("halt.vor = true; window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)"),
+        los: () => page.evaluate("clearInterval(__takt); halt.vor = false"),
         ziel: () => !!r._portalOverlay,
     });
     return (await page.evaluate(() => !!r._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
@@ -650,7 +640,17 @@ async function pruefeWelt(page, welt, lies) {
     aus.echo = z.readys > 1;
     await zaehlerAus(page);
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
-    if (welt.vorher) await hinFrame.evaluate((id) => document.getElementById(id).click(), welt.vorher);
+    // DAS BILD NACH DEM WERK (`gemalt`, die garage): der Vorbau zeichnet ein neues Werk erst, wenn seine Pipelines stehen
+    // (`werkSteht`), und die Leine der Bühne hält ein Bild an, solange die GPU zwei schuldet — erst ein GEZEICHNETES Bild der Leinwand
+    // (`_bildN` steigt) trägt das Werk. `vorher` steht so gezeichnet vor der Tat (sonst trägt das Sprite-Quad keinen Puffer, den der
+    // Neubau zerstören könnte, z259), und K6 liest erst nach einem Bild des Neubaus (z264, Linux: kein Bild zwischen Tat und Abgabe).
+    const gemalt = (id) =>
+        hinFrame.evaluate(async (id) => {
+            if (id) document.getElementById(id).click();
+            await werkSteht();
+            for (const n = _bildN; _bildN === n; _wecke()) await new Promise(requestAnimationFrame);
+        }, id);
+    if (welt.vorher) await gemalt(welt.vorher);
     await fremdBereit(page, PORT);
     const programm = welt.wort
         ? await page.evaluate((w) => r._portalParseWorldCommand(w), welt.wort)
@@ -695,6 +695,7 @@ async function pruefeWelt(page, welt, lies) {
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
     // K6 die GPU: nach einem Bild meldet jedes Gerät der Welt seine Arbeit und mit ihr jede Prüfung, die einen Befehl verwarf
+    if (welt.vorher) await gemalt();
     const gpu = await GPU_ABGABE(hinFrame);
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.

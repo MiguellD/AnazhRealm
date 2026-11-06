@@ -221,7 +221,8 @@ function ladeschirmVerdict(m) {
             if (!L.ohneFein) out.push("der Leib wartet vor dem Bild auf seine feine Stufe (mensch L0, `_leibBereit`), die Grobstufe steht");
             else if (L.baut[0] !== "vor 1") out.push(`vor dem Bild baut der Leib ohne die Grobstufe als Nah-Gestalt (nahStufe: ${L.baut.join(", ")})`);
             if (!b.includes("nach L0")) out.push(`nach dem ersten Bild bestellt der Leib seine feine Stufe nie (${b})`);
-            else if (!L.baut.includes("nach 0")) out.push("die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein (`_leibFeinTausch`)");
+            else if (!L.egoRoh) out.push("in Ego gießt oder tauscht der Haupt-Faden die feine Stufe (`_ofenRoh`)");
+            else if (!L.baut.includes("nach 0")) out.push("auf Third tauscht der Leib nie (`_leibWunsch`)");
         }
         if (K.dorf.ohne) out.push(`das Start-Dorf beim Buch: ${K.dorf.ohne} (Vorbedingung)`);
         else if (K.dorf.export && !K.dorf.kopfRang) out.push("der Export des Start-Dorfs geht ohne Kopf-Rang in die Schlange — hinter ihm wartet jeder Auftrag seiner Bahn (_foundryRang)");
@@ -372,15 +373,17 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
-// m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach] · m.r = [hinten ohne Leerlauf, vorn,
+// m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
+// m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
-    const [[wuchs, offen, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
-        !offen && "die wartende Hülle steht nicht offen (`_weltOffen`)",
-        (!boxen || rest) && "nach dem Bild fehlt die Hülle (`_tickHuellenNach`)",
+        ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
+        fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
+        (!boxen || rest) && "die Hülle fehlt am Leib (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
         !vorn && "der Ring baut das Bild nicht",
         !(ruf && mit) && "der Ring außer Bild kommt nie (`_ringLeerlauf`)",
@@ -672,9 +675,9 @@ async function probe(arg) {
                 ls.hidden = false;
                 ls.classList.remove("weg");
                 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-                st.keys.w = false;
+                halt.vor = false;
                 taste(document.body, "keydown", "w", "KeyW");
-                const wLief = st.keys.w === true;
+                const wLief = halt.vor === true;
                 taste(document.body, "keyup", "w", "KeyW");
                 taste(document.body, "keydown", "Enter");
                 const ae = document.activeElement;
@@ -814,7 +817,7 @@ async function probe(arg) {
                     const [kc, memo, bmD] = [window.__koerperCore, AnazhRealm._tierOfenMemo, r._koerperStudioDials()];
                     const fM = r._menschGussFarben(bmD);
                     const key = (l) => r._ofenMenschKey(Object.assign({}, kc.START_PARAMS, bmD || {}), fM.skin, fM.hair, l);
-                    [0, 1].forEach((l) => memo.delete(key(l)));
+                    [0, 1].forEach((l) => (memo.delete(key(l)), AnazhRealm._ofenRohMemo?.delete(key(l))));
                     Object.assign(st, { _deferredAvatarSoul: st.player.soul || "human", cameraMode: "first" });
                     if (merk.held) st.player.equipped.held = null;
                     r._spielerVorlagen = null;
@@ -825,6 +828,11 @@ async function probe(arg) {
                     k.leib.ohneFein = r._leibBereit() && !memo.has(key(0));
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
+                    // DIE FEINE WARTET AUF IHREN LESER (w14-ankunft-weg): in der Ego-Sicht liegt sie roh (`_ofenRoh`), ungegossen und
+                    // ungetauscht; die Sicht auf Third ist ihr Leser — dann gießt und tauscht der Leib
+                    await bis(() => AnazhRealm._ofenRohMemo?.has(key(0)), 90000, true);
+                    k.leib.egoRoh = !memo.has(key(0)) && !k.leib.baut.some((b) => b.startsWith("nach"));
+                    r.setCameraMode("third");
                     await bis(() => memo.has(key(0)) && k.leib.baut.some((b) => b.startsWith("nach")), 90000, true);
                     // das Dorf: fällig am Genesis-Ort, sein Wecker hing am echten Buch (`_startDorfAmBuch`) — ein frisches Buch weckt ihn
                     if (amOrt && kanal) {
@@ -906,12 +914,26 @@ async function probe(arg) {
     try {
         const [m, da, merk, sp, pc, ruf] = [(out.huelle = {}), st._weltbildDa, r._baumGestaltMerk, r._voxelChunkConfig().span, st.lastPlayerVoxelChunk, new Set()];
         const baum = st.architectures.find((e) => e && e._huelleG != null && e.blockerAABBs && e.blockerAABBs.length);
-        [r._baumGestaltMerk, st._weltbildDa] = [new Map(), 0];
-        r._populateBlockerAABBs(baum);
-        m.h = [r._baumGestaltMerk.size, r._weltOffen().huellen];
-        st._weltbildDa = da;
-        for (let n = 0; n < 400 && r._weltOffen().huellen; n++) r._tickHuellenNach();
-        m.h.push(baum.blockerAABBs.length, r._weltOffen().huellen);
+        // DER BEDARF IST DER LEIB (w14-ankunft-weg): nach dem Bild wartet die Hülle, bis ein Leib sie berühren kann
+        // (`_huellenBedarf`: der Spieler geht, und der Baum steht in HUELLE_BEDARF_M um ihn; eine Kreatur lebt) — die Kreaturen
+        // ruhen, der Spieler steht, dann geht er weit vom Baum, dann neben ihn
+        const [kreaturen, pos] = [st.creatures, st.playerMesh.position.clone()];
+        [r._baumGestaltMerk, st._weltbildDa, st.creatures, baum.blockerAABBs] = [new Map(), 0, [], null];
+        const boxen = (dx) => {
+            if (dx) st.playerMesh.position.set(baum.position.x + dx, pos.y, baum.position.z);
+            for (let i = 0; i < 400 && (r._tickHuellenNach(), r._weltOffen().huellen); i++);
+            return (baum.blockerAABBs || []).length;
+        };
+        try {
+            r._populateBlockerAABBs(baum);
+            m.h = [r._baumGestaltMerk.size];
+            st._weltbildDa = da;
+            m.h.push(boxen(0), boxen(99), boxen(1), r._weltOffen().huellen); // 99 m: fern über HUELLE_BEDARF_M
+        } finally {
+            st.creatures = kreaturen;
+            if (!baum.blockerAABBs) r._populateBlockerAABBs(baum);
+            st.playerMesh.position.copy(pos);
+        }
         r._baumGestaltMerk = merk;
         const stuecke = [[], []];
         st._weltbildDa = 0;
@@ -1000,7 +1022,7 @@ async function probe(arg) {
         m.enterFokus = fokus();
         if (m.enterFokus !== "chat-input") ci.focus();
         taste(ci, "keydown", "w", "KeyW");
-        m.wImFeld = st.keys.w === true;
+        m.wImFeld = halt.vor === true;
         const n0 = zeilen().length;
         ci.value = "setze uhrzeit mittag";
         taste(ci, "keydown", "Enter");
@@ -1009,7 +1031,7 @@ async function probe(arg) {
         m.nachSenden = fokus();
         const ziel = document.activeElement || document.body;
         taste(ziel, "keydown", "w", "KeyW");
-        m.wNachSenden = st.keys.w === true;
+        m.wNachSenden = halt.vor === true;
         taste(ziel, "keyup", "w", "KeyW");
         ci.value = "";
         ci.focus();
@@ -1419,13 +1441,13 @@ async function probe(arg) {
                     const gier = Math.atan2(-ux, -uz);
                     st.yaw = gier;
                     st.pitch = 0;
-                    st.keys.w = true;
+                    halt.vor = true;
                     for (let i = 0; i < 120; i++) {
                         st.yaw = gier;
                         __handTakt();
                         await sleep(16);
                     }
-                    st.keys.w = false;
+                    halt.vor = false;
                     st.pitch = 0;
                     ruhig();
                 };
@@ -1715,7 +1737,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)
-        const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
+        const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
         // der kleine Satz der Stand-Zeile (je Mutante ein Fall getauscht)
         const l2Klein = { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } };
         // der ruhende Vorrat: keine Streu aufgeschoben, jede Phase „wartet auf das erste Bild"
@@ -1772,65 +1794,66 @@ hauptLauf(async () => {
                     vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], kartenBsp: [], vorBild: [], nachBild: 2, ende: true, phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] }),
                 },
                 [
-                    ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
-                    ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
-                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
+                    ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter"],
+                    ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im"],
+                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
-                    ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
-                    ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten Baum"],
-                    ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die ferne"],
-                    ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)"],
+                    ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle:"],
+                    ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten"],
+                    ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die"],
+                    ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild"],
                     ["der Vorrat stirbt (er wartet ewig)", { vorrat: vr({ vorBild: [], nachBild: 0, ende: true }) }, "der Vorrat bestellt nie"],
                     ["der Vorrat endet nicht", { vorrat: vr({ vorBild: [], nachBild: 0, ende: false }) }, "der Vorrat endet nicht"],
                     ["das Tor wartet auf den Vorrat", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], fehltNeu: ["die Werkstatt backt vor"] }) }, "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0"],
-                    ["die Streu wartet auf den Vorrat statt auf ihr Asset", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], streu: { aufgeschoben: true, zellen: 0 } }) }, "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn"],
-                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: vr({ karten: 14, kartenBsp: ["eiche|1"] }) }, "der Vorrat bestellt 14 Karten"],
-                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } }, "solange der Vorrat auf das erste Bild wartet, sagt sein Merker `f._vorrat` true"],
+                    ["die Streu wartet auf den Vorrat statt auf ihr Asset", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], streu: { aufgeschoben: true, zellen: 0 } }) }, "während der Vorrat läuft,"],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: vr({ karten: 14, kartenBsp: ["eiche|1"] }) }, "der Vorrat bestellt 14"],
+                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } }, "solange der Vorrat auf"],
                     ["der Vorrat bestellt in der Warte-Phase (K30-N1)", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], vorBild: [], nachBild: 1, ende: true, phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] }) }, "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe"],
-                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
+                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine"],
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
-                    ["die Zusage wartet auf die ganze Schlange", { wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans kam erst mit der leeren Schlange"],
-                    ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans: kein Fall"],
-                    ...[[{ geweckt: false, vor2: 1 }, "das Weltbild wartete auf 1 Zusage außer Blick"], [{ vor1: null }, "das halbe Weltbild"], [{ nach2: null }, "der Rundblick vergisst"], [{ n: [] }, "das Bild der Ankunft: kein Fall"]].map(([b, soll]) => [soll, { blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1, ...b } }, soll]), ["Lade-Takt", { takt: { lief: 1 } }, "die Streu setzte im Lade-Takt 3 von 4"], ["ohne Lade-Takt", { takt: undefined }, "der Lade-Takt: kein Fall"],
-                    ["ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)", { terme: l2aTerme.concat(["zauber"]) }, "der Term „zauber“ des ersten Weltbilds hat keinen Fall"],
-                    ["ein Fall nennt einen Term außerhalb der Liste", { faelle: mitFall(l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) }, "der Fall pflanzung nennt den Term „saat“"],
-                    ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
-                    ["das Tor wartet auf seine L0", { ankunft: ank({ fein: ["geisttor 9 m L0"], nahKarte: 0 }) }, "das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: geisttor 9 m L0"],
-                    ["der nahe Baum vor dem Bild ohne Karte", { ankunft: ank({ nahKarte: 0 }) }, "ein naher Baum wünscht vor dem ersten Weltbild L0"],
-                    ["die Gestalt verfeinert nie", { ankunft: ank({ nahDanach: 2 }) }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
-                    ["der Kalt-Schätzer als Zwilling", { ankunft: ank({ zwilling: ["geisttor 11 m L0"] }) }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
-                    ["die Ferne hält das Ring-Tor", { ankunft: ank({ wahl: 2 }) }, "die Ferne hält die Stufe: das Tor in 11.4 m wählt L2 statt L1"],
+                    ["die Zusage wartet auf die ganze Schlange", { wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans"],
+                    ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans:"],
+                    ...[[{ geweckt: false, vor2: 1 }, "das Weltbild wartete auf"], [{ vor1: null }, "das halbe Weltbild"], [{ nach2: null }, "der Rundblick vergisst"], [{ n: [] }, "das Bild der Ankunft:"]].map(([b, soll]) => [soll, { blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1, ...b } }, soll]), ["Lade-Takt", { takt: { lief: 1 } }, "die Streu setzte im"], ["ohne Lade-Takt", { takt: undefined }, "der Lade-Takt: kein Fall"],
+                    ["ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)", { terme: l2aTerme.concat(["zauber"]) }, "der Term „zauber“ des"],
+                    ["ein Fall nennt einen Term außerhalb der Liste", { faelle: mitFall(l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) }, "der Fall pflanzung nennt"],
+                    ["ohne die Terme", { terme: undefined }, "die Terme des ersten"],
+                    ["das Tor wartet auf seine L0", { ankunft: ank({ fein: ["geisttor 9 m L0"], nahKarte: 0 }) }, "das erste Weltbild wartet"],
+                    ["der nahe Baum vor dem Bild ohne Karte", { ankunft: ank({ nahKarte: 0 }) }, "ein naher Baum wünscht"],
+                    ["die Gestalt verfeinert nie", { ankunft: ank({ nahDanach: 2 }) }, "nach dem ersten Weltbild"],
+                    ["der Kalt-Schätzer als Zwilling", { ankunft: ank({ zwilling: ["geisttor 11 m L0"] }) }, "der Kalt-Schätzer wählt anders"],
+                    ["die Ferne hält das Ring-Tor", { ankunft: ank({ wahl: 2 }) }, "die Ferne hält die"],
                     ["die Ferne ohne Probe", { ankunft: ank({ soll: undefined }) }, "die Ferne: keine Probe"],
-                    ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
-                    ["die Köpfe ohne Bild-Rang der Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit"],
-                    ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter einen Kopf der Ankunft"],
-                    ["der Leib ohne Kopf-Rang", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] } }) }, "vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang"],
-                    ["der Bild-Rang ortlos", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt die Nah-Wiese gras L1 ohne den Ort"],
-                    ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor dem Bild nichts"],
-                    ["der Leib wartet auf die feine Stufe", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe"],
-                    ["die feine Stufe tauscht nie ein", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1"] } }) }, "die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein"],
-                    ["der Dorf-Export wartet auf den Takt", { koepfe: mitFall(koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus"],
-                    ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm"],
-                    ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort"],
-                    ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) }, "eine arbeitende Lücke weicht wie eine ruhende"],
-                    ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im Blick: die Probe stellte den Fall nicht her und nennt keinen Grund"],
+                    ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der"],
+                    ["die Köpfe ohne Bild-Rang der Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft"],
+                    ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter"],
+                    ["der Leib ohne Kopf-Rang", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, bestellt: ["vor L1", "nach L0"] } }) }, "vor dem ersten Bild geht"],
+                    ["der Bild-Rang ortlos", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt"],
+                    ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor"],
+                    ["der Leib wartet auf die feine Stufe", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt"],
+                    ["Ego tauscht", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, egoRoh: false } }) }, "in Ego gießt"],
+                    ["Third tauscht nie", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, baut: ["vor 1"] } }) }, "auf Third tauscht"],
+                    ["der Dorf-Export wartet auf den Takt", { koepfe: mitFall(koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht"],
+                    ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines"],
+                    ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch"],
+                    ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) }, "eine arbeitende Lücke weicht"],
+                    ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im"],
                     ["kein Ladeschirm", { imHtml: false }, "kein Ladeschirm im HTML"],
-                    ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter der UI"],
-                    ["stumme Stand-Zeile", { faelle: mitFall(l2Klein, { ohneBoden: { weg: false, stand: "" } }) }, "ohne Boden unter dem Spieler nennt die Stand-Zeile"],
-                    ["bleibt, wenn alles steht", { faelle: mitFall(l2Klein, { allesSteht: { weg: false, stand: "?" } }) }, "steht alles, bleibt der Ladeschirm"],
-                    ["ruhende Lücke hält fest", { faelle: mitFall(l2Klein, { lueckeRuht: { weg: false, warn: 0 } }) }, "eine ruhende Lücke hält den Spieler"],
-                    ["ruhende Lücke still", { faelle: mitFall(l2Klein, { lueckeRuht: { weg: true, warn: 0 } }) }, "eine ruhende Lücke weicht ohne Wort"],
+                    ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter"],
+                    ["stumme Stand-Zeile", { faelle: mitFall(l2Klein, { ohneBoden: { weg: false, stand: "" } }) }, "ohne Boden unter dem"],
+                    ["bleibt, wenn alles steht", { faelle: mitFall(l2Klein, { allesSteht: { weg: false, stand: "?" } }) }, "steht alles, bleibt der"],
+                    ["ruhende Lücke hält fest", { faelle: mitFall(l2Klein, { lueckeRuht: { weg: false, warn: 0 } }) }, "eine ruhende Lücke hält"],
+                    ["ruhende Lücke still", { faelle: mitFall(l2Klein, { lueckeRuht: { weg: true, warn: 0 } }) }, "eine ruhende Lücke weicht"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
-                    ["Schleife fragt das Weltbild nicht", { schleifeFragt: false }, "die Render-Schleife fragt das Weltbild nicht"],
-                    ["flackernde Lücke ohne Deckel", { faelle: mitFall(l2Klein, { lueckeFlackert: { weg: false, warn: 0 } }) }, "eine flackernde Lücke hält den Ladeschirm ohne Grenze"],
-                    ["W hinter dem Ladeschirm", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft W"],
+                    ["Schleife fragt das Weltbild nicht", { schleifeFragt: false }, "die Render-Schleife fragt das"],
+                    ["flackernde Lücke ohne Deckel", { faelle: mitFall(l2Klein, { lueckeFlackert: { weg: false, warn: 0 } }) }, "eine flackernde Lücke hält"],
+                    ["W hinter dem Ladeschirm", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft"],
                     ["Enter hinter dem Ladeschirm", { tastenHinter: { w: false, enter: "chat-input", omnibox: false } }, "hinter dem Ladeschirm öffnet Enter"],
-                    ["Strg+K hinter dem Ladeschirm", { tastenHinter: { w: false, enter: "BODY", omnibox: true } }, "hinter dem Ladeschirm öffnet Strg+K die Omnibox"],
-                    ["weicht nicht aus dem Layout (0710-11)", { weichtGanz: { hidden: true, display: "flex", animationen: 1 } }, "der Ladeschirm weicht nicht aus dem Layout"],
+                    ["Strg+K hinter dem Ladeschirm", { tastenHinter: { w: false, enter: "BODY", omnibox: true } }, "hinter dem Ladeschirm öffnet Strg+K"],
+                    ["weicht nicht aus dem Layout (0710-11)", { weichtGanz: { hidden: true, display: "flex", animationen: 1 } }, "der Ladeschirm weicht nicht"],
                 ],
             ],
-            ["L1", kreuzVerdict, { gestartet: true, da: true, sichtbar: true, dx: 0, dy: 0, mitSchublade: false, nachSchublade: true }, [["kein Fadenkreuz", { da: false }, "kein Fadenkreuz"], ["daneben", { dx: 7 }, "das Fadenkreuz steht 7/0 px"], ["über der Werkstatt", { mitSchublade: true }, "das Fadenkreuz steht über der offenen Werkstatt"]]],
+            ["L1", kreuzVerdict, { gestartet: true, da: true, sichtbar: true, dx: 0, dy: 0, mitSchublade: false, nachSchublade: true }, [["kein Fadenkreuz", { da: false }, "kein Fadenkreuz"], ["daneben", { dx: 7 }, "das Fadenkreuz steht 7/0"], ["über der Werkstatt", { mitSchublade: true }, "das Fadenkreuz steht über"]]],
             [
                 "L2b",
                 hilfeVerdict,
@@ -1839,9 +1862,9 @@ hauptLauf(async () => {
                     unbekanntListe: false,
                     antworten: { hilfe: hilfeGut, help: hilfeGut, "?": hilfeGut },
                 },
-                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes trägt eine Liste von Hand"], ["Tafel halb", { antworten: { hilfe: { ...hilfeGut, fehlt: ["folge mir"] }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" nennt 1 Beispiel"]],
+                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes"], ["Tafel halb", { antworten: { hilfe: { ...hilfeGut, fehlt: ["folge mir"] }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" nennt 1 Beispiel"]],
             ],
-            ["L3", gespraechVerdict, { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" }, [["Enter öffnet nichts", { enterFokus: "BODY" }, "Enter öffnet das Gespräch nicht"], ["Fokus bleibt im Feld", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt der Fokus im Feld"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt nicht zurück"], ["Enter stiehlt dem Knopf den Fokus", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten Knopf öffnet das Gespräch"]]],
+            ["L3", gespraechVerdict, { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" }, [["Enter öffnet nichts", { enterFokus: "BODY" }, "Enter öffnet das Gespräch"], ["Fokus bleibt im Feld", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt"], ["Enter stiehlt dem Knopf den Fokus", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten"]]],
             [
                 "L7",
                 gurtVerdict,
@@ -1903,24 +1926,24 @@ hauptLauf(async () => {
                 },
                 [
                     ["Vorlagen-Maß", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
-                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält die Kamera in 641 von 2400"],
-                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält die Kamera"],
-                    ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt 3× hinaus"],
-                    ["Nadelwand ohne Durchsicht", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
-                    ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
-                    ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
-                    ["Fadenkreuz auf dem Kopf", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
-                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der Kamera liegt 0.597 m neben ihrem Blick"],
-                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler"],
+                    ["Wagendach", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } }, "ritt: eine Pflanze hält"],
+                    ["2-m-Minimum zu Fuß", { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Stamm (Natur-Blocker am Kamera-Strahl)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: eine Pflanze hält"],
+                    ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt"],
+                    ["Nadelwand ohne Durchsicht", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen"],
+                    ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die"],
+                    ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht"],
+                    ["Fadenkreuz auf dem Kopf", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in"],
+                    ["das Ziel ist die Brust, nicht der Blickpunkt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, zielAchse: 0.597 } }, "Fadenkreuz-Strahl: das Ziel der"],
+                    ["Fadenkreuz trifft hinten", { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, zielAchse: 0 } }, "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in"],
                     ["Kreatur fehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: false, zielAchse: 0 } }, "Fadenkreuz-Strahl: keine Kreatur"],
                     ["Lupe ohne den EINEN Strahl", { konsum: { _hasMagnifyingInSight: false } }, "Konsum: `_hasMagnifyingInSight`"],
-                    ["Loch im Stamm im 1st", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen"],
-                    ["Loch im Stamm vor dem Spieler", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt"],
-                    ["Durchsicht wirkt nicht", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 0, abstand: [3.8], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 0, wMax: 1 } } }, "Durchsicht 3rd: der Stamm zwischen Kamera und Spieler steht in 40 von 40"],
+                    ["Loch im Stamm im 1st", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 1st am Stamm:"],
+                    ["Loch im Stamm vor dem Spieler", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } }, "Durchsicht 3rd, der Stamm VOR"],
+                    ["Durchsicht wirkt nicht", { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 0, abstand: [3.8], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 0, wMax: 1 } } }, "Durchsicht 3rd: der Stamm"],
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true] }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -1928,8 +1951,8 @@ hauptLauf(async () => {
                 { gestartet: true, status: "Fehler (Ollama): Keine Antwort von 127.0.0.1:4604 — der lokale Dienst läuft nicht", ohneSchluessel: "(Grok schweigt: für Claude fehlt der Schlüssel …)", ursprung: "http://127.0.0.1:4601", proxyUrl: "http://127.0.0.1:4601/api/proxy/llm", proxyFehler: "der Proxy fehlt: … antwortet 404" },
                 [
                     ["Aktiv ohne Dienst", { status: "Aktiv: Ollama (lokal oder gehostet) (llama3.2)." }, "der Status sagt"],
-                    ["Schweigen ohne Schlüssel", { ohneSchluessel: null }, "ohne Schlüssel schweigt der Chat"],
-                    ["Proxy fest auf 4312", { proxyUrl: "http://localhost:4312/api/proxy/llm", proxyFehler: "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?)." }, "der Proxy fragt einen fremden Server"],
+                    ["Schweigen ohne Schlüssel", { ohneSchluessel: null }, "ohne Schlüssel schweigt der"],
+                    ["Proxy fest auf 4312", { proxyUrl: "http://localhost:4312/api/proxy/llm", proxyFehler: "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?)." }, "der Proxy fragt einen"],
                 ],
             ],
             [
@@ -1937,11 +1960,11 @@ hauptLauf(async () => {
                 dorfVerdict,
                 { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, gesperrtSteht: false, gesperrtLaut: true, mpAbweichung: 0, mpHaeuser: [20, 20] },
                 [
-                    ["umringt", { haeuser: 13, hinten: 7, cosHinten: ["-0.61", "-0.86", "-0.70"] }, "7 Häuser hinter dem Spieler"],
+                    ["umringt", { haeuser: 13, hinten: 7, cosHinten: ["-0.61", "-0.86", "-0.70"] }, "7 Häuser hinter dem"],
                     ["gesperrter Slot steht", { gesperrtSteht: true, gesperrtAbstand: 21.3, gesperrtImBau: true }, "ein gesperrter Slot steht"],
-                    ["gesperrter Slot fällt still", { gesperrtLaut: false, gesperrtGrund: "der Slot fiel am fehlenden Boden" }, "ein gesperrter Slot fällt still"],
-                    ["am Bildrand vorbei", { ausserBild: 3 }, "3 Häuser außerhalb des Bildwinkels"],
-                    ["Mitspieler 60 m daneben", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das Dorf 61.4 m daneben"],
+                    ["gesperrter Slot fällt still", { gesperrtLaut: false, gesperrtGrund: "der Slot fiel am fehlenden Boden" }, "ein gesperrter Slot fällt"],
+                    ["am Bildrand vorbei", { ausserBild: 3 }, "3 Häuser außerhalb des"],
+                    ["Mitspieler 60 m daneben", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das"],
                 ],
             ],
         ];
@@ -2015,7 +2038,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle nach dem Bild, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, offen, Boxen danach, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

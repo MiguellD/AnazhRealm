@@ -286,14 +286,21 @@ class AnazhRealm_speicher_laden {
                 ? state.wetterWort
                 : null;
         this.state.wetterWunsch = null;
-        // die Stempel des Regens (wetter.K3): Paare [t, rain] endlicher Zahlen, die Uhr aufsteigend — sonst keine (der Pegel ruht)
-        const rs = state.regenStempel;
-        this.state.regenStempel =
-            Array.isArray(rs) &&
-            rs.length % 2 === 0 &&
-            rs.every((v, i) => Number.isFinite(v) && (i % 2 || !i || v >= rs[i - 2]))
-                ? rs.slice()
-                : [];
+        // der Zustand des Pegels (wetter.K3, speicher.K3, gelaende-core `pegelZustand`): die Uhr, der Grund und je Lag-Klasse zwei
+        // Speicher, endliche Zahlen — sonst keiner (der Pegel beginnt am Klima). Die Stempel des Regens beginnen an ihm neu; die
+        // Stempel eines Stands von 18.546.199 (`regenStempel`) gelten nicht mehr, sein Pegel beginnt am Klima.
+        const pz = state.pegelZustand;
+        const n2 = 2 * globalThis.__gelaendeCore.LAUF.n;
+        this.state.pegelZustand =
+            pz &&
+            Number.isFinite(pz.t) &&
+            Number.isFinite(pz.grund) &&
+            Array.isArray(pz.s) &&
+            pz.s.length === n2 &&
+            pz.s.every(Number.isFinite)
+                ? { t: pz.t, grund: pz.grund, s: pz.s.slice() }
+                : null;
+        this.state.regenStempel = [];
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();
@@ -1677,7 +1684,7 @@ class AnazhRealm_speicher_laden {
                 link.addEventListener("click", () => this.switchToWorld(parentId, { reload: true }));
                 row.appendChild(link);
                 const meta = document.createElement("span");
-                meta.style.cssText = "opacity:0.7; font-size:0.85em;";
+                meta.style.cssText = "opacity:0.7; font-size:max(var(--schrift-min), 0.85em);";
                 meta.textContent = this._t("speicher.eltern-id", { id: parentId.slice(0, 8) });
                 row.appendChild(meta);
             } else {

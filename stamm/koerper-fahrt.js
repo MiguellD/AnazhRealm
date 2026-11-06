@@ -143,8 +143,8 @@ class AnazhRealm_koerper_fahrt {
     // hängt in der Szene und ist sichtbar, im Kegel der Kamera und so nah, dass sein Schwung (`TUCH_GESETZ.webe._.freiM`) am EINEN
     // Schirm (`_schirm().pxJeM`) mindestens
     // `TUCH_GESETZ.px` Bildpunkte deckt, höchstens `nahM`; ohne Schirm (pxJeM null) rechnet kein Tuch. DIE UHR DES TUCHS ist die
-    // Echtzeit: läuft die Spielzeit des Leibs schneller als `raffer` mal die Wand (der Zeitraffer — ein Bündel Takte ohne Bild, die
-    // Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. DIE STUFE DES BILDS trägt das Gitter (w12-tuch-grob,
+    // Echtzeit: läuft die Spielzeit des Leibs über ein Fenster von `sprungS` Wand schneller als `raffer` mal die Wand (der
+    // Zeitraffer — ein Bündel Takte ohne Bild, die Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. DIE STUFE DES BILDS trägt das Gitter (w12-tuch-grob,
     // Gebot 4 — EIN Weg für jede Stufe): ihr Tuch über IHRER Haut, wie es gezeichnet wird; wechselt die Stufe, ruht das Tuch der
     // alten und das der neuen beginnt mit dem Sprung. Bis hier rechnete nur die feine — wer die grobe nah zeigte (der erzwungene
     // Abstand der Werkstatt und der Proben), trug ihr Tuch in der Pose der Ruhe, und der Gang drückte es hinter die Haut (haar.K4#2
@@ -164,13 +164,18 @@ class AnazhRealm_koerper_fahrt {
         const KC = globalThis.__koerperCore;
         const TG = KC.TUCH_GESETZ;
         const st = this.state;
-        // DIE UHR: Spielzeit gegen Echtzeit seit dem letzten Ruf dieses Leibs (ein Rücksprung oder ein Takt ohne Zeit rafft nie)
+        // DIE UHR: Spielzeit gegen Echtzeit über ein FENSTER von mindestens `sprungS` Wand (ein Rücksprung beginnt es neu; das
+        // Urteil des geschlossenen Fensters gilt, bis das nächste schließt). Je Ruf gemessen las sie die Spielzeit am Beginn des
+        // Takts und die Wand am Ruf: eine Last vor dem Leib im letzten Takt (Strom, Leben, Kollektor) verkürzte die Wand um ihre
+        // Dauer, und der Leib raffte ohne Zeitraffer — Genesis Third headless 6-mal in 20 s (Spiel 11,6–19,1 ms gegen Wand
+        // 2,2–4,6 ms), je Mal fiel der Zustand, entstand neu und rechnete den Sprung und ~17 volle Schritte mit Haut-Kollision.
         const jetzt = performance.now();
-        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0 });
+        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0, raffer: false });
         const dSpiel = uhr.t == null ? 0 : t - uhr.t;
-        const raffer = dSpiel > 0 && dSpiel > (TG.raffer * (jetzt - uhr.w)) / 1000;
-        uhr.t = t;
-        uhr.w = jetzt;
+        const dWand = (jetzt - uhr.w) / 1000;
+        const raffer = uhr.raffer || dSpiel > TG.raffer * Math.max(dWand, TG.sprungS);
+        if (uhr.t == null || dSpiel < 0) Object.assign(uhr, { t, w: jetzt, raffer: false });
+        else if (dWand >= TG.sprungS) Object.assign(uhr, { t, w: jetzt, raffer: dSpiel > TG.raffer * dWand });
         // die Stufe des Bilds und ihr Satz (null: sie trägt kein Tuch); wechselte sie, ruht das Tuch der alten
         const satz = u._tuchTeile[G.istFern ? "fern" : "nah"];
         if (u._tuch && u._tuchSatz !== satz) this._tuchLoesen(group);
@@ -2046,12 +2051,10 @@ class AnazhRealm_koerper_fahrt {
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-Compound in Blick-Richtung in Reichweite ist, steht
     // das Fernglas (`_zoomActive`) — das FOV setzt der EINE Schreiber `_kamFov` (ZOOM_FOV_DEG), setZoomActive(false) löst es.
     // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit, Zeiger-Verlust und die Heimkehr aus dem Portal lösen
-    // jede gehaltene Taste (state.keys) und jede gehaltene Aktion der Verb-Tafel — das Mahlen, den gespannten Bogen (er fällt, ohne zu
-    // schießen: `_tickBogenZug`), den Zoom — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt. Das Gamepad hält, was
-    // es hält: sein Stand kommt je Bild neu (`_eingabeTakt`).
+    // jede gehaltene Aktion der Verb-Tafel — das Gehen, das Mahlen, den gespannten Bogen (er fällt, ohne zu schießen:
+    // `_tickBogenZug`), den Zoom — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt. Das Gamepad hält, was es hält:
+    // sein Stand kommt je Bild neu (`_eingabeTakt`).
     _alleTastenLos() {
-        const k = this.state.keys;
-        if (k) for (const n in k) k[n] = false;
         const g = this.state.verbTafel.gehalten;
         for (const n in g) g[n] = false;
         if (this.state._zoomActive) this.setZoomActive(false);

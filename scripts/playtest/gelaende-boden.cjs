@@ -1013,7 +1013,7 @@ async function checkBandV18130CsmShadow({ page, check }) {
             const span = r._voxelChunkConfig(0).span;
             const e0 = (A.DETAIL_CASCADE[0].maxRing + 0.5) * span;
             const F = A.SCHATTEN_FERN_FAKTOR;
-            const fars = [A.PERF_SHADOW_RANGE_MIN * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F];
+            const fars = [80 * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F]; // der Schieber des Spielers 80–400 m (`setShadowRange`)
             let kante = true,
                 minAnteil = 1;
             const zeilen = [];
@@ -1226,15 +1226,15 @@ async function checkBandV18150Ride({ page, check }) {
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
             // ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
-            for (const k of ["w", "a", "s", "d", "shift"]) st.keys[k] = false;
-            st.keys.w = true;
+            for (const k of ["vor", "links", "zurueck", "rechts", "sprint"]) halt[k] = false;
+            halt.vor = true;
             let tSim = 1000;
             for (let i = 0; i < 30; i++) {
                 tSim += 1 / 60;
                 r._stepFixedSim(tSim, 1 / 60);
                 r._tickMountedMovement(1 / 60);
             }
-            st.keys.w = false;
+            halt.vor = false;
             const vFahrt = st.playerVel;
             const yawTarget = Math.atan2(vFahrt.x(), vFahrt.z());
             out.orients =
@@ -2368,7 +2368,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
             s._jumpPressedAt = -Infinity;
             s._spaceWasDown = false;
             s.yaw = 0;
-            s.keys = { w: true }; // W gehalten (die Walk-Linsen-Simulation)
+            s.verbTafel.gehalten = { vor: true }; // W gehalten (die Walk-Linsen-Simulation)
             s._fixedAccumulator = 0;
             s._fixedSimPos = null;
             s._fixedPrevPos = null;
@@ -2446,7 +2446,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
         const K = AnazhRealm;
         const pauseLauf = (deckelAus) => {
             resetSim(nearSpot);
-            s.keys = {};
+            s.verbTafel.gehalten = {};
             const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
             const W = [];
             const absage = [];

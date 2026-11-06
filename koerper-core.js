@@ -1103,6 +1103,11 @@
     // seite und frei (die Iris: ihr Auge, und ob der Strahl der Kamera sie ohne Haut, Lid, Braue und Haar erreicht) };
     // eine Probe ist SICHTBAR, wenn die Teilung an ihrem Pixel ihren eigenen Teil zeigt. `mit`: `gemischt` (je Pixel: mehr als eine
     // Klasse ändert es, klassenTeilung) und `spur` (je Teil k: das Fehlen von k ändert das Pixel über der Schwelle).
+    // DAS GESICHT IST DAS GEZEICHNETE (w14-gesicht-fern): eine Probe zählt nur mit `bild` — die Kamera des Schusses zeichnet ihr
+    // Teil. Der Wurf-Zwilling eines Leibs (die Grobstufe, die nur wirft) trägt dieselbe Klasse und liegt im selben Kopf; seine
+    // Ecken zählten bis hier mit und legten eine zweite Zone in jeden Bildpunkt von Lippe und Höhle — an der Kamera des Spiels
+    // (6 m) waren beide darum ungemessen (Radeon 341ad089: 198 von 198 Lippen-Proben in zwei Zonen, nur mit den gezeichneten
+    // Ecken 8 reine Bildpunkte der Lippe, 9 der Höhle). Eine Probe ohne `bild` ist keine des Bilds (nie still mitgezählt).
     //   augeFrei     freie vordere Iris-Proben / vordere Iris-Proben: frei ist eine Probe, die der Strahl der Kamera erreicht (`frei`;
     //                ohne Strahl: an ihrem Pixel steht das Auge), und nur in einem Auge, das das BILD zeigt — mindestens eine seiner
     //                Proben trägt die Spur des Auges (sein Teil, oder sein Fehlen ändert das Pixel). Lider und Haut davor verdecken.
@@ -1120,7 +1125,8 @@
     //   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
     //                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
     //   weiss        Y_n, das Licht des Gesichts als Anteil am Weiß des Schirms (die Probe, unter welchem Licht die Züge standen)
-    function gesichtMasse(F, teil, W, H, proben, haarK, mit) {
+    function gesichtMasse(F, teil, W, H, alle, haarK, mit) {
+        const proben = alle.filter((p) => p.bild === true);
         const lab = _linLab;
         const px = (x, y) => y * W + x;
         const gem = mit && mit.gemischt;
@@ -1223,7 +1229,9 @@
     // (Lippe ΔL* −10 Δa* +9, Höhle −6/+3) im Schatten der Kamera des Spiels (Y_n 0,07) wie in der Sonne (0,5); unter dem Weiß des
     // Schirms trug der Schatten nie ΔL* ≤ −4 UND Δa* ≥ +4 (der Bruch bis w12-gesicht). Die Mutanten fallen beim Namen: die Lippe im Ton
     // der Wange, die Sklera im Saum der Höhle (ohne `gemischt` läse sie hell), die Lider über der Iris (`frei`), das Auge ohne Spur im
-    // Bild, die Wange ohne Albedo (ungemessen, nie das Weiß des Schirms).
+    // Bild, die Wange ohne Albedo (ungemessen, nie das Weiß des Schirms), der Wurf-Zwilling in Lippe und Höhle (w14-gesicht-fern: die
+    // Haut der Grobstufe, die nur wirft, liegt in jedem ihrer Bildpunkte — ohne `bild` misst das Gesicht wie ohne sie, mit ihr als
+    // Probe des Bilds sind Lippe und Höhle ungemessen, der Stand bis hier an der Kamera des Spiels).
     function gesichtSelbsttest() {
         const v = [], W = 12; // prettier-ignore
         // die Albedo (linear): Wange, Lippe (ΔL* −10 Δa* +9 gegen sie), Höhle (−6/+3), die Sklera
@@ -1234,7 +1242,7 @@
             const male = (x, y, c, z, p) => {
                 const h = _linHex(c.map((k) => k * licht));
                 F.set([(h >> 16) & 255, (h >> 8) & 255, h & 255], (y * W + x) * 4);
-                if (z) proben.push(Object.assign({ z, x, y, k: 2, vorn: true }, p));
+                if (z) proben.push(Object.assign({ z, x, y, k: 2, vorn: true, bild: true }, p));
             };
             for (let x = 0; x < W; x++) {
                 const auge = x === 2 || x === 9,
@@ -1243,10 +1251,12 @@
                 male(x, 0, auge ? weiss : haut, auge && "iris", { k: 1, seite: x, frei: !o.lider });
                 male(x, 1, sklera ? weiss : hoehle, "hoehle", { a: hoehle });
                 gemischt[W + x] = o.sklera && sklera && !o.ohneMisch ? 1 : 0;
-                if (o.braue && sklera) proben.push({ z: "braue", x, y: 1, k: 2, vorn: !o.ohneZone });
+                if (o.braue && sklera) proben.push({ z: "braue", x, y: 1, k: 2, vorn: !o.ohneZone, bild: true });
                 for (const y of [2, 3]) male(x, y, haut, "haut", { a: o.ohneAlbedo ? null : haut });
                 male(x, 4, o.lippeHaut ? haut : lippe, x < 3 || !o.schmal ? "lippe" : "haut", { a: lippe });
                 male(x, 5, haut);
+                // der Wurf-Zwilling: seine Haut in jedem Bildpunkt von Höhle und Lippe (dieselbe Klasse, die Kamera zeichnet ihn nie)
+                if (o.zwilling) for (const y of [1, 4]) proben.push({ z: "haut", x, y, k: 2, vorn: true, a: haut, bild: o.zwilling === "bild" });
             }
             return gesichtMasse(F, teil, W, 6, proben, [], { gemischt, spur: { 1: spur } });
         };
@@ -1263,6 +1273,7 @@
             ["das Auge ohne Spur im Bild", () => m({ ohneSpur: 1 }).augeFrei === 0],
             ["die Lippe auf drei Bildpunkten (unaufgelöst)", () => m({ schmal: 1 }).lippeA === null],
             ["die Wange ohne Albedo", () => m({ ohneAlbedo: 1 }).lippeL === null && m({ ohneAlbedo: 1 }).weiss === null],
+            ["der Wurf-Zwilling in Lippe und Höhle", () => nahe(m({ zwilling: 1 }), 0.07, 0.1) && m({ zwilling: "bild" }).lippeA === null && m({ zwilling: "bild" }).hoehleL === null], // prettier-ignore
         ];
         for (const [n, ok] of faelle) if (!ok()) v.push(`Gesicht: Mutante „${n}" fällt nicht`);
         return v;
