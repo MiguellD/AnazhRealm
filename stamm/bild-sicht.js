@@ -2494,6 +2494,9 @@ class AnazhRealm_bild_sicht {
                     this._feldPanoramaMal(fp);
             }
         }
+        // die Kamera, wie sie jetzt steht: ein Leser, der den Pass-Takt ruft und dann selbst zeichnet (die Laub-Licht-Linse, der
+        // Beweis E, die Fernwald-Linse), zeichnet aus ihr; das Bild des Loops setzt sie danach noch einmal (`_loopRender`)
+        this._feldPassKamera();
     }
 
     // DIE KAMERA DES FELDS AM BILD (`_loopRender`, w14-lod-uebergang): Stellvertreter und Strahl des Welt-Marchs lesen die Kamera
