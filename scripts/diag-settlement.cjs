@@ -2169,6 +2169,8 @@ hauptLauf(async () => {
                                 yield true;
                             })()
                         );
+                // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
+                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
@@ -2201,7 +2203,6 @@ hauptLauf(async () => {
                     rd._isHeadlessNull = true;
                     return e._ziegelSlot && "huelle";
                 };
-                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
                 let [bild, erstes] = [-1, null];
                 wach = true;
                 for (
