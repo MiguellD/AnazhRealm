@@ -1821,11 +1821,13 @@ async function selbsttest() {
     const vonHand = (c) => [...new Set(c.match(/(?<=window\.)\w+(?= *=[^=])/g))].filter((n) => seitenNamen.has(n));
     const namen = code.filter(([, c]) => vonHand(c).length).map(([f, c]) => `${f} (${vonHand(c)})`);
     // DIE WAND JE ZWILLING (EINE Form): die Träger im Code sind genau `fremd` (FREMD tragen ihn bis zum Schnitt ihres Besitzers, ein
-    // geheilter Eintrag macht die Liste ROT, bis er fällt), beide gepflanzten Proben fassen, die saubere nicht
+    // geheilter Eintrag macht die Liste ROT, bis er fällt), beide gepflanzten Proben fassen, die saubere nicht. DER TÄTER BEIM NAMEN
+    // (Gebot 10, w13-gtx-proben): die Träger gegen die FREMD-Liste, eine leere Seite als „keiner“ — nach der Heilung von ci-kopf.cjs las
+    // die Wand nur „ (FREMD ci-kopf.cjs)“, ohne zu sagen, dass der Träger fehlt und der Eintrag fällt; ein neuer Träger steht mit Datei
     const wand = (name, zw, fremd, gepflanzt, sauber) => {
         const t = code.flatMap(([f, c]) => (zw(c) ? [f] : [])).join(", ");
         const n = gepflanzt.filter(zw).length;
-        return [t === fremd && n === 2 && !zw(sauber), `${name}: ${t} (FREMD ${fremd}) · gepflanzt ${n}/2 gefasst`];
+        return [t === fremd && n === 2 && !zw(sauber), `${name}: Träger ${t || "keiner"} statt FREMD ${fremd || "keiner"} · gepflanzt ${n}/2 gefasst`];
     };
     // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
     // lausche/zeige
@@ -1846,8 +1848,8 @@ async function selbsttest() {
         "hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);"
     );
     // DIE SCHLAF-WAND: schläft ein Skript mit eigenem Versprechen (`new Promise((r) => setTimeout(r, ms))`, in Node wie in der
-    // Seite), ist das ein Zwilling von sleep; am Token-Strom, Strings (gepflanzte Stamm-Proben) zählen nicht; ci-kopf.cjs fährt
-    // allein im sparse-checkout
+    // Seite), ist das ein Zwilling von sleep; am Token-Strom, Strings (gepflanzte Stamm-Proben) zählen nicht. ci-kopf.cjs (allein im
+    // sparse-checkout, ohne welt-boot) schläft seit w13-gtx-proben über Node (`timers/promises`) — sein FREMD-Eintrag fiel
     const schlafWand = wand(
         "eigene Schlafe neben sleep",
         (c) =>
@@ -1856,7 +1858,7 @@ async function selbsttest() {
                     .map((k) => (/^(string|template|regexp)$/.test(k.type.label) ? "S" : c.slice(k.start, k.end)))
                     .join(" ")
             ),
-        "ci-kopf.cjs",
+        "",
         ["await new Promise((r) => setTimeout(r, 50));", "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });"],
         '"new Promise((r) => setTimeout(r, 5))"; new Promise((r) => setTimeout(() => r(1), 5)); new Promise((r) => setTimeout(r, 5, 1));'
     );
