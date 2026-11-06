@@ -1582,6 +1582,9 @@ async function probe(arg) {
         // Das Welt-Auge steht beim Spieler, wo er die Werkstatt öffnet.
         await __takte(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
+        // Das Öffnen endet mit seinem Nachbau (w12-menue, `_menueNachbau`): die Tafel zeigt sich im Hörer, ihre Vorschau
+        // entsteht in der Scheibe nach dem ersten Bild — gelesen wird nach `_menueSteht()`, nie im Takt der Taste.
+        await r._menueSteht();
         const ws = r._ensureWorkshopState();
         const lu = r._ensureLodUniforms();
         // Der Beobachtungs-Punkt im Takt des Öffnens: der Neben-Renderer bekommt den Masken-Stand.
