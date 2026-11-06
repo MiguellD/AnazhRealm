@@ -2027,7 +2027,7 @@ function sollTafelSelbsttest(tafel, q) {
                 const R = rauschBild(n, beta, 7919 * saat);
                 const v0 = [];
                 for (let p = 0; p < n * n; p++) v0.push(R[p * 4]);
-                const med = v0.sort((a, b) => a - b)[(n * n) >> 1];
+                const med = v0.sort(aufsteigend)[(n * n) >> 1];
                 const m = new Uint8Array(n * n);
                 for (let p = 0; p < n * n; p++) m[p] = R[p * 4] > med ? 1 : 0;
                 s += klassenMasse(R, m, n, n).kante;
