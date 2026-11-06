@@ -972,7 +972,6 @@ async function zensusDer(page, n) {
 module.exports = {
     VENDOR,
     zensusDer,
-    zielUrteil,
     zielTabelle,
     selbsttest,
     traegt,
