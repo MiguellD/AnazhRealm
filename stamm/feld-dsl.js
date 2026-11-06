@@ -1965,6 +1965,13 @@ class AnazhRealm_feld_dsl {
                 for (const sub of args) this.dslEval(sub, ctx);
             },
         };
+        // DIE FORMEN DER TAFEL, gelesen, wenn sie entsteht (ki.K5, 06.11.; `_dslForm`): Vertrag und Antwort-Form der Welt-KI
+        // lesen sie hier — ein Messgerät, das ein Verb danach hüllt (der Welt-Akt-Spion der Ausgabe-Aufnahme), ändert sie nicht.
+        // Bis ki.K5 las die KI die Signatur der Hülle: die Station ki.K5 maß einen Vertrag mit „spawn_temple(…)" (das Spiel nennt
+        // „spawn_temple(positionNode, seed)"), die Form erlaubte den Ort nackt.
+        this._dslFormen = Object.fromEntries(
+            Object.entries(this._dslEffectsCache).map(([op, fn]) => [op, this._dslForm(fn)])
+        );
         return this._dslEffectsCache;
     }
 
