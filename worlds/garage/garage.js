@@ -756,7 +756,7 @@ async function werkSteht(){const K=kamera();K.updateMatrixWorld();while(_bauWenn
 var wachBis=0;function _wecke(){wachBis=performance.now()+600;}
 ['pointerdown','pointermove','pointerup','wheel','keydown','keyup','input','change','click'].forEach(t=>addEventListener(t,_wecke,{capture:true,passive:true}));
 // gleich = dieselbe Kamera mit derselben Lage UND derselben Projektion (die orthografische Höhe wächst mit der Explosion)
-const _camAlt=new THREE.Matrix4(),_projAlt=new THREE.Matrix4();let _kamAlt=null;
+const _camAlt=new THREE.Matrix4(),_projAlt=new THREE.Matrix4();let _kamAlt=null,_bildN=0;   // _bildN: die gezeichneten Bilder der Leinwand (eine Linse wartet an ihnen auf ein Bild nach dem Werk)
 const _camGleich=K=>{if(K!==_kamAlt)return false;const a=_camAlt.elements,b=K.matrixWorld.elements,c=_projAlt.elements,d=K.projectionMatrix.elements;
   for(let i=0;i<16;i++)if(Math.abs(a[i]-b[i])>1e-6||Math.abs(c[i]-d[i])>1e-6)return false;return true;};
 let simT=0,tAlt=0;wachBis=performance.now()+2000;                  // die ersten Bilder nach dem Laden (Stoffe, Panorama)
@@ -773,7 +773,7 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R)){_kamAlt=null;return;}   // gespannte Leine: das Bild fragt im nächsten Takt
   // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewanderte Sonne (rebuild markiert selbst)
   if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!sonne.position.equals(_sonneAlt))){sonne.shadow.needsUpdate=true;_sonneAlt.copy(sonne.position);}
-  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
+  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);_bildN++;}
 const _sonneAlt=new THREE.Vector3();
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
