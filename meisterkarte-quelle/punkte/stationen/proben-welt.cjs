@@ -263,6 +263,11 @@ async function bodenRollen(tor) {
 // nach: das Leben lief mit 0,2 Spiel-s je Spiel-Sekunde, der Bestand eines 600-s-Kreises war der von 120 s. Jetzt ruht die Schleife
 // des Renderers und der Raffer ruft die Takte selbst (je rAF der Knoten-Rahmen, dann n Takte) — das Gesetz des Spiels für ein
 // Instrument, das selbst taktet: jeder Takt trägt die ganze Welt, die Leine hält nur sein Bild.
+// DIE UHR ×2 (`UHR`, im Kreis): mit vollem Leben je Takt trügen 12 000 Takte den 90-s-Deckel der Radeon nicht (headless an 8efb6318
+// je Takt Median 2,0 ms bei ruhendem Loop gegen 0,8 ms als Zwischen-Takt; die Radeon schaffte im alten Raffer 146 Spiel-s in den
+// ersten 10 s). Im Kreis ist der Deckel des Takts 0,2 s (TAKT_DECKEL_S × 2) und der Akkumulator darf doppelt so viele Fix-Schritte
+// (FIXED_MAX_STEPS × 2: 16 × 1/60 s ≥ 0,2 s — der Leib geht die volle Zeit): 5 Takte zu 0,2 s je Raffer-Bild, 3 000 Takte je Sicht.
+// Danach steht die Uhr des Spiels wieder (auch im Abbau des Raffers).
 // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
 // Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
 // ein Raffer-Bild), nie je 250 ms Wanduhr (die lag n-mal weiter in der Spiel-Zeit), und ohne die Sperre von 2 Spiel-s zwischen zwei
@@ -276,7 +281,8 @@ async function bodenRollen(tor) {
 // Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Masken, Sichtungen; nie am Anfang `KREIS-`, die Zeile des
 // Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
 async function tierKreis(tor) {
-    const n = 10;
+    const UHR = 2;
+    const n = 10 / UHR;
     const TAKT_S = 1;
     const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
         ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
@@ -336,15 +342,29 @@ async function tierKreis(tor) {
                 }).then((z) => z && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
             }, 10000);
             try {
+                await page.evaluate((u) => {
+                    const A = window.anazhRealm.constructor;
+                    const Z = window.__zeitraffer;
+                    Z.alt = Z.alt || [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS];
+                    [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = [Z.alt[0] * u, Z.alt[1] * u];
+                    Z.ms = 1000 * A.TAKT_DECKEL_S;
+                }, UHR);
                 o = await page.evaluate("(" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")");
             } catch (e) {
                 f = " FEHLER " + String((e && e.message) || e).split("\n")[0];
             } finally {
                 clearInterval(zeile);
-                await page.evaluate(() => delete window.__kreis).catch(() => {});
+                await page.evaluate(() => {
+                    delete window.__kreis;
+                    const A = window.anazhRealm.constructor;
+                    const Z = window.__zeitraffer;
+                    if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
+                    Z.ms = 1000 * A.TAKT_DECKEL_S;
+                    delete Z.alt;
+                }).catch(() => {});
             }
             const k = o && o.kreis;
-            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte je Bild, Prüfung je " + TAKT_S + " Spiel-s" + f + ") " + JSON.stringify(k || {}));
+            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte zu " + UHR * 100 + " ms je Bild, Prüfung je " + TAKT_S + " Spiel-s" + f + ") " + JSON.stringify(k || {}));
         }
     } finally {
         // der Raffer fällt: liegt kein fremder Haken über ihm, steht die Schleife des Renderers wieder wie vorher
@@ -352,6 +372,8 @@ async function tierKreis(tor) {
             const Z = window.__zeitraffer;
             const rend = window.anazhRealm.state.renderer;
             if (!Z) return 1;
+            const A = window.anazhRealm.constructor;
+            if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
             Z.n = 0;
             Z.gen++;
             if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer;
