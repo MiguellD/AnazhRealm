@@ -910,8 +910,9 @@ if (require.main === module) hauptLauf(async () => {
             { re: /\[ERROR\] STOFF:/, why: "Stoff-Bruch (K22, _stoffBruch)" },
             // z264: ein Takt, der je Bild wirft, nimmt dem Rest des Bilds seine Arbeit (die Welt wurde nie still, der
             // Leistungs-Vertrag riss nach 240 s) — die Zeile nennt den Täter (`at AnazhRealm.<Methode>`); ein Werk, das die
-            // Welt an `removeArchitecture` vorbei verließ, meldet sich als WERK-WAISE (`_werkWaise`)
-            { re: /Loop-Frame-Fehler|WERK-WAISE/, why: "Takt-Bruch" },
+            // Welt an `removeArchitecture` vorbei verließ, meldet sich als WERK-WAISE (`_werkWaise`); der gewollte Wurf der
+            // Loop-Wand (playtest/dirigent V18278) ist kein Befund
+            { re: /Loop-Frame-Fehler(?!.*V18278-test-throw)|WERK-WAISE/, why: "Takt-Bruch" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));
