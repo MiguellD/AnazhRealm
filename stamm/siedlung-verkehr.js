@@ -1477,6 +1477,10 @@ class AnazhRealm_siedlung_verkehr {
             const [rx, rz] = [-(p1.z - p0.z) / L, (p1.x - p0.x) / L];
             return { x: p.x - rx * off * g, z: p.z - rz * off * g };
         });
+        // nie in einen Ort, den seine Kette nicht trägt: wer neben der Spur an einer Kreuzung vorbei umführe, führe ohne Schlüssel
+        // durch sie (bis hier, 10 Uhr: Wagen 3 umfuhr einen Bewohner vor der Kreuzung am Markt, 614 Proben ohne Schlüssel in ihr)
+        const fremd = (q) => (Z) => (q.x - Z.x) ** 2 + (q.z - Z.z) ** 2 < Z.r * Z.r && !W.zonen.some((z) => z.Z === Z);
+        if (neu.some((q, i) => q !== P[i] && S.verkehr.zonen.some(fremd(q)))) return false;
         const deckel = F.deckel;
         F.roh = neu;
         this._verkehrLinie(S, W, [], false);

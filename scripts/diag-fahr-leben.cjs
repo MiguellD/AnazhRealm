@@ -2551,14 +2551,15 @@ hauptLauf(async () => {
         [
             schalter("--verkehr"),
             probeLeben,
-            // `--taeter` (pflicht.C#1): um 10 Uhr 70 s, Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2 in Wagen 3, der erste
-            // gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder beim Namen
-            { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 70, taeter: 1 }) } },
+            // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
+            // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
+            // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
+            { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 130, taeter: 1 }) } },
             (o) => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,1,1,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
