@@ -46,6 +46,10 @@
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
 //   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
+//   node scripts/werkbank.cjs bedienung --staffel 2        K3#2: jeder sichtbare Text von HUD und Menü ≥ 16 px und in seinem Kasten,
+//                                                           die Belegung frei (der Knopf „vor“, KeyO durch den Reload, der Leib
+//                                                           ≥ 0,1 m; `taeter` · `blind`) — der Kasten hält ab 800 px, headless 640 x 360
+//                                                           nicht (das Ich): dort `--echt`
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -1917,6 +1921,17 @@ async function starte() {
                 // Esc schließt) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
                 if (req.url === "/bedienung") {
                     const r = "anazhRealm";
+                    // DIE STAFFEL 2 (spielgang.K3#2): die EINE Seiten-Probe (`__bedienung2`, welt-boot) vor und nach dem echten Reload
+                    if (+b.staffel === 2) {
+                        await page.evaluate("__loop(1)");
+                        const vor = await page.evaluate("__bedienung2()");
+                        await lade();
+                        await page.waitForFunction(`!${r}._ladeschirmSteht()`, { timeout: 600000 });
+                        await page.evaluate("__loop(1)");
+                        const o = await page.evaluate((v) => __bedienung2(v), vor);
+                        await loopAus();
+                        return send(Object.assign(o, { ort: aktOrt }));
+                    }
                     await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
                     if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
@@ -3120,7 +3135,7 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3) });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung

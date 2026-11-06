@@ -121,6 +121,28 @@
                 --hope: #7bd389;
                 --peace: #88e1e1;
                 --chaos: #e94c89;
+                /* DIE KLEINSTE SCHRIFT (spielgang.K3#2: jeder sichtbare Text von HUD und Menü ≥ 16 px bei 1920 × 1080) —
+                   EINE Quelle jeder Größe darunter: was kleiner gesetzt war, liest sie, eine relative Größe hält sie als
+                   Boden (max). Vorher trugen 354 Regeln 7,5–15,5 px (headless am Null-Renderer: 4107 von 4274 sichtbaren
+                   Texten unter 16 px, gezählt von scripts/lib/bedienung-linse.cjs). */
+                --schrift-min: 16px;
+                /* DAS PERGAMENT (spielgang.K3) — EINE Quelle jeder Pergament-Tafel (das Ich, die Schubladen, die Hilfe,
+                   `.parchment`, der Rahmen `.frame-edge`): der Grund in drei Schichten und die vier Eck-Nieten, jede Niete
+                   nur auf ihrer Kachel von 8 × 8 px. Vorher stand der Grund in fünf Kopien, und jede Niete war ein Verlauf
+                   über die GANZE Tafel — sieben vollflächige Schichten je Bild des Ich (1896 × 996 px). Headless am
+                   Null-Renderer, Tab · Tab · I · Esc in fünf Runden: das Bild nach der Taste 80 → 48–64 ms im Median. */
+                --pergament:
+                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
+                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                --pergament-nieten:
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) 8px 8px / 8px 8px no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) calc(100% - 8px) 8px / 8px 8px
+                        no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) 8px calc(100% - 8px) / 8px 8px
+                        no-repeat,
+                    radial-gradient(circle 4px at 4px 4px, #1a1410 0 60%, transparent 65%) calc(100% - 8px)
+                        calc(100% - 8px) / 8px 8px no-repeat;
                 /* Schatten */
                 --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
                 /* Semantische Aliase — resolvern am Use-Site. */
@@ -139,10 +161,7 @@
            übersetzt 100–250 ms im GPU-Prozess, Radeon), ein Pergament-Fenster wartete darauf. rgba(70,29,0,0.152)
            malt dasselbe über dem Pergament-Grund: höchstens 0,8 Stufen Abstand (Mittel 0,24) bei 1896×996 wie 300×996. */
             .parchment {
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament);
                 position: relative;
                 color: var(--parch-ink);
             }
@@ -195,11 +214,7 @@
                 position: absolute;
                 inset: 0;
                 border-radius: inherit;
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%);
+                background: var(--pergament-nieten);
             }
 
             body {
@@ -211,6 +226,19 @@
                 /* Firefox: globaler Scrollbar-Stil (Brass auf Pergament-Dunkel). */
                 scrollbar-width: thin;
                 scrollbar-color: var(--brass-2) rgba(40, 25, 10, 0.18);
+            }
+            /* Knopf, Feld und Auswahl erben die Größe ihrer Tafel (spielgang.K3#2): ohne Regel setzt der Browser sie auf
+               13,33 px, unter der kleinsten Schrift (`--schrift-min`). */
+            button,
+            input,
+            select,
+            textarea {
+                font-size: max(var(--schrift-min), 1em);
+            }
+            /* eine Auswahl misst ihre längste Option — in ihrer Tafel nie breiter als ihr Kasten (w12-menue: der Anbieter
+               der Begleiter-Stimme ragte bei 16 px 42 px aus seiner Spalte); was sie zeigt, misst der Schrift-Zensus */
+            select {
+                max-width: 100%;
             }
 
             /* Webkit-Scrollbars: schmale Brass-Spur statt heller System-Default.
@@ -300,7 +328,7 @@
             }
             #ladeschirm .ladeschirm-stand {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 color: rgba(243, 230, 196, 0.55);
                 /* ein Umbruch je Zeile im Schirm: höchstens 72 Zeichen breit, mittig, gleichmäßig gebrochen; drei Zeilen Platz,
@@ -437,7 +465,7 @@
             #console-header h3 {
                 margin: 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.18em;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -447,7 +475,7 @@
                 background: transparent;
                 border: 1px solid var(--brass-3);
                 color: var(--brass-1);
-                font-size: 14px;
+                font-size: var(--schrift-min);
                 padding: 0 8px;
                 cursor: pointer;
                 border-radius: 2px;
@@ -492,7 +520,7 @@
                 max-height: 30vh;
                 overflow: hidden;
                 pointer-events: none;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 line-height: 1.35;
             }
             #console:not(.collapsed) #chat-feed {
@@ -541,7 +569,7 @@
                 bottom: 10px;
                 right: 14px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.1em;
                 color: var(--parch-ink-faded);
                 opacity: 0.5;
@@ -557,8 +585,10 @@
             /* V8.17 — Chat oben-bündig (nimmt den verfügbaren Platz), Logbuch
                unten-bündig (nur so viel Höhe wie nötig). Schöpfer-Wunsch:
                Chat bleibt im Vordergrund, Logbuch lebt am Boden der Konsole. */
+            /* aus dem Inhalt, nie aus null (w12-menue): die Konsole wächst mit ihm bis 50vh — eine Basis 0 bei min-height 0
+               legte den Chat auf 0 px, sein Label, das Logbuch und die Eingabe lagen übereinander */
             #console-chat-section {
-                flex: 1 1 0;
+                flex: 1 1 auto;
                 min-height: 0;
             }
             /* V8.36 — eingeklappt: nur das Label, am Boden der Konsole.
@@ -571,7 +601,7 @@
                 min-height: 0;
             }
             #console-log-section:has(#log:not([hidden])) {
-                flex: 1 1 0;
+                flex: 1 1 auto;
                 margin-top: 0;
             }
             #console-log-section #log:not([hidden]) {
@@ -583,7 +613,7 @@
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--brass-2);
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.12em;
                 margin-bottom: 4px;
@@ -619,7 +649,7 @@
                 flex: 1;
                 min-height: 80px;
                 overflow-y: auto;
-                font-size: 12.5px;
+                font-size: var(--schrift-min);
                 color: #e8d8a8;
                 font-family: "IM Fell English", Georgia, serif;
                 line-height: 1.45;
@@ -629,7 +659,7 @@
                 flex: 1;
                 min-height: 80px;
                 overflow-y: auto;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 font-family: "JetBrains Mono", monospace;
                 padding-right: 4px;
@@ -646,7 +676,7 @@
                 color: #f4e4b8;
                 border: 1px solid var(--brass-3);
                 padding: 7px 10px;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 border-radius: 2px;
@@ -662,7 +692,7 @@
                derselbe Fade, jetzt als Leisten-Wert. */
             #status-emotion {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.14em;
                 text-transform: uppercase;
                 transition: opacity 1.4s ease;
@@ -672,7 +702,7 @@
             .mach-tor-hint {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: #e8b04a;
                 margin-top: 4px;
                 transition: opacity 0.9s ease;
@@ -684,7 +714,7 @@
             .equip-stat-delta {
                 display: block;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #cdbf9d);
                 margin-top: 2px;
             }
@@ -728,7 +758,7 @@
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
                 text-align: center;
@@ -753,7 +783,7 @@
                 border: 1px solid #43c98a;
                 color: #9ff0c8;
                 font:
-                    14px/1.4 "JetBrains Mono",
+                    var(--schrift-min)/1.4 "JetBrains Mono",
                     monospace;
                 pointer-events: none;
             }
@@ -775,7 +805,7 @@
                 border: 1px solid #43c98a;
                 color: #9ff0c8;
                 font:
-                    13px/1.4 "JetBrains Mono",
+                    var(--schrift-min)/1.4 "JetBrains Mono",
                     monospace;
                 text-align: center;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -791,7 +821,7 @@
             }
             .portal-invite-row button {
                 font:
-                    12px "Cinzel",
+                    var(--schrift-min) "Cinzel",
                     Georgia,
                     serif;
                 padding: 4px 12px;
@@ -826,14 +856,7 @@
                 /* V18.58 — das Ich teilt die PERGAMENT-Sprache der Drawer (Werkstatt/Hof): heller Grund, EINE
                    dunkle Bühnen-Insel. Vorher war der Overlay-Grund dunkel — aber die Inhalte (Slots/Emotion/
                    Rezepte) tragen DUNKLEN Text (--parch-ink*) → dunkel-auf-dunkel-Mush. Jetzt crisp wie die Räume. */
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament-nieten), var(--pergament);
                 border-radius: 12px;
                 /* der geteilte Drawer-Rahmen (1:1 aus .drawer) — Eisen/Messing-Inset-Ringe. */
                 box-shadow:
@@ -1003,7 +1026,7 @@
             }
             .hof-emotion-bar .name {
                 width: 78px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.4px;
                 color: var(--ink-on-dark);
@@ -1022,7 +1045,7 @@
             .hof-emotion-bar .value {
                 width: 34px;
                 text-align: right;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-family: "JetBrains Mono", monospace;
                 color: var(--ink-on-dark);
             }
@@ -1040,7 +1063,7 @@
             .ich-emotion-block h4 {
                 margin: 0 0 2px 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--ink-on-dark);
@@ -1055,7 +1078,7 @@
             }
             .ich-boost-chip {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 7px;
                 border-radius: 10px;
                 background: rgba(198, 154, 217, 0.18);
@@ -1063,13 +1086,13 @@
                 color: #e7d2f0;
             }
             .ich-boosts-empty {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--ink-on-dark-soft);
             }
             .inventory-col-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -1079,7 +1102,7 @@
             }
             .inventory-col-character h4 {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 margin: 0 0 5px 0;
             }
@@ -1098,7 +1121,7 @@
             #inventory-overlay .inventory-col-recipes h4,
             #inventory-overlay .inventory-col-items h4 {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 margin: 0 0 5px 0;
             }
@@ -1120,7 +1143,7 @@
                 gap: 1px;
             }
             #inventory-overlay #hotbar-config .hotbar-slot .label {
-                font-size: 7.5px;
+                font-size: var(--schrift-min);
                 line-height: 1.05;
                 max-height: 2.1em;
                 overflow: hidden;
@@ -1177,11 +1200,11 @@
                 border: 1px solid var(--brass-3);
                 border-radius: 4px;
                 cursor: pointer;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .inventory-equip .equip-slot .equip-kind {
                 color: var(--parch-ink-faded);
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
             }
@@ -1198,7 +1221,7 @@
                 margin-top: 1px;
                 padding: 2px 4px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark);
                 background: rgba(40, 26, 12, 0.7);
                 border: 1px solid var(--brass-3);
@@ -1213,57 +1236,68 @@
             }
             .inventory-recipes-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.06em;
                 color: var(--parch-ink-soft);
                 margin: 0 0 8px 0;
             }
             .inventory-recipes .recipe-group {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.1em;
                 text-transform: uppercase;
                 color: var(--brass-1);
                 margin: 10px 0 4px;
             }
+            /* DIE ZEILE ALS RASTER (w12-menue, bauen.K1): Name und Knopf oben, die Kosten darunter über die volle Breite — bei
+               16 px brach die Kosten-Zeile neben dem Knopf um (77 statt 40 px je Zeile), und das Griffbereite fiel unter den Saum
+               des Buchs (Haus zwei Rad-Rasten tief). */
             .inventory-recipes .recipe-row {
-                display: flex;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
                 align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                padding: 4px 8px;
-                margin-bottom: 2px;
+                column-gap: 8px;
+                row-gap: 0;
+                padding: 2px 8px;
+                margin-bottom: 1px;
+                line-height: 1.2;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.08), rgba(60, 40, 18, 0.22));
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 /* DAS ICH ÖFFNET OHNE NEUBAU (spielgang.K3): von 109 Rezept-Zeilen stehen 14 im Bild — die übrigen legt und
-                   malt Tab erst, wenn das Buch sie zeigt (28 px Inhalt + Rand = die gemessene Zeile, 38 px) */
+                   malt Tab erst, wenn das Buch sie zeigt (42 px Inhalt + Rand = die gemessene Zeile bei 16 px, 48 px) */
                 content-visibility: auto;
-                contain-intrinsic-size: auto 28px;
+                contain-intrinsic-size: auto 42px;
             }
             .inventory-recipes .recipe-row .recipe-info {
-                display: flex;
-                flex-direction: column;
-                gap: 1px;
-                min-width: 0;
+                display: contents;
+            }
+            .inventory-recipes .recipe-row button {
+                grid-column: 2;
+                grid-row: 1;
             }
             .inventory-recipes .recipe-row .recipe-name {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
             .inventory-recipes .recipe-row .recipe-cost {
+                grid-column: 1 / -1;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .inventory-recipes .recipe-row button {
                 flex: none;
-                padding: 4px 10px;
+                padding: 2px 10px;
+                line-height: 1.2;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 background: linear-gradient(180deg, var(--brass-1), var(--brass-2));
                 color: #1a1023;
                 border: none;
@@ -1304,7 +1338,7 @@
             }
             #inventory-overlay .inventory-hint {
                 margin: 0 0 12px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "IM Fell English", Georgia, serif;
             }
@@ -1326,10 +1360,10 @@
                 height: auto;
                 aspect-ratio: 1 / 1;
                 padding: 2px;
-                font-size: 8px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .inventory-slot .slot-glyph {
-                font-size: 14px;
+                font-size: var(--schrift-min);
             }
             /* V18.60 — die Drag&Drop-Affordanz SICHTBAR machen (Schöpfer „in der Werkstatt vieles per Drag,
                hier viele Klicks"): ein gefüllter Slot zeigt den Greif-Cursor → der Spieler SIEHT, dass er
@@ -1354,7 +1388,7 @@
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 transition:
                     border-color 200ms ease,
@@ -1384,7 +1418,7 @@
                 border-width: 3px;
             }
             .inventory-slot .slot-label {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 line-height: 1.1;
                 text-align: center;
                 max-width: 60px;
@@ -1395,7 +1429,7 @@
                 position: absolute;
                 bottom: 2px;
                 right: 4px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 font-weight: 600;
             }
@@ -1451,7 +1485,7 @@
             }
             .inventory-selected {
                 margin-top: 10px;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "IM Fell English", Georgia, serif;
             }
@@ -1550,14 +1584,14 @@
             #fahr-tacho .fahr-tacho-einheit {
                 margin-left: 6px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.12em;
                 opacity: 0.8;
             }
             #fahr-tacho .fahr-tacho-tasten {
                 margin-top: 6px;
                 font-family: Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 line-height: 1.4;
                 opacity: 0.78;
             }
@@ -1606,7 +1640,7 @@
                     inset 0 1px 0 rgba(255, 220, 150, 0.15),
                     0 3px 14px rgba(0, 0, 0, 0.6);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: #e9d49e;
                 cursor: help;
                 transition: box-shadow 0.4s ease-out;
@@ -1630,7 +1664,7 @@
                 transition: opacity 0.6s ease;
             }
             #stats-hud .stats-hud-glyph {
-                font-size: 14px;
+                font-size: var(--schrift-min);
                 min-width: 18px;
                 text-align: center;
                 color: #f5e7c4;
@@ -1663,7 +1697,7 @@
             }
             #stats-hud .stats-hud-value {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 min-width: 44px;
                 text-align: right;
                 color: #e9d49e;
@@ -1707,7 +1741,7 @@
                 border-radius: 4px;
                 padding: 8px 12px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 1.7;
                 pointer-events: none;
                 opacity: 0;
@@ -1738,13 +1772,13 @@
                     box-shadow 120ms ease;
             }
             .hotbar-slot .num {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 font-weight: 600;
                 line-height: 1;
             }
             .hotbar-slot .label {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 text-align: center;
                 line-height: 1.1;
                 overflow: hidden;
@@ -1779,7 +1813,6 @@
                 display: flex;
                 gap: 4px;
                 align-items: center;
-                margin-left: 12px;
             }
             .latch {
                 background: linear-gradient(180deg, var(--iron-1), var(--iron-3));
@@ -1789,7 +1822,7 @@
                     inset 0 1px 0 rgba(255, 220, 160, 0.18),
                     0 2px 4px rgba(0, 0, 0, 0.5);
                 padding: 4px 9px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.06em;
                 cursor: pointer;
@@ -1881,7 +1914,7 @@
                 letter-spacing: 0.03em;
             }
             .world-tor-btn span {
-                font-size: 0.85em;
+                font-size: max(var(--schrift-min), 0.85em);
                 opacity: 0.78;
                 line-height: 1.4;
             }
@@ -1903,7 +1936,7 @@
                 border-radius: 3px;
                 cursor: pointer;
                 font-family: inherit;
-                font-size: 0.9em;
+                font-size: max(var(--schrift-min), 0.9em);
             }
             .world-tor-cancel:hover {
                 background: rgba(150, 110, 60, 0.1);
@@ -1951,7 +1984,7 @@
             }
             .world-fusion-row label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 0.92em;
+                font-size: max(var(--schrift-min), 0.92em);
                 min-width: 9.5em;
                 letter-spacing: 0.02em;
             }
@@ -1973,7 +2006,7 @@
             }
             .world-fusion-strategy legend {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 0.95em;
+                font-size: max(var(--schrift-min), 0.95em);
                 padding: 0 0.4em;
                 letter-spacing: 0.03em;
             }
@@ -1991,11 +2024,11 @@
             }
             .world-fusion-strategy strong {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 0.95em;
+                font-size: max(var(--schrift-min), 0.95em);
                 grid-column: 2;
             }
             .world-fusion-strategy span {
-                font-size: 0.83em;
+                font-size: max(var(--schrift-min), 0.83em);
                 opacity: 0.78;
                 line-height: 1.4;
                 grid-column: 2;
@@ -2021,7 +2054,7 @@
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.04em;
-                font-size: 0.95em;
+                font-size: max(var(--schrift-min), 0.95em);
             }
             .world-fusion-confirm:hover {
                 background: rgba(180, 140, 80, 0.32);
@@ -2065,7 +2098,7 @@
             }
             .new-world-row label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 0.92em;
+                font-size: max(var(--schrift-min), 0.92em);
                 letter-spacing: 0.02em;
             }
             .new-world-row input[type="text"] {
@@ -2087,7 +2120,7 @@
             .new-world-mode legend,
             .new-world-role legend {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 0.95em;
+                font-size: max(var(--schrift-min), 0.95em);
                 padding: 0 0.4em;
                 letter-spacing: 0.03em;
             }
@@ -2117,7 +2150,7 @@
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.04em;
-                font-size: 0.95em;
+                font-size: max(var(--schrift-min), 0.95em);
             }
             .new-world-footer button:hover {
                 background: rgba(180, 140, 80, 0.32);
@@ -2128,7 +2161,7 @@
                 color: var(--parch-ink);
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.04em;
-                font-size: 0.9em;
+                font-size: max(var(--schrift-min), 0.9em);
                 text-decoration: none;
                 border-bottom: 1px dotted var(--brass-1, #8b6a3f);
             }
@@ -2144,7 +2177,7 @@
                 background: rgba(180, 140, 80, 0.1);
                 border-left: 3px solid var(--brass-1, #8b6a3f);
                 border-radius: 0 3px 3px 0;
-                font-size: 0.9em;
+                font-size: max(var(--schrift-min), 0.9em);
                 line-height: 1.4;
             }
             #world-lineage .lineage-entry {
@@ -2190,6 +2223,9 @@
                     inset 0 0 0 9px rgba(0, 0, 0, 0.35);
                 z-index: 6;
                 display: flex;
+                /* die Leiste misst in ihrer Schrift (w12-menue): bei 16 px ragte „Sicht: 1st“ an 1280 px um 31 px aus ihr */
+                font-size: var(--schrift-min);
+                container: topbar / inline-size;
             }
             #topbar::before {
                 /* Holz-Faser-Textur */
@@ -2209,7 +2245,7 @@
                 display: flex;
                 align-items: center;
                 padding: 0 22px;
-                gap: 18px;
+                gap: 0.75em;
                 z-index: 1;
             }
             #topbar .title {
@@ -2230,18 +2266,43 @@
             #topbar .title .sub {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 letter-spacing: 0.04em;
                 font-weight: 400;
             }
-            @media (max-width: 1280px) {
+            /* was die Leiste nicht mehr trägt, weicht — gemessen in ihrer Schrift (die Zeile trägt alles in 89 em, ohne
+               Untertitel 83 em, ohne Version 77 em, mit engen Reitern 72 em, ohne Titel 62 em): erst der Untertitel, dann
+               die Version, dann der Atem der Reiter, zuletzt der Titel */
+            @container topbar (max-width: 89em) {
                 #topbar .title .sub {
                     display: none;
                 }
             }
-            @media (max-width: 1100px) {
+            @container topbar (max-width: 83em) {
                 #topbar .title .version {
+                    display: none;
+                }
+            }
+            @container topbar (max-width: 77em) {
+                #topbar .tab {
+                    letter-spacing: 0.02em;
+                    padding-inline: 0.4em;
+                }
+                #topbar .latch {
+                    letter-spacing: 0;
+                    padding-inline: 0.35em;
+                }
+            }
+            @container topbar (max-width: 72em) {
+                #topbar .title {
+                    display: none;
+                }
+            }
+            /* unter 58 em weichen die Suche (Strg+K bleibt) und die Stimme (die Einstellungen tragen sie) */
+            @container topbar (max-width: 58em) {
+                #omnibox-trigger,
+                #grok-voice-toggle {
                     display: none;
                 }
             }
@@ -2253,14 +2314,14 @@
             }
             .tab {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-weight: 600;
                 letter-spacing: 0.1em;
                 text-transform: uppercase;
                 color: #d8c08a;
                 background: transparent;
                 border: none;
-                padding: 8px 12px;
+                padding: 8px 0.7em;
                 cursor: pointer;
                 border-radius: 4px;
                 position: relative;
@@ -2313,7 +2374,7 @@
                 padding: 0 14px;
                 gap: 22px;
                 color: var(--brass-1);
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 z-index: 5;
             }
             #statusbar .status-item {
@@ -2327,12 +2388,12 @@
                 /* V18.43 — war --brass-2 (#5b4520, dunkel auf dunklem Banner = unlesbar, Schöpfer-Befund
                    „Schrift der Zeit/Bauten nicht lesbar"). Der lesbare Sekundär-Ton auf dunkel. */
                 color: var(--ink-on-dark-soft);
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
             }
             #statusbar .status-item .value {
                 font-family: "JetBrains Mono", monospace;
                 color: #f4e4b8;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #statusbar .status-item.pos {
                 margin-left: auto;
@@ -2348,7 +2409,7 @@
                 border: 1px solid var(--iron-1);
                 border-radius: 3px;
                 color: var(--ink-on-dark-soft);
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 line-height: 1;
                 padding: 2px 7px;
                 cursor: pointer;
@@ -2387,7 +2448,7 @@
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 /* V18.43 — z 5→6: der Drawer deckt beim Öffnen den Statusbar (z 5), bleibt aber
                    unter/neben dem Topbar (z 6, räumlich getrennt: Topbar 12–68, Drawer ab 70). */
                 z-index: 6;
@@ -2397,14 +2458,7 @@
                    ::before mit dem Inhalt weg; das Element selbst behält
                    Background fix beim Scroll (CSS-Standard). Plus Corner-
                    Dots als zusätzliche background-image-Layer. */
-                background:
-                    radial-gradient(circle 4px at 12px 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) 12px, #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament-nieten), var(--pergament);
                 /* Border-Ringe direkt als inset box-shadow — bleibt fest am
                    Element, nicht im scroll-flow. */
                 box-shadow:
@@ -2546,7 +2600,7 @@
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--parch-ink-soft);
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 margin: 0 0 14px 0;
             }
             .journal-list {
@@ -2560,7 +2614,7 @@
             }
             .journal-count {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.1em;
                 color: var(--parch-ink-soft);
                 margin-bottom: 6px;
@@ -2568,7 +2622,7 @@
             }
             .journal-entry {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 padding: 5px 0;
                 border-bottom: 1px solid rgba(40, 25, 10, 0.08);
@@ -2580,7 +2634,7 @@
             .journal-type {
                 display: inline-block;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.12em;
                 color: var(--brass-1);
@@ -2589,7 +2643,7 @@
             }
             .journal-age {
                 float: right;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 font-style: italic;
                 margin-left: 6px;
@@ -2597,7 +2651,7 @@
             .journal-empty {
                 color: var(--parch-ink-soft);
                 font-style: italic;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 text-align: center;
                 padding: 14px 0;
             }
@@ -2626,7 +2680,7 @@
             }
             .drawer h3 {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 margin: 0 0 8px 0;
                 color: var(--parch-ink-soft);
                 text-transform: uppercase;
@@ -2651,7 +2705,7 @@
                 position: absolute;
                 right: 2px;
                 top: 0;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 opacity: 0.65;
                 transition: transform 0.15s ease;
             }
@@ -2677,7 +2731,7 @@
                 position: absolute;
                 right: 2px;
                 top: 0;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 opacity: 0.65;
                 transition: transform 0.15s ease;
             }
@@ -2699,13 +2753,13 @@
             }
             .drawer .row .label {
                 color: var(--parch-ink-faded);
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
             }
             .drawer .row .value {
                 color: var(--parch-ink);
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-family: "JetBrains Mono", monospace;
             }
             /* W-B (V18.168) — die .emotion-Reihen sind GETEILT (der EINE Renderer
@@ -2719,10 +2773,12 @@
                 gap: 6px;
                 margin-bottom: 4px;
             }
+            /* Name und Wert in der Schrift gemessen (w12-menue): 60 und 30 px trugen „Ehrfurcht“ (66 px) und „0.00“ (38 px)
+               bei 16 px nicht — der Name 5 em, der Wert 5 Zeichen der Mono („-0.15“) */
             #inventory-overlay .emotion .name,
             .hof-emotion-rows .emotion .name {
-                width: 60px;
-                font-size: 10px;
+                flex: 0 0 5em;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 text-transform: capitalize;
                 font-family: "IM Fell English", Georgia, serif;
@@ -2745,9 +2801,9 @@
             }
             #inventory-overlay .emotion .value,
             .hof-emotion-rows .emotion .value {
-                width: 30px;
+                flex: 0 0 5ch;
                 text-align: right;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "JetBrains Mono", monospace;
             }
@@ -2835,7 +2891,7 @@
                 gap: 6px;
             }
             .p2p-lobby-name {
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -2853,7 +2909,7 @@
                 gap: 3px;
             }
             .mesh-catalog-peer-name {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-weight: 600;
                 color: var(--brass-1);
                 letter-spacing: 0.04em;
@@ -2866,13 +2922,13 @@
                 padding-left: 8px;
             }
             .mesh-catalog-world {
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
             .mesh-catalog-have {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 opacity: 0.8;
                 white-space: nowrap;
@@ -2887,7 +2943,7 @@
                 gap: 6px;
                 padding: 4px 8px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 cursor: pointer;
                 border: 1px solid var(--brass-2);
@@ -2925,14 +2981,14 @@
             }
             .mode-card-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 color: var(--parch-ink);
             }
             .mode-card-essence {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 line-height: 1.25;
                 color: var(--parch-ink-soft);
             }
@@ -2962,7 +3018,7 @@
                 padding: 0.4em 0.6em;
                 color: var(--parch-ink, #1a1023);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 box-shadow: inset 0 1px 2px rgba(60, 40, 15, 0.16);
                 outline: none;
             }
@@ -3004,7 +3060,7 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2);
                 padding: 6px 6px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-family: "Cinzel", Georgia, serif;
                 font-weight: 500;
                 letter-spacing: 0.04em;
@@ -3032,15 +3088,16 @@
                 background: rgba(40, 25, 10, 0.08);
                 border: 1px solid rgba(138, 106, 54, 0.4);
                 border-radius: 3px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .drawer .ability-row .ability-head {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 gap: 6px;
             }
             .drawer .ability-row .ability-desc {
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
@@ -3051,10 +3108,10 @@
                 flex: 1;
                 font-family: "JetBrains Mono", monospace;
                 color: var(--parch-ink);
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .drawer .ability-row .source {
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 text-transform: uppercase;
                 letter-spacing: 0.8px;
@@ -3078,7 +3135,7 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2);
                 padding: 1px 8px;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: inherit;
@@ -3088,7 +3145,7 @@
                 background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.5));
             }
             .drawer .ability-empty {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-style: italic;
                 font-family: "IM Fell English", Georgia, serif;
@@ -3102,7 +3159,7 @@
                 gap: 6px;
                 margin: 10px 0 4px 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
@@ -3117,7 +3174,7 @@
             }
             .drawer .worldrule-toggle {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 padding: 1px 7px;
                 background: rgba(120, 80, 30, 0.1);
@@ -3131,7 +3188,7 @@
                 background: rgba(198, 154, 74, 0.22);
             }
             .drawer .worldrule-more {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-faded);
                 font-family: "IM Fell English", Georgia, serif;
@@ -3140,7 +3197,7 @@
             }
             .drawer .ability-row .rule-value-chip {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 0 5px;
                 border-radius: 6px;
                 white-space: nowrap;
@@ -3162,7 +3219,7 @@
             /* V18.53 — das Kind-Abzeichen einer Geste (einmalige Tat, kein stehendes Gesetz). */
             .drawer .ability-row .ability-kind {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 padding: 0 5px;
                 border-radius: 6px;
@@ -3173,7 +3230,7 @@
             /* V17.39 — Gesetze-Persistenz-Badge + pausiert-Stil. Der Schöpfer sieht
                auf einen Blick, ob ein Gesetz bleibt (permanent) oder verfällt. */
             .drawer .ability-row .rule-status {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 0 5px;
                 border-radius: 6px;
                 margin-left: 4px;
@@ -3213,7 +3270,7 @@
             .drawer .tuning-row label {
                 display: flex;
                 justify-content: space-between;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 margin-bottom: 2px;
                 font-family: "IM Fell English", Georgia, serif;
@@ -3238,7 +3295,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-family: "IM Fell English", Georgia, serif;
                 color: var(--parch-ink-soft);
                 padding: 4px 6px;
@@ -3249,7 +3306,7 @@
             }
             .keybind-rebind {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 3px 8px;
                 min-width: 110px;
                 text-align: center;
@@ -3290,7 +3347,7 @@
                 max-height: 260px;
                 overflow-y: auto;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 padding: 4px 6px;
             }
@@ -3315,15 +3372,18 @@
             .creature-list .creature-row-main:hover {
                 background: rgba(198, 154, 74, 0.06);
             }
+            /* Ein Zeichen trägt seinen Kasten aus der Schrift (em), nie aus px: die Schrift des Geräts zeichnet „▸“ 13 px
+               breit (Radeon 06.11.: 13 px in 9), der Kasten wächst mit ihm, 1 em hält die Namen der Reihen bündig. */
             .creature-list .creature-focus-caret {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1, #8a6f3e);
-                width: 9px;
+                min-width: 1em;
+                text-align: center;
                 flex: 0 0 auto;
             }
             /* Hof-D — die Stimmung als Glyph (froh/trübe × Temperament). Resonanz auf das Feld + die Bindung. */
             .creature-mood {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 1px 6px;
                 border-radius: 8px;
                 border: 1px solid var(--brass-2, #6f5a30);
@@ -3339,9 +3399,11 @@
             }
             /* V18.55 Hof-Bühne — EIN kohärenter dunkler STAR (Bühne + Spec-Sheet auf demselben dunklen Grund,
                wie der Werkstatt-Viewer + sein Spec-Sheet): Canvas links, das geteilte .spec-sheet rechts. */
+            /* die Bühne und ihr Spec-Sheet nebeneinander, wo beide passen, sonst untereinander (w12-menue: bei 16 px trug die
+               Spalte des Orchesters neben 300 px Bühne 29 px Spec — jede Zeile ragte über die Bühne) */
             .hof-stage {
                 display: grid;
-                grid-template-columns: 300px 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
                 gap: 16px;
                 align-items: stretch;
                 margin: 2px 0 14px 0;
@@ -3355,6 +3417,7 @@
                 height: 300px;
                 display: block;
                 align-self: center;
+                justify-self: center;
                 background: #171019;
                 border: 1px solid var(--brass-2, #6f5a30);
                 border-radius: 10px;
@@ -3373,7 +3436,7 @@
                 flex-direction: column;
                 gap: 8px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
             }
@@ -3403,7 +3466,7 @@
                 text-shadow: 0 0 5px rgba(176, 137, 104, 0.3);
             }
             .hof-spec-sheet .spec-soul-label {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
@@ -3415,7 +3478,7 @@
                 gap: 3px;
             }
             .hof-spec-sheet .spec-grow-more {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--ink-on-dark-soft, #bda87e);
                 padding-left: 2px;
@@ -3428,7 +3491,7 @@
             }
             .hof-spec-sheet .spec-deed-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
@@ -3437,7 +3500,7 @@
             .hof-spec-sheet .spec-deed-text {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-bg, #ece1c5);
             }
             .hof-spec-footer {
@@ -3456,7 +3519,7 @@
             }
             .spec-dismiss {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 padding: 2px 9px;
                 margin-left: auto;
@@ -3475,7 +3538,7 @@
                 text-align: center;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #bda87e);
             }
             @media (max-width: 1100px) {
@@ -3491,7 +3554,7 @@
                hier nur das Ich-Eigene: der Modus-Chip im Header + die REISE-Liste (auf hellem Grund). */
             .hof-spec-sheet .ich-mode-chip {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 text-transform: uppercase;
                 padding: 1px 7px;
@@ -3520,7 +3583,7 @@
             }
             .ich-soul-bar label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
@@ -3535,7 +3598,7 @@
                 border-radius: 3px;
                 padding: 5px 8px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 cursor: pointer;
                 box-shadow:
@@ -3561,7 +3624,7 @@
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
             }
             #inventory-overlay .ich-search:focus {
@@ -3585,7 +3648,7 @@
             details.ich-equip-more > summary {
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 color: var(--brass-1, #8a6f3e);
                 list-style: none;
@@ -3596,7 +3659,7 @@
             }
             details.ich-equip-more > summary::before {
                 content: "▸ ";
-                font-size: 9px;
+                font-size: var(--schrift-min);
             }
             details.ich-equip-more[open] > summary::before {
                 content: "▾ ";
@@ -3613,7 +3676,7 @@
                 align-items: baseline;
                 justify-content: space-between;
                 gap: 8px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #hof-chronik .chronik-text {
                 font-family: "IM Fell English", Georgia, serif;
@@ -3625,12 +3688,12 @@
             }
             #hof-chronik .chronik-when {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 flex: 0 0 auto;
             }
             #hof-chronik .chronik-more {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-faded);
                 margin-top: 2px;
@@ -3689,7 +3752,7 @@
                 margin-left: 6px;
                 padding: 2px 10px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.05em;
                 background: var(--parch-mid, #2c2418);
                 color: var(--parch-ink, #d4c8a8);
@@ -3720,7 +3783,7 @@
                 margin: 2px 0;
                 padding: 1px 6px;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 opacity: 0.78;
             }
             .chat-proposal-executed {
@@ -3741,7 +3804,7 @@
             }
             .creature-list .creature-soul {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1, #8a6f3e);
             }
             .creature-list .creature-task {
@@ -3757,7 +3820,7 @@
             }
             .creature-list .creature-action-btn {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 padding: 2px 7px;
                 background: rgba(120, 80, 30, 0.12);
@@ -3775,12 +3838,13 @@
                 border-color: var(--brass-1);
                 font-weight: 600;
             }
-            /* V18.48 Hof-C — der kompakte „Auftrag ▾"-Select pro Wesen (Sammle/Baue inline). */
+            /* V18.48 Hof-C — der kompakte „Auftrag ▾"-Select pro Wesen (Sammle/Baue inline). So breit wie seine Wahl
+               (field-sizing), nie wie die längste Option — 96 px schnitten „⚒ Auftrag…“ bei 16 px zu „AUFTRAC“ (w12-menue). */
             .creature-list .creature-order-select {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
-                max-width: 96px;
+                field-sizing: content;
                 background: rgba(120, 80, 30, 0.12);
                 border: 1px solid var(--brass-2);
                 border-radius: 3px;
@@ -3811,7 +3875,7 @@
                 display: inline-block;
                 padding: 1px 6px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 border-radius: 3px;
                 background: rgba(0, 0, 0, 0.18);
@@ -3839,7 +3903,7 @@
                 display: inline-block;
                 padding: 1px 6px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 border-radius: 3px;
                 background: rgba(0, 0, 0, 0.18);
@@ -3867,7 +3931,7 @@
                 display: inline-block;
                 padding: 1px 6px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 border-radius: 3px;
                 background: rgba(0, 0, 0, 0.18);
@@ -3899,13 +3963,13 @@
             }
             .library-card-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 font-weight: bold;
                 color: var(--parch-ink, #2b1a08);
             }
             .library-stage {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -3920,7 +3984,7 @@
             }
             .library-desc {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-soft, #5a3f1d);
                 margin: 4px 0 5px;
@@ -3933,7 +3997,7 @@
             }
             .library-dsl-word {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 1px 5px;
                 border-radius: 2px;
                 background: rgba(138, 106, 54, 0.16);
@@ -3941,7 +4005,7 @@
             }
             .library-dsl-empty {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-faded, #7b5a2e);
             }
@@ -3950,7 +4014,7 @@
                 color: var(--parch-ink, #2b1a08);
                 border: 1px solid var(--brass-2, #8a6322);
                 padding: 3px 12px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
@@ -3960,7 +4024,7 @@
             }
             .library-status {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: #2c8a5e;
                 margin-left: 8px;
@@ -3977,7 +4041,7 @@
             }
             .library-sig-status {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 flex: 1;
             }
             .library-sig-status.sig-valid {
@@ -3998,7 +4062,7 @@
                 color: var(--parch-ink, #2b1a08);
                 border: 1px solid var(--brass-2, #8a6322);
                 padding: 2px 9px;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
@@ -4013,7 +4077,7 @@
             }
             .library-imported-mark {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4037,7 +4101,7 @@
                 padding: 9px 11px;
                 color: var(--parch-bg, #ece1c5);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 line-height: 1.6;
                 display: flex;
                 flex-direction: column;
@@ -4048,7 +4112,7 @@
             }
             .lib-spec-sheet .spec-name.lib-card-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 15.5px;
+                font-size: var(--schrift-min);
                 font-weight: bold;
                 letter-spacing: 0.3px;
                 color: var(--parch-bg, #ece1c5);
@@ -4065,7 +4129,7 @@
             }
             .lib-net-badge {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 padding: 1px 7px;
                 border-radius: 8px;
                 background: rgba(255, 224, 102, 0.14);
@@ -4074,13 +4138,13 @@
             }
             .lib-card-meta .lib-sig-seal {
                 margin-left: auto;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 opacity: 0.82;
             }
             /* Stufe + Herkunfts-/Multiplayer-Marken auf dunklem Grund. */
             .lib-stage {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4098,7 +4162,7 @@
             .lib-spec-sheet .library-imported-mark,
             .lib-spec-sheet .library-mp-mark {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4126,7 +4190,7 @@
             /* TRUST-Siegel — das Qualitäts-Pendant (führt die Karte, §G.2). */
             .lib-trust-seal {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 padding: 2px 9px;
                 border-radius: 3px;
@@ -4146,7 +4210,7 @@
             .lib-card-desc {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
                 margin: -2px 0 0;
             }
@@ -4157,7 +4221,7 @@
             }
             .lib-spec-sheet .library-dsl-word {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 1px 5px;
                 border-radius: 2px;
                 background: rgba(255, 235, 190, 0.12);
@@ -4165,7 +4229,7 @@
             }
             .lib-sig-seal {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
             }
             .lib-sig-seal.sig-valid {
@@ -4198,7 +4262,7 @@
                 color: #ffe6a8;
                 border: 1px solid var(--brass-2, #8a6322);
                 padding: 4px 15px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
@@ -4229,7 +4293,7 @@
                 color: var(--ink-on-dark-soft, #c8b48a);
                 border: none;
                 padding: 2px 4px;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "IM Fell English", Georgia, serif;
@@ -4267,13 +4331,13 @@
                 align-items: center;
                 gap: 6px;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: #2c8a5e;
                 cursor: pointer;
             }
             .vendor-status {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: #2c8a5e;
                 margin-top: 6px;
@@ -4287,7 +4351,7 @@
             }
             .library-vendored-mark {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4299,7 +4363,7 @@
                das Tor dieser Welt. Tor-grüner Akzent wie das Portal-Overlay. */
             .library-mp-mark {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4313,7 +4377,7 @@
                 width: 100%;
                 box-sizing: border-box;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink, #2b1a08);
                 background: rgba(255, 248, 230, 0.55);
                 border: 1px solid var(--brass-2, #8a6322);
@@ -4327,7 +4391,7 @@
             }
             .translator-status {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: #2c8a5e;
                 margin-top: 6px;
@@ -4346,14 +4410,14 @@
             }
             .translator-review-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-weight: bold;
                 color: var(--parch-ink, #2b1a08);
                 margin-bottom: 6px;
             }
             .translator-field-id {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded, #7b5a2e);
                 margin-bottom: 5px;
             }
@@ -4362,7 +4426,7 @@
             }
             .translator-field-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.1em;
                 text-transform: uppercase;
                 color: var(--parch-ink-soft, #5a3f1d);
@@ -4383,7 +4447,7 @@
                 background: rgba(255, 248, 230, 0.15);
                 color: var(--brass-1);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 font-weight: 700;
                 cursor: help;
                 position: relative;
@@ -4417,7 +4481,7 @@
                 border-radius: 4px;
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-weight: 400;
                 font-style: italic;
                 color: var(--parch-ink);
@@ -4481,7 +4545,7 @@
             }
             #omnibox-input::placeholder {
                 color: var(--parch-ink-soft);
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 font-style: italic;
             }
             #omnibox-results {
@@ -4509,7 +4573,7 @@
             .omnibox-kind {
                 flex: 0 0 auto;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 text-transform: uppercase;
                 color: #5a3f10;
@@ -4523,7 +4587,7 @@
             .omnibox-label {
                 flex: 1;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 14px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -4532,14 +4596,14 @@
             .omnibox-sub {
                 flex: 0 0 auto;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
             }
             #omnibox-hint {
                 margin-top: 8px;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 text-align: right;
                 position: relative;
@@ -4564,7 +4628,7 @@
                 width: 100%;
                 box-sizing: border-box;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink, #2b1a08);
                 background: rgba(255, 248, 230, 0.6);
                 border: 1px solid var(--brass-2, #8a6322);
@@ -4588,7 +4652,7 @@
             }
             .library-translated-mark {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 padding: 1px 6px;
                 border-radius: 8px;
@@ -4606,7 +4670,7 @@
             }
             #inventory-overlay .soul-row label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.08em;
                 text-transform: uppercase;
                 color: var(--parch-ink-soft);
@@ -4620,7 +4684,7 @@
                 border-radius: 3px;
                 padding: 5px 8px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 cursor: pointer;
                 box-shadow:
@@ -4645,7 +4709,7 @@
             }
             #inventory-overlay .body-parts-header {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 color: var(--parch-ink-faded);
                 text-transform: uppercase;
@@ -4658,7 +4722,7 @@
                 justify-content: space-between;
                 align-items: baseline;
                 padding: 2px 6px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .body-part-label {
                 font-family: "IM Fell English", Georgia, serif;
@@ -4668,7 +4732,7 @@
             #inventory-overlay .body-part-meta {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--parch-ink-faded);
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
             }
             .drawer .stats-divider {
                 border-top: 1px dashed rgba(138, 106, 54, 0.45);
@@ -4679,7 +4743,7 @@
                 justify-content: space-between;
                 align-items: baseline;
                 padding: 2px 6px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 background: rgba(184, 138, 80, 0.08);
                 border-left: 2px solid var(--violet-1, #8a4fb5);
             }
@@ -4691,7 +4755,7 @@
             .drawer .boost-remaining {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--parch-ink-faded);
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
             }
             /* Welle 6.D Etappe 1.7 — Avatar-Editor. */
             #inventory-overlay #soul-editor {
@@ -4706,7 +4770,7 @@
             }
             #inventory-overlay .soul-editor-empty {
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 padding: 4px 0;
             }
@@ -4718,7 +4782,7 @@
                 background: rgba(40, 25, 10, 0.08);
                 border: 1px solid rgba(138, 106, 54, 0.4);
                 border-radius: 3px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .soul-editor-name {
                 flex: 1;
@@ -4734,7 +4798,7 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
                 padding: 2px 8px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
@@ -4770,7 +4834,7 @@
             }
             #inventory-overlay .soul-editor-pane-head {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.05em;
                 color: var(--parch-ink);
             }
@@ -4788,7 +4852,7 @@
                 background: rgba(255, 248, 220, 0.4);
                 border: 1px solid rgba(138, 106, 54, 0.3);
                 border-radius: 2px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
             }
             .drawer .soul-part-idx {
                 font-family: "JetBrains Mono", monospace;
@@ -4799,7 +4863,7 @@
                 background: rgba(255, 250, 235, 0.7);
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 1px 4px;
                 font-family: "JetBrains Mono", monospace;
             }
@@ -4808,13 +4872,13 @@
                 align-items: center;
                 gap: 2px;
                 color: var(--parch-ink-faded);
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 font-family: "Cinzel", Georgia, serif;
             }
             .drawer .soul-part-num {
                 width: 38px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 1px 3px;
                 background: rgba(255, 252, 240, 0.8);
                 color: var(--parch-ink);
@@ -4829,21 +4893,21 @@
             /* W13 Phase 1 — Vibe-Pass: souveräne Avatar-Identität. */
             .drawer .vibe-pass-fingerprint {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 14px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 color: var(--brass-1, #c69a4a);
                 padding: 4px 0 2px;
             }
             .drawer .vibe-pass-id {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 word-break: break-all;
                 color: var(--parch-ink-soft, #5a3f1d);
                 opacity: 0.7;
                 user-select: all;
             }
             .drawer .vibe-pass-born {
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft, #5a3f1d);
                 opacity: 0.8;
                 margin-top: 3px;
@@ -4859,7 +4923,7 @@
                 color: var(--parch-ink, #2b1a08);
                 border: 1px solid var(--brass-2, #8a6322);
                 padding: 3px 9px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
@@ -4885,7 +4949,7 @@
             }
             #inventory-overlay .equip-slot-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 letter-spacing: 0.04em;
                 min-width: 60px;
@@ -4896,12 +4960,15 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
             }
             /* Welle 6.X.4 D2 — Slider-Row (Master + Pings + Render-Ring). */
+            /* Name · Schieber · Wert: der Name nie gestaucht, der Schieber bricht in die nächste Zeile, wenn beide nicht
+               nebeneinander passen (w12-menue: „Umgebungsgeräusche“ 201 px stand in 174) */
             .drawer .slider-row {
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 gap: 6px;
                 padding: 3px 6px;
@@ -4911,21 +4978,22 @@
                 border-radius: 3px;
             }
             .drawer .slider-row label {
+                flex: 0 0 auto;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 letter-spacing: 0.04em;
-                min-width: 90px;
+                min-width: 6em;
             }
             .drawer .slider-row input[type="range"] {
-                flex: 1;
+                flex: 1 1 4em;
                 accent-color: var(--brass-2, #b48c50);
             }
             .drawer .slider-row .slider-value {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
-                min-width: 36px;
+                min-width: 4ch;
                 text-align: right;
             }
             /* Welle 6.X.4 F1 — Identity-Row (Begleiter-/Spieler-Name). */
@@ -4941,7 +5009,7 @@
             }
             .drawer .identity-row label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 letter-spacing: 0.04em;
                 min-width: 70px;
@@ -4952,11 +5020,11 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
             }
             #inventory-overlay .equip-mark-header {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.05em;
@@ -4970,7 +5038,7 @@
                 align-items: center;
                 gap: 5px;
                 padding: 2px 6px;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .equip-mark-label {
                 flex: 1 0 100%;
@@ -4982,14 +5050,14 @@
                 color: var(--parch-ink);
                 border: 1px solid var(--brass-2, #b48c50);
                 padding: 1px 8px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
             }
             #inventory-overlay .equip-empty {
                 font-style: italic;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 padding: 4px 0;
             }
@@ -5001,12 +5069,12 @@
                 background: rgba(40, 25, 10, 0.06);
                 border-left: 2px solid var(--brass-2, #b48c50);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .stat-label {
                 color: var(--parch-ink);
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
             }
             #inventory-overlay .stat-value {
@@ -5016,19 +5084,19 @@
             #inventory-overlay .stat-tags {
                 margin-top: 6px;
                 padding: 4px 6px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "Cinzel", Georgia, serif;
                 letter-spacing: 0.04em;
                 border-top: 1px dashed rgba(138, 106, 54, 0.35);
             }
             .drawer .stats-empty {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-faded);
             }
             .drawer .section-hint {
-                font-size: 0.78em;
+                font-size: max(var(--schrift-min), 0.78em);
                 color: var(--parch-ink-faded);
                 font-weight: normal;
                 font-style: italic;
@@ -5048,7 +5116,7 @@
                 font-family: "Cinzel", Georgia, serif;
                 color: var(--brass-1);
                 font-weight: 600;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             #inventory-overlay .hotbar-config-row select {
                 flex: 1;
@@ -5058,7 +5126,7 @@
                 border-radius: 3px;
                 padding: 3px 6px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
             }
             #inventory-overlay .hotbar-config-row select:hover {
@@ -5119,7 +5187,7 @@
             }
             .drawer[data-drawer="einstellungen"] .settings-grouplabel {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 1px;
                 text-transform: uppercase;
                 color: var(--brass-1, #8a6f3e);
@@ -5139,7 +5207,7 @@
             }
             .drawer[data-drawer="einstellungen"] .settings-band > h4 {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 color: var(--brass-1, #8a6f3e);
                 margin: 0 0 5px 0;
@@ -5160,18 +5228,24 @@
             }
             /* V18.51 Hof-E — ZWEI ZONEN (ORCHESTER Star, wide | PARTITUR), content-first nach dem
                Dirigenten-Modell (statt des gleichrangigen 3-Spalten-Stapels). */
+            /* zwei Zonen, wo die Partitur ihre Zeile trägt (26 em: Name · Quelle · permanent · drei Knöpfe), sonst eine —
+               gemessen in der Schrift der Schublade (w12-menue: bei 16 px stand die Partitur an 1024 px 188 px über dem Rand,
+               ihre längste Chronik-Zeile ohne Umbruch spannte die Spalte) */
+            .drawer[data-drawer="kreaturen"] {
+                container: hof / inline-size;
+            }
             .drawer[data-drawer="kreaturen"] .drawer-scroll {
                 display: grid;
-                grid-template-columns: 1.7fr 1fr;
+                grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
                 gap: 0 22px;
                 align-items: start;
             }
             .drawer[data-drawer="kreaturen"] .drawer-scroll > .section {
                 margin: 0 0 6px 0;
             }
-            @media (max-width: 1000px) {
+            @container hof (max-width: 72em) {
                 .drawer[data-drawer="kreaturen"] .drawer-scroll {
-                    grid-template-columns: 1fr;
+                    grid-template-columns: minmax(0, 1fr);
                 }
             }
             .hof-orchester h3,
@@ -5180,7 +5254,7 @@
             }
             .hof-subhead {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 color: var(--brass-1, #8a6f3e);
                 margin: 16px 0 2px 0;
@@ -5194,7 +5268,7 @@
             }
             .hof-section-chip {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 padding: 2px 9px;
                 background: rgba(120, 80, 30, 0.1);
@@ -5230,7 +5304,7 @@
             .hof-section-cmd .hof-section-cmd-label {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
             }
             /* Hof-E — der Spawn-Fuß (ein neues Orchester-Mitglied rufen). */
@@ -5242,7 +5316,7 @@
             .hof-spawn-title {
                 display: block;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 color: var(--brass-1, #8a6f3e);
                 margin-bottom: 5px;
@@ -5265,7 +5339,7 @@
                 margin-top: 7px;
             }
             .hof-spawn-world-label {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
             }
             /* Hof-E/§G.9 — der einladende Leer-Zustand (das Spawnen als Held). */
@@ -5274,7 +5348,7 @@
                 text-align: center;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 border: 1px dashed var(--brass-2, #6f5a30);
                 border-radius: 8px;
@@ -5282,7 +5356,7 @@
             .library-intro {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 margin: 0 0 12px 0;
             }
@@ -5298,7 +5372,7 @@
                 flex: 1;
                 min-width: 0;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 padding: 7px 12px;
                 background: rgba(255, 245, 220, 0.5);
                 border: 1px solid var(--brass-2, #8a6322);
@@ -5310,7 +5384,7 @@
             }
             .library-import-btn {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 padding: 6px 13px;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
                 color: var(--parch-ink, #2b1a08);
@@ -5331,7 +5405,7 @@
                 gap: 8px;
                 padding: 6px 10px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 color: var(--ink-on-dark, #ece1c5);
                 background: rgba(212, 176, 118, 0.12);
@@ -5339,11 +5413,11 @@
                 border-radius: 3px;
             }
             .library-author-banner .library-author-clear {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
             }
             .feed-ident {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 opacity: 0.8;
                 margin-left: 6px;
             }
@@ -5361,7 +5435,7 @@
             }
             .library-create-summary {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 color: var(--parch-ink, #2b1a08);
                 cursor: pointer;
@@ -5458,7 +5532,7 @@
             }
             .feed-cover-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 1.4px;
                 text-transform: uppercase;
                 color: rgba(255, 245, 220, 0.82);
@@ -5475,7 +5549,7 @@
             }
             .feed-sort-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 text-transform: uppercase;
                 color: var(--brass-1, #b88a50);
@@ -5516,7 +5590,7 @@
                 padding: 14px;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 1.5;
                 color: var(--ink-on-dark-soft, #c8b48a);
                 background: rgba(20, 17, 10, 0.72);
@@ -5546,7 +5620,7 @@
             }
             .feed-self-badge {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 padding: 1px 7px;
@@ -5557,7 +5631,7 @@
             }
             .feed-self-stats {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
                 margin: 6px 0 0;
             }
@@ -5568,7 +5642,7 @@
             }
             .feed-self-act {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 padding: 4px 9px;
                 color: var(--ink-on-dark, #e8dcc0);
@@ -5596,7 +5670,7 @@
             }
             .feed-prov-list {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--ink-on-dark-soft, #c8b48a);
                 line-height: 1.5;
@@ -5618,7 +5692,7 @@
                 border-radius: 2px;
                 padding: 1px 7px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
             }
             .feed-journal {
@@ -5633,13 +5707,13 @@
                 flex-wrap: wrap;
                 align-items: baseline;
                 gap: 5px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark, #ece1c5);
                 line-height: 1.4;
             }
             .feed-journal .journal-type {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 text-transform: uppercase;
                 padding: 0 5px;
@@ -5649,18 +5723,18 @@
             }
             .feed-journal .journal-age {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
             }
             .feed-journal .journal-empty {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
             }
             #world-journal-count.journal-count {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #c8b48a);
                 text-transform: none;
                 letter-spacing: 0;
@@ -5676,7 +5750,7 @@
             .feed-tab {
                 flex: 1;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 padding: 8px 4px 9px;
                 background: transparent;
@@ -5696,27 +5770,28 @@
             .feed-panel-hint {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft, #5a3f1d);
                 margin: 0 0 12px;
                 max-width: 600px;
             }
             /* RECHTS — der Schöpfen-Block: die häufigen 1-Klick-Akte (3er-Block) prominent, die fremde-Welt-
                Power-Werkzeuge als Akkordeon darunter (progressive disclosure). */
-            /* der 3er-Block — exakte Drittel via Grid + box-sizing, damit „Empfangen" nicht über den Rahmen läuft. */
+            /* der 3er-Block — jeder Knopf so breit wie sein Wort, die Zeile bricht um, was nicht passt (w12-menue: exakte
+               Drittel schoben bei 16 px „Verschmelzen“ in „Empfangen“). */
             .feed-3block {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                display: flex;
+                flex-wrap: wrap;
                 gap: 5px;
                 margin-bottom: 8px;
             }
             .feed-3btn {
+                flex: 1 1 auto;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0;
                 line-height: 1.2;
-                padding: 7px 3px;
-                min-width: 0;
+                padding: 7px 6px;
                 box-sizing: border-box;
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.55), rgba(180, 140, 80, 0.35));
                 color: var(--parch-ink, #2b1a08);
@@ -5728,12 +5803,12 @@
                 background: linear-gradient(180deg, rgba(255, 245, 210, 0.7), rgba(200, 160, 100, 0.45));
             }
             .feed-picker-list {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 margin-bottom: 6px;
             }
             .feed-tool-group-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1, #b88a50);
@@ -5756,7 +5831,7 @@
             .feed-tagebuch-head::before {
                 content: "▸";
                 color: var(--brass-1, #b88a50);
-                font-size: 9px;
+                font-size: var(--schrift-min);
             }
             .feed-tagebuch[open] .feed-tagebuch-head::before {
                 content: "▾";
@@ -5788,10 +5863,11 @@
             .feed-tool-head::-webkit-details-marker {
                 display: none;
             }
+            /* der Kasten wächst mit dem Zeichen (Radeon 06.11.: „⚓“ 22 px in 1,25 em = 20) — wie `.mat-glyph` */
             .feed-tool-glyph {
                 color: var(--brass-1, #b88a50);
-                font-size: 13px;
-                width: 15px;
+                font-size: var(--schrift-min);
+                min-width: 1.25em;
                 text-align: center;
                 flex: 0 0 auto;
             }
@@ -5800,14 +5876,14 @@
             }
             .feed-tool-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 font-weight: bold;
                 color: var(--parch-ink, #2b1a08);
             }
             .feed-tool-sub {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded, #7b5a2e);
                 margin-left: auto;
                 text-align: right;
@@ -5818,7 +5894,7 @@
             }
             .feed-tool-hint {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-soft, #5a3f1d);
                 margin: 7px 0 8px;
@@ -5833,7 +5909,7 @@
             }
             .feed-curate-head {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 text-transform: uppercase;
                 color: var(--brass-1, #b88a50);
@@ -5846,7 +5922,7 @@
             }
             .feed-kind-chip {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 3px 10px;
                 border-radius: 12px;
                 background: rgba(255, 235, 190, 0.4);
@@ -5873,13 +5949,13 @@
             }
             .feed-trend-stars {
                 color: #e0a93a;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 1px;
                 white-space: nowrap;
             }
             .feed-trend-label {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink, #2b1a08);
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -5894,7 +5970,7 @@
             }
             .feed-role-chip {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.4px;
                 padding: 2px 9px;
                 border-radius: 3px;
@@ -5903,7 +5979,7 @@
             }
             .feed-kind-badge {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 text-transform: uppercase;
                 padding: 1px 7px;
@@ -5929,7 +6005,7 @@
             }
             .feed-star {
                 color: #e0a93a;
-                font-size: 15px;
+                font-size: var(--schrift-min);
                 line-height: 1;
                 cursor: pointer;
                 transition: transform 0.1s ease;
@@ -5941,14 +6017,14 @@
             /* F4 (V18.134/.135) — Gemeinschafts-Wertung + Lesezeichen in der Akt-Zeile */
             .feed-rating-agg {
                 color: var(--ink-on-dark-soft, #b8a888);
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 15px;
                 margin-left: 6px;
                 white-space: nowrap;
             }
             .feed-bookmark {
                 margin-left: auto;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 line-height: 15px;
                 cursor: pointer;
                 opacity: 0.55;
@@ -5963,7 +6039,7 @@
             }
             /* F4 Stufe 3 (V18.142) — der Folgen-Toggle (Identitäts-Chip) */
             .feed-follow {
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 line-height: 15px;
                 opacity: 0.6;
                 color: var(--ink-on-dark-soft, #c9bfae);
@@ -5978,7 +6054,7 @@
             }
             /* F4 Stufe 4 (V18.143) — Kommentare (die Worte der Gemeinschaft) */
             .feed-talk {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 15px;
                 opacity: 0.65;
                 margin-left: 6px;
@@ -5998,7 +6074,7 @@
             .feed-comment-row {
                 display: flex;
                 gap: 6px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 1.35;
             }
             .feed-comment-who {
@@ -6011,7 +6087,7 @@
                 overflow-wrap: anywhere;
             }
             .feed-comment-empty {
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 opacity: 0.55;
             }
@@ -6023,11 +6099,11 @@
             .feed-comment-input input {
                 flex: 1;
                 min-width: 0;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .feed-comment-input button {
                 flex: 0 0 auto;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 padding: 2px 8px;
             }
             .library-columns {
@@ -6095,7 +6171,7 @@
                 border-radius: 3px;
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
             }
             .workshop-list-row:hover {
@@ -6106,7 +6182,7 @@
                 border-color: var(--violet-1);
             }
             .workshop-list-row .badge {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.8px;
                 color: var(--parch-ink-faded);
@@ -6120,7 +6196,7 @@
                 margin-top: 5px;
                 padding: 2px 4px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 1px;
                 color: var(--parch-ink-faded);
@@ -6136,7 +6212,7 @@
                 border-radius: 3px;
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
             }
             .workshop-studio-recipe-row:hover {
@@ -6148,7 +6224,7 @@
             }
             .workshop-studio-recipe-row .badge,
             .stammbaum-verweis .badge {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.8px;
                 color: var(--parch-ink-faded);
@@ -6166,14 +6242,14 @@
             }
             .workshop-list-section.stammbaum-studio {
                 margin-top: 8px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
                 border-bottom: 1px solid var(--brass-2);
             }
             .workshop-list-section.stammbaum-bereich {
                 margin-top: 3px;
                 padding-left: 14px;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 border-bottom: 1px dotted rgba(138, 106, 54, 0.4);
             }
             .workshop-list-section.stammbaum-studio::before,
@@ -6186,7 +6262,7 @@
             }
             .stammbaum-zahl {
                 margin-left: auto;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 opacity: 0.7;
             }
             .stammbaum-verweis {
@@ -6198,14 +6274,14 @@
                 border-radius: 3px;
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
             }
             .stammbaum-griff {
                 flex: 0 0 auto;
                 margin-left: 6px;
                 padding: 0 5px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 line-height: 16px;
                 color: var(--parch-ink);
                 background: rgba(255, 235, 190, 0.35);
@@ -6233,17 +6309,17 @@
             /* W-A1 — das ehrliche Interim: die Status-Zeile im Stats-Element. */
             .workshop-studio-status {
                 padding: 4px 8px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-ink-faded);
             }
             .workshop-recipe-stats-head {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 margin-bottom: 4px;
             }
             .workshop-recipe-stats-hint {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
             }
             .workshop-header {
@@ -6258,7 +6334,7 @@
                 border: none;
             }
             .workshop-status {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
@@ -6286,18 +6362,20 @@
             }
             .workshop-recipe-head {
                 margin: 0 0 2px;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 color: var(--ink-on-dark, #e8d4a8);
             }
+            /* der Name über Schieber und Wert, der Wert so breit wie seine Ziffern (w12-menue: in 168 px trugen 78 + 34 px bei
+               16 px weder „Apikaldominanz“ noch „-0.15“, dem Schieber blieben 44 px) */
             .workshop-recipe-row {
                 display: grid;
-                grid-template-columns: 78px 1fr 34px;
-                gap: 6px;
+                grid-template-columns: 1fr auto;
+                gap: 0 6px;
                 align-items: center;
             }
             .workshop-recipe-row label {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft, #cdbf9a);
                 cursor: help;
                 white-space: nowrap;
@@ -6309,25 +6387,26 @@
                 accent-color: var(--brass-3, #b08648);
                 cursor: pointer;
             }
-            /* die Zeile der Hülle (worlds/huelle): der Kopf ist Inhalt, die Spalten wie zuvor (Name · Schieber · Wert) */
+            /* die Zeile der Hülle (worlds/huelle): der Kopf ist Inhalt — oben der Name, darunter Schieber · Wert */
             .workshop-recipe-row .h-kopf {
                 display: contents;
             }
             .workshop-recipe-row .h-lab {
-                grid-column: 1;
+                grid-column: 1 / -1;
                 grid-row: 1;
             }
             .workshop-recipe-row input[type="range"] {
-                grid-column: 2;
-                grid-row: 1;
+                grid-column: 1;
+                grid-row: 2;
             }
             .workshop-recipe-row .h-wert {
-                grid-column: 3;
-                grid-row: 1;
+                grid-column: 2;
+                grid-row: 2;
             }
             .workshop-recipe-val {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
+                min-width: 5ch;
                 text-align: right;
                 color: var(--ink-on-dark, #e8d4a8);
             }
@@ -6335,7 +6414,7 @@
             #workshop-recipe-panel .h-kosten-kopf {
                 display: flex;
                 gap: 6px;
-                font: 10px "JetBrains Mono", monospace;
+                font: var(--schrift-min) "JetBrains Mono", monospace;
                 color: var(--ink-on-dark, #e8d4a8);
             }
             #workshop-recipe-panel .h-kosten-bahn {
@@ -6366,7 +6445,7 @@
             }
             #workshop-recipe-panel .h-kosten > .h-gruppe,
             #workshop-recipe-panel .h-kosten-quelle {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 color: var(--ink-on-dark-soft, #cdbf9a);
             }
@@ -6377,7 +6456,7 @@
             }
             .workshop-recipe-btns button {
                 flex: 1;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 padding: 5px 6px;
                 background: rgba(176, 134, 72, 0.22);
                 border: 1px solid var(--brass-3, #b08648);
@@ -6393,7 +6472,7 @@
             }
             .workshop-recipe-sub {
                 margin-top: 4px;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.06em;
                 text-transform: uppercase;
                 color: var(--ink-on-dark-soft, #cdbf9a);
@@ -6407,7 +6486,7 @@
                 font-weight: 600;
             }
             .workshop-empty {
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 font-style: italic;
                 padding: 6px 0;
@@ -6425,7 +6504,7 @@
             .workshop-part-row select,
             .workshop-part-row input[type="color"] {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
                 background: rgba(255, 235, 190, 0.3);
                 border: 1px solid var(--brass-3);
@@ -6457,7 +6536,7 @@
             }
             .workshop-tools-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.12em;
                 text-transform: uppercase;
                 color: var(--parch-ink-soft);
@@ -6465,7 +6544,7 @@
             }
             .workshop-tool-chip {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 1px 6px;
                 background: rgba(255, 235, 190, 0.3);
                 border: 1px solid var(--brass-3);
@@ -6492,7 +6571,7 @@
                 padding: 4px 6px;
                 background: rgba(40, 25, 10, 0.04);
                 border-top: 1px solid rgba(40, 25, 10, 0.08);
-                font-size: 10px;
+                font-size: var(--schrift-min);
             }
             .workshop-opchain-header {
                 font-family: "IM Fell English", Georgia, serif;
@@ -6508,7 +6587,7 @@
             }
             .workshop-op {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 1px 4px;
                 background: rgba(255, 235, 190, 0.25);
                 border: 1px solid var(--brass-3);
@@ -6522,7 +6601,7 @@
             }
             .workshop-op-tool {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 flex: 1;
                 min-width: 0;
                 padding: 1px 3px;
@@ -6532,7 +6611,7 @@
             }
             .workshop-op-apply {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 6px;
                 background: var(--brass-2);
                 color: var(--parch-ink);
@@ -6546,7 +6625,7 @@
             .workshop-op-empty {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
             }
             /* V17.90 (Schöpfer-Befund „undo/redo sehe ich nicht") — die History-Zeile direkt unter den Parts
@@ -6568,7 +6647,7 @@
             }
             .workshop-tags-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.12em;
                 text-transform: uppercase;
                 color: var(--parch-ink-soft);
@@ -6580,7 +6659,7 @@
                 gap: 6px;
                 align-items: center;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 padding: 1px 0;
                 color: var(--parch-ink);
             }
@@ -6588,12 +6667,12 @@
                 color: var(--brass-1);
                 letter-spacing: 0.04em;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .workshop-tag-num {
                 color: var(--parch-ink-soft);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 text-align: right;
             }
             .workshop-connections {
@@ -6609,30 +6688,30 @@
                 gap: 4px;
                 align-items: center;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 padding: 2px 0;
                 color: var(--parch-ink);
             }
             .workshop-conn-label {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
             }
             .workshop-conn-bar {
                 color: var(--brass-1);
                 font-family: "JetBrains Mono", monospace;
-                font-size: 11px;
+                font-size: var(--schrift-min);
             }
             .workshop-conn-bar.workshop-conn-weak {
                 color: #b85050;
             }
             .workshop-conn-num {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 text-align: right;
             }
             .workshop-conn-del {
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 0 4px;
                 background: var(--iron-2);
                 color: var(--brass-1);
@@ -6649,7 +6728,7 @@
             .workshop-conn-type,
             .workshop-conn-part {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
                 background: rgba(255, 235, 190, 0.3);
                 border: 1px solid var(--brass-3);
@@ -6657,7 +6736,7 @@
             }
             .workshop-conn-addbtn {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 6px;
                 background: var(--brass-2);
                 color: var(--parch-ink);
@@ -6708,13 +6787,13 @@
                 margin: 0;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-faded);
                 text-align: center;
             }
             .workshop-preview-selected {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--violet-1);
                 letter-spacing: 0.5px;
             }
@@ -6742,7 +6821,7 @@
                 border: 1px solid var(--brass-3);
                 border-radius: 3px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-bg, #ece1c5);
                 line-height: 1.6;
                 min-height: 18px;
@@ -6771,13 +6850,17 @@
                 flex-wrap: wrap;
                 min-width: 0;
             }
+            /* die Stimmung des Wesens bricht im Sheet um, wo es schmal steht (w12-menue); in der Liste bleibt sie eine Pille */
+            .spec-id .creature-mood {
+                white-space: normal;
+            }
             .spec-role-chip {
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 padding: 3px 11px;
                 letter-spacing: 0.6px;
             }
             .spec-cap-chip {
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
             }
             .spec-quality {
                 display: inline-flex;
@@ -6787,26 +6870,27 @@
             }
             .spec-q-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
             }
             .spec-q-stars {
                 color: #ffe066;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 letter-spacing: 1px;
                 text-shadow: 0 0 4px rgba(255, 224, 102, 0.4);
             }
             .spec-q-val {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--ink-on-dark);
-                font-size: 10px;
+                font-size: var(--schrift-min);
             }
-            /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte). */
+            /* Body: zwei Spalten (Material-Profil | Rollen-Resonanz + Werte), je mindestens 15 em (der Balken: Name 7,5 em ·
+               Wert 4,5 em · Spur) — schmaler fällt das Sheet in eine Spalte, keine Zeile ragt in die Nachbarin (w12-menue) */
             .spec-body {
                 display: grid;
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 15em), 1fr));
                 gap: 6px 34px;
                 align-items: start;
             }
@@ -6818,7 +6902,7 @@
             }
             .spec-col-head {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.7px;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -6831,7 +6915,7 @@
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
                 color: var(--ink-on-dark-soft);
-                font-size: 10px;
+                font-size: var(--schrift-min);
             }
             /* W-B (V18.168) — die NATUR ruht als <details> (Werkstatt-Wissen,
                einen Klick entfernt): das Gefühl prägt die Karte, die Substanz
@@ -6843,7 +6927,7 @@
                 cursor: pointer;
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft);
                 list-style-position: inside;
                 margin-bottom: 3px;
@@ -6854,13 +6938,14 @@
             /* Die Daten-Viz-Balken: Label | Track(Fill) | Wert auf EINEM Raster. */
             .spec-bar {
                 display: grid;
-                grid-template-columns: 80px 1fr 34px;
+                /* Name · Balken · Wert in der Schrift gemessen (spielgang.K3#2): 80 px trugen „wärmeleitung" bei 10 px */
+                grid-template-columns: 7.5em 1fr 4.5em;
                 align-items: center;
                 gap: 8px;
             }
             .spec-bar-label {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark);
                 text-align: right;
                 overflow: hidden;
@@ -6902,7 +6987,7 @@
             }
             .spec-bar-val {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft);
                 text-align: right;
             }
@@ -6911,7 +6996,7 @@
             .spec-gap-hint {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark);
                 opacity: 0.92;
                 margin: 1px 0 3px;
@@ -6920,7 +7005,7 @@
                warn = Bernstein-rot (eine gerechnete Warnung), ok = ruhiges Grün. */
             .spec-physis-line {
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 10.5px;
+                font-size: var(--schrift-min);
                 margin: 1px 0;
                 line-height: 1.35;
             }
@@ -6948,13 +7033,13 @@
             }
             .spec-stat-name {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark);
                 letter-spacing: 0.3px;
             }
             .spec-stat-val {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: #ffe6a8;
             }
             .spec-stat-fit {
@@ -6962,7 +7047,7 @@
                 border-color: var(--violet-1);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark);
             }
             /* Footer: Preis + Wachstum. */
@@ -6987,7 +7072,7 @@
             .spec-cost-label,
             .spec-growth-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -6995,13 +7080,13 @@
             }
             .spec-cost-val {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft);
             }
             .spec-growth-text {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft);
                 line-height: 1.4;
             }
@@ -7037,7 +7122,7 @@
                Tabelle statt Flatter-Zeilen). */
             #workshop-stats-panel .stat-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 color: var(--brass-1);
                 text-transform: uppercase;
@@ -7064,7 +7149,7 @@
                 background: rgba(255, 235, 190, 0.18);
                 border: 1px solid var(--brass-2);
                 border-radius: 2px;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-bg, #ece1c5);
                 font-weight: 500;
             }
@@ -7074,20 +7159,20 @@
                (stark), lvl-3 violet (Signature). */
             #workshop-stats-panel .tag-chip .tag-stars {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: #6a5a3a;
                 letter-spacing: 1px;
             }
             #workshop-stats-panel .tag-chip .tag-name {
                 color: var(--parch-bg, #ece1c5);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
             }
             #workshop-stats-panel .tag-chip .tag-val {
                 font-family: "JetBrains Mono", monospace;
                 color: var(--ink-on-dark-soft); /* P11 — war --parch-ink-soft (dunkel auf dunklem Chip) */
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 margin-left: 2px;
             }
             #workshop-stats-panel .tag-chip.lvl-1 {
@@ -7123,7 +7208,7 @@
                 border: 1px solid var(--violet-1);
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: #fff;
                 letter-spacing: 0.5px;
                 font-weight: 600;
@@ -7135,7 +7220,7 @@
                 border: 1px solid var(--brass-1);
                 border-radius: 2px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: #fff;
                 letter-spacing: 0.5px;
                 font-weight: 600;
@@ -7159,7 +7244,7 @@
                 border: 1px solid var(--brass-2, #8a6322);
                 border-radius: 2px;
                 color: var(--brass-1, #c69a4a);
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 line-height: 1.2;
                 cursor: pointer;
                 transition: background 0.15s ease;
@@ -7186,7 +7271,7 @@
                 border: 1px solid var(--brass-1, #c69a4a);
                 border-radius: 3px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 font-weight: 700;
                 color: #fff;
                 letter-spacing: 0.6px;
@@ -7218,7 +7303,7 @@
             .workshop-werk-heading {
                 margin: 4px 0 2px 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -7257,13 +7342,13 @@
             }
             #workshop-action-zone .workshop-sig-status {
                 flex: 1 1 100%;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft); /* die Mach-Zone sitzt auf HELLEM Pergament → dunkler Text */
             }
             .workshop-fertigen-station {
                 margin-left: 8px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1, #c69a4a);
                 letter-spacing: 0.05em;
                 opacity: 0.9;
@@ -7287,7 +7372,7 @@
                 border: 1px solid rgba(184, 138, 80, 0.5);
                 border-radius: 2px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark); /* P11 — war --parch-ink (dunkel auf dunkler Bar) */
                 letter-spacing: 0.05em;
             }
@@ -7302,7 +7387,7 @@
             #workshop-stats-panel .workshop-growth-text {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft); /* P11 — war --parch-ink-soft (dunkel auf dunklem Panel = unlesbar) */
                 line-height: 1.4;
             }
@@ -7313,7 +7398,7 @@
                statt des dunklen Brass (in der Messung war „641× stein" zu blass). */
             #workshop-stats-panel .workshop-cost-text {
                 font-family: "JetBrains Mono", "Courier New", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--ink-on-dark-soft);
                 line-height: 1.4;
             }
@@ -7323,7 +7408,7 @@
                die Status-Farben fehlten = „WERK schwach". Die Klasse ist eindeutig, V18.40-Lehre). */
             .workshop-sig-status {
                 font-family: "JetBrains Mono", "Courier New", monospace;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 line-height: 1.4;
                 flex: 1;
             }
@@ -7349,7 +7434,7 @@
                 border-radius: 3px;
                 color: var(--parch-ink, #2b1a08);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9.5px;
+                font-size: var(--schrift-min);
                 font-weight: 600;
                 letter-spacing: 0.04em;
                 cursor: pointer;
@@ -7371,7 +7456,7 @@
                 border-radius: 3px;
                 color: var(--parch-ink);
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 cursor: pointer;
                 text-align: center;
@@ -7402,7 +7487,7 @@
                 cursor: grab;
                 user-select: none;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink);
             }
             .workshop-tool-card:hover {
@@ -7434,7 +7519,7 @@
             .workshop-snap-btn,
             .workshop-action-btn {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-weight: 600;
                 padding: 5px 9px;
                 background: rgba(40, 25, 10, 0.55);
@@ -7485,7 +7570,7 @@
                 border: 1px solid var(--brass-2);
                 border-radius: 999px;
                 font-family: "IM Fell English", Georgia, serif;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 font-style: italic;
                 color: var(--parch-bg, #ece1c5);
                 text-align: center;
@@ -7507,8 +7592,10 @@
                50% breiter (132→200px) damit Materialien als 3×4 statt 2×6
                rendern und Tool-Karten mehr Atem haben. Material-Cards-Grid
                wechselt automatisch auf 3 Spalten dank flex-wrap im Container. */
+            /* die Breiten der Paletten aus der Schrift (w12-menue): links zwei Form-Karten (Pyramide 5,6 em), rechts zwei
+               Material-Karten (7,5 em) */
             #workshop-side-palette {
-                flex: 0 0 168px;
+                flex: 0 0 12em;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -7530,8 +7617,18 @@
                 min-width: 300px;
                 max-width: 64vw;
             }
+            /* zwei Spalten Baupläne brauchen 45 em (Name · Herkunft · Griff je Zeile) — wo 64vw sie nicht tragen, eine
+               (w12-menue: an 800 px schnitt die Liste 271 Texte quer) */
+            .drawer[data-drawer="werkstatt"] {
+                container: werkstatt / inline-size;
+            }
+            @container werkstatt (max-width: 70em) {
+                #workshop-side-palette #workshop-list {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
             #workshop-side-palette-right {
-                flex: 0 0 200px;
+                flex: 0 0 15.5em;
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
@@ -7546,7 +7643,7 @@
             #workshop-side-palette-right h4 {
                 margin: 4px 0 2px 0;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.6px;
                 text-transform: uppercase;
                 color: var(--brass-1);
@@ -7560,7 +7657,7 @@
             /* V8.02 Phase 3a — Shape-Palette mit HTML5-Drag (seitlich, eine Spalte) */
             #workshop-shape-palette {
                 display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(5.75em, 1fr));
                 gap: 3px;
             }
             .workshop-shape-card {
@@ -7579,7 +7676,7 @@
                     background 0.15s ease,
                     border-color 0.15s ease;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 color: var(--parch-ink);
                 text-align: center;
@@ -7648,10 +7745,16 @@
             /* V8.03 — Material- + Farb-Palette als seitliche Drag-Sources.
                V8.17 — 3 Spalten statt 2 wegen breiterer rechter Side-Palette
                (Schöpfer-Wunsch Punkt 19). Materialien rendern als 3×4 statt 2×6. */
-            #workshop-material-palette,
             #workshop-color-palette {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
+                gap: 3px;
+            }
+            /* die Material-Karten im Raster ihrer Schrift (w12-menue): 3 Spalten in 200 px schnitten bei 16 px 7 von 15 Namen
+               („KNOCH“, „SCHUPP“) — eine Karte trägt Glyphe und Namen (⌘ Knochen 7 em), die rechte Palette zwei Spalten */
+            #workshop-material-palette {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(7.5em, 1fr));
                 gap: 3px;
             }
             .workshop-material-card,
@@ -7666,7 +7769,7 @@
                 cursor: grab;
                 user-select: none;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
                 color: var(--parch-ink);
                 text-align: center;
@@ -7691,16 +7794,16 @@
                (vorher Farb-Kreis + Glyph rechts). Glyph trägt die Farbe
                direkt — visuelle Konsistenz mit Inventar-Slots. */
             .workshop-material-card .mat-glyph {
-                font-size: 15px;
+                font-size: var(--schrift-min);
                 line-height: 1;
-                min-width: 14px;
+                min-width: 1.25em;
                 text-align: center;
                 margin-right: 4px;
                 text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
             }
             /* V8.17 — Hint-Mini im Side-Palette (kompakt, leitend). */
             .workshop-hint-mini {
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 line-height: 1.35;
                 margin: 2px 0 4px 0;
                 color: var(--parch-ink-faded);
@@ -7739,7 +7842,7 @@
             }
             #workshop-connect-overlay .conn-title {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.5px;
                 color: var(--brass-1);
                 padding: 2px 4px;
@@ -7748,7 +7851,7 @@
             }
             #workshop-connect-overlay button {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 4px 8px;
                 background: rgba(60, 38, 16, 0.65);
                 color: var(--parch-bg, #ece1c5);
@@ -7773,7 +7876,7 @@
                zwei Gruppen kompakter Glyph-Kacheln statt der Text-Liste. */
             #workshop-connect-overlay .conn-group-label {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.8px;
                 text-transform: uppercase;
                 color: var(--ink-on-dark-soft, #b9a989);
@@ -7798,7 +7901,7 @@
                 color: var(--brass-1);
             }
             #workshop-connect-overlay .conn-tile .conn-name {
-                font-size: 8.5px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.3px;
             }
             #workshop-connect-overlay .conn-tile .conn-strength {
@@ -7845,7 +7948,7 @@
             }
             #workshop-connect-overlay .conn-tile.conn-loesen .conn-glyph {
                 color: #ff8888;
-                font-size: 13px;
+                font-size: var(--schrift-min);
             }
             /* W-G (V18.177) — Progressive Disclosure + Lehr-Satz */
             #workshop-connect-overlay .conn-more-toggle {
@@ -7856,7 +7959,7 @@
                 border: 1px dashed rgba(176, 106, 217, 0.4);
                 border-radius: 5px;
                 color: var(--ink-on-dark-soft, #c9b8e0);
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
             }
             #workshop-connect-overlay .conn-more-toggle:hover {
@@ -7875,7 +7978,7 @@
                 border-left: 3px solid #5fa7ff;
                 border-radius: 4px;
                 color: var(--ink-on-dark, #e8eef7);
-                font-size: 11.5px;
+                font-size: var(--schrift-min);
                 line-height: 1.35;
             }
             .workshop-part-row.selected {
@@ -7893,7 +7996,7 @@
             .workshop-tool-registered {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--brass-1);
                 padding: 4px 0;
             }
@@ -7906,7 +8009,7 @@
             .workshop-tool-opname,
             .workshop-tool-opclass {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 2px 4px;
                 background: rgba(255, 235, 190, 0.3);
                 border: 1px solid var(--brass-3);
@@ -7914,7 +8017,7 @@
             }
             .workshop-tool-register {
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 9px;
+                font-size: var(--schrift-min);
                 padding: 2px 6px;
                 background: var(--brass-2);
                 color: var(--parch-ink);
@@ -7940,7 +8043,7 @@
             .workshop-tags-empty {
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 padding: 4px 0;
             }
@@ -7950,7 +8053,7 @@
                 border-top: 1px solid rgba(40, 25, 10, 0.1);
                 font-family: "IM Fell English", Georgia, serif;
                 font-style: italic;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 line-height: 1.3;
             }
@@ -7960,7 +8063,7 @@
                 gap: 1px;
             }
             .workshop-field span {
-                font-size: 8px;
+                font-size: var(--schrift-min);
                 text-transform: uppercase;
                 letter-spacing: 0.6px;
                 color: var(--parch-ink-faded);
@@ -7968,7 +8071,7 @@
             }
             .workshop-field input[type="number"] {
                 font-family: "JetBrains Mono", monospace;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 padding: 1px 4px;
                 background: rgba(255, 235, 190, 0.25);
                 border: 1px solid var(--brass-3);
@@ -7987,7 +8090,7 @@
                 border-radius: 2px;
                 cursor: pointer;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 14px;
+                font-size: var(--schrift-min);
                 line-height: 1;
                 padding: 0;
             }
@@ -8010,7 +8113,7 @@
                 border: 1px solid var(--brass-2);
                 padding: 4px 10px;
                 font-family: "Cinzel", Georgia, serif;
-                font-size: 10px;
+                font-size: var(--schrift-min);
                 letter-spacing: 0.04em;
                 cursor: pointer;
                 border-radius: 2px;
@@ -8035,14 +8138,11 @@
                 width: 90%;
                 max-width: 720px;
                 max-height: 85vh;
-                background:
-                    radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
-                    linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
+                background: var(--pergament);
                 color: var(--parch-ink);
                 z-index: 100;
                 padding: 28px 32px;
-                font-size: 13px;
+                font-size: var(--schrift-min);
                 overflow-y: auto;
                 border-radius: 12px;
                 box-shadow:
@@ -8069,7 +8169,7 @@
             }
             #help-overlay h3 {
                 margin: 18px 0 6px 0;
-                font-size: 11px;
+                font-size: var(--schrift-min);
                 color: var(--parch-ink-soft);
                 text-transform: uppercase;
                 letter-spacing: 2px;
@@ -8086,7 +8186,7 @@
                 padding: 6px 12px;
                 margin-bottom: 3px;
                 font-family: "JetBrains Mono", monospace;
-                font-size: 12px;
+                font-size: var(--schrift-min);
                 cursor: pointer;
                 border-radius: 2px;
                 width: 100%;
@@ -8136,7 +8236,7 @@
                 background: rgba(5, 6, 10, 0.72);
                 color: #9fb0c8;
                 font:
-                    13px/1.4 "JetBrains Mono",
+                    var(--schrift-min)/1.4 "JetBrains Mono",
                     monospace;
                 pointer-events: none;
             }
@@ -8150,7 +8250,7 @@
                 border-radius: 6px;
                 background: rgba(5, 6, 10, 0.78);
                 font:
-                    12px/1.4 "JetBrains Mono",
+                    var(--schrift-min)/1.4 "JetBrains Mono",
                     monospace;
                 pointer-events: none;
             }
@@ -8391,7 +8491,7 @@
                             <select
                                 id="player-soul-select"
                                 data-t-aria-label="ui.spieler-seele-waehlen"
-                                data-t-title="ui.waehle-deinen-koerper-einen-neuen")."
+                                data-t-title="ui.waehle-deinen-koerper-einen-neuen"
                             ></select>
                         </div>
                         <div class="ich-self">
@@ -8790,13 +8890,18 @@
                         <div data-t="ui.eingebaut-zum-bearbeiten-klonen" id="workshop-readonly-banner" hidden></div>
                     </div>
                     <aside id="workshop-side-palette-right" data-t-aria-label="ui.material-werkzeug-farb-palette">
-                        <!-- V18.42 — MATERIALIEN · WERKZEUGE · WERK sind DREI gleichwertige Sektionen in
+                        <!-- V18.42 — MATERIALIEN · WERK · WERKZEUGE sind DREI gleichwertige Sektionen in
                              EINEM Fluss, auf EINER Ebene (Schöpfer „WERK muss auf derselben Ebene sein,
                              keine zwei Schichten"). Kein innerer Scroll, der WERK abtrennt — die ganze
                              Spalte fliesst; bei sehr vielen Werkzeugen trägt der Drawer-Scroll alles
-                             gemeinsam (eine Ebene). -->
+                             gemeinsam (eine Ebene). WERK steht VOR den Werkzeugen (w12-menue): mit 16 px trägt
+                             jede Station eine volle Zeile, und die Stationen des Genesis-Orts schoben FERTIGEN
+                             bei 1280×720 unter den Saum der Tafel (bauen.K1: der Werk-Akt in ≤ 3 Eingaben). -->
                         <h4 data-t="ui.materialien"></h4>
                         <div id="workshop-material-palette" role="group" data-t-aria-label="ui.material-palette"></div>
+                        <!-- Die WERK-Sektion (Mach-Akt): gleiche Ebene wie Material/Werkzeug — „womit ich mache".
+                             _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
+                        <div id="workshop-action-zone" data-t-aria-label="ui.mach-aktion"></div>
                         <h4>
                             <span data-t="ui.werkzeuge"></span><span
                                 class="help-dot dot-right"
@@ -8809,9 +8914,6 @@
                             >
                         </h4>
                         <div id="workshop-tool-palette" role="group" data-t-aria-label="ui.werkzeug-palette"></div>
-                        <!-- Die WERK-Sektion (Mach-Akt): dritte Sektion, gleiche Ebene wie Material/Werkzeug —
-                             „womit ich mache". _workshopAppendFertigenRow + Werk-Heading + Signatur füllen sie. -->
-                        <div id="workshop-action-zone" data-t-aria-label="ui.mach-aktion"></div>
                     </aside>
                 </div>
                 <!-- V18.37 — die Ausgabe-Tabelle auf GANZE Breite (Schöpfer): aus dem
@@ -9196,7 +9298,7 @@
                             style="
                                 margin-top: 6px;
                                 padding: 6px 12px;
-                                font: 600 12px ui-monospace, monospace;
+                                font: 600 var(--schrift-min) ui-monospace, monospace;
                                 color: #cfe6ff;
                                 background: rgba(20, 40, 60, 0.6);
                                 border: 1px solid rgba(120, 200, 255, 0.35);
@@ -9312,7 +9414,7 @@
                                 spellcheck="false"
                             />
                         </div>
-                        <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                        <div class="drawer-hint" style="font-size: var(--schrift-min); opacity: 0.75; margin-top: -6px">
                             <span data-t="ui.endpoint-kann-eine-basis-url"></span> <code data-t="ui.http-localhost-11434"></code> →
                             <code data-t="ui.api-chat"></code> <span data-t="ui.wird-angehaengt-oder-eine-vollstaendige"></span><code data-t="ui.https-ollama-com-api-chat"
                                 ></code
@@ -9331,7 +9433,7 @@
                             class="drawer-hint"
                             id="llm-proxy-hint"
                             hidden
-                            style="font-size: 11px; opacity: 0.75; margin-top: -6px"
+                            style="font-size: var(--schrift-min); opacity: 0.75; margin-top: -6px"
                         >
                             <span data-t="ui.aktiviere-wenn-cloud-setup-mit"></span>
                             <code data-t="ui.ollama-com"></code><span data-t="ui.request-laeuft-ueber"></span> <code data-t="ui.localhost-4312-api-proxy-llm"></code> <span data-t="ui.braucht-laufenden"></span> <code data-t="ui.npm-run-dev"></code><span data-t="ui.cors-freundliche-provider-die-ohne"></span> <strong data-t="ui.groq"></strong> (<code data-t="ui.https-api-groq-com-openai"></code>),
@@ -9353,7 +9455,7 @@
                                 <!-- gefüllt aus llmProviderDefs()[provider].models -->
                             </datalist>
                         </div>
-                        <div class="drawer-hint" style="font-size: 11px; opacity: 0.75; margin-top: -6px">
+                        <div class="drawer-hint" style="font-size: var(--schrift-min); opacity: 0.75; margin-top: -6px">
                             <span data-t="ui.trag-den-modell-namen-ein"></span> <code data-t="ui.ollama-list"></code>
                             <span data-t="ui.zeigt-deine-modelle-cloud-hoster"></span>
                         </div>
