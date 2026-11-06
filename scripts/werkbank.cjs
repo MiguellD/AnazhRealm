@@ -1513,6 +1513,12 @@ async function starte() {
                             const kix = namen.indexOf(n) + 1;
                             for (const o of os) {
                                 if (r._leibWurzel(o) !== wahlLeib) continue;
+                                // DAS BILD DER ECKE (`gesichtMasse` bild): ob die Kamera dieses Schusses ihr Teil zeichnet (seine Ebene).
+                                // Der Wurf-Zwilling (die Grobstufe auf SHADOW_TWIN_LAYER, `_gelenkStufe`) trägt dieselbe Klasse und
+                                // wirft nur; bis w14-gesicht-fern lagen seine 6 299 Ecken der Kopf-Haut als Haut-Proben in jedem
+                                // Bildpunkt von Lippe und Höhle (Kamera des Spiels, Radeon 341ad089: 198 von 198 Lippen-Proben in
+                                // zwei Zonen, gesicht 0,333 mit Lippe und Höhle ungemessen). Mitte und Haarlinie liest nur der Kopf im Bild.
+                                const bild = o.layers.test(cam.layers);
                                 const pa = o.geometry.attributes.position;
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
@@ -1529,7 +1535,7 @@ async function starte() {
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
                                     v.applyMatrix4(o.matrixWorld);
-                                    if (z !== "iris" && z !== "braue") {
+                                    if (bild && z !== "iris" && z !== "braue") {
                                         minY = Math.min(minY, v.y);
                                         maxY = Math.max(maxY, v.y);
                                         mitte.add(v);
@@ -1539,6 +1545,7 @@ async function starte() {
                                     roh.push({
                                         z,
                                         seite,
+                                        bild,
                                         k: kix,
                                         a: z === "iris" ? null : albedo(o, i),
                                         w: v.clone(),
@@ -1555,7 +1562,7 @@ async function starte() {
                         const median = {};
                         for (const sd of ["irisL", "irisR"]) {
                             const ds = roh
-                                .filter((p) => p.seite === sd)
+                                .filter((p) => p.bild && p.seite === sd)
                                 .map((p) => p.d)
                                 .sort(aufsteigend);
                             median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
@@ -1586,12 +1593,7 @@ async function starte() {
                             .map((p) => {
                                 const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
                                 return {
-                                    z: p.z,
-                                    x: p.x,
-                                    y: p.y,
-                                    k: p.k,
-                                    a: p.a,
-                                    seite: p.seite,
+                                    ...p,
                                     frei: p.z === "iris" && vorn ? frei(p) : undefined,
                                     vorn,
                                     kalotte: p.z !== "iris" && p.w.y > yHaar,
