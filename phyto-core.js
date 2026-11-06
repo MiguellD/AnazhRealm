@@ -2805,9 +2805,11 @@
         // jeder Dichte, das Dach deckte 0,16, die Mess-Wiese war ein Loch des Zufalls. Gemessen (flach, 3 600 Zellen, Stand-Bänder
         // < −0,1 · −0,1–0,15 · 0,15–0,4 · ≥ 0,4): 1 · 61 · 131 · 349 Stämme/ha; Mess-Wiese Kronen-Deckung 0,108 → 0,116 (≤ 0,12).
         // DIE WALDGRENZE (`forestWaldgrenze`): `waldgrenze` ist der Schnee-Anteil des Sommers, ab dem kein Baum mehr geboren wird —
-        // darunter die Kampfzone (die Geburt fällt glatt von 1 bei 0). Der Wald endet unter dem ewigen Schnee, nie in ihm: wo
-        // ein Viertel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines).
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.25 },
+        // darunter die Kampfzone (die Geburt fällt glatt von 1 bei 0). Der Wald endet unter dem Schnee, nie in ihm: wo ein
+        // Zehntel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines: die
+        // Baumgrenze liegt unter der Schneegrenze). Gemessen (Land ±4 km, 50 m): die Grenze wirkt auf 2,0 %, baumlos 1,2 % — die
+        // höchsten Gipfel; mit 0,25 stand am gipfel-blick noch eine Tanne in 28 m im Blick-Strahl zur Stadt.
+        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1 },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -2826,8 +2828,9 @@
     // Null-Grad-Linie des Sommer-Mittels, ihre Zungen in Mulden und auf Rücken), dieselbe Quelle, die die Boden-Farbe weißt; die
     // Geburt fällt glatt von 1 (kein Schnee) auf 0 bei `bestand.waldgrenze`. Unterhalb der Grenze (schnee 0) ist der Wald
     // byte-gleich. Bis hierher wuchs der geschlossene Bestand bis auf den höchsten Gipfel (gipfel-blick 172,2 m, Schnee 0,48:
-    // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald); die Geburt allein (1 − schnee) hob ihn
-    // auf 49 (Matérn sättigt: weniger Dach, mehr freie Darts).
+    // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald; jetzt 0 Bäume binnen 25 m, der
+    // Blick-Strahl zur Stadt frei bis 120 m); die Geburt allein (1 − schnee) hob ihn auf 49 (Matérn sättigt: weniger Dach,
+    // mehr freie Darts).
     function forestWaldgrenze(schnee) {
         if (!Number.isFinite(schnee))
             throw new Error("phyto-core forestWaldgrenze: der Schnee-Anteil fehlt (KERN-PFLICHT)");
