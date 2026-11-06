@@ -2548,7 +2548,10 @@ class AnazhRealm_studio_bruecke {
         // (localMatrix), sonst wäre der ferne Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).
         const leaf = this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz);
         if (!leaf) return false;
-        z._flat = { instanceable: true, reason: "foundry-impostor", foundry: true, lod: 2, leaves: [leaf] };
+        // der Wurf der Karte (B2c: sie wirft sich selbst) reist als ihr Zwilling (`_impostorWurfLeaf`, w14-lod-sprung)
+        const wurf = this._impostorWurfLeaf(leaf, preset);
+        const leaves = wurf ? [leaf, wurf] : [leaf];
+        z._flat = { instanceable: true, reason: "foundry-impostor", foundry: true, lod: 2, leaves };
         return z._flat;
     }
     // ═══ DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker) ═══
