@@ -321,7 +321,16 @@ class AnazhRealm_dirigent_takt {
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
                 // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (`bild`, die Phase
                 // des Takts oben).
-                if (bild) {
+                // DAS ERSTE BILD ZEICHNET IN SEINEM EIGENEN TAKT (w14-ankunft-weg, FUND 06.11. `bild-himmel.js:750`): der Takt
+                // des ersten Lade-Bilds trägt Himmel, Atmosphäre, die Umgebung (PMREM samt ihren Programmen) und das Leben — das
+                // Bild selbst (die Programme der Erst-Zeichnung) geht im nächsten Takt hinaus, sofort fällig (`ladeBild`). Bis
+                // hier trug EINE Aufgabe beides (Radeon 953–1460 ms, swiftshader kalt 1 773–2 398 ms, die längste vor dem Bild);
+                // die Umgebung steht vor dem ersten Zeichnen, damit kein Stoff ohne sie gebaut wird (`_ensureSkyEnvironment`).
+                if (bild && this._ladeTakt() && !this._gpuLeine.gerendert && !this._erstesBildVorbereitet) {
+                    this._erstesBildVorbereitet = true;
+                    this._gpuLeine.ladeBild = -Infinity;
+                    this._gpuLeine.versuch = false;
+                } else if (bild) {
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender();
@@ -525,7 +534,8 @@ class AnazhRealm_dirigent_takt {
               (fr.editFlug | 0) +
               fr.einhaengen.length +
               fr.nachEdit.length +
-              (fr.cursor < fr.totalVerts ? 1 : 0)
+              (fr.cursor < fr.totalVerts ? 1 : 0) +
+              (fr.ready && !this._fernRingGeteilt(fr) ? 1 : 0) // die Teilung der Schale 0 im Fern-Faden (`_fernRingTeilung`)
             : 0;
         // DER FLUG IST DER FADEN (heil-horizont): zählt der Ring mehr Bestellungen im Flug, als der Fern-Faden trägt, ist eine
         // verloren — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie, und der Horizont stünde nie mehr (CI 40594858957:
@@ -556,8 +566,9 @@ class AnazhRealm_dirigent_takt {
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
-        // sie fühlt — bis dahin stößt kein Leib an ihnen
-        o.huellen = this._huellenNach ? this._huellenNach.size : 0;
+        // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
+        // keiner fragt, baut niemand, die Welt steht ohne sie
+        o.huellen = this._huellenOffen();
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
@@ -1844,7 +1855,7 @@ class AnazhRealm_dirigent_takt {
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
-        this._tickHuellenNach(); // nach dem ersten Bild: die Hüllen der Bäume, die vor ihm warteten (nah zuerst)
+        this._tickHuellenNach(); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
         this._tickWerkAlter(); // DAS ALTER DER WERKE (stoffe.K4): EIN Vergleich je Takt, Arbeit nur am Tag-Wechsel
