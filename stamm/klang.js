@@ -101,6 +101,9 @@ class AnazhRealm_klang {
                 o: { x: NaN, y: NaN, z: NaN },
                 ganz: 0,
                 ruht: false,
+                wx: NaN, // das Ohr des letzten Bilds und das Guthaben seines Wegs (der Takt nach Weg)
+                wz: NaN,
+                kredit: 0,
                 regung: { w: 0, e: 0, h: 0, g: 0, s: 0 },
                 bauten: null,
             },
@@ -551,14 +554,24 @@ class AnazhRealm_klang {
     // (der Hang, Stützstellen je 2,5 m, der erste Treffer endet ihn)? Je Bild höchstens `n` Gesetz-Höhen (UMWELT.ohr.probenJeFrame,
     // die Zahl des Rings, `_umweltRingProbe`); ein Strahl misst vom Ohr, an dem er begann, und schreibt sein Urteil, wenn er endet —
     // an einem Ort dieselben Bytes wie der Strahl in einem Bild. Ging der Schwenk an diesem Ohr ganz, und regt sich weder Welt noch
-    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). Kosten je Bild: n Gesetz-Höhen,
-    // nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen und das Netz im Umkreis, 0,17–0,19 ms auf dem
-    // Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage fragte das Dach selbst.
+    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). DER TAKT NACH WEG: wandert das
+    // Ohr, geht der Schwenk so viele Höhen, wie sein Weg verdient — ein ganzer Schwenk (raum.strahlen × weiteM / 2,5 m Höhen und das
+    // Dach) je halber raum.weiteM, das Guthaben `kredit` höchstens probenJeFrame; steht es, geht er n je Bild, bis er an ihm ganz
+    // ging. Kosten je Bild: höchstens n Gesetz-Höhen, nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen
+    // und das Netz im Umkreis, 0,17–0,19 ms auf dem Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage
+    // fragte das Dach selbst; bis w13-klang-fahrt ging er n Höhen in jedem Bild, in dem das Ohr wanderte (Radeon Fahrt 0,07 ms, z242).
     _raumStrahlen(um, px, fy, pz, n) {
         const S = um && um.raumStrahl;
         if (!S) return;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const ey = fy + R.augeM;
+        const weg = Math.hypot(px - S.wx, pz - S.wz);
+        [S.wx, S.wz] = [px, pz];
+        const wandert = weg > 0;
+        if (wandert) {
+            const jeM = (R.strahlen * (R.weiteM / 2.5) + 1) / (R.weiteM / 2);
+            S.kredit = Math.min(AnazhRealm._umweltGesetz().UMWELT.ohr.probenJeFrame, S.kredit + weg * jeM);
+        }
         const N = this._blockerNetz();
         const r = S.regung;
         const [w, e, h, g, s] = [
@@ -577,7 +590,8 @@ class AnazhRealm_klang {
         }
         S.ruht = false;
         const a = S.am;
-        for (let budget = n; budget > 0;) {
+        const frei = wandert ? Math.min(n, Math.floor(S.kredit)) : n;
+        for (let budget = frei; budget > 0;) {
             if (a.k < 0) {
                 // ein neuer Strahl (k 1 … strahlen; 0 das Dach) vom Ohr dieses Bilds
                 Object.assign(a, { k: S.idx, x: px, y: ey, z: pz, fy, d: 2.5, bau: 0, rein: true });
@@ -588,7 +602,10 @@ class AnazhRealm_klang {
                 if (a.k > 0) {
                     const wi = ((a.k - 1) / R.strahlen) * Math.PI * 2;
                     [a.ux, a.uz] = [Math.cos(wi), Math.sin(wi)];
-                    if (this._klangBauten(S, px, pz, R.weiteM)) budget = 0; // die Frage des Ankers trägt das Bild allein
+                    if (this._klangBauten(S, px, pz, R.weiteM)) {
+                        if (wandert) S.kredit -= budget;
+                        budget = 0; // die Frage des Ankers trägt das Bild allein
+                    }
                     a.bau = this._raumBauTrifft(S.bauten.liste, a, R.weiteM, N.gen) ? 1 : 0;
                 }
             }
@@ -596,12 +613,14 @@ class AnazhRealm_klang {
             let fels = 0;
             if (a.k === 0) {
                 budget--;
+                if (wandert) S.kredit--;
                 const dach = this._voxelSurfaceY(a.x, a.z);
                 S.hoehle = Number.isFinite(dach) && dach > a.fy + R.augeM + 2 ? 1 : 0;
                 fertig = true;
             } else if (a.d > R.weiteM) fertig = true;
             else if (budget > 0) {
                 budget--;
+                if (wandert) S.kredit--;
                 const hh = this.getTerrainHeightAt(a.x + a.ux * a.d, a.z + a.uz * a.d);
                 if (Number.isFinite(hh) && hh > a.y) [fertig, fels] = [true, 1];
                 else a.d += 2.5;
@@ -939,17 +958,19 @@ class AnazhRealm_klang {
     // Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-Tasten (W, rückwärts S),
     // den Flug und das Ohr (klang:FAHRT_OHR, `fahrtAmOhr`: Doppler aus der Geschwindigkeit des Wagens `_fahrWagenGeschw`
     // gegen die des Leibs am Ohr, Abstand; im Sattel sitzt das Ohr im Wagen). Absteigen, ein Wagen-Wechsel, die Ruhe oder die
-    // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt.
+    // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt, ihre Ziele nur über der Hörschwelle
+    // (klang:FAHRT.schwelle); ohne Sattel, Nachlauf und Stimme kein Rechnen.
     _fahrtKlangTick() {
         const s = this.state.symphony;
         const st = this.state;
         const pl = st.player;
+        const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
+        if (!sattel && !(this._fahrLos && this._fahrLos.size) && !(s.fahrt && s.fahrt.size)) return;
         const pm = st.playerMesh;
         const v = st.playerVel;
         const { kern } = AnazhRealm._umweltGesetz();
         const S = AnazhRealm._fahrSchrittGesetz().S;
         const T = st.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
-        const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
         const ohr = pm && {
             x: pm.position.x,
             y: pm.position.y,
