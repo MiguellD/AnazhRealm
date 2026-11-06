@@ -462,11 +462,17 @@ class AnazhRealm_daten {
     // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
     // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
     // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
-    // Gestalt des Büschels streckt sich waagrecht um s = (d/radius)^`streck`, höchstens `streckMax` (Mitten UND Halme, die Ähren
+    // Gestalt des Büschels streckt sich waagrecht um s = (Q/radius)³, höchstens `streckMax` (Mitten UND Halme, die Ähren
     // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
     // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
-    // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
+    // (voll/Q)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
+    // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
+    // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, an der Übergabe der flachen
+    // Wiese radius³/h; s = (Q/radius)³ ist ihr Verhältnis — auf flachem Boden ist Q der Abstand (das Gesetz bis hierher),
+    // am zugewandten Hang ist der Pixel kleiner: das Büschel streckt sich weniger und die Anzahl steigt (bis dahin lagen
+    // gestreckte Büschel als Platten am Hang, die Streckung hing nur am waagrechten Abstand), am abgewandten mehr.
     // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
     // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
     // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
@@ -507,8 +513,8 @@ class AnazhRealm_daten {
                     saum: 20,
                     voll: 40,
                     fall: 3.25,
-                    streck: 3,
                     streckMax: 14,
+                    auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,

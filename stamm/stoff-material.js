@@ -40,10 +40,12 @@ class AnazhRealm_stoff_material {
     }
 
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
-    // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über
-    // die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
-    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), Anteil a und Streckung s aus dem
-    // EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz rechnen es in Zahlen). Steht o unter a, steht das
+    // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
+    // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), ihr
+    // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
+    // Auges über dem eigenen Boden), o ihre Ordnung (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die
+    // oberen 24 Bit), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
+    // rechnen es in Zahlen). Steht o unter a, steht das
     // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: die ganze Gestalt des
     // Büschels waagrecht um s — die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und der Halm um sie (Fuß UND
@@ -59,9 +61,15 @@ class AnazhRealm_stoff_material {
         if (!this._halmFerneKnoten) {
             const NW = AnazhRealm.NAH_WIESE;
             const F = NW.fern;
-            this._halmFerneAuge = T.uniform(new THREE.Vector3());
-            const ank = this._weltNaht(T).anker;
-            const d = ank.xz.sub(this._halmFerneAuge.xz).length();
+            // das Auge der Wiese (`_wieseAuge`): xyz die Lage, w die Höhe über dem eigenen Boden
+            this._halmFerneAuge = T.uniform(new THREE.Vector4());
+            const naht = this._weltNaht(T);
+            const ank = naht.anker;
+            const auge = this._halmFerneAuge;
+            const d = ank.xz.sub(auge.xz).length();
+            // die Ebene des Hangs: die waagrechten Achsen der Instanz liegen in ihr (`_nahWieseKachelDaten`, y += gx·x + gz·z)
+            const n = T.cross(naht.spalte(2), naht.spalte(0));
+            const v0 = ank.sub(auge.xyz);
             const q = (v) => T.floor(v.mul(256).add(0.5)).add(8388608).toUint();
             const pcg = (u) => {
                 const s = u.mul(747796405).add(2891336453);
@@ -73,7 +81,7 @@ class AnazhRealm_stoff_material {
                 .toFloat()
                 .mul(1 / 16777216);
             const A = AnazhRealm._windTsl(T);
-            const G = AnazhRealm._wieseFern(A, d);
+            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w));
             const anteil = G.anteil;
             const v = anteil
                 .mul(1 + F.rand)
