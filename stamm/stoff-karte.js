@@ -361,15 +361,13 @@ class AnazhRealm_stoff_karte {
     // und Sichthöhe (`sicht`: die Höhe der Höhen-Stufe, × Instanz-Skala gestempelt — dieselbe Zahl wie der aH0-Stempel
     // der L1) reisen als Instanz-Werte über `_lodSlotStamp`, die Gruppe ist die EINE Atlas-Gruppe. Ohne Sichthöhe keine
     // Karte: ihre Maske hätte kein wahres Stufen-Urteil.
-    // DER WURF DER KARTE (w14-lod-sprung): sie wirft, wie ihre Zeile im Studio-Budget es sagt (B2c `schatten` der Stufe 2: die
-    // Karte wirft sich selbst) — bis hier warf sie nie, und am Wechsel L1 → Karte fiel der Schatten jedes Baums vom Boden
-    // (lod.K4, Radeon am Dorf: −44 462 Luma über 7 474 px, ohne Kaskaden-Schatten −5 209).
+    // DER WURF DER KARTE (w14-lod-sprung) reist als ihr ZWILLING (`_impostorWurfLeaf`), nie im Leaf des Bilds: die EINE
+    // Atlas-Gruppe bleibt eine Gruppe der Instanz-Wahl des Hauptbilds (W7), der Zwilling wählt je Kaskade.
     _impostorLeaf(z, localMatrix, sicht) {
         const at = this._impostorAtlas();
         if (!at || !z || !z.frame || !(sicht > 0)) return null;
         const mat = this._impostorAtlasMaterial();
         if (!mat) return null;
-        const wirft = this._foundryBudgetZeile(z.preset, 2).schatten === 2;
         return {
             geom: this._impostorQuad(at),
             mat,
@@ -379,8 +377,24 @@ class AnazhRealm_stoff_karte {
             zelle: z.idx,
             rahmen: [z.frame.halfW, z.frame.halfH * 2],
             sicht,
-            castShadow: wirft,
+            castShadow: false,
         };
+    }
+
+    // DER ZWILLING DER KARTE (w14-lod-sprung): sie wirft, wie ihre Zeile im Studio-Budget es sagt (B2c `schatten` der Stufe 2:
+    // die Karte wirft sich selbst), als Zwilling wie der Wurf jeder Stufe — dasselbe Quad, derselbe Stoff (im Schattenpass
+    // steht er zum Licht, seine Maske misst vom Auge der Stufen), nur auf der Wurf-Ebene, in seiner EIGENEN Atlas-Gruppe
+    // (`IMPOSTOR_ATLAS_GRUPPE` + "#S") mit der Wahl je Kaskade. Bis hier warf die Karte nie: am Wechsel L1 → Karte fiel der
+    // Schatten jedes Baums vom Boden (lod.K4, Radeon am Dorf −44 462 Luma über 7 474 px, ohne Kaskaden-Schatten −5 209).
+    // null = die Art wirft ihre Karte nicht.
+    _impostorWurfLeaf(leaf, preset) {
+        if (!leaf || this._foundryBudgetZeile(preset, 2).schatten !== 2) return null;
+        return Object.assign({}, leaf, {
+            leafKey: leaf.leafKey + "#S",
+            atlasGruppe: leaf.atlasGruppe + "#S",
+            castShadow: true,
+            shadowTwin: true,
+        });
     }
 
     // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · Atlas-Bytes · Haupt-Faden-ms je Bake. Reist im

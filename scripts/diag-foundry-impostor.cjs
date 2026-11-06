@@ -741,8 +741,11 @@ hauptLauf(async () => {
     });
     if (A.gruppen) {
         const G = A.gruppen;
-        if (G.karten.length !== 1)
-            errs.push(`A: ${G.karten.length} Karten-Gruppen statt EINER (${G.karten.slice(0, 4).join(" · ")})`);
+        // das Bild in EINER Gruppe, ihr Wurf (B2c: die Karte wirft sich selbst, w14-lod-sprung) als Zwilling in EINER ("#S")
+        const bild = G.karten.filter((k) => !k.endsWith("#S")),
+            wurf = G.karten.filter((k) => k.endsWith("#S"));
+        if (bild.length !== 1 || String(wurf) !== "impostor#fimp:atlas#S")
+            errs.push(`A: ${bild.length} Karten-Gruppen und ${wurf.length} Wurf-Gruppen statt je EINER (${G.karten.slice(0, 4).join(" · ")})`);
         if (!G.slotGruppen.every((k) => k === "impostor#fimp:atlas"))
             errs.push(`A: die Probe-Slots liegen nicht in der Atlas-Gruppe (${G.slotGruppen.join(" · ")})`);
         if (!G.instanziert) errs.push("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");

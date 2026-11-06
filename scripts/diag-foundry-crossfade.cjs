@@ -836,7 +836,7 @@ async function runPartB() {
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
                                     karte: true,
-                                    wirft: g.mesh.castShadow === true,
+                                    zwilling,
                                     keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
@@ -875,9 +875,10 @@ async function runPartB() {
                     const zw = teile.filter((t) => t.zwilling);
                     const d3 = bild.filter((t) => !t.karte);
                     if (zw.length) zwBekannt = true;
-                    // die Karte wirft sich selbst: ihr Wurf IST ihre gezeichnete Deckung (dieselbe Maske, vom Auge) — beide Seiten
-                    const kw = bild.filter((t) => t.karte && t.wirft);
-                    const S = { wurf: deckung(zw.concat(kw)), gestalt: deckung(d3.concat(kw)) };
+                    // die Karte wirft sich selbst (ihr Zwilling, w14-lod-sprung): wirft sie, steht ihre gezeichnete Deckung auf der
+                    // Seite der Gestalt, ihr Zwilling auf der des Wurfs
+                    const kb = zw.some((t) => t.karte) ? bild.filter((t) => t.karte) : [];
+                    const S = { wurf: deckung(zw), gestalt: deckung(d3.concat(kb)) };
                     const werte = Object.values(D);
                     return {
                         D,
