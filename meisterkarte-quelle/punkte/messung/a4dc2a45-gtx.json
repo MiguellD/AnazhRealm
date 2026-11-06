@@ -1,7 +1,7 @@
 {
  "sha": "a4dc2a45b65dfdea429ff2b03c3d67bcf2f86911",
  "geraet": "gtx",
- "zeit": "2026-11-06T09:22:04.333Z",
+ "zeit": "2026-11-06T09:27:55.601Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "material.K2#1": {
@@ -13,6 +13,34 @@
    "s": 67.8,
    "zeit": "2026-11-06T09:18:45.938Z",
    "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 15.6 m: 43 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (88 px) · 47.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (265 px) · 52.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (288 px)",
+   "exit": 0,
+   "minuten": 1.27,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.8° -522.1/-848.3, Flucht bei 15.6 m: 43 m 5/5 fliehen, 3 sichtbar, 1 Fleck(en) (88 px) · 47.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (265 px) · 52.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (288 px)",
+   "gpu": "nvidia/pascal",
+   "s": 76.4,
+   "zeit": "2026-11-06T09:25:03.343Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 107.4 · third/gehen 77.3 · ego/springen 34.8 · third/springen 31.7 · ego/einsteigen 71.2 · third/einsteigen 29.2 · ego/hieb 58.2 · third/hieb 45.9 · Bild 16.85 ms",
+   "exit": 0,
+   "minuten": 1.44,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 107.4 · third/gehen 77.3 · ego/springen 34.8 · third/springen 31.7 · ego/einsteigen 71.2 · third/einsteigen 29.2 · ego/hieb 58.2 · third/hieb 45.9 · Bild 16.85 ms",
+   "gpu": "nvidia/pascal",
+   "s": 86.4,
+   "zeit": "2026-11-06T09:26:28.228Z",
+   "abdruck": "69bb8ec1c19c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -63,86 +91,85 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.1 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 39.3,
+   "zeit": "2026-11-06T09:27:55.601Z",
+   "abdruck": "462e72b0bcca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T09:18:05.429Z",
+  "start": "2026-11-06T09:24:26.522Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 8.4,
+  "warten": 0.01,
+  "bootS": 7.3,
   "grundstellungS": [
-   5.9,
-   3.9
+   0.1,
+   0.1
   ],
   "proben": 3,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 30.7,
-    "takte": 675,
+    "vor": "tiere.K1#2",
+    "s": 28.3,
+    "takte": 706,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 20.3,
-    "takte": 702,
-    "chunks": 81,
-    "nach": "der Tür"
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 8.3,
+    "takte": 602,
+    "chunks": 90,
+    "nach": "der Grundstellung"
    },
    {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 16.1,
-    "takte": 862,
-    "chunks": 81,
-    "nach": "der Tür"
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 0.9,
+    "takte": 72,
+    "chunks": 90,
+    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "material.K3#2",
-    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 5.9
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K2#1",
-    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
-   },
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +6 (−0)"
-   }
-  ],
+  "wegeTueren": [],
   "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 3,
+   "bilder": 4428,
+   "frameP95": 33.36,
+   "taktP95": 26.77,
+   "vramMax": 135.9,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "material.K2#1",
-     "m": 1083,
+     "probe": "tiere.K1#2",
+     "m": 327,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 255,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 226,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 283.2,
-  "minuten": 4.8
+  "fahrtS": 247.5,
+  "minuten": 4.22
  }
 }
