@@ -229,7 +229,6 @@ class AnazhRealm_dienst {
             llm.inFlight = false;
             this._llmHintergrund = null;
             frei();
-            if (!vorwaermen) this._kiVorwaermenPlanen();
         }
     }
 
@@ -237,7 +236,7 @@ class AnazhRealm_dienst {
     // ein Ruf liest den zuletzt gewärmten Text des EINEN Vertrags (`llmBuildSystemPrompt`), nie ihn frisch. Das Selbst-Wissen
     // darin (Tagebuch, Stimmung, Zähler) wechselt mit jeder Tat, und ein lokales Modell rechnet ab dem ersten geänderten Token
     // neu: bis ki.K5 zahlte JEDER Satz das (qwen3:4b an 4 CPU-Kernen 3–10 s Prefill vor der ersten Wirkung). Erneuert wird nach
-    // `KI_RUHE_S` ohne Ruf und ohne Eintrag ins Tagebuch (`_kiVorwaermen`); Welt, Sprache und Namen tragen den Schlüssel — ein
+    // `KI_RUHE_S` ohne Satz und ohne Eintrag ins Tagebuch (`_kiVorwaermen`); Welt, Sprache und Namen tragen den Schlüssel — ein
     // Wechsel baut sofort neu. Wer schneller spricht als die Ruhe, spricht mit dem Stand des letzten Wärmens.
     _kiVertragGewaermt() {
         const st = this.state;
@@ -252,7 +251,7 @@ class AnazhRealm_dienst {
         return this._kiWarm.text;
     }
 
-    // Die Ruhe der KI (`KI_RUHE_S` nach dem letzten Ruf oder Tagebuch-Eintrag): weicht der frische Vertrag vom gewärmten ab, gilt
+    // Die Ruhe der KI (`KI_RUHE_S` nach dem letzten Satz oder Tagebuch-Eintrag): weicht der frische Vertrag vom gewärmten ab, gilt
     // ab jetzt der frische, und Hintergrund-Rufe (ein Token, nur ollama: sein Prompt-Cache) rechnen ihn IN HAPPEN vor — ab der
     // ersten Abweichung je `KI_HAPPEN_ZEICHEN` bis zum Zeilenende, zuletzt samt Kontext. Ein Prefill läuft bis zum Ende seines
     // Batches, auch wenn der Ruf weicht: in einem Stück (450 Token, ~10 s an 4 CPU-Kernen) wartete ein Satz, der dazwischen kam,
@@ -264,8 +263,8 @@ class AnazhRealm_dienst {
     }
     async _kiVorwaermen() {
         const llm = this.state.llm;
-        if (!llm || !llm.enabled || llm.provider !== "ollama" || !this._kiWarm) return;
-        if (llm.inFlight) return this._kiVorwaermenPlanen();
+        // die Tür ist besetzt: wer sie hält, ist ein Satz (er plant danach) oder ein Kommentar des Tagebuchs (sein Eintrag plante)
+        if (!llm || !llm.enabled || llm.provider !== "ollama" || !this._kiWarm || llm.inFlight) return;
         const [alt, text] = [this._kiWarm.text, this.llmBuildSystemPrompt()];
         if (text === alt) return;
         this._kiWarm = { schluessel: this._kiWarm.schluessel, text };

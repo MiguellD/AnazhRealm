@@ -2183,7 +2183,7 @@ class AnazhRealm_studio_bruecke {
             return i;
         };
         const regler = {};
-        const KP = AnazhRealm.KIND_POLICY || {};
+        const KP = AnazhRealm.KIND_POLICY;
         const arten = ohneArt ? Object.keys(GRUPPE).filter((a) => KP[a] && KP[a].werk === "praegung") : genannt;
         for (const art of arten)
             for (const d of Array.isArray(PBK[art]) ? PBK[art] : []) {

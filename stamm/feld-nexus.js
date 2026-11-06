@@ -1027,9 +1027,9 @@ class AnazhRealm_feld_nexus {
         // je Verb mit Ort die Tupel jeder Länge (die hinteren Argumente sind frei), die übrigen Verben über den Kopf mit Rest
         const mitOrt = [];
         const verben = [];
-        for (const [n, fn] of Object.entries(this.dslEffects)) {
+        for (const n of Object.keys(this.dslEffects)) {
             if (n === "spawn_studio") continue;
-            const ps = this._dslForm(fn).split(", ");
+            const ps = this._dslFormen[n].split(", ");
             if (!ps.some(istOrt)) verben.push(n);
             else
                 for (let k = 0; k <= ps.length; k++)
@@ -1067,21 +1067,20 @@ class AnazhRealm_feld_nexus {
 
     _dslVokabular() {
         const W = AnazhRealm.DSL_WERTE;
+        // je Eintrag [Name, Form]: die Verben in der Form ihrer Tafel (`_dslFormen`), die Orte und Bedingungen in ihrer Signatur
         const liste = (eintraege) =>
             eintraege
-                .map(
-                    ([n, fn]) =>
-                        `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2].length ? "Band: am Ende" : W[n][2]()}]` : ""}`
-                )
+                .map(([n, f]) => `${n}(${f})${W[n] ? ` [${W[n][2].length ? "Band: am Ende" : W[n][2]()}]` : ""}`)
                 .join(", ");
-        const ops = Object.entries(this.dslEffects);
+        const signatur = (tafel) => Object.entries(tafel).map(([n, fn]) => [n, this._dslForm(fn)]);
+        const ops = Object.keys(this.dslEffects).map((n) => [n, this._dslFormen[n]]);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
             'Die DSL kennt GENAU diese Verben: name(a, b) heißt ["name", a, b], „…" beliebig viele Programme; positionNode/posNode ist ein Ort, condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.',
             `  Welt-Akte: ${liste(welt)}.`,
             `  Weitere Ops: ${liste(ops.filter((o) => !welt.includes(o)))}.`,
-            `  Orte: ${liste(Object.entries(this.dslPositions))}.`,
-            `  Bedingungen: ${liste(Object.entries(this.dslConditions))}.`,
+            `  Orte: ${liste(signatur(this.dslPositions))}.`,
+            `  Bedingungen: ${liste(signatur(this.dslConditions))}.`,
         ];
     }
 
@@ -1468,6 +1467,8 @@ class AnazhRealm_feld_nexus {
         // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
         const tat = (program) => this.dslRun(program, { source: "llm:grok", grund: userText });
         const reply = await this.llmCall(userText, null, { tat });
+        // nach dem Satz: die Ruhe der KI beginnt (`_kiVorwaermenPlanen`) — der Satz, nie die Tür (`llmCall`), plant das Wärmen
+        this._kiVorwaermenPlanen();
         if (reply.error) {
             appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
