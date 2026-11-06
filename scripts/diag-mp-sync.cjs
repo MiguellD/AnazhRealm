@@ -145,8 +145,8 @@ function kenntMitGestalt(id, rechnet) {
     return !__marke;
 }
 // Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
-// jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang)
-// und das Leben je Zelle, die Stufe 2 noch verlangt
+// jedem Edit und (f) der Zug der Welt-Uhr — als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang) mit seinem
+// Schreiber (`wer`; ein Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern, heißt „Wunsch still") und das Leben je Zelle
 function abdruck(bauten) {
     const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
@@ -164,10 +164,11 @@ function abdruck(bauten) {
             e.studioOv || null,
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
-    const wt = st.weatherTransition;
+    const [wt, p] = [st.weatherTransition, st.playerMesh.position];
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
+    const still = st.wetterSchreiber === "front" && st.weather !== r._wetterAmOrt(p.x, p.z, r._wetterZug * r.constructor.WETTER_ZUG_SEK);
     const leben = [...(st.lifeField || [])].map(([k, e]) => JSON.stringify([k, e.a, e.t]));
-    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, leben };
+    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + (still ? "Wunsch still" : st.wetterSchreiber), leben };
 }
 // (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
@@ -816,10 +817,8 @@ hauptLauf(async () => {
         await folgt(sturm);
         // (f) was Stufe 2 noch verlangt, gemessen und OFFEN, bis es gleich ist: Wetter (Wort, Übergang) und Leben je Zelle
         const weich = (wann, A, B) =>
-            check(
-                `(f) ${wann}: Teil-Simulationen gleich`,
-                false,
-                `Wetter ${A.wetter === B.wetter ? "gleich" : "VERSCHIEDEN"} · Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/` +
+            check(`(f) ${wann}: Teil-Simulationen gleich`, false,
+                `Wetter ${A.wetter === B.wetter ? "gleich" : `VERSCHIEDEN (A ${A.wer} · B ${B.wer})`} · Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/` +
                     `${A.leben.length} gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`,
                 true
             );
