@@ -405,8 +405,9 @@ class AnazhRealm_vegetation_wiese {
     // DAS GESETZ DER FERNE (rein, `NAH_WIESE.fern`, EINE Rechnung über einer Algebra A — die Zahlen für Takt und Sicht-Satz,
     // TSL für den Stoff `_halmFerne`; bis w4-gras-l2 standen hier und im Stoff zwei Abschriften desselben Terms): je
     // Büschel aus seinem FUSSABDRUCK-ABSTAND Q (`_wieseFuss`: die Bodenfläche je Pixel an seinem Fuß als der Abstand, in dem
-    // die flache Wiese denselben Pixel trägt) die STRECKUNG s = (Q/radius)³ in [1, streckMax] — die Gestalt des Büschels
-    // waagrecht um s, es trägt die Fläche von s² Zellen, s ist das Verhältnis der Bodenfläche je Pixel zu der an der Übergabe —
+    // die flache Wiese denselben Pixel trägt) die STRECKUNG s = max(Q/radius, (Q/fuss)³) in [1, streckMax] — die Gestalt des
+    // Büschels waagrecht um s, es trägt die Fläche von s² Zellen; ab der Übergabe wächst der Halm mit der Breite des Pixels,
+    // ab ~16,6 m mit der Bodenfläche je Pixel (das Verhältnis zu der bei `fuss`: die Büschel je Pixel bleiben) —
     // und der ANTEIL der stehenden Büschel a = min(1, Ziel/s) × (1 − Saum vor `bis`), das Ziel der Deckung je Fläche 1 bis
     // `voll` (Anzahl × s = 1: an der Übergabe die Wiese der Nähe), dahinter (voll/Q)^fall; der Saum am waagrechten Abstand d
     // (der Ring der Chunks). So hält die Ferne die Deckung am Schirm, die Büschel je Pixel bleiben (Lehre 25). Bis
@@ -414,7 +415,9 @@ class AnazhRealm_vegetation_wiese {
     static _wieseFern(A, d, Q) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
-        const s = A.min(A.k(F.streckMax), A.max(A.k(1), A.pow(A.max(A.mul(Q, A.k(1 / NW.radius)), A.k(1e-3)), A.k(3))));
+        const breite = A.mul(Q, A.k(1 / NW.radius)); // die Breite aus dem Pixel (ab der Übergabe ∝ Q)
+        const flaeche = A.pow(A.max(A.mul(Q, A.k(1 / F.fuss)), A.k(1e-3)), A.k(3)); // die Fläche je Pixel (∝ Q³)
+        const s = A.min(A.k(F.streckMax), A.max(A.k(1), A.max(breite, flaeche)));
         const ziel = A.min(A.k(1), A.pow(A.max(A.mul(Q, A.k(1 / F.voll)), A.k(1e-3)), A.k(-F.fall)));
         const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(F.saum - F.bis)), A.k(1 / F.saum))));
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
@@ -424,8 +427,8 @@ class AnazhRealm_vegetation_wiese {
     // DER FUSSABDRUCK-ABSTAND (rein, über der Algebra A — dieselbe Rechnung in Takt, Sicht-Satz und Stoff): (dx, dy, dz) der
     // Fuß des Büschels vom Auge aus, (nx, ny, nz) die Normale der Ebene seines Hangs (ungenormt: (−gx, 1, −gz)), h die Höhe
     // des Auges über dem eigenen Boden. Die Bodenfläche je Pixel am Fuß ist dist²/sin φ = dist³/S (S = |n̂ · (Auge − Fuß)|,
-    // die Höhe des Auges über der Ebene), an der Übergabe der flachen Wiese radius³/h — Q = dist · (h/S)^⅓ ist der Abstand, in
-    // dem die flache Wiese dieselbe Fläche je Pixel trägt (flach: S = h, Q = dist).
+    // die Höhe des Auges über der Ebene), bei `fuss` der flachen Wiese fuss³/h — Q = dist · (h/S)^⅓ ist der Abstand, in dem
+    // die flache Wiese dieselbe Fläche je Pixel trägt (flach: S = h, Q = dist).
     static _wieseFuss(A, dx, dy, dz, nx, ny, nz, h) {
         const q = (a) => A.mul(a, a);
         const dist = A.sqrt(A.add(A.add(q(dx), q(dy)), q(dz)));

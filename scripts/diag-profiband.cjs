@@ -258,8 +258,8 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // P — DIE DECKUNG DER FERNE (w10-wiese, vegetation.K1) an der echten Klasse: das Gesetz der Ferne der Nah-Wiese (`_wieseFern`,
 // in Zahlen die Tafel `WIESE_FERN_TAFEL` über dem Fußabdruck-Abstand Q — flach der Abstand —, die Sicht-Satz und Takt lesen;
 // der Stoff `_halmFerne` rechnet denselben Term). DIE DECKUNG: Anteil × Streckung (ein Büschel trägt s² Zellen) hält 1 — die Wiese der
-// Nähe — über die festen Ringe der Meisterkarte bis 40 m; DER SCHIRM: die Büschel je Pixel (∝ Anteil × d³: ein Meter Abstand
-// deckt am Schirm ∝ 1/d², ein Ring ∝ d) übersteigen jenseits der Übergabe nie das Doppelte der Übergabe. Bis w10-wiese
+// Nähe — über die festen Ringe der Meisterkarte bis 40 m; DER SCHIRM: die Büschel je Pixel (∝ Anteil × Q³) übersteigen jenseits
+// der Übergabe nie das Doppelte derer am Fußabdruck `fuss` (14 m: bis w14-wiese-saum die Übergabe — absolut dieselbe Wand). Bis w10-wiese
 // (voll 21, fall 1,5) fiel die Deckung ab 21 m (bei 40 m 0,38; gemessen 10–20 m LAI 1,87 · 20–40 m 1,07, Radeon 2674ff9a,
 // im Modell der Station — flache Wiese, Third 2,43 m, Nilson je Ring — 1,82 · 1,29, jetzt 1,82 · 1,73), und die Ferne
 // zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe (jetzt ≤ 1,67×).
@@ -267,7 +267,7 @@ function ferneWand(A) {
     const [R, F, T] = [A.NAH_WIESE.radius, A.NAH_WIESE.fern, A.WIESE_FERN_TAFEL];
     let [deckung, schirm] = [1, 0];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
-        [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / R) ** 3)];
+        [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
     const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}×`;
     return { errs: deckung < 0.99 || schirm > 2 ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2×)`] : [], deckung, schirm };
 }

@@ -469,10 +469,14 @@ class AnazhRealm_daten {
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
     // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
     // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
-    // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, an der Übergabe der flachen
-    // Wiese radius³/h; s = (Q/radius)³ ist ihr Verhältnis — auf flachem Boden ist Q der Abstand (das Gesetz bis hierher),
-    // am zugewandten Hang ist der Pixel kleiner: das Büschel streckt sich weniger und die Anzahl steigt (bis dahin lagen
-    // gestreckte Büschel als Platten am Hang, die Streckung hing nur am waagrechten Abstand), am abgewandten mehr.
+    // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, bei `fuss` der flachen
+    // Wiese fuss³/h; s ist das größere zweier Gesetze — die BREITE AUS DEM PIXEL (Q/radius: ab der Übergabe wächst der Halm
+    // mit dem Pixel, sein Schirm-Maß bleibt, Ghost of Tsushima) und die FLÄCHE JE PIXEL ((Q/fuss)³: die Büschel je Pixel
+    // bleiben, Lehre 25) —, auf flachem Boden ist Q der Abstand; am zugewandten Hang ist der Pixel kleiner: das Büschel
+    // streckt sich weniger und die Anzahl steigt (bis dahin lagen gestreckte Büschel als Platten am Hang), am abgewandten
+    // mehr. Bis w14-wiese-saum lag die Übergabe bei 14 m und streckte erst die Fläche: das L2 der Nähe stand bei 10–14 m
+    // ungestreckt und geklumpt (swiftshader, Mess-Wiese Third: 1 164 der 1 190 Boden-Pixel des Rings 10–20 m), jenseits der
+    // Bogen der gespreizten Ferne; jenseits ~16,6 m ist das Gesetz das alte (die Kosten dort gleich, diesseits weniger Büschel).
     // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
     // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
     // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
@@ -501,7 +505,7 @@ class AnazhRealm_daten {
                 pfadDuennt: 0.92,
                 stufe1: 5,
                 stufe1Rand: 0.5,
-                radius: 14,
+                radius: 10,
                 // die Narbe am Fuß des Halms (Λ, foundry-core `__halmNarbe`: 1,86 und 2,51 je Büschel-Art) — der sichtbare Grund liegt in
                 // der Lücke, er trägt die lichtere; sein Himmel ist `halmNarbe(Λ).himmel` (0,27), der Grund der Wiese liest ihn
                 fussNarbe: 1.86,
@@ -514,6 +518,7 @@ class AnazhRealm_daten {
                     voll: 40,
                     fall: 3.25,
                     streckMax: 14,
+                    fuss: 14,
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
