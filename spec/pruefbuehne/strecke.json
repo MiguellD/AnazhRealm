@@ -1,0 +1,33 @@
+{
+    "zweck": "DIE PRÜFSTRECKE DER GARAGE (w11-fahrzeug, 04.11.; Eintrag F: „die Rennstrecke mit Kurven und Sprüngen“): ein Erbgut des Gelände-Gesetzes — die Insel als Grund und der Term `bahn` (gelaende-core `bahnNormal`): Start-Ziel-Gerade mit Kuppe, vier Kurven verschiedener Radien (R 70 überhöht 10°, R 30 eben, R 70 eben — der Zwilling ohne Überhöhung —, R 45 überhöht 8°), auf der Gegengeraden der Sprung (Kicker 11° · Lücke · Tisch · Landung 8°, Tempo 23,5 m/s). Die Probefahrt der Garage fährt auf ihr, die Prüffahrt (vehicle-core `pruefFahrt`) fährt sie mit dem Fahrer der Linie, die Labor-Linse G11 richtet ihre Zahlen gegen `soll` (Runde und Flug nach F).",
+    "erbgut": {
+        "terme": [
+            { "art": "insel", "x": 0, "z": -135, "r": 3000, "plateau": 0, "kuppel": 0, "schelf": 200, "grund": -20 },
+            {
+                "art": "bahn",
+                "x": 0,
+                "z": 0,
+                "richtung": 0,
+                "breite": 12,
+                "boeschung": 30,
+                "hoehe": 0,
+                "uebergang": 30,
+                "stuecke": [
+                    { "gerade": 440 },
+                    { "bogen": 70, "winkel": 90, "ueberhoehung": 10 },
+                    { "gerade": 250 },
+                    { "bogen": 30, "winkel": 90 },
+                    { "gerade": 455 },
+                    { "bogen": 70, "winkel": 90 },
+                    { "gerade": 235 },
+                    { "bogen": 45, "winkel": 90, "ueberhoehung": 8 }
+                ],
+                "profil": [
+                    { "art": "kuppe", "s": 200, "laenge": 80, "hoehe": 1.2 },
+                    { "art": "sprung", "s": 650, "anlauf": 9, "winkel": 11, "luecke": 7, "tisch": 18, "landeWinkel": 8, "tempo": 23.5 }
+                ]
+            }
+        ]
+    },
+    "soll": { "gattung": "gt", "rundeS": [55, 65], "flugM": [18, 22], "landestossMS": 5, "kontakt": 0.95, "ablageM": 4, "qG": [0.4, 1.3], "anschlag": 10 }
+}

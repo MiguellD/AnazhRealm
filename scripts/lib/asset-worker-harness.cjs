@@ -454,6 +454,16 @@ function kernKontext(mit = { THREE: absorber() }) {
     ctx.globalThis = ctx;
     return ctx;
 }
+// DER KERN AUS SEINEM TEXT (die Kern-Mutante: der echte Kern mit einem eingeschmuggelten Täter; ein anderer Stand): die Texte der
+// Reihe nach im Kontext eines Kerns, dazu die Gattungen des Gates (seine Typed Arrays, Map … — der Bau gehört dem THREE des
+// Gates) und `window`; zurück sein Namensraum `ns` (ohne: der Kontext). Bis w12-fahrzeug-decke lud ihn jede Mutanten-Linse
+// selbst (werk-im-wasser, garage-labor, die Gelände-Linse von worker-dichte).
+function kernAusText(texte, ns) {
+    const ctx = kernKontext({ console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN, THREE: global.THREE, Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array }); // prettier-ignore
+    ctx.window = ctx;
+    for (const t of [].concat(texte)) require("vm").runInContext(t, ctx);
+    return ns ? ctx[ns] : ctx;
+}
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
     const posts = [];
@@ -508,6 +518,7 @@ module.exports = {
     DATEN_KANAELE,
     kanalImVm,
     kernKontext,
+    kernAusText,
     bauAbdruck,
     bauBild,
     BAU_BILD_QUELLE,
