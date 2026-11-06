@@ -289,7 +289,8 @@ class AnazhRealm_koerper_frei {
 
     // DER GRUND DES KÖRPERS (gemerkt, `_freiUmwelt`): die Ebene g = a + b·(x − x₀) + c·(z − z₀) durch die Höhe des Gesetzes unter
     // seiner Mitte und vier Punkten seines Umrisses (± seiner Hülle, längs x und z), ab seiner Höhe; ihr Stoff und die Reibung
-    // beider (μ des Bodens; die des Körpers aus seiner Zeile). Neu, sobald er FREI.umweltM weiter steht oder die Welt edits.
+    // beider (μ des Bodens; die des Körpers aus seiner Zeile). Neu, sobald er FREI.umweltM weiter oder höher steht oder die Welt
+    // edits — wer fällt, behält ihn: der erste Grund unter seiner alten Höhe ist der erste unter jeder tieferen über ihm.
     _freiGrund(K) {
         const F = AnazhRealm.FREI;
         const p = K.p;
@@ -300,7 +301,7 @@ class AnazhRealm_koerper_frei {
             gr.marke === marke &&
             Math.abs(p[0] - gr.x) <= F.umweltM &&
             Math.abs(p[2] - gr.z) <= F.umweltM &&
-            Math.abs(p[1] - gr.y) <= F.umweltM
+            p[1] - gr.y <= F.umweltM
         )
             return gr;
         const r = Math.max(0.1, K.rad * 0.7);
@@ -766,60 +767,84 @@ class AnazhRealm_koerper_frei {
         if (n - n0 <= 4) return n;
         const G = this._freiG;
         const CS = AnazhRealm.FREI_KONTAKT;
-        const r = (k, d) => G[k * CS + 65 + d]; // der Anker r_a des Kontakts k
-        // die Wahl je Index (nichts wandert, bis die vier feststehen)
+        // die Wahl je Index (nichts wandert, bis die vier feststehen); der Anker r_a des Kontakts k liegt ab k·CS + 65
         let b = n0;
         for (let k = n0 + 1; k < n; k++) if (G[k * CS + 75] > G[b * CS + 75]) b = k;
         const i0 = b;
-        const [p0, p1, p2] = [r(i0, 0), r(i0, 1), r(i0, 2)];
+        const p0 = G[i0 * CS + 65];
+        const p1 = G[i0 * CS + 66];
+        const p2 = G[i0 * CS + 67];
         let best = -1;
         for (let k = n0; k < n; k++) {
-            const d = (r(k, 0) - p0) ** 2 + (r(k, 1) - p1) ** 2 + (r(k, 2) - p2) ** 2;
-            if (k !== i0 && d > best) [best, b] = [d, k];
+            const c = k * CS + 65;
+            const d = (G[c] - p0) ** 2 + (G[c + 1] - p1) ** 2 + (G[c + 2] - p2) ** 2;
+            if (k !== i0 && d > best) {
+                best = d;
+                b = k;
+            }
         }
         const i1 = b;
-        const u0 = r(i1, 0) - p0;
-        const u1 = r(i1, 1) - p1;
-        const u2 = r(i1, 2) - p2;
-        // die Normale des Dreiecks p, q, r (unnormiert): ihr Betrag ist die doppelte Fläche, ihr Vorzeichen längs N die Seite
-        const N = this._freiVierN || (this._freiVierN = new Float64Array(3));
-        const kreuz = (k) => {
-            const v0 = r(k, 0) - p0;
-            const v1 = r(k, 1) - p1;
-            const v2 = r(k, 2) - p2;
-            N[0] = u1 * v2 - u2 * v1;
-            N[1] = u2 * v0 - u0 * v2;
-            N[2] = u0 * v1 - u1 * v0;
-        };
+        const u0 = G[i1 * CS + 65] - p0;
+        const u1 = G[i1 * CS + 66] - p1;
+        const u2 = G[i1 * CS + 67] - p2;
+        // die Normale des Dreiecks p, q, r (unnormiert): ihr Betrag ist die doppelte Fläche, ihr Vorzeichen längs m die Seite
         best = -1;
+        let m0 = 0;
+        let m1 = 0;
+        let m2 = 0;
         for (let k = n0; k < n; k++) {
             if (k === i0 || k === i1) continue;
-            kreuz(k);
-            const a = N[0] * N[0] + N[1] * N[1] + N[2] * N[2];
-            if (a > best) [best, b] = [a, k];
+            const c = k * CS + 65;
+            const v0 = G[c] - p0;
+            const v1 = G[c + 1] - p1;
+            const v2 = G[c + 2] - p2;
+            const x = u1 * v2 - u2 * v1;
+            const y = u2 * v0 - u0 * v2;
+            const z = u0 * v1 - u1 * v0;
+            const a = x * x + y * y + z * z;
+            if (a > best) {
+                best = a;
+                b = k;
+                m0 = x;
+                m1 = y;
+                m2 = z;
+            }
         }
         const i2 = b;
-        kreuz(i2);
-        const [m0, m1, m2] = [N[0], N[1], N[2]];
         best = Infinity;
         for (let k = n0; k < n; k++) {
             if (k === i0 || k === i1 || k === i2) continue;
-            kreuz(k);
-            const a = N[0] * m0 + N[1] * m1 + N[2] * m2;
-            if (a < best) [best, b] = [a, k];
+            const c = k * CS + 65;
+            const v0 = G[c] - p0;
+            const v1 = G[c + 1] - p1;
+            const v2 = G[c + 2] - p2;
+            const a = (u1 * v2 - u2 * v1) * m0 + (u2 * v0 - u0 * v2) * m1 + (u0 * v1 - u1 * v0) * m2;
+            if (a < best) {
+                best = a;
+                b = k;
+            }
         }
         if (!(best < 0)) {
             best = -1;
-            const [s0, s1, s2] = [r(i2, 0), r(i2, 1), r(i2, 2)];
+            const s0 = G[i2 * CS + 65];
+            const s1 = G[i2 * CS + 66];
+            const s2 = G[i2 * CS + 67];
             for (let k = n0; k < n; k++) {
                 if (k === i0 || k === i1 || k === i2) continue;
-                const d = (r(k, 0) - s0) ** 2 + (r(k, 1) - s1) ** 2 + (r(k, 2) - s2) ** 2;
-                if (d > best) [best, b] = [d, k];
+                const c = k * CS + 65;
+                const d = (G[c] - s0) ** 2 + (G[c + 1] - s1) ** 2 + (G[c + 2] - s2) ** 2;
+                if (d > best) {
+                    best = d;
+                    b = k;
+                }
             }
         }
         // die vier nach vorn: über einen Zwischen-Puffer (sie liegen irgendwo in [n0, n))
         const T = this._freiVierT || (this._freiVierT = new Float64Array(4 * CS));
-        [i0, i1, i2, b].forEach((k, j) => T.set(G.subarray(k * CS, k * CS + CS), j * CS));
+        T.set(G.subarray(i0 * CS, i0 * CS + CS), 0);
+        T.set(G.subarray(i1 * CS, i1 * CS + CS), CS);
+        T.set(G.subarray(i2 * CS, i2 * CS + CS), 2 * CS);
+        T.set(G.subarray(b * CS, b * CS + CS), 3 * CS);
         G.set(T, n0 * CS);
         return n0 + 4;
     }
@@ -1156,7 +1181,7 @@ class AnazhRealm_koerper_frei {
 
     // DAS BILD UND DIE HÜLLE: der Eintrag steht, wo der Löser den Körper hält (Schwerpunkt minus Plan-Lage), die Pose des Werks
     // trägt die Drehung (`_werkPoseZeigen`); seine Blocker-Box ist die Hülle der Punkte in der Welt (Kapsel, Tier und Strahl
-    // lösen gegen sie), neu gestempelt, sobald er FREI.stempelM gewandert ist oder einschläft.
+    // lösen gegen sie), neu gestempelt, sobald er seine überstrichene Hülle verlässt oder einschläft.
     _freiZeigen(K) {
         const e = K.e;
         // still seit dem letzten Bild (unter 0,1 mm und 0,01°): nichts zu zeigen, nichts zu stempeln
@@ -1173,36 +1198,43 @@ class AnazhRealm_koerper_frei {
         e.position.z = K.p[2] - um.z * K.s;
         e._gesetz.pose.q.set(K.q[1], K.q[2], K.q[3], K.q[0]);
         this._werkPoseZeigen(e);
-        const sp = K.stempel;
-        if (sp && !K.schlaf && Math.hypot(sp[0] - K.p[0], sp[1] - K.p[1], sp[2] - K.p[2]) < AnazhRealm.FREI.stempelM)
-            return;
-        const box = {
-            minX: Infinity,
-            maxX: -Infinity,
-            minZ: Infinity,
-            maxZ: -Infinity,
-            topY: -Infinity,
-            botY: Infinity,
-        };
-        for (let i = 0; i < K.pw.length; i += 3) {
-            box.minX = Math.min(box.minX, K.pw[i]);
-            box.maxX = Math.max(box.maxX, K.pw[i]);
-            box.botY = Math.min(box.botY, K.pw[i + 1]);
-            box.topY = Math.max(box.topY, K.pw[i + 1]);
-            box.minZ = Math.min(box.minZ, K.pw[i + 2]);
-            box.maxZ = Math.max(box.maxZ, K.pw[i + 2]);
-        }
-        // die stehende Kiste ist eine gedrehte Box (`obb`, die Form der Haus-Hülle): Kapsel, Tier und Wagen lösen in ihrem Rahmen
+        // die Hülle der Punkte; die stehende Kiste ist eine gedrehte Box (`obb`, die Form der Haus-Hülle): Kapsel, Tier und Wagen
+        // lösen in ihrem Rahmen
+        const k = K.kasten;
         const R = K.R;
-        const auf = K.kiste ? [0, 1, 2].find((k) => Math.abs(R[3 + k]) > 0.9998) : undefined;
-        if (auf !== undefined) {
+        const auf = !K.kiste
+            ? -1
+            : Math.abs(R[3]) > 0.9998
+              ? 0
+              : Math.abs(R[4]) > 0.9998
+                ? 1
+                : Math.abs(R[5]) > 0.9998
+                  ? 2
+                  : -1;
+        const obb = (box) => {
+            if (auf < 0) return delete box.obb;
             const [a, b] = [(auf + 1) % 3, (auf + 2) % 3];
-            const halb = [K.hx, K.hy, K.hz];
-            box.obb = { cx: K.p[0], cz: K.p[2], c: R[a], s: -R[6 + a], hx: halb[a], hz: halb[b] };
+            const o = box.obb || (box.obb = {});
+            [o.cx, o.cz, o.c, o.s, o.hx, o.hz] = [K.p[0], K.p[2], R[a], -R[6 + a], K.halb[a], K.halb[b]];
+        };
+        // DER STEMPEL WANDERT MIT: das Netz trägt den Körper in der überstrichenen Hülle (`_streichHuelle`, FREI.huelleM um seine
+        // Box beim Stempel) — bis er sie verlässt oder einschläft, folgt die Box an Ort und Stelle (Kapsel, Tier und Strahl lesen
+        // sie), ohne neuen Stempel; vorher stempelte er je 2 cm neu: im fallenden Trümmerfeld je Schritt jeden Körper (100 Kisten:
+        // 1,1 → 0,8 ms je Schritt, Null-Renderer)
+        const H = AnazhRealm.FREI.huelleM;
+        const sp = K.stempel;
+        const box = e.blockerAABBs && e.blockerAABBs[0];
+        if (sp && box && !K.schlaf && Math.abs(sp[0] - K.p[0]) < H && Math.abs(sp[2] - K.p[2]) < H) {
+            [box.minX, box.botY, box.minZ, box.maxX, box.topY, box.maxZ] = k;
+            obb(box);
+            return;
         }
-        box.stoff = K.stoff;
-        box.stempelfrei = true; // er wandert: er staut kein Wasser
-        e.blockerAABBs = [box];
+        const neu = { minX: k[0], maxX: k[3], minZ: k[2], maxZ: k[5], topY: k[4], botY: k[1] };
+        obb(neu);
+        neu.stoff = K.stoff;
+        neu.stempelfrei = true; // er wandert: er staut kein Wasser
+        e.blockerAABBs = [neu];
+        e._streichHuelle = K.schlaf ? null : [k[0] - H, k[3] + H, k[2] - H, k[5] + H];
         K.stempel = K.p.slice();
         this._blockerBewegt(e);
         this._blockerStampReach(e);
@@ -1270,7 +1302,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 // ζ 10) und das höchste Tempo, mit dem sie eine Durchdringung herausdrückt (m/s); der Spalt (m), ab dem ein Punkt vor einer
 // Fläche schon ein Kontakt ist (Boden und Bau; Körper an Körper enger — ein weiter Spalt hielt die Kiste über der Seite der
 // unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig unter ruheMs
-// (jeder Punkt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach stempelM Weg; Grund und
+// (jeder Punkt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
 // Bauten gelten umweltM (m) Weg (`_freiUmwelt`).
 // Die Kosten (Node, flacher Boden, die Bank: 100 Kisten in 25 Säulen fallen, stoßen, ruhen): vorher (4 × Kontakt-Suche,
 // 8 + 8 Gänge je Teil-Schritt) 24 ms je Schritt wach; der Schlaf kostet nichts (ruht jeder, rechnet der Löser nicht).
@@ -1291,6 +1323,6 @@ AnazhRealm.FREI = Object.freeze({
     ruheMs: 0.05,
     ruheS: 0.3,
     rundPunkte: 16,
-    stempelM: 0.02,
+    huelleM: 0.5,
     umweltM: 0.3,
 });
