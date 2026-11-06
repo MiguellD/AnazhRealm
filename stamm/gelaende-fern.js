@@ -286,6 +286,17 @@ class AnazhRealm_gelaende_fern {
         // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
         // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
         this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
+        // DER SCHATTEN LIEST DEN BODEN DES GESETZES (ferne.K4): der Ring IST das Gesetz, seine Masche nähert es nur — jenseits
+        // der Gitter-Zelle der Horizont-Karte (`_horizontBoden`, die Masche aus dem Radius wie die Weiche unten) prüft er die
+        // Schatten-Höhe am Boden des Gitters, aus dem die Karte sie rechnet, nie an seiner Sehne (bei 4–7 km ±50 m daneben).
+        const schattenBoden = this._horizontBoden(
+            TSL.positionWorld,
+            TSL.length(TSL.positionWorld.xz.sub(uAnker))
+                .mul(AnazhRealm._fernRingMascheJeM())
+                .add(schalen[0].snap * Math.SQRT2)
+        );
+        material.receivedShadowPositionNode = schattenBoden;
+        stoffNaht.receivedShadowPositionNode = schattenBoden;
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
         // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
         // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
