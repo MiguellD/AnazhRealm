@@ -36,8 +36,9 @@
 //                     Bühne der Welt (garage, schmiede) bricht laut beim Namen, wenn sie neben dem Licht der Welt ein eigenes trägt
 //                     — ein Licht neben der Sonne, Sonne oder Belichtung neben dem Gesetz, ein Himmel neben seinem Knoten, ein Stoff
 //                     mit eigener Umgebung; der Gang (--engine) liest es über den EINEN Sammler der Seitenfehler. Der Selbsttest
-//                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: das Haupt der Matrix-Antike, die
-//                     Belichtung von main (1,04 statt 0,51), eine gehobene Sonne, eine gehobene Umgebung, ein Lack mit envMap.
+//                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
+//                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
+//                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
