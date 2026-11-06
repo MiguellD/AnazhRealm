@@ -57,7 +57,9 @@ class AnazhRealm_studio_gestalt {
     // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2): nach dem ersten Bild fühlt jeder Baum, dessen Hülle vor ihm wartete
     // (`_baumGestaltTeile`), seine Hülle — in der Reihe seines Abstands zum Spieler im Moment des Bilds, je Takt höchstens EIN
     // neues Skelett und HUELLE_NACH_MS (die übrigen lesen das Gedächtnis ihrer Gestalt). Jeder Eintrag kommt dran; was den Bestand
-    // verließ, braucht keine. → die Zahl der gefühlten Einträge.
+    // verließ, braucht keine. → die Zahl der gefühlten Einträge. Seit w16-haenger ist sie auch die Schlange der Uhr der Skelette:
+    // wer nach dem Bild im selben Takt nach einem anderen Skelett kam (`_baumGestaltTeile`), steht hier und kommt nah zuerst dran;
+    // ging die Uhr dieses Takts schon (die Pflanz-Schlange war vorher), bleibt der Vorderste vorn.
     _tickHuellenNach() {
         const S = this._huellenNach;
         if (!S || !this.state._weltbildDa) return 0;
