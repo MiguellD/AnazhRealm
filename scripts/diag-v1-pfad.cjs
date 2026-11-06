@@ -2048,15 +2048,25 @@ async function korpusSatz(a) {
     }
     const t0 = performance.now();
     const echo = (z) => r._chatEcho(z);
-    await (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo));
-    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
-    // das Fenster zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
-    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang++) {
+    let antwortMs = null;
+    const antwort = (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo)).then(
+        () => (antwortMs = Math.round(performance.now() - t0))
+    );
+    // DIE ERSTE WIRKUNG (ki.K5): die Welt tickt, während der Strom der Antwort läuft, wie im Spiel — das Prädikat liest sie ab dem
+    // Satz, nicht erst ab dem Ende der Antwort (die Tat läuft im Strom, `_llmStrom`). Das Fenster nach der Antwort zählt Takte der
+    // Welt (je 100 ms einer), nie die Wanduhr.
+    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += antwortMs == null ? 0 : 1) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
-        if (e.praedikat) break;
+        if (e.praedikat) {
+            e.weltMs = Math.round(performance.now() - t0);
+            break;
+        }
         await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
     }
-    Object.assign(e, { weltMs: e.praedikat ? Math.round(performance.now() - t0) : null, lauf: K.lauf });
+    await antwort;
+    Object.assign(e, { antwortMs, antwort: K.antwort });
+    if (!e.praedikat) e.weltMs = null;
+    e.lauf = K.lauf;
     e.fehler = (window.__seitenfehler || 0) - f0;
     return e;
 }

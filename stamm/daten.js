@@ -2804,6 +2804,8 @@ class AnazhRealm_daten {
             "ki.beispiel-say.eis": ["Ein Eis kann ich nicht erschaffen.", "I can't create an ice cream."],
             "ki.beispiel-satz.fruehling": ["es soll Frühling werden", "let spring come"],
             "ki.beispiel-say.fruehling": ["Der Frühling kommt.", "Spring is coming."],
+            "ki.beispiel-satz.gesetz": ["immer wenn ich traurig bin, soll die Sonne scheinen", "whenever I am sad, let the sun shine"],
+            "ki.beispiel-say.gesetz": ["Von nun an wärmt dich die Sonne, wenn du traurig bist.", "From now on the sun warms you whenever you are sad."],
             "ki.beispiel-satz.name": ["wie heißt du?", "what's your name?"],
             "ki.beispiel-say.name": ["Ich bin die Stimme dieser Welt.", "I am the voice of this world."],
             "ki.beispiel-satz.regen": ["es soll regnen", "let it rain"],

@@ -78,7 +78,10 @@ class AnazhRealm_dienst {
 
     // `form`: die Antwort-Form des Rufers als JSON-Schema über die Platzhalter DIESER Anfrage (`form(platz)`; die Seele eines
     // Wesens, `_kiSeeleSchema`) — ein Anbieter, der eine Form erzwingt (ollama `format`), sampelt nur sie.
-    async llmCall(userText, systemPromptOverride = null, { hintergrund = false, form = null } = {}) {
+    // `tat(program)`: DIE TAT IM STROM (ki.K5) — jeder Anbieter antwortet als Strom (`_llmStrom`), die Tat des Rufers läuft,
+    // sobald das Programm der Antwort vollständig geparst ist (`llmStromStand`), nie erst nach ihrem Ende; ihr Ergebnis reist als
+    // `tat` in der Antwort.
+    async llmCall(userText, systemPromptOverride = null, { hintergrund = false, form = null, tat = null } = {}) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -158,10 +161,15 @@ class AnazhRealm_dienst {
                 }
                 return { error: llm.lastError };
             }
-            const json = await res.json();
+            const strom = await this._llmStrom(res, def, tat);
             llm.lastResponseAt = performance.now() / 1000;
-            const raw = def.extractText(json);
-            const parsed = this.llmParseResponse(raw);
+            if (strom.fehler) {
+                llm.lastError = strom.fehler;
+                return { error: llm.lastError };
+            }
+            const parsed = this.llmParseResponse(strom.raw);
+            // die Tat lief im Strom: die Antwort trägt ihr Programm und ihr Ergebnis, nie ein zweiter Lauf
+            if (strom.tat) Object.assign(parsed, { program: strom.tat.program, tat: strom.tat.ergebnis });
             llm.lastError = parsed.error || null;
             // die Antwort bekommt die Namen zurück (isoliert, wie sie kamen) — der Spieler liest den Namen, nie den Platzhalter
             const name = new Map([...karte].map(([s, h]) => [h, s]));
@@ -208,6 +216,50 @@ class AnazhRealm_dienst {
             this._llmHintergrund = null;
             frei();
         }
+    }
+
+    // DER STROM DER ANTWORT (ki.K5): jeder Anbieter schickt Zeilen — ollama NDJSON, die übrigen Server-Sent-Events (`data: {…}`)
+    // —, je Zeile liest der Anbieter sein Stück (`extractText`); ein Server ohne Strom schickt EIN JSON, es ist der Strom aus einem
+    // Stück. Nach jedem Stück der Stand (`llmStromStand`): ist das Programm geparst, läuft `tat` sofort; ist das Objekt
+    // geschlossen, endet der Strom (die Form erlaubt Leerraum hinter ihm, ein Modell kann ihn bis `num_predict` schreiben).
+    // Bis ki.K5 las die Tür `res.json()`: die erste Wirkung kam erst nach dem letzten Token (qwen3:4b-instruct am Korpus: p95 23,6 s).
+    async _llmStrom(res, def, tat) {
+        const leser = res.body.getReader();
+        const dek = new TextDecoder();
+        const aus = { raw: "", fehler: null, tat: null };
+        let [puffer, ganz, ende] = ["", "", false];
+        const stueck = (zeile) => {
+            const z = zeile.trim().replace(/^data:\s*/, "");
+            if (!z || z === "[DONE]" || z[0] === ":" || /^(event|id|retry):/.test(z)) return;
+            let j = null;
+            try {
+                j = JSON.parse(z);
+            } catch (_e) {}
+            if (!j || typeof j !== "object") {
+                ganz += zeile + "\n"; // ein JSON über mehrere Zeilen (ein Server ohne Strom)
+                return;
+            }
+            if (j && j.error) aus.fehler = String(j.error.message || j.error).slice(0, 200);
+            else aus.raw += def.extractText(j) || "";
+        };
+        while (!ende) {
+            const { value, done } = await leser.read();
+            puffer += dek.decode(value || new Uint8Array(), { stream: !done });
+            const zeilen = puffer.split("\n");
+            puffer = done ? "" : zeilen.pop();
+            zeilen.forEach(stueck);
+            if (done && ganz) {
+                const g = ganz;
+                ganz = "";
+                stueck(g.replace(/\n/g, " "));
+            }
+            const stand = this.llmStromStand(aus.raw);
+            if (tat && !aus.tat && stand.program)
+                aus.tat = { program: stand.program, ergebnis: tat(stand.program) };
+            ende = done || stand.zu || !!aus.fehler;
+            if (ende && !done) leser.cancel().catch(() => {});
+        }
+        return aus;
     }
 
     // DIE ERREICHBARKEIT beim Aktivieren (Leben-Schau 07.10., V-D6): der Status sagte „Aktiv: Ollama (llama3.2)", obwohl der
