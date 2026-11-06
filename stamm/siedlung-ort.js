@@ -2510,15 +2510,12 @@ class AnazhRealm_siedlung_ort {
             // JEDE GESTALT DES ORTS IN DER STUFE IHRES BEDARFS (w13-dorf-strom): dahinter bestellt der Vorrat für jedes Haus des
             // Plans (in der Reihe des Zugs) und jedes Stück seiner Ausstattung, das das Erwachen hebt (Laternen an Mast und Wand,
             // Brunnen, Stände: `_dorfErlebnis`, `_spawnSettlementSlot`, ihre Samen `_ausstattungSame`), die Stufe, die es braucht,
-            // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts),
-            // sobald die Bahn es binnen `BEDARF.vorbauS` dorthin holt (dasselbe Gesetz wie der Vorbau jedes Eintrags,
-            // `_archVorbau`); die Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform,
+            // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts); die
+            // Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform,
             // die Mesh-Stufe bestellte erst der Vorlauf der Bahn (3 s vor der Zone): im GT standen die Häuser von −5,−3 erst
             // 10,3–11,7 s nach dem Erwachen, 81–139 m vor dem Spieler, die Marktstände von −4,−4 traten ungezeichnet in 150 m ein.
             const bedarf = (e) => {
-                const preset =
-                    this._bedarfZeit(e.position.x, e.position.z, R) <= AnazhRealm.BEDARF.vorbauS &&
-                    this._foundryPresetForEntry(e);
+                const preset = this._foundryPresetForEntry(e);
                 if (!preset) return;
                 const dh = Math.hypot(p.x - e.position.x, p.z - e.position.z) || 1;
                 const k2 = Math.min(1, R / dh);
