@@ -1190,7 +1190,7 @@ async function probeBahn(B) {
             for (const b of a.blockerAABBs) {
                 if (!(b.topY > unten && b.botY < oben) || b.dick < stufe) continue; // ein Trieb dünner als die Rad-Stufe wird überrollt
                 const R = rahmen(b);
-                const trennt = ([u, w], [a0, a1] = g.spanne(u, w), m = R.cx * u + R.cz * w, rB = R.hx * Math.abs(R.c * u - R.s * w) + R.hz * Math.abs(R.s * u + R.c * w)) => a1 <= m - rB || a0 >= m + rB;
+                const trennt = ([u, w], _, __, [a0, a1] = g.spanne(u, w), m = R.cx * u + R.cz * w, rB = R.hx * Math.abs(R.c * u - R.s * w) + R.hz * Math.abs(R.s * u + R.c * w)) => a1 <= m - rB || a0 >= m + rB;
                 if (![[R.c, -R.s], [R.s, R.c], ...g.K.map((k) => k.slice(2))].some(trennt)) {
                     blocker++;
                     namen.add(a.type);
