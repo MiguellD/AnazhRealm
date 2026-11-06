@@ -179,7 +179,7 @@ var WASSER_GESETZ = {
 // das Labor eine 1-px-Linie.
 // prettier-ignore
 var REGEN_GESETZ = {
-    anzahl: 1600,              // Schlieren im Kasten
+    anzahl: 7200,              // Schlieren im Kasten — Tropfen x Schlieren-Laenge deckt wie vor der Belichtung (1600 x 0,8 m)
     raum: [54, 30, 54],        // m — Breite x Hoehe x Tiefe des Kastens; das Auge in seiner Mitte
     belichtung: 1 / 60,        // s — die Belichtung des Auges: die Schliere ist fall x belichtung lang (9 m/s: 15 cm)
     fall: 9,                   // m/s — die Endgeschwindigkeit des Regentropfens (Gunn & Kinzer 1949: 5 mm 9,1 m/s; wetter.K2 ≤ 9,2)

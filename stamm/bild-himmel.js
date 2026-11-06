@@ -1036,9 +1036,7 @@ class AnazhRealm_bild_himmel {
             AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
         const T = THREE.TSL;
         const N = RG.anzahl;
-        // Die Saat je Schliere (Lage im Kasten 0..1) aus einem festen Strom — das Bild ist reproduzierbar. Ihre Länge ist der Weg
-        // des Tropfens in der Belichtung des Auges (`fall` × `belichtung`, 9 m/s: 15 cm) — bis w15-pfuetze ein fester Wert neben
-        // dem Fall (0,5–1,1 m, Radeon: Stäbe über halbe Baumhöhe)
+        // Die Saat je Schliere (Lage im Kasten 0..1) aus einem festen Strom — das Bild ist reproduzierbar.
         const saat = new Float32Array(N * 3);
         let h = 2166136261 >>> 0;
         const zufall = () => {
@@ -1057,7 +1055,8 @@ class AnazhRealm_bild_himmel {
         const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 3));
         const uZeit = T.uniform(0);
         const uDrift = T.uniform(new THREE.Vector2(0, 0));
-        const uWinkel = T.uniform(0);
+        // der Weg des Tropfens in der Belichtung im Bild: (sin θ, cos θ) × |v| · `belichtung` (m), θ die Neigung quer zum Blick
+        const uWeg = T.uniform(new THREE.Vector2(0, RG.fall * RG.belichtung));
         const R = RG.raum;
         // Fallen (y) und Treiben (xz), je Achse in den Kasten um das Auge zurückgefaltet.
         const x = T.fract(s4.x.add(uDrift.x.mul(uZeit).div(R[0])))
@@ -1088,10 +1087,19 @@ class AnazhRealm_bild_himmel {
                 .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        // DIE SCHLIERE IST DER WEG DES TROPFENS IN DER BELICHTUNG DES AUGES (w15-pfuetze): v = (Drift, −`fall`), ihr Weg
+        // v × `belichtung` (`uWeg`: 9 m/s → 15 cm) — Länge und Neigung im Wind aus EINEM Gesetz. Das Quad trägt den Hüllkasten des
+        // Wegs (|sin θ| · L + Breite × cos θ · L), die Schliere ist seine Diagonale in der Richtung des Falls (die Deckung je Fragment
+        // nach dem Abstand zu ihr, `breiteM` breit). Bis w15-pfuetze trug sie eine eigene Länge (0,5–1,1 m, Radeon: Stäbe über halbe
+        // Baumhöhe) und eine Drehung, die r184 VOR der Größe anwendet (`rotate(uv) · size`, gelesen im Vendor): das schmale Quad
+        // kippte nie, nur seine Enden schrägten. Ein positionNode, der die Ecke des Quads liest (Lage oder UV), zeichnet in r184 nichts.
+        const kasten = T.vec2(uWeg.x.abs().add(breiteM), uWeg.y);
         mat.positionNode = T.vec3(x, y, z);
-        mat.sizeNode = T.vec2(breiteM, T.float(RG.fall * RG.belichtung)).mul(uProj);
-        mat.opacityNode = T.materialOpacity.mul(blende);
-        mat.rotationNode = uWinkel;
+        mat.sizeNode = kasten.mul(uProj);
+        const q = T.uv().sub(0.5).mul(kasten);
+        const abstand = q.x.mul(uWeg.y).add(q.y.mul(uWeg.x)).abs().div(uWeg.length().max(1e-4));
+        const strich = T.float(1).sub(T.smoothstep(breiteM.mul(0.25), breiteM.mul(0.75), abstand));
+        mat.opacityNode = T.materialOpacity.mul(blende).mul(strich);
         mat.sizeAttenuation = true;
         const mesh = new THREE.Sprite(mat);
         AnazhRealm._instanzZahl(mesh, N);
@@ -1102,7 +1110,7 @@ class AnazhRealm_bild_himmel {
         mesh.userData.inventar = "wetter-regen";
         mesh.visible = false;
         this.state.scene.add(mesh);
-        this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
+        this._rainSystem = { mesh, uZeit, uDrift, uWeg, uProj, RG };
         return this._rainSystem;
     }
     _tickRain() {
@@ -1139,10 +1147,11 @@ class AnazhRealm_bild_himmel {
         const wd = cam ? this._windAt(cam.position.x, cam.position.z, this._bildZeit) : { x: 0, z: 0, staerke: 0 };
         const v = RG.drift * Math.max(wd.staerke, 0.1);
         sys.uDrift.value.set(wd.x * v, wd.z * v);
-        // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
+        // der Weg im Bild: der Drift-Anteil quer zur Blickrichtung (Bild-Rechts = Spalte 0 der Kamera) gegen das Fallen
         if (cam) {
             const m = cam.matrixWorld.elements;
-            sys.uWinkel.value = Math.atan2(wd.x * v * m[0] + wd.z * v * m[2], RG.fall);
+            const quer = wd.x * v * m[0] + wd.z * v * m[2];
+            sys.uWeg.value.set(quer * RG.belichtung, RG.fall * RG.belichtung);
             sys.uProj.value = cam.projectionMatrix.elements[5];
         }
     }
