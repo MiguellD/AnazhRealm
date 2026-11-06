@@ -2143,12 +2143,11 @@ const BRANDLAUF = process.argv.includes("--brand");
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
-                        const roh = r._windAt;
-                        r._windAt = (...a) => Object.assign(roh.apply(r, a), { ms: 0 });
+                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
                         const ohneWind = (await lauf(60)).alle;
                         delete r._windAt;
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
-                        st.brandFeld.clear();
+                        r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
                         st.worldMeta.taten.length = n0;
                         const lebVor = +am().lebendig.toFixed(3);
                         const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, glut, licht }));

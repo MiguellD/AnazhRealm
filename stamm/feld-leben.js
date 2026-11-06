@@ -2420,7 +2420,8 @@ class AnazhRealm_feld_leben {
     // vierfach 2 von 10) — die Asche hing an der Wanduhr.
     _tickBrand() {
         const bf = this.state.brandFeld;
-        if (!this._brandLebt()) return;
+        // die Frage `_brandLebt` ohne ihren Ruf: in Ruhe kostet der Takt nichts (die Stand-Linse zählt jeden Ruf im Takt)
+        if (!bf || (!bf.size && !this._brandRest)) return;
         const B = AnazhRealm.BRAND;
         const frist = performance.now() + B.budgetMs;
         // der Schritt fällt, sobald die Uhr ihn erreicht — im Gleitkomma mit einem Hauch (`(a + 1) − a` ist für ~0,1 % der Uhren
