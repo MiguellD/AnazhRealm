@@ -172,8 +172,11 @@ class AnazhRealm_siedlung_bauten {
         const W = this._stufenWache(pm);
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle wachen Einträge, ohne zu wechseln und ohne dass
         // einer wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
-        // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei.
-        if (this._standRuht("archLod", W.wach.size, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
+        // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei. DIE RUNDE IST EIN
+        // RUNDGANG: die wachen Einträge bei seinem Beginn, bis so viele gegangen sind — wer einschläft, verkürzt erst den
+        // nächsten (gate:stand-takt TREUE: die Runde steht, solange sie gegangen wird).
+        if (!(W.rest > 0)) W.runde = W.rest = W.wach.size;
+        if (this._standRuht("archLod", W.runde, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
         if (occlOn) this._maybeRebuildOcclusionGrid();
         const z = this._archStufeZaehler();
         // je Bild höchstens STUFEN_GANG wache Einträge in der Reihe der Wache (wer wach bleibt, stellt sich hinten an); endet der
@@ -198,6 +201,7 @@ class AnazhRealm_siedlung_bauten {
             if (rest < 0 && Z.size) {
                 const wer = entry._stufeWer || (entry._stufeWer = {});
                 this._schlafen(wer, Z, null, () => this._stufeWecken(entry));
+                W.zusage.add(entry); // er wartet: die Stufen-Wahl bleibt offen, bis seine Zusage kam
                 rest = AnazhRealm.LOD_DISTANCES.hysteresis;
             }
             if (rest === Infinity)
@@ -211,10 +215,12 @@ class AnazhRealm_siedlung_bauten {
             } else W.wach.add(entry);
         }
         gang.length = 0;
+        W.rest -= besucht;
         // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
         // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
         const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
-        this._standMeldet("archLod", besucht, z.switches + z.regung > 0, z.offen > 0 || gitterAlt);
+        // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie kam
+        this._standMeldet("archLod", besucht, z.switches + z.regung > 0, z.offen > 0 || gitterAlt || W.zusage.size > 0);
         return bewegt + z.switches;
     }
 
@@ -250,6 +256,9 @@ class AnazhRealm_siedlung_bauten {
                 eimer: new Map(),
                 gang: [],
                 zusagen: new Map(), // der Sammler der Zusagen eines Urteils (`_zusagenVon`)
+                zusage: new Set(), // wer auf seine Zusage schläft (`_schlafen`)
+                runde: 0, // der Rundgang der Stand-Wache: so viele Einträge, `rest` davon noch zu gehen
+                rest: 0,
                 odo: 0,
                 ab: 0,
                 px: null,
@@ -281,6 +290,7 @@ class AnazhRealm_siedlung_bauten {
     _stufeWecken(entry, art) {
         const W = this._stufenWacheStand;
         if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
+        W.zusage.delete(entry);
         if (art === "weg") {
             entry._stufeEimer = -1;
             W.wach.delete(entry);
@@ -289,7 +299,9 @@ class AnazhRealm_siedlung_bauten {
         if (entry._stufeEimer === -1 && art !== "ein") return;
         entry._stufeEimer = undefined;
         if (entry._stufeWer) entry._stufeWer._schlaf = null; // der Schlaf auf seiner Zusage endet (`_schlafen`)
+        if (W.wach.has(entry)) return;
         W.wach.add(entry);
+        this._standWecken("archLod"); // ein Geweckter weckt den Takt, der ihn urteilt (`_standWecken`)
     }
 
     // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann

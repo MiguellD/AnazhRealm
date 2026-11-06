@@ -1831,15 +1831,17 @@ class AnazhRealm_dirigent_takt {
         return b.stempel;
     }
 
-    // DIE PFLANZ-SCHLANGE LÄDT MIT DER WANDUHR (w15-strom-takt, das Muster der Foundry-Freigabe `_tickFoundryIngest`): so viele
-    // Würfe setzt ein Bild, wie PFLANZ_RATE_PER_S in seiner Wanduhr trägt (`dt` s), gedeckelt durch PFLANZ_BURST_CAP; ohne
-    // Uhr (Linse, Test) die Kappe des Ziel-Takts. Bis w15-strom-takt setzte jedes Bild 4 — der Durchsatz der Karten folgte der
-    // Bildrate (GT 64 m/s, Station headless: 2 131 Bilder → Karten 51,6 % fertig beim Eintritt, 2 542 → 59,6 %; die Bäume
-    // der Bahn standen wartend in der Schlange, als sie in den Kegel traten).
+    // DIE PFLANZ-SCHLANGE LÄDT MIT DER WANDUHR (w15-strom-takt, das Muster der Foundry-Freigabe `_tickFoundryIngest`): ein Bild
+    // setzt die Würfe des Ziel-Takts (PFLANZ_RATE_PER_S / 60) und mehr, wenn es länger dauert — so viele, wie die Rate in
+    // seiner Wanduhr trägt (`dt` s), gedeckelt durch PFLANZ_BURST_CAP; ohne Uhr (Linse, Test) die des Ziel-Takts. Bis
+    // w15-strom-takt setzte jedes Bild 4 — der Durchsatz der Karten folgte der Bildrate (GT 64 m/s, Station headless:
+    // 2 131 Bilder → Karten 51,6 % fertig beim Eintritt, 2 542 → 59,6 %; die Bäume der Bahn warteten in der Schlange, als
+    // sie in den Kegel traten).
     _pflanzKappe(dt) {
         const R = AnazhRealm.PFLANZ_RATE_PER_S;
-        if (!(dt > 0)) return Math.round(R / 60);
-        return Math.max(1, Math.min(AnazhRealm.PFLANZ_BURST_CAP, Math.round(R * Math.min(0.25, dt))));
+        const ziel = Math.round(R / 60);
+        if (!(dt > 0)) return ziel;
+        return Math.max(ziel, Math.min(AnazhRealm.PFLANZ_BURST_CAP, Math.round(R * Math.min(0.25, dt))));
     }
 
     // Ein Bau-Eintrag änderte Stufe oder Gestalt (ein Bau-Takt wirkte, ein Studio-Asset dockte an): die Bau-Takte gehen.
