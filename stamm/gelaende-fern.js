@@ -989,7 +989,7 @@ class AnazhRealm_gelaende_fern {
         const voll = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
         let anders = voll;
         // DAS FENSTER DER REGUNG (K51-4): die Texel, die sich änderten (a0, b0, a1, b1) — die Teilung urteilt nur die Dreiecke
-        // neu, deren Zellen darin liegen (`_fernRingKlassen`); wandert der Ursprung, ist es die ganze Maske
+        // neu, deren Zellen darin liegen (voxel-worker `fernTeilungKlassen`); wandert der Ursprung, ist es die ganze Maske
         let fa0 = M.n,
             fb0 = M.n,
             fa1 = -1,
@@ -1021,181 +1021,75 @@ class AnazhRealm_gelaende_fern {
 
     // DIE TEILUNG DER SCHALE 0 (K16, die Kosten an der Naht — Prüfung Runde 3): je Dreieck frei (0: der freie Stoff), an der
     // Naht (1: Maske und Weiche) oder sicher getragen (2: kein Index, es zeichnet niemand) — nach der Regel des maskNode
-    // (`_fernRingKlassen`). Neu geurteilt nur, wenn die Maske sich regt (`maske.ver`) oder eine Ecke der Schale wandert
-    // (`xzGen`, der Anker); die Indizes reisen nur, wenn ein Dreieck die Klasse wechselt. Leser: der Zeichner, gate:fern-ring
-    // Band 12 (die Weiche kostet nur an der Naht) und 13 (die Teilung ist treu).
+    // (voxel-worker `fernTeilungKlassen`). Neu geurteilt nur, wenn die Maske sich regt (`maske.ver`) oder eine Ecke der Schale
+    // wandert (`xzGen`, der Anker); die Indizes reisen nur, wenn ein Dreieck die Klasse wechselt. Leser: der Zeichner,
+    // gate:fern-ring Band 12 (die Weiche kostet nur an der Naht) und 13 (die Teilung ist treu).
+    // DIE TEILUNG IM FADEN (w14-ankunft-weg, FUND 06.11. `gelaende-fern.js:1782`): das Urteil, die zwei Index-Listen und die
+    // Ecken der Naht (`randV`) rechnet der Fern-Faden (`fernTeilung`); hier reisen nur Maske, Lage und Muster hinaus und die
+    // Listen herein — höchstens EIN Auftrag im Flug, die Regung dahinter fragt mit seiner Antwort neu. Geteilt wird erst der
+    // ganze Ring (`fr.ready`: davor zeichnet er nicht); bis seine Teilung steht, hält der Horizont das erste Bild
+    // (`_weltbildLuecken`) und die Welt (`_weltOffen`). Bis hier urteilte der Haupt-Faden jede Regung der Maske unter dem
+    // Ladeschirm selbst (swiftshader kalt bis zum ersten Bild 281–353 ms, das Urteil allein 186–268).
     _fernRingTeilung(fr) {
         const T = fr.teilung;
         const M = fr.maske;
         const schluessel = `${M.ver | 0}|${fr.xzGen | 0}`;
-        if (T.schluessel === schluessel) return;
+        if (!fr.ready || T.flug || T.schluessel === schluessel || !this._nebenFaden("fern")) return;
         T.schluessel = schluessel;
         // DER TAKT KOSTET, WAS IHN BETRIFFT (K51-4, Lehre 25): regte sich nur die Maske (die Lage der Schale steht), urteilt die
         // Teilung nur die Dreiecke am Fenster der Regung (`M.fenster`) neu — jeder Stufen-Wechsel eines Chunks urteilte vorher
-        // alle Dreiecke der Schale 0 (OMEN 1410-boden gehend: `_fernRingKlassen` +0,11 ms je Frame, Radeon bis 13 ms je Lauf)
+        // alle Dreiecke der Schale 0 (OMEN 1410-boden gehend: das Urteil +0,11 ms je Frame, Radeon bis 13 ms je Lauf)
         const fenster = T.xzGen === (fr.xzGen | 0) && Array.isArray(M.fenster) ? M.fenster : null;
         M.fenster = null;
         T.xzGen = fr.xzGen | 0;
         const geo = fr.geos[0];
-        const I = geo.index.array;
-        const neu = T.neu || (T.neu = new Uint8Array(T.klasse.length));
-        T.sMax = AnazhRealm._fernRingKlassen(
-            M,
-            this._voxelChunkConfig().span,
-            geo.attributes.position.array,
+        const [daten, P, I] = [M.daten.slice(), geo.attributes.position.array.slice(), geo.index.array.slice()];
+        const alt = fenster ? { fenster, klasse: T.klasse.slice(), sMax: T.sMax } : null;
+        const auftrag = {
+            type: "fern-teilung",
+            daten,
+            n: M.n,
+            i0: M.uZelle0.value.x,
+            j0: M.uZelle0.value.y,
+            span: this._voxelChunkConfig().span,
+            P,
             I,
-            neu,
-            fenster && { fenster, klasse: T.klasse, sMax: T.sMax }
+            alt,
+        };
+        T.flug = true;
+        this._nebenAuftrag(
+            "fern",
+            auftrag,
+            [daten.buffer, P.buffer, I.buffer].concat(alt ? [alt.klasse.buffer] : [])
+        ).then(
+            (a) => {
+                T.flug = false;
+                if (this.state.fernRing !== fr) return; // der Ring fiel (Neubau): seine Teilung mit ihm
+                T.sMax = a.sMax;
+                let anders = false;
+                for (let t = 0; t < a.klasse.length && !anders; t++) anders = a.klasse[t] !== T.klasse[t];
+                if (!anders && T.randV) return;
+                T.klasse.set(a.klasse);
+                T.frei.index.array.set(a.frei);
+                T.naht.index.array.set(a.naht);
+                T.randV = a.randV; // die Ecken der Naht-Dreiecke tragen die Fläche des Feldes (`_fernRingFeldY`)
+                T.gen = (T.gen | 0) + 1; // die Deck-Wache geht neu (`_fernRingDeckWache`)
+                T.frei.index.needsUpdate = true;
+                T.naht.index.needsUpdate = true;
+                T.n = a.n;
+            },
+            (e) => {
+                T.flug = false;
+                this._bruchMelden(
+                    `HORIZONT: der Fern-Faden teilte die Schale 0 nicht — ${e && e.message ? e.message : e}`
+                );
+            }
         );
-        let anders = false;
-        for (let t = 0; t < neu.length && !anders; t++) anders = neu[t] !== T.klasse[t];
-        if (!anders) return;
-        T.klasse.set(neu);
-        const fa = T.frei.index.array;
-        const na = T.naht.index.array;
-        let kf = 0;
-        let kn = 0;
-        for (let t = 0; t < neu.length; t++) {
-            if (neu[t] === 2) continue;
-            const ziel = neu[t] === 0 ? fa : na;
-            const o = neu[t] === 0 ? kf : kn;
-            ziel[o] = I[t * 3];
-            ziel[o + 1] = I[t * 3 + 1];
-            ziel[o + 2] = I[t * 3 + 2];
-            if (neu[t] === 0) kf += 3;
-            else kn += 3;
-        }
-        fa.fill(0, kf); // die Rest-Plätze entartet (0, 0, 0): kein Fragment, der Zeichen-Bereich bleibt
-        na.fill(0, kn);
-        // die Ecken der Naht-Dreiecke tragen die Fläche des Feldes (`_fernRingFeldY`)
-        const randV = T.randV || (T.randV = new Uint8Array(geo.attributes.position.count));
-        randV.fill(0);
-        for (let o = 0; o < kn; o++) randV[na[o]] = 1;
-        T.frei.index.needsUpdate = true;
-        T.naht.index.needsUpdate = true;
-        T.n = [kf / 3, kn / 3, neu.length - (kf + kn) / 3];
     }
-
-    // DAS URTEIL JE DREIECK (rein; der CPU-Spiegel des maskNode über den Kasten eines Dreiecks, ± `eps` gegen die f32-Rundung
-    // des Fragments). FREI (0): kein gezeichneter Chunk liegt im Kasten ± (1½ s_max + eps) — kein Punkt darin ist Chunk oder
-    // Band eines Chunks (`_fernRingRegel` 0 überall). GETRAGEN (2): jede Zelle im Kasten ± eps ist gezeichnet, und wo der
-    // Kasten ein Band der Zelle berührt (unten bis 1½ w, oben ab span − ½ w, w = die größte Stufe der 3 × 3 wie im Knoten),
-    // trägt der Nachbar jenseits (gezeichnet, dieselbe Stufe), in der Ecke auch der schräge (`_fernRingRegel` 2 überall).
-    // Sonst NAHT (1): dort urteilt der Knoten je Fragment.
-    static _fernRingKlassen(M, span, P, I, klasse, alt) {
-        const n = M.n;
-        const D = M.daten;
-        const i0 = M.uZelle0.value.x;
-        const j0 = M.uZelle0.value.y;
-        const eps = 0.05;
-        // DIE ZELLEN EINMAL JE URTEIL (Lehre 25, w4-ankunft): gezeichnet (`bz`), Stufe (`sz`) und die größte Stufe der 3 × 3
-        // (`wz`, die Breite jedes Saums) je Zelle, dazu die Summen-Tafel der gezeichneten (`q`, (n+1)²) — ein Dreieck fragt
-        // „frei" in vier Lesern statt Zelle um Zelle und den Saum in einem statt neun; dieselben Zahlen (f64), dasselbe Urteil
-        const nn = n * n;
-        const bz = new Uint8Array(nn);
-        const sz = new Float64Array(nn);
-        const wz = new Float64Array(nn);
-        const q = new Int32Array((n + 1) * (n + 1));
-        let sMax = 0;
-        let a0 = n;
-        let a1 = -1;
-        let b0 = n;
-        let b1 = -1;
-        for (let b = 0; b < n; b++)
-            for (let a = 0; a < n; a++) {
-                const z = b * n + a;
-                if (D[z * 4] / 255 > 0.5) {
-                    bz[z] = 1;
-                    sz[z] = (D[z * 4 + 1] / 255) * 25.5;
-                    sMax = Math.max(sMax, sz[z]);
-                    a0 = Math.min(a0, a);
-                    a1 = Math.max(a1, a);
-                    b0 = Math.min(b0, b);
-                    b1 = Math.max(b1, b);
-                }
-                q[(b + 1) * (n + 1) + a + 1] =
-                    bz[z] + q[b * (n + 1) + a + 1] + q[(b + 1) * (n + 1) + a] - q[b * (n + 1) + a];
-            }
-        for (let b = 0; b < n; b++)
-            for (let a = 0; a < n; a++) {
-                let w = 0;
-                for (let db = Math.max(0, b - 1); db <= Math.min(n - 1, b + 1); db++)
-                    for (let da = Math.max(0, a - 1); da <= Math.min(n - 1, a + 1); da++)
-                        w = Math.max(w, sz[db * n + da]);
-                wz[b * n + a] = w;
-            }
-        const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && bz[b * n + a] === 1;
-        const S = (a, b) => (B(a, b) ? sz[b * n + a] : 0);
-        const rand = 1.5 * sMax + eps;
-        // DAS FENSTER (`alt`, K51-4): das Urteil eines Dreiecks liest die Zellen im Kasten ± rand und deren Nachbarn — liegt keine
-        // geänderte Zelle darin, gilt sein altes Urteil; wechselt die größte Stufe (`sMax`, die Breite jedes Saums), alle neu
-        const F = alt && alt.sMax === sMax ? alt.fenster : null;
-        for (let t = 0; t < klasse.length; t++) {
-            const p = I[t * 3] * 3;
-            const r3 = I[t * 3 + 1] * 3;
-            const r = I[t * 3 + 2] * 3;
-            const x0 = Math.min(P[p], P[r3], P[r]);
-            const x1 = Math.max(P[p], P[r3], P[r]);
-            const z0 = Math.min(P[p + 2], P[r3 + 2], P[r + 2]);
-            const z1 = Math.max(P[p + 2], P[r3 + 2], P[r + 2]);
-            if (
-                F &&
-                (Math.floor((x1 + rand) / span) - i0 + 1 < F[0] ||
-                    Math.floor((x0 - rand) / span) - i0 - 1 > F[2] ||
-                    Math.floor((z1 + rand) / span) - j0 + 1 < F[1] ||
-                    Math.floor((z0 - rand) / span) - j0 - 1 > F[3])
-            ) {
-                klasse[t] = alt.klasse[t];
-                continue;
-            }
-            // frei: kein gezeichneter Chunk im Kasten ± rand
-            const ra0 = Math.max(a0, Math.floor((x0 - rand) / span) - i0);
-            const ra1 = Math.min(a1, Math.floor((x1 + rand) / span) - i0);
-            const rb0 = Math.max(b0, Math.floor((z0 - rand) / span) - j0);
-            const rb1 = Math.min(b1, Math.floor((z1 + rand) / span) - j0);
-            const n1 = n + 1;
-            if (
-                ra0 > ra1 ||
-                rb0 > rb1 ||
-                q[(rb1 + 1) * n1 + ra1 + 1] - q[rb0 * n1 + ra1 + 1] - q[(rb1 + 1) * n1 + ra0] + q[rb0 * n1 + ra0] === 0
-            ) {
-                klasse[t] = 0;
-                continue;
-            }
-            // getragen: jede Zelle im Kasten ± eps gezeichnet, jedes berührte Band vom Nachbarn getragen
-            let getragen = true;
-            const ca0 = Math.floor((x0 - eps) / span) - i0;
-            const ca1 = Math.floor((x1 + eps) / span) - i0;
-            const cb0 = Math.floor((z0 - eps) / span) - j0;
-            const cb1 = Math.floor((z1 + eps) / span) - j0;
-            for (let a = ca0; a <= ca1 && getragen; a++)
-                for (let b = cb0; b <= cb1 && getragen; b++) {
-                    if (!B(a, b)) {
-                        getragen = false;
-                        break;
-                    }
-                    const s = S(a, b);
-                    const w = wz[b * n + a];
-                    const ox = (a + i0) * span;
-                    const oz = (b + j0) * span;
-                    const uX = Math.max(x0 - eps, ox) - ox < 1.5 * w;
-                    const oX = Math.min(x1 + eps, ox + span) - ox > span - 0.5 * w;
-                    const uZ = Math.max(z0 - eps, oz) - oz < 1.5 * w;
-                    const oZ = Math.min(z1 + eps, oz + span) - oz > span - 0.5 * w;
-                    const tr = (da, db) => B(a + da, b + db) && S(a + da, b + db) === s;
-                    getragen =
-                        (!uX || tr(-1, 0)) &&
-                        (!oX || tr(1, 0)) &&
-                        (!uZ || tr(0, -1)) &&
-                        (!oZ || tr(0, 1)) &&
-                        (!(uX && uZ) || tr(-1, -1)) &&
-                        (!(uX && oZ) || tr(-1, 1)) &&
-                        (!(oX && uZ) || tr(1, -1)) &&
-                        (!(oX && oZ) || tr(1, 1));
-                }
-            klasse[t] = getragen ? 2 : 1;
-        }
-        return sMax;
+    // Steht die Teilung der Schale 0 zum Stand von Maske und Lage? (der Leser: das erste Bild und die Welt)
+    _fernRingGeteilt(fr) {
+        const T = fr.teilung;
+        return !T.flug && T.schluessel === `${fr.maske.ver | 0}|${fr.xzGen | 0}`;
     }
 
     // DER EINE SETZ-HELFER (jeder Weg, der einen Ring-Punkt legt, schreibt durch DIESELBE Naht): die Höhe aus dem Gesetz des
@@ -1827,7 +1721,9 @@ class AnazhRealm_gelaende_fern {
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
         // schläft die Wache.
         // ohne Saum-Punkt ist die Runde 0 und gegangen (`_standRuht`) — auch der leere Saum geht durch die Wache
-        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
+        // (die Teilung aus dem Fern-Faden kommt nach ihrer Regung: ihre Antwort weckt die Wache mit, `teilung.gen`)
+        const stand = ((fr.gen | 0) * 1048576 + (fr.feldEditGen | 0)) * 4096 + ((fr.teilung.gen | 0) % 4096);
+        if (this._standRuht("deckWache", fr.zoneVerts, stand, "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS kommt aus dem Fern-Faden (B2, `fr.law` · `fr.vollY`, einmal je Anker): die Wache rechnet keine

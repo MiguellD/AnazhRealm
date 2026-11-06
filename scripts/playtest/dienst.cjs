@@ -138,7 +138,8 @@ async function checkBandFeldStellvertreter({ page, check }) {
         }
         if (!fp) return { fehler: "kein Feld-Pass" };
         if (modus === "panoTiefe") fp.mat.depthNode = window.THREE.TSL.float(0.999999); // S1
-        // T1: der Takt (Anker gleich → kein Anstrich; sichtbar → Kamera-Uniforms + Instanzen)
+        // T1: der Takt (Anker gleich → kein Anstrich), dann das Bild: Kamera-Uniforms + Instanzen schreibt `_feldPassKamera` aus der
+        // Kamera DIESES Bilds (`_loopRender`), nie der Takt davor
         fp.mesh.visible = true;
         fp.march.visible = true;
         const cam = st.camera;
@@ -147,6 +148,7 @@ async function checkBandFeldStellvertreter({ page, check }) {
         cam.lookAt(0, 0, 0);
         cam.updateMatrixWorld(true);
         r._tickFeldPass({ anchorX: fp.anchorX, anchorZ: fp.anchorZ });
+        r._feldPassKamera();
         const vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         const ident = new T.Matrix4().multiplyMatrices(fp.U.vp.value, fp.U.invVP.value);
         let abwVp = 0,

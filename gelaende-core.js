@@ -1589,6 +1589,7 @@
         nash: 2,
         trocken: 20,
         fenster: 30,
+        zustand: 1e5,
     });
     function abfluss(L, y, saison, feld) {
         if (!Number.isFinite(y) || !Number.isFinite(saison)) throw new Error("gelaende-core abfluss: Höhe oder Saison fehlt");
@@ -1630,18 +1631,56 @@
     }
     // DER LAUF ZUR WELT-UHR: `stempel` die Knoten [t0, r0, t1, r1, …] (s der Welt-Uhr, aufsteigend), `jetzt` die Welt-Uhr (s),
     // `tagS` die Sekunden eines Spieltags, `mittel` der Regen des Klimas → { q (Float64Array je Klasse, quantisiert), grund (B),
-    // schnell (F je Klasse) } oder null ohne Stempel.
-    function pegelLauf(L, stempel, jetzt, tagS, mittel) {
-        if (!stempel || stempel.length < 2) return null;
-        if (!(Number.isFinite(jetzt) && tagS > 0)) throw new Error("gelaende-core pegelLauf: Welt-Uhr oder Spieltag fehlt");
+    // schnell (F je Klasse) } oder null ohne Stempel und ohne Zustand.
+    // DER ZUSTAND (`zustand`, speicher.K3, aus `pegelZustand`): was vor dem ersten Stempel fiel, gefaltet in die Speicher des Gesetzes
+    // zur Welt-Uhr `zustand.t` — der Grund B und je Klasse j die zwei Speicher der Kaskade (`zustand.s`: [a_0, b_0, a_1, b_1, …] in
+    // 1/`LAUF.zustand` des Regens; b = F_j, a = der obere Speicher S1/k) laufen frei ab (S1·e^(−τ/k), (S2 + S1·τ/k)·e^(−τ/k)), die
+    // Stempel beginnen nie vor ihm; liegt er hinter dem Fenster, steht der Grund auf dem Klima wie jeder Stempel dort. Ohne ihn
+    // regnete es vor dem ersten Stempel nicht (byte-gleich).
+    function pegelLauf(L, stempel, jetzt, tagS, mittel, zustand) {
+        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, false);
+        if (!f) return null;
         const P = PEGEL;
+        const [tf, krone] = pegelBett(L);
+        const q = new Float64Array(LAUF.n);
+        for (let j = 0; j < LAUF.n; j++) {
+            const k1 = Math.round(pegelHubVon(P.spende * (f.grund - 1) + P.regen * Math.max(0, f.schnell[j]), tf, krone) / P.stufe);
+            q[j] = k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
+        }
+        return { q, grund: f.grund, schnell: f.schnell };
+    }
+    // DER ZUSTAND DES LAUFS zur Welt-Uhr `jetzt` (speicher.K3): Stempel und Zustand gefaltet in { t, grund, s } — 2 + 2 · LAUF.n
+    // Zahlen, nie mehr, wie lange es auch regnete (Gebot 7: der Stand trägt die Speicher, nie die Uhr des Regens). Der Grund auf
+    // 1e-6, die Speicher auf 1/`LAUF.zustand` des Regens (ein F von 3,5e-4 trägt eine Stufe des Hubs: der Rest ist ein
+    // Fünfunddreißigstel davon und läuft mit den Speichern ab). null ohne Stempel und ohne Zustand.
+    function pegelZustand(stempel, jetzt, tagS, mittel, zustand) {
+        const f = laufFalte(stempel, jetzt, tagS, mittel, zustand, true);
+        if (!f) return null;
+        const E = LAUF.zustand;
+        const s = new Array(2 * LAUF.n);
+        for (let j = 0; j < LAUF.n; j++) {
+            s[2 * j] = Math.round(Math.max(0, f.oben[j]) * E);
+            s[2 * j + 1] = Math.round(Math.max(0, f.schnell[j]) * E);
+        }
+        return { t: Math.round(jetzt * 1000) / 1000, grund: Math.round(f.grund * 1e6) / 1e6, s };
+    }
+    // DIE FALTUNG (`pegelLauf`, `pegelZustand`): der Grund B und je Klasse F (der Ausfluss der Kaskade), mit `oben` auch der
+    // obere Speicher (die Faltung mit e^(−s/k)/k) — oder null ohne Stempel und ohne Zustand.
+    function laufFalte(stempel0, jetzt, tagS, mittel, zustand, oben) {
+        const Z = zustand && Number.isFinite(zustand.t) && Array.isArray(zustand.s) ? zustand : null;
+        if (!Z && (!stempel0 || stempel0.length < 2)) return null;
+        if (!(Number.isFinite(jetzt) && tagS > 0)) throw new Error("gelaende-core pegelLauf: Welt-Uhr oder Spieltag fehlt");
+        // ohne Stempel regnet es seit dem Zustand nicht
+        const stempel = stempel0 && stempel0.length >= 2 ? stempel0 : [Z.t, 0];
         const t = jetzt / tagS;
         const n = stempel.length >> 1;
         const T = (i) => stempel[2 * i] / tagS;
         const R0 = (i) => stempel[2 * i + 1];
-        // der Grund: das Klima vor dem Fenster (oder vor dem ersten Stempel), dann die Stücke des Regens im Fenster
+        const z0 = Z ? Z.t / tagS : 0;
+        // der Grund: das Klima vor dem Fenster (oder vor dem ersten Stempel, mit Zustand dessen Grund), dann die Stücke des
+        // Regens im Fenster
         const kb = LAUF.trocken;
-        const ab = Math.min(t, Math.max(t - LAUF.fenster, T(0)));
+        const ab = Math.min(t, Math.max(t - LAUF.fenster, Z ? z0 : T(0)));
         let grund = 1;
         if (mittel > 0) {
             const E = (s) => Math.exp(-(t - s) / kb);
@@ -1656,11 +1695,11 @@
             };
             for (let i = 0; i + 1 < n; i++) stueck(T(i), R0(i), T(i + 1), R0(i + 1));
             if (t > T(n - 1)) stueck(Math.max(T(n - 1), ab), R0(n - 1), t, R0(n - 1));
-            grund = Math.exp(-(t - ab) / kb) + I / mittel;
+            grund = (Z && ab <= z0 ? Z.grund : 1) * Math.exp(-(t - ab) / kb) + I / mittel;
         }
-        const [tf, krone] = pegelBett(L);
-        const q = new Float64Array(LAUF.n);
+        const E = LAUF.zustand;
         const schnell = new Float64Array(LAUF.n);
+        const hoch = oben ? new Float64Array(LAUF.n) : null;
         for (let j = 0; j < LAUF.n; j++) {
             const k = laufK(j);
             const S = (s) => (s > 0 ? 1 - Math.exp(-s / k) * (1 + s / k) : 0);
@@ -1675,11 +1714,30 @@
                 const m = (rb - ra) / (b - a);
                 F += ra * S(t - a) + m * Rk(t - a) - rb * S(t - b) - m * Rk(t - b);
             }
+            // die Speicher des Zustands laufen frei ab (nach 12 k sind sie fort wie jeder Stempel dort); vor seiner Uhr (die volle
+            // Sekunde des Wirts, `_pegelTafel`) gilt er, wie er ist
+            const tau = Math.max(0, t - z0);
+            const frei = Z && tau <= 12 * k;
+            const e = frei ? Math.exp(-tau / k) : 0;
+            if (frei) F += ((Z.s[2 * j + 1] || 0) / E + (((Z.s[2 * j] || 0) / E) * tau) / k) * e;
             schnell[j] = F;
-            const k1 = Math.round(pegelHubVon(P.spende * (grund - 1) + P.regen * Math.max(0, F), tf, krone) / P.stufe);
-            q[j] = k1 ? pegelAbfluss(L, k1 * P.stufe) : 0;
+            if (!hoch) continue;
+            // der obere Speicher (S1/k): die Faltung mit e^(−s/k)/k — Sprung H, Rampe HH
+            const H = (s) => (s > 0 ? 1 - Math.exp(-s / k) : 0);
+            const HH = (s) => (s > 0 ? s - k * (1 - Math.exp(-s / k)) : 0);
+            let A = t > T(n - 1) ? R0(n - 1) * H(t - T(n - 1)) : 0;
+            for (let i = n - 2; i >= 0; i--) {
+                const [a, b] = [T(i), T(i + 1)];
+                if (b < alt) break;
+                if (!(b > a) || a >= t) continue;
+                const [ra, rb] = [R0(i), R0(i + 1)];
+                const m = (rb - ra) / (b - a);
+                A += ra * H(t - a) + m * HH(t - a) - rb * H(t - b) - m * HH(t - b);
+            }
+            if (frei) A += ((Z.s[2 * j] || 0) / E) * e;
+            hoch[j] = A;
         }
-        return { q, grund, schnell };
+        return { grund, schnell, oben: hoch };
     }
     // die Schmelze der Tafel: { y0, a } — der Abfluss der Schmelze je Meter Höhe zum Tag der Saison (der Wirt rechnet sie je Tag)
     function pegelSchmelze(L, saison, feldAt) {
@@ -7467,6 +7525,7 @@
         laufKlasse: laufKlasse,
         hackLaenge: hackLaenge,
         pegelLauf: pegelLauf,
+        pegelZustand: pegelZustand,
         pegelSchmelze: pegelSchmelze,
         pegelTafel: pegelTafel,
         pegelHub: pegelHub,
