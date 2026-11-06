@@ -748,6 +748,20 @@
         return FLUSS_BREITE.min + FLUSS_BREITE.k * Math.pow(Math.max(0, A) / 1e6, FLUSS_BREITE.exp);
     }
 
+    // DIE ART EINES GEWÄSSERS (w13-bach-klar) — die EINE Quelle: stehendes Wasser (See, Teich, Meer, die Flut des Automaten)
+    // ist „see", ein Lauf je nach seiner Größe „bach" oder „fluss". Die Grenze ist die Größenklasse der Fließgewässer-Typologie
+    // (LAWA; Pottgiesser & Sommerhäuser 2008, UBA-Steckbriefe: Bach < 100 km² Einzugsgebiet, kleiner Fluss 100–1 000 km²),
+    // in die Breite gelegt durch das EINE Gesetz der Breite (`flussBreite`, 100 km² ≈ 27,8 m). `breiteM` ist die Bankvoll-Breite
+    // des Laufs an der Stelle (`flussAm(...).breite`, im Studio die Breite seines Bachs), 0 oder null für stehendes Wasser.
+    // Die Art wählt den Körper des Wassers (foundry-core `WASSER_GESETZ.koerper[art]`: Trübung je Art). Leser: der Stamm
+    // (`_wasserArtAt`, das Medium der Kamera) und das Terrain-Studio (`waterArtAt`). Bis w13-bach-klar entschied jeder Leser
+    // selbst („im Kanal → fluss"): der Bach der Mess-Wiese (4,4 m, ~0,2 km²) trug die Trübung eines Tieflandflusses, Sicht 1,1 m.
+    const GEWAESSER_ART = Object.freeze({ bachBisKm2: 100 });
+    function gewaesserArt(breiteM) {
+        if (!(breiteM > 0)) return "see";
+        return breiteM < flussBreite(GEWAESSER_ART.bachBisKm2 * 1e6) ? "bach" : "fluss";
+    }
+
     // DER MÄANDER (K16, Prüfung Runde 2: „ein linealgerader Fluss — der Kern hat keinen Mäander-Term"): die Bahn eines Fluss-
     // Glieds der Ebenen 0 und 1 ist die sinus-erzeugte Kurve (Langbein & Leopold 1966) — die Richtung schwingt mit der
     // Bogenlänge, θ(s) = ω·cos(2π·s/M), die Kurve kleinster Krümmungs-Varianz. Die Wellenlänge auf der Sehne λ ≈ 11 Breiten
@@ -6637,10 +6651,11 @@
         return k.edits;
     }
 
-    // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer } oder null jenseits jeder Krone: der Spiegel der
+    // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer, breite } oder null jenseits jeder Krone: der Spiegel der
     // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend, samt
     // dem Pegel (`pegelHub`); Lauf, Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
-    // ufer die Kronen-Blende [0, 1] (1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone, das Maximum der Segmente).
+    // ufer die Kronen-Blende [0, 1] (1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone, das Maximum der Segmente);
+    // breite (m) die Bankvoll-Breite des nächsten Segments an der Stelle (`flussBreite` × Quell-Anteil) — sie trägt die Art (`gewaesserArt`).
     function flussAm(L, x, z) {
         const h = hydroRegion(L, x, z);
         const kb = flussBucket(h, x, z);
@@ -6693,6 +6708,7 @@
             surfaceY: sSumme / gSumme + pegelHub(L, sSumme / gSumme),
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
             ufer,
+            breite: 2 * bestHalfW,
         };
     }
     // DER SPIEGEL QUER: der Spiegel des nächsten Segments an (x, z), auch jenseits der Krone (der Fluss-Spiegel liegt quer
@@ -7089,6 +7105,8 @@
         MAEANDER: MAEANDER,
         FLUSS_BREITE: FLUSS_BREITE,
         flussBreite: flussBreite,
+        GEWAESSER_ART: GEWAESSER_ART,
+        gewaesserArt: gewaesserArt,
         VERSION: VERSION,
         STUDIO_VERTRAG: 1, // G4.3 — EINE Versions-Semantik
         FUNKTION: 1, // studio-vertrag §9 — ein Gesetz-Kern: reine Funktionen, keine Rezepte, keine Gestalt

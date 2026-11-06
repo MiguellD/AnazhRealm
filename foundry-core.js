@@ -159,7 +159,11 @@ var WASSER_GESETZ = {
     // kd = der Abfall des Tageslichts mit der Tiefe (Poole & Atkins 1929: kd ~ 1,7 / Secchi-Tiefe; reines Wasser rot 0,35, gruen 0,06, blau 0,02 /m,
     // Pope & Fry 1997; geloestes Organisches hebt blau), c = die Strahl-Schwaechung, die Sicht (Zaneveld & Pegau 2003: waagrecht ~4,8/c).
     // see = stehendes klares Wasser (See, Teich, Meer: Secchi ~8 m, Sicht ~15 m); fluss = Schwebstoff der Stroemung (Secchi ~1,3 m, Sicht ~1,5 m).
-    koerper: { see: { kd: [0.45, 0.15, 0.3], c: [0.55, 0.25, 0.35] }, fluss: { kd: [2.0, 1.3, 1.7], c: [4.0, 3.5, 3.8] } },
+    // w13-bach-klar (additiv): bach = der kleine Lauf bei Basis-Abfluss (Wiesen- und Gebirgsbach, Einzugsgebiet < 100 km²): kaum Plankton
+    // und Schwebstoff, Secchi tiefer als sein Bett, schwarze Scheibe ~24 m (Davies-Colley & Smith 2001: klare Baeche c(550) 0,2-0,5 /m);
+    // je Kanal reines Wasser (Pope & Fry 1997) + wenig Geloestes (blau) + Partikel b_p ~0,1 /m, kd ~ (a + b_b) / 0,85 — klarer als der
+    // See (dessen Plankton), der Fluss am trübsten. WELCHE Zeile ein Wasser traegt, urteilt EIN Gesetz: gelaende-core `gewaesserArt`.
+    koerper: { see: { kd: [0.45, 0.15, 0.3], c: [0.55, 0.25, 0.35] }, fluss: { kd: [2.0, 1.3, 1.7], c: [4.0, 3.5, 3.8] }, bach: { kd: [0.4, 0.1, 0.19], c: [0.45, 0.2, 0.3] } },
     // K2 (rein additiv) — DIE WELLE DER WELT (Welt-Leser; das Studio-GLSL liest sie nicht): der Hub des Hydro-Stoffs. Duenung der
     // offenen See (drei Rausch-Oktaven je +-0,5, Gewichte duenung) und Kraeuseln ((Rausch + oktave*Rausch - mitte) * kraeusel *
     // Kraeusel-Staerke <= kraeuselDecke); phase (s) = die Fluss-Phase einer advektierten Lage des Wasser-Bilds.
@@ -5271,6 +5275,16 @@ var PARAMS_BY_KIND = {
         { id: "flare", lab: "Stammfuß", min: 0, max: 1.2, step: 0.01, def: 0.3, law: "Wurzelanlauf: der Stamm weitet sich zum Boden (Strebepfeiler)", grp: "Stamm" },
     ],
 };
+// DIE PRÄGUNG AUF DEN P-VEKTOR (stoffe.K5#2, w13-jung-gestalt) — der EINE Weg eines `ov` in die Parameter, für den Körper
+// (buildInstance) wie für den gefühlten Baum (skelettDerGestalt): jeder Schlüssel ersetzt sein Feld NACH der Ableitung (die
+// Regler der Werkstatt, die Wald-Overrides), das Alter nie — `ov.alter` ist der Eingang der Ableitung (phyto-core
+// `treeParams(…, alter)`: Tiefe, Kronenansatz, Anlauf, Blatt und der Schaft der Jugend aus EINER Hand), kein Feld. Bis
+// w13-jung-gestalt schrieb die Prägung `P.alter` ein zweites Mal: ein Wuchs ohne die Jugend der Ableitung trug ihren Schaft
+// doch (die Mutante der Sukzession [9, 2 928] statt [9, 2 933] Glieder, gate:stand-takt --brand; gate:phyto-core „Jugend").
+function __praegeP(P, ov) {
+    if (ov) for (const k of Object.keys(ov)) if (k !== "alter") P[k] = ov[k];
+    return P;
+}
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
         sSeed = SEED,
@@ -5291,14 +5305,12 @@ function buildInstance(presetId, seed, lod, ov) {
     try {
         const pre = PRESETS[presetId];
         if (pre.panel === "rock") {
-            const P = deriveParamsRock(pre);
-            if (ov) Object.assign(P, ov);
+            const P = __praegeP(deriveParamsRock(pre), ov);
             __rockKind = P.kind;
             emitRock(P);
         } else {
             // die Jugend-Gestalt (stoffe.K5#2) reist als Prägung `ov.alter` in die EINE Ableitung (phyto-core `treeParams`)
-            const P = deriveParamsPlant(pre, ov ? ov.alter : undefined);
-            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
+            const P = __praegeP(deriveParamsPlant(pre, ov ? ov.alter : undefined), ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") {
                 const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
                 try {
@@ -5315,7 +5327,7 @@ function buildInstance(presetId, seed, lod, ov) {
                         }
                         __blueteDetail *= Math.min(0.97, zeile / n);
                         RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
-                        Object.assign(P, deriveParamsPlant(pre), ov || {});
+                        __praegeP(Object.assign(P, deriveParamsPlant(pre)), ov);
                     }
                 } finally {
                     __blueteDetail = 1;
@@ -5368,7 +5380,7 @@ function skelettDerGestalt(presetId, seed, lod, ov) {
         ov ? ov.alter : undefined,
         __gestaltenArt(presetId)
     );
-    if (ov) Object.assign(P, ov);
+    __praegeP(P, ov);
     const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
     if (P.tot) __totholzSchnitt(nodes, P, seed);
     return { P, nodes };

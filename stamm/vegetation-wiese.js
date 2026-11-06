@@ -2203,9 +2203,10 @@ class AnazhRealm_vegetation_wiese {
     // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
     // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
     // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    // DER FALL IST EIN KASTEN AUCH FÜR DIE LIEFERUNG IM FLUG (w13-dorf-strom): der Kasten der Zellen samt Urteils-Nachbarn steht
+    // mit dem Stand des Erdbaus, der ihn warf, im Gedächtnis der Fälle (`_erdbauFaelle`) — eine Lieferung des Wald-Fadens, die vor
+    // ihm geschickt wurde, verwirft nur ihre Zellen darin (`_erdbauFielSeit`, `_waldDartsAn`).
     _forestDartsFallen(x0, z0, x1, z1) {
-        const memo = this._forestDartMemo;
-        if (!memo || !memo.size) return 0;
         const C = AnazhRealm.FOREST.cell;
         const U = AnazhRealm.WALD_PLAN.urteil;
         const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
@@ -2213,6 +2214,11 @@ class AnazhRealm_vegetation_wiese {
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
+        const F = this._erdbauFaelle || (this._erdbauFaelle = []);
+        F.push([this._erdbauStand | 0, ga - U, gb + U, ha - U, hb + U]);
+        if (F.length > AnazhRealm.WALD_PLAN.faelle) F.shift();
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
         let n = 0;
         for (let gx = ga - U; gx <= gb + U; gx++)
             for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
@@ -2263,12 +2269,31 @@ class AnazhRealm_vegetation_wiese {
             out.vorlaeufig = true;
             return out;
         }
-        if (memo.size > 8192) {
-            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
-            this._forestDartFall = (this._forestDartFall | 0) + 1;
-        }
+        this._forestDartRaum(memo, 1);
         memo.set(memoKey, out);
         return out;
+    }
+
+    // DIE SCHRANKE DES DART-GEDÄCHTNISSES räumt die FERNSTEN Zellen (Gebot 7, w12-dorf-strom): fasst das Gedächtnis `dazu`
+    // weitere Zellen nicht mehr (`WALD_PLAN.zellen`), fallen die Zellen mit dem größten Rang (`_spielerD2`, die Zeit bis
+    // Bedarf) bis auf drei Viertel; der Plan um den Spieler bleibt. Die Darts einer Zelle sind eine reine Funktion des Stands
+    // — kein Stand fällt, nur die stehenden Kästen (`_waldPlanVoll`) fragen neu. Bis w12-dorf-strom warf die Schranke das
+    // ganze Gedächtnis (`memo.clear()`): die Fahrt ins Dorf lud 11 108 Zellen, jeder Überlauf nahm den Plan aller Bäume vor
+    // dem Spieler, die Schlange stieg auf 1 330 Zellen, und 572 von 578 Bäumen traten ohne Gestalt in den Sichtkegel.
+    _forestDartRaum(memo, dazu) {
+        const N = AnazhRealm.WALD_PLAN.zellen;
+        if (memo.size + dazu <= N) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const rang = [];
+        for (const k of memo.keys()) {
+            const i = k.indexOf(",");
+            rang.push([this._spielerD2((Number(k.slice(0, i)) + 0.5) * C, (Number(k.slice(i + 1)) + 0.5) * C), k]);
+        }
+        rang.sort((a, b) => b[0] - a[0]);
+        const weg = Math.min(rang.length, memo.size + dazu - ((N * 3) >> 2));
+        for (let i = 0; i < weg; i++) memo.delete(rang[i][1]);
+        this._waldPlanVoll = null;
+        return weg;
     }
 
     // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo`, `_forestDartFall`, `_erdbauStand`
@@ -2572,23 +2597,23 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
-    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
-    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft ihn — die Zellen bleiben in der Schlange, ein neuer
-    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je Feld merken die Objekte).
-    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
-    // Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft, nie erst im nächsten Takt.
+    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand verwirft ihn, ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) nur die Zellen in seinem Kasten (`_erdbauFielSeit`) — sie bleiben
+    // in der Schlange, ein neuer Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je
+    // Feld merken die Objekte). Bis w13-dorf-strom verwarf jeder Erdbau der Welt jede Lieferung im Flug (Fahrt-Probe dorf: 10
+    // Lieferungen, 474 Zellen, auch im Kegel). Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr
+    // (Prüfung K60-3-1). Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft.
     _waldDartsAn(memo, zellen, r, erd) {
         if (this._waldFlugVon === memo)
             for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
         const Q = this._waldPlanSchlange;
         let n = 0;
-        if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
-            if (memo.size + zellen.length / 2 > 8192) {
-                memo.clear(); // bounded wie `_forestCellDarts`
-                this._forestDartFall = (this._forestDartFall | 0) + 1;
-            }
+        const fiel = this._erdbauFielSeit(erd);
+        if (r && this._forestDartMemo === memo && fiel !== true) {
+            this._forestDartRaum(memo, zellen.length / 2);
             const alle = this._waldDartsEntpacken(r, zellen.length / 2);
             for (let i = 0; i < alle.length; i++) {
+                if (fiel && fiel(zellen[i * 2], zellen[i * 2 + 1])) continue;
                 const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
                 if (!memo.has(k)) memo.set(k, alle[i]);
                 if (Q) Q.delete(k);
@@ -2598,6 +2623,17 @@ class AnazhRealm_vegetation_wiese {
         if (n > 0) this._waldPlanGeplant(performance.now());
         if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr())
             this._waldFadenSchicken(this._forestSeedInt());
+    }
+
+    // Was fiel seit dem Stand `erd` des Erdbaus (`_erdbauStand`)? null: kein Erdbau; sonst (gx, gz) → ob die Wald-Zelle im Kasten
+    // eines Falls liegt (`_erdbauFaelle`); true, wenn ein Erdbau ohne Kasten fiel (der Boden-Umzug) oder das Gedächtnis der Fälle
+    // nicht so weit reicht — dann gilt keine Zelle.
+    _erdbauFielSeit(erd) {
+        const jetzt = this._erdbauStand | 0;
+        if (jetzt === erd) return null;
+        const F = (this._erdbauFaelle || []).filter((f) => f[0] > erd && f[0] <= jetzt);
+        if (F.length !== jetzt - erd) return true;
+        return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
     // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
@@ -2672,7 +2708,12 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // `stufen` Schritten je Rampe, der Jungwuchs in den Stufen seiner Gestalt: `jugend` sind die Alter, in denen er wächst
 // (phyto-core `treeParams(…, alter)`, je Alter EIN Körper und EINE Karte je Art und Gestalt), gewachsen ist er bei der Heilung.
 // Die erste Stufe einer frischen Tat malt der Nachwuchs bis `malMs` je Bild (mindestens eine Tat).
+// DIE KAPPE DER JUGEND (w13-jung-gestalt): der Jungwuchs wächst als EINE Kohorte im Maß seiner Art — seine Größe ist `alter` ×
+// höchstens `kappe` × die Größe 1 der Art (`hoeheM`, `_waldDartSetzen`); das Übermaß des Überhälters (`forestTreeSize` bis 1,95)
+// ist Alter, kein Wuchs: er trägt es erst gewachsen. Bis w13 stand der Jungwuchs eines Überhälters der Stufe 0,7 mit 35,5 m
+// (Tanne, Größe 1,95) über seiner Kohorte (typisch 16,9 m) und jedem gewachsenen Bestandsbaum (24,2 m): die Riesenhalme der Narbe.
 AnazhRealm.SUKZESSION = Object.freeze({
+    kappe: 1,
     malMs: 1,
     asche: Object.freeze([0.08, 0.3]),
     busch: Object.freeze([0.3, 0.6]),
@@ -2786,4 +2827,7 @@ AnazhRealm.WALD_PLAN = Object.freeze({
     urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
     ms: 3,
     faden: 64,
+    zellen: 8192,
+    // so viele Fälle des Erdbaus (`_erdbauFaelle`) kennt das Gedächtnis der Lieferungen im Flug (`_erdbauFielSeit`)
+    faelle: 64,
 });
