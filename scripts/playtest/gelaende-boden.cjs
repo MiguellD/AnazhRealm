@@ -1572,7 +1572,7 @@ async function checkBandV18199GammaMLichen({ page, check }) {
             samplesDryStone.push(calcLichen(0.1, 0.7, x, z)); // trocken + stein
             samplesWetErde.push(calcLichen(0.8, 0.1, x, z)); // feucht + erde
         }
-        const avg = (arr) => arr.reduce(addiere, 0) / arr.length;
+        const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
         out.lichenAvgWetStone = avg(samplesPositive);
         out.lichenAvgDryStone = avg(samplesDryStone);
         out.lichenAvgWetErde = avg(samplesWetErde);
@@ -1699,7 +1699,7 @@ async function checkBandSeamNormal({ page, check }) {
                 if (!nb) continue;
                 angs.push((Math.acos(Math.max(-1, Math.min(1, na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2]))) * 180) / Math.PI);
             }
-            angs.sort(aufsteigend);
+            angs.sort((a, b) => a - b);
             return { matched: angs.length, max: angs.length ? +angs[angs.length - 1].toFixed(3) : null };
         };
         const gA = build(5, 5);

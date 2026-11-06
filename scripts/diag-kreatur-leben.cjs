@@ -686,11 +686,7 @@ async function lebenBuehnen() {
     });
     // ── lebensraum (Tiere K4; die Geburt fern, außer Blick, in Gruppen): an neun Orten (Raster 300 m) je 25 Geburten — je Tier
     // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe, je Wurf der Bär am Fluss; die Gegenprobe in anderer Saat ──
-    await buehne("lebensraum", async (restore) => {
-        // die Täter der Zeichnung am Platz (w16-tier-blick): die Fern-Regel der Geburt am Leib des Bestands und der Halt der
-        // Kappe um eine halbe Kachel (der Anteil, der ihn bei 200 m trägt)
-        if (taeter === "zeichnung-fern") decke("_bestandFernM", () => () => A.CREATURE_SPAWN_FAR_MIN);
-        if (taeter === "zeichnung-halt") restore.push(leihe(A, { BESTAND_REGION: { ...A.BESTAND_REGION, haltAnteil: 0.9 } }));
+    await buehne("lebensraum", async () => {
         if (taeter === "lebensraum")
             decke("_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
         if (taeter === "geburt") decke("_bestandLeibOrt", () => () => ({ x: pm.x + 15, z: pm.z }));
@@ -708,7 +704,7 @@ async function lebenBuehnen() {
         Object.assign(z, {
             imBlick: 0,
             fensterMax: 0,
-            fernMin: r._bestandFernM(), // der Leib des Bestands: jenseits der Witterung des Spielers (w16-tier-blick)
+            fernMin: A.CREATURE_SPAWN_FAR_MIN,
             baer: { fluss: [0, 0], sonst: [0, 0] },
         });
         const p0 = pm.clone();
@@ -774,26 +770,6 @@ async function lebenBuehnen() {
             z.rand.fernWich = z.rand.wich ? null : akt(Math.PI).wich;
             for (const c of s.creatures.slice()) r.removeCreature(c);
         }
-        // DIE KAPPE TRÄGT DIE NAHE HERDE (tiere.K5): an der Kappe 3 eine Herde 200 m hinter dem Spieler gezeichnet, dann ankert
-        // eine 80 m hinter ihm — die ferne gibt ihren Platz (bis w16-tier-blick hielt sie ihn um eine halbe Kachel, 177 m)
-        const F = r._bestandRegionen();
-        const herde = (dx) => {
-            const T = [0, 1, 2].map((i) => ({ id: dx + i, soul: "wesen", g: "deer", bs: 1, alterS: 0, x: p0.x + dx, z: p0.z }));
-            (F.regionen[r._bestandKey(p0.x + dx, p0.z)] ||= { tiere: [] }).tiere.push(...T);
-            T.forEach(() => r._bestandVerkoerpern());
-            return () => T.filter((t) => t.leib);
-        };
-        pm.copy(p0);
-        kamera(1, 0);
-        [F.regionen, s.maxCreatures] = [{}, 3];
-        const fern = herde(-200);
-        const f0 = fern().length;
-        const nah = herde(-80)();
-        z.halt = [f0, nah.length, fern().length];
-        // DIE ZEICHNUNG AM PLATZ (tiere.K5): die nahe Herde steht an ihrem Platz — bis w16-tier-blick schob die Fern-Regel der
-        // Geburt jeden Leib des Bestands ≥ 130 m vom Spieler
-        z.platzM = Math.max(...nah.map((t) => ab(t.leib.position, t)));
-        for (const c of s.creatures.slice()) r.removeCreature(c);
         return Object.assign(z, {
             anteil: z.n ? +(z.drin / z.n).toFixed(3) : null,
             saat: s.worldMeta.seed,
@@ -899,8 +875,6 @@ function lebenUrteil(name, z, soll) {
         soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
         soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
-        soll(z.platzM <= 25, `der Leib ${z.platzM} m neben seinem Platz`); // außer Blick, Soll ≤ 25 m
-        soll(z.halt.join() === "3,3,0", `die ferne Herde hält die Kappe: ${z.halt}`); // gezeichnet fern · nah · fern danach
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
@@ -992,8 +966,6 @@ module.exports = {
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
             ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],
-            ["zeichnung-fern", /neben seinem Platz/],
-            ["zeichnung-halt", /hält die Kappe/],
         ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],

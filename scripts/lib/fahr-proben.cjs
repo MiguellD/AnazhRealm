@@ -1222,7 +1222,7 @@ async function probeLeben(expected) {
                 bahnWache = null;
                 r.setCameraMode(sicht0);
             }
-            const pq = (a, p) => (a.sort(aufsteigend), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
+            const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
             Object.assign(w, {
                 ruckN: ruck.length,
                 ruckP95: pq(ruck, 0.95),
@@ -1344,7 +1344,7 @@ async function probeLeben(expected) {
             bilder(60);
             tasten(false);
             ab5();
-            spalte.sort(aufsteigend);
+            spalte.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
                 stehend: steh.length,

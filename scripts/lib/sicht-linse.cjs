@@ -290,7 +290,7 @@ function sichtLinse(cfg) {
             }
         return o;
     };
-    const bytes = () => Object.values(bytesJe()).reduce(addiere, 0);
+    const bytes = () => Object.values(bytesJe()).reduce((a, b) => a + b, 0);
     let b0 = 0,
         bj0 = {};
     // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen: ein Bereich kam (+), ging (−) oder
@@ -524,7 +524,7 @@ function sichtLinse(cfg) {
             ruhe += p._instanzBehalten || 0;
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
-            o.trefferSumme = Object.values(o.treffer).reduce(addiere, 0);
+            o.trefferSumme = Object.values(o.treffer).reduce((a, b) => a + b, 0);
             o.fehlt = fehlt;
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;
@@ -723,12 +723,12 @@ function sichtPhase(frames, ab) {
         f.klasse = window.__sichtBytesKlasse(f);
         f.legeKlasse = window.__sichtBytesKlasse(f, "legeGrund");
     }
-    const reihe = (g) => fs.map(g).sort(aufsteigend);
+    const reihe = (g) => fs.map(g).sort((a, b) => a - b);
     const st = (g) => {
         const x = reihe(g);
         if (!x.length) return { mittel: 0, median: 0, max: 0 };
         return {
-            mittel: +(x.reduce(addiere, 0) / x.length).toFixed(1),
+            mittel: +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(1),
             median: x[Math.floor(x.length / 2)],
             max: x[x.length - 1],
         };
@@ -862,7 +862,7 @@ function sichtPhase(frames, ab) {
         kameraFrames: fs.filter((f) => f.kamera).length,
         blendeFrames: fs.filter((f) => f.blende).length,
         arbeitOhne: (() => {
-            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort(aufsteigend);
+            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
             return {
                 frames: x.filter((a) => a > 0).length,
                 median: x.length ? x[Math.floor(x.length / 2)] : 0,

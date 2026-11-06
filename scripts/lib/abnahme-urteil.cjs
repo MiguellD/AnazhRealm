@@ -441,7 +441,7 @@ function spiegelPartner(m, W, H, s) {
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
         if (m[p] === 1) ys.push(hoch(p));
     }
-    const yw = ys.sort(aufsteigend)[ys.length >> 1];
+    const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {
@@ -716,7 +716,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 B[i] = L[p];
             }
             if (!voll) continue;
-            const mb = B.reduce(addiere, 0) / 64;
+            const mb = B.reduce((a, b) => a + b, 0) / 64;
             mk[0]++;
             if (Math.sqrt(B.reduce((a, b) => a + (b - mb) * (b - mb), 0) / 64) < 4) mk[1]++;
             for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {

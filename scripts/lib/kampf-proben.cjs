@@ -544,7 +544,7 @@ async function WELLE_L(ort) {
             const ke = tafel
                 .map(([, x]) => x.ke)
                 .filter((x) => x > 0)
-                .sort(aufsteigend);
+                .sort((a, b) => a - b);
             let gruppe = 0;
             for (let i = 0; i < ke.length; i++)
                 gruppe = Math.max(gruppe, ke.filter((k) => k >= ke[i] && k <= ke[i] * 1.06).length);
@@ -843,7 +843,7 @@ async function WELLE_L(ort) {
         const gestaltSchar = [];
         {
             const G = A._verhaltenGesetz().groessen;
-            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort(aufsteigend);
+            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort((a, b) => a - b);
             let n = 0;
             for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
                 for (const bs of groessen) {
