@@ -16,6 +16,14 @@ const { scanWarteWand, ausDatei, SELBSTTEST, path, fs, stammLib, jsonLesen } = r
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
+// die Gründe, die mehrere Tokens tragen (EINE Zeichenkette je Grund)
+const F_V503 = "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)";
+const F_D3_SONNE = "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)";
+const F_EGO = "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)";
+const F_KLANG_REGEN = "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal";
+const F_SLOPE = "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)";
+const F_GROB_TOR = "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)";
+const F_K11 = "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)";
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
@@ -172,9 +180,9 @@ const FORBIDDEN = [
         fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)",
     },
     { token: "lodServe", fiel: "V18.500 — fachwerk-core L1 = Flächen-Stufe, kindStages [0,1,2] alle serviert" },
-    { token: "fillLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
-    { token: "rimLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
-    { token: "backLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
+    { token: "fillLight", fiel: F_V503 },
+    { token: "rimLight", fiel: F_V503 },
+    { token: "backLight", fiel: F_V503 },
     { token: "FILL_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "RIM_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
     { token: "BACK_LIGHT", fiel: "V18.503 — Studio-Füll-Rig nur im Labor" },
@@ -376,8 +384,8 @@ const FORBIDDEN = [
     { token: 'baum_buche: "mammut"', fiel: "Waldboden — baum_buche ist die Studio-Buche" },
     { token: 'baum_karst: "eiche"', fiel: "Waldboden — baum_karst ist der Studio-Karst-Baum" },
     { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
-    { token: "_atmosphere(", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
-    { token: "_fATM", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_atmosphere(", fiel: F_D3_SONNE },
+    { token: "_fATM", fiel: F_D3_SONNE },
     { token: "_nebN", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln (_atmoLutBau), keine Nebel-Kuppel" },
     { token: "_hazeCol", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln, kein Grau-Schleier" },
     { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
@@ -595,8 +603,8 @@ const FORBIDDEN = [
     },
     { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
     { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
-    { token: "_egoVerborgen", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
-    { token: "_egoWar", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
+    { token: "_egoVerborgen", fiel: F_EGO },
+    { token: "_egoWar", fiel: F_EGO },
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
@@ -653,8 +661,8 @@ const FORBIDDEN = [
     { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
     { token: "ambient.osc1", fiel: "Welle 5 Klang — der Drohn; die Welt rauscht aus klang:UMWELT (wind/laub/…)" },
     { token: "ambient.ambientGain", fiel: "Welle 5 Klang — der Drohn" },
-    { token: "symphony.weather)", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal" },
-    { token: "symphony.weather;", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal" },
+    { token: "symphony.weather)", fiel: F_KLANG_REGEN },
+    { token: "symphony.weather;", fiel: F_KLANG_REGEN },
     { token: "_symphonyWeatherTarget", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen" },
     { token: "hydroAudio", fiel: "Welle 5 Klang — Ufer/Fluss/Fall aus dem Hör-Ring (_umweltRingProbe)" },
     { token: "_buildHydroAudioLayer", fiel: "Welle 5 Klang — _umweltKlangBauen" },
@@ -814,8 +822,8 @@ const FORBIDDEN = [
     },
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
     { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
-    { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
-    { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_slopeProbeV", fiel: F_SLOPE },
+    { token: "_slopeProbeH", fiel: F_SLOPE },
     {
         token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT",
         fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)",
@@ -863,8 +871,8 @@ const FORBIDDEN = [
     { token: "aPhase", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
     { token: "_mergeAttributedGeometries", fiel: "K19 — ohne Wind-Attribute ein Zwilling von `_mergeGeometries`" },
     { token: "useFlexAttr", fiel: "K19 — der Pflanzen-Stoff heißt `pflanzenStoff` (er liest kein aFlex)" },
-    { token: "Math.max(0.3, c.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
-    { token: "Math.max(0.3, cr.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
+    { token: "Math.max(0.3, c.scale.x", fiel: F_GROB_TOR },
+    { token: "Math.max(0.3, cr.scale.x", fiel: F_GROB_TOR },
     { token: "o.userData && o.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
     { token: "creature.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
     { token: "u.gattung || u.recipe", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
@@ -1006,11 +1014,11 @@ const FORBIDDEN = [
     },
     {
         token: "atmoUniforms.augenLicht",
-        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+        fiel: F_K11,
     },
     {
         token: "augenLicht: TSL.uniform",
-        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+        fiel: F_K11,
     },
     { token: "_umweltGlutSweep", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
@@ -1095,8 +1103,8 @@ function scan(files) {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
-// das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
-const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
+// das Gesetzbuch der Himmels-Sicht: der Baustein, der den Wandel-Pass trägt (welt-licht.js `atmoTafeln`; Welt und Studio-Bühne rufen ihn)
+const HIMMEL_BUCH = "welt-licht.js";
 const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
@@ -1297,7 +1305,7 @@ const ZWILLINGE = [
     })),
     // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
     // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
-    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    // nur im Wandel-Pass der Himmels-Sicht (`atmoTafeln`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
     {
         muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
         gefallen: true,
@@ -3839,6 +3847,7 @@ function main() {
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
         // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
         const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
+        const LAMBERT_ZEILE = '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"';
         const zwillingFeuert =
             feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
             feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&
@@ -3857,9 +3866,9 @@ function main() {
             feuert("scripts/diag-tor-fern.cjs", "Math.min(n - 1, Math.ceil(Math.max(a)));", "Raster") &&
             feuert("scripts/playtest/gelaende.cjs", "if (o && !o.error) f();", "Fehler-Zweig") &&
             feuert("scripts/playtest/netz.cjs", "if (!r) return;", "Wächter") &&
-            feuert(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"', "weltLicht") &&
+            feuert(STAMM[0], LAMBERT_ZEILE, "weltLicht") &&
             feuert(STAMM[0], "Object.create(ro);", "erbt nie") &&
-            still(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"');
+            still(STAMM[0], LAMBERT_ZEILE);
         console.log(
             zwillingFeuert
                 ? "✅ SELBST-TEST: die Zwillings-Wand feuert — jeder Abdruck mit Zeile, der Kommentar nicht"

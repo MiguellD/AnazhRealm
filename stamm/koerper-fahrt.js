@@ -143,8 +143,8 @@ class AnazhRealm_koerper_fahrt {
     // hängt in der Szene und ist sichtbar, im Kegel der Kamera und so nah, dass sein Schwung (`TUCH_GESETZ.webe._.freiM`) am EINEN
     // Schirm (`_schirm().pxJeM`) mindestens
     // `TUCH_GESETZ.px` Bildpunkte deckt, höchstens `nahM`; ohne Schirm (pxJeM null) rechnet kein Tuch. DIE UHR DES TUCHS ist die
-    // Echtzeit: läuft die Spielzeit des Leibs schneller als `raffer` mal die Wand (der Zeitraffer — ein Bündel Takte ohne Bild, die
-    // Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. DIE STUFE DES BILDS trägt das Gitter (w12-tuch-grob,
+    // Echtzeit: läuft die Spielzeit des Leibs über ein Fenster von `sprungS` Wand schneller als `raffer` mal die Wand (der
+    // Zeitraffer — ein Bündel Takte ohne Bild, die Probe des Bewohner-Tags), ruht das Tuch; ein Takt ohne Zeit rechnet nichts. DIE STUFE DES BILDS trägt das Gitter (w12-tuch-grob,
     // Gebot 4 — EIN Weg für jede Stufe): ihr Tuch über IHRER Haut, wie es gezeichnet wird; wechselt die Stufe, ruht das Tuch der
     // alten und das der neuen beginnt mit dem Sprung. Bis hier rechnete nur die feine — wer die grobe nah zeigte (der erzwungene
     // Abstand der Werkstatt und der Proben), trug ihr Tuch in der Pose der Ruhe, und der Gang drückte es hinter die Haut (haar.K4#2
@@ -164,13 +164,18 @@ class AnazhRealm_koerper_fahrt {
         const KC = globalThis.__koerperCore;
         const TG = KC.TUCH_GESETZ;
         const st = this.state;
-        // DIE UHR: Spielzeit gegen Echtzeit seit dem letzten Ruf dieses Leibs (ein Rücksprung oder ein Takt ohne Zeit rafft nie)
+        // DIE UHR: Spielzeit gegen Echtzeit über ein FENSTER von mindestens `sprungS` Wand (ein Rücksprung beginnt es neu; das
+        // Urteil des geschlossenen Fensters gilt, bis das nächste schließt). Je Ruf gemessen las sie die Spielzeit am Beginn des
+        // Takts und die Wand am Ruf: eine Last vor dem Leib im letzten Takt (Strom, Leben, Kollektor) verkürzte die Wand um ihre
+        // Dauer, und der Leib raffte ohne Zeitraffer — Genesis Third headless 6-mal in 20 s (Spiel 11,6–19,1 ms gegen Wand
+        // 2,2–4,6 ms), je Mal fiel der Zustand, entstand neu und rechnete den Sprung und ~17 volle Schritte mit Haut-Kollision.
         const jetzt = performance.now();
-        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0 });
+        const uhr = u._tuchUhr || (u._tuchUhr = { t: null, w: 0, raffer: false });
         const dSpiel = uhr.t == null ? 0 : t - uhr.t;
-        const raffer = dSpiel > 0 && dSpiel > (TG.raffer * (jetzt - uhr.w)) / 1000;
-        uhr.t = t;
-        uhr.w = jetzt;
+        const dWand = (jetzt - uhr.w) / 1000;
+        const raffer = uhr.raffer || dSpiel > TG.raffer * Math.max(dWand, TG.sprungS);
+        if (uhr.t == null || dSpiel < 0) Object.assign(uhr, { t, w: jetzt, raffer: false });
+        else if (dWand >= TG.sprungS) Object.assign(uhr, { t, w: jetzt, raffer: dSpiel > TG.raffer * dWand });
         // die Stufe des Bilds und ihr Satz (null: sie trägt kein Tuch); wechselte sie, ruht das Tuch der alten
         const satz = u._tuchTeile[G.istFern ? "fern" : "nah"];
         if (u._tuch && u._tuchSatz !== satz) this._tuchLoesen(group);
@@ -1692,10 +1697,11 @@ class AnazhRealm_koerper_fahrt {
     // DER FAHRER (fahrzeug.K2): wer am Steuer des gerittenen Gesetz-Wagens eine Route trägt (`fahrerSetzen`, die Punkte einer
     // Route über das Wegenetz, `_wegenetzRoute`), schreibt am Kopf jedes Sim-Schritts Gas, Bremse und Lenkung in die Verb-Tafel
     // (`_verbTafelSammeln`) — dieselben Felder wie Tastatur und Pad, gefahren vom EINEN Fahr-Schritt des Kerns, nie ein Teleport.
-    // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley — geteilt durch den
-    // Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
-    // in Sicht (`sichtM`): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (μ des Bodens unter dem Rad, `_fahrHaft`)
-    // und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` reicht; am Ende hält er. `F.s` (Weg auf der Route),
+    // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley mit dem Dämpfer der
+    // Gier — geteilt durch den Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
+    // voraus (das Tempo-Profil im Reibkreis): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (der des Kerns am Boden
+    // unter dem Rad, `_fahrHaft`) und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` neben der Querlast reicht;
+    // am Ende hält er. `F.s` (Weg auf der Route),
     // `F.quer` (Abstand zu ihr) und die Zählung des Takts (`F.takte`, `F.tempo`, `F.fest`) lesen die Linse und wer der Fahrt folgt.
     // Der Fahrer des Spielers sitzt in `_fahrer`; jeder Wagen mit einem Bewohner am Steuer trägt seinen eigenen (`_verkehrSchritt`)
     // — dieselbe Linie (`_fahrerLinie`), derselbe Schritt, nur Wagen und Lage sind seine.
@@ -1710,7 +1716,7 @@ class AnazhRealm_koerper_fahrt {
         const P = [];
         for (const q of pts || [])
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
-                P.push({ x: q.x, z: q.z });
+                P.push({ x: q.x, z: q.z, vz: q.vz });
         if (P.length < 2) return null;
         // DIE LINIE DES FAHRERS: die Route je Meter, gemittelt über ±kurveM (an den Enden das symmetrische Stück) — der Knick
         // einer Gasse wird der Bogen, den die Drehung über ±kurveM misst (am Knick schoss er über den Bogen hinaus und kroch zurück)
@@ -1718,8 +1724,12 @@ class AnazhRealm_koerper_fahrt {
         for (let i = 1; i < P.length; i++) {
             const [a, b] = [P[i - 1], P[i]];
             const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z));
-            for (let t = 1; t <= n; t++) M.push({ x: a.x + ((b.x - a.x) * t) / n, z: a.z + ((b.z - a.z) * t) / n });
+            for (let t = 1; t <= n; t++)
+                M.push({ x: a.x + ((b.x - a.x) * t) / n, z: a.z + ((b.z - a.z) * t) / n, vz: Math.min(a.vz, b.vz) });
         }
+        // das Entwurfs-Tempo je Meter (die Route des Wegenetzes trägt es je Punkt, `_wegenetzRoute`; je Stück das kleinere
+        // seiner Enden) — die Spur des Verkehrs trägt keins
+        const vz = P.some((q) => q.vz > 0) ? M.map((q) => q.vz) : null;
         const sx = [0];
         const sz = [0];
         for (const q of M) {
@@ -1757,6 +1767,7 @@ class AnazhRealm_koerper_fahrt {
             bogen: s,
             k,
             ks,
+            vz,
             stil,
             i: 0,
             s: 0,
@@ -1765,6 +1776,8 @@ class AnazhRealm_koerper_fahrt {
             lang: s[s.length - 1],
             takte: 0,
             tempo: Array(11).fill(0),
+            bezug: 0,
+            vmax: 0,
             fest: [],
             anker: 0,
             steht: 0,
@@ -1831,9 +1844,17 @@ class AnazhRealm_koerper_fahrt {
             (P[fi].z + tz * ft - az0) * -cy -
             ((G.L * G.L - G.c * G.c) * F.ks[kv]) / 2;
         const psi = Math.atan2(-tz, tx) - z.yaw;
-        const delta = Math.atan2(Math.sin(psi), Math.cos(psi)) + Math.atan2(D.querK * ab, D.querV + Math.abs(v));
+        // DIE GIER GEDÄMPFT (der dritte Term des Stanley-Reglers, Hoffmann · Tomlin · Montemerlo · Thrun 2007): gierD · (v·κ −
+        // Gier-Rate) — dreht der Wagen schneller als die Linie, nimmt er Einschlag zurück. Ohne ihn schwang die Gier über 25 m/s
+        // auf gerader Linie (R > 500 m) von +0,38 auf −1,02 rad/s, das Heck brach aus (die Fahrt auf dem Wegenetz bei 370 m)
+        const delta =
+            Math.atan2(Math.sin(psi), Math.cos(psi)) +
+            Math.atan2(D.querK * ab, D.querV + Math.abs(v)) +
+            D.gierD * (v * F.ks[kv] - (z.yawRate || 0));
         T.lenken = Math.max(-1, Math.min(1, (delta * (1 + Math.abs(z.speed || 0) * G.sfK)) / G.maxSteer));
-        const mu = this._fahrHaft(z) * G.g;
+        // DER REIBKREIS DES FAHRERS ist der des Kerns (vehicle-core fahrKraefte `cap`: maxGrip · grip des Rezepts · der Boden,
+        // gekappt bei 1) — bis hier las der Fahrer nur den Boden (`_fahrHaft`): der Supersport (grip 0,85) plante 18 % zu schnell
+        const mu = G.maxGrip * G.grip * Math.min(1, this._fahrHaft(z)) * G.g;
         // die Kurve deckelt das Tempo zweimal: der Reibkreis (v² · κ ≤ quer · μ·g) und die Lenksäule, deren Einschlag mit dem
         // Tempo sinkt (lenk · maxSteer / (1 + v · sfK) muss den Bogen atan(κ · L) tragen) — nie unter das Kriechen (`kriechMs`:
         // im Stand dreht kein Rad den Wagen)
@@ -1845,37 +1866,72 @@ class AnazhRealm_koerper_fahrt {
         F.ende = F.s >= F.lang - D.haltM;
         // auch der Bogen zurück auf die Route, gemessen auf mindestens `bogenM` (auf dem kurzen Blick des Kriechens hielte er
         // sich selbst im Schritt: langsam → nah → steil → langsam)
+        // DER BEZUG DER FAHRT (fahrzeug.K2): das Tempo, das der Weg hier trägt — min(vmax, Entwurfs-Tempo seiner Klasse,
+        // `WEGENETZ.entwurfKmh`); schneller fährt der Fahrer nie, und an ihm zählt die Fahrt ihre Takte
+        const vzAn = (i) => (F.vz ? F.vz[i] : Infinity);
+        const bezug = Math.min(G.vmax, vzAn(F.i));
         let soll = F.ende
             ? 0
-            : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
+            : Math.min(bezug, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
         // was das Soll deckelt: der Bogen zurück auf die Route, eine Kurve in Sicht (wo, ihr Radius) oder das Ende
         let grund = F.ende ? "ende" : "bogen";
         let kWo = -1;
-        // (fern genug, dass schon der Bremsweg allein das Soll trägt, deckelt keine Kurve mehr: dort endet der Blick — Lehre 25)
-        for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
-            if (2 * ST.brems * mu * (S[i] - F.s) >= soll * soll) break;
-            const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
-            const w = Math.sqrt(vk * vk + 2 * ST.brems * mu * Math.max(0, S[i] - F.s));
-            if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];
+        // DAS TEMPO-PROFIL IM REIBKREIS (die Rückwärts-Integration im g-g-Diagramm der Ideallinien-Planer, Kapania · Subosits ·
+        // Gerdes 2016): vom Ende des Blicks zurück zum Wagen trägt jeder Meter so viel Bremse, wie der Reibkreis neben der Querlast
+        // seiner Krümmung bei diesem Tempo lässt (brems · μ·g · √(1 − (v²·κ / μ·g)²)), und keine Kurve fährt schneller als
+        // `vKurve`. Bis hier bremste der Plan vor jeder Kurve mit dem vollen brems · μ·g, auch im Bogen davor: der Fahrer kam
+        // zu schnell in die S-Kurve bei 360–390 m (R 181 / 135 m), bremste im Bogen und drehte sich. Der Blick reicht 1,5-mal so
+        // weit wie der Bremsweg aus dem Soll ohne Querlast (fern davon trägt schon der Bremsweg allein das Soll — Lehre 25).
+        // Gedeckelt beim Soll (das Profil steigt mit dem Tempo, also ändert der Deckel kein Ergebnis unter ihm): eine Stelle,
+        // deren Krümmung unter `kSoll` liegt, trägt das Soll im Reibkreis und in der Lenksäule — über ihr kostet der Blick nichts
+        // (Lehre 25; der Verkehr der Metropole: 20 Wagen je Sim-Schritt).
+        const blick = (1.5 * soll * soll) / (ST.brems * mu) + 2;
+        const kSoll = Math.min(
+            (ST.quer * mu) / Math.max(soll * soll, 1e-6),
+            Math.tan((ST.lenk * G.maxSteer) / (1 + soll * G.sfK)) / G.L
+        );
+        let jb = F.i + 1;
+        while (jb < P.length - 1 && S[jb] - F.s < blick) jb++;
+        let [w, wo, wg] = [jb === P.length - 1 ? 0 : Math.min(soll, vKurve(F.k[jb]), vzAn(jb)), jb, "kurve"];
+        const auf = (w, k, ds) =>
+            Math.min(
+                soll,
+                Math.sqrt(w * w + 2 * ds * ST.brems * mu * Math.sqrt(Math.max(0, 1 - ((w * w * k) / mu) ** 2)))
+            );
+        for (let i = jb - 1; i > F.i; i--) {
+            if (w >= soll && F.k[i] <= kSoll && vzAn(i) >= soll) continue;
+            w = auf(w, F.k[i], S[i + 1] - S[i]);
+            const vk = F.k[i] > kSoll ? vKurve(F.k[i]) : Infinity;
+            // ein langsamerer Weg voraus (das Entwurfs-Tempo der nächsten Klasse) deckelt wie eine Kurve
+            if (Math.min(vk, vzAn(i)) < w) [w, wo, wg] = [Math.min(vk, vzAn(i)), i, vzAn(i) < vk ? "weg" : "kurve"];
         }
+        w = auf(w, F.k[F.i], Math.max(0, S[F.i + 1] - F.s));
+        if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : wg, wo];
         if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
-        T.bremse = v > D.bremsV ? Math.max(0, Math.min(1, -e / D.bandMs)) : 0;
+        // DIE BREMSE IM REST DES REIBKREISES (Kamm; derselbe Satz wie der Fahrer der Linie des Kerns, vehicle-core
+        // `fahrerLinie`): neben der Querlast (`z.aLat`) bleibt μ·g·√(1 − (a_quer / μ·g)²) für die Bremse, umgerechnet in den
+        // Tritt über die Bremse des Wagens (`brakeDecel`). Bis hier trat er voll (14 m/s² gegen μ·g 6,9 auf dem Feldweg) im
+        // Bogen: die Last ging nach vorn, das Heck verlor seine Seitenführung, der GT drehte sich bei 25 m/s im Bogen R 135 m
+        // (die Fahrt auf dem Wegenetz: drei Dreher, Steckenbleiber an Hauswand und Böschung bei 424, 1493 und 1840 m)
+        const rest = Math.sqrt(Math.max(0, 1 - ((z.aLat || 0) / mu) ** 2));
+        T.bremse = v > D.bremsV ? Math.max(0, Math.min(-e / D.bandMs, (rest * mu) / G.brakeDecel)) : 0;
         // unter `haltMs` Soll hält er die Handbremse (unter bremsV bremst der Kern nicht: wer hinter einem Stehenden auf Soll 0
         // kam, rollte mit 0,3–0,5 m/s in ihn — 327 Berührungen in der Metropole)
         T.handbremse = F.ende || soll < D.haltMs;
-        // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln von vmax (`F.tempo`), und wer vor dem Ende `festS`
+        // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln des Bezugs (`F.tempo`; seine Summe `F.bezug`), und wer vor dem Ende `festS`
         // lang keine `festM` auf der Route vorankommt, steckt fest (`F.fest`: wo, m auf der Route)
         F.takte++;
-        F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / G.vmax)))]++;
+        F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / bezug)))]++;
+        [F.bezug, F.vmax] = [F.bezug + bezug, G.vmax];
         if (F.s - F.anker >= D.festM || F.ende) [F.anker, F.steht] = [F.s, 0];
         else if (++F.steht === Math.round(D.festS / AnazhRealm.FIXED_DT)) F.fest.push(Math.round(F.s));
-        // DER TÄTER JEDES LANGSAMEN TAKTS (Gebot 10, unter `tempoTeil` · vmax): deckelt das Soll, sein Grund (die Kurve, der Bogen
-        // zurück, das Ende); fährt der Wagen unter einem freien Soll, die Welt am Rad — das Wasser (`_fahrTiefe`), der Hang
+        // DER TÄTER JEDES LANGSAMEN TAKTS (Gebot 10, unter `tempoTeil` · Bezug): deckelt das Soll, sein Grund (die Kurve, ein
+        // langsamerer Weg voraus, der Bogen zurück, das Ende); fährt der Wagen unter einem freien Soll, die Welt am Rad — das Wasser (`_fahrTiefe`), der Hang
         // (Steigung über `hangRad`) —, sonst holt er auf, was der letzte Täter ihm nahm (`F.nach`, am Start die Anfahrt). Je
         // `ortM` der Route die Takte und ihr Täter (`F.orte`), die Linse nennt die schwersten.
-        const lim = D.tempoTeil * G.vmax;
+        const lim = D.tempoTeil * bezug;
         if (soll < lim && grund !== "bogen") F.nach = grund;
         if (v < lim) {
             const g =
@@ -2821,7 +2877,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // Trägheit der Lenksäule) · ld0 + ldV·v (bis ldMax) m voraus misst er den Bogen zurück auf die Route · quer / lenk / brems = die
 // Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
 // fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
-// kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
+// kurveM = über ±so viele Meter misst er die Drehung der Route · gierD (s) = so viel Einschlag je rad/s Gier über der Linie
+// nimmt er zurück (Stanley, der Dämpfer) · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
 // bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltMs = unter diesem Soll zieht er die
 // Handbremse · haltM = so nah am Ende hält er · festM / festS =
 // so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber · tempoTeil = unter diesem Anteil von vmax ist
@@ -2832,6 +2889,7 @@ AnazhRealm.HAFT_MERK_M = 1;
 AnazhRealm.FAHRER = Object.freeze({
     querK: 3,
     querV: 1,
+    gierD: 0.1,
     lenkVorS: 0.1,
     ld0: 3,
     ldV: 0.35,
@@ -2842,7 +2900,6 @@ AnazhRealm.FAHRER = Object.freeze({
     bogenM: 6,
     brems: 0.8,
     kurveM: 8,
-    sichtM: 120,
     bandMs: 1.5,
     bremsV: 0.5,
     haltMs: 0.1,

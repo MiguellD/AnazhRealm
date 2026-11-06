@@ -1148,6 +1148,9 @@ class AnazhRealm_dirigent_ankunft {
                     "horizont",
                     `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
                 );
+            // die Teilung der Schale 0 im Fern-Faden (`_fernRingTeilung`, w14-ankunft-weg): bis sie zum Stand der Maske steht,
+            // zeichnete der Ring frei über dem Gebauten
+            else if (!this._fernRingGeteilt(fr)) luecke("horizont", "der Horizont wird geteilt", true);
             // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
             // auch headless, dort malt nie ein Panorama)
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
@@ -1549,11 +1552,44 @@ class AnazhRealm_dirigent_ankunft {
     // mass er am Punkt des Spielers: der Grat nahm ihm die Sonne in einem Schritt der Uhr ganz, dem Bild nur den nahen Boden
     // (die fernen besonnten Flecken blieben) — die Belichtung überholte das Bild um 0,10 EV (Wiese 0,728 → 0,73, Radeon und GTX).
     // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge 1.
+    // DIE MESSUNG KOSTET DIE ÄNDERUNG (Gebot 7): sie ist eine Funktion ihrer Eingänge — die Kamera (Lage und Projektion), das Licht,
+    // die Karte (Gitter, Anker, Bezug), die Lage des Gelände-Gesetzes (`hoehe` liest Saat, Grundhöhe, Wasserstand, Erbgut und
+    // Erdbau) und der Stand des Richtlichts; gleichen sie alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
+    // Bis hier fragte jedes Bild 33-mal die Höhe (Werkbank swiftshader, Genesis: 0,28 ms je Ruf, davon 0,21 ms Höhe), auch
+    // wo Kamera und Sonne standen.
     _horizontSichtImBild(L) {
         const st = this.state;
         const cam = st.camera;
         const K = st.horizontKarte;
         if (!cam || !K || !K.bereit || !(L.y > 0)) return 1;
+        const G = this._gelaende();
+        const dl = st.directionalLight;
+        const S = this._messerGedaechtnis || (this._messerGedaechtnis = { v: [], wert: 1 });
+        const v = S.v;
+        let n = 0;
+        let gleich = true;
+        const merk = (x) => {
+            if (!Object.is(v[n], x)) {
+                v[n] = x;
+                gleich = false;
+            }
+            n++;
+        };
+        for (const x of [K, K.stand, K.U.ursprung.value.x, K.U.ursprung.value.y, K.U.bezug.value]) merk(x);
+        for (const x of [L.x, L.y, L.z, G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
+        const tan = AnazhRealm.SCHATTEN_KASKADE.sonneTan;
+        for (const x of [st.renderer, st.rendererReady, dl, !!dl && dl.castShadow, tan]) merk(x);
+        // die Kamera, wie die Messung sie liest: der Ursprung der Strahlen (`position`) und `unproject` (Projektion⁻¹, Welt-Matrix)
+        for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
+        for (const x of cam.matrixWorld.elements) merk(x);
+        for (const x of cam.projectionMatrixInverse.elements) merk(x);
+        if (gleich) return S.wert;
+        return (S.wert = this._horizontSichtMessen(L));
+    }
+    // Die Messung selbst (`_horizontSichtImBild` ruft sie, wenn sich ein Eingang änderte)
+    _horizontSichtMessen(L) {
+        const st = this.state;
+        const cam = st.camera;
         const M = AnazhRealm.HORIZONT_KARTE.messer;
         const p = cam.position;
         const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
