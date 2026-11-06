@@ -2687,7 +2687,10 @@ const ULTI_K4_PROBEN = (() => {
 //      Auflösung (die Probe schaltet sie zu, kienspan trägt sie nicht: `_traa`), je Bild 1,5° Drehung über 12 Bilder: aus trägt das
 //      Bild mehr Kanten-Energie als an (das Nachziehen fällt), in Ruhe sind beide gleich.
 //  (Ü) DIE UNTERTITEL: `diag-klang-zensus --json` — die Zeile (Ü) UNTERTITEL n von n, kein ROT „Ü …“ (das Urteil von Staffel 1).
-// Am main db431cf0 ROT (keine Farbsicht: beide Bilder gleich, kein `state.zugang`, kein Schalter im Menü).
+// Gemessen (06.11., Cloud, swiftshader 4 Kerne, 7,2 min): am main db431cf0 ROT „kein state.zugang“ nach dem Umstellen; am Zweig
+// w15-farbsicht GRÜN — 4 Grenzen (Gras|Boden, Gras|Bau, Boden|Bau, Bau|Laub) min ΔE 16,9 → 19,5, Mittel 22,3 → 25,2; Sichtfeld 75 → 92°,
+// Skala 0,74 (Soll 0,741); Landung −0,079 m und Tempo +6°, aus 0 und das Bild byte-gleich; Kanten-Energie in Drehung an 3,6, aus 12,5
+// (Ruhe 7,79 ↔ 7,85); Untertitel 45 von 45. Fidaners Schub fiel an derselben Station: Boden|Bau 16,9 → 11,6, das Mittel sank.
 const ZUGANG_KLASSEN = {
     gras: "^nahWiese:",
     boden: "^bodenSatz$",
@@ -3049,32 +3052,14 @@ function zugangUrteil(e) {
     };
 }
 
-// DIE PROBEN von spielgang.K4#2: ZUGANG_ROH ist die Messung am Zweig w15-farbsicht (swiftshader, Genesis-Ort); die Mutanten nennen ihren Täter
-const ZUGANG_ROH = {
-    zeit: { umstellen: 100, "bild-aus": 160, "bild-deuteranopie": 220, komfort: 300, untertitel: 600 },
-    farbe: {
-        aus: { namen: ["bodenSatz", "nahWiese:L2"], schirm: [1280, 720], auge: [], deutan: [{ grenze: "gras|boden", n: 900, dE: 6.1 }, { grenze: "boden|bau", n: 400, dE: 8.2 }] },
-        deuteranopie: { namen: ["bodenSatz", "nahWiese:L2"], schirm: [1280, 720], auge: [], deutan: [{ grenze: "gras|boden", n: 900, dE: 12.4 }, { grenze: "boden|bau", n: 400, dE: 14.9 }] },
-    },
-    komfort: {
-        menue: { arten: ["aus", "deuteranopie", "protanopie", "tritanopie"], farbsicht: "tritanopie", fov: 92, wackeln: false, unschaerfe: false },
-        stand: {
-            snapshot: { farbsicht: "tritanopie", fov: 92, wackeln: false, unschaerfe: false },
-            geladen: { farbsicht: "tritanopie", fov: 100, wackeln: false, unschaerfe: false },
-            menue: { farbsicht: "tritanopie", fov: 100, wackeln: false, unschaerfe: false },
-        },
-        fov: { ruhe: 75, wahl: 92, skala: { s: 0.74, e: 6.2 }, soll: 0.741 },
-        wackeln: { an: { dip: -0.08, atem: 6, bildPx: 30000 }, aus: { dip: 0, atem: 0, bildPx: 0 } },
-        unschaerfe: { kette: true, an: 5.1, aus: 6.4, ruheAn: 7.0, ruheAus: 7.0, laufPx: 128 },
-    },
-    untertitel: { n: 39, von: 39, rot: [], exit: 0 },
-};
+// DIE PROBEN von spielgang.K4#2: ZUGANG_ROH ist die Messung am Zweig w15-farbsicht 1c (swiftshader, Genesis-Ort, 7,2 min); die Mutanten nennen ihren Täter
+const ZUGANG_ROH = {"zeit":{"umstellen":88,"farbe":159,"komfort":325,"untertitel":434},"farbe":{"gruppen":["gras","boden","bau","fels","laub","wasser"],"objekte":[4,1,31,2,36,0],"schirm":[640,360],"aus":{"deutan":[{"grenze":"gras|boden","n":902,"dE":28.04},{"grenze":"gras|bau","n":1024,"dE":17.67},{"grenze":"gras|laub","n":59,"dE":39.39},{"grenze":"boden|bau","n":345,"dE":16.92},{"grenze":"boden|laub","n":47,"dE":20.03},{"grenze":"bau|laub","n":1515,"dE":26.42}]},"deuteranopie":{"deutan":[{"grenze":"gras|boden","n":902,"dE":19.54},{"grenze":"gras|bau","n":1024,"dE":20.04},{"grenze":"gras|laub","n":59,"dE":29.4},{"grenze":"boden|bau","n":345,"dE":29.94},{"grenze":"boden|laub","n":47,"dE":23.88},{"grenze":"bau|laub","n":1515,"dE":31.32}]}},"komfort":{"menue":{"arten":["aus","deuteranopie","protanopie","tritanopie"],"farbsicht":"tritanopie","fov":92,"wackeln":false,"unschaerfe":false},"stand":{"snapshot":{"farbsicht":"tritanopie","fov":92,"wackeln":false,"unschaerfe":false},"geladen":{"farbsicht":"tritanopie","fov":100,"wackeln":false,"unschaerfe":false},"menue":{"farbsicht":"tritanopie","fov":100,"wackeln":false,"unschaerfe":false}},"fov":{"ruhe":75,"wahl":92,"skala":{"s":0.74,"e":8.21},"soll":0.741},"wackeln":{"an":{"dip":-0.0791,"atem":6,"bildPx":43195},"aus":{"dip":0,"atem":0,"bildPx":0}},"unschaerfe":{"kette":true,"an":3.639,"aus":12.453,"ruheAn":7.792,"ruheAus":7.85,"laufPx":4}},"untertitel":{"n":45,"von":45,"rot":[],"exit":1}};
 const zugangRoh = (aendern) => "[linse-gpu] google/swiftshader\nZUGANG " + JSON.stringify(aendern(JSON.parse(JSON.stringify(ZUGANG_ROH))));
 const ZUGANG_PROBEN = [
     { name: "die Messung am Zweig w15-farbsicht (swiftshader)", stdout: zugangRoh((x) => x), gruen: true },
     { name: "der Modus aus: das Bild der Farbsicht gleicht dem ohne (main)", stdout: zugangRoh((x) => ((x.farbe.deuteranopie = x.farbe.aus), x)), gruen: false },
     { name: "eine Grenze unter ΔE 10", stdout: zugangRoh((x) => ((x.farbe.deuteranopie.deutan[1].dE = 9.4), x)), gruen: false },
-    { name: "nur eine Grenze im Bild", stdout: zugangRoh((x) => (x.farbe.deuteranopie.deutan.pop(), x)), gruen: false },
+    { name: "nur eine Grenze im Bild", stdout: zugangRoh((x) => ((x.farbe.deuteranopie.deutan = x.farbe.deuteranopie.deutan.slice(0, 1)), x)), gruen: false },
     { name: "das Menü schreibt den Stand nicht", stdout: zugangRoh((x) => ((x.komfort.menue.fov = null), x)), gruen: false },
     { name: "der Lader klemmt das Sichtfeld nicht", stdout: zugangRoh((x) => ((x.komfort.stand.geladen.fov = 140), x)), gruen: false },
     { name: "das Sichtfeld steht fest (KAM_FOV_GRAD)", stdout: zugangRoh((x) => ((x.komfort.fov.wahl = 75), (x.komfort.fov.skala = { s: 1, e: 0 }), x)), gruen: false },
