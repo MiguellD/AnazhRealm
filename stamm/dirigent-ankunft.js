@@ -1713,7 +1713,9 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
-// `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest.
+// `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest. Die Leser der Karte: jeder
+// Empfänger der Sonne (`_sonnenSicht`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die Luft (`luftSicht`) und der Lichtmesser
+// (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
 // Speicher: Gitter r16f 128 KB + Karte rgba16f `karte`² 378 KB (H, s*, Boden), zusammen 0,494 MB unter der Ratsche 0,5
 // (spec/profiband/ratsche-*-gtx-*.json; vorher die Licht-Tiefe 512² r16f, 512 KB). Die Karte in der Auflösung des Gitters (256²,
 // 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an
