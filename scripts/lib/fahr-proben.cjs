@@ -725,13 +725,14 @@ async function probeLeben(expected) {
             };
             // DER ANFANG AUS DEM GESETZ (gleiche Saat, gleiches Urteil): erst steht die Stadt samt jeder Hülle ihrer Häuser und jedem
             // Erdbau im Boden (Foundry und Chunks ruhen — eine Stufe, die im Takt ankommt, wechselt die Wände der Wege, ein Edit den
-            // Boden der Spur), dann springt die Uhr noch einmal (6 h hin, zurück):
-            // jeder Bewohner und jeder Wagen steht, wo sein Tag ihn sieht (f(Same, t), `_verkehrSprung`), und der Takt beginnt am Rand
-            // eines Bilds mit dem ersten des Musters. Bis w13-verkehr-heil maß die Linse ab dem ersten Sprung, und wie viele Bilder die
-            // Geburt der Leiber und die Stufen der Häuser nach der Wanduhr brauchten, ging in die Stadt ein: drei Läufe desselben
-            // Stands urteilten dreimal anders (10 Uhr 21 m, 74 m, Stau ab Minute 3), zwei Läufe 180 s gingen 47 954 und 193 035 Schritte
+            // Boden der Spur), dann springt die Uhr noch einmal (6 h hin, zurück): jeder Bewohner und jeder Wagen steht, wo sein Tag
+            // ihn sieht (f(Same, t), `_verkehrSprung`), der Takt beginnt am Rand eines Bilds mit dem ersten des Musters und die Uhr der
+            // Sim am Rand ihres Tags (Tag `stunde`: die Böe des Winds am Wagen ist f(t), `_fahrWind` — sie stand sonst, wo die Wanduhr
+            // beim Start der Seite stand). Bis w13-verkehr-heil maß die Linse ab dem ersten Sprung, und wie viele Bilder die Geburt der
+            // Leiber und die Stufen der Häuser nach der Wanduhr brauchten, ging in die Stadt ein: drei Läufe desselben Stands urteilten
+            // dreimal anders (10 Uhr 21 m, 74 m, Stau ab Minute 3), zwei Läufe 180 s gingen 47 954 und 193 035 Schritte
             await bis("verkehr: die Stadt steht", () => bereit() && !(r._weltOffen().foundry + r._weltOffen().chunks));
-            [st._fixedAccumulator, i] = [0, Math.ceil(i / 8) * 8];
+            [st._fixedAccumulator, st._fixedSimTime, i] = [0, 86400 * stunde, i + 8 - (i % 8)];
             for (const h of [stunde + 6, stunde]) {
                 r._uhrSetzen((h % 24) / 24, "regler");
                 frame(i++);
@@ -1028,7 +1029,7 @@ async function probeLeben(expected) {
                 trasse: T.tr,
                 weg60: T.w60,
                 sitz: SZ,
-                abdruck: (abdruck >>> 0).toString(36),
+                abdruck: abdruck >>> 0,
             };
         }
         return aus;

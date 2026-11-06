@@ -1852,7 +1852,8 @@ class AnazhRealm_siedlung_bewohner {
         // seine Kapsel die Bahn eines Wagens berührt)
         const fuss = (p) => !this._verkehrAufSpur(S, p.x, p.z, 0);
         const alt = [];
-        const pts = kette.map((k, i) => {
+        let vorher = von; // der Punkt davor (`kette.map` geht der Reihe nach)
+        const punkt = (k, i) => {
             const q = N.knoten[k];
             const q0 = N.knoten[kette[Math.max(0, i - 1)]];
             const q1 = N.knoten[kette[Math.min(kette.length - 1, i + 1)]];
@@ -1882,9 +1883,9 @@ class AnazhRealm_siedlung_bewohner {
             const f = (2 * geh) / Math.max(1, n[0] * n[0] + n[1] * n[1]);
             const df = (Math.sign(geh) * 0.25) / (Math.hypot(n[0], n[1]) || 1);
             alt[i] = p; // trägt der Rand dort nicht (die Laterne, der Baum am Rand), geht er um sie — sonst in seiner Spur
-            const ort = (k, f0 = f) => {
+            const ort = (k, f0 = f, d = df) => {
                 const s = k & 1 ? (k + 1) >> 1 : -(k >> 1); // 0, +1, −1, +2, …: hinaus zuerst
-                return { x: q.x + n[0] * (f0 + s * df), z: q.z + n[1] * (f0 + s * df) };
+                return { x: q.x + n[0] * (f0 + s * d), z: q.z + n[1] * (f0 + s * d) };
             };
             if (!trasse) {
                 for (let k = 1; k <= 8 * BW.gehwegM; k++) {
@@ -1893,17 +1894,31 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 return p; // die Gasse ohne Ort neben der Bahn geht ihre Spur
             }
-            // die billige Probe zuerst (Lehre 25): die Fahrbahn, dann die Wand
-            for (let k = 0; k <= 16 * BW.gehwegM; k++) {
-                const c = ort(k);
-                if (fuss(c) && !this._bewohnerWand(c, c)) return c;
+            // die billige Probe zuerst (Lehre 25): die Fahrbahn, dann die Wand. DIE SEITE AM KNOTEN: trägt auch der Rand gegenüber,
+            // gilt der, zu dem das Bein vom Punkt davor weniger über die Fahrbahn führt — bis w13-verkehr-heil stellte die Ecke den
+            // Rand an jedem Knoten nach der Summe der Normalen beider Beine, und wo zwei Trassen sich im Stoß treffen (stadt-voll am
+            // Brunnen 961,6/387,7), lag er jenseits der Bahn: der Feld-Mann #291:3 ging über 962,5/391,2 zweimal quer durch sie
+            // (23 Uhr 418 der 893 Schritte der Menge auf der Fahrbahn)
+            const rand = (sg) => {
+                for (let k = 0; k <= 16 * BW.gehwegM; k++) {
+                    const c = ort(k, sg * f, sg * df);
+                    if (fuss(c) && !this._bewohnerWand(c, c)) return c;
+                }
+                return null;
+            };
+            const c = rand(1);
+            if (c) {
+                const g = rand(-1);
+                const fm = (o) => this._verkehrFahrbahnM(S, vorher, [o]);
+                return g && fm(g) < fm(c) ? g : c;
             }
             for (let k = 0; k <= 8 * BW.gehwegM; k++) {
                 const c = ort(k);
                 if (!this._bewohnerWand(c, c)) return c;
             }
             return ort(0);
-        });
+        };
+        const pts = kette.map((k, i) => (vorher = punkt(k, i)));
         if (ausA) (pts.unshift(ausA), alt.unshift(undefined));
         if (ausE) pts.push(ausE);
         pts.push(ziel);
