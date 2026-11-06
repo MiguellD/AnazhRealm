@@ -216,3 +216,4 @@
 2026-11-05T18:56 karte=205 (gebucht am 9c545df2, buche.sh)
 2026-11-05T20:39 karte=206 (gebucht am f5db8d90, buche.sh)
 2026-11-06T00:53 karte=205 (gebucht am 3f1d4a5b, buche.sh)
+2026-11-06T06:58 karte=208 (gebucht am 25374f6f, buche.sh)
