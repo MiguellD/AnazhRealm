@@ -29,3 +29,11 @@ Zweig `omen-w13-entwurf` af7ac356 im Klon der OMEN, `scripts/` atom-neutral (gat
 Auf Zuruf gebe ich ihn als Zweig unter anderem Namen oder als Patch heraus.
 
 Status ZWISCHENSTAND. Offen: alle vier GTX-Hälften, bis der Kopf des Champions kommt. Den messe ich dann hier mit `run --nur` derselben vier Stationen.
+
+## Champion-Kopf 5a7cff0d (Stationen w13-gtx-proben-pm 90dced1d), GTX 02:52–02:58, Schloss 5,9 min
+
+- **material.K3#2: gemessen nach 48,6 s, in der Sache ROT.** Die Welt-Seite war nach 48,5 s fertig (29 Zeilen, Karte 0,1799). ROT macht der Stoff: fichte@0.5 Karte 1,173 und birke Karte 0,944, Soll 0,95–1,05.
+- **material.K1#2: UNGEMESSEN an der Frist 84 s.** Die Welt-Seite war nach 64,7 s fertig, das Labor stand bei 84 s noch offen (`Target closed` beim Abbau).
+- **tiere.K3#2: UNGEMESSEN am Deckel 45 s.** Das Bild war nach ~25 s fertig, tier-gang GRÜN nach ~42,8 s. Der Querhang schrieb bis 45 s keine Zeile (seine Datei ist leer): Sein eigener Null-Welt-Boot mit der Prüfbühne läuft jetzt neben dem schnelleren tier-gang und ist der lange Teil.
+
+Messdatei `meisterkarte-quelle/punkte/messung/5a7cff0d-gtx.json`, Roh-Ausgaben in `roh/5a7cff0d-gtx/*.out`.

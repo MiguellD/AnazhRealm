@@ -1,0 +1,126 @@
+{
+ "sha": "5a7cff0db18889ed94ba1b6b49152a11c646d4c7",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T01:55:43.022Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.986/karte 0.944 · fichte@0.5 l1 0.995/karte 1.173 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.943 · fichte@0.27 l1 0.995/karte 1.173 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "ROT: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.986/karte 0.944 · fichte@0.5 l1 0.995/karte 1.173 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.943 · fichte@0.27 l1 0.995/karte 1.173 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 48.6,
+   "zeit": "2026-11-06T01:52:45.024Z",
+   "abdruck": "25872cfe0387",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-06T01:53:57.164Z",
+   "abdruck": "a434d5e796c8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.3 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.195 · Bühne summe)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.3 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.195 · Bühne summe)",
+   "s": 45.3,
+   "zeit": "2026-11-06T01:55:43.022Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T01:52:08.548Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.4,
+  "grundstellungS": [
+   4,
+   4
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 28.7,
+    "takte": 702,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#2",
+    "s": 19.4,
+    "takte": 647,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 17.5,
+    "takte": 878,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "material.K1#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 4
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K1#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 236,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 258.9,
+  "minuten": 4.39
+ }
+}
