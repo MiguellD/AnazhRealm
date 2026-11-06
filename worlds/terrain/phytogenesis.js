@@ -508,7 +508,7 @@ function init() {
             const x = (Math.random() - 0.5) * rext[0],
                 y = Math.random() * rext[1],
                 z = (Math.random() - 0.5) * rext[2],
-                ln = RG.laenge[0] + Math.random() * RG.laenge[1];
+                ln = RG.fall * RG.belichtung; // die Schliere: der Weg des Tropfens in der Belichtung des Auges
             rp[i * 6] = x;
             rp[i * 6 + 1] = y;
             rp[i * 6 + 2] = z;
