@@ -1084,9 +1084,12 @@ class AnazhRealm_siedlung_bauten {
     _tickBlueprintPrebake() {
         const st = this.state;
         if (st._frameOverBudget) return; // erst die Frame-Zeit, dann vorausplanen (V18.282-Wand)
-        // erst das Bild, dann vorausplanen (K60-2): kein Leser des ersten Weltbilds wählt einen Bauplan — unter dem Ladeschirm
-        // (`_ladeTakt`, der kein Budget reißt) wärmte das Vorbacken Radeon kalt 0,71 s Geister vor dem Bild (K602/p1)
-        if (this._ladeTakt()) return;
+        // DIE KONTROLLE ZUERST (K60-2, w13-ankunft-faden): kein Leser des ersten Weltbilds wählt einen Bauplan, und keiner wählt
+        // ihn, bevor der Spieler die Kontrolle hat — das Vorbacken wartet wie jeder Vorbau der Bedienung auf die EINE Ruhe der
+        // Eingabe (`_eingabeRuht`: nach jeder Ankunft erst, wenn die Welt einmal stand). Unter dem Ladeschirm wärmte es Radeon kalt
+        // 0,71 s Geister vor dem Bild (K602/p1); danach lag es im Takt des Weltbilds vor der Kontrolle (headless kalt eine Aufgabe
+        // von 329 ms im Takt des Bilds: der Merge und der Wuchs eines Geists, `_mergeBlueprintByMaterial`)
+        if (!st._weltbildDa || !this._eingabeRuht()) return;
         if (!st.blueprints) return;
         if (!this._prebakedBlueprints) this._prebakedBlueprints = new Set();
         const done = this._prebakedBlueprints;
