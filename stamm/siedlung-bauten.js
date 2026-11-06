@@ -193,6 +193,7 @@ class AnazhRealm_siedlung_bauten {
             if (bewegt + z.switches >= maxSwitchesPerFrame) break;
             besucht++;
             W.wach.delete(entry);
+            W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet (die Nachlese holt auch den Schläfer auf seiner Zusage)
             let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
@@ -219,34 +220,38 @@ class AnazhRealm_siedlung_bauten {
         // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
         // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
         const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
-        // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie kam
-        this._standMeldet("archLod", besucht, z.switches + z.regung > 0, z.offen > 0 || gitterAlt || W.zusage.size > 0);
+        // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie
+        // kam; ebenso die Nachlese, bis sie jeden Schläfer des Bestands einmal geweckt hat (`_stufenWache`)
+        this._standMeldet(
+            "archLod",
+            besucht,
+            z.switches + z.regung > 0,
+            z.offen > 0 || gitterAlt || W.zusage.size > 0 || W.nach > 0
+        );
         return bewegt + z.switches;
     }
 
-    // DIE WACHE DER STUFEN (`_tickArchitectureLOD`): je Epoche — der Bestand (`state.architectures`), das Buch, die Grenzen der
-    // Bäume (`_stufenSchirm`), der Schirm der Bau-Grenzen, die Regler (treeLOD, foundryCrossfade, useOcclusionDemotion) und
-    // die Ankunft aus der Ferne (solange sie misst, schläft keiner) — die wachen Einträge (`wach`) und die schlafenden in Eimern
+    // DIE WACHE DER STUFEN (`_tickArchitectureLOD`): je Epoche — der Bestand (`state.architectures`), die Grenzen der Bäume
+    // (`_stufenSchirm`), der Schirm der Bau-Grenzen und der Stand des Wunschs (Buch, Wahrnehmung, Regler, die Ankunft aus der
+    // Ferne: solange sie misst, schläft keiner) — die wachen Einträge (`wach`) und die schlafenden in Eimern
     // des Wegs (`eimer`: Eimer b weckt, sobald der Weg `odo` b · CULL_EIMER_M erreicht; `_stufeEimer` am Eintrag nennt seinen
     // Eimer, −1 den Abbau; wer auf eine Zusage wartet, schläft auf ihr und in seinem Eimer). Der Weg zählt den weiteren der Wege beider Enden der Strecke, die das Auge binnen des Vorlaufs
     // fährt (`_bedarfAbstand` misst zu ihr: kein Punkt der Strecke ging weiter). Eine neue Epoche weckt alle.
+    // DER STEMPEL WECKT AUCH DIE SCHLÄFER (w15-strom-takt-2, das Gesetz der Stand-Wache `_standRuht`: was die Urteile eines
+    // Fege-Takts liest, weckt ihn — hier jeden Eintrag, den er schlafen legte). Der Stand des WUNSCHS (`_standStempelWunsch`:
+    // Buch, Wahrnehmung, LOD-Distanzen, Regler, Ankunft — ohne die Lieferungen) ist Teil der Epoche: er weckt alle sofort; jede
+    // andere Regung des Stempels (`_weltRegt`, eine Lieferung der Foundry, der Plan des Walds) startet die NACHLESE — ein Gang
+    // über den Bestand ab dem Cursor, je Bild höchstens STUFEN_GANG Schläfer zurück in die Wache, hinter den Wachen (`nach`
+    // Einträge noch, die Stufen-Wahl bleibt offen, bis sie durch ist). Bis hier hielt die Epoche eine eigene Teil-Liste des Stempels,
+    // und ein Schläfer hörte nur den Weg und seinen Weckruf: ein Tausch, den die Welt mit `_weltRegt` meldet, erreichte ihn nie
+    // (gate:fernwald SELBSTTEST 3: der Riese schlief 123–146 Takte ohne Band, „die Welt hat nichts mehr offen"), und ein
+    // Schläfer auf einer Zusage, die nie kam, hielt seine Stufe für immer offen.
     _stufenWache(auge) {
         this._stufenSchirm();
         const st = this.state;
         const liste = st.architectures || [];
-        const atmo = st.atmosphere;
-        const epoche = [
-            liste,
-            this._foundryEnabled() && this._foundry ? this._foundry.recipes : null,
-            this._baumGrenzen,
-            AnazhRealm._studioRenderConfig, // das Buch der Wahrnehmung: Budget und Hysterese je Art (`_archStufenGrenzen`)
-            st.lodRef, // der Bezug der Wahrnehmungs-Distanz (`_lodPerceptionDistance`)
-            this._schirm().hoehe,
-            !(atmo && atmo.treeLOD === false),
-            st.foundryCrossfade === true,
-            st.useOcclusionDemotion !== false,
-            this._ankunftsFerne() > 1,
-        ];
+        const epoche = [liste, this._baumGrenzen, this._schirm().hoehe, this._standStempelWunsch()];
+        const stempel = this._standWache.stempel; // `_standStempelWunsch` las ihn eben
         let W = this._stufenWacheStand;
         if (!W || W.epoche.some((x, i) => x !== epoche[i])) {
             for (const e of liste) if (e) e._stufeEimer = undefined;
@@ -262,9 +267,21 @@ class AnazhRealm_siedlung_bauten {
                 odo: 0,
                 ab: 0,
                 px: null,
+                stempel, // der Stempel, unter dem die Schläfer einschliefen
+                nach: 0, // die Nachlese: so viele Einträge des Bestands noch, ab `nachI`
+                nachI: 0,
             };
             W.wach.delete(undefined);
             W.wach.delete(null);
+        }
+        if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, liste.length];
+        if (!liste.length) W.nach = 0;
+        for (let k = 0; W.nach > 0 && k < AnazhRealm.STUFEN_GANG; k++, W.nach--) {
+            W.nachI = (W.nachI + 1) % liste.length;
+            const e = liste[W.nachI];
+            if (!e || e._stufeEimer === -1 || W.wach.has(e)) continue;
+            e._stufeEimer = undefined;
+            W.wach.add(e);
         }
         const vb = this._bedarfVoraus(auge) || auge;
         if (W.px !== null)
