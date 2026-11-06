@@ -283,7 +283,7 @@ async function bodenRollen(tor) {
 async function tierKreis(tor) {
     const UHR = 2;
     const n = 10 / UHR;
-    const TAKT_S = 1;
+    const TAKT_S = 1; // die Prüfung je Raffer-Bild = je Spiel-Sekunde (der Anker `s + 0.5` unten wartet auf das nächste Bild)
     const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
         ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
         ["await r._rueckstrahlJetzt(() => (neubeginn(), frame()));", ""],
@@ -294,15 +294,16 @@ async function tierKreis(tor) {
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
             'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
         ["await sleep(250);\n                    st.yaw = kreis.gier",
-            "for (const z = s + " + TAKT_S + "; st.spielZeit - kreis.z0 < z; ) await new Promise((ok) => requestAnimationFrame(ok));\n" +
+            "for (const z = s + 0.5; st.spielZeit - kreis.z0 < z; ) await new Promise((ok) => requestAnimationFrame(ok));\n" +
             "                    s = st.spielZeit - kreis.z0;\n                    kreis.pruefungen++;\n                    st.yaw = kreis.gier"],
         ["naechst = s + 2;", ""],
         ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
-            "const schuss = async () => (await (" + bild + ')(W, H, 0, { satz: "messung" })).u8;'],
+            'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
         ["kreis.schuesse++;", "kreis.masken++;"],
     ]);
     const page = await tor.seite();
     tor.karte();
+    await page.evaluate("window.__kreisBild = " + bild);
     await page.evaluate((n) => {
         const r = window.anazhRealm;
         const rend = r.state.renderer;
@@ -371,6 +372,7 @@ async function tierKreis(tor) {
         await page.evaluate(() => {
             const Z = window.__zeitraffer;
             const rend = window.anazhRealm.state.renderer;
+            delete window.__kreisBild;
             if (!Z) return 1;
             const A = window.anazhRealm.constructor;
             if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;

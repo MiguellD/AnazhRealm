@@ -4363,7 +4363,12 @@ const stationen = [
     // Neubeginn der Folge, ohne die 32 Bilder der Geschichte, ohne Rücklese der Abnahme): jede Begegnung zählt, solange sie im Blick
     // steht, nicht nur ein Schuss-Treffer; keine Kappe bei der Staffel. EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die
     // Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt Radeon 1,98 gegen GTX 3,25 ms, 715754fc).
-    // DER DECKEL: DECKEL_K5
+    // DER RAFFER TAKTET BEI RUHENDEM LOOP (proben-welt.cjs): im alten Raffer trugen 8 von 10 Takten je Raffer-Bild als Zwischen-Takte
+    // kein Leben (headless 184 von 200 Takten ausgesetzt) — die Tiere lebten 0,2 Spiel-s je Spiel-Sekunde; jetzt trägt jeder Takt die
+    // ganze Welt, und die Uhr läuft ×2 (Takt-Deckel 0,2 s, Fix-Schritte 16): 3 000 Takte je Sicht.
+    // DER DECKEL 90 s (die Ausnahme der Fahrt, geschätzt): 6 000 Takte mit vollem Leben, die Masken nur bei einem ungesehenen Tier im
+    // Blick; die Radeon trug im alten Raffer ~6,8 ms je Takt (3ef20f9f: 146 Spiel-s in den ersten 10 s) — reißt er, nennt FORTSCHRITT
+    // Spiel-s, Prüfungen, Masken und Sichtungen am Deckel.
     {
         kriterium: "tiere.K5",
         staffel: 1,
