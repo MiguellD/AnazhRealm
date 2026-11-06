@@ -59,6 +59,10 @@ class AnazhRealm_dirigent_takt {
                 // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224–256 Takte unter dem Ladeschirm jedes
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
+                // DIE FRIST DES LADE-FRAMES BEGINNT MIT SEINEM TAKT (w16-lade-atem): jeder Leser (Kappe, Erst-Zeichnung des
+                // Lade-Bilds) misst ab hier — stellte sie erst der erste Leser im Render, bekam das Bild die Arbeit des Takts
+                // geschenkt (headless kalt: der Bild-Anteil des ersten Lade-Frames 389 → 536 ms)
+                this._ladeFrist();
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
@@ -648,9 +652,9 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
-    // DER BAU RUFT DAS NÄCHSTE BILD (w16-lade-atem): verschob das letzte Lade-Bild Knoten-Bauten an seiner Frist (die
-    // Erst-Zeichnung, `E.ladeVerschoben`), ist das nächste sofort fällig — der Bau geht in Bildern zu LADE_BILD_BAU_MS weiter,
-    // nie in EINER Aufgabe, und wartet nie LADE_BILD_MS auf sein Bild.
+    // DER BAU RUFT DAS NÄCHSTE BILD (w16-lade-atem): verschob das letzte Lade-Bild Knoten-Bauten an seiner Frist (der Bau in
+    // Raten, `E.ladeVerschoben`), ist das nächste sofort fällig — der Bau geht Schritt für Schritt in den Bildern weiter, nie in
+    // EINER Aufgabe, und wartet nie LADE_BILD_MS auf sein Bild.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
@@ -2179,8 +2183,8 @@ AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
-// Der Anteil des Bilds am Lade-Frame (ms nach der Frist des Takts, `_ladeFrist`): so lange baut die Erst-Zeichnung eines
-// Lade-Bilds über ihren ersten Stoff je Render-Aufruf hinaus — ein Lade-Frame trägt Arbeit und Bild, nie mehr (ankunft.K5).
+// Der Anteil des Bilds am Lade-Frame (ms nach der Frist des Takts, `_ladeFrist`): so lange geht der Knoten-Bau eines Lade-Bilds
+// in Raten weiter (`_knotenRate`) — ein Lade-Frame trägt Arbeit und Bild, nie mehr (ankunft.K5).
 AnazhRealm.LADE_BILD_BAU_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;

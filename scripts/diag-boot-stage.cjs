@@ -413,6 +413,18 @@ hauptLauf(async () => {
     await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
         const o = { stage: 0 };
+        // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
+        // bevor der Vorbau der Bedienung lief (der Null-Renderer baut ihn nie): leer sind Rezeptbuch, Werkstatt-Liste und
+        // Bibliothek, und die Mammut-Art (sie liest kein Wurf des Felds) wartet noch auf ihren ersten Leser. Jeder Täter beim Namen.
+        const kinder = (id) => (document.getElementById(id) || { childElementCount: -1 }).childElementCount;
+        const mammut = st.blueprints && st.blueprints.baum_mammut;
+        const wuchs = mammut && Object.getOwnPropertyDescriptor(mammut, "parts");
+        o.verborgen = [
+            kinder("inventory-recipes") !== 0 && `das Rezeptbuch (${kinder("inventory-recipes")} Zeilen, inventoryInitDOM)`,
+            (r._werkstattGemalt || kinder("workshop-list") !== 0) && "die Werkstatt (_renderWorkshopDOM im Init)",
+            kinder("library-list") !== 0 && `die Bibliothek (${kinder("library-list")} Karten, libraryInitDOM)`,
+            !(wuchs && wuchs.get) && "baum_mammut wuchs ohne Leser (_defaultBlueprints)",
+        ].filter(Boolean);
         const headless = !!(st.renderer && st.renderer._isHeadlessNull);
         // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
         const terms = () => {
@@ -492,6 +504,7 @@ hauptLauf(async () => {
         ],
         [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
+        [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES am ersten Weltbild: ${out.verborgen.join(" · ") || "Rezeptbuch, Werkstatt und Bibliothek leer, das Mammut wartet auf seinen Leser"}`], // prettier-ignore
     ];
     if (SELBSTTEST)
         checks.push(

@@ -586,30 +586,31 @@ class AnazhRealm_bild_kosten {
                 }
                 let bau = -1;
                 // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
-                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
-                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener. DAS LADE-BILD BAUT EBENSO (w16-lade-atem,
+                // ankunft.K5): unter dem Ladeschirm geht die Welt-Szene denselben Gang in Schritten, unter der Frist des
+                // Lade-Frames (`_knotenRate` liest `_ladeFrist`), und ein Lade-Bild, das verschob, ruft das nächste sofort
+                // (`E.ladeVerschoben`, `_ladeBildFaellig`). Bis hier baute jedes Lade-Bild je Render-Aufruf am Stück bis
+                // LADE_TAKT_MS — ein Stoff allein trug 100–260 ms (headless kalt: zwei Bauten 527 ms), das Bild bis 625 ms der
+                // Aufgabe (Radeon kalt längste Aufgabe 615–1075 ms). Die Bühnen (Atmosphären-Tafel, Umgebung, Karte) und der
+                // ruhende Loop bauen wie bisher je Aufruf: ein Einmal-Render zeichnet nie leer.
+                const lade = !buehne && scene !== welt._buehneJetzt && welt._ladeTakt();
+                if (ungebaut && ((welt.state._weltbildDa && !welt._loopRuht()) || lade)) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
+                        if (lade) E.ladeVerschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
                 } else if (ungebaut) {
                     const aufruf = buehne ? B.versuch : this.info.calls;
-                    // DIE FRIST DES LADE-BILDS (w16-lade-atem, ankunft.K5): unter dem Ladeschirm baut jeder Render-Aufruf
-                    // seinen ersten Stoff (ein Einmal-Render — Atmosphären-Tafel, Umgebung — zeichnet nie leer), jeden
-                    // weiteren nur bis zur EINEN Frist des Lade-Frames (`_ladeFrist`, die die Arbeit des Takts mit allen Lesern
-                    // teilt) und LADE_BILD_BAU_MS danach — dann wartet er auf das nächste Lade-Bild, das gleich fällig ist
-                    // (`_ladeBildFaellig`). Bis hier trug JEDER Aufruf eigene LADE_TAKT_MS (Hauptbild, Kaskaden, Kontakt,
-                    // Rückstrahl, Atmosphäre, Umgebung): ein Lade-Bild summierte sie (Radeon kalt längste Aufgabe 615–1075 ms,
-                    // headless 1 570 ms). Die Karten-Bühne hält ihre Frist je Bake-Versuch (13 Aufrufe) wie bisher.
-                    const frist = !buehne && welt._ladeTakt() ? welt._ladeFrist() + AnazhRealm.LADE_BILD_BAU_MS : null;
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
+                        // unter dem Ladeschirm sieht kein Spieler den Takt: eine Bühne baut je Aufruf bis zur Frist des
+                        // Lade-Frames, nicht nur einen Stoff
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
-                    } else if (frist !== null ? performance.now() >= frist : E.aufrufMs >= E.deckel) {
+                    } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
-                        if (frist !== null) E.ladeVerschoben++; // das nächste Lade-Bild ist fällig (`_ladeBildFaellig`)
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -700,7 +701,11 @@ class AnazhRealm_bild_kosten {
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
         if (E.rateFrist === null) {
-            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+            // unter dem Ladeschirm die Frist des Lade-Frames (`_ladeFrist` + LADE_BILD_BAU_MS: die Arbeit des Takts und das Bild),
+            // nie weniger als ERST_BAU_MS ab dem ersten Schritt der Aufgabe
+            const jetzt = performance.now();
+            const lade = this._ladeTakt() ? this._ladeFrist() + AnazhRealm.LADE_BILD_BAU_MS : -Infinity;
+            E.rateFrist = Math.max(jetzt + AnazhRealm.ERST_BAU_MS, lade);
             Promise.resolve().then(() => (E.rateFrist = null));
         }
         const t0 = performance.now();

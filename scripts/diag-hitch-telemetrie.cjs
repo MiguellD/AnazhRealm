@@ -230,7 +230,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
         // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
-        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS — am Runner steht er beim Einbau der Wand
+        // dem Ladeschirm baut der EINE Ort in Raten bis zur Frist des Lade-Frames (`_knotenRate`, `_ladeFrist`) — am Runner steht er beim Einbau der Wand
         // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
         const lade = document.getElementById("ladeschirm");
         const ladeVor = lade ? lade.hidden : null;
