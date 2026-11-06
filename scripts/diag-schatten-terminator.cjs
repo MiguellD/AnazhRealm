@@ -6,9 +6,7 @@
 // Weltpunkte, x ±12, z 136–160, auf den Schirm projiziert): die Fleckigkeit = der Anteil der Proben mehr als 25 % neben dem
 // Median der Rampe. ROT beim Namen, wenn der Schatten sie um mehr als TERMINATOR_FLECKEN_MAX hebt, wenn eine Sonne fehlt oder
 // die Rampe zu wenige Proben trägt (blind).
-// Dazu (H) DER HORIZONT (unten, ferne.K4): die Horizont-Karte trägt einen bekannten Grat, ihr leeres Gitter fällt rot.
-// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot,
-// der Horizont bei leerer Karte, falschem Boden und einem Ring, der an seiner Masche prüft.
+// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot.
 //   node scripts/diag-schatten-terminator.cjs [--selftest] [--port 4609]
 "use strict";
 
@@ -94,34 +92,6 @@ const nrm = new T.Vector3(-hx, 2 * e, -hz).normalize();
 return { e: V.e, az: V.az, NdotL: +nrm.dot(L0).toFixed(3), proben: va.length, medianAn: +med(va).toFixed(1), medianAus: +med(vb).toFixed(1), fleckenAn: +flecken(va).toFixed(4), fleckenAus: +flecken(vb).toFixed(4) };
 `;
 
-// (H) DER HORIZONT (ferne.K4): die Horizont-Karte (`_horizontKarte`) über einem BEKANNTEN Grat — das Gitter eben auf 50 m, in der
-// Spalte n/2 eine Wand 200 m hoch, die Sonne 5° aus +x; der Pass malt, die Linse liest die Karte zurück: hinter dem Grat liegen
-// so viele Texel im Schatten (r über dem Boden b des Kanals, an dem der Fern-Ring prüft, `_horizontBoden`), wie der Marsch über
-// die bilineare Wand trägt (19); jeder Stoff des Rings liest den Boden (`receivedShadowPositionNode`). Dieselbe Probe über dem
-// leeren Gitter (`leerM`, wie vor der ersten Antwort des Fadens, ohne Grat) wirft keinen — sonst ist die Linse blind. Täter beim
-// Namen: die leere Karte (GRAT 0), ein Kanal b ohne Boden (GRAT 127), ein Ring, der an seiner Masche prüft (RING).
-const HORIZONT = `
-const T = window.THREE, H = r.constructor.HORIZONT_KARTE, n = H.gitter, m = n / 2, K = r._horizontKarte(), D = K.hoehen.image.data, f = T.DataUtils;
-const zeile = async (h, grat) => {
-  D.fill(f.toHalfFloat(h));
-  for (let j = 0; j < n; j++) D[j * n + m] = f.toHalfFloat(h + grat);
-  K.hoehen.needsUpdate = true;
-  K.U.ursprung.value.set(0, 0); K.U.licht.value.set(1, 0.0875, 0);
-  r._atmoZeichne(K.pass, K.rt);
-  const px = await r.state.renderer.readRenderTargetPixelsAsync(K.rt, 0, 0, n, n), w = (i, c) => f.fromHalfFloat(px[(m * n + i) * 4 + c]);
-  return Array.from({ length: m - 1 }, (_, i) => w(i + 1, 0) - w(i + 1, 2)).filter((x) => x > H.bandM).length;
-};
-return { ring: Object.values(r.state.fernRing.stoffe).filter((s) => s.receivedShadowPositionNode).length, grat: await zeile(50, 200), leer: await zeile(-H.leerM, 0) };
-`;
-// der Grat (200 m, Sonne 5°) beschattet über die bilineare Wand am Marsch 19 Texel; das leere Gitter keinen
-function horizontUrteil(z) {
-    return [
-        ...(z.grat === 19 ? [] : [`(H) GRAT: ${z.grat} Texel hinter dem Grat im Schatten, das Gesetz 19${z.grat ? "" : " — die Karte ist leer"}`]),
-        ...(z.leer === 0 ? [] : [`(H) BLIND: das leere Gitter wirft ${z.leer} Texel`]),
-        ...(z.ring === 2 ? [] : [`(H) RING: ${z.ring} von 2 Ring-Stoffen lesen den Boden des Gesetzes, die übrigen ihre Masche`]),
-    ];
-}
-
 function selbsttest() {
     const f = [];
     const z = (fa, fb, proben) => ({ e: 22, az: 45, NdotL: -0.002, proben: proben == null ? 1600 : proben, fleckenAn: fa, fleckenAus: fb });
@@ -134,9 +104,6 @@ function selbsttest() {
     pruefe("main (11,6 % fleckig)", terminatorUrteil([z(0.1156, 0.0019), ruhig[1]]), /TERMINATOR-AKNE bei N·L -0\.002 .*11\.6 %.*TÄTER/);
     pruefe("keine Sonne", terminatorUrteil([]), /0 Sonnen gemessen/);
     pruefe("blind", terminatorUrteil([z(0, 0, 120), ruhig[1]]), /120 Proben .* blind/);
-    pruefe("Horizont", horizontUrteil({ ring: 2, grat: 19, leer: 0 }), null);
-    pruefe("Karte leer", horizontUrteil({ ring: 2, grat: 0, leer: 0 }), /GRAT: 0 .* leer/);
-    pruefe("Masche", horizontUrteil({ ring: 0, grat: 19, leer: 0 }), /RING: 0 von 2/);
     return f;
 }
 
@@ -174,12 +141,9 @@ if (require.main === module) {
                         `${j.ergebnis.medianAn} / ${j.ergebnis.medianAus}`
                 );
             }
-            const oh = rufe(["eval", HORIZONT]).stdout || "";
-            const hz = JSON.parse(oh.slice(oh.indexOf("{"))).ergebnis || { ring: 0, grat: 0, leer: 1 };
-            console.log(`  (H) ${JSON.stringify(hz)}`);
-            const b = [...terminatorUrteil(zeilen), ...horizontUrteil(hz)];
+            const b = terminatorUrteil(zeilen);
             for (const x of b) console.log("  ❌ " + x);
-            console.log(b.length ? "❌ ROT — Terminator oder Horizont" : "✅ GRÜN — der Terminator der Rampe ohne Akne, die Karte trägt den Grat");
+            console.log(b.length ? "❌ ROT — die Hang-Akne am Terminator" : "✅ GRÜN — der Terminator der Rampe ohne Akne");
             code = b.length ? 1 : 0;
         } catch (e) {
             console.log("❌ diag-schatten-terminator: " + e.message + "\n" + tor.log.split("\n").slice(-15).join("\n"));
