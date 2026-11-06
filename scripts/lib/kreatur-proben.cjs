@@ -90,7 +90,7 @@ async function kreaturProben(r, T, opts) {
                     /* Aufräumen bleibt best effort, die Zahl steht schon */
                 }
             }
-            for (const c of s.creatures.slice()) r.removeCreature(c);
+            leer();
             // DIE WELT KEHRT MIT DEM SPIELER HEIM: ließ die Probe die Welt fern takten (der Baum des Schwarms 526 m fort,
             // `__gebautNach`), streamt sie dort (Chunks, Streu, Wald) — die nächste Probe stünde mit ihren Tieren am Ort des
             // Spielers in einer Welt um den fremden Ort (jagdkreis nach dem Leittier: 1 von 42 Jagden ohne Ende, allein 0).
@@ -205,6 +205,8 @@ async function kreaturProben(r, T, opts) {
     const ruhig = (c) => {
         c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
     };
+    // ALLE LEIBER WEG: die Lebenden, mit `tote` auch die Gefallenen
+    const leer = (tote) => [...s.creatures, ...(tote ? s.leichname : [])].forEach((c) => r.removeCreature(c));
     // der Spieler ruhig (oder im Gefühl e), je Takt: ein zorniger verschreckt jedes Tier, die Ansteckung im Kreatur-Takt trägt
     // die Furcht der Beute zu ihm
     const ruhigSpieler = (e) => {
@@ -911,7 +913,7 @@ async function kreaturProben(r, T, opts) {
             r.tickFaunaLifecycle();
             for (const c of genannt) R.gefallen += !s.creatures.includes(c);
             genannt.clear();
-            for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
+            leer(1);
         }
         return {
             jagdFrames: F.jagd[0] + F.hetzen[0],
@@ -974,7 +976,7 @@ async function kreaturProben(r, T, opts) {
         const seq0 = s._creatureNetSeq || 0;
         const lauf = (art) => {
             const flucht = art === "flucht";
-            for (const c of s.creatures.slice()) r.removeCreature(c);
+            leer();
             Object.assign(s, { _creatureNetSeq: seq0, creatureAnimationTime: 100 });
             Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
             pm.set(heim.x + 140, heim.y, heim.z);
@@ -1520,7 +1522,7 @@ async function kreaturProben(r, T, opts) {
             kitz: r._kreaturIstBeute(wolfB, tier(land(36, 38), "wesen", 0.6)),
             baer: r._kreaturIstBeute(wolfB, tier(land(40, 30), "baer", 1)),
         };
-        for (const c of s.creatures.slice()) r.removeCreature(c);
+        leer();
         // (Hirsch und Bär vor dem ruhigen Spieler misst die Furcht-Probe in der Welt: der Hirsch flieht, der Bär naht)
         // Der Kampf liest dasselbe Temperament: die Furcht-Dauer eines getroffenen Wesens.
         const VG = A._verhaltenGesetz();
@@ -1848,7 +1850,7 @@ async function kreaturProben(r, T, opts) {
                 if (riss) Q.risse++;
                 if (mahl && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
                 for (const G of R.gaeste) delete G.c;
-                for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c);
+                leer(1);
             }
         }
         return { riss: R };

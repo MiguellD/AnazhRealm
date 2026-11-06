@@ -2324,7 +2324,7 @@ class AnazhRealm_siedlung_ort {
     // 4,67–4,82 s (vorher 0,65 s). Ohne Vorlauf (Teleport, Start-Dorf) fällt das Urteil hier, in Raten vor dem Eintrag.
     *_dorfErwachen(v2, anchor, ort, key, w, so) {
         while (!this._dorfWasserSchritt(w)) yield;
-        this._erdbauSetzen(ort, v2.erdbau, w.nass);
+        this._erdbauSetzen(ort, v2.erdbau, w.nass, true);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         yield;
         this._erdbauLage(); // die Normalform der Welt mit dem neuen Ort (ihr erster Leser zahlte sie)
@@ -3074,7 +3074,7 @@ class AnazhRealm_siedlung_ort {
                 // seine Bäume in den Kegel treten (`_forestDartsFallen` fällt hier, im Vorlauf-Ring). Das Erwachen findet ihn
                 // liegend (`_erdbauSetzen` legt keinen Schlüssel zweimal). Bis w12-dorf-strom legte erst das Erwachen ihn:
                 // 576 von 578 Bäumen, die unfertig in den Kegel traten, verloren ihren Plan in diesem Bild (Fahrt-Probe dorf).
-                this._erdbauSetzen(w.ort, w.v2.erdbau, w.wasser.nass);
+                this._erdbauSetzen(w.ort, w.v2.erdbau, w.wasser.nass, true);
                 w.grund = true;
                 rate = 0;
             }

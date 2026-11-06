@@ -1805,11 +1805,15 @@ class AnazhRealm_kreatur_leben {
     // Wurf (`_weichtDemBau`): nie im Grundriss eines Baus und nie auf der Lichtung des Genesis-Platzes (`_imGrundriss`),
     // nie in der Hülle eines Dorfs (`wegeKarte.siedlungen`: Wege, Plätze, Äcker und die Häuser zwischen ihnen). Bis G4a
     // fragte die Geburt nur die Wildnis — ein Rudel hätte im Start-Dorf (110–170 m vom Genesis-Ort) geboren werden können.
+    // Und nur auf dem LAND (`_landAt`, die EINE Frage jedes Wurfs: das gezeichnete Wasser und das des Gesetzes über dem Boden;
+    // zuletzt, die teuerste): bis w13-pegel-heil fragte keine Geburt das Wasser — der Bestand ankerte Tiere im See und zeichnete
+    // sie auf seinem Grund (gate:werk-im-wasser am Seeufer 1849/−6111: am main Fuchs und drei Wölfe 3,64 m, an 43584419 sechs
+    // Hirsche 3,5–3,6 m unter dem Spiegel, gezeichnet und frei zum Weichen).
     _kreaturGrundFrei(x, z) {
         if (!this._wildnisTraegt(x, z) || this._imGrundriss(x, z)) return false;
         const wk = this.state.wegeKarte;
         if (wk) for (const b of wk.siedlungen) if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return false;
-        return true;
+        return this._landAt(x, z);
     }
 
     // DER WURF (G4a): die Geburt wirft eine GRUPPE nach dem Gesetz des Kerns (tetrapoda VERHALTEN.herde.wurf): die Kopfzahl
