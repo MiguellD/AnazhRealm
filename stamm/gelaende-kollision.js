@@ -1221,23 +1221,90 @@ class AnazhRealm_gelaende_kollision {
         return g;
     }
 
-    // Fahrzeug-Kollisions-Hülle aus exportDrive.huelle: Unterkörper (nose..tail × ±bw × yFloor..yBelt)
-    // + Greenhouse (cowl..back × ±cw × yBelt..yRoof) + 4 Rad-Boxen an fAx/rAx — als PSEUDO-Parts durch
-    // `_blockerComputePartAABB` (Skala + Gier gratis, kein zweiter Mathe-Pfad). null → Donor-Parts.
+    // DER UMRISS DER GEZEICHNETEN GESTALT eines Studio-Wagens (Vorlagen-Raum, m; physik.K2 Staffel 2: Bild = Kollision): sein
+    // GRUNDRISS als konvexes Polygon (k-DOP) — je Richtung θ = k · 22,5° die Stützweite des Stations-Rechtecks der Hülle
+    // (exportDrive.huelle: noseX · tailX · ±bw, aus dem P des Wagens) plus der Überstand, den das Studio an seiner gebauten
+    // Gestalt mintet (`vehicle:FAHRZEUG_UMRISS.<Rezept>`: ueber[0…8], gespiegelt für die andere Flanke, und das Dach über yRoof;
+    // gate:vehicle-contract hält die Mint-Treue) — EINE Form für beide Rollen des Wagens: gefahren (`_fahrUmriss` → die Hülle
+    // des Ritts, `_fahrHuelleBau`) und gestoßen (`_fahrzeugBlockerParts`). Bis dahin waren die Stationen allein die Hülle: das
+    // Bild ragte 13–15 cm über Bug und Heck, 9–12 cm über die Flanke (der Supersport 0,14 m in der Mauer), und an einer schrägen
+    // Wand berührte die Ecke des Rechtecks, wo die gerundete Gestalt 7,5 cm Luft ließ. Ein Wagen der Werkstatt (ov) trägt den
+    // Überstand seines Rezepts über seinen eigenen Stationen. Ein Rezept ohne Zeile ist ein Vertragsbruch (laut), nie ein
+    // stiller Rückfall auf die Stationen. Liefert {bug, heck, hw, dach, poly: [[l, q], …] gegen den Uhrzeigersinn} oder null.
+    _fahrzeugGestaltUmriss(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        if (!h || !Number.isFinite(h.noseX) || !Number.isFinite(h.tailX) || !(h.noseX > h.tailX)) return null;
+        if (fzg.umriss) return fzg.umriss;
+        const U = AnazhRealm.Gesetz("vehicle:FAHRZEUG_UMRISS." + fzg.gestalt, null);
+        const n = U && Array.isArray(U.ueber) ? U.ueber.length : 0;
+        if (n < 3 || !U.ueber.every(Number.isFinite) || !Number.isFinite(U.dach))
+            return AnazhRealm._kernPflichtBruch("vehicle:FAHRZEUG_UMRISS." + fzg.gestalt);
+        // die Halb-Ebenen l·cos θ + q·sin θ ≤ S(θ), θ über den vollen Kreis (die Flanke gespiegelt), geschnitten aus einem
+        // Quadrat, das jede Gestalt umfasst (Sutherland–Hodgman: das Polygon bleibt konvex und gegen den Uhrzeigersinn)
+        let poly = [
+            [-50, -50],
+            [50, -50],
+            [50, 50],
+            [-50, 50],
+        ];
+        for (let k = -(n - 2); k <= n - 1; k++) {
+            const t = (k * Math.PI) / (n - 1);
+            const [c, sn] = [Math.cos(t), Math.sin(t)];
+            const S = Math.max(h.noseX * c, h.tailX * c) + h.bw * Math.abs(sn) + U.ueber[Math.abs(k)];
+            const aus = [];
+            for (let i = 0; i < poly.length; i++) {
+                const [a, b] = [poly[i], poly[(i + 1) % poly.length]];
+                const [da, db] = [a[0] * c + a[1] * sn - S, b[0] * c + b[1] * sn - S];
+                if (da <= 0) aus.push(a);
+                if (da * db < 0) {
+                    const f = da / (da - db);
+                    aus.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+                }
+            }
+            poly = aus;
+        }
+        let [bug, heck, hw] = [-Infinity, Infinity, 0];
+        for (const [l, q] of poly) [bug, heck, hw] = [Math.max(bug, l), Math.min(heck, l), Math.max(hw, Math.abs(q))];
+        fzg.umriss = { bug, heck, hw, dach: (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) + U.dach, poly };
+        return fzg.umriss;
+    }
+
+    // Fahrzeug-Kollisions-Hülle aus der gezeichneten Gestalt (`_fahrzeugGestaltUmriss`): der Unterkörper (yFloor..yBelt) als
+    // FAHRZEUG_SCHEIBEN Scheiben längs der Fahrt, jede so breit wie der Grundriss in ihr (die gerundeten Enden stehen nicht
+    // als Rechteck-Ecken in der Luft) + Greenhouse (cowl..back × ±cw × yBelt..Dach des Umrisses) + 4 Rad-Boxen an fAx/rAx —
+    // als PSEUDO-Parts durch `_blockerComputePartAABB` (Skala + Gier gratis, kein zweiter Mathe-Pfad). null → Donor-Parts.
     _fahrzeugBlockerParts(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-        if (!h || !Number.isFinite(h.noseX) || !Number.isFinite(h.tailX)) return null;
-        const teile = [
-            {
-                position: { x: (h.noseX + h.tailX) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
-                size: { x: h.noseX - h.tailX, y: h.yBelt - h.yFloor, z: h.bw * 2 },
-            },
-            {
-                position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + h.yRoof) / 2, z: 0 },
-                size: { x: Math.max(0.4, h.cowlX - h.backX), y: h.yRoof - h.yBelt, z: h.cw * 2 },
-            },
-        ];
+        const u = h ? this._fahrzeugGestaltUmriss(entry) : null;
+        if (!u) return null;
+        // die halbe Breite des Grundrisses an der Stelle l (die Quer-Linie gegen jede Kante des Polygons)
+        const breite = (l) => {
+            let w = 0;
+            for (let i = 0; i < u.poly.length; i++) {
+                const [a, b] = [u.poly[i], u.poly[(i + 1) % u.poly.length]];
+                if ((a[0] - l) * (b[0] - l) > 0 || a[0] === b[0]) continue;
+                w = Math.max(w, Math.abs(a[1] + ((b[1] - a[1]) * (l - a[0])) / (b[0] - a[0])));
+            }
+            return w;
+        };
+        const N = AnazhRealm.FAHRZEUG_SCHEIBEN;
+        const teile = [];
+        for (let i = 0; i < N; i++) {
+            const [l0, l1] = [u.heck + ((u.bug - u.heck) * i) / N, u.heck + ((u.bug - u.heck) * (i + 1)) / N];
+            // die Breite der Scheibe: an ihren Rändern und an jeder Ecke des Polygons in ihr (konvex: dort liegt das Maximum)
+            let w = Math.max(breite(l0), breite(l1));
+            for (const [l, q] of u.poly) if (l >= l0 && l <= l1) w = Math.max(w, Math.abs(q));
+            teile.push({
+                position: { x: (l0 + l1) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
+                size: { x: l1 - l0, y: h.yBelt - h.yFloor, z: w * 2 },
+            });
+        }
+        teile.push({
+            position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + u.dach) / 2, z: 0 },
+            size: { x: Math.max(0.4, h.cowlX - h.backX), y: u.dach - h.yBelt, z: h.cw * 2 },
+        });
         for (const ax of [h.fAx, h.rAx]) {
             for (const sz of [-1, 1]) {
                 teile.push({
@@ -1343,3 +1410,7 @@ AnazhRealm.BLOCKER_RIESE = -0.5;
 // Die Flügel-Boxen eines Eintrags ohne gezeichneten Flügel (`_fluegelBoxenVon`): eine Liste, die nie wächst.
 AnazhRealm.KEIN_FLUEGEL = Object.freeze([]);
 AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;
+// DIE SCHEIBEN des Unterkörpers eines Studio-Wagens als Hindernis (`_fahrzeugBlockerParts`): so viele Teil-Boxen längs der Fahrt,
+// je so breit wie der Grundriss der Gestalt in ihr — fünf lassen an den gerundeten Enden höchstens die Rundung einer
+// Fünftel-Länge in der Luft (beim Supersport 0,86 m), wo das Rechteck bis 24 cm stand.
+AnazhRealm.FAHRZEUG_SCHEIBEN = 5;

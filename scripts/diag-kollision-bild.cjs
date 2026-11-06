@@ -490,17 +490,46 @@ async function tempo(K) {
         const [p, F] = [simLage(), A.PLAYER_FOOT_OFFSET];
         return { mx: p.x, mz: p.z, y0: p.y - F, y1: p.y + F, kreise: [[p.x, p.z, A.PLAYER_WALL_RADIUS]] };
     };
-    const wagenK = (e) => () => {
-        const [p, h, s, c] = [simLage(), r._fahrHuelle(e), Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
-        const re = { cx: p.x + s * h.mitte, cz: p.z + c * h.mitte, c, s, hx: h.hw, hz: h.hl, stufe: h.stufe };
-        return { mx: re.cx, mz: re.cz, y0: e._fahr.y + h.stufe, y1: e._fahr.y + h.dach, re };
+    // der Wagen: der Grundriss seiner Hülle (`poly`, Fahrt-Rahmen l längs, q quer) in der Welt — die Ecken gegen den Uhrzeigersinn
+    // `p`: eine Lage des Ursprungs (der Zeitpunkt des Bilds, `fahre`), sonst die Sim-Lage; `zwischen`: das Bild zeichnet ihn
+    // zwischen zwei Sim-Schritten (der Spieler und sein Wagen, `_applyFixedInterpolation`)
+    const wagenK = (e) =>
+        Object.assign(
+            (p = simLage()) => {
+                const [h, s, c] = [r._fahrHuelle(e), Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
+                const ecken = h.poly.map(([l, q]) => [p.x + l * s + q * c, p.z + l * c - q * s]);
+                return { mx: p.x + s * h.mitte, mz: p.z + c * h.mitte, y0: e._fahr.y + h.stufe, y1: e._fahr.y + h.dach, re: { ecken, stufe: h.stufe } };
+            },
+            { zwischen: true }
+        );
+    // die Achsen eines konvexen Polygons (die Normalen seiner Kanten) und sein Intervall auf einer Achse
+    const kantenN = (E) => E.map(([x0, z0], i) => ((x1, z1, n) => [(z1 - z0) / n, -(x1 - x0) / n])(...E[(i + 1) % E.length], Math.hypot(E[(i + 1) % E.length][0] - x0, E[(i + 1) % E.length][1] - z0) || 1));
+    const spanne = (E, ux, uz) => E.reduce(([a, b], [x, z]) => [Math.min(a, x * ux + z * uz), Math.max(b, x * ux + z * uz)], [Infinity, -Infinity]);
+    // der Abstand eines Punkts zum Polygon (innen negativ: die Tiefe bis zur nächsten Kante)
+    const zuPoly = (E, x, z) => {
+        const N = kantenN(E);
+        const innen = Math.max(...E.map(([x0, z0], i) => (x - x0) * N[i][0] + (z - z0) * N[i][1]));
+        if (innen <= 0) return innen;
+        return Math.min(
+            ...E.map(([x0, z0], i) => {
+                const [x1, z1] = E[(i + 1) % E.length];
+                const t = Math.max(0, Math.min(1, ((x - x0) * (x1 - x0) + (z - z0) * (z1 - z0)) / ((x1 - x0) ** 2 + (z1 - z0) ** 2 || 1)));
+                return Math.hypot(x - x0 - (x1 - x0) * t, z - z0 - (z1 - z0) * t);
+            })
+        );
     };
     // DAS EINDRINGEN in eine Box; außer Band −Infinity (die Regeln der Hüllen: die Stufe trägt, der Wagen überrollt Dünneres)
     const inBox = (k, b, R = rahmen(b), h = k.re) => {
         if (h ? !(b.topY > k.y0 && b.botY < k.y1) || b.dick < h.stufe : !(b.topY > k.y0 + STUFE && b.botY < k.y1)) return -Infinity;
         if (!h) return Math.max(...k.kreise.map(([x, z, rr]) => rr - zuBox(R, x, z)));
-        const achsen = [R, h].flatMap((Q) => [[Q.c, -Q.s], [Q.s, Q.c]]);
-        return Math.min(...achsen.map(([ux, uz]) => weite(R, ux, uz) + weite(h, ux, uz) - Math.abs((h.cx - R.cx) * ux + (h.cz - R.cz) * uz)));
+        // SAT: die Achsen der Box und die Kanten-Normalen des Grundrisses, je Achse die Überlappung der Intervalle
+        const achsen = [[R.c, -R.s], [R.s, R.c], ...kantenN(h.ecken)];
+        return Math.min(
+            ...achsen.map(([ux, uz]) => {
+                const [[a, b], m, w] = [spanne(h.ecken, ux, uz), R.cx * ux + R.cz * uz, weite(R, ux, uz)];
+                return Math.min(b - (m - w), m + w - a);
+            })
+        );
     };
     // DER DURCHTRITT: die Mitte jenseits der Mitte des Ziels `b`, an einer gedrehten WAND jenseits ihrer Mittel-Ebene
     const werkH = (e, b, wand) => {
@@ -519,16 +548,22 @@ async function tempo(K) {
             let t = -Infinity;
             for (let i = 0; i <= 8; i++) {
                 const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, l.radius - zuBox(k.re, x, z));
+                if (k.re) t = Math.max(t, l.radius - zuPoly(k.re.ecken, x, z));
                 else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.radius - Math.hypot(kx - x, kz - z));
             }
             return t;
         },
     });
     // DER LAUF: gemessen nach jedem Bild und nach jedem Sim-Schritt (`_stepFixedSim`: Kontakt, Stoß, Leib an Leib); nach dem Bild auch
-    // das gezeichnete Paar `bk` gegen die gezeichnete Wand, wenn der Körper anliegt (Spalt ≤ SPALT_M)
+    // das gezeichnete Paar `bk` gegen die gezeichnete Wand, wenn der Körper anliegt (Spalt ≤ SPALT_M) — ZUR ZEIT DES BILDS: ein
+    // Körper, den das Bild zwischen zwei Schritten zeichnet (`zwischen`), steht auf der Wanduhr um α des letzten Schritts
+    // (`_fixedAlpha`) zwischen seiner Lage davor S und der danach; die Linse rechnet selbst, wo: von S mit dem Tempo vor dem
+    // Schritt geradeaus auf das Ziel T = S + v · dt, bis die Wand ihn hält — sein Abstand zur Wand fällt längs des Schritts von
+    // d(S) auf d(T), zur Zeit des Bilds d(S) + α · (d(T) − d(S)) (gehalten an der Wand: 0). Vorher urteilte die Linse an der
+    // Sim-Lage, die dem Bild um 1 − α Schritte vorausläuft, und nannte ein Bild Spalt, das den Wagen zeigt, wo er war.
     const fahre = (kad, sek, paare, je) => {
         const m = paare.map(() => ({ tief: -Infinity, spalt: Infinity }));
+        let vor = null; // die Lage und das Tempo vor dem letzten Sim-Schritt
         const miss = (bild) =>
             paare.forEach(([kf, H, bk], i) => {
                 const [k, M] = [kf(), m[i]];
@@ -536,10 +571,16 @@ async function tempo(K) {
                 if (d === -Infinity) return;
                 [M.tief, M.spalt, M.durch] = [Math.max(M.tief, d), Math.min(M.spalt, Math.max(0, -d)), M.durch || H.durch(k)];
                 if (!bild || !bk || d < -K.SPALT_M) return;
+                if (kf.zwischen && vor) {
+                    const T = { x: vor.x + vor.vx * A.FIXED_DT, z: vor.z + vor.vz * A.FIXED_DT };
+                    const [dS, dT] = [H.tiefe(kf(vor)), H.tiefe(kf(T))];
+                    if (dS !== -Infinity && dT !== -Infinity && dS + st._fixedAlpha * (dT - dS) < -K.SPALT_M) return;
+                }
                 const [b, a] = [bildAbstand(bk, H.bild), (M.bild = M.bild || { spalt: Infinity, tief: 0 })];
                 [a.spalt, a.tief] = [Math.min(a.spalt, Math.max(0, b)), Math.max(a.tief, -b)];
             });
         r._stepFixedSim = function (...a) {
+            vor = { x: pm.position.x, z: pm.position.z, vx: st.playerVel.x(), vz: st.playerVel.z() };
             Object.getPrototypeOf(r)._stepFixedSim.apply(this, a);
             imSchritt = true;
             miss();

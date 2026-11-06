@@ -4910,6 +4910,25 @@
         return g;
     }
 
+    // DER UMRISS DER GESTALT (physik.K2 Staffel 2 — rein additive DATEN, wie TOR_HUELLE im porta-Kern und fx.huellen im
+    // terrain-Kern): je Rezept der GRUNDRISS der gezeichneten Gestalt (buildInstance, Stufe 0 und 1, seed-invariant, jede Ecke)
+    // als k-DOP — `ueber[k]` die Stützweite der Gestalt in Richtung θ = k · 22,5° (Fahrt-Rahmen: 0° der Bug längs +x, 90° die
+    // Flanke, 180° das Heck; gespiegelt für die andere Flanke) über der des Stations-Rechtecks der Hülle (exportDrive.huelle:
+    // noseX · tailX · ±bw) — und `dach` über yRoof, in m auf den cm nach außen gerundet. Positiv ragt die Gestalt hinaus
+    // (Lichter, Lippe, Schürze, Kotflügel, Spiegel), negativ bleibt sie innen (die gerundeten Ecken). Der Wirt fährt und stößt
+    // den Wagen mit diesem Grundriss (`_fahrzeugGestaltUmriss`); bis dahin waren die Stationen allein die Hülle — das Bild
+    // ragte 13–15 cm über Bug und Heck, 9–12 cm über die Flanke (der Supersport 0,14 m in der Mauer), und an der schrägen Mauer
+    // berührte die Ecke des Rechtecks, wo die Gestalt 7,5 cm Luft ließ (gate:kollision-bild). Gemintet und gemessen von
+    // gate:vehicle-contract (scripts/lib/fahrzeug-umriss.cjs, Mint-Treue je Zahl); der Bau liest sie nie.
+    // prettier-ignore
+    const FAHRZEUG_UMRISS = {
+        gt: { ueber: [0.15, 0.03, -0.06, -0.08, 0.09, -0.07, -0.03, 0.04, 0.15], dach: 0.11 },
+        supersport: { ueber: [0.14, 0.01, -0.07, 0.01, 0.1, -0.03, -0.05, 0.03, 0.15], dach: 0.12 },
+        limousine: { ueber: [0.14, 0.05, -0.02, -0.05, 0.1, -0.03, 0, 0.05, 0.15], dach: 0.11 },
+        kompakt_fwd: { ueber: [0.15, 0.05, -0.01, -0.04, 0.11, 0, 0.01, 0.05, 0.15], dach: 0.1 },
+        suv: { ueber: [0.13, 0.06, 0.01, -0.02, 0.12, -0.01, 0.02, 0.06, 0.15], dach: 0.1 },
+    };
+
     // W8 — die Gestalten je Rezept (B2c): JEDES Fahrzeug trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (const _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
@@ -4919,6 +4938,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
+        FAHRZEUG_UMRISS: FAHRZEUG_UMRISS,
         PARAMS_BY_KIND: { vehicle: PARAMS },
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
         STAMMBAUM: { studio: "Garage", arten: { vehicle: "Fahrzeuge" } },

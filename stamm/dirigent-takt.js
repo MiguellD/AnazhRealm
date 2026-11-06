@@ -1015,7 +1015,9 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            if (st._schrittZiel) st._schrittZiel.mesh = null;
             this._stepFixedSim(simTime, FIXED_DT);
+            this._kontaktStuetze(mesh);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
             steps++;
@@ -1028,8 +1030,33 @@ class AnazhRealm_dirigent_takt {
         return steps;
     }
 
+    // DIE STÜTZE DES KONTAKTS (physik.K2 Staffel 2, Fiedler „Fix Your Timestep" mit Kontakt): hielt ein Hindernis den Leib in
+    // diesem Schritt auf, lief er von prev geradeaus auf das Ziel des Schritts (`_schrittZiel`, vor jedem Kontakt) zu, bis er
+    // die Ebene des Kontakts berührte, und glitt danach an ihr zur Sim-Lage. Die Ebene ist die, aus der der Löser ihn schob
+    // (Normale = Sim-Lage − Ziel, Eindringen p = ihre Länge); berührt hat er bei τ = Spalt / (Spalt + p) des Schritts, an
+    // der Stütze K = prev + τ · (Ziel − prev). Das Bild zieht zwischen prev, K und der Sim-Lage (`_applyFixedInterpolation`)
+    // — die gerade Linie prev → Sim-Lage schnitt die Ecke ab: der Wagen bei 19,6 m/s stand im Bild bis 0,22 m vor der Mauer,
+    // an der sein Körper lag (gate:kollision-bild). Ohne Kontakt τ = 1 (die gerade Linie, byte-gleich).
+    _kontaktStuetze(mesh) {
+        const st = this.state;
+        const K = st._fixedStuetze || (st._fixedStuetze = { tau: 1, x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 });
+        K.tau = 1;
+        const [S, R, Z] = [st._fixedPrevPos, mesh.position, st._schrittZiel];
+        if (!S || !Z || Z.mesh !== mesh) return K;
+        const p = Math.hypot(R.x - Z.x, R.z - Z.z);
+        if (!(p > 1e-5)) return K;
+        const spalt = ((S.x - R.x) * (R.x - Z.x) + (S.z - R.z) * (R.z - Z.z)) / p;
+        K.tau = spalt > 0 ? spalt / (spalt + p) : 0;
+        K.x = S.x + K.tau * (Z.x - S.x);
+        K.z = S.z + K.tau * (Z.z - S.z);
+        K.y = S.y + K.tau * (R.y - S.y);
+        [K.rx, K.ry, K.rz] = [R.x, R.y, R.z];
+        return K;
+    }
+
     // Die RENDER-Interpolation: zwischen prev (Sim-Position des Vorframes) und cur (jetzt) nach
-    // alpha lerpen → die Optik gleitet glatt bei jeder FPS. `_fixedSimPos` wird HIER (nach Rescue/
+    // alpha lerpen → die Optik gleitet glatt bei jeder FPS. Hielt ein Kontakt den Leib im letzten Schritt auf, zieht das Bild
+    // über seine Stütze (`_kontaktStuetze`): vor τ auf sie zu, danach an der Ebene entlang zur Sim-Lage. `_fixedSimPos` wird HIER (nach Rescue/
     // Harvest, die mesh noch bewegt haben könnten) als authoritativ erfasst → der nächste Sim-Schritt
     // stellt sie wieder her. Nur der Spieler-Mesh interpoliert (die statische Welt braucht es nicht).
     _applyFixedInterpolation() {
@@ -1039,7 +1066,14 @@ class AnazhRealm_dirigent_takt {
         if (!st._fixedSimPos) st._fixedSimPos = mesh.position.clone();
         else st._fixedSimPos.copy(mesh.position); // die authoritative Sim-Position (post-Rescue) festhalten
         const a = Math.max(0, Math.min(1, st._fixedAlpha || 0));
-        if (st._fixedPrevPos) mesh.position.lerpVectors(st._fixedPrevPos, st._fixedSimPos, a);
+        const K = st._fixedStuetze;
+        const P = st._fixedSimPos;
+        if (st._fixedPrevPos && K && K.tau < 1 && K.rx === P.x && K.ry === P.y && K.rz === P.z) {
+            const k = this._stuetzeV || (this._stuetzeV = new THREE.Vector3());
+            k.set(K.x, K.y, K.z);
+            if (a < K.tau) mesh.position.lerpVectors(st._fixedPrevPos, k, a / K.tau);
+            else mesh.position.lerpVectors(k, P, (a - K.tau) / (1 - K.tau));
+        } else if (st._fixedPrevPos) mesh.position.lerpVectors(st._fixedPrevPos, P, a);
         st._bildAlpha = a; // der Rest dieses Bilds — der Ritt im Bild liest ihn EINMAL (`_tickMountedMovement`)
         // V18.356 — merken, WAS wir mesh setzten → der nächste _loopFixedStep unterscheidet
         // „unangetastet" (Sim wiederherstellen) von „extern teleportiert" (übernehmen).
