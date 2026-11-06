@@ -139,7 +139,8 @@ const SPRUENGE_MAX = 4;
 // dem EINEN Orts-Gesetz (`__weltOrt("hang")` um die Mess-Wiese, die Neigung des Hangs von K1, `bergab`: der Weg talwärts
 // bleibt steil), der Blick hangab, rückwärts hangauf heran: die Kamera steht hangauf hinter ihm; beide auch im SPRINT
 // (Umschalt, `T.sprint`). Der Ruck gilt JE Gang („auch beim Sprint"), die Kamera, die nach dem Takt in den Hang sinkt
-// (`senk`), muss die Linse beim Namen nennen.
+// (`senk`), muss die Linse beim Namen nennen. `nahJeOrbit` (fehlt = `nahJe`): im Orbit die Nah-Frage je so viele Bilder — wer den
+// Orbit schneller dreht (`orbitMs`), fragt je Grad gleich dicht (die Station leib.K4 in der Welt der Sitzung).
 const GANG = Object.freeze({ R: 0.25, nahJe: 6, gw: 32, gh: 18, stammDickM: 0.15, startM: 8, orbitMs: 6000, heranM: 6, ruckM: 0.02, nahRadien: { Fels: 0.25, Bau: 0.25, Rinde: 0.25, Gelände: 0.25 }, hang: { ...ORTE.find((o) => o.id === "hang").such, bergab: [8, 20], rMax: 600 } });
 const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-sprint", "steil-sprint"] };
 // K6 DER LEIB IM SEITWÄRTSGANG (w12-leib-sicht, Befund des Schöpfers 05.11.: am Prüfplatz wurde der eigene Leib beim Strafe
@@ -690,8 +691,10 @@ async function leibGang(G) {
         const MUSTER = __MUSTER;
         let tMs = performance.now();
         let nr = 0;
-        const gang = async (art, a, sprint, senk) => {
+        // `bisBau`: der Gang endet mit der ersten Probe, die Bau-Pixel nennt (der Schmuggel: er beweist nur, dass die Linse ihn nennt)
+        const gang = async (art, a, sprint, senk, bisBau) => {
             const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [] };
+            const weiter = () => !(bisBau && g.nah.length);
             const v = a.v || L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
             const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
             L.fuss(v.x, v.z, v.gier, 0.15);
@@ -724,9 +727,10 @@ async function leibGang(G) {
                 }
                 const z3 = (o) => [+o.x.toFixed(2), +o.y.toFixed(2), +o.z.toFixed(2)];
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
-                if (n % G.nahJe === 0) {
+                // im Orbit je Winkel (`nahJeOrbit` Bilder, Vorgabe `nahJe`: dieselbe Zahl Proben je Grad bei schnellerem Orbit)
+                if (n % (phase.startsWith("orbit") ? G.nahJeOrbit || G.nahJe : G.nahJe) === 0) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, r: 4 }, neu: n === G.nahJe });
-                    if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
+                    if (d.deckung > 0 && (!bisBau || d.jeKlasse.Bau > 0)) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
                 }
                 if (n % 20 === 0) await sleep(0);
             };
@@ -736,7 +740,7 @@ async function leibGang(G) {
             if (senk) return g;
             q.length = 0;
             tasten({ zurueck: true });
-            for (let j = 0, still = 0, dMin = mitte(); j < 600 && still < 20; j++) {
+            for (let j = 0, still = 0, dMin = mitte(); j < 600 && still < 20 && weiter(); j++) {
                 await bild("rückwärts");
                 still = mitte() < dMin - 0.01 ? 0 : still + 1;
                 dMin = Math.min(dMin, mitte());
@@ -746,11 +750,11 @@ async function leibGang(G) {
             const p = pm.position;
             if (art.startsWith("innen")) g.drinnen = (p.x - a.d.cx) * a.n[0] + (p.z - a.d.cz) * a.n[1] < -1;
             tasten({});
-            for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit");
+            for (const t1 = tMs + G.orbitMs; tMs < t1 && weiter(); ) await bild("orbit");
             tasten({ vor: true });
-            for (let j = 0; j < 60; j++) await bild("vorwärts");
+            for (let j = 0; j < 60 && weiter(); j++) await bild("vorwärts");
             tasten({});
-            for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit fern");
+            for (const t1 = tMs + G.orbitMs; tMs < t1 && weiter(); ) await bild("orbit fern");
             return g;
         };
         for (const art of ["stamm", "fels", "haus"]) if (anker[art]) out.gaenge.push(await gang(art, anker[art]));
@@ -758,7 +762,7 @@ async function leibGang(G) {
         // Kugel geht durch das offene Blatt (Bau-Pixel)
         r._strahlBoxenVon = () => [];
         try {
-            out.schmuggel = (await gang("schmuggel", anker.haus)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
+            out.schmuggel = (await gang("schmuggel", anker.haus, false, false, true)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
         } finally {
             delete r._strahlBoxenVon;
         }

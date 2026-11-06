@@ -213,13 +213,35 @@ function nahDeckungInSeite(o) {
             }
         }
     };
-    // je (Mesh, Instanz) die Matrix und die Hülle; `fn(obj, inst)` nur für die, deren Hülle `kugel` schneidet
+    // je (Mesh, Instanz) die Matrix und die Hülle; `fn(obj, inst)` nur für die, deren Hülle `kugel` schneidet.
+    // DER BILLIGE FILTER ZUERST (Lehre 25, leib.K4: die Prüfung des Speichers ging je Frage JEDE Instanz der Szene mit voller
+    // Matrix durch — 6,4 ms je Frage im Gang, ein Drittel der Probe): je Instanz die Mitte ihrer Hülle (W · I · c, exakt) und ein
+    // Radius über ihr (r · |W|_F · |I|_F ≥ r · größte Achse von W · I) — wer so nicht trifft, trifft nie; wer trifft, geht den
+    // Weg von vorher (dieselbe Hülle, dasselbe Urteil, dieselbe Reihe der Treffer)
     const jeInstanz = (obj, kugel, fn) => {
         const g = obj.geometry;
         if (!g.boundingSphere) g.computeBoundingSphere();
         const gross = !Number.isFinite(g.boundingSphere.radius) || g.boundingSphere.radius > 1e5;
         const n = obj.isInstancedMesh ? obj.count : 1;
+        const W = obj.matrixWorld.elements;
+        const A = obj.isInstancedMesh ? obj.instanceMatrix.array : null;
+        const gc = g.boundingSphere.center;
+        const frob = (e, o) => Math.sqrt(e[o] ** 2 + e[o + 1] ** 2 + e[o + 2] ** 2 + e[o + 4] ** 2 + e[o + 5] ** 2 + e[o + 6] ** 2 + e[o + 8] ** 2 + e[o + 9] ** 2 + e[o + 10] ** 2); // prettier-ignore
+        const r0 = A && !gross ? g.boundingSphere.radius * frob(W, 0) : 0;
+        const vor = { center: { x: 0, y: 0, z: 0 }, radius: 0 };
         for (let i = 0; i < n; i++) {
+            if (A && !gross) {
+                const o = i * 16;
+                const lx = A[o] * gc.x + A[o + 4] * gc.y + A[o + 8] * gc.z + A[o + 12];
+                const ly = A[o + 1] * gc.x + A[o + 5] * gc.y + A[o + 9] * gc.z + A[o + 13];
+                const lz = A[o + 2] * gc.x + A[o + 6] * gc.y + A[o + 10] * gc.z + A[o + 14];
+                const vc = vor.center;
+                vc.x = W[0] * lx + W[4] * ly + W[8] * lz + W[12];
+                vc.y = W[1] * lx + W[5] * ly + W[9] * lz + W[13];
+                vc.z = W[2] * lx + W[6] * ly + W[10] * lz + W[14];
+                vor.radius = r0 * frob(A, o) + 1e-6;
+                if (typeof kugel === "function" ? !kugel(vor) : Math.hypot(vc.x - kugel.center.x, vc.y - kugel.center.y, vc.z - kugel.center.z) > kugel.radius + vor.radius) continue; // prettier-ignore
+            }
             m4.copy(obj.matrixWorld);
             if (obj.isInstancedMesh) {
                 im.fromArray(obj.instanceMatrix.array, i * 16);
@@ -316,8 +338,9 @@ function nahDeckungInSeite(o) {
     const uvt = [];
     const meta = [];
     // je Achse der Punkt der Dreiecks-Hülle, der dem Auge am nächsten liegt (geklemmt), sein Abstand gegen die Kugel
-    const inKugel = (a, b, c) =>
-        ["x", "y", "z"].reduce((s, k) => s + (Math.max(Math.min(a[k], b[k], c[k]), Math.min(E[k], Math.max(a[k], b[k], c[k]))) - E[k]) ** 2, 0) <= D2;
+    // (die Achsen ausgeschrieben, dieselbe Summe in derselben Reihe: die Schleife über Schlüssel-Texte trug 2,4 ms je Frage)
+    const achse = (a, b, c, e) => (Math.max(Math.min(a, b, c), Math.min(e, Math.max(a, b, c))) - e) ** 2;
+    const inKugel = (a, b, c) => 0 + achse(a.x, b.x, c.x, E.x) + achse(a.y, b.y, c.y, E.y) + achse(a.z, b.z, c.z, E.z) <= D2;
     C.lauf++;
     {
         const ft = C.tris;

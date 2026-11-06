@@ -2412,7 +2412,13 @@ class AnazhRealm_studio_bruecke {
         for (const t of h.teile) {
             if (
                 !t ||
-                !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "wurf" || t.rolle === "beide" || t.rolle === "strahl")
+                !(
+                    t.rolle === "fest" ||
+                    t.rolle === "sicht" ||
+                    t.rolle === "wurf" ||
+                    t.rolle === "beide" ||
+                    t.rolle === "strahl"
+                )
             )
                 return bruch("rolle");
             if (t.art === "box" || t.art === "keil") {
