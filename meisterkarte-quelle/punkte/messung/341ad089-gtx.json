@@ -16,20 +16,6 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "studios.K4#2": {
-   "gruen": false,
-   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
-   "exit": 2,
-   "minuten": 0.61,
-   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
-   "gpu": "nvidia/pascal",
-   "s": 36.5,
-   "zeit": "2026-11-06T09:45:34.298Z",
-   "abdruck": "968f1ccf5262",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
   }
  },
  "ungemessen": {
@@ -60,6 +46,24 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K4#2": {
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "verdrängt vom echt-Job (z258, integ-probe c4785981): gpu-lauf nahm der Sitzung um 10:46:08 das Schloss, die Welt fiel mitten in der Probe (Navigating frame was detached) — kein Urteil über den Kopf, die Scheibe fährt neu",
+   "gpu": "nvidia/pascal",
+   "s": 36.5,
+   "zeit": "2026-11-06T09:45:34.298Z",
+   "abdruck": "968f1ccf5262",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session",
+   "ungemessen": true,
+   "vorher": {
+    "gruen": false,
+    "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–"
+   }
   }
  },
  "sitzung": {
