@@ -1,8 +1,8 @@
 {
  "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
  "geraet": "headless",
- "zeit": "2026-11-06T20:01:38.245Z",
- "host": "farm:42279084351",
+ "zeit": "2026-11-06T20:36:31.316Z",
+ "host": "farm:42289710326",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -64,28 +64,26 @@
    "zwilling": "streaming.K1#1"
   },
   "speicher.K3#1": {
-   "gruen": false,
-   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.9 kB, Platte 9.7 kB, am stärksten architectures 2.1 kB · gesamt roh 61.9 kB, Platte 123.9 kB · Leben worldJournal 36.7 kB, dslHistory 12.6 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, creatures 1.9 kB, dslPatternMemory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1032.0 kB, Platte 2064.0 kB, am stärksten wegSpur 1032.0 kB · gesamt roh 1032.0 kB, Platte 2064.0 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl | ❌ (D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: worldMeta · gleich · gleich · gleich · gleich · gleich · gleich · gleich",
-   "exit": 1,
-   "minuten": 5.5,
-   "grund": "ROT: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.9 kB, Platte 9.7 kB, am stärksten architectures 2.1 kB · gesamt roh 61.9 kB, Platte 123.9 kB · Leben worldJournal 36.7 kB, dslHistory 12.6 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, creatures 1.9 kB, dslPatternMemory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1032.0 kB, Platte 2064.0 kB, am stärksten wegSpur 1032.0 kB · gesamt roh 1032.0 kB, Platte 2064.0 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl | ❌ (D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: worldMeta · gleich · gleich · gleich · gleich · gleich · gleich · gleich",
-   "zeit": "2026-11-06T19:43:22.143Z",
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 3.9 kB, Platte 7.9 kB, am stärksten architectures 1.4 kB · gesamt roh 58.4 kB, Platte 116.7 kB · Leben worldJournal 36.9 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, dslPatternMemory 0.0 kB, creatures -0.9 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.0 kB, Platte 2018.1 kB, am stärksten wegSpur 1009.0 kB · gesamt roh 1009.0 kB, Platte 2018.1 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 4.24,
+   "zeit": "2026-11-06T20:36:31.316Z",
    "abdruck": "14a69b36ebde",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42279084351/10"
+   "host": "farm:42289710326/1"
   },
   "speicher.K3#2": {
-   "gruen": false,
-   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.9 kB, Platte 9.7 kB, am stärksten architectures 2.1 kB · gesamt roh 61.9 kB, Platte 123.9 kB · Leben worldJournal 36.7 kB, dslHistory 12.6 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, creatures 1.9 kB, dslPatternMemory 0.0 kB | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 43.8 kB, Platte 87.5 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.8 kB, Platte 91.6 kB · Leben dslHistory 1.1 kB, creatures 0.7 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1032.0 kB, Platte 2064.0 kB, am stärksten wegSpur 1032.0 kB · gesamt roh 1032.0 kB, Platte 2064.0 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-   "exit": 1,
-   "minuten": 5.5,
-   "grund": "ROT: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.9 kB, Platte 9.7 kB, am stärksten architectures 2.1 kB · gesamt roh 61.9 kB, Platte 123.9 kB · Leben worldJournal 36.7 kB, dslHistory 12.6 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, creatures 1.9 kB, dslPatternMemory 0.0 kB | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 43.8 kB, Platte 87.5 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.8 kB, Platte 91.6 kB · Leben dslHistory 1.1 kB, creatures 0.7 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1032.0 kB, Platte 2064.0 kB, am stärksten wegSpur 1032.0 kB · gesamt roh 1032.0 kB, Platte 2064.0 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-   "zeit": "2026-11-06T19:43:22.143Z",
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 3.9 kB, Platte 7.9 kB, am stärksten architectures 1.4 kB · gesamt roh 58.4 kB, Platte 116.7 kB · Leben worldJournal 36.9 kB, dslHistory 12.3 kB, dslAbilities 3.1 kB, knowledgeBase 2.9 kB, dslPatternMemory 0.0 kB, creatures -0.9 kB | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 43.0 kB, Platte 86.0 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.1 kB, Platte 90.3 kB · Leben dslHistory 1.0 kB, creatures 0.7 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, worldJournal 0.0 kB, dslPatternMemory 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.0 kB, Platte 2018.1 kB, am stärksten wegSpur 1009.0 kB · gesamt roh 1009.0 kB, Platte 2018.1 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 4.24,
+   "zeit": "2026-11-06T20:36:31.316Z",
    "abdruck": "36711e149096",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42279084351/10",
+   "host": "farm:42289710326/1",
    "zwilling": "speicher.K3#1"
   },
   "pipeline.K2#1": {
