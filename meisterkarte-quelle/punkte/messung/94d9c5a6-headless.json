@@ -1,8 +1,8 @@
 {
  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
  "geraet": "headless",
- "zeit": "2026-11-06T23:41:20.461Z",
- "host": "farm:42313375491",
+ "zeit": "2026-11-06T23:42:57.032Z",
+ "host": "farm:42313665783",
  "je": {
   "ki.K1#2": {
    "gruen": true,
@@ -29,16 +29,15 @@
    "zwilling": "ki.K1#2"
   },
   "wetter.K2#2": {
-   "gruen": false,
-   "zahl": "keine PFUETZE-Zeile für ego, third, mutante, kurve — A.ecke is not a function (Exit 2)",
-   "exit": 2,
-   "minuten": 0.21,
-   "grund": "ROT: keine PFUETZE-Zeile für ego, third, mutante, kurve — A.ecke is not a function (Exit 2)",
-   "zeit": "2026-11-06T23:41:20.461Z",
-   "abdruck": "f9c8d36dc843",
+   "gruen": true,
+   "zahl": "ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0",
+   "exit": 0,
+   "minuten": 0.25,
+   "zeit": "2026-11-06T23:42:57.032Z",
+   "abdruck": "e999cb2ec8d6",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42313459468/1"
+   "host": "farm:42313665783/1"
   },
   "streaming.K1#1": {
    "gruen": false,

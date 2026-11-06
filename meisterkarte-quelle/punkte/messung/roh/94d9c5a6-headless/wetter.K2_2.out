@@ -17,7 +17,7 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function wetterK2Lauf
         const M = G.MULDE;
         if (!M || !AnazhRealm._pfuetzeGesetz) return { fehler: "keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz" };
         await window.__wasserStrom([-280.4, -1045.6], 1);
-        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)) };
+        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)), ecke: (x) => x };
         const S = st.chunkSaetze.get("boden");
         const [P, N, Z] = ["position", "normal", "aNormalZiel"].map((n) => S.geom.attributes[n].array);
         const senke = (x, z) => {
@@ -93,4 +93,7 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function wetterK2Lauf
     }
     process.exit(code);
 })() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/94d9c5a6-headless/wetter.K2_2.json 7704
-PFUETZE FEHLER A.ecke is not a function
+PFUETZE ego {"ecken":223,"pfuetze":116,"r":0.785}
+PFUETZE third {"ecken":237,"pfuetze":111,"r":0.736}
+PFUETZE mutante {"ecken":223,"pfuetze":116,"r":0.006}
+PFUETZE kurve {"kurve":[[0.909,116],[0.861,98],[0.813,78],[0.764,53],[0.716,30],[0.668,8],[0.619,3],[0.571,2],[0.522,0],[0.474,0],[0.426,0],[0.377,0],[0.329,0],[0.281,0],[0.232,0],[0.184,0],[0.135,0],[0.087,0],[0.039,0],[0,0]],"fall":9}
