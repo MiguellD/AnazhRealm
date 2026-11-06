@@ -2510,12 +2510,15 @@ class AnazhRealm_siedlung_ort {
             // JEDE GESTALT DES ORTS IN DER STUFE IHRES BEDARFS (w13-dorf-strom): dahinter bestellt der Vorrat für jedes Haus des
             // Plans (in der Reihe des Zugs) und jedes Stück seiner Ausstattung, das das Erwachen hebt (Laternen an Mast und Wand,
             // Brunnen, Stände: `_dorfErlebnis`, `_spawnSettlementSlot`, ihre Samen `_ausstattungSame`), die Stufe, die es braucht,
-            // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts); die
-            // Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform,
-            // die Mesh-Stufe bestellte erst der Vorlauf der Bahn (3 s vor der Zone): im GT standen die Häuser von −5,−3 erst
-            // 10,3–11,7 s nach dem Erwachen, 81–139 m vor dem Spieler, die Marktstände von −4,−4 traten ungezeichnet in 150 m ein.
+            // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts) —,
+            // und nur, wenn sie es dorthin holt (`_bedarfZeit` endlich: im Stand und seitab keine; die Stadt nH 302 bestellte im
+            // Stand sonst jede Gestalt und hielt die Bahnen der Foundry, gate:settlement C-K5). Die Foundry rangiert jede nach der
+            // Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform, die Mesh-Stufe bestellte erst
+            // der Vorlauf der Bahn (3 s vor der Zone): im GT standen die Häuser von −5,−3 erst 10,3–11,7 s nach dem Erwachen,
+            // 81–139 m vor dem Spieler, die Marktstände von −4,−4 traten ungezeichnet in 150 m ein.
             const bedarf = (e) => {
-                const preset = this._foundryPresetForEntry(e);
+                const preset =
+                    this._bedarfZeit(e.position.x, e.position.z, R) < Infinity && this._foundryPresetForEntry(e);
                 if (!preset) return;
                 const dh = Math.hypot(p.x - e.position.x, p.z - e.position.z) || 1;
                 const k2 = Math.min(1, R / dh);
@@ -2558,12 +2561,9 @@ class AnazhRealm_siedlung_ort {
         }
         // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei);
         // was steht, fragt der Takt nicht mehr (Lehre 25). Vorgebacken heißt: die Stufen am Auge des Erwachens stehen — die
-        // Stufen des Bedarfs (`vorbau`) gehen daneben, in der Reihe des Zugs höchstens `AUTO_SETTLEMENT.vorbauImFlug` zugleich
-        // (die Stadt nH 302 bestellte sonst jede Gestalt auf einmal und hielt die Bahnen der Foundry, gate:settlement C-K5).
+        // Stufen des Bedarfs (`vorbau`) gehen daneben, die Foundry rangiert sie nach der Zeit bis Bedarf.
         const offen = ([e, preset, lod]) => this._foundryFlattenFor(e, preset, lod) === null;
-        let n = 0;
-        w.vorback = w.vorback.filter(offen);
-        w.vorbau = w.vorbau.filter((x) => n >= A.vorbauImFlug || (offen(x) && ++n > 0));
+        [w.vorback, w.vorbau] = [w.vorback.filter(offen), w.vorbau.filter(offen)];
         return !w.vorback.length;
     }
     // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
@@ -3767,8 +3767,6 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     perTick: 2,
     // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
     vorbackHaeuser: 4,
-    // so viele Stufen des Bedarfs eines Vorrats sind zugleich bestellt (`_dorfVorbacken`, w13-dorf-strom)
-    vorbauImFlug: 6,
     // so viel Weg des Spielers, und der Vorrat liest die Reihe des Zugs neu (`_dorfVorbacken`, sk5-haus)
     vorbackNeuM: 8,
     // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
