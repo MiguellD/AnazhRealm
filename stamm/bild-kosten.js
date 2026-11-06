@@ -1978,14 +1978,15 @@ class AnazhRealm_bild_kosten {
             // auf dem getonten Bild. Sie ist eine eigene AUSGABE der Kette (`u.ausgabe`), die `_zugangTakt` beim Wechsel der Art
             // einhängt: aus fehlt ihr Knoten im Graphen, das Fragment ist byte-gleich dem ohne Zugang (vp-0611g: ein Zweig hinter
             // einer Uniform rundete auf 6,2 % der Pixel um 1 LSB). DER HIMMEL BLEIBT (die EINE Himmels-Maske aller Arten): wo die
-            // Szenen-Tiefe auf 1 steht, zeichnete nur der Himmel (`_himmelImUnendlichen`, die Welt schreibt Tiefe) — dort wirkt
-            // Δ nie. Deut und Prot trafen ihn nie (e · Himmelsblau < 0), die Tritanopie (e = 0,859 (B − G)) traf genau ihn (OMEN
-            // Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
+            // Szenen-Tiefe über der Himmels-Schwelle des Spiegels steht (0,99999, `bild-sicht`), zeichnete nur der Himmel
+            // (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1 — die Sonne rastert ihre 1 eine Spur darunter,
+            // gate:post-kette 80 Pixel unter Deuteranopie) — dort wirkt Δ nie. Deut und Prot trafen das Blau nie (e · Himmelsblau
+            // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
             const szenenTiefe = scenePass.getTextureNode("depth");
             const tiefenGr = vec2(szenenTiefe.size());
             const welt = szenenTiefe
                 .load(screenUV.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1)))
-                .r.lessThan(float(1))
+                .r.lessThan(float(0.99999))
                 .select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
             u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };

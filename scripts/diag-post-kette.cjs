@@ -250,6 +250,10 @@ function urteil(z) {
             v.push(
                 `ZUGANG: die Lauf-Grenze der zeitlichen Auflösung ist ein ${zg.laufPx}, keine Konstante des Resolve (vp-0611g: die Teilung durch eine Uniform rundet)`
             );
+        if (!(zg.himmel || []).includes("himmel"))
+            v.push(
+                `ZUGANG: die Kuppel des Himmels fehlt unter den Gegenständen im Unendlichen (${JSON.stringify(zg.himmel)}) — die Probe ist blind`
+            );
         const r = zg.rauschen || {};
         if (!(r.himmelPx > 0.5 * ((zg.leinwand || [0, 0])[0] * (zg.leinwand || [0, 0])[1])))
             v.push(`ZUGANG: nur ${r.himmelPx} Himmels-Pixel im Bild (die Probe ist blind)`);
@@ -260,7 +264,7 @@ function urteil(z) {
             if (!e) v.push(`ZUGANG: ${art} nicht gemessen`);
             else if (e.himmel > r.himmel)
                 v.push(
-                    `ZUGANG: ${art} ändert ${e.himmel} von ${e.himmelPx} Himmels-Pixeln (größte ${e.himmelMax}/255, Rauschen ${r.himmel}) — der Himmel bleibt (die EINE Himmels-Maske, vp-0611g: Ego 71,6/93,1/104,5 → 59,1/85,2/105,2)`
+                    `ZUGANG: ${art} ändert ${e.himmel} von ${e.himmelPx} Himmels-Pixeln (größte ${e.himmelMax}/255${e.ort ? ` an ${e.ort[0]}/${e.ort[1]}: ${e.ort[2]} → ${e.ort[3]}, ${e.ort[4]}` : ""}, Rauschen ${r.himmel}) — der Himmel bleibt (die EINE Himmels-Maske, vp-0611g: Ego 71,6/93,1/104,5 → 59,1/85,2/105,2)`
                 );
         }
         if (zg.tritan && !(zg.tritan.kiste >= 0.2 * zg.tritan.kistePx))
@@ -332,6 +336,7 @@ function selbsttest() {
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         zugang: {
             leinwand: [321, 241],
+            himmel: ["himmel", "Points", "himmel-sonne", "himmel-mond"],
             kiste: [140, 100, 180, 140],
             laufPx: null,
             ausMarke: true,
@@ -544,7 +549,12 @@ function selbsttest() {
             z: mit((z) => (z.zugang.wgsl.anGleichAus = true)),
             muss: /ZUGANG: die Tritanopie zeichnet dasselbe Fragment/,
         },
-        { name: "kein Himmel im Bild (blind)", z: mit((z) => (z.zugang.rauschen.himmelPx = 100)), muss: /nur 100 Himmels-Pixel/ },
+        {
+            name: "Kuppel nicht in der Proben-Schicht (blind)",
+            z: mit((z) => (z.zugang.himmel = ["himmel-sonne"])),
+            muss: /ZUGANG: die Kuppel des Himmels fehlt/,
+        },
+        { name: "kein Himmel im Bild (blind)",z: mit((z) => (z.zugang.rauschen.himmelPx = 100)), muss: /nur 100 Himmels-Pixel/ },
         { name: "Zugang-Probe fehlt", z: mit((z) => delete z.zugang), muss: /ZUGANG: die Probe lief nicht/ },
     ];
     taeterFaelle(faelle, urteil, { fehler });
@@ -1015,6 +1025,18 @@ function zugangProbe() {
         kiste.position.copy(p0).addScaledVector(ziel.clone().sub(p0).normalize(), 8);
         kiste.name = "post-kette:ZUGANG";
         st.scene.add(kiste);
+        // DIE KAMERA SIEHT NUR DEN HIMMEL UND DIE KISTE (eine Proben-Schicht wie das Dunkel): der Himmel sind die Gegenstände im
+        // Unendlichen (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne, Mond) — jedes andere Pixel wäre Welt, und die Welt
+        // daltonisiert die Farbsicht zu Recht (am main-Kopf stand eine `dsl-insel` im Blick)
+        const SCHICHT = 30;
+        const unendlich = r.constructor._unendlichKnoten;
+        const himmel = [];
+        st.scene.traverse((o) => {
+            if (o.material && unendlich && o.material.vertexNode === unendlich && !o.layers.isEnabled(SCHICHT)) himmel.push(o);
+        });
+        for (const o of [...himmel, kiste]) o.layers.enable(SCHICHT);
+        const maskeVor = cam.layers.mask;
+        cam.layers.set(SCHICHT);
         const setzeKamera = () => {
             cam.position.copy(p0);
             cam.up.set(0, 1, 0);
@@ -1069,7 +1091,7 @@ function zugangProbe() {
             }
             return false;
         };
-        const aus = { leinwand: [W, H] };
+        const aus = { leinwand: [W, H], himmel: himmel.map((o) => o.name || o.type) };
         try {
             const [x0, y0, x1, y1] = rechteck();
             aus.kiste = [x0, y0, x1, y1].map(Math.round);
@@ -1101,7 +1123,8 @@ function zugangProbe() {
                     himmelMax = 0,
                     kiste = 0,
                     nH = 0,
-                    nK = 0;
+                    nK = 0,
+                    ort = null; // das Himmels-Pixel mit der größten Änderung: [x, y, aus RGB, Art RGB]
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {
                         const i = (y * W + x) * 4;
@@ -1116,10 +1139,20 @@ function zugangProbe() {
                         } else {
                             nH++;
                             if (d >= 1) himmel++;
+                            if (d > himmelMax)
+                                ort = [x, y, [...bAus.slice(i, i + 3)].join("/"), [...b.slice(i, i + 3)].join("/")];
                             himmelMax = Math.max(himmelMax, d);
                         }
                     }
-                return { himmel, himmelMax, himmelPx: nH, kiste, kistePx: nK };
+                // der Täter beim Namen: was der Strahl durch dieses Pixel als erstes trifft (kein Treffer = der Himmel selbst)
+                if (ort) {
+                    setzeKamera();
+                    const rc = new T.Raycaster();
+                    rc.setFromCamera(new T.Vector2((2 * (ort[0] + 0.5)) / W - 1, 1 - (2 * (ort[1] + 0.5)) / H), cam);
+                    const t = rc.intersectObjects(st.scene.children, true).find((h) => h.object.visible !== false);
+                    ort.push(t ? `${t.object.name || t.object.type} in ${t.distance.toFixed(1)} m` : "kein Gegenstand");
+                }
+                return { himmel, himmelMax, himmelPx: nH, kiste, kistePx: nK, ort };
             };
             aus.rauschen = vergleich(bAus2);
             aus.tritan = vergleich(bTritan);
@@ -1131,6 +1164,8 @@ function zugangProbe() {
                 .join(" ← ");
         } finally {
             Object.assign(Z, vor);
+            cam.layers.mask = maskeVor;
+            for (const o of himmel) o.layers.disable(SCHICHT);
             st.scene.remove(kiste);
             kiste.geometry.dispose();
             kiste.material.dispose();
@@ -1179,7 +1214,7 @@ function zugangProbe() {
             const zg = out.zugang;
             const h = (v) => (v ? `${v.himmel} von ${v.himmelPx} Himmels-Pixeln (größte ${v.himmelMax}) · Kiste ${v.kiste} von ${v.kistePx}` : "?");
             log(
-                `Zugang: aus ${zg.ausMarke ? "die Ausgabe ohne Zugang" : "NICHT die Ausgabe ohne Zugang"} · Farbsicht-Knoten aus/an/zurück ` +
+                `Zugang: Himmel ${JSON.stringify(zg.himmel)} · aus ${zg.ausMarke ? "die Ausgabe ohne Zugang" : "NICHT die Ausgabe ohne Zugang"} · Farbsicht-Knoten aus/an/zurück ` +
                     `${zg.ausTraegt}/${zg.anTraegt}/${zg.zurueckTraegt} · Fragment aus ${zg.wgsl ? zg.wgsl.aus : "?"} B, an ${zg.wgsl ? zg.wgsl.an : "?"} B, ` +
                     `zurück byte-gleich ${zg.wgsl ? zg.wgsl.zurueckGleich : "?"} · Lauf-Grenze des Resolve ${zg.laufPx} · Rauschen ${h(zg.rauschen)} · ` +
                     `Tritanopie ${h(zg.tritan)} · Deuteranopie ${h(zg.deut)}${zg.abbruch ? " · ABBRUCH " + zg.abbruch : ""}`
