@@ -39,6 +39,9 @@
 //                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
 //                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
 //                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
+//   H10 WERK DER WELT (studios.K4, Labor = Welt) die Wurzel jeder Bühne trägt das Werk, das ihre Übergabe in die Welt schickt: die
+//                     erste Zeile der Kosten-Leiste nennt das Maß der Hülle (`werkMass`, die Box der Wurzel gegen die Box des Werks
+//                     aus dem Kern der Welt), H8 urteilt es; ein Mesh-Studio ohne Maß ist ROT (die Ratsche: terrain, fachwerk).
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
