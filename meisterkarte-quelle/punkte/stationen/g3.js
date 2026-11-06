@@ -191,7 +191,7 @@ async function probeAlbedo(H) {
     const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
     const log = process.env.PUNKTE_SITZUNG_LOG;
     const j = (H.teil = {
-        plan: "material.K1+K3",
+        plan: "material." + H.seite.TEIL,
         adapter: (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0],
         schritte: {},
         dateien: {},
@@ -202,8 +202,9 @@ async function probeAlbedo(H) {
         fehler: null,
     });
     const t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
-    // DAS LABOR NEBEN DER WELT: das Fenster des Labors im Browser der Sitzung, die Seiten der Studios vom save-server der Sitzung
-    const labor = (async () => {
+    // DAS LABOR NEBEN DER WELT (nur K1 liest es): das Fenster des Labors im Browser der Sitzung, die Seiten der Studios vom save-server
+    // der Sitzung
+    const labor = H.seite.TEIL !== "K1" ? null : (async () => {
         const { browser } = await H.verbinde();
         const kontext = await browser.createBrowserContext();
         H.beimAbbau(() => kontext.close().catch(() => null));
@@ -248,7 +249,7 @@ async function probeAlbedo(H) {
         if (!um || um.fehler) throw new Error("umstellen: " + String((um && um.fehler) || "keine Antwort").slice(0, 300));
         H.zeile("ort · " + um.takte + " Takte");
         const wd = path.join(DIR, "welt.json");
-        const al = await H.wb("/albedo", { datei: wd, ordner: path.join(DIR, "albw") }, 900000);
+        const al = await H.wb("/albedo", { datei: wd, ordner: path.join(DIR, "albw"), mittag: H.seite.TEIL === "K1" }, 900000);
         schritt("welt", al, al && al.urteil === "GRUEN" ? 0 : 1);
         if (fs.existsSync(wd)) Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
         j.dateien.welt = duenn(Wm);
@@ -331,10 +332,17 @@ const FELS_STUFEN =
 // DIE AUSNAHME (w12-proben-frist): die Tafel misst beide Seiten in EINER Probe — die Welt in neun Gängen (Uhr 0,5 und 0,27, je
 // Stufen-Zeile ein Gang) und daneben das Labor, sieben Studio-Seiten mit eigenem Renderer (wie studios.K4). Am Kopf 8ef49bef stand an
 // der Frist 39 s an Radeon und GTX keine Seite fertig (die Welt nach 1,5 s am Ort, dann 37,5 s ohne Antwort von `/albedo` und Labor).
-const ALBEDO_SITZUNG = {
-    ...probeBefehl(probeAlbedo, 10, { BAENDER: JSON.stringify(BAENDER), FELS: JSON.stringify(FELS_STUFEN) }),
-    ausnahme: "die Albedo-Tafel beider Seiten: neun Gänge der Welt und sieben Studio-Seiten des Labors mit eigenem Renderer",
-};
+// ZWEI PROBEN JE KRITERIUM (w13-gtx-proben, 06.11.; GTX bca0d3d7: die EINE Probe riss ihre Frist 84 s — die Welt 81 s in 21 Gängen, das
+// Labor daneben noch offen; Radeon 62 s, Welt 60 s ‖ Labor 59 s): K1 liest die Zeilen der Tafel selbst zur Uhr der Bühne und das Labor,
+// K3 die Folge-Stufen beider Uhren und die Stufen des Felses, nie das Labor. K1 misst die Welt mit `mittag` (werkbank /albedo: die
+// Zeilen ohne Folge-Stufen, fünf Gänge) neben dem Labor, K3 die ganze Welt-Seite (elf Gänge, je Stufen-Zeile EIN Gang über beide Uhren)
+// ohne das Labor daneben — dieselben Schüsse, dieselben Urteile, je Probe nur ihre Arbeit.
+const albedoSitzung = (teil, ausnahme) => ({
+    ...probeBefehl(probeAlbedo, 10, { TEIL: JSON.stringify(teil), BAENDER: JSON.stringify(BAENDER), FELS: JSON.stringify(FELS_STUFEN) }),
+    ausnahme,
+});
+const ALBEDO_K1 = albedoSitzung("K1", "die Albedo-Tafel beider Seiten am Mittag: fünf Gänge der Welt und daneben sieben Studio-Seiten des Labors mit eigenem Renderer");
+const ALBEDO_K3 = albedoSitzung("K3", "die Welt-Seite der Albedo-Tafel: elf Gänge, je Stufen-Zeile ihre Stufe gestellt und zu beiden Uhren geschossen");
 const ALBEDO_PFAD = [
     ...BILD,
     "*-core.js",
@@ -2464,9 +2472,9 @@ const stationen = [
         // Umgebungslicht π, nicht das belichtete Bild. Für das Haus wird der Ton jeder Stufe gegen L0 gerechnet (`stufeVon`); für den Fels
         // werden die Stufen der Art rock abgefragt (`_foundryKindStages`): ist es nur [0], zeigt die Welt den Fels nur in L0, und die
         // Fels-Hälfte ist erfüllt (M43).
-        // IN DER SITZUNG (31.10.): EIN Lauf für beide Staffeln und material.K1 (ALBEDO_SITZUNG, Zwillinge) — die Tafel misst ohnehin jede
+        // IN DER SITZUNG (31.10.; seit w13-gtx-proben ohne material.K1, ALBEDO_K3): EIN Lauf für beide Staffeln (Zwillinge) — die Tafel misst ohnehin jede
         // Zeile zu jeder ihrer Uhren, am Ort ihrer Messung (Genesis, `gemessen.welt.ort`: bis 31.10. `umstellen 0 0` neben dem Ort)
-        probe: { ...ALBEDO_SITZUNG },
+        probe: { ...ALBEDO_K3 },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -2520,8 +2528,8 @@ const stationen = [
         // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
-        // IN DER SITZUNG (31.10.): derselbe Lauf wie material.K3#1 (ALBEDO_SITZUNG, Zwillinge)
-        probe: { ...ALBEDO_SITZUNG },
+        // IN DER SITZUNG (31.10.): derselbe Lauf wie material.K3#1 (ALBEDO_K3, Zwillinge)
+        probe: { ...ALBEDO_K3 },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -2577,7 +2585,7 @@ const stationen = [
         // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
         // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
         // Seiten auf der Karte (nie ein Ersatz-Renderer).
-        probe: { ...ALBEDO_SITZUNG }, // derselbe Lauf wie material.K3#1 (Zwillinge)
+        probe: { ...ALBEDO_K1 }, // derselbe Lauf wie material.K1#1/#2 (Zwillinge)
         env: envDer,
         gpu: true,
         zeit: false,
@@ -2607,7 +2615,7 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
-        probe: { ...ALBEDO_SITZUNG }, // derselbe Lauf wie material.K3#1 (Zwillinge)
+        probe: { ...ALBEDO_K1 }, // derselbe Lauf wie material.K1#1/#2 (Zwillinge)
         env: envDer,
         gpu: true,
         zeit: false,
