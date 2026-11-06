@@ -490,6 +490,26 @@ class AnazhRealm_gelaende_kollision {
             );
             if (b) out.push(b);
         }
+        // DER LEIB DES STRAHLS (leib.K4 Staffel 2): die Teile der Rolle "strahl" (das Geländer der Treppe: Wange, Handlauf, Stab,
+        // Pfosten) als gedrehte Boxen derselben Matrix — der Strahl liest sie nach den Boxen des Gangs (`_strahlBoxenVon`), die
+        // Kapsel nie (ihre Spur ist so breit wie der Leib)
+        const gel = [];
+        for (const q of (hu && fest ? AnazhRealm._huelleVon(hu, "strahl", "fachwerk:__huelle") : null) || []) {
+            const b =
+                q.art === "box" &&
+                this._hausObb(
+                    entry,
+                    q.c[0] - q.h[0],
+                    q.c[1] - q.h[1],
+                    q.c[2] - q.h[2],
+                    q.c[0] + q.h[0],
+                    q.c[1] + q.h[1],
+                    q.c[2] + q.h[2],
+                    k
+                );
+            if (b) gel.push(b);
+        }
+        entry._strahlGelaender = gel.length ? gel : AnazhRealm.KEIN_FLUEGEL;
         return out.length ? out : null;
     }
 
@@ -885,9 +905,18 @@ class AnazhRealm_gelaende_kollision {
         if (!(h && fh[0] >= h[0] && fh[1] <= h[1] && fh[2] >= h[2] && fh[3] <= h[3])) this._blockerNetzSetzen(entry);
     }
 
-    // Die Flügel-Boxen eines Eintrags, solange die Slots stehen, die sie zeichneten (ein Stufen-Wechsel oder Cull nimmt sie)
-    _fluegelBoxenVon(e) {
-        return (e._fluegelSlots === e.instSlots && e._fluegelBoxen) || AnazhRealm.KEIN_FLUEGEL;
+    // DIE BOXEN, DIE NUR DER STRAHL KENNT (`_fieldRaycast` nach den Boxen des Gangs): der Leib des Strahls aus der Hülle (das
+    // Geländer, `_strahlGelaender`) und die Flügel-Boxen, solange die Slots stehen, die sie zeichneten (ein Stufen-Wechsel oder Cull
+    // nimmt sie) — die Liste hält, bis einer der beiden wechselt (der Schwenk schreibt die Flügel je Bild neu)
+    _strahlBoxenVon(e) {
+        const fl = (e._fluegelSlots === e.instSlots && e._fluegelBoxen) || AnazhRealm.KEIN_FLUEGEL;
+        const gel = e._strahlGelaender || AnazhRealm.KEIN_FLUEGEL;
+        if (!gel.length) return fl;
+        if (!fl.length) return gel;
+        const z = e._strahlZusammen;
+        if (z && z.fl === fl && z.gel === gel) return z.alle;
+        e._strahlZusammen = { fl, gel, alle: gel.concat(fl) };
+        return e._strahlZusammen.alle;
     }
 
     // DIE WACHE DES NETZES (mensch.K3): wer sich merkt, was er im Netz las (die Wege der Bewohner einer Siedlung), stellt
@@ -1340,6 +1369,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_kollision]);
 AnazhRealm.BLOCKER_ZELLE = 8;
 AnazhRealm.BLOCKER_ZELLEN_MAX = 1024;
 AnazhRealm.BLOCKER_RIESE = -0.5;
-// Die Flügel-Boxen eines Eintrags ohne gezeichneten Flügel (`_fluegelBoxenVon`): eine Liste, die nie wächst.
+// Die Strahl-Boxen eines Eintrags ohne Flügel und Geländer (`_strahlBoxenVon`): eine Liste, die nie wächst.
 AnazhRealm.KEIN_FLUEGEL = Object.freeze([]);
 AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;

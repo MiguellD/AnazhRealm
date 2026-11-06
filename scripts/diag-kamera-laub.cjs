@@ -754,12 +754,13 @@ async function leibGang(G) {
             return g;
         };
         for (const art of ["stamm", "fels", "haus"]) if (anker[art]) out.gaenge.push(await gang(art, anker[art]));
-        // DER ARM OHNE FLÜGEL-KOLLISION: der Wurf kennt den Tür-Flügel nicht — die Kugel geht durch das offene Blatt (Bau-Pixel)
-        r._fluegelBoxenVon = () => [];
+        // DER ARM OHNE FLÜGEL-KOLLISION: der Wurf kennt die Boxen des Strahls nicht (`_strahlBoxenVon`: Flügel und Geländer) — die
+        // Kugel geht durch das offene Blatt (Bau-Pixel)
+        r._strahlBoxenVon = () => [];
         try {
             out.schmuggel = (await gang("schmuggel", anker.haus)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
         } finally {
-            delete r._fluegelBoxenVon;
+            delete r._strahlBoxenVon;
         }
         if (anker.innen && G.zwei) out.gaenge.push(await gang("innen", anker.innen), await gang("innen-sprint", anker.innen, true));
         // DER STEILHANG: die Stelle aus dem Orts-Gesetz, das Weltbild dort steht, bevor der Gang beginnt

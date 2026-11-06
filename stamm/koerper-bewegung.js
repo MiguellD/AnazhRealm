@@ -1877,9 +1877,10 @@ class AnazhRealm_koerper_bewegung {
                 // eine Box (der Leib unter einer Decke, die er unterläuft), aus seiner Mitte. Bis hier stand er 1 m über der Mitte,
                 // auch unter der Treppe des haus_alemannisch, 1,02 m über der Stufe, auf der der Leib im Sprint stand
                 // (gate:kamera-leib gang2, innen-sprint: die Kugel in 125 von 870 Bildern im Bau).
-                const bx = player.position.x;
-                const bz = player.position.z;
                 const y1 = player.position.y + 1.0;
+                const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
+                // DIE SÄULE TRITT AUS DEM LEIB DES STRAHLS (`_kamSaeule`): steht der Leib im Geländer, steht der Drehpunkt daneben
+                const [bx, bz] = this._kamSaeule(player.position.x, player.position.z, yStufe, y1, kr);
                 const steigt = (y0) => {
                     const w = this._fieldRaycast(bx, y0, bz, bx, y1, bz, {
                         durchPflanzen: true,
@@ -1888,7 +1889,6 @@ class AnazhRealm_koerper_bewegung {
                     });
                     return w.t >= 1 ? y1 : y0 + (y1 - y0) * w.t; // frei: byte-alt
                 };
-                const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
                 let by = steigt(yStufe);
                 if (by === yStufe) by = steigt(player.position.y);
                 // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
@@ -2078,6 +2078,51 @@ class AnazhRealm_koerper_bewegung {
         this._kamFovSoll = st.camera.fov = soll;
         st.camera.updateProjectionMatrix();
         if (st.csmNode && st.csmNode.camera) st.csmNode.updateFrustums();
+    }
+
+    // DIE SÄULE DES DREHPUNKTS (leib.K4 Staffel 2): die Kugel (r) zwischen y0 und y1 über (x, z). Der Leib des Gangs hält jede Box
+    // der Hülle PLAYER_WALL_RADIUS fern, nie den Leib des Strahls (`_strahlBoxenVon`: das Geländer der Treppe — seine Spur ist so
+    // breit wie der Leib —, der offene Flügel): steht er in ihm, stand die Kugel dort in jeder Höhe am Start einer Haut, Wurf und
+    // Arm fielen auf 0 und die Linse stand in seiner Mitte, 0,10 m vor der Wange (gate:kamera-leib gang2, innen-sprint: Bau 16 % in
+    // 47 Proben). Die Säule tritt waagrecht aus jeder Strahl-Box, die sie in ihrer Höhe berührt — je Box quer zu ihrer schmalen Achse
+    // (Wange, Stab, Blatt sind Platten: hinaus auf die Seite, auf der die Säule steht; am Stoß zweier Tritt-Stücke schöbe der kürzere
+    // Weg längs der Wange in das nächste) aus der um r geweiteten Box in ihrem Rahmen (obb), bis keine mehr berührt (höchstens 4
+    // Runden) —, höchstens PLAYER_WALL_RADIUS weit: so fern hält die Kapsel jede Wand des Gangs, die Säule quert keine (die Höhe
+    // in ihr wählt danach der Aufstieg, `steigt`). Ohne Strahl-Box in der Nähe: die Mitte des Leibs, byte-alt.
+    _kamSaeule(x, z, y0, y1, r) {
+        const nah = this._blockerNahe(x, z, r, -Infinity, (this._kamSaeuleNah || (this._kamSaeuleNah = [])));
+        let px = x;
+        let pz = z;
+        for (let runde = 0; runde < 4; runde++) {
+            let rein = false;
+            for (const e of nah)
+                for (const b of this._strahlBoxenVon(e)) {
+                    if (b.topY < y0 - r || b.botY > y1 + r) continue;
+                    const o = b.obb;
+                    const [mx, mz, c, s, hx, hz] = o
+                        ? [o.cx, o.cz, o.c, o.s, o.hx, o.hz]
+                        : [(b.minX + b.maxX) / 2, (b.minZ + b.maxZ) / 2, 1, 0, (b.maxX - b.minX) / 2, (b.maxZ - b.minZ) / 2];
+                    const qx = px - mx;
+                    const qz = pz - mz;
+                    const lx = qx * c - qz * s;
+                    const lz = qx * s + qz * c;
+                    const ax = hx + r - Math.abs(lx);
+                    const az = hz + r - Math.abs(lz);
+                    if (!(ax > 0 && az > 0)) continue;
+                    rein = true;
+                    // lokal (dx, dz) → Welt (dx·c + dz·s, −dx·s + dz·c), wie `_hausObb`
+                    const quer = hx <= hz;
+                    const dx = quer ? (lx < 0 ? -1 : 1) * (ax + 1e-4) : 0;
+                    const dz = quer ? 0 : (lz < 0 ? -1 : 1) * (az + 1e-4);
+                    px += dx * c + dz * s;
+                    pz += -dx * s + dz * c;
+                }
+            if (!rein) break;
+        }
+        nah.length = 0;
+        const d = Math.hypot(px - x, pz - z);
+        const k = d > AnazhRealm.PLAYER_WALL_RADIUS ? AnazhRealm.PLAYER_WALL_RADIUS / d : 1;
+        return [x + (px - x) * k, z + (pz - z) * k];
     }
 
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem

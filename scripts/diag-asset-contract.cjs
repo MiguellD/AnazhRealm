@@ -123,7 +123,7 @@ function huellenFormFehler(h) {
     const imBild = h.teile.filter((t) => t && (t.rolle === "sicht" || t.rolle === "beide")).length;
     if (imBild > 24) return `${imBild} Teile im Fernbild > 24`;
     for (const t of h.teile) {
-        if (!t || !["fest", "sicht", "wurf", "beide"].includes(t.rolle)) return "rolle";
+        if (!t || !["fest", "sicht", "wurf", "beide", "strahl"].includes(t.rolle)) return "rolle";
         if (t.art === "box" || t.art === "keil") {
             if (!v3(t.c) || !v3(t.h)) return `${t.art} c/h nicht auf dem Raster`;
             if (t.art === "keil" && !["+x", "-x", "+z", "-z"].includes(t.first)) return `keil first ${t.first}`;
@@ -131,7 +131,7 @@ function huellenFormFehler(h) {
         } else if (t.art === "kapsel") {
             if (!v3(t.a) || !v3(t.b) || !(r(t.r) && t.r > 0)) return "kapsel a/b/r";
         } else return `art ${t.art}`;
-        if (t.rolle !== "fest" && !v3(t.farbe)) return "farbe";
+        if (t.rolle !== "fest" && t.rolle !== "strahl" && !v3(t.farbe)) return "farbe";
     }
     return null;
 }
