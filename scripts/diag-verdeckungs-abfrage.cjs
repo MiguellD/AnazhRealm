@@ -499,9 +499,9 @@ async function verdeckungPhase(opts) {
             });
             await __gebautNach(e, { takt });
             const tasten = (w, sb) => {
-                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
-                st.keys.w = !!w;
-                st.keys.s = !!sb;
+                for (const k of ["vor", "links", "zurueck", "rechts", "sprint", "jump"]) halt[k] = false;
+                halt.vor = !!w;
+                halt.zurueck = !!sb;
             };
             aus.ms.wagen = Math.round(performance.now() - tWagen);
             const tTakte = performance.now();

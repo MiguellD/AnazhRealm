@@ -624,14 +624,30 @@ const GANG = (k) => {
 hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "null", frist: 300000 });
-    // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte)
-    const seite = async (b, wer, schlupf) => {
-        const p = await b.newPage();
+    // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte);
+    // je Seite ein eigener Kontext (ein eigenes Fenster): ein Tab hinter dem anderen taktet nicht, das Körper-Studio fing dort keinen
+    // Zeiger (Radeon, die Labore neben der Welt: pageerror WrongDocumentError, die Linse ROT)
+    const seite = async (b, schlupf) => {
+        const p = await (await b.createBrowserContext()).newPage();
         if (schlupf) await p.evaluateOnNewDocument(`window.__schlupf = ${SCHLUPF};`);
         return p;
     };
-    const page = await seite(browser, "", true);
+    const page = await seite(browser, true);
     await nullRenderer(page);
+    // DAS LABOR NEBEN DER WELT (w13-gtx-proben): der Browser des Labors (WebGL r128) lädt beide Studios und misst den Gang der Tiere,
+    // WÄHREND die Null-Welt läuft — er braucht von ihr nichts; nur der Takt des Körper-Studios wartet auf ihre Spur (unten). Bis dahin
+    // fuhr das Labor erst nach der Welt (GTX: die Probe tiere.K3#2 riss ihren Deckel 45 s). Ein Studio steht, wenn sein Spiel-Modus
+    // geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor und mit ihm den Poll); ein hängendes steht in der Stall-Akte
+    const sb = await starteBrowser({ art: "linse", frist: 300000 });
+    const studio = async (p, pfad, da) => (await server.zeige(p, 240000, pfad), await p.waitForFunction(da, { timeout: 0 }), p);
+    /* eslint-disable no-undef */
+    const koerper = studio(await seite(sb, true), "worlds/koerperstudio/index.html", () => typeof enterPlay === "function" && typeof playTakt === "function" && typeof parkTeile !== "undefined");
+    const tierGang = studio(await seite(sb), "worlds/tetrapoda/index.html", () => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined").then(async (tp) => {
+        const g = {};
+        for (const gattung in LABOR_WELT) g[gattung] = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
+        return g;
+    });
+    /* eslint-enable no-undef */
     let rot = 0;
     let schwereRot = false;
     let taktRot = false;
@@ -744,62 +760,43 @@ hauptLauf(async () => {
             rot++;
             schwereRot = true;
         }
-        // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
-        const sb = await starteBrowser({ art: "linse", frist: 300000 });
-        try {
-            const sp = await seite(sb, "STUDIO-", true);
-            await server.zeige(sp, 240000, "worlds/koerperstudio/index.html");
-            // das Labor steht, wenn sein Spiel-Modus geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor
-            // und mit ihm den Poll); ein hängendes Labor steht in der Stall-Akte
-            // eslint-disable-next-line no-undef
-            await sp.waitForFunction(
-                () =>
-                    typeof enterPlay === "function" &&
-                    typeof playTakt === "function" &&
-                    typeof parkTeile !== "undefined",
-                { timeout: 0 }
-            );
-            // LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): dieselbe Spur im Körper-Studio, die erste Abweichung beim Namen
-            const taktLabor = await sp.evaluate(TAKT_LABOR, { skript: TAKT_SKRIPT, schaukel: TAKT_SCHAUKEL, ort: TAKT_ORT, y0: taktWelt.y0, werte: taktWelt.werte, stub: SELBST });
-            {
-                const dF = taktWelt.steht ? taktUneben(taktWelt.frei) || taktVergleich(taktWelt.frei, taktLabor.frei) : "Vorbedingung: kein Stand",
-                    dS = taktWelt.werk ? taktUneben(taktWelt.schaukel) || taktVergleich(taktWelt.schaukel, taktLabor.schaukel) : "kein Werk";
-                const verbe = new Set(taktWelt.schaukel.map((z) => z[12]).filter(Boolean));
-                const W = taktWelt.werte,
-                    E = taktLabor.eigen;
-                const seele = ["speed", "sprintSpeed", "jumpPower"].filter((k) => !Object.is(W[k], E[k])).map((k) => `${k} ${W[k]} ≠ ${E[k]}`);
-                if (Math.abs(W.masse - E.masse) > 1e-9 * W.masse) seele.push(`masse ${W.masse} ≠ ${E.masse}`);
-                if (Math.abs(W.g - E.g) > 1e-12) seele.push(`g ${W.g} ≠ ${E.g}`);
-                const ok = !dF && !dS && verbe.has("schaukeln") && !seele.length;
-                log(`  ${ok ? "✅" : "❌"} Labor = Welt im Takt: frei ${taktWelt.frei.length} ${dF || "byte-gleich"} · Schaukel ${taktWelt.schaukel.length} ${dS || "byte-gleich"} · Seele ${seele.join(" · ") || "gleich"}${ok ? "" : " — Täter: playSchritt"}`);
-                if (!ok) {
-                    rot++;
-                    taktRot = true;
-                }
+        // das Labor (oben: sein Browser und beide Studios laufen seit dem Anfang neben der Welt)
+        const sp = await koerper;
+        // LABOR = WELT IM BEWEGUNGS-TAKT (w4-koerper-park): dieselbe Spur im Körper-Studio, die erste Abweichung beim Namen
+        const taktLabor = await sp.evaluate(TAKT_LABOR, { skript: TAKT_SKRIPT, schaukel: TAKT_SCHAUKEL, ort: TAKT_ORT, y0: taktWelt.y0, werte: taktWelt.werte, stub: SELBST });
+        {
+            const dF = taktWelt.steht ? taktUneben(taktWelt.frei) || taktVergleich(taktWelt.frei, taktLabor.frei) : "Vorbedingung: kein Stand",
+                dS = taktWelt.werk ? taktUneben(taktWelt.schaukel) || taktVergleich(taktWelt.schaukel, taktLabor.schaukel) : "kein Werk";
+            const verbe = new Set(taktWelt.schaukel.map((z) => z[12]).filter(Boolean));
+            const W = taktWelt.werte,
+                E = taktLabor.eigen;
+            const seele = ["speed", "sprintSpeed", "jumpPower"].filter((k) => !Object.is(W[k], E[k])).map((k) => `${k} ${W[k]} ≠ ${E[k]}`);
+            if (Math.abs(W.masse - E.masse) > 1e-9 * W.masse) seele.push(`masse ${W.masse} ≠ ${E.masse}`);
+            if (Math.abs(W.g - E.g) > 1e-12) seele.push(`g ${W.g} ≠ ${E.g}`);
+            const ok = !dF && !dS && verbe.has("schaukeln") && !seele.length;
+            log(`  ${ok ? "✅" : "❌"} Labor = Welt im Takt: frei ${taktWelt.frei.length} ${dF || "byte-gleich"} · Schaukel ${taktWelt.schaukel.length} ${dS || "byte-gleich"} · Seele ${seele.join(" · ") || "gleich"}${ok ? "" : " — Täter: playSchritt"}`);
+            if (!ok) {
+                rot++;
+                taktRot = true;
             }
-            // DIE BEWEGUNG JE VERB UND PHASE: gesund das Urteil leer, im Selbsttest je Täter seine Zeile
-            for (const bruch of SELBST ? Object.keys(BEWEGUNG_BRUCH) : [null]) {
-                const b = await sp.evaluate(BEWEGUNG, bruch);
-                const tr = b.urteil.find((z) => bruch && BEWEGUNG_BRUCH[bruch].test(z));
-                if (tr) bewegtFeuert++;
-                const ok = !b.urteil.length;
-                log(`  ${ok ? "✅" : "❌"} Bewegung${bruch ? " " + bruch : ""}: ${b.zeilen} Phasen · ${JSON.stringify(b.geraete)} · ${JSON.stringify(b.tempo)}${ok ? "" : " — " + (tr || b.urteil.slice(0, 4).join(" · "))}`);
-                if (!ok) rot++;
-            }
-            // dieselbe Gangart im Labor der Tiere (Labor = Welt)
-            const tp = await seite(sb, "TETRAPODA-");
-            await server.zeige(tp, 240000, "worlds/tetrapoda/index.html");
-            await tp.waitForFunction(() => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined", { timeout: 0 });
-            for (const [gattung, seele] of Object.entries(LABOR_WELT)) {
-                const res = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
-                for (const z of res.zeilen)
-                    gangUrteil("Labor " + gattung, z, { Welt: weltGang[seele + z.vh], Satz: satzGang[seele + z.vh] });
-            }
-        } finally {
-            await sb.close();
         }
+        // DIE BEWEGUNG JE VERB UND PHASE: gesund das Urteil leer, im Selbsttest je Täter seine Zeile
+        for (const bruch of SELBST ? Object.keys(BEWEGUNG_BRUCH) : [null]) {
+            const b = await sp.evaluate(BEWEGUNG, bruch);
+            const tr = b.urteil.find((z) => bruch && BEWEGUNG_BRUCH[bruch].test(z));
+            if (tr) bewegtFeuert++;
+            const ok = !b.urteil.length;
+            log(`  ${ok ? "✅" : "❌"} Bewegung${bruch ? " " + bruch : ""}: ${b.zeilen} Phasen · ${JSON.stringify(b.geraete)} · ${JSON.stringify(b.tempo)}${ok ? "" : " — " + (tr || b.urteil.slice(0, 4).join(" · "))}`);
+            if (!ok) rot++;
+        }
+        // dieselbe Gangart im Labor der Tiere (Labor = Welt), gemessen neben der Welt
+        const g = await tierGang;
+        for (const [gattung, seele] of Object.entries(LABOR_WELT))
+            for (const z of g[gattung].zeilen)
+                gangUrteil("Labor " + gattung, z, { Welt: weltGang[seele + z.vh], Satz: satzGang[seele + z.vh] });
     } finally {
         await browser.close();
+        await sb.close();
         server.close();
     }
     if (SELBST) {

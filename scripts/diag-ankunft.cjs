@@ -672,9 +672,9 @@ async function probe(arg) {
                 ls.hidden = false;
                 ls.classList.remove("weg");
                 if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-                st.keys.w = false;
+                halt.vor = false;
                 taste(document.body, "keydown", "w", "KeyW");
-                const wLief = st.keys.w === true;
+                const wLief = halt.vor === true;
                 taste(document.body, "keyup", "w", "KeyW");
                 taste(document.body, "keydown", "Enter");
                 const ae = document.activeElement;
@@ -1000,7 +1000,7 @@ async function probe(arg) {
         m.enterFokus = fokus();
         if (m.enterFokus !== "chat-input") ci.focus();
         taste(ci, "keydown", "w", "KeyW");
-        m.wImFeld = st.keys.w === true;
+        m.wImFeld = halt.vor === true;
         const n0 = zeilen().length;
         ci.value = "setze uhrzeit mittag";
         taste(ci, "keydown", "Enter");
@@ -1009,7 +1009,7 @@ async function probe(arg) {
         m.nachSenden = fokus();
         const ziel = document.activeElement || document.body;
         taste(ziel, "keydown", "w", "KeyW");
-        m.wNachSenden = st.keys.w === true;
+        m.wNachSenden = halt.vor === true;
         taste(ziel, "keyup", "w", "KeyW");
         ci.value = "";
         ci.focus();
@@ -1419,13 +1419,13 @@ async function probe(arg) {
                     const gier = Math.atan2(-ux, -uz);
                     st.yaw = gier;
                     st.pitch = 0;
-                    st.keys.w = true;
+                    halt.vor = true;
                     for (let i = 0; i < 120; i++) {
                         st.yaw = gier;
                         __handTakt();
                         await sleep(16);
                     }
-                    st.keys.w = false;
+                    halt.vor = false;
                     st.pitch = 0;
                     ruhig();
                 };

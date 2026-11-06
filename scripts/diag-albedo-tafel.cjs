@@ -135,6 +135,8 @@ async function messeLabor({ echt, nur, tafel }) {
             }
             out.eichung.labor[sid] = eich;
             await page.close();
+            // je Studio EINE Zeile (Name, Zeilen): reißt die Frist der Probe material.K1, steht hier, wie weit das Labor kam
+            console.log("LABOR", sid, zeilen.length);
         }
     } finally {
         await b.close();
