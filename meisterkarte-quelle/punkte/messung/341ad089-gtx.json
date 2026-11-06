@@ -1,0 +1,137 @@
+{
+ "sha": "341ad089a67693bb927a1443c97fdc1574c52dd0",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T09:46:10.873Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157920 → 599459 px (×3.80) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "nvidia/pascal",
+   "s": 28.7,
+   "zeit": "2026-11-06T09:44:56.567Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
+   "gpu": "nvidia/pascal",
+   "s": 36.5,
+   "zeit": "2026-11-06T09:45:34.298Z",
+   "abdruck": "968f1ccf5262",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.1 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 39.3,
+   "zeit": "2026-11-06T09:43:56.567Z",
+   "abdruck": "462e72b0bcca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T09:46:10.873Z",
+   "abdruck": "7ebf20cab049",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T09:43:19.055Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [
+   4.7,
+   0.1
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 28.9,
+    "takte": 707,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "wetter.K3#2",
+    "s": 16,
+    "takte": 880,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#2",
+    "s": 8.9,
+    "takte": 714,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "zeichnerBlind": [
+   {
+    "probe": "studios.K4#2",
+    "wann": "nach",
+    "fehler": "Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'."
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor leib.K3#2: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic",
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "wetter.K3#2",
+     "m": 1162,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 163,
+   "luecken": 4,
+   "letzteLuecke": "Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'."
+  },
+  "fahrtS": 171.2,
+  "minuten": 3.39
+ }
+}
