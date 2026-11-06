@@ -1007,10 +1007,12 @@ async function probe(K) {
             }
             t.ring = { ...ring, krone2, nach: ringY() };
         }
-    // B: zurück auf den Turm, der Save
+    // B: zurück auf den Turm, der Save — der Stand des Turms zur Welt-Uhr des Saves (der Reload trägt sie und mit ihr das Jahr: im Herbst
+    // steht der Spieler in der Schnee-Decke um ihren Tritt tiefer als am Tag des Baus, wetter.K4 — bis feld.K2#2 hieß das RELOAD)
     if (T0) {
         absteigen();
         await einschwingen(T0.x, T0.z);
+        turm.hoehe = st.playerMesh.position.y - turm.y0;
         r.saveState();
     }
     return { proben, zensus, schmuggel, turm, turm2 };
