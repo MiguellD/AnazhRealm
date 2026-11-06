@@ -372,6 +372,60 @@ var ATMO_RECHNUNG = {
     },
 };
 __terrainCore.ATMO_RECHNUNG = ATMO_RECHNUNG;
+// DAS LICHT DER UHR (studios.K4 „EIN Licht", w16-studio-welt; rein additiv): die Sonne der Welt und das Gesetz ihrer Kamera als
+// reine Rechnung — die Welt (stamm bild-himmel: Bahn, Richtung, E0, Anker und Stufen der Belichtung) und die Bühne (die Garage)
+// lesen DIESELBEN Glieder. winkel: die Uhr t (0..1, 0,5 Mittag) als Bahnwinkel; richtung: ZUR Sonne (die Bahn kippt um
+// sin(w/2)·0,4); E0 = keyBase · legacy (das Schlüssellicht der r128-Studios 2,6, physisch × π); sonne: Richtung, Farbe (Durchlass
+// der EINEN Atmosphäre, ATMO_RECHNUNG.sonne) und Stärke E0 · lum; anker: E der waagrechten Karte unter der Zenit-Sonne der klaren
+// Luft plus der Himmel des Lesers (die Welt: ihre Bestrahlungs-Tafel); stufen/kamera: die Belichtung aus dem Licht (die 18-%-Karte
+// auf zielKarte, über der Gleitung die Kompensations-Steigung, darunter die Stufen der Tag-Achse).
+var LICHT_DER_UHR = {
+    keyBase: 2.6,
+    legacy: Math.PI,
+    belichtung: Object.freeze({
+        kurve: "NeutralToneMapping",
+        zielKarte: 0.22,
+        min: 0.05,
+        steigung: 0.75,
+        gleitung: Object.freeze([12, 8]),
+        stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
+        nachtGrad: -32,
+    }),
+    winkel: function (t) {
+        return t * Math.PI * 2 - Math.PI / 2;
+    },
+    richtung: function (w) {
+        var x = Math.cos(w), y = Math.sin(w), z = Math.sin(w * 0.5) * 0.4, l = Math.hypot(x, y, z) || 1;
+        return [x / l, y / l, z / l];
+    },
+    sonne: function (G, M, augeKm, t) {
+        var d = LICHT_DER_UHR.richtung(LICHT_DER_UHR.winkel(t));
+        var a = ATMO_RECHNUNG.sonne(G, M, augeKm, d[1], G.durchlassSchritte, [0, 0, 0]);
+        return { richtung: d, farbe: [a.col.r, a.col.g, a.col.b], staerke: LICHT_DER_UHR.keyBase * LICHT_DER_UHR.legacy * a.lum };
+    },
+    anker: function (G, M, himmel) {
+        var s = ATMO_RECHNUNG.sonne(G, M, 0.001, 1, G.durchlassSchritte, [0, 0, 0]);
+        var l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
+        return LICHT_DER_UHR.keyBase * LICHT_DER_UHR.legacy * (s.lum * l + himmel);
+    },
+    stufen: function (B, h, q) {
+        var K = B.stufen, n = K[K.length - 1][1];
+        if (h >= K[0][0]) n = K[0][1];
+        else
+            for (var i = 1; i < K.length; i++)
+                if (h >= K[i][0]) {
+                    n = K[i][1] + ((K[i - 1][1] - K[i][1]) * (h - K[i][0])) / (K[i - 1][0] - K[i][0]);
+                    break;
+                }
+        var t = Math.max(0, Math.min(1, (h - B.gleitung[1]) / (B.gleitung[0] - B.gleitung[1])));
+        return t * (1 - B.steigung) * Math.log2(q) + (1 - t) * n;
+    },
+    kamera: function (B, e, E, EA) {
+        var h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
+        return Math.max(B.min, (B.zielKarte * Math.pow(2, LICHT_DER_UHR.stufen(B, h, E / EA))) / ((0.18 / Math.PI) * E));
+    },
+};
+__terrainCore.LICHT_DER_UHR = LICHT_DER_UHR;
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke

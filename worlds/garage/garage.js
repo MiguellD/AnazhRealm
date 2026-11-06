@@ -18,7 +18,7 @@ const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,
 // dem ersten Bild. Gemessen (Isometrie 1280×720, swiftshader): 185 → 54 ms je Bild.
 const LEICHT=new URLSearchParams(location.search).has('leicht');
 const R=new THREE.WebGPURenderer({antialias:!LEICHT});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.toneMapping=THREE.NeutralToneMapping;R.toneMappingExposure=1.04;
+R.toneMapping=THREE.NeutralToneMapping;   // die Belichtung setzt das Gesetz der Kamera der Welt (`uhrSetzen`)
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
 document.body.appendChild(R.domElement);
 
@@ -58,26 +58,23 @@ const zifferblatt=(function(){const v=[],R0=3.35,R1=3.48,N=144;
   const ls=new THREE.LineSegments(ge,new THREE.LineBasicMaterial({color:0xb98a52,transparent:true,opacity:0.7}));ls.position.y=0.003;return ls;})();
 buehne.add(zifferblatt);
 
-// ── Licht ── (die Studio-Lichter sind unter r128 roh, also linear, eingestellt: `_lin` hält ihren Ton — als sRGB dekodiert
-// sättigten Füll-, Rand- und Himmelslicht den Lack cyan; der Lack selbst bleibt FARB-GESETZ des Kerns, sRGB → linear)
-// DAS STUDIO-LICHT DER MATRIX-ANTIKE (02.11.): drei Richtungen, die DEM BLICK FOLGEN (die Werkstatt-Kugel, `werkOrbit`) — das
-// Haupt (Bernstein, wirft den Schatten) 46° neben der Kamera und 49° hoch, die Blick-Füllung (Stahl) 20° neben ihr und flach
-// (8,5°): sie trägt den Lack der Flanke, den kein Himmel spiegelt; die Gegenkante (Cyan) hinter dem Wagen flach (15°) zeichnet
-// den Umriss. Jede Ansicht (Isometrie, Riss, Explosion, Drehteller) steht im selben Licht; vorher lag die Flanke im Riss im
-// Dunkel, und der Himmel fiel (er erhellte nur Stoff, nie Lack; unter swiftshader kostet jede Richtung ~6–12 ms je Bild).
-// EIN Regler „Licht" (warm 0 ↔ kühl 1) über die Hülle: warm das Haupt in Bernstein und die Kante in Cyan, kühl das Haupt im
-// Tageslicht und die Kante in Bronze, die Füllung gegenläufig. Die Leuchtdichte des Hauptlichts bleibt (2,6 · π über die
-// Luminanz seiner Farbe) — der Regler färbt, er hellt nie. Nur Farben und Stärken (Uniformen): kein Programm, kein Post.
-const _lin=h=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);
-const key=new THREE.DirectionalLight(0xfff0dc,2.93*PI);key.castShadow=true;
+// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Werkstatt steht unter der Sonne der Welt — Bahn, Farbe (der Durchlass
+// der EINEN Atmosphäre) und Stärke E0 · lum aus dem Licht der Uhr im Kern (foundry-core `LICHT_DER_UHR`, dieselben Glieder, die die
+// Welt liest: `_dayNightSunDirection`, KEY_BASE · LEGACY_LICHT, `_belichtungAnker`, `_belichtungAusLicht`), die Belichtung aus dem
+// Gesetz ihrer Kamera (die 18-%-Karte auf zielKarte gegen den Anker der klaren Luft) unter ihrer Tonkurve. Der Regler „Uhr" stellt
+// die Uhr der Pose (0,5 Mittag, die Uhr der Bühne der Werkbank). Offen benannt: der Himmel der Welt — ihre Umgebung und ihre
+// Bestrahlungs-Tafel rechnet nur die GPU der Welt; die Bühne trägt ihn mit 0 in Bestrahlung und Anker (wie die Welt ohne Tafel,
+// Null-Renderer: Belichtung 0,6304), das Auge in der Höhe des Bezugs (1 m). Bis w16-studio-welt: drei eigene Richtlichter, die dem
+// Blick folgten (Key 10,29 Bernstein, Füllung Stahl, Kante Cyan), Belichtung 1,04.
+const TC=window.__terrainCore,LU=TC.LICHT_DER_UHR,AG=TC.ATMO_GESETZ,AM=TC.ATMO_RECHNUNG.medium(AG,TC.ATMO_RECHNUNG.betaKlar(AG),null);
+const key=new THREE.DirectionalLight(0xffffff,1);key.castShadow=true;
 key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0002;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const fill=new THREE.DirectionalLight(0xffffff,0.7*PI);scene.add(fill);
-const rim=new THREE.DirectionalLight(0xffffff,0.9*PI);scene.add(rim);
-const LICHT={key:[0xffe2bf,0xe2ebff],fill:[0x9fc4d8,0xd8c0a0],rim:[0x52d4ff,0xffa65a]},_lc=[new THREE.Color(),new THREE.Color()];
-function lichtSetzen(w){const mix=(c,[a,b],lin)=>c.lerpColors(lin?_lin(a):_lc[0].set(a),lin?_lin(b):_lc[1].set(b),w);
-  mix(key.color,LICHT.key);key.intensity=2.6*PI/(0.2126*key.color.r+0.7152*key.color.g+0.0722*key.color.b);
-  mix(rim.color,LICHT.rim,1);mix(fill.color,LICHT.fill,1);}
-lichtSetzen(0);
+const SONNE=new THREE.Vector3(0,1,0);
+function uhrSetzen(t){const s=LU.sonne(AG,AM,0.001,t),e=s.richtung[1];SONNE.fromArray(s.richtung);
+  key.color.setRGB(s.farbe[0],s.farbe[1],s.farbe[2]);key.intensity=e>0?s.staerke:0;
+  const k=key.intensity*Math.max(0,e),E=Math.max(0.2126*s.farbe[0]*k+0.7152*s.farbe[1]*k+0.0722*s.farbe[2]*k,1e-6);   // die Rechnung des Lichtmessers der Welt (`_waagrechtIrradianz`)
+  R.toneMappingExposure=LU.kamera(LU.belichtung,e,E,LU.anker(AG,AM,0));key.shadow.needsUpdate=true;}
+uhrSetzen(0.5);
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -89,7 +86,7 @@ const M=VC.materials();            // dieselben geteilten Materialien (nie dispo
 // DIE BÜHNE STEHT IM LACK (studios.K4, Labor = Welt): sie zeigt die Gestalt, die „In der Welt ansehen" trägt (`werkSame`) —
 // das Ton-Modell (Clay) ist die Anatomie-Ansicht auf Zuruf, die Welt kennt keins (LACK_VIS host).
 let lackMat=VC.lackStoff(5), bodyMat=lackMat; // Start Azurblau; umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS}=VC;
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS:GATTUNGEN}=VC;   // GATTUNGEN: der Name PRESETS gehört im Fenster dem Kern der Welt (foundry-core, das Licht der Uhr)
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -301,7 +298,7 @@ let presetId='gt',kulturId=null;
 // Gattung und Kultur (Strg+Z · Strg+Umschalt+Z); der Rückweg baut wie der Hinweg.
 // (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
 const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert:[...pdiv.children].some(c=>c.classList.contains('on'))}),
-  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(PRESETS);
+  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(GATTUNGEN);
     [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',z.markiert&&ids[i]===presetId));
     const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
   anwenden:()=>rebuild()});
@@ -312,7 +309,7 @@ function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const bas
   for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
   kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
 const pdiv=document.getElementById('presets');
-for(const pid in PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=PRESETS[pid].lab;
+for(const pid in GATTUNGEN){const b=document.createElement('button');b.className='btn';b.textContent=GATTUNGEN[pid].lab;
   if(pid==='gt')b.classList.add('on');
   b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>presetSetzen(pid));};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
@@ -469,14 +466,14 @@ function animSchritt(dt,t){const z=t%7;inA.throttle=z<3?1:0;inA.brake=z>=3&&z<4.
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-carA.wheelAng;if(cc.front)cc.grp.rotation.y=carA.steer;});raederSetzen();}
 
 // Die Regler der Ansicht trägt die Hülle (derselbe Generator wie die Gesetz-Regler, ohne Sitzung: die Ansicht ist kein Bau).
-const ANS={explode:0,anim:0,dreh:0,licht:0};
+const ANS={explode:0,anim:0,dreh:0,uhr:0.5};
 const ansichtRegler=AnazhHuelle.regler(document.getElementById('ansichtRegler'),[
   {id:'explode',lab:'Explosion',min:0,max:1,step:0.01,def:0,law:'gestaffelt: Haut hebt ab · Baukörper steigt · Räder gleiten aus — die Achsen zeigen die Herkunft'},
   {id:'anim',lab:'Animation',min:0,max:1,step:1,def:0,law:'VC.fahrSchritt — Räder rollen, Federn arbeiten, Lenkung schlägt ein'},
   {id:'dreh',lab:'Drehteller',min:0,max:1,step:1,def:0,law:'20°/s um die Hochachse über dem Zifferblatt'},
-  {id:'licht',lab:'Licht',min:0,max:1,step:0.01,def:0,law:'warm (Bernstein-Haupt, Cyan-Kante) ↔ kühl (Tageslicht-Haupt, Bronze-Kante)'}],
+  {id:'uhr',lab:'Uhr',min:0.25,max:0.75,step:0.005,def:0.5,law:'die Uhr der Pose — die Sonne und die Kamera der Welt (foundry-core LICHT_DER_UHR), 0,5 Mittag'}],
   {werte:ANS,ruheMs:0,zuruecksetzen:false,gruppen:false,
-   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);if(id==='licht')lichtSetzen(+v);
+   bei:(id,v)=>{_wecke();if(id==='anim'&&mode!=='fahren')animSetzen(!!v);if(id==='uhr')uhrSetzen(+v);
      if(id==='explode'&&v>0&&!explGezeigt){explGezeigt=true;Object.assign(show,{frame:true,pkg:true});applyVis();syncLayerButtons();}}});
 let explGezeigt=false;   // die erste Explosion legt die Anatomie frei (Rahmen · Baukörper), danach gehören die Ebenen dem Schöpfer
 function ansichtLebt(){return ANS.anim||ANS.dreh||Math.abs(eZeig-ANS.explode)>1e-4;}
@@ -604,7 +601,7 @@ function updateVehicle(dt,t){
   vehicle.position.set(car.x,car.y,car.z);vehicle.rotation.set(car.wank,car.yaw,car.steig,'YZX');
   // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw). Räder: Abrollen ω=v/r (der Kern zählt wheelAng).
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
-  key.position.set(car.x+5,car.y+9,car.z+4);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
+  key.position.set(car.x,car.y,car.z).addScaledVector(SONNE,12);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
 }
 
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück.
@@ -644,7 +641,7 @@ function exitDrive(){mode='werkstatt';scene.fog.density=0.020;fahrSicht=false;ap
   ground.visible=false;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
-  key.position.set(5,9,4);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
+  key.position.copy(SONNE).multiplyScalar(12);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
   buehne.visible=true;explosionAnwenden(eZeig);if(ANS.anim)animSetzen(true);
   camFov(0);werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
 
@@ -664,7 +661,7 @@ addEventListener('keydown',e=>{keys[e.code]=true;
   const pk={Digit8:'persp',Digit9:'iso',Digit0:'seite'}[e.code];if(pk)projSetzen(pk);
   const ak={KeyX:'explode',KeyN:'anim',KeyT:'dreh'}[e.code];   // X Explosion ganz/zu · N Animation · T Drehteller — über den Regler der Hülle
   if(ak){const inp=ansichtRegler.eingabe(ak);if(inp.type==='checkbox')inp.click();else{inp.value=String(ANS.explode>0.5?0:1);inp.dispatchEvent(new Event('input',{bubbles:true}));}}
-  if(e.code==='KeyP'){const names=Object.keys(PRESETS);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
+  if(e.code==='KeyP'){const names=Object.keys(GATTUNGEN);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
     pdiv.children[(cur+1+names.length)%names.length].click();}
 });
 function readKeys(){
@@ -694,7 +691,7 @@ function werkOrbit(dt){dt=dt||0;if(ANS.dreh)oc.az+=0.349*dt;
   const h=oc.dist*Math.tan(CAM_FOV*PI/360)+eZeig*explHub*0.35,w=h*cam.aspect;
   if(camO.top!==h||camO.right!==w){camO.left=-w;camO.right=w;camO.top=h;camO.bottom=-h;camO.updateProjectionMatrix();}
   camO.position.copy(cam.position);camO.lookAt(_ziel);
-  for(const[l,d,y]of[[key,-0.8,8],[fill,0.35,1.2],[rim,PI,2.2]])l.position.set(Math.cos(oc.az+d)*7,y,Math.sin(oc.az+d)*7);}   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
+  key.position.copy(SONNE).multiplyScalar(12);}   // die Sonne steht, wo die Welt sie hat — der Blick wandert, sie nicht   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
 // Maus/Touch: in der Werkstatt die Kugel (links drehen, rechts schieben, Rad zoomen); in der Fahrt greifen → frei umsehen,
 // loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';

@@ -1380,7 +1380,7 @@ class AnazhRealm_bild_himmel {
     // L-F schrieb sie ein zweites Mal ohne Stufen aus — die spätere Klassen-Methode hätte die Stufen still überschrieben;
     // Integration V18.536: EINE Methode, jeder Leser ruft sie mit der Tageszeit des Spiels).
     _sonnenWinkel(t) {
-        const w = t * Math.PI * 2 - Math.PI / 2;
+        const w = AnazhRealm.LICHT_DER_UHR.winkel(t);
         const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
         s.stufe = this._sonnenStufe();
         if (Number.isFinite(s.winkel)) {
@@ -1428,11 +1428,8 @@ class AnazhRealm_bild_himmel {
     }
 
     _dayNightSunDirection(angle) {
-        const sunDirX = Math.cos(angle);
-        const sunDirY = Math.sin(angle);
-        const sunDirZ = Math.sin(angle * 0.5) * 0.4;
-        const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
-        return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+        const d = AnazhRealm.LICHT_DER_UHR.richtung(angle); // die Bahn der Sonne: EIN Gesetz mit der Bühne (foundry-core)
+        return new THREE.Vector3(d[0], d[1], d[2]);
     }
 
     // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
@@ -2392,8 +2389,7 @@ class AnazhRealm_bild_himmel {
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
         const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
-        const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
-        return Math.max(B.min, (B.zielKarte * 2 ** AnazhRealm._belichtungStufen(h, E / EA)) / ((0.18 / Math.PI) * E));
+        return AnazhRealm.LICHT_DER_UHR.kamera(B, e, E, EA); // das Gesetz der Kamera: EIN Glied mit der Bühne (foundry-core)
     }
 
     // DIE STUFEN DER KAMERA (rein): die Blenden-Stufen der 18-%-Karte gegen den Anker bei der Sonnenhöhe h (Grad) und dem Licht q
@@ -2401,19 +2397,7 @@ class AnazhRealm_bild_himmel {
     // Tag-Achse (`stufen`, linear in h zwischen den Knoten, außen gehalten); dazwischen linear in h gemischt. Die Linse rechnet
     // die Kurve aus demselben Glied (scripts/lib/licht-linsen.cjs `tagGesetzKurve`).
     static _belichtungStufen(h, q) {
-        const B = AnazhRealm.BELICHTUNG;
-        const K = B.stufen;
-        let n = K[K.length - 1][1];
-        if (h >= K[0][0]) n = K[0][1];
-        else
-            for (let i = 1; i < K.length; i++)
-                if (h >= K[i][0]) {
-                    n = K[i][1] + ((K[i - 1][1] - K[i][1]) * (h - K[i][0])) / (K[i - 1][0] - K[i][0]);
-                    break;
-                }
-        const [oben, unten] = B.gleitung;
-        const t = Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
-        return t * (1 - B.steigung) * Math.log2(q) + (1 - t) * n;
+        return AnazhRealm.LICHT_DER_UHR.stufen(AnazhRealm.BELICHTUNG, h, q);
     }
 
     // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
@@ -2429,11 +2413,7 @@ class AnazhRealm_bild_himmel {
         const himmel = rend && rend._isHeadlessNull ? 0 : A.anker;
         if (himmel == null) return null;
         const G = this._atmoGesetz();
-        const R = this._atmoRechnung();
-        const M = this._atmoMedium(R.betaKlar(G));
-        const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
-        const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
-        return (A.belichtung = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
+        return (A.belichtung = AnazhRealm.LICHT_DER_UHR.anker(G, this._atmoMedium(this._atmoRechnung().betaKlar(G)), himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
@@ -3660,12 +3640,19 @@ AnazhRealm.ATMO_LUT = Object.freeze({
 // Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
 AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
-AnazhRealm.KEY_BASE = 2.6;
+// DAS LICHT DER UHR wohnt im Kern (foundry-core `LICHT_DER_UHR`, studios.K4 „EIN Licht"): die Bühne der Garage liest dieselben
+// Glieder (Bahn, E0, Anker, Kamera); die Zahlen KEY_BASE · LEGACY_LICHT · BELICHTUNG sind seine. Fehlt der Kern, bricht es laut.
+AnazhRealm.LICHT_DER_UHR = (() => {
+    const L = typeof globalThis !== "undefined" && globalThis.__terrainCore ? globalThis.__terrainCore.LICHT_DER_UHR : null;
+    if (!L) throw new Error("Das Licht der Uhr: foundry-core.js fehlt (__terrainCore.LICHT_DER_UHR)");
+    return L;
+})();
+AnazhRealm.KEY_BASE = AnazhRealm.LICHT_DER_UHR.keyBase;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
-AnazhRealm.LEGACY_LICHT = Math.PI;
+AnazhRealm.LEGACY_LICHT = AnazhRealm.LICHT_DER_UHR.legacy;
 // DIE BELICHTUNG (licht.K1, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
 // Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau
 // legt (sRGB 118, der absolute Anker des Mittags: Luma 110–130; Neutral gibt unter der Schulter x − 0,04 aus, linear 0,18 braucht
@@ -3678,15 +3665,7 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // Stufen 3,14 EV darunter bei Luma 44; die Dämmerung fällt 1,3 Stufen über 30° — unter 0,1 EV je 0,72° Sonne auch im Fuß der
 // Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das
 // Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
-AnazhRealm.BELICHTUNG = Object.freeze({
-    kurve: "NeutralToneMapping",
-    zielKarte: 0.22,
-    min: 0.05,
-    steigung: 0.75,
-    gleitung: Object.freeze([12, 8]),
-    stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-    nachtGrad: -32,
-});
+AnazhRealm.BELICHTUNG = AnazhRealm.LICHT_DER_UHR.belichtung;
 // Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
 // nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
 // Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
