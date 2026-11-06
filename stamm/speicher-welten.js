@@ -1127,11 +1127,15 @@ class AnazhRealm_speicher_welten {
             ["terrainBaseHeight", () => st().terrainBaseHeight],
             ["weather", () => st().weather],
             // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
-            // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
-            // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
-            // Das Gedächtnis selbst reist ohne sein Abgeleitetes (w4-heil-speicher, 5 km in 30 min: 3,4 kB in 20 Zellen, je Ort
-            // der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind derselbe
-            // Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
+            // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). DER ERDBAU
+            // AUS DEM GESETZ EINES ORTS REIST NIE (Gebot 7, w13-erdbau-funktion): nicht der eines Orts mit Gedächtnis
+            // (`settlementCells`), der Ort kehrt aus ihm wieder (`_tickAutoSettlement`), und nicht, was das Gesetz eines Orts legte
+            // (`_erdbauAusGesetz`: sein Vorlauf, sein Erwachen) — der Grund eines Vorrats liegt, bevor die Zelle erwacht, der nächste
+            // Vorlauf legt ihn neu. Bis hier reiste der Grund jedes Vorrats, der noch nicht erwacht war, der Stand wuchs mit dem Weg
+            // (1 km in 6 min: worldMeta.erdbau Δ 77,4 kB). Was ein Akt legt (das gesetzte Haus `haus:`, der Boden-Umzug `alt:`),
+            // reist. Das Gedächtnis selbst reist ohne sein Abgeleitetes (w4-heil-speicher, 5 km in 30 min: 3,4 kB in 20 Zellen, je
+            // Ort der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind
+            // derselbe Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
             // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz. Der Trampelpfad reist
             // gepackt (`_trittStand`: ~4 Bytes je Zelle statt ~24 im JSON-Paar; 1 km in 6 min am Dorf trug 6,1 kB). Ein Ort ohne
             // Änderung reist gar nicht (`_ortReistNicht`: er ist eine Funktion von Saat und Gesetz und erwacht nach dem Reload am
@@ -1141,10 +1145,15 @@ class AnazhRealm_speicher_welten {
                 (stand, K) => {
                     const wm = { ...st().worldMeta };
                     const orte = new Set(Object.values(wm.settlementCells || {}).map((c) => c && c.seed >>> 0));
+                    const ausGesetz = this._erdbauAusGesetz;
                     if (wm.erdbau && typeof wm.erdbau === "object") {
                         wm.erdbau = { ...wm.erdbau };
                         for (const k in wm.erdbau)
-                            if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
+                            if (
+                                (ausGesetz && ausGesetz.has(wm.erdbau[k])) ||
+                                (/^ort:/.test(k) && orte.has(+k.split(":")[1]))
+                            )
+                                delete wm.erdbau[k];
                         // im Stand des Fadens als EIN fertiges Stück, je Ort gemerkt (`_erdbauStueck`)
                         if (stand) wm.erdbau = this._erdbauStueck(wm.erdbau);
                     }
@@ -1303,6 +1312,9 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
+            // Die Stempel des Regens reisen (wetter.K3, `_regenStempel`): der Pegel ist ihre Funktion zur Welt-Uhr — nach dem Reload
+            // fällt der Bach weiter, wie er fiel, und die Dürre hält
+            ["regenStempel", () => (Array.isArray(st().regenStempel) ? st().regenStempel.slice() : null)],
             // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
             ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
