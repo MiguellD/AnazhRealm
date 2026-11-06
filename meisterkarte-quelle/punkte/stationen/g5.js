@@ -2752,7 +2752,8 @@ const ULTI_K4_PROBEN = (() => {
 // Gemessen (06.11., Cloud, swiftshader 4 Kerne, 7,2 min): am main db431cf0 ROT „kein state.zugang“ nach dem Umstellen; am Zweig
 // w15-farbsicht GRÜN — 4 Grenzen (Gras|Boden, Gras|Bau, Boden|Bau, Bau|Laub) min ΔE 16,9 → 19,5, Mittel 22,3 → 25,2; Sichtfeld 75 → 92°,
 // Skala 0,74 (Soll 0,741); Landung −0,079 m und Tempo +6°, aus 0 und das Bild byte-gleich; Kanten-Energie in Drehung an 3,6, aus 12,5
-// (Ruhe 7,79 ↔ 7,85); Untertitel 45 von 45. Fidaners Schub fiel an derselben Station: Boden|Bau 16,9 → 11,6, das Mittel sank.
+// (Ruhe 7,79 ↔ 7,85); Untertitel 45 von 45 — am Kopf nach dem Merge von main 8efb6318 dieselben Zahlen (Spiel 1c39aada). Fidaners
+// Schub fiel an derselben Station: Boden|Bau 16,9 → 11,6, das Mittel sank.
 const ZUGANG_KLASSEN = {
     gras: "^nahWiese:",
     boden: "^bodenSatz$",
