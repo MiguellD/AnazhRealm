@@ -411,8 +411,9 @@ function validateManifest(m, kern) {
                     zv(`.schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst`);
                 if ("karte" in z) {
                     if (z.karte !== true) zv(`.karte ist nur als true erlaubt`);
-                    else if (st !== stufen[stufen.length - 1] || z.schatten !== false)
-                        zv(`.karte — nur die letzte Stufe ist Karte, und sie wirft nicht`);
+                    // die Karte wirft sich selbst (w14-lod-sprung): ohne Wurf fiel der Schatten des Baums am Wechsel vom Boden
+                    else if (st !== stufen[stufen.length - 1] || z.schatten !== st)
+                        zv(`.karte — nur die letzte Stufe ist Karte, und sie wirft sich selbst`);
                 }
                 // S3 haus — DIE NUR-WURF-STUFE (B2): nur `true`, nur an der Stufe 3, sie wirft selbst, nie Karte; eine Stufe 3
                 // ohne `nurWurf` wäre eine gezeigte Stufe jenseits der Grob-Stufe

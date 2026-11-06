@@ -431,7 +431,9 @@ const PORTAL_RENDER_CONFIG = {
         //   tris     = Obergrenze der Dreiecke je Instanz (gebaut ueber die echte Bruecke, ueber alle Samen);
         //   draws    = Obergrenze der Sippen je Instanz (Host-Verschmelz-Regel: Stoff × Attribut-Form × Index) =
         //              Draws je Instanz-Gruppe und Pass;
-        //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false;
+        //   schatten = die Stufe, deren Gestalt den Schatten wirft (L0-Baum wirft seine L1), oder false; die Karte wirft
+        //              sich selbst (w14-lod-sprung: ohne Wurf fiel der Schatten des Baums am Wechsel L1 -> Karte vom Boden,
+        //              lod.K4 Radeon am Dorf -44 462 Luma ueber 7 474 px, ohne Kaskaden-Schatten -5 209);
         //   karte    = die Stufe IST die Karte des EINEN Bäckers (die Welt backt sie aus L1, `_karteWeltBacken`; das
         //              Labor zeigt ihre Bytes; beim Host das Gitter der Karte) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
         //              karte ⇔ KIND_POLICY.impostor des Hosts).
@@ -497,7 +499,7 @@ const PORTAL_RENDER_CONFIG = {
                     ringToleranz: 0.001,
                     wurf: { durchmesserM: 0.17, teil: "schatten", lagen: 12, tris: 1200 },
                 },
-                2: { tris: 2, draws: 1, schatten: false, karte: true },
+                2: { tris: 2, draws: 1, schatten: 2, karte: true },
                 fernform: "karte",
             },
             // Der Strauch (05.10.): seine L1 traegt Karten aus dem EINEN Atlas (blattKarte = Kante in Blatt-Groessen, an der
@@ -527,7 +529,7 @@ const PORTAL_RENDER_CONFIG = {
                     rute: 0.15,
                 },
                 1: { tris: 1100, draws: 2, schatten: 1, schnitt: 0.35, rute: 0.99 },
-                2: { tris: 2, draws: 1, schatten: false, karte: true },
+                2: { tris: 2, draws: 1, schatten: 2, karte: true },
                 fernform: "karte",
             },
             // DAS GRAS (S3 08.10., aus dem Haushalt abgeleitet): die Nah-Wiese der Welt darf an der Mess-Wiese höchstens

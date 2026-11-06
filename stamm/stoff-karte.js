@@ -361,11 +361,15 @@ class AnazhRealm_stoff_karte {
     // und Sichthöhe (`sicht`: die Höhe der Höhen-Stufe, × Instanz-Skala gestempelt — dieselbe Zahl wie der aH0-Stempel
     // der L1) reisen als Instanz-Werte über `_lodSlotStamp`, die Gruppe ist die EINE Atlas-Gruppe. Ohne Sichthöhe keine
     // Karte: ihre Maske hätte kein wahres Stufen-Urteil.
+    // DER WURF DER KARTE (w14-lod-sprung): sie wirft, wie ihre Zeile im Studio-Budget es sagt (B2c `schatten` der Stufe 2: die
+    // Karte wirft sich selbst) — bis hier warf sie nie, und am Wechsel L1 → Karte fiel der Schatten jedes Baums vom Boden
+    // (lod.K4, Radeon am Dorf: −44 462 Luma über 7 474 px, ohne Kaskaden-Schatten −5 209).
     _impostorLeaf(z, localMatrix, sicht) {
         const at = this._impostorAtlas();
         if (!at || !z || !z.frame || !(sicht > 0)) return null;
         const mat = this._impostorAtlasMaterial();
         if (!mat) return null;
+        const wirft = this._foundryBudgetZeile(z.preset, 2).schatten === 2;
         return {
             geom: this._impostorQuad(at),
             mat,
@@ -375,7 +379,7 @@ class AnazhRealm_stoff_karte {
             zelle: z.idx,
             rahmen: [z.frame.halfW, z.frame.halfH * 2],
             sicht,
-            castShadow: false,
+            castShadow: wirft,
         };
     }
 
@@ -585,7 +589,7 @@ class AnazhRealm_stoff_karte {
         // die Lese-Tiefe der Sonnen-Kacheln, solange sie selbst Ziel sind (eine Textur ist nie Ziel und Bindung zugleich)
         B.leer = ziel(4, 4, 1);
         // DIE SONNEN-SICHT DER KRONE (A7-Term, `KARTE_SONNEN_SICHT`): die Krone wirft in der Welt ihren Schatten auf sich
-        // selbst, die Karte wirft nie. Je Texel der Anteil des Richtlichts aus dem oberen Halbraum, den die eigene Krone
+        // selbst, die Karte wirft, empfängt ihren Wurf aber nie (`receivedShadowPositionNode`). Je Texel der Anteil des Richtlichts aus dem oberen Halbraum, den die eigene Krone
         // durchlässt — N·L-gewichtet über die Richtungen, im Baum-Raum (sie drehen mit jeder Ansicht), aus den Tiefen-
         // Kacheln derselben Krone (3×3 Abgriffe). Der Kartenstoff legt sie auf den EMPFANGENEN Schatten (`receivedShadowNode`),
         // nie auf die Albedo: der Himmel bleibt frei wie an der Gestalt.
@@ -963,7 +967,6 @@ class AnazhRealm_stoff_karte {
         const rend = this.state.renderer;
         if (!rend || rend._isHeadlessNull || !this.state.rendererReady)
             return Promise.reject(this._stoffBruch("die Karte: der Abzug braucht den Welt-Renderer"));
-        const at = this._impostorAtlas();
         const z = this._foundryEnsureImpostorRecord(preset, gestalt, null);
         if (!z) return Promise.reject(this._stoffBruch(`die Karte ${preset}|${gestalt}: keine Zelle`));
         if (z.gescheitert) return Promise.reject(this._stoffBruch(`die Karte ${z.key}: gescheitert`));

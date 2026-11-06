@@ -1028,7 +1028,6 @@ class AnazhRealm_stoff_material {
                                     //    Außerhalb seines Bilds ist der Ring leer. ──
                                     const _hPhi = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _phiF);
                                     const _hE = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _eW);
-                                    const _bK = _uv.y.mul(2.0).sub(1.0).mul(_hPhi);
                                     const _mR = _hPhi.div(_hE.mul(_Ta.cos(_phiF.sub(_eW)).max(1e-3))); // dv / d(uv.y)
                                     const _vC = _uv.y.mul(2.0).sub(1.0).mul(_mR).mul(0.5).add(0.5);
                                     const _imRing = _Ta.step(0.0, _vC).mul(_Ta.step(_vC, 1.0));
@@ -1165,9 +1164,15 @@ class AnazhRealm_stoff_material {
                                         // des gesetzten Waldes lebt auf der CPU (`_archKartenHorizont`).
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
-                                            // die Distanz zur ACHSE der Instanz (der Anker, `_dA` ohne den Hub der gekippten
-                                            // Karte), wie das Studio-Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment
-                                            distNode: _dA.sub(_sInst.mul(_bK).mul(_Ta.sin(_phiF))),
+                                            // die Distanz zur ACHSE der Instanz (der Anker), wie das Studio-Billboard (`vCD` aus
+                                            // `instanceMatrix[3]`), nie zum Fragment — gemessen vom EINEN Auge der Stufen
+                                            // (`uLodAuge`, w14-lod-sprung) wie die Maske der 3D-Stufen (`_instanzMitteNode`), nie
+                                            // von `cameraPosition`: im Schattenpass ist das die Kaskaden-Kamera (die Karte wirft),
+                                            // und eine Sonde, die das Auge versetzte, blendete die L1 nach dem Auge, die Karte
+                                            // nach der Kamera (lod.K4: die L1 trat vor die stehende Karte)
+                                            distNode: _Ta.length(
+                                                this._ensureLodUniforms().uLodAuge.xz.sub(this._instanzMitteNode(_Ta))
+                                            ),
                                             visHeightNode: _karte.w.abs(),
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
@@ -1259,7 +1264,7 @@ class AnazhRealm_stoff_material {
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
                                     // ── DIE SONNEN-SICHT DER KRONE (A7): die volle Krone beschattet sich in der Kaskade selbst,
-                                    //    die Karte wirft nie — ihr Bake misst je Texel, welchen Teil des Richtlichts die eigene
+                                    //    die Karte wirft, empfängt ihren Wurf aber nie (`receivedShadowPositionNode`) — ihr Bake misst je Texel, welchen Teil des Richtlichts die eigene
                                     //    Krone durchlässt (`_karteBuehne`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
                                     //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
                                     //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
@@ -1427,8 +1432,23 @@ class AnazhRealm_stoff_material {
                                         _clip.w
                                     );
                                     const _wAuge = _Ta.varying(_wAugeV, "vKarteTiefe");
-                                    mat.receivedShadowPositionNode = _Ta.positionWorld.add(
+                                    const _pEmpf = _Ta.positionWorld.add(
                                         _Ta.cameraPosition.sub(_Ta.positionWorld).normalize().mul(_wAuge)
+                                    );
+                                    // DER EIGENE WURF TRIFFT DIE KARTE NIE (w14-lod-sprung, B2c: die Karte wirft sich selbst): im
+                                    // Schattenpass steht sie als Ebene durch ihre Mitte zum Licht; ein Empfänger hinter dieser
+                                    // Ebene (vom Licht aus) rückt längs des Lichts vor sie, um ein Viertel der Rahmen-Breite —
+                                    // ihren Eigenschatten trägt die Sonnen-Sicht (A7, `receivedShadowNode` oben), nie doppelt,
+                                    // und der Wurf auf Boden und Nachbarn bleibt ganz (die Ebene liegt, wo die Krone steht). Ohne
+                                    // das Rücken zog die Schnittlinie beider Ebenen Akne-Streifen quer über jede Karte (Radeon, Dorf).
+                                    const _lichtW = _Ta.normalize(this._windUniformsEnsure().uSunDir);
+                                    const _mitteW = _Ta.varying(
+                                        _naht.anker.add(_Ta.vec3(0.0, _hHv.mul(_sV), 0.0)),
+                                        "vKarteMitte"
+                                    );
+                                    const _vorEbene = _pEmpf.sub(_mitteW).dot(_lichtW);
+                                    mat.receivedShadowPositionNode = _pEmpf.add(
+                                        _lichtW.mul(_rahmen.x.mul(_sInst).mul(0.25).sub(_vorEbene).max(0.0))
                                     );
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
@@ -1494,6 +1514,12 @@ class AnazhRealm_stoff_material {
                                         _hHv.add(_cPhi.mul(_bV)).add(_swayT.y),
                                         _axis.z.add(_lx.negate().mul(_off)).sub(_sPhi.mul(_lz).mul(_bV)).add(_swayT.z)
                                     );
+                                    // DER WURF DER KARTE (w14-lod-sprung, B2c: die Karte wirft sich selbst): im Schattenpass ist
+                                    // `cameraPosition` die Kaskaden-Kamera — dieselbe Karte steht durch ihre Mitte zum Licht, ihr
+                                    // Fragment wählt die Ansicht aus der Richtung des Lichts (die Hebungs-Ringe bis 80°), die Maske
+                                    // misst vom Auge der Stufen (oben), die eigene Krone empfängt ihn nie (`receivedShadowPositionNode`
+                                    // oben). Bis hier warf die Karte nie: am Wechsel L1 → Karte fiel der Schatten jedes Baums vom
+                                    // Boden (lod.K4, Radeon am Dorf −44 462 Luma über 7 474 px).
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
                                     // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
