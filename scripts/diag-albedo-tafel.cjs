@@ -89,53 +89,59 @@ async function messeLabor({ echt, nur, tafel }) {
     const b = await browser(echt);
     const out = { labor: {}, karten: {}, eichung: { labor: {} }, geraet: null };
     try {
-        for (const [sid, S] of Object.entries(AT.STUDIOS)) {
-            if (nur && !nur.includes(sid)) continue;
-            const page = await b.newPage();
-            await server.zeige(page, 120000, S.pfad, "load");
-            await page.evaluate(AT.LABOR_INSTALL);
-            // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
-            const bereit = (S) => {
-                const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
-                const w = g(S.wurzel);
-                let n = 0;
-                if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
-                return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
-            };
-            while (!(await page.evaluate(bereit, S))) await sleep(300);
-            if (!out.geraet)
-                out.geraet = await page.evaluate((S) => {
-                    const R = new Function(`return ${S.renderer};`)();
-                    if (R.isWebGPURenderer) return "WebGPU " + (R.backend.device ? R.backend.device.adapterInfo.architecture : "WebGL2-Ersatz");
-                    const gl = R.getContext();
-                    const e = gl.getExtension("WEBGL_debug_renderer_info");
-                    return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-                }, S);
-            // Die Karte zuerst: das Labor-Licht, wie das Studio startet (vor jeder Vorlagen-Wahl, vor dem Wald).
-            out.karten[sid] = await page.evaluate((o) => window.__laborKarte(o), { studio: S, studioId: sid });
-            const zeilen = tafel.zeilen.filter((z) => z.labor && z.labor.studio === sid);
-            // Der Wald baut die Pflanzen-Welt um — seine Zeilen zuletzt.
-            const wald = (z) => [].concat(z.labor.aktion || []).some((x) => x.wald);
-            zeilen.sort((a, c) => (wald(a) ? 1 : 0) - (wald(c) ? 1 : 0));
-            let eich = null;
-            for (const z of zeilen) {
-                await aktion(page, z.labor.aktion);
-                const res = await page.evaluate((o) => window.__laborAlbedo(o), { studio: S, zeilen: [z] });
-                const e = res.find((x) => x.id === z.id || x.name === z.id) || { fehler: "keine Antwort" };
-                const k = res.find((x) => x.name === "graukarte");
-                if (k && k.gesamt) eich = k.gesamt.Y;
-                const ordner = opt("--bilder");
-                if (ordner && e.png) {
-                    fs.mkdirSync(ordner, { recursive: true });
-                    pngDatei(path.join(ordner, `labor-${z.id}.png`), e.png);
-                }
-                out.labor[z.id] = e.gesamt
-                    ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
-                    : { Y: null, fehler: e.fehler || "kein Pixel" };
-            }
-            out.eichung.labor[sid] = eich;
-            await page.close();
-        }
+        // DIE STUDIOS ZUGLEICH (w13-gtx-proben): jedes Studio ist eine eigene Seite mit eigenem Renderer, keines liest ein anderes —
+        // sie messen nebeneinander, jede Seite ihre Zeilen in ihrer Reihe (bis dahin eins nach dem anderen: an der GTX riss das Labor
+        // neben der Welt die Frist der Probe material.K1/K3 84 s)
+        await Promise.all(
+            Object.entries(AT.STUDIOS)
+                .filter(([sid]) => !nur || nur.includes(sid))
+                .map(async ([sid, S]) => {
+                    const page = await b.newPage();
+                    await server.zeige(page, 120000, S.pfad, "load");
+                    await page.evaluate(AT.LABOR_INSTALL);
+                    // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
+                    const bereit = (S) => {
+                        const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
+                        const w = g(S.wurzel);
+                        let n = 0;
+                        if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
+                        return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
+                    };
+                    while (!(await page.evaluate(bereit, S))) await sleep(300);
+                    if (!out.geraet)
+                        out.geraet = await page.evaluate((S) => {
+                            const R = new Function(`return ${S.renderer};`)();
+                            if (R.isWebGPURenderer) return "WebGPU " + (R.backend.device ? R.backend.device.adapterInfo.architecture : "WebGL2-Ersatz");
+                            const gl = R.getContext();
+                            const e = gl.getExtension("WEBGL_debug_renderer_info");
+                            return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+                        }, S);
+                    // Die Karte zuerst: das Labor-Licht, wie das Studio startet (vor jeder Vorlagen-Wahl, vor dem Wald).
+                    out.karten[sid] = await page.evaluate((o) => window.__laborKarte(o), { studio: S, studioId: sid });
+                    const zeilen = tafel.zeilen.filter((z) => z.labor && z.labor.studio === sid);
+                    // Der Wald baut die Pflanzen-Welt um — seine Zeilen zuletzt.
+                    const wald = (z) => [].concat(z.labor.aktion || []).some((x) => x.wald);
+                    zeilen.sort((a, c) => (wald(a) ? 1 : 0) - (wald(c) ? 1 : 0));
+                    let eich = null;
+                    for (const z of zeilen) {
+                        await aktion(page, z.labor.aktion);
+                        const res = await page.evaluate((o) => window.__laborAlbedo(o), { studio: S, zeilen: [z] });
+                        const e = res.find((x) => x.id === z.id || x.name === z.id) || { fehler: "keine Antwort" };
+                        const k = res.find((x) => x.name === "graukarte");
+                        if (k && k.gesamt) eich = k.gesamt.Y;
+                        const ordner = opt("--bilder");
+                        if (ordner && e.png) {
+                            fs.mkdirSync(ordner, { recursive: true });
+                            pngDatei(path.join(ordner, `labor-${z.id}.png`), e.png);
+                        }
+                        out.labor[z.id] = e.gesamt
+                            ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
+                            : { Y: null, fehler: e.fehler || "kein Pixel" };
+                    }
+                    out.eichung.labor[sid] = eich;
+                    await page.close();
+                })
+        );
     } finally {
         await b.close();
         server.close();
