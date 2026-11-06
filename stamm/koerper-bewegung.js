@@ -1806,7 +1806,7 @@ class AnazhRealm_koerper_bewegung {
                     const c = (this.state._kamChase = this.state._kamChase || {});
                     // DIE MAUS IM RITT (H3): was das mousemove seit dem letzten Bild an state.yaw/pitch drehte, greift das Rig
                     // (`chaseGreif`, dieselbe Klemme wie die Probefahrt), in diesem Bild folgt der Azimut nicht (Gier NaN); lässt sie
-                    // los, kehrt es in `rueckS` zurück. Die Welt reicht Fahr-Zustand und vmax IHRES Gesetzes (`_fahrSatz`).
+                    // los, kehrt es in `rueckS` zurück. Die Welt reicht den Fahr-Zustand IHRES Wagens (das Tempo atmet absolut).
                     const vc = AnazhRealm._fahrSchrittGesetz().vc;
                     const mausDa = Number.isFinite(c.maus);
                     const gAz = mausDa ? this.state.yaw - c.maus : 0;
@@ -1821,8 +1821,7 @@ class AnazhRealm_koerper_bewegung {
                         ent._fahr ? ent._fahr.steig : 0,
                         kDt,
                         K,
-                        ent._fahr,
-                        ent._fahrSatz && ent._fahrSatz.vmax
+                        ent._fahr
                     );
                     tempoFov = v.fovPlus;
                     camX = ent.position.x + v.x;
