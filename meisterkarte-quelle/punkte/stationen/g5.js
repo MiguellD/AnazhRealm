@@ -1924,11 +1924,26 @@ async function unterwasserSeite(o) {
         return l.length > (x1 - x0) * (y1 - y0) * 0.5 ? R(l[l.length >> 1], 7) : null;
     };
     const schirm = (v) => ((v = v.clone().project(cam)), [((v.x + 1) / 2) * W, ((1 - v.y) / 2) * H]);
+    // DER BLICK JE SCHUSS (w14-unterwasser): das Mittel der Szenen-Luma auf 8 × 5 Feldern — woran das Urteil erkennt, ob die Aufnahme
+    // der Kamera folgt (`UNTERWASSER_STEHT`); dazu passiv gelesen der Knoten-Frame und die Render-Rufe vor und nach der Aufnahme und
+    // die Befehle und Dreiecke ihres gezählten Bilds (`zug`), nie ein Haken an Pass oder Renderer
+    const blickGitter = (u8, k) => {
+        const g = new Array(40).fill(0), n = new Array(40).fill(0);
+        for (let py = 0; py < H; py++)
+            for (let px = 0, i, f; px < W; px++) {
+                (i = 4 * (py * W + px)), (f = Math.floor((py * 5) / H) * 8 + Math.floor((px * 8) / W));
+                g[f] += 0.2126 * lin[u8[i]] + 0.7152 * lin[u8[i + 1]] + 0.0722 * lin[u8[i + 2]];
+                n[f]++;
+            }
+        return g.map((v, f) => R(v / n[f] / k, 5));
+    };
     const schuss = async (name, leib) => {
         r._applyDayNightToScene();
-        const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8, k = s.renderer.toneMappingExposure;
+        const nf = s.renderer._nodes && s.renderer._nodes.nodeFrame, ri = s.renderer.info, vor = [nf ? nf.frameId : NaN, ri ? ri.calls : NaN];
+        const a = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" }), u8 = a.u8, k = s.renderer.toneMappingExposure;
         if (o.bilder) aus.bilder[name] = window.__png(u8, W, H);
-        const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4) };
+        const b = { L: median(u8, k, 0, W, 0, H), k: R(k, 4), gitter: blickGitter(u8, k), kamera: [cam.position.x, cam.position.y, cam.position.z].map((v) => R(v, 2)) };
+        b.zug = [nf ? nf.frameId - vor[0] : null, ri ? ri.calls - vor[1] : null, a.info && a.info.drawCalls, a.info && a.info.triangles];
         if (leib) {
             const [lx, ly] = schirm(pm.position);
             const [lb, lr, ll] = [median(u8, k, lx - 3, lx + 4, ly - 7, ly + 8), median(u8, k, lx + 37, lx + 44, ly - 7, ly + 8), median(u8, k, lx - 44, lx - 37, ly - 7, ly + 8)];
@@ -2012,7 +2027,7 @@ async function unterwasserSeite(o) {
         cam.lookAt(p[0] + Math.cos(weg.a) * 10, p[1] - 1.5, p[2] + Math.sin(weg.a) * 10);
         cam.updateMatrixWorld(true);
         const b = await schuss(name);
-        return { auge: p.map((v) => R(v, 1)), h: R(s.himmelAmAuge, 3), L: b.L, k: b.k };
+        return { auge: p.map((v) => R(v, 1)), h: R(s.himmelAmAuge, 3), L: b.L, k: b.k, gitter: b.gitter, zug: b.zug };
     };
     aus.hoehle = await blick("hoehle", auge);
     aus.hinaus = await blick("hinaus", [raum.x, raum.S + 1.7, raum.z]);
@@ -2055,8 +2070,24 @@ const UNTERWASSER_PROBE = probeBefehl(probeUnterwasser, 45, { UNTER: unterwasser
 const UNTERWASSER_MUTANTE = 0.75;
 const LEIB_KONTRAST = 0.05;
 const HOEHLE_BLENDEN = 2;
-// das Urteil über die Zeile `LEIB_K3_BILD {…}`: je Sicht der Abfall K in 1,5 und 2,5 m im Band der Soll-Tafel (die REF der Literatur,
-// unabhängig vom Gesetz: kd klarer Seen), die Mutante, der Leib in Third, die Höhle
+// DER STEHENDE BLICK (w14-unterwasser): unter diesem Anteil weichen die Gitter zweier Aufnahmen voneinander ab, die das Gesetz
+// verschieden sehen muss — Ego 0,5 ↔ 2,5 m, Third 0,5 ↔ 2,5 m (die Farbe des Mediums fällt mit exp(−kd · 2 m), REF ≥ 0,17 /m:
+// ≥ 29 %), Ego ↔ Third in 0,5 m (andere Kamera, der eigene Leib im Bild). Frische Aufnahmen (Radeon 341ad089, fünf Läufe: frisch,
+// Zweit-Boot, Grundstellung durch die Tür, nach wetter.K3#2, die Takte vor __werkTakt) liegen bei 55–61 % und 7–10 %; die Läufe,
+// die die Zeile ROT nannte (GTX 341ad089 nach wetter.K3#2: L 0,17442/0,17444/0,17460, Ego = Third auf 10⁻⁶; GTX und Radeon
+// f5db8d90, Radeon b5aa8779 — dort pixelgleich auch 3 m über dem Spiegel), zeigten in jeder Aufnahme dasselbe Bild
+const UNTERWASSER_STEHT = 0.02;
+// das Gitter zweier Aufnahmen: die mittlere Abweichung der 8 × 5 Felder relativ zu ihrem Mittel (null ohne Gitter)
+function blickAbstand(a, b) {
+    const g = a && a.gitter, q = b && b.gitter;
+    if (!Array.isArray(g) || !Array.isArray(q) || g.length !== 40 || q.length !== 40) return null;
+    let d = 0, m = 0;
+    for (let i = 0; i < 40; i++) (d += Math.abs(g[i] - q[i])), (m += (g[i] + q[i]) / 2);
+    return m > 0 ? d / m : null;
+}
+// das Urteil über die Zeile `LEIB_K3_BILD {…}`: zuerst, ob die Aufnahme der Kamera folgt (DER STEHENDE BLICK, `UNTERWASSER_STEHT` —
+// steht sie, nennt die Zeile ihn und beschuldigt nie das Gesetz des Wassers), dann je Sicht der Abfall K in 1,5 und 2,5 m im Band der
+// Soll-Tafel (die REF der Literatur, unabhängig vom Gesetz: kd klarer Seen), die Mutante, der Leib in Third, die Höhle
 function unterwasserUrteil(lauf) {
     const t = String(lauf.stdout || "");
     const j = jsonZeile(t, /^LEIB_K3_BILD \{/);
@@ -2067,6 +2098,17 @@ function unterwasserUrteil(lauf) {
     if (!band) rot.push("keine REF: die Soll-Tafel trägt in der Klasse wasser kein Band sichtAbfall");
     const K = (a, b, za, zb) => (a > 0 && b > 0 && zb > za ? Math.log(a / b) / (zb - za) : null);
     const teile = [];
+    const pz = (x) => (x === null ? "—" : +(100 * x).toFixed(2) + " %"), zug = (x) => (x && Array.isArray(x.zug) ? x.zug.join("/") : "—");
+    const [e0, e2, t0, t2] = [(w.ego || [])[0], (w.ego || [])[2], (w.third || [])[0], (w.third || [])[2]];
+    const paare = [["Ego 0,5 ↔ 2,5 m", e0, e2], ["Third 0,5 ↔ 2,5 m", t0, t2], ["Ego ↔ Third 0,5 m", e0, t0]].map(([n, a, b]) => [n, blickAbstand(a, b)]);
+    const blick = paare.map(([n, x]) => n + " " + pz(x)).join(", ");
+    if (paare.some(([, x]) => x === null)) rot.push("kein Gitter der Szenen-Luma je Schuss — ob die Aufnahme der Kamera folgt, ist ungemessen");
+    const steht = paare.every(([, x]) => x !== null && x < UNTERWASSER_STEHT);
+    if (steht)
+        rot.push("DAS BILD STEHT: " + blick + " (Soll ≥ " + 100 * UNTERWASSER_STEHT + " %) — jede Aufnahme zeigt dasselbe Bild, der Schuss folgt weder der Tiefe " +
+            "noch der Sicht (Frames/Rufe/Befehle/Dreiecke je Aufnahme: Ego 0,5 m " + zug(e0) + ", Ego 2,5 m " + zug(e2) + ", Third 0,5 m " + zug(t0) +
+            "); Abfall, Mutante und Leib sind so nicht gemessen, das Gesetz des Wassers nicht beschuldigt");
+    teile.push("Blick " + blick);
     for (const n of ["ego", "third"]) {
         const r = w[n];
         if (!Array.isArray(r) || r.length !== 3) {
@@ -2075,28 +2117,42 @@ function unterwasserUrteil(lauf) {
         }
         for (const x of r) if (!x.unter || x.fest || !(Math.abs(x.tiefe - x.z) <= 0.1)) rot.push(n + " " + x.z + " m: die Kamera steht nicht im Wasser (Tiefe " + x.tiefe + ", fest " + x.fest + ")");
         const ks = r.slice(1).map((x) => K(r[0].L, x.L, r[0].tiefe, x.tiefe));
-        r.slice(1).forEach((x, i) => { if (band && !(ks[i] >= band[0] && ks[i] <= band[1])) rot.push(n + " " + x.z + " m: Abfall " + f2(ks[i]) + " /m außerhalb der REF [" + band.join("; ") + "]"); });
+        r.slice(1).forEach((x, i) => { if (!steht && band && !(ks[i] >= band[0] && ks[i] <= band[1])) rot.push(n + " " + x.z + " m: Abfall " + f2(ks[i]) + " /m außerhalb der REF [" + band.join("; ") + "]"); });
         teile.push(n + " L " + r.map((x) => x.L).join("/") + " · K " + ks.map(f2).join(", ") + " /m · 2,5÷0,5 m " + f2(r[2].L / r[0].L));
     }
     const leib = Array.isArray(w.third) && w.third[0] && Array.isArray(w.third[0].leib) ? w.third[0].leib[3] : null;
-    if (!(leib >= LEIB_KONTRAST)) rot.push("Third 0,5 m: der eigene Leib hebt sich nur um " + f2(leib) + " vom Wasser ab (Soll ≥ " + LEIB_KONTRAST + ")");
+    if (!steht && !(leib >= LEIB_KONTRAST)) rot.push("Third 0,5 m: der eigene Leib hebt sich nur um " + f2(leib) + " vom Wasser ab (Soll ≥ " + LEIB_KONTRAST + ")");
     teile.push("Leib Third 0,5 m Kontrast " + f2(leib));
     const eg = Array.isArray(w.ego) && w.ego.length === 3 ? K(w.ego[0].L, w.ego[2].L, w.ego[0].tiefe, w.ego[2].tiefe) : null;
     const mu = Array.isArray(w.mutante) && w.mutante.length === 2 ? K(w.mutante[0].L, w.mutante[1].L, w.mutante[0].tiefe, w.mutante[1].tiefe) : null;
     const sieht = eg > 0 && mu !== null && mu / eg <= UNTERWASSER_MUTANTE;
-    if (!sieht) rot.push("die Mutante kd halbiert verschiebt den Abfall nicht (" + f2(mu) + " gegen " + f2(eg) + " /m) — das Bild liest das Gesetz des Wassers nicht");
+    if (!steht && !sieht) rot.push("die Mutante kd halbiert verschiebt den Abfall nicht (" + f2(mu) + " gegen " + f2(eg) + " /m) — das Bild liest das Gesetz des Wassers nicht");
     teile.push("Mutante K " + f2(mu) + " (" + (sieht ? "erkannt" : "UNERKANNT") + ")");
+    // die Höhle und hinaus stehen 32 m auseinander (frisch 187 %): gleichen sich ihre Gitter, steht auch dieser Blick
+    const hb = blickAbstand(h.hoehle, h.hinaus), hSteht = hb !== null && hb < UNTERWASSER_STEHT;
+    if (hb === null) rot.push("Höhle: kein Gitter der Szenen-Luma je Schuss — ob die Aufnahme der Kamera folgt, ist ungemessen");
+    if (hSteht)
+        rot.push("DIE HÖHLE STEHT: Höhle ↔ hinaus " + pz(hb) + " (Soll ≥ " + 100 * UNTERWASSER_STEHT + " %, 32 m auseinander; Frames/Rufe/Befehle/Dreiecke " +
+            zug(h.hoehle) + " · " + zug(h.hinaus) + ") — der Licht-Abfall ist so nicht gemessen");
     const a = h.hoehle && h.hinaus && h.hinaus.L > 0 ? h.hoehle.L / h.hinaus.L : null, nacht = Number.isFinite(h.nacht) ? 2 ** (h.nacht - HOEHLE_BLENDEN) : null;
-    if (!(a !== null && nacht !== null && a >= nacht && a <= 2 ** -HOEHLE_BLENDEN && h.hoehle.h < 1))
+    if (!hSteht && !(a !== null && nacht !== null && a >= nacht && a <= 2 ** -HOEHLE_BLENDEN && h.hoehle.h < 1))
         rot.push("Höhle: Abfall " + f2(a) + " außerhalb [" + f2(nacht) + "; " + 2 ** -HOEHLE_BLENDEN + "] (Himmel am Auge " + (h.hoehle && h.hoehle.h) + ")" + (h.fehler ? " — " + h.fehler : ""));
-    teile.push("Höhle " + (h.hoehle ? h.hoehle.L : "—") + " ÷ hinaus " + (h.hinaus ? h.hinaus.L : "—") + " = " + f2(a));
+    teile.push("Höhle " + (h.hoehle ? h.hoehle.L : "—") + " ÷ hinaus " + (h.hinaus ? h.hinaus.L : "—") + " = " + f2(a) + " (Blick " + pz(hb) + ")");
     return { gruen: !rot.length && lauf.exit === 0, zahl: teile.join(" · ") + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit };
 }
 const UNTERWASSER_PROBEN = (() => {
     const kd = [0.45, 0.15, 0.3], Y = (z) => 0.2126 * Math.exp(-kd[0] * z) + 0.7152 * Math.exp(-kd[1] * z) + 0.0722 * Math.exp(-kd[2] * z);
-    const reihe = (f = (z) => 0.3 * Y(z), tiefen = [0.5, 1.5, 2.5], leib) => tiefen.map((z, i) => Object.assign({ z, tiefe: z, unter: true, fest: false, L: +f(z).toFixed(7), k: 0.512 }, leib && !i ? { leib } : {}));
+    // das Gitter einer frischen Aufnahme: die Helligkeit L über einem Muster, das mit dem Ort der Kamera wandert (Tiefe, Sicht)
+    const blick = (L, z, sicht) => Array.from({ length: 40 }, (_, i) => +(L * (1 + 0.3 * Math.sin(0.7 * i + 1.3 * z + (sicht === "third" ? 2 : 0)))).toFixed(5));
+    const reihe = (f = (z) => 0.3 * Y(z), tiefen = [0.5, 1.5, 2.5], leib) =>
+        tiefen.map((z, i) => Object.assign({ z, tiefe: z, unter: true, fest: false, L: +f(z).toFixed(7), k: 0.512, gitter: blick(f(z), z, leib ? "third" : "ego"), zug: [37, 52, 31, 412000] }, leib && !i ? { leib } : {}));
     const wasser = (o = {}) => Object.assign({ art: "see", ego: reihe(), third: reihe(undefined, undefined, [0.62, 0.27, 0.28, 1.25]), mutante: reihe((z) => 0.3 * Y(z / 2), [0.5, 2.5]) }, o);
-    const hoehle = (o = {}) => Object.assign({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.017, k: 0.51 }, hinaus: { auge: [-1020.6, 123.8, -720], h: 1, L: 0.157, k: 0.51 }, weg: 15.5, nacht: -2.17 }, o);
+    const hoehle = (o = {}) => Object.assign({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.017, k: 0.51, gitter: blick(0.017, 91.8), zug: [37, 49, 12, 98000] }, hinaus: { auge: [-1020.6, 123.8, -720], h: 1, L: 0.157, k: 0.51, gitter: blick(0.157, 123.8), zug: [37, 55, 64, 530000] }, weg: 15.5, nacht: -2.17 }, o);
+    // DER STEHENDE BLICK (GTX 341ad089 nach wetter.K3#2): jede Aufnahme dasselbe Bild — `f` die Helligkeit, die die Zeile je Tiefe trägt
+    const steht = (f, G = blick(0.1744, 0.5)) => (tiefen = [0.5, 1.5, 2.5], leib) =>
+        tiefen.map((z, i) => Object.assign({ z, tiefe: z, unter: true, fest: false, L: +f(z).toFixed(7), k: 0.5117, gitter: G.map((v, q) => +(v * (1 + (q % 3) * 1e-4 * z)).toFixed(5)), zug: [37, 52, 31, 412000] }, leib && !i ? { leib } : {}));
+    const gtx = steht((z) => 0.17442 + 8e-5 * (z - 0.5));
+    const imBand = steht((z) => 0.3 * Y(z));
     const z = (j) => "@@ 31.2 s · umgestellt -1041/-738 in 10355 ms\nLEIB_K3_BILD " + JSON.stringify(Object.assign({ band: [0.17, 0.57], see: { x: 1816, z: -6168, level: 0.93, tiefe: 3.4 }, wasser: wasser(), hoehle: hoehle() }, j));
     const flach = reihe((z) => 0.062 + 0.004 * z);
     const truebe = (z) => 0.3 * (0.7152 * Math.exp(-2 * z) + 0.0722 * Math.exp(-1.2 * z));
@@ -2107,10 +2163,14 @@ const UNTERWASSER_PROBEN = (() => {
         { name: "die Mutante kd halbiert ändert das Bild nicht (blind)", stdout: z({ wasser: wasser({ mutante: reihe(undefined, [0.5, 2.5]) }) }), gruen: false },
         { name: "Third: der Grund im vollen Mittag hebt 2,5 m auf das Bild von 0,5 m", stdout: z({ wasser: wasser({ third: reihe((z) => 0.3 * Y(z) * (z > 2 ? 1.4 : 1), undefined, [0.62, 0.27, 0.28, 1.25]) }) }), gruen: false },
         { name: "die Kamera steckt im Grund", stdout: z({ wasser: wasser({ ego: reihe().map((x, i) => (i === 2 ? Object.assign(x, { fest: true }) : x)) }) }), gruen: false },
-        { name: "vorher: das Auge gleicht das Fehlende ganz aus (eine Blende)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.075, k: 0.51 } }) }), gruen: false },
-        { name: "die Höhle schwarz (kein Licht des Auges)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.006, k: 0.51 } }) }), gruen: false },
+        { name: "vorher: das Auge gleicht das Fehlende ganz aus (eine Blende)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.075, k: 0.51, gitter: blick(0.075, 91.8), zug: [37, 49, 12, 98000] } }) }), gruen: false },
+        { name: "die Höhle schwarz (kein Licht des Auges)", stdout: z({ hoehle: hoehle({ hoehle: { auge: [-1020.6, 91.8, -720], h: 0, L: 0.006, k: 0.51, gitter: blick(0.006, 91.8), zug: [37, 49, 12, 98000] } }) }), gruen: false },
         { name: "die Soll-Tafel trägt keine REF", stdout: z({ band: null }), gruen: false },
         { name: "die Probe warf vor der Zeile", stdout: "@@ PROBE-FEHLER Error: kein See nächst der Mess-Wiese (__wasserOrte)", gruen: false },
+        { name: "der stehende Blick (GTX 341ad089): jede Aufnahme dasselbe Bild, L flach — DAS BILD STEHT, nie das Gesetz", stdout: z({ wasser: wasser({ ego: gtx(), third: gtx(undefined, [0.2335, 0.2345, 0.2419, 0.02]), mutante: gtx([0.5, 2.5]) }) }), gruen: false },
+        { name: "der stehende Blick, dessen Zahlen im Band liegen (nur das Gitter sieht ihn)", stdout: z({ wasser: wasser({ ego: imBand(), third: imBand(undefined, [0.62, 0.27, 0.28, 1.25]), mutante: steht((q) => 0.3 * Y(q / 2))([0.5, 2.5]) }) }), gruen: false },
+        { name: "die Höhle steht: Höhle und hinaus dasselbe Bild, ihr Verhältnis im Band", stdout: z({ hoehle: hoehle({ hinaus: { auge: [-1020.6, 123.8, -720], h: 1, L: 0.157, k: 0.51, gitter: blick(0.017, 91.8), zug: [37, 49, 12, 98000] } }) }), gruen: false },
+        { name: "die Probe ohne Gitter je Schuss (die Fassung vor w14-unterwasser)", stdout: z({ wasser: wasser({ ego: reihe().map(({ gitter, ...x }) => x) }) }), gruen: false },
     ];
 })();
 
@@ -3642,6 +3702,8 @@ const stationen = [
     // leib.K3 Staffel 2 (w12-unterwasser): das Unterwasser-Bild aus der EINEN Wasser-Wahrheit gegen die REF und die Höhle mit
     // Licht-Abfall — die Probe `probeUnterwasser` (oben) in der Welt der Sitzung, See und Höhle in EINEM Lauf. mutiert: sie hält den
     // Takt an (Bühne), stellt Leib und Kamera unter den Spiegel und leiht das Gesetz des Wassers für die Mutante — die Sitzung setzt danach zurück.
+    // Zuerst urteilt sie, ob die Aufnahme der Kamera folgt (w14-unterwasser, DER STEHENDE BLICK: das Gitter je Schuss) — ein stehendes
+    // Bild heißt beim Namen DAS BILD STEHT, nie „das Gesetz des Wassers“.
     {
         kriterium: "leib.K3",
         staffel: 2,
