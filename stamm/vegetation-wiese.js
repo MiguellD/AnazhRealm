@@ -462,26 +462,28 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE SCHRANKE DER FERNE (Takt und Sicht-Satz, rein): der höchste Anteil, den das Gesetz einem Büschel in der Lage `L`
     // gibt ({ x0, x1, z0, z1 } seiner Füße, y0–y1 ihre Höhe, gx0–gx1 · gz0–gz1 die Neigung ihrer Hänge) — für jedes Auge, das
-    // bis `rand` m waagrecht (rand/4 lotrecht) vom Auge A steht (der Vorlauf einer Kachel). Der kleinste Fußabdruck-Abstand:
-    // der nächste Fuß, die höchste Ebene (S ≤ |(−gx, 1, −gz) · (Auge − Fuß)|, die Ecken der Intervalle) und das tiefste
-    // Auge — an der Tafel (der Saum zählt nicht: die Schranke hält ohne ihn). Samt dem Band, in dem ein Büschel sinkt.
+    // bis `rand` m waagrecht und rand/4 lotrecht vom Auge A steht (der Vorlauf einer Kachel; lotrecht wandern seine Höhe über
+    // der Ebene und über dem eigenen Boden gemeinsam). Der kleinste Fußabdruck-Abstand: der nächste Fuß, die höchste Ebene
+    // (S ≤ |(−gx, 1, −gz) · (Auge − Fuß)|, die Ecken der Intervalle) — an der Tafel (der Saum zählt nicht: die Schranke hält
+    // ohne ihn). Samt dem Band, in dem ein Büschel sinkt.
     static _wieseFernSchranke(L, A, rand) {
         const F = AnazhRealm.NAH_WIESE.fern,
             TF = AnazhRealm.WIESE_FERN_TAFEL;
-        const r4 = rand / 4;
         // je Achse die Spanne Fuß − Auge
         const [dx0, dx1, dz0, dz1] = [L.x0 - A.x - rand, L.x1 - A.x + rand, L.z0 - A.z - rand, L.z1 - A.z + rand];
-        const [dy0, dy1] = [L.y0 - A.y - r4, L.y1 - A.y + r4];
         const naechst = (a, b) => (a > 0 ? a : b < 0 ? -b : 0);
-        const dist = Math.hypot(naechst(dx0, dx1), naechst(dy0, dy1), naechst(dz0, dz1));
         // n'·(Fuß − Auge) = −gx·dx + dy − gz·dz über den Ecken der Intervalle
         const span = (g0, g1, a0, a1) => [g0 * a0, g0 * a1, g1 * a0, g1 * a1];
         const sx = span(-L.gx1, -L.gx0, dx0, dx1),
             sz = span(-L.gz1, -L.gz0, dz0, dz1);
-        const hi = dy1 + Math.max(...sx) + Math.max(...sz),
-            lo = dy0 + Math.min(...sx) + Math.min(...sz);
-        const S = Math.max(Math.abs(hi), Math.abs(lo), 1e-3);
-        const Q = dist * Math.cbrt(Math.max(F.auge, A.h - r4) / S);
+        const [hx, lx] = [Math.max(...sx) + Math.max(...sz), Math.min(...sx) + Math.min(...sz)];
+        let Q = Infinity;
+        for (const dh of rand ? [-rand / 4, 0, rand / 4] : [0]) {
+            const [dy0, dy1] = [L.y0 - A.y - dh, L.y1 - A.y - dh];
+            const S = Math.max(Math.abs(dy1 + hx), Math.abs(dy0 + lx), 1e-3);
+            const dist = Math.hypot(naechst(dx0, dx1), naechst(dy0, dy1), naechst(dz0, dz1));
+            Q = Math.min(Q, dist * Math.cbrt(Math.max(F.auge, A.h + dh) / S));
+        }
         const j = Math.floor(Q * TF.je);
         const a = j < TF.anteil.length ? TF.anteil[j] : AnazhRealm._wieseFern(globalThis.__phytoCore.WIND_ZAHLEN, 0, Q).anteil; // prettier-ignore
         return a * (1 + F.rand);
@@ -489,7 +491,7 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE LAGE EINER KACHEL DER FERNE (vor ihrem Bau): die Höhe und die Neigung ihres gezeichneten Bodens an einem Gitter von
     // 4 × 4 Proben (dieselben Leser wie der Bau der Büschel: `_bodenSichtAt`, `_slopeAt`), um den Rand eines Büschels
-    // zwischen den Proben geweitet (0,25 m · 0,08) — die Schranke des Takts (`_wieseFernSchranke`) liest sie. null, solange
+    // zwischen den Proben geweitet (0,1 m · 0,02) — die Schranke des Takts (`_wieseFernSchranke`) liest sie. null, solange
     // ein Chunk unter ihr keine Karte trägt.
     _wieseFernLage(fx, fz) {
         const K = AnazhRealm.NAH_WIESE.fern.kachel;
@@ -506,9 +508,9 @@ class AnazhRealm_vegetation_wiese {
                 const y = this._bodenSichtAt(x, z);
                 if (y === null) return null;
                 this._slopeAt(x, z, boden, 1, eb);
-                [L.y0, L.y1] = [Math.min(L.y0, y - 0.25), Math.max(L.y1, y + 0.25)];
-                [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 0.08), Math.max(L.gx1, eb.gx + 0.08)];
-                [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 0.08), Math.max(L.gz1, eb.gz + 0.08)];
+                [L.y0, L.y1] = [Math.min(L.y0, y - 0.1), Math.max(L.y1, y + 0.1)];
+                [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 0.02), Math.max(L.gx1, eb.gx + 0.02)];
+                [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 0.02), Math.max(L.gz1, eb.gz + 0.02)];
             }
         return L;
     }

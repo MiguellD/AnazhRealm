@@ -3536,6 +3536,7 @@ AnazhRealm._saisonGesetz = function () {
         SG.typ &&
         Number.isFinite(SG.typ.laub) &&
         Number.isFinite(SG.typ.bluete) &&
+        Number.isFinite(SG.typ.halm) &&
         Number.isFinite(SG.karteSchwelle)
     )
         return SG;
