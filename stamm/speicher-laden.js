@@ -488,7 +488,7 @@ class AnazhRealm_speicher_laden {
                 if (typeof zg.wackeln === "boolean") Z.wackeln = zg.wackeln;
                 if (typeof zg.unschaerfe === "boolean") Z.unschaerfe = zg.unschaerfe;
             }
-            this._zugangDom();
+            this._menueZeigtStand(); // das Menü zeigt den geladenen Stand (Ziel-FPS, Skala, LOD, Panel, Untertitel, Zugang)
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
