@@ -502,14 +502,30 @@ class AnazhRealm_dirigent_ankunft {
             window.addEventListener(
                 art,
                 (event) => {
-                    if (this._ladeschirmSteht()) event.stopImmediatePropagation();
+                    if (!this._ladeschirmSteht()) return;
+                    event.stopImmediatePropagation();
+                    if (this._eingabeGehalten) this._eingabeGehalten.clear(); // unter ihm hält keine Taste die Welt
                 },
                 true
             );
         // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
-        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`).
-        for (const art of ["keydown", "pointerdown"])
-            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
+        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`). EINE GEHALTENE TASTE RUHT NICHT (w13-ankunft-faden): die
+        // gehaltenen Tasten und Zeiger stehen in `_eingabeGehalten`, bis sie loslassen (ein Fenster ohne Fokus lässt alle los) — der
+        // Stempel des Drucks allein ließ den Vorbau mitten in der Fahrt bauen, sobald das gehaltene W 300 ms alt war (gate:werkstatt-weg
+        // L-Verben, ki · Third · Wagen: kein Fahren; seit w12-ankunft-faden kam der Vorbau nach der Ankunft genau dorthin).
+        const gehalten = (this._eingabeGehalten = new Set());
+        for (const art of ["keydown", "pointerdown", "keyup", "pointerup"])
+            window.addEventListener(
+                art,
+                (e) => {
+                    const wer = e.code || "zeiger" + e.pointerId;
+                    if (art.endsWith("up")) return void gehalten.delete(wer);
+                    gehalten.add(wer);
+                    this._eingabeT = performance.now();
+                },
+                true
+            );
+        window.addEventListener("blur", () => gehalten.clear());
         window.addEventListener("keydown", (event) => {
             // Ist ein Portal offen, ist die Heimat-Welt eingefroren: nur Esc verlässt das Portal, alle anderen
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
@@ -1324,20 +1340,23 @@ class AnazhRealm_dirigent_ankunft {
         return !!el && !el.hidden && !el.classList.contains("weg");
     }
 
-    // RUHT DIE EINGABE? (spielgang.K3) — seit VORBAU_RUHE_MS keine Taste, kein Zeiger-Druck (der Stempel der Capture-Hörer):
-    // dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr nächstes Bild. DIE KONTROLLE ZUERST
-    // (w12-ankunft-faden, PFLICHT B): was der Vorbau baut, steht im ersten Weltbild nicht — nach jeder Ankunft (`_weltbildDa`)
-    // ruht die Eingabe erst, wenn die Welt einmal stand (`_weltSteht`, gemerkt je Ankunft), danach nach der Ruhe der Tasten. Bis
-    // hier ruhte sie im Takt des Weltbilds schon (unter dem Ladeschirm hält der Hörer davor jede Taste, kein Stempel): das
-    // Tuch-Gitter (`_tuchVorbau`) hielt den Haupt-Faden am Stück vor dem ersten Schritt (headless kalt 274–677 ms je Lauf, Radeon
-    // 226 ms); mit der Ruhe ab der ersten Taste nach dem Bild lag es noch davor (300 ms zwischen zwei Drücken, headless 401 ms).
+    // RUHT DIE EINGABE? (spielgang.K3) — keine Taste und kein Zeiger gehalten (`_eingabeGehalten`) und seit VORBAU_RUHE_MS kein
+    // Druck (der Stempel der Capture-Hörer): dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr
+    // nächstes Bild. DIE KONTROLLE ZUERST (w12-ankunft-faden, PFLICHT B): was der Vorbau baut, steht im ersten Weltbild nicht —
+    // nach jeder Ankunft (`_weltbildDa`) ruht die Eingabe erst, wenn der Spieler seither eine Eingabe gab (er hat die Kontrolle;
+    // sie hält, solange er die Taste hält) oder die Welt einmal stand (`_weltSteht`), gemerkt je Ankunft. Bis w12 ruhte sie im
+    // Takt des Weltbilds schon (unter dem Ladeschirm hält der Hörer davor jede Taste, kein Stempel): das Tuch-Gitter (`_tuchVorbau`)
+    // hielt den Haupt-Faden vor dem ersten Schritt (headless kalt 274–677 ms je Lauf, Radeon 226 ms). Die Stand-Regel allein
+    // (w12) ließ eine Welt, die nie steht (ein Brand, ein Wagen in Fahrt), nie vorbauen: gate:werkstatt-weg L-Verben fiel an
+    // ki · Third · Wagen („kein Fahren", w13-ankunft-faden, dreimal in Folge; ohne die Regel grün).
     _eingabeRuht() {
         const da = this.state._weltbildDa;
+        const t = this._eingabeT;
         if (da && this._ankunftStand !== da) {
-            if (!this._weltSteht()) return false;
+            if (!(t > da) && !this._weltSteht()) return false;
             this._ankunftStand = da;
         }
-        const t = this._eingabeT;
+        if (this._eingabeGehalten && this._eingabeGehalten.size) return false;
         return t === undefined || performance.now() - t >= AnazhRealm.VORBAU_RUHE_MS;
     }
 
