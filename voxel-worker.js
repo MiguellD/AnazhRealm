@@ -251,6 +251,12 @@ function nachricht(e) {
             // Chunk — per Transfer zurück (Lehre 24); der Main lädt nur hoch und hängt ein.
             const r = fernAuftrag(msg);
             self.postMessage(Object.assign({ type: "fern-result", requestId: msg.requestId }, r.antwort), r.transfer);
+        } else if (msg.type === "fern-teilung") {
+            const r = fernTeilung(msg);
+            self.postMessage(
+                Object.assign({ type: "fern-teilung-result", requestId: msg.requestId }, r.antwort),
+                r.transfer
+            );
         } else if (msg.type === "spiegel-feld") {
             // DAS SPIEGEL-FELD (D10): ein Rechteck der Welt-Zellen — die Höhen (untere Fläche, Basis und Dach der Krone, ihre
             // Gestalt) als RGBA-Halbfloat, der Stoff der unteren Fläche als RGBA8 — aus dem GEBAUTEN Boden dieses Workers
@@ -4100,6 +4106,155 @@ function fernKrone(ax, az, rad, ang, ht, q, merk) {
         top = Math.max(top, merk.get(key));
     }
     return top;
+}
+
+// DIE TEILUNG DER SCHALE 0 IM FADEN (w14-ankunft-weg, FUND 06.11. `stamm/gelaende-fern.js:1782`): je Dreieck frei · Naht ·
+// getragen nach der Regel des maskNode (`fernTeilungKlassen`), dazu die zwei Index-Listen fester Länge (frei, Naht; die
+// Rest-Plätze entartet) und die Ecken der Naht-Dreiecke (`randV`) — per Transfer zurück (Lehre 24); der Haupt-Faden setzt nur
+// die Listen ein (`_fernRingTeilung`). Bis hier urteilte er jede Regung der Maske selbst: swiftshader kalt bis zum ersten
+// Bild 281–353 ms (`_fernRingKlassen` 186–268), Radeon 134 ms. Eingang: die Maske (`daten` n×n×4, Zelle0 i0/j0), die Lage
+// der Schale 0 (`P`), ihr volles Index-Muster (`I`), das alte Urteil mit dem Fenster der Regung (`alt`, K51-4).
+function fernTeilung(msg) {
+    const { P, I, alt } = msg;
+    const nT = I.length / 3;
+    const klasse = new Uint8Array(nT);
+    const sMax = fernTeilungKlassen(msg.daten, msg.n, msg.i0, msg.j0, msg.span, P, I, klasse, alt);
+    const frei = new I.constructor(I.length);
+    const naht = new I.constructor(I.length);
+    const randV = new Uint8Array(P.length / 3);
+    let kf = 0;
+    let kn = 0;
+    for (let t = 0; t < nT; t++) {
+        if (klasse[t] === 2) continue;
+        const ziel = klasse[t] === 0 ? frei : naht;
+        const o = klasse[t] === 0 ? kf : kn;
+        ziel[o] = I[t * 3];
+        ziel[o + 1] = I[t * 3 + 1];
+        ziel[o + 2] = I[t * 3 + 2];
+        if (klasse[t] === 0) kf += 3;
+        else kn += 3;
+    }
+    for (let o = 0; o < kn; o++) randV[naht[o]] = 1;
+    return {
+        antwort: { klasse, sMax, frei, naht, randV, n: [kf / 3, kn / 3, nT - (kf + kn) / 3] },
+        transfer: [klasse.buffer, frei.buffer, naht.buffer, randV.buffer],
+    };
+}
+// DAS URTEIL JE DREIECK (rein; der CPU-Spiegel des maskNode über den Kasten eines Dreiecks, ± `eps` gegen die f32-Rundung
+// des Fragments). FREI (0): kein gezeichneter Chunk liegt im Kasten ± (1½ s_max + eps) — kein Punkt darin ist Chunk oder
+// Band eines Chunks (`_fernRingRegel` 0 überall). GETRAGEN (2): jede Zelle im Kasten ± eps ist gezeichnet, und wo der
+// Kasten ein Band der Zelle berührt (unten bis 1½ w, oben ab span − ½ w, w = die größte Stufe der 3 × 3 wie im Knoten),
+// trägt der Nachbar jenseits (gezeichnet, dieselbe Stufe), in der Ecke auch der schräge (`_fernRingRegel` 2 überall).
+// Sonst NAHT (1): dort urteilt der Knoten je Fragment.
+function fernTeilungKlassen(D, n, i0, j0, span, P, I, klasse, alt) {
+    const eps = 0.05;
+    // DIE ZELLEN EINMAL JE URTEIL (Lehre 25, w4-ankunft): gezeichnet (`bz`), Stufe (`sz`) und die größte Stufe der 3 × 3
+    // (`wz`, die Breite jedes Saums) je Zelle, dazu die Summen-Tafel der gezeichneten (`q`, (n+1)²) — ein Dreieck fragt
+    // „frei" in vier Lesern statt Zelle um Zelle und den Saum in einem statt neun; dieselben Zahlen (f64), dasselbe Urteil
+    const nn = n * n;
+    const bz = new Uint8Array(nn);
+    const sz = new Float64Array(nn);
+    const wz = new Float64Array(nn);
+    const q = new Int32Array((n + 1) * (n + 1));
+    let sMax = 0;
+    let a0 = n;
+    let a1 = -1;
+    let b0 = n;
+    let b1 = -1;
+    for (let b = 0; b < n; b++)
+        for (let a = 0; a < n; a++) {
+            const z = b * n + a;
+            if (D[z * 4] / 255 > 0.5) {
+                bz[z] = 1;
+                sz[z] = (D[z * 4 + 1] / 255) * 25.5;
+                sMax = Math.max(sMax, sz[z]);
+                a0 = Math.min(a0, a);
+                a1 = Math.max(a1, a);
+                b0 = Math.min(b0, b);
+                b1 = Math.max(b1, b);
+            }
+            q[(b + 1) * (n + 1) + a + 1] =
+                bz[z] + q[b * (n + 1) + a + 1] + q[(b + 1) * (n + 1) + a] - q[b * (n + 1) + a];
+        }
+    for (let b = 0; b < n; b++)
+        for (let a = 0; a < n; a++) {
+            let w = 0;
+            for (let db = Math.max(0, b - 1); db <= Math.min(n - 1, b + 1); db++)
+                for (let da = Math.max(0, a - 1); da <= Math.min(n - 1, a + 1); da++) w = Math.max(w, sz[db * n + da]);
+            wz[b * n + a] = w;
+        }
+    const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && bz[b * n + a] === 1;
+    const S = (a, b) => (B(a, b) ? sz[b * n + a] : 0);
+    const rand = 1.5 * sMax + eps;
+    // DAS FENSTER (`alt`, K51-4): das Urteil eines Dreiecks liest die Zellen im Kasten ± rand und deren Nachbarn — liegt keine
+    // geänderte Zelle darin, gilt sein altes Urteil; wechselt die größte Stufe (`sMax`, die Breite jedes Saums), alle neu
+    const F = alt && alt.sMax === sMax ? alt.fenster : null;
+    for (let t = 0; t < klasse.length; t++) {
+        const p = I[t * 3] * 3;
+        const r3 = I[t * 3 + 1] * 3;
+        const r = I[t * 3 + 2] * 3;
+        const x0 = Math.min(P[p], P[r3], P[r]);
+        const x1 = Math.max(P[p], P[r3], P[r]);
+        const z0 = Math.min(P[p + 2], P[r3 + 2], P[r + 2]);
+        const z1 = Math.max(P[p + 2], P[r3 + 2], P[r + 2]);
+        if (
+            F &&
+            (Math.floor((x1 + rand) / span) - i0 + 1 < F[0] ||
+                Math.floor((x0 - rand) / span) - i0 - 1 > F[2] ||
+                Math.floor((z1 + rand) / span) - j0 + 1 < F[1] ||
+                Math.floor((z0 - rand) / span) - j0 - 1 > F[3])
+        ) {
+            klasse[t] = alt.klasse[t];
+            continue;
+        }
+        // frei: kein gezeichneter Chunk im Kasten ± rand
+        const ra0 = Math.max(a0, Math.floor((x0 - rand) / span) - i0);
+        const ra1 = Math.min(a1, Math.floor((x1 + rand) / span) - i0);
+        const rb0 = Math.max(b0, Math.floor((z0 - rand) / span) - j0);
+        const rb1 = Math.min(b1, Math.floor((z1 + rand) / span) - j0);
+        const n1 = n + 1;
+        if (
+            ra0 > ra1 ||
+            rb0 > rb1 ||
+            q[(rb1 + 1) * n1 + ra1 + 1] - q[rb0 * n1 + ra1 + 1] - q[(rb1 + 1) * n1 + ra0] + q[rb0 * n1 + ra0] === 0
+        ) {
+            klasse[t] = 0;
+            continue;
+        }
+        // getragen: jede Zelle im Kasten ± eps gezeichnet, jedes berührte Band vom Nachbarn getragen
+        let getragen = true;
+        const ca0 = Math.floor((x0 - eps) / span) - i0;
+        const ca1 = Math.floor((x1 + eps) / span) - i0;
+        const cb0 = Math.floor((z0 - eps) / span) - j0;
+        const cb1 = Math.floor((z1 + eps) / span) - j0;
+        for (let a = ca0; a <= ca1 && getragen; a++)
+            for (let b = cb0; b <= cb1 && getragen; b++) {
+                if (!B(a, b)) {
+                    getragen = false;
+                    break;
+                }
+                const s = S(a, b);
+                const w = wz[b * n + a];
+                const ox = (a + i0) * span;
+                const oz = (b + j0) * span;
+                const uX = Math.max(x0 - eps, ox) - ox < 1.5 * w;
+                const oX = Math.min(x1 + eps, ox + span) - ox > span - 0.5 * w;
+                const uZ = Math.max(z0 - eps, oz) - oz < 1.5 * w;
+                const oZ = Math.min(z1 + eps, oz + span) - oz > span - 0.5 * w;
+                const tr = (da, db) => B(a + da, b + db) && S(a + da, b + db) === s;
+                getragen =
+                    (!uX || tr(-1, 0)) &&
+                    (!oX || tr(1, 0)) &&
+                    (!uZ || tr(0, -1)) &&
+                    (!oZ || tr(0, 1)) &&
+                    (!(uX && uZ) || tr(-1, -1)) &&
+                    (!(uX && oZ) || tr(-1, 1)) &&
+                    (!(oX && uZ) || tr(1, -1)) &&
+                    (!(oX && oZ) || tr(1, 1));
+            }
+        klasse[t] = getragen ? 2 : 1;
+    }
+    return sMax;
 }
 
 function fernAuftrag(msg) {

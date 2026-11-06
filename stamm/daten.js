@@ -468,11 +468,24 @@ class AnazhRealm_daten {
     // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
     // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
     // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
-    // Gestalt des Büschels streckt sich waagrecht um s = (d/radius)^`streck`, höchstens `streckMax` (Mitten UND Halme, die Ähren
+    // Gestalt des Büschels streckt sich waagrecht um s = (Q/radius)³, höchstens `streckMax` (Mitten UND Halme, die Ähren
     // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
     // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
-    // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
+    // (voll/Q)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
     // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // DIE BODENFLÄCHE JE PIXEL (w14-wiese-saum): Q ist der FUSSABDRUCK-ABSTAND des Büschels (`_wieseFuss`) — Q = dist · (h/S)^⅓,
+    // dist der Abstand seines Fußes vom Auge, S die Höhe des Auges über der Ebene seines Hangs, h die Höhe des Auges über
+    // dem eigenen Boden (mindestens `auge`). Die Bodenfläche eines Pixels ist d²/sin φ = dist³/S, bei `fuss` der flachen
+    // Wiese fuss³/h; s ist das größere zweier Gesetze — die BREITE AUS DEM PIXEL (Q/radius: ab der Übergabe wächst der Halm
+    // mit dem Pixel, sein Schirm-Maß bleibt, Ghost of Tsushima) und die FLÄCHE JE PIXEL ((Q/fuss)³: die Büschel je Pixel
+    // bleiben, Lehre 25) —, auf flachem Boden ist Q der Abstand; am zugewandten Hang ist der Pixel kleiner: das Büschel
+    // streckt sich weniger und die Anzahl steigt (bis dahin lagen gestreckte Büschel als Platten am Hang), am abgewandten
+    // mehr. Bis w14-wiese-saum lag die Übergabe bei 14 m und streckte erst die Fläche: das L2 der Nähe stand bei 10–14 m
+    // ungestreckt und geklumpt (swiftshader, Mess-Wiese Third: 1 164 der 1 190 Boden-Pixel des Rings 10–20 m), jenseits der
+    // Bogen der gespreizten Ferne; jenseits ~16,6 m ist das Gesetz das alte (die Kosten dort gleich, diesseits weniger Büschel).
+    // Die Station (vegetation.K1#1, swiftshader, 1920 × 1080): Boden-Pixel 10–20 m 1 190 → 881, LAI 1,95 → 2,06 bei 5–10 m
+    // 2,41 (Saum 19 % → 14,6 %), 20–40 m 1,71 → 1,76; nahWiese 63 548 → 52 158 Dreiecke, die Ferne 58 735 → 79 939 (sie trägt
+    // 10–14 m und füllt die zugewandten Hänge: 925 → 1 259 Büschel).
     // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
     // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
     // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
@@ -501,7 +514,7 @@ class AnazhRealm_daten {
                 pfadDuennt: 0.92,
                 stufe1: 5,
                 stufe1Rand: 0.5,
-                radius: 14,
+                radius: 10,
                 // die Narbe am Fuß des Halms (Λ, foundry-core `__halmNarbe`: 1,86 und 2,51 je Büschel-Art) — der sichtbare Grund liegt in
                 // der Lücke, er trägt die lichtere; sein Himmel ist `halmNarbe(Λ).himmel` (0,27), der Grund der Wiese liest ihn
                 fussNarbe: 1.86,
@@ -513,8 +526,9 @@ class AnazhRealm_daten {
                     saum: 20,
                     voll: 40,
                     fall: 3.25,
-                    streck: 3,
                     streckMax: 14,
+                    fuss: 14,
+                    auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,
@@ -2817,10 +2831,14 @@ class AnazhRealm_daten {
             "ki.beispiel-say.eis": ["Ein Eis kann ich nicht erschaffen.", "I can't create an ice cream."],
             "ki.beispiel-satz.fruehling": ["es soll Frühling werden", "let spring come"],
             "ki.beispiel-say.fruehling": ["Der Frühling kommt.", "Spring is coming."],
+            "ki.beispiel-satz.gesetz": ["immer wenn ich traurig bin, soll die Sonne scheinen", "whenever I am sad, let the sun shine"],
+            "ki.beispiel-say.gesetz": ["Von nun an wärmt dich die Sonne, wenn du traurig bist.", "From now on the sun warms you whenever you are sad."],
             "ki.beispiel-satz.name": ["wie heißt du?", "what's your name?"],
             "ki.beispiel-say.name": ["Ich bin die Stimme dieser Welt.", "I am the voice of this world."],
             "ki.beispiel-satz.regen": ["es soll regnen", "let it rain"],
             "ki.beispiel-say.regen": ["Ich lasse es regnen.", "I let it rain."],
+            "ki.beispiel-satz.schwermut": ["die Wesen sollen schwermütig werden", "the creatures should grow melancholy"],
+            "ki.beispiel-say.schwermut": ["Die Wesen werden still und schwermütig.", "The creatures grow quiet and melancholy."],
             "ki.beispiel-satz.sonne": ["Sonne und gute Laune", "sunshine and good spirits"],
             "ki.beispiel-say.sonne": ["Die Sonne kommt, die Wesen freuen sich.", "The sun comes out, the creatures rejoice."],
             "ki.beispiel-satz.tiere": ["ein paar frohe Tiere", "a few happy animals"],

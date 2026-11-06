@@ -254,7 +254,10 @@ var SAISON_GESETZ = {
     // Hoehe), steht im Sommer ganz (1 — jeder Koerper bleibt byte-gleich), ist im Herbst gemaeht und vergilbt (0,8) und
     // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
     // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
-    typ: { laub: 1, bluete: 3 },
+    // w14-wiese-saum (06.11., additiv) — DER HALM (`halm`, emitGrass): seine Mitte (aCenter) ist der Fuss des Halms am Boden, die
+    // der Aehre die Spitze ihres Staengels; das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese Mitten
+    // (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras — die Bytes bleiben gleich.
+    typ: { laub: 1, bluete: 3, halm: 4 },
     karteSchwelle: 0.5,
 };
 
@@ -3179,7 +3182,7 @@ function emitGrass(P) {
                 const sw = Math.pow(f, 1.4) * P.windGain;
                 sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
                 ctr.push(bx, 0, bz);
-                typ.push(4);
+                typ.push(SAISON_GESETZ.typ.halm);
                 col.push(c.r, c.g, c.b);
             }
         }
@@ -3268,7 +3271,7 @@ function emitGrass(P) {
                     pc.push(cc.r, cc.g, cc.b);
                     pw.push(swT, la * 1.3 + i, 1.0);
                     pct.push(tip[0], tip[1], tip[2]);
-                    pty.push(4);
+                    pty.push(SAISON_GESETZ.typ.halm);
                 }
             }
             const gp = new THREE.BufferGeometry();

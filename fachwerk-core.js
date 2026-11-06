@@ -3864,13 +3864,19 @@
     // obb jedes Slots) und keinen Tritt der Ausstattung (Stand, Brunnen, Laterne, Hof-Baum) näher als `halbM` streift — bis
     // EIN Netz steht. Rückgabe {knoten (je Knoten die Breite w seines Wegs), kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
     // Wirt (`_wegeNetzGrund`: die Bewohner gehen, der Fahrer fährt es, die Nähte liegen als Feldweg).
+    // DIE KLASSEN DER WEGE EINES PLANS (fahrzeug.K2, RASt 06): die Straße der ersten Generation ist die Ortsdurchfahrt, die der
+    // zweiten die Wohnstraße, jede weitere (und jede Quergasse) die Gasse; ein Feldweg des Plans ist Feldweg. Leser: `wegeNetz`
+    // (je Knoten `klasse`) und der Wirt (das Entwurfs-Tempo je Klasse, `WEGENETZ.entwurfKmh`).
+    var WEGE_KLASSE = ['ortsdurchfahrt', 'wohnstrasse', 'gasse'];
     function wegeNetz(plan, kreuzM, halbM, bisM){
       const kn=[], kan=[], zug=[], naehte=[];
       const kante=(i,j)=>{ const w=Math.hypot(kn[i].x-kn[j].x,kn[i].z-kn[j].z); kan[i].push(j,w); kan[j].push(i,w); };
       let wi=0;
+      const nR=(plan.roads||[]).length;
       for(const rd of (plan.roads||[]).concat(plan.feldwege||[])){ let vor=-1;
+        const klasse= wi>=nR ? 'feldweg' : WEGE_KLASSE[Math.max(0,Math.min(2,rd.gen|0))];   /*die Klasse des Wegs (`WEGE_KLASSE`): der Leser des Entwurfs-Tempos (Wirt `WEGENETZ.entwurfKmh`, der Fahrer)*/
         for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;   /*über dem Wasser die Achse der Brücke (`wegUeberBruecken`)*/
-          kn.push({x:q.x,z:q.z,w:rd.w||0}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
+          kn.push({x:q.x,z:q.z,w:rd.w||0,klasse}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
         wi++; }
       for(let i=0;i<kn.length;i++) for(let j=i+1;j<kn.length;j++)
         if(zug[i]!==zug[j]&&(kn[i].x-kn[j].x)**2+(kn[i].z-kn[j].z)**2<kreuzM*kreuzM) kante(i,j);
