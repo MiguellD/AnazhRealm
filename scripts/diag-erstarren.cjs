@@ -96,7 +96,7 @@ const { errs, check } = pruefer();
             };
 
             // ── (a)+(b) DER WANDER-LAUF: W gehalten, 60-fps-Sim, Kreis-Kurs ──
-            s.keys = { w: true };
+            s.verbTafel.gehalten = { vor: true };
             const N = 2400; // 40 s Sim-Zeit ≈ 160 m Weg
             const STALL_MS = 250;
             let t = performance.now();

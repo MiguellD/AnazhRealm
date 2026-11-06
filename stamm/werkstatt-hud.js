@@ -619,85 +619,122 @@ class AnazhRealm_werkstatt_hud {
         obs.observe(out, { childList: true });
     }
 
-    // Tab-System: ein Tab je Drawer. activeTab-Klasse auf dem Knopf,
-    // hidden-Attribut entscheidet welcher Drawer sichtbar slidet.
-    // Welle 6.X.4 V8.15 Punkt 15 — öffentliche toggleDrawer-Methode für
-    // Keyboard-Shortcuts (M/K/P/B/I). Wenn der Drawer schon offen ist,
-    // wird er geschlossen; sonst geöffnet (single-active-pattern).
+    // Die Taste einer Schublade (K/P/B/I, `_verbTaste`): ist sie offen, schließt sie, sonst zeigt sie sich — über den EINEN
+    // Schalter (`_menueZeigen`) mit ihren Scheiben (`_menueScheiben`), wie ihr Reiter.
     toggleDrawer(name) {
         if (typeof document === "undefined") return;
         const drawer = document.querySelector(`.drawer[data-drawer="${name}"]`);
         if (!drawer) return;
-        const isOpen = !drawer.hidden;
-        if (isOpen) {
-            this.closeAllDrawers();
-            return;
-        }
-        // Drawer öffnen — sync Tabs + Drawer-Status
-        const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
-        const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
-        for (const tab of tabs) {
-            const isActive = tab.getAttribute("data-tab") === name;
-            tab.classList.toggle("active", isActive);
-            tab.setAttribute("aria-selected", isActive ? "true" : "false");
-        }
-        for (const d of drawers) {
-            d.hidden = d.getAttribute("data-drawer") !== name;
-        }
-        this.state.uiActiveDrawer = name;
-        this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
-        // toggleDrawer ruft den Werkstatt-Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start) —
-        // sonst bleiben Drawer-Shortcuts/API-Calls ohne Preview (state.workshop.preview === null).
-        if (typeof this._workshopHandleDrawerChange === "function") {
-            this._workshopHandleDrawerChange(name);
-        }
-        if (typeof this._hofHandleDrawerChange === "function") {
-            this._hofHandleDrawerChange(name);
-        }
-        if (typeof this._feedHandleDrawerChange === "function") {
-            this._feedHandleDrawerChange(name);
-        }
+        if (!drawer.hidden) this.closeAllDrawers();
+        else this._menueZeigen(name, this._menueScheiben(name));
     }
 
-    // closeAllDrawers schließt alle (für Help-Klick + ESC).
+    // DAS MENÜ ZEIGT SICH IN EINEM BILD (spielgang.K3) — der EINE Schalter jeder Tafel: das Ich (`ziel` "ich": Tab, sein Reiter
+    // „spieler") und jede Schublade (ihr Name: ihre Taste, ihr Reiter); null verbirgt jede (Esc, das Zurück, der Schließ-Knopf).
+    // Offen ist höchstens EINE Tafel. Im Hörer läuft nur der Schalter — [hidden], die Reiter, der Zustand, der freie Zeiger, jede
+    // Bühne ruht —; was die Tafel füllt (Habe, Spec-Sheet und Bühne des Ich, Liste und Vorschau der Werkstatt, Listen und Bühne
+    // des Hofs, die Bibliothek), reicht ihr Öffner als `scheiben` (`_menueScheiben`, das Ich `_ichScheiben`) und kommt nach ihrem
+    // ersten Bild, je Bild EINE Scheibe (`_menueNachbau`). Der Schalter selbst kennt keine Tafel: das Schließen (null, ohne
+    // Scheiben) erreicht nichts, was eine Tafel füllt — ein Schalter mit dem Tisch aller Tafeln verband jedes Schließen (Fertigen,
+    // Esc) und das Ich mit der Bibliothek und darüber der Welt (gate:v1-pfad W7, z224: ein Zeit-Kreis aus 430 Gliedern um
+    // `_foundryAwaitBook`). Vorher öffnete jeder der vier Öffner (Taste, Reiter, Tab, Esc) mit eigenem Bau im Hörer: headless am
+    // Null-Renderer, Tab · Tab · I · Esc in fünf Runden, hielt das erste Tab den Hörer 99 ms (Rezeptbuch 29 ms, Bauplan-Massen
+    // 29 ms, Spec-Sheet, Bühne), jedes weitere 6–7 ms, davon 4,5 ms ein erzwungenes Layout (das Rezeptbuch nach oben gerollt).
+    _menueZeigen(ziel, scheiben = []) {
+        if (typeof document === "undefined") return;
+        const st = this.state;
+        const ich = document.getElementById("inventory-overlay");
+        const ichAuf = ziel === "ich";
+        if (ich && !ichAuf && !ich.hidden) {
+            // das Rezeptbuch öffnet oben, wo das Griffbereite steht (bauen.K1): gerollt beim Verbergen, solange sein Layout steht
+            const rezepte = document.getElementById("inventory-recipes");
+            if (rezepte) rezepte.scrollTop = 0;
+            this._uiVerbergen(ich); // [hidden] ohne laufende Animation im gefrorenen Baum
+            st.inventorySelected = null;
+        } else if (ich && ichAuf) ich.hidden = false;
+        st.inventoryOpen = !!ich && ichAuf;
+        document.body.classList.toggle("inventory-open", st.inventoryOpen);
+        const reiter = ichAuf ? "spieler" : ziel;
+        for (const tab of document.querySelectorAll("#topbar .tab")) {
+            const an = tab.getAttribute("data-tab") === reiter;
+            tab.classList.toggle("active", an);
+            tab.setAttribute("aria-selected", an ? "true" : "false");
+        }
+        for (const d of document.querySelectorAll(".drawer[data-drawer]"))
+            d.hidden = d.getAttribute("data-drawer") !== ziel;
+        st.uiActiveDrawer = !ziel || ichAuf ? null : ziel;
+        // jede Bühne ruht im Schalter (ihr Takt hält an); die der gezeigten Tafel läuft nach deren erstem Bild an
+        this._ichHandleOverlay(false);
+        this._workshopHandleDrawerChange(null);
+        this._hofHandleDrawerChange(null);
+        this._feedHandleDrawerChange(null);
+        if (ziel) this._uiZeigerFrei(); // die Tafel gehört der Maus (Welle L, V-D2)
+        this._menueNachbau(scheiben);
+    }
+
+    // DIE SCHEIBEN JEDER TAFEL (spielgang.K3, für `_menueZeigen`): was die Tafel `ziel` nach ihrem ersten Bild füllt — die des Ich
+    // (`_ichScheiben`), der Werkstatt, des Hofs und der Bibliothek. Nur die Öffner, die jede Tafel öffnen (ihre Taste, ihr Reiter),
+    // lesen diesen Tisch; das Ich öffnet sein Tab mit seinen eigenen Scheiben.
+    _menueScheiben(ziel) {
+        if (ziel === "ich") return this._ichScheiben();
+        return (
+            {
+                werkstatt: [() => this._workshopHandleDrawerChange("werkstatt")],
+                kreaturen: [() => this._hofHandleDrawerChange("kreaturen")],
+                bibliothek: [
+                    () => this.updateWorldInfo(),
+                    () => this.renderLibraryUI(),
+                    () => this._feedHandleDrawerChange("bibliothek"),
+                ],
+            }[ziel] || []
+        );
+    }
+
+    // DER NACHBAU DER TAFEL (spielgang.K3, aus `_menueZeigen`): ihre Scheiben nach ihrem ersten Bild, je Bild EINE — ein Bild
+    // läuft (`requestAnimationFrame`), die Scheibe ist die Aufgabe nach ihm (`setTimeout`), keine fällt in den Hörer einer Taste
+    // und keine in das Bild, das die Tafel zeigt. Ein neuer Schalter verwirft, was für die alte Tafel noch ansteht (das Schließen
+    // reicht keine Scheibe); `_menueSteht()` verspricht das Ende des laufenden Nachbaus. Eine Scheibe, die wirft, bricht laut
+    // (der Fehler der Seite), der Nachbau geht weiter.
+    _menueNachbau(liste) {
+        const N = this._menueStand || (this._menueStand = { n: 0, fertig: Promise.resolve(), ende: null });
+        const n = ++N.n;
+        const scheiben = [...liste];
+        if (N.ende) N.ende();
+        N.fertig = new Promise((ok) => (N.ende = ok));
+        const weiter = () => {
+            if (N.n !== n) return;
+            if (!scheiben.length) return (N.ende(), (N.ende = null));
+            requestAnimationFrame(() =>
+                setTimeout(() => {
+                    if (N.n !== n) return;
+                    try {
+                        scheiben.shift()();
+                    } finally {
+                        weiter();
+                    }
+                }, 0)
+            );
+        };
+        weiter();
+    }
+
+    // Das Ende des laufenden Nachbaus der Tafel (`_menueNachbau`): wer nach dem Öffnen liest, was die Tafel füllt, wartet darauf
+    // — die Bedienung (`__bedienung2`, welt-boot) und V-D3 der V1-Pfad-Linse (die Werkstatt-Vorschau entsteht erst in der Scheibe;
+    // im Takt der Taste gelesen fehlte sie, Zug z243).
+    _menueSteht() {
+        return this._menueStand ? this._menueStand.fertig : Promise.resolve();
+    }
+
+    // Die Reiter der Topbar, ihre Schließ-Knöpfe und Esc — jeder schaltet über `_menueZeigen` (der Reiter „spieler" ist das Ich).
     initTopbar() {
         const tabs = Array.from(document.querySelectorAll("#topbar .tab"));
         const drawers = Array.from(document.querySelectorAll(".drawer[data-drawer]"));
         if (tabs.length === 0 || drawers.length === 0) return;
-
-        const openDrawer = (name) => {
-            for (const tab of tabs) {
-                const isActive = tab.getAttribute("data-tab") === name;
-                tab.classList.toggle("active", isActive);
-                tab.setAttribute("aria-selected", isActive ? "true" : "false");
-            }
-            // UI-Putz: der "Ich"-Tab (data-tab="spieler") öffnet das zentrierte Inventar-
-            // Overlay (das vereinte Habe + Charakter + Rezeptbuch, wie Minecraft), keinen
-            // Seiten-Drawer. Jeder andere Tab schließt das Overlay wieder.
-            if (name === "spieler") {
-                for (const drawer of drawers) drawer.hidden = true;
-                if (typeof this.toggleInventoryOverlay === "function") this.toggleInventoryOverlay(true);
-                return;
-            }
-            if (typeof this.toggleInventoryOverlay === "function" && this.state && this.state.inventoryOpen) {
-                this.toggleInventoryOverlay(false);
-            }
-            for (const drawer of drawers) {
-                const isThis = drawer.getAttribute("data-drawer") === name;
-                drawer.hidden = !isThis;
-            }
-            this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
-            // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
-            // Sektionen (Stammbaum/Tagebuch/Andere Welten) + die Welten-Liste.
-            if (name === "bibliothek") {
-                if (typeof this.updateWorldInfo === "function") this.updateWorldInfo();
-                if (typeof this.renderLibraryUI === "function") this.renderLibraryUI();
-            }
-        };
         for (const tab of tabs) {
             tab.addEventListener("click", () => {
                 const name = tab.getAttribute("data-tab");
-                if (name) openDrawer(name);
+                const ziel = name === "spieler" ? "ich" : name;
+                if (ziel) this._menueZeigen(ziel, this._menueScheiben(ziel));
             });
         }
         // Close-Buttons schließen den eigenen Drawer und entaktivieren den Tab.
@@ -712,23 +749,6 @@ class AnazhRealm_werkstatt_hud {
         // offen, kein Tab aktiv = der WOW-Start). state.uiActiveDrawer trackt den aktuellen
         // Tab (null = die Welt), damit Tests + spätere Save-Persistenz darauf greifen können.
         this.state.uiActiveDrawer = null;
-        // Tab-Klicks loggen indirekt über uiActiveDrawer. Jeder Tab-Klick informiert die Werkstatt:
-        // Preview-Renderer an (Werkstatt offen) oder pausiert (anderer Tab).
-        for (const tab of tabs) {
-            tab.addEventListener("click", () => {
-                const name = tab.getAttribute("data-tab");
-                if (name) this.state.uiActiveDrawer = name;
-                if (typeof this._workshopHandleDrawerChange === "function") {
-                    this._workshopHandleDrawerChange(name);
-                }
-                if (typeof this._hofHandleDrawerChange === "function") {
-                    this._hofHandleDrawerChange(name);
-                }
-                if (typeof this._feedHandleDrawerChange === "function") {
-                    this._feedHandleDrawerChange(name);
-                }
-            });
-        }
         // P12 (UI-Putz §1.5) — der geteilte Overlay-Hebel verdrahtet (einmal, delegiert).
         this._installHelpPopovers();
         // V18.45 — die Omnibox (Ctrl/Cmd+K): der EINE beschwörbare Ort für jede Absicht.
@@ -1117,26 +1137,8 @@ class AnazhRealm_werkstatt_hud {
             }
             return;
         }
-        const tabs = document.querySelectorAll("#topbar .tab");
-        for (const tab of tabs) {
-            tab.classList.remove("active");
-            tab.setAttribute("aria-selected", "false");
-        }
-        for (const drawer of document.querySelectorAll(".drawer[data-drawer]")) {
-            drawer.hidden = true;
-        }
-        this.state.uiActiveDrawer = null;
-        // Welle 6.B Phase 1: Werkstatt-Preview pausieren (Renderer bleibt
-        // alloziert für schnelles Re-Open, aber RAF-Loop stoppt).
-        if (typeof this._workshopHandleDrawerChange === "function") {
-            this._workshopHandleDrawerChange(null);
-        }
-        if (typeof this._hofHandleDrawerChange === "function") {
-            this._hofHandleDrawerChange(null);
-        }
-        if (typeof this._feedHandleDrawerChange === "function") {
-            this._feedHandleDrawerChange(null);
-        }
+        // jede Tafel fällt (der EINE Schalter): die Bühnen ruhen, ihre Renderer bleiben für das nächste Öffnen
+        this._menueZeigen(null);
     }
 
     // Resize-Handles: Konsole „tr" (wächst nach oben, bottom-Anker), Drawer „b" (nur Höhe).
@@ -2326,6 +2328,7 @@ class AnazhRealm_werkstatt_hud {
     // Standard-Tastatur (Medien-, Eingabe-Methoden-Tasten), auf den der Spieler selbst umband, zeigt den Namen, den sein Gerät
     // ihm gibt — wie der Name, den ein Spieler vergibt.
     _formatBindingCode(code) {
+        if (Array.isArray(code)) return code.length ? code.map((c) => this._formatBindingCode(c)).join(" / ") : "—";
         if (!code) return "—";
         const name = {
             Mouse0: "hud.maus-links",
@@ -2645,9 +2648,9 @@ class AnazhRealm_werkstatt_hud {
             lead.style.cssText = "margin:0 0 16px;font-size:16px;color:#e8d2b4;";
             const how = document.createElement("p");
             how.textContent = this._t("hud.gate-wie");
-            how.style.cssText = "margin:0 0 8px;font-size:15px;color:#ffce96;font-weight:600;";
+            how.style.cssText = "margin:0 0 8px;font-size:var(--schrift-min);color:#ffce96;font-weight:600;";
             const list = document.createElement("ul");
-            list.style.cssText = "margin:0 0 18px;padding-left:20px;font-size:15px;color:#e2cba8;";
+            list.style.cssText = "margin:0 0 18px;padding-left:20px;font-size:var(--schrift-min);color:#e2cba8;";
             const rows = [this._t("hud.gate-chrome"), this._t("hud.gate-safari"), this._t("hud.gate-firefox")];
             for (const t of rows) {
                 const li = document.createElement("li");
@@ -2661,10 +2664,10 @@ class AnazhRealm_werkstatt_hud {
             link.rel = "noopener noreferrer";
             link.textContent = this._t("hud.gate-link");
             link.style.cssText =
-                "display:inline-block;color:#ff9a52;text-decoration:none;font-size:14px;border-bottom:1px solid #ff9a52;";
+                "display:inline-block;color:#ff9a52;text-decoration:none;font-size:var(--schrift-min);border-bottom:1px solid #ff9a52;";
             const foot = document.createElement("p");
             foot.textContent = this._t("hud.gate-fuss");
-            foot.style.cssText = "margin:18px 0 0;font-size:13px;color:#b89a78;font-style:italic;";
+            foot.style.cssText = "margin:18px 0 0;font-size:var(--schrift-min);color:#b89a78;font-style:italic;";
             card.appendChild(title);
             card.appendChild(lead);
             card.appendChild(how);
@@ -2752,6 +2755,164 @@ class AnazhRealm_werkstatt_hud {
         for (const a of el.getAnimations({ subtree: true }))
             if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
         el.hidden = true;
+    }
+
+    // DIE KLEINSTE SCHRIFT IM BILD (spielgang.K3#2, das Gesetz `--schrift-min` in index.html): jeder sichtbare Text unter
+    // `wurzel` (ein Element, sonst die Seite) — jeder Text-Knoten und jedes ::before/::after mit Inhalt, seine berechnete Größe mal
+    // dem Maßstab der transform-Kette; die gefalteten Sektionen zeigen ihren Inhalt, solange er zählt. Was unter der kleinsten
+    // Schrift liegt, steht beim Namen (Ort im Baum, Größe, Text). Der Leser: `werkbank bedienung --staffel 2` am Gerät und die
+    // Tasten-Tafel-Probe im Playtest. → { knoten, klein: [{ wo, px, text, n }], ueber: [{ wo, text, grund, n }], bild: [w, h] } —
+    // das Bild ist der Schirm der Welt (`_schirm`, die EINE Quelle jeder Schirm-Größe; gate:schirm-monotonie Q), in dem der
+    // Spieler die Schrift liest.
+    // DER TEXT IN SEINEM KASTEN (`ueber`, w12-menue): die 16-px-Schrift schnitt in ihren alten Kästen 32 Texte ab (Radeon
+    // 155a934f: „KNOCH“, „AUFTRAC“, „Verschmelzen“ in „Empfangen“); diese Linse nannte headless 1280 x 720 dort 84 Texte an 66
+    // Orten (main 5, nach dem Layout aus der Schrift 0). Jeder gezählte Text steht beim Namen, wenn eines seiner
+    // Rechtecke aus einem Kasten der Kette ragt — sein eigener (der nächste Vorfahr, der kein Inline ist), dann jeder Vorfahr bis
+    // zur Seite oder bis zum ersten, der außer Fluss liegt (absolute, fixed): quer sein Rechteck, längs sein Geviert (1 em um
+    // die Mitte — das Rechteck einer Zeile trägt den Raum ihrer Schrift, Cinzel 22 px bei 16 px), je um 1 px. Ein Roll-Kasten
+    // rollt längs, quer gilt er;
+    // ein Auslassen mit „…“ (text-overflow: ellipsis) ist gelesen und gilt. Ein <select> zeigt seine Wahl ohne Text-Knoten: sein
+    // Klon ohne Breite misst die Breite, die sie braucht, sein Kasten ragt wie jeder.
+    _schriftZensus(wurzel = document.body) {
+        const min = parseFloat(window.getComputedStyle(document.documentElement).getPropertyValue("--schrift-min"));
+        const gefaltet = [...wurzel.querySelectorAll(".collapsed")];
+        for (const s of gefaltet) s.classList.remove("collapsed");
+        const wo = (el) => {
+            const teile = [];
+            for (let e = el; e && e !== document.body && teile.length < 4; e = e.parentElement) {
+                teile.unshift(
+                    e.id
+                        ? "#" + e.id
+                        : e.tagName.toLowerCase() +
+                              [...e.classList]
+                                  .slice(0, 2)
+                                  .map((k) => "." + k)
+                                  .join("")
+                );
+                if (e.id) break;
+            }
+            return teile.join(" > ");
+        };
+        const massstab = (el) => {
+            let s = 1;
+            for (let e = el; e; e = e.parentElement) {
+                const t = window.getComputedStyle(e).transform;
+                if (t && t !== "none") s *= Math.hypot(...new window.DOMMatrix(t).toFloat64Array().slice(0, 2));
+            }
+            return s;
+        };
+        const sichtbar = (el) =>
+            el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) && el.getClientRects().length > 0;
+        const schirm = this._schirm();
+        const [klein, ueber] = [new Map(), new Map()];
+        const aus = { knoten: 0, klein: [], ueber: [], bild: [schirm.breite, schirm.hoehe] };
+        const css = (el) => window.getComputedStyle(el);
+        const ausgelassen = (cs) => cs.textOverflow === "ellipsis" && cs.overflowX !== "visible";
+        const schneidet = (el, rechtecke, eigen) => {
+            let k = el;
+            while (k.parentElement && /^(inline|contents)$/.test(css(k).display)) k = k.parentElement;
+            const em = parseFloat(css(k).fontSize);
+            let laengs = true;
+            // ein Kasten ragt nie aus seinem eigenen Rand (ein ::before, ein <select>: ihr Rechteck ist der Kasten)
+            for (let a = eigen ? k.parentElement : k; a && a !== document.body; a = a.parentElement) {
+                const ac = css(a);
+                if (/^(inline|contents)$/.test(ac.display)) continue;
+                if (ausgelassen(ac)) return null;
+                const rollt = /auto|scroll/.test(ac.overflowY);
+                if (rollt) laengs = false;
+                const c = a.getBoundingClientRect();
+                const [l, o] = [c.left + a.clientLeft, c.top + a.clientTop];
+                const wie =
+                    a === k
+                        ? "aus seinem Kasten"
+                        : ac.overflowX === "visible"
+                          ? `aus ${wo(a)}`
+                          : `geschnitten von ${wo(a)}`;
+                for (const r of rechtecke) {
+                    if (r.left < l - 1 || r.right > l + a.clientWidth + 1)
+                        return `ragt quer ${wie} (${Math.round(r.width)} px in ${a.clientWidth})`;
+                    const mitte = r.top + r.height / 2;
+                    if (laengs && (mitte - em / 2 < o - 1 || mitte + em / 2 > o + a.clientHeight + 1))
+                        return `ragt längs ${wie} (${Math.round(r.height)} px in ${a.clientHeight})`;
+                }
+                if (/absolute|fixed/.test(ac.position)) return null;
+            }
+            return null;
+        };
+        const zaehle = (el, text, cs, rechtecke = null) => {
+            const px = +(parseFloat(cs.fontSize) * massstab(el)).toFixed(1);
+            aus.knoten++;
+            const grund = schneidet(el, rechtecke || [...el.getClientRects()], !rechtecke);
+            if (grund) {
+                const k = wo(el) + "|" + grund;
+                const z = ueber.get(k) || { wo: wo(el), text: text.slice(0, 40), grund, n: 0 };
+                z.n++;
+                ueber.set(k, z);
+            }
+            if (px >= min) return;
+            const k = wo(el) + "@" + px;
+            const z = klein.get(k) || { wo: wo(el), px, text: text.slice(0, 40), n: 0 };
+            z.n++;
+            klein.set(k, z);
+        };
+        // DAS ZEICHEN DES GERÄTS (w13-menue-heil): ein Zeichen (▸ ◆ ⚓ ✶, kein Buchstabe, keine Ziffer) zeichnet jede Maschine
+        // aus ihrer eigenen Symbol-Schrift — die Radeon „▸“ 13 px und „⚓“ 22 px, headless 8 und 20; ein Kasten in px um 9 oder
+        // 1,25 em hielt hier und brach dort. Darum misst der Zensus jedes Zeichen, das seinen Kasten allein trägt, noch einmal
+        // um ½ em breiter (letter-spacing): ein Kasten, der aus der Schrift wächst (min-width in em), hält es, ein fester ragt.
+        const zeichen = /^(?:\p{S}\p{M}*){1,2}$/u;
+        const rechteckeVon = (t) => {
+            const r = document.createRange();
+            r.selectNodeContents(t);
+            return [...r.getClientRects()].filter((q) => q.width * q.height > 0);
+        };
+        const gang = document.createTreeWalker(wurzel, window.NodeFilter.SHOW_TEXT);
+        for (let t; (t = gang.nextNode());) {
+            const el = t.parentElement;
+            const text = t.textContent.trim();
+            if (!text || !el || el.closest("select") || !sichtbar(el)) continue;
+            const rechtecke = rechteckeVon(t);
+            if (!rechtecke.length) continue;
+            zaehle(el, text, css(el), rechtecke);
+            if (!zeichen.test(text) || el.textContent.trim() !== text) continue;
+            const alt = el.style.letterSpacing;
+            el.style.letterSpacing = "0.5em";
+            const grund = schneidet(el, rechteckeVon(t), false);
+            el.style.letterSpacing = alt;
+            if (!grund) continue;
+            const k = wo(el) + "|zeichen";
+            const z = ueber.get(k) || { wo: wo(el), text, grund: `das Zeichen des Geräts (+½ em) ${grund}`, n: 0 };
+            z.n++;
+            ueber.set(k, z);
+        }
+        for (const el of [wurzel, ...wurzel.querySelectorAll("*")])
+            for (const p of ["::before", "::after"]) {
+                const cs = window.getComputedStyle(el, p);
+                const inhalt = /^"(.+)"$/.exec(cs.content || "");
+                if (inhalt && inhalt[1].trim() && cs.display !== "none" && sichtbar(el)) zaehle(el, inhalt[1], cs);
+            }
+        // die Wahl eines <select>: sein Klon ohne Breite neben ihm misst, was sie braucht
+        for (const s of wurzel.querySelectorAll("select")) {
+            const o = s.options[s.selectedIndex];
+            if (!o || !o.text.trim() || !sichtbar(s)) continue;
+            const klon = s.cloneNode(false);
+            klon.append(o.cloneNode(true));
+            klon.style.cssText = "position:absolute;visibility:hidden;width:auto;min-width:0;max-width:none";
+            s.after(klon);
+            const braucht = klon.offsetWidth;
+            klon.remove();
+            zaehle(s, o.text.trim(), css(s));
+            if (braucht > s.offsetWidth + 1) {
+                const k = wo(s) + "|wahl";
+                const grund = `die Wahl braucht ${braucht} > ${s.offsetWidth} px`;
+                const z = ueber.get(k) || { wo: wo(s), text: o.text.trim().slice(0, 40), grund, n: 0 };
+                z.n++;
+                ueber.set(k, z);
+            }
+        }
+        for (const s of gefaltet) s.classList.add("collapsed");
+        aus.klein = [...klein.values()];
+        aus.ueber = [...ueber.values()];
+        return aus;
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.

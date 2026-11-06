@@ -3442,7 +3442,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "voxelWorkerReady",
         "voxelWorkerNextRequestId",
         "voxelWorkerStateGen",
-        "keys",
         "verbTafel",
         "padBelegung",
         "keybindings",
