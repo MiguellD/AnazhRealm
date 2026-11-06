@@ -140,11 +140,13 @@ class AnazhRealm_klang {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
             letzteMischung: -Infinity,
-            folge: 0, // der Teil des Misch-Takts im nächsten Bild (1 Lage · 2 Mischung · 3 Graph · 4 Tier-Rufe, `_umweltKlangTick`)
+            folge: 0, // der Teil des Misch-Takts im nächsten Bild (4 Lage · 1 Mischung · 2 Graph · 3 Tier-Rufe, `_umweltKlangTick`)
             lageEins: null, // die erste Hälfte der Lage (`_umweltLageEins`), geschlossen im nächsten Bild
             rufDt: 0,
             rufSaat: saat || 1,
-            lage: null,
+            tat: null, // die jüngste Tat im Buch, die der Takt hörte (eine neue ist ein Ereignis)
+            naechste: null, // die Lage im Takt, bis der Graph sie spielt
+            lage: null, // die Lage, die der Graph spielt
             mix: null,
         });
     }
@@ -217,6 +219,12 @@ class AnazhRealm_klang {
     // die Lage ganz, danach Mischung (`folge` 1), Graph (2) und Ruf (3) — drei Takte nach der Ankunft klingt der Ort mit seinem
     // Nachhall. Im Misch-Takt trägt die zweite Lage-Hälfte die 4. Bis w13-klang-fahrt verschob die geteilte Lage (w12) den Graph
     // in den vierten Takt: der Ort blieb drei Takte nach der Ankunft trocken (klang.K3#2 RT60 0 s an Feld, Wald, Gasse, Höhle).
+    // DIE TAT ist ein Ereignis wie der Sprung: eine neue Wertung im Buch (`state.taten`) geht im nächsten Bild ohne Musik die Lage
+    // ganz (ihre Antwort, affekt K1, `_tatAntwortAm`), danach Mischung und Graph — zwei Takte nach der Tat singt der Chor ihre
+    // Antwort. `um.lage` ist die Lage, die der Graph spielt: der Takt rechnet die nächste in `um.naechste` und reicht sie im Takt
+    // des Graphs weiter (der Zensus und die Welt-Wache lesen Lage und Graph als Paar). Bis w13-klang-tat stand die Lage zwei Takte
+    // vor ihrem Graph, und die Tat wartete auf den Misch-Takt: die Welt-Wache hörte Tat 1 mit 1,78 dB (Lage) über dem Graph der
+    // vorigen (Mischung −37,35, Ausgabe −35,77 dB), Tat 2 mit der Antwort von Tat 1.
     _umweltKlangTick(musik) {
         const s = this.state.symphony;
         const um = s.umwelt;
@@ -227,14 +235,18 @@ class AnazhRealm_klang {
         const ohr = um.ohr || (um.ohr = { x: NaN, z: NaN });
         if (!(Math.hypot(p.x - ohr.x, p.z - ohr.z) <= U.raum.weiteM / 2)) um.sprung = true;
         [ohr.x, ohr.z] = [p.x, p.z];
+        const buch = this.state.taten;
+        const tat = buch && buch.length ? buch[buch.length - 1] : null;
+        if (tat !== um.tat) [um.tat, um.ereignis] = [tat, true];
         if (musik) return void this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
         const jetzt = s.ctx.currentTime;
-        if (um.sprung) {
-            um.sprung = false;
-            this._umweltRingProbe(um, p.x, p.z, um.ring.punkte.length);
+        if (um.sprung || um.ereignis) {
+            if (um.sprung) this._umweltRingProbe(um, p.x, p.z, um.ring.punkte.length);
+            else this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
+            um.sprung = um.ereignis = false;
             um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
             um.letzteMischung = jetzt;
-            um.lage = this._umweltLage();
+            um.naechste = this._umweltLage();
             um.folge = 1;
             return;
         }
@@ -244,9 +256,10 @@ class AnazhRealm_klang {
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, schwer ? 0 : O.probenJeFrame);
         if (teil) {
             um.folge = teil === 4 ? 1 : (teil + 1) % 4;
-            if (teil === 4) um.lage = this._umweltLageZwei(um.lageEins);
-            else if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
+            if (teil === 4) um.naechste = this._umweltLageZwei(um.lageEins);
+            else if (teil === 1) um.mix = um.kern.umweltMischung(um.naechste);
             else if (teil === 2) {
+                um.lage = um.naechste;
                 um.graph.anwenden(um.mix, jetzt);
                 um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
                 this._untertitelStimmen(um.graph);
