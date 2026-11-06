@@ -593,8 +593,9 @@ class AnazhRealm_stoff_karte {
         // aktiven Körpers im Baum-Raum (`uSunDir`, Sonne oder Mond, über die EINE Naht) und legt es auf den EMPFANGENEN
         // Schatten (`receivedShadowNode`), nie auf die Albedo: dieselbe Richtung, die die Kaskade an der Gestalt prüft, der
         // Himmel bleibt frei wie an ihr. Bis w14-nadel-licht trug die Sicht zwei Zahlen, den Zenit und das N·L-gewichtete Mittel
-        // des 45°-Kranzes, und der Stoff mischte sie nach der Höhe: die der tiefen Sonne abgewandte Seite der Krone las die Sicht
-        // IHRER Seite, ihr Durchlass leuchtete (Radeon, Messort dorf, Sonne 7°: Karte/Gestalt Fichte 1,217, Tanne 1,146).
+        // des 45°-Kranzes, und der Stoff mischte sie nach der Höhe: ein Texel las die Sicht der Richtungen SEINER Normale, nie
+        // die des Lichts — die vom Licht abgewandte Krone stand im Licht ihrer eigenen Seite (Radeon, Messort dorf, F6-Linse:
+        // die Tanne unter dem Mond der Uhr 0,05, 65° hoch, Karte/Gestalt 1,234 → 1,028; die neun Zeilen 0,93–1,055).
         B.uBaum = S.uniform(new T.Matrix4());
         B.uVP = SZ.richtungen.map(() => S.uniform(new T.Matrix4()));
         B.dirs = SZ.richtungen.map(([h, a]) => {

@@ -1270,8 +1270,8 @@ class AnazhRealm_stoff_material {
                                     //    Sonne oder Mond, dieselbe Richtung wie das Richtlicht) im Raum der Vorlage — die EINE Naht
                                     //    (`_weltNaht.vorlage`) dreht sie je Instanz, wie die Bühne die Krone in ihren Kacheln sah.
                                     //    Bis w14 mischte der Stoff den Zenit und das N·L-Mittel des 45°-Kranzes nach der Höhe: die
-                                    //    der tiefen Sonne abgewandte Seite las die Sicht ihrer eigenen Seite, ihr Durchlass leuchtete
-                                    //    (Radeon, Messort dorf, Sonne 7°: Fichte 1,217, Tanne 1,146 ihrer Gestalt).
+                                    //    vom Licht abgewandte Krone las die Sicht ihrer eigenen Seite (Radeon, Messort dorf: die
+                                    //    Tanne unter dem Mond der Uhr 0,05 stand 1,234 × über ihrer Gestalt, jetzt 1,028).
                                     const _SZ = AnazhRealm.KARTE_SONNEN_SICHT;
                                     const _beide = (tex) => _Ta.mix(_probeA(tex, _uvA), _probeA(tex, _uvB), _fb);
                                     const _lP = _beide(_at.lmapNode);
