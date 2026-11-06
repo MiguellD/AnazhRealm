@@ -1525,8 +1525,8 @@ async function startDorfInnen(o) {
                 const w = welt(e, lx, lz);
                 let kl = 0;
                 for (let k = 0, ruhe = 0; ruhe < 10; k++) {
-                    s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
-                    if (!s.keys.w) ruhe++;
+                    s.verbTafel.gehalten.vor = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                    if (!s.verbTafel.gehalten.vor) ruhe++;
                     // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
                     let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                     const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
@@ -1582,7 +1582,7 @@ async function startDorfInnen(o) {
         } catch (err) {
             h.fehler = "Gang warf: " + String((err && err.message) || err);
         } finally {
-            s.keys.w = false;
+            s.verbTafel.gehalten.vor = false;
         }
     }
     // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
