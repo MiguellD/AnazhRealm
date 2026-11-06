@@ -3479,11 +3479,12 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
 // Fehler, den der Dichromat nicht sieht (Bild − Simulation), geht in die Achsen, die er sieht — HALBSEITIG: nur die eine Seite des
 // Fehlers im Kanal des verlorenen Gegensatzes (`kanal`: Rot für protan und deutan, Blau für tritan; e = Zeile von I − Sim), Δ =
 // `schub` · staerke · max(e · Bild, 0). Rötliches wird dunkler und blauer, Grünes, Graues und das Blau des Himmels bleiben, wie der
-// Dichromat sie sah. Fidaners Schub (beidseitig, Rot-Fehler in Grün und Blau je 0,7) machte Braun blauer und dem Grau ähnlicher —
-// Genesis-Ort, swiftshader, Grenze Boden|Bau unter Machado-Deuteranopie ΔE 16,9 → 11,6 —, ein beidseitiger Schub kippte den
-// Himmel nach Khaki; dieser hebt jede Grenze des Bilds auf min ΔE 23,2 (Deuteranopie) bzw. 30,3 (Protanopie), acht klassische
-// Verwechslungs-Paare (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …) von min 6,4 auf 13,1 bzw. 4,1 auf 22,1, die Tritan-Paare
-// (Blau/Grün, Gelb/Rosa, Himmel/Grau …) von 10,4 auf 12,1 (Mittel 22,1 → 49,0). Weiß, Grau und Schwarz tragen e = 0.
+// Dichromat sie sah. Gemessen am Ausgabe-Bild des Genesis-Orts (swiftshader, Grenzen unter Machado-Deuteranopie, je Pixel): ohne
+// min ΔE 16,9 / Mittel 22,3; Fidaners Schub (beidseitig, Rot-Fehler in Grün und Blau je 0,7) machte Braun blauer und dem Grau
+// ähnlicher (Boden|Bau 16,9 → 11,6); ein beidseitiger Schub hebt die Grenzen, kippt aber den Himmel für den Dichromaten nach Khaki;
+// dieser 19,3 / 25,4, der Himmel unberührt. Acht klassische Verwechslungs-Paare (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …):
+// Deuteranopie min 6,4 → 31,8, Protanopie 4,1 → 29,1; die Tritan-Paare (Blau/Grün, Gelb/Rosa, Himmel/Grau …) 10,4 → 12,1 (Mittel
+// 22,1 → 49,0). Weiß, Grau und Schwarz tragen e = 0.
 AnazhRealm.FARBSICHT = Object.freeze({
     arten: Object.freeze(["aus", "deuteranopie", "protanopie", "tritanopie"]),
     lms: Object.freeze([
@@ -3497,8 +3498,8 @@ AnazhRealm.FARBSICHT = Object.freeze({
     ebene: Object.freeze({ protanopie: [0, 2], deuteranopie: [1, 2], tritanopie: [2, 0] }),
     kanal: Object.freeze({ protanopie: 0, deuteranopie: 0, tritanopie: 2 }),
     schub: Object.freeze({
-        protanopie: Object.freeze([-0.75, -1.2, 1.8]),
-        deuteranopie: Object.freeze([-0.75, -1.2, 1.8]),
+        protanopie: Object.freeze([-1.5, -2.25, 2.25]),
+        deuteranopie: Object.freeze([-1.5, -2.25, 2.25]),
         tritanopie: Object.freeze([-0.75, -0.75, 0]),
     }),
     staerke: 1,
