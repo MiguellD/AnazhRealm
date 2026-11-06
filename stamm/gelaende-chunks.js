@@ -2552,14 +2552,22 @@ class AnazhRealm_gelaende_chunks {
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
             const grob = !!existing && desiredLod > (existingLod ?? 0);
+            // die Grenze, unter der die Bahn den Chunk braucht: fehlt er, der Ring; steht er gröber, die nächst feinere Stufe
             const schwelle = !existing
                 ? ringRadius * span
-                : ST.stufen.find((s) => s.lod === (existingLod ?? 0) - 1).bis + ST.vorlauf;
+                : ST.stufen[desiredLod < (existingLod ?? 0) ? (existingLod ?? 0) - 1 : 0].bis;
             const t = mitte
                 ? -1
                 : grob
                   ? Infinity
-                  : this._bedarfKastenZeit(cx * span, (cx + 1) * span, cz * span, (cz + 1) * span, schwelle, playerPos);
+                  : this._bedarfKastenZeit(
+                        cx * span,
+                        (cx + 1) * span,
+                        cz * span,
+                        (cz + 1) * span,
+                        schwelle + (existing ? ST.vorlauf : 0),
+                        playerPos
+                    );
             zellen.push([cx, cz, bild, grob, t, mitte ? -1 : this._bedarfWeg(x, z), existing, existingLod, desiredLod]);
         };
         const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
