@@ -31,6 +31,10 @@
 //       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 //       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
+//   (i) ZUGANG (spielgang.K4, vp-0611g) — aus ist die Ausgabe der Kette die ohne Zugang: kein Knoten der Farbsicht im Graphen
+//       (Suche nach ihren Uniformen), der Rückweg auf aus byte-gleich im Fragment, die Lauf-Grenze des Resolve eine Konstante.
+//       Steil in den Himmel mit einer blauen Kiste: Tritanopie und Deuteranopie ändern kein Himmels-Pixel (die EINE
+//       Himmels-Maske), die Tritanopie ändert die Kiste (sonst blind).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
@@ -225,6 +229,45 @@ function urteil(z) {
         v.push(
             `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
         );
+    const zg = z.zugang;
+    if (!zg) v.push("ZUGANG: die Probe lief nicht");
+    else if (zg.abbruch) v.push(`ZUGANG: ABBRUCH — ${zg.abbruch}`);
+    else {
+        if (!zg.ausMarke) v.push("ZUGANG: aus hängt nicht die Ausgabe ohne Zugang in die Kette (`_zugangTakt`, `ausgabe.aus`)");
+        if (zg.ausTraegt || zg.zurueckTraegt)
+            v.push(
+                `ZUGANG: aus trägt den Knoten der Farbsicht im Graphen der Ausgabe (${zg.ausTraegt ? "beim Start" : "nach dem Rückweg"}) — das Fragment ist nicht das ohne Zugang (vp-0611g: 1 LSB auf 6,2 % der Pixel)`
+            );
+        if (!zg.anTraegt) v.push("ZUGANG: die Tritanopie hängt keinen Knoten der Farbsicht ein (die Probe ist blind)");
+        const w = zg.wgsl || {};
+        if (!(w.aus > 0 && w.an > 0)) v.push("ZUGANG: kein Fragment der Ausgabe gelesen (die Linse ist blind)");
+        else {
+            if (w.anGleichAus) v.push("ZUGANG: die Tritanopie zeichnet dasselbe Fragment wie aus (die Probe ist blind)");
+            if (!w.zurueckGleich)
+                v.push("ZUGANG: der Rückweg auf aus ist im Fragment der Ausgabe nicht byte-gleich dem Start");
+        }
+        if (zg.laufPx != null && zg.laufPx !== "number")
+            v.push(
+                `ZUGANG: die Lauf-Grenze der zeitlichen Auflösung ist ein ${zg.laufPx}, keine Konstante des Resolve (vp-0611g: die Teilung durch eine Uniform rundet)`
+            );
+        const r = zg.rauschen || {};
+        if (!(r.himmelPx > 0.5 * ((zg.leinwand || [0, 0])[0] * (zg.leinwand || [0, 0])[1])))
+            v.push(`ZUGANG: nur ${r.himmelPx} Himmels-Pixel im Bild (die Probe ist blind)`);
+        for (const [art, e] of [
+            ["Tritanopie", zg.tritan],
+            ["Deuteranopie", zg.deut],
+        ]) {
+            if (!e) v.push(`ZUGANG: ${art} nicht gemessen`);
+            else if (e.himmel > r.himmel)
+                v.push(
+                    `ZUGANG: ${art} ändert ${e.himmel} von ${e.himmelPx} Himmels-Pixeln (größte ${e.himmelMax}/255, Rauschen ${r.himmel}) — der Himmel bleibt (die EINE Himmels-Maske, vp-0611g: Ego 71,6/93,1/104,5 → 59,1/85,2/105,2)`
+                );
+        }
+        if (zg.tritan && !(zg.tritan.kiste >= 0.2 * zg.tritan.kistePx))
+            v.push(
+                `ZUGANG: die Tritanopie ändert ${zg.tritan.kiste} von ${zg.tritan.kistePx} Pixeln der blauen Kiste (die Probe ist blind — sie wirkt nicht)`
+            );
+    }
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -287,6 +330,19 @@ function selbsttest() {
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
+        zugang: {
+            leinwand: [321, 241],
+            kiste: [140, 100, 180, 140],
+            laufPx: null,
+            ausMarke: true,
+            ausTraegt: false,
+            anTraegt: true,
+            zurueckTraegt: false,
+            wgsl: { aus: 17802, an: 18522, anGleichAus: false, zurueckGleich: true },
+            rauschen: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 0, kistePx: 1681 },
+            tritan: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 1500, kistePx: 1681 },
+            deut: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 0, kistePx: 1681 },
+        },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -447,6 +503,49 @@ function selbsttest() {
             z: mit((z) => (z.dunkel.nachtFaktor = 0)),
             muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
         },
+        // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht hinter der Uniform stand aus im Graphen
+        {
+            name: "aus trägt den Farbsicht-Knoten (vp-0611g)",
+            z: mit((z) => Object.assign(z.zugang, { ausTraegt: true, ausMarke: false })),
+            muss: /ZUGANG: aus trägt den Knoten der Farbsicht .*beim Start/,
+        },
+        {
+            name: "Rückweg auf aus nicht byte-gleich",
+            z: mit((z) => (z.zugang.wgsl.zurueckGleich = false)),
+            muss: /ZUGANG: der Rückweg auf aus .* nicht byte-gleich/,
+        },
+        {
+            name: "Lauf-Grenze als Uniform (vp-0611g)",
+            z: mit((z) => (z.zugang.laufPx = "object")),
+            muss: /ZUGANG: die Lauf-Grenze .* ein object, keine Konstante/,
+        },
+        {
+            name: "Tritanopie färbt den Himmel (vp-0611g)",
+            z: mit((z) => Object.assign(z.zugang.tritan, { himmel: 64000, himmelMax: 40 })),
+            muss: /ZUGANG: Tritanopie ändert 64000 von 75680 Himmels-Pixeln \(größte 40\/255/,
+        },
+        {
+            name: "Deuteranopie färbt den Himmel",
+            z: mit((z) => (z.zugang.deut.himmel = 12)),
+            muss: /ZUGANG: Deuteranopie ändert 12 von/,
+        },
+        {
+            name: "Tritanopie wirkt nicht (blind)",
+            z: mit((z) => (z.zugang.tritan.kiste = 0)),
+            muss: /ZUGANG: die Tritanopie ändert 0 von 1681 .* blind/,
+        },
+        {
+            name: "Tritanopie hängt keinen Knoten ein (blind)",
+            z: mit((z) => (z.zugang.anTraegt = false)),
+            muss: /ZUGANG: die Tritanopie hängt keinen Knoten/,
+        },
+        {
+            name: "Fragment unverändert unter Tritanopie (blind)",
+            z: mit((z) => (z.zugang.wgsl.anGleichAus = true)),
+            muss: /ZUGANG: die Tritanopie zeichnet dasselbe Fragment/,
+        },
+        { name: "kein Himmel im Bild (blind)", z: mit((z) => (z.zugang.rauschen.himmelPx = 100)), muss: /nur 100 Himmels-Pixel/ },
+        { name: "Zugang-Probe fehlt", z: mit((z) => delete z.zugang), muss: /ZUGANG: die Probe lief nicht/ },
     ];
     taeterFaelle(faelle, urteil, { fehler });
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
@@ -892,9 +991,157 @@ function buehne(nFrames, nachtLicht) {
     })();
 }
 
+// (i) DER ZUGANG (spielgang.K4, Seiten-Kontext, nach `buehne`): die Farbsicht als eigene Ausgabe der Kette (`_zugangTakt`).
+// Aus ist der Graph der Ausgabe der ohne Zugang — kein Knoten der Farbsicht darin (die Graph-Suche nach ihren Uniformen), der
+// Rückweg auf aus byte-gleich im Fragment, die Unschärfe der Bewegung eine Konstante des Resolve (wo die zeitliche Auflösung
+// läuft). Der Blick steil in den Himmel, darin eine blaue Kiste: unter Tritanopie und Deuteranopie bleibt jedes Himmels-Pixel
+// (außerhalb der Kiste) wie aus, die Kiste ändert sich unter Tritanopie (sonst ist die Probe blind).
+function zugangProbe() {
+    return (async () => {
+        const T = window.THREE;
+        const rend = st.renderer;
+        rend.setAnimationLoop(null);
+        window.__buehne();
+        const Z = st.zugang;
+        const vor = { ...Z };
+        const pp = st.postProcessing;
+        const ppu = st.postProcessingUniforms;
+        const cam = st.camera;
+        const p0 = cam.position.clone();
+        const ziel = new T.Vector3(p0.x, p0.y + 10, p0.z - 3.6); // 70° über dem Horizont
+        const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicNodeMaterial({ color: 0x2050ff }));
+        kiste.material.fog = false;
+        kiste.frustumCulled = false;
+        kiste.position.copy(p0).addScaledVector(ziel.clone().sub(p0).normalize(), 8);
+        kiste.name = "post-kette:ZUGANG";
+        st.scene.add(kiste);
+        const setzeKamera = () => {
+            cam.position.copy(p0);
+            cam.up.set(0, 1, 0);
+            cam.lookAt(ziel);
+            cam.updateMatrixWorld(true);
+        };
+        const db = rend.getDrawingBufferSize(new T.Vector2());
+        const W = Math.round(db.x),
+            H = Math.round(db.y);
+        // das Rechteck der Kiste im Bild (ihre acht Ecken projiziert, 4 Pixel Saum für Bloom und Kante)
+        const rechteck = () => {
+            setzeKamera();
+            const x = [],
+                y = [];
+            for (const s of [-0.5, 0.5])
+                for (const t of [-0.5, 0.5])
+                    for (const u of [-0.5, 0.5]) {
+                        const v = new T.Vector3(s, t, u).add(kiste.position).project(cam);
+                        x.push(((v.x + 1) / 2) * W);
+                        y.push(((1 - v.y) / 2) * H);
+                    }
+            return [Math.min(...x) - 4, Math.min(...y) - 4, Math.max(...x) + 4, Math.max(...y) + 4];
+        };
+        const bild = async () => {
+            st._godrayScale = 0;
+            for (let i = 0; i < 4; i++) {
+                setzeKamera();
+                window.__loopBild();
+            }
+            setzeKamera();
+            const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
+            return u8;
+        };
+        const fragment = async () => {
+            const p = await window.__shaderKosten({ frames: 2 });
+            return (p.find((x) => x.programm === "post:ausgabe") || {}).fragment || null;
+        };
+        // trägt der Graph der Ausgabe einen Knoten der Farbsicht (ihre Uniformen)?
+        const traegtFarbsicht = (wurzel) => {
+            const such = new Set([ppu.farbFehler, ppu.farbSchub].filter(Boolean));
+            const gesehen = new Set();
+            const stapel = [wurzel];
+            while (stapel.length && gesehen.size < 400000) {
+                const n = stapel.pop();
+                if (!n || typeof n !== "object" || gesehen.has(n)) continue;
+                gesehen.add(n);
+                if (such.has(n)) return true;
+                for (const v of Object.values(n)) {
+                    if (v && v.isNode) stapel.push(v);
+                    else if (Array.isArray(v)) for (const e of v) if (e && e.isNode) stapel.push(e);
+                }
+            }
+            return false;
+        };
+        const aus = { leinwand: [W, H] };
+        try {
+            const [x0, y0, x1, y1] = rechteck();
+            aus.kiste = [x0, y0, x1, y1].map(Math.round);
+            const traa = st.traaNode;
+            aus.laufPx = traa ? typeof traa._laufPx : null;
+            aus.ausMarke = !!(ppu && ppu.ausgabe && pp.outputNode === ppu.ausgabe.aus);
+            aus.ausTraegt = traegtFarbsicht(pp.outputNode);
+            const fAus = await fragment();
+            const bAus = await bild();
+            const bAus2 = await bild();
+            Z.farbsicht = "tritanopie";
+            const fAn = await fragment();
+            aus.anTraegt = traegtFarbsicht(pp.outputNode);
+            const bTritan = await bild();
+            Z.farbsicht = "deuteranopie";
+            const bDeut = await bild();
+            Z.farbsicht = "aus";
+            const fZurueck = await fragment();
+            aus.zurueckTraegt = traegtFarbsicht(pp.outputNode);
+            aus.wgsl = {
+                aus: fAus ? fAus.length : 0,
+                an: fAn ? fAn.length : 0,
+                anGleichAus: !!fAus && fAus === fAn,
+                zurueckGleich: !!fAus && fAus === fZurueck,
+            };
+            // je Bild gegen aus: geänderte Himmels-Pixel (außerhalb der Kiste, je Kanal ≥ 1/255) und geänderte Kisten-Pixel
+            const vergleich = (b) => {
+                let himmel = 0,
+                    himmelMax = 0,
+                    kiste = 0,
+                    nH = 0,
+                    nK = 0;
+                for (let y = 0; y < H; y++)
+                    for (let x = 0; x < W; x++) {
+                        const i = (y * W + x) * 4;
+                        const d = Math.max(
+                            Math.abs(b[i] - bAus[i]),
+                            Math.abs(b[i + 1] - bAus[i + 1]),
+                            Math.abs(b[i + 2] - bAus[i + 2])
+                        );
+                        if (x >= x0 && x <= x1 && y >= y0 && y <= y1) {
+                            nK++;
+                            if (d >= 4) kiste++;
+                        } else {
+                            nH++;
+                            if (d >= 1) himmel++;
+                            himmelMax = Math.max(himmelMax, d);
+                        }
+                    }
+                return { himmel, himmelMax, himmelPx: nH, kiste, kistePx: nK };
+            };
+            aus.rauschen = vergleich(bAus2);
+            aus.tritan = vergleich(bTritan);
+            aus.deut = vergleich(bDeut);
+        } catch (e) {
+            aus.abbruch = String((e && (e.stack || e.message)) || e)
+                .split("\n")
+                .slice(0, 4)
+                .join(" ← ");
+        } finally {
+            Object.assign(Z, vor);
+            st.scene.remove(kiste);
+            kiste.geometry.dispose();
+            kiste.material.dispose();
+        }
+        return aus;
+    })();
+}
+
 (async () => {
     console.log(
-        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
+        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang ==="
     );
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
@@ -927,6 +1174,17 @@ function buehne(nFrames, nachtLicht) {
         const b = out.buehne;
         log(`Bühne: Boden ${b.boden.toFixed(1)} m · Wasser ${b.wasserY.toFixed(1)} m · Eis-Linie ${b.eisNull.toFixed(1)} m`);
         out.saum = await page.evaluate(saumProbe, b);
+        out.zugang = await page.evaluate(zugangProbe);
+        {
+            const zg = out.zugang;
+            const h = (v) => (v ? `${v.himmel} von ${v.himmelPx} Himmels-Pixeln (größte ${v.himmelMax}) · Kiste ${v.kiste} von ${v.kistePx}` : "?");
+            log(
+                `Zugang: aus ${zg.ausMarke ? "die Ausgabe ohne Zugang" : "NICHT die Ausgabe ohne Zugang"} · Farbsicht-Knoten aus/an/zurück ` +
+                    `${zg.ausTraegt}/${zg.anTraegt}/${zg.zurueckTraegt} · Fragment aus ${zg.wgsl ? zg.wgsl.aus : "?"} B, an ${zg.wgsl ? zg.wgsl.an : "?"} B, ` +
+                    `zurück byte-gleich ${zg.wgsl ? zg.wgsl.zurueckGleich : "?"} · Lauf-Grenze des Resolve ${zg.laufPx} · Rauschen ${h(zg.rauschen)} · ` +
+                    `Tritanopie ${h(zg.tritan)} · Deuteranopie ${h(zg.deut)}${zg.abbruch ? " · ABBRUCH " + zg.abbruch : ""}`
+            );
+        }
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
@@ -974,6 +1232,8 @@ function buehne(nFrames, nachtLicht) {
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
-            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}).`
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); ` +
+            `der Zugang aus ist die Kette ohne Zugang (Rückweg byte-gleich), Tritanopie und Deuteranopie lassen ${out.zugang.tritan.himmelPx} Himmels-Pixel unberührt, ` +
+            `die blaue Kiste wechselt unter Tritanopie (${out.zugang.tritan.kiste} von ${out.zugang.tritan.kistePx}).`
     );
 })();

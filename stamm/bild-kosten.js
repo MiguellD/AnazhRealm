@@ -1251,9 +1251,11 @@ class AnazhRealm_bild_kosten {
                 // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
                 this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
-                // die Unschärfe der Bewegung (spielgang.K4, `_zugangTakt`): ab so vielen Ausgabe-Pixeln Bewegung je Bild trägt
-                // das Jetzt allein — an r184s `maxVelocityLength`, aus `ZUGANG.laufPxAus`
-                this._laufPx = uniform(this.maxVelocityLength);
+                // die Unschärfe der Bewegung (spielgang.K4, `_zugangTakt` → `laufPxSetzen`): ab so vielen Ausgabe-Pixeln Bewegung
+                // je Bild trägt das Jetzt allein — an r184s `maxVelocityLength`, aus `ZUGANG.laufPxAus`. Eine KONSTANTE des
+                // Resolve, nie eine Uniform: an (der Default) ist der Resolve byte-gleich dem ohne Zugang (vp-0611g: die Teilung
+                // durch eine Uniform rundete auf 6,2 % der Pixel um 1 LSB); der Wechsel baut die zwei Resolve-Stoffe neu.
+                this._laufPx = this.maxVelocityLength;
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 // DAS DECKUNGS-GEDÄCHTNIS (A3b): der Resolve schreibt neben dem Bild je Ausgabe-Pixel, wie oft sein 3×3 eine
                 // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT, Schlüssel = Name der Textur).
@@ -1532,7 +1534,18 @@ class AnazhRealm_bild_kosten {
                 };
                 stoff(0);
                 stoff(1);
+                this._stoffBau = stoff;
                 return this._textureNode;
+            }
+            // die Unschärfe der Bewegung wechselt (`_zugangTakt`): die Konstante des Resolve, beide Stoffe neu gebaut — nur beim
+            // Wechsel, nie je Bild; vor dem ersten Bau (`setup`) liest der Bau sie selbst
+            laufPxSetzen(px) {
+                if (px === this._laufPx) return;
+                this._laufPx = px;
+                if (!this._stoffBau) return;
+                this._stoffBau(0);
+                this._stoffBau(1);
+                for (const m of this._resolveStoffe) m.needsUpdate = true;
             }
         }
         return new ZeitAufloesung();
@@ -1690,21 +1703,27 @@ class AnazhRealm_bild_kosten {
 
     // DER ZUGANG IM BILD (spielgang.K4), je Bild aus `_loopRender`: der Stand `state.zugang` (Einstellungen › Ton & Sicht, im
     // Snapshot) ist die EINE Quelle, die Kette liest ihn hier — die Farbsicht (`farbsicht`: die Art, ihr Fehler und Schub aus
-    // `_farbsichtMatrix`, gerechnet nur beim Wechsel) und die Unschärfe der Bewegung: sie IST die Geschichte der zeitlichen
-    // Auflösung, die einem bewegten Pixel bis `maxVelocityLength` (r184: 128 px je Bild) nachzieht; aus (`unschaerfe` false)
-    // weicht sie ab `ZUGANG.laufPxAus` Ausgabe-Pixeln Bewegung je Bild ganz dem Jetzt (`_laufPx` des Resolve).
+    // `_farbsichtMatrix`; ihre Ausgabe der Kette nur, wenn eine Art gewählt ist) und die Unschärfe der Bewegung: sie IST die
+    // Geschichte der zeitlichen Auflösung, die einem bewegten Pixel bis `maxVelocityLength` (r184: 128 px je Bild) nachzieht;
+    // aus (`unschaerfe` false) weicht sie ab `ZUGANG.laufPxAus` Ausgabe-Pixeln Bewegung je Bild ganz dem Jetzt (die Konstante
+    // des Resolve, `laufPxSetzen`). Alles nur beim Wechsel: aus ist die Kette der Graph ohne Zugang, Knoten für Knoten.
     _zugangTakt(ppu) {
         const Z = this.state.zugang || {};
         const art = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
-        if (ppu && ppu.farbSchub && ppu._farbArt !== art) {
+        const pp = this.state.postProcessing;
+        if (pp && ppu && ppu.ausgabe && ppu._farbArt !== art) {
             const m = AnazhRealm._farbsichtMatrix(art);
-            ppu.farbsicht.value = m ? 1 : 0;
             if (m) (ppu.farbFehler.value.set(...m.fehler), ppu.farbSchub.value.set(...m.schub));
+            const ziel = m ? ppu.ausgabe.farbsicht : ppu.ausgabe.aus;
+            if (pp.outputNode !== ziel) {
+                pp.outputNode = ziel;
+                pp.needsUpdate = true;
+            }
             ppu._farbArt = art;
         }
         const traa = this.state.traaNode;
-        if (traa && traa._laufPx)
-            traa._laufPx.value = Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength;
+        if (traa && traa.laufPxSetzen)
+            traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -1816,9 +1835,8 @@ class AnazhRealm_bild_kosten {
                 // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
                 // Skala 1 null (die Stufe kostet dann nichts).
                 nachSchaerfe: uniform(0),
-                // DIE FARBSICHT (spielgang.K4): 1 = die Daltonisierung der gewählten Art (`state.zugang.farbsicht`) wirkt, ihr
-                // Fehler e und ihr Schub v (`_farbsichtMatrix`) stehen daneben — alle stellt `_zugangTakt` je Bild aus dem Stand.
-                farbsicht: uniform(0),
+                // DIE FARBSICHT (spielgang.K4): der Fehler e und der Schub v der gewählten Art (`state.zugang.farbsicht`,
+                // `_farbsichtMatrix`) — `_zugangTakt` stellt sie beim Wechsel und hängt ihre Ausgabe (`ausgabe.farbsicht`) ein.
                 farbFehler: uniform(new THREE.Vector3()),
                 farbSchub: uniform(new THREE.Vector3()),
             };
@@ -1953,12 +1971,24 @@ class AnazhRealm_bild_kosten {
                 return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
             };
             const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
+            const graded = gesehen.max(vec3(0, 0, 0));
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
             // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz
             // der Tonkurve (PBR Neutral zieht unter ihrem Knie nur einen grauen Sockel ab), im Mittelbereich ist sie dieselbe wie
-            // auf dem getonten Bild. Aus (`farbsicht` 0) fällt der Zweig (`nurBeiStaerke`).
-            const farbsichtDelta = () => u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0));
-            const graded = gesehen.add(nurBeiStaerke(farbsichtDelta(), u.farbsicht)).max(vec3(0, 0, 0));
+            // auf dem getonten Bild. Sie ist eine eigene AUSGABE der Kette (`u.ausgabe`), die `_zugangTakt` beim Wechsel der Art
+            // einhängt: aus fehlt ihr Knoten im Graphen, das Fragment ist byte-gleich dem ohne Zugang (vp-0611g: ein Zweig hinter
+            // einer Uniform rundete auf 6,2 % der Pixel um 1 LSB). DER HIMMEL BLEIBT (die EINE Himmels-Maske aller Arten): wo die
+            // Szenen-Tiefe auf 1 steht, zeichnete nur der Himmel (`_himmelImUnendlichen`, die Welt schreibt Tiefe) — dort wirkt
+            // Δ nie. Deut und Prot trafen ihn nie (e · Himmelsblau < 0), die Tritanopie (e = 0,859 (B − G)) traf genau ihn (OMEN
+            // Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
+            const szenenTiefe = scenePass.getTextureNode("depth");
+            const tiefenGr = vec2(szenenTiefe.size());
+            const welt = szenenTiefe
+                .load(screenUV.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1)))
+                .r.lessThan(float(1))
+                .select(float(1), float(0));
+            const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
+            u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
             // Ausgabe-Quad — keine Zwischen-Textur.
