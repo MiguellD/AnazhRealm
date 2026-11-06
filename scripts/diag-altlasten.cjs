@@ -24,6 +24,8 @@ const F_KLANG_REGEN = "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem ra
 const F_SLOPE = "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)";
 const F_GROB_TOR = "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)";
 const F_K11 = "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)";
+const TETRAPODA_KERN = ["tetrapoda-core.js"];
+const PHYTO_BRUECKE = ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"];
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
     { token: "triggerPhoenixDeath", fiel: "W1a" },
@@ -245,7 +247,7 @@ const FORBIDDEN = [
     {
         token: "dt * 42",
         fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
-        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
+        auch: PHYTO_BRUECKE,
     },
     { token: "aboveWater < 2.0", fiel: "Welle L Q7 — die Strand-Glocke trägt bis 0,6 + 1,9 m (imStrand)" },
     { token: "seg.halfW || 0", fiel: "Welle L Q7 — die Halbbreite am Fußpunkt wie im Main (hwA/hwB)" },
@@ -465,7 +467,7 @@ const FORBIDDEN = [
     {
         token: "__baumGrammatik",
         fiel: "05.10. — der Grammatik-Beipack hatte keinen Leser mehr",
-        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"], // die Brücke legte ihn in den Umschlag
+        auch: PHYTO_BRUECKE, // die Brücke legte ihn in den Umschlag
     },
     { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
@@ -529,7 +531,7 @@ const FORBIDDEN = [
     {
         token: "impulsProM",
         fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
@@ -554,47 +556,47 @@ const FORBIDDEN = [
     {
         token: "boldFromDichte",
         fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "shyFromLebendig",
         fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "radiusBaseM",
         fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "minAbstSq",
         fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
-    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
-    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: ["tetrapoda-core.js"] },
+    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: TETRAPODA_KERN },
+    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: TETRAPODA_KERN },
     { token: "_flockGrid", fiel: "S6 — die Glieder je Verband statt der Gattungs-Zellen (_verbaende)" },
-    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: TETRAPODA_KERN },
     {
         token: "scentProbeM",
         fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
     {
         token: "fleeSpeedBoost",
         fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "strikeRange",
         fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "pirschStoppM",
         fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "kippNachklangSec",
@@ -655,7 +657,7 @@ const FORBIDDEN = [
     {
         token: "emissiv: 0x442200",
         fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
     { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
@@ -716,7 +718,7 @@ const FORBIDDEN = [
     {
         token: "__strauchZeile",
         fiel: "Welle 6 — die Holz-Zeile ist die Stufe selbst (stufenRezept, emitTree)",
-        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
+        auch: PHYTO_BRUECKE,
     },
     { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
     { token: "_chunkSatzLeert", fiel: "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)" },
@@ -1103,6 +1105,8 @@ function scan(files) {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+const KOERPER_STAMM = ["worlds/koerperstudio/koerperstudio.js", ...STAMM];
+const FACHWERK_STAMM = ["worlds/fachwerk/fachwerk.js", ...STAMM];
 // das Gesetzbuch der Himmels-Sicht: der Baustein, der den Wandel-Pass trägt (welt-licht.js `atmoTafeln`; Welt und Studio-Bühne rufen ihn)
 const HIMMEL_BUCH = "welt-licht.js";
 const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
@@ -1143,55 +1147,55 @@ const ZWILLINGE = [
     {
         fingerprint: "0.818 * H",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
     },
     {
         fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
         fingerprint: "mahagoni:{hex:0x6a4230", // K57: der Ton nach KOPF_SOLL hautAlbedo (vorher 0x5f3826)
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
     },
     {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: FACHWERK_STAMM,
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: FACHWERK_STAMM,
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
+        verboten: FACHWERK_STAMM,
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
@@ -1203,7 +1207,7 @@ const ZWILLINGE = [
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
+        verboten: KOERPER_STAMM,
         fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
     },
     {
