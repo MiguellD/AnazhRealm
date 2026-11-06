@@ -2431,16 +2431,8 @@ class AnazhRealm_kreatur_leben {
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
         // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz)
-        // (der Leib selbst, seine Kugel samt dem Rand des Blicks: `_kreaturAusserBlick`, `_kreaturBlickRand` — ohne Frustum fragt
-        // keiner)
-        const fr = this._frustumCache;
-        const rand = this._kreaturBlickRand();
         for (const c of st.creatures.slice())
-            if (
-                !bleibt.has(c) &&
-                !soll.has(c.userData._bestand) &&
-                (!fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand)))
-            )
+            if (!bleibt.has(c) && !soll.has(c.userData._bestand) && this._bestandAusserBlick(c))
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
         let suchen = 3;
@@ -2468,9 +2460,18 @@ class AnazhRealm_kreatur_leben {
             this._kreaturNah(c)
         );
     }
+    // DARF DER LEIB `c` VOR DEM AUGE GEHEN (die EINE Frage der Zeichnung und des Weichens an den Blick)? Ohne Frustum ja, sonst
+    // nur, wenn der Leib selbst außer Blick steht — seine Kugel samt Saum und dem Rand des Blicks (`_kreaturAusserBlick`,
+    // `_kreaturBlickRand`). Bis w13-pegel-heil fragte das Weichen (`_bestandWeicht`) den Fuß-Punkt (`_kreaturImBlick`): ein Leib
+    // am Rand des Blicks, dessen Fuß eben draußen lag, verschwand an der vollen Kappe vor dem Auge.
+    _bestandAusserBlick(c) {
+        const fr = this._frustumCache;
+        const rand = this._kreaturBlickRand();
+        return !fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand));
+    }
     // DER PLATZ FÜR EINEN AKT (`spawnCreatureAt` an der vollen Kappe): der gezeichnete Leib des Bestands, der gehen darf, außer
-    // Blick (keiner verschwindet vor dem Auge, wie in der Zeichnung) und am fernsten vom Spieler (die Zeichnung hält die nahen
-    // Gruppen) — oder keiner.
+    // Blick (`_bestandAusserBlick`, wie in der Zeichnung) und am fernsten vom Spieler (die Zeichnung hält die nahen Gruppen) —
+    // oder keiner.
     _bestandWeicht() {
         const st = this.state;
         if (!st.playerMesh) return null; // ohne Spieler keine Zeichnung, kein Nah-Kreis
@@ -2479,7 +2480,7 @@ class AnazhRealm_kreatur_leben {
         let wer = null,
             fern = -1;
         for (const c of st.creatures) {
-            if (this._bestandHaelt(c, jagen) || this._kreaturImBlick(c.position.x, c.position.z)) continue;
+            if (this._bestandHaelt(c, jagen) || !this._bestandAusserBlick(c)) continue;
             const d = Math.hypot(c.position.x - p.x, c.position.z - p.z);
             if (d > fern) [wer, fern] = [c, d];
         }
