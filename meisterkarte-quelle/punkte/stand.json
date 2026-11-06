@@ -2004,7 +2004,7 @@
   },
   "material.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3 an f5db8d90 radeon · gehalten: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an f5db8d90 radeon — offen: material.K1#2 gtx: Station seit der Messung geändert — zuletzt an 8efb6318: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+   "beleg": "Maschine: gehalten: Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3 an f5db8d90 radeon · gehalten: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an f5db8d90 radeon — offen: material.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5a7cff0d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2012,7 +2012,7 @@
      "gruen": true,
      "zahl": "Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -2030,7 +2030,7 @@
      "gruen": true,
      "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
      "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -2039,7 +2039,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 8efb6318: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+     "grund": "Station seit der Messung geändert — zuletzt an 5a7cff0d: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
      "ungemessen": true
     }
    ]
@@ -2069,7 +2069,7 @@
   },
   "material.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Haus L0 0.1518 · L1/L0 1.004 · L2/L0 0.995 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an f5db8d90 radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: material.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) · material.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs, scripts/werkbank.cjs) — zuletzt an 8efb6318: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.984/karte 0.943 · fichte@0.5 l1 0.997/karte 1.175 · haus@0.27 l1 1.004/l2 0.995 · bi",
+   "beleg": "Maschine: gehalten: Haus L0 0.1518 · L1/L0 1.004 · L2/L0 0.995 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an f5db8d90 radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: material.K3#2 radeon: Station seit der Messung geändert · material.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +6)",
    "stationen": [
     {
      "id": "material.K3#1",
@@ -2077,7 +2077,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1518 · L1/L0 1.004 · L2/L0 0.995 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "f5db8d904ae0f50187c9b3e2e37de3fa38da73e0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
+     "grund": "Station seit der Messung geändert",
      "gehalten": true
     },
     {
@@ -2095,7 +2095,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8)",
+     "grund": "Station seit der Messung geändert",
      "ungemessen": true
     },
     {
@@ -2104,7 +2104,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs, scripts/werkbank.cjs) — zuletzt an 8efb6318: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.984/karte 0.943 · fichte@0.5 l1 0.997/karte 1.175 · haus@0.27 l1 1.004/l2 0.995 · bi",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +6)",
      "ungemessen": true
     }
    ]
@@ -2240,16 +2240,15 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.926 m um 1.814 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.249 ms für 1094 → 0.057 ms je 50 an db431cf0 headless — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +7) · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -18.38 [-14, -4] · lippeA 9.86 [4, 14] · hoehleL -6.59 [-12, 0] · hoehleA 2.11 [-2, 6] · haarDeckung 1 [0.9, 1] an 8efb6318",
+   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.926 m um 1.814 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.249 ms für 1094 → 0.057 ms je 50 an db431cf0 headless — offen: mensch.K4#1 radeon: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -12.8 [-14, -4] · lippeA 13.21 [4, 14] · hoehleL -8.86 [-12, 0] · hoehleA 7.38 [-2, 6] · haarDeckung 1 [0.9, 1] an 8efb6318 · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -18.38 [-14, -4] · lippeA 9.86 [4, 14] · hoehleL -6.59 [-12, 0] · hoehleA 2.11 [-2, 6] · haarDeckung 1 [0.9, 1] an 8efb6318",
    "stationen": [
     {
      "id": "mensch.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +7)",
-     "ungemessen": true
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -12.8 [-14, -4] · lippeA 13.21 [4, 14] · hoehleL -8.86 [-12, 0] · hoehleA 7.38 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
+     "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -12.8 [-14, -4] · lippeA 13.21 [4, 14] · hoehleL -8.86 [-12, 0] · hoehleA 7.38 [-2, 6] · haarDeckung 1 [0.9, 1]"
     },
     {
      "id": "mensch.K4#1",
@@ -3890,7 +3889,7 @@
   },
   "tiere.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Station seit der Messung geändert — zuletzt an 8ef49bef: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":465,\"schuesse\":20,\"gesehen\":1,\"imBlick\":0})",
+   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Station seit der Messung geändert — zuletzt an 8efb6318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":384,\"schuesse\":23,\"gesehen\":0,\"imBlick\":0})",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -3898,7 +3897,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 8ef49bef: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":465,\"schuesse\":20,\"gesehen\":1,\"imBlick\":0})",
+     "grund": "Station seit der Messung geändert — zuletzt an 8efb6318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":384,\"schuesse\":23,\"gesehen\":0,\"imBlick\":0})",
      "ungemessen": true
     }
    ]
@@ -4267,8 +4266,8 @@
    ]
   },
   "wetter.K3": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an db431cf0 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an db431cf0 headless · Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx — offen: wetter.K3#2 radeon: ungemessen (R10)",
+   "punkte": 2,
+   "beleg": "Maschine: gehalten: Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 48 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0 an db431cf0 headless · gehalten: A 0.16 ↔ 0.8 km² (×5.0) · Lag 1 ↔ 1.9 Spielstunden (Verhältnis 1.647) · Bilanz 1.006 / 0.98 (Regen × Fläche ↔ ΔVolumen 3.8 ↔ 3.9 / 19.2 ↔ 18.8 m³) · Dürre-Δ 14 Spieltage Bach/Fluss/See -0.2 / -0.2 / -0.2 m · Regen-Feld gehalten Bilanz 0 / 0 · Exit 0 an db431cf0 headless · Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157716 → 520876 px (×3.30) in 1920×1080 / 1920×1080 an 8efb6318 radeon · Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080 an 8efb6318 gtx",
    "stationen": [
     {
      "id": "wetter.K3#1",
@@ -4291,11 +4290,10 @@
     {
      "id": "wetter.K3#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157716 → 520876 px (×3.30) in 1920×1080 / 1920×1080",
+     "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
+     "grund": null
     },
     {
      "id": "wetter.K3#2",
@@ -4392,8 +4390,8 @@
  },
  "rueckfall": [],
  "kopfVoll": "8efb6318181690d3eb5b1742d886c2ea15716920",
- "zeit": "2026-11-06T15:20:43.983Z",
- "vorher": "db431cf0",
+ "zeit": "2026-11-06T18:50:36.586Z",
+ "vorher": "8efb6318",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4427,7 +4425,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +7)"
+      "zeile": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lip"
      },
      {
       "station": "mensch.K4#1",

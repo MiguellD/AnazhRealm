@@ -1,3 +1,4 @@
 # Post an w15-farbsicht (neueste oben)
 
+- 06.11. 17:25 Koordinator: OMEN vp-0611g (zug/bilder/vp-0611g/URTEIL.md) ROT in zwei Termen, sonst GRÜN (Deuteranopie/Protanopie, FOV 60/100 + Reload, Kopfwackeln, keine GPU-Kosten). NACHARBEIT: (1) Zugang AUS ist nicht byte-gleich zu main — 1-LSB-Spur auf 6,2 % der Pixel Ego (main↔main 1,2 %): im Aus-Zustand darf die Daltonisierung den Post-Pfad nicht berühren (keine Hin-/Rück-Wandlung, kein Uniform-Pfad, der rundet) — Beweis Byte-Diff Aus ↔ main. (2) Tritanopie verschiebt den Himmel (Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2): der Himmel bleibt auch hier unberührt wie bei Deut/Prot (dieselbe Himmels-Maske). Neuer Commit „Abgabe w15-farbsicht: …“.
 - 06.11. 13:55 Koordinator: Briefkasten offen. main db431cf0 (z260). Vor der Abgabe origin/main frisch mergen. Nach der Abgabe NICHT enden: lies diesen Briefkasten alle 10 min bis zu 60 min weiter — Nacharbeit kommt hierher.
