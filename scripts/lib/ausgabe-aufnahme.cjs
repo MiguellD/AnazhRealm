@@ -107,15 +107,15 @@ function wetterSpion() {
         },
     });
     if (!Object.hasOwn(r, "_setWeather"))
-        r._setWeather = function (name, quelle, ...zugUndAkt) {
+        r._setWeather = function (name, quelle) {
             const vor = this.state.weather;
             const q0 = S.quelle,
                 s0 = S.stapel;
             S.quelle = S.buehne ? "buehne" : quelle || "?";
             S.stapel = wer();
             try {
-                // der Zug (sein Übergang, sein Wunsch) und der Akt reisen durch die Hülle — bis feld.K2#2 fielen sie hier weg
-                const ok = Object.getPrototypeOf(this)._setWeather.call(this, name, quelle, ...zugUndAkt);
+                // der Zug (sein Übergang, sein Wunsch) und der Akt reisen durch die Hülle (`arguments`) — bis feld.K2#2 fielen sie hier weg
+                const ok = Object.getPrototypeOf(this)._setWeather.apply(this, arguments);
                 // ein Wunsch der Welt an den Wetter-Zug (das Gesetz der Schreiber): gebucht, nicht geschrieben
                 if (ok === "wunsch")
                     buche({ art: "gewuenscht", von: vor, zu: name, quelle: S.quelle, stapel: S.stapel });

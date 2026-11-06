@@ -1729,11 +1729,13 @@ class AnazhRealm_kreatur_leben {
     // `_streamRng`: ein Wurf mehr re-rollt nie einen anderen): "fauna" der Lebenszyklus (Geburts-Ort, Seele, Gemüt, Geburts-
     // und Todes-Takt, Gegenwehr), "gefuehl" das Wetter-Gefühl, "stimme" die Wahl der Worte, "hof" der Ort einer Hof-Geburt.
     // Wechselt die Welt (ihr Seed), beginnen die Ströme neu.
-    _faunaRng(zweck = "fauna") {
+    // `frisch`: ein Strom, den niemand weiterzählt (der Takt des Bestands, je Region und Zeit einer, feld.K2#2) — nicht gemerkt
+    _faunaRng(zweck = "fauna", frisch = false) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         let f = this._faunaStroeme;
         if (!f || f.seed !== seed) f = this._faunaStroeme = { seed, rng: Object.create(null) };
-        return f.rng[zweck] || (f.rng[zweck] = this._streamRng(seed + "-" + zweck));
+        const strom = f.rng[zweck] || this._streamRng(seed + "-" + zweck);
+        return frisch ? strom : (f.rng[zweck] = strom);
     }
 
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
@@ -2307,8 +2309,7 @@ class AnazhRealm_kreatur_leben {
     _bestandTakt(key, R, still, tode) {
         const B = AnazhRealm._bestandGesetz().B;
         for (const t of R.tiere) t.alterS += B.taktS;
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const rng = this._streamRng(seed + "-bestand:" + key + "@" + R.t);
+        const rng = this._faunaRng("bestand:" + key + "@" + R.t, true);
         const zellen = [];
         const bestand = this._kreaturBestand(zellen, key);
         this._kreaturFrass(bestand, zellen);
@@ -2342,10 +2343,9 @@ class AnazhRealm_kreatur_leben {
     // DER FALL DER GEZEICHNETEN, nach dem Gesetz aller Regionen eines Takts (kein Gefühl eines Falls färbt eine Wahl desselben
     // Takts): Hunger und Alter fällen den Leib (`_creatureNaturalDeath`, ohne zweite Gabe ans Feld); den Riss reißt der nächste
     // gezeichnete Jäger (`_kreaturRiss`: nah als Körper, fern fällt er). Steht das Opfer im Nah-Kreis ohne gezeichneten Jäger,
-    // stirbt an seiner Stelle das älteste Ungezeichnete seiner Gattung (die Zahl gleich, kein Riss ohne Jäger am Leib); fehlt
-    // es, fällt das Opfer.
+    // bleibt sein Leib ohne Tier, bis er außer Blick geht (der Bestand entscheidet, nie die Zeichnung).
     _bestandTode(tode) {
-        for (const { R, t, ursache, jaeger } of tode) {
+        for (const { t, ursache, jaeger } of tode) {
             const c = t.leib;
             if (!c || !this.state.creatures.includes(c)) continue;
             [c.userData._bestand, t.leib, c.userData.alterS] = [null, null, t.alterS];
@@ -2637,6 +2637,7 @@ class AnazhRealm_kreatur_leben {
             }
             if (!wahl || budget-- <= 0) break;
             this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
+            L.feldLetzt = wahl[1].t; // das zuletzt gerechnete Ereignis der Folge (der Moment des Felds, gate:mp-sync (f))
         }
         if (tode.length) this._bestandTode(tode);
     }

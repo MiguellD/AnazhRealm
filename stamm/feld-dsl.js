@@ -756,14 +756,16 @@ class AnazhRealm_feld_dsl {
         return { spawnsLeft: 8, depthLeft: 6, stepsLeft: 200, delayedSteps: 8 };
     }
 
-    // Deterministische Regel-RNG: der EINE Hash (`_fastHash`) über worldId, die Identität des Gesetzes (`_regelHash`) und die
+    // Deterministische Regel-RNG: der EINE Hash (`_fastHash`) über die Saat der Welt, die Identität des Gesetzes (`_regelHash`) und die
     // Scheibe der Welt-Uhr (`spielZeit` / everySec — die Uhr, der jeder Peer folgt, `_weltUhrNimm`): Peers mit demselben Gesetz
     // würfeln in derselben Scheibe denselben Wurf, jede Scheibe neu. Bis ultiversum.K4 trug die Saat die Platz-Nummer `id`, die
     // jeder Peer selbst zählt (ein Nexus-Experiment mehr bei B, und „manchmal" würfelte dort anders), und die Zahl der Feuer:
-    // fiel der erste Wurf von „manchmal" daneben, fiel jeder daneben — das Gesetz schlief für immer.
+    // fiel der erste Wurf von „manchmal" daneben, fiel jeder daneben — das Gesetz schlief für immer. ZUFALL NUR AUS DER SAAT (feld.K2#2,
+    // Lockstep): bis dahin hieß die Saat des Wurfs die Kennung der Welt (`worldId`) — zwei Seiten derselben Saat mit eigener Kennung
+    // (eine Seite bootete, bevor der Stand des Mitspielers lag) würfelten unter Last anders (gate:mp-sync (h), 1 von 3 Läufen).
     _worldRuleSeed(rule, scheibe) {
-        const wid = (this.state.worldMeta && this.state.worldMeta.worldId) || this.state.worldId || "realm";
-        return parseInt(this._fastHash(`${wid}:rule:${this._regelHash(rule)}:${scheibe || 0}`), 16) >>> 0 || 1;
+        const saat = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        return parseInt(this._fastHash(`${saat}:rule:${this._regelHash(rule)}:${scheibe || 0}`), 16) >>> 0 || 1;
     }
 
     // DIE IDENTITÄT EINES GESETZES (ultiversum.K4): der EINE Hash über Bedingung und Wirkung — auf jedem Peer, nach jedem Reload

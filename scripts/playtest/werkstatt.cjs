@@ -886,8 +886,8 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         r.updatePlayerEmotions(200);
         r._tickWorldRules(200); // das Gesetz des Gemüts `emotion:sorrow` (affekt.K2)
         out.sorrowAfterTick = st.player.emotions.sorrow;
-        // der Wunsch ist ein Akt mit Stempel (feld.K2#2): der nächste Zug zieht ihn
-        const sorrowWunsch = (r._wunschDesZugs(Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK) + 1) || {}).wort;
+        // der Wunsch ist ein Akt mit Stempel (feld.K2#2): der jüngste der Liste, der nächste Zug zieht ihn
+        const sorrowWunsch = st.wetterWuensche.at(-1)?.wort;
         st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
         out.sorrowTriggersRain = sorrowWunsch === "rainy" && st.weather === "rainy";
@@ -897,7 +897,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         st.weather = "sunny";
         st.wetterWuensche = [];
         r._tickWorldRules(205);
-        out.cooldownRespected = st.weather === "sunny" && st.wetterWuensche.length === 0;
+        out.cooldownRespected = st.weather === "sunny" && !st.wetterWuensche.length;
 
         // (e) DSL-Condition emotion_above
         st.player.emotions.joy = 0.9;
@@ -983,7 +983,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         st.creatureEmotions = st.creatures.map(() => "sad");
         r._tickWorldRules(400);
         const happyCount = st.creatureEmotions.filter((e) => e === "happy").length;
-        const hopeWunsch = (r._wunschDesZugs(Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK) + 1) || {}).wort;
+        const hopeWunsch = st.wetterWuensche.at(-1)?.wort;
         st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
         out.hopeTriggersSunnyHappy =

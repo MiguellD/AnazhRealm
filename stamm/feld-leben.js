@@ -2127,7 +2127,8 @@ class AnazhRealm_feld_leben {
         if ((i > 0 && A[i - 1].w === akt.w && A[i - 1].k === akt.k) || gewirkt.has(id)) return false; // doppelt empfangen: einer
         this._lebenGen = (this._lebenGen || 0) + 1;
         if (reist) {
-            const { k, ...feld } = akt;
+            const feld = Object.assign({}, akt);
+            delete feld.k; // der Schlüssel der Reihe ist die Sache jeder Seite
             this._aktSenden({ type: "dsl", w: akt.w, feld });
         }
         if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w)) {
@@ -2188,8 +2189,11 @@ class AnazhRealm_feld_leben {
             }));
             bestand[key] = { t: R.t, seq: R.seq, tiere };
         }
-        const feld = [...(st.lifeField || [])].map(([k, e]) => [k, e.a, e.t]);
-        const akte = (st.feldAkte || []).map(({ k, ...a }) =>
+        // nur die lebenden Zellen (eine Zelle unter epsilon ist tot — ihr Eintrag ist nur Gedächtnis der Räumung, `_feldTod`)
+        const L = AnazhRealm.LIFE_FIELD;
+        const lebt = ([, e]) => Math.abs(e.a * Math.exp(-L.decayPerSec * Math.max(0, st.spielZeit - e.t))) >= L.epsilon;
+        const feld = [...(st.lifeField || [])].filter(lebt).map(([k, e]) => [k, e.a, e.t]);
+        const akte = (st.feldAkte || []).map(({ k: _k, ...a }) =>
             a.art === "annahme" ? { ...a, tier: { ...a.tier } } : a
         );
         // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
@@ -2284,6 +2288,7 @@ class AnazhRealm_feld_leben {
         const jetzt = st.spielZeit;
         const gewirkt = this._feldAktGewirkt || (this._feldAktGewirkt = new Map());
         gewirkt.set(akt.w + "|" + akt.k, akt.w);
+        st.faunaLifecycle.feldLetzt = akt.w; // das zuletzt gerechnete Ereignis der Folge des Felds (`_feldTakt`)
         if (gewirkt.size > 512)
             for (const [k, w] of gewirkt) if (w < jetzt - 2 * AnazhRealm.AKT_NACHHOL_S) gewirkt.delete(k);
         st.spielZeit = akt.w;

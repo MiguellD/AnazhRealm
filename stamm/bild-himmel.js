@@ -974,7 +974,7 @@ class AnazhRealm_bild_himmel {
     // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
     // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
     // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
-    _tickSeason(currentTime) {
+    _tickSeason(_currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
         // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
@@ -988,7 +988,7 @@ class AnazhRealm_bild_himmel {
             if (!A || A.phase !== st.seasonPhase || A.jahr !== yearSec)
                 A = this._saisonAnker = { anker: st.seasonPhase, t: st.spielZeit, jahr: yearSec };
             A.phase = st.seasonPhase = (((A.anker + (st.spielZeit - A.t) / yearSec) % 1) + 1) % 1;
-        } else this._saisonAnker = null;
+        } else if (st.autoSeason === false) this._saisonAnker = null; // ein angehaltenes Jahr setzt beim Weiterlaufen neu an
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
