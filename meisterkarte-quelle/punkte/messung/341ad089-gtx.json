@@ -1,18 +1,32 @@
 {
  "sha": "341ad089a67693bb927a1443c97fdc1574c52dd0",
  "geraet": "gtx",
- "zeit": "2026-11-06T09:46:10.873Z",
+ "zeit": "2026-11-06T10:08:11.028Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "wetter.K3#2": {
    "gruen": true,
-   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157920 → 599459 px (×3.80) in 1920×1080 / 1920×1080",
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157927 → 599460 px (×3.80) in 1920×1080 / 1920×1080",
    "exit": 0,
    "minuten": 0.48,
    "gpu": "nvidia/pascal",
-   "s": 28.7,
-   "zeit": "2026-11-06T09:44:56.567Z",
+   "s": 29.1,
+   "zeit": "2026-11-06T10:05:43.895Z",
    "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "ego L 0.17442/0.1744375/0.1745979 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.1744196/0.1744371/0.1745975 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.02 · Mutante K 0 (UNERKANNT) · Höhle 0.0008013 ÷ hinaus 0.1458123 = 0.01 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.02 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht, Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "ROT: ego L 0.17442/0.1744375/0.1745979 · K 0, 0 /m · 2,5÷0,5 m 1 · third L 0.1744196/0.1744371/0.1745975 · K 0, 0 /m · 2,5÷0,5 m 1 · Leib Third 0,5 m Kontrast 0.02 · Mutante K 0 (UNERKANNT) · Höhle 0.0008013 ÷ hinaus 0.1458123 = 0.01 · ROT: ego 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], ego 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 1.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], third 2.5 m: Abfall 0 /m außerhalb der REF [0.17; 0.57], Third 0,5 m: der eigene Leib hebt sich nur um 0.02 vom Wasser ab (Soll ≥ 0.05), die Mutante kd halbiert verschiebt den Abfall nicht (0 gegen 0 /m) — das Bild liest das Gesetz des Wassers nicht, Höhle: Abfall 0.01 außerhalb [0.06; 0.25] (Himmel am Auge 0) · Exit 0",
+   "gpu": "nvidia/pascal",
+   "s": 34.4,
+   "zeit": "2026-11-06T10:08:11.028Z",
+   "abdruck": "7ebf20cab049",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -27,70 +41,55 @@
    "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.1 s · Exit 1",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 39.3,
-   "zeit": "2026-11-06T09:43:56.567Z",
+   "s": 39.2,
+   "zeit": "2026-11-06T10:04:43.939Z",
    "abdruck": "462e72b0bcca",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
-  "leib.K3#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-06T09:46:10.873Z",
-   "abdruck": "7ebf20cab049",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "studios.K4#2": {
-   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–",
-   "exit": 2,
-   "minuten": 0.61,
-   "grund": "verdrängt vom echt-Job (z258, integ-probe c4785981): gpu-lauf nahm der Sitzung um 10:46:08 das Schloss, die Welt fiel mitten in der Probe (Navigating frame was detached) — kein Urteil über den Kopf, die Scheibe fährt neu",
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.4 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (87.5 s)",
+   "exit": 3,
+   "minuten": 1.48,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.4 %/– · schmiede 99.4 %/– · fachwerk 99.6 %/– · terrain 99.1 %/– · koerperstudio –/– · tetrapoda –/–) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (87.5 s)",
    "gpu": "nvidia/pascal",
-   "s": 36.5,
-   "zeit": "2026-11-06T09:45:34.298Z",
+   "ungemessen": true,
+   "s": 88.6,
+   "zeit": "2026-11-06T10:06:21.987Z",
    "abdruck": "968f1ccf5262",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session",
-   "ungemessen": true,
-   "vorher": {
-    "gruen": false,
-    "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.3 %/– · portale 94.3 %/– · schmiede –/– [ROT: Navigating frame was detached] · fachwerk –/– · terrain –/– · koerperstudio –/– · tetrapoda –/–"
-   }
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T09:43:19.055Z",
+  "start": "2026-11-06T10:04:07.531Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
+  "bootS": 7.9,
   "grundstellungS": [
    4.7,
-   0.1
+   0.1,
+   4.2
   ],
-  "proben": 3,
+  "proben": 4,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
     "vor": "leib.K4#2",
-    "s": 28.9,
-    "takte": 707,
+    "s": 27.3,
+    "takte": 733,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": null,
     "vor": "wetter.K3#2",
-    "s": 16,
-    "takte": 880,
+    "s": 15.9,
+    "takte": 915,
     "chunks": 81,
     "nach": "der Tür"
    },
@@ -98,44 +97,50 @@
     "ort": null,
     "vor": "studios.K4#2",
     "s": 8.9,
-    "takte": 714,
+    "takte": 704,
     "chunks": 81,
     "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 16.2,
+    "takte": 849,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "zeichnerBlind": [
-   {
-    "probe": "studios.K4#2",
-    "wann": "nach",
-    "fehler": "Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'."
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor leib.K3#2: /eval: {\"ms\":1,\"fehler\":\"Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\mic",
-  "ciBlicke": 4,
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 2,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
+     "probe": "leib.K3#2",
+     "m": 6430,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
      "probe": "wetter.K3#2",
      "m": 1162,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 163,
-   "luecken": 4,
-   "letzteLuecke": "Attempted to use detached Frame '6C6CB1ECD2B6E85A113E9E62EB8EEDF0'."
+   "zapfen": 262,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 171.2,
-  "minuten": 3.39
+  "fahrtS": 277.1,
+  "minuten": 4.69
  }
 }
