@@ -1,8 +1,8 @@
 {
  "sha": "341ad089a67693bb927a1443c97fdc1574c52dd0",
  "geraet": "headless",
- "zeit": "2026-11-06T10:03:17.466Z",
- "host": "farm:42196924426",
+ "zeit": "2026-11-06T11:04:53.288Z",
+ "host": "farm:42207205085",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -424,15 +424,15 @@
   },
   "ki.K1#2": {
    "gruen": false,
-   "zahl": "Deckel 1800 s überschritten — beendet (zuletzt: ✓ „lösche die ganze welt“ 15875 ms → Welt — · null)",
+   "zahl": "Deckel 1800 s überschritten — beendet (zuletzt: ✓ „verringere die schwerkraft“ 19721 ms → Welt 19722 ms · [\"gravity\",0])",
    "exit": null,
    "minuten": 30,
-   "grund": "Deckel 1800 s überschritten — beendet (zuletzt: ✓ „lösche die ganze welt“ 15875 ms → Welt — · null)",
-   "zeit": "2026-11-06T09:44:11.447Z",
+   "grund": "Deckel 1800 s überschritten — beendet (zuletzt: ✓ „verringere die schwerkraft“ 19721 ms → Welt 19722 ms · [\"gravity\",0])",
+   "zeit": "2026-11-06T11:04:53.288Z",
    "abdruck": "a8876f20dede",
    "port": 7704,
-   "bahn": "allein",
-   "host": "farm:42196924426/3"
+   "bahn": "1/1",
+   "host": "farm:42207205085/1"
   },
   "ki.K5#1": {
    "gruen": false,
@@ -920,16 +920,15 @@
    "zwilling": "streaming.K4#1"
   },
   "speicher.K3#1": {
-   "gruen": false,
-   "zahl": "❌ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 5.5 kB, Platte 11.0 kB, am stärksten architectures 1.9 kB · gesamt roh 59.9 kB, Platte 119.7 kB · Leben worldJournal 36.4 kB, dslHistory 12.1 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1012.8 kB, Platte 2025.6 kB, am stärksten wegSpur 1012.8 kB · gesamt roh 1012.8 kB, Platte 2025.6 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-   "exit": 1,
-   "minuten": 3.62,
-   "grund": "ROT: ❌ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 5.5 kB, Platte 11.0 kB, am stärksten architectures 1.9 kB · gesamt roh 59.9 kB, Platte 119.7 kB · Leben worldJournal 36.4 kB, dslHistory 12.1 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, dslPatternMemory 0.0 kB, creatures -0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1012.8 kB, Platte 2025.6 kB, am stärksten wegSpur 1012.8 kB · gesamt roh 1012.8 kB, Platte 2025.6 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
-   "zeit": "2026-11-06T09:43:54.367Z",
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 4.5 kB, Platte 9.1 kB, am stärksten architectures 1.6 kB · gesamt roh 56.1 kB, Platte 112.2 kB · Leben worldJournal 36.5 kB, dslHistory 10.8 kB, knowledgeBase 3.0 kB, dslAbilities 2.7 kB, dslPatternMemory 0.0 kB, creatures -1.4 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.3 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 6.2,
+   "zeit": "2026-11-06T11:03:01.467Z",
    "abdruck": "14a69b36ebde",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42196924426/6"
+   "host": "farm:42207205085/2"
   },
   "speicher.K3#2": {
    "gruen": false,
@@ -1358,17 +1357,15 @@
    "host": "farm:42196924426/8"
   },
   "luftwasser.K4#1": {
-   "gruen": false,
-   "zahl": "9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 44 Bestäuber, r 0.499 · der Leser sieht 83 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
+   "gruen": true,
+   "zahl": "9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 39 Bestäuber, r 0.699 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
    "exit": 0,
-   "minuten": 0.96,
-   "grund": "ROT: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 44 Bestäuber, r 0.499 · der Leser sieht 83 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5)",
-   "zeit": "2026-11-06T09:48:31.936Z",
+   "minuten": 0.83,
+   "zeit": "2026-11-06T11:03:00.972Z",
    "abdruck": "77708c9d6e8f",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42196924426/8",
-   "zwilling": "luftwasser.K3#1"
+   "host": "farm:42207205085/3"
   },
   "speicher.K4#1": {
    "gruen": true,
