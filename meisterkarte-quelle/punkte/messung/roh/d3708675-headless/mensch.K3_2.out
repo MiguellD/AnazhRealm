@@ -1,0 +1,43 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] Seite #2: der Puls kehrt zurück nach 20.7 s — complete · renderer bereit · weltbild da · frames 10151 · welt 10151 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(r, window.THREE, o); }) seit 308.6 s
+[stall-akte] Puls 285×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 10151 · welt 10151 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 3169 144 % · renderer 3170 1 % · GPU 3068 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 44:57 gpu 0/r 169 · 44:59 gpu 1/r 182 · 45:01 gpu 0 [VizCompositorTh 1 %]/r 185 · 45:03 gpu 2 [VizCompositorTh 1 %]/r 190 · 45:05 gpu 0/r 167 · 45:07 gpu 0/r 170 · 45:09 gpu 0 [VizCompositorTh 1 %]/r 188 · 45:11 gpu 2 [VizCompositorTh 1 %]/r 187 · 45:13 gpu 0/r 213 · 45:15 gpu 0/r 172 · 45:17 gpu 0/r 184 · 45:19 gpu 0/r 180 · 45:21 gpu 0 [VizCompositorTh 1 %]/r 178 · 45:23 gpu 0/r 175 · 45:25 gpu 0/r 174 · 45:27 gpu 0/r 174 · 45:29 gpu 0/r 177 · 45:31 gpu 1 [VizCompositorTh 1 %]/r 182 · 45:33 gpu 2 [VizCompositorTh 1 %]/r 182 · 45:35 gpu 0/r 198 · 45:37 gpu 0/r 106 · 45:39 gpu 0 [Chrome_ChildIOT 1 %]/r 105 · 45:41 gpu 2 [VizCompositorTh 1 %]/r 103 · 45:43 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 45:45 gpu 1 [VizCompositorTh 1 %]/r 102 · 45:47 gpu 1 [Chrome_ChildIOT 1 %]/r 104 · 45:49 gpu 1 [VizCompositorTh 1 %]/r 104 · 45:51 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 45:53 gpu 1 [VizCompositorTh 1 %]/r 144 · 45:55 gpu 1 [Chrome_ChildIOT 1 %]/r 163
+[stall-akte] Stapel _tickBewohner siedlung-bewohner.js:1057
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -25.8/-161.6 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -27.0/-162.0 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -27.6/-162.2 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -28.1/-162.4 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -28.7/-162.7 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -29.2/-163.0 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -5.0/-187.7 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -15.7/-191.3 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -15.1/-191.3 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -14.5/-191.2 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -13.9/-191.1 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.202] [ERROR] BEWOHNER: der Ort -13.3/-191.0 erreicht keinen Weg frei
+[stall-akte] Stderr [3032:3048:1106/194131.115071:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [3032:3048:1106/194200.415553:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr [3032:3048:1106/194246.272233:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr [3032:3048:1106/194424.344517:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _tickBewohner siedlung-bewohner.js:1057
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":17,"third":20},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.029,"wegLeib":1808.9},"blick":{"n":159,"quote":0.925,"sektorMax":0.12},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":266,"tuer":266,"falsch":[],"aufWeg":0.9,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":202,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.37,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.967,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":165,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (347 s) — Sekunden je Probe: bewohner: 334
+
+✅ GRÜN — bewohner

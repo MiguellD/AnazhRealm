@@ -1,0 +1,20 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-worker-dichte.cjs --faden
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   7.2 s · 4.30 MB/min am Empfang: Faden → Main 0.29 MB · Main → Faden 0.23 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: buch:book 0.13 MB · voxel:genesis-plan-result 0.07 MB · buch:asset 0.06 MB · voxel:chunk-mesh-result 0.01 MB
+         Main → Faden: speicher:stand:.worldMeta.erdbau 0.04 MB · streu:state-set 0.04 MB · wald:state-set 0.04 MB · voxel:state-update 0.04 MB
+  gang   120.0 s · 0.20 MB/min am Empfang: Faden → Main 0.22 MB · Main → Faden 0.17 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: buch:asset 0.17 MB · voxel:chunk-mesh-result 0.02 MB · voxel:boden-morph 0.01 MB · buch:settlement 0.01 MB
+         Main → Faden: speicher:stand:creatures 0.05 MB · voxel:state-update 0.03 MB · streu:state-update 0.03 MB · wald:state-update 0.03 MB
+  fahrt  60.0 s · 0.87 MB/min am Empfang: Faden → Main 0.53 MB · Main → Faden 0.33 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: voxel:chunk-mesh-result 0.25 MB · voxel:boden-morph 0.17 MB · voxel:water-sheet-result 0.07 MB · buch:asset 0.02 MB
+         Main → Faden: voxel:water-sheet 0.11 MB · voxel:chunk-mesh 0.05 MB · voxel:boden-ein 0.04 MB · speicher:stand:creatures 0.03 MB
+  Fäden: buch · voxel · streu · wald · speicher
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 1.8 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 31 an Sync-Stellen und Test-Nähten · 0 sonst {"naht":31}
+  Bau-Klicks in der Fahrt: 6, die Hand 25.9 · 6.2 · 8.8 · 12.9 · 8.9 · 8.9 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 0.87 MB/min ≤ 5 in der Fahrt
+
