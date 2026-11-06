@@ -41,7 +41,7 @@ const FORBIDDEN = [
         "_ensureGenesisPlatform",
         "_genesisPortalRing",
         "genesisPortalRing",
-    ].map((token) => ({ token, fiel: "ort-wirt (Pflicht F) — der Genesis-Ort ist EIN Plan des Ort-Gesetzes, der Wirt liest ihn (_genesisOrt)" })),
+    ].map((token) => ({ token, fiel: "ort-wirt — EIN Plan des Ort-Gesetzes (_genesisOrt)" })),
     ...[
         "_nachtAnteil",
         "_celestialHorizonFade",
@@ -95,11 +95,11 @@ const FORBIDDEN = [
         fiel: "Welle 6.G — die Kollision ist feld-nativ, der Baum ein Bauplan",
     })),
     ...["initIntroDialog", "_introPages", "createDynamicAbility", "codeParser", "developAdvancedPhysics", "developAdvancedRenderer"].map(
-        (token) => ({ token, fiel: "UI-Putz und Phase 5 — kein Anleitungs-Modal, kein Laufzeit-Code, der Nexus spricht DSL" })
+        (token) => ({ token, fiel: "Phase 5 — der Nexus spricht DSL" })
     ),
     ...["_equipAppendHeldRow", "_equipAppendWeaponRow", "_workshopRenderActions"].map((token) => ({
         token,
-        fiel: "V17.91/V18.66 — der EINE Halte-Pfad (wieldBlueprint), der EINE FERTIGEN-Akt",
+        fiel: "V18.66 — wieldBlueprint",
     })),
     ...["_chatTryWorldCommand", "_chatTrySystemCommand", "_chatTryAbilityCommand", "_chatTryPersistenceCommand"].map(
         (token) => ({ token, fiel: "E1 — der Chat-Dispatch ist die EINE Tabelle (chatSystemPatterns)" })
@@ -156,7 +156,7 @@ const FORBIDDEN = [
     { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
     {
         token: "SPECIES_PALETTE_DEFAULT",
-        fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz",
+        fiel: "K24-N1 — P.barkA/barkB der Art",
     },
     { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
     { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
@@ -171,7 +171,7 @@ const FORBIDDEN = [
         token: "maxWalkableSlopeY",
         fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)",
     },
-    { token: "lodServe", fiel: "V18.500 — fachwerk-core L1 = Flächen-Stufe, kindStages [0,1,2] alle serviert" },
+    { token: "lodServe", fiel: "V18.500 — fachwerk-core kindStages" },
     { token: "fillLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
     { token: "rimLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
     { token: "backLight", fiel: "V18.503 — die Welt-Schattenseite trägt der Himmel (_ensureSkyEnvironment)" },
@@ -185,12 +185,12 @@ const FORBIDDEN = [
     { token: "brickCache", fiel: "V18.528 — der Kapsel-Cache ist der EINE Dedup" },
     { token: "freiGross", fiel: "V18.528 — kein 64³-Block-Allokator" },
     { token: "freiKlein", fiel: "V18.528 — kein 32³-Einheiten-Allokator" },
-    { token: "atlasDaten", fiel: "V18.528 — der 512×512×128-RGBA8-Atlas (128 MB) fiel" },
+    { token: "atlasDaten", fiel: "V18.528 — der RGBA8-Atlas" },
     { token: "feldTriAbtast", fiel: "V18.528 — der trilineare Brick-March im WGSL fiel" },
     { token: "feldTriGrad", fiel: "V18.528 — der trilineare Brick-Gradient im WGSL fiel" },
     {
         token: "_bundleZiegelTick",
-        fiel: "V18.528 — der Region-Ziegel (Fern-Cache) fiel, das Ferne trägt der Welt-March",
+        fiel: "V18.528 — der Welt-March",
     },
     { token: "_bundleZiegelTod", fiel: "V18.528" },
     { token: "_ziegelBackenAusGruppe", fiel: "V18.528 — der Gruppen-Bäcker fiel mit dem Region-Ziegel" },
@@ -215,14 +215,14 @@ const FORBIDDEN = [
         token: "_waterCellAt",
         fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen",
     },
-    { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
+    { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Strömung des Gesetzes" },
     { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
-    { token: "convexBulge", fiel: "Welle L Q7 — der 1,55-m-Buckel des Querschnitts (W-F2)" },
+    { token: "convexBulge", fiel: "Welle L Q7 — W-F2" },
     { token: "waterRunSurfaceAt", fiel: "Welle L Q7 — die geglättete Lauf-Fläche; der Spiegel selbst ist monoton" },
     { token: "_tickWaterCANearWake", fiel: "Welle L Q6 — die Annäherungs-Weckung (Ufer-Flut W-W1)" },
     { token: "_wakeWaterCAOnce", fiel: "Welle L Q6 — die Einstream-Weckung" },
     { token: "_caEvaporateSettled", fiel: "F3 — die Verdunstung der Zungen über dem Spiegel (die Haut fiel)" },
-    { token: "_preSeedWaterCAForEdit", fiel: "F3 — die Vor-Saat des Grabens aus den alten Zellen (sein Dach war die zweite Fläche)" },
+    { token: "_preSeedWaterCAForEdit", fiel: "F3 — die Vor-Saat des Grabens" },
     { token: "WAKE_CA_RADIUS", fiel: "Welle L Q6" },
     { token: "_voxelChunkNearPlayer", fiel: "Welle L Q6 — der Nah-Test der Weckung" },
     { token: "_caWoken", fiel: "Welle L Q6" },
@@ -233,27 +233,27 @@ const FORBIDDEN = [
     { token: "_ensureWaterfallMaterial", fiel: "Welle L Q7 — die Saat ohne Leser" },
     { token: "waterfallUniforms", fiel: "Welle L Q7" },
     { token: "waterfallMaterial", fiel: "Welle L Q7" },
-    { token: "sys.lastT", fiel: "Welle L Q7 — der Regen fiel je Frame im Haupt-Thread; die Lage rechnet der Vertex" },
+    { token: "sys.lastT", fiel: "Welle L Q7 — die Lage rechnet der Vertex" },
     {
         token: "dt * 42",
         fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
         auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
-    { token: "aboveWater < 2.0", fiel: "Welle L Q7 — die Strand-Glocke trägt bis 0,6 + 1,9 m (imStrand)" },
+    { token: "aboveWater < 2.0", fiel: "Welle L Q7 — imStrand" },
     { token: "seg.halfW || 0", fiel: "Welle L Q7 — die Halbbreite am Fußpunkt wie im Main (hwA/hwB)" },
-    { token: "kroneAnteil", fiel: "Gegenprüfung 07.10. — die Krone nach 0,6 der Bank-Rampe (die Steilwand)" },
-    { token: "carveBankSlope", fiel: "Gegenprüfung 07.10. — die Bank-Rampe Tiefe × 1,4; die Bank ist bankNeigung" },
-    { token: "kn.T - y", fiel: "Gegenprüfung 07.10. — das Gewicht der Gleit-Zone; die Dichte nimmt Kanal und Damm" },
+    { token: "kroneAnteil", fiel: "07.10. — die Steilwand" },
+    { token: "carveBankSlope", fiel: "07.10. — bankNeigung" },
+    { token: "kn.T - y", fiel: "07.10. — die Dichte nimmt Kanal und Damm" },
     {
         token: "_nahStreuSpiegel",
-        fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)",
+        fiel: "07.10. — der Kronen-Sprung des Schilf-Bands",
     },
     { token: "_chunkBundleAnker", fiel: "Welle B — der Satz ist der EINE Eintritt (_chunkSatzEin / _streuNahEin)" },
     { token: ".iStart", fiel: "Welle 6 Boden-Schatten — je Pass ein Abschnitt (_chunkSatzPass), kein Ring-Index" },
     { token: ".iVoll", fiel: "Welle 6 — der ganze Satz zeichnet nie; je Pass ein Abschnitt (_chunkSatzAbschnitt)" },
     {
         token: "_satzWerferWahl",
-        fiel: "Welle 6 — die Werfer-Wahl der Bau-Sätze ist der Abschnitt je Pass (_chunkSatzPass)",
+        fiel: "Welle 6 — _chunkSatzPass",
     },
     {
         token: "_chunkSatzVerdraeng",
@@ -282,7 +282,7 @@ const FORBIDDEN = [
     },
     { token: "useRegionRenderBundles", fiel: "Bundle-Wahrheit — kein Kill-Switch, die Bundles sind der EINE Weg" },
     { token: "_fxaa", fiel: "04.10. — TRAA trägt die Kantenglättung (_ensurePostProcessing)" },
-    { token: "taaLite", fiel: "04.10. — das nie gesetzte TAA-Flag; uDitherT rotiert, wo state.traaNode steht" },
+    { token: "taaLite", fiel: "04.10. — state.traaNode" },
     {
         token: "_foliageResScale",
         fiel: "K50 — die Szenen-Skala ist EINE Größe (_szeneSkalaWirk), kein Stellglied des Reglers",
@@ -316,7 +316,7 @@ const FORBIDDEN = [
     { token: "_bakeImpostorSilhouetteCanvas", fiel: "W6 — die Silhouette erreichte das Auge nie" },
     { token: "_buildImpostorCrossGeometry", fiel: "W6 — EIN Einheits-Quad (_impostorQuad)" },
     { token: "impostorKey", fiel: "W6 — EIN Karten-Material (impostorAtlas)" },
-    { token: "_rec.frame", fiel: "W6 — die Programm-Konstante der Sichthöhe (|aKarte.w|, der Stempel der L1-Höhe)" },
+    { token: "_rec.frame", fiel: "W6 — die Sichthöhe (aKarte.w)" },
     { token: "rttBaked", fiel: "W6 — die Zelle ist gebacken" },
     { token: "rttFailed", fiel: "W6 — die Zelle ist gescheitert" },
     { token: "silhouetteWartend", fiel: "W6 — der Zensus zählt wartende Zellen" },
@@ -325,10 +325,10 @@ const FORBIDDEN = [
     { token: "aZelle", fiel: "W6 — die Schicht ist aKarte.x" },
     { token: "aRahmen", fiel: "W6 — der Rahmen ist aKarte.yz" },
     { token: "aImpX", fiel: "W6 — die Ecke ist 2·uv.x − 1" },
-    { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
+    { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — lod.budget.tree[0]" },
     {
         token: "_WIRT_WURF",
-        fiel: "Integration W8 — das Budget aller Kerne trägt den Wurf (lod.budget[kind][stufe].schatten)",
+        fiel: "Integration W8 — lod.budget[kind][stufe].schatten",
     },
     {
         token: "AnazhRealm.LOOK_KLASSEN",
@@ -378,13 +378,13 @@ const FORBIDDEN = [
     { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
     { token: "_atmosphere(", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
     { token: "_fATM", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
-    { token: "_nebN", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln (_atmoLutBau), keine Nebel-Kuppel" },
+    { token: "_nebN", fiel: "D3 — die Kuppel (_atmoLutBau)" },
     { token: "_hazeCol", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln, kein Grau-Schleier" },
     { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
     { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
     { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
     { token: "nebulaColor", fiel: "D3 — der Träger der Tönung heißt himmelTint (die Nebel-Kuppel fiel)" },
-    { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
+    { token: "_skyEnvTex", fiel: "D3 — der Wandel-Pass der Himmels-Sicht (rtEq)" },
     { token: "RAYLEIGH_BETA", fiel: "D3 — die Rayleigh-Tiefe wohnt im Gesetz (ATMO_GESETZ.rayleighTiefe)" },
     {
         token: "ATMOS_GESETZ",
@@ -418,7 +418,7 @@ const FORBIDDEN = [
     { token: "slider-fog", fiel: "V18.530" },
     { token: "uFogNear", fiel: "V18.530 — kein Wasser-eigener Nebel" },
     ...["uIrr", "_feldLichtSync", "_feldEnvIrradianz"].map((token) => ({ token, fiel: "Licht K3 — Wasser, Feld und Panorama lesen das Licht der Welt (_weltLicht)" })),
-    { token: "_fernRingFarbe", fiel: "V18.530 — die Fern-Farbe liest die Boden-Farbe + den Wald (_fernFarbeAt)" },
+    { token: "_fernRingFarbe", fiel: "V18.530 — _fernFarbeAt" },
     { token: "_buildSkyPlanets", fiel: "V18.530 — die Wandelsterne leben im Sternfeld" },
     { token: "_loopSkyboxPlanets", fiel: "V18.530 — _loopSkyboxZeit" },
     { token: "state.planets", fiel: "V18.530" },
@@ -436,7 +436,7 @@ const FORBIDDEN = [
         token: "kronendach: Object.freeze",
         fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul",
     },
-    { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
+    { token: "farbeJeTakt", fiel: "05.10. — _fernFarbTakt" },
     ...[
         "_fernFarbeTeile(", "_fernFarbeMasche(", "_fernFarbeAt(", "_fernRingTeile(",
         "_fernRingFaerben(", "_fernFarbTakt(", "_fernRingGpuMal(", "_feldZeichnerHoehen(",
@@ -445,12 +445,12 @@ const FORBIDDEN = [
     ].map((token) => ({ token, fiel: "B2 — der Horizont rechnet im Fern-Faden, der Haupt-Faden-Weg fiel" })),
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
     { token: "Ammo.destroy(", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
-    { token: "_b1.klinge", fiel: "Welle 5 — die Trauer-L1 trägt Strähnen (tree[1].straehne), keine Klinge" },
+    { token: "_b1.klinge", fiel: "Welle 5 — tree[1].straehne" },
     {
         token: '".klinge fehlt"',
-        fiel: "Welle 5 — die Budget-Wand von tree[1].klinge ist mit der Trauer-Klinge gefallen",
+        fiel: "Welle 5 — die Trauer-Klinge",
     },
-    { token: "cup, seg)", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
+    { token: "cup, seg)", fiel: "Welle 5 — die Trauer-Klinge" },
     { token: "__foliageAtlasError", fiel: "Integration Welle 5 — kein Stoff ohne seinen Atlas (_blattAtlasProbe)" },
     { token: "_baumGrammatikFit", fiel: "05.10. — fern ist der Baum seine Karte (gate:fernwald)" },
     { token: "_baumKapselFit", fiel: "05.10. — _gestaltKapselFit (Fels, Blume der Gesetz-Streu)" },
@@ -459,7 +459,7 @@ const FORBIDDEN = [
         fiel: "05.10. — der Grammatik-Beipack hatte keinen Leser mehr",
         auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"], // die Brücke legte ihn in den Umschlag
     },
-    { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
+    { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
     {
         token: "opts.fernNode",
@@ -483,14 +483,14 @@ const FORBIDDEN = [
     { token: "lakeBaseFoam", fiel: "Welle 5 — ruhiges Wasser schäumt nicht" },
     { token: "const uSkyCol ", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
     { token: "skyCol: uSkyCol", fiel: "Welle 5 — der Spiegel liest die Himmels-Umgebung" },
-    { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
+    { token: "WG.tief", fiel: "Welle 5 — WASSER_GESETZ.koerperStreu" },
     {
         token: "_fernFlussFarbe",
         fiel: "K16 — der Fluss der Ferne ist der Wasser-Anteil aNass, gezeichnet mit _wasserBlick",
     },
     {
         token: "FERN_FARBE.wasser",
-        fiel: "K16 — die Ferne trägt den Wasser-Körper des Gesetzes (_wasserKoerper), kein Fern-Blau",
+        fiel: "K16 — _wasserKoerper",
     },
     { token: "0.0196, 0.0863, 0.1706", fiel: "K16 — das Fern-Blau 0x265273 fiel, R∞ aus WASSER_GESETZ" },
     {
@@ -508,7 +508,7 @@ const FORBIDDEN = [
     { token: "litTint", fiel: "Welle 5 — der Fragment-Waldkern; die Laubstreu folgt den Kronen (_kronenStreuNeu)" },
     { token: "G.floorMax", fiel: "Welle 5 — der Fragment-Waldkern" },
     { token: "floorMax: 0.55", fiel: "Welle 5 — der Deckel des Fragment-Waldkerns" },
-    { token: "const _dryW ", fiel: "Welle 5 — die Dürre-Flecken (Albedo × 1,32/1,12/0,6) färbten die Streu orange" },
+    { token: "const _dryW ", fiel: "Welle 5 — die Dürre-Flecken" },
     { token: ".sub(_dryW)", fiel: "Welle 5 — die Dürre-Flecken" },
     { token: "[0.3, 0.52, 0.22]", fiel: "Integration 06.10. — die Insel-Wiese ist BODEN_FARBE.mead" },
     { token: "[0.4, 0.3, 0.18]", fiel: "Integration 06.10. — der Insel-Hang ist BODEN_FARBE.dirt" },
@@ -520,7 +520,7 @@ const FORBIDDEN = [
     { token: "_hopV * 0.05", fiel: "Welle L kreatur — der Hüpfer integriert auf delta (updateCreatures)" },
     {
         token: "impulsProM",
-        fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)",
+        fiel: "Welle L kreatur — creatureJump",
         auch: ["tetrapoda-core.js"],
     },
     { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
@@ -536,7 +536,7 @@ const FORBIDDEN = [
     { token: "time_of_day: ([value])", fiel: "Leben-Schau 2 — der Zwilling time_of_day schrieb die Uhr roh" },
     {
         token: "this.state.dayLengthMinutes = state.dayLengthMinutes",
-        fiel: "Leben-Schau 2 — die Tag-Länge ist die Wahl des Spielers (localStorage), das Laden setzt sie nie",
+        fiel: "Leben-Schau 2 — die Tag-Länge wählt der Spieler",
     },
     { token: "dayLengthMinutes || 8", fiel: "Leben-Schau 2 — der Standard ist DAY_LENGTH_DEFAULT_MINUTES (60)" },
     { token: "player_size_mul", fiel: "Welle LF rudel — die Spieler-Skala ohne Gesetz-Achse fiel" },
@@ -595,8 +595,8 @@ const FORBIDDEN = [
     },
     { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
     { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
-    { token: "_egoVerborgen", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
-    { token: "_egoWar", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
+    { token: "_egoVerborgen", fiel: "Ego-Schatten 0910-5 — _maskeVorEgo" },
+    { token: "_egoWar", fiel: "Ego-Schatten 0910-5 — _maskeVorEgo" },
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
@@ -616,7 +616,7 @@ const FORBIDDEN = [
         token: "_k.mul(_T.float(0.42))",
         fiel: "Integration 06.10. — die Streu trägt ihre Albedo, die Krone ihren Schatten",
     },
-    { token: "WG.licht[0]", fiel: "Welle 5 — der Wasser-Körper ist R∞ im Licht des Orts (koerperAlbedo × uIrr)" },
+    { token: "WG.licht[0]", fiel: "Welle 5 — koerperAlbedo" },
     { token: "WG.spiegel.dim", fiel: "Welle 5 — der Spiegel ist die Himmels-Umgebung × Schlick-Fresnel" },
     { token: "const mixT = mix(", fiel: "Welle 5 — Tief und Flach trennt der Durchlass, kein Noise-Mix" },
     { token: "vnoise(xz.mul(0.05).add(uTime.mul(0.03)))", fiel: "Welle 5 — die Noise-Tönung baseN des Wassers" },
@@ -625,7 +625,7 @@ const FORBIDDEN = [
     { token: 'prefix: "glut"', fiel: "Welle 5 architektur — kein Glut-Pool im SCATTER_VARIANT_POOL" },
     {
         token: "row.wirte",
-        fiel: "Integration W5-Körper — der Deck-Mantel liegt auf der Haut der Wurzel (Strähnen je Fläche)",
+        fiel: "W5-Körper — der Deck-Mantel auf der Haut",
     },
     { token: "Math.sqrt(anteil * 3)", fiel: "Integration W5-Körper — kein fester Mantel-Radius je Wirt" },
     {
@@ -651,7 +651,7 @@ const FORBIDDEN = [
     },
     { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
     { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
-    { token: "ambient.osc1", fiel: "Welle 5 Klang — der Drohn; die Welt rauscht aus klang:UMWELT (wind/laub/…)" },
+    { token: "ambient.osc1", fiel: "Welle 5 Klang — klang:UMWELT" },
     { token: "ambient.ambientGain", fiel: "Welle 5 Klang — der Drohn" },
     { token: "symphony.weather)", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal" },
     { token: "symphony.weather;", fiel: "Welle 5 Klang — Regen = UMWELT.stimmen.regen aus dem rain-Kanal" },
@@ -673,7 +673,7 @@ const FORBIDDEN = [
     { token: "_glutVolumen", fiel: "Integration W5-Klang — _glutFlaeche (die Brenn-Fläche)" },
     {
         token: "vRefM3",
-        fiel: "Integration W5-Klang — UMWELT.stimmen.glut.bettRefM (das Glutbett der Studio-Feuerstelle)",
+        fiel: "W5-Klang — UMWELT.stimmen.glut.bettRefM",
         auch: ["klang-core.js", "worlds/klang/klang.js"],
     },
     {
@@ -684,7 +684,7 @@ const FORBIDDEN = [
     { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtFeld)" },
     { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtFeld" },
     { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },
-    { token: "feldCull", fiel: "05.10. — der Feld-Cull (Compute-Kompaktierung + indirekte Draws) fiel ganz" },
+    { token: "feldCull", fiel: "05.10. — der Feld-Cull" },
     { token: "FeldCull", fiel: "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern" },
     { token: "FELD_CULL", fiel: "05.10." },
     { token: "IndirectStorageBufferAttribute", fiel: "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt" },
@@ -703,7 +703,7 @@ const FORBIDDEN = [
     },
     {
         token: "nw.gruppe",
-        fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene",
+        fiel: "S3 wiese-gestalten — die Senke hängt in der Szene",
     },
     {
         token: "__strauchZeile",
@@ -733,7 +733,7 @@ const FORBIDDEN = [
     { token: "_hoehlenAugeGleich(tor,", fiel: "W7-Vereinigung — die Sperre gilt je Auge UND je Boden (H.boden)" },
     {
         token: "lib/stoff-linse",
-        fiel: "Welle G — EINE Shader-Kosten-Linse (scripts/lib/shader-kosten.cjs)",
+        fiel: "Welle G — scripts/lib/shader-kosten.cjs",
         auch: ["scripts/werkbank.cjs", "scripts/playtest.cjs", "scripts/diag-post-kette.cjs"],
     },
     {
@@ -762,11 +762,11 @@ const FORBIDDEN = [
     { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
     { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
     { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
-    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
-    { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
+    { token: "_torPanorama", fiel: "D8 — das Ziel aus der Ziel-Welt" },
+    { token: "_torPanoMal", fiel: "D8 — die Ziel-Welt rendert sich selbst" },
     { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
-    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
-    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
+    { token: "_torZielRahmen", fiel: "D8-n1 — das Studio backt" },
+    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (H5)" },
     { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
     { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
     { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
@@ -799,7 +799,7 @@ const FORBIDDEN = [
     },
     {
         token: "sliderEls",
-        fiel: "Studio-Hülle K41 — die Schieber hält der Generator (regler.eingabe / regler.sync)",
+        fiel: "K41 — regler.eingabe, regler.sync",
         auch: ["worlds/garage/garage.js", "worlds/schmiede/schmiede.js"],
     },
     {
@@ -832,12 +832,12 @@ const FORBIDDEN = [
     { token: 'creature.rotation.order !== "YXZ"', fiel: "D5 — die Gier-Ordnung YXZ an EINER Stelle (spawnCreatureAt)" },
     {
         token: "_fahrVLongPrev",
-        fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)",
+        fiel: "Welle L Q13 — z.aLong",
     },
     { token: "_ridePitchV", fiel: "Welle L Q13 — die Nick-Feder lebt im Fahr-Zustand des Kerns (fNickV)" },
     { token: "_rideKurvenRollV", fiel: "Welle L Q13 — die Wank-Feder lebt im Fahr-Zustand des Kerns (fWankV)" },
     { token: "_rideHeaveV", fiel: "Welle L Q13 — die Hub-Feder lebt im Fahr-Zustand des Kerns (fHubV)" },
-    { token: "_rideYawPrev", fiel: "Welle L Q13 — die Quer-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLat)" },
+    { token: "_rideYawPrev", fiel: "Welle L Q13 — z.aLat" },
     {
         token: "Spring.prototype.step",
         fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
@@ -890,18 +890,18 @@ const FORBIDDEN = [
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
     { token: "_menschFern", fiel: "S3 kreatur — die Gelenk-Gestalt (_gelenk) und der EINE Schalter _gelenkStufe" },
     { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
-    { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
+    { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — _gelenk.abM" },
     { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
     { token: "KREATUR_NAH_MESH", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
     { token: "_bewohnerFeldGrenze", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
-    { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
+    { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — _gelenk.abM" },
     {
         token: "_tierFernFolgt",
         fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)",
     },
     {
         token: "fernStarr",
-        fiel: "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg",
+        fiel: "V18.538 — EIN Gelenk-Guss für Tier und Mensch",
         auch: ["foundry-core.js"],
     },
     {
@@ -922,7 +922,7 @@ const FORBIDDEN = [
     { token: "NADEL_ZWEIG", fiel: "S3 — der Maler der Zelle 3 malt den Wedel (WEDEL_ZWEIG)", auch: ["phyto-core.js"] },
     {
         token: "_tiefenLeserNeuBinden",
-        fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler",
+        fiel: "0910-3 A — die Diät trägt den Größenwechsel",
     },
     {
         token: "_archFachwerkFit",
@@ -1002,7 +1002,7 @@ const FORBIDDEN = [
     { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
     {
         token: "_anazhAtlasTexe",
-        fiel: "V18.542 — die Erklärung der Atlanten an die Diät: der Textur-Wächter (`_diaetVorTextur`) sieht jede Textur des Programms",
+        fiel: "V18.542 — der Textur-Wächter (_diaetVorTextur)",
     },
     {
         token: "atmoUniforms.augenLicht",
@@ -1039,8 +1039,8 @@ const FORBIDDEN = [
     { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
     // w4-b-pflanzen: das Urteil der Kronen-Schüchternheit ist Kern-Gesetz (phyto-core `forestSteht`), der Bestand trägt es
     { token: "_forestDartSteht", fiel: "w4-b-pflanzen" },
-    { token: "gpuScatter", fiel: "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter" },
-    { token: "uSeite", fiel: "18.10. — das Panorama faltet EINE CPU-Faltung je Engine, die GLSL-Faltung fiel", auch: ["worlds/huelle/huelle.js"] },
+    { token: "gpuScatter", fiel: "G1 — die Streu hat keinen Schalter" },
+    { token: "uSeite", fiel: "18.10. — EINE CPU-Faltung", auch: ["worlds/huelle/huelle.js"] },
     // F6 — das additive Licht-Band der Host-Stoffe (Rim, Nacht-Boden, Mond-Rim, der sonnen-blinde Gegenlicht-Glow) leuchtete aus
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)
@@ -1118,7 +1118,7 @@ const ZWILLINGE = [
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
         verboten: ["foundry-core.js", ...STAMM],
-        fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
+        fiel: "U2b — Pflanzen-Gesetzbuch (barkProfile, buildTubeGesetz)",
     },
     {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
@@ -1148,19 +1148,19 @@ const ZWILLINGE = [
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
-        fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
+        fiel: "KONVERGENZ — Gesetzbuch (bauMensch)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
-        fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
+        fiel: "KONVERGENZ II — Gesetzbuch (MATERIAL_KLASSEN)",
     },
     {
         fingerprint: "mahagoni:{hex:0x6a4230", // K57: der Ton nach KOPF_SOLL hautAlbedo (vorher 0x5f3826)
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
-        fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
+        fiel: "KONVERGENZ II — Gesetzbuch (SKIN_TONES, HAIR_COLORS)",
     },
     {
         fingerprint: "wristFrac: 1.36",
@@ -1184,19 +1184,19 @@ const ZWILLINGE = [
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
-        fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
+        fiel: "U6c — Gesetzbuch (metaParams)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM, "foundry-core.js"],
-        fiel: "V18.463 — die Hüllen-Maschine (Voxel-Ops + Surface-Nets) wohnt im Gesetzbuch; Shell UND Bäcker LESEN",
+        fiel: "V18.463 — die Hüllen-Maschine im Gesetzbuch",
     },
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
-        fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
+        fiel: "V18.461 — Kern-Gesetz (CLOTH_COLORS, kleidZonen, haarStreu)",
     },
     {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
@@ -1214,7 +1214,7 @@ const ZWILLINGE = [
         fingerprint: "bladeLen: 1.45",
         gesetzbuch: "schmiede-core.js",
         verboten: [...STAMM],
-        fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
+        fiel: "U6d — Gesetzbuch (OAKESHOTT_TYPES)",
     },
     // K09a — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
     // Makro-Anker samt Grat-Strom und Massiv-Maske, Erosions- und Tarn-Delta samt Mulden-Form, die Rauheits-Maske, die
@@ -1293,7 +1293,7 @@ const ZWILLINGE = [
         fingerprint,
         gesetzbuch: "foundry-core.js",
         verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
-        fiel: "W1 — die Bodenschicht (groundCover) und der Wiesen-Tint (wiesenTint, bis W1 FIX v27 im Labor) wohnen im Kern",
+        fiel: "W1 — die Bodenschicht (groundCover), der Wiesen-Tint (wiesenTint)",
     })),
     // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
     // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
@@ -1302,13 +1302,13 @@ const ZWILLINGE = [
         muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
         gefallen: true,
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
-        fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (ATMO_RECHNUNG.sonne), keine Luftmasse als Kehrwert der Höhe",
+        fiel: "D3 — ATMO_RECHNUNG.sonne",
     },
     {
         muster: /\bEquirectangularReflectionMapping\b/,
         gesetzbuch: HIMMEL_BUCH,
         verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
-        fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
+        fiel: "D3 — die Himmels-Sicht (_atmoLutBau)",
     },
     // Licht K3 — DAS LICHT DER WELT als MUSTER: kein Pass rechnet sein Lambert-Licht selbst (der Faktor 1/π im WGSL, die Neigung
     // gegen die Sonnenhöhe im TSL) — Feld-March und Panorama reichen Albedo und Normale an den EINEN Baustein (`_weltLicht`).
@@ -1316,7 +1316,7 @@ const ZWILLINGE = [
         muster: /\b1\.0\s*\/\s*PI\b|0\.31830988|max\(\s*[\w.]+\.y\s*,\s*0\.2\s*\)/,
         gefallen: true,
         verboten: STAMM,
-        fiel: "Licht K3 — Spiegel, Panorama, Feld-March und Wasser rufen den EINEN Baustein weltLicht (_weltLicht)",
+        fiel: "Licht K3 — _weltLicht",
     },
     // ein Array-Bereich geht EINMAL in die Queue (`einmal`: der erste Fund im Gesetzbuch ist das Gesetz)
     {
@@ -1324,7 +1324,7 @@ const ZWILLINGE = [
         gesetzbuch: WORT_BUCH,
         einmal: true,
         verboten: STAMM,
-        fiel: "K-ICH-BÜHNE-PUFFER — die Arena rundete neben der EINEN Wort-Schrift (_schreibWorte)",
+        fiel: "K-ICH-BÜHNE-PUFFER — die EINE Wort-Schrift (_schreibWorte)",
     },
     // DECKE w3w-studios — das EINE Dreiecks-Raster: wer ein Dreieck rastert, ruft kronen-linse `rasterDreieck`; die Kante der
     // Pixel-Bahn am Raster-Rand ist sein Abdruck. Rest: diag-pflanzen-nah (die Karte w3w-wald schreibt seine Teppich-Deckung neu).
