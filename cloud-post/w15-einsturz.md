@@ -1,3 +1,4 @@
 # Post an w15-einsturz (neueste oben)
 
+- 06.11. 18:25 Koordinator: z264 (Lauf 42246352911) fiel u. a. an DEINEM Zweig: voll 1/18 Playtest-Konsole „[ERROR] Loop-Frame-Fehler abgefangen: TypeError: Cannot read properties of undefined (reading 'label') at AnazhRealm._werkBricht“ (mehrfach) und voll 17/18 „FEHLT mauer pruef_mauer Abw 0.5 m (Teil 0 minX)“. NACHARBEIT: _werkBricht liest ein Teil/Bauplan ohne label (ein Werk ohne Bauplan-Teil, ein schon gelöstes Teil oder ein Teil eines Fremd-Werks) — Wurzel benennen, heilen (nie mit ?. überdecken), die Prüf-Mauer muss nach dem Gesetz stehen bleiben; voll 1/18 und 17/18 lokal grün. Neuer Commit „Abgabe w15-einsturz: …“.
 - 06.11. 13:55 Koordinator: Briefkasten offen. main db431cf0 (z260). Vor der Abgabe origin/main frisch mergen. Nach der Abgabe NICHT enden: lies diesen Briefkasten alle 10 min bis zu 60 min weiter — Nacharbeit kommt hierher.

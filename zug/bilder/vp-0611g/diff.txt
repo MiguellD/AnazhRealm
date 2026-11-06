@@ -1,0 +1,34 @@
+1-third-aus main↔Zweig                       {"lumaA":52.31,"lumaB":52.31,"mAbs":0.009,"ueber8":0.006,"ueber24":0.001,"max":60,"maxPixel":[503,814],"zellen":["Spalte 4/8 Zeile 4/6 0.05","Spalte 3/8 Zeile 5/6 0.02","Spalte 2/8 Zeile 4/6 0.02"]}
+1-third-aus main↔main2 (Rausch-Boden)        {"lumaA":52.31,"lumaB":52.31,"mAbs":0.006,"ueber8":0.01,"ueber24":0.001,"max":60,"maxPixel":[503,814],"zellen":["Spalte 4/8 Zeile 4/6 0.08","Spalte 1/8 Zeile 2/6 0.01","Spalte 2/8 Zeile 1/6 0.01"]}
+1-third-aus main2↔Zweig                      {"lumaA":52.31,"lumaB":52.31,"mAbs":0.009,"ueber8":0.006,"ueber24":0.001,"max":40.4,"maxPixel":[1326,873],"zellen":["Spalte 4/8 Zeile 4/6 0.06","Spalte 1/8 Zeile 2/6 0.02","Spalte 3/8 Zeile 5/6 0.02"]}
+1-ego-aus main↔Zweig                         {"lumaA":57.78,"lumaB":57.78,"mAbs":0.026,"ueber8":0.004,"ueber24":0.001,"max":79.4,"maxPixel":[1142,595],"zellen":["Spalte 4/8 Zeile 2/6 0.05","Spalte 1/8 Zeile 3/6 0.04","Spalte 1/8 Zeile 1/6 0.04"]}
+1-ego-aus main↔main2 (Rausch-Boden)          {"lumaA":57.78,"lumaB":57.78,"mAbs":0.006,"ueber8":0.004,"ueber24":0.001,"max":54.3,"maxPixel":[1277,588],"zellen":["Spalte 6/8 Zeile 4/6 0.02","Spalte 1/8 Zeile 3/6 0.02","Spalte 2/8 Zeile 3/6 0.02"]}
+1-ego-aus main2↔Zweig                        {"lumaA":57.78,"lumaB":57.78,"mAbs":0.027,"ueber8":0.005,"ueber24":0.001,"max":79.4,"maxPixel":[1142,595],"zellen":["Spalte 4/8 Zeile 2/6 0.05","Spalte 1/8 Zeile 3/6 0.04","Spalte 1/8 Zeile 1/6 0.04"]}
+2-ego-zurueck-aus ↔ 1-ego-aus (Zweig)        {"lumaA":57.78,"lumaB":57.78,"mAbs":0.001,"ueber8":0.003,"ueber24":0,"max":79.4,"maxPixel":[1142,595],"zellen":["Spalte 6/8 Zeile 4/6 0.01","Spalte 5/8 Zeile 4/6 0.01","Spalte 4/8 Zeile 5/6 0.01"]}
+2-third-deuteranopie gegen aus               {"rgbAus":[43.5,58.6,15.9],"rgbFarb":[41.7,54.5,20.3],"geaendertProzent":12,"himmelPixel":52627,"himmelMaxKanalDelta":0.04,"schwarzProzent":[0.006,0.007],"weissProzent":[0,0]}
+2-ego-deuteranopie gegen aus                 {"rgbAus":[47.7,64.5,20.6],"rgbFarb":[46.1,61.1,24.3],"geaendertProzent":9.5,"himmelPixel":51975,"himmelMaxKanalDelta":0.02,"schwarzProzent":[0.002,0.004],"weissProzent":[0,0]}
+2-third-protanopie gegen aus                 {"rgbAus":[43.5,58.6,15.9],"rgbFarb":[41.3,53.5,21.2],"geaendertProzent":12.6,"himmelPixel":52627,"himmelMaxKanalDelta":0.04,"schwarzProzent":[0.006,0.008],"weissProzent":[0,0]}
+2-ego-protanopie gegen aus                   {"rgbAus":[47.7,64.5,20.6],"rgbFarb":[45.8,60.2,25.1],"geaendertProzent":9.9,"himmelPixel":51975,"himmelMaxKanalDelta":0.02,"schwarzProzent":[0.002,0.002],"weissProzent":[0,0]}
+2-third-tritanopie gegen aus                 {"rgbAus":[43.5,58.6,15.9],"rgbFarb":[43.3,58.4,15.9],"geaendertProzent":1.3,"himmelPixel":52627,"himmelMaxKanalDelta":8.99,"schwarzProzent":[0.006,0.006],"weissProzent":[0,0]}
+2-ego-tritanopie gegen aus                   {"rgbAus":[47.7,64.5,20.6],"rgbFarb":[47.4,64.3,20.6],"geaendertProzent":1.5,"himmelPixel":51975,"himmelMaxKanalDelta":12.54,"schwarzProzent":[0.002,0.002],"weissProzent":[0,0]}
+3-ego-fov60 gegen fov75                      {"soll":0.7524,"gemessen":0.75,"fehlerAmBesten":11.2,"fehlerBeiS1":27.39}
+3-ego-fov100 gegen fov75                     {"soll":1.5531,"gemessen":1.555,"fehlerAmBesten":7.32,"fehlerBeiS1":28.44}
+3-ego-fov75 ↔ 1-ego-aus (Default 75)         {"lumaA":57.78,"lumaB":57.78,"mAbs":0.001,"ueber8":0.003,"ueber24":0,"max":79.4,"maxPixel":[1142,595],"zellen":["Spalte 6/8 Zeile 4/6 0.01","Spalte 5/8 Zeile 4/6 0.01","Spalte 4/8 Zeile 5/6 0.01"]}
+
+1-ego-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 93.770 % / 6.198 % / 0.014 % / 0.007 % / 0.005 % / 0.006 % · Δ≥2 je Neuntel-Band (oben→unten) 18,43,70,67,270,152,1,42,3 · Himmel-Pixel mit Δ≥1 1398/52593
+1-ego-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 98.715 % / 1.245 % / 0.017 % / 0.011 % / 0.006 % / 0.006 % · Δ≥2 je Neuntel-Band (oben→unten) 31,59,140,127,274,158,0,40,0 · Himmel-Pixel mit Δ≥1 267/52593
+1-ego-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 93.498 % / 6.471 % / 0.013 % / 0.008 % / 0.004 % / 0.007 % · Δ≥2 je Neuntel-Band (oben→unten) 32,61,124,86,175,91,1,81,2 · Himmel-Pixel mit Δ≥1 1510/52592
+1-third-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 98.416 % / 1.523 % / 0.024 % / 0.016 % / 0.011 % / 0.009 % · Δ≥2 je Neuntel-Band (oben→unten) 33,44,74,234,172,572,85,32,0 · Himmel-Pixel mit Δ≥1 526/53107
+1-third-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.250 % / 0.668 % / 0.031 % / 0.023 % / 0.013 % / 0.015 % · Δ≥2 je Neuntel-Band (oben→unten) 90,100,157,266,187,782,85,31,0 · Himmel-Pixel mit Δ≥1 228/53107
+1-third-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 98.267 % / 1.673 % / 0.022 % / 0.016 % / 0.011 % / 0.010 % · Δ≥2 je Neuntel-Band (oben→unten) 74,73,130,84,84,676,72,35,0 · Himmel-Pixel mit Δ≥1 583/53108
+
+1-ego-aus main→kand: +1 je R/G/B 28380/33796/12794 · −1 je R/G/B 23134/19557/17092 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 6.0% 7.3% 5.9% 3.8% 2.7% 2.0% 0.7% 0.3%
+1-ego-aus main→main2: +1 je R/G/B 5757/4953/3871 · −1 je R/G/B 5211/4468/3484 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 1.2% 1.6% 1.0% 0.7% 0.5% 0.3% 0.1% 0.0%
+1-third-aus main→kand: +1 je R/G/B 6045/4766/3630 · −1 je R/G/B 5430/10432/3291 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 1.4% 1.9% 1.3% 0.8% 1.0% 0.9% 0.6% 0.0%
+1-third-aus main→main2: +1 je R/G/B 3255/2908/2257 · −1 je R/G/B 3007/2634/2221 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 0.7% 0.8% 0.6% 0.4% 0.5% 0.5% 0.0% 0.0%
+ego deuteranopie Himmel RGB aus 71.6/93.1/104.5 → 71.6/93.1/104.5 (51975 px) · rötlich (Stamm, Halm-Spitzen) RGB 122.5/104.3/36.1 → 102.4/56.3/89.7 (5.7 % px)
+ego protanopie Himmel RGB aus 71.6/93.1/104.5 → 71.6/93.1/104.5 (51975 px) · rötlich (Stamm, Halm-Spitzen) RGB 122.5/104.3/36.1 → 98.8/43.6/100.5 (5.7 % px)
+ego tritanopie Himmel RGB aus 71.6/93.1/104.5 → 59.1/85.2/105.2 (51975 px) · rötlich (Stamm, Halm-Spitzen) RGB 122.5/104.3/36.1 → 122.4/104.2/36.1 (5.7 % px)
+third deuteranopie Himmel RGB aus 51.3/75.3/84.0 → 51.3/75.3/84.0 (52627 px) · rötlich (Stamm, Halm-Spitzen) RGB 110.6/93.1/31.8 → 92.1/47.4/82.8 (7.0 % px)
+third protanopie Himmel RGB aus 51.3/75.3/84.0 → 51.3/75.3/84.0 (52627 px) · rötlich (Stamm, Halm-Spitzen) RGB 110.6/93.1/31.8 → 89.2/36.2/93.3 (7.0 % px)
+third tritanopie Himmel RGB aus 51.3/75.3/84.0 → 42.4/69.7/84.7 (52627 px) · rötlich (Stamm, Halm-Spitzen) RGB 110.6/93.1/31.8 → 110.5/92.9/31.8 (7.0 % px)
