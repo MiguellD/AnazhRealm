@@ -672,8 +672,8 @@ async function gtDorfweg(v2, anker, sek) {
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
 // (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "wand" stellt die Steil-Wand 0,35 zurück
 // in `_autoSettlementSiteOk`, die bis siedlung-k3-hang jeden Ort steiler als 0,35 abwies. C-K3 DIE TRASSE AM ORT: je Vorrat der
-// Abstand seines Plans v2 vom Ort, `hang` die Steilheit dort (die EINE `_slopeAt`, die auch die Wand fragt; der Vorrat liegt
-// vor dem Erwachen, sein Erdbau noch nicht)
+// Abstand seines Plans v2 vom Ort, `hang` die Steilheit dort (die EINE `_slopeAt`, die auch die Wand fragt; der Grund des
+// Vorrats liegt vor dem Erwachen, w13-dorf-strom — er fällt vor der Messung, `_dorfVorratGrundFaellt`)
 // seines Höhen-Rasters, die Lese-Punkte außerhalb des Rasters und die Gassen (das Gefälle misst `gassenGefaelle`). Browser.
 async function vorratAmDorf(messort, alt) {
     const SG = AnazhRealm._siedlungGesetz();
@@ -728,6 +728,7 @@ async function vorratAmDorf(messort, alt) {
             r._tickAutoSettlement(pm);
             await sleep(20);
         }
+        for (const w of r._dorfVorraete.values()) r._dorfVorratGrundFaellt(w);
         for (const [k, v] of r._dorfVorraete) {
             const b = await v.fertig;
             const v2 = b && r._ortPlaene.get(AnazhRealm._ortSchluessel(b.plan, b.anker));
@@ -2144,11 +2145,7 @@ hauptLauf(async () => {
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, erst, haus, haupt, vor] = [false, null, -1, 1, 0];
-                r._foundryFlattenFor = function (e, ...a) {
-                    vor += !wach && /^haus_/.test(e.type);
-                    return AnazhRealm.prototype._foundryFlattenFor.call(this, e, ...a);
-                };
+                let [wach, erst, haus, haupt] = [false, null, -1, 1];
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p && p.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
@@ -2172,14 +2169,20 @@ hauptLauf(async () => {
                                 yield true;
                             })()
                         );
+                // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
+                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
-                if (vorlauf) r._tickAutoSettlement(stell(nah + 80));
+                // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
+                // bereitet sich vor, weil sie ihn binnen `bereitS` erreicht (`_bedarfZeit`); nH 13 (Selbsttest) steht still: dort
+                // ist es eine Strecke (nah + 200 m: der Ring der Sicht `vorlaufM` 160 m und 40 m)
+                if (nH - 13) r._bedarf = { t: 0, vx: -16, vz: 0, wand: performance.now() }; // nH 13: ohne Bahn
+                if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
+                const vr = vorlauf && !alt && r._dorfVorraete.get(key);
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
-                const vr = vorlauf && !alt && r._dorfVorraete.get(key);
                 for (let m = nah + 80; vr && m > nah + 1; m -= 4)
                     for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++) await sleep(5);
                 const vor0 = new Set(st.architectures); // die Häuser der Läufe davor zählen nie
@@ -2200,7 +2203,6 @@ hauptLauf(async () => {
                     rd._isHeadlessNull = true;
                     return e._ziegelSlot && "huelle";
                 };
-                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
                 let [bild, erstes] = [-1, null];
                 wach = true;
                 for (
@@ -2224,7 +2226,7 @@ hauptLauf(async () => {
                         nH,
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
-                        vor,
+                        vorrat: vr?.vorgebacken,
                         bild,
                         erstes,
                         nahImSchirm,
@@ -2239,9 +2241,9 @@ hauptLauf(async () => {
                     ["teleport12", 12, 0],
                     ["teleport300", 300, 0],
                     ["alt300", 301, 1, 1],
+                    ["strecke13", 13, 1],
                 ])
                     res.c.k5[k] = await lauf(nH, v, alt, fern);
-                delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = st.yaw;
                 const slot = (d, w, e = 3) => ({
@@ -3290,7 +3292,7 @@ hauptLauf(async () => {
         `${w.erstes.typ} als Hülle in ${w.erstes.d} m vor dem nahen`;
     check(
         `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken`,
-        je(["vorlauf12", "vorlauf300"], (w) => w.vor > 0 && w.erstes && w.bild <= soll && !fernVorNah(w)),
+        je(["vorlauf12", "vorlauf300"], (w) => w.vorrat && w.erstes && w.bild <= soll && !fernVorNah(w)),
         k5
     );
     check(
@@ -3301,7 +3303,7 @@ hauptLauf(async () => {
     check(
         // der Export nach dem Erwachen (Teleport) und die Schichten vor dem ersten Haus (alt)
         "C-K5 Selbsttest: Teleport und alt fallen ROT",
-        je(["teleport300", "alt300"], (w) => w.haus > soll),
+        je(["teleport300", "alt300"], (w) => w.haus > soll) && !k5.strecke13.vorrat,
         k5
     );
     check(

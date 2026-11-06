@@ -2498,7 +2498,7 @@ class AnazhRealm_vegetation_baum {
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zu SEINEM Rand (`_archKartenHorizont`, im
         // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern).
-        const totband = AnazhRealm.KARTEN_HORIZONT_TOTBAND_M;
+        const totband = AnazhRealm.CULL_TOTBAND_M;
         const saumSq = (AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M) ** 2;
         // DIE WACHE DES CULLS (pbk4-fahrt, Gebot 7): der Gang geht die WACHEN Einträge (`_cullWache`), nie den Bestand. Ein
         // Eintrag, dessen Urteil steht (nichts offen, kein Mesh der Mesh-Zone, kein Beweger), schläft, bis der Weg des Spielers
@@ -2610,8 +2610,9 @@ class AnazhRealm_vegetation_baum {
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
             // LOD-Tick schaltet die Stufen nach Distanz. Bis das Mesh steht, trägt das Feld (kein Loch beim
             // Streamen); steht es, schweigt das Feld — sonst läge der konservative Box-Satz VOR dem Mesh. Jenseits
-            // des Radius ist der Box-Satz die Gestalt der Bauten und Steine (klein im Bild, billig).
-            if (distSq <= radiusSq) {
+            // des Radius ist der Box-Satz die Gestalt der Bauten und Steine (klein im Bild, billig). Was gezeichnet ist, bleibt
+            // es bis hinter das Totband (`CULL_TOTBAND_M`).
+            if (distSq <= radiusSq || (distSq <= (radius + totband) ** 2 && this._archIsRendered(entry))) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
                 // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
                 // fernen (Befund 02.10., gate:arch-feld: in Listen-Reihenfolge fraß das Dorf den überbuchten
@@ -2642,11 +2643,12 @@ class AnazhRealm_vegetation_baum {
                     this._cullArchitectureMesh(entry);
                     regung++;
                 }
+                const vor = this._archVorbau(entry, radius); // die Stufe des Eintritts, binnen `vorbauS` bestellt
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
-                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius); // der Satz steht
+                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius - vor); // der Satz steht
                 } else {
                     entry._ziegelD2 = rang;
                     ziegelOffen.push(entry);
@@ -2761,6 +2763,30 @@ class AnazhRealm_vegetation_baum {
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
+    }
+
+    // DER VORBAU DER MESH-ZONE (w13-dorf-strom, die Zeit bis Bedarf): holt die Bahn einen Eintrag jenseits der Zone binnen
+    // `BEDARF.vorbauS` in die Zone `R` (`_bedarfZeit`), bestellt er die Studio-Stufe seines Eintritts — am Auge `R` vor ihm auf
+    // dem Weg zum Spieler (`_foundryLodForEntry`), über DENSELBEN Chokepoint wie sein Bau (`_foundryFlattenFor`, die Foundry
+    // rangiert sie nach der Zeit bis Bedarf). Bis w13-dorf-strom bestellte erst die Zone samt dem Vorlauf der Bahn (3 s) die
+    // Stufe: im GT wartete ein Felsturm 6,4 s auf die Foundry und trat 23 Bilder ungezeichnet in den Kegel (Fahrt-Probe dorf).
+    // Rückgabe: der Weg der Bahn in `vorbauS` (m) — um ihn endet der Schlaf des Eintrags früher.
+    _archVorbau(entry, R) {
+        const [vx, vz] = this._bedarfTempo();
+        const weg = Math.hypot(vx, vz) * AnazhRealm.BEDARF.vorbauS;
+        const e = entry.position;
+        if (!weg || !this._foundryEnabled() || !(this._bedarfZeit(e.x, e.z, R) <= AnazhRealm.BEDARF.vorbauS))
+            return weg;
+        const preset = this._foundryPresetForEntry(entry);
+        const p = this.state.playerMesh.position;
+        const k = Math.min(1, R / (Math.hypot(p.x - e.x, p.z - e.z) || 1));
+        if (preset)
+            this._foundryFlattenFor(
+                entry,
+                preset,
+                this._foundryLodForEntry(entry, { x: e.x + (p.x - e.x) * k, z: e.z + (p.z - e.z) * k })
+            );
+        return weg;
     }
 
     // DIE WACHE DES CULLS (`tickArchitectureCulling`): je Bestand (`state.architectures`, eine neue Liste oder ein neues Buch
@@ -3006,10 +3032,13 @@ AnazhRealm.ARCH_NAH_VERSUCHE = 24;
 // Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
 // gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
 AnazhRealm.ARCH_PLATZ_MS = 4;
-// Das Totband am Karten-Horizont (m, `tickArchitectureCulling`): ein Karten-Ding platziert seine Karte bis zu seinem
-// Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
-// keine Karte flattern.
-AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
+// DAS TOTBAND DER RÄUMUNG (m, `tickArchitectureCulling`): an jeder Grenze des Culls — dem Karten-Horizont eines Karten-Dings
+// (`_archKartenHorizont`) und dem Rand der Mesh-Zone (`architectureCullingRadius`) — zeichnet ein Ding bis an die Grenze
+// und räumt erst so weit dahinter: ein Spieler, der am Rand pendelt oder an ihm entlang fährt, lässt nichts flattern.
+// Bis w13-dorf-strom trug nur der Horizont das Band: die Mesh-Zone räumte jenseits des Radius — im GT seitlich in 149–152 m
+// (der Abstand im Takt springt mit dem Schritt der Bahn) wechselten Felsturm, Glutbrunnen und Felsbogen Bild für Bild
+// zwischen Mesh und Satz und traten ungezeichnet in den Kegel (Fahrt-Probe dorf: 12 Lücken-Bilder).
+AnazhRealm.CULL_TOTBAND_M = 16;
 // DIE BÜSCHE DER SAAT (w4-b-pflanzen): die gewachsenen Baupläne, die die Saat eines Chunks setzen kann — der Probe nass,
 // lebendig, sonst (`_vegetationSampleSpawn`) und der Strauch-Teppich des Walds (`_forestPlantChunk`, der sonst-Busch). Ihr
 // Wuchs kommt aus dem Wald-Faden; die Saat wartet auf die Variante ihrer Region (`_wuchsFehlt`).
