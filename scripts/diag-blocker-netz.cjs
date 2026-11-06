@@ -450,7 +450,17 @@ async function probe() {
             let huelle = null;
             if (rng() < 0.3) {
                 const w = rng() * Math.PI * 2;
+                // der Grundriss des Wagens (physik.K2 Staffel 2: die Hülle löst als konvexes Polygon, `_fahrHuelleBau`) — hier
+                // ein Achteck um mitte 0,3 (Bug 2,5, Heck −1,9, Breite ±0,9, die Ecken 0,3 m gebrochen) mit seinen Kanten
+                const poly = [[-1.9, -0.6], [-1.6, -0.9], [2.2, -0.9], [2.5, -0.6], [2.5, 0.6], [2.2, 0.9], [-1.6, 0.9], [-1.9, 0.6]];
+                const kanten = poly.map(([l0, q0], j) => {
+                    const [l1, q1] = poly[(j + 1) % poly.length];
+                    const len = Math.hypot(l1 - l0, q1 - q0);
+                    return { l0, q0, l1, q1, nl: (q1 - q0) / len, nq: -(l1 - l0) / len, len };
+                });
                 huelle = {
+                    poly,
+                    kanten,
                     mitte: 0.3,
                     hl: 2.2,
                     hw: 0.9,

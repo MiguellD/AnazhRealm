@@ -50,7 +50,7 @@ function driveVerdict(d) {
     if (!d || d.flatFoundry !== true || d.flatBauplan !== true) out.push("flat"); // die EINE Flat-Quelle der Instanz
     if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
     // DONOR-ABSCHIED: Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
-    // Anker; Blocker-Huelle == exportDrive.huelle-Laenge (> 3 m — die 2.1-m-Donor-
+    // Anker; Blocker-Huelle == die Laenge der Gestalt (exportDrive.huelle + FAHRZEUG_UMRISS, > 3 m — die 2.1-m-Donor-
     // Box KANN das nicht liefern). Beide beweisen KONSUM des Kerns + ABSENZ des Donors.
     if (!d || d.sitzKern !== true) out.push("sitzKern");
     if (!d || d.huelleKern !== true) out.push("huelleKern");
@@ -227,8 +227,13 @@ hauptLauf(async () => {
                             mnZ = Math.min(mnZ, b.minZ);
                             mxZ = Math.max(mxZ, b.maxZ);
                         }
+                        // die Spanne der GEZEICHNETEN Gestalt (physik.K2 Staffel 2): die Stationen der Kern-Hülle plus der
+                        // Überstand, den der Kern an seiner gebauten Gestalt mintet (FAHRZEUG_UMRISS: Bug ueber[0], Heck ueber[8])
+                        const U = (globalThis.__vehicleCore.FAHRZEUG_UMRISS || {})[fzg.gestalt];
                         const span = Math.max(mxX - mnX, mxZ - mnZ);
-                        res.drive.huelleKern = span > 3 && Math.abs(span - (drv.huelle.noseX - drv.huelle.tailX) * sc) < 0.05;
+                        res.drive.huelleKern =
+                            !!U && span > 3 &&
+                            Math.abs(span - (drv.huelle.noseX + U.ueber[0] - drv.huelle.tailX + U.ueber[8]) * sc) < 0.05;
                     }
                 } catch (eD) {
                     res.drive.donorErr = fehlerText(eD);
