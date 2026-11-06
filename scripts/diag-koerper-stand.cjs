@@ -40,12 +40,11 @@
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST, jsonSchreiben } = require("./lib/welt-boot.cjs");
-const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = SELBSTTEST;
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
-const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
 // DIE KARTE DES EIGNERS (die Karte des Chunks unter dem Punkt, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
@@ -1235,9 +1234,9 @@ hauptLauf(async () => {
             page.setDefaultTimeout(880000);
             await nullRenderer(page);
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
-            // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
-            // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm); dasselbe Urteil hält den Takt des Nexus an (sein Dorf)
-            if (DORF_ZUG === false) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = false));
+            // Wiese und Hang — die Ankunft trägt ihn (`server.zeige` → `ortZug`, genesis wie Wiese: er ruht; bis w12-dorf-probe hielt
+            // ihn headless der Null-Renderer an, auf der Karte lief er, und der 25°-Hang stand unter den Terrassen des Dorfs, Radeon:
+            // Feinform p95 21,1 statt 4,3 cm); dasselbe Urteil hält den Takt des Nexus an (sein Dorf)
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);

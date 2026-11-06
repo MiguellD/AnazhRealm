@@ -1094,7 +1094,7 @@ class AnazhRealm_vegetation_baum {
 
     // DER JUNGWUCHS DES WALDS AM ORT (stoffe.K5#2): eine Tat wechselte die Stufe ihrer Sukzession (`_sukzessionMalen`, die
     // Heilung) — jeder stehende Dart des Walds im Kasten x0…x1 · z0…z1 eines gepflanzten Chunks trägt danach den Baum im Alter
-    // seines Orts (`_baumAlter`): der Brand nimmt die Bäume seiner Zellen, der Stubben treibt den Sämling, der Jungwuchs wächst
+    // seines Orts (`_baumAlter`): der Brand nimmt die Bäume seiner Narbe, der Stubben treibt den Sämling, der Jungwuchs wächst
     // Stufe um Stufe, die Heilung stellt den gewachsenen. Steht der Baum in seinem Alter, bleibt er; sonst fällt er still und
     // der neue tritt ein. Ein Chunk ohne Plan oder Saat pflanzt selbst im Alter seiner Orte (`_forestPlantChunk`).
     // → die Zahl der Wechsel.
@@ -1137,15 +1137,14 @@ class AnazhRealm_vegetation_baum {
             ...Q.filter((q) => q.opts && q.opts._lodSpecies && imKasten(q.position)),
         ];
         const am = (d) => steht.find((e) => Math.hypot(e.position.x - d.x, e.position.z - d.z) < 0.05);
-        const cellDarts = (gx, gz) => this._forestCellDarts(gx, gz, seedInt);
-        const fd = this._effectiveFoliageDensity();
+        const [zelle, fd] = [this._brandZellen(), this._effectiveFoliageDensity()];
         let n = 0;
         for (let gz = ha; gz <= hb; gz++)
             for (let gx = ga; gx <= gb; gx++)
-                for (const d of cellDarts(gx, gz)) {
+                for (const d of this._forestCellDarts(gx, gz, seedInt)) {
                     if (d.x < x0 || d.x >= x1 || d.z < z0 || d.z >= z1 || !gepflanzt(d.x, d.z)) continue;
                     if (fd < 1 && d.keep >= fd) continue;
-                    const alter = this._baumAlter(d.x, d.z);
+                    const alter = this._baumAlter(d.x, d.z, zelle);
                     const e = am(d);
                     const ov = e && (e.studioOv || (e.opts && e.opts.studioOv));
                     if ((e ? (ov && ov.alter) || 1 : 0) === alter) continue;
@@ -1196,6 +1195,7 @@ class AnazhRealm_vegetation_baum {
         // Jeder Dart des Bestands STEHT (das Urteil trägt `_forestCellDarts`, w4-b-pflanzen); die geborenen Darts eines
         // vorläufigen Bestands merkt der Gang je Aufruf (`geborenMerk` — KEIN chunk-übergreifender mutabler Zustand).
         const geborenMerk = new Map();
+        const zelle = this._brandZellen();
         let planted = 0;
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
@@ -1205,7 +1205,7 @@ class AnazhRealm_vegetation_baum {
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     // DAS ALTER DES ORTS (stoffe.K5#2, `_baumAlter`): wo ein Baum fiel oder die Narbe eines Brands liegt, steht
                     // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4)
-                    const alter = this._baumAlter(d.x, d.z);
+                    const alter = this._baumAlter(d.x, d.z, zelle);
                     if (!(alter > 0)) continue;
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).

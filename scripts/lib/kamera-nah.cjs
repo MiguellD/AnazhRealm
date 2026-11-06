@@ -198,9 +198,7 @@ function nahDeckungInSeite(o) {
             const karte = !!(atlasA && uv && mat.userData && mat.userData.foundryKind === "foliageTex");
             const me = metaFuer(kl, mat, karte);
             for (let t = s0; t + 2 < s1; t += 3) {
-                const i0 = I ? I[t] : t;
-                const i1 = I ? I[t + 1] : t + 1;
-                const i2 = I ? I[t + 2] : t + 2;
+                const [i0, i1, i2] = I ? [I[t], I[t + 1], I[t + 2]] : [t, t + 1, t + 2];
                 va.fromBufferAttribute(pos, i0).applyMatrix4(m4);
                 vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
                 vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
@@ -231,15 +229,18 @@ function nahDeckungInSeite(o) {
             if (!gross) {
                 bs.copy(g.boundingSphere).applyMatrix4(m4);
                 if (!(typeof kugel === "function" ? kugel(bs) : bs.intersectsSphere(kugel))) continue;
-            }
+            } else bs.radius = Infinity; // die Hülle eines Ganzen ohne Maß (der Satz, ein Netz über alles) trifft jedes Feld
             fn(obj, i);
         }
     };
     // was sich dreht, steht nie im Speicher: der Tür- und Tor-Flügel (seine Gruppe trägt `tuer`, `_tickTorFluegel`)
     const dreht = (obj) => !!st.archInstanceGroups.get(obj.userData.archInstanceKey)?.tuer;
+    // … und was wandert: jede Instanz-Schar ohne Gruppe der Welt (die Vögel, `vogel`, setzt jeder Takt neu) — je Frage frisch gelegt,
+    // nie im Speicher. Bis w12-proben-tempo hielt der Speicher die Vögel seiner letzten Lage (er legte ohnehin fast jede Frage neu)
+    const wandert = (obj) => obj.isInstancedMesh && !obj.userData.archInstanceKey;
     const dynamisch = (obj, inst) => {
         const e = eintragVon(obj, inst);
-        return dreht(obj) || !!(e && o.dyn != null && e.id === o.dyn);
+        return dreht(obj) || wandert(obj) || !!(e && o.dyn != null && e.id === o.dyn);
     };
     // der Sammler der Dreiecke (Ecken, Karten-UV, meta) in seine Listen
     const sammler = (tris, uvs, metas) => (a, b, c, u, me) => {
@@ -255,38 +256,41 @@ function nahDeckungInSeite(o) {
     // Instanz-Gruppe, der kommt oder geht (der Stufen-Wechsel eines Hauses, `slotStand`), legt ihn neu. Vorher hielt der Gang
     // die Dreiecke seines ersten Bilds: das Haus in 12 m stand dort auf Stufe 1, ging nah auf Stufe 0, und die Linse zählte die
     // nicht mehr gezeichnete Stufe 1 vor der Hülle der Stufe 0 (Bild 1032, Bau 0,9 % — je nach Lade-Takt rot oder grün).
-    let stand = 0;
-    for (const g of (st.archInstanceGroups || new Map()).values()) stand += g.slotStand | 0;
-    if (o.neu || !C || !o.ort || C.id !== o.ort.id || C.stand !== stand) {
+    // DER BESTAND DES FELDS (w12-proben-tempo): der Stand zählte JEDEN Slot jeder Gruppe der Welt (die Summe der `slotStand`) — jeder
+    // Wechsel einer Streu oder eines Baums 200 m fern legte den Speicher neu: leib.K4 headless b62542c9 in 204 von 224 Fragen, je
+    // Frage ~240 ms, ≈ 70 % des Gangs, und das Urteil hing am Takt der Neulagen (innen „Bau 1“ in der einen Welt, „{}“ in der anderen,
+    // derselbe Code). Jetzt gilt der Speicher, solange die Kugel der Frage in SEINEM Feld liegt (`innen`) und dort derselbe Bestand
+    // gezeichnet steht: je Satz-Zelle im Feld ihr Block, ihr Platz und ihr Index, je ruhender Instanz im Feld ihr Mesh, ihr Slot und
+    // ihre Lage — der Stufen-Wechsel des Hauses im Feld (Mesh und Slot wechseln) legt weiter neu, ein Wechsel draußen nie.
+    const feld = (cx, cz, R) => (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
+    const durchs = (region, fn) => st.scene.traverseVisible((obj) => zaehlt(obj) && jeInstanz(obj, region, (ob, i) => dynamisch(ob, i) || fn(ob, i)));
+    // die Quellen eines Felds (je Satz-Zelle und je ruhender Instanz ihr Schlüssel und ihre Hülle in x/z) und ihre Schlüssel in einem Feld
+    const quellen = (region, a = []) => (durchs(region, (ob, i) => (satzVon.has(ob) ? satzVon.get(ob).bloecke.forEach((b, k) => b.zellen.forEach((z, j) => region(z.huelle.getBoundingSphere(zs)) && a.push(Object.assign(zs.clone(), { k: k + j + "|" + z.idx.length })))) : a.push(Object.assign(bs.clone(), { k: ob.id + "|" + i + "|" + m4.elements })))), a); // prettier-ignore
+    const bei = (qs, region) => qs.filter(region).map((q) => q.k).join();
+    // gefragt wird nur, was die Zellen dieser Frage tragen: die Kugel und eine Zelle um sie
+    const um = feld(E.x, E.z, D + ZELLE);
+    if (o.neu || !C || !o.ort || C.id !== o.ort.id || !C.quellen || !C.innen({ center: E, radius: D }) || bei(C.quellen, um) !== bei(quellen(um), um)) {
         const tris = [];
         const uvs = [];
         const metas = [];
+        // das Feld liegt um das AUGE der Frage (gefragt wird nur die Kugel um es; `innen` hält es, solange sie darin liegt)
         const R = o.ort ? o.ort.r : 60;
-        const cx = o.ort ? o.ort.x : E.x;
-        const cz = o.ort ? o.ort.z : E.z;
+        const { x: cx, z: cz } = E;
         // die Hülle in x/z gegen das Feld
-        const region = (s) => Math.abs(s.center.x - cx) <= R + s.radius && Math.abs(s.center.z - cz) <= R + s.radius;
+        const region = feld(cx, cz, R);
         const imFeld = (a, b, c) =>
             Math.max(a.x, b.x, c.x) >= cx - R &&
             Math.min(a.x, b.x, c.x) <= cx + R &&
             Math.max(a.z, b.z, c.z) >= cz - R &&
             Math.min(a.z, b.z, c.z) <= cz + R;
         const sammle = sammler(tris, uvs, metas);
-        st.scene.traverseVisible((obj) => {
-            if (!zaehlt(obj)) return;
-            jeInstanz(obj, region, (ob, i) => {
-                if (!dynamisch(ob, i)) legeDreiecke(ob, i, imFeld, sammle, region);
-            });
-        });
+        durchs(region, (ob, i) => legeDreiecke(ob, i, imFeld, sammle, region));
         const n = metas.length;
         const ft = new Float32Array(tris);
         const zellen = new Map();
         for (let t = 0; t < n; t++) {
             const b = t * 9;
-            const ix0 = Math.floor(Math.min(ft[b], ft[b + 3], ft[b + 6]) / ZELLE);
-            const ix1 = Math.floor(Math.max(ft[b], ft[b + 3], ft[b + 6]) / ZELLE);
-            const iz0 = Math.floor(Math.min(ft[b + 2], ft[b + 5], ft[b + 8]) / ZELLE);
-            const iz1 = Math.floor(Math.max(ft[b + 2], ft[b + 5], ft[b + 8]) / ZELLE);
+            const [ix0, ix1, iz0, iz1] = [[0, Math.min], [0, Math.max], [2, Math.min], [2, Math.max]].map(([k, f]) => Math.floor(f(ft[b + k], ft[b + 3 + k], ft[b + 6 + k]) / ZELLE)); // prettier-ignore
             for (let ix = ix0; ix <= ix1; ix++)
                 for (let iz = iz0; iz <= iz1; iz++) {
                     const k = zk(ix, iz);
@@ -297,7 +301,8 @@ function nahDeckungInSeite(o) {
         }
         C = window.__nahSpeicher = {
             id: o.ort ? o.ort.id : "?",
-            stand,
+            innen: feld(cx, cz, R - 2 * D),
+            quellen: quellen(region),
             tris: ft,
             uvs: new Float32Array(uvs),
             metas,
@@ -310,12 +315,9 @@ function nahDeckungInSeite(o) {
     const tri = [];
     const uvt = [];
     const meta = [];
-    const inKugel = (a, b, c) => {
-        const qx = Math.max(Math.min(a.x, b.x, c.x), Math.min(E.x, Math.max(a.x, b.x, c.x)));
-        const qy = Math.max(Math.min(a.y, b.y, c.y), Math.min(E.y, Math.max(a.y, b.y, c.y)));
-        const qz = Math.max(Math.min(a.z, b.z, c.z), Math.min(E.z, Math.max(a.z, b.z, c.z)));
-        return (qx - E.x) ** 2 + (qy - E.y) ** 2 + (qz - E.z) ** 2 <= D2;
-    };
+    // je Achse der Punkt der Dreiecks-Hülle, der dem Auge am nächsten liegt (geklemmt), sein Abstand gegen die Kugel
+    const inKugel = (a, b, c) =>
+        ["x", "y", "z"].reduce((s, k) => s + (Math.max(Math.min(a[k], b[k], c[k]), Math.min(E[k], Math.max(a[k], b[k], c[k]))) - E[k]) ** 2, 0) <= D2;
     C.lauf++;
     {
         const ft = C.tris;
@@ -327,19 +329,16 @@ function nahDeckungInSeite(o) {
                     if (C.stempel[t] === C.lauf) continue;
                     C.stempel[t] = C.lauf;
                     const b = t * 9;
-                    va.set(ft[b], ft[b + 1], ft[b + 2]);
-                    vb.set(ft[b + 3], ft[b + 4], ft[b + 5]);
-                    vc.set(ft[b + 6], ft[b + 7], ft[b + 8]);
-                    if (!inKugel(va, vb, vc)) continue;
-                    for (let k = 0; k < 9; k++) tri.push(ft[b + k]);
-                    for (let k = 0; k < 6; k++) uvt.push(C.uvs[t * 6 + k]);
+                    if (!inKugel(va.fromArray(ft, b), vb.fromArray(ft, b + 3), vc.fromArray(ft, b + 6))) continue;
+                    tri.push(...ft.subarray(b, b + 9));
+                    uvt.push(...C.uvs.subarray(t * 6, t * 6 + 6));
                     meta.push(C.metas[t]);
                 }
             }
     }
     const kugel = new T.Sphere(E, D);
     st.scene.traverseVisible((obj) => {
-        if (!zaehlt(obj) || (o.dyn == null && !dreht(obj))) return;
+        if (!zaehlt(obj) || (o.dyn == null && !dreht(obj) && !wandert(obj))) return;
         jeInstanz(obj, kugel, (ob, i) => {
             if (dynamisch(ob, i)) legeDreiecke(ob, i, inKugel, sammler(tri, uvt, meta));
         });
@@ -350,17 +349,7 @@ function nahDeckungInSeite(o) {
         if (maskeVon.has(me.mat)) return maskeVon.get(me.mat);
         const mat = me.mat;
         const maske = !!(mat.maskNode && mat.maskNode.isNode);
-        const a = !maske
-            ? null
-            : knoten
-              ? mat.maskNode === knoten.laub
-                  ? "laub"
-                  : mat.maskNode === knoten.rinde
-                    ? "rinde"
-                    : mat.maskNode === knoten.boden
-                      ? "boden"
-                      : "fremd"
-              : me.art || "rinde";
+        const a = !maske ? null : knoten ? ["laub", "rinde", "boden"].find((k) => mat.maskNode === knoten[k]) || "fremd" : me.art || "rinde";
         maskeVon.set(mat, a);
         return a;
     };
@@ -381,18 +370,10 @@ function nahDeckungInSeite(o) {
     const poly = [];
     for (let t = 0; t < nT; t++) {
         const b = t * 9;
-        G[b] = tri[b];
-        G[b + 1] = tri[b + 1];
-        G[b + 2] = tri[b + 2];
-        for (let k = 0; k < 3; k++) G[b + 3 + k] = tri[b + 3 + k] - tri[b + k];
-        for (let k = 0; k < 3; k++) G[b + 6 + k] = tri[b + 6 + k] - tri[b + k];
         for (let k = 0; k < 3; k++) {
-            const x = tri[b + k * 3];
-            const y = tri[b + k * 3 + 1];
-            const z = tri[b + k * 3 + 2];
-            vx[k] = V[0] * x + V[4] * y + V[8] * z + V[12];
-            vy[k] = V[1] * x + V[5] * y + V[9] * z + V[13];
-            vz[k] = V[2] * x + V[6] * y + V[10] * z + V[14];
+            [G[b + k], G[b + 3 + k], G[b + 6 + k]] = [tri[b + k], tri[b + 3 + k] - tri[b + k], tri[b + 6 + k] - tri[b + k]];
+            const [x, y, z] = tri.slice(b + k * 3, b + k * 3 + 3);
+            [vx[k], vy[k], vz[k]] = [0, 1, 2].map((j) => V[j] * x + V[4 + j] * y + V[8 + j] * z + V[12 + j]);
         }
         poly.length = 0;
         for (let k = 0; k < 3; k++) {
@@ -413,10 +394,7 @@ function nahDeckungInSeite(o) {
             const w = -poly[q + 2];
             const nx = (Pm[0] * poly[q] + Pm[8] * poly[q + 2]) / w;
             const ny = (Pm[5] * poly[q + 1] + Pm[9] * poly[q + 2]) / w;
-            if (nx < x0) x0 = nx;
-            if (nx > x1) x1 = nx;
-            if (ny < y0) y0 = ny;
-            if (ny > y1) y1 = ny;
+            [x0, x1, y0, y1] = [Math.min(x0, nx), Math.max(x1, nx), Math.min(y0, ny), Math.max(y1, ny)];
         }
         if (x1 < -1 || x0 > 1 || y1 < -1 || y0 > 1) continue;
         const cx0 = Math.max(0, Math.floor(((x0 + 1) / 2) * gw - 0.5));
@@ -456,9 +434,7 @@ function nahDeckungInSeite(o) {
     let deckung = 0;
     const jeKlasse = {};
     const jeName = {};
-    const ex = E.x;
-    const ey = E.y;
-    const ez = E.z;
+    const { x: ex, y: ey, z: ez } = E;
     for (let cy = 0; cy < gh; cy++)
         for (let cx = 0; cx < gw; cx++) {
             const l = zellen[cy * gw + cx];
@@ -466,9 +442,7 @@ function nahDeckungInSeite(o) {
             const nx = ((cx + 0.5) / gw) * 2 - 1;
             const ny = 1 - ((cy + 0.5) / gh) * 2;
             dir.set(nx, ny, 0.5).unproject(cam).sub(E).normalize();
-            const dx = dir.x;
-            const dy = dir.y;
-            const dz = dir.z;
+            const { x: dx, y: dy, z: dz } = dir;
             // die Tiefe längs der Blickachse je Meter des Strahls: die GPU klippt an der Nah-EBENE (z = −near)
             const cosA = dx * fwd.x + dy * fwd.y + dz * fwd.z;
             treffer.length = 0;
@@ -600,7 +574,7 @@ function nahDeckungInSeite(o) {
         jeKlasse: kl,
         taeter: nm,
         taeterDreiecke: meta.filter((me) => TAETER[me.k.klasse]).length,
-        auge: [+E.x.toFixed(2), +E.y.toFixed(2), +E.z.toFixed(2)],
+        auge: [E.x, E.y, E.z].map((v) => +v.toFixed(2)),
         fremd: meta.some((me) => maskeArt(me) === "fremd"),
         ziel: zielOut,
     };

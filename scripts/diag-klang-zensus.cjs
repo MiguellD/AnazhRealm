@@ -587,14 +587,14 @@ async function messeOrt(page, name, ort, stubs) {
             if (stubs?.ohneLeib || stubs?.stehend) {
                 // der Leib weg: das Revier-Gesetz trägt kein Revier — oder er steht (Selbst-Test S12): die Bahn des Gesetzes
                 // auf der Uhr dieses Takts; die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test) singt in der Lage am Ohr
-                // ohne einen Leib
-                [alt.vogel, alt.lage] = [AnazhRealm._vogelGesetzMemo, P._umweltLage];
+                // ohne einen Leib: an der Hälfte, die sie schließt (`_umweltLageZwei`, der Takt und `_umweltLage` rufen sie)
+                [alt.vogel, alt.lage] = [AnazhRealm._vogelGesetzMemo, P._umweltLageZwei];
                 const T = st.spielZeit;
                 const mut = stubs.stehend ? { bahn: (w, a, _t, ...x) => alt.vogel.bahn(w, a, T, ...x) } : { revier: () => false };
                 [AnazhRealm._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, ...mut }, null];
                 if (stubs.phantom)
-                    P._umweltLage = function () {
-                        return Object.assign(alt.lage.call(this), { voegel: [{ d: 20 }] });
+                    P._umweltLageZwei = function () {
+                        return Object.assign(alt.lage.apply(this, arguments), { voegel: [{ d: 20 }] });
                     };
             }
             const um0 = st.symphony.umwelt;
@@ -653,7 +653,7 @@ async function messeOrt(page, name, ort, stubs) {
                 halt.vor = halt.zurueck = W.szene = false;
                 if (alt.luft) P._temperaturAt = alt.luft;
                 if (alt.lage)
-                    [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
+                    [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLageZwei] = [alt.vogel, null, alt.lage];
                 for (const k of ["_koerperWasser", "_untertitelZeile"]) if (alt[k]) P[k] = alt[k];
                 if (alt.graph) {
                     um0.graph.stopAlle();
@@ -1005,23 +1005,15 @@ function drucke(zeilen, kostenErg) {
 // (T) DER KLANG-TAKT IN BEWEGUNG (`--takt [--echt]`, klang.K5): je präsentiertem Bild die Haupt-Faden-ms der Klang-Arbeit
 // (symphonyTick + _schrittKlangTick + _tierRuf, der äußere Aufruf) im echten Spiel, Klang über den Knopf — gehen, Fahrt
 // (GT, Gas und rückwärts im Wechsel), nachts gehen; p95 ≤ TAKT_SOLL_MS je Phase, der Träger der Bilder über dem Soll beim
-// Namen; über den Gang 0 Aussetzer am Ausgang. Die Seite ist isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
+// Namen (die Teile: die Folge der Musik, die zwei Hälften der Lage, der Schwenk des Raums `_raumStrahlen` — bis w12-klang-lage
+// fehlte er, und die Sichtung nannte die Lage, wo der Schwenk trug); über den Gang 0 Aussetzer am Ausgang. Die Seite ist
+// isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
 // `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
 // `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT, eine stotternde Stimme → Aussetzer gezählt.
 const TAKT_SOLL_MS = 0.2;
 const MINUTEN = Number(argOpt("--minuten")) || 0;
-const TAKT_TEILE = [
-    "_lofiPlayChord",
-    "_lofiPlayMelody",
-    "_lofiPlayGroove",
-    "_lofiPlayBass",
-    "_lofiRaum",
-    "_umweltLage",
-    "_tierRufTakt",
-    "_fahrtKlangTick",
-    "_schrittMaterialAt",
-    "_playSchrittOneShot",
-];
+const TAKT_TEILE = ("_lofiPlayChord _lofiPlayMelody _lofiPlayGroove _lofiPlayBass _lofiRaum _umweltLageEins _umweltLageZwei " +
+    "_raumStrahlen _tierRufTakt _fahrtKlangTick _schrittMaterialAt _playSchrittOneShot").split(" ");
 function taktSeite(m, echt, namen) {
     const P = Object.getPrototypeOf(r);
     const T = (window.__klangTakt = { phase: "", bilder: [], weg: 0, m });
@@ -1496,9 +1488,9 @@ async function gesehenSeite(m) {
     // der Täter des Selbsttests: das Ohr hört Fluss, Ufer und Regen, wie sie beim Pflanzen klangen — das Bild geht weiter
     G.taeter = () => {
         const Pr = Object.getPrototypeOf(r);
-        const alt = Pr._umweltLage;
+        const alt = Pr._umweltLageZwei; // die Hälfte, die die Lage schließt (der Takt und `_umweltLage` rufen sie)
         let fest;
-        Pr._umweltLage = function () {
+        Pr._umweltLageZwei = function () {
             const l = alt.apply(this, arguments);
             return l && Object.assign(l, (fest ||= { fluss: l.fluss, ufer: l.ufer, regen: l.regen }));
         };

@@ -619,7 +619,7 @@ class AnazhRealm_siedlung_verkehr {
         (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
         W.sitzt = false;
         this._bewohnerSatzSchreiben(S);
-        this._blockerWacheMelden(e._blockerHuelle);
+        this._blockerWacheMelden(e._blockerHuelle, false, e);
         e._verkehrFaehrt = true;
         this._archFahrt(e, true); // seine Stufe folgt auch dem wandernden Auge (`_archBewegteUrteilen`)
         W.zustand = "faehrt";

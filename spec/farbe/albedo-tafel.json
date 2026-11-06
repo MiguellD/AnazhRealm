@@ -882,7 +882,7 @@
         {
             "id": "fell",
             "gruppe": "Haut/Fell",
-            "titel": "Wolf, das Fell (Labor: Leib und Strähnen des Wolfs, Rauheit ab 0,85 — ohne Nase, Augen, Krallen, Zähne; Welt: die Fell-Haut)",
+            "titel": "Wolf, das Fell (Labor: Leib und Strähnen des Wolfs, Rauheit ab 0,85 — ohne Nase, Augen, Krallen, Zähne; Welt: dieselbe Wahl)",
             "pflicht": true,
             "labor": {
                 "studio": "tetrapoda",
@@ -904,7 +904,10 @@
                 },
                 "klasse": "^tier:wolf$",
                 "stoff": {
-                    "kind": "^fell$"
+                    "r": [
+                        0.85,
+                        1
+                    ]
                 }
             },
             "quellen": [

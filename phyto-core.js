@@ -359,8 +359,8 @@
         const schaft = !weltMass
             ? 0
             : frei
-              ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz)
-              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0);
+              ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
+              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
         // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -1911,7 +1911,14 @@
     // ist der Hub DES SCHAFTS nur, was der Stamm unter der Krone wuchs (kb − yb): die gestreckte Krone ist Krone, und die
     // Sichthöhe (Höhe ohne Hub, der Wirt `_foundryGruppenHoehe`) misst sie mit — sonst las die Stufenwahl die Bestands-
     // Buche mit 8–9 statt 16–18 m und die Eiche unter der Referenz-Höhe (T2-Nachbesserung, gate:foundry-crossfade).
-    function schaftHub(segs, leaves, runMeta, ziel, ansatz, krone) {
+    // DIE JUGEND TRÄGT KEINEN SCHAFT (`jung`, stoffe.K5#2, JUGEND in `treeParams`): den Schaft schuf der Schatten des
+    // Bestands, der die unteren Äste nahm — der Jungwuchs steht im Licht, seine Krone reicht zum Grund. Er wächst in seiner
+    // Form auf dieselbe Höhe h0 + dh (das Maß der Art, die Welt pflanzt ihn in `alter` × seiner Größe): jeder Punkt × (h0 +
+    // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
+    // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
+    // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06
+    // bei 0,51 H, gewachsen 0,34 H; die Fichte 0,40 gegen 0,26) — aus dem Jungwuchs der Narbe ragten Riesenhalme.
+    function schaftHub(segs, leaves, runMeta, ziel, ansatz, krone, jung) {
         let h0 = 0,
             yb = Infinity;
         const erst = new Set();
@@ -1927,6 +1934,13 @@
         if (ansatz > 0) for (const l of leaves) yk = Math.min(yk, l.pos[1]);
         const dh = ansatz > 0 && ansatz < 1 ? (ansatz * h0 - yk) / (1 - ansatz) : ziel - h0;
         if (!(dh > 0)) return 0;
+        if (jung) {
+            const [k, gewachsen] = [(h0 + dh) / h0, new Set()];
+            const wachse = (q) => gewachsen.has(q) || (gewachsen.add(q), (q[0] *= k), (q[1] *= k), (q[2] *= k));
+            for (const q of segs) (wachse(q.p0), wachse(q.p1));
+            for (const l of leaves) wachse(l.pos);
+            return 0;
+        }
         const streck = (yb + dh) / yb;
         const kb = krone > 0 && !(ansatz > 0) ? (1 - krone) * (h0 + dh) : 0;
         const kStreck = kb > 0 ? (h0 + dh - kb) / (h0 - yb) : 0;
@@ -2017,7 +2031,7 @@
             oak: 0x4a7a2c,
             conifer: 0x2e5526,
             sequoia: 0x3a6a30,
-            birch: 0x8ab84a,
+            birch: 0x6a8e37, // Laubkrone im Band der Karte 0,15–0,26 (Betts & Ball 1997, BOREAS: Espe 0,15): 0x8ab84a trug den Baum auf 0,294, derselbe Ton linear × 0,57
             willow: 0x6a9a3a,
             smooth: 0x4a7a2c,
         };
@@ -2190,7 +2204,9 @@
         // ihr). Die Gestalt der Jugend: die Krone reicht zum Grund (der Kronenansatz × alter: kein Schatten hat die unteren Äste
         // genommen), er verzweigt in weniger Ordnungen (die Tiefe fällt bis auf JUGEND.tiefeAb ihrer selbst, nie unter
         // JUGEND.tiefe), der Anlauf wächst mit, und das Blatt wächst langsamer als der Baum (in der Vorlage × alter^−¼ — der
-        // Sämling trägt wenige, große Blätter).
+        // Sämling trägt wenige, große Blätter). Den Schaft des Bestands trägt die Jugend nie (`schaftHub` mit `jung`). Unter
+        // fünf Ordnungen trägt ein Sämling sein Laub nur am Wipfel: der Karst @0,06 mit vier stand mit dem Kronen-Fuß bei
+        // 0,34–0,47 H, gewachsen 0,12–0,25 H (gate:phyto-core „Jugend", w12-riesenhalm) — bis dahin hielt JUGEND.tiefe 3.
         if (alter > 0 && alter < 1 && ph.kind === "tree" && !ph.tot) {
             P.alter = alter;
             if (P.crownBase) P.crownBase *= alter;
@@ -2205,7 +2221,7 @@
         if (T && Math.floor(seedInt) === T) P.freistand = 1;
         return P;
     }
-    const JUGEND = Object.freeze({ tiefe: 3, tiefeAb: 0.5 });
+    const JUGEND = Object.freeze({ tiefe: 5, tiefeAb: 0.5 });
 
     // DER EINE IMPOSTOR-RAHMEN (Studio v36, phytogenesis bakeImpostorAtlas — „Drähte statt
     // Kopien", 08.07.): Bake-Kamera UND Billboard-Quad ALLER Leser (AnazhRealm-Main ·
