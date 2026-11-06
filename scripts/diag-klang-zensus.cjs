@@ -1006,7 +1006,8 @@ function drucke(zeilen, kostenErg) {
 // (symphonyTick + _schrittKlangTick + _tierRuf, der äußere Aufruf) im echten Spiel, Klang über den Knopf — gehen, Fahrt
 // (GT, Gas und rückwärts im Wechsel), nachts gehen; p95 ≤ TAKT_SOLL_MS je Phase, der Träger der Bilder über dem Soll beim
 // Namen (die Teile: die Folge der Musik, die zwei Hälften der Lage, der Schwenk des Raums `_raumStrahlen` — bis w12-klang-lage
-// fehlte er, und die Sichtung nannte die Lage, wo der Schwenk trug); über den Gang 0 Aussetzer am Ausgang. Die Seite ist
+// fehlte er, und die Sichtung nannte die Lage, wo der Schwenk trug), und hinter dem max in [ ] der Träger des teuersten Bilds (bis
+// w13-klang-fahrt ohne Namen — die Fahrt: der erste Bau der Stimme im Bild des Aufsitzens); über den Gang 0 Aussetzer am Ausgang. Die Seite ist
 // isoliert (COOP + COEP: 5 µs statt des 100-µs-Rasters).
 // `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
 // `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT, eine stotternde Stimme → Aussetzer gezählt.
