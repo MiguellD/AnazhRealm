@@ -26,6 +26,11 @@ document.body.appendChild(R.domElement);
 // GEMESSEN (05.11., swiftshader, Lack-Pixel linear): die Spiegelung des Himmels trägt in der Isometrie 33 % des Lack-Lichts, im
 // Riss 65 %; die Umgebung insgesamt 47 %. Dieselbe Lack-Kugel aus demselben Blick (35° von oben, 7 m): Welt Luma 45,3, Bühne
 // 48,2. Der „Glanz" der Matrix-Antike (Isometrie 80 % gespiegelt, Luma 91) waren die drei Lichter am Blick — die Welt hat keine.
+// GEMESSEN (06.11., w13-buehne-lack, swiftshader, Isometrie, Lack-Pixel Luma Mittel · p95/p50): im Licht der Welt 46,0 · 1,14;
+// ohne die Sonne 30,9 · 1,55 (der Himmel spiegelt, das Licht der Sonne auf Dach und Haube überdeckt ihn); bei der Belichtung von
+// main (1,04) 66,5 · 1,15; ein Chrom-Wagen (Spiegel 1) 80,9 — kein Stoff erreicht unter dem Licht der Welt die 92,5 · 2,11 von
+// main. Im flacheren Blick (Perspektive) trägt der Lack den Himmel: p95/p50 1,58. Dass die Bühne kein eigenes Licht trägt,
+// hält die Wand im Gesetz (welt-licht.js `buehneZeichnet`, gate:studio-huelle H9): jedes Bild fragt sie vor dem Zeichnen.
 
 // ── DIE BÜHNE (Boden · Raster · Zifferblatt) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
 // DER BODEN IST DER BODEN DER ATMOSPHÄRE (w12-studio-buehne): die gemessene Welt-Albedo (`ATMO_BODEN`, linear — dieselbe, die die
