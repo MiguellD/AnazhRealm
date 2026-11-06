@@ -751,6 +751,14 @@ class AnazhRealm_siedlung_ort {
             // Re-Arm beim VERLASSEN der Apertur-Zone: ein Durchgang verbraucht die
             // Waffnung (kein Doppelfeuer in einem Pass), wer die Zone verlässt und
             // erneut kreuzt (egal welche Richtung), betritt wieder.
+            // DIE ANKUNFT IN DER APERTUR (tore.K1): der Welt-Wechsel setzt den Spieler, wo er die Ziel-Welt verließ — mitten in das
+            // Tor, das zurückführt. Sieht ein Tor ihn zum ersten Mal schon in seiner Zone, hat er es nicht durchschritten: es
+            // bleibt entwaffnet, bis er sie verlässt. Bis hier warf ihn der nächste Schritt zurück (Radeon 8efb6318: drei
+            // Welt-Wechsel je Durchgang A → B → A → B, 2,7 s, bevor die Ziel-Welt überhaupt zu wachsen begann).
+            if (rec.erstBlick !== false) {
+                rec.erstBlick = false;
+                if (inApertur) rec.armed = false;
+            }
             if (rec.armed === false && !inApertur) rec.armed = true;
             // Tür-Flügel öffnen sich dem Reisenden: g.tuer-Meshes drehen um die Hinge-Achse, Ziel = Nähe ×
             // _tuerOffenRad() (EINE Quelle TUER_GESETZ.offen, wie das Lab-DOOR_OPEN), weich geglättet.
@@ -2864,6 +2872,10 @@ class AnazhRealm_siedlung_ort {
             if ((e.position.x - o.x) ** 2 + (e.position.z - o.z) ** 2 > R2) continue;
             const vorschau = typeof e.id === "string" && e.id.startsWith("portal-preview-");
             if (e.type !== w.typ && !vorschau) continue;
+            // EIN TOR, DAS SEINE WELT KENNT (`portalMeta.weltId` am Eintrag: das Heimtor, `_heimTorSetzen`), ist keine ältere Form
+            // des Slots: bis tore.K1 fiel das Heimtor jeder geborenen Welt, sobald ihr Ring sein Welt-Tor setzte (beide
+            // `welt_portal`) — der Weg zurück stand nie (Radeon 8efb6318).
+            if (e.portalMeta && e.portalMeta.weltId) continue;
             this.removeArchitecture(e, { still: true });
             if (vorschau) {
                 const welt = e.id.slice("portal-preview-".length);
