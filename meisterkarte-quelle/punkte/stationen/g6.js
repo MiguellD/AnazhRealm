@@ -535,12 +535,16 @@ async function taktLauf(h) {
     const D = "scripts/diag-klang-zensus.cjs";
     const text = require("fs").readFileSync(D, "utf8");
     const soll = Number((/const TAKT_SOLL_MS = ([\d.]+);/.exec(text) || [])[1]);
-    const teile = (/const TAKT_TEILE = (\[[^\]]*\]);/.exec(text) || [])[1];
-    if (!(soll > 0) || !teile) throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
+    // TAKT_TEILE ist ein Ausdruck der Linse, nie eine Form: das Array-Literal (bis z242) und der Satz `("…").split(" ")`
+    // (w12-klang-lage, z242) ergeben dieselbe Liste — gelesen wird die Anweisung bis zu ihrem Ende, geprüft das Ergebnis
+    const teileText = (/const TAKT_TEILE = ([\s\S]*?);\r?\n/.exec(text) || [])[1];
+    const teile = teileText && new Function("return " + teileText)();
+    if (!(soll > 0) || !Array.isArray(teile) || !teile.length || !teile.every((x) => typeof x === "string" && /^_\w+$/.test(x)))
+        throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
     const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
     // der Weg je Phase: EINE Zahl für die Probe (die Geh-Phase läuft bis zu ihm) und das Urteil — 10 m, wie die Klang-Linse (`takt`)
     const weg = 10;
-    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10, weg }], 150000);
+    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, teile, { soll, n: 10, weg }], 150000);
     console.log("Klang-Takt:", JSON.stringify(j.seite));
     for (const [name, z] of Object.entries(j.phasen))
         console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
