@@ -823,7 +823,8 @@
     //     alten Lage (sie lagen fast in der Ebene der Nasenspitze), oberkiefer = Vorstand unter der Nase, wange = die
     //     Wangen-Polster, naseTiefer/brauHoch = die Gesichts-Drittel (die Nasen-Basis lag 0,18 headSeg zu hoch, die
     //     Braue zu tief), kiefer/kieferBreite/kieferTiefe = der Kiefer-Körper (er hing als Doppelkinn unter dem Kinn),
-    //     kinnZurueck = das Kinn hinter die Unterlippe.
+    //     kinnZurueck = das Kinn hinter die Unterlippe · oberlippeNeigung / unterlippeNeigung = die Lippen um die Quer-Achse
+    //     geneigt (rad): das Rot der Oberlippe sieht nach vorn-unten zum Spalt, das der Unterlippe nach vorn-oben (w17-gesicht).
     //   rumpf: brustkorb/nacken = Höhen-Faktoren der Brustkorb-Ellipse und des oberen Rückens (beide reichten bis ans
     //     Kinn — jede Hülle über ihnen verschluckte den Hals).
     //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
@@ -875,6 +876,16 @@
     //     [0,02, 0,02] las an der Kamera des Spiels 1 von 7 Schüssen 0,754) · kopfHaut.mundSpalt 0,45 → 0,15: die Lippen sind
     //     geschlossen, die Mund-Linie ein Strich — die Spalte trug 45 % der Lippen-Ecken als dunkle Innenlippe, das Bild zeigte
     //     ein Loch (0,7 m lippeA 1,5–2,5 unter dem Licht des Gesichts).
+    //   w17-gesicht (DER MUND IN SEINER ANATOMIE, foundry-core `__mundFein`): im Raster 5,5 mm war der Mund EINE gewölbte Beule —
+    //     die Unterlippe sah im Mittel 23° nach unten, die Oberlippe nach oben, kein Spalt, keine Kinnfalte. kopfHaut.mund: die
+    //     Haut teilt sich NUR im Kasten um den Mund (`kasten` [halbe Breite, über, unter der Mund-Mitte], `rand` der Saum, der
+    //     auf das Raster blendet) — `stufen` 2 um den Spalt (1,4 mm), eine im übrigen Kasten (2,75 mm) — und liegt auf dem Feld am
+    //     Punkt: die Lippen verrunden mit `blend` (2,5 mm statt 12 mm), der LIPPENSPALT (`spalt` [Halbhöhe, Tiefe]) und die
+    //     KINNFALTE (`falte` [unter der Mund-Mitte, Halbhöhe, Tiefe, halbe Breite]) graben weich in die Fläche; `rot` [über, unter
+    //     der Mund-Mitte] ist das Lippenrot (Farkas: Oberlippe ~8 mm, Unterlippe ~9 mm), darüber und darunter ist die Lippe Haut.
+    //     mundSpalt 0,15 → 0,05: der geschlossene Mund trägt die Innenlippe als Strich von 1 mm im Spalt (die Falte trägt die Form).
+    //     Die Normalen am Spalt: die Oberlippe −0,56 (nach unten), die Unterlippe +0,46 (nach oben); die feinen Ecken stehen dem
+    //     Kollaps auf die Zeile fest — die Kopf-Haut L0 6 994 → 7 746 Dreiecke, die L0-Zeile 40 000 bleibt (der Leib trägt weniger).
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -890,11 +901,13 @@
         augeRaster: Object.freeze({ w: 12, h: 8 }),
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
-            mundTiefer: 0.035 }),
+            mundTiefer: 0.035, oberlippeNeigung: 0.25, unterlippeNeigung: 0.3 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.05, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
-                kanal: Object.freeze([0.373, 1, 1]) }) }),
+                kanal: Object.freeze([0.373, 1, 1]) }),
+            mund: Object.freeze({ stufen: 2, kasten: Object.freeze([0.15, 0.045, 0.09]), rand: 0.02, blend: 0.012, rot: Object.freeze([0.04, 0.045]),
+                spalt: Object.freeze([0.006, 0.015]), falte: Object.freeze([0.085, 0.012, 0.012, 0.1]) }) }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
     // DAS FETT-DEPOT (studios.K1, der Regler mass „Masse (Fett)" — die Fülle des Leibs wie der Körper-Regler eines Character-
@@ -946,7 +959,8 @@
     //   brauner Ring) · hautAlbedo = die lineare Luma jedes Hauttons der Palette (Hautreflexion 550 nm, dunkel bis hell)
     //   · haarDeckung = Anteil der Kopf-Haut über der Haarlinie (0,80 kH über dem Kinn, das Trichion), die das Haar
     //   als VOLUMEN trägt (Stil mittel; die Strähnen sind sein Rand, nie der Fleck auf der Glatze) · kopfDreiecke =
-    //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar).
+    //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar; w17-gesicht 12 000 → 13 000: der Mund in seiner
+    //   Anatomie, `kopfHaut.mund`, trägt 2 286 feine Dreiecke, der Kopf der Start-Dials 11 664 → 12 416).
     //   mensch.K4 (das Gesicht auf 6 m): brauKontrast = |ΔL*| des Brauen-Tons gegen die Haut (die Braue ist Fläche, nie fünf
     //   Striche unter einem Bildpunkt).
     // prettier-ignore
@@ -954,7 +968,7 @@
         kopfAnteil: [0.127, 0.14], augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
-        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
+        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 13000], haarLinie: 0.8,
         brauKontrast: [8, 80],
     });
 
@@ -1657,8 +1671,8 @@
         const noseBridge=reg('noseBr',c(0.04,0.06,(bY-nY)*1.1,matSkin));noseBridge.position.set(0,(bY+nY)/2,0.4);headGroup.add(noseBridge);
         const noseTip=reg('noseTip',s(0.055,matSkin,[1.2,1,1.2]));noseTip.position.set(0,nY,0.45);headGroup.add(noseTip);
         [-1,1].forEach(sd=>{const n2=reg('noseA'+(sd===1?'1':'-1'),s(0.035,matSkin,[1,0.5,1]));n2.position.set(sd*0.05,nY-0.04,0.43);headGroup.add(n2);});
-        const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);headGroup.add(upperLip);upperLipRef=upperLip;
-        const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
+        const upperLip=s(0.12,matLips,[1.22,0.42*GS.lippe,0.62*GS.lippe]);upperLip.position.set(0,lipY+0.02,0.415-GS.lippeZurueck);upperLip.rotation.x=GS.oberlippeNeigung;headGroup.add(upperLip);upperLipRef=upperLip;
+        const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);lowerLip.rotation.x=-GS.unterlippeNeigung;headGroup.add(lowerLip);lowerLipRef=lowerLip;
         const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
         [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39-GS.lippeZurueck);headGroup.add(mc);});
         [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;headGroup.add(e);});

@@ -6365,6 +6365,10 @@ function __huelleKollaps(geo, ziel, zone) {
             fest[Math.floor(key / n)] = 1;
             fest[key % n] = 1;
         }
+    // DIE FESTEN ECKEN DER HÜLLE (mensch.K4, `userData.fest`, die feine Haut am Mund `__mundFein`): sie kollabieren nie — der Kollaps
+    // nimmt seine Dreiecke anderswo
+    const festU = geo.userData && geo.userData.fest;
+    if (festU) for (let i = 0; i < n; i++) if (festU[i]) fest[i] = 1;
     // die Zonen um eine Ecke (lebende Flächen) und ob (u, v) Naht ist
     const zonenUm = (u) => {
         const s = new Set();
@@ -6565,6 +6569,11 @@ function __huelleKollaps(geo, ziel, zone) {
     }
     ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(idx), 1));
     ng.computeVertexNormals();
+    if (festU) {
+        const f2 = new Uint8Array(neu);
+        for (let i = 0; i < n; i++) if (karte[i] >= 0) f2[karte[i]] = festU[i];
+        ng.userData.fest = f2;
+    }
     if (zone) {
         const zn = [];
         for (let f = 0; f < mAll; f++) if (lebt[f]) zn.push(zone[f]);
@@ -7280,10 +7289,12 @@ function __feldWert(F, vox, x, y, z) {
 // `V.kanal`): die Falte nimmt jedem Kanal seinen Anteil — die Haut streut Rot unter der Fläche in sie hinein —, der Überhang
 // wirft Schatten und nimmt alle ganz; Rückgabe [R, G, B]
 function __feldVerdeckung(F, vox, x, y, z, V) {
+    // das Feld am Punkt selbst (`F.wert`, die feine Haut am Mund) oder das Raster
+    const fw = F.wert || ((a, b, c) => __feldWert(F, vox, a, b, c));
     const e = 0.5 * vox;
-    let gx = __feldWert(F, vox, x + e, y, z) - __feldWert(F, vox, x - e, y, z),
-        gy = __feldWert(F, vox, x, y + e, z) - __feldWert(F, vox, x, y - e, z),
-        gz = __feldWert(F, vox, x, y, z + e) - __feldWert(F, vox, x, y, z - e);
+    let gx = fw(x + e, y, z) - fw(x - e, y, z),
+        gy = fw(x, y + e, z) - fw(x, y - e, z),
+        gz = fw(x, y, z + e) - fw(x, y, z - e);
     const L = Math.hypot(gx, gy, gz);
     if (!(L > 1e-12)) return [1, 1, 1];
     // das Feld der Ellipsoide wächst nicht mit 1 je Einheit: frei ist, was mit seinem Gradienten |∇f| wächst — entlang eines
@@ -7292,7 +7303,7 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
     gx /= L;
     gy /= L;
     gz /= L;
-    const d0 = __feldWert(F, vox, x, y, z);
+    const d0 = fw(x, y, z);
     const strahl = (rx, ry, rz) => {
         const c = rx * gx + ry * gy + rz * gz;
         if (!(c > 0.2)) return 0;
@@ -7300,7 +7311,7 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
             ws = 0;
         for (let s = 1, w = 0.5; s <= V.stufen; s++, w *= 0.5) {
             const h = s * V.schritt;
-            const d = __feldWert(F, vox, x + rx * h, y + ry * h, z + rz * h) - d0;
+            const d = fw(x + rx * h, y + ry * h, z + rz * h) - d0;
             occ += w * Math.min(1, Math.max(0, (g * h * c - d) / (g * h * c)));
             ws += w;
         }
@@ -7310,6 +7321,127 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
     const oben = uL > 1e-6 ? strahl(gx / uL, (gy + V.oben) / uL, gz / uL) : 0;
     const falte = strahl(gx, gy, gz);
     return V.kanal.map((k) => Math.max(0, 1 - (V.staerke * (k * falte + oben)) / 2));
+}
+
+// DAS FELD AM PUNKT SELBST (mensch.K4 Staffel 1, der Mund): dasselbe smin der Primitive wie `__tierFeld` (dieselbe Reihe, je
+// Primitiv seine Verrundung), ohne Raster gerechnet — die Feinform, die das Raster der Kopf-Haut (5,5 mm) nicht trägt; danach
+// graben die `schnitte` (je { Mi, r, auf, k }: ein Ellipsoid, seine Verrundung k) weich in die Fläche (smax: der Lippenspalt,
+// die Kinnfalte). `weit` ist der Anfangswert des Rasters (8 · vox).
+function __feldExakt(prims, blend, schnitte, weit, x, y, z) {
+    let a = weit;
+    for (const p of prims) {
+        const bl = p.blend || blend;
+        // wie im Raster: jenseits seiner Kugel erreicht das Primitiv den Wert nie (p.R, `__mundFein`-Aufrufer)
+        if (p.R !== undefined && Math.hypot(x - p.c[0], y - p.c[1], z - p.c[2]) - p.R >= a + bl) continue;
+        const b = __tierAbstand(p, x, y, z);
+        const d = a > b ? a - b : b - a;
+        if (d >= bl) {
+            if (b < a) a = b;
+            continue;
+        }
+        const h = (bl - d) / bl;
+        a = (a < b ? a : b) - h * h * bl * 0.25;
+    }
+    for (const s of schnitte) {
+        const b = -__tierAbstand(s, x, y, z);
+        const d = a > b ? a - b : b - a;
+        if (d >= s.k) {
+            if (b > a) a = b;
+            continue;
+        }
+        const h = (s.k - d) / s.k;
+        a = (a > b ? a : b) + h * h * s.k * 0.25;
+    }
+    return a;
+}
+
+// DIE FEINE HAUT AM MUND (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.mund): das Raster der Kopf-Haut legt alle 5,5 mm eine
+// Ecke — der Mund (Lippen 6–7 mm Halbhöhe, der Spalt 1 mm) war darin EINE gewölbte Beule: die Unterlippe sah im Mittel 23° nach
+// unten, die Oberlippe nach oben, umgekehrt zur Anatomie. Hier wird die Haut NUR im Kasten des Munds geteilt (rot-grün: ein
+// markiertes Dreieck in vier, sein Nachbar mit einer oder zwei geteilten Kanten in zwei oder drei — kein Riss), so oft, wie
+// `stufe(x, y, z)` am Schwerpunkt sagt (`stufe(Infinity)` die höchste), und jede Ecke im Kasten geht auf die Fläche des Felds am Punkt
+// (`feld`, Newton entlang des Gradienten), um ihr Gewicht (der Saum des Kastens blendet auf die Haut des Rasters). Die Ecken im
+// Kasten tragen `userData.fest`: der Kollaps auf die Zeile nimmt seine Dreiecke anderswo (die flache Kalotte, die Stirn).
+function __mundFein(geo, gewicht, stufe, feld, schritt) {
+    const pa = geo.attributes.position;
+    const P = [];
+    for (let i = 0; i < pa.count; i++) P.push([pa.getX(i), pa.getY(i), pa.getZ(i)]);
+    let I = Array.from(geo.index.array);
+    const stufen = stufe(Infinity);
+    for (let s = 0; s < stufen; s++) {
+        const n0 = P.length;
+        const mitte = new Map();
+        const schluessel = (a, b) => (a < b ? a * 4194304 + b : b * 4194304 + a);
+        const teile = (a, b) => {
+            const k = schluessel(a, b);
+            if (!mitte.has(k)) {
+                mitte.set(k, P.length);
+                P.push([(P[a][0] + P[b][0]) / 2, (P[a][1] + P[b][1]) / 2, (P[a][2] + P[b][2]) / 2]);
+            }
+        };
+        for (let f = 0; f < I.length; f += 3) {
+            const [a, b, c] = [I[f], I[f + 1], I[f + 2]];
+            if (a >= n0 || b >= n0 || c >= n0) continue;
+            const [x, y, z] = [0, 1, 2].map((k) => (P[a][k] + P[b][k] + P[c][k]) / 3);
+            if (!(gewicht(x, y, z) > 0 && stufe(x, y, z) > s)) continue;
+            teile(a, b);
+            teile(b, c);
+            teile(c, a);
+        }
+        const neu = [];
+        const m = (a, b) => mitte.get(schluessel(a, b));
+        for (let f = 0; f < I.length; f += 3) {
+            const v = [I[f], I[f + 1], I[f + 2]];
+            const mm = [m(v[0], v[1]), m(v[1], v[2]), m(v[2], v[0])];
+            const z = mm.filter((x) => x !== undefined).length;
+            if (z === 0) neu.push(v[0], v[1], v[2]);
+            else if (z === 3) neu.push(v[0], mm[0], mm[2], mm[0], v[1], mm[1], mm[2], mm[1], v[2], mm[0], mm[1], mm[2]);
+            else if (z === 1) {
+                const i = mm.findIndex((x) => x !== undefined);
+                const [A, B, C] = [v[i], v[(i + 1) % 3], v[(i + 2) % 3]];
+                neu.push(A, mm[i], C, mm[i], B, C);
+            } else {
+                const i = mm.findIndex((x) => x === undefined);
+                const [A, B, C] = [v[i], v[(i + 1) % 3], v[(i + 2) % 3]];
+                const m1 = mm[(i + 1) % 3],
+                    m2 = mm[(i + 2) % 3];
+                neu.push(A, B, m1, A, m1, m2, m2, m1, C);
+            }
+        }
+        I = neu;
+    }
+    // auf die Fläche des Felds am Punkt: Newton entlang des Gradienten (Schritt höchstens `schritt`), um das Gewicht der Ecke
+    const fest = new Uint8Array(P.length);
+    const e = 0.25 * schritt;
+    for (let i = 0; i < P.length; i++) {
+        const w = gewicht(P[i][0], P[i][1], P[i][2]);
+        if (!(w > 0)) continue;
+        fest[i] = 1;
+        const q = P[i].slice();
+        for (let it = 0; it < 8; it++) {
+            const d = feld(q[0], q[1], q[2]);
+            const gx = (feld(q[0] + e, q[1], q[2]) - feld(q[0] - e, q[1], q[2])) / (2 * e),
+                gy = (feld(q[0], q[1] + e, q[2]) - feld(q[0], q[1] - e, q[2])) / (2 * e),
+                gz = (feld(q[0], q[1], q[2] + e) - feld(q[0], q[1], q[2] - e)) / (2 * e);
+            const g2 = gx * gx + gy * gy + gz * gz;
+            if (!(g2 > 1e-12)) break;
+            const L = schritt / Math.sqrt(g2);
+            const t = Math.max(-L, Math.min(L, d / g2));
+            q[0] -= t * gx;
+            q[1] -= t * gy;
+            q[2] -= t * gz;
+            if (Math.abs(d) < 1e-3 * schritt) break;
+        }
+        for (let k = 0; k < 3; k++) P[i][k] += w * (q[k] - P[i][k]);
+    }
+    const pos = new Float32Array(P.length * 3);
+    for (let i = 0; i < P.length; i++) pos.set(P[i], i * 3);
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setIndex(new THREE.BufferAttribute(Uint32Array.from(I), 1));
+    geo.deleteAttribute("normal");
+    geo.computeVertexNormals();
+    geo.userData.fest = fest;
+    return geo;
 }
 
 // Das glatte SDF-Feld der Primitive (polynomiales smin, Verrundung ~blend) auf einem Raster der Weite vox.
@@ -8543,6 +8675,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         });
         kopf.updateMatrixWorld(true);
         const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips", "haarKappe"], true);
+        // DER MUND IN SEINER ANATOMIE (mensch.K4 Staffel 1, koerper kopfHaut.mund): die Lippen verrunden mit ihrer eigenen, kleinen
+        // Verrundung (der Spalt zwischen ihnen und der Saum zur Haut bleiben stehen); ohne das Gesetz kein Mund (fail-closed)
+        const KM = KH.mund;
+        if (!KM || !(KM.stufen >= 1) || !(KM.blend > 0) || !(KM.rand > 0) || !Array.isArray(KM.kasten) || !Array.isArray(KM.rot) || !Array.isArray(KM.spalt) || !Array.isArray(KM.falte))
+            throw new Error("MENSCH-HAUT: kopfHaut.mund fehlt (fail-closed)");
+        for (const p of prims) if (p.node.material.userData.__klasse === "lips") p.blend = KM.blend;
         // DIE HÖHLE IST HAUT (A4, KOPF_SOLL hoehleL/hoehleA im BILD): ihr Ton (koerper kopfToene) stand auf einer eigenen Kugel
         // HINTER der Kopf-Haut — das Bild zeigte um das Auge den Wangen-Ton. Die Höhlen-Kugeln (Klasse socket, die Ohrmuschel
         // eingeschlossen) formen nichts mehr und werden nicht gegossen: sie sind die Ton-Zone der Haut (hoehleSaum, unten).
@@ -8569,6 +8707,61 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             uL = B.augen.lowerLipRef;
         const mundY = (oL.position.y + uL.position.y) / 2,
             mundH = Math.abs(oL.position.y - uL.position.y);
+        let mundGewicht = null,
+            mundFeld = null;
+        // DIE FEINE HAUT AM MUND (`__mundFein`, koerper kopfHaut.mund): im Kasten um den Mund (`kasten` [halbe Breite, über, unter
+        // der Mund-Mitte], `rand` der Saum) teilt sich die Haut `stufen` Mal und liegt auf dem Feld am Punkt — die Lippen mit ihrer
+        // Neigung (koerper gesicht.oberlippeNeigung/unterlippeNeigung: die Oberlippe nach vorn-unten, die Unterlippe nach
+        // vorn-oben), dazu zwei weiche Schnitte: der LIPPENSPALT (`spalt` [Halbhöhe, Tiefe], so breit wie die Oberlippe) und die
+        // KINNFALTE (Sulcus mentolabialis, `falte` [unter der Mund-Mitte, Halbhöhe, Tiefe, halbe Breite]), je an der Fläche
+        {
+            const [KX, KO, KU] = KM.kasten,
+                R = KM.rand;
+            const weit = 8 * KH.vox;
+            const mx = 0,
+                my = mundY,
+                mz = oL.position.z;
+            const reich = Math.hypot(KX + R, Math.max(KO, KU) + R, 0.2);
+            // die Primitive in Reichweite des Kastens, je mit dem Radius ihrer Kugel (die Schranke von `__tierFeld`)
+            const nah = prims
+                .filter((p) => Math.hypot(p.c[0] - mx, p.c[1] - my, p.c[2] - mz) < p.ext + reich)
+                .map((p) => Object.assign(Object.create(p), { R: p.ext - KH.blend - 2 * KH.vox }));
+            const schnitte = [];
+            const feld = (x, y, z) => __feldExakt(nah, KH.blend, schnitte, weit, x, y, z);
+            // die Fläche vorn auf der Mittel-Linie in der Höhe y (Halbierung entlang z, innen → außen)
+            const vorn = (y) => {
+                let a = 0,
+                    b = 0.8;
+                if (!(feld(0, y, a) < 0 && feld(0, y, b) > 0)) throw new Error("MENSCH-HAUT: der Mund liegt nicht auf der Kopf-Haut (fail-closed)");
+                for (let i = 0; i < 40; i++) {
+                    const c = (a + b) / 2;
+                    if (feld(0, y, c) < 0) a = c;
+                    else b = c;
+                }
+                return (a + b) / 2;
+            };
+            const schnitt = (c, h, k) => ({
+                Mi: Float64Array.from(new THREE.Matrix4().compose(new THREE.Vector3(c[0], c[1], c[2]), new THREE.Quaternion(), new THREE.Vector3(h[0], h[1], h[2])).invert().elements),
+                r: 1,
+                auf: 0,
+                k,
+            });
+            const breit = oL.geometry.parameters.radius * oL.scale.x;
+            const zSpalt = vorn(mundY),
+                yFalte = mundY - KM.falte[0],
+                zFalte = vorn(yFalte);
+            schnitte.push(schnitt([0, mundY, zSpalt], [breit, KM.spalt[0], KM.spalt[1]], KM.spalt[0]));
+            schnitte.push(schnitt([0, yFalte, zFalte], [KM.falte[3], KM.falte[1], KM.falte[2]], KM.falte[1]));
+            const glatt = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+            const zMin = zSpalt - 0.15;
+            const gewicht = (x, y, z) =>
+                z < zMin ? 0 : glatt((KX + R - Math.abs(x)) / R) * glatt((y - (mundY - KU - R)) / R) * glatt((mundY + KO + R - y) / R);
+            // die feinste Stufe nur um den Spalt (die innere Hälfte des Lippenrots), der übrige Kasten eine
+            const stufe = (x, y) => (x === Infinity ? KM.stufen : Math.abs(x) < 0.8 * breit && y > mundY - KM.rot[1] / 2 && y < mundY + KM.rot[0] / 2 ? KM.stufen : 1);
+            __mundFein(geo, gewicht, stufe, feld, KH.vox / (2 << KM.stufen));
+            mundGewicht = gewicht;
+            mundFeld = { wert: feld };
+        }
         // DER SAUM DER HÖHLE (A4, koerper MENSCH_GESTALT.kopfHaut.hoehleSaum): die Höhlen-Kugel liegt unter Braue und Wange — die
         // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
         // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
@@ -8625,11 +8818,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             return [best, bd];
         };
         haarZone = (x, y, z) => naechstes(prims, x, y, z)[0].node.material.userData.__klasse === "haarKappe";
+        const hautPrims = prims.filter((p) => p.node.material.userData.__klasse === "skin");
         for (let i = 0; i < pa.count; i++) {
             const x = pa.getX(i),
                 y = pa.getY(i),
                 z = pa.getZ(i);
             let [best] = naechstes(prims, x, y, z);
+            // DAS LIPPENROT (koerper kopfHaut.mund.rot [über, unter der Mund-Mitte]): jenseits davon ist die Lippe Haut (die Oberlippe
+            // bis unter die Nase, die Unterlippe bis zur Kinnfalte)
+            if (best.node.material.userData.__klasse === "lips" && (y > mundY + KM.rot[0] || y < mundY - KM.rot[1])) [best] = naechstes(hautPrims, x, y, z);
             const [hoehle, hd] = naechstes(hoehlen, x, y, z);
             if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
             const kl = best.node.material.userData.__klasse;
@@ -8660,8 +8857,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             throw new Error("MENSCH-HAUT: kopfHaut.verdeckung fehlt (fail-closed)");
         if (!Array.isArray(VK) || VK.length !== 3 || !VK.every((k) => k >= 0 && k <= 1))
             throw new Error("MENSCH-HAUT: kopfHaut.verdeckung.kanal fehlt (fail-closed)");
+        // am Mund liest die Verdeckung das Feld am Punkt (die Falte des Spalts, die Neigung der Lippen), im Saum gemischt
         for (let i = 0; i < pa.count; i++) {
-            const ao = __feldVerdeckung(Fk, KH.vox, pa.getX(i), pa.getY(i), pa.getZ(i), VD);
+            const [x, y, z] = [pa.getX(i), pa.getY(i), pa.getZ(i)];
+            const w = mundGewicht(x, y, z);
+            const ao = __feldVerdeckung(Fk, KH.vox, x, y, z, VD);
+            if (w > 0) {
+                const aoM = __feldVerdeckung(mundFeld, KH.vox, x, y, z, VD);
+                for (let c = 0; c < 3; c++) ao[c] += w * (aoM[c] - ao[c]);
+            }
             for (let c = 0; c < 3; c++) if (ao[c] < VD.frei) col[i * 3 + c] *= ao[c];
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
@@ -8806,6 +9010,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 for (const h of kopfHuellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * k));
             }
         }
+        // die festen Ecken waren nur dem Kollaps gesagt (`__mundFein`) — die Lieferung trägt sie nicht
+        B.character.traverse((node) => {
+            if (node.isMesh && node.geometry && node.geometry.userData.fest) delete node.geometry.userData.fest;
+        });
     }
     // DIE ANLAGE (w11-koerper, koerper `armAnlage`): in der Ruhe-Pose, an der Gestalt, die die Stufe trägt (nach dem Schnitt der
     // Haut unter dem Stoff und dem Kollaps auf die Zeile), weicht die Hülle des Rumpfs — Haut, Stoff und Fett-Depot — dem
