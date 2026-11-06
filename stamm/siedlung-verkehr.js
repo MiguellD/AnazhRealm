@@ -353,8 +353,11 @@ class AnazhRealm_siedlung_verkehr {
                 F: null,
                 T: { gas: 0, bremse: 0, lenken: 0, handbremse: true },
                 zonen: [],
+                reihe: new Set(),
                 dtAcc: 0,
                 takt: w,
+                // der Blick des Fahrers versetzt je Wagen (`folgeTakt`): nie sieht die ganze Stadt im selben Schritt
+                folgeH: (w % V.folgeTakt) * AnazhRealm.FIXED_DT,
                 leiber: null,
                 vorne: null,
                 grund: null,
@@ -777,8 +780,7 @@ class AnazhRealm_siedlung_verkehr {
         });
         for (const Z of S.verkehr.zonen) {
             AnazhRealm._verkehrLos(Z, W);
-            const k = Z.warte.indexOf(W);
-            if (k >= 0) Z.warte.splice(k, 1);
+            AnazhRealm._verkehrReihe(Z, W, false);
         }
         W.zustand = "steht";
         W.zonen = [];
@@ -1071,9 +1073,15 @@ class AnazhRealm_siedlung_verkehr {
         for (const a of vorher) if (a.hat && !W.zonen.some((z) => z.hat && z.Z === a.Z)) AnazhRealm._verkehrLos(a.Z, W);
     }
 
-    // DER VERKEHR IM SIM-SCHRITT (`_stepFixedSim`, nach dem Nachlauf): je fahrendem Wagen nach seiner Stufe der Leiter (die Ferne
-    // spart Aufrufe, nie Zeit — derselbe Schritt mit der gesammelten Zeit) der Fahrer (Folge, Orte, `_fahrerSchritt`), der EINE
-    // Fahr-Schritt des Kerns, die Lage und das Bild; vorn hängt die Route ihre nächsten Züge an, heim parkt der Wagen am Ende.
+    // DER VERKEHR IM SIM-SCHRITT (`_stepFixedSim`, nach dem Nachlauf): je fahrendem Wagen nach seiner Stufe (die Ferne und der
+    // Schirm sparen Aufrufe, nie Zeit — derselbe Schritt mit der gesammelten Zeit) der Fahrer (Folge, Orte, `_fahrerSchritt`), der
+    // EINE Fahr-Schritt des Kerns, die Lage und das Bild; vorn hängt die Route ihre nächsten Züge an, heim parkt der Wagen am Ende.
+    // DIE KOSTEN (Gebot 7: an Schirm und Änderung, nie an der Zahl der Wagen): die Stufe ist die Leiter vom Auge (`VERKEHR.leiter`)
+    // und außer dem Blick der Kamera (jenseits der Hülle) mindestens `ausBlick`; höchstens `kappe` Wagen schreiten je Sim-Schritt —
+    // wer fällig ist und darüber liegt, schreitet im nächsten mit seiner Zeit, zuerst wer am weitesten hinter seiner Stufe liegt
+    // (keiner verhungert), im Blick vor dem Rest. Wer vor ihm fährt, findet die Belegung (`_verkehrBelegung`), nie die ganze Stadt.
+    // Bis w13-verkehr-heil schritt jeder Fällige, und jeder fragte jeden (stadt-voll 23 Uhr an der Radeon: CPU-Takt p50 16,5 →
+    // 37,3 ms, die Fege-Takte der Nah-Wiese verhungerten über dem Markt)
     _verkehrSchritt(dt) {
         const alle = this._bewohnerSiedlungen;
         const pm = this.state.playerMesh;
@@ -1082,19 +1090,40 @@ class AnazhRealm_siedlung_verkehr {
         const V = AnazhRealm.VERKEHR;
         const { vc } = AnazhRealm._fahrSchrittGesetz();
         const p = pm.position;
+        const auge = this._lodAuge() || p;
         const pl = this.state.player;
         for (const S of alle.values()) {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length) continue;
+            this._verkehrBelegung(VK);
+            const faellig = VK.faellig || (VK.faellig = []);
+            faellig.length = 0;
             for (const W of VK.wagen) {
                 const e = W.entry;
                 if (W.zustand !== "faehrt" || !e || !e._fahr || !W.F) continue;
                 if (pl && pl.mountedArch === e.id) continue; // der Spieler sitzt am Steuer: der Ritt führt
                 W.dtAcc += dt;
-                const d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
+                W.d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
+                const a2 = (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
                 let k = 1;
-                for (const [m, n] of V.leiter) if (d2 >= m * m) k = n;
-                if ((W.takt = (W.takt + 1) % k) !== 0) continue;
+                for (const [m, n] of V.leiter) if (a2 >= m * m) k = n;
+                W.imBlick = W.d2 < V.huelleM * V.huelleM || this._verkehrImBlick(e, W.hl + 1);
+                if (!W.imBlick) k = Math.max(k, V.ausBlick);
+                W.k = k;
+                if ((W.takt = (W.takt + 1) % k) !== 0 && !W.aufgeschoben) continue;
+                faellig.push(W);
+            }
+            if (faellig.length > V.kappe) {
+                // der Verzug: die gesammelte Zeit je Schritt seiner Stufe — wer aufgeschoben wurde, liegt vorn
+                faellig.sort((a, b) => b.dtAcc / b.k - a.dtAcc / a.k || b.imBlick - a.imBlick);
+                for (let n = V.kappe; n < faellig.length; n++) faellig[n].aufgeschoben = true;
+                VK.zahl.aufgeschoben = (VK.zahl.aufgeschoben || 0) + faellig.length - V.kappe;
+                faellig.length = V.kappe;
+            }
+            for (const W of faellig) {
+                W.aufgeschoben = false;
+                const e = W.entry;
+                const [d2, k] = [W.d2, W.k];
                 const h = W.dtAcc;
                 W.dtAcc = 0;
                 W.uhr += h; // die Uhr des Wagens: die Dauer jeder Fahrt (`_verkehrAngekommen`)
@@ -1139,7 +1168,7 @@ class AnazhRealm_siedlung_verkehr {
                 // fuhr, zeichnet nach, sobald er hineinkommt
                 W.bildAlt = W.bildAlt || !ruht || !W.bildRuht;
                 W.bildRuht = ruht;
-                if (W.bildAlt && (d2 < V.blickNahM * V.blickNahM || this._verkehrImBlick(e, W.hl + 1))) {
+                if (W.bildAlt && (d2 < V.blickNahM * V.blickNahM || W.imBlick)) {
                     this._verkehrBild(e);
                     W.bildAlt = false;
                 }
@@ -1173,6 +1202,21 @@ class AnazhRealm_siedlung_verkehr {
                     this._verkehrParken(S, W);
                 }
             }
+        }
+    }
+
+    // DIE BELEGUNG (Gebot 7: wer vor ihm fährt, kostet die Nachbarschaft, nie die Stadt): je Zelle von `belegungM` die Wagen, deren
+    // Mitte in ihr liegt — einmal je Sim-Schritt gelegt; die Folge (`_verkehrFolge`) fragt nur die Zellen um ihr Fenster, samt
+    // `belegungRandM` (so weit fährt ein Wagen der fernsten Stufe in einem Schritt) — dieselben Wagen wie die ganze Liste.
+    _verkehrBelegung(VK) {
+        const B = VK.belegung || (VK.belegung = new Map());
+        for (const l of B.values()) l.length = 0;
+        const M = AnazhRealm.VERKEHR.belegungM;
+        for (const W of VK.wagen) {
+            const e = W.entry;
+            if (!e) continue;
+            const k = Math.floor(e.position.x / M) * 2097152 + Math.floor(e.position.z / M);
+            (B.get(k) || (B.set(k, []), B.get(k))).push(W);
         }
     }
 
@@ -1252,7 +1296,18 @@ class AnazhRealm_siedlung_verkehr {
         const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / kurveR)) / 2;
         const rundAn = (i) => F.rund[i];
         const rand = W.hw + V.seitM + 3;
-        for (const O of S.verkehr.wagen) {
+        // nur wer in den Zellen der Belegung um das Fenster steht (`_verkehrBelegung`, samt dem Weg eines Schritts), nie die Stadt
+        const BM = V.belegungM;
+        const [bx0, bx1] = [Math.floor((hx0 - rand - V.belegungRandM) / BM), Math.floor((hx1 + rand + V.belegungRandM) / BM)]; // prettier-ignore
+        const [bz0, bz1] = [Math.floor((hz0 - rand - V.belegungRandM) / BM), Math.floor((hz1 + rand + V.belegungRandM) / BM)]; // prettier-ignore
+        const kandidaten = this._verkehrKandidaten || (this._verkehrKandidaten = []);
+        kandidaten.length = 0;
+        for (let ix = bx0; ix <= bx1; ix++)
+            for (let iz = bz0; iz <= bz1; iz++) {
+                const l = S.verkehr.belegung.get(ix * 2097152 + iz);
+                if (l) for (const O of l) kandidaten.push(O);
+            }
+        for (const O of kandidaten) {
             if (O === W || !O.entry) continue;
             const o = O.entry;
             if (
@@ -1395,9 +1450,9 @@ class AnazhRealm_siedlung_verkehr {
         const q = ((u.x - a.x) * -(b.z - a.z) + (u.z - a.z) * (b.x - a.x)) / l; // rechts der Fahrt (+): (−tz, tx)
         const noetig = W.hw + R + V.seitM + F.rund[u.i] + V.umfahrRandM;
         if (Math.abs(q) >= noetig) return false;
-        const rechts = noetig + q; // die Linie rechts an ihm vorbei (er bleibt links)
-        const off = rechts <= V.umfahrMaxM ? -rechts : noetig - q; // + nach links (fort von ihm, wenn er rechts steht)
-        // (−off: die Linie wandert nach rechts, `off` > 0 nach links; die Normale rechts der Fahrt je Punkt)
+        // die Linie rechts an ihm vorbei (er bleibt links), sonst links (er bleibt rechts) — `off` > 0 schert nach links
+        const rechts = noetig + q;
+        const off = rechts <= V.umfahrMaxM ? -rechts : noetig - q;
         const kern = W.hl + R + 1;
         const w = (s) => {
             const d = Math.abs(s - u.s);
@@ -1469,7 +1524,7 @@ class AnazhRealm_siedlung_verkehr {
                 v < 0.5 &&
                 O &&
                 W.vorne.gap < V.abstandM + 1 &&
-                voll[0].Z.warte.includes(O) &&
+                O.reihe.has(voll[0].Z) &&
                 !(O.vorne && O.vorne.O === W)
             ) {
                 for (const z of voll) z.hat = false;
@@ -1480,13 +1535,15 @@ class AnazhRealm_siedlung_verkehr {
         const j0 = voll.findIndex((z) => !z.hat);
         const kette = voll.slice(j0);
         const z0 = kette[0];
-        if (W.weicht && !z0.Z.warte.includes(W.weicht)) W.weicht = null;
+        if (W.weicht && !W.weicht.reihe.has(z0.Z)) W.weicht = null;
         const dEin = z0.ein - V.vorM - vor;
         if (dEin > (v * v) / (2 * V.bremsMs2) + V.frageM) return Infinity;
         const halt = Math.sqrt(2 * V.bremsMs2 * Math.max(0, dEin));
         if (W.kurz) return halt;
         const Z = z0.Z;
-        Z.warte = Z.warte.filter((o) => o.zustand === "faehrt" && o.zonen.some((z) => z.Z === Z && !z.weg));
+        for (const o of Z.warte.slice())
+            if (!(o.zustand === "faehrt" && o.zonen.some((z) => z.Z === Z && !z.weg)))
+                AnazhRealm._verkehrReihe(Z, o, false);
         const ende = kette[kette.length - 1].aus;
         const platz = !W.vorne || W.vorne.s > ende + 2 * W.hl + V.abstandM || W.vorne.v > 1;
         // wer schon im Ort steht (seine Einfahrt hinter seinem Bug: vom Platz an der Wende, nach einem Halt in ihr), muss hinaus —
@@ -1516,7 +1573,7 @@ class AnazhRealm_siedlung_verkehr {
         // führe der Durchgang der Wende ewig vor dem Ausparkenden vorbei) — bis w12-verkehr hielt der Kopf die Reihe auch, wenn er selbst nicht
         // konnte: um 23 Uhr wartete Wagen 5 an der Enge vor der Wende, die Wagen 18 hielt, 18 stand hinter 13, 13 hinter 15, und 15
         // durfte nicht an der Enge an 5 vorbei — ab Minute 5 fuhr keiner der 20 Wagen der Stadt des Worts
-        const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorne && Z.warte.includes(o.vorne.O))));
+        const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorne && o.vorne.O.reihe.has(Z))));
         // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen)
         if (!W.weicht && kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
             for (const z of kette) {
@@ -1524,13 +1581,12 @@ class AnazhRealm_siedlung_verkehr {
                 if (!z.Z.halter.includes(W)) z.Z.halter.push(W);
                 z.Z.richtung = z.dir;
             }
-            const k = Z.warte.indexOf(W);
-            if (k >= 0) Z.warte.splice(k, 1);
+            AnazhRealm._verkehrReihe(Z, W, false);
             W.gesperrt = false;
             return Infinity;
         }
         W.gesperrt = !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
-        if (!Z.warte.includes(W)) Z.warte.push(W);
+        AnazhRealm._verkehrReihe(Z, W, true);
         return halt;
     }
 
@@ -1721,8 +1777,13 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // steht er ohne Grund, dann steckt er (gezählt, `zahl.fest`) · ankunftAbstandM /
 // ankunftSchrittM = die Ankunft auf der Route: Abstand zum nächsten Wagen, Schritt der Suche · leiter = [Abstand m,
 // Schritt-Teiler]: so selten fährt ein ferner Wagen · genauM = so nah zieht er seine Boxen je Schritt nach (sonst ab 0,5 m) ·
-// huelleM = so nah fährt er mit der Probe seiner Hülle (Bau, Leib, Spieler; fern trägt die freie Spur des Gesetzes). Wie nah der Leib
-// sichtbar am Steuer sitzt, sagt die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
+// huelleM = so nah fährt er mit der Probe seiner Hülle (Bau, Leib, Spieler; fern trägt die freie Spur des Gesetzes) · kappe = so
+// viele Wagen schreiten höchstens je Sim-Schritt (`_verkehrSchritt`: der Rest mit seiner Zeit im nächsten) · ausBlick = so selten
+// schreitet ein Wagen außer dem Blick der Kamera mindestens (jenseits der Hülle) · belegungM / belegungRandM = die Zelle der
+// Belegung (`_verkehrBelegung`) und der Weg, den ein Wagen in einem Schritt höchstens fährt · umfahrMs = unter diesem Tempo steht,
+// wen er umfährt (`_verkehrUmfahren`), umfahrRandM = so viel Raum hält er über `seitM` hinaus, umfahrRampeM = so lang schert er
+// aus und ein, umfahrMaxM = so weit schert er höchstens rechts aus (sonst links). Wie nah der Leib sichtbar am Steuer sitzt, sagt
+// die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
 AnazhRealm.VERKEHR = Object.freeze({
     wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),
     stufeM: 0.2,
@@ -1757,6 +1818,10 @@ AnazhRealm.VERKEHR = Object.freeze({
     platzS: 2,
     vorausM: 160,
     platzBogenM: 4,
+    kappe: 12,
+    ausBlick: 4,
+    belegungM: 16,
+    belegungRandM: 2,
     umfahrMs: 0.3,
     umfahrRandM: 0.25,
     umfahrRampeM: 6,
@@ -1780,6 +1845,20 @@ AnazhRealm.VERKEHR = Object.freeze({
 // auch das abgeleitete `speed` (vehicle-core: hypot(vlong, vlat) je Unter-Schritt) — bis w4-verkehr-c2 trug der gestellte Wagen
 // das Tempo seiner letzten Fahrt (5,55 m/s im Platz nach dem Sprung auf 23 Uhr: er hieß fahrend, ruhte nie)
 AnazhRealm.VERKEHR_STEHT = Object.freeze({ vlong: 0, vlat: 0, yawRate: 0, speed: 0 });
+
+// DIE REIHE DER WARTENDEN eines Orts (`Z.warte`, in der Folge ihrer Frage) und je Wagen die Orte, an denen er wartet (`W.reihe`):
+// wer in einer Reihe steht, fragt die Menge des Wagens, nie die Liste (die Kopf-Suche, `_verkehrZonen`, ging je Wartendem die
+// Reihe ab — die Quadrat-Suche je Ort und Wagen bis w13-verkehr-heil). `an`: hinein (einmal), sonst hinaus.
+AnazhRealm._verkehrReihe = function (Z, W, an) {
+    if (an === W.reihe.has(Z)) return;
+    if (an) {
+        W.reihe.add(Z);
+        Z.warte.push(W);
+    } else {
+        W.reihe.delete(Z);
+        Z.warte.splice(Z.warte.indexOf(W), 1);
+    }
+};
 
 // DER SCHLÜSSEL GEHT ZURÜCK: W hält den Ort Z nicht mehr (hält ihn keiner, hat er keine Richtung).
 AnazhRealm._verkehrLos = function (Z, W) {

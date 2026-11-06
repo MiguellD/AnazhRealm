@@ -1462,6 +1462,17 @@ class AnazhRealm_siedlung_bewohner {
                     g.position.z = P.z;
                     fort = true;
                 }
+        // DER FAHRER IM DIENST KOMMT AM STEUER AN (PFLICHT-OFFEN C): wen sein Tag jetzt am Werk sieht und wessen Wagen steht, der
+        // steht an seinem Werk, dem Stand neben der Tür seines Wagens — `_tickVerkehr` setzt ihn im nächsten Takt ans Steuer, und
+        // der Wagen fährt, wo sein Tag ihn sähe (`_verkehrAnkunft`). Bis w13-verkehr-heil kam er, wo der nachgespielte Gang ihn
+        // ließ: um 10 Uhr ging der Fahrer von Wagen 19 der Metropole noch 18 m zu seinem Stand, sein Wagen stand im Platz, und
+        // die sechs Wagen der Plätze dahinter (jeder Bogen aus dem Platz führt durch den Platz vor ihm) standen 100 s mit ihm
+        const W = b.wagen;
+        if (W && b.ziel === b.orte.werk && W.zustand === "steht" && W.fahrer.includes(b)) {
+            [g.position.x, g.position.z] = [b.orte.werk.x, b.orte.werk.z];
+            g.rotation.y = b.orte.werk.blick;
+            Object.assign(b, { da: true, weg: null, wegRest: 0, stand: b.orte.werk, drehen: null });
+        }
         // die Stufe am Ende neu (der Schritt fragt die Stufe ab der Höhe seines letzten Stands — nach einem Weg ohne
         // Zwischenschritte läge die Frage am Hang unter oder über ihr)
         this._bewohnerStellen(b, g, g.position.x, g.position.z);
