@@ -851,6 +851,8 @@ const FORBIDDEN = [
         fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
         auch: ["worlds/garage/garage.js"],
     },
+    // bis w12-fahrzeug-decke gate:vehicle-drive A1 (eine eigene Absenz-Probe mit eigenem Selbsttest)
+    ...["maxSteer:", "function carPhys"].map((token) => ({ token, fiel: "N6.1 — die Shell liest VC.FAHR und carPhys des Kerns", auch: ["worlds/garage/garage.js"] })),
     { token: "zoneMulAt", fiel: "Welle L Q8 — die Zone trägt das Urteil (ARENA.zonen, tetrapoda trefferZone)" },
     { token: "zoneKindAt", fiel: "Welle L Q8" },
     { token: "zoneJuiceAt", fiel: "Welle L Q8 — der Hit-Stop liest die Energie des Urteils" },

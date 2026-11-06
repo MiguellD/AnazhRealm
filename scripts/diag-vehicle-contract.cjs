@@ -62,11 +62,8 @@ function caseKey(c) {
         )
             seedInv = false;
     check("Seed-Invarianz der Geometrie: seed 7 == seed 12345 je Gattung (kein stochastischer Term)", seedInv);
-    // 3) ov-Kanal wirkt (Kultur-Override ändert die Geometrie wirklich — kein Passagier).
-    check(
-        "ov-Kanal: Kultur-Override ändert den Bau (gt != gt+toro)",
-        actual["gt-s7-L0"].sha256 !== actual["gt-s7-L0-ov_toro"].sha256
-    );
+    // 3) dass der ov-Kanal wirkt (jede der fünf Kulturen formt den GT anders), hält gate:charakter-achsen K — hier stand bis
+    //    w12-fahrzeug-decke ein Zwilling an EINER Kultur (gt ≠ gt+toro)
 
     // 4) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
     goldenWand(path.join(root, "spec/asset-contract/v3/golden/vehicles.json"), 3, actual, check, CASES.length);
@@ -80,5 +77,5 @@ function caseKey(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();
