@@ -108,29 +108,30 @@ class AnazhRealm_koerper_bewegung {
     // Griff- und Tritt-Anker, Achse, Bahn), mit der Lage des Werks in die Welt gedreht wie seine Teile (`_blockerComputePartAABB`:
     // Ursprung position − 0,5 m, Gier rotationY, Skala) — je Werk einmal gebaut, der Zustand des Geräts (der Winkel der Schaukel,
     // der Wippe) lebt an ihm. Nur Werke in GERAET_REICH_M um den Leib; ohne Gerät die leere Liste (kein Gerät, kein Verb).
+    // DER SCHRITT KOSTET DIE NÄHE (K54, Gebot 7): gefragt werden die Geräte des Verzeichnisses um den Leib (`_blockerUmPlatz` mit
+    // dem Namen „geraet", in der Ordnung des Bestands) — bis hier ging jeder Sim-Schritt den ganzen Bestand der Welt durch
+    // (Wiese Third headless, die Leine der GTX mit 16 Takten je Bild: 1,07 ms Selbstzeit je Bild, ohne ein Gerät in Reichweite).
     _leibAngebote() {
         const out = this._leibAngeboteListe || (this._leibAngeboteListe = []);
         out.length = 0;
         const arches = this.state.architectures;
         const pm = this.state.playerMesh;
         if (!arches || !arches.length || !pm) return out;
-        const FC = globalThis.__fachwerkCore;
         const memo = this._leibAngebotMemo || (this._leibAngebotMemo = new WeakMap()); // das Werk trägt sein Angebot, solange es lebt
-        const R2 = AnazhRealm.GERAET_REICH_M * AnazhRealm.GERAET_REICH_M;
-        for (const e of arches) {
-            const typ = e && e.type;
-            const k = typeof typ === "string" ? typ.indexOf("_") : -1;
-            if (k < 0) continue;
-            const rez = typ.slice(k + 1);
-            if (!FC || !FC.GERAETE || !FC.GERAETE[rez] || FC.GERAETE[rez].kind !== typ.slice(0, k)) continue;
-            if ((e.position.x - pm.position.x) ** 2 + (e.position.z - pm.position.z) ** 2 > R2) continue;
+        const R = AnazhRealm.GERAET_REICH_M;
+        const nah = this._leibGeraeteNah || (this._leibGeraeteNah = []);
+        nah.length = 0;
+        this._blockerUmPlatz(pm.position.x, pm.position.z, R + 1e-6, nah, "geraet");
+        for (const e of nah) {
+            if ((e.position.x - pm.position.x) ** 2 + (e.position.z - pm.position.z) ** 2 > R * R) continue;
             let liste = memo.get(e);
             if (!liste) {
-                liste = this._geraetAngebotWelt(e, rez);
+                liste = this._geraetAngebotWelt(e, e.type.slice(e.type.indexOf("_") + 1));
                 memo.set(e, liste);
             }
             for (const a of liste) out.push(a);
         }
+        nah.length = 0;
         return out;
     }
     // das Angebot eines gesetzten Geräts im Welt-Rahmen: die EINE Platzierung des Gesetzbuchs (fachwerk `geraetAngebotIn`) am

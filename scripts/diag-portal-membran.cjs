@@ -347,6 +347,10 @@ async function blickStufe(check) {
     const lauf = async (alt) => {
         const page = await browser.newPage();
         await page.setViewport({ width: 480, height: 270 });
+        // DIE ANKUNFT WIE IM SPIEL (w12-dorf-probe): der Ring der Tore entsteht im Spiel-Takt (`_tickGenesisOrt`, am Urteil des
+        // Dorf-Zugs) — diese Seite erklärt ihren Zug darum laufend, als erstes Wort vor `server.zeige` (dort ruht er sonst); bis
+        // w12-dorf-probe lief er mit Bild von selbst. Mit dem Ort-Takt allein (`_genesisOrt`) standen in 900 s keine Fenster am Ring.
+        await page.evaluateOnNewDocument(() => window.__anazhAutoSettlement = true);
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske), VOR den Blicken B; die Seite des
         // alten Culling-Stands (BS) zählt nur Befehle

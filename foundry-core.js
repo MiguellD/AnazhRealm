@@ -154,6 +154,12 @@ var WASSER_GESETZ = {
     alpha: [0.55, 0.95, 0.32, 0.06],    // mix(a0,a1,depth)+fres*a2; Auslauf smoothstep(0,a3,depth)
     schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
     koerperStreu: 0.1,                  // Rueckstreuung b_b (1/m) des Wasser-Koerpers (Binnensee 0,01-0,2): R = 0,33*b_b/(wK+b_b) (Welt-Leser; das Studio-GLSL liest sie nicht)
+    // w12-unterwasser (rein additiv) — DER WASSER-KOERPER JE ART in 1/m, je Kanal R G B (der Leser UNTER Wasser: Welt und Studio; das GLSL liest ihn nicht).
+    // wK oben ist eine Look-Zahl ueber der NORMIERTEN Tiefe depth01 des Studio-Spiegels (a3d4f188), keine Absorption je Meter.
+    // kd = der Abfall des Tageslichts mit der Tiefe (Poole & Atkins 1929: kd ~ 1,7 / Secchi-Tiefe; reines Wasser rot 0,35, gruen 0,06, blau 0,02 /m,
+    // Pope & Fry 1997; geloestes Organisches hebt blau), c = die Strahl-Schwaechung, die Sicht (Zaneveld & Pegau 2003: waagrecht ~4,8/c).
+    // see = stehendes klares Wasser (See, Teich, Meer: Secchi ~8 m, Sicht ~15 m); fluss = Schwebstoff der Stroemung (Secchi ~1,3 m, Sicht ~1,5 m).
+    koerper: { see: { kd: [0.45, 0.15, 0.3], c: [0.55, 0.25, 0.35] }, fluss: { kd: [2.0, 1.3, 1.7], c: [4.0, 3.5, 3.8] } },
     // K2 (rein additiv) — DIE WELLE DER WELT (Welt-Leser; das Studio-GLSL liest sie nicht): der Hub des Hydro-Stoffs. Duenung der
     // offenen See (drei Rausch-Oktaven je +-0,5, Gewichte duenung) und Kraeuseln ((Rausch + oktave*Rausch - mitte) * kraeusel *
     // Kraeusel-Staerke <= kraeuselDecke); phase (s) = die Fluss-Phase einer advektierten Lage des Wasser-Bilds.

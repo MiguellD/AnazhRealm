@@ -1267,10 +1267,7 @@ hauptLauf(async () => {
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhAutoSettlement = false;
-    });
-    await server.zeige(page, 60000);
+    await server.zeige(page, 60000); // die Ankunft trägt ihren Dorf-Zug (haushalt genesis: er ruht)
     await page.evaluate(AUSGABE_INSTALL);
     const b = await page.evaluate(buehneBauen);
     let S;

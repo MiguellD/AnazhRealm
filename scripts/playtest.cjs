@@ -2,7 +2,7 @@
 // Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
 // Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
-const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText, path, fs } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText, ortZug, path, fs } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -430,6 +430,10 @@ if (require.main === module) hauptLauf(async () => {
             }
         };
     }, REAL_RENDERER);
+    // DER ORT DER ANKUNFT stellt seinen Dorf-Zug (haushalt.json genesis: er ruht, das Start-Dorf hinge an der Bildrate) — in jedem
+    // Renderer gleich; bis w12-dorf-probe hielt ihn nur der Null-Renderer an (am Spawn wuchs sonst das Start-Dorf, die
+    // Streu-Region der Bänder trug 0 Instanzen)
+    await ortZug(page, "genesis");
 
     const logs = [];
     const errors = [];

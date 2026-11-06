@@ -71,7 +71,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
@@ -838,10 +838,7 @@ async function starte() {
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
-    if (START_ORT && BAND.ladeSpec(START_ORT).ort.dorfZug === false)
-        await page.evaluateOnNewDocument(() => {
-            window.__anazhAutoSettlement = false;
-        });
+    if (START_ORT) await ortZug(page, START_ORT);
     const fehler = [];
     const zerstoert = { n: 0 };
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
@@ -1023,8 +1020,7 @@ async function starte() {
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
                 }
-                if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
-                else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
+                if (o) window.__anazhAutoSettlement = o.dorfZug; // der Zug des Orts (haushalt.json `dorfZug`)
                 if (o && o.kamera) r.setCameraMode(o.kamera);
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
