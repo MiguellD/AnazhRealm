@@ -738,8 +738,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
-                    const g = r.getTerrainHeightAt(c.position.x, c.position.z);
-                    const tiefe = r._koerperWasser(c.position.x, c.position.z, g) - g;
+                    const grund = r.getTerrainHeightAt(c.position.x, c.position.z);
+                    const tiefe = r._koerperWasser(c.position.x, c.position.z, grund) - grund;
                     if (tiefe > schwimm) (z.imWasser++, (z.wasserMaxM = Math.max(z.wasserMaxM, +tiefe.toFixed(2))));
                     const nn = Math.min(
                         ...neu
