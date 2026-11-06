@@ -1487,7 +1487,9 @@ class AnazhRealm_dirigent_ankunft {
         const H = AnazhRealm.HORIZONT_KARTE;
         const q = K.zuUv(p.xz);
         const boden = T.texture(K.rt.texture, q).level(0).b.add(K.U.bezug);
-        const w = T.smoothstep(H.zelleM, 2 * H.zelleM, masche).mul(AnazhRealm._imEinheitsQuadrat(q)).mul(K.U.aktiv);
+        const w = T.smoothstep(H.zelleM, 2 * H.zelleM, masche)
+            .mul(AnazhRealm._imEinheitsQuadrat(q))
+            .mul(K.U.aktiv);
         return T.vec3(p.x, T.mix(p.y, boden, w), p.z);
     }
 
