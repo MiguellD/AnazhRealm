@@ -404,6 +404,40 @@ class AnazhRealm_gelaende_chunks {
         return this._voxelFadenAuftrag(worker, Object.assign({ type: "spiegel-feld" }, auftrag));
     }
 
+    // Die Glättungs-Pässe des Wasser-Blatts (der Regler `waterSheetSmooth`, 0–6) — derselbe Wert wie `_mainWaterSheetCtx`.
+    _wasserBlattPaesse() {
+        const r =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
+                ? Math.round(this.state.atmosphere.waterSheetSmooth)
+                : 4;
+        return Math.max(0, Math.min(6, r));
+    }
+    // Trägt das Blatt des Chunks (cx, cz) keine Flut? Keine Zelle WATER im Chunk und in den `pad` Spalten seiner Nachbarn an der
+    // gemeinsamen Kante (die Spalten, die der Faden liest; ein fehlender Nachbar liest den Chunk selbst). Leser:
+    // `_workerBuildWaterSheet`.
+    _blattTrocken(cx, cz, pad) {
+        const W = AnazhRealm.CELL_STATE.WATER;
+        const vc = this.state.voxelChunks;
+        const { dim, dimY } = this._voxelChunkConfig(0);
+        const dimSq = dim * dim;
+        const mitte = vc.get(`${cx},${cz}`);
+        if (mitte && mitte.waterCells && mitte.waterCells.includes(W)) return false;
+        const p = Math.min(pad, dim);
+        for (let dz = -1; dz <= 1; dz++)
+            for (let dx = -1; dx <= 1; dx++) {
+                if (!dx && !dz) continue;
+                const e = vc.get(`${cx + dx},${cz + dz}`);
+                const c = e && e.waterCells;
+                if (!c) continue;
+                const [i0, i1] = dx < 0 ? [dim - p, dim - 1] : dx > 0 ? [0, p - 1] : [0, dim - 1];
+                const [k0, k1] = dz < 0 ? [dim - p, dim - 1] : dz > 0 ? [0, p - 1] : [0, dim - 1];
+                for (let k = k0; k <= k1; k++)
+                    for (let i = i0; i <= i1; i++)
+                        for (let j = 0, o = i + k * dim; j < dimY; j++, o += dimSq) if (c[o] === W) return false;
+            }
+        return true;
+    }
+
     // DIE NEBEN-FÄDEN DES GESETZES (K60-3, B2): eigene Fäden aus DERSELBEN Quelle wie der Voxel-Faden (`voxel-worker.js`,
     // derselbe Gelände-Kern, dieselben Spiegel) — der Wald-Faden (die Darts) und der Fern-Faden (der Horizont, `_fernAuftrag`).
     // Im Voxel-Faden stünde jeder Auftrag hinter jedem Chunk (K60-3: die Darts kamen 3,5 s nach der Bestellung). Den Zustand
@@ -480,6 +514,12 @@ class AnazhRealm_gelaende_chunks {
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
+        // DAS TROCKENE BLATT (w15-strom-takt): das Blatt trägt nur Spalten mit Flut (`caColumnScan`: eine Zelle WATER) im Chunk und
+        // im Rand-Streifen seiner Nachbarn, so breit wie die Glättung samt Rand (PAD = Pässe + 1; dachlos — der Faden zeichnet kein
+        // Live-Dach). Trägt keine dieser Spalten Flut, ist es leer, wie der Faden es rechnete (`_blattTrocken`); der Auftrag geht
+        // nicht hinaus. Ein Stempel macht Zellen nur fest, nie nass. Bis w15-strom-takt rechnete der gesättigte Voxel-Faden jedes
+        // Blatt (GT 64 m/s, 60 s: 3 023 Blätter, 1 718 davon leer, das Fenster des Boden-Strom in 83 % der Bilder voll).
+        if (this._blattTrocken(cx, cz, this._wasserBlattPaesse() + 1)) return Promise.resolve({ empty: true });
         // je Platz i = (dz+1)·3 + (dx+1) des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt
         // sie samt der Liste seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis,
         // der den Faden verfehlte: `ganz`, die Plätze der Antwort). DER AUFTRAG REIST PER TRANSFER (Lehre 24): die Verweise als
@@ -504,11 +544,7 @@ class AnazhRealm_gelaende_chunks {
             for (let i = 0, o = 0; i < listen.length; o += listen[i++].length) fest.set(listen[i], o);
             return { zids, festAb, fest, eigen };
         };
-        const smoothRaw =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
-                ? Math.round(this.state.atmosphere.waterSheetSmooth)
-                : 4;
-        const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
+        const smoothPasses = this._wasserBlattPaesse();
         // die Plätze, die den Faden verfehlten, wachsen, bis keiner mehr fehlt (höchstens neun Runden): fiel ein Verweis zwischen
         // zwei Runden (der Deckel des Fadens, `zellen-frei` beim Neubau), kam `{ fehlt }` als Blatt an — ein leeres Netz
         const auftrag = (ganz) => {
