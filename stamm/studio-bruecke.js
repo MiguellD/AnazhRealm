@@ -1523,6 +1523,10 @@ class AnazhRealm_studio_bruecke {
     // Schritt darüber ist ein Sprung. Gemerkt je Kern. Bis w14-strom-tempo stand hier eine Kopie (`tempoMax` 60 m/s, „über dem
     // GT 16 m/s“): das Antriebs-Gesetz (w11-fahrzeug) hob den GT auf 63,8 m/s, jeder Schritt galt als Sprung, das Tempo der
     // Bahn blieb 0 und mit ihm jeder Vorlauf (streaming.K2 Null-Renderer GT an main a4dc2a45: Boden 11,3 %, Bäume 5,2 %).
+    // DER SCHRITT EINES BILDS IST GEQUANTELT: der Fix-Schritt der Physik (FIXED_DT) fährt je Bild 0, 1 oder 2 Schritte, und ein
+    // gestellter Stand (die Fahrt-Probe stellt den Ort, der Takt fährt ihn weiter) trägt den Weg zweimal — je Bild misst der
+    // Weg bis zum Doppelten des Tempos, im Mittel das Tempo. `sprungUeber` liegt darüber: mit 1,5 galt im GT jedes zweite
+    // lange Bild als Sprung, das Tempo der Bahn sprang zwischen 0 und 42 m/s (Spur der Fahrt-Probe, Cloud 06.11.).
     // Ohne Fahrzeug-Kern bricht es laut (der Kern ist Pflicht).
     _bedarfSprung() {
         const VC = globalThis.__vehicleCore;
@@ -1556,14 +1560,46 @@ class AnazhRealm_studio_bruecke {
         const [vx, vz] = this._bedarfTempo();
         return { x: e.x + vx * T, z: e.z + vz * T, weg: Math.hypot(vx, vz) * T }; // je Ruf ein eigener Ort: ein Leser hält ihn
     }
-    // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`): der nähere des Auges jetzt und des Auges am
-    // Ende des Vorlaufs — die Stufen-Wahl der Einträge liest ihn (`_archStufeUrteil`, `_foundryLodForEntry`): die feine Stufe steht,
-    // bevor die Bahn ankommt.
+    // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`; ohne Angabe der Spieler): der kleinste
+    // Abstand zur STRECKE, die das Auge binnen des Vorlaufs fährt (von `auge` bis `auge + Tempo · vorlaufS`) — die Stufen-Wahl
+    // der Einträge (`_archStufeUrteil`, `_foundryLodForEntry`), die Mesh-Zone, der Laub-Rand und die Reichweite der Streu lesen
+    // ihn: die feine Stufe steht, bevor die Bahn ankommt, und bleibt, bis sie vorbei ist. Bis w14-strom-tempo galt der nähere
+    // der zwei Endpunkte: im GT (Vorlauf 191 m) lag ein Baum in der Mitte der Strecke 95 m von beiden — seine L1 fiel zurück auf
+    // die Karte, sobald das Ende des Vorlaufs an ihm vorbei war, und kam erst mit dem Spieler wieder.
     _bedarfAbstand(x, z, auge) {
-        const d = Math.hypot(x - auge.x, z - auge.z);
+        const e = auge || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const [qx, qz] = [x - e.x, z - e.z];
         const [vx, vz] = this._bedarfTempo();
+        if (!(vx || vz)) return Math.hypot(qx, qz);
         const T = AnazhRealm.BEDARF.vorlaufS;
-        return vx || vz ? Math.min(d, Math.hypot(x - auge.x - vx * T, z - auge.z - vz * T)) : d;
+        const [sx, sz] = [vx * T, vz * T];
+        const u = Math.max(0, Math.min(1, (qx * sx + qz * sz) / (sx * sx + sz * sz)));
+        return Math.hypot(qx - sx * u, qz - sz * u);
+    }
+    // DER KASTEN-ABSTAND DER BAHN zum Kasten [x0, x1] × [z0, z1] von `p` (ohne Angabe der Spieler): der kleinste Abstand
+    // entlang derselben Strecke wie `_bedarfAbstand`, Chebyshev (die Stufe eines Chunks, `_voxelChunkLodFor`) oder `euklid`
+    // (die Reichweite einer Streu-Region, `_streuRegionInReichweite`). Beide sind längs der Strecke konvex: die Dreiteilung
+    // findet ihr Minimum.
+    _bedarfKasten(x0, x1, z0, z1, p, euklid = false) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const k = (x, z) => {
+            const [dx, dz] = [Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)];
+            return euklid ? Math.hypot(dx, dz) : Math.max(dx, dz);
+        };
+        const [vx, vz] = this._bedarfTempo();
+        if (!(vx || vz)) return k(e.x, e.z);
+        const T = AnazhRealm.BEDARF.vorlaufS;
+        const f = (u) => k(e.x + vx * T * u, e.z + vz * T * u);
+        let [a, b] = [0, 1];
+        for (let i = 0; i < 24; i++) {
+            const m1 = a + (b - a) / 3,
+                m2 = b - (b - a) / 3;
+            if (f(m1) <= f(m2)) b = m2;
+            else a = m1;
+        }
+        return Math.min(f(0), f(1), f((a + b) / 2));
     }
     // DIE ZEIT BIS ZUR SICHT eines Rings (w13-dorf-strom): die Sekunden, bis die Bahn (der Spieler mit dem Tempo-Vektor
     // `_bedarfTempo`) den Kreis `r` um (x, z) betritt — 0, wenn er darin steht, Infinity, wenn die Bahn ihn nicht trifft (im
@@ -3792,7 +3828,8 @@ AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
 // 81,7 % fertig beim Eintritt bei 1,5 s, 100 % bei 3 s); die Bahn legt in 3 s 48 m zurück, ihr Ring hält die Pflege
 // (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `sprungUeber` — ein Schritt
 // schneller als dieses Vielfache des schnellsten Fahr-Gesetzes (`_bedarfSprung`, vehicle-core `vmax`) ist ein Sprung
-// (Teleport, Tor, ein gestellter Stand), kein Tempo; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
+// (Teleport, Tor), kein Tempo — über dem Doppelten, das ein Bild aus dem Fix-Schritt trägt; `fahrtAb` — unter diesem
+// Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
 // `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
 // `vorbauS` (w13-dorf-strom): so viele Sekunden, bevor die Bahn ein Ding in seine Zone holt, bestellt sie seine Studio-Stufe
 // (`_archVorbau`, der Vorrat eines Orts `_dorfVorbacken`) — ein Bau wartete im GT bis 6,4 s auf die Foundry (Fahrt-Probe dorf)
@@ -3800,7 +3837,7 @@ AnazhRealm.BEDARF = Object.freeze({
     vorlaufS: 3,
     vorbauS: 8,
     tauS: 0.3,
-    sprungUeber: 1.5,
+    sprungUeber: 3,
     fahrtAb: 1.05,
     frischMs: 500,
 });

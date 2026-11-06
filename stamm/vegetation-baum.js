@@ -2506,9 +2506,10 @@ class AnazhRealm_vegetation_baum {
         // Totband, ungezeichnete bis an ihren Rand, ein ferner Satz bis an den Radius; was sein Urteil liest (Stufe gezeichnet,
         // Typ, Lage, Satz, Buch), weckt ihn (`_cullWecken`). Bis pbk4-fahrt ging jeder Gang jeden Eintrag des Bestands, der mit
         // dem gefahrenen Weg wächst (Mess-Wiese, GT 20 m/s, 60 s: 868 → 3 859 Einträge, der Gang 2,9 ms bei 4 953, `werkbank takt`).
-        // DER ABSTAND DER BAHN (der EINE Rang, w7-rang): ein Eintrag gilt am näheren der zwei Orte — dem Spieler und seinem Ort am
-        // Ende des Vorlaufs (`_bedarfVoraus`); was die Bahn binnen des Vorlaufs in der Mesh-Zone oder diesseits des Karten-Horizonts
-        // braucht, steht, bevor sie ankommt. Der Weg der Wache zählt den weiteren der beiden Wege (ein Schlaf in Metern hält).
+        // DER ABSTAND DER BAHN (der EINE Rang, w7-rang): ein Eintrag gilt am Abstand zur Strecke, die der Spieler binnen des
+        // Vorlaufs fährt (`_bedarfAbstand`, w14-strom-tempo: bis dahin am näheren ihrer Endpunkte); was die Bahn binnen des
+        // Vorlaufs in der Mesh-Zone oder diesseits des Karten-Horizonts braucht, steht, bevor sie ankommt. Der Weg der Wache zählt
+        // den weiteren der Wege beider Enden (ein Schlaf in Metern hält: kein Punkt der Strecke ging weiter).
         const vb = this._bedarfVoraus(playerPos) || playerPos;
         const K = this._cullWache();
         K.odo +=
@@ -2565,9 +2566,7 @@ class AnazhRealm_vegetation_baum {
                 K.schlaefer.add(entry);
                 continue;
             }
-            const dx = entry.position.x - playerPos.x;
-            const dz = entry.position.z - playerPos.z;
-            const distSq = Math.min(dx * dx + dz * dz, (entry.position.x - vb.x) ** 2 + (entry.position.z - vb.z) ** 2);
+            const distSq = this._bedarfAbstand(entry.position.x, entry.position.z, playerPos) ** 2; // entlang der Bahn
             // die Reihe der Wartenden: die Zeit bis Bedarf (`_bedarfWeg`, in Metern zu Fuß), bis w7-rang der Abstand
             const rang = this._spielerD2(entry.position.x, entry.position.z);
             // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch

@@ -839,16 +839,12 @@ class AnazhRealm_gelaende_chunks {
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
-        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte am Spieler ODER an seinem Ort am Ende des
-        // Vorlaufs (`_bedarfVoraus`) im Radius liegt — sein Wald steht, bevor die Bahn den Rand des Laubs über ihn schiebt. Bis
-        // w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in den Sichtkegel (streaming.K1, Null-Renderer).
-        const v = this._bedarfVoraus(pm.position);
-        const d = Math.hypot(ccx - pm.position.x, ccz - pm.position.z);
+        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte entlang der Strecke, die der Spieler binnen
+        // des Vorlaufs fährt, im Radius liegt (`_bedarfAbstand`; bis w14-strom-tempo an ihren Endpunkten) — sein Wald steht, bevor
+        // die Bahn den Rand des Laubs über ihn schiebt. Bis w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in
+        // den Sichtkegel (streaming.K1, Null-Renderer).
         // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
-        return (
-            (d <= fr || (!!v && Math.hypot(ccx - v.x, ccz - v.z) <= fr)) &&
-            this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2)
-        );
+        return this._bedarfAbstand(ccx, ccz, pm.position) <= fr && this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2);
     }
 
     // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
@@ -867,6 +863,7 @@ class AnazhRealm_gelaende_chunks {
         if (!pending || pending.size === 0) return;
         const pm = this.state.playerMesh;
         const s = this._wuchsSchlaf;
+        const sv = s && pm ? this._bedarfVoraus(pm.position) : null;
         if (
             s &&
             s.n === pending.size &&
@@ -874,7 +871,8 @@ class AnazhRealm_gelaende_chunks {
             s.karte === (this._karteRegung | 0) &&
             s.fr === this.state.foliageRadius &&
             pm &&
-            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei
+            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
+            (sv.x - s.vx) ** 2 + (sv.z - s.vz) ** 2 < s.frei * s.frei
         )
             return;
         this._wuchsSchlaf = null;
@@ -884,9 +882,15 @@ class AnazhRealm_gelaende_chunks {
         const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
         const { span } = this._voxelChunkConfig();
         let frei = Infinity;
+        // DER SCHLAF MISST AN DER BAHN (w14-strom-tempo): ein Chunk wächst, wenn seine Mitte entlang der Strecke des Vorlaufs im
+        // Radius liegt (`_foliageChunkInRadius`, `_bedarfAbstand`) — sein Abstand zum Rand ist der zur Strecke, und der Schlaf
+        // hält nur, solange beide ihrer Enden weniger als `frei` gingen (die Strecke rückt nie weiter als ihre Enden). Bis
+        // w14-strom-tempo maß er am Spieler allein: im GT (63,8 m/s, Vorlauf 191 m) schlief der Wuchs, während die Bahn längst
+        // über dem nächsten Chunk stand.
+        const v = pm ? this._bedarfVoraus(pm.position) : null;
         const draussen = (cx, cz) => {
             if (!pm) return;
-            const d = Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z) - fr;
+            const d = this._bedarfAbstand(cx * span + span / 2, cz * span + span / 2, pm.position) - fr;
             if (d < frei) frei = d;
         };
         const schlafe = () => {
@@ -898,6 +902,8 @@ class AnazhRealm_gelaende_chunks {
                 fr: this.state.foliageRadius,
                 x: pm.position.x,
                 z: pm.position.z,
+                vx: v ? v.x : pm.position.x,
+                vz: v ? v.z : pm.position.z,
                 frei,
             };
         };
@@ -2551,7 +2557,7 @@ class AnazhRealm_gelaende_chunks {
             // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
             // `existing`) bekommt die reine Band-LOD.
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, voraus);
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {

@@ -2508,14 +2508,18 @@ class AnazhRealm_gelaende_boden {
     // (Streaming-Takt) hält die Hysterese einen feineren Chunk, bis der Abstand `bis + vorlauf + halt` erreicht. Der
     // Wechsel geschieht so nur, wo jeder Vertex des Chunks ganz auf der gröberen Fläche liegt (Gewicht 1, `_stufeGewicht`):
     // der Ring der Stufe-0-Zone (r ≤ 1) war für die CDLOD-Bedingung zu grob — ein Chunk-Ring trägt 2 Spannen Abstand.
-    // `voraus` (optional, {x, z}): der Spieler am Ende des Vorlaufs (`_bedarfVoraus`, der EINE Rang) — die Stufe gilt für den
-    // näheren der beiden Orte: was die Bahn binnen des Vorlaufs fein braucht, baut fein, bevor sie ankommt.
-    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, voraus = null) {
+    // `bahn` (optional): die Stufe gilt am Kasten-Abstand der Bahn (`_bedarfKasten`, der EINE Rang) — der kleinste entlang der
+    // Strecke, die der Spieler binnen des Vorlaufs fährt: was die Bahn fein braucht, baut fein, bevor sie ankommt, und bleibt
+    // fein, bis sie vorbei ist. Weit voraus steht so erst die Grobstufe, die feinere folgt mit der Ankunft (Grob zuerst). Bis
+    // w14-strom-tempo galt der nähere der Endpunkte (Spieler, Ende des Vorlaufs): im GT fiel ein Chunk der Bahnmitte zurück
+    // auf die gröbere Stufe und baute neu, sobald das Ende des Vorlaufs an ihm vorbei war.
+    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, bahn = false) {
         const B = AnazhRealm.BODEN_STUFEN;
         const S = this._voxelChunkConfig(0).span;
-        const kasten = (x, z) =>
-            Math.max(Math.max(cx * S - x, 0, x - (cx + 1) * S), Math.max(cz * S - z, 0, z - (cz + 1) * S));
-        const d = voraus ? Math.min(kasten(px, pz), kasten(voraus.x, voraus.z)) : kasten(px, pz);
+        const [x0, x1, z0, z1] = [cx * S, (cx + 1) * S, cz * S, (cz + 1) * S];
+        const d = bahn
+            ? this._bedarfKasten(x0, x1, z0, z1, { x: px, z: pz })
+            : Math.max(Math.max(x0 - px, 0, px - x1), Math.max(z0 - pz, 0, pz - z1));
         const st = B.stufen;
         let lod = st[st.length - 1].lod;
         for (let i = 0; i < st.length; i++)
