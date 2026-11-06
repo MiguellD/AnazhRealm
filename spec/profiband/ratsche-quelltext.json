@@ -34,6 +34,10 @@
             "zweck": "Messung: die Schale der geladenen Klasse (A._foundrySchale.toString(), wie studio-bruecke sie in den Worker gibt) läuft im echten Worker (V1–V14, die Selbsttests wandeln sie)",
             "seite": 1
         },
+        "scripts/diag-garage-labor.cjs": {
+            "zweck": "Messung: führt vehicle-core im vm mit eingeschmuggelten Tätern aus (G9 die Zeit-Achse: Lasur, Antrieb der Stufe, Schnitt der Flanke)",
+            "datei": 1
+        },
         "scripts/diag-kamera-laub.cjs": {
             "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM)",
             "stamm": 1
