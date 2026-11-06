@@ -2853,14 +2853,34 @@ class AnazhRealm_werkstatt_hud {
             z.n++;
             klein.set(k, z);
         };
+        // DAS ZEICHEN DES GERÄTS (w13-menue-heil): ein Zeichen (▸ ◆ ⚓ ✶, kein Buchstabe, keine Ziffer) zeichnet jede Maschine
+        // aus ihrer eigenen Symbol-Schrift — die Radeon „▸“ 13 px und „⚓“ 22 px, headless 8 und 20; ein Kasten in px um 9 oder
+        // 1,25 em hielt hier und brach dort. Darum misst der Zensus jedes Zeichen, das seinen Kasten allein trägt, noch einmal
+        // um ½ em breiter (letter-spacing): ein Kasten, der aus der Schrift wächst (min-width in em), hält es, ein fester ragt.
+        const zeichen = /^(?:\p{S}\p{M}*){1,2}$/u;
+        const rechteckeVon = (t) => {
+            const r = document.createRange();
+            r.selectNodeContents(t);
+            return [...r.getClientRects()].filter((q) => q.width * q.height > 0);
+        };
         const gang = document.createTreeWalker(wurzel, window.NodeFilter.SHOW_TEXT);
         for (let t; (t = gang.nextNode());) {
             const el = t.parentElement;
-            if (!t.textContent.trim() || !el || el.closest("select") || !sichtbar(el)) continue;
-            const r = document.createRange();
-            r.selectNodeContents(t);
-            const rechtecke = [...r.getClientRects()].filter((q) => q.width * q.height > 0);
-            if (rechtecke.length) zaehle(el, t.textContent.trim(), css(el), rechtecke);
+            const text = t.textContent.trim();
+            if (!text || !el || el.closest("select") || !sichtbar(el)) continue;
+            const rechtecke = rechteckeVon(t);
+            if (!rechtecke.length) continue;
+            zaehle(el, text, css(el), rechtecke);
+            if (!zeichen.test(text) || el.textContent.trim() !== text) continue;
+            const alt = el.style.letterSpacing;
+            el.style.letterSpacing = "0.5em";
+            const grund = schneidet(el, rechteckeVon(t), false);
+            el.style.letterSpacing = alt;
+            if (!grund) continue;
+            const k = wo(el) + "|zeichen";
+            const z = ueber.get(k) || { wo: wo(el), text, grund: `das Zeichen des Geräts (+½ em) ${grund}`, n: 0 };
+            z.n++;
+            ueber.set(k, z);
         }
         for (const el of [wurzel, ...wurzel.querySelectorAll("*")])
             for (const p of ["::before", "::after"]) {

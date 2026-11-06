@@ -140,11 +140,15 @@ async function bedienung2(vor) {
         // der zu enge Kasten: 2 em breit, der Text schneidet ohne „…“ ab
         const eng = Object.assign(document.createElement("span"), { textContent: "Probe Kasten zu eng" });
         eng.style.cssText = "display: inline-block; width: 2em; overflow: hidden; white-space: nowrap";
-        document.getElementById("hotbar").append(probe, eng);
+        // das Zeichen im px-Kasten (der Hof vor w13-menue-heil): headless 8 px in 9 hält es, am Gerät ragt es — die Dehnprobe nennt es
+        const zeichen = Object.assign(document.createElement("span"), { id: "probe-zeichen", textContent: "▸" });
+        zeichen.style.cssText = "display: inline-block; width: 9px";
+        document.getElementById("hotbar").append(probe, eng, zeichen);
         r._menueZeigen(null);
         const schrift = { hud: r._schriftZensus() };
         probe.remove();
         eng.remove();
+        zeichen.remove();
         const blind = [
             ...(schrift.hud.klein.some((z) => z.text === probe.textContent)
                 ? []
@@ -152,9 +156,12 @@ async function bedienung2(vor) {
             ...(schrift.hud.ueber.some((z) => z.text === eng.textContent)
                 ? []
                 : ["der zu enge Kasten der Hotbar fehlt im Zensus"]),
+            ...(schrift.hud.ueber.some((z) => z.wo === "#probe-zeichen" && /Zeichen des Geräts/.test(z.grund))
+                ? []
+                : ["das Zeichen im px-Kasten der Hotbar fehlt im Zensus"]),
         ];
         schrift.hud.klein = schrift.hud.klein.filter((z) => z.text !== probe.textContent);
-        schrift.hud.ueber = schrift.hud.ueber.filter((z) => z.text !== eng.textContent);
+        schrift.hud.ueber = schrift.hud.ueber.filter((z) => z.text !== eng.textContent && z.wo !== "#probe-zeichen");
         for (const d of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
