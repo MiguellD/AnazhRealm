@@ -638,6 +638,8 @@ async function probeLeben(expected) {
             tempo: t,
             steck: F.fest,
             anteil: (t[8] + t[9] + t[10]) / F.takte,
+            // der Bezug der Takte (fahrzeug.K2): die Tafel des Wegenetzes, vmax des Wagens und der mittlere Bezug
+            bezug: { kmh: A.WEGENETZ.entwurfKmh, vmax: F.vmax, mittel: F.bezug / F.takte },
             wegAnteil: b.weg / b.n,
             boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n },
             lage: [p.x, p.z],

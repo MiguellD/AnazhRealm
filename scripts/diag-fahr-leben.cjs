@@ -757,7 +757,7 @@ function ketteBericht(k, err) {
 
 // ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2 Staffel 1, `wegenetz` in probeLeben): die feste Route von der Mess-Wiese über die
 // Orte der Zellen (je zwei Nachbarn im Wegenetz) — ≥ 2 km, auf Weg und Feldweg durch Wald und Dorf, 0 Steckenbleiber, ≥ 80 % der
-// Sim-Schritte über 0,8 · vmax. ════
+// Sim-Schritte über 0,8 · Bezug (das Tempo, das der Weg trägt: min(vmax, Entwurfs-Tempo seiner Klasse, `WEGENETZ.entwurfKmh`)). ════
 const WEGENETZ = { orte: ["-1,-5", "0,-5", "1,-6", "2,-7", "3,-6", "4,-7"] };
 const wegenetzVerdict = (m) =>
     [
@@ -767,7 +767,7 @@ const wegenetzVerdict = (m) =>
         [!m.steck.length, `Steckenbleiber bei ${m.steck} m`],
         [
             m.anteil >= 0.8,
-            `über 0,8 · vmax ${m.anteil} — Täter ${JSON.stringify(m.grund)} · ${(m.taeter || [])
+            `über 0,8 · Bezug ${m.anteil} — Täter ${JSON.stringify(m.grund)} · ${(m.taeter || [])
                 .slice(0, 4)
                 .map((t) => `${t.grund} bei ${t.s} m (${t.n})`)
                 .join(", ")}`,

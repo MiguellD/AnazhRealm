@@ -1711,7 +1711,7 @@ class AnazhRealm_koerper_fahrt {
         const P = [];
         for (const q of pts || [])
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
-                P.push({ x: q.x, z: q.z });
+                P.push({ x: q.x, z: q.z, vz: q.vz });
         if (P.length < 2) return null;
         // DIE LINIE DES FAHRERS: die Route je Meter, gemittelt über ±kurveM (an den Enden das symmetrische Stück) — der Knick
         // einer Gasse wird der Bogen, den die Drehung über ±kurveM misst (am Knick schoss er über den Bogen hinaus und kroch zurück)
@@ -1719,8 +1719,12 @@ class AnazhRealm_koerper_fahrt {
         for (let i = 1; i < P.length; i++) {
             const [a, b] = [P[i - 1], P[i]];
             const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z));
-            for (let t = 1; t <= n; t++) M.push({ x: a.x + ((b.x - a.x) * t) / n, z: a.z + ((b.z - a.z) * t) / n });
+            for (let t = 1; t <= n; t++)
+                M.push({ x: a.x + ((b.x - a.x) * t) / n, z: a.z + ((b.z - a.z) * t) / n, vz: Math.min(a.vz, b.vz) });
         }
+        // das Entwurfs-Tempo je Meter (die Route des Wegenetzes trägt es je Punkt, `_wegenetzRoute`; je Stück das kleinere
+        // seiner Enden) — die Spur des Verkehrs trägt keins
+        const vz = P.some((q) => q.vz > 0) ? M.map((q) => q.vz) : null;
         const sx = [0];
         const sz = [0];
         for (const q of M) {
@@ -1758,6 +1762,7 @@ class AnazhRealm_koerper_fahrt {
             bogen: s,
             k,
             ks,
+            vz,
             stil,
             i: 0,
             s: 0,
@@ -1766,6 +1771,8 @@ class AnazhRealm_koerper_fahrt {
             lang: s[s.length - 1],
             takte: 0,
             tempo: Array(11).fill(0),
+            bezug: 0,
+            vmax: 0,
             fest: [],
             anker: 0,
             steht: 0,
@@ -1854,9 +1861,13 @@ class AnazhRealm_koerper_fahrt {
         F.ende = F.s >= F.lang - D.haltM;
         // auch der Bogen zurück auf die Route, gemessen auf mindestens `bogenM` (auf dem kurzen Blick des Kriechens hielte er
         // sich selbst im Schritt: langsam → nah → steil → langsam)
+        // DER BEZUG DER FAHRT (fahrzeug.K2): das Tempo, das der Weg hier trägt — min(vmax, Entwurfs-Tempo seiner Klasse,
+        // `WEGENETZ.entwurfKmh`); schneller fährt der Fahrer nie, und an ihm zählt die Fahrt ihre Takte
+        const vzAn = (i) => (F.vz ? F.vz[i] : Infinity);
+        const bezug = Math.min(G.vmax, vzAn(F.i));
         let soll = F.ende
             ? 0
-            : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
+            : Math.min(bezug, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
         // was das Soll deckelt: der Bogen zurück auf die Route, eine Kurve in Sicht (wo, ihr Radius) oder das Ende
         let grund = F.ende ? "ende" : "bogen";
         let kWo = -1;
@@ -1876,20 +1887,21 @@ class AnazhRealm_koerper_fahrt {
         );
         let jb = F.i + 1;
         while (jb < P.length - 1 && S[jb] - F.s < blick) jb++;
-        let [w, wo] = [jb === P.length - 1 ? 0 : Math.min(soll, vKurve(F.k[jb])), jb];
+        let [w, wo, wg] = [jb === P.length - 1 ? 0 : Math.min(soll, vKurve(F.k[jb]), vzAn(jb)), jb, "kurve"];
         const auf = (w, k, ds) =>
             Math.min(
                 soll,
                 Math.sqrt(w * w + 2 * ds * ST.brems * mu * Math.sqrt(Math.max(0, 1 - ((w * w * k) / mu) ** 2)))
             );
         for (let i = jb - 1; i > F.i; i--) {
-            if (w >= soll && F.k[i] <= kSoll) continue;
+            if (w >= soll && F.k[i] <= kSoll && vzAn(i) >= soll) continue;
             w = auf(w, F.k[i], S[i + 1] - S[i]);
             const vk = F.k[i] > kSoll ? vKurve(F.k[i]) : Infinity;
-            if (vk < w) [w, wo] = [vk, i];
+            // ein langsamerer Weg voraus (das Entwurfs-Tempo der nächsten Klasse) deckelt wie eine Kurve
+            if (Math.min(vk, vzAn(i)) < w) [w, wo, wg] = [Math.min(vk, vzAn(i)), i, vzAn(i) < vk ? "weg" : "kurve"];
         }
         w = auf(w, F.k[F.i], Math.max(0, S[F.i + 1] - F.s));
-        if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : "kurve", wo];
+        if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : wg, wo];
         if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
@@ -1903,17 +1915,18 @@ class AnazhRealm_koerper_fahrt {
         // unter `haltMs` Soll hält er die Handbremse (unter bremsV bremst der Kern nicht: wer hinter einem Stehenden auf Soll 0
         // kam, rollte mit 0,3–0,5 m/s in ihn — 327 Berührungen in der Metropole)
         T.handbremse = F.ende || soll < D.haltMs;
-        // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln von vmax (`F.tempo`), und wer vor dem Ende `festS`
+        // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln des Bezugs (`F.tempo`; seine Summe `F.bezug`), und wer vor dem Ende `festS`
         // lang keine `festM` auf der Route vorankommt, steckt fest (`F.fest`: wo, m auf der Route)
         F.takte++;
-        F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / G.vmax)))]++;
+        F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / bezug)))]++;
+        [F.bezug, F.vmax] = [F.bezug + bezug, G.vmax];
         if (F.s - F.anker >= D.festM || F.ende) [F.anker, F.steht] = [F.s, 0];
         else if (++F.steht === Math.round(D.festS / AnazhRealm.FIXED_DT)) F.fest.push(Math.round(F.s));
-        // DER TÄTER JEDES LANGSAMEN TAKTS (Gebot 10, unter `tempoTeil` · vmax): deckelt das Soll, sein Grund (die Kurve, der Bogen
-        // zurück, das Ende); fährt der Wagen unter einem freien Soll, die Welt am Rad — das Wasser (`_fahrTiefe`), der Hang
+        // DER TÄTER JEDES LANGSAMEN TAKTS (Gebot 10, unter `tempoTeil` · Bezug): deckelt das Soll, sein Grund (die Kurve, ein
+        // langsamerer Weg voraus, der Bogen zurück, das Ende); fährt der Wagen unter einem freien Soll, die Welt am Rad — das Wasser (`_fahrTiefe`), der Hang
         // (Steigung über `hangRad`) —, sonst holt er auf, was der letzte Täter ihm nahm (`F.nach`, am Start die Anfahrt). Je
         // `ortM` der Route die Takte und ihr Täter (`F.orte`), die Linse nennt die schwersten.
-        const lim = D.tempoTeil * G.vmax;
+        const lim = D.tempoTeil * bezug;
         if (soll < lim && grund !== "bogen") F.nach = grund;
         if (v < lim) {
             const g =

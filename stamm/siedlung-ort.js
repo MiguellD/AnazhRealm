@@ -3447,7 +3447,7 @@ class AnazhRealm_siedlung_ort {
     _wegeNetzGrund(plan, ox, oz) {
         const W = AnazhRealm.WEGENETZ;
         const G = AnazhRealm.Gesetz("fachwerk:wegeNetz")(plan, AnazhRealm.BEWOHNER.kreuzM, W.halbM, W.nahtM);
-        G.knoten = G.knoten.map((q) => ({ x: ox + q.x, z: oz + q.z, w: q.w }));
+        G.knoten = G.knoten.map((q) => ({ x: ox + q.x, z: oz + q.z, w: q.w, klasse: q.klasse }));
         return G;
     }
 
@@ -3672,7 +3672,7 @@ class AnazhRealm_siedlung_ort {
             const [a, b] = [naechster(k.pts[0], 1), naechster(k.pts[k.pts.length - 1], 1)];
             let vor = a;
             for (let i = 1; i + 1 < k.pts.length; i++) {
-                knoten.push(k.pts[i]);
+                knoten.push({ x: k.pts[i].x, z: k.pts[i].z, klasse: "feldweg" });
                 kanten.push([]);
                 if (vor >= 0) kante(vor, knoten.length - 1);
                 vor = knoten.length - 1;
@@ -3740,7 +3740,13 @@ class AnazhRealm_siedlung_ort {
             }
             s = t;
         }
-        return zug.map((i) => ({ x: knoten[i].x, z: knoten[i].z }));
+        // je Punkt das Entwurfs-Tempo seiner Wegeklasse (`WEGENETZ.entwurfKmh`, m/s): das Tempo, das der Weg trägt — der Fahrer
+        // fährt nie schneller, und an ihm misst sich seine Fahrt (fahrzeug.K2)
+        return zug.map((i) => {
+            const vz = AnazhRealm.WEGENETZ.entwurfKmh[knoten[i].klasse] / 3.6;
+            if (!(vz > 0)) throw new Error("WEGENETZ: der Knoten trägt keine Wegeklasse (" + knoten[i].klasse + ")");
+            return { x: knoten[i].x, z: knoten[i].z, vz };
+        });
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_ort]);
@@ -3751,7 +3757,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_ort]);
 // randM / randAnteil = so weit (mindestens / je Länge) reicht das Raster seitlich über die Luftlinie (der Saumpfad weicht) ·
 // halbM = die halbe Breite des Wagens, für die eine Naht im Netz eines Orts frei sein muss · nahtM = so weit schließt eine Naht
 // eine Lücke (fachwerk `wegeNetz`; die Lücken der Straßen eines Dorfs: 18–41 m) · zugangM = so weit hinter dem nächsten Knoten
-// sucht der Anfang einer Route seinen Zugang zum Netz (`_wegenetzRoute`).
+// sucht der Anfang einer Route seinen Zugang zum Netz (`_wegenetzRoute`) · entwurfKmh = das Entwurfs-Tempo je Wegeklasse (fachwerk
+// `WEGE_KLASSE`; RASt 06: Ortsdurchfahrt 50, Wohnstraße 30, Gasse 20–30 km/h; DWA-A 904, ländlicher Wegebau: Feldweg 30–40 km/h) —
+// das Tempo, das der Weg trägt: der Fahrer fährt höchstens so schnell, und die Fahrt misst sich daran (fahrzeug.K2: ≥ 80 % der
+// Takte über 0,8 × min(vmax, Entwurfs-Tempo)).
 AnazhRealm.WEGENETZ = Object.freeze({
     maxM: 720,
     breiteM: 3.4,
@@ -3761,6 +3770,7 @@ AnazhRealm.WEGENETZ = Object.freeze({
     halbM: 1.2,
     nahtM: 48,
     zugangM: 60,
+    entwurfKmh: Object.freeze({ ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 }),
 });
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
 // Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`ortTraegt` im Ort-Faden) urteilen gleich.
