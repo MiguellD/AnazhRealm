@@ -37,3 +37,14 @@ Status ZWISCHENSTAND. Offen: alle vier GTX-Hälften, bis der Kopf des Champions 
 - **tiere.K3#2: UNGEMESSEN am Deckel 45 s.** Das Bild war nach ~25 s fertig, tier-gang GRÜN nach ~42,8 s. Der Querhang schrieb bis 45 s keine Zeile (seine Datei ist leer): Sein eigener Null-Welt-Boot mit der Prüfbühne läuft jetzt neben dem schnelleren tier-gang und ist der lange Teil.
 
 Messdatei `meisterkarte-quelle/punkte/messung/5a7cff0d-gtx.json`, Roh-Ausgaben in `roh/5a7cff0d-gtx/*.out`.
+
+## material.K2#1 am main 25374f6f (z251, mikro-schirm), GTX 06:09–06:14, Schloss 5,0 min
+
+- **material.K2#1 GRÜN nach 66,3 s** (Deckel 90 s). Boden 0,5/1/2 m: nyquist 0,160/0,176/0,173, glatt 0,065/0,037/0,027. Fels 0,5/1/2 m: nyquist 0,166/0,156/0,164, glatt 0/0,071/0. Alle Arme stimmen (0,498/0,998/1,996 und 0,494/0,99/1,984), Adapter nvidia/pascal.
+- Den knappsten Wert hat der Fels auf 1 m: nyquist 0,156 gegen das Soll 0,15.
+- In den Bildern ist der Boden zwischen den Halmen körnig und hell, der Fels trägt Korn (`roh/25374f6f-gtx/material.K2_1.json.d/boden-0.5.png`, `fels-1.png` auf der OMEN).
+- Teile: Wiese 2,5 s, Einschwingen 1,3 s, drei Boden-Schüsse 0,5 s. Genesis kalt 12,9 s, der Gang an den Fels 6,5 s, Einschwingen 2,8 s, drei Fels-Stände je 1,2–1,6 s plus Schuss 0,4 s. Der Rest der 66 s sind die Aufrufe der Werkbank.
+- Die Sitzung meldet: Die Probe ließ die Welt verändert zurück, ohne `mutiert` zu tragen (`wege +1 [-119.1,-274.9,279.2,201/272]` an Genesis). Die Grundstellung folgte.
+- Zum Abgleich: `zug/fortschritt-radeon.txt` meldet am selben main um 06:11 `material.K2#1 ROT 1.1`. Die Messdatei der Radeon liegt noch nicht in koordination; den Grund habe ich nicht gelesen.
+
+Messdatei `meisterkarte-quelle/punkte/messung/25374f6f-gtx.json`, Roh-Ausgabe `roh/25374f6f-gtx/material.K2_1.out`.

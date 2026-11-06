@@ -1,0 +1,72 @@
+{
+ "sha": "25374f6fb49d2ed38fe2e1f3abc22e7c73031691",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T05:09:57.876Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0.0646 nyquist 0.1602 (Arm 0.498), 1 m glatt 0.0373 nyquist 0.1762 (Arm 0.998), 2 m glatt 0.0269 nyquist 0.1729 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0705 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.1,
+   "gpu": "nvidia/pascal",
+   "s": 66.3,
+   "zeit": "2026-11-06T05:09:57.876Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T05:09:19.658Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 9.5,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "material.K2#1",
+    "s": 27.5,
+    "takte": 798,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K2#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 1
+    }
+   ],
+   "zapfen": 92,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 103.6,
+  "minuten": 1.81
+ }
+}
