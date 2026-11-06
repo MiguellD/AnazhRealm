@@ -1881,11 +1881,25 @@ class AnazhRealm_netz_p2p {
     _p2pMsgDsl(msg, p2p) {
         // Eingehendes DSL-Programm eines Peers: STRENGE Sandbox — derselbe dslRun-Pfad mit identischen
         // Budget-Limits + Op-Whitelist. source="remote:<peerId>" verhindert den Re-Broadcast (Endlos-Echo).
+        // DER AKT TRÄGT SEINE ZEIT (feld.K2#2): `w` ist die Welt-Uhr, zu der er beim Absender wirkte (ctx.akt — wer zeitlich schreibt,
+        // schreibt zu ihr). Ein WUNSCH DER WELT (`_wunschAkt`) reist als ["weather", Wort] mit seiner Quelle: er läuft unter ihr (sie
+        // ist eine Stimme der Welt, `_himmelSchreiber` → welt), nie als Wort des Mitspielers — eine andere Quelle oder ein anderes
+        // Programm unter ihr fällt.
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+        const w = this._fremdeZahl(msg.w);
+        const akt = Number.isFinite(w) ? { w, von: pid } : null;
+        let source = `remote:${pid}`;
+        if (msg.quelle != null) {
+            const q = String(msg.quelle).slice(0, 80);
+            const wunsch =
+                msg.program.length === 2 && msg.program[0] === "weather" && typeof msg.program[1] === "string";
+            if (!akt || !wunsch || q.startsWith("remote:") || this._himmelSchreiber(q, "wetter") !== "welt") return;
+            source = q;
+        }
         try {
-            this.dslRun(msg.program, { source: `remote:${pid}` });
+            this.dslRun(msg.program, { source, akt });
         } catch (err) {
             this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
         }

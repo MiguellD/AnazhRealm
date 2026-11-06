@@ -318,7 +318,7 @@ async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
         const K = AnazhRealm;
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
 
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
@@ -469,7 +469,7 @@ async function checkBandV1733WorldRules({ page, check }) {
 async function checkBandV1734FieldRules({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
         const mkCtx = () => r.dslCtx({ source: "test" });
 
         // Save world state
@@ -613,7 +613,7 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
         const K = AnazhRealm;
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
         const cfg = K.WORLD_RULES;
         const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
 
@@ -1006,7 +1006,7 @@ async function checkBandV1737RulesUI({ page, check }) {
 async function checkBandV1739RulesUX({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
         const host = document.getElementById("status-worldrules");
         const forceRender = () => {
             r._statusRefs.worldrulesSignature = "";
@@ -1145,7 +1145,7 @@ async function checkBandV1739RulesUX({ page, check }) {
 async function checkBandV1740LlmRules({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
 
         const savedRules = st.worldRules.slice();
         const savedWeather = st.weather;
@@ -1206,7 +1206,7 @@ async function checkBandV1741RuleThread({ page, check }) {
     const res = await page.evaluate(() => {
         const regen = () => r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const out = {};
-        const now = () => performance.now() / 1000;
+        const now = () => st.spielZeit; // die Uhr der Gesetze ist die Welt-Uhr (feld.K2#2)
 
         const savedRules = st.worldRules.slice();
         const savedWeather = st.weather;

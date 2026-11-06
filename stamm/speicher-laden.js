@@ -285,7 +285,11 @@ class AnazhRealm_speicher_laden {
             typeof state.wetterWort === "string" && state.wetterWort in AnazhRealm.WEATHER_INTENSITY
                 ? state.wetterWort
                 : null;
-        this.state.wetterWunsch = null;
+        // die Wünsche der Welt reisen (feld.K2#2): der Zug, den der Stand mitten in seinem Fenster lädt, zieht denselben Wunsch
+        this.state.wetterWuensche = (Array.isArray(state.wetterWuensche) ? state.wetterWuensche : [])
+            .filter((x) => x && x.wort in AnazhRealm.WEATHER_INTENSITY && Number.isFinite(x.w))
+            .slice(-64)
+            .map((x) => ({ wort: x.wort, quelle: String(x.quelle).slice(0, 80), w: x.w }));
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();
@@ -943,7 +947,7 @@ class AnazhRealm_speicher_laden {
     _loadStateRestoreWorldRules(state) {
         if (!Array.isArray(state.worldRules)) return;
         const cfg = AnazhRealm.WORLD_RULES;
-        const now = this._taktUhr();
+        const now = this.state.spielZeit; // die Geburt auf der Welt-Uhr (`_tickWorldRules`)
         const restored = [];
         for (const s of state.worldRules) {
             if (

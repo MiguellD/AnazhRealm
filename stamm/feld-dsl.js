@@ -61,6 +61,9 @@ class AnazhRealm_feld_dsl {
             grund: opts.grund || null,
             weil: null,
             tat: null,
+            // DER AKT EINES MITSPIELERS (feld.K2#2): sein Stempel der Welt-Uhr `w` (die Tat-Uhr) — was der Akt schreibt, schreibt
+            // er zu DIESER Zeit, nie zur Ankunft (`_p2pMsgDsl`)
+            akt: opts.akt || null,
         };
     }
 
@@ -105,7 +108,7 @@ class AnazhRealm_feld_dsl {
             this.state.p2p.enabled &&
             this.state.p2p.connected
         ) {
-            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx));
+            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx), { w: this.state.spielZeit });
         }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -243,15 +246,17 @@ class AnazhRealm_feld_dsl {
         return { ok: true };
     }
 
-    // DSL-Broadcast: skip bei nicht-broadcastbarem Op; sendet {type:"dsl", program}, der Server
-    // stempelt peerId; Empfänger routen via p2pHandleMessage → dslRun(source="remote:<peerId>").
-    p2pBroadcastDsl(program) {
+    // DSL-Broadcast: skip bei nicht-broadcastbarem Op; sendet {type:"dsl", program, w}, der Server
+    // stempelt peerId; Empfänger routen via p2pHandleMessage → dslRun(source="remote:<peerId>"). DER AKT TRÄGT SEINE ZEIT
+    // (feld.K2#2, die Tat-Uhr): `akt.w` ist die Welt-Uhr des Absenders, zu der er wirkte; ein Wunsch der Welt (`_wunschAkt`)
+    // trägt dazu seine Quelle (`akt.quelle` — der Empfänger nimmt ihn als Wunsch, nie als Wort des Mitspielers).
+    p2pBroadcastDsl(program, akt) {
         if (!Array.isArray(program) || program.length === 0) return;
         if (this._dslContainsAnyOp(program, AnazhRealm.NON_BROADCASTABLE_OPS)) {
             // Programm enthält Spieler-private Op — bewusst lokal behalten.
             return;
         }
-        this.p2pSend({ type: "dsl", program });
+        this.p2pSend(Object.assign({ type: "dsl", program }, akt));
     }
 
     dslEval(program, ctx) {
@@ -562,7 +567,7 @@ class AnazhRealm_feld_dsl {
         if (ttlSec == null && source.startsWith("llm")) {
             ttlSec = Math.round((cfg.ruleTtlMin + cfg.ruleTtlMax) / 2);
         }
-        const now = this._taktUhr();
+        const now = this.state.spielZeit; // die Geburt auf der Welt-Uhr, der Uhr ihres Takts (`_tickWorldRules`)
         // Dedup: dieselbe Regel nicht doppelt — refresh (TTL-Fenster + Raten)
         // statt push. Die Signatur ist billig (Registrierung ist selten, nie
         // pro Frame).
@@ -890,7 +895,7 @@ class AnazhRealm_feld_dsl {
                         ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
                     return;
                 }
-                const ok = this._setWeather(name, quelle);
+                const ok = this._setWeather(name, quelle, null, ctx && ctx.akt);
                 // die Welt schreibt das Wetter nie selbst, sie wünscht es (die Stimme sagt es so, `_feldStimmeZeile`)
                 if (ctx && ctx.tat) ctx.tat.wunsch = ok === "wunsch";
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
