@@ -672,7 +672,8 @@ class AnazhRealm_bild_sicht {
         // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
         // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe — das EINE Gesetz der
         // Umgebung der Stoffe (welt-licht.js `himmelDerStoffe`), dasselbe, das die Bühne der Studios jedem Stoff reicht
-        const himmel = __weltLicht.himmelDerStoffe(quelle, this._atmoLutBau().U);
+        const U = this._atmoLutBau().U;
+        const himmel = __weltLicht.himmelDerStoffe(quelle, U);
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
@@ -693,7 +694,12 @@ class AnazhRealm_bild_sicht {
                 if (konstant(stufe)) {
                     // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden
                     const n = builder.context.getUV(this, builder);
-                    const frei = T.max(himmel.sub(wirt._horizontHimmel(T.shadowPositionWorld, n)), T.vec3(0));
+                    const strahlung = (dir) =>
+                        __weltLicht.himmelDerStoffe(quelle, U, dir, T.float(AnazhRealm.HORIZONT_KARTE.gratRauheit));
+                    // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
+                    // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen
+                    const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
+                    const frei = T.max(himmel.sub(wirt._horizontHimmel(ort, n, strahlung)), T.vec3(0));
                     return wirt._rueckstrahlHalbraum(frei, n);
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));

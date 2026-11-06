@@ -1490,14 +1490,15 @@ class AnazhRealm_dirigent_ankunft {
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
     // Himmel des Abends. α aus der Karte: tan α = (H − y) / s* + tan h☉ (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe
     // des Empfängers), ohne Grat 0. Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
-    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Himmels-Sicht der EINEN Atmosphäre
-    // (`himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der Bestrahlung (die PMREM-Stufe der Umgebung,
-    // `_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den ganzen Himmel.
-    _horizontHimmel(p, n) {
+    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω, gemittelt
+    // über die Breite der Abtastung (`strahlung`: die Umgebung der Stoffe in der Rauheit `gratRauheit` — eine Richtung allein
+    // träfe die Aureole 2° neben der Sonne und wöge ihren Gipfel über das ganze Band) × max(n·ω, 0) × Δω/π — der Abzug von der
+    // mittleren Strahlung der Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der
+    // Hang hinter dem Grat den ganzen Himmel.
+    _horizontHimmel(p, n, strahlung) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
-        const A = this._atmoLutBau();
         const q = K.zuUv(p.xz);
         const t = T.texture(K.rt.texture, q).level(0);
         const L = K.U.licht;
@@ -1515,7 +1516,7 @@ class AnazhRealm_dirigent_ankunft {
         for (const d of [-2 / 3, 0, 2 / 3]) {
             const [c, s] = [Math.cos(d * H.gratRad), Math.sin(d * H.gratRad)];
             const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce));
-            summe = summe.add(A.himmelFarbe(dir).mul(T.max(n.dot(dir), 0)));
+            summe = summe.add(strahlung(dir).mul(T.max(n.dot(dir), 0)));
         }
         return summe.mul(w);
     }
@@ -1771,7 +1772,8 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
 // `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest; `gratRad` die halbe Breite
-// des Grats um das Azimut der Sonne, dessen Himmel er dem Empfänger nimmt (`_horizontHimmel`). Die Leser der Karte: jeder
+// des Grats um das Azimut der Sonne, dessen Himmel er dem Empfänger nimmt (`_horizontHimmel`), `gratRauheit` die Rauheit der
+// Umgebung, in der er ihn abtastet (ihre Keule ~ der Abstand der Abtastungen). Die Leser der Karte: jeder
 // Empfänger der Sonne (`_sonnenSicht`) und des Himmels (`_horizontHimmel`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die
 // Luft (`luftSicht`) und der Lichtmesser
 // (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
@@ -1795,6 +1797,7 @@ AnazhRealm.HORIZONT_KARTE = Object.freeze({
     leerM: 10000,
     luftProben: 8,
     gratRad: (30 * Math.PI) / 180,
+    gratRauheit: 0.5,
 });
 
 // 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.
