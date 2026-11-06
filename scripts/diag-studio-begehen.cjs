@@ -25,6 +25,8 @@ const SELBST = SELBSTTEST;
 // DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const LAB = "/worlds/fachwerk/fachwerk.js";
 const KERN = "/fachwerk-core.js";
+// die Klemme der Basis (der Körper als Zylinder) — kopf und kappe setzen dieselbe Zeile zurück
+const ZYLINDER = [LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"];
 const BASIS = {
     // S-S1: die Promotion ließ die Hülle stehen, die Demotion löschte sie mit
     huelle: [
@@ -38,10 +40,10 @@ const BASIS = {
             "  if(climb>oldY){ for(const s of solids){ if(overlap(p,s)){ p[ax]=oldA; p.y=oldY; return; } } } }",
             " }",
         ],
-        [LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"],
+        ZYLINDER,
     ],
     // S-S2 (Steigen): der Körper als Zylinder — die Kante stößt hinter dem Antritt an den Estrich
-    kappe: [[LAB, "s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;", "R;"]],
+    kappe: [ZYLINDER],
     // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
     spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
