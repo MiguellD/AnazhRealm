@@ -24,6 +24,7 @@ console.log("BOE-ZEIT " + JSON.stringify(erg));
 fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 })() C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\94d9c5a6-gtx\vegetation.K2_1.json 7804
 [linse-gpu] nvidia/pascal
+BOE-ZEIT {"abnahme":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 57.9 σ 29.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.204 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","mutante":null,"dt":0.25,"nahAnteil":0.5412630208333333,"tempo":10.416666666666668,"kamm":{"t":25.55,"boe":1.1499993836170879,"v":234.500554379498,"boden":0.0001199447350990721},"tal":{"t":48.8,"boe":0.2500001854256985,"v":44.3105490685185,"boden":0.0001372414671189273},"nah":21.65052083333333,"ueber":234.500554379498,"lauf":5.292219701095196,"rot":[]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
