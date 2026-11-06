@@ -221,7 +221,8 @@ function ladeschirmVerdict(m) {
             if (!L.ohneFein) out.push("der Leib wartet vor dem Bild auf seine feine Stufe (mensch L0, `_leibBereit`), die Grobstufe steht");
             else if (L.baut[0] !== "vor 1") out.push(`vor dem Bild baut der Leib ohne die Grobstufe als Nah-Gestalt (nahStufe: ${L.baut.join(", ")})`);
             if (!b.includes("nach L0")) out.push(`nach dem ersten Bild bestellt der Leib seine feine Stufe nie (${b})`);
-            else if (!L.baut.includes("nach 0")) out.push("die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein (`_leibFeinTausch`)");
+            else if (!L.egoRoh) out.push("in der Ego-Sicht gießt der Haupt-Faden die feine Stufe nach dem Bild oder tauscht sie ein — sie trägt dort kein Pixel (`_ofenRoh`, `_leibFeinTausch`)");
+            else if (!L.baut.includes("nach 0")) out.push("die Sicht geht auf Third, der Leib tauscht die feine Stufe nie ein (`_leibWunsch`)");
         }
         if (K.dorf.ohne) out.push(`das Start-Dorf beim Buch: ${K.dorf.ohne} (Vorbedingung)`);
         else if (K.dorf.export && !K.dorf.kopfRang) out.push("der Export des Start-Dorfs geht ohne Kopf-Rang in die Schlange — hinter ihm wartet jeder Auftrag seiner Bahn (_foundryRang)");
@@ -372,15 +373,17 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
-// m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach] · m.r = [hinten ohne Leerlauf, vorn,
+// m.h = [Skelette vor dem Bild, wartet vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, Boxen mit dem Leib, offen danach] ·
+// m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
-    const [[wuchs, offen, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const [[wuchs, wartet, ohneLeib, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
-        !offen && "die wartende Hülle steht nicht offen (`_weltOffen`)",
-        (!boxen || rest) && "nach dem Bild fehlt die Hülle (`_tickHuellenNach`)",
+        !wartet && "die wartende Hülle steht nicht in der Schlange der Ankunft (`_huellenNach`)",
+        ohneLeib && "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte (`_huellenLeib`)",
+        (!boxen || rest) && "der Leib regt sich, die Hülle fehlt (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
         !vorn && "der Ring baut das Bild nicht",
         !(ruf && mit) && "der Ring außer Bild kommt nie (`_ringLeerlauf`)",
@@ -814,7 +817,7 @@ async function probe(arg) {
                     const [kc, memo, bmD] = [window.__koerperCore, AnazhRealm._tierOfenMemo, r._koerperStudioDials()];
                     const fM = r._menschGussFarben(bmD);
                     const key = (l) => r._ofenMenschKey(Object.assign({}, kc.START_PARAMS, bmD || {}), fM.skin, fM.hair, l);
-                    [0, 1].forEach((l) => memo.delete(key(l)));
+                    [0, 1].forEach((l) => (memo.delete(key(l)), AnazhRealm._ofenRohMemo && AnazhRealm._ofenRohMemo.delete(key(l))));
                     Object.assign(st, { _deferredAvatarSoul: st.player.soul || "human", cameraMode: "first" });
                     if (merk.held) st.player.equipped.held = null;
                     r._spielerVorlagen = null;
@@ -825,6 +828,13 @@ async function probe(arg) {
                     k.leib.ohneFein = r._leibBereit() && !memo.has(key(0));
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
+                    // DIE FEINE WARTET AUF IHREN LESER (w14-ankunft-weg): in der Ego-Sicht liegt sie roh (`_ofenRoh`), ungegossen und
+                    // ungetauscht; die Sicht auf Third ist ihr Leser — dann gießt und tauscht der Leib
+                    const roh = () => !!(AnazhRealm._ofenRohMemo && AnazhRealm._ofenRohMemo.has(key(0)));
+                    await bis(roh, 90000, true);
+                    await __takte(30, 50);
+                    k.leib.egoRoh = roh() && !memo.has(key(0)) && !k.leib.baut.some((b) => b.startsWith("nach"));
+                    r.setCameraMode("third");
                     await bis(() => memo.has(key(0)) && k.leib.baut.some((b) => b.startsWith("nach")), 90000, true);
                     // das Dorf: fällig am Genesis-Ort, sein Wecker hing am echten Buch (`_startDorfAmBuch`) — ein frisches Buch weckt ihn
                     if (amOrt && kanal) {
@@ -906,12 +916,24 @@ async function probe(arg) {
     try {
         const [m, da, merk, sp, pc, ruf] = [(out.huelle = {}), st._weltbildDa, r._baumGestaltMerk, r._voxelChunkConfig().span, st.lastPlayerVoxelChunk, new Set()];
         const baum = st.architectures.find((e) => e && e._huelleG != null && e.blockerAABBs && e.blockerAABBs.length);
-        [r._baumGestaltMerk, st._weltbildDa] = [new Map(), 0];
-        r._populateBlockerAABBs(baum);
-        m.h = [r._baumGestaltMerk.size, r._weltOffen().huellen];
-        st._weltbildDa = da;
-        for (let n = 0; n < 400 && r._weltOffen().huellen; n++) r._tickHuellenNach();
-        m.h.push(baum.blockerAABBs.length, r._weltOffen().huellen);
+        // DER BEDARF IST DER LEIB (w14-ankunft-weg): nach dem Bild wartet die Hülle, bis sich ein Leib regt (`_huellenLeib`: der
+        // Spieler geht, eine Kreatur lebt) — die Kreaturen ruhen, der Spieler steht, dann geht er einen Schritt
+        const [kreaturen, gefragt, ort, pos] = [st.creatures, r._huellenGefragt, r._huellenOrt, st.playerMesh.position.clone()];
+        [r._baumGestaltMerk, st._weltbildDa, st.creatures, r._huellenGefragt, r._huellenOrt, baum.blockerAABBs] = [new Map(), 0, [], false, null, null];
+        try {
+            r._populateBlockerAABBs(baum);
+            m.h = [r._baumGestaltMerk.size, +!!(r._huellenNach && r._huellenNach.has(baum))];
+            st._weltbildDa = da;
+            for (let n = 0; n < 50; n++) r._tickHuellenNach();
+            m.h.push((baum.blockerAABBs || []).length);
+            st.playerMesh.position.x += 0.5;
+            for (let n = 0; n < 400 && (r._tickHuellenNach(), r._weltOffen().huellen); n++);
+            m.h.push((baum.blockerAABBs || []).length, r._weltOffen().huellen);
+        } finally {
+            st.playerMesh.position.copy(pos);
+            [st.creatures, r._huellenGefragt, r._huellenOrt] = [kreaturen, gefragt || r._huellenGefragt, ort];
+            if (!baum.blockerAABBs) r._populateBlockerAABBs(baum);
+        }
         r._baumGestaltMerk = merk;
         const stuecke = [[], []];
         st._weltbildDa = 0;
@@ -1715,7 +1737,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)
-        const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
+        const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
         // der kleine Satz der Stand-Zeile (je Mutante ein Fall getauscht)
         const l2Klein = { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } };
         // der ruhende Vorrat: keine Streu aufgeschoben, jede Phase „wartet auf das erste Bild"
@@ -1805,11 +1827,12 @@ hauptLauf(async () => {
                     ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
                     ["die Köpfe ohne Bild-Rang der Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit"],
                     ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter einen Kopf der Ankunft"],
-                    ["der Leib ohne Kopf-Rang", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] } }) }, "vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang"],
+                    ["der Leib ohne Kopf-Rang", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] } }) }, "vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang"],
                     ["der Bild-Rang ortlos", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt die Nah-Wiese gras L1 ohne den Ort"],
                     ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor dem Bild nichts"],
                     ["der Leib wartet auf die feine Stufe", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe"],
-                    ["die feine Stufe tauscht nie ein", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1"] } }) }, "die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein"],
+                    ["die feine Stufe tauscht in Ego", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: false, baut: ["vor 1", "nach 0"] } }) }, "in der Ego-Sicht gießt der Haupt-Faden die feine Stufe"],
+                    ["die feine Stufe tauscht nie ein", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1"] } }) }, "die Sicht geht auf Third, der Leib tauscht die feine Stufe nie ein"],
                     ["der Dorf-Export wartet auf den Takt", { koepfe: mitFall(koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus"],
                     ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort"],
@@ -1920,7 +1943,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 1, 0, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["die Hülle wächst ohne Leib", { h: [0, 1, 3, 3, 0] }, "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2016,7 +2039,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle nach dem Bild, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, offen, Boxen danach, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle beim ersten Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, wartet, Boxen ohne Leib, Boxen mit Leib, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

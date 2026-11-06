@@ -32,7 +32,10 @@ class AnazhRealm_studio_gestalt {
             // Gestalt `_huelleG`, die steht). Ihr Skelett (je Gestalt 15–30 ms im Haupt-Faden) wächst darum erst nach dem Bild,
             // nah zuerst (`_tickHuellenNach`); bis dahin trägt der Eintrag keine Hülle und steht offen in der Welt
             // (`_weltOffen().huellen`). swiftshader kalt bis zu den Termen des Bilds: `_baumGestaltTeile` 0,6–1,0 s.
-            if (!this.state._weltbildDa) {
+            // DIE HÜLLE WARTET AUF IHREN LEIB (w14-ankunft-weg, FUND 06.11. `studio-gestalt.js:55`): auch nach dem Bild berührt
+            // keiner einen Baum, bis sich ein Leib regt (`_huellenGefragt`) — wer nach dem Bild in die Ankunft tritt, wartet mit
+            // den Wartenden; danach wächst jede Hülle wie immer am Spawn.
+            if (!this.state._weltbildDa || (this._huellenNach && this._huellenNach.size && !this._huellenGefragt)) {
                 (this._huellenNach || (this._huellenNach = new Set())).add(entry);
                 return null;
             }
@@ -49,12 +52,19 @@ class AnazhRealm_studio_gestalt {
         return teile;
     }
     // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2): nach dem ersten Bild fühlt jeder Baum, dessen Hülle vor ihm wartete
-    // (`_baumGestaltTeile`), seine Hülle — in der Reihe seines Abstands zum Spieler im Moment des Bilds, je Takt höchstens EIN
-    // neues Skelett und HUELLE_NACH_MS (die übrigen lesen das Gedächtnis ihrer Gestalt). Jeder Eintrag kommt dran; was den Bestand
-    // verließ, braucht keine. → die Zahl der gefühlten Einträge.
+    // (`_baumGestaltTeile`), seine Hülle — in der Reihe seines Abstands zum Spieler im Moment des ersten Leibs, je Takt höchstens
+    // EIN neues Skelett und HUELLE_NACH_MS (die übrigen lesen das Gedächtnis ihrer Gestalt). Jeder Eintrag kommt dran; was den
+    // Bestand verließ, braucht keine. DER BEDARF IST DER LEIB (w14-ankunft-weg): sie wachsen erst, wenn sich einer regt —
+    // der Spieler geht (`HUELLE_LEIB_M` waagrecht vom Ort des Bilds, die Taste, ein Sprung des Orts) oder eine Kreatur lebt;
+    // bis dahin stößt keiner an einen Baum. Bis hier wuchsen sie mit dem Bild, im Fenster Weltbild→Kontrolle (Radeon
+    // 124–296 ms, swiftshader 124–216 ms, `_baumGestaltTeile` dort 277–294 ms). → die Zahl der gefühlten Einträge.
     _tickHuellenNach() {
         const S = this._huellenNach;
         if (!S || !this.state._weltbildDa) return 0;
+        if (!this._huellenGefragt) {
+            if (!S.size || !this._huellenLeib()) return 0;
+            this._huellenGefragt = true;
+        }
         let Q = this._huellenNachReihe;
         if (!Q) {
             if (!S.size) return 0;
@@ -79,6 +89,16 @@ class AnazhRealm_studio_gestalt {
             this.log(`Die Hüllen der Ankunft stehen: ${Q.length} Bäume und Sträucher fühlen ihre Gestalt.`, "INFO");
         }
         return n;
+    }
+    // Regt sich ein Leib, der einen Baum berühren kann? Der Spieler ging waagrecht `HUELLE_LEIB_M` vom Ort, an dem er nach dem
+    // Bild zuerst stand, oder eine Kreatur lebt (`state.creatures`).
+    _huellenLeib() {
+        const st = this.state;
+        if (st.creatures && st.creatures.length) return true;
+        const pm = st.playerMesh;
+        if (!pm) return false;
+        const o = this._huellenOrt || (this._huellenOrt = { x: pm.position.x, z: pm.position.z });
+        return Math.hypot(pm.position.x - o.x, pm.position.z - o.z) >= AnazhRealm.HUELLE_LEIB_M;
     }
 
     // Ein Wartender meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur, solange einer
@@ -1412,6 +1432,8 @@ AnazhRealm._solitaerVon = function (preset, V) {
 // DIE HÜLLEN DER ANKUNFT (`_tickHuellenNach`): so viele ms fühlen die Bäume je Takt ihre Hülle aus dem Gedächtnis ihrer Gestalt —
 // ein neues Skelett beendet den Takt sofort.
 AnazhRealm.HUELLE_NACH_MS = 2;
+// der waagrechte Weg des Spielers (m), ab dem die Hüllen der Ankunft wachsen (`_huellenLeib`): weniger als ein Schritt
+AnazhRealm.HUELLE_LEIB_M = 0.05;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
 // — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
