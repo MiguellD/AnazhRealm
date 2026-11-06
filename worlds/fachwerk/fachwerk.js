@@ -1069,7 +1069,11 @@ if(dorf&&dorfB){ lodTick(performance.now());
 renderer.render(scene,camera);requestAnimationFrame(frame);}
 
 // ── Start ──
-setZeit($('pZeit').value); applyKultur($('pK').value, SEED); if(WELT.genesis){ buildGenesis(); frameGenesis(); } else { buildHouse(readParams()); frameHouse(); } wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
+// DIE BÜHNE STARTET IM WERK (studios.K4, Labor = Welt): die Kultur aus dem Samen — das Haus, das „In der Welt ansehen" trägt
+// (`werk`: Kultur des Samens + die Haus-Zeilen; PRESETS = „derselbe Zustand, den ein Klick auf die Kultur beim Lab-Start zeigt").
+// Bis hier startete sie in „Manuell" mit dem L-Grundriss des Formulars und übergab die Kultur des Samens (viktorianisch, I):
+// die Bühne zeigte einen Flügel bis z 7,34 m, den die Welt nie baut (Box-Tiefe 11,74 gegen 8,80 m, Tafel K4).
+setZeit($('pZeit').value); applyKultur($('pK').value, SEED); if($('pK').value==='samen') $('vK').textContent='Samen→'+kulturFromSeed(SEED); if(WELT.genesis){ buildGenesis(); frameGenesis(); } else { buildHouse(readParams()); frameHouse(); } wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */

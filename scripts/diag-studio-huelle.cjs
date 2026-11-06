@@ -67,6 +67,35 @@ const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
 const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// H9 — DIE WURZEL TRÄGT DAS WERK (studios.K4, Labor = Welt): je Mesh-Studio die Box der Bühnen-Wurzel (scripts/lib/albedo-tafel.cjs
+// STUDIOS, die sichtbaren Meshes, eine Instanz je Instanz) gegen die Box des Werks, das der Kern der Welt für die Übergabe der Bühne
+// baut (`AnazhHuelle.werk()` → `buildInstance(preset, seed, 0, ov)`, dasselbe baut die Brücke der Welt) — eine Achse über
+// 2 % von R ist ROT beim Namen. Bis w16-studio-welt rahmte die K4-Probe die Schnitt-Karte der Schmiede (0,433 gegen 0,244 m),
+// die Parzelle und den Flügel des Fachwerks (31 × 13,3 × 31 gegen 10,0 × 13,2 × 8,8 m) mit. Frei, benannt: wer kein gesetztes Werk übergibt.
+const WERK_FREI = { klang: 1, koerperstudio: 1, tetrapoda: 1 }; // ein Klang, eine Prägung (der Leib des Spielers), ein Wesen — kein gesetztes Werk
+function werkUrteil(id, w) {
+    if (WERK_FREI[id]) return [];
+    if (!w?.welt) return [`H9 ${id}: kein Werk der Bühne, das ein Kern baut`];
+    const d = (2 * Math.max(...w.welt.map((v, i) => Math.abs(w.buehne[i] - v)))) / Math.hypot(...w.welt);
+    return d > 0.02 ? [`H9 ${id}: die Wurzel der Bühne ${w.buehne} m, das Werk der Welt ${w.welt} m (${w.werk})`] : [];
+}
+// die Messung in der Seite (r128 und r184; eine Instanz je Instanz-Matrix)
+const werkBoxen = (o) => {
+    const T = THREE, w = AnazhHuelle.werk(), K = [...o.kerne.map((n) => window[n]), window].find((k) => k?.PARAMS_BY_KIND?.[w?.kind]);
+    const mass = (g, f) => {
+        const b = new T.Box3(), m = new T.Box3(), im = new T.Matrix4();
+        g.updateMatrixWorld(true);
+        g[f]((x) => {
+            for (let i = 0; x.isMesh && i < (x.isInstancedMesh ? x.count : 1); i++) {
+                if (!x.geometry.boundingBox) x.geometry.computeBoundingBox();
+                b.union(m.copy(x.geometry.boundingBox).applyMatrix4(x.isInstancedMesh ? (x.getMatrixAt(i, im), im.premultiply(x.matrixWorld)) : x.matrixWorld));
+            }
+        });
+        return b.getSize(new T.Vector3()).toArray().map((v) => +v.toFixed(2));
+    };
+    return K && { werk: w.preset, buehne: mass(new Function("return " + o.wurzel)(), "traverseVisible"), welt: mass(K.buildInstance(w.preset, w.seed, 0, w.ov), "traverse") };
+};
+const KERN_NS = jsonLesen("cores.manifest.json").map((c) => c.ns);
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -111,6 +140,7 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
         if (OFEN_STUDIOS[id] && !(+k0.leiste <= +k0.deckel))
             rot.push(`H4 ${id}: Labor L0 ${k0.leiste} △ über der Welt-Zeile ${k0.deckel} — das Labor zeigt nicht den Ofen-Körper`);
         if (!STUDIOS.includes(id)) continue;
+        rot.push(...werkUrteil(id, seiten[id].werk));
         const z = sitzungZahl(seiten[id]);
         const soll = zeit ? GRIFFE : 4;
         if (z.mit < soll) rot.push(`H7 ${id}: ${z.mit} von ${soll} Griffen mit Bild — ein Griff ohne neuen Bau-Hash im Bild`);
@@ -310,7 +340,7 @@ function selbsttest() {
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
     const ort = (audio) => ({ kosten: audio ? [{ stufe: "sturm", audio, audioDeckel: 2.6667 }] : [] });
     const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)) }]));
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)), werk: { buehne: [2, 1], welt: [2, 1] } }]));
     const mit = (id, o) => ({ [id]: { ...seiten[id], ...o } });
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
@@ -342,6 +372,10 @@ function selbsttest() {
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
+        // H9 (studios.K4): die Parzelle und der Flügel in der Wurzel der fachwerk, die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt)
+        ["H9 die Parzelle in der Wurzel der fachwerk", {}, /^H9 fachwerk: die Wurzel der Bühne 31,13,31 m, das Werk der Welt 10,13,9/, mit("fachwerk", { werk: { buehne: [31, 13, 31], welt: [10, 13, 9] } })],
+        ["H9 die Schnitt-Karte in der Wurzel der schmiede", {}, /^H9 schmiede: die Wurzel der Bühne 1.2,0.43/, mit("schmiede", { werk: { buehne: [1.2, 0.43], welt: [1.2, 0.24] } })],
+        ["H9 die garage nennt kein Werk (nie still)", {}, /^H9 garage: kein Werk/, mit("garage", { werk: null })],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
@@ -376,6 +410,10 @@ async function gang() {
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
             await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
             await sleep(1500);
+            // H9 vor dem ersten Griff (die Bühne baut ihn verzögert neu): sobald ihre Wurzel steht
+            const wz = STUDIOS.includes(id) && !WERK_FREI[id] && require("./lib/albedo-tafel.cjs").STUDIOS[id].wurzel;
+            if (wz) await waitFor(page, `typeof ${wz} !== "undefined" && ${wz}.children.length > 0`, `${id}: die Wurzel ${wz} steht`);
+            const werk = wz && (await page.evaluate(werkBoxen, { wurzel: wz, kerne: KERN_NS }));
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
@@ -394,6 +432,7 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
+            z.werk = werk;
             // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
             // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
             // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
@@ -414,7 +453,7 @@ async function gang() {
             sauber += !fremd.length;
             const engine = fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three";
             const sitzung = z.folge ? folgeText(z.folge) : "ohne Sitzung"; // den Spruch fällt pruefeGang
-            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${z.kosten ? " · Kosten " + JSON.stringify(z.kosten) : ""}`);
+            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${z.werk ? " · Werk " + JSON.stringify(z.werk) : ""}${z.kosten ? " · Kosten " + JSON.stringify(z.kosten) : ""}`);
         }
     } finally {
         await browser.close();

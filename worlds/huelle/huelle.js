@@ -1595,6 +1595,9 @@
     }
 
     var reisender = null; // der Avatar, den die Heimat beim Betreten schickte (`bruecke`, enter)
+    // DAS WERK DER BÜHNE (studios.K4): `opt.werk` der Brücke — auch ohne Heimat lesbar (`AnazhHuelle.werk()`): gate:studio-huelle H9
+    // misst daran, ob die Wurzel der Bühne das Werk trägt, das der Kern der Welt für diese Übergabe baut
+    var werkDerBuehne = null;
 
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
@@ -1609,6 +1612,7 @@
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
+        werkDerBuehne = opt.werk || null;
         function post(m) {
             if (!eltern) return;
             try {
@@ -1915,6 +1919,9 @@
         },
         reisender: function () {
             return reisender;
+        },
+        werk: function () {
+            return werkDerBuehne ? werkDerBuehne() : null;
         },
         panorama: panorama,
         panoramaBild: panoramaBild,
