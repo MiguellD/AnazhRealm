@@ -868,6 +868,11 @@ function lebenUrteil(name, z, soll) {
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
     }
     if (name === "lebensraum") {
+        // DER RAND DES BLICKS: der Leib im Bild weicht dem Akt an der vollen Kappe nie, außer Blick weicht er
+        const RB = z.rand || {};
+        soll(RB.punktImBlick === false && RB.leibAusser === false, `LEER: kein Leib am Rand des Blicks: ${JSON.stringify(z.rand)}`); // prettier-ignore
+        soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
+        soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
@@ -876,11 +881,6 @@ function lebenUrteil(name, z, soll) {
         );
         soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
         soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
-        // DER RAND DES BLICKS: der Leib im Bild weicht dem Akt an der vollen Kappe nie, außer Blick weicht er
-        const RB = z.rand || {};
-        soll(RB.punktImBlick === false && RB.leibAusser === false, `LEER: kein Leib am Rand des Blicks: ${JSON.stringify(z.rand)}`); // prettier-ignore
-        soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
-        soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
     }
     if (name === "lebensraum")
         for (const [wo, L] of [

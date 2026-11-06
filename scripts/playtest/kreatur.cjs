@@ -3,7 +3,7 @@
 // 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
 // gate:kreatur-takt kaskade).
@@ -346,7 +346,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
     // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
     // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
     const wave6hP2b2Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
         // 1. Konstanten
@@ -556,7 +555,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
         return out;
     });
 
-    if (wave6hP2b2Results && !wave6hP2b2Results.error) {
+    if (erreichbar(check, "Welle 6.H P2B.2: Tests laufen", wave6hP2b2Results)) {
         check("CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
         check(
@@ -652,15 +651,12 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             "free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
             wave6hP2b2Results.symbolicCostHasMultiple
         );
-    } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
-        check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
     // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material, build:blueprint): Speed-Bonus
     // je Level, Audio + Journal beim Level-Up, UI-Pills; Levels sind abgeleitet, nie separat gespeichert.
     const wave6hP2dResults = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
         const Class = AnazhRealm;
 
@@ -832,7 +828,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
         return out;
     });
 
-    if (wave6hP2dResults && !wave6hP2dResults.error) {
+    if (erreichbar(check, "Welle 6.H P2D: Tests laufen", wave6hP2dResults)) {
         check("skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
         check(
             "der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
@@ -911,15 +907,12 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             "KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
             wave6hP2dResults.noSpecDslOp
         );
-    } else if (wave6hP2dResults && wave6hP2dResults.error) {
-        check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
     }
 
     // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
     // Kreatur-Identitäten überleben Reload: der Save trägt {name, soul, memory, position, bornAt} je
     // Kreatur (~1 KB), Memory-Cap 200; tote Kreaturen (removeCreature) fallen aus dem Save.
     const wave6hP2d1Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
         // Cap-Headroom: der Warmup kann `creatures` bis maxCreatures füllen → ein Spawn obendrauf gäbe null.
@@ -1052,7 +1045,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
         return out;
     });
 
-    if (wave6hP2d1Results && !wave6hP2d1Results.error) {
+    if (erreichbar(check, "Welle 6.H P2D.1: Tests laufen", wave6hP2d1Results)) {
         check("spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
         check(
             "Snapshot enthält name + soul + memory + position + bornAt + alterS",
@@ -1099,8 +1092,6 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
             "Restore mit übergroßem memory wird auf 200 gekappt",
             wave6hP2d1Results.oversizedRestoredCappedAt200
         );
-    } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
-        check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
     }
 }
 
@@ -1109,7 +1100,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
     // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
     // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.
     const wave6hP2f1Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
         // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
@@ -1224,7 +1214,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         return out;
     });
 
-    if (wave6hP2f1Results && !wave6hP2f1Results.error) {
+    if (erreichbar(check, "Welle 6.H P2F.1: Tests laufen", wave6hP2f1Results)) {
         check(
             "computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
             wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
@@ -1265,15 +1255,12 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             "Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
             wave6hP2f1Results.sameStatKeysAsPlayer
         );
-    } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
-        check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
     // Kreaturen tragen Werkzeug + Rüstung wie der Spieler: equipped Compound-Tags stacken mit
     // TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT; Persistenz via _serializeCreature → snap.equipped.
     const wave6hP2f2Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
         const Class = AnazhRealm;
 
@@ -1393,7 +1380,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         return out;
     });
 
-    if (wave6hP2f2Results && !wave6hP2f2Results.error) {
+    if (erreichbar(check, "Welle 6.H P2F.2: Tests laufen", wave6hP2f2Results)) {
         check(
             "spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
             wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
@@ -1449,15 +1436,12 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             "UI — .creature-equipped Wraps + .creature-equip-tool Pills",
             wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
         );
-    } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
-        check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
     // Boost = `computeCompoundTags(consumableBp) × scale` — kein Hardcode, keine Tabelle. Bauplan mit
     // role:"consumable" + consumableMeta; RMB + Hotbar-Konsumable + Raycast-Kreatur = Übergabe.
     const wave6hP2f3Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.playerMesh) return null;
         const out = {};
         const Class = AnazhRealm;
 
@@ -1610,7 +1594,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         return out;
     });
 
-    if (wave6hP2f3Results && !wave6hP2f3Results.error) {
+    if (erreichbar(check, "Welle 6.H P2F.3: Tests laufen", wave6hP2f3Results)) {
         check("spawnCreatureAt initialisiert boosts = []", wave6hP2f3Results.initialBoostsEmpty);
         check(
             "applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
@@ -1664,8 +1648,6 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
             "UI — .creature-boost Pills in der Liste bei aktiven Boosts",
             wave6hP2f3Results.uiHasBoostPills
         );
-    } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
-        check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
     }
 }
 
