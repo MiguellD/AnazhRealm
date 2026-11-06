@@ -6,7 +6,7 @@
 // 100–150 m). Der EINE Chokepoint `tickArchitectureCulling` liest `_archKartenPreset`: ein Karten-Ding trägt seine
 // Studio-Kette über die Mesh-Zone hinaus — dieselbe EINE Stufen-Wahl wie nah legt es jenseits seines L1↔Karte-Bands auf
 // die Karte allein (kein Partner; ein Riese trägt sein Band über den Radius hinaus) bis zu SEINEM Rand im Saum vor
-// `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst `KARTEN_HORIZONT_TOTBAND_M` dahinter. Keine
+// `SCATTER.outerM` (`_archKartenHorizont`, aus dem Samen), geräumt erst `CULL_TOTBAND_M` dahinter. Keine
 // Karte dithert am Horizont (die Maske trägt keinen Schwund).
 //
 // Boot mit Foundry-ON und Null-Renderer (die Form-Entscheidung fällt CPU-seitig; headless trägt der Rahmen aus der
@@ -268,7 +268,7 @@ hauptLauf(async () => {
         const stelle = (x, z) => pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const [MX, MZ] = window.__messWiese;
         const H = AR.SCATTER.outerM;
-        const TOT = AR.KARTEN_HORIZONT_TOTBAND_M;
+        const TOT = AR.CULL_TOTBAND_M;
         res.horizont = H;
         res.totband = TOT;
         const dist = (e) => Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
@@ -385,10 +385,10 @@ hauptLauf(async () => {
             const start = { x: pm.x, z: pm.z };
             const slots = JSON.stringify(e.instSlots);
             const d0 = dist(e);
-            // den Spieler radial vom Baum weg setzen, bis der Baum RMAX + 15 m entfernt steht
+            // den Spieler radial vom Baum weg setzen, bis der Baum 15 m hinter RMAX und dem Totband steht
             const ux = (pm.x - e.position.x) / d0,
                 uz = (pm.z - e.position.z) / d0;
-            const weg = RMAX + 15 - d0;
+            const weg = RMAX + TOT + 15 - d0; // das Totband jeder Zone des Culls (`CULL_TOTBAND_M`, w13-dorf-strom)
             let luecke = 0,
                 takte = 0;
             const folge = async (n) => {
