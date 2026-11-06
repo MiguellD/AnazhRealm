@@ -1769,19 +1769,28 @@ class AnazhRealm_stoff_material {
             );
         const bis = je("bis");
         const rel = T.positionLocal.xz.sub(U.stufeAuge).abs();
-        const w = T.smoothstep(bis.sub(je("band")), bis, T.max(rel.x, rel.y));
+        const abstand = T.max(rel.x, rel.y);
+        const w = T.smoothstep(bis.sub(je("band")), bis, abstand);
         const f = U.geomorph.mul(s.add(w).sub(s.mul(w)));
         const nZ4 = T.attribute("aNormalZiel", "vec4");
         const fZ4 = T.attribute("aFarbeZiel", "vec4");
         const nLokal = T.normalize(T.mix(T.normalGeometry, nZ4.xyz, f));
+        // die Mulde des Gesetzes (wetter.K2) liegt in der vierten Komponente der Normale (snorm8x4, `BODEN_SATZ_ATTR`). r184 teilt
+        // jeden Attribut-Knoten nach seinem NAMEN (`AttributeNode.getHash`, `Node.build` → `getShared`, gelesen im Vendor): der
+        // zuerst gebaute Knoten „normal" ist `normalGeometry` (vec3), ein zweiter `attribute("normal", "vec4")` las bis
+        // w15-pfuetze dessen Varying als vec4(n, 1.0).w — die Mulde war auf der GPU überall 1. Ihr Knoten trägt darum einen
+        // eigenen Schlüssel: dieselbe Vertex-Eingabe (vec4 nach dem Puffer), sein eigener Weg.
+        const normal4 = T.attribute("normal", "vec4");
+        normal4.getHash = () => "normal:vec4";
         this._bodenStufenK = {
             f,
+            abstand,
             farbe: T.mix(farbe4.xyz, fZ4.xyz, f),
             normalWelt: T.normalize(T.modelNormalMatrix.mul(nLokal)),
             himmel: nZ4.w,
             schutt: fZ4.w,
             // die Mulde des Gesetzes (wetter.K2, gelaende-core `muldeEcken`) in der vierten Komponente der Normale
-            mulde: T.attribute("normal", "vec4").w,
+            mulde: normal4.w,
         };
         return this._bodenStufenK;
     }
@@ -1871,10 +1880,12 @@ class AnazhRealm_stoff_material {
     }
 
     // DIE PFÜTZE IM BODEN-STOFF (wetter.K2) — EIN Satz Knoten: die Mulde des Gesetzes (die vierte Komponente der Normale im
-    // Boden-Satz, `_bodenStufenKnoten`) unter dem Pfützen-Gesetz (`_pfuetzeGesetz`) mit dem Film der Welt (`atmoUniforms.naesse`),
-    // × die Himmels-Sicht des Bodens und des Dach-Pools (unter einer Decke regnet es nicht), × die Nähe (`PFUETZE.fernM`) →
-    // `deckung`; `welle` die Neigung der Tropfen-Ringe (x, z) im Regen (`atmoUniforms.regen`): je Zelle ein Tropfen an einem Ort
-    // und in einem Takt aus ihrem Hash, sein Ring läuft bis `welle.radius` und verebbt. Leser: die Normale und der Stoff
+    // Boden-Satz, `_bodenStufenKnoten`) unter dem Pfützen-Gesetz (`_pfuetzeGesetz`) mit dem Film der Welt (`atmoUniforms.naesse`)
+    // und der Nähe zum Auge der Stufen (`PFUETZE.fernM`), × die Himmels-Sicht des Bodens und des Dach-Pools (unter einer Decke
+    // regnet es nicht) → `deckung`. Das Gesetz ist affin in der Mulde: die ECKE rechnet es (EIN Varying), das Fragment klemmt nur —
+    // dieselbe Kante, ohne Rechnung im Pixel. `welle` die Neigung der Tropfen-Ringe (x, z) im Regen (`atmoUniforms.regen`): je
+    // Zelle ein Tropfen an einem Ort und in einem Takt aus ihrem Gitter-Hash (drei Zahlen aus EINER Ziehung, reine Arithmetik —
+    // kein Fn-Rumpf im Graph, RAUSCH-GESETZ (B)), sein Ring läuft bis `welle.radius` und verebbt. Leser: die Normale und der Stoff
     // (`_naesseImStoff`) des Bodens.
     _pfuetzeKnoten() {
         if (this._pfuetzeK) return this._pfuetzeK;
@@ -1883,38 +1894,31 @@ class AnazhRealm_stoff_material {
         const P = AnazhRealm.PFUETZE;
         const B = this._bodenStufenKnoten();
         const A = {
-            k: (n) => T.float(n),
+            k: T.float,
             mul: (a, b) => a.mul(b),
             sub: (a, b) => a.sub(b),
-            mix: T.mix,
             max: T.max,
             klemm: (x) => x.clamp(0, 1),
+            ecke: (x) => T.varying(x),
         };
-        const g = AnazhRealm._pfuetzeGesetz(A, B.mulde.max(0), U.naesse);
-        const p = T.positionWorld;
-        const rel = p.xz.sub(U.stufeAuge).abs();
-        const nah = T.float(1).sub(T.smoothstep(T.float(P.fernM[0]), T.float(P.fernM[1]), T.max(rel.x, rel.y)));
-        const deckung = g.deckung.mul(nah).mul(B.himmel).mul(this._naesseHimmel(T));
+        const nah = T.float(1).sub(T.smoothstep(P.fernM[0], P.fernM[1], B.abstand));
+        const deckung = AnazhRealm._pfuetzeGesetz(A, B.mulde, U.naesse, nah)
+            .deckung.mul(B.himmel)
+            .mul(this._naesseHimmel(T));
         const W = P.welle;
-        const q = p.xz.mul(1 / W.zelleM);
-        const id = q.floor();
-        const f = q.fract();
-        const mitte = T.vec2(T.hash(id.x.add(id.y.mul(157))), T.hash(id.x.mul(311).add(id.y.mul(37)).add(11)))
-            .mul(0.5)
-            .add(0.25);
-        const t = T.fract(
-            this._windUniformsEnsure()
-                .uWindTime.mul(W.takt)
-                .add(T.hash(id.x.mul(71).add(id.y.mul(193)).add(23)))
-        );
-        const d = f.sub(mitte);
+        const q = T.positionWorld.xz.mul(1 / W.zelleM);
+        // der Gitter-Hash der Zelle (Hoskins, „Hash without Sine" hash33): x, y die Lage des Tropfens, z sein Takt
+        const z = T.fract(q.floor().xyx.mul(T.vec3(0.1031, 0.103, 0.0973)));
+        const z3 = z.add(T.dot(z, z.yzx.add(33.33)));
+        const h = T.fract(z3.xxy.add(z3.yzz).mul(z3.zyx));
+        const t = T.fract(this._windUniformsEnsure().uWindTime.mul(W.takt).add(h.z));
+        const d = q.fract().sub(h.xy.mul(0.5).add(0.25));
         const r = d.length().max(1e-4);
         const vorn = r.sub(t.mul(W.radius / W.zelleM));
         const ring = T.sin(vorn.mul(W.wellen))
             .mul(T.float(1).sub(t))
-            .mul(T.float(1).sub(T.smoothstep(T.float(0), T.float(0.18), vorn.abs())));
-        const welle = d.div(r).mul(ring.mul(W.hub).mul(U.regen));
-        this._pfuetzeK = { deckung, welle };
+            .mul(T.float(1).sub(T.smoothstep(0, 0.18, vorn.abs())));
+        this._pfuetzeK = { deckung, welle: d.mul(ring.mul(W.hub).mul(U.regen).div(r)) };
         return this._pfuetzeK;
     }
 
@@ -1935,12 +1939,16 @@ class AnazhRealm_stoff_material {
         };
     }
 
-    // DAS PFÜTZEN-GESETZ (wetter.K2) über einer Algebra A (k, mul, sub, mix, max, klemm): `mulde` die Mulde des Gesetzes (0 … 1
-    // in Einheiten von `MULDE.tiefeM`, gelaende-core `muldeEcken`), `film` die Nässe der Welt (`state.naesse`) → { wasser (in
-    // Einheiten von `tiefeM`), deckung 0 … 1 }. TSL-Knoten im Boden-Stoff (`_pfuetzeKnoten`), Zahlen in der Linse (`_pfuetzeAt`).
-    static _pfuetzeGesetz(A, mulde, film) {
-        const wasser = A.max(A.k(0), A.sub(mulde, A.sub(A.k(1), film)));
-        return { wasser, deckung: A.klemm(A.mul(wasser, A.k(1 / AnazhRealm.PFUETZE.saum))) };
+    // DAS PFÜTZEN-GESETZ (wetter.K2) über einer Algebra A (k, mul, sub, max, klemm, ecke): `mulde` die Mulde des Gesetzes (0 … 1
+    // in Einheiten von `MULDE.tiefeM`, gelaende-core `muldeEcken`), `film` die Nässe der Welt (`state.naesse`), `nah` die Nähe
+    // zum Auge (1 nah … 0 jenseits `PFUETZE.fernM`: fern sinkt der Spiegel, die flachen Pfützen gehen zuerst, jenseits keine) →
+    // { wasser (in Einheiten von `tiefeM`), deckung 0 … 1 }. `roh` ist affin in Mulde, Film und Nähe: `A.ecke` markiert die
+    // Grenze, bis zu der die Ecke rechnet (TSL: ein Varying; Zahlen: dieselbe Zahl). TSL-Knoten im Boden-Stoff
+    // (`_pfuetzeKnoten`), Zahlen in jeder Linse.
+    static _pfuetzeGesetz(A, mulde, film, nah = A.k(1)) {
+        const saum = AnazhRealm.PFUETZE.saum;
+        const roh = A.ecke(A.mul(A.sub(A.sub(mulde, A.sub(A.k(1), film)), A.sub(A.k(1), nah)), A.k(1 / saum)));
+        return { wasser: A.mul(A.max(A.k(0), roh), A.k(saum)), deckung: A.klemm(roh) };
     }
 
     // DIE KURVE DER NÄSSE (wetter.K2) — EINE Rechnung für den Takt der Welt (`_naesseTakt`) und jede Linse: von `n0` nach `dt`
@@ -2412,7 +2420,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ao = T.float(1.0).add(hoehe.mul(B.kavitaet)).max(0.0);
         mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
-        const c = T.vec4(mat.colorNode || T.materialColor);
+        // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
+        // (`vec4(vec4)`, ConvertNode) aber nie — sie schrieb ihren ganzen Ausdruck je Leser aus (`.rgb` und `.a`: der Boden trug
+        // seine Stoff-Farbe zweimal, 727 Zeichen WGSL, w15-pfuetze). `toVar` legt sie in EINE Variable.
+        const c = T.vec4(mat.colorNode || T.materialColor).toVar();
         mat.colorNode = T.vec4(c.rgb.mul(T.float(1.0).add(hoehe.mul(B.korn)).max(0.0)), c.a);
     }
 
@@ -3675,8 +3686,9 @@ AnazhRealm.NAESSE = Object.freeze({
 // Wasser in jeder Mulde: Wasser = max(0, m − (1 − Nässe)) — nass steht jede Mulde voll, beim Trocknen fallen zuerst die flachen,
 // zuletzt die tiefen, trocken keine. Die Deckung steigt über `saum` (in Einheiten von `tiefeM`: 1,4 cm Wasser) auf 1. Unter der
 // Pfütze ist der Boden ganz getränkt, ihr Spiegel ist Wasser (Rauheit `rauh`, die Normale waagrecht); im Regen schlagen Tropfen
-// Ringe (je Zelle `welle.zelleM` ein Tropfen, `welle.takt` je s, bis `welle.radius` der Zelle, Neigung `welle.hub`). Jenseits
-// `fernM` (Chebyshev zum Auge der Stufen) blendet die Pfütze aus: die gröberen Stufen tragen keine Mulde (`MULDE.bisStufe`).
+// Ringe (je Zelle `welle.zelleM` ein Tropfen, `welle.takt` je s, bis `welle.radius` der Zelle, Neigung `welle.hub`). Über
+// `fernM` (Chebyshev zum Auge der Stufen) sinkt der Spiegel um die Ferne (die flachen Pfützen gehen zuerst, jenseits keine):
+// die gröberen Stufen tragen keine Mulde (`MULDE.bisStufe`).
 AnazhRealm.PFUETZE = Object.freeze({
     saum: 0.12,
     rauh: 0.05,
