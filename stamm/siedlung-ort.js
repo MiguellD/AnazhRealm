@@ -2511,14 +2511,14 @@ class AnazhRealm_siedlung_ort {
             // Plans (in der Reihe des Zugs) und jedes Stück seiner Ausstattung, das das Erwachen hebt (Laternen an Mast und Wand,
             // Brunnen, Stände: `_dorfErlebnis`, `_spawnSettlementSlot`, ihre Samen `_ausstattungSame`), die Stufe, die es braucht,
             // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts) —,
-            // und nur, wenn sie es dorthin holt (`_bedarfZeit` endlich: im Stand und seitab keine; die Stadt nH 302 bestellte im
-            // Stand sonst jede Gestalt und hielt die Bahnen der Foundry, gate:settlement C-K5). Die Foundry rangiert jede nach der
-            // Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform, die Mesh-Stufe bestellte erst
+            // und nur, wenn sie es binnen `AUTO_SETTLEMENT.bedarfS` dorthin holt (`_bedarfZeit`: im Stand und seitab keine; im
+            // Gang auf die Stadt nH 302 bestellte der Vorrat sonst Dutzende Stufen, und ihre ferne Hülle wartete hinter ihnen,
+            // gate:settlement C-K5). Die Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform, die Mesh-Stufe bestellte erst
             // der Vorlauf der Bahn (3 s vor der Zone): im GT standen die Häuser von −5,−3 erst 10,3–11,7 s nach dem Erwachen,
             // 81–139 m vor dem Spieler, die Marktstände von −4,−4 traten ungezeichnet in 150 m ein.
             const bedarf = (e) => {
                 const preset =
-                    this._bedarfZeit(e.position.x, e.position.z, R) < Infinity && this._foundryPresetForEntry(e);
+                    this._bedarfZeit(e.position.x, e.position.z, R) <= A.bedarfS && this._foundryPresetForEntry(e);
                 if (!preset) return;
                 const dh = Math.hypot(p.x - e.position.x, p.z - e.position.z) || 1;
                 const k2 = Math.min(1, R / dh);
@@ -3761,6 +3761,9 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     // DER VORLAUF IST ZEIT (w13-dorf-strom, `_bedarfZeit`): so viele Sekunden vor dem Ring der Sicht bereitet sich ein Ort vor
     // (Export, Ort-Wahl, Wasser-Urteil, Grund) — der Export wartete im GT hinter der Foundry bis 8,3 s (Cloud, Fahrt-Probe dorf)
     bereitS: 10,
+    // so viele Sekunden vor ihrer Mesh-Zone bestellt der Vorrat die Stufe einer Gestalt des Orts (`_dorfVorbacken`): im GT ab
+    // dem Vorlauf (Ring der Sicht + bereitS, ~27 s vor der Zone), die Foundry baut die Gestalten eines Dorfs in 10–12 s
+    bedarfS: 30,
     spawnClearM: 320,
     siteProbeR: Object.freeze([0.15, 0.3]),
     startRingeM: Object.freeze([24, 48, 72]),
