@@ -552,9 +552,10 @@ class AnazhRealm_studio_stoff {
             R.ub ? "ub" : "",
             mp && typeof mp.stein === "string" && !R.ub ? "stein:" + mp.stein : "",
             // DAS MIKRO-RELIEF DER FACETTE (`_mikroGestalt`) schreibt das Korn in colorNode: bis w13-fels-korn fehlte der Zweig
-            // hier, und wer seine Signatur zuerst baute, gab allen den colorNode — eine glatte Bau-Wand (unknown, Satz) vor dem
-            // Fels nahm ihm das Korn (Radeon, material.K2#1 am Fels der Genesis 1 m: glatt 0,56 statt 0,03; die Folge der Bauten
-            // verschob w13-kreatur-blick), der Fels zuerst gäbe der Wand seines
+            // hier — der facettierte Fels (`unknown|…|1|0.50|xf|satz`) und ein glatter Bau-Stoff (`…|0|1.00|s2|v:stoff|xf|satz`)
+            // trugen EINE Signatur, und wer zuerst baute, gab beiden den colorNode: baute die Wand zuerst, verlor der Fels sein Korn
+            // (Radeon main 25374f6f, material.K2#1 am Fels der Genesis 0,5/1/2 m: glatt 0,606/0,559/0,237 → 0/0,029/0), baute der
+            // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
         ].join("|");
         this._graphTeilen(mat, _sig, [
