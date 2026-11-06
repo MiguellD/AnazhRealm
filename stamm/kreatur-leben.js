@@ -2410,7 +2410,7 @@ class AnazhRealm_kreatur_leben {
         const st = this.state;
         if (!st.playerMesh || !this._kreaturenBereit()) return;
         const F = this._bestandRegionen();
-        const p = this._bestandVoraus();
+        const p = st.playerMesh.position;
         const gruppen = new Map();
         for (const key of this._bestandNah())
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {
@@ -2446,20 +2446,6 @@ class AnazhRealm_kreatur_leben {
             fehlt[0]._ohneOrt = st.spielZeit + 6 * AnazhRealm._bestandGesetz().B.taktS;
         }
         for (const c of st.creatures) if (c.userData._bestand) c.userData.alterS = c.userData._bestand.alterS;
-    }
-    // DER ORT DER BEGEGNUNG (tiere.K5, die Wahl der Zeichnung): wo der Spieler in `BESTAND_REGION.vorausS` s steht, wenn er
-    // seinen Lauf hält (`playerVel`, die Absicht des Leibs, ein Feld-Vektor mit `.x()`/`.z()`; im Stand sein Ort) — gezeichnet wird zuerst die Herde, der er
-    // begegnen wird, solange sie noch außer Blick steht, und die Herde hinter ihm gibt ihren Platz (das Streaming nach der
-    // Fahrtrichtung offener Welten: vor dem Spieler entsteht, hinter ihm fällt). Bis w16-tier-blick wählte die Zeichnung nach
-    // dem Abstand zum Spieler: die Herde am Weg voraus kam erst in die Kappe, wenn sie im Blick stand und nicht mehr
-    // gezeichnet werden durfte — der Spieler ging an ihr vorbei, gezeichnet stand sie hinter ihm.
-    _bestandVoraus() {
-        const p = this.state.playerMesh.position;
-        const v = this.state.playerVel;
-        const T = AnazhRealm.BESTAND_REGION.vorausS;
-        const vx = v ? v.x() : 0,
-            vz = v ? v.z() : 0;
-        return Number.isFinite(vx) && Number.isFinite(vz) ? { x: p.x + vx * T, z: p.z + vz * T } : p;
     }
     // WER BLEIBT GEZEICHNET (die EINE Frage der Zeichnung und des Weichens): ein Leib außerhalb des Bestands, einer im Riss (Opfer
     // oder Jäger), gebunden, mit Auftrag oder im Nah-Kreis. `jagen` = die Jäger der offenen Risse (`_bestandJagen`).
@@ -3308,7 +3294,6 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
     aufholS: 3600,
     aufholJeTakt: 20,
     leiberJeTakt: 3,
-    vorausS: 60,
     haltAnteil: 0.25,
 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
