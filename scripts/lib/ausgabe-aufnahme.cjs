@@ -40,11 +40,12 @@ function saisonFest() {
 // eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die Bühne ruft sie, und jede Schleife, die Takte am
 // Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt. Solange er unter 0 steht, verweigert der EINE
 // Wetter-Schreiber des Spiels (`_setWeather`) jeden Zug — Emotions-Effekt, Nexus, Gesetz, Mitspieler — und der Auto-Zug
-// verbraucht seinen Takt der Welt-Uhr ohne Wort; im Spiel steht der Halt auf 0.
+// verbraucht seinen Takt der Welt-Uhr ohne Wort; im Spiel steht der Halt auf 0. Gehalten ist, was unter 0 steht — die Regel des
+// Spiels (`_messHalt`), jeder Leser hier liest sie so.
 function wetterHalten() {
     window.__wetterSpion();
     const u = st.weatherEffectTime;
-    if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
+    if (!(u < 0)) st.weatherEffectTime = -1e9;
 }
 
 // DER STAPEL DER SPIONE: die Spiel-Rahmen des Stapels (stamm/), der jüngste zuerst — die Rahmen der Linse zählen nicht.
@@ -137,7 +138,7 @@ function wetterBuch(seit) {
         seq: S.seq,
         wetter: st.weather,
         uhr: Number.isFinite(u) ? +u.toFixed(1) : null,
-        fest: Number.isFinite(u) && u < 0,
+        fest: u < 0,
         buch: S.buch.filter((e) => e.seq > (seit || 0)),
     };
 }
@@ -243,7 +244,7 @@ function weltaktSpion(ersatz) {
     S.blind = !Array.isArray(liste);
     const halt = () => {
         const u = st.weatherEffectTime;
-        return Number.isFinite(u) && u < 0;
+        return u < 0;
     };
     const buche = (e) => {
         e.seq = ++S.seq;
@@ -277,7 +278,7 @@ function weltaktBuch(seit) {
     const u = st.weatherEffectTime;
     return {
         seq: S.seq,
-        gehalten: Number.isFinite(u) && u < 0,
+        gehalten: u < 0,
         blind: S.blind,
         buch: S.buch.filter((e) => e.seq > (seit || 0)),
     };
@@ -367,6 +368,12 @@ function buehne(o) {
     // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
+    // DER GANG DES TAGS STEHT (die Uhr der Zelle, Lehre 17): die Tag-Länge des Halts, mit der `werkbank sicht --tag steht` den Tag
+    // hält — eine Linse, die die Sonne laufen lässt, setzt ihre eigene (`sicht --sonne`, die Erstarrung der Wasser-Linse); das Laden
+    // setzt sie nie, die Grundstellung der Sitzung trägt sie zurück. Bis w14-lod-uebergang ging der Tag unter der Bühne nach der
+    // Wanduhr weiter: lod.K2#1 (Radeon, 1–3 s Wanduhr je Schuss-Paar) drehte die Sonne zwischen zwei Schüssen derselben Pose, jede
+    // Stufe der Sonne schob die Halm-Schatten der ganzen Wiese — im Stand 55 000 von 60 000 Pop-Pixeln je Schritt.
+    st.dayLengthMinutes = 1e12;
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
     r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
@@ -917,7 +924,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
 // `_setWeather` vorbei, die Uhr taut nach der Messung, oder ein eingefrorenes Wort ist danach ein anderes. Verweigerte Züge
 // (die Wache hielt) sind grün und stehen je Quelle beim Namen.
 function wetterUrteil(w) {
-    const fest = (u) => Number.isFinite(u) && u < 0;
+    const fest = (u) => u < 0;
     const taeter = [];
     const verweigert = {};
     for (const e of w.buch || []) {

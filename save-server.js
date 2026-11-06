@@ -335,42 +335,39 @@ function handleLlmProxy(req, res) {
                 "content-length": Buffer.byteLength(bodyStr),
             },
         };
+        // DER STROM GEHT DURCH (ki.K5): Status + CORS-Kopf sofort, jedes Stück der Antwort, sobald es kommt — der Browser liest
+        // die Antwort des Modells als Strom (`_llmStrom`); bis ki.K5 puffert der Proxy sie bis zum Ende. Über der Grenze reißt der
+        // Strom ab (der Kopf ist schon gesendet), ein Abbruch des Browsers bricht die Anfrage ans Modell.
         const proxyReq = https.request(requestOptions, (proxyRes) => {
-            let respBody = "";
-            let respAborted = false;
-            proxyRes.on("data", (chunk) => {
-                if (respAborted) return;
-                respBody += chunk;
-                if (respBody.length > PROXY_MAX_BODY_BYTES) {
-                    respAborted = true;
-                    proxyRes.destroy();
-                }
+            let bytes = 0;
+            const contentType = proxyRes.headers["content-type"] || "application/json; charset=utf-8";
+            res.writeHead(proxyRes.statusCode || 502, {
+                "Content-Type": contentType,
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST,OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type,Authorization",
             });
-            proxyRes.on("end", () => {
-                if (respAborted) {
-                    sendJson(res, 502, { error: "Upstream response too large" });
+            proxyRes.on("data", (chunk) => {
+                bytes += chunk.length;
+                if (bytes > PROXY_MAX_BODY_BYTES) {
+                    proxyRes.destroy();
+                    res.destroy();
                     return;
                 }
-                // Antwort weiterleiten — Status + Body, mit CORS-Headern für
-                // den Browser. Content-Type vom Upstream wenn vorhanden.
-                const contentType = proxyRes.headers["content-type"] || "application/json; charset=utf-8";
-                res.writeHead(proxyRes.statusCode || 502, {
-                    "Content-Type": contentType,
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST,OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-                });
-                res.end(respBody);
+                res.write(chunk);
             });
-            proxyRes.on("error", (err) => {
-                sendJson(res, 502, { error: "Upstream stream error", details: err.message });
-            });
+            proxyRes.on("end", () => res.end());
+            proxyRes.on("error", () => res.destroy());
+        });
+        res.on("close", () => {
+            if (!res.writableEnded) proxyReq.destroy();
         });
         proxyReq.setTimeout(PROXY_TIMEOUT_MS, () => {
             proxyReq.destroy(new Error("Upstream timeout"));
         });
         proxyReq.on("error", (err) => {
-            sendJson(res, 502, { error: "Upstream request failed", details: err.message });
+            if (res.headersSent) res.destroy();
+            else sendJson(res, 502, { error: "Upstream request failed", details: err.message });
         });
         proxyReq.write(bodyStr);
         proxyReq.end();
