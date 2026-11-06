@@ -835,7 +835,7 @@ async function brandSeite(MESS) {
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const neu = () => (leer(), trocken(), wort("cloudy"));
     const brennen = (max) => {
-        for (let i = 0; i < max && bf().size; i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
+        for (let i = 0; i < max && r._brandLebt(); i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
     const nass = (f) => r._brandFeuchte(f.boden) >= f.zeile.brenn.mx;
@@ -984,7 +984,7 @@ async function brandSeite(MESS) {
             delete r._naesseTakt;
             r._naesseUhr = st.spielZeit;
             wort("rainy");
-            for (R.s = 0; R.s < 300 && bf().size; R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+            for (R.s = 0; R.s < 300 && r._brandLebt(); R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
             delete r._brandFeuchte;
             wort("cloudy"), trocken();
             return R;
@@ -2143,19 +2143,18 @@ const BRANDLAUF = process.argv.includes("--brand");
                             const mit = [...kopf.values()].filter((h) => h.c >= 0.94 && h.gras);
                             return Object.assign(Z, { mit: f(mit, (k) => k >> 1), koepfe: mit.length, gegen: f(alle.filter((h) => h.c <= -0.87), (k) => k - 1), alle: f(alle, (k) => k - 1) });
                         };
-                        const roh = r._windAt;
-                        r._windAt = (...a) => Object.assign(roh.apply(r, a), { ms: 0 });
+                        r._windAt = (...a) => Object.assign(P._windAt.apply(r, a), { ms: 0 });
                         const ohneWind = (await lauf(60)).alle;
                         delete r._windAt;
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
-                        st.brandFeld.clear();
+                        r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
                         st.worldMeta.taten.length = n0;
                         const lebVor = +am().lebendig.toFixed(3);
                         const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, glut, licht }));
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && st.brandFeld.size; Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);
