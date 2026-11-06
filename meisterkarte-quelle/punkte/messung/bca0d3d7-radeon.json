@@ -1,0 +1,60 @@
+{
+ "sha": "bca0d3d794e0c73ead8a9a9a4c4723f664421805",
+ "geraet": "radeon",
+ "zeit": "2026-11-06T00:38:47.402Z",
+ "host": "MiguellD",
+ "je": {
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.18 · fahrt 0.27 · nacht 0.18 ms · Aussetzer 0 in 26 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.51,
+   "grund": "ROT: Klang-Takt p95 gehen 0.18 · fahrt 0.27 · nacht 0.18 ms · Aussetzer 0 in 26 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "amd/rdna-3",
+   "s": 30.6,
+   "zeit": "2026-11-06T00:38:47.402Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T00:38:19.666Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "klang.K5#2",
+    "s": 20.7,
+    "takte": 689,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1045,
+   "frameP95": 41.96,
+   "taktP95": 30.56,
+   "vramMax": 135.9,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 56,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 57.5,
+  "minuten": 1.01
+ }
+}
