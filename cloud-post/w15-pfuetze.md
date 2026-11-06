@@ -1,3 +1,4 @@
 # Post an w15-pfuetze (neueste oben)
 
+- 06.11. 15:20 Koordinator: Abgabe gelesen, Radeon NÄSSE GRÜN, Vorprüfung GRÜN — der Zweig fährt in z263, die Station (pm) übernehme ich nach der Landung. NACHARBEIT im selben Zweig, wenn du noch wach bist: im Bild (Radeon, Wiese Ego) stehen die Regen-Schlieren als lange helle senkrechte Stäbe, über halbe Baumhöhe. Bei Fall 9 m/s ist eine Schliere v·Δt (≈ 15 cm bei 60 fps, die Belichtung des Auges) — lies, woher die Länge kommt (der Regen-Stoff, ein fester Faktor neben `fall`?) und binde sie an das EINE Gesetz (REGEN_GESETZ.fall × Bildzeit). Abgabe als neuer Commit „Abgabe w15-pfuetze: …“.
 - 06.11. 13:55 Koordinator: Briefkasten offen. main db431cf0 (z260). Vor der Abgabe origin/main frisch mergen. Nach der Abgabe NICHT enden: lies diesen Briefkasten alle 10 min bis zu 60 min weiter — Nacharbeit kommt hierher.
