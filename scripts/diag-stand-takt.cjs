@@ -835,8 +835,10 @@ async function brandSeite(MESS) {
     st.autoSeason = false;
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const neu = () => (leer(), trocken(), wort("cloudy"));
-    const brennen = (max) => {
-        for (let i = 0; i < max && r._brandLebt(); i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
+    // je Schritt der Welt-Uhr bis `max` s (nie je Ruf: ein Rest über dem Budget schreitet nicht), `tick` der Takt des Brands oder des Spiels
+    const brennen = (max, tick = () => r._tickBrand(), u = r._brandUhr) => {
+        while (r._brandUhr - u < max - 1e-9 && r._brandLebt()) (st.spielZeit = r._brandUhr + B.schrittS), tick();
+        return Math.round(r._brandUhr - u);
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
     const nass = (f) => r._brandFeuchte(f.boden) >= f.zeile.brenn.mx;
@@ -950,11 +952,11 @@ async function brandSeite(MESS) {
         delete r._brandZuenden;
         // REGEN und LESER am Herd der Mess-Wiese: Licht, Ohr und das Bild (15 s zu 0,1 s, `_brandBild`: die Fahne steht) — die Flammen der Front,
         // die Fahne und ihre DECKUNG: der dichteste Strahl quer zum Wind durch ihre Ballen 8 m über den Flammen, 1 − Π(1 − Deckung)^g,
-        // g = (1 − ρ²)^profil die Dicke, die das Rauch-Bild im Abstand ρ (je Radius) zeichnet (RAUCH_BILD, Beer-Lambert); die Bühne hält
-        // die Bild-Uhr (A9) ab der Welt-Uhr: Flammen, Fahne und Strahl lesen den Wind EINER Uhr (bis w12-brand-halt die Wanduhr des Takts)
+        // g = (1 − ρ²)^profil die Dicke, die das Rauch-Bild im Abstand ρ (je Radius) zeichnet (RAUCH_BILD, Beer-Lambert); die Bild-Uhr (A9)
+        // läuft ab 0 wie nach dem Laden eines Stands, fern der Welt-Uhr: zog die Fahne zu ihr (bis w13-brand-wind), fiel die Deckung
         const leser = () => {
-            st.brandRauch.teilchen.length = 0;
-            for (let i = 0; i < 150; i++) (r._bildZeit = st.spielZeit + 0.1 * i), r._brandBild(0.1);
+            st.brandRauch.teilchen.length = st.brandRauch.n = 0; // der Same der Fahne zählt ab der Bühne, nie ab den Takten davor
+            for (let i = 0; i < 150; i++) (r._bildZeit = 0.1 * i), r._brandBild(0.1);
             const [g, T, F, w] = [r._glutAmOhr(pm.x, pm.z, () => 0), st.brandRauch.teilchen, r._brandFlammen, r._windAt(pm.x, pm.z, st.spielZeit)];
             const h = F.reduce((u, f) => u + f.y / F.length, 0) + 8;
             const band = T.filter((p) => Math.abs(p.y - h) < p.s);
@@ -985,7 +987,7 @@ async function brandSeite(MESS) {
             delete r._naesseTakt;
             r._naesseUhr = st.spielZeit;
             wort("rainy");
-            for (R.s = 0; R.s < 300 && r._brandLebt(); R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+            R.s = brennen(300, takt);
             delete r._brandFeuchte;
             wort("cloudy"), trocken();
             return R;
