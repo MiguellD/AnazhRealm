@@ -33,8 +33,13 @@ class AnazhRealm_klang {
         s.lofi = this._buildLofiLayer(ctx, masterGain);
         // Welle 5 Klang — die Klang-Welt (klang:UMWELT) auf ihrem Bus.
         s.umwelt = this._umweltKlangBauen(ctx, masterGain, UM);
-        // Die Welle des Abrollens (klang:FAHRT, je Kontext einmal) backt beim Einschalten, nie beim Aufsitzen in Fahrt.
+        // Die Welle des Abrollens und die Tafel der Säge (klang:FAHRT, je Kontext einmal) backen beim Einschalten, und EINE stumme
+        // Stimme geht einmal Bau, Lage und Halt (ihr Code liegt warm) — nie im Bild des Aufsitzens in Fahrt (die Spitze der Fahrt:
+        // der erste Bau, headless 2,0–2,3 ms, w13-klang-fahrt).
         UM.kern.fahrtWelle(ctx);
+        const warm = UM.kern.fahrtStimme(ctx, ctx.createGain());
+        warm.anwenden({ v: 0, vmax: 1, motor: true }, ctx.currentTime);
+        warm.stop(ctx.currentTime);
 
         s.ctx = ctx;
         s.masterGain = masterGain;
