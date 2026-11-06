@@ -24,6 +24,7 @@ async function kreaturProben(r, T, opts) {
         const b = arr.slice().sort((a, b) => a - b);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
+    const rund = (v, n) => +v.toFixed(n); // die Zahl der Zeile, auf n Stellen
     const pm = s.playerMesh.position;
     const P0 = pm.clone();
 
@@ -597,18 +598,18 @@ async function kreaturProben(r, T, opts) {
             f144 = flug(144, "happy"),
             fSad = flug(60, "sad");
         return {
-            luftAnteil: +(luft / frames).toFixed(4),
+            luftAnteil: rund(luft / frames, 4),
             starts,
             ausAktion,
             rufe: rufeImLauf,
-            gesetzFehler: fehler.length ? +Math.max(...fehler).toFixed(3) : null,
+            gesetzFehler: fehler.length ? rund(Math.max(...fehler), 3) : null,
             hopHochM: F.hopHochM,
             hopBasisM: F.hopBasisM,
-            flug30: { top: +f30.top.toFixed(3) },
-            flugVerhaeltnis: f30.t > 0 ? +(f144.t / f30.t).toFixed(3) : null,
-            frohFehler: +Math.abs(f30.top / f30.soll - 1).toFixed(3),
-            basisTop: +fSad.top.toFixed(3),
-            basisFehler: +Math.abs(fSad.top / fSad.soll - 1).toFixed(3),
+            flug30: { top: rund(f30.top, 3) },
+            flugVerhaeltnis: f30.t > 0 ? rund(f144.t / f30.t, 3) : null,
+            frohFehler: rund(Math.abs(f30.top / f30.soll - 1), 3),
+            basisTop: rund(fSad.top, 3),
+            basisFehler: rund(Math.abs(fSad.top / fSad.soll - 1), 3),
         };
     });
 
@@ -630,7 +631,7 @@ async function kreaturProben(r, T, opts) {
         // 3600 Spiel-Sekunden am Loop-Pfad (je Aufruf eine Sekunde weiter)
         const t0 = 1e6;
         for (let k = 0; k < 3600; k++) r._loopWeatherAndGrowth(1 / 60, t0 + k);
-        return { skala: +(c.scale.x / s0).toFixed(4) };
+        return { skala: rund(c.scale.x / s0, 4) };
     });
 
     // ── gier: die Tiere folgen dem Spieler im Quadrat ──
@@ -762,17 +763,17 @@ async function kreaturProben(r, T, opts) {
                     wegL += ab(pf.leib[n], pf.leib[n - 1]);
                 }
             }
-            return wegL > 0 ? { q: +(wegQ / wegL).toFixed(3), l: +(wegH / wegL).toFixed(3) } : null;
+            return wegL > 0 ? { q: rund(wegQ / wegL, 3), l: rund(wegH / wegL, 3) } : null;
         });
         const o = {};
         arten.forEach((a, i) => {
             const z = zeilen[i];
             o[a] = {
                 laufFrames: z.lauf,
-                abwP90: z.abw.length ? +quantil(z.abw, 0.9).toFixed(1) : null,
-                rueckwaerts: z.lauf ? +(z.rueck / z.lauf).toFixed(3) : 0,
-                beschlMax: +Math.max(...z.beschl).toFixed(1),
-                gasBremseJeMin: z.freiT > 0 ? +((z.wechsel / z.freiT) * 60).toFixed(1) : null,
+                abwP90: z.abw.length ? rund(quantil(z.abw, 0.9), 1) : null,
+                rueckwaerts: z.lauf ? rund(z.rueck / z.lauf, 3) : 0,
+                beschlMax: rund(Math.max(...z.beschl), 1),
+                gasBremseJeMin: z.freiT > 0 ? rund((z.wechsel / z.freiT) * 60, 1) : null,
                 schlupfQuer: schlupf[i] ? schlupf[i].q : null,
                 schlupfLaengs: schlupf[i] ? schlupf[i].l : null,
             };
@@ -918,7 +919,7 @@ async function kreaturProben(r, T, opts) {
         return {
             jagdFrames: F.jagd[0] + F.hetzen[0],
             hetzFrames: F.hetzen[0],
-            achsAnteil: +Math.max(...Object.values(F).map(([n, a]) => (n ? a / n : 0))).toFixed(3),
+            achsAnteil: rund(Math.max(...Object.values(F).map(([n, a]) => (n ? a / n : 0))), 3),
             riss: R,
         };
     });
@@ -987,17 +988,13 @@ async function kreaturProben(r, T, opts) {
                     ? r._kreaturWurf({ x: heim.x, z: heim.z + 30 }, "wesen", "happy", r._faunaRng("fremd"), 7)
                     : [];
             const anteil = () => {
-                const mx = glieder.reduce((m, c) => m + c.position.x, 0) / glieder.length;
-                const mz = glieder.reduce((m, c) => m + c.position.z, 0) / glieder.length;
-                const d = glieder.map(
-                    (c) => Math.hypot(c.position.x - mx, c.position.z - mz) / (2 * r._kreaturRaum(c))
-                );
-                return d.filter((v) => v <= VH.fensterRaum).length / glieder.length;
+                const m = glieder.reduce((m, c) => m.add(c.position), new T.Vector3()).divideScalar(glieder.length);
+                return glieder.filter((c) => ab(c.position, m) / (2 * r._kreaturRaum(c)) <= VH.fensterRaum).length / glieder.length;
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
             Object.assign(t, { enge: 0, engst: [Infinity] });
-            const [alt, ab] = [glieder.map((c) => c.position.clone()), []];
+            const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
             for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
                 const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
@@ -1023,17 +1020,15 @@ async function kreaturProben(r, T, opts) {
                     const [p, fl] = [c.position, c.userData._motionZustand === "flucht"];
                     // DIE ENGE: das engste Paar in seinem Paar-Raum (dem Raum der Separation, `_kreaturRaum` beider)
                     for (const b of glieder.slice(0, i)) {
-                        const q =
-                            Math.hypot(p.x - b.position.x, p.z - b.position.z) /
-                            (r._kreaturRaum(c) + r._kreaturRaum(b));
-                        if (q < e[0]) e = [+q.toFixed(2), b.userData.name, c.userData.name, (k / 60) | 0];
+                        const q = ab(p, b.position) / (r._kreaturRaum(c) + r._kreaturRaum(b));
+                        if (q < e[0]) e = [rund(q, 2), b.userData.name, c.userData.name, (k / 60) | 0];
                     }
-                    const d = Math.hypot(p.x - alt[i].x, p.z - alt[i].z);
+                    const d = ab(p, alt[i]);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
                     if (fl && d > 1 / 60) t.lauf[i] = t.lauf[i] || [k, c.userData._alarmEigen];
-                    ab[i] = fl ? ab[i] || p.clone() : null;
-                    if (ab[i]) t.weg[i] = Math.max(t.weg[i], Math.hypot(p.x - ab[i].x, p.z - ab[i].z));
+                    beginn[i] = fl ? beginn[i] || p.clone() : null;
+                    if (beginn[i]) t.weg[i] = Math.max(t.weg[i], ab(p, beginn[i]));
                 });
                 if (fliehen && nl >= 3) ((t.phi[0] += Math.hypot(sx, sz) / nl), t.phi[1]++);
                 if (k >= 600) t.enge += e[0];
@@ -1044,71 +1039,36 @@ async function kreaturProben(r, T, opts) {
         const [W, F, X, B] = ["wander", "flucht", "fremd", "blick"].map(lauf);
         const zahl = (t) => ({
             n: t.n,
-            wurfAnteil: +t.wurf.toFixed(3),
-            mittel: +(t.summe / t.bilder).toFixed(3),
-            fluchtAnteil: +(t.fluchtTakte / (3600 * t.n)).toFixed(3),
-            fluchtMittel: t.fb ? +(t.fs / t.fb).toFixed(3) : null,
-            fluchtMin: t.fb ? +t.fMin.toFixed(3) : null,
-            enge: +(t.enge / t.bilder).toFixed(2),
+            wurfAnteil: rund(t.wurf, 3),
+            mittel: rund(t.summe / t.bilder, 3),
+            fluchtAnteil: rund(t.fluchtTakte / (3600 * t.n), 3),
+            fluchtMittel: t.fb ? rund(t.fs / t.fb, 3) : null,
+            fluchtMin: t.fb ? rund(t.fMin, 3) : null,
+            enge: rund(t.enge / t.bilder, 2),
             engst: t.engst,
         });
-        // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang): der Ort des Gesetzes (`_zellOrt`), der dem Spieler am
-        // nächsten liegt und in dieser Sitzung nicht erwacht ist (ihr Gedächtnis fehlt, ihre Hülle steht nicht) — in ihrem Reich (fachwerk
-        // `siedlungsReich`) auf drei Ringen je acht Orte, die der Grund ohne Ort trüge (Wildnis, kein Grundriss, keine Hülle,
-        // Land): keiner trägt eine Geburt (`_kreaturGrundFrei`). Täter: die Geburt ohne das Reich (die alte Form)
+        // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang: das Dorf erwachte nach dem Wurf, sein Erdbau trug den Hang
+        // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
+        // `_zellOrt`, fern des Spielers, nicht erwacht) — auf dem Kreis von 25 m um ihn (im Kern jedes Reichs, fachwerk
+        // `siedlungsReich` 30 m + 22 m·√nH) trägt keiner von acht Orten eine Geburt (`_kreaturGrundFrei`). Täter: die Geburt ohne das Reich (die alte Form); er macht alle
+        // acht frei, das ist der Beweis, dass der Kreis ohne den Ort trüge
         if (taeter === "herde-dorf") decke("_imReichEinesOrts", () => () => false);
-        const dorf = (() => {
-            const SG = A._siedlungGesetz();
-            if (!SG) return { fehler: "kaltes Buch: kein Gesetz der Zellen" };
-            const reich = A.Gesetz("fachwerk:siedlungsReich");
-            const [cx0, cz0] = [Math.floor(P0.x / SG.cellM), Math.floor(P0.z / SG.cellM)];
-            const cells = (s.worldMeta && s.worldMeta.settlementCells) || {};
-            let z = null;
-            for (let d = 0; d <= 4 && !z; d++)
-                for (let dz = -d; dz <= d; dz++)
-                    for (let dx = -d; dx <= d; dx++) {
-                        if (Math.max(Math.abs(dx), Math.abs(dz)) !== d) continue;
-                        const i = r._zellOrt(cx0 + dx + "," + (cz0 + dz));
-                        if (!i || cells[i.key] || (r._stlWegeKeys && r._stlWegeKeys.has(i.key))) continue;
-                        if (!z || ab(i, P0) < ab(z, P0)) z = i;
-                    }
-            if (!z) return { fehler: "keine schlafende Zelle des Gesetzes in 4 Zellen um den Spieler" };
-            const R = reich(SG, z.nH);
-            const wk = s.wegeKarte;
-            const ohneOrt = (x, y) =>
-                r._wildnisTraegt(x, y) &&
-                !r._imGrundriss(x, y) &&
-                !(wk && wk.siedlungen.some((b) => x >= b.x0 && x <= b.x1 && y >= b.z0 && y <= b.z1)) &&
-                r._landAt(x, y);
-            const orte = [];
-            for (const f of [0.3, 0.6, 0.9])
-                for (let q = 0; q < 8; q++) {
-                    const [x, y] = [z.x + Math.cos((q * TAU) / 8) * f * R, z.z + Math.sin((q * TAU) / 8) * f * R];
-                    if (ohneOrt(x, y)) orte.push([x, y]);
-                }
-            const traegt = orte.filter(([x, y]) => r._kreaturGrundFrei(x, y));
-            return {
-                zelle: z.key,
-                reichM: +R.toFixed(0),
-                orte: orte.length,
-                geburten: traegt.length,
-                erste: traegt[0] ? traegt[0].map((v) => +v.toFixed(1)) : null,
-            };
-        })();
+        const o = r._zellOrt(r._wegenetzNachbarn("start")[0]);
+        const dorf = [o.key, [...Array(8).keys()].filter((q) => r._kreaturGrundFrei(o.x + 25 * Math.cos(q), o.z + 25 * Math.sin(q))).length];
         const L = F.lauf.filter(Boolean);
         const k = L.map((x) => x[0]);
         return {
             dorf,
             fremdN: X.fremdN,
-            blickDiffM: +Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))).toFixed(4),
+            blickDiffM: rund(Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))), 4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
-            ausrichtung: { mittel: +(F.phi[0] / F.phi[1]).toFixed(3), takte: F.phi[1] },
+            ausrichtung: { mittel: rund(F.phi[0] / F.phi[1], 3), takte: F.phi[1] },
             alarm: {
                 laufen: L.length,
                 zweiteHand: L.filter((x) => !x[1]).length,
-                letzterS: L.length < F.n ? null : +((Math.max(...k) - Math.min(...k)) / 60).toFixed(2),
+                letzterS: L.length < F.n ? null : rund((Math.max(...k) - Math.min(...k)) / 60, 2),
             },
-            fluchtWegM: +Math.min(...F.weg).toFixed(1),
+            fluchtWegM: rund(Math.min(...F.weg), 1),
             id: { bruch: X.bruch || null, fluchtS: X.id },
         };
     });
@@ -1213,10 +1173,10 @@ async function kreaturProben(r, T, opts) {
             if (m === "flieht" && k % 6 === 0) kf.push(verbund(G));
             if (m !== "flieht" && M0 && F.ruheM === undefined)
                 Object.assign(F, {
-                    abstandM: +ab(mitte(M0)).toFixed(1),
-                    ruheM: +ab(mitte(G)).toFixed(1),
-                    wegAnteil: +(M0.filter((p, i) => G[i] && ab(G[i]) - ab(p) >= 20).length / zt.n).toFixed(3),
-                    kohaesion: +Math.min(...kf).toFixed(3),
+                    abstandM: rund(ab(mitte(M0)), 1),
+                    ruheM: rund(ab(mitte(G)), 1),
+                    wegAnteil: rund(M0.filter((p, i) => G[i] && ab(G[i]) - ab(p) >= 20).length / zt.n, 3),
+                    kohaesion: rund(Math.min(...kf), 3),
                 });
             if (m === "sitzt") Ld.nachS = k / 60;
         }
@@ -1231,10 +1191,10 @@ async function kreaturProben(r, T, opts) {
         const oben = q.position ? q.position.y + r._lodTreeVisHeight(q) : q.fuss.y + r._scatterSichtHoehe(A.SCATTER.layers.find((l) => l.name === schicht), q.species, q.cellX, q.cellZ, q.variantIndex, q); // prettier-ignore
         Object.assign(Ld, {
             krone: Kr.schluessel,
-            scheitelM: +oben.toFixed(3),
-            dyM: +Math.abs(leit().y - oben).toFixed(3),
+            scheitelM: rund(oben, 3),
+            dyM: rund(Math.abs(leit().y - oben), 3),
             radiusM: Kr.r,
-            aufKrone: +(G.filter((p) => Math.hypot(p[0] - Kr.x, p[2] - Kr.z) <= Kr.r && p[1] <= oben + 0.05 && p[1] >= oben - Kr.r).length / zt.n).toFixed(3), // prettier-ignore
+            aufKrone: rund(G.filter((p) => Math.hypot(p[0] - Kr.x, p[2] - Kr.z) <= Kr.r && p[1] <= oben + 0.05 && p[1] >= oben - Kr.r).length / zt.n, 3), // prettier-ignore
         });
         return aus;
     });
@@ -1266,9 +1226,9 @@ async function kreaturProben(r, T, opts) {
         const c2 = r._restoreCreatureFromSnapshot(snap);
         if (!c2) return { fehler: "Restore" };
         return {
-            hpVor: +hpVor.toFixed(2),
-            hpNach: +c2.userData.hp.toFixed(2),
-            gierFehlerGrad: +Math.abs(grad(wrap(c2.rotation.y - 1.0))).toFixed(1),
+            hpVor: rund(hpVor, 2),
+            hpNach: rund(c2.userData.hp, 2),
+            gierFehlerGrad: rund(Math.abs(grad(wrap(c2.rotation.y - 1.0))), 1),
         };
     });
 
@@ -1354,8 +1314,8 @@ async function kreaturProben(r, T, opts) {
         if (!rc) return { fehler: "keine Sicht-Kopie" };
         const tb = rc.mesh.userData && rc.mesh.userData._tierBaum;
         return {
-            gierFehlerGrad: +Math.abs(grad(wrap(rc.mesh.rotation.y - Math.PI / 2))).toFixed(1),
-            gangV: tb && tb._gang ? +(tb._gang.v || 0).toFixed(2) : 0,
+            gierFehlerGrad: rund(Math.abs(grad(wrap(rc.mesh.rotation.y - Math.PI / 2))), 1),
+            gangV: tb && tb._gang ? rund(tb._gang.v || 0, 2) : 0,
         };
     });
 
@@ -1473,22 +1433,22 @@ async function kreaturProben(r, T, opts) {
         return {
             wuerfe,
             koerperWuerfe,
-            speedBand: [+bS.min.toFixed(3), +bS.max.toFixed(3)],
-            speedNach: +speedNach.toFixed(3),
-            sprintNach: +sprintNach.toFixed(3),
-            sprintSoll: +(speedNach * A._sprintMulGesetz()).toFixed(3),
-            sprungBand: [+bJ.min.toFixed(3), +bJ.max.toFixed(3)],
-            sprungNach: +sprungNach.toFixed(3),
+            speedBand: [rund(bS.min, 3), rund(bS.max, 3)],
+            speedNach: rund(speedNach, 3),
+            sprintNach: rund(sprintNach, 3),
+            sprintSoll: rund(speedNach * A._sprintMulGesetz(), 3),
+            sprungBand: [rund(bJ.min, 3), rund(bJ.max, 3)],
+            sprungNach: rund(sprungNach, 3),
             groessen: tiere.length,
             ohneAchse,
             ausserBand,
-            tempoVor: +vor.toFixed(3),
-            tempoNach: +nach.toFixed(3),
-            tempoHoch: +hoch.toFixed(3),
+            tempoVor: rund(vor, 3),
+            tempoNach: rund(nach, 3),
+            tempoHoch: rund(hoch, 3),
             tempoBand: [W.speedMulMin, W.speedMulMax],
             geburten: geboren.length,
             geburtImBlick: imBlickN,
-            geburtMinM: geboren.length ? +minD.toFixed(1) : null,
+            geburtMinM: geboren.length ? rund(minD, 1) : null,
             fernMin: A.CREATURE_SPAWN_FAR_MIN,
         };
     });
@@ -1578,7 +1538,7 @@ async function kreaturProben(r, T, opts) {
             const dauer = c.userData.fearUntil - t0;
             const soll = VG.furcht.fearSec * VG.temperament.profile[r._creatureTemperament(c)].fleeMul;
             r.removeCreature(c);
-            return { dauer: +dauer.toFixed(2), soll: +soll.toFixed(2) };
+            return { dauer: rund(dauer, 2), soll: rund(soll, 2) };
         };
         return {
             art,
@@ -1740,15 +1700,15 @@ async function kreaturProben(r, T, opts) {
         const paar = tiere.flatMap((a, i) => tiere.slice(i + 1).map((b) => a.position.distanceTo(b.position)));
         return {
             tiere: tiere.length,
-            minLeibLueckeM: +minLeib.toFixed(3),
+            minLeibLueckeM: rund(minLeib, 3),
             durchFrames,
-            minSpielerLueckeM: +minSpieler.toFixed(3),
+            minSpielerLueckeM: rund(minSpieler, 3),
             spielerFrames,
             // die Tiefe zweier Leiber über ihrem Frame-Schritt (geerbt)
-            erbeMaxM: +erbeMax.toFixed(3),
-            paarMinM: +Math.min(...paar).toFixed(2),
-            nachbarRaumP10: +quantil(nnRaum, 0.1).toFixed(3),
-            nachbarRaumP50: +quantil(nnRaum, 0.5).toFixed(3),
+            erbeMaxM: rund(erbeMax, 3),
+            paarMinM: rund(Math.min(...paar), 2),
+            nachbarRaumP10: rund(quantil(nnRaum, 0.1), 3),
+            nachbarRaumP50: rund(quantil(nnRaum, 0.5), 3),
         };
     });
 
@@ -1860,9 +1820,9 @@ async function kreaturProben(r, T, opts) {
                     for (const c of woelfe) if (c.userData._motionZustand === "hetzen") hetzer.add(c);
                     if (!riss && s.leichname.includes(beute)) {
                         riss = true;
-                        if (szene === "rudel" && R.rissS === null) R.rissS = +(k * dt).toFixed(1);
+                        if (szene === "rudel" && R.rissS === null) R.rissS = rund(k * dt, 1);
                         if (!mahl) break;
-                        R.fleisch0 = beute.userData.kadaver ? +beute.userData.kadaver.fleisch.toFixed(1) : null;
+                        R.fleisch0 = beute.userData.kadaver ? rund(beute.userData.kadaver.fleisch, 1) : null;
                         for (const [seele, dz] of [
                             ["fuchs", 18],
                             ["baer", -18],
@@ -1883,16 +1843,16 @@ async function kreaturProben(r, T, opts) {
                     }
                     if (!riss || !mahl) continue;
                     if (woelfe.some((c) => c.userData._motionZustand === "fressen"))
-                        R.fressS = +(R.fressS + dt).toFixed(2);
+                        R.fressS = rund(R.fressS + dt, 2);
                     for (const G of R.gaeste)
                         if (G.c.userData._motionZustand === "fressen") {
-                            G.frissS = +(G.frissS + dt).toFixed(2);
-                            if (G.kommtS === null) G.kommtS = +(k * dt - R.rissS).toFixed(1);
+                            G.frissS = rund(G.frissS + dt, 2);
+                            if (G.kommtS === null) G.kommtS = rund(k * dt - R.rissS, 1);
                         }
                 }
                 if (hetzer.size) Q.jagden++;
                 if (riss) Q.risse++;
-                if (mahl && riss && beute.userData.kadaver) R.fleischEnde = +beute.userData.kadaver.fleisch.toFixed(1);
+                if (mahl && riss && beute.userData.kadaver) R.fleischEnde = rund(beute.userData.kadaver.fleisch, 1);
                 for (const G of R.gaeste) delete G.c;
                 leer(1);
             }
@@ -1958,12 +1918,12 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 36000 && ersterBiss === null; k++) {
             ruhigSpieler();
             takt(1 / 60);
-            const [R, t] = [jaeger(), +(s.creatureAnimationTime - t0).toFixed(1)];
+            const [R, t] = [jaeger(), rund(s.creatureAnimationTime - t0, 1)];
             if (ev.pirschS === null && R.length) ev.pirschS = t;
             const nah = R.length >= 3 && R.every((c) => ab(c.position, pm) < 2 * H);
             if (ev.umstelltS === null && nah && luecke(R) <= 540 / R.length) ev.umstelltS = t;
         }
-        return { ...ev, lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0) };
+        return { ...ev, lueckeBeimBiss: ersterBiss === null ? null : rund(ersterBiss, 0) };
     });
 
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
@@ -2091,8 +2051,8 @@ async function kreaturProben(r, T, opts) {
                 return grad(Math.acos(Math.max(-1, Math.min(1, -by / Math.max(1e-6, Math.hypot(bx, by, bz))))));
             });
             return {
-                rollGrad: +grad(cr.rotation.z || 0).toFixed(1),
-                lotMaxGrad: +Math.max(...lot).toFixed(1),
+                rollGrad: rund(grad(cr.rotation.z || 0), 1),
+                lotMaxGrad: rund(Math.max(...lot), 1),
             };
         });
         // der Lauf längs der Höhenlinie: der Spieler geht 1,4 m/s quer, Wolf und Hirsch folgen
@@ -2134,11 +2094,11 @@ async function kreaturProben(r, T, opts) {
                         weg += lw;
                     }
                 }
-            return weg > 0.05 ? +(fuss / weg).toFixed(3) : null;
+            return weg > 0.05 ? rund(fuss / weg, 3) : null;
         });
         return {
             ort: ort ? ort.id : "welt",
-            hangGrad: +hang.grad.toFixed(1),
+            hangGrad: rund(hang.grad, 1),
             stand: { wolf: stand[0], hirsch: stand[1] },
             schlupf: { wolf: schlupf[0], hirsch: schlupf[1] },
         };
@@ -2277,7 +2237,7 @@ async function kreaturProben(r, T, opts) {
             aus2[zone] = {
                 laufTakte: Z.lauf,
                 gleitTakte: Z.gleit,
-                gleitAnteil: Z.lauf ? +(Z.gleit / Z.lauf).toFixed(3) : null,
+                gleitAnteil: Z.lauf ? rund(Z.gleit / Z.lauf, 3) : null,
                 fernBild: Z.fernBild,
             };
         aus2.abstandM = tiere.map((t) => +ab(t.c.position, P0).toFixed(1));
@@ -3564,16 +3524,7 @@ function urteil(name, z) {
         soll(z.fluchtWegM >= 30, `Fluchtweg ${z.fluchtWegM} m`);
         const I = z.id.bruch || [];
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
-        // die Geburt im Reich eines Orts, der noch nicht erwacht ist (Herde am Hang: sein Erdbau trug den Boden unter ihr ab)
-        const D = z.dorf || {};
-        soll(
-            !D.fehler && D.orte >= 6,
-            `Probe vakuös (Dorf-Grund): ${D.fehler || D.orte + " Orte im Reich der Zelle " + D.zelle}`
-        );
-        soll(
-            !D.fehler && D.geburten === 0,
-            `Geburt im Reich des kommenden Orts ${D.zelle} (${D.reichM} m): ${D.geburten} von ${D.orte} Orten tragen sie (erste ${D.erste})`
-        );
+        soll(!z.dorf[1], `Geburt im Reich des kommenden Orts ${z.dorf[0]}: ${z.dorf[1]} von 8 Orten tragen sie`);
     }
     if (name === "schwarm") {
         const [F, Ld] = [z.flucht || {}, z.landung || {}];
@@ -3846,7 +3797,7 @@ const TAETER = {
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
         ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
-        ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+ \(\d+ m\): [1-9]\d* von \d+ Orten/],
+        ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+: 8 von 8/],
     ],
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],
