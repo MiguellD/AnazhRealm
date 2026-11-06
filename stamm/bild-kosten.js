@@ -557,8 +557,19 @@ class AnazhRealm_bild_kosten {
                 const buehne = !!B && scene === B.szene;
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                // DER PSO-VORBAU (w16-lade-atem, ankunft.K5 — der Pipeline-Precache von Unreal/Fortnite): unter dem Ladeschirm
+                // entsteht auch die Pipeline eines solchen Renders asynchron (der Treiber übersetzt sie neben dem Bild, nie im
+                // GPU-Prozess vor dem nächsten); bis sie steht, zeichnet er nicht und zählt `einmalOffen` — ein Einmal-Render
+                // (Atmosphären-Tafel, Umgebung, Wolken- und Horizont-Karte, Welt-Licht, Rückstrahl) liest daran, dass er nicht
+                // ganz ist, und zeichnet im nächsten Takt neu (`_atmoZeichne` → false). Bis hier entstanden 16 Pipelines des
+                // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
+                // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    zeichne(this, ro, aufnahme, false);
+                    if (!welt._ladeTakt()) zeichne(this, ro, aufnahme, false);
+                    else if (!zeichne(this, ro, aufnahme, true)) {
+                        E.einmalOffen++;
+                        if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
+                    }
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -640,6 +651,7 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
+                einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
                 rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
                 rateMs: 0,
                 rateFrist: null,
@@ -817,6 +829,30 @@ class AnazhRealm_bild_kosten {
             return p;
         };
         dev.__anazhAbsage = true;
+    }
+
+    // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
+    // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
+    // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
+    // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    _einmalRender(schluessel, fn) {
+        const E = this._erstZeichnungStand();
+        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const w = W.get(schluessel);
+        if (w) {
+            for (const p of w) if (E.offen.has(p)) return false;
+            W.delete(schluessel);
+        }
+        const vorbau = E.einmalOffen;
+        const sammel = (E.einmalSammel = new Set());
+        try {
+            fn();
+        } finally {
+            E.einmalSammel = null;
+        }
+        if (E.einmalOffen === vorbau) return true;
+        if (sammel.size) W.set(schluessel, sammel);
+        return false;
     }
 
     // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
@@ -1625,30 +1661,35 @@ class AnazhRealm_bild_kosten {
                 "}\n" +
                 "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
         });
-        const pipe = dev.createRenderPipeline({
-            label: "ausgabe-sonde",
-            layout: "auto",
-            vertex: { module: modul, entryPoint: "vs" },
-            fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
-            primitive: { topology: "triangle-list" },
-        });
+        // ihre Pipeline entsteht asynchron (w16-lade-atem: der PSO-Vorbau — eine synchrone hält den GPU-Prozess vor dem Bild)
         const buf = dev.createBuffer({
             label: "ausgabe-sonde",
             size: 256,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
-        const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
-        const pass = enc.beginRenderPass({
-            label: "ausgabe-sonde",
-            colorAttachments: [{ view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
-        });
-        pass.setPipeline(pipe);
-        pass.draw(3);
-        pass.end();
-        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
-        dev.queue.submit([enc.finish()]);
-        return buf
-            .mapAsync(GPUMapMode.READ)
+        return dev
+            .createRenderPipelineAsync({
+                label: "ausgabe-sonde",
+                layout: "auto",
+                vertex: { module: modul, entryPoint: "vs" },
+                fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
+                primitive: { topology: "triangle-list" },
+            })
+            .then((pipe) => {
+                const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+                const pass = enc.beginRenderPass({
+                    label: "ausgabe-sonde",
+                    colorAttachments: [
+                        { view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" },
+                    ],
+                });
+                pass.setPipeline(pipe);
+                pass.draw(3);
+                pass.end();
+                enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+                dev.queue.submit([enc.finish()]);
+                return buf.mapAsync(GPUMapMode.READ);
+            })
             .then(() => {
                 const w = new Uint32Array(buf.getMappedRange())[0];
                 buf.unmap();
@@ -3241,7 +3282,7 @@ class AnazhRealm_bild_kosten {
         }
         if (K.gemalt !== K.stand || K.licht.dot(L) < Math.cos(H.lichtRad)) {
             K.U.licht.value.copy(L);
-            this._atmoZeichne(K.pass, K.rt);
+            if (!this._atmoZeichne(K.pass, K.rt)) return K; // die Pipeline im Vorbau: der nächste Takt malt
             K.licht.copy(L);
             K.gemalt = K.stand;
             K.malZahl++;

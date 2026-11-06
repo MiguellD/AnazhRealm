@@ -240,7 +240,7 @@ class AnazhRealm_bild_himmel {
             K.mitte && K.mitte[0] === mx && K.mitte[1] === mz && K.deckung === c && Math.abs(t - K.zeit) < W.zugS;
         if (!gleich) {
             K.U.ursprung.value.set(mx, mz);
-            this._atmoZeichne(K.pass, K.rt);
+            if (!this._atmoZeichne(K.pass, K.rt)) return; // die Pipeline im Vorbau: der nächste Takt malt
             K.mitte = [mx, mz];
             K.zeit = t;
             K.deckung = c;
@@ -790,17 +790,23 @@ class AnazhRealm_bild_himmel {
                 return true;
             }
             if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
-            this._atmoZeichne(A.qEq, A.rtEq);
+            if (!this._atmoZeichne(A.qEq, A.rtEq)) return false; // die Pipeline im Vorbau: der nächste Takt malt
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
             // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade) —
             // das EINE Gesetz der Umgebung (welt-licht.js `umgebungZeichnen`, die Bühne der Studios zeichnet dieselbe).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = __weltLicht.umgebungZeichnen(st._skyPmrem, A, st._skyEnvRT);
+            let rt = st._skyEnvRT || null;
+            const pmrem = st._skyPmrem;
+            // PMREM im Vorbau (`_einmalRender`): der Takt, in dem seine Pipelines stehen, filtert neu
+            if (!this._einmalRender(pmrem, () => (rt = __weltLicht.umgebungZeichnen(pmrem, A, rt)))) {
+                st._skyEnvRT = rt;
+                return false;
+            }
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
-            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
+            if (!this._weltLichtHimmel()) return false; // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -1553,11 +1559,13 @@ class AnazhRealm_bild_himmel {
             r.clear(true, false, false);
             r.setClearColor(farbe, alpha);
         }
-        this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
+        // false: seine Pipeline steht unter dem Ladeschirm noch im Vorbau (PSO-Vorbau, `_einmalRender`)
+        const ganz = this._einmalRender(quad, () => this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre"));
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
         if (rof) r.setRenderObjectFunction(rof);
         r.autoClear = auto;
+        return ganz;
     }
 
     // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter in seinen Stufen (Transmittance und
@@ -1627,21 +1635,22 @@ class AnazhRealm_bild_himmel {
         // ehe der Karten-Takt fragte: die Karte begann nie (gate:kamera-leib, swiftshader, Mess-Wiese: 15 Karten und 494 Bauten
         // standen nach 600 s offen, das Weltbild nie; main 0 nach 215 s).
         if (!anker && !sprung && st._skyEnvLast && this._gpuLeineStraff()) return A;
+        // eine Tafel, deren Pipeline noch im Vorbau steht (`_atmoZeichne` false), zeichnet der nächste Takt ganz neu
         if (!A.tafelnFrisch) {
-            this._atmoZeichne(A.qT, A.rtT);
-            this._atmoZeichne(A.qMS, A.rtMS);
+            const durchlass = this._atmoZeichne(A.qT, A.rtT);
+            if (!this._atmoZeichne(A.qMS, A.rtMS) || !durchlass) return A;
             A.tafelnFrisch = true;
             A.himmelSchluessel = null;
         }
         if (A.himmelSchluessel !== schluessel) {
-            this._atmoZeichne(A.qSV, A.rtSV);
+            if (!this._atmoZeichne(A.qSV, A.rtSV)) return A;
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
         }
         // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
         const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
         if (A.tafelSchluessel !== tafel) {
-            this._atmoZeichne(A.qBS, A.rtBS);
+            if (!this._atmoZeichne(A.qBS, A.rtBS)) return A;
             A.tafelSchluessel = tafel;
             // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
             A.tafel = null;
