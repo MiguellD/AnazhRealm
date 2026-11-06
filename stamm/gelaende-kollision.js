@@ -1271,36 +1271,21 @@ class AnazhRealm_gelaende_kollision {
     }
 
     // Fahrzeug-Kollisions-Hülle aus der gezeichneten Gestalt (`_fahrzeugGestaltUmriss`): der Unterkörper (yFloor..yBelt) als
-    // FAHRZEUG_SCHEIBEN Scheiben längs der Fahrt, jede so breit wie der Grundriss in ihr (die gerundeten Enden stehen nicht
-    // als Rechteck-Ecken in der Luft) + Greenhouse (cowl..back × ±cw × yBelt..Dach des Umrisses) + 4 Rad-Boxen an fAx/rAx —
-    // als PSEUDO-Parts durch `_blockerComputePartAABB` (Skala + Gier gratis, kein zweiter Mathe-Pfad). null → Donor-Parts.
+    // EINE Box über Bug..Heck und die Breite des Grundrisses (sein Rahmen: an Bug, Heck und Flanke die Gestalt, an den gerundeten
+    // Ecken konservativ — Teil-Boxen je Scheibe bildeten Fugen und Stufen an der Flanke: der Spieler steckte 0,18 m darin und
+    // wurde je Schritt neu gestoßen, gate:fahr-leben L6) + Greenhouse (cowl..back × ±cw × yBelt..Dach des Umrisses) + 4
+    // Rad-Boxen an fAx/rAx — als PSEUDO-Parts durch `_blockerComputePartAABB` (Skala + Gier gratis). null → Donor-Parts.
     _fahrzeugBlockerParts(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
         const u = h ? this._fahrzeugGestaltUmriss(entry) : null;
         if (!u) return null;
-        // die halbe Breite des Grundrisses an der Stelle l (die Quer-Linie gegen jede Kante des Polygons)
-        const breite = (l) => {
-            let w = 0;
-            for (let i = 0; i < u.poly.length; i++) {
-                const [a, b] = [u.poly[i], u.poly[(i + 1) % u.poly.length]];
-                if ((a[0] - l) * (b[0] - l) > 0 || a[0] === b[0]) continue;
-                w = Math.max(w, Math.abs(a[1] + ((b[1] - a[1]) * (l - a[0])) / (b[0] - a[0])));
-            }
-            return w;
-        };
-        const N = AnazhRealm.FAHRZEUG_SCHEIBEN;
-        const teile = [];
-        for (let i = 0; i < N; i++) {
-            const [l0, l1] = [u.heck + ((u.bug - u.heck) * i) / N, u.heck + ((u.bug - u.heck) * (i + 1)) / N];
-            // die Breite der Scheibe: an ihren Rändern und an jeder Ecke des Polygons in ihr (konvex: dort liegt das Maximum)
-            let w = Math.max(breite(l0), breite(l1));
-            for (const [l, q] of u.poly) if (l >= l0 && l <= l1) w = Math.max(w, Math.abs(q));
-            teile.push({
-                position: { x: (l0 + l1) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
-                size: { x: l1 - l0, y: h.yBelt - h.yFloor, z: w * 2 },
-            });
-        }
+        const teile = [
+            {
+                position: { x: (u.bug + u.heck) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
+                size: { x: u.bug - u.heck, y: h.yBelt - h.yFloor, z: u.hw * 2 },
+            },
+        ];
         teile.push({
             position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + u.dach) / 2, z: 0 },
             size: { x: Math.max(0.4, h.cowlX - h.backX), y: u.dach - h.yBelt, z: h.cw * 2 },
@@ -1410,7 +1395,3 @@ AnazhRealm.BLOCKER_RIESE = -0.5;
 // Die Flügel-Boxen eines Eintrags ohne gezeichneten Flügel (`_fluegelBoxenVon`): eine Liste, die nie wächst.
 AnazhRealm.KEIN_FLUEGEL = Object.freeze([]);
 AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;
-// DIE SCHEIBEN des Unterkörpers eines Studio-Wagens als Hindernis (`_fahrzeugBlockerParts`): so viele Teil-Boxen längs der Fahrt,
-// je so breit wie der Grundriss der Gestalt in ihr — fünf lassen an den gerundeten Enden höchstens die Rundung einer
-// Fünftel-Länge in der Luft (beim Supersport 0,86 m), wo das Rechteck bis 24 cm stand.
-AnazhRealm.FAHRZEUG_SCHEIBEN = 5;
