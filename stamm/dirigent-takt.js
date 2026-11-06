@@ -566,9 +566,9 @@ class AnazhRealm_dirigent_takt {
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
-        // sie fühlt — bis dahin stößt kein Leib an ihnen; offen erst, wenn ein Leib sie fragt (`_huellenGefragt`, w14-ankunft-weg):
-        // vorher baut niemand an ihnen, die Welt steht ohne sie
-        o.huellen = this._huellenGefragt && this._huellenNach ? this._huellenNach.size : 0;
+        // sie fühlt — bis dahin stößt kein Leib an ihnen; offen nur, die ein Leib fragt (`_huellenOffen`, w14-ankunft-weg): was
+        // keiner fragt, baut niemand, die Welt steht ohne sie
+        o.huellen = this._huellenOffen();
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         o.alter = this._werkAltertOffen ? this._werkAltertOffen.size : 0; // ein alterndes Werk, dessen Körper noch kommt
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier

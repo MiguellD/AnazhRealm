@@ -373,16 +373,18 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
-// m.h = [Skelette vor dem Bild, wartet vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, Boxen mit dem Leib, offen danach] ·
+// m.h = [Skelette vor dem Bild, wartet vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah,
+// offen danach] ·
 // m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
-    const [[wuchs, wartet, ohneLeib, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const [[wuchs, wartet, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
         !wartet && "die wartende Hülle steht nicht in der Schlange der Ankunft (`_huellenNach`)",
-        ohneLeib && "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte (`_huellenLeib`)",
+        ohneLeib && "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte (`_huellenBedarf`)",
+        fern && "die Hülle wuchs, als der Spieler fern von ihr ging (`HUELLE_BEDARF_M`)",
         (!boxen || rest) && "der Leib regt sich, die Hülle fehlt (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
         !vorn && "der Ring baut das Bild nicht",
@@ -916,22 +918,30 @@ async function probe(arg) {
     try {
         const [m, da, merk, sp, pc, ruf] = [(out.huelle = {}), st._weltbildDa, r._baumGestaltMerk, r._voxelChunkConfig().span, st.lastPlayerVoxelChunk, new Set()];
         const baum = st.architectures.find((e) => e && e._huelleG != null && e.blockerAABBs && e.blockerAABBs.length);
-        // DER BEDARF IST DER LEIB (w14-ankunft-weg): nach dem Bild wartet die Hülle, bis sich ein Leib regt (`_huellenLeib`: der
-        // Spieler geht, eine Kreatur lebt) — die Kreaturen ruhen, der Spieler steht, dann geht er einen Schritt
-        const [kreaturen, gefragt, ort, pos] = [st.creatures, r._huellenGefragt, r._huellenOrt, st.playerMesh.position.clone()];
-        [r._baumGestaltMerk, st._weltbildDa, st.creatures, r._huellenGefragt, r._huellenOrt, baum.blockerAABBs] = [new Map(), 0, [], false, null, null];
+        // DER BEDARF IST DER LEIB (w14-ankunft-weg): nach dem Bild wartet die Hülle, bis ein Leib sie berühren kann
+        // (`_huellenBedarf`: der Spieler geht, und der Baum steht in HUELLE_BEDARF_M um ihn; eine Kreatur lebt) — die Kreaturen
+        // ruhen, der Spieler steht, dann geht er weit vom Baum, dann neben ihn
+        const [kreaturen, geht, ort, pos] = [st.creatures, r._huellenGeht, r._huellenOrt, st.playerMesh.position.clone()];
+        [r._baumGestaltMerk, st._weltbildDa, st.creatures, r._huellenGeht, r._huellenOrt, baum.blockerAABBs] = [new Map(), 0, [], false, null, null];
         try {
             r._populateBlockerAABBs(baum);
             m.h = [r._baumGestaltMerk.size, +!!(r._huellenNach && r._huellenNach.has(baum))];
             st._weltbildDa = da;
-            for (let n = 0; n < 50; n++) r._tickHuellenNach();
+            const takte = (n) => {
+                for (let i = 0; i < n && (r._tickHuellenNach(), r._weltOffen().huellen); i++);
+            };
+            takte(50);
             m.h.push((baum.blockerAABBs || []).length);
-            st.playerMesh.position.x += 0.5;
-            for (let n = 0; n < 400 && (r._tickHuellenNach(), r._weltOffen().huellen); n++);
+            const weit = AnazhRealm.HUELLE_BEDARF_M * 3;
+            st.playerMesh.position.set(baum.position.x + weit, pos.y, baum.position.z);
+            takte(50);
+            m.h.push((baum.blockerAABBs || []).length);
+            st.playerMesh.position.set(baum.position.x + 1, pos.y, baum.position.z);
+            takte(400);
             m.h.push((baum.blockerAABBs || []).length, r._weltOffen().huellen);
         } finally {
             st.playerMesh.position.copy(pos);
-            [st.creatures, r._huellenGefragt, r._huellenOrt] = [kreaturen, gefragt || r._huellenGefragt, ort];
+            [st.creatures, r._huellenGeht, r._huellenOrt] = [kreaturen, geht || r._huellenGeht, ort];
             if (!baum.blockerAABBs) r._populateBlockerAABBs(baum);
         }
         r._baumGestaltMerk = merk;
@@ -1943,7 +1953,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 0, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["die Hülle wächst ohne Leib", { h: [0, 1, 3, 3, 0] }, "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 1, 0, 0, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 0, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["die Hülle wächst ohne Leib", { h: [0, 1, 3, 3, 3, 0] }, "nach dem Bild wuchs die Hülle, ohne dass sich ein Leib regte"], ["die Hülle wächst fern vom Leib", { h: [0, 1, 0, 3, 3, 0] }, "die Hülle wuchs, als der Spieler fern von ihr ging"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2039,7 +2049,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle beim ersten Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, wartet, Boxen ohne Leib, Boxen mit Leib, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle beim ersten Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, wartet, Boxen ohne Leib, fern, nah, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

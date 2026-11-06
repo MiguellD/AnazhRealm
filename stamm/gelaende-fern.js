@@ -1073,6 +1073,7 @@ class AnazhRealm_gelaende_fern {
                 T.frei.index.array.set(a.frei);
                 T.naht.index.array.set(a.naht);
                 T.randV = a.randV; // die Ecken der Naht-Dreiecke tragen die Fläche des Feldes (`_fernRingFeldY`)
+                T.gen = (T.gen | 0) + 1; // die Deck-Wache geht neu (`_fernRingDeckWache`)
                 T.frei.index.needsUpdate = true;
                 T.naht.index.needsUpdate = true;
                 T.n = a.n;
@@ -1716,7 +1717,9 @@ class AnazhRealm_gelaende_fern {
         // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
         // schläft die Wache.
         // ohne Saum-Punkt ist die Runde 0 und gegangen (`_standRuht`) — auch der leere Saum geht durch die Wache
-        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
+        // (die Teilung aus dem Fern-Faden kommt nach ihrer Regung: ihre Antwort weckt die Wache mit, `teilung.gen`)
+        const stand = ((fr.gen | 0) * 1048576 + (fr.feldEditGen | 0)) * 4096 + ((fr.teilung.gen | 0) % 4096);
+        if (this._standRuht("deckWache", fr.zoneVerts, stand, "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS kommt aus dem Fern-Faden (B2, `fr.law` · `fr.vollY`, einmal je Anker): die Wache rechnet keine

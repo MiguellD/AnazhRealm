@@ -1978,8 +1978,9 @@ class AnazhRealm_koerper_leib {
                         }
                         // die feine nach dem Bild wartet ROH auf ihren Leser (`_ofenRoh`): zeigt das Bild nur den Wurf, gießt sie
                         // der Haupt-Faden erst, wenn ein Leser sie liest (die Sicht, die Hand, die Ich-Bühne, ein Neubau)
-                        if (nachBild && !z.gewuenscht) this._ofenRoh(keyM, meshes);
-                        else this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
+                        if (nachBild && !z.gewuenscht) {
+                            if (!memo.has(keyM)) this._ofenRoh(keyM, meshes);
+                        } else this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                     });
                 // DER WUNSCH FOLGT DEM BLICK: die feine kommt mit dem Ereignis des Bilds — oder früher, wenn das erste Bild sie
                 // doch zeigt (`_leibWunsch`: die Sicht wechselt vor ihm auf Third)
