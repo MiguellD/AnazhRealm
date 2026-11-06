@@ -72,10 +72,10 @@ const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", ko
 // (`werkMass`: die Box der Wurzel der Bühne gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut), ihr Urteil liest
 // H8 (`zeileUrteil`, eine Achse über 2 % des Halbmessers) — ein Mesh-Studio ohne Maß ist ROT. Bis w16-studio-welt trug die Wurzel der
 // Schmiede ihre Schnitt-Karte (0,433 gegen 0,244 m), die des Fachwerks Parzelle und Flügel (31 × 13,3 × 31 gegen 10,0 × 13,2 × 8,8 m).
-// DIE RATSCHE (sie zieht nur an): das terrain-Labor baut den Baum aus den Dials seiner Tafel, der Kern der Welt aus den Dials des
-// Rezepts und den Zeilen der Übergabe — Eiche 3,25 × 6,37 × 3,31 gegen 3,62 × 6,86 × 3,33 m: EIN Bauer fehlt im Phyto-Labor. Die
-// fachwerk zeigt am Start das Werk der Welt (11,16 × 13,93 × 11,48 m beidseits), ihr erster Schieber ist die Zeit-Achse (`jahr`:
-// Stil und Dach der Epoche) — sie reist nicht in der Übergabe (nach dem Griff des Gangs auf 2025: 10 × 9,1 gegen 10 × 10,54 m Höhe).
+// DIE RATSCHE (sie zieht nur an): terrain und fachwerk zeigen am Start das Werk der Welt (Eiche 3,25 × 6,37 × 3,31 m, Haus
+// 11,16 × 13,93 × 11,48 m beidseits), ihr erster Schieber ist keine Zeile des Vertrags und reist nicht in der Übergabe — ein Dial des
+// Phyto-Labors (nach dem Griff des Gangs 6,55 × 8,24 × 6,30 gegen 3,62 × 6,86 × 3,33 m), die Zeit-Achse des Fachwerks (`jahr`: Stil
+// und Dach der Epoche; auf 2025 Höhe 9,1 gegen 10,54 m).
 const WERK_RATSCHE = { terrain: 1, fachwerk: 1 };
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
