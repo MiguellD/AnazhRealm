@@ -1866,20 +1866,30 @@ class AnazhRealm_koerper_fahrt {
         // `vKurve`. Bis hier bremste der Plan vor jeder Kurve mit dem vollen brems · μ·g, auch im Bogen davor: der Fahrer kam
         // zu schnell in die S-Kurve bei 360–390 m (R 181 / 135 m), bremste im Bogen und drehte sich. Der Blick reicht 1,5-mal so
         // weit wie der Bremsweg aus dem Soll ohne Querlast (fern davon trägt schon der Bremsweg allein das Soll — Lehre 25).
+        // Gedeckelt beim Soll (das Profil steigt mit dem Tempo, also ändert der Deckel kein Ergebnis unter ihm): eine Stelle,
+        // deren Krümmung unter `kSoll` liegt, trägt das Soll im Reibkreis und in der Lenksäule — über ihr kostet der Blick nichts
+        // (Lehre 25; der Verkehr der Metropole: 20 Wagen je Sim-Schritt).
         const blick = (1.5 * soll * soll) / (ST.brems * mu) + 2;
+        const kSoll = Math.min(
+            (ST.quer * mu) / Math.max(soll * soll, 1e-6),
+            Math.tan((ST.lenk * G.maxSteer) / (1 + soll * G.sfK)) / G.L
+        );
         let jb = F.i + 1;
         while (jb < P.length - 1 && S[jb] - F.s < blick) jb++;
-        if (jb < P.length) {
-            let [w, wo] = [jb === P.length - 1 ? 0 : vKurve(F.k[jb]), jb];
-            const auf = (w, k, ds) =>
-                Math.sqrt(w * w + 2 * ds * ST.brems * mu * Math.sqrt(Math.max(0, 1 - ((w * w * k) / mu) ** 2)));
-            for (let i = jb - 1; i > F.i; i--) {
-                const [vk, wb] = [vKurve(F.k[i]), auf(w, F.k[i], S[i + 1] - S[i])];
-                [w, wo] = vk < wb ? [vk, i] : [wb, wo];
-            }
-            w = auf(w, F.k[F.i], Math.max(0, S[F.i + 1] - F.s));
-            if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : "kurve", wo];
+        let [w, wo] = [jb === P.length - 1 ? 0 : Math.min(soll, vKurve(F.k[jb])), jb];
+        const auf = (w, k, ds) =>
+            Math.min(
+                soll,
+                Math.sqrt(w * w + 2 * ds * ST.brems * mu * Math.sqrt(Math.max(0, 1 - ((w * w * k) / mu) ** 2)))
+            );
+        for (let i = jb - 1; i > F.i; i--) {
+            if (w >= soll && F.k[i] <= kSoll) continue;
+            w = auf(w, F.k[i], S[i + 1] - S[i]);
+            const vk = F.k[i] > kSoll ? vKurve(F.k[i]) : Infinity;
+            if (vk < w) [w, wo] = [vk, i];
         }
+        w = auf(w, F.k[F.i], Math.max(0, S[F.i + 1] - F.s));
+        if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : "kurve", wo];
         if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
