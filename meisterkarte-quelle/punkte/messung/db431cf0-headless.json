@@ -1,8 +1,8 @@
 {
  "sha": "db431cf08b0df18a1da8b770622d1a18dc0c0fa1",
  "geraet": "headless",
- "zeit": "2026-11-06T13:34:58.278Z",
- "host": "farm:42226551307",
+ "zeit": "2026-11-06T13:44:49.945Z",
+ "host": "farm:42227893022",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -1635,16 +1635,15 @@
    "host": "farm:42219242855/9"
   },
   "leib.K3#1": {
-   "gruen": false,
-   "zahl": "ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.152 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
+   "gruen": true,
+   "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.009 m (p95 0.0028 / 0.0009) · third: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.011 / Kamera 0.011 m (p95 0.0029 / 0.0029) · Mutante Ruck 0.201 m erkannt · Exit 0",
    "exit": 0,
-   "minuten": 0.54,
-   "grund": "ROT: ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.152 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
-   "zeit": "2026-11-06T13:34:58.278Z",
-   "abdruck": "f9a66b51a01d",
+   "minuten": 0.55,
+   "zeit": "2026-11-06T13:44:49.945Z",
+   "abdruck": "05daf18f7fdf",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42226551307/3"
+   "host": "farm:42227893022/1"
   },
   "oekologie.K4#1": {
    "gruen": true,

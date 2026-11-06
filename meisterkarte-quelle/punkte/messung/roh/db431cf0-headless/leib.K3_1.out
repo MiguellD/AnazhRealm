@@ -29,7 +29,7 @@ const B = [];
 let tMs = performance.now();
 let nr = 0;
 const bild = (keys, phase) => {
-st.keys = Object.assign({}, keys);
+Object.assign(st.verbTafel.gehalten, { vor: !!keys.w, sprint: !!keys.shift });
 tMs += MUSTER[nr++ % MUSTER.length];
 r._gameLoopTick(tMs);
 if (mut && phase === "tauchen" && B.filter((b) => b[1] === "tauchen").length === 30) {
@@ -45,7 +45,7 @@ const tief = () => see.level - r._voxelSurfaceY(pm.position.x, pm.position.z) >=
 for (let i = 0; i < 900 && (i < 60 || !tief()); i++) bild({ w: true }, "schwimmen");
 for (let i = 0; i < 240; i++) bild({ w: true, shift: true }, "tauchen");
 for (let i = 0; i < 120; i++) bild({}, "auftrieb");
-st.keys = {};
+Object.assign(st.verbTafel.gehalten, { vor: false, sprint: false });
 return B;
 };
 const auswerten = (B) => {
@@ -100,6 +100,6 @@ process.exit(code);
 }
 })() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/db431cf0-headless/leib.K3_1.json 7704
 LEIB_K3 see [1816,-6168,0.93]
-LEIB_K3 ego {"bilder":3690,"phasen":{"ufer":{"n":2400,"unter":0,"augen":0,"geerdet":2400},"schwimmen":{"n":900,"unter":0,"augen":0,"geerdet":900},"tauchen":{"n":240,"unter":0,"augen":0,"geerdet":240},"auftrieb":{"n":120,"unter":0,"augen":0,"geerdet":120}},"tiefe":0,"ruckLeib":{"max":0,"wo":"—","p95":0},"ruckKamera":{"max":0,"wo":"ufer 31","p95":0}}
-LEIB_K3 third {"bilder":3690,"phasen":{"ufer":{"n":2400,"unter":0,"augen":0,"geerdet":2400},"schwimmen":{"n":900,"unter":0,"augen":0,"geerdet":900},"tauchen":{"n":240,"unter":0,"augen":0,"geerdet":240},"auftrieb":{"n":120,"unter":0,"augen":0,"geerdet":120}},"tiefe":0,"ruckLeib":{"max":0,"wo":"—","p95":0},"ruckKamera":{"max":0,"wo":"—","p95":0}}
-LEIB_K3 mutante {"bilder":3690,"phasen":{"ufer":{"n":2400,"unter":0,"augen":0,"geerdet":2400},"schwimmen":{"n":900,"unter":0,"augen":0,"geerdet":900},"tauchen":{"n":240,"unter":0,"augen":0,"geerdet":240},"auftrieb":{"n":120,"unter":0,"augen":0,"geerdet":120}},"tiefe":0.3,"ruckLeib":{"max":0.152,"wo":"tauchen 3360","p95":0},"ruckKamera":{"max":0.02,"wo":"tauchen 3361","p95":0}}
+LEIB_K3 ego {"bilder":1117,"phasen":{"ufer":{"n":445,"unter":1,"augen":0,"geerdet":412},"schwimmen":{"n":282,"unter":282,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":189,"geerdet":87},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":0}},"tiefe":2.21,"ruckLeib":{"max":0.013,"wo":"ufer 66","p95":0.0028},"ruckKamera":{"max":0.009,"wo":"ufer 65","p95":0.0009}}
+LEIB_K3 third {"bilder":1117,"phasen":{"ufer":{"n":445,"unter":1,"augen":0,"geerdet":411},"schwimmen":{"n":282,"unter":282,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":189,"geerdet":89},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":0}},"tiefe":2.21,"ruckLeib":{"max":0.011,"wo":"ufer 66","p95":0.0029},"ruckKamera":{"max":0.011,"wo":"ufer 66","p95":0.0029}}
+LEIB_K3 mutante {"bilder":1117,"phasen":{"ufer":{"n":444,"unter":1,"augen":0,"geerdet":411},"schwimmen":{"n":283,"unter":283,"augen":0,"geerdet":0},"tauchen":{"n":240,"unter":240,"augen":205,"geerdet":97},"auftrieb":{"n":120,"unter":120,"augen":120,"geerdet":1}},"tiefe":2.21,"ruckLeib":{"max":0.201,"wo":"tauchen 787","p95":0.003},"ruckKamera":{"max":0.038,"wo":"tauchen 787","p95":0.0009}}
