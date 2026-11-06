@@ -1023,7 +1023,8 @@ Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Es
 des Betts, die Dürre senkt ihn bis zum leeren Bett; die Lage trägt die Tafel, `L.pegel`, je Höhe und Lag-Klasse des Laufs, der
 Spiegel des Kerns liest sie, nie das Bett; `koerperY` der Spiegel jedes stehenden Körpers) mit dem Lauf des Regens `LAUF`/`pegelLauf`
 (wetter.K3: die Faltung der Stempel des Regens über die Welt-Uhr mit der Nash-Ganglinie je Lag-Klasse, dazu der Grund gegen das
-Mittel des Klimas — eine Funktion der Uhr, kein Speicher), der Lag-Klasse eines Laufs `laufKlasse` (Snyder aus Lauflänge und
+Mittel des Klimas — eine Funktion der Uhr; was vor den Stempeln fiel, trägt der Zustand des Laufs `pegelZustand`, der Grund und
+je Klasse die zwei Speicher der Kaskade, 50 Zahlen im Stand statt jedes Stempels), der Lag-Klasse eines Laufs `laufKlasse` (Snyder aus Lauflänge und
 Einzugsgebiet, die Länge stromauf nach Hack `hackLaenge`; der Kanal trägt sie je Segment, das Wasser-Feld je See-Zelle) und den
 Klassen am Rechteck `pegelKlassen` (die Marke des Chunks), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
