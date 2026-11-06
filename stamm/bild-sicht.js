@@ -2494,22 +2494,31 @@ class AnazhRealm_bild_sicht {
                     this._feldPanoramaMal(fp);
             }
         }
-        if (cam && fp.mesh.visible) {
-            fp.U.camPos.value.copy(cam.position);
-            // Stellvertreter und Strahl aus DERSELBEN Matrix (Raster-Deckung == Strahl-Treffer).
-            fp.U.vp.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-            fp.U.invVP.value.copy(fp.U.vp.value).invert();
-            // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
-            // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
-            fp.U.nah.value = cam.near;
-            fp.U.fern.value = cam.far;
-            const e = cam.matrixWorld.elements;
-            fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
-            // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
-            // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild.
-            const wm = st.weltMarch;
-            fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
-        }
+    }
+
+    // DIE KAMERA DES FELDS AM BILD (`_loopRender`, w14-lod-uebergang): Stellvertreter und Strahl des Welt-Marchs lesen die Kamera
+    // DIESES Bilds — bis hier schrieb sie der Pass-Takt im Strom (`_tickFeldPass`), VOR `_loopCamera`: jedes Fern-Ding des Marchs
+    // (Hülle, Gesetz-Streu, Glieder-Kapsel) stand ein Bild hinter der Szene, und eine Aufnahme nach dem Setzen der Kamera
+    // zeichnete es aus der Kamera des letzten Takts (lod.K2#1, Radeon: 500–1 200 Pop-Pixel je Schritt bei gehaltener Uhr, der
+    // March verborgen 18–178).
+    _feldPassKamera() {
+        const fp = this.state.feldPass;
+        const cam = this.state.camera;
+        if (!fp || !cam || !fp.mesh.visible) return;
+        fp.U.camPos.value.copy(cam.position);
+        // Stellvertreter und Strahl aus DERSELBEN Matrix (Raster-Deckung == Strahl-Treffer).
+        fp.U.vp.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        fp.U.invVP.value.copy(fp.U.vp.value).invert();
+        // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
+        // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
+        fp.U.nah.value = cam.near;
+        fp.U.fern.value = cam.far;
+        const e = cam.matrixWorld.elements;
+        fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
+        // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
+        // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild.
+        const wm = this.state.weltMarch;
+        fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
     }
 
     // DAS LICHT DER WELT (Licht K3, EIN Lichtweg; Lehre 21): die diffuse Bestrahlung E(n)/π einer Fläche mit der Normale n, wie

@@ -1946,6 +1946,8 @@ class AnazhRealm_dirigent_takt {
             this.state.hydroSurfaceUniforms.time.value = bildZeit;
         // DAS LICHT DER WELT am Bild (`_weltLicht`): Spiegel, Wasser, Feld und Panorama lesen die Lichter dieses Bilds
         this._weltLichtTakt();
+        // … und die Kamera des Welt-Marchs: DIESES Bilds, nie die des Takts davor (`_feldPassKamera`)
+        this._feldPassKamera();
         const knotenUhr = this.state.renderer && this.state.renderer._nodes && this.state.renderer._nodes.nodeFrame;
         if (knotenUhr) knotenUhr.time = bildZeit;
         // die Böen-Drift am Bild (`_windWob` auf der Bild-Uhr; die Uhr-Wache liest sie)
