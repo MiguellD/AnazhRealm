@@ -67,6 +67,7 @@ export default [
                 Response: "readonly",
                 indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
                 AnazhHuelle: "readonly", // die Studio-Hülle (worlds/huelle/huelle.js, K41): die Werkstatt ruft DENSELBEN Regler-Generator
+                __weltLicht: "readonly", // das Licht des Orts (welt-licht.js): Tafeln, Sonne, Umgebung, Belichtung — Welt und Bühne der Studios
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",

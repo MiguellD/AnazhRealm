@@ -12,7 +12,7 @@
      (enter/ready/dsl/exit). -->
 <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+    content="default-src 'self'; script-src 'self' 'sha256-0GvGmzWavRegxN1My7wRvCLRbft9D2pWirOHv/rDu50='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>ANATOMIE · KLINGE — Rückgrat · Schnitt · Lehren</title>
 <link rel="stylesheet" href="../huelle/huelle.css?v=18.546.201">
@@ -123,27 +123,20 @@ canvas{display:block}
 <div id="hint">MAUS orbit · 1–5 Ebenen · G Gattung · T Tradition · LEER anschlagen</div>
 <div id="ring-info"><span id="ring-txt"></span></div>
 
-<!-- Klassische Global-Skripte aus dem geteilten Vendor-Regal des Terrain-
-     Portals (EINE Kopie, kein Duplikat): r128 + OrbitControls + der Post-FX-
-     Verbund (EffectComposer-Kette für den UnrealBloom). Danach der KLINGEN-
-     STUDIO-KERN (schmiede-core.js, __schmiedeCore — W-A4a Kern-Split, die
-     EINE generative Quelle für Shell UND AnazhRealm-Foundry) VOR der Shell,
-     dann die Shell selbst (schmiede.js, byte-treu aus dem Inline-Skript;
-     W12-Brücke am Datei-Ende). Davor der KÖRPER-KERN (koerper-core.js): sein
-     EINER weicher Löser (xpbdSchritt) rechnet das Seil der Schmiede — Labor = Welt. -->
-<script src="../terrain/lib/three-r128.min.js"></script>
-<script src="../terrain/lib/OrbitControls.js"></script>
-<script src="../terrain/lib/CopyShader.js"></script>
-<script src="../terrain/lib/LuminosityHighPassShader.js"></script>
-<script src="../terrain/lib/FXAAShader.js"></script>
-<script src="../terrain/lib/EffectComposer.js"></script>
-<script src="../terrain/lib/RenderPass.js"></script>
-<script src="../terrain/lib/MaskPass.js"></script>
-<script src="../terrain/lib/ShaderPass.js"></script>
-<script src="../terrain/lib/UnrealBloomPass.js"></script>
-<script src="../../koerper-core.js?v=18.546.201"></script>
-<script src="../../schmiede-core.js?v=18.546.201"></script>
-<script src="../huelle/huelle.js?v=18.546.201"></script>
-<script src="schmiede.js?v=18.546.201"></script>
+<!-- DIE EINE ENGINE UND DIE BÜHNE DER WELT (w12-studio-buehne, studios.K4): die Schmiede läuft auf der Engine der Welt —
+     dieselbe Import-Karte, derselbe Bootstrap (three r184 WebGPU, window.THREE; der Hash der CSP trägt die Import-Karte) wie
+     index.html und die Garage — und zeichnet ihr Werk im Licht der Welt: die EINE Luft (foundry-core ATMO_GESETZ) und das
+     Licht des Orts (welt-licht.js). Bis hierher lud sie r128, OrbitControls und den Post-FX-Verbund (EffectComposer,
+     UnrealBloom, FXAA) aus dem Regal der terrain-Familie. Danach der KÖRPER-KERN (koerper-core.js: sein EINER weicher Löser
+     rechnet das Seil — Labor = Welt), der KLINGEN-STUDIO-KERN (schmiede-core.js), die Hülle (die Kugel des Blicks) und die
+     Shell; defer hält die Reihe hinter dem Modul. -->
+<script type="importmap">{"imports":{"three":"../../vendor/three.module.min.js","three/webgpu":"../../vendor/three.webgpu.min.js","three/tsl":"../../vendor/three.tsl.min.js"}}</script>
+<script type="module" src="../../vendor/three-bootstrap.js?v=18.546.201"></script>
+<script src="../../foundry-core.js?v=18.546.201" defer></script>
+<script src="../../welt-licht.js?v=18.546.201" defer></script>
+<script src="../../koerper-core.js?v=18.546.201" defer></script>
+<script src="../../schmiede-core.js?v=18.546.201" defer></script>
+<script src="../huelle/huelle.js?v=18.546.201" defer></script>
+<script src="schmiede.js?v=18.546.201" defer></script>
 </body>
 </html>
