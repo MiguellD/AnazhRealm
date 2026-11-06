@@ -92,55 +92,61 @@ async function messeLabor({ echt, nur, tafel }) {
         // DIE STUDIOS ZUGLEICH (w13-gtx-proben): jedes Studio ist eine eigene Seite mit eigenem Renderer, keines liest ein anderes —
         // sie messen nebeneinander, jede Seite ihre Zeilen in ihrer Reihe (bis dahin eins nach dem anderen: an der GTX riss das Labor
         // neben der Welt die Frist der Probe material.K1/K3 84 s)
+        // die Reihe der Studios bleibt die der Tafel: Karten, Eichung und Gerät stehen je Studio an seinem Platz, wie seriell
+        const reihe = Object.keys(AT.STUDIOS).filter((sid) => !nur || nur.includes(sid));
+        for (const sid of reihe) out.karten[sid] = out.eichung.labor[sid] = null;
         await Promise.all(
-            Object.entries(AT.STUDIOS)
-                .filter(([sid]) => !nur || nur.includes(sid))
-                .map(async ([sid, S]) => {
-                    const page = await b.newPage();
-                    await server.zeige(page, 120000, S.pfad, "load");
-                    await page.evaluate(AT.LABOR_INSTALL);
-                    // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
-                    const bereit = (S) => {
-                        const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
-                        const w = g(S.wurzel);
-                        let n = 0;
-                        if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
-                        return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
-                    };
-                    while (!(await page.evaluate(bereit, S))) await sleep(300);
-                    if (!out.geraet)
-                        out.geraet = await page.evaluate((S) => {
-                            const R = new Function(`return ${S.renderer};`)();
-                            if (R.isWebGPURenderer) return "WebGPU " + (R.backend.device ? R.backend.device.adapterInfo.architecture : "WebGL2-Ersatz");
-                            const gl = R.getContext();
-                            const e = gl.getExtension("WEBGL_debug_renderer_info");
-                            return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-                        }, S);
-                    // Die Karte zuerst: das Labor-Licht, wie das Studio startet (vor jeder Vorlagen-Wahl, vor dem Wald).
-                    out.karten[sid] = await page.evaluate((o) => window.__laborKarte(o), { studio: S, studioId: sid });
-                    const zeilen = tafel.zeilen.filter((z) => z.labor && z.labor.studio === sid);
-                    // Der Wald baut die Pflanzen-Welt um — seine Zeilen zuletzt.
-                    const wald = (z) => [].concat(z.labor.aktion || []).some((x) => x.wald);
-                    zeilen.sort((a, c) => (wald(a) ? 1 : 0) - (wald(c) ? 1 : 0));
-                    let eich = null;
-                    for (const z of zeilen) {
-                        await aktion(page, z.labor.aktion);
-                        const res = await page.evaluate((o) => window.__laborAlbedo(o), { studio: S, zeilen: [z] });
-                        const e = res.find((x) => x.id === z.id || x.name === z.id) || { fehler: "keine Antwort" };
-                        const k = res.find((x) => x.name === "graukarte");
-                        if (k && k.gesamt) eich = k.gesamt.Y;
-                        const ordner = opt("--bilder");
-                        if (ordner && e.png) {
-                            fs.mkdirSync(ordner, { recursive: true });
-                            pngDatei(path.join(ordner, `labor-${z.id}.png`), e.png);
-                        }
-                        out.labor[z.id] = e.gesamt
-                            ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
-                            : { Y: null, fehler: e.fehler || "kein Pixel" };
+            reihe.map(async (sid) => {
+                const S = AT.STUDIOS[sid];
+                const page = await b.newPage();
+                await server.zeige(page, 120000, S.pfad, "load");
+                await page.evaluate(AT.LABOR_INSTALL);
+                // die Bereitschaft fragt Node je 300 ms (die strenge CSP der Seiten erlaubt new Function nur im Aufruf von außen)
+                const bereit = (S) => {
+                    const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
+                    const w = g(S.wurzel);
+                    let n = 0;
+                    if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
+                    return n > 0 && !!g(S.renderer) && g(S.renderer)._initialized !== false; // r184 rendert nach init()
+                };
+                while (!(await page.evaluate(bereit, S))) await sleep(300);
+                if (sid === reihe[0])
+                    out.geraet = await page.evaluate((S) => {
+                        const R = new Function(`return ${S.renderer};`)();
+                        if (R.isWebGPURenderer)
+                            return (
+                                "WebGPU " +
+                                (R.backend.device ? R.backend.device.adapterInfo.architecture : "WebGL2-Ersatz")
+                            );
+                        const gl = R.getContext();
+                        const e = gl.getExtension("WEBGL_debug_renderer_info");
+                        return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+                    }, S);
+                // Die Karte zuerst: das Labor-Licht, wie das Studio startet (vor jeder Vorlagen-Wahl, vor dem Wald).
+                out.karten[sid] = await page.evaluate((o) => window.__laborKarte(o), { studio: S, studioId: sid });
+                const zeilen = tafel.zeilen.filter((z) => z.labor && z.labor.studio === sid);
+                // Der Wald baut die Pflanzen-Welt um — seine Zeilen zuletzt.
+                const wald = (z) => [].concat(z.labor.aktion || []).some((x) => x.wald);
+                zeilen.sort((a, c) => (wald(a) ? 1 : 0) - (wald(c) ? 1 : 0));
+                let eich = null;
+                for (const z of zeilen) {
+                    await aktion(page, z.labor.aktion);
+                    const res = await page.evaluate((o) => window.__laborAlbedo(o), { studio: S, zeilen: [z] });
+                    const e = res.find((x) => x.id === z.id || x.name === z.id) || { fehler: "keine Antwort" };
+                    const k = res.find((x) => x.name === "graukarte");
+                    if (k && k.gesamt) eich = k.gesamt.Y;
+                    const ordner = opt("--bilder");
+                    if (ordner && e.png) {
+                        fs.mkdirSync(ordner, { recursive: true });
+                        pngDatei(path.join(ordner, `labor-${z.id}.png`), e.png);
                     }
-                    out.eichung.labor[sid] = eich;
-                    await page.close();
-                })
+                    out.labor[z.id] = e.gesamt
+                        ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
+                        : { Y: null, fehler: e.fehler || "kein Pixel" };
+                }
+                out.eichung.labor[sid] = eich;
+                await page.close();
+            })
         );
     } finally {
         await b.close();
@@ -206,7 +212,7 @@ async function laborLaub() {
 function tafelZumTest() {
     const t = AT.ladeTafel();
     const k = structuredClone(t);
-    for (const z of k.zeilen) (z.ratsche = 0.05), delete z.gemessen;
+    for (const z of k.zeilen) ((z.ratsche = 0.05), delete z.gemessen);
     for (const s of Object.keys(k.karten)) k.karten[s].ratsche = 0.05;
     return k;
 }
@@ -247,7 +253,10 @@ async function selbsttest() {
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = ausDatei(path.join(__dirname, "..", d0));
         const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
-        const kommentar = AT.tafelStand(S0, mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n"));
+        const kommentar = AT.tafelStand(
+            S0,
+            mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n")
+        );
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
         const dk = "stamm/dirigent-kern.js";
         const stufe = AU.codeAbdruck(ausDatei(path.join(__dirname, "..", dk)).replace(/VERSION = "/, "$&0."), dk);
@@ -264,7 +273,9 @@ async function selbsttest() {
                 kommentar.length === 0 &&
                 stufe === pruefsumme(dk) &&
                 code.length === 2 * mitD0 &&
-                code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
+                code.every(
+                    (r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)
+                ) &&
                 altForm.some((r) => r.zeile === "lack" && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
                 ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
                 AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
@@ -347,7 +358,9 @@ async function selbsttest() {
         delete s6s.zeilen.find((z) => z.id === zs.id).welt.stufen;
         t(
             "Stufe: erklärt L0, gezeichnet L0/L1 → ROT `stufe` beim Namen; nur L0 → kein Befund; ohne Stufen → ROT; Foundry-Klasse ohne Stufen → Schema rot",
-            AT.tafelUrteil(T0, mS).rot.some((r) => r.art === "stufe" && r.text.startsWith(`${zs.id}:`) && r.text.includes(`L${s0}/L${s0 + 1}`)) &&
+            AT.tafelUrteil(T0, mS).rot.some(
+                (r) => r.art === "stufe" && r.text.startsWith(`${zs.id}:`) && r.text.includes(`L${s0}/L${s0 + 1}`)
+            ) &&
                 !hatRot(AT.tafelUrteil(T0, messungZumTest(T0)), "stufe") &&
                 AT.tafelUrteil(T0, mO).rot.some((r) => r.art === "stufe" && /nennt ihre Stufen nicht/.test(r.text)) &&
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
@@ -496,13 +509,18 @@ window.__bereit = true;
                 rotT.befunde.length === 1 &&
                 /tanne: Reflexion 0\.0739 .*besonnte Schale/.test(rotT.befunde[0]) &&
                 LL.kronenObenUrteil({ welt: { fichte: o(0.0547, 0.1027) } }).urteil === "GRUEN" &&
-                LL.kronenObenUrteil({ welt: { eiche: o(0.0797, 0.2143) } }).befunde.join().includes("schluckt") &&
+                LL.kronenObenUrteil({ welt: { eiche: o(0.0797, 0.2143) } })
+                    .befunde.join()
+                    .includes("schluckt") &&
                 LL.kronenObenUrteil({}).urteil === "ROT"
         );
     }
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    selbsttestEnde(rot.map((x) => x.name), `die Albedo-Wand feuert (${tests.length}/${tests.length})`);
+    selbsttestEnde(
+        rot.map((x) => x.name),
+        `die Albedo-Wand feuert (${tests.length}/${tests.length})`
+    );
 }
 
 // Die gespeicherte Tafel als Messung (für das Urteil ohne GPU).
@@ -570,14 +588,20 @@ async function main() {
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },
         };
         // der Stand beider Seiten reist in die Tafel (K63-n3: die Soll-Tafel prüft Version und Quellen, `messStand`)
-        const st = (s) => (s && s.stand ? { version: s.stand.version, sha: s.stand.sha, quellen: s.stand.quellen } : {});
-        const r = AT.tafelNachziehen(t, m, {
-            labor: Object.assign({ datum: labor.datum, geraet: labor.geraet, echt: labor.echt }, st(labor)),
-            welt: Object.assign(
-                { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
-                st(welt)
-            ),
-        }, nur);
+        const st = (s) =>
+            s && s.stand ? { version: s.stand.version, sha: s.stand.sha, quellen: s.stand.quellen } : {};
+        const r = AT.tafelNachziehen(
+            t,
+            m,
+            {
+                labor: Object.assign({ datum: labor.datum, geraet: labor.geraet, echt: labor.echt }, st(labor)),
+                welt: Object.assign(
+                    { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
+                    st(welt)
+                ),
+            },
+            nur
+        );
         console.log(AT.tafelTabelle(r.u));
         if (!r.tafel) {
             console.log("\nTafel NICHT nachgezogen: " + r.grund);
@@ -607,7 +631,8 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) if (!istNeu(r)) errs.push(`[${r.art}] ${r.text}`);
-    for (const s of ["labor", "welt"]) if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
+    for (const s of ["labor", "welt"])
+        if (t.gemessen && !t.gemessen[s].echt) errs.push(`[echt] ${s} nicht echt gemessen`);
     for (const z of t.zeilen) for (const s in z.gemessen) if (!z.gemessen[s].echt) errs.push(`[echt] ${z.id} ${s}`);
     // DER STAND (K63-n8; wie H5): ungeprüft bricht, veraltet steht laut je Zeile
     const sw = AT.standWand(AT.tafelStand(t, pruefsumme));

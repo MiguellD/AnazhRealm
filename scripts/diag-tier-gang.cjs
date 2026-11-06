@@ -635,12 +635,14 @@ hauptLauf(async () => {
     // DAS LABOR NEBEN DER WELT (w13-gtx-proben): der Browser des Labors (WebGL r128) lädt beide Studios und misst den Gang der Tiere,
     // WÄHREND die Null-Welt läuft — er braucht von ihr nichts; nur der Takt des Körper-Studios wartet auf ihre Spur (unten). Bis dahin
     // fuhr das Labor erst nach der Welt (GTX: die Probe tiere.K3#2 riss ihren Deckel 45 s). Ein Studio steht, wenn sein Spiel-Modus
-    // geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor und mit ihm den Poll); ein hängendes steht in der Stall-Akte
+    // geladen ist — ohne Frist (ein swiftshader-Bild des Labors hält den Compositor und mit ihm den Poll); ein hängendes steht in der Stall-Akte.
+    // Je Studio ein eigener Kontext (ein eigenes Fenster): ein Tab hinter dem anderen taktet nicht, das Körper-Studio fing dort keinen Zeiger
+    // (Radeon: pageerror WrongDocumentError, die Linse ROT)
     const sb = await starteBrowser({ art: "linse", frist: 300000 });
     const studio = async (p, pfad, da) => (await server.zeige(p, 240000, pfad), await p.waitForFunction(da, { timeout: 0 }), p);
     /* eslint-disable no-undef */
-    const koerper = studio(await seite(sb, true), "worlds/koerperstudio/index.html", () => typeof enterPlay === "function" && typeof playTakt === "function" && typeof parkTeile !== "undefined");
-    const tierGang = studio(await seite(sb), "worlds/tetrapoda/index.html", () => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined").then(async (tp) => {
+    const koerper = studio(await seite(await sb.createBrowserContext(), true), "worlds/koerperstudio/index.html", () => typeof enterPlay === "function" && typeof playTakt === "function" && typeof parkTeile !== "undefined");
+    const tierGang = studio(await seite(await sb.createBrowserContext()), "worlds/tetrapoda/index.html", () => typeof wolf !== "undefined" && !!wolf && typeof emo !== "undefined").then(async (tp) => {
         const g = {};
         for (const gattung in LABOR_WELT) g[gattung] = await tp.evaluate(GANG, { art: gattung, vh: VH, stub: SELBST, stimmung: STIMMUNG_FOLGE });
         return g;
