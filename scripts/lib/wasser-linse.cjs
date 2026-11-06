@@ -399,7 +399,7 @@ async function wasserKoerper(o = {}) {
     } finally {
         delete r._temperaturFeld;
         [st.seasonPhase, st.autoSeason] = jahr;
-        r._tickSeason(0); // Schneegrenze und Pegel tragen wieder die Saison der Welt
+        r._tickSeason(); // Schneegrenze und Pegel tragen wieder die Saison der Welt
         leib.zurueck();
     }
     return aus;
@@ -438,14 +438,14 @@ function wasserSchmelze(r, x, z, P) {
         // Phase oder Länge des Jahrs setzt ihn)
         const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit];
         Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
-        r._tickSeason(0); // der Anker des Jahrs zur Uhr jetzt
+        r._tickSeason(); // der Anker des Jahrs zur Uhr jetzt
         const w = [];
         let neuBau = 0;
         try {
             for (let k = 1; k <= 52; k++) {
                 const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
                 st.spielZeit += 0.2;
-                r._tickSeason(k * 200);
+                r._tickSeason();
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
                 const F = r._temperaturFeld(y, 0);
@@ -456,7 +456,7 @@ function wasserSchmelze(r, x, z, P) {
             }
         } finally {
             [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit] = alt;
-            r._tickSeason(0);
+            r._tickSeason();
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
         return [
@@ -473,7 +473,7 @@ function wasserSchmelze(r, x, z, P) {
     };
     const koerper = (p) => {
         Object.assign(st, { seasonPhase: p, autoSeason: false });
-        r._tickSeason(0);
+        r._tickSeason();
         r._drainDirtyVoxelChunks();
         let nass = 0;
         for (let u = P.see[0]; u <= P.ufer + 5; u += 0.25) nass += r._koerperWasser(u, P.see[1], r._voxelSurfaceY(u, P.see[1])) > r._voxelSurfaceY(u, P.see[1]) + 0.02;
@@ -510,7 +510,7 @@ function wasserSchmelze(r, x, z, P) {
     } finally {
         ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt", "_weatherFieldFor"].forEach((k) => delete r[k]);
         [st.seasonPhase, st.autoSeason] = jahr;
-        r._tickSeason(0);
+        r._tickSeason();
     }
 }
 

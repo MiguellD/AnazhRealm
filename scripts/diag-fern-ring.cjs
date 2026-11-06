@@ -1422,7 +1422,7 @@ hauptLauf(async () => {
             r._tickFernRing(pos); // der Horizont-Takt bestellt die Ecken um den Edit
             res.horizont = [f.editFlug, f.gen | 0];
             r.setSeason(phase < 0.5 ? "winter" : "summer");
-            r._tickSeason(performance.now());
+            r._tickSeason();
             await pumpe(pos, (g) => !r._nebenFaeden.get("fern").pending.size && g.cursor >= g.totalVerts);
             res.horizont.push(f.gen | 0, f.editFlug);
         } catch (e15) {

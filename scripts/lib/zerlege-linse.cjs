@@ -1710,7 +1710,6 @@ module.exports = {
     zerlegeSchalter,
     zerlegeAuswerten,
     zerlegeTabelle,
-    zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
     belegungAuswerten,

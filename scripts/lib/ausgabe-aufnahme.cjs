@@ -380,7 +380,7 @@ function buehne(o) {
     r._applyDayNightToScene();
     // … und die Saison im Takt des Jahrs (`_tickSeason`): Tönung und Schneegrenze (stoffe.K3-2) — bis dahin zeigte `--saison
     // winter` den Boden des Sommers, bis der Loop sie zufällig tickte
-    r._tickSeason(0);
+    r._tickSeason();
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.

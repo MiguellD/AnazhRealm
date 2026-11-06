@@ -974,7 +974,7 @@ class AnazhRealm_bild_himmel {
     // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
     // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
     // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
-    _tickSeason(_currentTime) {
+    _tickSeason() {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
         // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
