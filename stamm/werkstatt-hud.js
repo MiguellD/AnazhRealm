@@ -1621,7 +1621,7 @@ class AnazhRealm_werkstatt_hud {
     renderWorldRulesList() {
         const r = this._statusRefs;
         if (!r || !r.worldrules) return;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // die Uhr der Gesetze (`_tickWorldRules`)
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const all = this.state.worldRules || [];
         // Zwei Gruppen: DEINE Gesetze (Mensch + adoptiert, stabil, oben) ↔ DER NEXUS ERPROBT (ephemer,

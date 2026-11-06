@@ -284,9 +284,10 @@ class AnazhRealm {
             weatherEffectTime: 0, // der Halt einer Messung, wenn < 0 (`_messHalt`); der Zug liest die Welt-Uhr
             // DAS WORT DES SPIELERS über das Wetter (`_setWeather`, Leben-Schau 2): steht es, hält der Wetter-Zug und
             // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
-            // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
+            // Die WÜNSCHE der Welt (Nexus, seine Gesetze, die Emotion, die Wesen — jeder Seite, feld.K2#2): je Wunsch Wort, Quelle
+            // und Stempel der Welt-Uhr `w`, die Akte der Fenster, die ein Zug noch zieht (`_wunschNimm`); persistiert.
             wetterWort: null,
-            wetterWunsch: null,
+            wetterWuensche: [],
             // DER SCHREIBER DES WETTERS (affekt.K4#2): wer das Wetter, das gerade gilt, schrieb — die Quelle am EINEN Schreiber
             // `_setWeather` (der Spieler, sein Gesetz, das Laden), beim Zug der Wunsch, den er zog (Nexus, seine Gesetze, die
             // Emotion, die Wesen), ohne Wunsch die Front („front"); persistiert. Leser: der Kontext der KI (`llmBuildContext`),

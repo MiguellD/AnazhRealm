@@ -976,19 +976,21 @@ class AnazhRealm_bild_himmel {
     // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
     // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
     // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
-    _tickSeason(currentTime) {
+    _tickSeason() {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
-        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
+        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
+        // Phase ist die ihres Ankers (`_saisonAnker`: Phase und Welt-Uhr, gesetzt vom Wort des Spielers, vom Laden eines Stands, vom
+        // Beginn des Drifts) plus die Welt-Zeit seitdem durch die Länge des Jahrs — zwei Seiten einer Uhr und ein Reload stehen am
+        // selben Tag, und der Pegel des Jahrs (`_pegelTafel`) steigt auf jeder gleich. Bis feld.K2#2 driftete sie mit der Wanduhr
+        // jeder Seite (dt ≤ 0,2 s je Bild): ein Reload und ein Sprung der Uhr ließen das Jahr der Seiten auseinanderlaufen.
         if (st.autoSeason !== false && this._buehneSteht()) {
-            const now = currentTime || 0;
-            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
-            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
-            this._lastSeasonTime = now;
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
-        }
+            let A = this._saisonAnker;
+            if (!A || A.phase !== st.seasonPhase || A.jahr !== yearSec)
+                A = this._saisonAnker = { anker: st.seasonPhase, t: st.spielZeit, jahr: yearSec };
+            A.phase = st.seasonPhase = (((A.anker + (st.spielZeit - A.t) / yearSec) % 1) + 1) % 1;
+        } else if (st.autoSeason === false) this._saisonAnker = null; // ein angehaltenes Jahr setzt beim Weiterlaufen neu an
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -1005,12 +1007,16 @@ class AnazhRealm_bild_himmel {
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
-    setSeason(name) {
+    setSeason(name, uhr) {
         const key = AnazhRealm.JAHRESZEITEN[String(name || "").toLowerCase()];
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
         this.state.season = key;
+        // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
+        const yearSec = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
+        const t = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
+        this._saisonAnker = { anker: phaseFor[key], t, jahr: yearSec, phase: phaseFor[key] };
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -2911,11 +2917,12 @@ class AnazhRealm_bild_himmel {
     // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
     // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
     // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
-    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
-    // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
-    // `zug` ({ von, beginn }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus dem Wort der Front `von`,
-    // ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang lief.
-    _setWeather(name, quelle, zug) {
+    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort — ein AKT mit Welt-Uhr-Stempel (`_wunschAkt`, Rückgabe "wunsch"),
+    // der Zug zieht es in seinem Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen
+    // (alle 4,7 s). `zug` ({ von, beginn, wunsch }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus
+    // dem Wort der Front `von`, ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang
+    // lief —, sein Schreiber der gezogene Wunsch oder die Front. `akt` ({ w }): der Wunsch kam als Akt eines Mitspielers.
+    _setWeather(name, quelle, zug, akt) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
@@ -2931,21 +2938,20 @@ class AnazhRealm_bild_himmel {
                 return false;
             }
             if (wer === "welt") {
-                this.state.wetterWunsch = { wort: name, quelle: quelle || "?" };
+                this._wunschAkt(name, quelle || "?", akt);
                 return "wunsch";
             }
         }
         if (wer === "spieler") {
             this.state.wetterWort = name;
-            this.state.wetterWunsch = null;
+            this.state.wetterWuensche = [];
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
-        // der wahre Schreiber (affekt.K4#2): der Zug zieht den Wunsch der Welt (er ist verbraucht, sein Wünscher schrieb) oder die Front
-        const wunsch = quelle === "auto-zug" && this.state.wetterWunsch;
-        if (wunsch && wunsch.wort === name) this.state.wetterWunsch = null;
-        this.state.wetterSchreiber =
-            quelle !== "auto-zug" ? quelle || "?" : wunsch && wunsch.wort === name ? wunsch.quelle : "front";
+        // der wahre Schreiber (affekt.K4#2): der Zug nennt den Wunsch der Welt, den er zog, oder die Front — auch wenn das Wort
+        // blieb (bis feld.K2#2 hieß ein still gezogener Wunsch weiter „front")
+        const wunsch = quelle === "auto-zug" && zug && zug.wunsch;
+        this.state.wetterSchreiber = quelle !== "auto-zug" ? quelle || "?" : wunsch ? wunsch.quelle : "front";
         if (zug) {
             this.state.weatherTransition = null;
             this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);
@@ -2964,9 +2970,52 @@ class AnazhRealm_bild_himmel {
         const wer = this._himmelSchreiber(quelle, "wetter");
         if (wer !== "spieler" && wer !== "gesetz") return false;
         this.state.wetterWort = null;
-        this.state.wetterWunsch = null;
+        this.state.wetterWuensche = [];
         this._wetterZug = Math.floor(this.state.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         return true;
+    }
+
+    // DER WUNSCH DER WELT IST EIN SCHREIB-AKT (feld.K2#2, Lockstep: Zufall und Takt nur aus Saat, Welt-Uhr und Akten). Jede Seite
+    // trägt ihre eigene Welt-Stimme (Nexus, seine Gesetze, das Gemüt ihres Spielers) — ihr Wunsch ist darum keine Funktion von Saat
+    // und Uhr, er ist eine EINGABE: er steht mit seinem Stempel der Welt-Uhr `w` in der Liste der Wünsche (`wetterWuensche`) und
+    // reist als Akt über den dsl-Kanal (`p2pBroadcastDsl` mit Stempel und Quelle), der Empfänger nimmt ihn mit DEM Stempel des
+    // Absenders (`akt`). Der Zug k zieht den letzten Wunsch aus dem Fenster des Zugs davor (`_wunschDesZugs`) — auf jeder Seite
+    // derselbe, gleich in welcher Folge die Akte ankamen. Bis feld.K2#2 hielt jede Seite EINEN Wunsch (`wetterWunsch`), den ihr
+    // eigener Nexus schrieb: unter Last zog A „rainy von rule:emotion:sorrow", B „sunny von rule:nexus" (2 von 3 Läufen).
+    _wunschAkt(wort, quelle, akt) {
+        const w = akt ? akt.w : this.state.spielZeit;
+        if (this._wunschNimm({ wort, quelle, w }) && !akt)
+            this._aktSenden({ type: "dsl", program: ["weather", wort], w, quelle });
+    }
+
+    // Ein Wunsch tritt in die Liste (je Stempel, Wort und Quelle EINMAL — ein doppelt empfangener Akt ist einer); sie trägt nur die
+    // Fenster, die ein Zug noch zieht. Kam er spät (sein Fenster ist das des Zugs, der schon zog — der Mitspieler war voraus), zieht
+    // der Zug neu: das Wetter ist eine Funktion des Fensters, nie der Ankunft. → ob er neu war
+    _wunschNimm(wunsch) {
+        const st = this.state;
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        if (!(wunsch.wort in AnazhRealm.WEATHER_INTENSITY) || !Number.isFinite(wunsch.w)) return false;
+        const L = (st.wetterWuensche || []).filter((x) => Math.floor(x.w / Z) >= Math.floor(st.spielZeit / Z) - 1);
+        if (L.some((x) => x.w === wunsch.w && x.wort === wunsch.wort && x.quelle === wunsch.quelle)) return false;
+        L.push({ wort: wunsch.wort, quelle: String(wunsch.quelle).slice(0, 80), w: wunsch.w });
+        st.wetterWuensche = L;
+        if (this._wetterZug !== undefined && Math.floor(wunsch.w / Z) === this._wetterZug - 1 && !this._messHalt())
+            this._wetterZugZiehen(this._wetterZug);
+        return true;
+    }
+
+    // Der Wunsch, den der Zug `zug` zieht: der letzte (der späteste Stempel; bei gleichem Stempel das größere Wort|Quelle) aus dem
+    // Fenster des Zugs davor — oder keiner.
+    _wunschDesZugs(zug) {
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        let best = null;
+        for (const x of this.state.wetterWuensche || [])
+            if (
+                Math.floor(x.w / Z) === zug - 1 &&
+                (!best || x.w > best.w || (x.w === best.w && x.wort + "|" + x.quelle > best.wort + "|" + best.quelle))
+            )
+                best = x;
+        return best;
     }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. Default-Dauer via _emotionModulate aus den Emotionen
