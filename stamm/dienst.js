@@ -254,8 +254,7 @@ class AnazhRealm_dienst {
                 stueck(g.replace(/\n/g, " "));
             }
             const stand = this.llmStromStand(aus.raw);
-            if (tat && !aus.tat && stand.program)
-                aus.tat = { program: stand.program, ergebnis: tat(stand.program) };
+            if (tat && !aus.tat && stand.program) aus.tat = { program: stand.program, ergebnis: tat(stand.program) };
             ende = done || stand.zu || !!aus.fehler;
             if (ende && !done) leser.cancel().catch(() => {});
         }
