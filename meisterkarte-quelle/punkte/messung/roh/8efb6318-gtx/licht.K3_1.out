@@ -167,8 +167,22 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\8efb6318-gtx\licht.K3_1.json {"vorher":["umstellen","--ort","dorf","--sicht","ego"],"args":["licht","--laub","ring,fichte,tanne","--karte","--uhr","0.5,0.27,0.05","--ort","dorf"],"fenster":[640,360],"ruheMax":600}
 [linse-gpu] nvidia/pascal
-VORHER werkbank umstellen --ort dorf --sicht ego EXIT=2 · 0.3 s
-PROBE-FEHLER Error: der Messort der Linse steht nicht: werkbank.cjs ABSTURZ: Error: connect ECONNREFUSED 127.0.0.1:27804 |     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16) |     at werkbankLinse ([eval]:106:35) |     at [eval]:168:3 |     at runScriptInThisContext (node:internal/vm:219:10)
+VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.1 s
+BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.9 s
+RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 7.5 s · 11.4 s
+BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 11.4 s
+BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 13.3 s
+BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 13.6 s
+RUF /umstellen {"x":-841,"z":-861} · 3.0 s · 16.8 s
+BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 16.9 s
+BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 18.0 s
+BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 48 Takten, 0.7 s · 19.3 s
+BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 20.2 s
+BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 20.2 s
+BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 20.9 s
+BERUHIGUNG 11 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 21.7 s
+BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 21.8 s
+BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 22.6 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
