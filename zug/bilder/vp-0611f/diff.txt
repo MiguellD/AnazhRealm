@@ -1,0 +1,4 @@
+1-third                  {"lumaMain":52.41,"lumaKand":52.77,"mAbs":4.254,"mDelta":0.362,"ueber8":12.76}
+2-ego                    {"lumaMain":57.85,"lumaKand":59.82,"mAbs":4.972,"mDelta":1.973,"ueber8":10.45}
+3-hang                   {"lumaMain":59.14,"lumaKand":59.08,"mAbs":2.681,"mDelta":-0.055,"ueber8":8.23}
+4-weg                    {"lumaMain":74.83,"lumaKand":74.79,"mAbs":2.708,"mDelta":-0.047,"ueber8":7.62}
