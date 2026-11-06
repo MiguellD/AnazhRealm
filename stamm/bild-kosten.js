@@ -557,7 +557,7 @@ class AnazhRealm_bild_kosten {
                 const buehne = !!B && scene === B.szene;
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
-                // DER PSO-VORBAU (w16-lade-atem, ankunft.K5 — der Pipeline-Precache von Unreal/Fortnite): unter dem Ladeschirm
+                // DER PSO-VORBAU (w16-lade-atem, ankunft.K5 — der Pipeline-Precache von Unreal/Fortnite): im Takt unter dem Ladeschirm
                 // entsteht auch die Pipeline eines solchen Renders asynchron (der Treiber übersetzt sie neben dem Bild, nie im
                 // GPU-Prozess vor dem nächsten); bis sie steht, zeichnet er nicht und zählt `einmalOffen` — ein Einmal-Render
                 // (Atmosphären-Tafel, Umgebung, Wolken- und Horizont-Karte, Welt-Licht, Rückstrahl) liest daran, dass er nicht
@@ -565,7 +565,7 @@ class AnazhRealm_bild_kosten {
                 // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
                 // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    if (!welt._ladeTakt()) zeichne(this, ro, aufnahme, false);
+                    if (!welt._psoVorbau()) zeichne(this, ro, aufnahme, false);
                     else if (!zeichne(this, ro, aufnahme, true)) {
                         E.einmalOffen++;
                         if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
@@ -839,6 +839,12 @@ class AnazhRealm_bild_kosten {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
+        if (!this._psoVorbau()) {
+            W.delete(schluessel);
+            fn();
+            return true;
+        }
         if (w) {
             for (const p of w) if (E.offen.has(p)) return false;
             W.delete(schluessel);
