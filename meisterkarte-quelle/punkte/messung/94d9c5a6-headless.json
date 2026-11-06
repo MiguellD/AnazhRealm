@@ -1,0 +1,32 @@
+{
+ "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
+ "geraet": "headless",
+ "zeit": "2026-11-06T23:06:54.102Z",
+ "host": "farm:42309443498",
+ "je": {
+  "ki.K1#2": {
+   "gruen": true,
+   "zahl": "41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 100.0 % (Soll 95), Absicht 100.0 % (Soll 85), Brüche 0, Negativ 9/9 ohne Tat benannt, p95 6291 ms (genannt)",
+   "exit": 1,
+   "minuten": 7.58,
+   "zeit": "2026-11-06T23:06:54.102Z",
+   "abdruck": "a8876f20dede",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42309443498/1"
+  },
+  "ki.K5#1": {
+   "gruen": false,
+   "zahl": "p95 Satz → Welt 6.29 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "exit": 1,
+   "minuten": 7.58,
+   "grund": "ROT: p95 Satz → Welt 6.29 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "zeit": "2026-11-06T23:06:54.102Z",
+   "abdruck": "30202ff53615",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42309443498/1",
+   "zwilling": "ki.K1#2"
+  }
+ }
+}
