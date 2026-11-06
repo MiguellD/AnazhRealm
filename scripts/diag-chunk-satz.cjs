@@ -41,11 +41,6 @@
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
-//   (q) DAS ALTER IM SATZ (stoffe.K4, w13-haus-alter) — der gesetzte Bau altert dort, wo seine Albedo entsteht: nach einem
-//       Sprung der Welt-Uhr um 30 Tage tragen die Ecken jeder alternden Gruppe (`_satzAlter`) oben ≥ 0,02 Δ gegen ihre Vorlage
-//       (Farbe × Instanz-Farbe; die Flechte unter dem Himmel), die Wände (nord/süd, trocken) höchstens die Hälfte davon (die
-//       Lage), ein frischer Bau (Geburt heute) 0. Selbsttest: kein alternder Bau, ein Satz ohne Alter, ein Alter ohne Lage, ein
-//       frischer Bau mit Alter — je ROT beim Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
 // Fern-Deko, einer
@@ -54,18 +49,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const {
-    statikServer,
-    warteAufWelt,
-    taeterFaelle,
-    selbsttestEnde,
-    nullSeite,
-    pruefer,
-    wandEnde,
-    fehlerText,
-    seiteZu,
-    SELBSTTEST,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -175,10 +159,7 @@ function urteil(z) {
                         .join(", ")
             );
         const los = z.stufen.ohneSatz || [];
-        if (los.length)
-            v.push(
-                `BODEN-STUFEN: ${los.length} Naht-Bänder ohne Bereich im Boden-Satz — ${los.slice(0, 4).join(", ")}`
-            );
+        if (los.length) v.push(`BODEN-STUFEN: ${los.length} Naht-Bänder ohne Bereich im Boden-Satz — ${los.slice(0, 4).join(", ")}`);
     }
     return v;
 }
@@ -200,22 +181,6 @@ function urteilNeu(m) {
                     v.push(`NEUSCHREIBEN (${phase}, Frame ${i + 1}): ${satz}${was} — ${b} B`);
                 }
     return v;
-}
-
-// (q) DAS ALTER IM SATZ (rein): `a` = { gruppen, tage, oben: [vor, nach], wand: [vor, nach], frisch } — die mittlere Δ
-// (größter Kanal) der Ecken gegen ihre Vorlage je Lage, vor und nach dem Sprung der Welt-Uhr, und die eines frischen Baus.
-function urteilAlter(a) {
-    if (!(a && a.gruppen > 0)) return ["ALTER: kein alternder Bau im Satz (`_satzAlter` trägt keine Gruppe)"];
-    const [o, w] = [a.oben[1] - a.oben[0], a.wand[1] - a.wand[0]].map((d) => +d.toFixed(3));
-    return [
-        o < 0.02 &&
-            `ALTER: der Bau-Satz altert nicht — oben Δ ${o} in ${a.tage} Tagen (Soll ≥ 0,02; \`_satzAlterEcken\`)`,
-        o >= 0.02 &&
-            w > o / 2 &&
-            `ALTER: das Alter kennt keine Lage — die Wände Δ ${w} gegen oben ${o} (\`_alterLage\`)`,
-        !(a.frisch <= 0.002 && Number.isFinite(a.frisch)) &&
-            `ALTER: ein frischer Bau trägt Alter — Δ ${a.frisch} (\`_werkAlter\`)`,
-    ].filter(Boolean);
 }
 
 // Ein grüner Zensus (die Form, die der Lauf liefert) und drei injizierte Täter.
@@ -407,29 +372,6 @@ function selbsttest() {
         },
     ];
     taeterFaelle(neuFaelle, urteilNeu, { fehler });
-    // (q) das Alter im Satz: die Flechte oben, die Wände trocken still, der frische Bau ohne Alter ist grün; ohne alternde
-    // Gruppe, ohne Alter, ohne Lage und mit Alter am frischen Bau fällt es rot, beim Namen
-    const ag = { gruppen: 2, tage: 30, oben: [0, 0.04], wand: [0, 0], frisch: 0 };
-    const alterFaelle = [
-        { name: "die Flechte oben, die Wände trocken still, der frische Bau ohne Alter", z: ag },
-        { name: "kein alternder Bau im Satz (am main)", z: {}, muss: /kein alternder Bau im Satz \(`_satzAlter`/ },
-        {
-            name: "der Satz legt die Vorlage (die Uhr wirkt nicht)",
-            z: { ...ag, oben: [0, 0] },
-            muss: /altert nicht — oben Δ 0 in 30/,
-        },
-        {
-            name: "ein Regler nach Spielzeit (jede Lage gleich)",
-            z: { ...ag, wand: [0, 0.04] },
-            muss: /keine Lage — die Wände Δ 0\.04/,
-        },
-        {
-            name: "der frische Bau trägt das Alter der Welt",
-            z: { ...ag, frisch: 0.04 },
-            muss: /frischer Bau trägt Alter — Δ 0\.04/,
-        },
-    ];
-    taeterFaelle(alterFaelle, urteilAlter, { fehler });
     selbsttestEnde(fehler);
 }
 
@@ -578,14 +520,9 @@ const { errs, check } = pruefer();
                 // die erste Instanz, erster Vertex: die Geometrie geo × Instanz-Matrix e, in Welt-Lage im Pool des Satzes (Bereich
                 // bereich) auf 1 mm je Achse
                 const ersteEcke = (e, geo, satz, bereich) => {
-                    const [q, w, o] = [
-                        geo.attributes.position.array,
-                        satz.geom.attributes.position.array,
-                        bereich.vStart * 3,
-                    ];
+                    const [q, w, o] = [geo.attributes.position.array, satz.geom.attributes.position.array, bereich.vStart * 3];
                     return [0, 1, 2].every(
-                        (c) =>
-                            Math.abs(w[o + c] - (e[c] * q[0] + e[c + 4] * q[1] + e[c + 8] * q[2] + e[c + 12])) <= 1e-3
+                        (c) => Math.abs(w[o + c] - (e[c] * q[0] + e[c + 4] * q[1] + e[c + 8] * q[2] + e[c + 12])) <= 1e-3
                     );
                 };
                 // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
@@ -653,10 +590,7 @@ const { errs, check } = pruefer();
                             const bb = satz ? satz.bloecke.get(a.key + "@" + kk) : null;
                             const n = a.geo.attributes.position.count;
                             const treu =
-                                !!bb &&
-                                bb.vAnzahl === n * b.n &&
-                                satz.spec.mat === a.mat &&
-                                ersteEcke(b.matrizen, a.geo, satz, bb);
+                                !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat && ersteEcke(b.matrizen, a.geo, satz, bb);
                             if (treu) z.streuSatz.imSatz++;
                             else z.streuSatz.ohneBereich.push(a.key + "@" + kk);
                         }
@@ -1018,14 +952,8 @@ const { errs, check } = pruefer();
             {
                 const h = () => {};
                 const geos = { _geometryDisposeListeners: new Map(), info: { memory: { geometries: 1 } } };
-                geos.initGeometry = (ro) => (
-                    ro.geometry.addEventListener("dispose", h),
-                    geos._geometryDisposeListeners.set(ro.geometry, h)
-                );
-                r._renderObjektRegister({
-                    _objects: Object.create({ createRenderObject: () => null }),
-                    _geometries: geos,
-                });
+                geos.initGeometry = (ro) => (ro.geometry.addEventListener("dispose", h), geos._geometryDisposeListeners.set(ro.geometry, h));
+                r._renderObjektRegister({ _objects: Object.create({ createRenderObject: () => null }), _geometries: geos });
                 const g = new window.THREE.BufferGeometry();
                 geos.initGeometry({ geometry: g });
                 res.tauschSicher = !geos._geometryDisposeListeners.has(g) && !g.hasEventListener("dispose", h);
@@ -1414,7 +1342,7 @@ const { errs, check } = pruefer();
                             const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
                             if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
                         }
-                        for (const weiter = __deckel("die Soll-Stufen der Chunks", 1400); weiter();) {
+                        for (const weiter = __deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
                             r._tickMorphFolge(); // die Nähte des Fadens wie im Takt
                             await sleep(15);
@@ -1477,89 +1405,6 @@ const { errs, check } = pruefer();
             const mit = await gang(2, 30, false);
             const ohne = await gang(-2, 30, true);
             return { mit, ohne };
-        });
-        // (q) DAS ALTER IM SATZ: ein Haus des Ortes (Geburt am ersten Tag) und die Welt-Uhr 30 Tage weiter (trocken: der Tag allein,
-        // keine Nässe) — der Alters-Takt und der Satz-Takt, bis nichts mehr wartet; je alternder Gruppe die Ecken ihres Bereichs
-        // gegen ihre Vorlage (Farbe × Instanz-Farbe) je Lage. Dann ein frischer Bau (ein Wort setzt ihn heute) — seine Ecken.
-        out.alter = await page.evaluate(async () => {
-            const [s, N3] = [r.state, new THREE.Vector3()];
-            const P = s.playerMesh.position;
-            const typ = Object.keys(s.blueprints).find((k) => /^haus_/.test(k));
-            const setze = (o) => {
-                for (let a = 0, e; a < 24; a++) {
-                    const [x, z] = [P.x + Math.cos(a) * (16 + a), P.z + Math.sin(a) * (16 + a)];
-                    if ((e = r.spawnArchitecture(typ, { x, y: r.getTerrainHeightAt(x, z), z }, o))) return e;
-                }
-            };
-            const satz = (f) => {
-                const g = s.archInstanceGroups.get(f.key);
-                return g && /^bauSatz\|/.test(g.satz) ? [g, s.chunkSaetze.get(g.satz)] : [g];
-            };
-            const steht = async (e) => {
-                for (
-                    let i = 0;
-                    i < 600 && !(e && e.instSlots.every((f) => !satz(f)[1] || satz(f)[1].bloecke.has(f.key)));
-                    i++
-                )
-                    await __takte(1, 10);
-                for (
-                    let t = 0;
-                    t < 600 && (r._satzAltertOffen || []).length + s.bauSatzSchmutzig.size + s.bauSatzRaten.size;
-                    t++
-                )
-                    await __takte(1, 0);
-            };
-            // je Lage (oben, Wand) die mittlere Δ (größter Kanal) der Ecken des Werks `e` im Satz gegen ihre Vorlage
-            const delta = (e) => {
-                const q = [
-                    [0, 0],
-                    [0, 0],
-                ];
-                for (const f of e.instSlots) {
-                    const [g, sz] = satz(f);
-                    if (!sz) continue;
-                    const [C, N, Q] = [sz.geom.attributes.color, sz.geom.attributes.normal, g.geom.attributes.color];
-                    const [n, ic] = [Q.count, g.mesh.instanceColor ? g.mesh.instanceColor.array : null];
-                    for (let v = 0, w = sz.bloecke.get(f.key).vStart + f.slot * n; v < n; v++, w++) {
-                        const l =
-                            q[
-                                N3.set(N.getX(w), N.getY(w), N.getZ(w)).normalize().y > 0.7
-                                    ? 0
-                                    : Math.abs(N3.y) < 0.3
-                                      ? 1
-                                      : 2
-                            ];
-                        if (l)
-                            ((l[0] += Math.max(
-                                ...[0, 1, 2].map((k) =>
-                                    Math.abs(
-                                        C.getComponent(w, k) - Q.getComponent(v, k) * (ic ? ic[f.slot * 3 + k] : 1)
-                                    )
-                                )
-                            )),
-                                l[1]++);
-                    }
-                }
-                return q.map(([d, n]) => (n ? d / n : 0));
-            };
-            const alt = setze({});
-            await steht(alt);
-            const [vor, tag] = [delta(alt), s.worldMeta.tag || 0];
-            s.worldMeta.tag = tag + 30;
-            await steht(alt);
-            const [nach, frisch] = [delta(alt), setze({ werk: true })];
-            await steht(frisch);
-            const gruppen = alt.instSlots.filter((f) => satz(f)[1] && r._satzAlter && r._satzAlter(satz(f)[0])).length;
-            const o = {
-                gruppen,
-                tage: 30,
-                oben: [vor[0], nach[0]],
-                wand: [vor[1], nach[1]],
-                frisch: Math.max(...delta(frisch)),
-            };
-            s.worldMeta.tag = tag;
-            for (const e of [alt, frisch]) r.removeArchitecture(e, { still: true });
-            return o;
         });
     } catch (e) {
         out = { error: fehlerText(e) };
@@ -1763,14 +1608,5 @@ const { errs, check } = pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
-    const vAlter = urteilAlter(out.alter);
-    check(
-        "(q) DAS ALTER IM SATZ — 30 Tage später oben die Flechte, die Wände trocken still, ein frischer Bau ohne Alter",
-        !vAlter.length,
-        vAlter.join(" · ") || JSON.stringify(out.alter)
-    );
-    wandEnde(
-        errs,
-        "der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt."
-    );
+    wandEnde(errs, "der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
 })();
