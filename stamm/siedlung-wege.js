@@ -53,11 +53,42 @@ class AnazhRealm_siedlung_wege {
         };
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
-        const wege = karte(N, 2, THREE.RGFormat, "wege-karte", W.null);
+        // DIE KARTEN UND IHRE UNIFORMEN SIND GUT DER SEITE (`_seitenGut`, tore.K1): der Boden-Stoff und der Stoff des Fern-Rings
+        // lesen sie und reisen über die Weltgrenze — jede Welt nimmt dieselben Texturen und leert sie (ihre Wege malt sie neu).
+        // Bis hier legte jede Welt eigene an, und jeder Stoff, der sie las, baute je Durchgang seinen Graphen neu.
         // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
         // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff.
-        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu");
-        const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
+        const {
+            wege,
+            streu,
+            fluesse,
+            U: stufenU,
+        } = this._seitenGut(
+            "wege-karte",
+            () => ({
+                wege: karte(N, 2, THREE.RGFormat, "wege-karte", W.null),
+                streu: karte(kN, 2, THREE.RGFormat, "kronen-streu"),
+                fluesse: karte(N, 1, THREE.RedFormat, "fluss-karte"),
+                U: W.stufen.map((S) =>
+                    this._uniformHeimatTeilen({
+                        mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+                        groesse: TSL.uniform(S.fensterM),
+                    })
+                ),
+            }),
+            (g) => {
+                for (const [k, nul] of [
+                    [g.wege, W.null],
+                    [g.streu, 0],
+                    [g.fluesse, 0],
+                ]) {
+                    k.tex.image.data.fill(nul);
+                    k.tex.clearLayerUpdates();
+                    k.tex.needsUpdate = true;
+                }
+                g.U.forEach((U, si) => (U.mitte.value.set(0, 0), (U.groesse.value = W.stufen[si].fensterM)));
+            }
+        );
         const stufen = W.stufen.map((S, si) => {
             const daten = wege.schicht(si);
             const tex = wege.tex;
@@ -74,10 +105,7 @@ class AnazhRealm_siedlung_wege {
                 schmutz: null,
                 upload: 0,
             };
-            const U = this._uniformHeimatTeilen({
-                mitte: TSL.uniform(new THREE.Vector2(0, 0)),
-                groesse: TSL.uniform(S.fensterM),
-            });
+            const U = stufenU[si];
             // DIE FLUSS-KARTE dieser Stufe (K16, die Naht des Wassers): dasselbe Fenster, dasselbe Raster wie die Wege — je Texel
             // der Anteil, den das Wasser eines Flusses deckt (`_flussKarteMalen`, dieselben Segmente und Breiten wie
             // `_fernFlussDeckung`). Der Fern-Ring liest sie je Fragment (`_flussKarteNode`): ein 4–17 m breiter Fluss

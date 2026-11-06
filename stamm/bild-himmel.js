@@ -198,6 +198,7 @@ class AnazhRealm_bild_himmel {
                 })(),
             "wolken-karte"
         );
+        this._seitenStoff(pass.material); // sie reist über die Weltgrenze (WELT_GRENZE.seite), ihr Bau bleibt
         st.wolkenKarte = { rt, U, pass, mitte: null, zeit: NaN, deckung: NaN, malZahl: 0, stufen: Math.log2(n) };
         return st.wolkenKarte;
     }

@@ -1550,7 +1550,7 @@ class AnazhRealm_bild_sicht {
         // UNIFORM-HEIMAT (Pflicht-Paar der Diät, die jeder Welt-Stoff bei seiner Erst-Zeichnung trägt): alle Takt-Uniforms
         // des Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
         this._uniformHeimatTeilen(this.state.hydroSurfaceUniforms);
-        this.state.hydroSurfaceMaterial = mat;
+        this.state.hydroSurfaceMaterial = this._seitenStoff(mat); // er reist über die Weltgrenze (WELT_GRENZE.seite)
         return mat;
     }
 
@@ -2786,13 +2786,12 @@ class AnazhRealm_bild_sicht {
         const fr = this.state.fernRing;
         if (!fr) return;
         this._horizontKarteLeeren(); // das Gitter der Horizont-Karte gehört der Welt, die den Ring trug
-        // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
-        // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
+        // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0); die zwei Stoffe, frei und Naht,
+        // sind Gut der Seite (`_seitenGut`, tore.K1) — der nächste Ring zeichnet mit ihnen
         for (const m of fr.meshes || []) {
             if (!m) continue;
             if (this.state.scene) this.state.scene.remove(m);
             this._queueGeometryDispose(m.geometry);
-            if (m.material && typeof m.material.dispose === "function") m.material.dispose();
         }
         // die volle Schale 0: der Träger der Attribute, die ihre zwei Teile teilen (sie zeichnet kein Mesh)
         if (fr.geos && fr.geos[0]) this._queueGeometryDispose(fr.geos[0]);

@@ -249,21 +249,6 @@ class AnazhRealm_gelaende_fern {
         // die Dreiecke der Schale 0, die das Gebaute oder seine Bänder berühren (`_fernRingTeilung`). Eine Tiefe aus dem
         // Fragment kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die Tiefen-Kompression: auf dem EINEN Stoff
         // aller drei Schalen lag sie auf jedem Fragment des Rings (Radeon 890M gpu-bank ABAB +1,28 ms je Frame).
-        const stoff = () =>
-            this._buildToonNodeMaterial({
-                vertexColors: true,
-                side: THREE.DoubleSide,
-                wegeKarte: true,
-                kroneVertex: TSL.attribute("aKrone", "vec4"),
-                wasserVertex: TSL.attribute("aNass", "float"),
-            });
-        const material = stoff();
-        const stoffNaht = stoff();
-        if (!material || !material.colorNode || !stoffNaht || !stoffNaht.colorNode)
-            throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
-        // Die Fabrik schluckt Fehler ihres Albedo-Zweigs still — der Ring prüft seinen Wasser-Anteil selbst (K16, laut).
-        if (!material.emissiveNode || !stoffNaht.emissiveNode)
-            throw new Error("Fern-Ring: der Blick des Wassers (aNass, `_fernWasserBlickNode`) fehlt im Ring-Stoff");
         // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
         // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
         // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
@@ -286,84 +271,116 @@ class AnazhRealm_gelaende_fern {
         if (maskeN > fernKarte.N)
             throw new Error(`Fern-Ring: die Maske (${maskeN}²) passt nicht in die Fern-Karte (${fernKarte.N}²)`);
         const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
-        const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
-        // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
-        const uAnker = TSL.uniform(new THREE.Vector2(anker[0], anker[1]));
-        // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
-        // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
-        this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
-        // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
-        // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
-        // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
-        // Laplace-Runde, λ 0,5) schiebt jeden Vertex um höchstens eine halbe Kante über seine Voxel-Spalte hinaus. Das Deck
-        // beginnt also zwischen ox − ½ s und ox + 1½ s und endet zwischen ox + span − ½ s und ox + span + 1½ s. Sicher getragen
-        // ist die Zelle ohne diese Bänder; ein Band nur, wenn der Nachbar dort gebaut ist und dieselbe Stufe trägt (dann
-        // teilen beide die Vertex-Spalte; über die Stufen-Grenze trägt das Deck nicht sicher — Morph-Kappe, Höhlen-Zweige).
-        // Dort verwirft der Ring (2). Im SAUM — den Bändern am Rand des Gebauten, innen wie außen — zeichnet er und WEICHT dem
-        // Chunk in die Tiefe (`nahtWeiche`, senkrecht über die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das
-        // Deck fehlt, trägt der Ring, wo es steht, gewinnt es (1). Die Kante s der Stufe trägt die Karte im Grün-Kanal (× 10).
-        // Bis 12.10. verwarf die ganze Zelle: an der −X- und −Z-Kante des Gebauten zeichnete niemand (Prüfung: 47 von 52
-        // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante; die Glättung trug Reste bis 1,9 m innen).
-        {
-            const zelleF = TSL.floor(TSL.positionWorld.xz.div(cfg.span));
-            const lokal = TSL.positionWorld.xz.sub(zelleF.mul(cfg.span));
-            const zelle = zelleF.sub(uMaskeZelle0);
-            const lies = (dx, dz) => {
-                const z = zelle.add(TSL.vec2(dx, dz));
-                const drin = z.x
-                    .greaterThanEqual(0)
-                    .and(z.y.greaterThanEqual(0))
-                    .and(z.x.lessThan(maskeN))
-                    .and(z.y.lessThan(maskeN));
-                // die Mitte des Texels (das Gewicht der linearen Filterung liegt dort ganz auf ihm), Stufe 0
-                const uv = TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))
-                    .add(0.5)
-                    .div(fernKarte.N);
-                const t = TSL.texture(fernKarte.tex, uv).depth(TSL.int(1)).level(TSL.float(0));
-                const b = drin.and(t.x.greaterThan(0.5));
-                return { b, s: TSL.select(b, t.w.mul(25.5), TSL.float(0)) };
-            };
-            const N = {};
-            let w = TSL.float(0);
-            for (let dx = -1; dx <= 1; dx++)
-                for (let dz = -1; dz <= 1; dz++) {
-                    N[`${dx},${dz}`] = lies(dx, dz);
-                    w = TSL.max(w, N[`${dx},${dz}`].s);
+        // DIE STOFFE DES RINGS SIND GUT DER SEITE (`_seitenGut`, tore.K1): ihr Graph liest nur Gesetz und Karten der Seite (die
+        // Wege, die Fern-Karte) und die Uniformen von Maske und Anker, die er selbst trägt — jede Welt nimmt dieselben, ein
+        // anderes Raster der Maske (`maskeN`, der Sicht-Regler) ist ein anderes Gut. Bis hier baute jeder Ring zwei Stoffe neu.
+        const { material, stoffNaht, uMaskeZelle0, uAnker } = this._seitenGut(
+            "fern-ring:" + maskeN + ":" + cfg.span,
+            () => {
+                const stoff = () =>
+                    this._buildToonNodeMaterial({
+                        vertexColors: true,
+                        side: THREE.DoubleSide,
+                        wegeKarte: true,
+                        kroneVertex: TSL.attribute("aKrone", "vec4"),
+                        wasserVertex: TSL.attribute("aNass", "float"),
+                    });
+                const material = stoff();
+                const stoffNaht = stoff();
+                if (!material || !material.colorNode || !stoffNaht || !stoffNaht.colorNode)
+                    throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+                // Die Fabrik schluckt Fehler ihres Albedo-Zweigs still — der Ring prüft seinen Wasser-Anteil selbst (K16, laut).
+                if (!material.emissiveNode || !stoffNaht.emissiveNode)
+                    throw new Error(
+                        "Fern-Ring: der Blick des Wassers (aNass, `_fernWasserBlickNode`) fehlt im Ring-Stoff"
+                    );
+                const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
+                // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
+                const uAnker = TSL.uniform(new THREE.Vector2(anker[0], anker[1]));
+                // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
+                // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
+                this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
+                // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
+                // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
+                // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
+                // Laplace-Runde, λ 0,5) schiebt jeden Vertex um höchstens eine halbe Kante über seine Voxel-Spalte hinaus. Das Deck
+                // beginnt also zwischen ox − ½ s und ox + 1½ s und endet zwischen ox + span − ½ s und ox + span + 1½ s. Sicher getragen
+                // ist die Zelle ohne diese Bänder; ein Band nur, wenn der Nachbar dort gebaut ist und dieselbe Stufe trägt (dann
+                // teilen beide die Vertex-Spalte; über die Stufen-Grenze trägt das Deck nicht sicher — Morph-Kappe, Höhlen-Zweige).
+                // Dort verwirft der Ring (2). Im SAUM — den Bändern am Rand des Gebauten, innen wie außen — zeichnet er und WEICHT dem
+                // Chunk in die Tiefe (`nahtWeiche`, senkrecht über die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das
+                // Deck fehlt, trägt der Ring, wo es steht, gewinnt es (1). Die Kante s der Stufe trägt die Karte im Grün-Kanal (× 10).
+                // Bis 12.10. verwarf die ganze Zelle: an der −X- und −Z-Kante des Gebauten zeichnete niemand (Prüfung: 47 von 52
+                // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante; die Glättung trug Reste bis 1,9 m innen).
+                {
+                    const zelleF = TSL.floor(TSL.positionWorld.xz.div(cfg.span));
+                    const lokal = TSL.positionWorld.xz.sub(zelleF.mul(cfg.span));
+                    const zelle = zelleF.sub(uMaskeZelle0);
+                    const lies = (dx, dz) => {
+                        const z = zelle.add(TSL.vec2(dx, dz));
+                        const drin = z.x
+                            .greaterThanEqual(0)
+                            .and(z.y.greaterThanEqual(0))
+                            .and(z.x.lessThan(maskeN))
+                            .and(z.y.lessThan(maskeN));
+                        // die Mitte des Texels (das Gewicht der linearen Filterung liegt dort ganz auf ihm), Stufe 0
+                        const uv = TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))
+                            .add(0.5)
+                            .div(fernKarte.N);
+                        const t = TSL.texture(fernKarte.tex, uv).depth(TSL.int(1)).level(TSL.float(0));
+                        const b = drin.and(t.x.greaterThan(0.5));
+                        return { b, s: TSL.select(b, t.w.mul(25.5), TSL.float(0)) };
+                    };
+                    const N = {};
+                    let w = TSL.float(0);
+                    for (let dx = -1; dx <= 1; dx++)
+                        for (let dz = -1; dz <= 1; dz++) {
+                            N[`${dx},${dz}`] = lies(dx, dz);
+                            w = TSL.max(w, N[`${dx},${dz}`].s);
+                        }
+                    const T00 = N["0,0"];
+                    // je Achse das untere Band (bis 1½ s) und das obere (ab span − ½ s)
+                    const untenX = lokal.x.lessThan(w.mul(1.5));
+                    const untenZ = lokal.y.lessThan(w.mul(1.5));
+                    const nahX = untenX.or(lokal.x.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+                    const nahZ = untenZ.or(lokal.y.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+                    const wahl = (a, b, c) => ({ b: TSL.select(a, b.b, c.b), s: TSL.select(a, b.s, c.s) });
+                    const TX = wahl(untenX, N["-1,0"], N["1,0"]);
+                    const TZ = wahl(untenZ, N["0,-1"], N["0,1"]);
+                    const TXZ = wahl(untenX, wahl(untenZ, N["-1,-1"], N["-1,1"]), wahl(untenZ, N["1,-1"], N["1,1"]));
+                    const traegt = (T) => T.b.and(T.s.equal(T00.s));
+                    const sicher = T00.b
+                        .and(nahX.not().or(traegt(TX)))
+                        .and(nahZ.not().or(traegt(TZ)))
+                        .and(nahX.and(nahZ).not().or(traegt(TXZ)));
+                    const saum = sicher
+                        .not()
+                        .and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
+                    stoffNaht.maskNode = sicher.not();
+                    // die Weiche: der Strahl bis zur um H gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|). H trägt
+                    // den Fehler der MASCHE (`_fernRingWeiche`, der CPU-Spiegel): ihre Ecken liegen auf dem Feld, dazwischen
+                    // interpoliert sie linear — über einer Wand des Feldes (Sockel, Höhlen-Mündung, Kanal) steht sie bis zu ihrer Steigung
+                    // × ihrem Durchmesser über der Fläche (Band 9 13.10.: die Masche 516…528 m über einer 15-m-Wand stand 7,6 m über dem
+                    // Deck, die feste Weiche 6 m schnitt ein). H·|n_y| = max(nahtWeiche·|n_y|, |n_xz|·Durchmesser).
+                    const pv = TSL.positionView;
+                    const lang = pv.length();
+                    const nW = TSL.normalWorldGeometry;
+                    const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
+                    const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
+                        .mul(AnazhRealm._fernRingMascheJeM())
+                        .add(schalen[0].snap * Math.SQRT2);
+                    const hNy = TSL.max(TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)), TSL.length(nW.xz).mul(masche));
+                    const dt = TSL.min(hNy.div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)), TSL.float(F.nahtWeicheMax));
+                    const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
+                    stoffNaht.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
                 }
-            const T00 = N["0,0"];
-            // je Achse das untere Band (bis 1½ s) und das obere (ab span − ½ s)
-            const untenX = lokal.x.lessThan(w.mul(1.5));
-            const untenZ = lokal.y.lessThan(w.mul(1.5));
-            const nahX = untenX.or(lokal.x.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
-            const nahZ = untenZ.or(lokal.y.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
-            const wahl = (a, b, c) => ({ b: TSL.select(a, b.b, c.b), s: TSL.select(a, b.s, c.s) });
-            const TX = wahl(untenX, N["-1,0"], N["1,0"]);
-            const TZ = wahl(untenZ, N["0,-1"], N["0,1"]);
-            const TXZ = wahl(untenX, wahl(untenZ, N["-1,-1"], N["-1,1"]), wahl(untenZ, N["1,-1"], N["1,1"]));
-            const traegt = (T) => T.b.and(T.s.equal(T00.s));
-            const sicher = T00.b
-                .and(nahX.not().or(traegt(TX)))
-                .and(nahZ.not().or(traegt(TZ)))
-                .and(nahX.and(nahZ).not().or(traegt(TXZ)));
-            const saum = sicher.not().and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
-            stoffNaht.maskNode = sicher.not();
-            // die Weiche: der Strahl bis zur um H gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|). H trägt
-            // den Fehler der MASCHE (`_fernRingWeiche`, der CPU-Spiegel): ihre Ecken liegen auf dem Feld, dazwischen
-            // interpoliert sie linear — über einer Wand des Feldes (Sockel, Höhlen-Mündung, Kanal) steht sie bis zu ihrer Steigung
-            // × ihrem Durchmesser über der Fläche (Band 9 13.10.: die Masche 516…528 m über einer 15-m-Wand stand 7,6 m über dem
-            // Deck, die feste Weiche 6 m schnitt ein). H·|n_y| = max(nahtWeiche·|n_y|, |n_xz|·Durchmesser).
-            const pv = TSL.positionView;
-            const lang = pv.length();
-            const nW = TSL.normalWorldGeometry;
-            const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
-            const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
-                .mul(AnazhRealm._fernRingMascheJeM())
-                .add(schalen[0].snap * Math.SQRT2);
-            const hNy = TSL.max(TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)), TSL.length(nW.xz).mul(masche));
-            const dt = TSL.min(hNy.div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)), TSL.float(F.nahtWeicheMax));
-            const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
-            stoffNaht.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
-        }
+                return { material, stoffNaht, uMaskeZelle0, uAnker };
+            },
+            (g) => {
+                g.uMaskeZelle0.value.set(0, 0);
+                g.uAnker.value.set(anker[0], anker[1]);
+            }
+        );
         const meshes = [];
         const geos = [];
         const zeichne = (geo, stoffZ) => {
@@ -706,8 +723,11 @@ class AnazhRealm_gelaende_fern {
         geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
         geo.computeBoundingSphere();
         geo.userData.kammArt = art;
+        // der Stoff ist Gut der Seite (`_seitenGut`, tore.K1): jede Krone jeder Welt zeichnet mit demselben Graphen
         if (!kk.stoff)
-            kk.stoff = this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide });
+            kk.stoff = this._seitenGut("kamm-krone", () =>
+                this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide })
+            );
         if (kk.mesh) {
             if (st.scene) st.scene.remove(kk.mesh);
             this._queueGeometryDispose(kk.mesh.geometry);
@@ -777,8 +797,7 @@ class AnazhRealm_gelaende_fern {
             if (this.state.scene) this.state.scene.remove(kk.mesh);
             this._queueGeometryDispose(kk.mesh.geometry);
         }
-        if (kk.stoff) kk.stoff.dispose();
-        this.state.kammKrone = null;
+        this.state.kammKrone = null; // ihr Stoff ist Gut der Seite (`_seitenGut`): er bleibt
     }
 
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
@@ -1374,26 +1393,47 @@ class AnazhRealm_gelaende_fern {
         const K = AnazhRealm.FERN_KRONE_NAH;
         // DIE FERN-KARTE: EINE Array-Textur, Schicht 0 die Krone des nahen Bodens, Schicht 1 die Maske des Fern-Rings
         // (`_fernRingMaskeHoch`) — EIN Sampler für beide (gate:webgl-probe W6: ≤ 16 Einheiten je Stoff)
-        const lagen = new Uint8Array(K.N * K.N * 4 * 2);
+        // Karte und Uniformen sind GUT DER SEITE (`_seitenGut`, tore.K1): der Boden-Stoff und der Stoff des Rings lesen sie über
+        // die Weltgrenze — jede Welt nimmt sie geleert (ihre Krone und ihre Maske schreibt sie neu)
+        const leer = (U) => {
+            U.mitte.value.set(0, 0);
+            U.groesse.value = 1;
+            U.bereit.value = 0;
+            U.waldR.value = 0;
+            U.spieler.value.set(0, 0);
+        };
+        const { lagen, tex, U } = this._seitenGut(
+            "fern-krone-nah",
+            () => {
+                const lagen = new Uint8Array(K.N * K.N * 4 * 2);
+                const tex = new THREE.DataArrayTexture(lagen, K.N, K.N, 2);
+                tex.format = THREE.RGBAFormat;
+                tex.type = THREE.UnsignedByteType;
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.minFilter = THREE.LinearFilter;
+                tex.magFilter = THREE.LinearFilter;
+                tex.wrapS = THREE.ClampToEdgeWrapping;
+                tex.wrapT = THREE.ClampToEdgeWrapping;
+                tex.generateMipmaps = false;
+                tex.name = "fern-krone-nah";
+                tex.needsUpdate = true;
+                const U = this._uniformHeimatTeilen({
+                    mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+                    groesse: TSL.uniform(1),
+                    bereit: TSL.uniform(0),
+                    waldR: TSL.uniform(0),
+                    spieler: TSL.uniform(new THREE.Vector2(0, 0)),
+                });
+                return { lagen, tex, U };
+            },
+            (g) => {
+                g.lagen.fill(0);
+                g.tex.clearLayerUpdates();
+                g.tex.needsUpdate = true;
+                leer(g.U);
+            }
+        );
         const daten = lagen.subarray(0, K.N * K.N * 4);
-        const tex = new THREE.DataArrayTexture(lagen, K.N, K.N, 2);
-        tex.format = THREE.RGBAFormat;
-        tex.type = THREE.UnsignedByteType;
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.wrapS = THREE.ClampToEdgeWrapping;
-        tex.wrapT = THREE.ClampToEdgeWrapping;
-        tex.generateMipmaps = false;
-        tex.name = "fern-krone-nah";
-        tex.needsUpdate = true;
-        const U = this._uniformHeimatTeilen({
-            mitte: TSL.uniform(new THREE.Vector2(0, 0)),
-            groesse: TSL.uniform(1),
-            bereit: TSL.uniform(0),
-            waldR: TSL.uniform(0),
-            spieler: TSL.uniform(new THREE.Vector2(0, 0)),
-        });
         st.fernKroneNah = {
             N: K.N,
             tex,

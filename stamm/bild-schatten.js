@@ -154,7 +154,16 @@ class AnazhRealm_bild_schatten {
         if (typeof Quad !== "function") throw new Error("RÜCKSTRAHL: Quad der Post-Kette fehlt (Vendor-Drift)");
         const quad = new Quad(mat);
         quad.name = "rueckstrahl:boden";
-        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0, sig: null, sprung: false };
+        // er reist über die Weltgrenze (WELT_GRENZE.seite), sein Bau bleibt (`_seitenStoff`)
+        st.rueckstrahlPass = {
+            quad,
+            mat: this._seitenStoff(mat),
+            U,
+            vp: new THREE.Matrix4(),
+            laeufe: 0,
+            sig: null,
+            sprung: false,
+        };
         return st.rueckstrahlPass;
     }
 
@@ -1462,7 +1471,15 @@ class AnazhRealm_bild_schatten {
         })();
         const quadGlatt = new Quad(glatt);
         quadGlatt.name = "kontakt:verdeckung:glatt";
-        st.kontaktPass = { quad, mat, quadGlatt, glatt, U, vp: new THREE.Matrix4() };
+        // er reist über die Weltgrenze (WELT_GRENZE.seite), seine Bauten bleiben (`_seitenStoff`)
+        st.kontaktPass = {
+            quad,
+            mat: this._seitenStoff(mat),
+            quadGlatt,
+            glatt: this._seitenStoff(glatt),
+            U,
+            vp: new THREE.Matrix4(),
+        };
         return st.kontaktPass;
     }
 

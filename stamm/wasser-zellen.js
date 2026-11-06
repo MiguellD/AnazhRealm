@@ -1495,7 +1495,7 @@ class AnazhRealm_wasser_zellen {
             himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
             felsImVertex: true, // die Vertex-Farbe IST der Fels-Stoff (`_felsStoff`), der Shader legt nur die feinen Bänke auf
         });
-        this.state.voxelChunkMaterial = mat;
+        this.state.voxelChunkMaterial = this._seitenStoff(mat); // er reist über die Weltgrenze (WELT_GRENZE.seite)
         return mat;
     }
 

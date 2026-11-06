@@ -774,6 +774,7 @@ class AnazhRealm_bild_kosten {
         const NEUTRAL = AnazhRealm.BAU_NEUTRAL;
         const blick = { get: (m, p) => (NEUTRAL.includes(p) && typeof m[p] === "number" ? 1 : Reflect.get(m, p, m)) };
         const bau = new WeakMap(); // Render-Objekt → sein Bau-Schlüssel
+        const welt = this;
         N.getForRenderCacheKey = function (ro) {
             let k = bau.get(ro);
             if (k !== undefined) return k;
@@ -786,9 +787,63 @@ class AnazhRealm_bild_kosten {
                 k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
             }
             bau.set(ro, k);
+            welt._seitenBauHalten(ro, k);
             return k;
         };
+        // DER BAU EINES STOFFS DER SEITE BLEIBT (tore.K1, `_seitenStoff`): r184 wirft einen Knoten-Bau aus dem Cache, sobald sein
+        // letztes Render-Objekt fällt (`usedTimes` 0) — beim Welt-Wechsel fällt jede Gestalt der alten Welt, und der Stoff, der
+        // bleibt, baute in der Ziel-Welt denselben Graphen neu. Sein Schlüssel hält, bis der Stoff selbst geht (`dispose`).
+        const C = N.nodeBuilderCache;
+        const raus = C.delete.bind(C);
+        C.delete = (k) => (welt._seitenBau && welt._seitenBau.halt.has(k) ? false : raus(k));
         N.__anazhBauSchluessel = true;
+    }
+
+    // DER STOFF DER SEITE (tore.K1, der Durchgang): ein Stoff, dessen Graph die Seite trägt (er reist über die Weltgrenze,
+    // `WELT_GRENZE.seite` oder `_seitenGut`), hält seinen Knoten-Bau über jeden Welt-Wechsel (`_gestaltSchluessel`): r184
+    // schlüsselt den Bau nach der Identität seiner Knoten, ein Graph, den jede Welt neu anlegte, baute je Durchgang neu — Radeon
+    // 3be28b69, der Weg zurück in eine besuchte Welt: 14–35 Knoten-Bauten, 290–720 ms unter dem Ladeschirm, je Bau bis 92 ms am
+    // Stück. Gibt der Stoff sich frei (`dispose`), lässt die Seite seine Bauten los.
+    _seitenStoff(mat) {
+        if (!mat || !mat.isMaterial) return mat;
+        const S = this._seitenBau || (this._seitenBau = { stoffe: new WeakMap(), halt: new Set() });
+        if (S.stoffe.has(mat)) return mat;
+        const keys = new Set();
+        S.stoffe.set(mat, keys);
+        mat.addEventListener("dispose", () => {
+            S.stoffe.delete(mat);
+            const N = this.state.renderer && this.state.renderer._nodes;
+            for (const k of keys) {
+                S.halt.delete(k);
+                const s = N && N.nodeBuilderCache.get(k);
+                if (s && !(s.usedTimes > 0)) N.nodeBuilderCache.delete(k);
+            }
+        });
+        return mat;
+    }
+    // der Bau-Schlüssel eines Render-Objekts, dessen Stoff (im Schatten-Pass der Stoff des Werfers) der Seite gehört
+    _seitenBauHalten(ro, k) {
+        const S = this._seitenBau;
+        if (!S) return;
+        const m =
+            ro.material && ro.material.isShadowPassMaterial === true ? ro.object && ro.object.material : ro.material;
+        const keys = m && S.stoffe.get(m);
+        if (keys) (keys.add(k), S.halt.add(k));
+    }
+
+    // DAS GUT DER SEITE (tore.K1): was eine Welt-Gestalt an Stoff und Karten trägt, deren Programm die Seite hält — der Stoff
+    // des Fern-Rings, der Kamm-Krone, die Karten der Wege und der Fern-Krone samt ihren Uniformen —, entsteht EINMAL je Seite
+    // (`bauen`); jede weitere Welt nimmt es und leert es für sich (`leeren`: was die alte malte, malt die neue neu). Jeder
+    // Stoff darin ist ein Stoff der Seite (`_seitenStoff`). Die Welt gibt es nie frei.
+    _seitenGut(schluessel, bauen, leeren) {
+        const G = this._seitenGueter || (this._seitenGueter = new Map());
+        let g = G.get(schluessel);
+        if (g === undefined) {
+            G.set(schluessel, (g = bauen()));
+            for (const v of g && typeof g === "object" ? [g, ...Object.values(g)] : [])
+                if (v && v.isMaterial) this._seitenStoff(v);
+        } else if (leeren) leeren(g);
+        return g;
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
