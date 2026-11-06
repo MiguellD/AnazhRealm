@@ -586,9 +586,9 @@ class AnazhRealm_dienst {
     // die Zeit bis Bedarf in Metern zu Fuß (`_bedarfWeg`, w7-rang) — im Stand der Abstand², voraus rückt ein Ding um s / v0 näher.
     // Leser: der Bake-Takt (`_weltBakeErlaubt` über `_archZiegelD2`, die Gesetz-Kapsel `_streuGesetzSpawn`), die Raten des
     // Bau-Satzes, die Glieder der Kreaturen, die Schlange des Walds (`_waldPlanListe`). Bis w7-rang der Abstand² allein.
-    _spielerD2(x, z) {
+    _spielerD2(x, z, bahn) {
         if (!(this.state.playerMesh && this.state.playerMesh.position)) return 0;
-        return this._bedarfWeg(x, z) ** 2;
+        return this._bedarfWeg(x, z, bahn) ** 2;
     }
     // Die Takt-Distanz eines Baus: der Schlangen-Rang (`_ziegelD2`, gebaute Meshes backen nur vor) oder seine Lage.
     _archZiegelD2(entry) {

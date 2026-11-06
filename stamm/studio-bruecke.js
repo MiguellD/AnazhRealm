@@ -1283,10 +1283,11 @@ class AnazhRealm_studio_bruecke {
         if (darf) while (i < q.length && !darf(q[i])) i++;
         if (i >= q.length) return -1;
         if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS && (halter.warteZug = !halter.warteZug)) return i;
-        let best = this._foundryAuftragD2(q[i].rang.wo);
+        const bahn = this._bedarfBahn(); // der Stand der Bahn EINMAL je Wahl
+        let best = this._foundryAuftragD2(q[i].rang.wo, bahn);
         for (let k = i + 1; k < q.length; k++) {
             if (darf && !darf(q[k])) continue;
-            const d2 = this._foundryAuftragD2(q[k].rang.wo);
+            const d2 = this._foundryAuftragD2(q[k].rang.wo, bahn);
             if (d2 < best) {
                 best = d2;
                 i = k;
@@ -1448,14 +1449,14 @@ class AnazhRealm_studio_bruecke {
             this._foundryPumpe(f);
         });
     }
-    _foundryAuftragD2(wo) {
+    _foundryAuftragD2(wo, bahn) {
         // eine Zahl trägt den Blick-Schlüssel ihres Lesers (`_blickRang`, die Karte) — wie beim Ort gilt er nur vor dem Bild
         if (typeof wo === "number") {
             const A = AnazhRealm.ERSTER_BLICK.ausserD2;
             return !Number.isFinite(wo) ? Infinity : this.state._weltbildDa && wo >= A ? wo - A : wo;
         }
         if (!wo || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
-        const D = this._bedarfWeg(wo.x, wo.z);
+        const D = this._bedarfWeg(wo.x, wo.z, bahn);
         if (!Number.isFinite(D)) return Infinity;
         // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, Bedarf²) — `_blickRang`
         return D * D + this._blickRang(wo.x, wo.z);
@@ -1471,14 +1472,17 @@ class AnazhRealm_studio_bruecke {
     // die Streu in Ring-Reihe — beim GT-Tempo (16 m/s) trat die Welt unfertig in den Sichtkegel
     // (streaming.K2, Null-Renderer an main 6eeeb856: fertig beim Eintritt Boden 42,6 %, Bäume 11,1 %, Karten 7,7 %, Bauten
     // 78,6 %, Streu 0 von 15; mit dem Rang 100 · 98,7 · 100 · 100 %, und 0 statt 1 627 Lücken-Bilder in Sprint und GT, streaming.K1).
-    _bedarfWeg(x, z) {
-        const e = this.state.playerMesh && this.state.playerMesh.position;
+    // `bahn` (optional, `_bedarfBahn`): der Stand der Bahn, den eine Schlange EINMAL je Gang liest — wer viele Dinge ordnet, fragt
+    // Uhr und Tempo nicht je Ding (w15-strom-takt: die Wahl der Foundry und die Pflanz-Schlange fragten je Bild jedes Wartenden,
+    // GT 64 m/s 4,7 s Haupt-Faden in der Minute, davon 3,2 s Uhr und Tempo).
+    _bedarfWeg(x, z, bahn) {
+        const B = bahn || this._bedarfBahn();
+        const e = B.e;
         if (!e) return Infinity;
         const qx = x - e.x,
             qz = z - e.z;
         const d = Math.hypot(qx, qz);
-        const [vx, vz] = this._bedarfTempo();
-        const v0 = this._bedarfFuss();
+        const [vx, vz, v0] = [B.vx, B.vz, B.v0];
         const s = Math.hypot(vx, vz);
         if (!(s > v0 * AnazhRealm.BEDARF.fahrtAb)) return d;
         const a = (qx * vx + qz * vz) / s;
@@ -1486,6 +1490,15 @@ class AnazhRealm_studio_bruecke {
         const w = Math.sqrt(s * s - v0 * v0);
         if (a < (b * v0) / w) return d;
         return ((a + (b * w) / v0) / s) * v0;
+    }
+    // DER STAND DER BAHN für einen Gang (`_bedarfWeg`, `_bedarfAbstand`): der Spieler, das Tempo der Bahn (`_bedarfTempo`) und die
+    // Gier zu Fuß — EIN Objekt je Welt, je Ruf neu gefüllt (ein Gang liest ihn, bevor er den nächsten Gang beginnt).
+    _bedarfBahn() {
+        const B = this._bedarfBahnStand || (this._bedarfBahnStand = { e: null, vx: 0, vz: 0, v0: 1 });
+        B.e = this.state.playerMesh ? this.state.playerMesh.position : null;
+        [B.vx, B.vz] = this._bedarfTempo();
+        B.v0 = this._bedarfFuss();
+        return B;
     }
     // Die Gier zu Fuß (v0 des Rangs): das Gehen des Leibs (`state.speed`, aus dem Körper-Gesetz geeicht), vor der Eichung 1 m/s.
     _bedarfFuss() {
@@ -1547,7 +1560,7 @@ class AnazhRealm_studio_bruecke {
     // schöbe die Vorausschau über eine Welt, die niemand fährt (gate:chunk-satz: die Stufen erreichten ihr Soll nie).
     _bedarfTempo() {
         const B = this._bedarf;
-        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : [0, 0];
+        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : AnazhRealm.BEDARF_STEHT;
     }
     // DER ORT DER BAHN IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau): wo `p` (der Ort eines Lesers — der Spieler, das Auge der Stufen;
     // ohne Angabe der Spieler) mit dem Tempo-Vektor der Bahn sein wird. Jeder Leser, der Dinge NACH ABSTAND zulässt (der Ring des
@@ -1566,11 +1579,12 @@ class AnazhRealm_studio_bruecke {
     // ihn: die feine Stufe steht, bevor die Bahn ankommt, und bleibt, bis sie vorbei ist. Bis w14-strom-tempo galt der nähere
     // der zwei Endpunkte: im GT (Vorlauf 191 m) lag ein Baum in der Mitte der Strecke 95 m von beiden — seine L1 fiel zurück auf
     // die Karte, sobald das Ende des Vorlaufs an ihm vorbei war, und kam erst mit dem Spieler wieder.
-    _bedarfAbstand(x, z, auge) {
+    // `bahn` (optional, `_bedarfBahn`): sein Tempo, EINMAL je Gang gelesen.
+    _bedarfAbstand(x, z, auge, bahn) {
         const e = auge || (this.state.playerMesh && this.state.playerMesh.position);
         if (!e) return Infinity;
         const [qx, qz] = [x - e.x, z - e.z];
-        const [vx, vz] = this._bedarfTempo();
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
         if (!(vx || vz)) return Math.hypot(qx, qz);
         const T = AnazhRealm.BEDARF.vorlaufS;
         const [sx, sz] = [vx * T, vz * T];
@@ -3871,6 +3885,8 @@ AnazhRealm.BEDARF = Object.freeze({
     fahrtAb: 1.05,
     frischMs: 500,
 });
+// Das Tempo der stehenden Bahn (`_bedarfTempo` ohne frischen Takt) — EIN Wert, kein Array je Ruf.
+AnazhRealm.BEDARF_STEHT = Object.freeze([0, 0]);
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind

@@ -1869,59 +1869,111 @@ class AnazhRealm_vegetation_baum {
     }
 
     // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser, Bauten, Lichtungen und Dorf-Flächen, faul aus den Einträgen und
-    // der Wege-Karte gebaut; es fällt bei jedem Spawn/Abriss eines Baus mit Grundriss und mit jeder Fläche, die die Wege-Karte
-    // gewinnt oder verliert (K52), sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
-    // durch die Natur-Wand geht (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein
-    // neues Haus über einem Nachbarn macht den Baum daneben frei).
+    // der Wege-Karte gebaut; ein neuer oder gefallener Grundriss legt es AM ORT neu (`_grundrissFaellt` → `_grundrissAmOrt`), ohne
+    // Kasten ganz. Leser: `_imGrundriss` und wer eine Antwort merkt, die durch die Natur-Wand geht (die Gestalt des Orts
+    // `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein neues Haus über einem Nachbarn macht den Baum daneben frei).
     _grundrissStand() {
         if (this._grundrissGitter) return this._grundrissGitter;
-        const G = AnazhRealm.GRUNDRISS_ZELLE;
         const gitter = (this._grundrissGitter = { zellen: new Map(), wege: new Map() });
-        for (const e of this.state.architectures || []) {
-            const fp = this._grundrissVon(e);
-            if (!fp) continue;
-            const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
-            for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
-                for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
-                    const k = AnazhRealm._grundrissSchluessel(gx, gz);
-                    let l = gitter.zellen.get(k);
-                    if (!l) gitter.zellen.set(k, (l = []));
-                    l.push(e);
-                }
-        }
-        // die Flächen der Dörfer (`_aufWeg`): je Siedlung der Wege-Karte und Zelle die Formen, die sie mit 1 m Rand berühren
-        // ({ quelle, Hülle, formen }) — bis stadt-erwachen stand die Hülle in jeder Zelle mit ALLEN Formen: im Dorf nH 300 (bis
-        // 900 Formen) fragte jeder Punkt jede, die Räumung seiner Flächen (`_wegeRaeumen`) kostete den Takt nach dem Erwachen 73 ms
-        const wk = this.state.wegeKarte;
-        if (wk)
-            for (const b of wk.siedlungen) {
-                const je = new Map();
-                for (const f of b.formen) {
-                    if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
-                    const r = AnazhRealm._wegeFormRadius(f) + 1;
-                    const [gx0, gx1] = [
-                        Math.floor((Math.min(f.ax, f.bx) - r) / G),
-                        Math.floor((Math.max(f.ax, f.bx) + r) / G),
-                    ];
-                    const [gz0, gz1] = [
-                        Math.floor((Math.min(f.az, f.bz) - r) / G),
-                        Math.floor((Math.max(f.az, f.bz) + r) / G),
-                    ];
-                    for (let gx = gx0; gx <= gx1; gx++)
-                        for (let gz = gz0; gz <= gz1; gz++) {
-                            const k = AnazhRealm._grundrissSchluessel(gx, gz);
-                            let e = je.get(k);
-                            if (!e) {
-                                je.set(k, (e = { quelle: b, x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, formen: [] }));
-                                const l = gitter.wege.get(k);
-                                if (l) l.push(e);
-                                else gitter.wege.set(k, [e]);
-                            }
-                            e.formen.push(f);
-                        }
-                }
-            }
+        for (const e of this.state.architectures || []) this._grundrissSetzen(gitter, e);
+        this._grundrissWegeIn(gitter, -Infinity, Infinity, -Infinity, Infinity);
         return gitter;
+    }
+
+    // DER GRUNDRISS AM ORT (w15-strom-takt, Gebot 7): ein Fall im Kasten x0…x1 · z0…z1 legt nur, was er ändern kann, neu — die
+    // Bauten, deren Platz den Kasten erreicht (`_blockerUmPlatz`: wer dort eintrat, sich wandelte oder steht), lösen und setzen
+    // ihre Zellen; die Zellen der Dorf-Flächen im Kasten samt einer Zelle Rand entstehen aus der Wege-Karte neu. Wer den Bestand
+    // verlässt, löst seine Zellen selbst (`_blockerAustritt` → `_grundrissLoesen`). Bis w15-strom-takt fiel das ganze Gitter, und
+    // die nächste Frage baute es aus jedem Eintrag des Bestands neu (GT 64 m/s, 60 s: 12 000 Einträge je Fall, `_grundrissStand`
+    // 4,1 s Haupt-Faden in der Minute — jedes Haus eines Dorfs am Rand der Bahn räumte seine Fläche).
+    _grundrissAmOrt(x0, z0, x1, z1) {
+        const g = this._grundrissGitter;
+        if (!g) return;
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const [mx, mz] = [(x0 + x1) / 2, (z0 + z1) / 2];
+        for (const e of this._blockerUmPlatz(mx, mz, Math.hypot(x1 - x0, z1 - z0) / 2, [])) {
+            this._grundrissLoesen(e);
+            this._grundrissSetzen(g, e);
+        }
+        const [gx0, gx1, gz0, gz1] = [
+            Math.floor(x0 / G) - 1,
+            Math.floor(x1 / G) + 1,
+            Math.floor(z0 / G) - 1,
+            Math.floor(z1 / G) + 1,
+        ];
+        for (let gx = gx0; gx <= gx1; gx++)
+            for (let gz = gz0; gz <= gz1; gz++) g.wege.delete(AnazhRealm._grundrissSchluessel(gx, gz));
+        this._grundrissWegeIn(g, gx0, gx1, gz0, gz1);
+    }
+
+    // Ein Eintrag setzt seinen Grundriss in die Zellen, die er mit 2 m Rand berührt (`_grundrissIn`: das Gitter und die Schlüssel).
+    _grundrissSetzen(g, e) {
+        const fp = this._grundrissVon(e);
+        if (!fp) return;
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+        const keys = [];
+        for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
+            for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
+                const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                let l = g.zellen.get(k);
+                if (!l) g.zellen.set(k, (l = []));
+                l.push(e);
+                keys.push(k);
+            }
+        e._grundrissIn = { g, keys };
+    }
+
+    // Ein Eintrag löst seinen Grundriss aus dem Gitter, in dem er steht (der Fall am Ort, der Austritt aus dem Bestand).
+    _grundrissLoesen(e) {
+        const m = e && e._grundrissIn;
+        if (!m) return;
+        e._grundrissIn = null;
+        if (m.g !== this._grundrissGitter) return;
+        for (const k of m.keys) {
+            const l = m.g.zellen.get(k);
+            const i = l ? l.indexOf(e) : -1;
+            if (i < 0) continue;
+            l.splice(i, 1);
+            if (!l.length) m.g.zellen.delete(k);
+        }
+    }
+
+    // Die Flächen der Dörfer (`_aufWeg`) in den Zellen gx0…gx1 · gz0…gz1: je Siedlung der Wege-Karte und Zelle die Formen, die sie
+    // mit 1 m Rand berühren ({ quelle, Hülle, formen }) — bis stadt-erwachen stand die Hülle in jeder Zelle mit ALLEN Formen: im
+    // Dorf nH 300 (bis 900 Formen) fragte jeder Punkt jede, die Räumung seiner Flächen (`_wegeRaeumen`) kostete den Takt nach dem
+    // Erwachen 73 ms.
+    _grundrissWegeIn(g, gx0, gx1, gz0, gz1) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return;
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        for (const b of wk.siedlungen) {
+            const je = new Map();
+            for (const f of b.formen) {
+                if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)
+                const r = AnazhRealm._wegeFormRadius(f) + 1;
+                const [ax0, ax1] = [
+                    Math.max(gx0, Math.floor((Math.min(f.ax, f.bx) - r) / G)),
+                    Math.min(gx1, Math.floor((Math.max(f.ax, f.bx) + r) / G)),
+                ];
+                const [az0, az1] = [
+                    Math.max(gz0, Math.floor((Math.min(f.az, f.bz) - r) / G)),
+                    Math.min(gz1, Math.floor((Math.max(f.az, f.bz) + r) / G)),
+                ];
+                for (let gx = ax0; gx <= ax1; gx++)
+                    for (let gz = az0; gz <= az1; gz++) {
+                        const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                        let e = je.get(k);
+                        if (!e) {
+                            je.set(k, (e = { quelle: b, x0: b.x0, x1: b.x1, z0: b.z0, z1: b.z1, formen: [] }));
+                            const l = g.wege.get(k);
+                            if (l) l.push(e);
+                            else g.wege.set(k, [e]);
+                        }
+                        e.formen.push(f);
+                    }
+            }
+        }
     }
 
     // Natur nach ihrer ART am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_, der Totholz-Stamm).
@@ -2247,9 +2299,10 @@ class AnazhRealm_vegetation_baum {
         const rang = [];
         let spawned = 0;
         for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
-            // ein Wurf, der während des Takts dazukam, trägt seinen Rang ab hier
+            // ein Wurf, der während des Takts dazukam, trägt seinen Rang ab hier (der Stand der Bahn EINMAL je Runde)
+            const bahn = rang.length < queue.length ? this._bedarfBahn() : null;
             for (let j = rang.length; j < queue.length; j++)
-                rang.push(this._foundryAuftragD2(queue[j] && queue[j].position));
+                rang.push(this._foundryAuftragD2(queue[j] && queue[j].position, bahn));
             let k = queue.length - 1;
             for (let j = k - 1; j >= 0; j--) if (rang[j] < rang[k]) k = j;
             // vor dem ersten Weltbild setzt sie nur Bäume im Blick (`_rangImErstenBlick`), die übrigen setzt der Nachlauf
@@ -2560,15 +2613,16 @@ class AnazhRealm_vegetation_baum {
             !!e._ziegelGebacken ||
             !!this._archKartenPreset(e) ||
             this._schlaeft(e._ziegelSchlaf, wunsch);
+        const bahn = this._bedarfBahn(); // der Stand der Bahn EINMAL je Gang
         for (const entry of K.wach) {
             if (this._schlaeft(entry, wunsch) && ziegelRuht(entry)) {
                 K.wach.delete(entry);
                 K.schlaefer.add(entry);
                 continue;
             }
-            const distSq = this._bedarfAbstand(entry.position.x, entry.position.z, playerPos) ** 2; // entlang der Bahn
+            const distSq = this._bedarfAbstand(entry.position.x, entry.position.z, playerPos, bahn) ** 2; // entlang der Bahn
             // die Reihe der Wartenden: die Zeit bis Bedarf (`_bedarfWeg`, in Metern zu Fuß), bis w7-rang der Abstand
-            const rang = this._spielerD2(entry.position.x, entry.position.z);
+            const rang = this._spielerD2(entry.position.x, entry.position.z, bahn);
             // DIE FERNFORM DER KARTEN-DINGE (Studio-Vertrag B2c `fernform: "karte"`, `_archKartenPreset`): Baum und Strauch
             // tragen ihre Studio-Kette über die Mesh-Zone hinaus und SIND dort ihre Karte — dieselbe EINE Stufen-Wahl wie
             // nah (die Wahrnehmung legt jeden Baum jenseits seines L1↔Karte-Bands auf die Karte, einen Riesen erst dort;
@@ -2814,7 +2868,7 @@ class AnazhRealm_vegetation_baum {
         });
     }
 
-    // Der Weckruf: seine gezeichnete Stufe, sein Typ oder seine Lage wechselt — sein Urteil geht im nächsten Gang. `art`
+    // Der Weckruf (der Cull und die Stufen-Wahl): seine gezeichnete Stufe, sein Typ oder seine Lage wechselt — sein Urteil geht im nächsten Gang. `art`
     // "ein": er tritt in den Bestand, "weg": er verlässt ihn (danach weckt ihn nichts mehr). Leser: Eintritt und Abbau,
     // `_blockerBewegt`, die Instanz-Naht (`_archInstanceAdd`, `_archInstanceRemove`) und das Mesh (`_rebuildArchitectureMesh`,
     // `_cullArchitectureMesh`).
@@ -2822,6 +2876,7 @@ class AnazhRealm_vegetation_baum {
         // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) und sein Schlaf (`_schlafen`) gelten
         // nicht mehr
         if (entry) entry._platzNein = entry._dockNein = entry._schlaf = entry._ziegelSchlaf = undefined;
+        this._stufeWecken(entry, art); // die Stufen-Wahl liest dasselbe (`_stufenWache`): EIN Weckruf für beide Bau-Takte
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
         entry._cullEimer = art === "weg" ? -1 : undefined;
