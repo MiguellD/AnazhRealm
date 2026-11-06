@@ -1651,14 +1651,15 @@ class AnazhRealm_studio_bruecke {
     // dem Spieler wächst um Tempo × T, im Stand bleibt er der Ring. Leser: der Vorlauf der Orte (`_autoSettlementZelle`,
     // `_tickAutoSettlement`); bis w13-dorf-strom bereitete sich ein Ort in einer festen Strecke vor seinem Erwachen vor
     // (`AUTO_SETTLEMENT.vorlaufM` 160 m): im GT (16 m/s) lag sein Grund erst 269–301 m vor dem Anker, der Wald im Kegel fiel.
-    _bedarfZeit(x, z, r) {
-        const e = this.state.playerMesh && this.state.playerMesh.position;
+    // `bahn` (optional, `_bedarfBahn`): Spieler und Tempo, EINMAL je Gang gelesen.
+    _bedarfZeit(x, z, r, bahn) {
+        const e = bahn ? bahn.e : this.state.playerMesh && this.state.playerMesh.position;
         if (!e) return Infinity;
         const qx = x - e.x,
             qz = z - e.z;
         const d2 = qx * qx + qz * qz;
         if (d2 <= r * r) return 0;
-        const [vx, vz] = this._bedarfTempo();
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
         const s = Math.hypot(vx, vz);
         if (!(s > 0)) return Infinity;
         const a = (qx * vx + qz * vz) / s;

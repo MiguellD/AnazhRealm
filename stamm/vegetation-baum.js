@@ -2758,7 +2758,7 @@ class AnazhRealm_vegetation_baum {
                     this._cullArchitectureMesh(entry);
                     regung++;
                 }
-                const vor = this._archVorbau(entry, radius); // die Stufe des Eintritts, binnen `vorbauS` bestellt
+                const vor = this._archVorbau(entry, radius, bahn); // die Stufe des Eintritts, binnen `vorbauS` bestellt
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
@@ -2886,11 +2886,12 @@ class AnazhRealm_vegetation_baum {
     // rangiert sie nach der Zeit bis Bedarf). Bis w13-dorf-strom bestellte erst die Zone samt dem Vorlauf der Bahn (3 s) die
     // Stufe: im GT wartete ein Felsturm 6,4 s auf die Foundry und trat 23 Bilder ungezeichnet in den Kegel (Fahrt-Probe dorf).
     // Rückgabe: der Weg der Bahn in `vorbauS` (m) — um ihn endet der Schlaf des Eintrags früher.
-    _archVorbau(entry, R) {
-        const [vx, vz] = this._bedarfTempo();
+    // `bahn` (optional, `_bedarfBahn`): der Stand der Bahn des Gangs — der Cull fragt Uhr und Tempo nie je Eintrag.
+    _archVorbau(entry, R, bahn) {
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
         const weg = Math.hypot(vx, vz) * AnazhRealm.BEDARF.vorbauS;
         const e = entry.position;
-        if (!weg || !this._foundryEnabled() || !(this._bedarfZeit(e.x, e.z, R) <= AnazhRealm.BEDARF.vorbauS))
+        if (!weg || !this._foundryEnabled() || !(this._bedarfZeit(e.x, e.z, R, bahn) <= AnazhRealm.BEDARF.vorbauS))
             return weg;
         const preset = this._foundryPresetForEntry(entry);
         const p = this.state.playerMesh.position;

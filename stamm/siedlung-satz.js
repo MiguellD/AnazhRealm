@@ -1252,9 +1252,21 @@ class AnazhRealm_siedlung_satz {
         }
     }
 
-    // DIE SUBSTANZ EINES BAUPLANS (Tags, Affordanzen, ihre Stärke): rein aus Bauplan und Stoffen. Ein Gang, in dem beide stehen
-    // (die Pflanz-Schlange, `_tickPendingVegSpawns` → `_bauplanJe`), rechnet sie EINMAL je Bauplan; sonst je Ruf.
+    // DIE SUBSTANZ EINES BAUPLANS (Tags, Affordanzen, ihre Stärke): rein aus Bauplan und Stoffen. Ein EINGEBAUTER Bauplan (`builtIn`:
+    // die Werkstatt weist jede Änderung ab, ein eingebauter Stoff lässt sich nicht überschreiben — der Wald, die gewachsenen Bäume)
+    // trägt sie EINMAL (`_bauplanSubstanzMerk`), solange jeder Stoff seiner Teile dasselbe Objekt der Tafel ist (ein Laden, ein
+    // neuer Stoff unter dem Namen legt sie neu); je Exemplar nur seine Lage (w15-strom-takt: GT 64 m/s, 235 Bäume und Karten je
+    // Sekunde, die Substanz 1,1 s Haupt-Faden in der Minute). Ein Gang der Pflanz-Schlange (`_bauplanJe`) rechnet die übrigen
+    // einmal; sonst je Ruf.
     _bauplanSubstanz(bp) {
+        const W = this._bauplanSubstanzMerk || (this._bauplanSubstanzMerk = new WeakMap());
+        const mats = this.state.materials;
+        const fest = bp.builtIn === true && Array.isArray(bp.parts);
+        if (fest) {
+            const m = W.get(bp);
+            if (m && m.mats === mats && m.stoffe.every((n, i) => (mats ? mats[n] : undefined) === m.objekte[i]))
+                return m.sub;
+        }
         const M = this._bauplanJe;
         const alt = M ? M.get(bp) : null;
         if (alt) return alt;
@@ -1262,6 +1274,10 @@ class AnazhRealm_siedlung_satz {
         const aff = this.computeBlueprintAffordances(bp, tags);
         const sub = { tags, aff, staerke: this.computeAffordanceStrength(bp, aff, tags) };
         if (M) M.set(bp, sub);
+        if (fest) {
+            const stoffe = [...new Set(bp.parts.map((t) => (t && t.material) || "stein"))];
+            W.set(bp, { mats, stoffe, objekte: stoffe.map((n) => (mats ? mats[n] : undefined)), sub });
+        }
         return sub;
     }
 
