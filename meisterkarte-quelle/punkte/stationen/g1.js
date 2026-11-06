@@ -1003,6 +1003,178 @@ function schneeUrteil(e) {
     };
 }
 
+// wetter.K2#2 — DIE PFÜTZE UND DIE TROCKEN-KURVE (w15-pfuetze), headless: die Welt mit Null-Renderer an der Mess-Wiese, 10 min Regen
+// als Wort des Spielers (ohne Cross-Fade), dann je Sicht (Ego, Third) die Ecken des Boden-Satzes im Blick bis 40 m — ihre Mulde aus den
+// Bytes, die die GPU liest (die vierte Komponente der Normale im Satz), ihre Deckung über das Pfützen-Gesetz des Stamms
+// (`_pfuetzeGesetz`) unter dem Film der Welt und der Himmels-Sicht (das Normal-Ziel). Gegen sie die Senke des Kerns, FRISCH an der
+// Ecke gerechnet (das Kasten-Mittel `MULDE.kasten` × `MULDE.gitterM` um die Ecke minus die Höhe — ohne Gitter, Kappe und Gefälle): r
+// nach Pearson. Die MUTANTE im selben Lauf: die Mulden-Bytes im Satz um 97 Ecken verrutscht (ein Pack-Fehler: die Pfütze am falschen
+// Ort), danach zurück — r muss fallen. Danach
+// klar: die Kurve der Nässe und der Pfützen-Fläche je 30 s (`_naesseTakt`), bis beide 0 sind; `fall` die Fall-Geschwindigkeit des
+// Regens, die die Welt zeichnet (`terrain:REGEN_GESETZ`).
+async function wetterK2Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 600000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    const out = {};
+    let code = 2;
+    const probe = async () => {
+        const R = (x) => (Number.isFinite(x) ? +x.toFixed(3) : null);
+        const [G, L] = [globalThis.__gelaendeCore, r._gelaende()];
+        const M = G.MULDE;
+        if (!M || !AnazhRealm._pfuetzeGesetz) return { fehler: "keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz" };
+        await window.__wasserStrom([-280.4, -1045.6], 1);
+        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)), ecke: (x) => x };
+        const S = st.chunkSaetze.get("boden");
+        const [P, N, Z] = ["position", "normal", "aNormalZiel"].map((n) => S.geom.attributes[n].array);
+        const senke = (x, z) => {
+            let s = -G.hoehe(L, x, z, true);
+            for (let b = -M.kasten; b <= M.kasten; b++) for (let a = -M.kasten; a <= M.kasten; a++) s += G.hoehe(L, x + a * M.gitterM, z + b * M.gitterM, true);
+            return s / ((2 * M.kasten + 1) ** 2 - 1) - G.hoehe(L, x, z, true);
+        };
+        const deckung = (i) => AnazhRealm._pfuetzeGesetz(A, Math.max(0, N[i * 4 + 3] / 127), st.naesse).deckung * Math.max(0, Z[i * 4 + 3] / 127);
+        const blick = new THREE.Frustum();
+        const ecken = () => {
+            st.camera.updateMatrixWorld(true);
+            blick.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(st.camera.projectionMatrix, st.camera.matrixWorldInverse));
+            const v = new THREE.Vector3();
+            const l = [];
+            for (const b of S.bloecke.values())
+                for (let i = b.vStart; i < b.vStart + b.vAnzahl; i += 2)
+                    if (v.fromArray(P, i * 3).distanceTo(st.camera.position) < 40 && blick.containsPoint(v) && N[i * 4 + 1] > 90) l.push(i);
+            return l;
+        };
+        const mass = (l) => {
+            const [d, m] = [l.map(deckung), l.map((i) => senke(P[i * 3], P[i * 3 + 2]))];
+            const mw = (x) => x.reduce((a, b) => a + b, 0) / x.length;
+            const [md, mm] = [mw(d), mw(m)];
+            let [sdm, sdd, smm] = [0, 0, 0];
+            for (let j = 0; j < l.length; j++) [sdm, sdd, smm] = [sdm + (d[j] - md) * (m[j] - mm), sdd + (d[j] - md) ** 2, smm + (m[j] - mm) ** 2];
+            return { ecken: l.length, pfuetze: d.filter((x) => x > 0.5).length, r: R(sdm / Math.sqrt(sdd * smm)) };
+        };
+        const wort = (w) => (r._setWeather(w, "human"), (st.weatherTransition = null));
+        wort("rainy");
+        r._naesseTakt(600);
+        const erg = {};
+        for (const s of ["first", "third"]) {
+            r.setCameraMode(s);
+            for (let k = 0; k < 4; k++) window.__handTakt();
+            erg[s === "first" ? "ego" : "third"] = mass(ecken());
+        }
+        r.setCameraMode("first");
+        for (let k = 0; k < 4; k++) window.__handTakt();
+        const l = ecken();
+        const w = l.map((i) => N[i * 4 + 3]);
+        l.forEach((i, j) => (N[i * 4 + 3] = w[(j + 97) % w.length]));
+        try {
+            erg.mutante = mass(l);
+        } finally {
+            l.forEach((i, j) => (N[i * 4 + 3] = w[j]));
+        }
+        const flaeche = () => l.filter((i) => deckung(i) > 0.5).length;
+        const kurve = [[R(st.naesse), flaeche()]];
+        wort("sunny");
+        while (kurve.length < 80 && (st.naesse > 0 || kurve[kurve.length - 1][1] > 0)) kurve.push([R(r._naesseTakt(30)), flaeche()]);
+        erg.kurve = { kurve, fall: AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null).fall };
+        return erg;
+    };
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r.state.hydrosphere && r.state.hydrosphere.ready, { timeout: 300000, polling: 250 });
+        await page.evaluate(WASSER_INSTALL);
+        await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6)));
+        const erg = await page.evaluate(probe);
+        if (erg.fehler) throw new Error(erg.fehler);
+        for (const n of ["ego", "third", "mutante", "kurve"]) {
+            out[n] = erg[n];
+            console.log("PFUETZE " + n + " " + JSON.stringify(erg[n]));
+        }
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("PFUETZE FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        server.close();
+    }
+    process.exit(code);
+}
+// DAS URTEIL der headless-Hälfte: je Sicht ≥ 20 Ecken Pfütze in den Senken des Kerns (r ≥ 0,5), die Mutante erkannt (r < 0,5),
+// benetzt (Nässe ≥ 0,85, Pfützen > 0), trocken nach 5–15 min ohne Sprung (je 30 s fällt die Fläche höchstens um ein Viertel ihres
+// Anfangs, Nässe und Fläche steigen nie), der Regen fällt ≤ 9,2 m/s
+function wetterK2Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^PFUETZE FEHLER (.*)$/m.exec(t) || [])[1];
+    const L = Object.fromEntries(["ego", "third", "mutante", "kurve"].map((n) => [n, jsonZeile(t, new RegExp("^PFUETZE " + n + " \\{"))]));
+    const fehlt = Object.keys(L).filter((n) => !L[n]);
+    if (fehlt.length) return { gruen: false, zahl: "keine PFUETZE-Zeile für " + fehlt.join(", ") + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    for (const n of ["ego", "third"]) {
+        if (!(L[n].pfuetze >= 20)) rot.push(n + " nur " + L[n].pfuetze + " Ecken Pfütze");
+        if (!(L[n].r >= 0.5)) rot.push(n + " r " + L[n].r + " < 0,5 (die Pfütze steht nicht in den Senken des Kerns)");
+    }
+    const erkannt = !(L.mutante.r >= 0.5);
+    if (!erkannt) rot.push("die Mutante (die Mulde verrutscht im Satz) hält r " + L.mutante.r + " — die Probe ist blind");
+    const K = L.kurve.kurve || [[0, 0]];
+    const [n0, f0] = K[0];
+    const i0 = K.findIndex(([n, f]) => !n && !f);
+    const tS = i0 < 0 ? null : i0 * 30;
+    if (!(n0 >= 0.85 && f0 > 0)) rot.push("nicht benetzt (Nässe " + n0 + ", Pfützen " + f0 + ")");
+    else if (!(tS >= 300 && tS <= 900)) rot.push("trocken nach " + tS + " s (Soll 300–900)");
+    const sprung = K.findIndex(([n, f], i) => i && (n > K[i - 1][0] || f > K[i - 1][1] || K[i - 1][1] - f > f0 / 4));
+    if (sprung > 0) rot.push("Sprung bei " + sprung * 30 + " s: " + JSON.stringify(K.slice(sprung - 1, sprung + 1)));
+    if (!(L.kurve.fall <= 9.2)) rot.push("der Regen fällt " + L.kurve.fall + " m/s (Soll ≤ 9,2)");
+    const z = ["ego", "third"].map((n) => n + " r " + L[n].r + " (" + L[n].pfuetze + "/" + L[n].ecken + " Ecken Pfütze)");
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: z.join(" · ") + " · Mutante r " + L.mutante.r + " " + (erkannt ? "erkannt" : "UNERKANNT") + " · benetzt " + n0 + " → trocken nach " + tS + " s · Fall " + L.kurve.fall + " m/s" +
+            (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+// die Roh-Ausgaben der Probe mit ihrem Urteil (der Selbsttest urteilt jede): grün an w15-pfuetze, die Mutanten beim Namen
+const WETTER_K2_PROBEN = (() => {
+    const sicht = (o = {}) => Object.assign({ ecken: 223, pfuetze: 116, r: 0.785 }, o);
+    const kurve = (o = {}) => Object.assign({ kurve: [...[116, 88, 69, 48, 33, 11, 6, 2].map((f, i) => [+(0.909 - i * 0.048).toFixed(3), f]), ...Array.from({ length: 11 }, (_, i) => [+(0.525 - i * 0.048).toFixed(3), 0]), [0, 0]], fall: 9 }, o);
+    const z = (ego, third, mutante, k) => ["PFUETZE ego " + JSON.stringify(ego), "PFUETZE third " + JSON.stringify(third), "PFUETZE mutante " + JSON.stringify(mutante), "PFUETZE kurve " + JSON.stringify(k)].join("\n");
+    const mut = sicht({ r: 0.04 });
+    return [
+        { name: "Pfützen in den Senken, Ego und Third, trocken nach 9,5 min, Fall 9 m/s, die Mutante erkannt", stdout: z(sicht(), sicht({ ecken: 237, pfuetze: 111, r: 0.736 }), mut, kurve()), gruen: true },
+        { name: "main db431cf0: die Welt kennt keine Pfütze", stdout: "PFUETZE FEHLER keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz", gruen: false },
+        { name: "die Mutante (die Mulde verrutscht im Satz) bleibt über der Wand — die Probe ist blind", stdout: z(sicht(), sicht(), sicht(), kurve()), gruen: false },
+        { name: "die Pfütze liegt überall (die Deckung folgt nur dem Film)", stdout: z(sicht({ r: 0.08 }), sicht(), mut, kurve()), gruen: false },
+        { name: "Third sieht keine Pfütze", stdout: z(sicht(), sicht({ pfuetze: 0, r: 0.6 }), mut, kurve()), gruen: false },
+        { name: "der Film trocknet mit τ 25 min (main: nach 40 min nicht trocken)", stdout: z(sicht(), sicht(), mut, kurve({ kurve: kurve().kurve.slice(0, -1) })), gruen: false },
+        { name: "die Pfütze springt weg (ein Schritt nimmt die Hälfte)", stdout: z(sicht(), sicht(), mut, kurve({ kurve: [[0.909, 116], [0.861, 20], ...kurve().kurve.slice(2)] })), gruen: false },
+        { name: "der Regen fällt 42 m/s", stdout: z(sicht(), sicht(), mut, kurve({ fall: 42 })), gruen: false },
+        { name: "Third fehlt in der Ausgabe", stdout: z(sicht(), sicht(), mut, kurve()).split("\n").filter((l) => !/third/.test(l)).join("\n"), gruen: false },
+    ];
+})();
+// DAS URTEIL der Karten-Hälfte (`naesseWiese`, die Linse `naesseSicht` in der Welt der Sitzung): je Sicht porös draußen 0,5–0,8 aus
+// ≥ 100 Rasterpunkten, Glanz nass/trocken ≥ 2 (das Gesetz der Linse), Regenbild ≤ Sonne, die Zählung sieht den Regen draußen
+function naesseWieseUrteil(j) {
+    const w = (j && j.wiese) || {};
+    const rot = [];
+    const z = ["ego", "third"].map((s) => {
+        const m = w[s];
+        if (!m || m.fehler) return rot.push(s + ": " + (m ? m.fehler : "keine Messung")), s + " —";
+        const a = m.aussen || {};
+        if (!(a.n >= 100 && a.verhaeltnis >= 0.5 && a.verhaeltnis <= 0.8)) rot.push(s + " porös " + a.verhaeltnis + " (n " + a.n + ")");
+        if (!(m.glanz >= 2)) rot.push(s + " Glanz " + m.glanz);
+        if (!(m.regenbild <= 1)) rot.push(s + " Regenbild " + m.regenbild);
+        if (!(m.regen && m.regen.aussen >= 1)) rot.push(s + " keine Schliere draußen");
+        return s + " porös " + a.verhaeltnis + " (n " + a.n + ") · Glanz " + m.glanz + " · Regenbild " + m.regenbild + " · Regen " + (m.regen || {}).aussen;
+    });
+    return { gruen: !rot.length, zahl: "Wiese " + z.join(" | ") + (rot.length ? " · ROT: " + rot.join(", ") : "") };
+}
+
 // DER BEFEHL der Welt-Probe: der Lauf, der Grund und die Proben [name, Seiten-Funktion] als Text (eine Hilfe der Seite, `helfer`,
 // steht vor der Probe in ihrem Rumpf); `weltZeile` liest das Maß einer Probe aus {AUS} oder der Zeile des Laufs
 const weltBefehl = (proben, helfer = []) => [
@@ -1017,6 +1189,248 @@ const weltBefehl = (proben, helfer = []) => [
 const weltZeile = (j, lauf, name) => (j && j.proben && j.proben[name]) || jsonZeile(lauf.stdout, new RegExp("^WELTPROBE " + name + " "));
 const WELT_G1 = weltBefehl([["seil", seilProbe], ["stoss", stossProbe], ["feld", feldProbe], ["alter", alterProbe, { ort: "dorf" }], ["schnee", schneeProbe]]);
 const ALTER_SPUR = weltBefehl([["alterspur", alterSpurProbe], ["alterspur-reload", alterSpurReload, { neuladen: true }]], [alterSpurMessen]);
+
+// physik.K3#2 — DER EINSTURZ NACH LASTPFAD (w15-einsturz): ein Werk aus Teilen — ein Sockel (Stein 4 × 0,2 × 3 m: die Standfläche
+// trägt jeden Rest, nichts kippt), vier Pfosten (Holz 0,3 × 2,4 × 0,3 m), je ein Kopf (0,5 × 0,25 × 0,5 m) und ein Dach (Stein
+// 0,6 × 0,2 × 2,6 m) über den Köpfen 2 und 3 —, gesetzt gedreht mit zufällig fehlenden Pfosten (die Mutation des Bauplans, 1–4 von
+// 4, der Same im Maß; der ersten fehlt sicher Pfosten 0 oder 1), drei Mutationen an drei Orten der Mess-Wiese. Die Erwartung aus dem
+// Bau, nie aus dem Lastpfad des Spiels: Kopf i hängt an Pfosten i, Kopf 2 und 3 am Dach; was nicht über eine Kette den Sockel
+// erreicht, fällt. Gemessen am Zustand der Welt: der Rest steht (sein Bauplan trägt genau die erwarteten Teile, Ort und Gier wie
+// gesetzt, er stürzt nicht), je fallendes Teil ein freier Körper, der fiel, auf Sockel oder Boden liegt (nie in ihm) und schläft —
+// die Zeit bis zum Schlaf aller; dann zehn Minuten Spielzeit (36 000 Takte), wie weit ein Trümmer wanderte. Dann DIE KOSTEN: 100
+// Kisten, je Sim-Schritt die Zeit des EINEN Lösers (`_freiSchritt`, um ihn gemessen), solange alle 100 wach sind und wenn alle
+// schlafen — das Trümmerfeld (gerichtet: 10 × 10 Kisten aus 2–4 m, gedreht, fallen, stoßen, ruhen) und der Haufen (gemeldet: 25
+// Säulen zu 4, die dichteste Berührung), je ein Lauf zum Warmwerden und zwei gemessen. Zuletzt der Stand gesichert, das Notizbuch
+// (Kennung, Lage, Drehung jedes Trümmers) im localStorage.
+async function einsturzProbe(r, T, o, G) {
+    const { s, takt, stehen, r3, y } = G;
+    let same = (o.same >>> 0) || ((Date.now() % 1e9) >>> 0);
+    const same0 = same;
+    const zufall = () => ((same = (Math.imul(same, 1664525) + 1013904223) >>> 0) / 4294967296);
+    // der Platz: Land, flach (± 0,3 m über 5 × 5 m), längs x von der Wiese, je 10 m
+    const flach = (x, z) => r._landAt(x, z, 4) && [[-2.5, -2.5], [2.5, -2.5], [-2.5, 2.5], [2.5, 2.5]].every(([a, b]) => Math.abs(y(x + a, z + b) - y(x, z)) <= 0.3);
+    const plaetze = [];
+    for (let k = 0, x = o.orte.wiese.x + 10; k < 60 && plaetze.length < 4; k++, x += 10) if (flach(x, o.orte.wiese.z)) plaetze.push([x, o.orte.wiese.z]);
+    if (plaetze.length < 4) return { fehler: "kein flacher Platz an der Wiese (" + plaetze.length + " von 4)", same: same0 };
+    await stehen(plaetze[0][0] - 14, plaetze[0][1]);
+    G.trocken();
+    const teil = (shape, material, sx, sy, sz, px, py, pz) => ({ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: px, y: py, z: pz } });
+    const ecken = [[-1.5, -1], [-1.5, 1], [1.5, -1], [1.5, 1]];
+    const mutationen = [];
+    for (let m = 0; m < 3; m++) {
+        // die Mutation: 1–4 Pfosten fehlen
+        const fehlt = new Set(m ? [] : [Math.floor(zufall() * 2)]); // die erste trennt sicher (Pfosten 0 oder 1: sein Kopf fällt)
+        const k = 1 + Math.floor(zufall() * 4);
+        while (fehlt.size < k) fehlt.add(Math.floor(zufall() * 4));
+        const glieder = [["sockel", teil("box", "stein", 4, 0.2, 3, 0, 0.1, 0)]];
+        ecken.forEach(([x, z], i) => fehlt.has(i) || glieder.push(["pfosten" + i, teil("box", "holz", 0.3, 2.4, 0.3, x, 1.4, z)]));
+        ecken.forEach(([x, z], i) => glieder.push(["kopf" + i, teil("box", "holz", 0.5, 0.25, 0.5, x, 2.725, z)]));
+        glieder.push(["dach", teil("box", "stein", 0.6, 0.2, 2.6, 1.5, 2.95, 0)]);
+        // die Erwartung aus dem Bau: Sockel → Pfosten i → Kopf i; Kopf 2 ↔ Dach ↔ Kopf 3
+        const kanten = [["kopf2", "dach"], ["kopf3", "dach"], ...[0, 1, 2, 3].flatMap((i) => [["sockel", "pfosten" + i], ["pfosten" + i, "kopf" + i]])];
+        const da = new Set(glieder.map((g) => g[0]));
+        const getragen = new Set(["sockel"]);
+        for (let wuchs = true; wuchs; ) {
+            wuchs = false;
+            for (const [a, b] of kanten)
+                if (da.has(a) && da.has(b) && getragen.has(a) !== getragen.has(b)) (getragen.add(a), getragen.add(b), (wuchs = true));
+        }
+        const fallend = glieder.filter((g) => !getragen.has(g[0])).map((g) => g[0]);
+        const typ = "probe_k3_laube_" + m;
+        s.blueprints[typ] = { name: typ, label: typ, builtIn: false, parts: glieder.map((g) => g[1]), connections: [] };
+        const [px, pz] = plaetze[m];
+        const vorher = new Set(s.architectures);
+        const gier = 0.4 + 0.5 * m; // das Werk steht gedreht: jeder Trümmer trägt die Gier in seiner Drehung
+        const e = r.spawnArchitecture(typ, { x: px, y: y(px, pz) + 0.5, z: pz }, { werk: true, precise: true, seed: 7 + m, rotationY: gier });
+        mutationen.push({ m, fehlt: [...fehlt].sort(), fallend, stehend: [...getragen].sort(), typ, ort: [px, pz], gier, id: e && e.id, vorher, boden: y(px, pz) });
+    }
+    // der Einsturz: bis jeder Trümmer schläft (höchstens 20 s)
+    const neu = (M) => s.architectures.filter((a) => !M.vorher.has(a));
+    let ruheS = null;
+    for (let i = 1; i <= 1200 && ruheS === null; i++) {
+        takt();
+        if (i >= 2 && mutationen.every((M) => neu(M).filter((a) => a._frei).every((a) => a._frei.schlaf))) ruheS = i / 60;
+    }
+    const truemmer = [];
+    for (const M of mutationen) {
+        const alle = neu(M).filter((a) => Math.hypot(a.position.x - M.ort[0], a.position.z - M.ort[1]) < 8);
+        const rest = alle.filter((a) => !a._frei);
+        const frei = alle.filter((a) => a._frei);
+        const bp = rest.length === 1 ? s.blueprints[rest[0].type] : null;
+        const ecke = (p) => ecken.findIndex(([a, b]) => a === p.position.x && b === p.position.z);
+        const name = (p) => (p.size.x === 4 ? "sockel" : p.size.y === 2.4 ? "pfosten" + ecke(p) : p.size.z === 2.6 ? "dach" : "kopf" + ecke(p));
+        M.restTeile = (bp ? bp.parts : []).map(name).sort();
+        M.restTyp = rest.map((a) => a.type);
+        M.restSteht = rest.length === 1 && !(rest[0]._gesetz && (rest[0]._gesetz.sturz || rest[0]._gesetz.bruch)) && Math.hypot(rest[0].position.x - M.ort[0], rest[0].position.z - M.ort[1]) < 1e-6 && Math.abs(rest[0].rotationY - M.gier) < 1e-9;
+        // je Trümmer: seine Mitte über dem Boden (er fiel: ≤ 1,2 m, er saß ≥ 2,7 m hoch), sein tiefster Punkt über dem Boden und —
+        // liegt er über dem Sockel — über dessen Oberseite (nie durch ihn), sein Schlaf
+        M.koerper = frei.map((a) => {
+            const K = a._frei;
+            r._freiLage(K);
+            let unten = Infinity;
+            for (let i = 1; i < K.pw.length; i += 3) unten = Math.min(unten, K.pw[i]);
+            const [dx, dz] = [K.p[0] - M.ort[0], K.p[2] - M.ort[1]];
+            const [lx, lz] = [dx * Math.cos(M.gier) - dz * Math.sin(M.gier), dx * Math.sin(M.gier) + dz * Math.cos(M.gier)];
+            const ueberSockel = Math.abs(lx) < 2 && Math.abs(lz) < 1.5;
+            return { mitteM: r3(K.p[1] - M.boden), untenM: r3(unten - M.boden - (ueberSockel ? 0.2 : 0)), ueberSockel, schlaf: K.schlaf };
+        });
+        for (const a of frei) truemmer.push({ id: a.id, typ: a.type, p: [a._frei.p[0], a._frei.p[1], a._frei.p[2]], q: Array.from(a._frei.q) });
+        delete M.vorher;
+    }
+    // ZEHN MINUTEN weiter (36 000 Takte): die Trümmer bleiben, wo sie ruhen
+    const t10 = performance.now();
+    takt(36000);
+    const zehnMinSek = (performance.now() - t10) / 1000;
+    let wander = 0;
+    for (const t of truemmer) {
+        const a = s.architectures.find((e) => e.id === t.id);
+        wander = Math.max(wander, a && a._frei ? Math.hypot(a._frei.p[0] - t.p[0], a._frei.p[1] - t.p[1], a._frei.p[2] - t.p[2]) : Infinity);
+    }
+    // DIE KOSTEN: 100 Kisten, je Sim-Schritt die Zeit des Lösers (`_freiSchritt`, um ihn gemessen), solange alle 100 wach sind,
+    // und wenn alle schlafen — das TRÜMMERFELD (gerichtet: 10 × 10 Kisten aus 1,5–3,5 m, gedreht, fallen, stoßen, ruhen, wie die
+    // Trümmer eines Einsturzes) und der HAUFEN (gemeldet: 25 Säulen zu 4, 10 cm Spalt — jede Kiste trägt oder liegt, die dichteste
+    // Berührung). Je Art ein Lauf zum Warmwerden, dann zwei gemessen; die Kisten fallen nach jedem Lauf.
+    const [kx, kz] = plaetze[3];
+    const lauf = (feld) => {
+        const kisten = [];
+        for (let i = 0; i < 100; i++) {
+            let x, z, h, opt;
+            if (feld) {
+                const a = Math.sin(i * 12.9898) * 43758.5453;
+                const f = a - Math.floor(a);
+                [x, z, h] = [kx - 5 + (i % 10) + 0.3 * f, kz - 5 + ((i / 10) | 0), 2 + 2 * f];
+                opt = { drehung: [Math.cos(i), Math.sin(i) * 0.6, Math.sin(i * 1.7) * 0.6, Math.sin(i * 2.3) * 0.5] };
+            } else {
+                const c = i % 25;
+                [x, z, h] = [kx - 1.6 + (c % 5) * 0.8 + 0.05 * Math.sin(i), kz - 1.6 + ((c / 5) | 0) * 0.8, 0.6 + 0.75 * ((i / 25) | 0)];
+                opt = { rotationY: i * 0.7 };
+            }
+            kisten.push(r.spawnArchitecture("kiste", { x, y: y(x, z) + h, z }, Object.assign({ silent: true, precise: true }, opt)));
+        }
+        const schritt0 = r._freiSchritt;
+        const z = { wach: [], ruhend: [] };
+        r._freiSchritt = function (dt) {
+            const wach = kisten.filter((k) => !k._frei.schlaf).length;
+            const t0 = performance.now();
+            schritt0.call(this, dt);
+            if (wach === 100 || wach === 0) z[wach ? "wach" : "ruhend"].push(performance.now() - t0);
+        };
+        try {
+            takt(feld ? 360 : 240);
+        } finally {
+            r._freiSchritt = schritt0;
+        }
+        const schlafen = kisten.filter((k) => k._frei.schlaf).length;
+        for (const k of kisten) r.removeArchitecture(k, { still: true });
+        takt(5);
+        return Object.assign(z, { schlafen });
+    };
+    const q = (L, p) => (L.length ? L.slice().sort((a, b) => a - b)[Math.min(L.length - 1, Math.floor(p * L.length))] : null);
+    const kosten = {};
+    for (const [art, feld] of [["feld", true], ["haufen", false]]) {
+        lauf(feld);
+        const [a, b] = [lauf(feld), lauf(feld)];
+        const wach = a.wach.concat(b.wach);
+        const ruhend = a.ruhend.concat(b.ruhend);
+        kosten[art] = { wachSchritte: wach.length, wachMedianMs: r3(q(wach, 0.5)), wachP75Ms: r3(q(wach, 0.75)), ruhendSchritte: ruhend.length, ruhendMedianMs: r3(q(ruhend, 0.5)), schlafen: Math.min(a.schlafen, b.schlafen) };
+    }
+    // DER STAND: gesichert, der Speicher still; das Notizbuch reist im localStorage
+    r.saveState();
+    await r._speicherStill();
+    localStorage.setItem("__einsturz", JSON.stringify(truemmer));
+    return { same: same0, ruheS: ruheS === null ? null : r3(ruheS), wanderM: r3(wander), zehnMinSek: r3(zehnMinSek), mutationen, kosten };
+}
+// … NACH DEM RELOAD: jeder Trümmer des Notizbuchs steht wieder, wo er lag, mit seiner Drehung, schlafend; nach 10 s noch dort
+async function einsturzReload(r, T, o, G) {
+    const { s, takt, stehen, r3 } = G;
+    let alt = null;
+    try {
+        alt = JSON.parse(localStorage.getItem("__einsturz"));
+    } catch (_e) {}
+    if (!Array.isArray(alt) || !alt.length) return { fehler: "kein Notizbuch der Probe einsturz (sie lief nicht bis zum Stand)" };
+    await stehen(alt[0].p[0] - 14, alt[0].p[2]);
+    const lese = () =>
+        alt.map((t) => {
+            const a = s.architectures.find((e) => String(e.id) === String(t.id));
+            if (!a || !a._frei) return { da: false };
+            const K = a._frei;
+            const dot = Math.abs(K.q[0] * t.q[0] + K.q[1] * t.q[1] + K.q[2] * t.q[2] + K.q[3] * t.q[3]);
+            return { da: true, lageM: Math.hypot(K.p[0] - t.p[0], K.p[1] - t.p[1], K.p[2] - t.p[2]), drehGrad: (2 * Math.acos(Math.min(1, dot)) * 180) / Math.PI, schlaf: K.schlaf };
+        });
+    const gleich = lese();
+    takt(600);
+    const danach = lese();
+    const max = (L, k) => r3(Math.max(...L.map((x) => (x.da ? x[k] : Infinity))));
+    // die Gegenprobe der Drehung: so weit (der kleinste Winkel) stünde jeder Trümmer falsch, trüge der Stand seine Drehung nicht
+    // (bis w15-einsturz: Lage und Gier, die Gier des freien Körpers 0 — er stand nach dem Reload in der Grundstellung)
+    const ohneDrehung = r3(Math.min(...alt.map((t) => (2 * Math.acos(Math.min(1, Math.abs(t.q[0]))) * 180) / Math.PI)));
+    return {
+        truemmer: alt.length,
+        da: gleich.filter((x) => x.da).length,
+        schlafen: gleich.filter((x) => x.schlaf).length,
+        lageM: max(gleich, "lageM"),
+        drehGrad: max(gleich, "drehGrad"),
+        nach10sLageM: max(danach, "lageM"),
+        nach10sDrehGrad: max(danach, "drehGrad"),
+        ohneDrehungGrad: ohneDrehung,
+    };
+}
+// DAS URTEIL (physik.K3#2): je Mutation trägt der Rest genau die erwarteten Teile und steht (Ort und Gier wie gesetzt), je fallendes
+// Teil EIN freier Körper, der fiel (Mitte ≤ 1,2 m über dem Boden, er saß ≥ 2,7 m hoch), in nichts steckt (≥ −3 cm) und schläft; mindestens
+// ein Teil fiel; alle Trümmer ruhen binnen 3 s und wandern in 10 min ≤ 1 cm. Nach dem Reload: jeder Trümmer da und schlafend, Lage
+// ≤ 1 mm und Drehung ≤ 0,1° wie vorher, nach 10 s ebenso; die Drehung trägt (ohne sie stünde jeder Trümmer ≥ 1° falsch). Die Kosten
+// (das Vorzeichen, die Zeit an der GTX-CPU misst der Koordinator): das Trümmerfeld ≤ 1 ms je Takt im Median der Schritte mit 100
+// wachen Körpern (≥ 20 solche Schritte), schlafend ≤ 0,05 ms, alle 100 schlafen am Ende; der Haufen steht in der Zahl.
+function einsturzUrteil(e, rl) {
+    if (!e) return { gruen: false, zahl: "keine Zeile WELTPROBE einsturz" };
+    if (e.fehler) return { gruen: false, zahl: "Probe: " + e.fehler };
+    const rot = [];
+    const M = e.mutationen || [];
+    let fiel = 0;
+    for (const m of M) {
+        const name = "Mutation " + m.m + " (ohne Pfosten " + m.fehlt.join(",") + ")";
+        if (JSON.stringify(m.restTeile) !== JSON.stringify(m.stehend)) rot.push(name + ": der Rest trägt [" + m.restTeile.join(",") + "] statt [" + m.stehend.join(",") + "]");
+        if (!m.restSteht) rot.push(name + ": der Rest steht nicht, wo er stand");
+        const K = m.koerper || [];
+        if (K.length !== m.fallend.length) rot.push(name + ": " + K.length + " freie Körper statt " + m.fallend.length + " (" + m.fallend.join(",") + ")");
+        if (K.some((k) => !k.schlaf)) rot.push(name + ": ein Trümmer ruht nicht");
+        if (K.some((k) => !(k.mitteM <= 1.2))) rot.push(name + ": ein Trümmer fiel nicht");
+        if (K.some((k) => !(k.untenM >= -0.03))) rot.push(name + ": ein Trümmer steckt in Sockel oder Boden");
+        fiel += m.fallend.length;
+    }
+    if (M.length < 3 || !fiel) rot.push("keine Mutation mit fallendem Teil");
+    if (!(e.ruheS !== null && e.ruheS <= 3)) rot.push("die Trümmer ruhen nicht binnen 3 s");
+    if (!(e.wanderM <= 0.01)) rot.push("die Trümmer wandern in 10 min " + e.wanderM + " m");
+    if (!rl) rot.push("keine Zeile WELTPROBE einsturz-reload");
+    else if (rl.fehler) rot.push("Reload: " + rl.fehler);
+    else {
+        if (!(rl.truemmer > 0 && rl.da === rl.truemmer && rl.schlafen === rl.truemmer)) rot.push("Reload: " + rl.da + " von " + rl.truemmer + " Trümmern da, " + rl.schlafen + " schlafen");
+        if (!(rl.lageM <= 0.001 && rl.nach10sLageM <= 0.001)) rot.push("Reload: die Lage weicht " + rl.lageM + " m ab (nach 10 s " + rl.nach10sLageM + ")");
+        if (!(rl.drehGrad <= 0.1 && rl.nach10sDrehGrad <= 0.1)) rot.push("Reload: die Drehung weicht " + rl.drehGrad + "° ab (nach 10 s " + rl.nach10sDrehGrad + ")");
+        if (!(rl.ohneDrehungGrad >= 1)) rot.push("Reload vakuös: ohne Drehung stünde jeder Trümmer richtig");
+    }
+    const f = (e.kosten && e.kosten.feld) || {};
+    const h = (e.kosten && e.kosten.haufen) || {};
+    if (!(f.wachSchritte >= 20 && f.wachMedianMs <= 1)) rot.push("100 wache Körper " + f.wachMedianMs + " ms je Takt (" + f.wachSchritte + " Schritte)");
+    if (!(f.ruhendMedianMs <= 0.05 && f.schlafen === 100)) rot.push("der Schlaf kostet " + f.ruhendMedianMs + " ms (" + f.schlafen + " von 100 schlafen)");
+    const z = (x) => (x === null || x === undefined ? "–" : String(x).replace(".", ","));
+    return {
+        gruen: !rot.length,
+        zahl: "Same " + e.same + ": " + M.map((m) => "ohne " + m.fehlt.join("+") + " → " + (m.koerper || []).length + "/" + m.fallend.length + " Trümmer").join(", ") +
+            ", Ruhe " + z(e.ruheS) + " s, 10 min " + z(e.wanderM) + " m · Reload " + (rl && !rl.fehler ? rl.da + "/" + rl.truemmer + ", Lage " + z(rl.lageM) + " m, Drehung " + z(rl.drehGrad) + "° (ohne sie ≥ " + z(rl.ohneDrehungGrad) + "°)" : "–") +
+            " · 100 Körper wach: Trümmerfeld " + z(f.wachMedianMs) + " ms (p75 " + z(f.wachP75Ms) + "), Haufen 4 hoch " + z(h.wachMedianMs) + " ms (p75 " + z(h.wachP75Ms) + "), schlafend " + z(f.ruhendMedianMs) + " ms" +
+            (rot.length ? " · ROT " + rot.join("; ") : ""),
+    };
+}
+// DIE ROH-AUSGABE der Station physik.K3#2 (06.11., Cloud, headless): am Zweig w15-einsturz (GRÜN) und am main db431cf0 (ROT) — die
+// Proben der Station urteilen sie und ihre Mutanten (`einsturzRoh`: die zwei Zeilen, die Änderung an einer Kopie)
+const EINSTURZ_ROH = { zweig: {"einsturz": {"same": 973114193, "ruheS": 1.75, "wanderM": 0, "zehnMinSek": 60.237, "mutationen": [{"m": 0, "fehlt": [0, 2, 3], "fallend": ["kopf0", "kopf2", "kopf3", "dach"], "stehend": ["kopf1", "pfosten1", "sockel"], "typ": "probe_k3_laube_0", "ort": [-270.4, -1045.6], "gier": 0.4, "id": "w-probe_k3_laube_0-7", "boden": 27.31638911763696, "restTeile": ["kopf1", "pfosten1", "sockel"], "restTyp": ["probe_k3_laube_0_rest_fb6c8917"], "restSteht": true, "koerper": [{"mitteM": 0.325, "untenM": 0, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.324, "untenM": -0.001, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.324, "untenM": -0.001, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.545, "untenM": 0.245, "ueberSockel": true, "schlaf": true}]}, {"m": 1, "fehlt": [0, 2, 3], "fallend": ["kopf0", "kopf2", "kopf3", "dach"], "stehend": ["kopf1", "pfosten1", "sockel"], "typ": "probe_k3_laube_1", "ort": [-260.4, -1045.6], "gier": 0.9, "id": "w-probe_k3_laube_1-8", "boden": 27.070667164250303, "restTeile": ["kopf1", "pfosten1", "sockel"], "restTyp": ["probe_k3_laube_1_rest_7f58dfbe"], "restSteht": true, "koerper": [{"mitteM": 0.325, "untenM": 0, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.324, "untenM": -0.001, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.324, "untenM": -0.001, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.546, "untenM": 0.245, "ueberSockel": true, "schlaf": true}]}, {"m": 2, "fehlt": [0, 1, 2], "fallend": ["kopf0", "kopf1"], "stehend": ["dach", "kopf2", "kopf3", "pfosten3", "sockel"], "typ": "probe_k3_laube_2", "ort": [-250.39999999999998, -1045.6], "gier": 1.4, "id": "w-probe_k3_laube_2-9", "boden": 26.811163578295893, "restTeile": ["dach", "kopf2", "kopf3", "pfosten3", "sockel"], "restTyp": ["probe_k3_laube_2_rest_bc58d2e4"], "restSteht": true, "koerper": [{"mitteM": 0.325, "untenM": 0, "ueberSockel": true, "schlaf": true}, {"mitteM": 0.325, "untenM": 0, "ueberSockel": true, "schlaf": true}]}], "kosten": {"feld": {"wachSchritte": 144, "wachMedianMs": 0.7, "wachP75Ms": 0.9, "ruhendSchritte": 375, "ruhendMedianMs": 0, "schlafen": 100}, "haufen": {"wachSchritte": 82, "wachMedianMs": 1.2, "wachP75Ms": 1.5, "ruhendSchritte": 346, "ruhendMedianMs": 0, "schlafen": 100}}, "sek": 76.8}, "einsturz-reload": {"truemmer": 10, "da": 10, "schlafen": 10, "lageM": 0, "drehGrad": 0, "nach10sLageM": 0, "nach10sDrehGrad": 0, "ohneDrehungGrad": 21.763, "sek": 15.7}}, main: {"einsturz": {"same": 973114095, "ruheS": 0.033, "wanderM": 0, "zehnMinSek": 56.897, "mutationen": [{"m": 0, "fehlt": [0, 1, 2], "fallend": ["kopf0", "kopf1"], "stehend": ["dach", "kopf2", "kopf3", "pfosten3", "sockel"], "typ": "probe_k3_laube_0", "ort": [-270.4, -1045.6], "gier": 0.4, "id": "w-probe_k3_laube_0-7", "boden": 27.31638911763696, "restTeile": ["dach", "kopf0", "kopf1", "kopf2", "kopf3", "pfosten3", "sockel"], "restTyp": ["probe_k3_laube_0"], "restSteht": false, "koerper": []}, {"m": 1, "fehlt": [0, 1, 3], "fallend": ["kopf0", "kopf1"], "stehend": ["dach", "kopf2", "kopf3", "pfosten2", "sockel"], "typ": "probe_k3_laube_1", "ort": [-260.4, -1045.6], "gier": 0.9, "id": "w-probe_k3_laube_1-8", "boden": 27.070667164250303, "restTeile": ["dach", "kopf0", "kopf1", "kopf2", "kopf3", "pfosten2", "sockel"], "restTyp": ["probe_k3_laube_1"], "restSteht": false, "koerper": []}, {"m": 2, "fehlt": [1, 2], "fallend": ["kopf1"], "stehend": ["dach", "kopf0", "kopf2", "kopf3", "pfosten0", "pfosten3", "sockel"], "typ": "probe_k3_laube_2", "ort": [-250.39999999999998, -1045.6], "gier": 1.4, "id": "w-probe_k3_laube_2-9", "boden": 26.811163578295893, "restTeile": ["dach", "kopf0", "kopf1", "kopf2", "kopf3", "pfosten0", "pfosten3", "sockel"], "restTyp": ["probe_k3_laube_2"], "restSteht": false, "koerper": []}], "kosten": {"feld": {"wachSchritte": 120, "wachMedianMs": 4.8, "wachP75Ms": 10.7, "ruhendSchritte": 423, "ruhendMedianMs": 0, "schlafen": 100}, "haufen": {"wachSchritte": 76, "wachMedianMs": 8.8, "wachP75Ms": 9.7, "ruhendSchritte": 292, "ruhendMedianMs": 0.1, "schlafen": 100}}, "sek": 77.6}, "einsturz-reload": {"fehler": "kein Notizbuch der Probe einsturz (sie lief nicht bis zum Stand)", "sek": 8.7}} };
+const einsturzRoh = (wo, aendern = (e, rl) => [e, rl]) => {
+    const k = JSON.parse(JSON.stringify(EINSTURZ_ROH[wo]));
+    const [e, rl] = aendern(k.einsturz, k["einsturz-reload"]);
+    return "WELTPROBE einsturz " + JSON.stringify(e) + "\nWELTPROBE einsturz-reload " + JSON.stringify(rl) + "\n";
+};
+const EINSTURZ = weltBefehl([["einsturz", einsturzProbe], ["einsturz-reload", einsturzReload, { neuladen: true }]]);
 // wetter.K3#2 — DIE GANGLINIE JE LAUF: eine Mess-Kopie der Wasser-Linse (scripts/lib/wasser-linse.cjs) trägt die Probe hinter
 // `sturm()` (die Anker „pg.regen = sturm();“ und „pg.regen.fest = sturm().hub;“, je genau einmal im Text), eine Mess-Kopie von
 // scripts/diag-wasser-leben.cjs liest sie statt der Linse; der Block koerper läuft (Null-Renderer, Mess-Wiese), sein JSON trägt das
@@ -1762,6 +2176,63 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose",
+    },
+    // wetter.K2 Staffel 2 (w15-pfuetze) — ZWEI Hälften unter EINEM Schlüssel: headless die Pfütze in den Senken des Kerns (Ego und Third),
+    // die Trocken-Kurve und der Fall (`wetterK2Lauf`, die Mutante im selben Lauf); auf beiden Karten die Nässe der Mess-Wiese im Bild in
+    // Ego und Third (`naesseWiese`, die Linse `werkbank licht --naesse wiese,wiese:third`). Die Dorfgasse trägt die Staffel 1 auf beiden
+    // Karten (die Linse stellt dort die Kamera selbst an die Schwelle). An main db431cf0 ROT: die Welt kennt keine Pfütze.
+    {
+        kriterium: "wetter.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + wetterK2Lauf + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => wetterK2Urteil(lauf),
+        proben: WETTER_K2_PROBEN,
+        pfad: [
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "foundry-core.js",
+            "voxel-worker.js",
+            "index.html",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
+    },
+    {
+        kriterium: "wetter.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 30, befehl: PW.torBefehl(PW.naesseWiese), mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j) => naesseWieseUrteil(j),
+        pfad: [
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "foundry-core.js",
+            "voxel-worker.js",
+            "index.html",
+            "scripts/werkbank.cjs",
+            "scripts/lib/licht-linsen.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
     },
 
     // ── wetter.K3 ── gate:wasser-leben P4 im Block koerper (Null-Renderer, Mess-Wiese): das Wort des Spielers „Sturm", 20 min
@@ -3025,6 +3496,49 @@ module.exports = [
         ],
         quelle: "1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um",
     },
+    // physik.K3 Staffel 2 — DER EINSTURZ NACH LASTPFAD (w15-einsturz), die Welt-Probe `einsturz` + `einsturz-reload` (Null-Renderer,
+    // die Mess-Wiese; oben bei einsturzProbe): ein Werk mit fehlenden Pfosten bricht — was der Lastpfad nicht trägt, wird je Teil
+    // ein freier Körper des EINEN Lösers (`_werkBricht` → `_freiSchritt`), der Rest steht; die Trümmer ruhen, bleiben 10 min und
+    // kehren über den Reload mit Lage und Drehung wieder; 100 wache Körper kosten ≤ 1 ms je Takt (das Vorzeichen headless, die Zeit
+    // an der GTX-CPU misst der Koordinator). Die Zeit fällt an der Wanduhr: die Station fährt allein. Gefahren 06.11. in der Cloud:
+    // am main 8efb6318 / db431cf0 ROT (das Werk fällt als Ganzes, kein Trümmer, kein Reload; 100 Körper Trümmerfeld 4,8 ms, Haufen
+    // 8,8 ms), am Zweig w15-einsturz f9f3d0db GRÜN (3 Mutationen, Ruhe 2,2 s, 10 min 0 m, Reload 8/8 Lage 0 m Drehung 0° — ohne sie
+    // ≥ 24°; Trümmerfeld 0,7 ms, Haufen 4 hoch 1,2 ms gemeldet, schlafend 0 ms).
+    {
+        kriterium: "physik.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: EINSTURZ,
+        gpu: false,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => einsturzUrteil(weltZeile(j, lauf, "einsturz"), weltZeile(j, lauf, "einsturz-reload")),
+        proben: [
+            { name: "die Messung am Zweig w15-einsturz", stdout: einsturzRoh("zweig"), gruen: true },
+            { name: "die Messung am main db431cf0 (das Werk fällt als Ganzes, kein Trümmer)", stdout: einsturzRoh("main"), gruen: false },
+            {
+                name: "MUTANTE der Bruch aus: das Werk fällt als Ganzes, kein Teil wird ein freier Körper",
+                stdout: einsturzRoh("zweig", (e, rl) => [(e.mutationen.forEach((m) => ((m.koerper = []), (m.restTeile = [...m.stehend, ...m.fallend].sort()))), e), rl]),
+                gruen: false,
+            },
+            { name: "MUTANTE die Drehung reist nicht (der Stand trägt Lage und Gier)", stdout: einsturzRoh("zweig", (e, rl) => [e, ((rl.drehGrad = rl.ohneDrehungGrad), rl)]), gruen: false },
+            { name: "MUTANTE die Trümmer ruhen nicht", stdout: einsturzRoh("zweig", (e, rl) => [(e.mutationen[0].koerper[0].schlaf = false, (e.ruheS = null), e), rl]), gruen: false },
+            { name: "MUTANTE ein Trümmer fällt durch den Sockel", stdout: einsturzRoh("zweig", (e, rl) => [((e.mutationen[0].koerper[0].untenM = -0.2), e), rl]), gruen: false },
+            { name: "MUTANTE die Kosten von main (100 wache Körper 4,8 ms)", stdout: einsturzRoh("zweig", (e, rl) => [((e.kosten.feld = EINSTURZ_ROH.main.einsturz.kosten.feld), e), rl]), gruen: false },
+            { name: "MUTANTE der Reload vakuös (jeder Trümmer stünde auch ohne Drehung richtig)", stdout: einsturzRoh("zweig", (e, rl) => [e, ((rl.ohneDrehungGrad = 0), rl)]), gruen: false },
+        ],
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/bau-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/speicher-*.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/gelaende-*.js",
+            "stamm/kreatur-leben.js",
+            ...WELT_PFAD,
+        ],
+        quelle: "2 = auch Einsturz nach Lastpfad, Trümmer ≥ 10 min und über den Reload, 100 freie Körper ≤ 1 ms CPU an der GTX-CPU",
+    },
 
     // ───────── DIE WELT-PROBE (p3-stationen-g12): physik.K4 · physik.K5 · feld.K5 · stoffe.K4 · wetter.K4 — EIN Lauf (Zwillinge),
     // die Seiten-Proben und Urteile oben (weltProbeLauf). Gefahren 01.11. in der Cloud am main 25ac4c0c (headless, Null-Renderer):
@@ -3165,10 +3679,8 @@ module.exports = [
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
-    { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: 7/7 verlangt je Stoff Albedo → Luma im Ausgabe-Bild (die Karte; headless zählt sie nie), die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "wetter.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Ego/Third, beide Geräte“ verlangt das Ausgabe-Bild beider Karten in beiden Sichten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. an 5fba36ea, Staffel 1 ROT): der Fuß steht 0,01 m ÜBER der Decke — keine Tiefe, also keine Spur, die bleiben könnte" },
-    { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „100 freie Körper ≤ 1 ms CPU an der GTX-CPU“ ist eine Zeit am Gerät, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];
 // DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
 module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };

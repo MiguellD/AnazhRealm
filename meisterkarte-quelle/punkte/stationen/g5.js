@@ -983,6 +983,29 @@ const SIEDLUNG_SITZUNG = sitzung(10,
 // dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
 // Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
 // bis sie steht (der Ort im Wachstum zählt in `_dorfOffen`). Der Code trägt kein einfaches Hochkomma (bash '…').
+// DIE ROH-AUSGABE DER PROBE (die Proben von siedlung.K4#2): die Schritte von GTX a4dc2a45 (Ort, Haus, Uhr, Stand, Kamera, Teil W) mit
+// einem Teil BILD nach Wahl — `bild` null lässt ihn fehlen
+const K4_ROH = (bild) => {
+    const b = (n, e) => ["@@PUNKTE@@ " + n, JSON.stringify(e, null, 1)].join("\n");
+    return [
+        "[linse-gpu] nvidia/pascal",
+        b("ORT", { ms: 13, ergebnis: { S: { x: 400, z: 692.82, hang: 3.97 }, hill: { x: 446.82, y: 48.05, z: 457.43 } } }),
+        b("VOR", { ms: 103, ergebnis: { k: "d:7@400,693", groesse: "dorf", jahr: 1412, slots: 12, haeuser: 12, haus: [411.55, 634.76], hill: { x: 446.82, y: 48.05, z: 457.43 } } }),
+        b("UHR", { ms: 3, ergebnis: { kern: true, jahr: 1412, haeuser: 12, uhr: 1543.1 } }),
+        b("STAND", { ms: 4, ergebnis: { jahr: [1412, 1744], haeuser: [12, 20], slots: 21, bleiben: 0.917, ring: { neu: 9, zumHaus: 22, zumOrt: 59 }, offen: 0 } }),
+        b("KAMERA", { ms: 3, ergebnis: { pose: [446.82, 49.75, 457.43, 405.77, 40.34, 663.79], d: 210, hoeher: 11.7 } }),
+        ...(bild ? [b("BILD", bild), "@@PUNKTE@@ EXIT 1"] : []),
+        "@@PUNKTE@@ W",
+        "  ✅ W1 WACHSTUM in 10800 s: 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5/24 24→73 73/73 2019",
+        "  ✅ W2 AUS BEWOHNERN (wohl 0, ohne Leute halten; Gewalt bremst): 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1",
+        "@@PUNKTE@@ EXIT 0",
+    ].join("\n");
+};
+const K4_ROT_GTX =
+    "ABNAHME ROT [Vordergrund 29.3 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_birke 28.6 %, Rinde baum_birke 0.7 % · Ziel Blickziel " +
+    "verdeckt von siedlung-mauer in 139.26 m · Ziel Blickziel nicht gezeichnet: wandlaterne_dorf 609 UNGEZEICHNET] · beweis · Sicht 0.0 % · " +
+    "Ziel Blickziel im Bild VERDECKT 210.61 m · Luma 57.5 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.198 · Bühne summer sunny 0.50 · " +
+    "Gerät WebGPU nvidia pascal · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts";
 const K4_ORT =
     "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = null; " +
     "for (const R of [500, 650, 800]) for (let k = 0; k < 24; k++) { const a = (k / 24) * 2 * Math.PI, x = g.x + Math.cos(a) * R, z = g.z + Math.sin(a) * R; " +
@@ -2749,6 +2772,407 @@ const ULTI_K4_PROBEN = (() => {
     ];
 })();
 
+// ───────── spielgang.K4 Staffel 2 (w15-farbsicht): DER ZUGANG — Farbsicht im Ausgabe-Bild, Komfort an seinen Quellen, Untertitel ─────────
+// Die Staffel: „beides und Bewegungs-Komfort (FOV, Kopfwackeln, Unschärfe aus)“. EIN Lauf (headless, swiftshader): eine Werkbank an der
+// Weiche ({PORT}+20000, kienspan) am Genesis-Ort, dann die Wand (Ü) der Klang-Linse mit eigenem Boot (die Untertitel, wie Staffel 1).
+//  (F) DIE FARBSICHT (`zugangFarbe`): am Blick der Ankunft (Ego, Fenster 640 × 360) die Teilung des AUSGABE-Bilds nach den Gruppen
+//      ZUGANG_KLASSEN (Gras · Boden/Weg · Bau · Fels · Laub · Wasser; je Gruppe ein Schuss ohne sie, `__klassenTeilung` wie `werkbank bild
+//      --klasse` — dessen 1920 × 1080 mit 15 Teil-Klassen trug swiftshader nicht in 30 min), dann dasselbe Bild mit `state.zugang.farbsicht`
+//      „deuteranopie“ (der Spieler-Wert, den das Menü schreibt). Je Grenze zweier Gruppen
+//      im Bild (≥ ZUGANG_GRENZE_N Paare von Nachbar-Pixeln) die Farbe beider Seiten 2 px von der Kante (die Fläche, nie die gemischte
+//      Kante), gemittelt linear, unter der Simulation der Deuteranopie nach MACHADO, Oliveira & Fernandes 2009 (Schwere 1) — einem
+//      ANDEREN Modell als dem des Spiels (Viénot 1999): das Urteil prüft die Daltonisierung nie an ihrer eigenen Simulation — nach
+//      CIELAB D65, ΔE*ab. GRÜN, wenn jede Grenze im Bild der Farbsicht ΔE ≥ 10 trägt; das Bild ohne sie steht daneben (vorher).
+//  (K) DER KOMFORT in der Seite (`zugangKomfort`): das Menü schreibt `state.zugang` (Wahl, Regler, zwei Schalter), der Snapshot trägt
+//      ihn, der Lader nimmt ihn zurück und klemmt (FOV 140 → 100) und zeigt ihn im Menü; das SICHTFELD — der EINE Schreiber `_kamFov`
+//      setzt die Wahl (92°), und das Ausgabe-Bild skaliert um tan(37,5°)/tan(46°) (die beste Skala zwischen den Bildern bei 75° und 92°);
+//      das KOPFWACKELN — eine Landung (`_landImpactPending`) senkt das Ego-Auge im Rig (`_loopCamera`) und das Tempo atmet im Sichtfeld,
+//      aus nickt nichts: das Bild nach der Landung gleicht dem davor auf das Byte; die UNSCHÄRFE — die Geschichte der zeitlichen
+//      Auflösung (die Probe schaltet sie zu, kienspan trägt sie nicht: `_traa`), je Bild 1,5° Drehung über 12 Bilder: aus trägt das
+//      Bild mehr Kanten-Energie als an (das Nachziehen fällt), in Ruhe sind beide gleich.
+//  (Ü) DIE UNTERTITEL: `diag-klang-zensus --json` — die Zeile (Ü) UNTERTITEL n von n, kein ROT „Ü …“ (das Urteil von Staffel 1).
+// Gemessen (06.11., Cloud, swiftshader 4 Kerne, 7,2 min): am main db431cf0 ROT „kein state.zugang“ nach dem Umstellen; am Zweig
+// w15-farbsicht GRÜN — 4 Grenzen (Gras|Boden, Gras|Bau, Boden|Bau, Bau|Laub) min ΔE 16,9 → 19,5, Mittel 22,3 → 25,2; Sichtfeld 75 → 92°,
+// Skala 0,74 (Soll 0,741); Landung −0,079 m und Tempo +6°, aus 0 und das Bild byte-gleich; Kanten-Energie in Drehung an 3,6, aus 12,5
+// (Ruhe 7,79 ↔ 7,85); Untertitel 45 von 45 — am Kopf nach dem Merge von main 8efb6318 dieselben Zahlen (Spiel 1c39aada). Fidaners
+// Schub fiel an derselben Station: Boden|Bau 16,9 → 11,6, das Mittel sank.
+const ZUGANG_KLASSEN = {
+    gras: "^nahWiese:",
+    boden: "^bodenSatz$",
+    bau: "^(bauSatz|geometrie-arena|portal-membran|f:sitzbank:L\\d)$",
+    fels: "^formationenSatz$",
+    laub: "^(fscatter:|fimp:|f:(eiche|fichte|tanne|buche|birke|kiefer):L\\d)",
+    wasser: "(wasser|hydro)",
+};
+const ZUGANG_GRENZE_N = 150;
+const MACHADO_DEUTAN = [
+    [0.367322, 0.860646, -0.227968],
+    [0.280085, 0.672501, 0.047413],
+    [-0.01182, 0.04294, 0.968881],
+];
+// DIE GRENZEN (rein, in node): je Paar zweier Gruppen, die im Bild aneinanderstoßen, die mittlere Farbe beider Seiten 2 px von der Kante,
+// unter `sim` (null = das Auge ohne Simulation) in CIELAB, ΔE*ab
+function zugangGrenzen(u8, teil, namen, W, H, gruppen, sim) {
+    const LIN = new Float64Array(256).map((_v, i) => (i <= 10.31475 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+    const lab = ([r, g, b]) => {
+        const [X, Y, Z] = [(0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, 0.2126 * r + 0.7152 * g + 0.0722 * b, (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883];
+        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+    };
+    const gk = Object.keys(gruppen);
+    const gi = namen.map((n) => 1 + gk.findIndex((k) => new RegExp(gruppen[k]).test(n)));
+    const g = new Uint8Array(W * H);
+    for (let p = 0; p < W * H; p++) g[p] = teil[p] ? gi[teil[p] - 1] : 0;
+    const D = 3;
+    const summe = new Map();
+    const nimm = (a, b, p) => {
+        const k = a + "|" + b;
+        const s = summe.get(k) || summe.set(k, [0, 0, 0, 0]).get(k);
+        (s[0] += LIN[u8[p * 4]]), (s[1] += LIN[u8[p * 4 + 1]]), (s[2] += LIN[u8[p * 4 + 2]]), s[3]++;
+    };
+    for (let y = D; y < H - D; y++)
+        for (let x = D; x < W - D; x++) {
+            const p = y * W + x;
+            const a = g[p];
+            if (!a) continue;
+            for (const s of [1, W]) {
+                const b = g[p + s];
+                if (!b || b === a || g[p - (D - 1) * s] !== a || g[p + D * s] !== b) continue;
+                nimm(a, b, p - (D - 1) * s), nimm(b, a, p + D * s);
+            }
+        }
+    const mul = (M, c) => (M ? M.map((z) => z[0] * c[0] + z[1] * c[1] + z[2] * c[2]) : c);
+    const aus = [];
+    for (let a = 1; a <= gk.length; a++)
+        for (let b = a + 1; b <= gk.length; b++) {
+            const [sa, sb] = [summe.get(a + "|" + b), summe.get(b + "|" + a)];
+            if (!sa || !sb) continue;
+            const [la, lb] = [sa, sb].map((s) => lab(mul(sim, s.slice(0, 3).map((v) => v / s[3]))));
+            aus.push({ grenze: gk[a - 1] + "|" + gk[b - 1], n: Math.min(sa[3], sb[3]), dE: +Math.hypot(la[0] - lb[0], la[1] - lb[1], la[2] - lb[2]).toFixed(2) });
+        }
+    return aus;
+}
+// DIE TEILUNG IN DER SEITE (r = Welt, T = THREE): am Blick der Ankunft (Ego, die Pipelines stehen schon) das Ausgabe-Bild ganz und je
+// Gruppe ohne sie (`__ausgabeAufnahme`, der Takt der Nah-Sätze ruht wie in `werkbank bild --klasse`), die Teilung `__klassenTeilung`
+// (Schwelle 18) — dann dasselbe Bild mit der Farbsicht „deuteranopie“. Rückgabe: Gruppen, Schirm, Teilung und beide Bilder (base64).
+async function zugangFarbe(r, T, gruppen) {
+    const st = r.state;
+    const gk = Object.keys(gruppen);
+    const je = gk.map(() => []);
+    st.scene.traverse((o) => {
+        if (!(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.visible) return;
+        const [grob, fein] = r._kopfKlasse(o);
+        const i = gk.findIndex((k) => new RegExp(gruppen[k]).test(grob) || new RegExp(gruppen[k]).test(fein));
+        if (i >= 0) je[i].push(o);
+    });
+    const db = st.renderer.getDrawingBufferSize(new T.Vector2());
+    const [W, H] = [Math.round(db.x), Math.round(db.y)];
+    const ruhen = ["_tickNahWiese", "_tickNahStreu", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
+    for (const [m] of ruhen) r[m] = () => 0;
+    const b64 = (u8) => {
+        let s = "";
+        for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
+        return btoa(s);
+    };
+    const schuss = async (aus) => {
+        for (const o of aus) o.visible = false;
+        window.__bundlesNeu();
+        try {
+            return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        } finally {
+            for (const o of aus) o.visible = true;
+            window.__bundlesNeu();
+        }
+    };
+    try {
+        st.zugang.farbsicht = "aus";
+        const G = await schuss([]);
+        const Os = [];
+        for (const l of je) Os.push(await schuss(l));
+        const { teil } = window.__klassenTeilung(G, Os, W, H, 18);
+        st.zugang.farbsicht = "deuteranopie";
+        const D = await schuss([]);
+        return { gruppen: gk, objekte: je.map((l) => l.length), W, H, teil: b64(teil), aus: b64(G), deutan: b64(D) };
+    } finally {
+        st.zugang.farbsicht = "aus";
+        for (const [m, eigen, alt] of ruhen)
+            if (eigen) r[m] = alt;
+            else delete r[m];
+    }
+}
+// DER KOMFORT IN DER SEITE (r = Welt, T = THREE; die Werkzeuge der Werkbank stehen dort)
+async function zugangKomfort(r, T) {
+    const st = r.state;
+    const cam = st.camera;
+    const aus = { menue: {}, stand: {}, fov: {}, wackeln: {}, unschaerfe: {} };
+    if (!st.zugang) return { fehler: "kein state.zugang" };
+    const el = (id) => document.getElementById(id);
+    const feuer = (e, typ) => e.dispatchEvent(new Event(typ, { bubbles: true }));
+    const grund = () => (st.zugang = { farbsicht: "aus", fov: null, wackeln: true, unschaerfe: true });
+    const luma = (u8, n) => {
+        const L = new Float32Array(n);
+        for (let p = 0; p < n; p++) L[p] = 0.2126 * u8[p * 4] + 0.7152 * u8[p * 4 + 1] + 0.0722 * u8[p * 4 + 2];
+        return L;
+    };
+    const [BW, BH] = [320, 180];
+    const schuss = async () => luma((await window.__ausgabeAufnahme(BW, BH, 1, { satz: "messung" })).u8, BW * BH);
+    const bytes = (A, B) => A.reduce((s, v, i) => s + (Math.abs(v - B[i]) > 0.5 ? 1 : 0), 0);
+    try {
+        // (M) DAS MENÜ schreibt den Stand
+        const sel = el("farbsicht-wahl");
+        aus.menue.arten = sel ? [...sel.options].map((o) => o.value) : [];
+        if (sel) (sel.value = "tritanopie"), feuer(sel, "change"), (aus.menue.farbsicht = st.zugang.farbsicht);
+        const sv = el("slider-sichtfeld");
+        if (sv) (sv.value = "92"), feuer(sv, "input"), (aus.menue.fov = st.zugang.fov);
+        for (const [id, k] of [["kopfwackeln-toggle", "wackeln"], ["unschaerfe-toggle", "unschaerfe"]]) {
+            const c = el(id);
+            if (c) c.click(), (aus.menue[k] = st.zugang[k]);
+        }
+        // (S) DER STAND reist: der Snapshot trägt die Wahl, der Lader nimmt sie zurück (FOV geklemmt) und das Menü zeigt sie
+        const snap = r.buildStateSnapshot().zugang || null;
+        aus.stand.snapshot = snap && Object.assign({}, snap);
+        grund();
+        r._loadStateRestoreSoulAndAtmosphere({ zugang: Object.assign({}, snap, { fov: 140 }) });
+        aus.stand.geladen = Object.assign({}, st.zugang);
+        aus.stand.menue = { farbsicht: sel && sel.value, fov: sv && +sv.value, wackeln: el("kopfwackeln-toggle")?.checked, unschaerfe: el("unschaerfe-toggle")?.checked };
+        // (V) DAS SICHTFELD: der EINE Schreiber setzt die Wahl, das Bild skaliert
+        grund();
+        const t = () => performance.now() / 1000;
+        r._kamFov(0, t());
+        aus.fov.ruhe = cam.fov;
+        const A = await schuss();
+        st.zugang.fov = 92;
+        r._kamFov(0, t());
+        aus.fov.wahl = cam.fov;
+        const Bf = await schuss();
+        let best = null;
+        for (let s = 0.6; s <= 1.0001; s += 0.01) {
+            let e = 0,
+                n = 0;
+            for (let y = 0; y < BH; y += 2)
+                for (let x = 0; x < BW; x += 2) {
+                    const [ax, ay] = [BW / 2 + (x - BW / 2) / s, BH / 2 + (y - BH / 2) / s];
+                    if (ax < 0 || ay < 0 || ax > BW - 1 || ay > BH - 1) continue;
+                    (e += Math.abs(Bf[y * BW + x] - A[Math.round(ay) * BW + Math.round(ax)])), n++;
+                }
+            if (n > 500 && (!best || e / n < best.e)) best = { s: +s.toFixed(2), e: +(e / n).toFixed(2) };
+        }
+        aus.fov.skala = best;
+        aus.fov.soll = +(Math.tan((37.5 * Math.PI) / 180) / Math.tan((46 * Math.PI) / 180)).toFixed(3);
+        grund();
+        r._kamFov(0, t());
+        // (W) DAS KOPFWACKELN: eine Landung im Ego-Rig und das Tempo im Sichtfeld, an und aus
+        const nicken = async (an) => {
+            st.zugang.wackeln = an;
+            st._landDip = 0;
+            st._landImpactPending = 0;
+            r._loopCamera(t());
+            const y0 = cam.position.y;
+            const vor = await schuss();
+            st._landImpactPending = 8;
+            r._loopCamera(t());
+            const dip = +(cam.position.y - y0).toFixed(4);
+            const nach = await schuss();
+            r._kamFov(6, t());
+            const atem = +(cam.fov - aus.fov.ruhe).toFixed(2);
+            r._kamFov(0, t());
+            st._landDip = 0;
+            return { dip, atem, bildPx: bytes(vor, nach) };
+        };
+        aus.wackeln.an = await nicken(true);
+        aus.wackeln.aus = await nicken(false);
+        grund();
+        r._loopCamera(t());
+        // (U) DIE UNSCHÄRFE: die Geschichte der zeitlichen Auflösung (zugeschaltet: die Kette neu mit `_traa`), 12 Bilder Drehung
+        st._traa = true;
+        st.postProcessing = null;
+        st.postProcessingFailed = false;
+        st.traaNode = null;
+        const rend = st.renderer;
+        const db = rend.getDrawingBufferSize(new T.Vector2());
+        const [W, H] = [Math.round(db.x), Math.round(db.y)];
+        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+        const vorOut = rend.getOutputRenderTarget();
+        const q0 = cam.quaternion.clone();
+        const energie = (u8) => {
+            const L = luma(u8, W * H);
+            let s = 0;
+            for (let y = 0; y < H; y++) for (let x = 0; x + 1 < W; x++) s += Math.abs(L[y * W + x + 1] - L[y * W + x]);
+            return +(s / (W * H)).toFixed(3);
+        };
+        rend.setOutputRenderTarget(rt);
+        try {
+            const lauf = async (unsch, grad) => {
+                st.zugang.unschaerfe = unsch;
+                cam.quaternion.copy(q0);
+                cam.updateMatrixWorld(true);
+                if (st._traaR) st._traaR.neu = true;
+                if (st.traaNode) st.traaNode._jitterIndex = 0;
+                if (st.lodUniforms && st.lodUniforms.uDitherT) st.lodUniforms.uDitherT.value = 0;
+                for (let k = 0; k < 8; k++) window.__loopBild();
+                for (let k = 0; k < 12; k++) {
+                    cam.rotateY((grad * Math.PI) / 180);
+                    cam.updateMatrixWorld(true);
+                    window.__loopBild();
+                }
+                return energie(await window.__zielLesen(rt, W, H));
+            };
+            window.__loopBild(); // die Kette entsteht im ersten Bild (`_ensurePostProcessing`)
+            aus.unschaerfe.kette = !!st.traaNode && !!st.traaNode._laufPx;
+            await lauf(true, 0); // der Vorlauf: die Pipelines der zeitlichen Auflösung entstehen (swiftshader kompiliert sie im Bild)
+            aus.unschaerfe.an = await lauf(true, 1.5);
+            aus.unschaerfe.aus = await lauf(false, 1.5);
+            aus.unschaerfe.ruheAn = await lauf(true, 0);
+            aus.unschaerfe.ruheAus = await lauf(false, 0);
+            aus.unschaerfe.laufPx = st.traaNode && st.traaNode._laufPx ? st.traaNode._laufPx.value : null;
+        } finally {
+            rend.setOutputRenderTarget(vorOut);
+            rt.dispose();
+            cam.quaternion.copy(q0);
+            cam.updateMatrixWorld(true);
+        }
+    } finally {
+        grund();
+    }
+    return aus;
+}
+// DER LAUF (im Spiel-Baum, cwd; headless): die Werkbank, dann die Klang-Linse; die Zeile „ZUGANG {…}“ und {AUS} tragen das Maß
+async function zugangLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, gruppen, sim, grenzenText, farbeText, komfortText] = process.argv.slice(1);
+    const zugangGrenzen = eval("(" + grenzenText + ")");
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    const t0 = Date.now();
+    const erg = { zeit: {} };
+    const ruf = async (weg, o) => {
+        const a = await werkbankRuf(W, weg, o || {});
+        if (!a || a.fehler || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+        return a;
+    };
+    const seite = async (code) => (await ruf("/eval", { code })).ergebnis;
+    const zeit = (k) => console.log("ZUGANG-SCHRITT " + k + " " + (erg.zeit[k] = Math.round((Date.now() - t0) / 1000)) + " s");
+    const tor = werkbankTor(W, ["--ort", "genesis"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        await ruf("/umstellen", { ort: "genesis", sicht: "ego" });
+        zeit("umstellen");
+        if (!(await seite("return !!r.state.zugang;"))) throw new Error("kein state.zugang (der Stand kennt den Zugang nicht)");
+        await ruf("/fenster", { w: 640, h: 360 });
+        const f = await seite("return await (" + farbeText + ")(r, T, " + gruppen + ");");
+        const teil = Buffer.from(f.teil, "base64");
+        const G = Object.fromEntries(f.gruppen.map((k) => [k, "^" + k + "$"]));
+        const bild = (k) => new Uint8Array(Buffer.from(f[k], "base64"));
+        erg.farbe = { gruppen: f.gruppen, objekte: f.objekte, schirm: [f.W, f.H] };
+        for (const [art, k] of [["aus", "aus"], ["deuteranopie", "deutan"]])
+            erg.farbe[art] = {
+                auge: zugangGrenzen(bild(k), teil, f.gruppen, f.W, f.H, G, null),
+                deutan: zugangGrenzen(bild(k), teil, f.gruppen, f.W, f.H, G, JSON.parse(sim)),
+            };
+        fs.writeFileSync(B + "-farbe.json", JSON.stringify(f));
+        zeit("farbe");
+        await seite("r.state.zugang.farbsicht = 'aus'; return 1;");
+        erg.komfort = await seite("return await (" + komfortText + ")(r, T);");
+        zeit("komfort");
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    } finally {
+        tor.stop();
+    }
+    if (!erg.fehler) {
+        const kj = B + "-klang.json";
+        const k = cp.spawnSync(process.execPath, ["scripts/diag-klang-zensus.cjs", "--json", kj], {
+            env: Object.assign({}, process.env, { KLANG_ZENSUS_PORT: String(port) }),
+            encoding: "utf8",
+            maxBuffer: 64 << 20,
+        });
+        const z = (String(k.stdout).match(/^── \(Ü\) UNTERTITEL: (\d+) von (\d+) /m) || []).slice(1).map(Number);
+        let rot = [];
+        try {
+            rot = (JSON.parse(fs.readFileSync(kj, "utf8")).rot || []).filter((x) => /^Ü /.test(x));
+        } catch (_e) {
+            rot = ["keine JSON der Klang-Linse (Exit " + k.status + ")"];
+        }
+        erg.untertitel = z.length === 2 ? { n: z[0], von: z[1], rot, exit: k.status } : { fehler: "keine Zeile (Ü) UNTERTITEL (Exit " + k.status + ")", rot };
+        zeit("untertitel");
+    }
+    console.log("ZUGANG " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// DAS URTEIL: (F) jede Grenze der Farbsicht ΔE ≥ 10 unter Machado-Deuteranopie, mindestens zwei Grenzen im Bild, die Farbsicht ändert das
+// Bild (das Mittel der Grenzen hebt sich gegen „aus“); (K) Menü · Stand · Sichtfeld · Kopfwackeln · Unschärfe je beim Namen; (Ü) n von n
+function zugangUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile ZUGANG" };
+    if (e.fehler) return { gruen: false, zahl: "Lauf: " + e.fehler };
+    const rot = [];
+    const F = e.farbe || {};
+    const gilt = (g) => g.n >= ZUGANG_GRENZE_N;
+    const [vor, nach] = [((F.aus || {}).deutan || []).filter(gilt), ((F.deuteranopie || {}).deutan || []).filter(gilt)];
+    const min = (l) => (l.length ? Math.min(...l.map((g) => g.dE)) : null);
+    if (nach.length < 2) rot.push("F: " + nach.length + " Klassen-Grenzen im Bild (Soll ≥ 2)");
+    for (const g of nach) if (!(g.dE >= 10)) rot.push("F: " + g.grenze + " ΔE " + g.dE + " < 10");
+    const mittel = (l) => l.reduce((s, g) => s + g.dE, 0) / Math.max(1, l.length);
+    if (!(mittel(nach) > mittel(vor) + 0.5)) rot.push("F: die Farbsicht hebt die Grenzen nicht (Mittel " + mittel(vor).toFixed(1) + " → " + mittel(nach).toFixed(1) + ")");
+    const K = e.komfort || {};
+    if (!K.menue) rot.push("K: keine Komfort-Probe" + (K.fehler ? " (" + K.fehler + ")" : ""));
+    else {
+        const M = K.menue;
+        if (["aus", "deuteranopie", "protanopie", "tritanopie"].some((a) => !(M.arten || []).includes(a))) rot.push("M: die Farbsicht-Wahl trägt " + JSON.stringify(M.arten));
+        if (M.farbsicht !== "tritanopie" || M.fov !== 92 || M.wackeln !== false || M.unschaerfe !== false) rot.push("M: das Menü schreibt den Stand nicht " + JSON.stringify(M));
+        const S = K.stand || {};
+        const soll = { farbsicht: "tritanopie", fov: 100, wackeln: false, unschaerfe: false };
+        if (JSON.stringify(S.snapshot) !== JSON.stringify(Object.assign({}, soll, { fov: 92 }))) rot.push("S: der Snapshot trägt " + JSON.stringify(S.snapshot));
+        if (JSON.stringify(S.geladen) !== JSON.stringify(soll)) rot.push("S: geladen " + JSON.stringify(S.geladen));
+        if (JSON.stringify(S.menue) !== JSON.stringify(soll)) rot.push("S: das Menü zeigt nach dem Laden " + JSON.stringify(S.menue));
+        const V = K.fov || {};
+        if (V.ruhe !== 75 || V.wahl !== 92) rot.push("V: Sichtfeld " + V.ruhe + " → " + V.wahl + " (Soll 75 → 92)");
+        if (!V.skala || Math.abs(V.skala.s - V.soll) > 0.03) rot.push("V: das Bild skaliert " + JSON.stringify(V.skala) + " (Soll " + V.soll + ")");
+        const Wa = K.wackeln || {};
+        const [an, ab] = [Wa.an || {}, Wa.aus || {}];
+        if (!(an.dip < -0.02 && an.atem > 0 && an.bildPx > 0)) rot.push("W: an nickt nicht " + JSON.stringify(an));
+        if (!(ab.dip === 0 && ab.atem === 0 && ab.bildPx === 0)) rot.push("W: aus nickt " + JSON.stringify(ab));
+        const U = K.unschaerfe || {};
+        if (!U.kette) rot.push("U: keine zeitliche Auflösung mit _laufPx");
+        else {
+            if (!(U.aus >= 1.05 * U.an)) rot.push("U: aus " + U.aus + " gegen an " + U.an + " (Soll ≥ 1,05 ×)");
+            if (!(Math.abs(U.ruheAus - U.ruheAn) <= 0.02 * U.ruheAn)) rot.push("U: in Ruhe " + U.ruheAn + " gegen " + U.ruheAus + " (Soll gleich ± 2 %)");
+        }
+    }
+    const Ue = e.untertitel || {};
+    if (!(Ue.von > 0 && Ue.n === Ue.von && !(Ue.rot || []).length)) rot.push("Ü: " + (Ue.fehler || Ue.n + " von " + Ue.von) + ((Ue.rot || []).length ? " · " + Ue.rot.slice(0, 2).join(" · ") : ""));
+    const k = K.menue ? K : {};
+    return {
+        gruen: rot.length === 0,
+        zahl:
+            (rot.length ? "ROT: " + rot.slice(0, 4).join(" · ") + " — " : "") +
+            "Farbsicht: " + nach.length + " Grenzen, ΔE min " + min(nach) + " (vorher " + min(vor) + ") unter Machado-Deuteranopie [" +
+            nach.map((g) => g.grenze + " " + g.dE).join(", ") + "] · Sichtfeld " + (k.fov || {}).ruhe + "→" + (k.fov || {}).wahl + "°, Skala " +
+            ((k.fov || {}).skala || {}).s + " (Soll " + (k.fov || {}).soll + ") · Wackeln an " + JSON.stringify((k.wackeln || {}).an) + " aus " +
+            JSON.stringify((k.wackeln || {}).aus) + " · Unschärfe an " + (k.unschaerfe || {}).an + " aus " + (k.unschaerfe || {}).aus + " · Untertitel " +
+            Ue.n + " von " + Ue.von,
+    };
+}
+
+// DIE PROBEN von spielgang.K4#2: ZUGANG_ROH ist die Messung am Zweig w15-farbsicht 1c (swiftshader, Genesis-Ort, 7,2 min); die Mutanten nennen ihren Täter
+const ZUGANG_ROH = {"zeit":{"umstellen":88,"farbe":159,"komfort":325,"untertitel":434},"farbe":{"gruppen":["gras","boden","bau","fels","laub","wasser"],"objekte":[4,1,31,2,36,0],"schirm":[640,360],"aus":{"deutan":[{"grenze":"gras|boden","n":902,"dE":28.04},{"grenze":"gras|bau","n":1024,"dE":17.67},{"grenze":"gras|laub","n":59,"dE":39.39},{"grenze":"boden|bau","n":345,"dE":16.92},{"grenze":"boden|laub","n":47,"dE":20.03},{"grenze":"bau|laub","n":1515,"dE":26.42}]},"deuteranopie":{"deutan":[{"grenze":"gras|boden","n":902,"dE":19.54},{"grenze":"gras|bau","n":1024,"dE":20.04},{"grenze":"gras|laub","n":59,"dE":29.4},{"grenze":"boden|bau","n":345,"dE":29.94},{"grenze":"boden|laub","n":47,"dE":23.88},{"grenze":"bau|laub","n":1515,"dE":31.32}]}},"komfort":{"menue":{"arten":["aus","deuteranopie","protanopie","tritanopie"],"farbsicht":"tritanopie","fov":92,"wackeln":false,"unschaerfe":false},"stand":{"snapshot":{"farbsicht":"tritanopie","fov":92,"wackeln":false,"unschaerfe":false},"geladen":{"farbsicht":"tritanopie","fov":100,"wackeln":false,"unschaerfe":false},"menue":{"farbsicht":"tritanopie","fov":100,"wackeln":false,"unschaerfe":false}},"fov":{"ruhe":75,"wahl":92,"skala":{"s":0.74,"e":8.21},"soll":0.741},"wackeln":{"an":{"dip":-0.0791,"atem":6,"bildPx":43195},"aus":{"dip":0,"atem":0,"bildPx":0}},"unschaerfe":{"kette":true,"an":3.639,"aus":12.453,"ruheAn":7.792,"ruheAus":7.85,"laufPx":4}},"untertitel":{"n":45,"von":45,"rot":[],"exit":1}};
+const zugangRoh = (aendern) => "[linse-gpu] google/swiftshader\nZUGANG " + JSON.stringify(aendern(JSON.parse(JSON.stringify(ZUGANG_ROH))));
+const ZUGANG_PROBEN = [
+    { name: "die Messung am Zweig w15-farbsicht (swiftshader)", stdout: zugangRoh((x) => x), gruen: true },
+    { name: "der Modus aus: das Bild der Farbsicht gleicht dem ohne (main)", stdout: zugangRoh((x) => ((x.farbe.deuteranopie = x.farbe.aus), x)), gruen: false },
+    { name: "eine Grenze unter ΔE 10", stdout: zugangRoh((x) => ((x.farbe.deuteranopie.deutan[1].dE = 9.4), x)), gruen: false },
+    { name: "nur eine Grenze im Bild", stdout: zugangRoh((x) => ((x.farbe.deuteranopie.deutan = x.farbe.deuteranopie.deutan.slice(0, 1)), x)), gruen: false },
+    { name: "das Menü schreibt den Stand nicht", stdout: zugangRoh((x) => ((x.komfort.menue.fov = null), x)), gruen: false },
+    { name: "der Lader klemmt das Sichtfeld nicht", stdout: zugangRoh((x) => ((x.komfort.stand.geladen.fov = 140), x)), gruen: false },
+    { name: "das Sichtfeld steht fest (KAM_FOV_GRAD)", stdout: zugangRoh((x) => ((x.komfort.fov.wahl = 75), (x.komfort.fov.skala = { s: 1, e: 0 }), x)), gruen: false },
+    { name: "Kopfwackeln aus nickt weiter", stdout: zugangRoh((x) => ((x.komfort.wackeln.aus = x.komfort.wackeln.an), x)), gruen: false },
+    { name: "Unschärfe aus zieht weiter nach", stdout: zugangRoh((x) => ((x.komfort.unschaerfe.aus = x.komfort.unschaerfe.an), x)), gruen: false },
+    { name: "eine Stimme ohne Untertitel", stdout: zugangRoh((x) => ((x.untertitel = { n: 38, von: 39, rot: ["Ü ruf:wolf ohne Zeile"], exit: 1 }), x)), gruen: false },
+    { name: "main: der Stand kennt keinen Zugang", stdout: "ZUGANG " + JSON.stringify({ zeit: {}, fehler: "kein state.zugang (der Stand kennt den Zugang nicht)" }), gruen: false },
+];
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
     {
@@ -3352,6 +3776,20 @@ const stationen = [
             const waechst = Array.isArray(s.jahr) && s.jahr[1] > s.jahr[0] && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && s.offen === 0;
             const kern = u.kern === true && ring.neu > 0 && ring.zumHaus < ring.zumOrt;
             const bild = !!j && j.ok === true;
+            // DIE ABNAHME BEIM NAMEN (w17-siedlung-abnahme): ein Bild, das sie nicht hält, schreibt kein {AUS} — die Werkbank wirft
+            // „ABNAHME ROT [<Gründe>] · … — die Aufnahme speichert nichts" in den Teil BILD. Bis hier stand dann nur „ohne Abnahme
+            // (Exit 0)" (der Exit des Teils W): GTX a4dc2a45 und Radeon 8ef49bef lasen sich wie ein Schuss, der nie lief — der
+            // Grund war „wandlaterne_dorf 609 UNGEZEICHNET" in allen 42 Posen der Blick-Wahl (die Fernform zählte nicht als Bild)
+            const bf = jsonBlock(teil("BILD")) || {};
+            const rot = /ABNAHME ROT \[([^\]]*)\]/.exec(String(bf.fehler || ""));
+            const wahl = /die Blick-Wahl fand in (\d+) Posen keine freie/.exec(String(bf.fehler || ""));
+            const abnahme = j && j.zeile
+                ? j.zeile.slice(0, 120)
+                : rot
+                    ? "ABNAHME ROT [" + rot[1].slice(0, 240) + "]" + (wahl ? ", die Blick-Wahl fand in " + wahl[1] + " Posen keine freie" : "") + " — die Aufnahme speichert nichts"
+                    : bf.fehler
+                        ? "BILD ohne Abnahme: " + String(bf.fehler).slice(0, 160)
+                        : "ohne Abnahme — der Schuss vom Hügel schrieb weder Zeile noch Fehler (Exit " + lauf.exit + ")";
             const gruen = !!w1 && w1[1] === "✅" && !!w2 && w2[1] === "✅" && steht && waechst && kern && !k.fehler && k.hoeher > 0 && bild;
             return {
                 gruen,
@@ -3361,7 +3799,7 @@ const stationen = [
                     ", Kern " + (u.kern ? "ja" : "nein") + " · 1500 s: " +
                     (Array.isArray(s.jahr) ? s.jahr.join(" → ") + ", Häuser " + s.haeuser.join(" → ") + "/" + s.slots + ", die alten " + s.bleiben + (s.offen ? ", offen " + s.offen : "") : "kein Stand") +
                     " · Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort · Schuss vom Hügel " + k.d + " m, " +
-                    k.hoeher + " m höher · " + (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+                    k.hoeher + " m höher · " + abnahme,
             };
         },
         pfad: [
@@ -3375,6 +3813,17 @@ const stationen = [
             "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/abnahme-urteil.cjs",
+            "stamm/dienst.js",
+        ],
+        // DIE PROBEN (w17-siedlung-abnahme): ohne {AUS} urteilt die Station ROT, und ihre Zahl nennt die Abnahme beim Namen — den
+        // Grund der Werkbank aus dem Teil BILD, nie „ohne Abnahme" über einem Schuss, der geurteilt hat
+        proben: [
+            { name: "GTX a4dc2a45: der Schuss vom Hügel urteilt ROT beim Namen", stdout: K4_ROH({ ms: 11209, fehler: K4_ROT_GTX }), gruen: false,
+                zahl: /· ABNAHME ROT \[Vordergrund 29\.3 %.*wandlaterne_dorf 609 UNGEZEICHNET\], die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts$/ },
+            { name: "Mutante: die Abnahme fehlt (kein Teil BILD, kein {AUS})", stdout: K4_ROH(null), gruen: false,
+                zahl: /· ohne Abnahme — der Schuss vom Hügel schrieb weder Zeile noch Fehler \(Exit 0\)$/ },
+            { name: "der Schuss bricht vor der Abnahme (ein Fehler ohne Urteil)", stdout: K4_ROH({ ms: 9, fehler: "Seite weg" }), gruen: false,
+                zahl: /· BILD ohne Abnahme: Seite weg$/ },
         ],
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
     },
@@ -4697,6 +5146,37 @@ const stationen = [
         ],
         quelle: "1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10)",
     },
+    // spielgang.K4 Staffel 2 (w15-farbsicht): der Zugang — Farbsicht im Ausgabe-Bild, Komfort an seinen Quellen, Untertitel (zugangLauf,
+    // zugangKomfort, zugangGrenzen, zugangUrteil oben)
+    {
+        kriterium: "spielgang.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(zugangLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(ZUGANG_KLASSEN), JSON.stringify(MACHADO_DEUTAN),
+            knapp(zugangGrenzen), knapp(zugangFarbe), knapp(zugangKomfort)],
+        gpu: false,
+        zeit: false,
+        minuten: 14,
+        urteil: (j, lauf) => zugangUrteil(j || jsonZeile(lauf.stdout, /^ZUGANG /)),
+        proben: ZUGANG_PROBEN,
+        pfad: [
+            "stamm/bild-kosten.js",
+            "stamm/dirigent-takt.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/werkstatt-hud.js",
+            "stamm/speicher-*.js",
+            "stamm/dirigent-kern.js",
+            "stamm/klang.js",
+            "klang-core.js",
+            "index.html",
+            "scripts/werkbank.cjs",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+        ],
+        quelle: "2 = beides und Bewegungs-Komfort (FOV, Kopfwackeln, Unschärfe aus)",
+    },
 
     // ───────── ultiversum.K4 — Spieler schreiben Gesetze und teilen sie (Zweig w3t-spielergesetz) ─────────
     {
@@ -4961,9 +5441,6 @@ module.exports.fehlt = [
     // als Probe der EINEN Welt der Sitzung — tore.K5#2 fuhr gate:praegung-welt mit eigenem Boot (A und B je ein Browser, Radeon b3f9ae95
     // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
     { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT. GPU-Station wartet auf die Prüfbühne (w5-s2-g5, 03.11.): „beide Flüsse an beiden Geräten“ — die Fahrt hat Radeon 17 / GTX 16 s frei, zwei Browser-Prozesse mit eigenem Boot passen nie in sie" },
-    // w5-s2-g5 (03.11.): GPU-STATIONEN, DIE AUF DIE PRÜFBÜHNE WARTEN — die Staffel verlangt ein Bild auf der Karte und beide Geräte; die
-    // Fahrt steht Radeon 1 783 / GTX 1 784 von 1 800 s (Σ Deckel + Boot, punkte.cjs fahrtSumme), frei sind 16–17 s
-    { kriterium: "spielgang.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne (w5-s2-g5): „beides“ verlangt den Farb-Modus — jede Klassen-Grenze des AUSGABE-Bilds unter Deuteranopie-Simulation ΔE ≥ 10 (Klassen-Masken, ein Bild der Karte) — neben den Untertiteln, deren Wand (Ü) nur gate:klang-zensus mit eigenem Boot misst (ein Sitzungs-Feind); am main 5fba36ea gibt es weder Farb-Modus (deuteran|farbseh|colorblind: 0 Treffer im Stamm) noch einen Schalter für FOV, Kopfwackeln oder Unschärfe (KAM_FOV_GRAD fest, `_kamFov`)" },
     // p3-stationen-g456 (01.11.): DIE FAHRT trägt keine neue Probe — die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s
     // (FAHRT_MAX_S samt Boot); was hier steht, braucht einen eigenen Lauf mit Sekunden, die erst die Eich-Fahrt freigibt, oder ein
     // Werkzeug oder Spiel, das es nicht gibt — je Eintrag beim Namen
