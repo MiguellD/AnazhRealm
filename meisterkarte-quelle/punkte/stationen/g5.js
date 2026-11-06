@@ -983,6 +983,29 @@ const SIEDLUNG_SITZUNG = sitzung(10,
 // dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
 // Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
 // bis sie steht (der Ort im Wachstum zählt in `_dorfOffen`). Der Code trägt kein einfaches Hochkomma (bash '…').
+// DIE ROH-AUSGABE DER PROBE (die Proben von siedlung.K4#2): die Schritte von GTX a4dc2a45 (Ort, Haus, Uhr, Stand, Kamera, Teil W) mit
+// einem Teil BILD nach Wahl — `bild` null lässt ihn fehlen
+const K4_ROH = (bild) => {
+    const b = (n, e) => ["@@PUNKTE@@ " + n, JSON.stringify(e, null, 1)].join("\n");
+    return [
+        "[linse-gpu] nvidia/pascal",
+        b("ORT", { ms: 13, ergebnis: { S: { x: 400, z: 692.82, hang: 3.97 }, hill: { x: 446.82, y: 48.05, z: 457.43 } } }),
+        b("VOR", { ms: 103, ergebnis: { k: "d:7@400,693", groesse: "dorf", jahr: 1412, slots: 12, haeuser: 12, haus: [411.55, 634.76], hill: { x: 446.82, y: 48.05, z: 457.43 } } }),
+        b("UHR", { ms: 3, ergebnis: { kern: true, jahr: 1412, haeuser: 12, uhr: 1543.1 } }),
+        b("STAND", { ms: 4, ergebnis: { jahr: [1412, 1744], haeuser: [12, 20], slots: 21, bleiben: 0.917, ring: { neu: 9, zumHaus: 22, zumOrt: 59 }, offen: 0 } }),
+        b("KAMERA", { ms: 3, ergebnis: { pose: [446.82, 49.75, 457.43, 405.77, 40.34, 663.79], d: 210, hoeher: 11.7 } }),
+        ...(bild ? [b("BILD", bild), "@@PUNKTE@@ EXIT 1"] : []),
+        "@@PUNKTE@@ W",
+        "  ✅ W1 WACHSTUM in 10800 s: 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5/24 24→73 73/73 2019",
+        "  ✅ W2 AUS BEWOHNERN (wohl 0, ohne Leute halten; Gewalt bremst): 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1",
+        "@@PUNKTE@@ EXIT 0",
+    ].join("\n");
+};
+const K4_ROT_GTX =
+    "ABNAHME ROT [Vordergrund 29.3 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_birke 28.6 %, Rinde baum_birke 0.7 % · Ziel Blickziel " +
+    "verdeckt von siedlung-mauer in 139.26 m · Ziel Blickziel nicht gezeichnet: wandlaterne_dorf 609 UNGEZEICHNET] · beweis · Sicht 0.0 % · " +
+    "Ziel Blickziel im Bild VERDECKT 210.61 m · Luma 57.5 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.198 · Bühne summer sunny 0.50 · " +
+    "Gerät WebGPU nvidia pascal · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts";
 const K4_ORT =
     "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = null; " +
     "for (const R of [500, 650, 800]) for (let k = 0; k < 24; k++) { const a = (k / 24) * 2 * Math.PI, x = g.x + Math.cos(a) * R, z = g.z + Math.sin(a) * R; " +
@@ -3352,6 +3375,20 @@ const stationen = [
             const waechst = Array.isArray(s.jahr) && s.jahr[1] > s.jahr[0] && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && s.offen === 0;
             const kern = u.kern === true && ring.neu > 0 && ring.zumHaus < ring.zumOrt;
             const bild = !!j && j.ok === true;
+            // DIE ABNAHME BEIM NAMEN (w17-siedlung-abnahme): ein Bild, das sie nicht hält, schreibt kein {AUS} — die Werkbank wirft
+            // „ABNAHME ROT [<Gründe>] · … — die Aufnahme speichert nichts" in den Teil BILD. Bis hier stand dann nur „ohne Abnahme
+            // (Exit 0)" (der Exit des Teils W): GTX a4dc2a45 und Radeon 8ef49bef lasen sich wie ein Schuss, der nie lief — der
+            // Grund war „wandlaterne_dorf 609 UNGEZEICHNET" in allen 42 Posen der Blick-Wahl (die Fernform zählte nicht als Bild)
+            const bf = jsonBlock(teil("BILD")) || {};
+            const rot = /ABNAHME ROT \[([^\]]*)\]/.exec(String(bf.fehler || ""));
+            const wahl = /die Blick-Wahl fand in (\d+) Posen keine freie/.exec(String(bf.fehler || ""));
+            const abnahme = j && j.zeile
+                ? j.zeile.slice(0, 120)
+                : rot
+                    ? "ABNAHME ROT [" + rot[1].slice(0, 240) + "]" + (wahl ? ", die Blick-Wahl fand in " + wahl[1] + " Posen keine freie" : "") + " — die Aufnahme speichert nichts"
+                    : bf.fehler
+                        ? "BILD ohne Abnahme: " + String(bf.fehler).slice(0, 160)
+                        : "ohne Abnahme — der Schuss vom Hügel schrieb weder Zeile noch Fehler (Exit " + lauf.exit + ")";
             const gruen = !!w1 && w1[1] === "✅" && !!w2 && w2[1] === "✅" && steht && waechst && kern && !k.fehler && k.hoeher > 0 && bild;
             return {
                 gruen,
@@ -3361,7 +3398,7 @@ const stationen = [
                     ", Kern " + (u.kern ? "ja" : "nein") + " · 1500 s: " +
                     (Array.isArray(s.jahr) ? s.jahr.join(" → ") + ", Häuser " + s.haeuser.join(" → ") + "/" + s.slots + ", die alten " + s.bleiben + (s.offen ? ", offen " + s.offen : "") : "kein Stand") +
                     " · Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort · Schuss vom Hügel " + k.d + " m, " +
-                    k.hoeher + " m höher · " + (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+                    k.hoeher + " m höher · " + abnahme,
             };
         },
         pfad: [
@@ -3375,6 +3412,17 @@ const stationen = [
             "scripts/werkbank.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/abnahme-urteil.cjs",
+            "stamm/dienst.js",
+        ],
+        // DIE PROBEN (w17-siedlung-abnahme): ohne {AUS} urteilt die Station ROT, und ihre Zahl nennt die Abnahme beim Namen — den
+        // Grund der Werkbank aus dem Teil BILD, nie „ohne Abnahme" über einem Schuss, der geurteilt hat
+        proben: [
+            { name: "GTX a4dc2a45: der Schuss vom Hügel urteilt ROT beim Namen", stdout: K4_ROH({ ms: 11209, fehler: K4_ROT_GTX }), gruen: false,
+                zahl: /· ABNAHME ROT \[Vordergrund 29\.3 %.*wandlaterne_dorf 609 UNGEZEICHNET\], die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts$/ },
+            { name: "Mutante: die Abnahme fehlt (kein Teil BILD, kein {AUS})", stdout: K4_ROH(null), gruen: false,
+                zahl: /· ohne Abnahme — der Schuss vom Hügel schrieb weder Zeile noch Fehler \(Exit 0\)$/ },
+            { name: "der Schuss bricht vor der Abnahme (ein Fehler ohne Urteil)", stdout: K4_ROH({ ms: 9, fehler: "Seite weg" }), gruen: false,
+                zahl: /· BILD ohne Abnahme: Seite weg$/ },
         ],
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
     },
