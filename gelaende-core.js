@@ -34,6 +34,7 @@
     // Normalform (`erbgutNormal`) EINMAL.
     function termY(t, h, x, z, L) {
         const base = L.baseHeight || 0;
+        if (t.art === "bahn") return bahnY(t, h, x, z, base);
         if (t.art === "insel") {
             // Plateau mit Kuppel (steigt zur Mitte, entwässert), dann der Schelf (smoothstep) bis zum Grund.
             const r = Math.hypot(x - t.x, z - t.z);
@@ -98,7 +99,7 @@
         const RAD = Math.PI / 180;
         return roh.terme.map((t, i) => {
             if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
-            if (!["wildnis", "insel", "rampe", "bucht", "rinne"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
+            if (!["wildnis", "insel", "rampe", "bucht", "rinne", "bahn"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
             const basis = t.art === "wildnis" || t.art === "insel";
             if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
             if (t.art === "wildnis") {
@@ -191,8 +192,168 @@
                     einzug: zahl(t, "einzug", 0.01, 1000),
                 };
             }
+            if (t.art === "bahn") return bahnNormal(t, zahl, nein, RAD);
             return nein(`unbekannte Term-Art „${t.art}"`);
         });
+    }
+
+    // ══ DIE BAHN (w11-fahrzeug, 04.11.) — die Rennstrecke als Term des Erbguts: die Prüfbühne der Fahrphysik (Kurven verschiedener
+    // Radien, Überhöhung, Kuppe, Sprung mit Landung) aus DEMSELBEN Gesetz, das jede Welt trägt (kein Sonder-Gelände; der
+    // Prüfplatz hängt sie in sein Ort-Gesetz). Roh: { art: "bahn", x, z, richtung (°, die Fahrt beim Start), breite, boeschung (°),
+    // hoehe (m über der Basis), uebergang (m: die Überhöhung läuft über diese Länge ein und aus), stuecke: [{ gerade: m } |
+    // { bogen: R, winkel: ° (+ links), ueberhoehung: ° }], profil: [{ art: "kuppe", s, laenge, hoehe } | { art: "sprung", s, anlauf,
+    // winkel, luecke, tisch, landeWinkel, tempo }] }. Die Fahrt läuft wie der Bug eines Wagens (cos φ, −sin φ), links (−sin φ,
+    // −cos φ); die Überhöhung kippt die Fahrbahn um die Linie. Die Normalform rechnet die Mittellinie EINMAL
+    // (je `ds` ein Punkt: X, Z, PHI, KAPPA, BANK, Y, VZIEL — das Tempo, das die Bühne am Kicker verlangt) und ein Gitter der Punkte;
+    // die Linie ist zugleich der Vertrag des Fahrers (vehicle-core `fahrerLinie`, `pruefFahrt`). Eine geschlossene Bahn schließt
+    // (≤ 2 m, ≤ 2°), sonst fällt sie laut.
+    function bahnNormal(t, zahl, nein, RAD) {
+        const ds = 1;
+        const breite = zahl(t, "breite", 4, 40),
+            hoehe = zahl(t, "hoehe", -100, 200),
+            tanB = Math.tan(zahl(t, "boeschung", 10, 60) * RAD),
+            uebergang = zahl(t, "uebergang", 0, 100);
+        if (!Array.isArray(t.stuecke) || t.stuecke.length < 1 || t.stuecke.length > 64) nein("bahn: 1–64 Stücke");
+        const X = [],
+            Z = [],
+            PHI = [],
+            KAPPA = [],
+            ZIEL_BANK = [],
+            stuecke = [];
+        let x = zahl(t, "x", -1e5, 1e5),
+            z = zahl(t, "z", -1e5, 1e5),
+            phi = zahl(t, "richtung", -360, 360) * RAD;
+        const x0 = x,
+            z0 = z,
+            phi0 = phi;
+        for (const st of t.stuecke) {
+            const bogen = st && st.bogen != null;
+            const R = bogen ? zahl(st, "bogen", 5, 2000) : Infinity,
+                w = bogen ? zahl(st, "winkel", -360, 360) * RAD : 0,
+                len = bogen ? R * Math.abs(w) : zahl(st, "gerade", 1, 5000),
+                kappa = bogen ? Math.sign(w) / R : 0,
+                bank = bogen && st.ueberhoehung != null ? Math.sign(w) * zahl(st, "ueberhoehung", 0, 30) * RAD : 0,
+                n = Math.max(1, Math.round(len / ds)),
+                d = len / n;
+            stuecke.push({ i0: X.length, i1: X.length + n, R, bank });
+            for (let i = 0; i < n; i++) {
+                X.push(x);
+                Z.push(z);
+                PHI.push(phi);
+                KAPPA.push(kappa);
+                ZIEL_BANK.push(bank);
+                const pm = phi + (kappa * d) / 2;
+                x += Math.cos(pm) * d;
+                z -= Math.sin(pm) * d;
+                phi += kappa * d;
+            }
+        }
+        const N = X.length,
+            geschlossen = t.geschlossen !== false;
+        if (geschlossen) {
+            const dw = Math.abs(((phi - phi0) / (2 * Math.PI)) % 1);
+            if (Math.hypot(x - x0, z - z0) > 2 || Math.min(dw, 1 - dw) * 360 > 2)
+                nein(`bahn: sie schließt nicht (${Math.hypot(x - x0, z - z0).toFixed(1)} m vom Start)`);
+        }
+        // die Überhöhung läuft über `uebergang` ein und aus: zweimal das gleitende Mittel über die halbe Länge (auf der
+        // geschlossenen Bahn rundum) — die Kipp-Rate ist stetig, die Kante steigt ohne Knick
+        const hw = Math.max(0, Math.round(uebergang / ds / 4));
+        const mittel = (A) => {
+            const B = new Float64Array(N);
+            for (let i = 0; i < N; i++) {
+                let sum = 0;
+                for (let j = i - hw; j <= i + hw; j++) sum += A[geschlossen ? ((j % N) + N) % N : Math.max(0, Math.min(N - 1, j))];
+                B[i] = sum / (2 * hw + 1);
+            }
+            return B;
+        };
+        const BANK = mittel(mittel(ZIEL_BANK));
+        // das Profil längs der Linie (über der Basis): die Kuppe (Kosinus-Welle) und der Sprung (Kicker · Lücke · Tisch · Landung)
+        const Y = new Float64Array(N).fill(hoehe),
+            VZIEL = new Float64Array(N).fill(Infinity);
+        for (const e of Array.isArray(t.profil) ? t.profil : []) {
+            const s0 = zahl(e, "s", 0, N * ds);
+            if (e.art === "kuppe") {
+                const l = zahl(e, "laenge", 2, 500),
+                    hk = zahl(e, "hoehe", -20, 20);
+                for (let i = 0; i < N; i++) {
+                    const u = (i * ds - s0) / l;
+                    if (Math.abs(u) < 0.5) Y[i] += hk * 0.5 * (1 + Math.cos(2 * Math.PI * u));
+                }
+            } else if (e.art === "sprung") {
+                const anlauf = zahl(e, "anlauf", 1, 100),
+                    tanW = Math.tan(zahl(e, "winkel", 1, 45) * RAD),
+                    luecke = zahl(e, "luecke", 0, 100),
+                    tisch = zahl(e, "tisch", 0, 200),
+                    tanL = Math.tan(zahl(e, "landeWinkel", 2, 45) * RAD),
+                    tempo = zahl(e, "tempo", 1, 100),
+                    hk = anlauf * tanW,
+                    s1 = s0 + anlauf, // die Kante des Kickers
+                    s2 = s1 + luecke, // der Fuß der Tisch-Front (35°)
+                    s3 = s2 + hk / Math.tan(35 * RAD) + tisch; // das Ende des Tischs
+                for (let i = 0; i < N; i++) {
+                    const s = i * ds;
+                    let y = 0;
+                    if (s >= s0 && s <= s1) y = (s - s0) * tanW;
+                    else if (s >= s2 && s <= s3) y = Math.min(hk, (s - s2) * Math.tan(35 * RAD));
+                    else if (s > s3) {
+                        // die Landung rundet den Knick des Tischs mit dem Vertikal-Radius 80 m aus (v²/R < g bis 28 m/s)
+                        const d = s - s3,
+                            dT = tanL * 80;
+                        y = Math.max(0, d <= dT ? hk - (d * d) / 160 : hk - (dT * dT) / 160 - (d - dT) * tanL);
+                    }
+                    Y[i] += y;
+                    if (s >= s0 - 40 && s <= s1) VZIEL[i] = tempo; // die Anfahrt hält das Tempo der Bühne
+                }
+            } else nein(`bahn: unbekanntes Profil „${e.art}"`);
+        }
+        // das Gitter: je Zelle die Punkte, deren Einfluss (Bahn + Böschung bis zur größten Höhe) sie berührt
+        let relief = 0;
+        for (let i = 0; i < N; i++) relief = Math.max(relief, Math.abs(Y[i]) + breite * Math.abs(Math.tan(BANK[i])) + 1);
+        const reich = breite / 2 + relief / tanB + 1,
+            zelle = 16,
+            gitter = new Map();
+        for (let i = 0; i < N; i++)
+            for (let gx = Math.floor((X[i] - reich) / zelle); gx <= Math.floor((X[i] + reich) / zelle); gx++)
+                for (let gz = Math.floor((Z[i] - reich) / zelle); gz <= Math.floor((Z[i] + reich) / zelle); gz++) {
+                    const k = gx * 131071 + gz;
+                    (gitter.get(k) || gitter.set(k, []).get(k)).push(i);
+                }
+        return { art: "bahn", ds, N, X: Float64Array.from(X), Z: Float64Array.from(Z), PHI: Float64Array.from(PHI), KAPPA: Float64Array.from(KAPPA), BANK, Y, VZIEL, stuecke, geschlossen, breite, halb: breite / 2, tanB, reich, zelle, gitter };
+    }
+    // Der Ort auf der Bahn: der nächste Punkt der Linie `i` (−1: außer Reichweite), der Abstand quer `q` (links +) und die Höhe
+    // der Fahrbahn an (x, z) über der Basis `y` (die Überhöhung kippt die Fahrbahn um die Linie: die Außenkante hebt sich, die
+    // Innenkante senkt sich). Leser: `bahnY`, der Fahrer, die Garage.
+    function bahnAm(t, x, z, ab) {
+        let best = -1,
+            d2 = t.reich * t.reich;
+        const pruef = (i) => {
+            const dx = x - t.X[i],
+                dz = z - t.Z[i],
+                e = dx * dx + dz * dz;
+            if (e < d2) (d2 = e), (best = i);
+        };
+        if (ab >= 0) for (let k = -8; k <= 40; k++) pruef((((ab + k) % t.N) + t.N) % t.N);
+        else for (const i of t.gitter.get(Math.floor(x / t.zelle) * 131071 + Math.floor(z / t.zelle)) || []) pruef(i);
+        if (best < 0) return null;
+        const c = Math.cos(t.PHI[best]),
+            sn = Math.sin(t.PHI[best]),
+            dx = x - t.X[best],
+            dz = z - t.Z[best],
+            a = dx * c - dz * sn, // längs
+            q = -dx * sn - dz * c, // quer, links +
+            j = a >= 0 ? (best + 1) % t.N : (best - 1 + t.N) % t.N,
+            yc = t.Y[best] + (t.Y[j] - t.Y[best]) * Math.min(1, Math.abs(a) / t.ds);
+        return { i: best, q, a, y: yc - Math.max(-t.halb, Math.min(t.halb, q)) * Math.tan(t.BANK[best]) };
+    }
+    function bahnY(t, h, x, z, base) {
+        const b = bahnAm(t, x, z, -1);
+        if (!b) return h;
+        const ye = base + b.y,
+            d = Math.abs(b.q) - t.halb;
+        if (d <= 0) return ye;
+        const lim = d * t.tanB;
+        return ye + Math.max(-lim, Math.min(lim, h - ye));
     }
 
     // ══ DIE LANDFORM (K16) — der Wildnis-Term als Gesetz: Großform als Daten, das Flussnetz zuerst, das Schicht-Gesetz ══
@@ -6968,6 +7129,7 @@
         erbgutNormal: erbgutNormal,
         wildnisY: wildnisY,
         termY: termY,
+        bahnAm: bahnAm, // w11-fahrzeug (rein additiv): der Ort auf der Bahn — der Fahrer und die Garage lesen ihn
         SCHNEE: SCHNEE,
         schnee: schnee,
         TEMPERATUR: TEMPERATUR,

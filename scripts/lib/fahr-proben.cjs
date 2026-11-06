@@ -13,22 +13,20 @@ async function probeLeben(expected) {
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
     // KONSUM am Zähl-Spion: der Versorger o[k] zählt, während lauf() den Leser einmal ruft (ein Wurf danach entwertet ihn nicht)
-    const ruft = (lauf, o, k) => {
-        const eigen = Object.prototype.hasOwnProperty.call(o, k);
-        const f0 = o[k];
-        let n = 0;
-        o[k] = function (...a) {
-            n++;
-            return f0.apply(this, a);
-        };
+    // (der Tausch über die EINE Leihe `leihe`, welt-boot — bis w12-fahrzeug-decke ein eigenes hasOwnProperty-Merken)
+    const ruft = (lauf, o, k, n = 0, f0 = o[k]) => {
+        const zurueck = leihe(o, {
+            [k]: function (...a) {
+                n++;
+                return f0.apply(this, a);
+            },
+        });
         try {
             lauf();
         } catch {
             /* der Ruf zählt */
-        } finally {
-            if (eigen) o[k] = f0;
-            else delete o[k];
         }
+        zurueck();
         return n > 0;
     };
     // Frame-Zeiten (ms): Frames ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei Sim-Schritten (25 · 33,3).
@@ -1069,7 +1067,7 @@ async function probeLeben(expected) {
             const m5 = (res.tempo = window.__tempoSpion(
                 VC,
                 st.camera,
-                (z5, vm) => z5 === g5._fahr && vm === g5._fahrSatz.vmax
+                (z5) => z5 === g5._fahr
             ));
             m5.schreiber = [];
             bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 90, quer: 8, n: 0 };
@@ -1180,7 +1178,8 @@ async function probeLeben(expected) {
                 if (ausEgo) [wf, fv] = [Math.max(wf, Math.abs(st.camera.fov - fv)), st.camera.fov];
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
-                if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f));
+                // gegen das Ziel des Rigs (H3: Gier + driftFolge · Drift) — rutscht der GT quer am Hang, blickt es auf die Fahrt
+                if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f - VC.FAHR.kamera.driftFolge * st._kamChase.dF));
                 q.push([dx * Math.cos(f) - dz * Math.sin(f), tMs]);
                 if (n > 15) ruck.push(window.__ruckJeBild(q.slice(-3)));
                 const o = V.setFromMatrixColumn(M, 1).normalize();
@@ -2812,10 +2811,10 @@ async function probeLeben(expected) {
 function tempoVerdict(m) {
     if (!m || !(m.n > 0)) return ["tempo: kein Aufruf der Chase-Cam (vakuös)"];
     const soll = [
-        ["fovMax", m.fovMax >= 8, `fov +${m.fovMax}° bei vmax (Soll ≥ 8°)`],
-        ["arm", m.arm >= 0.15, `arm +${m.arm} bei vmax (Soll ≥ 0,15)`],
+        ["fovMax", m.fovMax >= 8, `fov +${m.fovMax}° bei tempoV (Soll ≥ 8°)`],
+        ["arm", m.arm >= 0.15, `arm +${m.arm} bei tempoV (Soll ≥ 0,15)`],
         ["drift", m.drift <= 15, `drift: der Azimut ${m.drift}° neben dem Fahrtvektor`],
-        ["quelle", m.quelle, "quelle: der Wirt reicht nicht Fahr-Zustand und vmax seines Gesetzes"],
+        ["quelle", m.quelle, "quelle: der Wirt reicht nicht den Fahr-Zustand seines Wagens"],
         ["fov", m.fov && m.fov[10] >= 3.2, `fov +${m.fov && m.fov[10]}° bei 10 m/s (Soll ≥ 3,2°)`],
         ["zeigt", m.zeigt <= 0.01, `zeigt: camera.fov ${m.zeigt}° neben Ruhe + Tempo`],
         ["schreiber", String(m.schreiber) === "_kamFov", `schreiber ${m.schreiber} (Soll EINER, _kamFov)`],
@@ -2850,14 +2849,14 @@ function tempoSpion(VC, cam, quelle) {
         value: () => (VC.chaseKamera = ck),
     });
     let [letzt, g0, los] = [0, 0, null];
-    VC.chaseKamera = (c, g, s, dt, K, z, vmax) => {
+    VC.chaseKamera = (c, g, s, dt, K, z) => {
         m.zeigt = Math.max(m.zeigt, +Math.abs(cam.fov - ruhe - letzt).toFixed(3));
-        m.quelle = m.quelle && quelle(z, vmax);
-        const v = ck(c, g, s, dt, K, z, vmax);
+        m.quelle = m.quelle && quelle(z);
+        const v = ck(c, g, s, dt, K, z);
         letzt = v.fovPlus || 0;
         if (z && z.speed >= 10 && !(10 in m.fov)) m.fov[10] = +letzt.toFixed(2);
         g0 = Number.isFinite(g) ? g : g0;
-        ck(sch, g0, s, dt, K, z, vmax);
+        ck(sch, g0, s, dt, K, z);
         const ab = (Math.abs(Math.atan2(Math.sin(c.az - sch.az), Math.cos(c.az - sch.az))) * 180) / Math.PI;
         m.orbit = Math.max(m.orbit, Math.round(ab));
         if (!Number.isFinite(g)) [los, m.rueck] = [0, null];
@@ -2870,15 +2869,15 @@ function tempoSpion(VC, cam, quelle) {
     };
     return m;
 }
-// DER KERN (Node): je 5 s Stand und vmax, Drift 45° (vlong = vlat = 8 m/s); was ihm fehlt, nennt `kern` (nie ein Wurf).
+// DER KERN (Node): je 5 s Stand und das Tempo des vollen Atems (FAHR.kamera.tempoV), Drift 45° (vlong = vlat = 8 m/s); was ihm fehlt, nennt `kern` (nie ein Wurf).
 function kernTempo(VC) {
     const kern = ["chaseKamera", "chaseGreif"].filter((n) => !VC[n]);
     if (kern[0] === "chaseKamera") return { kern };
-    const [K, dt, vmax] = [VC.FAHR.kamera, 1 / 60, 16];
+    const K = VC.FAHR.kamera, dt = 1 / 60, vmax = K.tempoV;
     const lauf = (c, n, g, sp, q = 0) => {
         let v;
         for (let i = 0; i < n; i++)
-            v = VC.chaseKamera(c, g, 0, dt, K, { vlong: sp, vlat: q, speed: Math.hypot(sp, q) }, vmax);
+            v = VC.chaseKamera(c, g, 0, dt, K, { vlong: sp, vlat: q, speed: Math.hypot(sp, q) });
         return v;
     };
     const arm = (v) => Math.hypot(v.x, v.y - K.blickHoehe, v.z);
