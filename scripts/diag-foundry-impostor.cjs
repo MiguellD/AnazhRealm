@@ -190,7 +190,8 @@ async function driveImpostor(page) {
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...st.archInstanceGroups.keys()].filter((k) => !vor.has(k));
-                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
+                // die Gruppen des Bilds, nie der Zwilling (der Wurf der Karte "#S", w14-lod-sprung)
+                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:[^#]*$/.test(k));
                 const g = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
