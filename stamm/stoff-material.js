@@ -770,6 +770,7 @@ class AnazhRealm_stoff_material {
         const metalness = zeile ? zeile.metall : 0;
         let emissiveColor = null;
         let emissiveIntensity = 0;
+        let _wieseGrund = null; // der Bestand der Wiese am Boden (`_terrainGeologyAlbedo` → `gruen`), sein Grund liest die Narbe
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -872,6 +873,7 @@ class AnazhRealm_stoff_material {
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
+                            _wieseGrund = _terrRough.gruen || null;
                         }
                     } else if (opts.pflanzenStoff) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
@@ -1675,7 +1677,24 @@ class AnazhRealm_stoff_material {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz). Dazu die Kontakt-Verdeckung der
             // Dinge auf ihm (schatten.K3, `_kontaktVerdeckung`: der Fuß, der Sockel, der Stamm nehmen dem Boden den Himmel).
-            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel.mul(this._kontaktVerdeckung());
+            // DER GRUND DER WIESE (material.K2): wo der Boden Halme trägt (`_wieseGrund`), sieht er den Himmel wie der Fuß des Halms
+            // über ihm — das Narben-Gesetz (`halmNarbe`, Monsi & Saeki: exp(−kHimmel · Λ) mit der Narbe am Fuß `NAH_WIESE.fussNarbe`)
+            // ist die Untergrenze seiner Kontakt-Verdeckung. Der Kontakt-Pass zählt jeden Halm vor dem Boden als undurchsichtige
+            // Wand (Radeon, Mess-Wiese Ego auf 1 m: 37 % des Bodens unter Luma 10, der Fuß des Halms daneben 27 % des Himmels); die
+            // Wand und der Leib darüber hinaus verdecken wie bisher (das Maximum hebt nur, wo der Pass unter der Narbe liegt).
+            if (opts.himmelsSicht) {
+                const _Tg = THREE.TSL;
+                let _kontakt = this._kontaktVerdeckung();
+                if (_wieseGrund) {
+                    const _narbe = globalThis.__phytoCore.halmNarbe(
+                        AnazhRealm._windTsl(_Tg),
+                        _Tg.float(AnazhRealm.NAH_WIESE.fussNarbe),
+                        _Tg.float(1.0)
+                    ).himmel;
+                    _kontakt = _Tg.max(_kontakt, _narbe.mul(_wieseGrund));
+                }
+                mat.aoNode = this._bodenStufenKnoten().himmel.mul(_kontakt);
+            }
             if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
@@ -2782,6 +2801,8 @@ class AnazhRealm_stoff_material {
                 hardDrive: _hardDrive,
             });
             if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
+            // der Bestand der Wiese (`_green`, derselbe Treiber wie Moos und Halm-Schicht): der Grund der Wiese liest ihn (`_wieseGrund`)
+            if (roughOut) roughOut.gruen = _green;
             return _r.albedo;
         } catch (_e) {
             throw this._stoffBruch("die Boden-Geologie", _e);
