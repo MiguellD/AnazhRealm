@@ -1,0 +1,200 @@
+{
+ "a": {
+  "welt": "5d61df5b-ba1f-483b-a31c-33f274baebf9",
+  "slug": "leise-ufer",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ },
+ "tor": {
+  "ok": true,
+  "a": "5d61df5b-ba1f-483b-a31c-33f274baebf9",
+  "b": "504639e4-55d7-4aaf-9caa-1eb809b59d3b",
+  "merkt": true
+ },
+ "b": {
+  "welt": "504639e4-55d7-4aaf-9caa-1eb809b59d3b",
+  "slug": "ferne",
+  "gesetz": {
+   "schwere": -3.71,
+   "rayleighTiefe": [
+    0.13,
+    0.085,
+    0.05
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "foggy",
+    "nebel": "foggy",
+    "regen": "cloudy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": 1.6
+  },
+  "g": -3.71,
+  "sprung": {
+   "y0": 146.703,
+   "hoehe": 1.54,
+   "abdruck": 3.411,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.01625,
+    0.01063,
+    0.00625
+   ],
+   "blauRot": 0.3846,
+   "sonne": [
+    1,
+    0.9467,
+    0.922
+   ]
+  },
+  "wetter": {
+   "je": {
+    "regen>cloudy": 70,
+    "klar>sunny": 62,
+    "bewoelkt>foggy": 51,
+    "nebel>foggy": 35,
+    "sturm>stormy": 22
+   },
+   "worte": {
+    "cloudy": 70,
+    "sunny": 62,
+    "foggy": 86,
+    "stormy": 22
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 59.069,
+   "reliefErde": 30.429,
+   "verhaeltnis": 1.9412,
+   "leserRegler": 1.6
+  }
+ },
+ "heim": {
+  "ok": true,
+  "hier": "5d61df5b-ba1f-483b-a31c-33f274baebf9"
+ },
+ "a2": {
+  "welt": "5d61df5b-ba1f-483b-a31c-33f274baebf9",
+  "slug": "leise-ufer",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ }
+}

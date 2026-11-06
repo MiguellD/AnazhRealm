@@ -1,0 +1,40 @@
+$ bash -c rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs; e=$?; cp artifacts/werkstatt-weg/weg.json "$PUNKTE_AUS" 2>/dev/null; exit $e
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)
+  ✅ W3 der Wort-Katalog liest den Stammbaum der Bücher (kein STUDIO_WORT, keine Wort-Literale in Stammbaum · Auflöser · Katalog · Wortliste · Gruppen)
+  ✅ W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)
+  ✅ W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · _workshopRecipeSpec · dslCompose · generateEvolution · confirmBuild)
+  ✅ W8 EIN Same-Hash (`_werkSame`)
+  ✅ W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #2 http://127.0.0.1:7704/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 120.0 s
+[stall-akte] Puls 318×, zuletzt vor 0.6 s — complete · renderer bereit · weltbild da · frames 6575 · welt 6575 Takte · Ruhe 2869 · zuletzt Fege-Takt nahWiese 0/1 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 5273 19 % · GPU 5183 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 20:32 gpu 0/r 18 · 20:34 gpu 0/r 22 · 20:36 gpu 1 [VizCompositorTh 1 %]/r 19 · 20:38 gpu 0/r 21 · 20:40 gpu 0/r 19 · 20:42 gpu 0/r 19 · 20:44 gpu 0 [VizCompositorTh 1 %]/r 19 · 20:46 gpu 0/r 17 · 20:48 gpu 0/r 17 · 20:50 gpu 0/r 18 · 20:52 gpu 1 [VizCompositorTh 1 %]/r 19 · 20:54 gpu 0/r 19 · 20:56 gpu 0/r 18 · 20:58 gpu 0/r 18 · 21:00 gpu 1 [VizCompositorTh 1 %]/r 19 · 21:02 gpu 0/r 18 · 21:04 gpu 0/r 17 · 21:06 gpu 0/r 18 · 21:08 gpu 0 [VizCompositorTh 1 %]/r 18 · 21:10 gpu 0/r 42 · 21:12 gpu 0/r 22 · 21:14 gpu 0/r 19 · 21:16 gpu 0/r 19 · 21:18 gpu 0/r 18 · 21:20 gpu 0/r 33 · 21:22 gpu 0/r 19 · 21:24 gpu 0/r 22 · 21:26 gpu 0/r 19 · 21:28 gpu 0/r 20 · 21:30 gpu 0/r 19
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr [5147:5162:1106/021809.552986:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [5147:5162:1106/021830.959628:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr [5147:5162:1106/021913.951380:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [5147:5162:1106/022106.388389:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.6 s), ein Versprechen der Seite kehrt nie zurück; zuletzt kein Stempel

@@ -1,0 +1,193 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function tuchLauf() {
+const fs = require("fs");
+const path = require("path");
+const { spawnSync } = require("child_process");
+const { statikServer, starteBrowser } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [welt, aus, port, grund, proben] = process.argv.slice(1);
+spawnSync(process.execPath, ["-e", welt, aus, port, grund, proben], { stdio: "inherit" });
+const erg = fs.existsSync(aus) ? JSON.parse(fs.readFileSync(aus, "utf8")) : { proben: {}, fehler: ["die Welt-Probe schrieb nichts"] };
+const L = { kern: false, webgl: null, rufe: {}, fehler: null };
+const server = statikServer();
+let browser = null;
+const t0 = Date.now();
+try {
+await server.lausche(0);
+browser = await starteBrowser({ art: "webgl", frist: 300000, viewport: { width: 640, height: 360 } });
+const seite = await browser.newPage();
+const fehler = [];
+seite.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
+await server.zeige(seite, 120000, "worlds/koerperstudio/index.html", "load");
+Object.assign(
+L,
+await seite.evaluate(() => {
+const c = document.createElement("canvas");
+const webgl = !!(c.getContext("webgl2") || c.getContext("webgl"));
+const kc = window.__koerperCore;
+if (!kc) return { kern: false, webgl };
+const rufe = (window.__laborRufe = {});
+for (const k of Object.keys(kc))
+if (typeof kc[k] === "function" && /xpbd|tuch|cloth/i.test(k)) {
+const f = kc[k];
+rufe[k] = 0;
+kc[k] = function (...a) {
+rufe[k]++;
+return f.apply(this, a);
+};
+}
+return { kern: true, webgl };
+})
+);
+if (!L.webgl) L.fehler = "Labor ohne WebGL";
+else if (L.kern) {
+await seite.waitForFunction(() => (window.__laborRufe.tuchTakt || 0) >= 3, { timeout: 120000, polling: 100 }).catch(() => {});
+L.rufe = await seite.evaluate(() => window.__laborRufe);
+}
+if (fehler.length) L.fehler = L.fehler || fehler[0];
+} catch (e) {
+L.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 300);
+} finally {
+if (browser) await browser.close().catch(() => {});
+server.close();
+}
+L.sek = Math.round((Date.now() - t0) / 100) / 10;
+erg.proben.tuch = Object.assign(erg.proben.tuch || { fehler: "die Welt-Probe trug keine Zeile tuch" }, { labor: L });
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+console.log("WELTPROBE tuch " + JSON.stringify(erg.proben.tuch));
+})() (async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL + ";" + AUSGABE_INSTALL); // das Orts-Gesetz und der EINE Wetter-Weg (`__wetterSetzen`)
+        };
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await erwacht();
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
+                // DER ORT STELLT SEINEN DORF-ZUG (w12-dorf-probe): je Probe der Zustand ihres Messorts (`o.ort`, sonst die Wiese) aus dem
+                // Haushalt (`dorfZug`, derselbe Haken wie `werkbank umstellen`), vor ihrem ersten Takt — am Dorf läuft der Zug, an der
+                // Wiese ruht er. Bis dahin stellte die Probe ihn nie: headless ruhte er überall (der Null-Renderer hielt ihn an), am Dorf
+                // urteilte jede Probe eine leere Welt (0 Häuser nach 9000 Takten), mit Renderer wüchse an der Wiese ein Dorf (−1,−5).
+                await seite.evaluate((z) => (window.__anazhAutoSettlement = z), orte[(o && o.ort) || "wiese"].dorfZug);
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/ff79cba4-headless/haar.K4_2.json 7704 function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    // DAS WETTER EINER PROBE über den EINEN Weg (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs; der Lauf baut ihn in jede
+    // Welt): er taut den Mess-Halt für DIESES Wort und hält danach wieder — ein Wort, das nicht gilt, wirft beim Namen. Bis 03.11.
+    // setzte `trocken` selbst und fror den Halt dahinter (−1e9): jedes spätere Wort fiel still (der Regen der Alter-Spur)
+    const wetter = (wort, zug) => {
+        if (window.__wetterSetzen(wort, zug) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + s.weather + ")");
+    };
+    const trocken = () => {
+        wetter("sunny");
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, wetter, trocken, r3, streu };
+} [["tuch","async (r, T, o, G) => {\n\nreturn await (async function tuchProbe(r, T, o, G) {\n    const s = r.state;\n    const A = r.constructor;\n    const kc = window.__koerperCore;\n    const loeser = Object.keys(kc || {}).filter((k) => typeof kc[k] === \"function\" && /xpbd|tuch|cloth/i.test(k));\n    const rufe = Object.fromEntries(loeser.map((k) => [k, 0]));\n    const echt = Object.fromEntries(loeser.map((k) => [k, kc[k]]));\n    const zaehlen = () => {\n        for (const k of loeser)\n            kc[k] = function (...a) {\n                rufe[k]++;\n                return echt[k].apply(this, a);\n            };\n    };\n    const stilllegen = () => {\n        for (const k of loeser) kc[k] = (x) => x;\n    };\n    const aus = { loeser, rufe };\n    const W = o.orte.wiese;\n    await G.stehen(W.x, W.z);\n    const ep = A.Gesetz(\"fachwerk:epocheImJahr\")(1320);\n    const plan = await r._foundryRequestSettlement({ seed: 7, epoche: ep });\n    if (!plan || !plan.kleidung) return Object.assign(aus, { fehler: \"der Plan trägt keine Tracht\" });\n    const Gs = r._bewohnerGestalten({ plan, key: \"haar-k4-2\" })[0];\n    aus.kleidung = plan.kleidung;\n    const namen = new Set();\n    // ein Leib an der Mess-Wiese, je Stufe (`_gelenk.nah` die feine, `_gelenk.fern` die grobe) seine Haut und sein Tuch\n    const leib = (eigen) => {\n        const g = r._buildHumanGroup(Gs.ov, eigen ? { eigen: true } : undefined);\n        g.position.set(W.x, G.y(W.x, W.z) + A.PLAYER_FOOT_OFFSET, W.z);\n        s.scene.add(g);\n        const gl = g.userData._gelenk;\n        const stufeVon = (n) => {\n            for (let p = n; p && gl; p = p.parent) {\n                if (p === gl.nah) return \"fein\";\n                if (p === gl.fern) return \"grob\";\n            }\n            return null;\n        };\n        const ST = { fein: { haut: [], tuch: [] }, grob: { haut: [], tuch: [] } };\n        g.traverse((n) => {\n            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;\n            const seh = String((n.userData && n.userData.__seh) || \"\");\n            const sf = stufeVon(n);\n            namen.add((sf ? sf + \":\" : \"\") + seh + (n.isSkinnedMesh ? \"*\" : \"\"));\n            if (!sf) return;\n            // die Haut, aus der der Ofen das Tuch hebt (`__stoffAusHaut`): die Hüllen der Klasse „haut“ (die Klasse „skin“ trägt Kopf und Lider)\n            if (seh === \"haut\" && n.userData.__klasse === \"haut\") ST[sf].haut.push(n);\n            else if (seh === \"stoff\") ST[sf].tuch.push(n);\n        });\n        return { g, ST };\n    };\n    stilllegen();\n    const M = leib(true);\n    zaehlen();\n    const L = leib(false);\n    aus.teile = [...namen].slice(0, 24);\n    const fehlt = [\"fein\", \"grob\"].flatMap((sf) => [\"haut\", \"tuch\"].filter((k) => !L.ST[sf][k].length).map((k) => (k === \"haut\" ? \"die Haut\" : \"das Tuch\") + \" der \" + sf + \"en Stufe\"));\n    const gemeinsam = M.ST.fein.tuch.some((m, i) => L.ST.fein.tuch[i] && m.geometry === L.ST.fein.tuch[i].geometry);\n    if (fehlt.length || gemeinsam) {\n        for (const x of [M, L]) s.scene.remove(x.g);\n        for (const k of loeser) kc[k] = echt[k];\n        return Object.assign(aus, { fehler: fehlt.length ? \"am Leib fehlt \" + fehlt.join(\", \") : \"die Mutante trägt die Vorlage der Welt (der eigene Guss kam aus dem Memo)\" });\n    }\n    const v = new T.Vector3();\n    const nv = new T.Vector3();\n    const M4 = new T.Matrix4();\n    const S4 = new T.Matrix4();\n    const N3 = new T.Matrix3();\n    // je Ecke die Welt-Lage durch das Skelett (`getVertexPosition`); mit `normalen` auch die Normale, durch dieselben Knochen gedreht\n    // (Σ w · Knochen × Bindung, die Drehung davon), in die Welt\n    const lage = (meshes, normalen) => {\n        const P = [];\n        const Nn = [];\n        for (const m of meshes) {\n            m.updateMatrixWorld(true);\n            const geo = m.geometry;\n            const n = geo.attributes.position.count;\n            const si = geo.attributes.skinIndex;\n            const sw = geo.attributes.skinWeight;\n            const na = geo.attributes.normal;\n            if (m.isSkinnedMesh) m.skeleton.update();\n            for (let i = 0; i < n; i++) {\n                if (m.isSkinnedMesh) m.getVertexPosition(i, v);\n                else v.fromBufferAttribute(geo.attributes.position, i);\n                v.applyMatrix4(m.matrixWorld);\n                P.push(v.x, v.y, v.z);\n                if (!normalen) continue;\n                nv.fromBufferAttribute(na, i);\n                if (m.isSkinnedMesh) {\n                    S4.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);\n                    for (let k = 0; k < 4; k++) {\n                        const w = sw.getComponent(i, k);\n                        if (!w) continue;\n                        const j = si.getComponent(i, k);\n                        M4.multiplyMatrices(m.skeleton.bones[j].matrixWorld, m.skeleton.boneInverses[j]);\n                        for (let e = 0; e < 16; e++) S4.elements[e] += w * M4.elements[e];\n                    }\n                    S4.premultiply(m.bindMatrixInverse).multiply(m.bindMatrix).premultiply(m.matrixWorld);\n                } else S4.copy(m.matrixWorld);\n                nv.applyMatrix3(N3.setFromMatrix4(S4)).normalize();\n                Nn.push(nv.x, nv.y, nv.z);\n            }\n        }\n        return { P: Float32Array.from(P), N: Float32Array.from(Nn) };\n    };\n    // je Tuch-Ecke die nächste Haut-Ecke DES BILDS (Gitter 4 cm, ±8 cm), gezählt nur in Berührung (≤ 3 cm: unter dem Tuch fällt die\n    // Haut, `__stoffAusHaut` — über dem Loch wäre die nächste Ecke ein ferner Rand): liegt sie hinter der Haut (Versatz gegen die\n    // Haut-Normale < −2 mm), durchdringt sie; `ruhe` = die Ecken, die es schon in der Ruhe-Pose taten (nicht gezählt)\n    const hinter = (H, U, ruhe) => {\n        const Z = 0.04;\n        const zelle = new Map();\n        for (let i = 0; i < H.P.length / 3; i++) {\n            const k = Math.floor(H.P[3 * i] / Z) + \",\" + Math.floor(H.P[3 * i + 1] / Z) + \",\" + Math.floor(H.P[3 * i + 2] / Z);\n            (zelle.get(k) || zelle.set(k, []).get(k)).push(i);\n        }\n        let n = 0;\n        const flag = new Uint8Array(U.length / 3);\n        for (let j = 0; j < U.length / 3; j++) {\n            const [x, y, z] = [U[3 * j], U[3 * j + 1], U[3 * j + 2]];\n            let [b, bd] = [-1, Infinity];\n            for (let dx = -2; dx <= 2; dx++)\n                for (let dy = -2; dy <= 2; dy++)\n                    for (let dz = -2; dz <= 2; dz++)\n                        for (const i of zelle.get(Math.floor(x / Z) + dx + \",\" + (Math.floor(y / Z) + dy) + \",\" + (Math.floor(z / Z) + dz)) || []) {\n                            const d = (H.P[3 * i] - x) ** 2 + (H.P[3 * i + 1] - y) ** 2 + (H.P[3 * i + 2] - z) ** 2;\n                            if (d < bd) [b, bd] = [i, d];\n                        }\n            if (b >= 0 && bd <= 0.0009 && (x - H.P[3 * b]) * H.N[3 * b] + (y - H.P[3 * b + 1]) * H.N[3 * b + 1] + (z - H.P[3 * b + 2]) * H.N[3 * b + 2] < -0.002) {\n                flag[j] = 1;\n                if (!(ruhe && ruhe[j])) n++;\n            }\n        }\n        return { n, flag };\n    };\n    const STUFEN = [\"fein\", \"grob\"];\n    const andere = { fein: \"grob\", grob: \"fein\" };\n    // die Ruhe (die Pose des Ofens, ohne Leib-Gesetz) am Leib der Welt: was dort schon hinter der Haut liegt, zählt kein Gang\n    const ruhe = {};\n    aus.ruhe = {};\n    L.g.updateMatrixWorld(true);\n    for (const sf of STUFEN)\n        for (const [k, h] of [[sf, sf], [\"quer\" + sf, andere[sf]]]) {\n            const x = hinter(lage(L.ST[h].haut, true), lage(L.ST[sf].tuch, false).P, null);\n            aus.ruhe[k] = x.n;\n            ruhe[k] = x.flag;\n        }\n    // der Gang einer Stufe in ihrem Zustand: die feine nah, die grobe fern (die Wahl des Spiels, `_gelenkStufe` mit erzwungenem Abstand²)\n    const gang = (X, sf, bilder) => {\n        const dt = 1 / 20;\n        const fern = sf === \"grob\";\n        r._gelenkStufe(X.g, fern ? 1e12 : 0);\n        const je = { durchdringung: 0, bilderMitDurchdringung: 0, quer: 0, ecken: 0 };\n        const spur = [];\n        let ms = 0;\n        for (let b = 0; b < bilder; b++) {\n            r._animateHuman(X.g, b * dt, b * dt * 2 * Math.PI * 1.6, true, false, s.player.emotions, null);\n            X.g.updateMatrixWorld(true);\n            const U = lage(X.ST[sf].tuch, false).P;\n            spur.push(U);\n            const n = hinter(lage(X.ST[sf].haut, true), U, ruhe[sf]).n;\n            je.durchdringung += n;\n            if (n) je.bilderMitDurchdringung++;\n            je.quer += hinter(lage(X.ST[andere[sf]].haut, true), U, ruhe[\"quer\" + sf]).n;\n            const z = X.g.userData._tuch;\n            ms += (z && z.art === \"tuch\" && z.ms) || 0;\n        }\n        je.ecken = spur[0].length / 3;\n        const z = X.g.userData._tuch;\n        if (!fern && z && z.art === \"tuch\") je.gitter = { stufe: z.stufe, msMittel: +(ms / bilder).toFixed(2) };\n        return { je, spur };\n    };\n    try {\n        const echtG = Object.fromEntries(STUFEN.map((sf) => [sf, gang(L, sf, 40)]));\n        aus.rufeImGang = Object.assign({}, rufe);\n        stilllegen();\n        const still = Object.fromEntries(STUFEN.map((sf) => [sf, gang(M, sf, 40)]));\n        // was der Löser am Tuch der Stufe trägt: die größte Lage-Differenz einer Tuch-Ecke zwischen dem Leib der Welt und der Mutante\n        const traegt = (sf) => {\n            let d = 0;\n            echtG[sf].spur.forEach((U, b) => {\n                const V = still[sf].spur[b];\n                for (let k = 0; k + 2 < U.length && k + 2 < V.length; k += 3) d = Math.max(d, Math.hypot(U[k] - V[k], U[k + 1] - V[k + 1], U[k + 2] - V[k + 2]));\n            });\n            return +d.toFixed(4);\n        };\n        aus.gang = {};\n        aus.stillgelegt = {};\n        for (const sf of STUFEN) {\n            aus.gang[sf] = Object.assign(echtG[sf].je, { loeserTraegtM: traegt(sf) });\n            aus.stillgelegt[sf] = still[sf].je;\n        }\n    } finally {\n        for (const k of loeser) kc[k] = echt[k];\n        for (const x of [M, L]) s.scene.remove(x.g);\n    }\n    return aus;\n})(r, T, o, G);\n}",{}]]
+[stall-akte] ═══ haar.K4_2.json · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((async (r, T, o, G) => { return await (async function tuchProbe(r, T, o, G) { const s = r.) seit 40.1 s
+[stall-akte] Puls 15×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 735 · welt 735 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 4410 102 % · browser 4274 1 % · GPU 4315 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 18:31 gpu 4 [VizCompositorTh 4 %]/r 193 · 18:33 gpu 2 [VizCompositorTh 2 %]/r 265 · 18:35 gpu 0/r 380 · 18:37 gpu 2 [VizCompositorTh 1 %]/r 369 · 18:39 gpu 1 [VizCompositorTh 1 %]/r 319 · 18:41 gpu 1 [VizCompositorTh 1 %]/r 158 · 18:43 gpu 0/r 96 · 18:45 gpu 1 [VizCompositorTh 1 %]/r 141 · 18:47 gpu 1 [VizCompositorTh 1 %]/r 157 · 18:49 gpu 1 [VizCompositorTh 1 %]/r 123 · 18:51 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 18:53 gpu 0 [VizCompositorTh 1 %]/r 104 · 18:55 gpu 1/r 102 · 18:57 gpu 0 [Chrome_ChildIOT 1 %]/r 101 · 18:59 gpu 2 [VizCompositorTh 1 %]/r 101 · 19:01 gpu 0 [VizCompositorTh 1 %]/r 107 · 19:03 gpu 1 [VizCompositorTh 1 %]/r 102 · 19:05 gpu 1 [Chrome_ChildIOT 1 %]/r 103 · 19:07 gpu 1 [Chrome_ChildIOT 1 %]/r 105 · 19:09 gpu 1 [VizCompositorTh 1 %]/r 111 · 19:11 gpu 1 [VizCompositorTh 1 %]/r 102
+[stall-akte] Stapel kein Stapel in 8 s — der Haupt-Thread steht NATIV
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Maussteuerung für Kamera initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Chat-Steuerung initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Nervensystem: 129 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] Das Wetter zieht zu rainy
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] A3: Hydro-Kachel 0,-1 aus dem Faden (31 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [WARN] Der Rundblick steht nach 120 Takten ohne: der Boden wächst (23 Stücke im Bild) · 2 Wald-Böden werden bepflanzt · 8 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.196] [ERROR] FADEN-UMGANGEN: Guss „mensch“ ohne Vorlage im Haupt-Faden — _buildHumanoidRig (Lehre 14)
+[stall-akte] URTEIL NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (102 %, kein JS-Stapel); zuletzt kein Stempel
+WELTPROBE tuch {"loeser":["xpbdSchritt","xpbdKette","tuchGitter","tuchZustand","tuchTakt","tuchRuhe","tuchDrapieren"],"rufe":{"xpbdSchritt":0,"xpbdKette":0,"tuchGitter":2,"tuchZustand":2,"tuchTakt":80,"tuchRuhe":1,"tuchDrapieren":2},"kleidung":{"top":"poncho","bottom":"pants","shoes":"boot","farben":["sand","olive","grey","mustard","burgundy"]},"teile":["fein:haar","fein:haut*","fein:stoff*","fein:*","grob:haut*","grob:auge*","grob:haar*","grob:stoff*"],"ruhe":{"fein":12,"querfein":89,"grob":6,"quergrob":35},"rufeImGang":{"xpbdSchritt":0,"xpbdKette":0,"tuchGitter":2,"tuchZustand":2,"tuchTakt":80,"tuchRuhe":1,"tuchDrapieren":2},"gang":{"fein":{"durchdringung":0,"bilderMitDurchdringung":0,"quer":2183,"ecken":8245,"gitter":{"stufe":0,"msMittel":11.46},"loeserTraegtM":0.1036},"grob":{"durchdringung":0,"bilderMitDurchdringung":0,"quer":597,"ecken":2877,"loeserTraegtM":0.0717}},"stillgelegt":{"fein":{"durchdringung":7339,"bilderMitDurchdringung":40,"quer":5093,"ecken":8245},"grob":{"durchdringung":2396,"bilderMitDurchdringung":40,"quer":1882,"ecken":2877}},"sek":50}
+WELTPROBE-ENDE {"proben":["tuch"],"fehler":[]}
+[linse-gpu] webgl2/Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE))
+WELTPROBE tuch {"loeser":["xpbdSchritt","xpbdKette","tuchGitter","tuchZustand","tuchTakt","tuchRuhe","tuchDrapieren"],"rufe":{"xpbdSchritt":0,"xpbdKette":0,"tuchGitter":2,"tuchZustand":2,"tuchTakt":80,"tuchRuhe":1,"tuchDrapieren":2},"kleidung":{"top":"poncho","bottom":"pants","shoes":"boot","farben":["sand","olive","grey","mustard","burgundy"]},"teile":["fein:haar","fein:haut*","fein:stoff*","fein:*","grob:haut*","grob:auge*","grob:haar*","grob:stoff*"],"ruhe":{"fein":12,"querfein":89,"grob":6,"quergrob":35},"rufeImGang":{"xpbdSchritt":0,"xpbdKette":0,"tuchGitter":2,"tuchZustand":2,"tuchTakt":80,"tuchRuhe":1,"tuchDrapieren":2},"gang":{"fein":{"durchdringung":0,"bilderMitDurchdringung":0,"quer":2183,"ecken":8245,"gitter":{"stufe":0,"msMittel":11.46},"loeserTraegtM":0.1036},"grob":{"durchdringung":0,"bilderMitDurchdringung":0,"quer":597,"ecken":2877,"loeserTraegtM":0.0717}},"stillgelegt":{"fein":{"durchdringung":7339,"bilderMitDurchdringung":40,"quer":5093,"ecken":8245},"grob":{"durchdringung":2396,"bilderMitDurchdringung":40,"quer":1882,"ecken":2877}},"sek":50,"labor":{"kern":true,"webgl":true,"rufe":{"xpbdSchritt":0,"xpbdKette":0,"tuchGitter":0,"tuchZustand":0,"tuchTakt":3,"tuchRuhe":0,"tuchDrapieren":0},"fehler":null,"sek":9.9}}
