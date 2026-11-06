@@ -696,13 +696,21 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     (...a) =>
                         alt.apply(r, a).slice(0, 1)
             );
+        if (taeter === "geburt-wasser") decke("_kreaturImWasser", () => () => false);
         const LG = A._lebensraumGesetz();
         const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
+        // DAS WASSER (w13-pegel-heil): je Leib die Tiefe der EINEN Wasser-Wahrheit am Körper (`_koerperWasser`) über dem Grund,
+        // auf dem er geboren steht — über der Schwimm-Tiefe der Tiere trägt ihn kein Grund (am Seeufer der Wasser-Linse standen
+        // 6 Hirsche 3,6 m tief auf dem Seegrund)
+        const schwimm = A._verhaltenGesetz().wasser.schwimmTiefeM;
         Object.assign(z, {
             imBlick: 0,
             fensterMax: 0,
             fernMin: A.CREATURE_SPAWN_FAR_MIN,
             baer: { fluss: [0, 0], sonst: [0, 0] },
+            imWasser: 0,
+            wasserMaxM: 0,
+            schwimmM: schwimm,
         });
         const p0 = pm.clone();
         for (let i = 0; i < (taeter ? 3 : 9); i++) {
@@ -730,6 +738,9 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
+                    const g = r.getTerrainHeightAt(c.position.x, c.position.z);
+                    const tiefe = r._koerperWasser(c.position.x, c.position.z, g) - g;
+                    if (tiefe > schwimm) (z.imWasser++, (z.wasserMaxM = Math.max(z.wasserMaxM, +tiefe.toFixed(2))));
                     const nn = Math.min(
                         ...neu
                             .filter((o) => o !== c)
@@ -842,6 +853,10 @@ function lebenUrteil(name, z, soll) {
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
+            z.imWasser === 0,
+            `${z.imWasser} Leiber im Wasser geboren — bis ${z.wasserMaxM} m über ihrem Grund (Soll 0 über der Schwimm-Tiefe ${z.schwimmM} m)`
+        );
+        soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
             `keine Gruppe: ${z.gruppen} von ${z.geburten} Würfen`
         );
@@ -933,6 +948,7 @@ module.exports = {
             ],
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
+            ["geburt-wasser", /Leiber im Wasser geboren/],
         ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
