@@ -1545,6 +1545,27 @@ class AnazhRealm_studio_bruecke {
         const T = AnazhRealm.BEDARF.vorlaufS;
         return vx || vz ? Math.min(d, Math.hypot(x - auge.x - vx * T, z - auge.z - vz * T)) : d;
     }
+    // DIE ZEIT BIS ZUR SICHT eines Rings (w13-dorf-strom): die Sekunden, bis die Bahn (der Spieler mit dem Tempo-Vektor
+    // `_bedarfTempo`) den Kreis `r` um (x, z) betritt — 0, wenn er darin steht, Infinity, wenn die Bahn ihn nicht trifft (im
+    // Stand, seitab, dahinter). Ein Leser mit eigener Vorlaufzeit T lässt zu, was die Bahn binnen T erreicht — der Ring vor
+    // dem Spieler wächst um Tempo × T, im Stand bleibt er der Ring. Leser: der Vorlauf der Orte (`_autoSettlementZelle`,
+    // `_tickAutoSettlement`); bis w13-dorf-strom bereitete sich ein Ort in einer festen Strecke vor seinem Erwachen vor
+    // (`AUTO_SETTLEMENT.vorlaufM` 160 m): im GT (16 m/s) lag sein Grund erst 269–301 m vor dem Anker, der Wald im Kegel fiel.
+    _bedarfZeit(x, z, r) {
+        const e = this.state.playerMesh && this.state.playerMesh.position;
+        if (!e) return Infinity;
+        const qx = x - e.x,
+            qz = z - e.z;
+        const d2 = qx * qx + qz * qz;
+        if (d2 <= r * r) return 0;
+        const [vx, vz] = this._bedarfTempo();
+        const s = Math.hypot(vx, vz);
+        if (!(s > 0)) return Infinity;
+        const a = (qx * vx + qz * vz) / s;
+        const b2 = d2 - a * a;
+        if (!(a > 0) || b2 >= r * r) return Infinity;
+        return (a - Math.sqrt(r * r - b2)) / s;
+    }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer): ein Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der
     // Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>", sonst das Werk.
     _foundryBahn(reqIdOderMsg) {
