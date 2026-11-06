@@ -1,7 +1,7 @@
 {
  "sha": "341ad089a67693bb927a1443c97fdc1574c52dd0",
  "geraet": "gtx",
- "zeit": "2026-11-06T10:08:11.028Z",
+ "zeit": "2026-11-06T10:14:54.963Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "wetter.K3#2": {
@@ -62,55 +62,119 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-06T10:11:01.836Z",
+   "abdruck": "b64e0211e9fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "zeit": "2026-11-06T10:12:48.472Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 33.6,
+   "zeit": "2026-11-06T10:13:55.644Z",
+   "abdruck": "a78f56e3db67",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "zeit": "2026-11-06T10:14:54.963Z",
+   "abdruck": "a303317755ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T10:04:07.531Z",
+  "start": "2026-11-06T10:10:26.962Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.9,
+  "bootS": 8.9,
   "grundstellungS": [
-   4.7,
-   0.1,
-   4.2
+   3.8,
+   3.7,
+   3.9
   ],
   "proben": 4,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 27.3,
-    "takte": 733,
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 24.7,
+    "takte": 667,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": null,
-    "vor": "wetter.K3#2",
-    "s": 15.9,
-    "takte": 915,
+    "ort": "genesis",
+    "vor": "vegetation.K4#2",
+    "s": 18.4,
+    "takte": 716,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": null,
-    "vor": "studios.K4#2",
-    "s": 8.9,
-    "takte": 704,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 18.2,
+    "takte": 733,
     "chunks": 81,
-    "nach": "der Grundstellung"
+    "nach": "der Tür"
    },
    {
-    "ort": null,
-    "vor": "leib.K3#2",
-    "s": 16.2,
-    "takte": 849,
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 21.7,
+    "takte": 711,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +6 (−0)"
+   }
+  ],
   "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
@@ -118,29 +182,23 @@
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 3,
+   "seiten": 4,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "leib.K3#2",
-     "m": 6430,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "wetter.K3#2",
-     "m": 1162,
+     "probe": "fahrzeug.K2#1",
+     "m": 1215,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 262,
+   "zapfen": 299,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 277.1,
-  "minuten": 4.69
+  "fahrtS": 312.5,
+  "minuten": 5.28
  }
 }
