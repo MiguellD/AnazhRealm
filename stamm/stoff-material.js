@@ -1680,7 +1680,7 @@ class AnazhRealm_stoff_material {
             // DER GRUND DER WIESE (material.K2): wo der Boden Halme trägt (`_wieseGrund`), sieht er den Himmel wie der Fuß des Halms
             // über ihm — das Narben-Gesetz (`halmNarbe`, Monsi & Saeki: exp(−kHimmel · Λ) mit der Narbe am Fuß `NAH_WIESE.fussNarbe`)
             // ist die Untergrenze seiner Kontakt-Verdeckung. Der Kontakt-Pass zählt jeden Halm vor dem Boden als undurchsichtige
-            // Wand (Radeon, Mess-Wiese Ego auf 1 m: 37 % des Bodens unter Luma 10, der Fuß des Halms daneben 27 % des Himmels); die
+            // Wand (Radeon, Mess-Wiese Ego auf 1 m: 37 % der 8×8-Blöcke des Bodens unter Luma 10, der Halm-Fuß daneben 27 % Himmel); die
             // Wand und der Leib darüber hinaus verdecken wie bisher (das Maximum hebt nur, wo der Pass unter der Narbe liegt).
             if (opts.himmelsSicht) {
                 const _Tg = THREE.TSL;
