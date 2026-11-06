@@ -2122,10 +2122,11 @@ class AnazhRealm_studio_bruecke {
         return { GRUPPE, listen };
     }
 
-    // EINE Regler-Zeile der Welt-KI: `id Name` und der Bereich, wenn er nicht 0–1 ist (der Vertrag nennt 0–1 als Regel).
-    // Leser: der Abruf je Satz (`_kiAbruf`) und seine Linse (diag-praegung-welt K2 „prompt").
+    // EINE Regler-Zeile der Welt-KI: `id Name min–max` — immer mit Bereich (ki.K5: „0–1, wo keiner steht" als Regel im Vertrag
+    // las qwen3:4b nicht, „voller energie" schrieb energy 100). Leser: der Abruf je Satz (`_kiAbruf`) und seine Linse
+    // (diag-praegung-welt K2 „prompt").
     _kiReglerZeile(d) {
-        return `${d.id} ${d.lab}${d.min === 0 && d.max === 1 ? "" : ` ${d.min}–${d.max}`}`;
+        return `${d.id} ${d.lab} ${d.min}–${d.max}`;
     }
 
     // DER ABRUF JE SATZ (ki.K5, 06.11.; Tool-Retrieval über die EINE Regler-Tafel PARAMS_BY_KIND): die Regler, die der Satz beim
