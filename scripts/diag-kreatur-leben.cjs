@@ -7,10 +7,11 @@
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera) {
+// Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
+// decke, kamera, ab und jeder Helfer der Proben sind dort im Gültigkeitsbereich — keine zweite Liste.
+async function lebenBuehnen() {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
-    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -73,7 +74,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     R.abstand.push(ab(c.position, pm));
                 }
                 R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
             erinnert[rolle] = {
                 medianM: +quantil(R.abstand, 0.5).toFixed(2),
@@ -117,7 +118,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     for (const c of herde) if (zelle(c.position.x, c.position.z, mx, mz)) drin++;
                 }
                 ort[gegen ? "gegenlauf" : "riss"].push(+(drin / 5400 / herde.length).toFixed(3));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
         const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
@@ -192,7 +193,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 if (je.alle > 3 * K + 10 && ++kappe) break;
                 n.push(je);
             }
-            for (const c of s.creatures.slice()) r.removeCreature(c);
+            leer();
             const mittel = (a, b, g) =>
                 +(n.slice(a, b).reduce((p, je) => p + (je[g || "alle"] || 0), 0) / (b - a)).toFixed(2);
             return { kappe, mittel, tod, ms, nah };
@@ -696,25 +697,13 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     (...a) =>
                         alt.apply(r, a).slice(0, 1)
             );
-        // der Täter: die Geburt vor w13-pegel-heil — Wildnis und Grundriss, nie das Land
-        if (taeter === "geburt-wasser")
-            decke("_kreaturGrundFrei", () => (x, z) => r._wildnisTraegt(x, z) && !r._imGrundriss(x, z));
-        // der Täter: das Weichen vor w13-pegel-heil — der Blick am Fuß-Punkt
-        if (taeter === "weichen-rand") decke("_bestandAusserBlick", () => (c) => !r._kreaturImBlick(c.position.x, c.position.z)); // prettier-ignore
         const LG = A._lebensraumGesetz();
         const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
-        // DAS WASSER (w13-pegel-heil): je Leib die Tiefe der EINEN Wasser-Wahrheit am Körper (`_koerperWasser`) über dem Grund,
-        // auf dem er geboren steht — über der Schwimm-Tiefe der Tiere trägt ihn kein Grund (am Seeufer der Wasser-Linse standen
-        // 6 Hirsche 3,6 m tief auf dem Seegrund)
-        const schwimm = A._verhaltenGesetz().wasser.schwimmTiefeM;
         Object.assign(z, {
             imBlick: 0,
             fensterMax: 0,
             fernMin: A.CREATURE_SPAWN_FAR_MIN,
             baer: { fluss: [0, 0], sonst: [0, 0] },
-            imWasser: 0,
-            wasserMaxM: 0,
-            schwimmM: schwimm,
         });
         const p0 = pm.clone();
         for (let i = 0; i < (taeter ? 3 : 9); i++) {
@@ -742,9 +731,6 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
-                    const grund = r.getTerrainHeightAt(c.position.x, c.position.z);
-                    const tiefe = r._koerperWasser(c.position.x, c.position.z, grund) - grund;
-                    if (tiefe > schwimm) (z.imWasser++, (z.wasserMaxM = Math.max(z.wasserMaxM, +tiefe.toFixed(2))));
                     const nn = Math.min(
                         ...neu
                             .filter((o) => o !== c)
@@ -754,67 +740,6 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 }
                 for (const c of neu) r.removeCreature(c);
             }
-        }
-        // DER SEE: der Bestand ankert eine Geburt in der tiefsten Zelle eines Sees der Hydrosphäre (der Heimat und jeder Kachel),
-        // der Spieler 300 m davon, der Blick vom See weg — die Zeichnung (`_bestandLeiber`, der Weg des Spiels) stellt jeden Leib
-        // auf Land; gemessen wie oben (`imWasser`)
-        let see = null;
-        for (const h of [s.hydrosphere, ...(s.hydroTiles ? s.hydroTiles.values() : [])])
-            for (const lk of (h && h.lakes) || [])
-                for (const q of lk.cells || []) {
-                    const [x, zq] = [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
-                    const grund = r.getTerrainHeightAt(x, zq);
-                    const t = r._koerperWasser(x, zq, grund) - grund;
-                    if (!see || t > see.tiefe) see = { x, z: zq, tiefe: t };
-                }
-        z.see = see ? { x: +see.x.toFixed(1), z: +see.z.toFixed(1), tiefe: +see.tiefe.toFixed(2), leiber: 0 } : null;
-        if (see && see.tiefe > 3 * schwimm) {
-            pm.set(see.x + 300, boden(see.x + 300, see.z), see.z);
-            kamera(1, 0);
-            for (let k = 0; k < 25 && !z.see.leiber; k++) {
-                const tiere = r._creatureNaturalBirth();
-                for (const t of tiere) [t.x, t.z] = [see.x, see.z];
-                const neu = tiere.length ? r._bestandLeiber(tiere) : [];
-                for (const c of neu) {
-                    z.see.leiber++;
-                    const grund = r.getTerrainHeightAt(c.position.x, c.position.z);
-                    const tiefe = r._koerperWasser(c.position.x, c.position.z, grund) - grund;
-                    if (tiefe > schwimm) (z.imWasser++, (z.wasserMaxM = Math.max(z.wasserMaxM, +tiefe.toFixed(2))));
-                }
-                for (const c of neu) r.removeCreature(c);
-            }
-        }
-        // DER RAND DES BLICKS (das Weichen an der vollen Kappe, `_bestandWeicht`): ein gezeichneter Leib des Bestands allein in
-        // der Welt, der Blick so gedreht, dass sein Fuß-Punkt 0,2 m jenseits der Seiten-Ebene steht, sein Leib aber ins Bild ragt
-        // — ein Akt an der vollen Kappe nimmt ihm den Platz nicht; die Gegenprobe vom Leib weg: dort weicht er
-        pm.copy(p0);
-        kamera(1, 0);
-        let leib = null;
-        for (let k = 0; k < 25 && !leib; k++) {
-            const tiere = r._creatureNaturalBirth();
-            const neu = tiere.length ? r._bestandLeiber(tiere) : [];
-            leib = neu[0] || null;
-        }
-        z.rand = null;
-        if (leib) {
-            for (const c of s.creatures.slice()) if (c !== leib) r.removeCreature(c);
-            const cam = s.camera;
-            const [dx, dz] = [leib.position.x - pm.x, leib.position.z - pm.z];
-            const halb = Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect);
-            const akt = (a) => {
-                kamera(Math.cos(a), Math.sin(a));
-                const vor = [r._kreaturImBlick(leib.position.x, leib.position.z), r._kreaturAusserBlick(leib, r._frustumCache, r._kreaturBlickRand())]; // prettier-ignore
-                const maxAlt = s.maxCreatures;
-                s.maxCreatures = s.creatures.length;
-                const c = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z, "happy", "wesen", { precise: true });
-                s.maxCreatures = maxAlt;
-                const wich = !s.creatures.includes(leib);
-                if (c) r.removeCreature(c);
-                return { punktImBlick: vor[0], leibAusser: vor[1], wich };
-            };
-            const rand = akt(Math.atan2(dz, dx) + halb + 0.2 / Math.hypot(dx, dz));
-            z.rand = { ...rand, fernWich: rand.wich ? null : akt(Math.atan2(dz, dx) + Math.PI).wich };
-            for (const c of s.creatures.slice()) r.removeCreature(c);
         }
         return Object.assign(z, {
             anteil: z.n ? +(z.drin / z.n).toFixed(3) : null,
@@ -917,37 +842,12 @@ function lebenUrteil(name, z, soll) {
     if (name === "lebensraum") {
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
-        for (const [wo, L] of [
-            ["", z],
-            ["Gegenprobe ", z.gegen || {}],
-        ]) {
-            if (!L.see) continue;
-            soll(
-                L.imWasser === 0,
-                `${wo}${L.imWasser} Leiber im Wasser geboren — bis ${L.wasserMaxM} m über ihrem Grund (Soll 0 über der Schwimm-Tiefe ${L.schwimmM} m; der See ${JSON.stringify(L.see)})`
-            );
-        }
-        const RB = z.rand;
-        soll(
-            RB && RB.punktImBlick === false && RB.leibAusser === false,
-            `LEER: kein Leib am Rand des Blicks (Fuß-Punkt draußen, Leib im Bild): ${JSON.stringify(RB)}`
-        );
-        if (RB) {
-            soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Leib im Bild, der Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
-            soll(RB.wich || RB.fernWich === true, `der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös: ${JSON.stringify(RB)})`);
-        }
-        soll(
-            [z, z.gegen || {}].some((L) => L.see && L.see.tiefe > 3 * L.schwimmM && L.see.leiber >= 1),
-            `LEER: kein See trug eine Geburt (der See ${JSON.stringify(z.see)}, Gegenprobe ${JSON.stringify((z.gegen || {}).see)})`
-        );
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
             `keine Gruppe: ${z.gruppen} von ${z.geburten} Würfen`
         );
         soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
         soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
-    }
-    if (name === "lebensraum")
         for (const [wo, L] of [
             ["", z],
             ["Gegenprobe ", z.gegen || { fehler: "die Gegenprobe in einer Welt anderer Saat lief nicht" }],
@@ -962,7 +862,6 @@ function lebenUrteil(name, z, soll) {
                     `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
-    if (name === "lebensraum") {
         const gb = (z.gegen && z.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
         const [F, N] = ["fluss", "sonst"].map((k) => [z.baer[k][0] + gb[k][0], z.baer[k][1] + gb[k][1]]);
         soll(
@@ -999,7 +898,7 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera);`,
+    BUEHNEN: `await (${lebenQuelle})();`,
     PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
@@ -1032,8 +931,6 @@ module.exports = {
             ],
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
-            ["geburt-wasser", /Leiber im Wasser geboren/],
-            ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],
         ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
