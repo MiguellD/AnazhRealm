@@ -1,0 +1,200 @@
+{
+ "a": {
+  "welt": "53431e28-29e0-47f7-b274-76ec2cae5338",
+  "slug": "dunkle-hain",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ },
+ "tor": {
+  "ok": true,
+  "a": "53431e28-29e0-47f7-b274-76ec2cae5338",
+  "b": "3795a0c4-0de2-4de1-8205-e3f7366703cb",
+  "merkt": true
+ },
+ "b": {
+  "welt": "3795a0c4-0de2-4de1-8205-e3f7366703cb",
+  "slug": "ferne",
+  "gesetz": {
+   "schwere": -3.71,
+   "rayleighTiefe": [
+    0.13,
+    0.085,
+    0.05
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "foggy",
+    "nebel": "foggy",
+    "regen": "cloudy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": 1.6
+  },
+  "g": -3.71,
+  "sprung": {
+   "y0": 28.891,
+   "hoehe": 1.54,
+   "abdruck": 3.411,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.01625,
+    0.01063,
+    0.00625
+   ],
+   "blauRot": 0.3846,
+   "sonne": [
+    1,
+    0.7414,
+    0.5128
+   ]
+  },
+  "wetter": {
+   "je": {
+    "klar>sunny": 63,
+    "sturm>stormy": 26,
+    "bewoelkt>foggy": 55,
+    "regen>cloudy": 63,
+    "nebel>foggy": 33
+   },
+   "worte": {
+    "sunny": 63,
+    "stormy": 26,
+    "foggy": 88,
+    "cloudy": 63
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 57.5,
+   "reliefErde": 33.46,
+   "verhaeltnis": 1.7185,
+   "leserRegler": 1.6
+  }
+ },
+ "heim": {
+  "ok": true,
+  "hier": "53431e28-29e0-47f7-b274-76ec2cae5338"
+ },
+ "a2": {
+  "welt": "53431e28-29e0-47f7-b274-76ec2cae5338",
+  "slug": "dunkle-hain",
+  "gesetz": {
+   "schwere": -9.81,
+   "rayleighTiefe": [
+    0.044,
+    0.1,
+    0.23
+   ],
+   "wetter": {
+    "klar": "sunny",
+    "bewoelkt": "cloudy",
+    "nebel": "foggy",
+    "regen": "rainy",
+    "sturm": "stormy"
+   },
+   "hoeheRegler": null
+  },
+  "g": -9.81,
+  "sprung": {
+   "y0": 90.805,
+   "hoehe": 0.323,
+   "abdruck": 2.599,
+   "sprang": true
+  },
+  "himmel": {
+   "betaR": [
+    0.0055,
+    0.0125,
+    0.02875
+   ],
+   "blauRot": 5.2273,
+   "sonne": [
+    1,
+    0.8107,
+    0.6063
+   ]
+  },
+  "wetter": {
+   "je": {
+    "nebel>foggy": 29,
+    "regen>rainy": 55,
+    "klar>sunny": 69,
+    "sturm>stormy": 32,
+    "bewoelkt>cloudy": 55
+   },
+   "worte": {
+    "foggy": 29,
+    "rainy": 55,
+    "sunny": 69,
+    "stormy": 32,
+    "cloudy": 55
+   },
+   "gegenTafel": 0
+  },
+  "gelaende": {
+   "relief": 27.02,
+   "reliefErde": 27.02,
+   "verhaeltnis": 1,
+   "leserRegler": null
+  }
+ }
+}
