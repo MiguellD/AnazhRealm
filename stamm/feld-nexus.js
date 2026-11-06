@@ -1003,9 +1003,8 @@ class AnazhRealm_feld_nexus {
         const spawn = !alle.length
             ? []
             : [
-                  ...[2, 3, 4, 5].map((n) =>
-                      tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
-                  ),
+                  // <same> ohne Regler ist eine Zahl: ein leeres „,null" vor dem Ende kostete jedes Werk zwei Token (~0,4 s)
+                  ...[2, 3, 4, 5].map((n) => tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl, zahl].slice(0, n))),
                   ...Object.entries(regler)
                       .filter(([art, ds]) => ziele[art] && ds.length)
                       .map(([art, ds]) =>
@@ -2093,6 +2092,12 @@ AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
 // Infrastruktur-Defaults an EINER Stelle (Drift-Schutz): lokaler Ollama-Server und
 // Default-Signaling-Adresse.
 AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
+// DIE RUHE DER WELT-KI (ki.K5): so viele Sekunden ohne Ruf und ohne Tagebuch-Eintrag, dann wärmt sie ihren Vertrag vor
+// (`_kiVorwaermen`) — gleich der Pause ihrer Stimme (`llm.minGapSeconds`), das Vorwärmen ist ein Hintergrund-Ruf wie sie
+AnazhRealm.KI_RUHE_S = 3;
+// so viele Wörter je Gruppe nennt der Vertrag der Welt-KI (`_studioWordsForPrompt`); jedes andere Wort eines Satzes ruft der
+// Abruf je Satz ab (`_kiAbruf`)
+AnazhRealm.KI_WOERTER_JE_GRUPPE = 2;
 // Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
 // Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
 AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";

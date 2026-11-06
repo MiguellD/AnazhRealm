@@ -81,7 +81,11 @@ class AnazhRealm_dienst {
     // `tat(program)`: DIE TAT IM STROM (ki.K5) — jeder Anbieter antwortet als Strom (`_llmStrom`), die Tat des Rufers läuft,
     // sobald das Programm der Antwort vollständig geparst ist (`llmStromStand`), nie erst nach ihrem Ende; ihr Ergebnis reist als
     // `tat` in der Antwort.
-    async llmCall(userText, systemPromptOverride = null, { hintergrund = false, form = null, tat = null } = {}) {
+    async llmCall(
+        userText,
+        systemPromptOverride = null,
+        { hintergrund = false, form = null, tat = null, vorwaermen = false } = {}
+    ) {
         const llm = this.state.llm;
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
@@ -119,7 +123,7 @@ class AnazhRealm_dienst {
             // DIE NUMMERN DER NAMEN IN DER FOLGE DES PROMPTS (ki.K5, 06.11.): erst der Vertrag, dann der Kontext, zuletzt der Satz —
             // bis ki.K5 nummerierte der Satz zuerst: ein Satz mit Namen (jeder Kommentar einer Erinnerung) schob „Du bist «N2»" in
             // der ersten Zeile auf «N4», das Modell rechnete den ganzen Vertrag neu (39 s an 4 CPU-Kernen) und danach wieder
-            let system = platz(systemPromptOverride || this.llmBuildSystemPrompt());
+            let system = platz(systemPromptOverride || this._kiVertragGewaermt());
             // DER ABRUF JE SATZ der Welt-KI (ki.K5, `_kiAbruf`): die Regler, die der Satz nennt — ihre Zeilen stehen im Kontext
             // (hinter dem Prompt-Cache des festen Vertrags), ihre Schlüssel in der Antwort-Form; ein Prompt eines Rufers trägt keinen
             const abruf = systemPromptOverride ? null : this._kiAbruf(userText);
@@ -134,6 +138,7 @@ class AnazhRealm_dienst {
             // Detection brauchen (Ollama Cloud). Andere Provider ignorieren es.
             const welt = abruf && system.includes(AnazhRealm.KI_WELT_FORM) ? this._kiAntwortSchema(abruf.regler) : null;
             const body = def.buildBody(cfg.model, system, userContent, cfg, form ? form(platz) : welt);
+            if (vorwaermen && body.options) body.options.num_predict = 1;
             // useProxy (Ollama Cloud): Request über localhost:4312/api/proxy/llm, damit der Browser nicht an
             // CORS scheitert (der save-server setzt CORS-Header). Bei localhost/127.0.0.1-URLs automatisch
             // umgangen — kein CORS-Problem, und der Proxy scheiterte am https-only-Check.
@@ -169,6 +174,8 @@ class AnazhRealm_dienst {
                 return { error: llm.lastError };
             }
             const strom = await this._llmStrom(res, def, tat);
+            // das Vorwärmen spricht nicht: kein Satz, kein Fehler im Status der KI, keine Pause für die Stimme
+            if (vorwaermen) return { vorgewaermt: !strom.fehler };
             llm.lastResponseAt = performance.now() / 1000;
             if (strom.fehler) {
                 llm.lastError = strom.fehler;
@@ -222,7 +229,44 @@ class AnazhRealm_dienst {
             llm.inFlight = false;
             this._llmHintergrund = null;
             frei();
+            if (!vorwaermen) this._kiVorwaermenPlanen();
         }
+    }
+
+    // DER GEWÄRMTE VERTRAG DER WELT-KI (ki.K5, 06.11.; Lehre 14: schwere Arbeit im Leerlauf, nie auf dem Interaktions-Pfad):
+    // ein Ruf liest den zuletzt gewärmten Text des EINEN Vertrags (`llmBuildSystemPrompt`), nie ihn frisch. Das Selbst-Wissen
+    // darin (Tagebuch, Stimmung, Zähler) wechselt mit jeder Tat, und ein lokales Modell rechnet ab dem ersten geänderten Token
+    // neu: bis ki.K5 zahlte JEDER Satz das (qwen3:4b an 4 CPU-Kernen 3–10 s Prefill vor der ersten Wirkung). Erneuert wird nach
+    // `KI_RUHE_S` ohne Ruf und ohne Eintrag ins Tagebuch (`_kiVorwaermen`); Welt, Sprache und Namen tragen den Schlüssel — ein
+    // Wechsel baut sofort neu. Wer schneller spricht als die Ruhe, spricht mit dem Stand des letzten Wärmens.
+    _kiVertragGewaermt() {
+        const st = this.state;
+        const schluessel = [
+            (st.worldMeta || {}).worldId,
+            AnazhRealm._spracheKi(),
+            (st.grok || {}).companionName,
+            (st.player || {}).name,
+        ].join("|");
+        if (!this._kiWarm || this._kiWarm.schluessel !== schluessel)
+            this._kiWarm = { schluessel, text: this.llmBuildSystemPrompt() };
+        return this._kiWarm.text;
+    }
+
+    // Die Ruhe der KI (`KI_RUHE_S` nach dem letzten Ruf oder Tagebuch-Eintrag): weicht der frische Vertrag vom gewärmten ab, gilt
+    // ab jetzt der frische, und ein Hintergrund-Ruf (ein Token, nur ollama: sein Prompt-Cache) rechnet ihn samt Kontext vor —
+    // spricht der Spieler dazwischen, weicht der Ruf (`hintergrund`), was er rechnete, bleibt im Cache.
+    _kiVorwaermenPlanen() {
+        clearTimeout(this._kiWarmUhr);
+        this._kiWarmUhr = setTimeout(() => this._kiVorwaermen(), AnazhRealm.KI_RUHE_S * 1000);
+    }
+    _kiVorwaermen() {
+        const llm = this.state.llm;
+        if (!llm || !llm.enabled || llm.provider !== "ollama" || !this._kiWarm) return;
+        if (llm.inFlight) return this._kiVorwaermenPlanen();
+        const text = this.llmBuildSystemPrompt();
+        if (text === this._kiWarm.text) return;
+        this._kiWarm = { schluessel: this._kiWarm.schluessel, text };
+        this.llmCall("", null, { hintergrund: true, vorwaermen: true });
     }
 
     // DER STROM DER ANTWORT (ki.K5): jeder Anbieter schickt Zeilen — ollama NDJSON, die übrigen Server-Sent-Events (`data: {…}`)
@@ -339,6 +383,7 @@ class AnazhRealm_dienst {
             if (ctx && typeof ctx === "object") entry.ctx = ctx;
             j.entries.push(entry);
             if (j.entries.length > (j.entryCap || 200)) j.entries = j.entries.slice(-j.entryCap);
+            this._kiVorwaermenPlanen();
             return;
         }
         if (typeof zeile !== "string" || zeile.length === 0) return;
@@ -351,6 +396,7 @@ class AnazhRealm_dienst {
         if (j.entries.length > (j.entryCap || 200)) {
             j.entries = j.entries.slice(-j.entryCap);
         }
+        this._kiVorwaermenPlanen();
     }
 
     // die Zeile einer Erinnerung: `t` ist die EINE Quelle, `text` ihre Lesart in der Quell-Sprache (de) — nie gespeichert

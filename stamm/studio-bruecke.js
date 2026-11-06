@@ -2087,22 +2087,29 @@ class AnazhRealm_studio_bruecke {
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
     // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst die
-    // Wörter des Programms („fachwerkhaus", „eiche"). DIE KOMPAKTE FORM (ki.K5, 06.11.): der Vertrag trägt je Gruppe vier Wörter
-    // und keinen Regler — die Regler, die ein Satz nennt, ruft `_kiAbruf` je Satz ab. Bis ki.K5 trug diese Zeile jede Regler-
+    // Wörter des Programms („fachwerkhaus", „eiche"). DIE KOMPAKTE FORM (ki.K5, 06.11.): der Vertrag trägt je Gruppe
+    // `KI_WOERTER_JE_GRUPPE` Wörter und keinen Regler — die übrigen Wörter und die Regler, die ein Satz nennt, ruft `_kiAbruf` je
+    // Satz ab. Bis ki.K5 trug diese Zeile jede Regler-
     // Zeile jeder Art (2 812 von 5 532 Token des Vertrags, `"id" min–max Name` Ziffer um Ziffer): qwen3:4b an 4 CPU-Kernen
     // rechnete je Token der Antwort 305 statt ~200 ms und kopierte die Zeilen als Rauschen in jedes Werk.
     _studioWordsForPrompt(nennen = false) {
-        const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
-        const gruppen = {};
-        for (const [art, ps] of Object.entries(paare))
-            gruppen[art] = [...new Set(ps.map(([w, nennung]) => (nennen ? nennung : w)))];
-        const kappe = nennen ? 5 : 4;
-        return Object.keys(GRUPPE)
-            .filter((a) => gruppen[a] && gruppen[a].length)
-            .map(
-                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
-            )
+        const { GRUPPE, listen } = this._studioWortListen(nennen);
+        return Object.entries(listen)
+            .map(([a, ws]) => `${GRUPPE[a]}: ${ws.join(", ")}${ws.ganz > ws.length ? " …" : ""}`)
             .join(" · ");
+    }
+
+    // Die gezeigten Wörter je Art (`nennen` 5, sonst `KI_WOERTER_JE_GRUPPE`): { GRUPPE, listen: {art: [wort …] (.ganz: alle)} }
+    // — gelesen vom Vertrag (`_studioWordsForPrompt`) und vom Abruf (`_kiAbruf`: er nennt nur, was hier fehlt)
+    _studioWortListen(nennen = false) {
+        const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
+        const kappe = nennen ? 5 : AnazhRealm.KI_WOERTER_JE_GRUPPE;
+        const listen = {};
+        for (const a of Object.keys(GRUPPE)) {
+            const alle = [...new Set((paare[a] || []).map(([w, nennung]) => (nennen ? nennung : w)))];
+            if (alle.length) listen[a] = Object.assign(alle.slice(0, kappe), { ganz: alle.length });
+        }
+        return { GRUPPE, listen };
     }
 
     // EINE Regler-Zeile der Welt-KI: `id Name` und der Bereich, wenn er nicht 0–1 ist (der Vertrag nennt 0–1 als Regel).
@@ -2139,15 +2146,19 @@ class AnazhRealm_studio_bruecke {
         };
         const kopf = {};
         for (const [art, lab] of Object.entries(GRUPPE)) kopf[ohneUmlaut(woerter(lab)[0] || "")] = art;
+        // erst der Kopf einer Gruppe („tiere" sind die Tiere, nie das Tier-Tor, dessen Werk-Name „tier" ist), dann das Wort
         const genannt = new Set();
         const werkWort = new Set();
+        const werkName = new Set();
         for (const w of woerter(satz)) {
-            const art =
-                artVon(w) ||
-                stamm(ohneUmlaut(w))
-                    .map((s) => kopf[s])
-                    .find(Boolean);
-            if (art && GRUPPE[art]) (genannt.add(art), werkWort.add(w));
+            const gruppe = stamm(ohneUmlaut(w))
+                .map((s) => kopf[s])
+                .find(Boolean);
+            const art = gruppe || artVon(w);
+            if (!art || !GRUPPE[art]) continue;
+            genannt.add(art);
+            werkWort.add(w);
+            if (!gruppe) werkName.add(w);
         }
         const ohneArt = !genannt.size;
         const eigen = woerter(satz)
@@ -2180,17 +2191,30 @@ class AnazhRealm_studio_bruecke {
                     );
                 if (trifft) (regler[art] = regler[art] || []).push(d);
             }
-        // die Werk-Wörter des Satzes in der Form des Programms („holzhütte" → holzhuette): der Vertrag nennt je Gruppe nur vier —
-        // ohne diese Zeile schrieb qwen3:4b für „eine kleine holzhütte" das erste Haus
-        const ziele = new Set(Object.values(this._studioWortGruppen().ziele).flat());
-        const werk = [...werkWort].map((w) => AnazhRealm._wortFalten(w)).filter((w) => ziele.has(w));
+        // die Werk-Namen des Satzes (Bauplan und Werk, nie ein Art-Wort: „tiere" meint die Wesen) in der Form des Programms
+        // („holzhütte" → holzhuette), die der Vertrag nicht zeigt (er nennt
+        // je Gruppe `KI_WOERTER_JE_GRUPPE`): ohne sie schrieb qwen3:4b für „eine kleine holzhütte" das erste Haus; ein gezeigtes
+        // Wort zu wiederholen kostete den Satz ~0,5 s Prefill
+        const sagbar = new Set(Object.values(this._studioWortGruppen().ziele).flat());
+        const gezeigt = new Set(Object.values(this._studioWortListen().listen).flat());
+        const werk = [
+            ...new Set(
+                [...werkName]
+                    .map((w) =>
+                        stamm(AnazhRealm._wortFalten(w))
+                            .flatMap((x) => [x, x.replace(/aeu/g, "au").replace(/ae/g, "a")])
+                            .find((x) => sagbar.has(x) && (K.stufen[0].has(x) || K.stufen[1].has(x)))
+                    )
+                    .filter((w) => w && !gezeigt.has(w))
+            ),
+        ];
         const zeile = Object.entries(regler)
             .map(([art, ds]) => `${GRUPPE[art]}: ${ds.map((d) => this._kiReglerZeile(d)).join("; ")}`)
             .join(" · ");
         return {
             regler,
             zeile: [
-                werk.length && `Wörter, die der Satz nennt: ${werk.join(", ")}.`,
+                werk.length && `Wörter des Satzes: ${werk.join(", ")}.`,
                 zeile && `Regler, die der Satz nennt: ${zeile}.`,
             ]
                 .filter(Boolean)
