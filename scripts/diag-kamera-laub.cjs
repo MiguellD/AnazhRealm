@@ -355,15 +355,16 @@ function leibInstall(cfg) {
         const k = r._bodenSichtAt(x, z);
         return Number.isFinite(k) ? k : null;
     };
+    // die Kugel vom Radius m um p trifft die Box, wenn der Abstand der Mitte zur Box kleiner als m ist (die Minkowski-Summe ist
+    // rund: bis w17-bild-kollision urteilte die Linse an der scharfkantig aufgeblasenen Box und nannte eine Linse, die r neben
+    // einer Kante in der Luft steht, „in der Box")
     L.inBox = (p, b, m) => {
-        if (p.y < b.botY - m || p.y > b.topY + m) return false;
         const ob = b.obb;
-        if (ob) {
-            const qx = p.x - ob.cx;
-            const qz = p.z - ob.cz;
-            return Math.abs(qx * ob.c - qz * ob.s) < ob.hx + m && Math.abs(qx * ob.s + qz * ob.c) < ob.hz + m;
-        }
-        return p.x > b.minX - m && p.x < b.maxX + m && p.z > b.minZ - m && p.z < b.maxZ + m;
+        const [qx, qz] = ob ? [p.x - ob.cx, p.z - ob.cz] : [0, 0];
+        const [lx, lz] = ob ? [qx * ob.c - qz * ob.s, qx * ob.s + qz * ob.c] : [p.x, p.z];
+        const [x0, x1, z0, z1] = ob ? [-ob.hx, ob.hx, -ob.hz, ob.hz] : [b.minX, b.maxX, b.minZ, b.maxZ];
+        const aus = (v, a0, a1) => (v < a0 ? a0 - v : v > a1 ? v - a1 : 0);
+        return Math.hypot(aus(lx, x0, x1), aus(p.y, b.botY, b.topY), aus(lz, z0, z1)) < m;
     };
     L.boxen = (x, z, rad) => {
         const out = [];
