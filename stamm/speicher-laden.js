@@ -1177,10 +1177,7 @@ class AnazhRealm_speicher_laden {
         }
         if (zielId) this.activeWorldSet(zielId);
         const schirm = typeof document !== "undefined" && document.getElementById("ladeschirm");
-        if (schirm) {
-            schirm.hidden = false;
-            schirm.classList.remove("weg");
-        }
+        if (schirm) this._ladeschirmHalt(schirm); // das letzte Bild der lebenden Seite, nie die schwarze Tafel (tore.K1)
         this._ladeschirmStand(this._t("speicher.welt-wechselt"));
         const tausch = this._speicherVerlassen()
             .then(() => this._speicherStill())
@@ -1311,14 +1308,32 @@ class AnazhRealm_speicher_laden {
             for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
                 karten(x, aus, tiefe + 1);
         };
+        // DER ABBAU IN RATEN (tore.K1): die Suche nach den Karten ging den ganzen alten Zustand vier Ebenen tief in EINEM Frame
+        // (Radeon 8efb6318: bis 530 ms im Frame des Wechsels, der Durchgang stand dort still). Jetzt sind die Glieder hier nur
+        // gelesen — die Felder am Wirt, bevor sie fallen —, gesucht und freigegeben wird in Raten von ABBAU_RATE_MS, sobald das
+        // erste Bild der neuen Welt steht; bis dahin hält die GPU, was fällt (der alte Zustand ist abgehängt, kein Bild liest ihn).
         const [bleibt, faellt] = [new Set(), new Set()];
-        for (const k of Object.keys(alt)) karten(alt[k], reist.has(k) ? bleibt : faellt);
-        for (const k of Object.keys(this)) if (k !== "state") karten(this[k], bleibtFeld(k) ? bleibt : faellt);
-        for (const t of faellt) if (!bleibt.has(t)) this._queueDispose(t);
+        const glieder = [
+            ...Object.keys(alt).map((k) => [alt[k], reist.has(k)]),
+            ...Object.keys(this)
+                .filter((k) => k !== "state")
+                .map((k) => [this[k], bleibtFeld(k)]),
+        ];
         this.state = neu;
         for (const k of Object.keys(this)) if (!bleibtFeld(k)) delete this[k];
         for (const k of G.gedaechtnis) this[k] = null;
         if (this._takt) this._gameLoopTick = this._takt; // was eine Linse am Takt hängte, fällt mit der Welt
+        const rate = () => {
+            if (!this.state._weltbildDa) return void setTimeout(rate, 100);
+            const bis = performance.now() + AnazhRealm.ABBAU_RATE_MS;
+            while (glieder.length && performance.now() < bis) {
+                const [v, b] = glieder.pop();
+                karten(v, b ? bleibt : faellt);
+            }
+            if (glieder.length) return void setTimeout(rate, 0);
+            for (const t of faellt) if (!bleibt.has(t)) this._queueDispose(t);
+        };
+        setTimeout(rate, 0);
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
@@ -2463,3 +2478,6 @@ AnazhRealm.TOOL_OP_CLASSES = Object.freeze(new Set(["subtractive", "plastic", "a
 // Op-Name-Whitelist (a-z, -_, max 24 Zeichen) — verhindert injection in
 // state.tools-Keys. Pure Sanitisierung, keine semantische Wertung.
 AnazhRealm.TOOL_OP_NAME_PATTERN = /^[a-z0-9_-]{1,24}$/;
+// DIE RATE DES ABBAUS (`_weltAbschied`): so viele ms je Aufgabe sucht der Wechsel die Karten der verlassenen Welt — nie ein Frame über
+// dem Takt.
+AnazhRealm.ABBAU_RATE_MS = 4;

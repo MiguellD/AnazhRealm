@@ -1299,16 +1299,54 @@ class AnazhRealm_dirigent_ankunft {
         this._hudSchreib(el, text);
     }
 
+    // DER LADESCHIRM HÄLT DAS LETZTE BILD (tore.K1, der Durchgang): wechselt die lebende Seite die Welt (`_weltWechsel`), steht
+    // auf dem Schirm ihr letztes Bild — die Membran, durch die der Spieler ging —, nie die schwarze Tafel des Kalt-Boots, bis das
+    // erste Bild der Ziel-Welt steht (`_ladeschirmWeg`); die Tafel trägt nur, was kein Bild hatte (Kalt-Boot, Null-Renderer).
+    // Bis hier zeigte jeder Wechsel 5–12 s Luma 0,043 (Radeon 8efb6318). DIE KOPIE AM ENDE DES TAKTS: WebGPU hält das Bild nur im
+    // Frame, der es zeichnet — mitten im Takt des Kreuzens (vor dem Zeichnen) und im nächsten Bild (der Tausch zeichnet nicht) war die
+    // Kopie durchsichtig; die Mikro-Aufgabe nach dem Takt liest das eben gezeichnete (halbe Auflösung, EIN Lese-Weg). Zeichnete der
+    // Takt nicht (die Leine hielt sein Bild), ist die Kopie leer — dann steht die Tafel, laut im Log.
+    _ladeschirmHalt(el) {
+        const zeige = (halt) => {
+            el.classList.toggle("halt", halt);
+            el.hidden = false;
+            el.classList.remove("weg");
+        };
+        const rd = this.state.renderer;
+        const cv = rd && !rd._isHeadlessNull && this.state._weltbildDa ? rd.domElement : null;
+        if (!cv || !(cv.width > 0)) return void zeige(false);
+        queueMicrotask(() => {
+            let bild = el.querySelector("canvas.ladeschirm-bild");
+            if (!bild) {
+                bild = document.createElement("canvas");
+                bild.className = "ladeschirm-bild";
+                bild.setAttribute("aria-hidden", "true");
+                el.prepend(bild);
+            }
+            bild.width = Math.max(1, cv.width >> 1);
+            bild.height = Math.max(1, cv.height >> 1);
+            const g = bild.getContext("2d", { willReadFrequently: true });
+            g.drawImage(cv, 0, 0, bild.width, bild.height);
+            const steht = g.getImageData(bild.width >> 1, bild.height >> 1, 1, 1).data[3] > 0;
+            if (!steht) this.log("Der Durchgang fand kein gezeichnetes Bild in seinem Takt — die Tafel steht.", "WARN");
+            zeige(steht);
+        });
+    }
+
     // Der Ladeschirm weicht: nach dem ersten fertigen Weltbild, oder dem WebGPU-Tor (das Tor IST die Antwort — unter dem
-    // Ladeschirm läge es unsichtbar).
+    // Ladeschirm läge es unsichtbar). Hielt er ein Bild (`_ladeschirmHalt`), weicht er im Schnitt, nie in einer Blende über 0,7 s.
     _ladeschirmWeg() {
         if (typeof document === "undefined") return;
         const el = document.getElementById("ladeschirm");
         if (!el || el.hidden) return;
         el.classList.add("weg");
-        setTimeout(() => {
-            el.hidden = true;
-        }, 750);
+        setTimeout(
+            () => {
+                el.hidden = true;
+                el.classList.remove("halt");
+            },
+            el.classList.contains("halt") ? 150 : 750
+        );
     }
 
     // Steht der Ladeschirm (die DOM-Wahrheit: da, nicht versteckt, nicht im Weichen)? Solange gehört keine Taste der Welt.
