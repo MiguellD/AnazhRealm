@@ -2637,10 +2637,18 @@ class AnazhRealm_bau_teile {
             geburt: e.geburt,
             geburtNass: e.geburtNass,
         };
+        // ein Plan des Gesetzes (`vomGesetz`, die Herkunfts-Marke; sie reist im Stand): er trägt Trümmer und Rest, nie den
+        // Katalog des Spielers (`_katalogSichtbar`) — sonst stünde jeder Einsturz als „eigenes Werk" zuoberst im Rezeptbuch
         const bauplan = (stamm, teile, mehr) => {
             const n = stamm + "_" + this._fastHash(JSON.stringify(teile) + JSON.stringify(mehr));
             if (!this.state.blueprints[n])
-                this.state.blueprints[n] = AnazhRealm._etikett({ name: n, builtIn: false, parts: teile, ...mehr });
+                this.state.blueprints[n] = AnazhRealm._etikett({
+                    name: n,
+                    builtIn: false,
+                    vomGesetz: true,
+                    parts: teile,
+                    ...mehr,
+                });
             return n;
         };
         // die Trümmer: je fallendes Teil sein Körper in der Lage des Werks

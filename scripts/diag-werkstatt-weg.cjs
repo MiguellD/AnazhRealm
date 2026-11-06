@@ -243,27 +243,10 @@ function pruefVerdict(m, b) {
         g.breit > 0.05 && g.hoch < 0.01,
     ];
     const rest = [...konsumTaeter(m.konsum), ...(z.length === 10 ? [] : [`${z.length} von 10 gesetzt`])];
+    // der Takt des Gesetzes (Soll 2,0,1,0): [Bauten der Laube ohne Plan (Rest + Trümmer), der Waise, ihre WERK-WAISE-Meldungen,
+    // Pläne des Gesetzes im Katalog]
+    if (m.takt + "" !== "2,0,1,0") rest.push("Takt " + m.takt);
     return { statik: [...rest, ...statik], wirkung: WIRKUNGEN.filter((_, i) => !ok[i]), richtig: z.length - statik.length };
-}
-
-// Der Takt des Gesetzes (z264): { konsum, fehler, plan: {gesetzt, rest, truemmer, alt}, waise: {gesetzt, neu, imTakt, meldung},
-// laden: {gesetzt, alterImTakt, waisen, truemmer, rest}, waisenEnde } → die Täter beim Namen.
-function taktVerdict(m) {
-    if (ungelaufen(m)) return ["start"];
-    const out = konsumTaeter(m.konsum);
-    const [p, w, l] = [m.plan || {}, m.waise || {}, m.laden || {}];
-    if (!(m.fehler && !m.fehler.length)) out.push(`ein Takt wirft: ${(m.fehler || ["nicht gemessen"]).join(" · ")}`);
-    if (!p.gesetzt || !w.gesetzt || !l.gesetzt) out.push(`die Laube schwebt nicht (Vorbedingung): ${[p, w, l].map((x) => !!x.gesetzt).join("/")}`);
-    if (!(JSON.stringify(p.rest) === "[3]" && p.truemmer === 1 && p.alt === false))
-        out.push(`PLAN: ohne Plan im Buch bricht die Laube nicht nach dem Urteil (Rest ${JSON.stringify(p.rest)} statt [3], ${p.truemmer} Trümmer statt 1, steht noch ${p.alt})`);
-    if (w.neu !== 0) out.push(`WAISE: ${w.neu} Bauten aus dem Bruch eines Werks, das die Welt verließ (Geister-Rest und -Trümmer)`);
-    if (w.imTakt !== false) out.push("WAISE: die Waise bleibt im Takt des Gesetzes");
-    if (!w.meldung) out.push("WAISE: die Waise bricht still (kein „WERK-WAISE“ im Melder)");
-    if (l.alterImTakt !== false || (l.waisen && l.waisen.length) || !l.waisen)
-        out.push(`LADEN: der alte Bestand bleibt im Takt (${(l.waisen || ["nicht gemessen"]).join(", ") || "der alte Eintrag"})`);
-    if (!(l.truemmer === 1 && l.rest === 1)) out.push(`LADEN: die geladene Laube bricht ${l.rest} Rest / ${l.truemmer} Trümmer statt 1 / 1`);
-    if (!Array.isArray(m.waisenEnde) || m.waisenEnde.length) out.push(`Waisen am Ende: ${(m.waisenEnde || ["nicht gemessen"]).join(", ")}`);
-    return out;
 }
 
 // Der Same des Werks: { steht, zuege, phantomKey, werkKey, phantomDreh, werkDreh, werkSame, werkTint, gesendetSame,
@@ -932,80 +915,21 @@ async function probe(argW) {
             if (e) r.removeArchitecture(e);
         }
         emo.chaos = chaos;
+        // DER TAKT DES GESETZES (z264): zwei Lauben, deren Kopf ohne Pfosten schwebt (der Bruch im ersten Takt, `_werkBricht`);
+        // der Stand wird über ihnen geladen (kein Takt hält den alten Bestand, `_bautenLeeren`), dann fällt der Plan der einen
+        // (`deleteBlueprint`: sie bricht nach dem Plan ihres Urteils — Rest und ein Trümmer), die andere verlässt die Welt an
+        // `removeArchitecture` vorbei (sie bricht nie als Geist, meldet sich EINMAL als „WERK-WAISE"); die Pläne des Gesetzes
+        // stehen nie im Katalog des Spielers (`_katalogSichtbar`). Ein Wurf im Takt fällt als Ausnahme der Probe.
+        const um = (d) => st.architectures.filter((e) => /Laube|truemmer_/.test(e.type) && Math.hypot(e.position.x - frei.x - 9, e.position.z - frei.z - d) < 4);
+        [9, 18].forEach((d) => setze("Laube" + d, satz.einsturz.Laube, frei.x + 9, frei.z + d));
+        r._loadStateRestoreArchitectures(r.buildStateSnapshot(), false);
+        r.deleteBlueprint(um(9)[0].type);
+        const w = um(18)[0];
+        st.architectures = st.architectures.filter((e) => e !== w);
+        takte(3, 1 / 30);
+        m.takt = [um(9).length, um(18).length, [...r._bruchBuch.keys()].join().split("Laube18").length - 1, Object.keys(st.blueprints).filter((n) => /truemmer_|_rest_/.test(n) && r._katalogSichtbar(n)).length];
+        um(9).forEach((e) => r.removeArchitecture(e));
         for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
-    });
-
-    // ── DER TAKT DES GESETZES (Bauen K3 · physik.K3 Staffel 2, z264): das Urteil trägt seinen Plan, kein Takt hält eine Waise ──
-    // Eine Laube, deren Kopf ohne Pfosten schwebt (der Lastpfad bricht im ersten Takt, `_werkBricht`), dreimal über den Bau-Weg:
-    // PLAN — ihr Plan fällt vor dem ersten Takt (`deleteBlueprint`): sie bricht trotzdem nach dem geurteilten Plan (Rest +
-    // ein Trümmer), kein Takt wirft. WAISE — sie verlässt die Welt an `removeArchitecture` vorbei (der Aufräumer des Playtests):
-    // kein Rest, kein Trümmer, laut beim Namen („WERK-WAISE"), aus dem Takt. LADEN — der Stand wird über ihr geladen
-    // (`_loadStateRestoreArchitectures`): kein Takt hält den alten Eintrag, die geladene Laube bricht.
-    await abschnitt("takt", { konsum: { "_werkBricht → der Plan des Urteils": false } }, async (m) => {
-        const takte = (n) => {
-            for (let i = 0; i < n; i++) r.tickAffordances(1 / 30);
-        };
-        const LAUBE = [[0, 0.1, 0, 4, 0.2, 3], [-1.5, 1.4, -1, 0.3, 2.4, 0.3, "holz"], [-1.5, 2.725, -1, 0.5, 0.25, 0.5, "holz"], [1.5, 2.725, 1, 0.5, 0.25, 0.5, "holz"]];
-        const TAKTE = ["_werkGesetzImTakt", "_freiImTakt", "_fahrLos", "_archFahrende"];
-        const waisen = () => {
-            const welt = new Set(st.architectures);
-            return TAKTE.flatMap((k) => [...(r[k] || [])].filter((e) => !welt.has(e)).map((e) => `${k}: ${e.type}`));
-        };
-        const um = (x, z) => st.architectures.filter((a) => Math.hypot(a.position.x - x, a.position.z - z) < 4);
-        const fehler = [];
-        const lauf = (n) => {
-            try {
-                takte(n);
-            } catch (e) {
-                fehler.push(String((e && e.stack) || e).split("\n").slice(0, 2).join(" "));
-            }
-        };
-        const bricht = r._werkBricht;
-        r._werkBricht = function (e, bp, frei) {
-            if (bp && bp.parts && bp.parts.length === LAUBE.length) m.konsum["_werkBricht → der Plan des Urteils"] = true;
-            return bricht.call(this, e, bp, frei);
-        };
-        try {
-            // PLAN
-            const [px, pz] = [frei.x - 12, frei.z + 8];
-            const e1 = setze("Laube Plan", LAUBE, px, pz);
-            const k1 = e1 && e1.type;
-            m.plan = { gesetzt: !!(e1 && e1._gesetz && e1._gesetz.bruch) };
-            if (k1) r.deleteBlueprint(k1);
-            lauf(3);
-            const da1 = um(px, pz);
-            m.plan.rest = da1.filter((a) => !a._frei && a.type.includes("_rest_")).map((a) => (st.blueprints[a.type] ? st.blueprints[a.type].parts.length : -1));
-            m.plan.truemmer = da1.filter((a) => a._frei).length;
-            m.plan.alt = st.architectures.includes(e1);
-            for (const a of da1) r.removeArchitecture(a, { still: true });
-            // WAISE
-            const [wx, wz] = [frei.x - 12, frei.z + 16];
-            const e2 = setze("Laube Waise", LAUBE, wx, wz);
-            m.waise = { gesetzt: !!(e2 && e2._gesetz && e2._gesetz.bruch) };
-            const melder = r._bruchBuch ? new Set(r._bruchBuch.keys()) : new Set();
-            st.architectures = st.architectures.filter((a) => a !== e2);
-            lauf(3);
-            m.waise.neu = um(wx, wz).length;
-            m.waise.imTakt = !!(r._werkGesetzImTakt && r._werkGesetzImTakt.has(e2));
-            m.waise.meldung = [...(r._bruchBuch ? r._bruchBuch.keys() : [])].filter((t) => !melder.has(t) && t.includes("WERK-WAISE")).join(" | ");
-            // LADEN
-            const [lx, lz] = [frei.x - 12, frei.z + 24];
-            const e3 = setze("Laube Laden", LAUBE, lx, lz);
-            m.laden = { gesetzt: !!(e3 && e3._gesetz && e3._gesetz.bruch) };
-            r._loadStateRestoreArchitectures(r.buildStateSnapshot(), false);
-            m.laden.alterImTakt = TAKTE.some((k) => r[k] && r[k].has(e3));
-            m.laden.waisen = waisen();
-            lauf(3);
-            const da3 = um(lx, lz);
-            m.laden.truemmer = da3.filter((a) => a._frei).length;
-            m.laden.rest = da3.filter((a) => !a._frei && a.type.includes("_rest_")).length;
-            for (const a of da3) r.removeArchitecture(a, { still: true });
-            m.waisenEnde = waisen();
-        } finally {
-            delete r._werkBricht;
-            m.fehler = fehler;
-            for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
-        }
     });
     return out;
 }
@@ -1709,6 +1633,7 @@ hauptLauf(async () => {
             rad: { rad: { weg: 4, hinab: 1, neigung: 170 }, klotz: { weg: 0 } },
             schale: { regen: 0.4, sonne: 0.4, sichtbar: true, loch: 0 },
             gruender: { breit: 0.2, hoch: 0 },
+            takt: [2, 0, 1, 0],
         };
         const mitP = (k, o) => ({ ...gesundP, [k]: { ...gesundP[k], ...o } });
         familie("Prüf-Satz", (m, v = pruefVerdict(m, gesundB)) => [...v.statik, ...v.wirkung], gesundP, [
@@ -1717,29 +1642,8 @@ hauptLauf(async () => {
             [mitP("konsum", { k: false }), "Konsum"],
             [mitP("rad", { rad: { weg: 0, hinab: 0, neigung: 0 } }), "Rad"],
             [mitP("schale", { regen: 0 }), "Schale"],
-        ]);
-        // Der Takt des Gesetzes: gesund ohne Täter, je Befund von z264 der Täter beim Namen
-        const gesundT = {
-            gestartet: true,
-            konsum: { k: true },
-            fehler: [],
-            plan: { gesetzt: true, rest: [3], truemmer: 1, alt: false },
-            waise: { gesetzt: true, neu: 0, imTakt: false, meldung: "WERK-WAISE: der Bruch an x" },
-            laden: { gesetzt: true, alterImTakt: false, waisen: [], truemmer: 1, rest: 1 },
-            waisenEnde: [],
-        };
-        const mitT = (k, o) => ({ ...gesundT, [k]: { ...gesundT[k], ...o } });
-        familie("Takt des Gesetzes", taktVerdict, gesundT, [
-            // der Plan aus dem Buch (main bis z264): ohne Plan wirft `_werkBricht` je Bild
-            [{ ...mitT("plan", { rest: [], truemmer: 0, alt: true }), fehler: ["TypeError: Cannot read properties of undefined (reading 'label') at AnazhRealm._werkBricht"] }, "ein Takt wirft: TypeError"],
-            // die Waise bricht als Geist
-            [mitT("waise", { neu: 2 }), "WAISE: 2 Bauten"],
-            // die Waise bricht still
-            [mitT("waise", { meldung: "" }), "WAISE: die Waise bricht still"],
-            // das Laden lässt den alten Bestand im Takt
-            [mitT("laden", { alterImTakt: true, waisen: ["_werkGesetzImTakt: __pruef_Laube Laden"] }), "LADEN: der alte Bestand"],
-            // der Bruch liest nicht den Plan des Urteils
-            [{ ...gesundT, konsum: { "_werkBricht → der Plan des Urteils": false } }, "Konsum"],
+            // z264: die Waise bricht als Geist (Rest und Trümmer), das Laden hält den alten Bestand, der Trümmer im Katalog
+            [{ ...gesundP, takt: [2, 2, 3, 2] }, "Takt"],
         ]);
         // L-Verben: gesund ohne Täter; ein Werk ohne Policy (das Tor ohne Portal) ist rot an seinem Verb, eines, das nicht steht, am Setzen
         const je = (f) => Object.fromEntries(HERKUNFT.map((h) => [h, Object.fromEntries(SICHTEN.map((s) => [s, f(h + s)]))]));
@@ -1904,15 +1808,6 @@ hauptLauf(async () => {
             "Prüf-Satz über den Bau-Weg: das Stabile steht nach 150 Takten, das Instabile stürzt sichtbar und nennt den Grund; die Wirkung aus der Form hält",
             !t.length,
             `Statik ${vP.richtig}/10 · Wirkung ${5 - vP.wirkung.length}/5 — ${JSON.stringify(pm).slice(0, 2400)}${t.length ? " — Täter: " + t : ""}`
-        );
-        const tm = out.takt || {};
-        abschnitt(
-            "DER TAKT DES GESETZES — DAS URTEIL TRÄGT SEINEN PLAN, KEIN TAKT HÄLT EINE WAISE (z264)",
-            "Takt des Gesetzes",
-            tm,
-            taktVerdict(tm),
-            "Takt des Gesetzes die Laube bricht nach dem geurteilten Plan, auch wenn das Buch ihn verlor; eine Waise bricht nie als Geist und meldet sich; das Laden nimmt den alten Bestand aus jedem Takt",
-            () => `Plan: Rest ${JSON.stringify(tm.plan?.rest)} Teile, ${tm.plan?.truemmer} Trümmer · Waise: ${tm.waise?.neu} neue Bauten, im Takt ${tm.waise?.imTakt}, „${(tm.waise?.meldung || "").slice(0, 60)}…" · Laden: alter Eintrag im Takt ${tm.laden?.alterImTakt}, Waisen ${JSON.stringify(tm.laden?.waisen)}, danach ${tm.laden?.rest} Rest / ${tm.laden?.truemmer} Trümmer · Waisen am Ende ${JSON.stringify(tm.waisenEnde)}`
         );
     }
     wandEnde(errs, "der Werkstatt-Weg trägt seine benannten Schnitte.");

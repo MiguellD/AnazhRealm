@@ -449,6 +449,9 @@ async function checkBandWave10b({ page, check }) {
     const wave10bResults = await safeEvaluate(page, () => {
         const AR = AnazhRealm;
         const out = {};
+        // jeder gesetzte Bau verlässt die Welt durch die EINE Tür (`removeArchitecture`): ein `filter` auf die Liste ließ ihn
+        // im Takt des Gesetzes, im Löser und im Blocker-Netz zurück (z264: der Wagen brach als Waise je Bild)
+        const weg = (a) => st.architectures.filter((e) => (a.test ? a.test(e.type) : a(e))).forEach((e) => r.removeArchitecture(e, { still: true }));
         try {
             out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
             // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
@@ -564,7 +567,7 @@ async function checkBandWave10b({ page, check }) {
             const aweFar = emoR.awe;
             for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
             out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
+            weg(/^test_10ext_radiator$/);
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
             out.broadcastingLabel = AR._t(AR.AFFORDANCE_LABELS.broadcasting) === "sendend";
@@ -598,11 +601,12 @@ async function checkBandWave10b({ page, check }) {
             // Cleanup natürlicher Strahler im Test-Bereich um (60, z) — Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M +
             // RADIATING_RANGE_M (EIN Räumer für beide Proben, w4-z140-rueckfall)
             const strahlerWeg = (z) =>
-                (st.architectures = st.architectures.filter((e) => {
-                    if (!e || !e.position || !e.affordances) return true;
-                    if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
-                    return Math.hypot(e.position.x - 60, e.position.z - z) > 100;
-                }));
+                weg(
+                    (e) =>
+                        e.affordances &&
+                        (e.affordances.radiating || e.affordances.broadcasting) &&
+                        Math.hypot(e.position.x - 60, e.position.z - z) <= 100
+                );
             strahlerWeg(82);
             const radE = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
             emoR.awe = 0.1;
@@ -614,9 +618,7 @@ async function checkBandWave10b({ page, check }) {
             out.relayMastAffordance = !!(mastE && mastE.affordances && mastE.affordances.broadcasting === true);
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.relayMitMastReicheWeiter = emoR.awe > 0.1;
-            st.architectures = st.architectures.filter(
-                (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
-            );
+            weg(/^test_10ext_(radiator|mast)$/);
             void radE;
 
             // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
@@ -655,7 +657,7 @@ async function checkBandWave10b({ page, check }) {
                 radSnap.affordanceStrength &&
                 typeof radSnap.affordanceStrength.radiating === "number"
             );
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
+            weg(/^test_10ext_radiator$/);
             // Ein STARKER Mast relais-verstärkt weiter als ein SCHWACHER: Spieler 23 m vom Strahler, nur der
             // starke erreicht ihn. Natürliche Strahler/Sender im 100-m-Radius entfernen (sonst kontaminiert).
             if (pmR) {
@@ -670,13 +672,11 @@ async function checkBandWave10b({ page, check }) {
             emoR.peace = 0.1;
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.weakMastTooWeak = Math.abs(emoR.awe - 0.1) < 0.0001;
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_mastweak");
+            weg(/^test_10ext_mastweak$/);
             r.spawnArchitecture("test_10ext_mast", { x: 66, y: 0, z: 60 }, { silent: true });
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.strongMastReachesFarther = emoR.awe > 0.1;
-            st.architectures = st.architectures.filter(
-                (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
-            );
+            weg(/^test_10ext_(radiator|mast)$/);
 
             // ── W10 ext. balancing (gründende Form) ──
             out.balancingLabel = AR._t(AR.AFFORDANCE_LABELS.balancing) === "gründend";
@@ -775,7 +775,7 @@ async function checkBandWave10b({ page, check }) {
             if (pmR) pmR.z = 400;
             r._tickLiftingAffordances();
             out.liftFieldInactiveFar = !(st.player.liftingField && st.player.liftingField.active);
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_lifter");
+            weg(/^test_10ext_lifter$/);
 
             emoR.awe = aweBefore0;
             emoR.peace = peaceBefore0;
@@ -791,9 +791,8 @@ async function checkBandWave10b({ page, check }) {
             const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
             out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
 
-            // Cleanup: der Wagen geht durch die EINE Tür (`removeArchitecture`) — sein Quarz-Block schwebt 0,1 m über den
-            // Rädern, das Gesetz bricht ihn im nächsten Takt; ein `filter` ließ ihn als Waise im Takt (z264, `_werkBricht`)
-            if (entry) r.removeArchitecture(entry, { still: true });
+            // Cleanup: der Wagen (sein Quarz-Block schwebt 0,1 m über den Rädern: das Gesetz bricht ihn im nächsten Takt)
+            weg(/^test_10b_car$/);
 
             // UI: Werkstatt-Status zeigt "fahrbar"
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1023,10 +1022,11 @@ async function checkBandWave10b({ page, check }) {
             out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
 
             // Mount-Range
-            const fern = r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
+            const zurueck = window.__bautenSeit(); // durch die EINE Tür, nie als Waise im Takt (z264)
+            r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
             const farMountRes = r.toggleMountAtPlayer();
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
-            if (fern) r.removeArchitecture(fern, { still: true }); // durch die EINE Tür, nie als Waise im Takt (z264)
+            zurueck();
 
             // Zoom-Test: _hasMagnifyingInSight raycastet gegen ALLE magnifying-Architekturen; eine autonom
             // gespawnte Geode im Strahl kippte die „kein Target“-Prüfung → Architektur-Liste kurz leeren.

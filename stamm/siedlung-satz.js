@@ -603,10 +603,12 @@ class AnazhRealm_siedlung_satz {
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
-    // erscheinen nirgends — je Gattung EIN Studio-Eintrag.
+    // erscheinen nirgends — je Gattung EIN Studio-Eintrag. Ebenso kein Plan des Gesetzes (`vomGesetz`: Trümmer und Rest eines
+    // Einsturzes, `_werkBricht`) — Befund w15-einsturz (gate:werkstatt-weg L-Werkstatt): als Nicht-Built-in stand jeder vor den
+    // eigenen Werken (`_katalogRang` −1), das Haus rückte im Rezeptbuch eine Raste tiefer (4 Eingaben statt 3).
     _katalogSichtbar(name, bp) {
         const b = bp || (this.state.blueprints && this.state.blueprints[name]);
-        if (!b || b.donorOnly) return false;
+        if (!b || b.donorOnly || b.vomGesetz === true) return false;
         const n = typeof name === "string" && name ? name : b.name || "";
         return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
     }

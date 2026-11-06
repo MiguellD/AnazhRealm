@@ -761,24 +761,28 @@ class AnazhRealm_speicher_laden {
         return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
     }
 
-    _loadStateRestoreArchitectures(state, umzug) {
-        // an Ort und Stelle (`_standRueckspielen`) bauen die Bauten nur neu, wenn ihr Bestand vom Grund abweicht (GRUND_TAFEL `bauten`)
-        if (!Array.isArray(state.architectures) || !this.state.scene || this._ladeOrt) return;
+    // DER BESTAND FÄLLT GANZ (die EINE Tafel, die leer wird — das Laden und jede Probe, die die Welt räumt, `__bautenLeer`):
+    // je Eintrag sein Bild (Mesh oder Instanz-Slot), seine Krone und jeder Takt, der ihn hält (`_bauVerlaesstTakte`); dann die
+    // Instanz-Gruppen und die Liste. Befund z264: neun Proben des Playtests räumten von Hand (Mesh fort, Liste leer) — was im
+    // Takt des Gesetzes, im Löser oder im Nachlauf stand, lief als Waise weiter, das Laden hielt seinen alten Bestand ebenso.
+    _bautenLeeren() {
         for (const old of this.state.architectures) {
-            // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
-            // nicht nur die mit old.mesh (klassisch).
-            if (old.mesh || old.instanced) {
-                this._cullArchitectureMesh(old);
-            }
+            // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei), nicht nur die mit old.mesh (klassisch).
+            if (old.mesh || old.instanced) this._cullArchitectureMesh(old);
             this._kronenStreuWeg("a:" + old.id); // der Respawn trägt die Krone neu ein (neue id)
             this._bauVerlaesstTakte(old); // der alte Bestand fällt aus jedem Takt (Löser, Gesetz, Nachlauf, Fahrt)
         }
-        // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-
-        // Buffer frei; geteilte Geom/Mat im Flatten-Cache bleiben). Die
-        // Respawn-Schleife baut sie lazy neu.
+        // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-Buffer frei; geteilte Geom/Mat im Flatten-Cache
+        // bleiben). Die Respawn-Schleife baut sie lazy neu.
         this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+    }
+
+    _loadStateRestoreArchitectures(state, umzug) {
+        // an Ort und Stelle (`_standRueckspielen`) bauen die Bauten nur neu, wenn ihr Bestand vom Grund abweicht (GRUND_TAFEL `bauten`)
+        if (!Array.isArray(state.architectures) || !this.state.scene || this._ladeOrt) return;
+        this._bautenLeeren();
         // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         // EIN EINTRAG OHNE BAUPLAN FÄLLT LAUT (der Umzug eines gefallenen Bauplans, Pflicht F): die Wurzel sagt je Eintrag ab
