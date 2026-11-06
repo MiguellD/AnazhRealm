@@ -977,10 +977,6 @@ class AnazhRealm_feld_nexus {
     // spawn_studio mit <regler> trägt nur die Zeilen der Art seines Worts, jeder Wert eine Zahl. ollama (llama.cpp) liest ein
     // Tupel nur als `prefixItems` fester Länge (`items: false` bricht die Anfrage, `items` neben `prefixItems` verdrängt es) —
     // darum je Länge eine Form; kein anderes Array darf mit "spawn_studio" beginnen.
-    // DIE FORM TRÄGT DIE SIGNATUR (ki.K5): ein Verb, ein Ort, eine Bedingung trägt bis zu so vielen Argumenten, wie seine Form
-    // (`_dslForm`) liest — die Länge n nennt nur die Namen mit ≥ n Stellen („…": alle). Bis ki.K5 stand jeder Name in jeder
-    // Länge 0–8 (Orte 0–4): nach dem Namen lebten 9 Zweige, jeder Wert darin wieder alle — der Sampler prüfte jedes Token gegen
-    // diese Vielfalt (qwen3:4b-instruct an der CPU: 344–497 ms je Token mit der Form, 124 ms ohne).
     _kiAntwortSchema() {
         const W = { $ref: "#/$defs/wert" };
         const zahl = { type: "number" };
@@ -990,14 +986,8 @@ class AnazhRealm_feld_nexus {
             minItems: glieder.length,
             maxItems: glieder.length,
         });
-        const stellen = (fn) => {
-            const f = this._dslForm(fn);
-            return f === "…" ? Infinity : f ? f.split(", ").length : 0;
-        };
-        const kopfMitRest = (eintraege, bis) =>
-            Array.from({ length: bis + 1 }, (_, n) => eintraege.filter(([, fn]) => stellen(fn) >= n).map(([k]) => k))
-                .map((namen, n) => namen.length && tupel([{ enum: namen }, ...Array(n).fill(W)]))
-                .filter(Boolean);
+        const kopfMitRest = (namen, bis) =>
+            Array.from({ length: bis + 1 }, (_, n) => tupel([{ enum: namen }, ...Array(n).fill(W)]));
         const { ziele } = this._studioWortGruppen();
         const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const ss = { const: "spawn_studio" };
@@ -1023,8 +1013,8 @@ class AnazhRealm_feld_nexus {
                       ])
                   ),
               ];
-        const verben = Object.entries(this.dslEffects).filter(([n]) => n !== "spawn_studio");
-        const orte = [...Object.entries(this.dslPositions), ...Object.entries(this.dslConditions)];
+        const verben = Object.keys(this.dslEffects).filter((n) => n !== "spawn_studio");
+        const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
         return {
             type: "object",
             // DAS PROGRAMM ZUERST (ki.K5): das Modell schreibt die Felder in dieser Folge — die Tat steht im Strom vor dem Satz an
@@ -1122,12 +1112,12 @@ class AnazhRealm_feld_nexus {
         return [
             AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             AnazhRealm.KI_WELT_FORM,
-            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
             // das Programm zuerst, wie die Form es verlangt (`_kiAntwortSchema`): die Tat läuft im Strom, bevor der Satz kommt
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
             "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
             "  - Eine FRAGE antwortet NUR mit say (program null) — auch die Frage nach Uhrzeit oder Wetter ändert nie die Welt.",
             "    Ebenso ein Dank, ein Gespräch, eine Zerstörung, ein Ding ohne Studio-Wort (spawn_creature ruft nur Tiere): null.",
+            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
             sp("ki.welt.say"),
             "Beispiele (Spieler → Antwort):",
             ...AnazhRealm.KI_BEISPIELE.map(([k, program]) =>
@@ -1161,14 +1151,17 @@ class AnazhRealm_feld_nexus {
             "",
             AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
                 ` Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
+            // DAS SELBST-WISSEN NACH SEINEM WECHSEL (ki.K5): das Tagebuch wächst nur am Ende (`journalForPrompt`), es steht vor
+            // dem, was jeder Satz ändert — der Hang des Spielers (das Wetter, in dem er steht), sein Gemüt, die Bänder, die Zahlen.
+            // Bis ki.K5 standen sie vor dem Tagebuch: jede Tat brach den Cache dort, das Tagebuch rechnete jedes Mal neu.
+            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             AnazhRealm._datum`Dein Spieler heißt ${playerName}` + ` und hält sich gern auf: ${tendency}.`,
-            moodLine,
             moodBgLine,
+            moodLine,
             `Die Bänder jetzt: ${Object.entries(AnazhRealm.DSL_WERTE)
                 .filter(([, w]) => w[2].length)
                 .map(([n, w]) => `${n} ${w[2](this)}`)
                 .join(" · ")}.`,
-            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             // die Zahl wechselt mit jeder Tat — sie steht zuletzt, der Cache hält bis davor
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
         ].join("\n");
@@ -2114,6 +2107,8 @@ AnazhRealm.KI_BEISPIELE = Object.freeze([
     ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
     // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"])
     ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"], { everySec: 3 }]],
+    // eine Stimmung der Wesen ist eine Tat, kein Schaden (ki.K5: mit dem Programm zuerst verweigerte die KI „traurig")
+    ["schwermut", ["creatures_emotion", "sad"]],
     ["name", null],
     ["eis", null],
     ["wald", null],

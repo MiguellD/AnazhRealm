@@ -969,7 +969,7 @@ function wand(src) {
         ],
         [
             "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
+            WARTENDE.every((n) => foundryNamen.has(n)) && !polls.length,
             `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n))
                 .map((n) => " · ungezählt " + n)
                 .join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
@@ -2048,25 +2048,20 @@ async function korpusSatz(a) {
     }
     const t0 = performance.now();
     const echo = (z) => r._chatEcho(z);
-    let antwortMs = null;
     const antwort = (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo)).then(
-        () => (antwortMs = Math.round(performance.now() - t0))
+        () => (e.antwortMs = Math.round(performance.now() - t0))
     );
     // DIE ERSTE WIRKUNG (ki.K5): die Welt tickt, während der Strom der Antwort läuft, wie im Spiel — das Prädikat liest sie ab dem
-    // Satz, nicht erst ab dem Ende der Antwort (die Tat läuft im Strom, `_llmStrom`). Das Fenster nach der Antwort zählt Takte der
-    // Welt (je 100 ms einer), nie die Wanduhr.
-    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += antwortMs == null ? 0 : 1) {
+    // Satz, nie erst ab dem Ende der Antwort (die Tat läuft im Strom, `_llmStrom`); das Fenster danach zählt Takte der Welt (je
+    // 100 ms einer), nie die Wanduhr
+    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += e.antwortMs > 0) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
-        if (e.praedikat) {
-            e.weltMs = Math.round(performance.now() - t0);
-            break;
-        }
+        if (e.praedikat) break;
         await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
     }
+    e.weltMs = e.praedikat ? Math.round(performance.now() - t0) : null;
     await antwort;
-    Object.assign(e, { antwortMs, antwort: K.antwort });
-    if (!e.praedikat) e.weltMs = null;
-    e.lauf = K.lauf;
+    Object.assign(e, { antwort: K.antwort, lauf: K.lauf });
     e.fehler = (window.__seitenfehler || 0) - f0;
     return e;
 }
@@ -2135,7 +2130,7 @@ const mitschnitt = (ratsche) => (req) =>
             const inhalt = p === false ? "kein JSON" : JSON.stringify({ say: "Aus dem Mitschnitt.", program: p });
             fertig(
                 JSON.stringify(
-                    p === undefined ? { error: "kein Mitschnitt" } : { message: { role: "assistant", content: inhalt } }
+                    p === undefined ? { error: "kein Mitschnitt" } : { message: { content: inhalt } }
                 )
             );
         });
@@ -2231,7 +2226,7 @@ async function korpusHaupt() {
     const ist = `${m.saetze.length} Sätze · ${[teil, mutante, modell].filter(Boolean).join(" · ")} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
     check(
         `WORT der Korpus über den echten Chat-Pfad (${echt ? "echter Anbieter" : "Mitschnitt"}): das Soll, 0 Brüche, Negativ-Sätze ohne Tat`,
-        v.length === 0,
+        !v.length,
         ist + (v.length ? " — Täter: " + v.join(" · ") : "")
     );
     console.log(errs.length ? `\n❌ ROT — ${errs.length} Verletzung(en).` : "\n✅ GRÜN — der Korpus hält sein Soll.");
@@ -3271,7 +3266,7 @@ hauptLauf(async () => {
         const v = urteil(mm);
         check(
             `${kurz} ${name}`,
-            v.length === 0,
+            !v.length,
             `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
         );
     }
