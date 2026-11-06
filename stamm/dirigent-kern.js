@@ -924,16 +924,23 @@ class AnazhRealm {
         // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
         // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
         // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
+        // Eine Art, die am ersten Leser wächst (`_defaultBlueprints`), legt ihre Teile dort selbst so an (`_teileGrund`).
         for (const bp of Object.values(this.state.blueprints)) {
-            if (!bp || !Array.isArray(bp.parts)) continue;
-            for (const p of bp.parts) {
-                if (!p || typeof p !== "object") continue;
-                if (typeof p.material !== "string") p.material = "stein";
-                if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
-            }
+            const d = bp && Object.getOwnPropertyDescriptor(bp, "parts");
+            if (d && !d.get) this._teileGrund(d.value);
         }
         // die Glieder des Zustands bei der Geburt: was init an ihnen neu setzt, ist die Seite (`_seite`, init)
         this._zustandGeburt = { ...this.state };
+    }
+    // DER GRUND DER TEILE EINES BUILT-INS (Welle 4 Phase 1+3): ein Teil ohne Material ist „stein", ohne opChain trägt es die
+    // billige Default-Kette — der Konstruktor legt die Teile jedes Built-ins so an, eine Art, die am ersten Leser wächst, ihr Wuchs.
+    _teileGrund(parts) {
+        if (!Array.isArray(parts)) return;
+        for (const p of parts) {
+            if (!p || typeof p !== "object") continue;
+            if (typeof p.material !== "string") p.material = "stein";
+            if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
+        }
     }
     // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
     _lodAugeGesetzt(c) {
