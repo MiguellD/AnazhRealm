@@ -1993,13 +1993,17 @@ class AnazhRealm_siedlung_ort {
         const m = /^(-?\d+),(-?\d+)$/.exec(k);
         const i =
             k === "start" ? this._autoSettlementStartInfo() : m ? this._autoSettlementCellInfo(+m[1], +m[2]) : null;
+        // DIE WAHRHEIT VOR DEM URTEIL (wie `_autoSettlementZelle`): die Stelle fragt das Wasser um die Probe-Ringe — fehlt eine
+        // Hydro-Kachel, ist sie bestellt, und der Ort ist offen (undefined, nichts gemerkt)
+        const um = Math.max(...AnazhRealm.AUTO_SETTLEMENT.siteProbeR) * AnazhRealm._siedlungGesetz().cellM;
+        if (i && k !== "start" && this._ensureHydroTilesAround(i.x, i.z, um)) return undefined;
         const s = i && (k === "start" ? i : this._autoSettlementFindSite(i));
         const o = s ? { key: k, x: s.x, z: s.z, nH: i.nH } : null;
         M.set(k, o);
         return o;
     }
     // DAS REICH EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang): liegt (x, z) in der Reichweite eines Orts des Gesetzes
-    // (`_zellOrt`), dessen Hülle in dieser Sitzung noch nicht steht? Steht sie (`_stlWegeKeys`), urteilt sie selbst
+    // (`_zellOrt`; das Start-Dorf ab seinem Gedächtnis), dessen Hülle in dieser Sitzung noch nicht steht? Steht sie (`_stlWegeKeys`), urteilt sie selbst
     // (`wegeKarte.siedlungen`). Das Reich ist das des Gesetzes (fachwerk `siedlungsReich`: kern + jeWurzel·√nH um den Ort —
     // dieselbe Scheibe, mit der der Rang verdrängt), sein Ort der gewählte, sobald es ihn gibt (das Gedächtnis der Zelle
     // `settlementCells`, ihr Vorrat `_dorfBereiten`), davor die Stelle des Gesetzes; eine verworfene Zelle trägt keinen. Vor dem
@@ -2022,17 +2026,19 @@ class AnazhRealm_siedlung_ort {
         const ws = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
         if (!this._ortReichMemo || this._ortReichMemo.ws !== ws) this._ortReichMemo = { ws, M: new Map() };
         const M = this._ortReichMemo.M;
-        // je Zelle [Ort x, z, Reich, Schlüssel] oder null, gemerkt an der Zahl der Zelle (der Schlüssel nur, wo ein Ort steht)
+        // je Zelle [Ort x, z, Reich, Schlüssel] oder null, gemerkt an der Zahl der Zelle (der Schlüssel nur, wo ein Ort steht);
+        // ist die Stelle offen (ihr Wasser fehlt), gilt bis dahin der Anker des Gesetzes, ungemerkt
         const zelle = (cx, cz) => {
             const n = cx * 1048576 + cz;
             if (M.has(n)) return M.get(n);
             const o = this._zellOrt(cx + "," + cz);
-            const a = o ? [o.x, o.z, reich(S, o.nH), o.key] : null;
+            const q = o === undefined ? this._autoSettlementCellInfo(cx, cz) : o;
+            const a = q ? [q.x, q.z, reich(S, q.nH), cx + "," + cz] : null;
             if (a && a[2] > grenze)
                 throw new Error(
                     `das Reich des Orts ${a[3]} (${a[2].toFixed(0)} m) reicht über ${R} Zellen (ORT_REICH_ZELLEN)`
                 );
-            M.set(n, a);
+            if (o !== undefined) M.set(n, a);
             return a;
         };
         const drin = (ox, oz, r) => (x - ox) * (x - ox) + (z - oz) * (z - oz) <= r * r;
@@ -2052,8 +2058,10 @@ class AnazhRealm_siedlung_ort {
                 const a = zelle(cx0 + dx, cz0 + dz);
                 if (a && ort(a[3], a[0], a[1], a[2])) return true;
             }
-        const s0 = this._zellOrt("start");
-        return !!s0 && ort("start", s0.x, s0.z, reich(S, s0.nH));
+        // das Start-Dorf ab seinem Gedächtnis (reserviert am Buch, `_startDorfBestellen`): seine Stelle fragt die Geburt nie selbst —
+        // früh gefragt merkte sie eine andere als die, an der es steht (gate:kreatur-takt bewohner: 5 Leiber statt 4)
+        const s0 = cells.start;
+        return !!s0 && Number.isFinite(s0.nH) && ort("start", s0.x, s0.z, reich(S, s0.nH));
     }
     // Site-Wände am Anker (die Slot-Wände prüft `_spawnSettlementSlot` je Haus zusätzlich). `noSpawnClear`
     // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser und Hang bleiben für jede Site dieselbe Wand. DIE STEIL-WAND IST DIE

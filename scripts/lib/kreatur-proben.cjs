@@ -1561,7 +1561,7 @@ async function kreaturProben(r, T, opts) {
             K.verbandZug = function (x, z, vx, vz, tempo, raum, glieder) {
                 const o = { x: vx, z: vz, n: 0 };
                 for (const nb of glieder) {
-                    const d = Math.hypot(nb.x - x, nb.z - z);
+                    const d = ab(nb, { x, z });
                     if (o.n >= 6 || !(d > 1 && d < 5)) continue;
                     o.x += ((nb.x - x) / d) * 0.5 * tempo;
                     o.z += ((nb.z - z) / d) * 0.5 * tempo;
@@ -2687,7 +2687,7 @@ async function kreaturProben(r, T, opts) {
                     (e) =>
                         e &&
                         e.seed >>> 0 === sl.seed >>> 0 &&
-                        Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
+                        ab(e.position, { x: ox + sl.x, z: oz + sl.z }) < 1
                 )
             );
         // DER ORT der Probe (`--ort`): ein Messort mit Gründung (stadt · stadt-voll) misst seine Stadt, der Genesis-Ort sein
@@ -2732,7 +2732,7 @@ async function kreaturProben(r, T, opts) {
         const leer = haeuser
             .filter((h) => h.soll > 0 && !jeHaus.get(h.seed))
             .map((h) => `${h.rolle} ${h.kultur} #${h.seed}: 0 von ${h.soll}`);
-        const alsLeibStart = L.filter((b) => b.visible).length;
+        const alsLeibStart = L.filter((b) => b.visible && !b.userData._drinnen).length;
         L.forEach((b, i) => (b.visible = sah[i]));
         for (const b of fort) s.scene.add(b);
         const cam = s.camera;
@@ -2869,7 +2869,7 @@ async function kreaturProben(r, T, opts) {
                     gangMessen(SZ);
                 }
             }
-            z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible).length);
+            z.alsLeib = Math.max(z.alsLeib, L.filter((g) => g.visible && !g.userData._drinnen).length);
             // die Soll-Orte: am Ort (≤ 1,5 m, gezeichnet) · drinnen (an der Tür) · unterwegs (sein Weg zu DIESEM Soll begann
             // eben oder schrumpfte um die Hälfte dessen, was sein Tempo seit dem letzten Ereignis trägt)
             for (const b of planFn ? liste : []) {
