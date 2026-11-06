@@ -818,9 +818,22 @@ class AnazhRealm_siedlung_verkehr {
             vc.fahrStand(fz, e._fahrSatz, this._fahrBoden(e), 0);
             if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
             const folgeH = (W.nr % AnazhRealm.VERKEHR.folgeTakt) * AnazhRealm.FIXED_DT; // wie beim Anlegen
-            Object.assign(W, { T: { gas: 0, bremse: 0, lenken: 0, handbremse: true }, ankunft: true, zielN: 0, zugN: 0 });
+            Object.assign(W, {
+                T: { gas: 0, bremse: 0, lenken: 0, handbremse: true },
+                ankunft: true,
+                zielN: 0,
+                zugN: 0,
+            });
             Object.assign(W, { takt: W.nr, denk: 0, folgeH, dtAcc: 0, aufgeschoben: false, kurz: false, heim: false });
-            Object.assign(W, { leibS: 0, warteS: 0, stehtS: 0, festOrt: null, umfahr: null, weicht: null, gesperrt: false });
+            Object.assign(W, {
+                leibS: 0,
+                warteS: 0,
+                stehtS: 0,
+                festOrt: null,
+                umfahr: null,
+                weicht: null,
+                gesperrt: false,
+            });
             Object.assign(W, { vorne: null, grund: null, wer: null, platzLeib: null, bildRuht: false, bildAlt: true });
         }
     }
@@ -1549,7 +1562,10 @@ class AnazhRealm_siedlung_verkehr {
         const voll = [W.zonen[i0]];
         for (let k = i0 + 1; k < W.zonen.length; k++) {
             const z = W.zonen[k];
-            if (z.ein - voll[voll.length - 1].aus < 2 * W.hl + V.abstandM && !voll.some((y) => y.Z === z.Z && y.dir === z.dir))
+            if (
+                z.ein - voll[voll.length - 1].aus < 2 * W.hl + V.abstandM &&
+                !voll.some((y) => y.Z === z.Z && y.dir === z.dir)
+            )
                 voll.push(z);
             else break;
         }
@@ -1560,6 +1576,35 @@ class AnazhRealm_siedlung_verkehr {
         // standen dahinter. Er gibt die ganze Kette ab, die er hält (sonst hielte er dem anderen den Ort dahinter).
         const rand = 2 * W.hl + V.abstandM + globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL;
         if (W.letzter && W.letzter.art !== "ein" && F.lang < voll[voll.length - 1].aus + rand) W.kurz = true;
+        // DER STAURAUM (jede Kette bleibt frei — wer in sie fährt, muss aus ihr hinaus können; SUMO „keep clear“): hinter ihrem Ende
+        // braucht er Platz, wo die Reihe vor ihm STEHEN WIRD, nicht wo sie fährt — jeder vor ihm hält, wo er steht (unter 1 m/s), an
+        // der Haltelinie seines nächsten Orts, den er noch nicht hält, oder hinter dem vor ihm mit Abstand, das Engste gilt. Bis
+        // w13-verkehr-heil genügte, dass der Vordere fuhr (über 1 m/s): er hielt kurz danach vor dem nächsten Ort, und der Halter
+        // blieb in der Kette (stadt-voll 23 Uhr, Minute 10: Wagen 18 mit dem Heck 0,5 m in der Enge 818/467 hinter 19 und 4 vor der
+        // Kreuzung am Markt, die 9 mit dem Heck 1,5 m hielt, 9 hinter 5 und 14 vor der Enge — ein Kreis, keiner der 20 Wagen fuhr)
+        const raum = (ende) => {
+            let stopp = Infinity;
+            if (!W.vorne) return true;
+            const reihe = [];
+            let [O, s, vO] = [W.vorne.O, W.vorne.s, W.vorne.v];
+            for (const war = new Set(); O && !war.has(O) && war.size < 20;) {
+                war.add(O);
+                const z = O.F && O.zonen.find((y) => !y.weg && !y.hat);
+                const eigen = vO <= 1 || !O.F ? s : z ? s + Math.max(0, z.ein - V.vorM - O.F.s - O.hl) : Infinity;
+                reihe.push([O, eigen]);
+                if (!O.vorne || eigen === s) break;
+                [s, vO, O] = [s + 2 * O.hl + O.vorne.gap, O.vorne.v, O.vorne.O];
+            }
+            for (let k = reihe.length - 1; k >= 0; k--)
+                stopp = Math.min(reihe[k][1], stopp - V.abstandM - 2 * reihe[k][0].hl);
+            return stopp > ende + 2 * W.hl + V.abstandM;
+        };
+        // DER STAURAUM GILT BIS ZUR EINFAHRT: wer seine Kette hält, aber noch vor ihr halten kann, prüft ihn bis dorthin — füllt sich
+        // der Raum hinter ihr, seit er sie bekam (ein Wagen bog vor ihm ein, die Reihe vor der nächsten Enge wuchs), gibt er sie
+        // zurück und wartet davor. Bis w13-verkehr-heil galt der Schlüssel, sobald er gegeben war: der Halter fuhr ein und stand mit
+        // dem Heck in der Kreuzung am Markt (stadt-voll 23 Uhr, Minute 2: Wagen 16 0,5 m in ihr hinter 6 und 9 vor der Enge 818/467,
+        // die 0 mit dem Heck hielt, 0 hinter 18 und 4 vor der Kreuzung — derselbe Kreis wie ohne Stauraum, nur früher)
+        const vorKette = (z) => z.ein - V.vorM - vor > (v * v) / (2 * V.bremsMs2);
         const O = W.vorne && W.vorne.O;
         if (voll[0].hat) {
             if (
@@ -1572,7 +1617,11 @@ class AnazhRealm_siedlung_verkehr {
                 for (const z of voll) z.hat = false;
                 for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
                 W.weicht = O;
-            } else if (voll.every((z) => z.hat)) return Infinity;
+            } else if (voll.every((z) => z.hat)) {
+                if (!vorKette(voll[0]) || raum(voll[voll.length - 1].aus)) return Infinity;
+                for (const z of voll) z.hat = false;
+                for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
+            }
         }
         const j0 = voll.findIndex((z) => !z.hat);
         const kette = voll.slice(j0);
@@ -1587,27 +1636,7 @@ class AnazhRealm_siedlung_verkehr {
             if (!(o.zustand === "faehrt" && o.zonen.some((z) => z.Z === Z && !z.weg)))
                 AnazhRealm._verkehrReihe(Z, o, false);
         const ende = kette[kette.length - 1].aus;
-        // DER STAURAUM (jede Kette bleibt frei — wer in sie fährt, muss aus ihr hinaus können; SUMO „keep clear“): hinter ihrem Ende
-        // braucht er Platz, wo die Reihe vor ihm STEHEN WIRD, nicht wo sie fährt — jeder vor ihm hält, wo er steht (unter 1 m/s), an
-        // der Haltelinie seines nächsten Orts, den er noch nicht hält, oder hinter dem vor ihm mit Abstand, das Engste gilt. Bis
-        // w13-verkehr-heil genügte, dass der Vordere fuhr (über 1 m/s): er hielt kurz danach vor dem nächsten Ort, und der Halter
-        // blieb in der Kette (stadt-voll 23 Uhr, Minute 10: Wagen 18 mit dem Heck 0,5 m in der Enge 818/467 hinter 19 und 4 vor der
-        // Kreuzung am Markt, die 9 mit dem Heck 1,5 m hielt, 9 hinter 5 und 14 vor der Enge — ein Kreis, keiner der 20 Wagen fuhr)
-        let stopp = Infinity;
-        if (W.vorne) {
-            const reihe = [];
-            let [O, s, vO] = [W.vorne.O, W.vorne.s, W.vorne.v];
-            for (const war = new Set(); O && !war.has(O) && war.size < 20; ) {
-                war.add(O);
-                const z = O.F && O.zonen.find((y) => !y.weg && !y.hat);
-                const eigen = vO <= 1 || !O.F ? s : z ? s + Math.max(0, z.ein - V.vorM - O.F.s - O.hl) : Infinity;
-                reihe.push([O, eigen]);
-                if (!O.vorne || eigen === s) break;
-                [s, vO, O] = [s + 2 * O.hl + O.vorne.gap, O.vorne.v, O.vorne.O];
-            }
-            for (let k = reihe.length - 1; k >= 0; k--) stopp = Math.min(reihe[k][1], stopp - V.abstandM - 2 * reihe[k][0].hl);
-        }
-        const platz = stopp > ende + 2 * W.hl + V.abstandM;
+        const platz = raum(ende);
         // wer schon im Ort steht (seine Einfahrt hinter seinem Bug: vom Platz an der Wende, nach einem Halt in ihr), muss hinaus —
         // ihn hält die Reihe der Wartenden nicht (bis hier wartete er hinter dem Kopf der Reihe, dem er selbst im Weg stand:
         // sieben Wagen an einer Wende, keiner hielt den Schlüssel)
