@@ -2498,7 +2498,7 @@ class AnazhRealm_vegetation_baum {
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zu SEINEM Rand (`_archKartenHorizont`, im
         // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern).
-        const totband = AnazhRealm.KARTEN_HORIZONT_TOTBAND_M;
+        const totband = AnazhRealm.CULL_TOTBAND_M;
         const saumSq = (AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M) ** 2;
         // DIE WACHE DES CULLS (pbk4-fahrt, Gebot 7): der Gang geht die WACHEN Einträge (`_cullWache`), nie den Bestand. Ein
         // Eintrag, dessen Urteil steht (nichts offen, kein Mesh der Mesh-Zone, kein Beweger), schläft, bis der Weg des Spielers
@@ -2610,8 +2610,9 @@ class AnazhRealm_vegetation_baum {
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
             // LOD-Tick schaltet die Stufen nach Distanz. Bis das Mesh steht, trägt das Feld (kein Loch beim
             // Streamen); steht es, schweigt das Feld — sonst läge der konservative Box-Satz VOR dem Mesh. Jenseits
-            // des Radius ist der Box-Satz die Gestalt der Bauten und Steine (klein im Bild, billig).
-            if (distSq <= radiusSq) {
+            // des Radius ist der Box-Satz die Gestalt der Bauten und Steine (klein im Bild, billig). Was gezeichnet ist, bleibt
+            // es bis hinter das Totband (`CULL_TOTBAND_M`).
+            if (distSq <= radiusSq || (distSq <= (radius + totband) ** 2 && this._archIsRendered(entry))) {
                 // Der Ziegel-Ruf hängt NICHT am Mesh-Budget — er taktet sich selbst (Bake-Garantie, memoisiert).
                 // Lebende Slots aktivieren sofort; ungebackene Bauten warten in DERSELBEN Distanz-Schlange wie die
                 // fernen (Befund 02.10., gate:arch-feld: in Listen-Reihenfolge fraß das Dorf den überbuchten
@@ -3006,10 +3007,13 @@ AnazhRealm.ARCH_NAH_VERSUCHE = 24;
 // Die Platzier-Uhr der Mesh-Zone (ms je Takt): so lange setzt der Culling-Tick kalte Einträge, deren Studio-Stufe
 // gedockt bereitliegt — ohne Bau-Budget, nah zuerst. 197 Plätze kosteten 2,5 ms (04.10., echte GPU, Mess-Wiese).
 AnazhRealm.ARCH_PLATZ_MS = 4;
-// Das Totband am Karten-Horizont (m, `tickArchitectureCulling`): ein Karten-Ding platziert seine Karte bis zu seinem
-// Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
-// keine Karte flattern.
-AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
+// DAS TOTBAND DER RÄUMUNG (m, `tickArchitectureCulling`): an jeder Grenze des Culls — dem Karten-Horizont eines Karten-Dings
+// (`_archKartenHorizont`) und dem Rand der Mesh-Zone (`architectureCullingRadius`) — zeichnet ein Ding bis an die Grenze
+// und räumt erst so weit dahinter: ein Spieler, der am Rand pendelt oder an ihm entlang fährt, lässt nichts flattern.
+// Bis w13-dorf-strom trug nur der Horizont das Band: die Mesh-Zone räumte jenseits des Radius — im GT seitlich in 149–152 m
+// (der Abstand im Takt springt mit dem Schritt der Bahn) wechselten Felsturm, Glutbrunnen und Felsbogen Bild für Bild
+// zwischen Mesh und Satz und traten ungezeichnet in den Kegel (Fahrt-Probe dorf: 12 Lücken-Bilder).
+AnazhRealm.CULL_TOTBAND_M = 16;
 // DIE BÜSCHE DER SAAT (w4-b-pflanzen): die gewachsenen Baupläne, die die Saat eines Chunks setzen kann — der Probe nass,
 // lebendig, sonst (`_vegetationSampleSpawn`) und der Strauch-Teppich des Walds (`_forestPlantChunk`, der sonst-Busch). Ihr
 // Wuchs kommt aus dem Wald-Faden; die Saat wartet auf die Variante ihrer Region (`_wuchsFehlt`).
