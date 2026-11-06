@@ -450,9 +450,9 @@ async function probe() {
             let huelle = null;
             if (rng() < 0.3) {
                 const w = rng() * Math.PI * 2;
-                // der Grundriss des Wagens (die Hülle löst als konvexes Polygon, `_fahrHuelleBau`), Bug 2,5 · Heck −1,9 · ±0,9
+                // ein Grundriss des Wagens (die Hülle löst als konvexes Polygon, `_fahrHuelleBau`; der Löser jedes Polygons ist derselbe)
                 huelle = {
-                    poly: [[-1.9, -0.9], [2.5, -0.9], [2.5, 0.9], [-1.9, 0.9]],
+                    poly: [[-1.9, -0.9], [2.5, -0.9], [2.5, 0.9]],
                     mitte: 0.3,
                     hl: 2.2,
                     hw: 0.9,

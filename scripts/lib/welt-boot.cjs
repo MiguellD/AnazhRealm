@@ -464,11 +464,14 @@ const rahmen = (b) =>
         hz: (b.maxZ - b.minZ) / 2,
     };
 // DER GRUNDRISS EINES KÖRPERS (`grundriss(E)`, in jeder Seite als `window.grundriss`): ein konvexes Polygon [[x, z], …] gegen
-// den Uhrzeigersinn (der Wagen, `_fahrUmriss`) — seine Kanten [x0, z0, nx, nz] mit Außen-Normale, sein Intervall auf einer Achse,
+// oder mit dem Uhrzeigersinn (der Wagen, `_fahrUmriss`) — seine Kanten [x0, z0, nx, nz] mit Außen-Normale, sein Intervall auf einer Achse,
 // der Abstand eines Punkts: der größte zu einer Kanten-Ebene (innen negativ; außen beim k-DOP des Wagens, Kanten je 22,5°,
 // höchstens 2 % unter dem euklidischen) — die Linsen des Wagens (kollision-bild, fahr-leben)
 const grundriss = (E) => {
-    const K = E.map(([x, z], i, _, [a, b] = E[(i + 1) % E.length], n = Math.hypot(a - x, b - z)) => [x, z, (b - z) / n, (x - a) / n]);
+    // die Umlaufrichtung aus dem Vorzeichen der Fläche (eine gespiegelte Abbildung kehrt sie um): die Normale zeigt immer hinaus
+    const [[x0, z0], [x1, z1], [x2, z2]] = E;
+    const o = Math.sign((x1 - x0) * (z2 - z1) - (z1 - z0) * (x2 - x1));
+    const K = E.map(([x, z], i, _, [a, b] = E[(i + 1) % E.length], n = o * Math.hypot(a - x, b - z)) => [x, z, (b - z) / n, (x - a) / n]);
     return {
         K,
         spanne: (u, w, P = E.map(([x, z]) => x * u + z * w)) => [Math.min(...P), Math.max(...P)],

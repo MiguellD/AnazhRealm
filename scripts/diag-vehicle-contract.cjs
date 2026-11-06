@@ -24,7 +24,7 @@
 //   node scripts/diag-vehicle-contract.cjs
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root, path, jsonKlon } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 
@@ -77,10 +77,7 @@ function caseKey(c) {
     //     (die Lehre des Buchs `umrissTreue`: je Zahl ≥ gemessen, ≤ 1 cm darüber); ein Mutant fällt beim Namen.
     const tr = VC.umrissTreue(VC.FAHRZEUG_UMRISS).join(" · ");
     check("FAHRZEUG_UMRISS ist die gebaute Gestalt", !tr, tr);
-    const kurz = jsonKlon(VC.FAHRZEUG_UMRISS);
-    kurz.gt.ueber[0] = 0;
-    delete kurz.suv;
-    const tk = VC.umrissTreue(kurz).join(" · ");
+    const tk = VC.umrissTreue({ ...VC.FAHRZEUG_UMRISS, gt: { ueber: [0] }, suv: null }).join(" · ");
     check("SELBST-TEST: Umriss-Mutant beim Namen", /gt\.ueber\[0\].*suv: keine/.test(tk), tk);
 
     // 5) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.

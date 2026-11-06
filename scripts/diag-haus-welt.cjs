@@ -1313,13 +1313,7 @@ async function proben(phasen) {
         const M0 = r._genesisMitte() || start;
         const ort = ort150(M0, true);
         const inBau = (bau, x, z) =>
-            (bau.blockerAABBs || []).some((b) => {
-                const ob = b.obb;
-                if (!ob) return x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
-                const dx = x - ob.cx;
-                const dz = z - ob.cz;
-                return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz;
-            });
+            (bau.blockerAABBs || []).some((b, _, __, R = rahmen(b), dx = x - R.cx, dz = z - R.cz) => Math.abs(dx * R.c - dz * R.s) <= R.hx && Math.abs(dx * R.s + dz * R.c) <= R.hz);
         if (!ort) wb.fehler = "kein trockener Ort 150 m vom Genesis-Ort";
         else {
             const [gx, gz] = ort;
