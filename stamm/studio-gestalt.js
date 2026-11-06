@@ -32,10 +32,16 @@ class AnazhRealm_studio_gestalt {
             // Gestalt `_huelleG`, die steht). Ihr Skelett (je Gestalt 15–30 ms im Haupt-Faden) wächst darum erst nach dem Bild,
             // nah zuerst (`_tickHuellenNach`); bis dahin trägt der Eintrag keine Hülle und steht offen in der Welt
             // (`_weltOffen().huellen`). swiftshader kalt bis zu den Termen des Bilds: `_baumGestaltTeile` 0,6–1,0 s.
-            if (!this.state._weltbildDa) {
+            // DIE UHR DER SKELETTE (w16-haenger, profiband.K4): nach dem Bild wächst im laufenden Spiel höchstens EIN neues Skelett
+            // je Takt (`_taktZeit`), wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah zuerst,
+            // `_tickHuellenNach` geht sie je Takt weiter). Bis hier wuchs jeder Rufer am Stück: die Pflanz-Schlange setzte je Bild
+            // 4 Würfe (w15: bis 8), jeder mit eigener Gestalt ein Skelett — headless Erst-Boot Genesis, Gehen: zwei Skelette
+            // 95 + 62 ms in EINEM Takt (`_tickPendingVegSpawns` 158 ms). Ruhender Loop (Sonde, Werkbank-Befehl) wächst wie bisher.
+            if (!this.state._weltbildDa || (this._skelettTakt === this._taktZeit && !this._loopRuht())) {
                 (this._huellenNach || (this._huellenNach = new Set())).add(entry);
                 return null;
             }
+            this._skelettTakt = this._taktZeit;
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
@@ -70,6 +76,11 @@ class AnazhRealm_studio_gestalt {
             const e = Q[this._huellenNachI++];
             S.delete(e);
             if (e._blockerGen) this._populateBlockerAABBs(e);
+            // die Uhr der Skelette ist für diesen Takt gegangen (`_baumGestaltTeile` stellte ihn zurück): er bleibt vorn in der Reihe
+            if (S.has(e)) {
+                this._huellenNachI--;
+                break;
+            }
             n++;
             const neu = (this._baumGestaltMerk ? this._baumGestaltMerk.size : 0) > neu0;
             if (neu || performance.now() - t0 > AnazhRealm.HUELLE_NACH_MS) break;

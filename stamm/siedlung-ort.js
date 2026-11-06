@@ -595,30 +595,54 @@ class AnazhRealm_siedlung_ort {
 
     // half rgba (der Export) → rgb9e5 (der Atlas): je Texel der geteilte Exponent des größten Kanals (WebGPU/GL-Packregel, B 15,
     // N 9, Emax 31), die Kanäle gerundet; negativ und NaN → 0, über 65408 geklemmt. Alpha fällt (die Membran liest es nie).
+    // DIE TAFEL JE HALB-WERT (w16-haenger, profiband.K4): Wert (geklemmt) und Exponent jedes der 65 536 Halb-Werte EINMAL, je
+    // Texel nur Nachschlagen — der Exponent des Größten ist der größte der drei (floor·log2 steigt monoton). Bis hier rechnete
+    // jeder Kanal `2 **` und jedes Texel `Math.log2`: die sieben Zeilen des Genesis-Rings (917 504 Texel) trugen EINE Aufgabe
+    // von 340–1 252 ms im Haupt-Faden (headless Erst-Boot, Gehen), Node 266 → 24 ms, byte-gleich über jeden Halb-Wert je Kanal.
     static _rgb9e5AusHalb(h) {
-        const f = (x) => {
-            const e = (x >> 10) & 31,
-                m = x & 1023;
-            if (x & 0x8000 || e === 31) return e === 31 && !m && !(x & 0x8000) ? 65408 : 0;
-            return e === 0 ? m * 2 ** -24 : (1 + m / 1024) * 2 ** (e - 15);
-        };
+        const { wert, ex, stufe } = AnazhRealm._rgb9e5Tafel();
         const aus = new Uint32Array(h.length >> 2);
-        for (let i = 0; i < aus.length; i++) {
-            const r = Math.min(f(h[4 * i]), 65408),
-                g = Math.min(f(h[4 * i + 1]), 65408),
-                b = Math.min(f(h[4 * i + 2]), 65408);
-            const mx = Math.max(r, g, b);
-            let e = Math.max(-16, Math.floor(Math.log2(mx || 2 ** -16))) + 16;
-            let s = 2 ** (e - 24);
+        for (let i = 0, j = 0; i < aus.length; i++, j += 4) {
+            const a = h[j],
+                b = h[j + 1],
+                c = h[j + 2];
+            const r = wert[a],
+                g = wert[b],
+                bl = wert[c];
+            const mx = r > g ? (r > bl ? r : bl) : g > bl ? g : bl;
+            const xa = ex[a],
+                xb = ex[b],
+                xc = ex[c];
+            let e = (xa > xb ? (xa > xc ? xa : xc) : xb > xc ? xb : xc) + 16;
+            let s = stufe[e];
             if (Math.floor(mx / s + 0.5) === 512) ((s *= 2), e++);
             aus[i] =
                 (Math.floor(r / s + 0.5) |
                     (Math.floor(g / s + 0.5) << 9) |
-                    (Math.floor(b / s + 0.5) << 18) |
+                    (Math.floor(bl / s + 0.5) << 18) |
                     (e << 27)) >>>
                 0;
         }
         return aus;
+    }
+    // Die Tafel (`_rgb9e5AusHalb`): je Halb-Wert x sein Wert (negativ, NaN → 0, ∞ und darüber → 65408) und max(−16, ⌊log2⌋),
+    // dazu 2^(e − 24) je Exponent e des Pakets.
+    static _rgb9e5Tafel() {
+        if (AnazhRealm.__rgb9e5Tafel) return AnazhRealm.__rgb9e5Tafel;
+        const wert = new Float64Array(65536),
+            ex = new Int8Array(65536),
+            stufe = new Float64Array(34);
+        for (let x = 0; x < 65536; x++) {
+            const e = (x >> 10) & 31,
+                m = x & 1023;
+            let v;
+            if (x & 0x8000 || e === 31) v = e === 31 && !m && !(x & 0x8000) ? 65408 : 0;
+            else v = e === 0 ? m * 2 ** -24 : (1 + m / 1024) * 2 ** (e - 15);
+            wert[x] = v = Math.min(v, 65408);
+            ex[x] = Math.max(-16, Math.floor(Math.log2(v || 2 ** -16)));
+        }
+        for (let e = 0; e < 34; e++) stufe[e] = 2 ** (e - 24);
+        return (AnazhRealm.__rgb9e5Tafel = { wert, ex, stufe });
     }
 
     // Membran-Tick: je sichtbarem Portal-Eintrag mit Tor-Gestalt EINE Membran (Registry je entry.id),
