@@ -45,3 +45,4 @@ w13-bach-klar 2d04d714 GRÜN Sicht Bach β 3,5 → 0,2 /m (~1,1 → ~19,5 m), Se
 w13-jung-gestalt 2fea76d4 GRÜN Waldrand Mess-Wiese bildgleich (mAbs 0,51 = Rauschen), keine Riesenhalme; Brand + Sukzession nicht in der Bühne gefahren (zug/bilder/vp-0611b/jung-waldrand.jpg)
 w13-menue-heil 07f32d3f GRÜN Layout von w12-menue (Radeon-Bild vp-0611 §2 angesehen) + Vorschau zurück (V1-Pfad 6 ROT → 0) + Zeichen in em (ueber 0)
 w13-verkehr-heil 0475c204 GRÜN 20/20 fahren ≥ 30 m in Minute 1 um 10 und 23 Uhr (w12: 9/8), CPU-Takt 23 Uhr p50 +1,31 ms Mittel / +1,55 Median über 4 warme Welten je Seite (17,09 → 18,40 ms; w12: 37,3), Übersichtsblick 2/2 bildgleich (w12: 0/2) (zug/bilder/vp-0611c/verkehr-10-ueber-zoom.png)
+w13-pegel-heil 1102ee55 GRÜN Bach +0,20 m nach 20 min Sturm (Basis main+bach-klar 0), nach 2 Spielstunden gehalten, 14 Tage Sonne −0,21 m, Bett nicht leer, Wasser im Gerinne; Tiere im Wasser 0 (Bach, See) (zug/bilder/vp-0611d/bach-oben-sturm2h.jpg)
