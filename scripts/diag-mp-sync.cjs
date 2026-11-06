@@ -84,12 +84,9 @@ const STILLE_S = 15;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
 // (e) die erlaubten Arten am Draht — Schreib-Akt, der Leib des Spielers, die Sicht der eigenen Wesen, die Leitung
-const NETZ_ERLAUBT = {
-    dsl: "Schreib-Akt",
-    ...Object.fromEntries(["pos", "input", "soul", "vibe"].map((t) => [t, "Leib"])),
-    ...Object.fromEntries(["creature-pos", "companion-say"].map((t) => [t, "Sicht"])),
-    ...Object.fromEntries(["join", "rtc-offer", "rtc-answer", "rtc-ice", "stats"].map((t) => [t, "Leitung"])),
-};
+// die erlaubten Arten am Draht: der Schreib-Akt (dsl), der Leib (pos, input, soul, vibe), die Sicht (creature-pos,
+// companion-say) und die Leitung (join, rtc-offer, rtc-answer, rtc-ice, stats)
+const NETZ_ERLAUBT = new Set("dsl pos input soul vibe creature-pos companion-say join rtc-offer rtc-answer rtc-ice stats".split(" "));
 // Das Netz-Log der Seite (vor ihrem ersten Skript, über jeden Reload): jede Sendung am Draht nach ihrer Art
 function netzLog() {
     const log = (window.__netz = {});
@@ -146,7 +143,8 @@ function kenntMitGestalt(id, rechnet) {
 }
 // Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
 // jedem Edit und (f) der Zug der Welt-Uhr — als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang) mit seinem
-// Schreiber (`wer`; ein Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern, heißt „Wunsch still") und das Leben je Zelle
+// Schreiber (`wer`, der Täter beim Namen; ein Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern, heißt „Wunsch still")
+// und das Leben je Zelle, die Stufe 2 noch verlangt
 function abdruck(bauten) {
     const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
@@ -817,7 +815,9 @@ hauptLauf(async () => {
         await folgt(sturm);
         // (f) was Stufe 2 noch verlangt, gemessen und OFFEN, bis es gleich ist: Wetter (Wort, Übergang) und Leben je Zelle
         const weich = (wann, A, B) =>
-            check(`(f) ${wann}: Teil-Simulationen gleich`, false,
+            check(
+                `(f) ${wann}: Teil-Simulationen gleich`,
+                false,
                 `Wetter ${A.wetter === B.wetter ? "gleich" : `VERSCHIEDEN (A ${A.wer} · B ${B.wer})`} · Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/` +
                     `${A.leben.length} gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`,
                 true
@@ -989,7 +989,7 @@ hauptLauf(async () => {
             !!R && teile.every(rg),
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        if (R) weich("Reload mitten im Sturm", g.A, R);
+        if (R) weich("Reload mitten im Sturm", jetztA, R);
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
@@ -1027,7 +1027,7 @@ hauptLauf(async () => {
         const fremd = (n) =>
             Object.entries(n).flatMap(([seite, log]) =>
                 Object.keys(log)
-                    .filter((t) => !NETZ_ERLAUBT[t])
+                    .filter((t) => !NETZ_ERLAUBT.has(t))
                     .map((t) => `${seite} ${t}×${log[t]}`)
             );
         const n0 = await netz();
@@ -1036,7 +1036,7 @@ hauptLauf(async () => {
             fremd(n0).length === 0 && n0.A.dsl > 0,
             JSON.stringify(n0) + (fremd(n0).length ? " — Zustand: " + fremd(n0).join(", ") : "")
         );
-        await pageA.evaluate(() => r.p2pSend({ type: "wetter", weather: "stormy" }));
+        await pageA.evaluate(() => r.p2pSend({ type: "wetter" }));
         const n1 = fremd(await netz());
         check(
             "(e) Selbsttest: eine Wetter-Nachricht von A macht das Netz-Log ROT",
