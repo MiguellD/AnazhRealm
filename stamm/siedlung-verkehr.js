@@ -1098,7 +1098,7 @@ class AnazhRealm_siedlung_verkehr {
                 const h = W.dtAcc;
                 W.dtAcc = 0;
                 W.uhr += h; // die Uhr des Wagens: die Dauer jeder Fahrt (`_verkehrAngekommen`)
-                const F = W.F;
+                let F = W.F;
                 // DER FAHRER SIEHT (Folge, Orte) je `folgeTakt` Sim-Schritte seiner Zeit (nah und fern: wer fern seltener schreitet,
                 // sieht in seinem Schritt, sobald die Zeit voll ist — bis hier sah der Wagen zwischen 40 und 100 m öfter als der nahe)
                 // und LENKT nah jeden `denkTakt`-ten Schritt — die Physik und das Bild tragen jeden (Lehre 25: 50 ms Blick bei 30 km/h
@@ -1107,6 +1107,7 @@ class AnazhRealm_siedlung_verkehr {
                 if (W.folgeH >= V.folgeTakt * AnazhRealm.FIXED_DT - 1e-9) {
                     F.deckel = this._verkehrFolge(S, W, p, W.folgeH);
                     W.folgeH = 0;
+                    if (W.umfahr && this._verkehrUmfahren(S, W, W.umfahr)) F = W.F;
                 }
                 if (k > 1 || (W.denk = ((W.denk || 0) + 1) % V.denkTakt) === 0)
                     this._fahrerSchritt(W.T, F, e, e.position);
@@ -1186,7 +1187,7 @@ class AnazhRealm_siedlung_verkehr {
         const fz = e._fahr;
         const v = Math.max(0, fz.vlong);
         let deckel = V.tempoMs;
-        [W.grund, W.wer] = [null, null];
+        [W.grund, W.wer, W.umfahr] = [null, null, null];
         // DIE ANKUNFT (die Uhr sprang, `_tickBewohner` stellt jeden Leib, wo sein Tag ihn sieht — `ankunftJeTakt` je Takt): bis
         // jeder steht, hält der Wagen — bis hier stand einer 2 m vor einem Wagen mit 6,5 m/s, den er nie kommen sah
         if (S.ankunftOffen) {
@@ -1311,6 +1312,10 @@ class AnazhRealm_siedlung_verkehr {
                 "leib",
                 leib
             );
+            // WER NIE WEICHT UND STEHT (der Spieler: `leib` null — kein Gedränge fragt ihn nach Platz), um den fährt er
+            // (`_verkehrUmfahren`), den nächsten zuerst
+            if (!leib && Math.hypot(vx || 0, vz || 0) < V.umfahrMs && !(W.umfahr && W.umfahr.s <= a.s))
+                W.umfahr = { x, z, i: a.i, s: a.s };
             // Platz verlangt er von dem, der ihn `platzS` lang hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt
             // (ein langsamer Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der
             // Linie um seinen Fußpunkt, je `platzBahnM` davor und dahinter, jedes Stück der Bahn — nie ihre Sehne) und je `platzS`
@@ -1370,6 +1375,53 @@ class AnazhRealm_siedlung_verkehr {
         const z = this._verkehrZonen(S, W, v);
         if (z < deckel) [deckel, W.grund, W.wer] = [z, "ort", null];
         return deckel;
+    }
+
+    // DER STEHENDE, DER NIE WEICHT (der Spieler in der Bahn, `_verkehrFolge`): der Wagen fährt um ihn herum — seine Linie schert im
+    // Stück um ihn aus (je `umfahrRampeM` davor und danach, dazwischen voll), so weit, dass zwischen der Flanke und der Kapsel
+    // `seitM` samt Ausscheren und `umfahrRandM` bleibt; zur Seite fort von ihm, rechts (fort vom Gegenverkehr), solange
+    // `umfahrMaxM` trägt, sonst links (wer entgegenkommt, sieht ihn in seiner Bahn, `_verkehrFolge`). Die Orte der Kette rechnet
+    // die neue Linie (`_verkehrLinie`). Bis w13-verkehr-heil hielt jeder vor ihm, bis er ging: an der Radeon stand der Spieler
+    // 0,5 m neben der Mitte der Kreuzung am Markt (der Ort des Messorts stadt-voll), ihre Halter warteten auf ihn, die Stadt
+    // dahinter — 15–55 s nach dem Sprung fuhren 8 und 9 von 20 Wagen 30 m. Liefert, ob die Linie neu ist.
+    _verkehrUmfahren(S, W, u) {
+        const V = AnazhRealm.VERKEHR;
+        const F = W.F;
+        const R = AnazhRealm.PLAYER_WALL_RADIUS;
+        const P = F.pts;
+        const a = P[u.i];
+        const b = P[Math.min(P.length - 1, u.i + 1)];
+        const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const q = ((u.x - a.x) * -(b.z - a.z) + (u.z - a.z) * (b.x - a.x)) / l; // rechts der Fahrt (+): (−tz, tx)
+        const noetig = W.hw + R + V.seitM + F.rund[u.i] + V.umfahrRandM;
+        if (Math.abs(q) >= noetig) return false;
+        const rechts = noetig + q; // die Linie rechts an ihm vorbei (er bleibt links)
+        const off = rechts <= V.umfahrMaxM ? -rechts : noetig - q; // + nach links (fort von ihm, wenn er rechts steht)
+        // (−off: die Linie wandert nach rechts, `off` > 0 nach links; die Normale rechts der Fahrt je Punkt)
+        const kern = W.hl + R + 1;
+        const w = (s) => {
+            const d = Math.abs(s - u.s);
+            return d <= kern ? 1 : d >= kern + V.umfahrRampeM ? 0 : 1 - (d - kern) / V.umfahrRampeM;
+        };
+        const neu = P.map((p, i) => {
+            const g = w(F.bogen[i]);
+            if (!g) return p;
+            const [p0, p1] = [P[Math.max(0, i - 1)], P[Math.min(P.length - 1, i + 1)]];
+            const L = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
+            const [rx, rz] = [-(p1.z - p0.z) / L, (p1.x - p0.x) / L];
+            return { x: p.x - rx * off * g, z: p.z - rz * off * g };
+        });
+        const deckel = F.deckel;
+        F.pts = neu;
+        this._verkehrLinie(S, W, [], false);
+        if (W.F === F) {
+            F.pts = P;
+            return false;
+        }
+        W.F.deckel = deckel;
+        W.umfahren = (W.umfahren || 0) + 1;
+        S.verkehr.zahl.umfahren = (S.verkehr.zahl.umfahren || 0) + 1;
+        return true;
     }
 
     // DER SCHLÜSSEL DER ORTE (Kreuzung, Enge, Wende): wer einen Ort hinter sich hat, gibt ihn frei; vor dem nächsten fragt er ihn,
@@ -1705,6 +1757,10 @@ AnazhRealm.VERKEHR = Object.freeze({
     platzS: 2,
     vorausM: 160,
     platzBogenM: 4,
+    umfahrMs: 0.3,
+    umfahrRandM: 0.25,
+    umfahrRampeM: 6,
+    umfahrMaxM: 2.2,
     leuteRandM: 4,
     parkMs: 0.3,
     festS: 10,

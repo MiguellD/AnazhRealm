@@ -783,11 +783,12 @@ const verkehrVerdict = (m) =>
     [
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
         // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
-        // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [die wenigsten, Minute, der
-        // kürzeste Weg, sein Wagen], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
+        // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
+        // Minute, sein Wagen, volle Minuten, die Minute, wie viele dort fuhren, Zustand, Grund, wer — `spieler`: die Stadt floss
+        // nicht um den stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
         [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
-        [m.weg60[1] > 0 && m.weg60[0] >= m.soll, `fahrend je Minute ${JSON.stringify(m.weg60)} von ${m.soll}`],
+        [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)} (Soll ≥ ${VERKEHR.weg60M} m)`], // prettier-ignore
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -2380,7 +2381,12 @@ hauptLauf(async () => {
                 },
                 ...{ ankunft: { d: 0.14, K: 0.71, wagen: 3 } },
                 ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600 },
-                ...{ amSteuer: [20, 0], trasse: [9e4, 0, []], weg60: [20, 3, 210, 4], sitz: [4800, 0] },
+                ...{
+                    amSteuer: [20, 0],
+                    trasse: [9e4, 0, []],
+                    weg60: [210, 4, 10, 3, 20, "faehrt", null, null],
+                    sitz: [4800, 0],
+                },
                 ...{
                     ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
                     fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
@@ -2398,7 +2404,10 @@ hauptLauf(async () => {
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
                 [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
                 [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
-                [{ weg60: [0, 1, 0, 1] }, /je Minute \[0,1,0,1\] von 20/],
+                [
+                    { weg60: [0, 17, 1, 1, 9, "faehrt", "leib", "spieler"] },
+                    /je Minute \[0,17,1,1,9,"faehrt","leib","spieler"\] \(Soll ≥ 30 m\)/,
+                ], // die Radeon 06.11.: der stehende Spieler in der Kreuzung
                 [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
                 [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
