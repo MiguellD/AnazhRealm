@@ -12,7 +12,7 @@
 //
 // DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
 // je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
-// Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
+// Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Knoten-Bau der Zeichnung, aus der Spur),
 // die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
 // DIE KONTROLLE VON AUSSEN (ankunft K1): t = die Prozess-Uhr ab Navigation, als die gehaltene Taste W den Leib um ≥ 0,1 m trug
 // — nie `_weltbildDa` (die Eigenmeldung steht daneben). Urteil: t ≤ 5 s ohne halbes Weltbild (kalt: Pflicht-OFFEN B; mit
@@ -161,6 +161,11 @@ const KALT_KLASSEN = {
     _forestPlantChunk: "Saat",
     _tickWaldPlan: "Wald-Plan",
     _ortGestaltSame: "Gestalt",
+    // DER KNOTEN-BAU (w16-lade-atem): am Stück (r184 `getNodeBuilderState`, Bühnen und Einmal-Renders) und in Raten (`_knotenRate`,
+    // die Welt-Szene auch unter dem Ladeschirm) — bis hier zählte ihn ein zweites Instrument, der Zähler `_erstZeichnung.bauMs`
+    // der Probe, der die Raten nie sah
+    getNodeBuilderState: "Knoten-Bau",
+    _knotenRate: "Knoten-Bau",
 };
 const KALT_PFLANZEN = ["Streu", "Saat", "Wald-Plan", "Gestalt"];
 function KALT_PROBE() {
@@ -192,9 +197,6 @@ function KALT_PROBE() {
                 o.vorrat = f._vorrat || null; // die Phase wörtlich (VORRAT_PHASE), null = steht nicht an oder ist durch
                 o.schlange = `${(f.warte || []).length} wartend · ${f.pending.size} im Werk`; // der Bäcker fiel mit S2
             }
-            // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
-            const E = r._erstZeichnung;
-            if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
         }
         A.proben.push(o);
     }, 200);
@@ -347,24 +349,18 @@ async function kaltLauf() {
         `\n=== DIE ${zweit ? "ZWEIT-ZEILE (Profil mit Platte)" : "KALT-ZEILE (leeres Profil)"} — ${ECHT ? "echte GPU" : "swiftshader"} · ${out.adapter || "Adapter ?"} · ` +
             `Holz ${out.holz} · V${out.version} ===`
     );
-    // der Erst-Bau je Sekunde = Zuwachs des Stamm-Zählers seit der letzten Probe (er wächst nur); eine Sekunde ganz ohne Probe
-    // (der Haupt-Thread hielt sie) zählt in die nächste Sekunde mit Probe
-    let erstVor = 0;
     for (let s = 0; s < S; s++) {
         const q = out.proben.filter((p) => p.t < (s + 1) * 1000).pop() || {};
-        const erstMs = q.erst ? q.erst[1] - erstVor : 0;
-        erstVor += erstMs;
         const gruende = tK && tK < (s + 1) * 1000 ? "— die Kontrolle" : (q.fehlt || ["die Seite lädt"]).join(" · ");
         const kosten = Object.entries(out.kosten)
             .map(([k, z]) => [k, Math.round(z[s] || 0)])
-            .concat([["Erst-Bau", Math.round(erstMs)]])
             .filter(([, ms]) => ms >= 5)
             .map((z) => z.join(" "))
             .join(" · ");
         console.log(
             `  ${String(s).padStart(3)} s  blockiert ${String(Math.round(blockiert[s])).padStart(4)} ms` +
                 (kosten ? ` (${kosten})` : "") +
-                `${q.erst && q.erst[2] ? ` · ${q.erst[2]} Pipelines offen` : ""}${q.vorrat ? ` · Vorrat ${q.vorrat}` : ""}` +
+                `${q.vorrat ? ` · Vorrat ${q.vorrat}` : ""}` +
                 `${q.schlange ? ` · Foundry ${q.schlange}` : ""} | ${gruende}`
         );
     }
@@ -414,17 +410,11 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
         const o = { stage: 0 };
         // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
-        // bevor der Vorbau der Bedienung lief (der Null-Renderer baut ihn nie): leer sind Rezeptbuch, Werkstatt-Liste und
-        // Bibliothek, und die Mammut-Art (sie liest kein Wurf des Felds) wartet noch auf ihren ersten Leser. Jeder Täter beim Namen.
-        const kinder = (id) => (document.getElementById(id) || { childElementCount: -1 }).childElementCount;
-        const mammut = st.blueprints && st.blueprints.baum_mammut;
-        const wuchs = mammut && Object.getOwnPropertyDescriptor(mammut, "parts");
-        o.verborgen = [
-            kinder("inventory-recipes") !== 0 && `das Rezeptbuch (${kinder("inventory-recipes")} Zeilen, inventoryInitDOM)`,
-            (r._werkstattGemalt || kinder("workshop-list") !== 0) && "die Werkstatt (_renderWorkshopDOM im Init)",
-            kinder("library-list") !== 0 && `die Bibliothek (${kinder("library-list")} Karten, libraryInitDOM)`,
-            !(wuchs && wuchs.get) && "baum_mammut wuchs ohne Leser (_defaultBlueprints)",
-        ].filter(Boolean);
+        // bevor der Vorbau der Bedienung lief (der Null-Renderer baut ihn nie): leer sind Rezeptbuch (inventoryInitDOM), Werkstatt-
+        // Liste (_renderWorkshopDOM) und Bibliothek (libraryInitDOM), und die Mammut-Art (sie liest kein Wurf des Felds) wartet noch
+        // auf ihren ersten Leser (_defaultBlueprints). Jeder Täter beim Namen seiner Tafel; fehlt eine, wirft die Linse laut.
+        o.verborgen = ["inventory-recipes", "workshop-list", "library-list"].filter((id) => document.getElementById(id).childElementCount);
+        if (!Object.getOwnPropertyDescriptor(st.blueprints.baum_mammut, "parts").get) o.verborgen.push("baum_mammut");
         const headless = !!(st.renderer && st.renderer._isHeadlessNull);
         // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
         const terms = () => {
@@ -496,7 +486,7 @@ hauptLauf(async () => {
     const [T, s] = [out.terms, out.selftest || {}];
     // je Invariante [hält, Name]
     const checks = [
-        [T.ring, `RING erreicht Ziel (${T.ring})`],
+        [T.ring, "RING erreicht Ziel"],
         [T.grass && T.water, `GRAS aufgeholt (${T.grass}) · WASSER aufgeholt (${T.water})`],
         [
             T.streu,
@@ -504,7 +494,7 @@ hauptLauf(async () => {
         ],
         [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
-        [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES am ersten Weltbild: ${out.verborgen.join(" · ") || "Rezeptbuch, Werkstatt und Bibliothek leer, das Mammut wartet auf seinen Leser"}`], // prettier-ignore
+        [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES ${out.verborgen}`],
     ];
     if (SELBSTTEST)
         checks.push(
