@@ -3,7 +3,7 @@
 // 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandW17Multiplayer({ page, check }) {
     // ### das Mesh-als-Server ###
@@ -202,13 +202,7 @@ async function checkBandW17Multiplayer({ page, check }) {
 
         return out;
     });
-    if (!w17bResults || w17bResults.error) {
-        check(
-            "W17 Phase B-Relay: das Mesh-als-Server erreichbar",
-            false,
-            (w17bResults && w17bResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-Relay: das Mesh-als-Server erreichbar", w17bResults)) {
         check("W17 B: _sanitizePortalMeta — multiplayer Default false", w17bResults.sanitizeDefaultsFalse);
         check("W17 B: _sanitizePortalMeta bewahrt multiplayer:true", w17bResults.sanitizeKeepsTrue);
         check(
@@ -474,13 +468,7 @@ async function checkBandW17Multiplayer({ page, check }) {
 
         return out;
     });
-    if (!w17jsResults || w17jsResults.error) {
-        check(
-            "W17 Phase B-JS-Compute: der Compute-Host erreichbar",
-            false,
-            (w17jsResults && w17jsResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-JS-Compute: der Compute-Host erreichbar", w17jsResults)) {
         check("W17 JS: _sanitizePortalMeta — serverMode Default 'relay'", w17jsResults.sanitizeDefaultRelay);
         check("W17 JS: serverMode 'js-compute' bleibt + erzwingt multiplayer", w17jsResults.sanitizeJsComputeForcesMp);
         check("W17 JS: aimBlueprintAtWorld trägt serverMode aus dem Eintrag", w17jsResults.aimCarriesServerMode);
@@ -668,13 +656,7 @@ async function checkBandW17Multiplayer({ page, check }) {
         r._p2pSendChannelTo = origChan;
         return out;
     });
-    if (!w17mResults || w17mResults.error) {
-        check(
-            "W17 Phase B-JS-Compute Phase 2: Host-Migration erreichbar",
-            false,
-            (w17mResults && w17mResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-JS-Compute Phase 2: Host-Migration erreichbar", w17mResults)) {
         check(
             "W17 JS P2: _portalSpawnServerContext baut ein Server-Kontext-iframe",
             w17mResults.spawnBuildsServerFrame
@@ -847,13 +829,7 @@ async function checkBandW17Multiplayer({ page, check }) {
 
         return out;
     });
-    if (!w17cResults || w17cResults.error) {
-        check(
-            "W17 Phase C: das Gruppen-Portal erreichbar",
-            false,
-            (w17cResults && w17cResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase C: das Gruppen-Portal erreichbar", w17cResults)) {
         check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
         check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
         check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
@@ -972,13 +948,7 @@ async function checkBandW17Multiplayer({ page, check }) {
 
         return out;
     });
-    if (!w17mpResults || w17mpResults.error) {
-        check(
-            "W17 Multiplayer-Welt-Deklaration erreichbar",
-            false,
-            (w17mpResults && w17mpResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Multiplayer-Welt-Deklaration erreichbar", w17mpResults)) {
         check("W17 MP: _sanitizeImportedManifest trägt multiplayer", w17mpResults.sanitizeCarriesMp);
         check("W17 MP: _sanitizeImportedManifest — Default ohne Marke", w17mpResults.sanitizeDefaultsNoMp);
         check("W17 MP: multiplayer überlebt den localStorage-Rundlauf", w17mpResults.sanitizeSurvivesRoundtrip);
@@ -1072,9 +1042,7 @@ async function checkBandW17Multiplayer({ page, check }) {
 
         return out;
     });
-    if (!w17svResults || w17svResults.error) {
-        check("W17 P-Vendor erreichbar", false, (w17svResults && w17svResults.error) || "page.evaluate fehlgeschlagen");
-    } else {
+    if (erreichbar(check, "W17 P-Vendor erreichbar", w17svResults)) {
         check(
             "W17 P-Vendor: _sanitizeImportedManifest trägt serverMode js-compute + erzwingt multiplayer",
             w17svResults.sanitizeCarriesJsCompute
@@ -1227,7 +1195,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12c1Results && !w12c1Results.error) {
+    if (erreichbar(check, "W12 P1: Welt-Portal Commit 1 Tests laufen", w12c1Results)) {
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
         check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
@@ -1258,8 +1226,6 @@ async function checkBandW12WorldPortal({ page, check }) {
             "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
             w12c1Results.emergentRefreshPortal
         );
-    } else {
-        check("W12 P1: Welt-Portal Commit 1 Tests laufen", false, w12c1Results ? w12c1Results.error : "no result");
     }
 
     // ### Skelett-Welt + iframe-Overlay + CSP ###
@@ -1297,7 +1263,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12c2Results && !w12c2Results.error) {
+    if (erreichbar(check, "W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", w12c2Results)) {
         check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
         check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
         check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
@@ -1308,8 +1274,6 @@ async function checkBandW12WorldPortal({ page, check }) {
             "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
             w12c2Results.overlaySanitizesForeign
         );
-    } else {
-        check("W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", false, w12c2Results ? w12c2Results.error : "no result");
     }
 
     // ### Betreten / Pause / Rückkehr ###
@@ -1382,7 +1346,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12c3Results && !w12c3Results.error) {
+    if (erreichbar(check, "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen", w12c3Results)) {
         check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
         check("W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)", w12c3Results.affPortalExclusive);
         check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
@@ -1402,12 +1366,6 @@ async function checkBandW12WorldPortal({ page, check }) {
         check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
         check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
         check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
-    } else {
-        check(
-            "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
-            false,
-            w12c3Results ? w12c3Results.error : "no result"
-        );
     }
 
     // ### Strom-Welt (three-fluid-fx) ###
@@ -1441,15 +1399,13 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12p2Results && !w12p2Results.error) {
+    if (erreichbar(check, "W12 P2 C1: Strom-Welt Tests laufen", w12p2Results)) {
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
         check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
         check("W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)", w12p2Results.stromPortalShaped);
         check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
         check("W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe", w12p2Results.enterFluidWorld);
-    } else {
-        check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
     }
 
     // ### DSL-Brücke (das Protokoll) ###
@@ -1520,7 +1476,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12bridgeResults && !w12bridgeResults.error) {
+    if (erreichbar(check, "W12 P2 C2: DSL-Brücke Tests laufen", w12bridgeResults)) {
         check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
         check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
         check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
@@ -1536,8 +1492,6 @@ async function checkBandW12WorldPortal({ page, check }) {
         check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
         check("W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt", w12bridgeResults.homeWeatherUntouched);
         check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
-    } else {
-        check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
 
     // ### zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
@@ -1574,7 +1528,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12terrainResults && !w12terrainResults.error) {
+    if (erreichbar(check, "W12 P2: Phytogenesis-Welt Tests laufen", w12terrainResults)) {
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
         check("W12 P2: welt_terrain trägt ein DSL-Manifest (eiche/wald/neu)", w12terrainResults.terrainManifest);
@@ -1582,12 +1536,6 @@ async function checkBandW12WorldPortal({ page, check }) {
         check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
         check("W12 P2: enterPortal(welt_terrain) lädt die Phytogenesis-Welt", w12terrainResults.enterTerrainWorld);
         check("W12 P2: die Brücke trägt einen Phytogenesis-Manifest-Op", w12terrainResults.terrainBridge);
-    } else {
-        check(
-            "W12 P2: Phytogenesis-Welt Tests laufen",
-            false,
-            w12terrainResults ? w12terrainResults.error : "no result"
-        );
     }
 
     // ### Welt-Registry + Portal-Zielen ###
@@ -1655,7 +1603,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12registryResults && !w12registryResults.error) {
+    if (erreichbar(check, "W12 P2: Welt-Registry Tests laufen", w12registryResults)) {
         check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
         check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
         check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
@@ -1666,8 +1614,6 @@ async function checkBandW12WorldPortal({ page, check }) {
         check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
         check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
         check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
-    } else {
-        check("W12 P2: Welt-Registry Tests laufen", false, w12registryResults ? w12registryResults.error : "no result");
     }
 
     // ### Portal-Größe emergiert aus der Avatar-Größe ###
@@ -1701,19 +1647,13 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12portalSizeResults && !w12portalSizeResults.error) {
+    if (erreichbar(check, "W12 P2: Portal-Größe Tests laufen", w12portalSizeResults)) {
         check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
         check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
         check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
         check("W12 P2: großer Eisen-Ring bleibt kein Tor (Magie nötig)", w12portalSizeResults.ironStillNotPortal);
         check("W12 P2: Built-in-Portale bleiben Tor-förmig", w12portalSizeResults.builtinsStayPortal);
         check("W12 P2: feste minRingSize-Zahl ist entfernt", w12portalSizeResults.noFixedThreshold);
-    } else {
-        check(
-            "W12 P2: Portal-Größe Tests laufen",
-            false,
-            w12portalSizeResults ? w12portalSizeResults.error : "no result"
-        );
     }
 
     // ### Umwidmen: Portal-Geste erreichbar + umwidmbar ###
@@ -1757,7 +1697,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12markResults && !w12markResults.error) {
+    if (erreichbar(check, "W12 P2: Markier-Sektion Tests laufen", w12markResults)) {
         check(
             "W12 P2/M5: die Umwidmen-Reihe (+ Portal-Auswahl) lebt in der WERKSTATT-Mach-Zone",
             w12markResults.markRowRendered
@@ -1771,8 +1711,6 @@ async function checkBandW12WorldPortal({ page, check }) {
             "M5: ✨ Emergent löst roleManual (der Chip-Tooltip-Verweis ist wahr) + das ICH trägt keine Doublette",
             w12markResults.resetWorks && w12markResults.ichClean
         );
-    } else {
-        check("W12 P2: Markier-Sektion Tests laufen", false, w12markResults ? w12markResults.error : "no result");
     }
 
     // ### Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
@@ -1858,7 +1796,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12p3aResults && !w12p3aResults.error) {
+    if (erreichbar(check, "W12 P3a: Teil-A-Tests laufen", w12p3aResults)) {
         check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
         check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
         check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
@@ -1875,8 +1813,6 @@ async function checkBandW12WorldPortal({ page, check }) {
             w12p3aResults.rateLimitNoJournalOverflow
         );
         check("W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster", w12p3aResults.overlayHasEventWindow);
-    } else {
-        check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
     // ### Teil B: die native Manifest-Stufe ###
@@ -1939,7 +1875,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         return out;
     });
 
-    if (w12p3bResults && !w12p3bResults.error) {
+    if (erreichbar(check, "W12 P3b: Teil-B-Tests laufen", w12p3bResults)) {
         check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
         check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
         check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
@@ -1954,8 +1890,6 @@ async function checkBandW12WorldPortal({ page, check }) {
         );
         check("W12 P3b: der ready-Handler wendet das native Manifest an", w12p3bResults.readyAppliesManifest);
         check("W12 P3b: das Registry-Literal kennt 'flut' nicht", w12p3bResults.registryLacksFlut);
-    } else {
-        check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
 }
