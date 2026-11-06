@@ -1016,7 +1016,7 @@ const TAKT_TEILE = ("_lofiPlayChord _lofiPlayMelody _lofiPlayGroove _lofiPlayBas
     "_raumStrahlen _tierRufTakt _fahrtKlangTick _schrittMaterialAt _playSchrittOneShot").split(" ");
 function taktSeite(m, echt, namen) {
     const P = Object.getPrototypeOf(r);
-    const T = (window.__klangTakt = { phase: "", bilder: [], weg: 0, m });
+    const T = (window.__klangTakt = { phase: "", bilder: [], weg: 0 });
     let tiefe = 0;
     let b = { ms: 0, teile: {} }; // das laufende Bild
     const huelle = (o, fn, nach, tief = 0) => {
@@ -1037,8 +1037,7 @@ function taktSeite(m, echt, namen) {
     for (const fn of namen) if (P[fn]) huelle(P, fn, (d) => (b.teile[fn] = (b.teile[fn] || 0) + d));
     let vor;
     const bild = () => {
-        const e = st.player?.mountedArch != null ? __klangGT : null;
-        const q = (e || st.playerMesh).position;
+        const q = (st.player?.mountedArch != null ? __klangGT : st.playerMesh).position;
         if (vor?.q === q) T.weg += Math.hypot(q.x - vor.x, q.z - vor.z);
         vor = { q, x: q.x, z: q.z };
         if (T.phase) T.bilder.push(b);
@@ -1048,25 +1047,30 @@ function taktSeite(m, echt, namen) {
     requestAnimationFrame(bild);
     // der Null-Renderer zeichnet nicht: hier trägt die Linse den Takt des Spiels (das Fenster trägt ihn selbst)
     if (!echt) requestAnimationFrame(__klangW.spiel);
-    st.playerMesh.position.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
+    (T.mitte = () => st.playerMesh.position.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z))();
     document.getElementById("anazh-symphony-toggle").click();
     T.start = (p) => Object.assign(T, { phase: p, bilder: [], weg0: T.weg });
     T.urteil = (soll) => {
         T.phase = "";
-        const s = T.bilder.map((x) => x.ms).sort((x, y) => x - y);
-        const q = (k) => +(s[Math.min(s.length - 1, Math.floor(k * s.length))] || 0).toFixed(2);
+        const s = [...T.bilder].sort((x, y) => x.ms - y.ms);
+        const q = (k) => +(s[Math.min(s.length - 1, Math.floor(k * s.length))]?.ms || 0).toFixed(2);
         const ueber = T.bilder.filter((x) => x.ms > soll);
         const last = {};
         for (const x of ueber) for (const k in x.teile) last[k] = (last[k] || 0) + x.teile[k] / ueber.length;
+        const nenne = (t) =>
+            Object.entries(t)
+                .sort((u, v) => v[1] - u[1])
+                .slice(0, 3)
+                .map(([k, v]) => `${k} ${v.toFixed(2)}`);
+        // der Träger der Spitze (des teuersten Bilds) beim Namen — bis w13-klang-fahrt stand das max ohne ihn (die Fahrt: der Bau der
+        // Stimme beim Aufsitzen)
         return {
             bilder: s.length,
             weg: Math.round(T.weg - T.weg0),
             p95: q(0.95),
             max: q(1),
-            traeger: Object.entries(last)
-                .sort((u, v) => v[1] - u[1])
-                .slice(0, 3)
-                .map(([k, v]) => `${k} ${v.toFixed(2)}`),
+            traeger: nenne(last),
+            spitze: nenne(s.at(-1)?.teile || {}),
         };
     };
     // der Aussetzer-Zähler am Ausgang (AudioContext.playbackStats), dazu ob es noch der Kontext des ersten Abrufs ist
@@ -1076,7 +1080,7 @@ function taktSeite(m, echt, namen) {
         T.ctx ||= c;
         return p && { n: p.underrunEvents, still: p.underrunDuration, s: p.totalDuration, gleich: T.ctx === c };
     };
-    T.uhr = () => st.symphony.ctx?.currentTime ?? NaN;
+    T.uhr = () => st.symphony.ctx?.currentTime; // ohne Kontext undefined: die Differenz ist NaN, die Phase endet
     // sein Täter: eine Worklet-Stimme rechnet je Render-Quantum (2,7 ms) 8 ms
     T.stotterer = async () => {
         await st.symphony.ctx.audioWorklet.addModule("/__stotter.js");
@@ -1111,7 +1115,7 @@ async function taktPhase(page, phase, n, pendeln, sek = 0) {
     }
     const z = await page.evaluate((soll) => __klangTakt.urteil(soll), TAKT_SOLL_MS);
     console.log(
-        `── ${phase}: p95 ${z.p95} · max ${z.max} ms (${z.bilder} Bilder, ${z.weg} m) · ${z.traeger.join(" · ")}`
+        `── ${phase}: p95 ${z.p95} · max ${z.max} ms [${z.spitze}] (${z.bilder} Bilder, ${z.weg} m) · ${z.traeger.join(" · ")}`
     );
     return z;
 }
@@ -1126,13 +1130,11 @@ async function takt(page, erg) {
     ph.gehen = await taktPhase(page, "gehen", 20, false, MINUTEN * 24);
     // zurück in die Mitte der Lichtung, der GT daneben, aufsitzen
     await page.evaluate(async () => {
-        const p = st.playerMesh.position,
-            m = __klangTakt.m;
-        p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
+        const p = __klangTakt.mitte();
         r.mountArchitecture((window.__klangGT = await __klangW.wagen(p.x + 3, p.z)));
     });
     ph.fahrt = await taktPhase(page, "fahrt", 20, true, MINUTEN * 18);
-    ph.fahrt.sattel = await page.evaluate(() => !!(st.symphony.fahrt || new Map()).size);
+    ph.fahrt.sattel = await page.evaluate(() => !!st.symphony.fahrt?.size);
     await page.evaluate(() => {
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
