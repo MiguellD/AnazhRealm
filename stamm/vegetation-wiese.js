@@ -2823,7 +2823,8 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 AnazhRealm.STAND_RAND_M = 0.25;
 // DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest den Bestand der Wald-Zellen
 // bis ±`reich` um seine Zelle (der Freistand ±4); der Bestand jeder Zelle trägt sein Urteil (die geborenen Darts der Zellen
-// ±`urteil`, die Reihe des Kerns `FOREST_URTEIL_REIHE` — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
+// ±`urteil` = phyto-core `FOREST_URTEIL_REICH`: das Dach ±2 der Reihe `FOREST_URTEIL_REIHE`, der Schirm des Unterstands ±1
+// darüber, w16-wald-innen — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
 // Wald-Faden plant der Takt frische Zellen höchstens `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von
 // `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
 AnazhRealm.WALD_PLAN = Object.freeze({
