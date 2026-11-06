@@ -239,35 +239,53 @@ class AnazhRealm_bild_sicht {
         const K = AnazhRealm.SPIEGEL;
         const n = K.n;
         const leer = THREE.DataUtils.toHalfFloat(-30000);
-        const daten = new Uint16Array(n * n * 4);
-        for (let p = 0; p < daten.length; p += 4) daten[p] = daten[p + 1] = daten[p + 2] = leer;
-        const tex = new THREE.DataTexture(daten, n, n, THREE.RGBAFormat, THREE.HalfFloatType);
-        tex.name = "spiegel:feld";
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.minFilter = tex.magFilter = THREE.LinearFilter;
-        tex.generateMipmaps = false;
-        tex.needsUpdate = true;
-        // die Höchste je Block (der Sprung des Passes): nb × nb Blöcke im selben Wiederhol-Raster, leer −30 000 m
-        const nb = n / K.block;
-        const hoechste = new Float32Array(nb * nb).fill(-30000);
-        const hTex = new THREE.DataTexture(hoechste, nb, nb, THREE.RedFormat, THREE.FloatType);
-        hTex.name = "spiegel:hoechste";
-        hTex.minFilter = hTex.magFilter = THREE.NearestFilter;
-        hTex.generateMipmaps = false;
-        hTex.needsUpdate = true;
-        const stoff = new Uint8Array(n * n * 4);
-        const stoffTex = new THREE.DataTexture(stoff, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
-        stoffTex.name = "spiegel:stoff";
-        stoffTex.minFilter = stoffTex.magFilter = THREE.NearestFilter;
-        stoffTex.generateMipmaps = false;
-        stoffTex.needsUpdate = true;
-        // die Kronen-Farben als Halbfloat: eine Farbe trägt keine 32 bit (gate:ziel-zensus FORMAT, am Bach der Mess-Wiese)
-        const laub = new Uint16Array(K.laubFarben * 4);
-        const laubTex = new THREE.DataTexture(laub, K.laubFarben, 1, THREE.RGBAFormat, THREE.HalfFloatType);
-        laubTex.name = "spiegel:laub";
-        laubTex.minFilter = laubTex.magFilter = THREE.NearestFilter;
-        laubTex.generateMipmaps = false;
-        laubTex.needsUpdate = true;
+        // DIE TEXTUREN SIND GUT DER SEITE (`_seitenGut`, tore.K1): der Pass des Spiegels liest sie und reist über die Weltgrenze —
+        // jede Welt nimmt sie leer (−30 000 m, kein Stoff, keine Krone), ihr Feld backt sie neu
+        const { daten, tex, nb, hoechste, hTex, stoff, stoffTex, laub, laubTex } = this._seitenGut(
+            "spiegel-feld",
+            () => {
+                const daten = new Uint16Array(n * n * 4);
+                for (let p = 0; p < daten.length; p += 4) daten[p] = daten[p + 1] = daten[p + 2] = leer;
+                const tex = new THREE.DataTexture(daten, n, n, THREE.RGBAFormat, THREE.HalfFloatType);
+                tex.name = "spiegel:feld";
+                tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+                tex.minFilter = tex.magFilter = THREE.LinearFilter;
+                tex.generateMipmaps = false;
+                tex.needsUpdate = true;
+                // die Höchste je Block (der Sprung des Passes): nb × nb Blöcke im selben Wiederhol-Raster, leer −30 000 m
+                const nb = n / K.block;
+                const hoechste = new Float32Array(nb * nb).fill(-30000);
+                const hTex = new THREE.DataTexture(hoechste, nb, nb, THREE.RedFormat, THREE.FloatType);
+                hTex.name = "spiegel:hoechste";
+                hTex.minFilter = hTex.magFilter = THREE.NearestFilter;
+                hTex.generateMipmaps = false;
+                hTex.needsUpdate = true;
+                const stoff = new Uint8Array(n * n * 4);
+                const stoffTex = new THREE.DataTexture(stoff, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
+                stoffTex.name = "spiegel:stoff";
+                stoffTex.minFilter = stoffTex.magFilter = THREE.NearestFilter;
+                stoffTex.generateMipmaps = false;
+                stoffTex.needsUpdate = true;
+                // die Kronen-Farben als Halbfloat: eine Farbe trägt keine 32 bit (gate:ziel-zensus FORMAT, am Bach der Mess-Wiese)
+                const laub = new Uint16Array(K.laubFarben * 4);
+                const laubTex = new THREE.DataTexture(laub, K.laubFarben, 1, THREE.RGBAFormat, THREE.HalfFloatType);
+                laubTex.name = "spiegel:laub";
+                laubTex.minFilter = laubTex.magFilter = THREE.NearestFilter;
+                laubTex.generateMipmaps = false;
+                laubTex.needsUpdate = true;
+                return { daten, tex, nb, hoechste, hTex, stoff, stoffTex, laub, laubTex };
+            },
+            (g) => {
+                for (let p = 0; p < g.daten.length; p += 4) {
+                    g.daten[p] = g.daten[p + 1] = g.daten[p + 2] = leer;
+                    g.daten[p + 3] = 0;
+                }
+                g.hoechste.fill(-30000);
+                g.stoff.fill(0);
+                g.laub.fill(0);
+                for (const t of [g.tex, g.hTex, g.stoffTex, g.laubTex]) t.needsUpdate = true;
+            }
+        );
         st.spiegelFeld = {
             n,
             texel: K.texel,
@@ -1143,7 +1161,8 @@ class AnazhRealm_bild_sicht {
         if (typeof Quad !== "function") throw new Error("SPIEGEL-PASS: Quad der Post-Kette fehlt (Vendor-Drift)");
         const quad = new Quad(mat);
         quad.name = "spiegel:strahl";
-        st.spiegelPass = { quad, mat, U, vp: new THREE.Matrix4() };
+        // er reist über die Weltgrenze (WELT_GRENZE.seite), sein Bau bleibt (`_seitenStoff`); den Bezug setzt jeder Lauf
+        st.spiegelPass = { quad, mat: this._seitenStoff(mat), U, vp: new THREE.Matrix4() };
         void L;
         return st.spiegelPass;
     }

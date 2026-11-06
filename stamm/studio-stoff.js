@@ -576,7 +576,8 @@ class AnazhRealm_studio_stoff {
         mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen
         // Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
-        this._foundryMats[key] = mat;
+        // ein Stoff der Seite (`_seitenStoff`, tore.K1): `_foundryMats` reist am Wirt, sein Knoten-Bau bleibt über jeden Welt-Wechsel
+        this._foundryMats[key] = this._seitenStoff(mat);
         // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
             this._baumWindStoff(mat, kind, baum);

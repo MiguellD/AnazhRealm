@@ -1099,6 +1099,7 @@ class AnazhRealm {
         P.U.p14.value = cam.projectionMatrix.elements[14];
         P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
         P.U.hMax.value = S.hMax + 2;
+        P.U.bezug.value = S.bezug; // der Pass reist über die Weltgrenze, der Bezug ist der der Welt
         P.U.texel.value.set(1 / m.w, 1 / m.h);
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);

@@ -135,14 +135,17 @@ class AnazhRealm_siedlung_bewohner {
                 if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
                 this._instanzAbschied(R.mesh); // die Instanz-Puffer verlassen die GPU (W6, r184s Register)
                 R.geo.dispose();
-                R.mat.dispose();
             }
             const cap = kap;
             const geo = new THREE.PlaneGeometry(2, 2);
             const daten = new THREE.InstancedBufferAttribute(new Float32Array(4 * cap), 4);
             geo.setAttribute("aRauch", daten);
-            const mat = this._rauchStoff(G);
-            this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
+            // der Stoff ist Gut der Seite (`_seitenGut`, tore.K1): jeder Rauch jeder Welt zeichnet mit demselben Graphen
+            const mat = this._seitenGut("rauch:" + satz, () => {
+                const m = this._rauchStoff(G);
+                this._leuchtStoff(m, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
+                return m;
+            });
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = G.name || "dorf-rauch";
             mesh.userData.inventar = G.inventar || mesh.name; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)

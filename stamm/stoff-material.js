@@ -116,7 +116,8 @@ class AnazhRealm_stoff_material {
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
         const m = mat.clone();
         m.positionNode = this._halmFerneKnoten;
-        this._halmFerneStoffe.set(mat, m);
+        // Knoten, Auge und Klone reisen am Wirt (tore.K1): ein Stoff der Seite (`_seitenStoff`), sein Bau bleibt
+        this._halmFerneStoffe.set(mat, this._seitenStoff(m));
         return m;
     }
 
