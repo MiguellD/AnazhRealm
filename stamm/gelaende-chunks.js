@@ -62,6 +62,8 @@ class AnazhRealm_gelaende_chunks {
                                 himmel: new Float32Array(msg.himmel),
                                 schutt: new Float32Array(msg.schutt),
                                 felsFeuchte: msg.felsFeuchte,
+                                // die Mulde des Gesetzes je Vertex (wetter.K2, gelaende-core `muldeEcken`)
+                                mulde: new Float32Array(msg.mulde),
                                 // die Boden-Karte des Netzes (w4-b-boden, gelaende-core `bodenKarte` im Faden): undefined heißt,
                                 // der Faden lieferte keine (der Einbau bricht laut), null: das Netz trägt kein Dreieck
                                 karte:
@@ -749,12 +751,20 @@ class AnazhRealm_gelaende_chunks {
         // DER STOFF KOMMT FERTIG (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt baut der Worker, wo er das Netz baut
         // (gelaende-core `himmelsSicht` · `felsStoff`) — hier fällt kein Ruf des Fels-Gesetzes (`gate:hoehlen-sicht` (n)).
         const nV = meshData.positions.length / 3;
-        if (!meshData.himmel || meshData.himmel.length !== nV || !meshData.schutt || meshData.schutt.length !== nV)
+        if (
+            !meshData.himmel ||
+            meshData.himmel.length !== nV ||
+            !meshData.schutt ||
+            meshData.schutt.length !== nV ||
+            !meshData.mulde ||
+            meshData.mulde.length !== nV
+        )
             throw new Error(
-                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff (Himmels-Sicht · Schutt)`
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff (Himmels-Sicht · Schutt · Mulde)`
             );
         geom.setAttribute("aHimmel", attr(meshData.himmel, 1));
         geom.setAttribute("aSchutt", attr(meshData.schutt, 1));
+        geom.setAttribute("aMulde", attr(meshData.mulde, 1));
         if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
@@ -1195,6 +1205,7 @@ class AnazhRealm_gelaende_chunks {
         );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
+        this._muldeStoff(geom, lod); // die Mulde des Gesetzes (wetter.K2), derselbe Kern wie im Faden
         // DER GEOMORPH DER STUFE (K51-2): das Ziel jedes Vertex auf dem Netz der nächst gröberen Stufe samt Normale und Stoff-
         // Farbe (derselbe Bau wie im Worker, `_stufeZielNetz`), die Stufe im Morph-Code — die gröbste Stufe trägt ihre eigenen
         {
@@ -1469,6 +1480,7 @@ class AnazhRealm_gelaende_chunks {
                 col: k(A.color.array),
                 him: k(A.aHimmel.array),
                 sch: k(A.aSchutt.array),
+                mul: k(A.aMulde.array),
                 nZ: k(A.aNormalZiel.array),
                 fZ: k(A.aFarbeZiel.array),
                 karte: karte(naht.lage),
@@ -1593,6 +1605,7 @@ class AnazhRealm_gelaende_chunks {
         // die Naht trägt die Himmels-Sicht und den Schutt ihrer Quell-Vertices
         bg.setAttribute("aHimmel", at(band.HS, 1));
         bg.setAttribute("aSchutt", at(band.SC, 1));
+        bg.setAttribute("aMulde", at(band.MU, 1));
         bg.setIndex(at(band.I, 1));
         bg.userData.satzVorlage = band.satz;
         bg.userData.ausFaden = true; // sein Satz kommt fertig (`_chunkSatzEin` wacht darüber)
@@ -2909,6 +2922,7 @@ class AnazhRealm_gelaende_chunks {
         g.setAttribute("aMorphWeight", attr(new Float32Array(nV).fill(this._morphCode((E && E.lod) || 0, 0)), 1));
         g.setAttribute("aNormalZiel", attr(new Float32Array(N), 3));
         g.setAttribute("aFarbeZiel", attr(new Float32Array(g.attributes.color.array), 3));
+        g.setAttribute("aMulde", attr(new Float32Array(nV), 1)); // die Krone ist gebaut, keine Senke des Gesetzes (wetter.K2)
         const S = this.state.saeulenVorlaeufig || (this.state.saeulenVorlaeufig = Object.assign(new Map(), { n: 0 }));
         const key = `saeule:${++S.n}`;
         this._chunkSatzEin("boden", key, g, ck);

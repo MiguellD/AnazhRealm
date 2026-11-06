@@ -4979,8 +4979,8 @@
     // der groben Kante, der Fang für Rest-Spalten) und, wo ein Ende die Naht nicht ganz schließt, ein Viereck von der feinen Kante
     // (Lage) zur groben Fläche (das Naht-Ziel). Die feine Kante trägt Morph-Ziel und -Code, Normale und Stoff-Farbe ihres Quell-
     // Vertex (sie wandert mit), die grobe Seite und der Skirt stehen fest (Code 0, Ziel = Lage). `r` das Netz (Lage, Ziel, Code,
-    // Normale, Farbe, Himmels-Sicht, Schutt, Ziel-Normale, Ziel-Farbe, Naht) · `bandVerts` je Vertex 1 in der Grenz-Zeile ·
-    // `nahtZiel` je Vertex das Naht-Ziel. → { P, N, C, NZ, FZ, MT, MW, HS, SC, I } oder null (kein Band).
+    // Normale, Farbe, Himmels-Sicht, Schutt, Mulde, Ziel-Normale, Ziel-Farbe, Naht) · `bandVerts` je Vertex 1 in der Grenz-Zeile ·
+    // `nahtZiel` je Vertex das Naht-Ziel. → { P, N, C, NZ, FZ, MT, MW, HS, SC, MU, I } oder null (kein Band).
     function bodenNahtBand(r, bandVerts, nahtZiel) {
         if (!bandVerts || !bandVerts.includes(1)) return null;
         if (!nahtZiel) throw new Error("bodenNahtBand: kein Naht-Ziel");
@@ -5022,7 +5022,7 @@
         let nV = 0;
         for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
         const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
-        const [MW, HS, SC] = Array.from({ length: 3 }, () => new Float32Array(nV));
+        const [MW, HS, SC, MU] = Array.from({ length: 4 }, () => new Float32Array(nV));
         // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
         const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
         let o = 0,
@@ -5031,6 +5031,7 @@
             cA = r.col,
             hA = r.him,
             sA = r.sch,
+            mA = r.mul,
             nZ = r.nZ,
             fZ = r.fZ;
         // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); `morph`: Ziel, Code, Ziel-Normale
@@ -5056,6 +5057,7 @@
             }
             HS[o] = hA[v];
             SC[o] = sA[v];
+            MU[o] = vorhang ? 0 : mA[v]; // der Vorhang steht senkrecht: keine Pfütze
             o++;
         };
         const quad = () => {
@@ -5089,7 +5091,7 @@
             ecke(tax, tay - SKIRT, taz, a, false, true);
             quad();
         }
-        return { P, N, C, NZ, FZ, MT, MW, HS, SC, I };
+        return { P, N, C, NZ, FZ, MT, MW, HS, SC, MU, I };
     }
 
     // DIE VORLAGE EINES BODEN-BEREICHS IM SATZ (aus dem Stamm `_chunkSatzLege` · `_chunkSatzViertel` · `_chunkSatzHuelle`): je
@@ -5349,6 +5351,98 @@
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
         }
         return { schutt: SW, feuchte: fe };
+    }
+
+    // DIE MULDE DES GELÄNDES (wetter.K2, das Pfützen-Gesetz; rein additiv): wo Regen stehen bleibt. Die Höhe des Gesetzes
+    // (`hoehe`, mit Detail) auf dem Welt-Gitter der Kante `gitterM`; je Gitter-Punkt die Tiefe unter dem Mittel des Kastens
+    // ±`kasten` Punkte um ihn (die Senke gegen ihr Umland — die Krümmung des Gesetzes im Maßstab einer Pfütze, 7 m; im 1,8-m-Maß
+    // trägt die Funktion nur Millimeter), gekappt auf `tiefeM`, und das Gefälle (zentrale Differenz): über `gefaelle[0]` läuft
+    // das Wasser ab, über `gefaelle[1]` hält der Hang keine Pfütze. Je Vertex bilinear, nur auf der Fläche des Gesetzes (weiter als
+    // `flaecheM` neben ihr — Säule, Höhlen-Boden, der Grund des Hauses — trägt das Netz keine Mulde des Gesetzes) und nur in den
+    // Stufen bis `bisStufe` (jenseits zeichnet der Boden keine Pfütze, `PFUETZE` im Stamm blendet sie davor aus). `memo` (Map)
+    // hält die Höhen des Gitters über die Netze eines Fadens (der Nachbar teilt den Kasten), höchstens `memo`-Einträge.
+    // L die Lage · P die Lage des Netzes (n Vertices) · lod die Stufe → Float32Array(n), die Tiefe in Einheiten von `tiefeM`
+    // (0 … 1: so reist sie als snorm8 in der vierten Komponente der Normale, Stamm `BODEN_SATZ_ATTR`).
+    const MULDE = Object.freeze({
+        gitterM: 3.6,
+        kasten: 2,
+        tiefeM: 0.2,
+        gefaelle: Object.freeze([0.05, 0.14]),
+        flaecheM: 0.6,
+        bisStufe: 1,
+        memo: 262144,
+    });
+    function muldeEcken(L, P, n, lod, memo) {
+        const M = new Float32Array(n);
+        if (!(n > 0) || (lod | 0) > MULDE.bisStufe) return M;
+        const d = MULDE.gitterM,
+            R = MULDE.kasten;
+        let x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity;
+        for (let i = 0; i < n; i++) {
+            const x = P[3 * i],
+                z = P[3 * i + 2];
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (z < z0) z0 = z;
+            if (z > z1) z1 = z;
+        }
+        const i0 = Math.floor(x0 / d),
+            k0 = Math.floor(z0 / d);
+        const nx = Math.floor(x1 / d) - i0 + 2,
+            nz = Math.floor(z1 / d) - k0 + 2;
+        const w = nx + 2 * R,
+            hz = nz + 2 * R;
+        const H = new Float64Array(w * hz);
+        // das Gedächtnis gilt EINER Lage: ein anderer Rausch, ein anderes Erbgut oder ein neuer Erdbau (ein Ort hebt den Grund)
+        // leeren es
+        if (memo && (memo.size > MULDE.memo || memo.rausch !== L.noise || memo.erbgut !== L.erbgut || memo.erdbau !== L.erdbau)) {
+            memo.clear();
+            [memo.rausch, memo.erbgut, memo.erdbau] = [L.noise, L.erbgut, L.erdbau];
+        }
+        for (let k = 0; k < hz; k++)
+            for (let i = 0; i < w; i++) {
+                const gi = i0 - R + i,
+                    gk = k0 - R + k;
+                const key = gi + "," + gk;
+                let h = memo ? memo.get(key) : undefined;
+                if (h === undefined) {
+                    h = hoehe(L, gi * d, gk * d, true);
+                    if (memo) memo.set(key, h);
+                }
+                H[k * w + i] = h;
+            }
+        const G = MULDE.gefaelle;
+        const T = new Float64Array(nx * nz);
+        const kn = (2 * R + 1) * (2 * R + 1) - 1;
+        for (let k = 0; k < nz; k++)
+            for (let i = 0; i < nx; i++) {
+                const c = (k + R) * w + i + R;
+                let s = 0;
+                for (let b = -R; b <= R; b++) for (let a = -R; a <= R; a++) s += H[c + b * w + a];
+                const tief = (s - H[c]) / kn - H[c];
+                const g = Math.hypot(H[c + 1] - H[c - 1], H[c + w] - H[c - w]) / (2 * d);
+                let t = (g - G[0]) / (G[1] - G[0]);
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                const m = tief > 0 ? (tief < MULDE.tiefeM ? tief : MULDE.tiefeM) / MULDE.tiefeM : 0;
+                T[k * nx + i] = m * (1 - t * t * (3 - 2 * t));
+            }
+        for (let v = 0; v < n; v++) {
+            const u = P[3 * v] / d - i0,
+                q = P[3 * v + 2] / d - k0;
+            const iu = Math.min(nx - 2, Math.max(0, Math.floor(u))),
+                iq = Math.min(nz - 2, Math.max(0, Math.floor(q)));
+            const fu = u - iu,
+                fq = q - iq;
+            const bi = (A, s, o) =>
+                (A[o] * (1 - fu) + A[o + 1] * fu) * (1 - fq) + (A[o + s] * (1 - fu) + A[o + s + 1] * fu) * fq;
+            const hy = bi(H, w, (iq + R) * w + iu + R);
+            if (Math.abs(P[3 * v + 1] - hy) > MULDE.flaecheM) continue;
+            M[v] = bi(T, nx, iq * nx + iu);
+        }
+        return M;
     }
 
     // ── DAS GELÄNDE-STUDIO (K16b): Urteil, Messung und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein. Die
@@ -7282,6 +7376,8 @@
         STUFE_ZIEL: STUFE_ZIEL,
         stufeZiel: stufeZiel,
         felsStoff: felsStoff,
+        MULDE: MULDE,
+        muldeEcken: muldeEcken,
         felsBasis: felsBasis,
         felsFarbe: felsFarbe,
         felsKruemmung: felsKruemmung,

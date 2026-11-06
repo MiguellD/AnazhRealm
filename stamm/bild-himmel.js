@@ -3347,11 +3347,12 @@ class AnazhRealm_bild_himmel {
         return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
     }
 
-    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
-    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt, also
+    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass, der Film): Regen
+    // benetzt, ohne Regen verdunstet der Film nach Sonne, Wind und den Poren des Bodens (`_naesseKurve`) — exakt je Schritt, also
     // dieselbe Nässe nach 600 Takten wie nach einem Schritt von 600 s (die Bühne der Linse `werkbank licht --naesse`). Ohne `dt`
-    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
-    // `atmoUniforms.naesse`; den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
+    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Die Leser sind der EINE Welt-Stoff (`_naesseImStoff`) und die
+    // Pfütze in den Mulden des Bodens (`_pfuetzeKnoten`) über `atmoUniforms.naesse` (der Regen schlägt Ringe nach
+    // `atmoUniforms.regen`); den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
     _naesseTakt(dt) {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
@@ -3362,10 +3363,11 @@ class AnazhRealm_bild_himmel {
         const wf = this._weatherFieldFor(st.weather);
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
-        const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
-        const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        const n = AnazhRealm._naesseKurve(n0, wf, dt);
         st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
-        this._ensureAtmoUniforms().naesse.value = st.naesse;
+        const U = this._ensureAtmoUniforms();
+        U.naesse.value = st.naesse;
+        U.regen.value = ziel ? wf.rain : 0;
         this._dachTakt();
         this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;

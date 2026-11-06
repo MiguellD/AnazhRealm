@@ -1400,25 +1400,25 @@ module.exports = {
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
-        `window.__abnahmeMessen = ${abnahmeMessen.toString()};` +
-        `window.__blickWahl = ${blickWahl.toString()};` +
-        `(${seitenfehlerZaehlen.toString()})();` +
-        `window.__erstRuhe = ${erstRuhe.toString()};` +
-        `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
-        `window.__spielStapel = ${spielStapel.toString()};` +
-        `window.__weltaktSpion = ${weltaktSpion.toString()};` +
-        `window.__weltaktBuch = ${weltaktBuch.toString()};` +
-        `window.__wetterSpion = ${wetterSpion.toString()};` +
-        `window.__wetterBuch = ${wetterBuch.toString()};` +
-        `window.__wetterSetzen = ${wetterSetzen.toString()};` +
-        `window.__wetterHalten = ${wetterHalten.toString()};` +
-        `window.__uhrSpion = ${uhrSpion.toString()};` +
-        `window.__bildUhren = ${bildUhren.toString()};` +
-        `window.__uhrHalten = ${uhrHalten.toString()};` +
+        `window.__abnahmeMessen = ${abnahmeMessen};` +
+        `window.__blickWahl = ${blickWahl};` +
+        `(${seitenfehlerZaehlen})();` +
+        `window.__erstRuhe = ${erstRuhe};` +
+        `window.__ausgabeAufnahme = ${ausgabeAufnahme};` +
+        `window.__spielStapel = ${spielStapel};` +
+        `window.__weltaktSpion = ${weltaktSpion};` +
+        `window.__weltaktBuch = ${weltaktBuch};` +
+        `window.__wetterSpion = ${wetterSpion};` +
+        `window.__wetterBuch = ${wetterBuch};` +
+        `window.__wetterSetzen = ${wetterSetzen};` +
+        `window.__wetterHalten = ${wetterHalten};` +
+        `window.__uhrSpion = ${uhrSpion};` +
+        `window.__bildUhren = ${bildUhren};` +
+        `window.__uhrHalten = ${uhrHalten};` +
         require("./welt-boot.cjs").WARTEN_SEITE +
-        `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
-        `window.__buehne = ${buehne.toString()};` +
+        `window.__weltStehtWarten = ${weltStehtWarten};` +
+        `window.__buehne = ${buehne};` +
         `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib".split(" ");` +
-        `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
-        `(${saisonFest.toString()})();`,
+        `window.__membranOhneFilm = ${membranOhneFilm};` +
+        `(${saisonFest})();`,
 };

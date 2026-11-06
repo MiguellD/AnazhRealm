@@ -2290,6 +2290,23 @@ class AnazhRealm_gelaende_boden {
         col.needsUpdate = true;
     }
 
+    // DIE MULDE DES BODENS (wetter.K2, das Pfützen-Gesetz): gelaende-core `muldeEcken` — je Vertex die Senke des Gesetzes, in der
+    // der Regen als Pfütze steht (0 … 1 in Einheiten von `MULDE.tiefeM`), nur in den nahen Stufen. Sie entsteht, wo das Netz
+    // entsteht: der Faden rechnet sie beim Chunk-Bau (`buildChunkMesh`), der Haupt-Thread nur im Sync-Bau; das Gedächtnis des
+    // Gitters (`_muldeMemo`) leert der Kern je Lage. Leser: der Boden-Stoff (`_pfuetzeKnoten`, die vierte Komponente der Normale).
+    _muldeStoff(geom, lod) {
+        const pos = geom.attributes.position;
+        const M = globalThis.__gelaendeCore.muldeEcken(
+            this._gelaende(),
+            pos.array,
+            pos.count,
+            lod,
+            this._muldeMemo || (this._muldeMemo = new Map())
+        );
+        geom.setAttribute("aMulde", new THREE.Float32BufferAttribute(M, 1));
+        return M;
+    }
+
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
     // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
     // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
