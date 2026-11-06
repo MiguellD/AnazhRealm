@@ -1858,13 +1858,7 @@ class AnazhRealm_siedlung_bewohner {
             const q1 = N.knoten[kette[Math.min(kette.length - 1, i + 1)]];
             const l = Math.hypot(q1.x - q0.x, q1.z - q0.z) || 1;
             const p = { x: q.x - ((q1.z - q0.z) / l) * spur, z: q.z + ((q1.x - q0.x) / l) * spur };
-            // DER RAND GILT JEDEM KNOTEN IN DER FAHRBAHN (die EINE Wege-Karte der Wagen, `fuss`): dem der Trasse (ihr Gehweg, unten)
-            // und dem der Gasse, die neben ihr oder in sie läuft — sie tritt quer zu sich an den nächsten Ort neben der Bahn, zu der
-            // Seite, die näher liegt (je Viertelmeter, höchstens `gehwegM`), nie über die Bahn auf den Gehweg ihrer Seite. Bis
-            // w13-verkehr-heil galt der Rand nur dem Knoten eines Wegs ab `breiteM`: die Gasse, die bei 900/360 an die Bahn der Wagen
-            // stößt, trug die Feld-Leute der Metropole auf ihrer Mitte durch sie (stadt-voll 10 Uhr fünf Leute je 24–58 s)
-            const trasse = q.w >= breit;
-            if (!seite || breit === Infinity || (!trasse && fuss(p))) return p;
+            if (!seite || !(q.w >= breit)) return p;
             // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n —
             // steht er dort in einer Wand (die Laterne am Bordstein, auf seiner Linie) oder in der Bahn eines Wagens (die Ecke in
             // der Kreuzung, wo die Abbieger fahren; die Spur, die einem Stand auswich), gilt der nächste Ort längs n je Viertelmeter
@@ -1882,17 +1876,10 @@ class AnazhRealm_siedlung_bewohner {
             const f = (2 * geh) / Math.max(1, n[0] * n[0] + n[1] * n[1]);
             const df = (Math.sign(geh) * 0.25) / (Math.hypot(n[0], n[1]) || 1);
             alt[i] = p; // trägt der Rand dort nicht (die Laterne, der Baum am Rand), geht er um sie — sonst in seiner Spur
-            const ort = (k, f0 = f) => {
+            const ort = (k) => {
                 const s = k & 1 ? (k + 1) >> 1 : -(k >> 1); // 0, +1, −1, +2, …: hinaus zuerst
-                return { x: q.x + n[0] * (f0 + s * df), z: q.z + n[1] * (f0 + s * df) };
+                return { x: q.x + n[0] * (f + s * df), z: q.z + n[1] * (f + s * df) };
             };
-            if (!trasse) {
-                for (let k = 1; k <= 8 * BW.gehwegM; k++) {
-                    const c = ort(k, 0);
-                    if (fuss(c) && !this._bewohnerWand(c, c)) return c;
-                }
-                return p; // die Gasse ohne Ort neben der Bahn geht ihre Spur
-            }
             // die billige Probe zuerst (Lehre 25): die Fahrbahn, dann die Wand
             for (let k = 0; k <= 16 * BW.gehwegM; k++) {
                 const c = ort(k);
@@ -1917,16 +1904,10 @@ class AnazhRealm_siedlung_bewohner {
                 // Gassen und den Gehweg der Trassen, erst wo auch der nicht trägt, ganz in der Mitte. Bis hier fiel er an jeder Laterne
                 // auf der Linie (13 von 33 der Metropole, 2,75–3,5 m von der Mitte) in seine Spur, 0,8 m neben die Mitte der Trasse,
                 // und am ersten Bein vom Stand jeder Weg auf die Mitte der Trasse — zwischen die Wagen.
-                // DER UMWEG FÜHRT NIE WEITER ÜBER DIE FAHRBAHN ALS DAS BEIN SELBST (`_verkehrFahrbahnM`): bis w13-verkehr-heil lag nur
-                // der Seitenpunkt neben ihr — seine Beine querten sie hin und zurück (stadt-voll 23 Uhr: der Feld-Mann #291:3 ging am
-                // Bein 959,4/385,7 → 958,6/386,5 über 962,5/391,2 zweimal quer durch die Bahn der Wagen, 418 der 893 Schritte auf ihr)
                 const m = AnazhRealm.PLAYER_WALL_RADIUS + BW.umRandM;
-                const bein = breit < Infinity ? this._verkehrFahrbahnM(S, a, [pts[i]]) : 0;
-                const neben = (f) => (q) => (!f || f(q)) && this._verkehrFahrbahnM(S, a, [q, pts[i]]) <= bein;
                 const um =
                     breit < Infinity &&
-                    (this._bewohnerGerade(a, pts[i], neben(fuss), m) ||
-                        this._bewohnerGerade(a, pts[i], neben(null), m));
+                    (this._bewohnerGerade(a, pts[i], fuss, m) || this._bewohnerGerade(a, pts[i], null, m));
                 if (um && um.length === 2) {
                     pts.splice(i, 0, um[0]);
                     alt.splice(i, 0, undefined);
