@@ -256,23 +256,38 @@ async function bodenRollen(tor) {
 // Der Kreis der Werkbank (`lauf`, seine Seiten-Funktion aus dem Spiel-Baum, ohne die Spur der Route) zählt 600 SPIEL-s (die
 // Uhr `st.spielZeit`, „je 10 Spielminuten“), je Sicht an der Mess-Wiese, 1280×720, Bestand des Spiels. Der ZEITRAFFER an der
 // Schleife (`renderer.setAnimationLoop`) fährt je Bild n Takte zu TAKT_DECKEL_S (0,1 s): 600 Spiel-s in Sekunden statt in
-// 10 min; die Schüsse halten die Welt wie im Lauf (`kreis.halt`), die Sichtung ist dieselbe (Klassen-Maske tier ≥ 200 px am Maß
-// 1280×720, `imBlick`). Was der Raffer gröber macht, macht das Urteil strenger: die Prüfung je 250 ms Wanduhr liegt n-mal weiter in
-// der Spiel-Zeit (weniger Schuss-Gelegenheiten). Die Bild-Zeiten dieser Probe sind keine Kadenz (der Strom urteilt sie nicht).
-// DER GRUND DES RISSES BEIM NAMEN (w4-fehlt-acht; Radeon riss in jeder Fahrt am 90/99-s-Deckel): die Sichtung. Jedes Schuss-Paar sind
-// drei Aufnahmen des Ausgabe-Pfads (G, G2, O) zu je 33 Bildern bei 1280×720, und der Kreis schoss, solange ein ungesehenes Tier im
-// Blick stand — 28 und 21 Paare an 3ed96b3f (Radeon, eigener Boot), die Welt steht derweil. DER SCHNITT: die Sichtung zählt bis zur
-// Staffel (`STAFFEL` 3 Sichtungen je Sicht), danach schießt der Kreis nie mehr und wacht bis 600 Spiel-s über das Schlupfloch (`imBlick`
-// zählt jeden Takt der Prüfung weiter) — das Urteil (≥ 3, im Blick 0, 600 Spiel-s, die Sicht) fällt gleich; nur die Zahl der Sichtungen
-// über drei fällt weg. Der Anker `__kreis` legt den Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Schüsse,
-// Sichtungen; nie am Anfang `KREIS-`, die Zeile des Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
+// 10 min. Die Bild-Zeiten dieser Probe sind keine Kadenz (der Strom urteilt sie nicht).
+// DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
+// Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
+// ein Raffer-Bild), nie je 250 ms Wanduhr (die lag n-mal weiter in der Spiel-Zeit), und ohne die Sperre von 2 Spiel-s zwischen zwei
+// Prüfungen. Steht ein ungesehenes Tier im Blick, das 200 px decken KANN, zeichnet DIE MASKE der Klasse tier: drei Bilder des
+// Ausgabe-Pfads (`ausgabeAufnahme` aus dem Spiel-Baum, gekürzt um die Geschichte — der Neubeginn der Folge je Bild, gleicher Versatz,
+// gleiche Dither-Phase, die Schatten-Karten neu; ohne Erst-Ruhe, ohne Rückstrahl, ohne die 32 Bilder der zeitlichen Auflösung, ohne
+// die Abnahme des Beweisbilds): G und G2 mit, O ohne Tiere — dieselbe Klassen-Teilung wie vorher, ein Bild je Schuss statt 33 mit
+// Rücklese und Abnahme. Jede Begegnung wird so in jeder Spiel-Sekunde gemessen, die sie im Blick steht, bis ihr Tier ≥ 200 px deckt;
+// jedes Tier zählt einmal; die Sichtung zählt über alle 600 Spiel-s (keine Kappe bei der Staffel). `imBlick` zählt jedes Tier, das
+// in der Prüfung einer Spiel-Sekunde zum ersten Mal da ist und schon im Blick steht (das Schlupfloch). Der Anker `__kreis` legt den
+// Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Masken, Sichtungen; nie am Anfang `KREIS-`, die Zeile des
+// Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
 async function tierKreis(tor) {
     const n = 10;
-    const STAFFEL = 3;
+    const TAKT_S = 1;
+    const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
+        ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
+        ["await r._rueckstrahlJetzt(() => (neubeginn(), frame()));", ""],
+        ["const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
+        ["if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };", "if (BW === W && BH === H) return { u8: voll, info, ms };"],
+    ]);
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
-            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
-        ["if (!kand.some((q) => q.neu)) continue;", "if (!kand.some((q) => q.neu) || kreis.gesehen.size >= " + STAFFEL + ") continue;"],
+            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
+        ["await sleep(250);\n                    st.yaw = kreis.gier",
+            "for (const z = s + " + TAKT_S + "; st.spielZeit - kreis.z0 < z; ) await new Promise((ok) => requestAnimationFrame(ok));\n" +
+            "                    s = st.spielZeit - kreis.z0;\n                    kreis.pruefungen++;\n                    st.yaw = kreis.gier"],
+        ["naechst = s + 2;", ""],
+        ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
+            "const schuss = async () => (await (" + bild + ')(W, H, 0, { satz: "messung" })).u8;'],
+        ["kreis.schuesse++;", "kreis.masken++;"],
     ]);
     const page = await tor.seite();
     tor.karte();
@@ -305,7 +320,7 @@ async function tierKreis(tor) {
             const zeile = setInterval(() => {
                 page.evaluate(() => {
                     const k = window.__kreis;
-                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), schuesse: k.schuesse, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
+                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
                 }).then((z) => z && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
             }, 10000);
             try {
@@ -317,7 +332,7 @@ async function tierKreis(tor) {
                 await page.evaluate(() => delete window.__kreis).catch(() => {});
             }
             const k = o && o.kreis;
-            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte je Bild" + f + ") " + JSON.stringify(k || {}));
+            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte je Bild, Prüfung je " + TAKT_S + " Spiel-s" + f + ") " + JSON.stringify(k || {}));
         }
     } finally {
         // der Raffer fällt: liegt kein fremder Haken über ihm, steht die Schleife des Renderers wieder wie vorher

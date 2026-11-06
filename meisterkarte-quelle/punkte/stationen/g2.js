@@ -65,6 +65,28 @@ const KREATUR = [
     "scripts/lib/welt-boot.cjs",
 ];
 
+// DAS URTEIL DES KREISES (tiere.K5#1, proben-welt.cjs `tierKreis`): je Sicht die Zeile `KREIS-<sicht>`; GRÜN nur, wenn JEDE Sicht ≥ 3
+// Tiere ≥ 200 px der Klassen-Maske tier zählt, über ≥ 600 Spiel-s, in ihrer Sicht, und keines im Blick erschien
+function kreisUrteil(j, lauf) {
+    const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
+    const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
+    if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
+    const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
+    return {
+        gruen: K.every(([s, k]) => gut(s, k)),
+        zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
+            "), " + k.pruefungen + " Prüfungen, " + k.masken + " Masken, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
+    };
+}
+// die Roh-Ausgabe des Kreises für die Proben der Station: zwei Zeilen `KREIS-<sicht>`, `f(k, sicht)` verändert je Sicht
+function kreisRoh(f = (k) => k) {
+    const k0 = {
+        ego: { sicht: "first", spielS: 600, pruefungen: 600, masken: 41, imBlick: 0, max: 9, gesehen: [["deer", "412 px", "38 m", "51 s"], ["wolf", "260 px", "44 m", "203 s"], ["deer", "1290 px", "21 m", "388 s"]] },
+        third: { sicht: "third", spielS: 601, pruefungen: 600, masken: 57, imBlick: 0, max: 11, gesehen: [["deer", "233 px", "51 m", "17 s"], ["bear", "905 px", "27 m", "160 s"], ["fox", "214 px", "12 m", "322 s"], ["deer", "618 px", "33 m", "540 s"]] },
+    };
+    return ["ego", "third"].map((s) => "KREIS-" + s + " EXIT=0 (41.2 s Wanduhr, Zeitraffer 10 Takte je Bild, Prüfung je 1 Spiel-s) " + JSON.stringify(f(JSON.parse(JSON.stringify(k0[s])), s))).join("\n");
+}
+
 // der Schwarm (luftwasser.K5): das Gesetz, der Takt und sein Zeichner, die Bühne und der Draw-Zähler der Werkbank
 const SCHWARM = [
     "tetrapoda-core.js",
@@ -4327,49 +4349,44 @@ const stationen = [
     // DIE WELT DER SITZUNG (punkte.cjs fahreSitzung) an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
     // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
     // wiese` und der Kreis der Werkbank (`lauf`, `wandern: kreis`): der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
-    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
-    // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
-    // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
-    // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
-    // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
-    // Headless (swiftshader 320×180, die Schwelle auf 1280×720 normiert, 28.10., Zweig tier-sicht): main Ego 1 Sichtung (Hirsch
-    // 90 m), Third 3 (Hirsch 94/54/51 m), keines im Blick erschienen — ROT an Ego; mit oeko-k2-bestand (d9928c7e) Ego 3 (Bär 5 m,
-    // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
-    // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
-    // Radeon oder GTX bei 1280×720.
-    // IN DER SITZUNG (29.10., proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je
-    // Bild) — 600 Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht; bis 29.10. zwei mal zehn Minuten im eigenen Boot (Radeon
-    // b3f9ae95: 32,07 min Arbeit).
-    // DER RISS BEIM NAMEN (w4-fehlt-acht): in jeder GPU-Fahrt am Deckel (Radeon 90/99 s) — die Sichtung schoss je ungesehenem Tier im Blick
-    // ein Paar aus drei Aufnahmen zu 33 Bildern (1280×720). Jetzt schießt sie bis zur Staffel (3 je Sicht) und der Kreis wacht danach
-    // bis 600 Spiel-s über das Schlupfloch (proben-welt.cjs `tierKreis`, STAFFEL); je 10 s eine FORTSCHRITT-Zeile nennt am Deckel, wo er stand
-    // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt
-    // Radeon 1,98 gegen GTX 3,25 ms, 715754fc). DER DECKEL DER ARBEIT (geschätzt, ungemessen in der Sitzung): 12 000 Takte zu 0,1 Spiel-s,
-    // ≤ 2 Bilder je Raffer-Bild unter der GPU-Leine, die Sichtung bis zur Staffel, Third am selben Ort — 55 s
+    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (G und G2 mit, O ohne Tiere unter
+    // der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in BEIDEN Sichten ≥ 3
+    // Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Genesis fehlt der Station: der
+    // Ring der Tore liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
+    // IN DER SITZUNG (proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je Bild) — 600
+    // Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht.
+    // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm): bis 8efb6318 zählte die Station nur in ihren Schüssen — je ungesehenem Tier im Blick
+    // ein Paar aus drei Aufnahmen zu 33 Bildern mit Abnahme, höchstens alle 2 Spiel-s, geprüft je 250 ms Wanduhr (≈ 1 Prüfung je 17
+    // Spiel-s an der Radeon); der Deckel 90 s riss nach 384 Spiel-s Ego (23 Schuss-Paare, gesehen 0), die Null-Renderer-Sonde
+    // (w16-tier-blick d8166bb8) zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen. JETZT prüft der Kreis JEDE Spiel-Sekunde
+    // (ein Raffer-Bild) und zeichnet, steht ein ungesehenes Tier im Blick, die Maske aus drei EINZEL-Bildern des Ausgabe-Pfads (je der
+    // Neubeginn der Folge, ohne die 32 Bilder der Geschichte, ohne Rücklese der Abnahme): jede Begegnung zählt, solange sie im Blick
+    // steht, nicht nur ein Schuss-Treffer; keine Kappe bei der Staffel. EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die
+    // Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt Radeon 1,98 gegen GTX 3,25 ms, 715754fc).
+    // DER DECKEL: DECKEL_K5
     {
         kriterium: "tiere.K5",
         staffel: 1,
         geraet: "radeon",
         probe: {
             befehl: PW.torBefehl(PW.tierKreis),
-            sek: 55,
-            ausnahme: "1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) im Zeitraffer der Schleife, die Sichtung bis zur Staffel — die Arbeit, nie das Einschwingen",
+            sek: 90,
+            ausnahme: "1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) im Zeitraffer der Schleife, je Spiel-s die Prüfung und im Blick die Maske — die Arbeit, nie das Einschwingen",
             mutiert: false,
         },
         gpu: true,
         zeit: false,
         minuten: 30,
-        urteil: (j, lauf) => {
-            const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
-            const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
-            if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
-            const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
-            return {
-                gruen: K.every(([s, k]) => gut(s, k)),
-                zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
-                    "), " + k.schuesse + " Schuss-Paare, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
-            };
-        },
+        urteil: kreisUrteil,
+        proben: [
+            { name: "die Begegnung zählt in beiden Sichten (3 und 4 Tiere ≥ 200 px, keines erschien im Blick)", stdout: kreisRoh(), gruen: true },
+            { name: "Mutante Bestand 0: keine Geburt, kein Tier — 0 Sichtungen", stdout: kreisRoh((k) => Object.assign(k, { gesehen: [], max: 0, masken: 0 })), gruen: false },
+            { name: "Mutante ein Tier erscheint IM Blick (das Schlupfloch)", stdout: kreisRoh((k, s) => (s === "third" && (k.imBlick = 1), k)), gruen: false },
+            { name: "der Kreis endet vor 600 Spiel-s (der Deckel der Fahrt)", stdout: kreisRoh((k, s) => (s === "ego" && (k.spielS = 384), k)), gruen: false },
+            { name: "zwei Sichtungen in Ego", stdout: kreisRoh((k, s) => (s === "ego" && k.gesehen.splice(2), k)), gruen: false },
+            { name: "Third misst in Ego (die Sicht wechselt nicht)", stdout: kreisRoh((k, s) => (s === "third" && (k.sicht = "first"), k)), gruen: false },
+            { name: "keine KREIS-Zeile der Third", stdout: kreisRoh().split("\n")[0], gruen: false },
+        ],
         pfad: [
             ...KREATUR,
             "stamm/bild-*.js",
