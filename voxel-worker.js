@@ -1134,6 +1134,11 @@ function waldStand(x, z) {
     return waldRausch.n.noise2D(x * f, z * f);
 }
 
+// Der Schnee des Sommers am Boden (die Waldgrenze, phyto-core `forestWaldgrenze`): gelaende-core `schnee`, Versatz 0 — wie der Wirt.
+function waldSchnee(x, z, y) {
+    return G.schnee(state, y, x, z, 0);
+}
+
 // Mirror von `_ortFrei`: trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Erdbau zu berühren?
 function ortFrei(x, z, T) {
     const E = state.erdbau;
@@ -1172,6 +1177,7 @@ function waldCtx(msg) {
         extras: msg.extras,
         fbm: forestFbm,
         stand: waldStand,
+        schnee: waldSchnee,
         surfaceYAt: (x, z) => {
             bodenX = x;
             bodenZ = z;
@@ -3937,7 +3943,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
         FERN_KRONEN.C = C;
     }
     for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
-    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z));
+    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z), waldSchnee(x, z, y));
     const S = K.kronenSchatten;
     let summe = 0;
     let r = 0;
@@ -4037,6 +4043,7 @@ function kammKrone(msg) {
         extras: msg.extras,
         fbm: forestFbm,
         stand: waldStand,
+        schnee: waldSchnee,
         surfaceYAt: (x, z) => {
             [bx, bz, by] = [x, z, law(x, z)];
             return by;

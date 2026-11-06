@@ -2609,10 +2609,11 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st) {
-        // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee) {
+        // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
+        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -2803,7 +2804,10 @@
         // Standort wie in der Ertragstafel (BWI 4). Bis hierher sättigte Matérn II bei fester Packung: 36–48 Stämme/ha bei
         // jeder Dichte, das Dach deckte 0,16, die Mess-Wiese war ein Loch des Zufalls. Gemessen (flach, 3 600 Zellen, Stand-Bänder
         // < −0,1 · −0,1–0,15 · 0,15–0,4 · ≥ 0,4): 1 · 61 · 131 · 349 Stämme/ha; Mess-Wiese Kronen-Deckung 0,108 → 0,116 (≤ 0,12).
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6 },
+        // DIE WALDGRENZE (`forestWaldgrenze`): `waldgrenze` ist der Schnee-Anteil des Sommers, ab dem kein Baum mehr geboren wird —
+        // darunter die Kampfzone (die Geburt fällt glatt von 1 bei 0). Der Wald endet unter dem ewigen Schnee, nie in ihm: wo
+        // ein Viertel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines).
+        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.25 },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -2816,6 +2820,20 @@
         let t = (st - B.schluss[0]) / (B.schluss[1] - B.schluss[0]);
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         return 1 - (1 - B.min) * t * t * (3 - 2 * t);
+    }
+    // DIE WALDGRENZE (w16-wald-innen-pm, der Befund am gipfel-blick vp-0611h): der Wald endet unter dem Schnee des Sommers —
+    // `schnee` ist der Anteil der Schneegrenze des Gelände-Kerns (gelaende-core `schnee` zur Sommer-Mitte, Versatz 0: die
+    // Null-Grad-Linie des Sommer-Mittels, ihre Zungen in Mulden und auf Rücken), dieselbe Quelle, die die Boden-Farbe weißt; die
+    // Geburt fällt glatt von 1 (kein Schnee) auf 0 bei `bestand.waldgrenze`. Unterhalb der Grenze (schnee 0) ist der Wald
+    // byte-gleich. Bis hierher wuchs der geschlossene Bestand bis auf den höchsten Gipfel (gipfel-blick 172,2 m, Schnee 0,48:
+    // 46 Bäume binnen 25 m, Kronen-Deckung 0,285 — der Blick vom Gipfel stand im Wald); die Geburt allein (1 − schnee) hob ihn
+    // auf 49 (Matérn sättigt: weniger Dach, mehr freie Darts).
+    function forestWaldgrenze(schnee) {
+        if (!Number.isFinite(schnee))
+            throw new Error("phyto-core forestWaldgrenze: der Schnee-Anteil fehlt (KERN-PFLICHT)");
+        let t = schnee / FOREST_PACK.bestand.waldgrenze;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return 1 - t * t * (3 - 2 * t);
     }
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
@@ -2933,7 +2951,10 @@
             for (let k = 0; k < nb.length; k++) {
                 const o = nb[k];
                 if (o === d) continue;
-                if (forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk * Math.min(d.schluss, o.schluss)) && forestPrioWins(o, d))
+                if (
+                    forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk * Math.min(d.schluss, o.schluss)) &&
+                    forestPrioWins(o, d)
+                )
                     return false;
             }
         }
@@ -2965,7 +2986,8 @@
                 const o = nb[k];
                 const dx = d.x - o.x;
                 const dz = d.z - o.z;
-                schirm = o !== d && dx * dx + dz * dz < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+                schirm =
+                    o !== d && dx * dx + dz * dz < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
             }
         }
         if (!schirm) return 0;
@@ -3186,10 +3208,15 @@
             const z = (cz + rng()) * CELL;
             const sd = forestStandDensity(ctx.fbm, x, z);
             const st = ctx.stand(x, z); // der Stand des Standorts (FOREST_PACK.bestand): Lichtung und Schluss
-            if (rng() > forestGeburt(sd) * forestLichtung(st)) continue;
+            const wurf = rng();
+            const geburt = forestGeburt(sd) * forestLichtung(st);
+            if (wurf > geburt) continue;
             // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet.
             const surfaceY = ctx.surfaceYAt(x, z);
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+            // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
+            // ohne Schnee bleibt jeder Wurf, wie er war
+            if (wurf > geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY))) continue;
             const waterY = ctx.waterYAt(x, z);
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
@@ -5884,6 +5911,7 @@
         forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
         forestSchluss: forestSchluss, // w16-wald-innen — der Kronen-Schluss des Bestands aus dem Stand (Mindestabstand × c)
         forestLichtung: forestLichtung, // w16-wald-innen — die Geburt des Walds am Stand (0 = Lichtung/Wiese)
+        forestWaldgrenze: forestWaldgrenze, // w16-wald-innen-pm — die Geburt im Schnee des Sommers (gelaende-core `schnee`)
         forestSchicht: forestSchicht, // w16-wald-innen — die Schicht eines Darts: 1 Dach, das Alter im Zwischen-/Unterstand, 0
         FOREST_URTEIL_REICH: FOREST_URTEIL_REICH, // w16-wald-innen — die Zellen ±n, deren geborene Darts ein Bestand liest
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt

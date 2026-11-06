@@ -1065,11 +1065,16 @@ class AnazhRealm_vegetation_baum {
     // ohne sie kein L0/L1/L2/Impostor. IM ALTER SEINES ORTS (stoffe.K5#2, `_baumAlter`): der Jungwuchs (alter < 1) steht in
     // `alter` × seiner Größe, gekappt auf das Maß der Kohorte (`SUKZESSION.kappe`), und trägt seine Gestalt als Prägung (`studioOv.alter`, phyto-core `treeParams(…, alter)` im
     // Foundry-Pfad — Körper, Karte und der gefühlte Baum aus EINER Ableitung, ihr ov-Hash trennt sie vom gewachsenen); kein
-    // Sonder-Sämling. Die Krone streut Laub, sobald der
+    // Sonder-Sämling. DIE SCHICHT DES BESTANDS (phyto-core `forestSchicht`, `d.alter` < 1: Zwischen- und Unterstand unter dem
+    // Schirm des Dachs) ist keine Prägung: der beherrschte Baum trägt die Gestalt seiner Art in der Größe seiner Schicht (die
+    // Krone T·alter des Plans IST die Krone der skalierten Gestalt) — eine Instanz im Satz seiner Art, nie ein eigener Satz.
+    // Bis w16-wald-innen-pm prägte die Schicht `studioOv.alter`: je Art × Gestalt drei Sätze, am Dorf-Spawn 5 → 14 Sätze binnen
+    // 60 m, die Befehle 71 → 129 (OMEN vp-0611h). Die Krone streut Laub, sobald der
     // Baum als Eintrag steht (`spawnArchitecture`, Radius = die Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim
     // Wurf. Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die
     // reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
     _waldDartSetzen(d, alter) {
+        const g = Math.min(alter, d.alter || 1); // die Größe: das Alter des Orts und die Schicht des Bestands, das kleinere
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const regionSeed = `${worldSeed}|${d.sp}|${Math.floor(d.x / 256)},${Math.floor(d.z / 256)}`;
         const variantIndex =
@@ -1081,7 +1086,7 @@ class AnazhRealm_vegetation_baum {
                 {
                     seed: d.seed,
                     silent: true,
-                    scale: alter < 1 ? Math.min(d.s, AnazhRealm.SUKZESSION.kappe) * alter : d.s,
+                    scale: g < 1 ? Math.min(d.s, AnazhRealm.SUKZESSION.kappe) * g : d.s,
                     rotationY: d.rotY,
                     _lodSpecies: d.sp,
                     _lodVariantIndex: variantIndex,
@@ -1145,7 +1150,7 @@ class AnazhRealm_vegetation_baum {
                 for (const d of this._forestCellDarts(gx, gz, seedInt)) {
                     if (d.x < x0 || d.x >= x1 || d.z < z0 || d.z >= z1 || !gepflanzt(d.x, d.z)) continue;
                     if (fd < 1 && d.keep >= fd) continue;
-                    const alter = Math.min(this._baumAlter(d.x, d.z, zelle), d.alter || 1);
+                    const alter = this._baumAlter(d.x, d.z, zelle); // die Prägung des Orts (die Schicht trägt nur die Größe)
                     const e = am(d);
                     const ov = e && (e.studioOv || (e.opts && e.opts.studioOv));
                     if ((e ? (ov && ov.alter) || 1 : 0) === alter) continue;
@@ -1205,9 +1210,9 @@ class AnazhRealm_vegetation_baum {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     // DAS ALTER DES ORTS (stoffe.K5#2, `_baumAlter`): wo ein Baum fiel oder die Narbe eines Brands liegt, steht
-                    // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4); der Zwischen- und Unterstand des Bestands
-                    // steht im Alter seiner Schicht (phyto-core `forestSchicht`, `d.alter`) — das jüngere gilt
-                    const alter = Math.min(this._baumAlter(d.x, d.z, zelle), d.alter || 1);
+                    // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4); die Größe seiner Schicht (Zwischen- und
+                    // Unterstand, phyto-core `forestSchicht`, `d.alter`) legt `_waldDartSetzen` an
+                    const alter = this._baumAlter(d.x, d.z, zelle);
                     if (!(alter > 0)) continue;
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).

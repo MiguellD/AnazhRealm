@@ -2464,6 +2464,8 @@ class AnazhRealm_vegetation_wiese {
                       extras: this._forestExtraSpecies(),
                       fbm: (px, pz) => this._forestFbm(px, pz),
                       stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
+                      // die Waldgrenze (phyto-core `forestWaldgrenze`): der Schnee des Sommers am Boden, Versatz 0 (die Sommer-Mitte)
+                      schnee: (px, pz, y) => globalThis.__gelaendeCore.schnee(this._gelaende(), y, px, pz, 0),
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
