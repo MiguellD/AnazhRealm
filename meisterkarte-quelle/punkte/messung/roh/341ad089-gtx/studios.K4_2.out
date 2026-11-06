@@ -1,0 +1,8 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\341ad089-gtx\studios.K4_2.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804 90
+K4 garage: Differenz 0.8429 ·  (15.9 s: buehne 1.5 · welt 3.4 · bild 10.4 · schuss 0.7)
+K4 portale: Differenz 0.9435 ·  (16.4 s: buehne 3.1 · welt 0.5 · bild 12.4 · schuss 0.5)
+K4 schmiede: Differenz — · ROT: Navigating frame was detached (3.1 s)
+@@ PROBE-FEHLER ConnectionClosedError: Connection closed. |     at Connection._rawSend (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:106:35) |     at Connection.send (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:99:21) |     at CdpBrowser._createPageInContext (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Browser.js:207:53) |     at CdpBrowserContext.newPage (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\BrowserContext.js:140:40)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
