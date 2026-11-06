@@ -257,6 +257,12 @@ async function bodenRollen(tor) {
 // Uhr `st.spielZeit`, „je 10 Spielminuten“), je Sicht an der Mess-Wiese, 1280×720, Bestand des Spiels. Der ZEITRAFFER an der
 // Schleife (`renderer.setAnimationLoop`) fährt je Bild n Takte zu TAKT_DECKEL_S (0,1 s): 600 Spiel-s in Sekunden statt in
 // 10 min. Die Bild-Zeiten dieser Probe sind keine Kadenz (der Strom urteilt sie nicht).
+// DER RAFFER TAKTET BEI RUHENDEM LOOP (w16-tier-blick-pm, `_loopRuht` in stamm/dirigent-takt.js): bis dahin fuhr er die n Takte in
+// der Schleife des Renderers — die GPU-Leine (GPU_FRAMES_IM_FLUG 2) gab je Raffer-Bild höchstens zwei Bilder frei, die übrigen
+// acht Takte waren ZWISCHEN-TAKTE ohne Leben (Tiere, Bewohner, Vögel), ihre Zeit trug der nächste Bild-Takt nur bis zu EINEM Deckel
+// nach: das Leben lief mit 0,2 Spiel-s je Spiel-Sekunde, der Bestand eines 600-s-Kreises war der von 120 s. Jetzt ruht die Schleife
+// des Renderers und der Raffer ruft die Takte selbst (je rAF der Knoten-Rahmen, dann n Takte) — das Gesetz des Spiels für ein
+// Instrument, das selbst taktet: jeder Takt trägt die ganze Welt, die Leine hält nur sein Bild.
 // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
 // Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
 // ein Raffer-Bild), nie je 250 ms Wanduhr (die lag n-mal weiter in der Spiel-Zeit), und ohne die Sperre von 2 Spiel-s zwischen zwei
@@ -299,14 +305,20 @@ async function tierKreis(tor) {
         Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
         if (Z.roh) return;
         Z.roh = rend.setAnimationLoop;
+        Z.gen = 0;
         Z.huelle = rend.setAnimationLoop = function (cb) {
-            if (typeof cb !== "function") return Z.roh.call(this, cb);
+            const g = ++Z.gen;
+            if (typeof cb !== "function" || !Z.n) return Z.roh.call(this, cb);
+            Z.roh.call(this, null);
             let ts = null;
-            return Z.roh.call(this, function (t, x) {
-                if (!Z.n) return cb.call(this, t, x);
+            const bild = (t) => {
+                if (Z.gen !== g) return;
                 if (ts === null) ts = t;
-                for (let i = 0; i < Z.n; i++) cb.call(this, (ts += Z.ms), x);
-            });
+                rend._nodes?.nodeFrame?.update();
+                for (let i = 0; i < Z.n && Z.gen === g; i++) cb.call(rend, (ts += Z.ms));
+                if (Z.gen === g) requestAnimationFrame(bild);
+            };
+            requestAnimationFrame(bild);
         };
         return 1;
     }, n);
@@ -341,6 +353,7 @@ async function tierKreis(tor) {
             const rend = window.anazhRealm.state.renderer;
             if (!Z) return 1;
             Z.n = 0;
+            Z.gen++;
             if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer;
             return 1;
         });
