@@ -1,0 +1,144 @@
+{
+ "sha": "db431cf08b0df18a1da8b770622d1a18dc0c0fa1",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T12:24:09.782Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.62 [-14, -4] · lippeA 13.75 [4, 14] · hoehleL -10.14 [-12, 0] · hoehleA 6.57 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.62 [-14, -4] · lippeA 13.75 [4, 14] · hoehleL -10.14 [-12, 0] · hoehleA 6.57 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 32.1,
+   "zeit": "2026-11-06T12:21:16.926Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0.0657 nyquist 0.161 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1749 (Arm 0.998), 2 m glatt 0.027 nyquist 0.1709 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0705 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.13,
+   "gpu": "nvidia/pascal",
+   "s": 67.9,
+   "zeit": "2026-11-06T12:21:49.083Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.15 · fahrt 0.32 · nacht 0.16 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: Klang-Takt p95 gehen 0.15 · fahrt 0.32 · nacht 0.16 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "s": 35.9,
+   "zeit": "2026-11-06T12:23:22.384Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158092 → 604210 px (×3.82) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.47,
+   "gpu": "nvidia/pascal",
+   "s": 28.4,
+   "zeit": "2026-11-06T12:24:09.782Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T12:20:39.454Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 8.4,
+  "grundstellungS": [
+   5.9,
+   0.1
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 27.8,
+    "takte": 756,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K5#2",
+    "s": 19.5,
+    "takte": 709,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "wetter.K3#2",
+    "s": 11.4,
+    "takte": 650,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "klang.K5#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 5.9
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K2#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   }
+  ],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1456,
+   "frameP95": 33.53,
+   "taktP95": 33.62,
+   "vramMax": 131,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "wetter.K3#2",
+     "m": 1162,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 211,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 237.9,
+  "minuten": 4.05
+ }
+}
