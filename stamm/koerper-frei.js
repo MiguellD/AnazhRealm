@@ -1296,8 +1296,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_frei]);
 // unteren), dazu sein Weg im Schritt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig unter ruheMs
 // (jeder Punkt), nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach huelleM Weg (dazwischen folgt sie an Ort und Stelle); Grund und
 // Bauten gelten umweltM (m) Weg (`_freiUmwelt`).
-// Die Kosten (Node, flacher Boden, die Bank: 100 Kisten in 25 Säulen fallen, stoßen, ruhen): vorher (4 × Kontakt-Suche,
-// 8 + 8 Gänge je Teil-Schritt) 24 ms je Schritt wach; der Schlaf kostet nichts (ruht jeder, rechnet der Löser nicht).
+// Die Kosten je Schritt mit 100 wachen Kisten (Median; physik.K3#2, Null-Renderer an der Mess-Wiese): das Trümmerfeld (aus 2–4 m
+// gefallen) main 4,8 → 0,7 ms, der Haufen 4 hoch main 8,8 → 1,2 ms; die Bank (Node, flacher Boden) 4,2 → 0,93 ms; der Schlaf
+// kostet nichts (ruht jeder, rechnet der Löser nicht).
 // Die Packung des Lösers (`_freiKoerperPacken`, `_freiKontakt`): Zahlen je wachem Körper und je Kontakt im Puffer.
 AnazhRealm.FREI_KONTAKT = 76;
 // die Marke eines Baus ohne freien Körper (die Stand-Tafel, `architectures`): vier leere Plätze der Drehung
