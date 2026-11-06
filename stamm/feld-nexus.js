@@ -995,11 +995,16 @@ class AnazhRealm_feld_nexus {
         const { ziele } = this._studioWortGruppen();
         const ss = { const: "spawn_studio" };
         const alle = Object.values(ziele).flat();
+        // DER ORT IST EIN ORT (ki.K5, 06.11.): wo die Signatur eines Verbs einen Ort liest (`_dslForm`: positionNode/posNode), steht
+        // in der Form ein Ort-Tupel ["at_player_forward", 12] — nie ein beliebiger Wert. Mit dem knappen Vertrag schrieb qwen3:4b
+        // den Ort nackt („at_player_forward"), fünf von 41 Programmen fielen ungültig.
+        const ORT = { $ref: "#/$defs/ort" };
+        const istOrt = (p) => p === "positionNode" || p === "posNode";
         const spawn = !alle.length
             ? []
             : [
                   ...[2, 3, 4, 5].map((n) =>
-                      tupel([ss, { $ref: "#/$defs/wort" }, W, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
+                      tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
                   ),
                   ...Object.entries(regler)
                       .filter(([art, ds]) => ziele[art] && ds.length)
@@ -1007,7 +1012,7 @@ class AnazhRealm_feld_nexus {
                           tupel([
                               ss,
                               { enum: ziele[art] },
-                              W,
+                              ORT,
                               zahl,
                               { anyOf: [zahl, { type: "null" }] },
                               {
@@ -1019,7 +1024,17 @@ class AnazhRealm_feld_nexus {
                           ])
                       ),
               ];
-        const verben = Object.keys(this.dslEffects).filter((n) => n !== "spawn_studio");
+        // je Verb mit Ort die Tupel jeder Länge (die hinteren Argumente sind frei), die übrigen Verben über den Kopf mit Rest
+        const mitOrt = [];
+        const verben = [];
+        for (const [n, fn] of Object.entries(this.dslEffects)) {
+            if (n === "spawn_studio") continue;
+            const ps = this._dslForm(fn).split(", ");
+            if (!ps.some(istOrt)) verben.push(n);
+            else
+                for (let k = 0; k <= ps.length; k++)
+                    mitOrt.push(tupel([{ const: n }, ...ps.slice(0, k).map((p) => (istOrt(p) ? ORT : W))]));
+        }
         const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
         return {
             type: "object",
@@ -1033,7 +1048,8 @@ class AnazhRealm_feld_nexus {
             additionalProperties: false,
             $defs: {
                 ...(alle.length ? { wort: { enum: alle } } : {}),
-                programm: { anyOf: [...spawn, ...kopfMitRest(verben, 8)] },
+                programm: { anyOf: [...spawn, ...mitOrt, ...kopfMitRest(verben, 8)] },
+                ort: { anyOf: kopfMitRest(Object.keys(this.dslPositions), 4) },
                 wert: {
                     anyOf: [
                         zahl,
@@ -1134,7 +1150,7 @@ class AnazhRealm_feld_nexus {
             ...this._dslVokabular(),
             // DIE STUDIOS KNAPP (ki.K5, 06.11.): je Gruppe vier Wörter (`_studioWordsForPrompt`); die Regler, die ein Satz nennt,
             // stehen in SEINEM Kontext (`_kiAbruf`) — der feste Vertrag fiel von 5 532 auf ~2 000 Token
-            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen: <wort> genau EIN Wort der Welt, nie seine Gruppe; Anzahl 1–24; <same> Zahl oder null.',
+            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen, z.B. ["spawn_studio","eiche",["near_water",60],6]: <wort> genau EIN Wort der Welt, nie seine Gruppe (eine Art der Welt wächst nur so), Anzahl 1–24, <same> Zahl oder null.',
             `  Wörter der Welt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
             '<regler> nur aus „Regler, die der Satz nennt“ im Kontext: {Regler: Zahl}, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; die Gestalt des Spielers und die Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
             'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion; es berührt nur Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
@@ -1322,21 +1338,15 @@ class AnazhRealm_feld_nexus {
         return { error: ["llm.fehler.keine-erinnerung", { ist }] };
     }
 
+    // DER KONTEXT DES SATZES: was der Vertrag nicht trägt — die Seele des Spielers und der wahre Schreiber des Wetters
+    // (affekt.K4#2: die KI nennt, wer es schrieb, nie eine Vermutung). OHNE ZWILLING (ki.K5, 06.11.): die Emotionen als Zahlen
+    // (die Stimmung nennt der Vertrag, `_emotionState`), Wetter und Kreaturen (der Vertrag zählt sie) und die Bildrate fielen —
+    // ihre Zahlen wechselten jeden Satz, das Modell rechnete dahinter alles neu (3 s je Satz an 4 CPU-Kernen).
     llmBuildContext() {
-        const e = (this.state.player && this.state.player.emotions) || {};
-        const top = Object.entries(e)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([k, v]) => `${k}=${v.toFixed(2)}`);
-        // der wahre Schreiber des Wetters (affekt.K4#2): die KI nennt, wer es schrieb, nie eine Vermutung
         const wer = this._wetterSchreiberZeile();
-        // DAS WECHSELNDE ZULETZT (ki.K5, wie im Vertrag, KI H1): der Prompt-Cache des Modells hält bis zum ersten geänderten
-        // Token — `fps` wechselt jeden Satz und stand vorn, die Zeilen dahinter rechnete das Modell jedes Mal neu
         return [
             AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
             `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
-            `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
-            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
         ].join("\n");
     }
 

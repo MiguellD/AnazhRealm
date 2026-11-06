@@ -2119,7 +2119,7 @@ class AnazhRealm_studio_bruecke {
     // Gestalt des Spielers; in allen Arten hätte „höher springen" die Federrate des Wagens gerufen). Leser: der Kontext der Welt-KI
     // (`zeile`, hinter dem Prompt-Cache: nur die genannten Zeilen kosten Prefill) und ihre Antwort-Form (`regler`: ein
     // Regler-Objekt trägt GENAU diese Schlüssel, ohne Treffer gibt es keines — „bau mir ein haus" kann keinen Regler mehr
-    // schreiben). { regler: {art: [Zeile …]}, zeile }.
+    // schreiben). { regler: {art: [Zeile …]}, zeile } — `zeile` nennt dazu die Werk-Wörter des Satzes in der Form des Programms.
     _kiAbruf(satz) {
         const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const K = this._studioWortKatalog();
@@ -2180,10 +2180,22 @@ class AnazhRealm_studio_bruecke {
                     );
                 if (trifft) (regler[art] = regler[art] || []).push(d);
             }
+        // die Werk-Wörter des Satzes in der Form des Programms („holzhütte" → holzhuette): der Vertrag nennt je Gruppe nur vier —
+        // ohne diese Zeile schrieb qwen3:4b für „eine kleine holzhütte" das erste Haus
+        const ziele = new Set(Object.values(this._studioWortGruppen().ziele).flat());
+        const werk = [...werkWort].map((w) => AnazhRealm._wortFalten(w)).filter((w) => ziele.has(w));
         const zeile = Object.entries(regler)
             .map(([art, ds]) => `${GRUPPE[art]}: ${ds.map((d) => this._kiReglerZeile(d)).join("; ")}`)
             .join(" · ");
-        return { regler, zeile: zeile && `Regler, die der Satz nennt: ${zeile}.` };
+        return {
+            regler,
+            zeile: [
+                werk.length && `Wörter, die der Satz nennt: ${werk.join(", ")}.`,
+                zeile && `Regler, die der Satz nennt: ${zeile}.`,
+            ]
+                .filter(Boolean)
+                .join("\n"),
+        };
     }
 
     // Die lebenden Wörter je benannter Art aus dem EINEN Wort-Katalog: { GRUPPE: {art: Name}, gruppen: {art: [[wort, nennung], …]} }
