@@ -1739,7 +1739,10 @@ class AnazhRealm_gelaende_fern {
 
     // DAS EINHÄNGEN (B2): die Antworten des Fern-Fadens in Index-Folge — je Punkt das Gesetz in die Gedächtnisse des Rings
     // (Höhe, Schutt, voll, Fläche, Spiegel, Fluss, Teile), dann Lage und Farbe durch die EINE Setz-Naht; EIN Hochladen je Takt.
-    // Erst der volle Ring wird sichtbar (kein Null-Blob).
+    // Erst der volle Ring wird sichtbar (kein Null-Blob). IN RATEN (w16-haenger, profiband.K4): je 64 Punkte fragt das Einhängen die
+    // EINE Frist der Bau-Arbeit (`_bauFrist`, im Lade-Takt die des Lade-Frames); die Scheibe am Cursor merkt, wie weit sie hängt
+    // (`k`), und wartet mit den übrigen Antworten auf den nächsten Takt — bis hier hing ein Takt jede angekommene Scheibe am Stück
+    // ein (headless Erst-Boot, nach dem Umzug an den Genesis-Ring: 128 ms in EINEM Takt).
     _fernRingEinhaengen(fr) {
         if (!fr.einhaengen.length && !fr.nachEdit.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
@@ -1755,12 +1758,24 @@ class AnazhRealm_gelaende_fern {
         };
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
-        while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
-            const { von, antwort: a } = fr.einhaengen.shift();
-            const n = a.law.length;
-            for (let k = 0; k < n; k++) setze(von + k, a, k);
-            fr.cursor = von + n;
-            done += n;
+        const frist = this._bauFrist();
+        while (
+            fr.einhaengen.length &&
+            fr.einhaengen[0].von + (fr.einhaengen[0].k | 0) === fr.cursor &&
+            !(done && performance.now() >= frist)
+        ) {
+            const e = fr.einhaengen[0];
+            const n = e.antwort.law.length;
+            let k = e.k | 0;
+            for (; k < n && !(k > (e.k | 0) && (k & 63) === 0 && performance.now() >= frist); k++)
+                setze(e.von + k, e.antwort, k);
+            done += k - (e.k | 0);
+            fr.cursor = e.von + k;
+            if (k < n) {
+                e.k = k;
+                break;
+            }
+            fr.einhaengen.shift();
         }
         // die Ecken um einen Edit: nur wo der Ring schon hängt (dahinter bringt die Scheibe den Edit mit)
         for (const { liste, antwort: a } of fr.nachEdit.splice(0))

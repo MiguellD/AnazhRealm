@@ -379,7 +379,7 @@ function huelleVerdict(m) {
     const [[wuchs, offen, boxen, rest, takt], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
-        takt !== 1 && "nach dem Bild nicht EIN Skelett je Takt (`_baumGestaltTeile`)",
+        takt !== 1 && "nicht EIN Skelett je Takt nach dem Bild (`_baumGestaltTeile`)",
         !offen && "die wartende Hülle steht nicht offen (`_weltOffen`)",
         (!boxen || rest) && "nach dem Bild fehlt die Hülle (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
@@ -916,7 +916,7 @@ async function probe(arg) {
         // DIE UHR DER SKELETTE (w16-haenger): nach dem Bild, im laufenden Spiel, fühlen zwei Bäume verschiedener Art ihre Hülle im
         // selben Takt — es wächst EIN Skelett (das Gedächtnis zählt sie), der andere wartet in der Hüllen-Schlange
         [r._baumGestaltMerk, r._loopRuht, r._skelettTakt] = [new Map(), () => false, -1];
-        [baum, st.architectures.find((e) => e && e._huelleG != null && e.type !== baum.type)].forEach((e) => r._populateBlockerAABBs(e));
+        [baum, st.architectures.find((e) => e._huelleG != null && e.type !== baum.type)].forEach((e) => r._populateBlockerAABBs(e));
         m.h.push(r._baumGestaltMerk.size);
         delete r._loopRuht;
         r._baumGestaltMerk = merk;
@@ -1927,7 +1927,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 3, 0, 1], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0, 1] }, "die Hülle wuchs vor dem Bild"], ["zwei Skelette in einem Takt", { h: [0, 1, 3, 0, 2] }, "nach dem Bild nicht EIN Skelett je Takt"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 1, 3, 0, 1], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0, 1] }, "die Hülle wuchs vor dem Bild"], ["zwei Skelette in einem Takt", { h: [0, 1, 3, 0, 2] }, "nicht EIN Skelett je Takt"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",

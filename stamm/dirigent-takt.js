@@ -1658,6 +1658,21 @@ class AnazhRealm_dirigent_takt {
         return n < kappe || (frist && performance.now() < this._ladeFrist());
     }
 
+    // DIE EINE FRIST DER BAU-ARBEIT (w16-haenger, profiband.K4): jede atomare Bau-Arbeit, die in Raten geht, arbeitet je Aufgabe des
+    // Event-Loops (der Takt ist eine) bis zu EINER Frist — der Knoten-Bau (`_knotenRate`, auch zwischen zwei Fluss-Knoten eines
+    // Schritts), das Einhängen des Fern-Rings (`_fernRingEinhaengen`, in Punkten) und der Karten-Bake (`_tickKarteWelt`, in Ansichten);
+    // jeder Leser geht mindestens ein Stück (nie verhungert). Gestellt beim ersten Leser (ERST_BAU_MS), gelöscht am Ende der Aufgabe
+    // (Mikro-Task), im Lade-Takt die Frist des Lade-Frames (K60: unter dem Ladeschirm greift keine Drossel). Bis hier trug der
+    // Knoten-Bau eine eigene (`rateFrist`), die Karte ein eigenes Fenster (KARTE_WELT_MS) und das Einhängen keine — headless
+    // Erst-Boot, Gehen: ein Schritt des Knoten-Baus 90 ms, ein Ring der Karte 138–170 ms, das Einhängen nach dem Umzug 128 ms am Stück.
+    _bauFrist() {
+        if (this._bauFristBis == null) {
+            this._bauFristBis = performance.now() + AnazhRealm.ERST_BAU_MS;
+            Promise.resolve().then(() => (this._bauFristBis = null));
+        }
+        return Math.max(this._bauFristBis, this._ladeFrist());
+    }
+
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
     // `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) fragt `_dekoWartet`.
     _buildDeferrableJobs(playerPos) {

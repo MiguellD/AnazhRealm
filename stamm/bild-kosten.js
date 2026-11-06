@@ -640,9 +640,8 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
-                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
+                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte und ihre Zeit
                 rateMs: 0,
-                rateFrist: null,
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -683,20 +682,19 @@ class AnazhRealm_bild_kosten {
     // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
     // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
     // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
-    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, je Aufgabe des Event-Loops bis zur
-    // Frist ERST_BAU_MS (der erste Schritt immer); der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
+    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, bis zur EINEN Frist der Bau-Arbeit
+    // (`_bauFrist`), auch IM Schritt: zwischen zwei Fluss-Knoten einer Shader-Stufe fragt er sie (der erste Knoten immer; `R.k` ist
+    // der nächste, der Vendor setzt je Knoten nur Bau- und Shader-Stufe — headless Erst-Boot: eine Stufe trug bis 90 ms am Stück);
+    // der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
     // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
     // EIN BAU JE SCHLÜSSEL IM FLUG (w4-knoten-wurzel): der laufende Bau eines Schlüssels steht in `E.imFlug`, jedes Render-Objekt
     // desselben Schlüssels geht DENSELBEN Bau weiter — bis hier legte jedes, das im selben Bild kam, seinen eigenen an (die Teile
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
-        if (E.rateFrist === null) {
-            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
-            Promise.resolve().then(() => (E.rateFrist = null));
-        }
+        const frist = this._bauFrist();
         const t0 = performance.now();
-        if (t0 >= E.rateFrist) return false;
+        if (t0 >= frist) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -710,7 +708,7 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null }));
+                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null }));
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
@@ -719,11 +717,17 @@ class AnazhRealm_bild_kosten {
                 const stufe = STUFE[(R.i / 3) | 0];
                 const shader = SHADER[R.i % 3];
                 b.setBuildStage(stufe);
-                if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
+                if (R.k === 0 && R.i % 3 === 0 && b.context.position && b.context.position.isNode)
                     b.flowNodeFromShaderStage("vertex", b.context.position);
                 b.setShaderStage(shader);
-                for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
-                arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+                // eine leere Shader-Stufe geht im selben Schritt mit; die volle bis zur Frist, je Knoten gefragt
+                const F = b.flowNodes[shader];
+                for (; R.k < F.length && !(arbeit && performance.now() >= frist); R.k++) {
+                    if (stufe === "generate") b.flowNode(F[R.k]);
+                    else F[R.k].build(b);
+                    arbeit = true;
+                }
+                if (R.k >= F.length) [R.i, R.k] = [R.i + 1, 0];
             }
             [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
             if (arbeit) return false;
