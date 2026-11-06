@@ -348,7 +348,9 @@ async function welt() {
                 geboren.delete(lebt);
             }
             // (5) W blind: der Sicht-Satz legt nichts (jede Senke anzahl 0) — die Linse nennt jede Senke mit Soll > 0; der
-            // Blick in den Himmel hat kein Soll, dort schweigt sie (kein Fehlalarm, wo leer richtig ist)
+            // Blick in den Himmel hat kein Soll, dort schweigt sie (kein Fehlalarm, wo leer richtig ist). Der letzte Umzug endet am
+            // Start (der Platz: die Nähe legt dort nichts, die Ferne trägt) — die Linse rückt das Auge erst an die Wiese.
+            st_.wieseSchritt = await window.__wieseZurWiese(r, takt);
             const himmel = window.__wieseSicht(r, true);
             const bH = [];
             wieseUrteil(himmel, bH);
@@ -363,7 +365,8 @@ async function welt() {
             st_.wieseHimmel = bH.length;
             // (6) eine gelegte Instanz mit Null-3×3 und (7) eine gelegte Instanz fort aus dem Ring (die veraltete Matrix)
             const nw = st.nahWiese;
-            const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1) : null;
+            // eine Senke der NÄHE: die Ferne (`:Lf:`) legt ihre Kacheln jenseits des Rings, die Ring-Wahrheit gilt ihr nicht
+            const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1 && !/:Lf:/.test(a.name)) : null;
             if (voll) {
                 const arr = voll.mesh.instanceMatrix.array;
                 const merk = arr.slice(0, 16);
@@ -457,7 +460,7 @@ hauptLauf(async () => {
         if (!s.ohneGenannt) fails.push("SELBSTTEST: die Senke ohne Abschied blieb ungesehen");
         if (!s.lebendGenannt) fails.push("SELBSTTEST: der Abschied einer Senke im Graphen blieb ungesehen");
         console.log(
-            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W: der blinde Sicht-Satz — jede leere Senke mit Soll genannt (${s.wieseLeer || 0}), der Himmel ohne Soll still (${s.wieseHimmel || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
+            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W (Schritt zur Wiese ${s.wieseSchritt ? s.wieseSchritt.schritt + " m, nächster Büschel " + s.wieseSchritt.d + " m" : "—"}): der blinde Sicht-Satz — jede leere Senke mit Soll genannt (${s.wieseLeer || 0}), der Himmel ohne Soll still (${s.wieseHimmel || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
         );
         if (!s.wieseAltGenannt) fails.push("SELBSTTEST: veraltete Instanzen im Ring ohne Büschel blieben ungesehen");
         if (!s.wieseLeerGenannt)

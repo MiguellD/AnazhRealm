@@ -73,6 +73,9 @@ hauptLauf(async () => {
         await __weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
         await __streuTakte(350, 8);
+        // ── Die Nähe der Wiese misst nur, wo sie legt: am Start (der Platz) steht der nächste Büschel jenseits der Übergabe —
+        // die Linse rückt das Auge an die Wiese (scripts/lib/wiese-sicht.cjs), VOR dem Ausklingen der Inventur.
+        o.wieseSchritt = await window.__wieseZurWiese(r, (n) => __streuTakte(n, 6));
         try {
             r._drainPendingWaterIso && r._drainPendingWaterIso();
             r._drainPendingGrass && r._drainPendingGrass();
@@ -550,7 +553,7 @@ hauptLauf(async () => {
 
     const w = out.wiese || { je: {} };
     console.log(
-        `  ── NAH-WIESE (Sicht-Satz von der Linse gelegt): ${w.senken} Senken · ${w.bueschel} Büschel im Ring · gelegt ${Object.values(w.je).join("/")} · als Studio-Emitter gezählt ${out.wieseZensus}`
+        `  ── NAH-WIESE (Sicht-Satz von der Linse gelegt, Schritt zur Wiese ${out.wieseSchritt ? out.wieseSchritt.schritt + " m, nächster Büschel " + out.wieseSchritt.d + " m" : "—"}): ${w.senken} Senken · ${w.bueschel} Büschel im Ring · gelegt ${Object.values(w.je).join("/")} · als Studio-Emitter gezählt ${out.wieseZensus}`
     );
     for (const x of out.wieseFehl || []) console.log(`     ❌ ${x}`);
 
