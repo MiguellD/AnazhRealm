@@ -166,6 +166,10 @@ const KALT_KLASSEN = {
     // der Probe, der die Raten nie sah
     getNodeBuilderState: "Knoten-Bau",
     _knotenRate: "Knoten-Bau",
+    // die Teile des Takts (Post 06.11. 18:15: wohin geht die Belegung bis zur Kontrolle?) — das Bild, die Jobs, der Himmel
+    _loopRender: "Bild",
+    _runFrameScheduler: "Jobs",
+    tickDayNight: "Himmel",
 };
 const KALT_PFLANZEN = ["Streu", "Saat", "Wald-Plan", "Gestalt"];
 function KALT_PROBE() {

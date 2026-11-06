@@ -791,14 +791,18 @@ class AnazhRealm_bild_himmel {
             }
             if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
             if (!this._atmoZeichne(A.qEq, A.rtEq)) return false; // die Pipeline im Vorbau: der nächste Takt malt
-            const vorbau = this._erstZeichnungStand().einmalOffen;
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
             // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
+            let rt = st._skyEnvRT || null;
+            const pmrem = st._skyPmrem;
+            // PMREM im Vorbau (`_einmalRender`): der Takt, in dem seine Pipelines stehen, filtert neu
+            if (!this._einmalRender(pmrem, () => (rt = pmrem.fromEquirectangular(A.rtEq.texture, rt)))) {
+                st._skyEnvRT = rt;
+                return false;
+            }
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
-            if (this._erstZeichnung.einmalOffen !== vorbau) return false; // PMREM im Vorbau: der nächste Takt filtert neu
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
             if (!this._weltLichtHimmel()) return false; // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
@@ -1995,14 +1999,13 @@ class AnazhRealm_bild_himmel {
             r.clear(true, false, false);
             r.setClearColor(farbe, alpha);
         }
-        const E = this._erstZeichnungStand();
-        const vorbau = E.einmalOffen;
-        this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
+        // false: seine Pipeline steht unter dem Ladeschirm noch im Vorbau (PSO-Vorbau, `_einmalRender`)
+        const ganz = this._einmalRender(quad, () => this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre"));
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
         if (rof) r.setRenderObjectFunction(rof);
         r.autoClear = auto;
-        return E.einmalOffen === vorbau; // false: seine Pipeline steht unter dem Ladeschirm noch im Vorbau (PSO-Vorbau)
+        return ganz;
     }
 
     // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter in seinen Stufen (Transmittance und

@@ -177,11 +177,10 @@ class AnazhRealm_bild_schatten {
             if (typeof rend.readRenderTargetPixelsAsync !== "function")
                 throw new Error("der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)");
             const vor = rend.getRenderTarget();
-            const vorbau = this._erstZeichnungStand().einmalOffen;
             rend.setRenderTarget(L.rt);
-            P.quad.render(rend);
+            const ganz = this._einmalRender(P.quad, () => P.quad.render(rend));
             rend.setRenderTarget(vor);
-            if (this._erstZeichnung.einmalOffen !== vorbau) return; // die Pipeline im Vorbau: keine Lesung eines leeren Ziels
+            if (!ganz) return; // die Pipeline im Vorbau (`_einmalRender`): keine Lesung eines leeren Ziels
             // springt das Auge, gilt der neue Boden sofort (der erste Lauf, ein Sprung der Zeit-Auflösung), sonst folgt er
             const folge = P.sprung ? 1 : AnazhRealm.RUECKSTRAHL.folge;
             P.sprung = false;

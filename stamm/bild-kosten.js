@@ -566,7 +566,10 @@ class AnazhRealm_bild_kosten {
                 // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
                     if (!welt._ladeTakt()) zeichne(this, ro, aufnahme, false);
-                    else if (!zeichne(this, ro, aufnahme, true)) E.einmalOffen++;
+                    else if (!zeichne(this, ro, aufnahme, true)) {
+                        E.einmalOffen++;
+                        if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
+                    }
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -826,6 +829,30 @@ class AnazhRealm_bild_kosten {
             return p;
         };
         dev.__anazhAbsage = true;
+    }
+
+    // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
+    // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
+    // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
+    // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    _einmalRender(schluessel, fn) {
+        const E = this._erstZeichnungStand();
+        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const w = W.get(schluessel);
+        if (w) {
+            for (const p of w) if (E.offen.has(p)) return false;
+            W.delete(schluessel);
+        }
+        const vorbau = E.einmalOffen;
+        const sammel = (E.einmalSammel = new Set());
+        try {
+            fn();
+        } finally {
+            E.einmalSammel = null;
+        }
+        if (E.einmalOffen === vorbau) return true;
+        if (sammel.size) W.set(schluessel, sammel);
+        return false;
     }
 
     // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
