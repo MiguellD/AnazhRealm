@@ -1052,9 +1052,53 @@ async function kreaturProben(r, T, opts) {
             enge: +(t.enge / t.bilder).toFixed(2),
             engst: t.engst,
         });
+        // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang): der Ort des Gesetzes (`_zellOrt`), der dem Spieler am
+        // nächsten liegt und in dieser Sitzung nicht erwacht ist (ihr Gedächtnis fehlt, ihre Hülle steht nicht) — in ihrem Reich (fachwerk
+        // `siedlungsReich`) auf drei Ringen je acht Orte, die der Grund ohne Ort trüge (Wildnis, kein Grundriss, keine Hülle,
+        // Land): keiner trägt eine Geburt (`_kreaturGrundFrei`). Täter: die Geburt ohne das Reich (die alte Form)
+        if (taeter === "herde-dorf") decke("_imReichEinesOrts", () => () => false);
+        const dorf = (() => {
+            const SG = A._siedlungGesetz();
+            if (!SG) return { fehler: "kaltes Buch: kein Gesetz der Zellen" };
+            const reich = A.Gesetz("fachwerk:siedlungsReich");
+            const [cx0, cz0] = [Math.floor(P0.x / SG.cellM), Math.floor(P0.z / SG.cellM)];
+            const cells = (s.worldMeta && s.worldMeta.settlementCells) || {};
+            let z = null;
+            for (let d = 0; d <= 4 && !z; d++)
+                for (let dz = -d; dz <= d; dz++)
+                    for (let dx = -d; dx <= d; dx++) {
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) !== d) continue;
+                        const i = r._zellOrt(cx0 + dx + "," + (cz0 + dz));
+                        if (!i || cells[i.key] || (r._stlWegeKeys && r._stlWegeKeys.has(i.key))) continue;
+                        if (!z || ab(i, P0) < ab(z, P0)) z = i;
+                    }
+            if (!z) return { fehler: "keine schlafende Zelle des Gesetzes in 4 Zellen um den Spieler" };
+            const R = reich(SG, z.nH);
+            const wk = s.wegeKarte;
+            const ohneOrt = (x, y) =>
+                r._wildnisTraegt(x, y) &&
+                !r._imGrundriss(x, y) &&
+                !(wk && wk.siedlungen.some((b) => x >= b.x0 && x <= b.x1 && y >= b.z0 && y <= b.z1)) &&
+                r._landAt(x, y);
+            const orte = [];
+            for (const f of [0.3, 0.6, 0.9])
+                for (let q = 0; q < 8; q++) {
+                    const [x, y] = [z.x + Math.cos((q * TAU) / 8) * f * R, z.z + Math.sin((q * TAU) / 8) * f * R];
+                    if (ohneOrt(x, y)) orte.push([x, y]);
+                }
+            const traegt = orte.filter(([x, y]) => r._kreaturGrundFrei(x, y));
+            return {
+                zelle: z.key,
+                reichM: +R.toFixed(0),
+                orte: orte.length,
+                geburten: traegt.length,
+                erste: traegt[0] ? traegt[0].map((v) => +v.toFixed(1)) : null,
+            };
+        })();
         const L = F.lauf.filter(Boolean);
         const k = L.map((x) => x[0]);
         return {
+            dorf,
             fremdN: X.fremdN,
             blickDiffM: +Math.max(...W.lage.map((p, i) => ab(p, B.lage[i]))).toFixed(4),
             verband: { fensterRaum: VH.fensterRaum, wander: zahl(W), flucht: zahl(F) },
@@ -3520,6 +3564,16 @@ function urteil(name, z) {
         soll(z.fluchtWegM >= 30, `Fluchtweg ${z.fluchtWegM} m`);
         const I = z.id.bruch || [];
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
+        // die Geburt im Reich eines Orts, der noch nicht erwacht ist (Herde am Hang: sein Erdbau trug den Boden unter ihr ab)
+        const D = z.dorf || {};
+        soll(
+            !D.fehler && D.orte >= 6,
+            `Probe vakuös (Dorf-Grund): ${D.fehler || D.orte + " Orte im Reich der Zelle " + D.zelle}`
+        );
+        soll(
+            !D.fehler && D.geburten === 0,
+            `Geburt im Reich des kommenden Orts ${D.zelle} (${D.reichM} m): ${D.geburten} von ${D.orte} Orten tragen sie (erste ${D.erste})`
+        );
     }
     if (name === "schwarm") {
         const [F, Ld] = [z.flucht || {}, z.landung || {}];
@@ -3792,6 +3846,7 @@ const TAETER = {
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
         ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
+        ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+ \(\d+ m\): [1-9]\d* von \d+ Orten/],
     ],
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],
