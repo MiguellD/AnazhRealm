@@ -761,11 +761,16 @@ function plattePost(msg) {
                 })
         )
         .then((p) => {
-            // ein Reply ohne Morph-Ziel, Boden-Karte, Naht oder Satz-Vorlage ist eine alte Form: der Faden baut frisch
+            // ein Reply ohne Morph-Ziel, Boden-Karte, Naht, Satz-Vorlage oder Mulde (wetter.K2) ist eine alte Form: der Faden baut frisch
             if (
                 p &&
                 !p.empty &&
-                (!p.morphZiel || p.karteHoehe === undefined || p.zielHoehe === undefined || !p.naht || !p.satz)
+                (!p.morphZiel ||
+                    p.karteHoehe === undefined ||
+                    p.zielHoehe === undefined ||
+                    !p.naht ||
+                    !p.satz ||
+                    !p.mulde)
             )
                 p = null;
             if (p) p.vonPlatte = true;
