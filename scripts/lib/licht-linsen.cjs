@@ -352,7 +352,11 @@ function albedoSicht(opts) {
                         if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && !visAlt.has(o))
                             meshes.push(o) && visAlt.set(o, o.visible) && kl.set(o, klasse(o));
                     });
-                    for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
+                    // DIE ARENA ZEICHNET IHRE GLIEDER (material.K3#2, wie `linsenZiel`): sie zieht nur sichtbare Glieder — die Wahl
+                    // trägt das Glied, nie die Arena. Verborgen fiel jede Senke, die gerade eine Arena zeichnet: die Birken-Karte
+                    // stand nur im ersten Schuss (der Zeichner, bis die Arena folgte), drei von vier Schüssen leer, die Zeile las
+                    // die Nachbar-Karten (swiftshader 12 797 · 0 · 0 · 0 Pixel)
+                    for (const m of meshes) m.visible = visAlt.get(m) && (sicht(m) || m.isGeometrieArena === true);
                     bundles();
                     for (const [l] of lichtAlt) l.intensity = 0;
                     A.color.setRGB(1, 1, 1);

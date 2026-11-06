@@ -1419,9 +1419,17 @@ class AnazhRealm_stoff_material {
                                     // Projektion wie jede Ecke der Welt: sie trägt den Tiefen-Raum des Rückends (WebGPU [0, 1], der
                                     // WebGL2-Rückfall [−1, 1]). Eine Tiefe aus [0, 1] stellte unter WebGL2 jede Karte hinter das, was
                                     // hinter ihr steht (z120: gate:foundry-impostor C7 auf swiftshader, Karte vor der Tafel 0).
-                                    const _zV = _pVv.z
+                                    // DIE SPANNE HÄLT NUR DEN RÜCK (material.K3#2): sie klemmt, was die Tiefe der Gestalt über eine
+                                    // Ebene der Kamera schöbe — eine Ecke, die schon ohne Rück jenseits der Fern- oder vor der
+                                    // Nah-Ebene liegt, bleibt dort und fällt wie jede Ecke der Welt aus dem Clip-Raum. Bis hier zog die
+                                    // Klemme jede Karte hinter der Fern-Ebene AUF sie: sie zeichnete, wo die Welt nichts mehr zeichnet,
+                                    // und im Tiefen-Fenster eines Exemplars (die Albedo-Tafel, ±1 m) zählte jede Karte dahinter mit
+                                    // (swiftshader, Genesis: Birke 54 294 Pixel im Fenster, ohne die Nachbarn 48 984; Karte/L0 Fichte
+                                    // 1,122, Birke 0,940; GTX db431cf0 1,172 / 0,944).
+                                    const _zOhne = _pVv.z;
+                                    const _zV = _zOhne
                                         .mul(_Ta.float(1.0).sub(_wAugeV.div(_pVv.length().max(1e-3))))
-                                        .clamp(_Ta.cameraFar.negate(), _Ta.cameraNear.negate());
+                                        .clamp(_zOhne.min(_Ta.cameraFar.negate()), _zOhne.max(_Ta.cameraNear.negate()));
                                     const _zClip = _Ta.cameraProjectionMatrix.mul(_Ta.vec4(0.0, 0.0, _zV, 1.0));
                                     mat.vertexNode = _Ta.vec4(
                                         _clip.x,
