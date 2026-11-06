@@ -1998,15 +1998,18 @@ class AnazhRealm_siedlung_ort {
         const ws = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
         if (!this._ortReichMemo || this._ortReichMemo.ws !== ws) this._ortReichMemo = { ws, M: new Map() };
         const M = this._ortReichMemo.M;
-        // die Zelle des Gesetzes: [Anker x, z, Reich] oder null — eine Stadt, deren Reich über R Zellen hinausreicht, bricht laut
+        // die Zelle des Gesetzes: [Anker x, z, Reich, Schlüssel] oder null, gemerkt an der Zahl der Zelle (die Hälfte der Zellen
+        // trägt keinen Ort: sie kostet keinen Schlüssel) — eine Stadt, deren Reich über R Zellen hinausreicht, bricht laut
         const zelle = (cx, cz) => {
-            const k = cx + "," + cz;
-            if (M.has(k)) return M.get(k);
+            const n = cx * 1048576 + cz;
+            if (M.has(n)) return M.get(n);
             const i = this._autoSettlementCellInfo(cx, cz);
-            const o = i ? [i.x, i.z, reich(S, i.nH)] : null;
+            const o = i ? [i.x, i.z, reich(S, i.nH), cx + "," + cz] : null;
             if (o && o[2] > (R + 0.25) * S.cellM)
-                throw new Error(`das Reich des Orts ${k} (${o[2].toFixed(0)} m) reicht über ${R} Zellen (ORT_REICH_ZELLEN)`);
-            M.set(k, o);
+                throw new Error(
+                    `das Reich des Orts ${o[3]} (${o[2].toFixed(0)} m) reicht über ${R} Zellen (ORT_REICH_ZELLEN)`
+                );
+            M.set(n, o);
             return o;
         };
         const drin = (ox, oz, r) => (x - ox) * (x - ox) + (z - oz) * (z - oz) <= r * r;
@@ -2014,15 +2017,14 @@ class AnazhRealm_siedlung_ort {
         const cz0 = Math.floor(z / S.cellM);
         for (let dz = -R; dz <= R; dz++)
             for (let dx = -R; dx <= R; dx++) {
-                const k = cx0 + dx + "," + (cz0 + dz);
-                if ((steht && steht.has(k)) || (this._autoSettlementRejected && this._autoSettlementRejected.has(k)))
-                    continue;
                 const o = zelle(cx0 + dx, cz0 + dz);
                 if (!o) continue;
+                const k = o[3];
+                if ((steht && steht.has(k)) || (this._autoSettlementRejected && this._autoSettlementRejected.has(k)))
+                    continue;
                 const c = cells[k];
                 const v = V && V.get(k);
-                const [ox, oz] =
-                    c && Number.isFinite(c.x) ? [c.x, c.z] : v && v.da ? [v.x, v.z] : [o[0], o[1]];
+                const [ox, oz] = c && Number.isFinite(c.x) ? [c.x, c.z] : v && v.da ? [v.x, v.z] : [o[0], o[1]];
                 if (drin(ox, oz, o[2])) return true;
             }
         // das Start-Dorf: sein Gedächtnis, bevor es steht, sonst die Stelle seines Gesetzes (gemerkt je Plan des Genesis-Orts)
