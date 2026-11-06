@@ -1580,8 +1580,8 @@ class AnazhRealm_dirigent_ankunft {
         };
         for (const x of [K, K.stand, K.U.ursprung.value.x, K.U.ursprung.value.y, K.U.bezug.value]) merk(x);
         for (const x of [L.x, L.y, L.z, G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
-        for (const x of [st.renderer, st.rendererReady, dl, !!dl && dl.castShadow, AnazhRealm.SCHATTEN_KASKADE.sonneTan])
-            merk(x);
+        const tan = AnazhRealm.SCHATTEN_KASKADE.sonneTan;
+        for (const x of [st.renderer, st.rendererReady, dl, !!dl && dl.castShadow, tan]) merk(x);
         // die Kamera, wie die Messung sie liest: der Ursprung der Strahlen (`position`) und `unproject` (Projektion⁻¹, Welt-Matrix)
         for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
         for (const x of cam.matrixWorld.elements) merk(x);
