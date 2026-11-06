@@ -49,6 +49,8 @@ class AnazhRealm_klang {
         try {
             if (s.umwelt && s.umwelt.graph) s.umwelt.graph.stopAlle();
             if (s.umwelt && s.umwelt.werkstatt) s.umwelt.werkstatt.terminate();
+            const bauten = s.umwelt && s.umwelt.raumStrahl.bauten;
+            if (bauten && this._blockerWachen) this._blockerWachen.delete(bauten.wache); // die Wache des Schwenks geht mit
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
@@ -69,9 +71,11 @@ class AnazhRealm_klang {
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
     // Hör-Ring (Ufer) · der Kanal des Flusses · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
-    // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
-    // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
-    // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
+    // UMWELT.ohr.probenJeFrame Ring-Proben und ebenso viele Gesetz-Höhen des Raum-Schwenks (`_raumStrahlen`, nur in einem Bild
+    // ohne schweren Teil, im Stand ruht er), die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt
+    // ohr.mischSek — je Bild EIN Teil (`_umweltKlangTick`); Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße.
+    // Gerechnet wird in der KLANG-WERKSTATT (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linsen:
+    // gate:klang-zensus, der Klang-Takt `diag-klang-zensus --takt`.
     _umweltKlangBauen(ctx, masterGain, UM) {
         const K = UM.kern;
         const O = UM.UMWELT.ohr;
@@ -86,8 +90,20 @@ class AnazhRealm_klang {
             kern: K,
             bus,
             raum,
-            // die Raum-Strahlen am Ohr (`_raumStrahlen`): je Strahl Bau und Hang getroffen, rund um die Uhr wie der Hör-Ring
-            raumStrahl: { bau: new Uint8Array(RS), fels: new Uint8Array(RS), idx: 0 },
+            // DER SCHWENK am Ohr (`_raumStrahlen`): je Strahl Bau und Hang getroffen, das Dach (die Höhle), rund um die Uhr wie
+            // der Hör-Ring; `am` der Strahl im Gang, `o`/`ganz`/`ruht` der Ort, an dem er zuletzt ganz ging, `regung` die Welt dazu
+            raumStrahl: {
+                bau: new Uint8Array(RS),
+                fels: new Uint8Array(RS),
+                hoehle: 0,
+                idx: 0,
+                am: { k: -1, x: 0, y: 0, z: 0, fy: 0, ux: 0, uz: 0, d: 0, bau: 0, rein: true },
+                o: { x: NaN, y: NaN, z: NaN },
+                ganz: 0,
+                ruht: false,
+                regung: { w: 0, e: 0, h: 0, g: 0, s: 0 },
+                bauten: null,
+            },
             werkstatt: null,
             bestellt: 0,
             geliefert: 0,
@@ -115,7 +131,8 @@ class AnazhRealm_klang {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
             letzteMischung: -Infinity,
-            folge: 0, // der Teil des Misch-Takts im nächsten Bild (1 Mischung · 2 Graph · 3 Tier-Rufe, `_umweltKlangTick`)
+            folge: 0, // der Teil des Misch-Takts im nächsten Bild (1 Lage · 2 Mischung · 3 Graph · 4 Tier-Rufe, `_umweltKlangTick`)
+            lageEins: null, // die erste Hälfte der Lage (`_umweltLageEins`), geschlossen im nächsten Bild
             rufDt: 0,
             rufSaat: saat || 1,
             lage: null,
@@ -181,37 +198,45 @@ class AnazhRealm_klang {
     }
 
     // DER EINE UMWELT-TAKT (aus symphonyTick, jeden Frame): Proben fortsetzen (konstant je Frame), im Misch-Takt die
-    // Lage, im nächsten Bild die Mischung, dann der Graph, dann die Tier-Rufe — je Bild höchstens EIN Teil des Misch-Takts
-    // (klang.K5: alle in einem Bild trugen jedes sechste Bild über 0,2 ms, diag-klang-zensus --takt).
-    _umweltKlangTick() {
+    // Lage in zwei Hälften (`_umweltLageEins` fasst Ort, Blick und Wetter, `_umweltLageZwei` schließt sie), im nächsten Bild
+    // die Mischung, dann der Graph, dann die Tier-Rufe — je Bild höchstens EIN Teil des Misch-Takts, und die Höhen des Schwenks
+    // (`_raumStrahlen`) nur in einem Bild ohne schweren Teil (Lage, Graph). klang.K5: alle in einem Bild trugen jedes sechste
+    // Bild über 0,2 ms; bis w12-klang-lage trug das Lage-Bild die ganze Lage (0,07–0,09 ms) über den Strahlen des Bilds
+    // (diag-klang-zensus --takt). Spielte die Musik in diesem Bild (`musik`, `_lofiTick`), gehen nur die Ring-Proben.
+    _umweltKlangTick(musik) {
         const s = this.state.symphony;
         const um = s.umwelt;
         if (!um || !s.ctx || !this.state.playerMesh) return;
         const p = this.state.playerMesh.position;
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
-        this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
+        if (musik) return void this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
         const jetzt = s.ctx.currentTime;
         const teil = um.folge;
+        const lage = !teil && jetzt - um.letzteMischung >= O.mischSek;
+        const schwer = lage || teil === 1 || teil === 3;
+        this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, schwer ? 0 : O.probenJeFrame);
         if (teil) {
-            um.folge = (teil + 1) % 4;
-            if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
-            else if (teil === 2) {
+            um.folge = (teil + 1) % 5;
+            if (teil === 1) um.lage = this._umweltLageZwei(um.lageEins);
+            else if (teil === 2) um.mix = um.kern.umweltMischung(um.lage);
+            else if (teil === 3) {
                 um.graph.anwenden(um.mix, jetzt);
                 um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
                 this._untertitelStimmen(um.graph);
             } else this._tierRufTakt(um.rufDt);
             return;
         }
-        if (jetzt - um.letzteMischung < O.mischSek) return;
+        if (!lage) return;
         um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
         um.letzteMischung = jetzt;
-        um.lage = this._umweltLage();
+        um.lageEins = this._umweltLageEins();
         um.folge = 1;
     }
 
     // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
-    // Strömungs-Quelle `_waterFlowAt`: ein fließender Punkt ist nie Ufer). Die Punkte wandern mit dem Ohr.
-    _umweltRingProbe(um, px, pz, n) {
+    // Strömungs-Quelle `_waterFlowAt`: ein fließender Punkt ist nie Ufer). Die Punkte wandern mit dem Ohr; der Schwenk des Raums
+    // geht `hoehen` Gesetz-Höhen (`_raumStrahlen`).
+    _umweltRingProbe(um, px, pz, n, hoehen = n) {
         const R = um.ring;
         for (let k = 0; k < n; k++) {
             const i = R.idx;
@@ -225,7 +250,7 @@ class AnazhRealm_klang {
             R.tempo[i] = fl ? Math.hypot(fl.x, fl.z) : 0;
         }
         const pm = this.state.playerMesh;
-        if (pm) this._raumStrahlen(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, n);
+        if (pm) this._raumStrahlen(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, hoehen);
     }
 
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
@@ -301,13 +326,22 @@ class AnazhRealm_klang {
     // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, die singenden Vögel (ihre
     // Leiber, `state.voegel`), der Hör-Ring (Ufer), der Kanal des Flusses, der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche)
     // — und die ANTWORT der Wertung
-    // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1).
+    // (`_tatAntwortAm`: das abklingende δ der Tat, die hier am stärksten wirkt; affekt K1). In einem Zug für jeden Leser (die
+    // Linsen, der Zensus); der Takt rechnet sie in zwei Bildern (`_umweltKlangTick`) — dieselbe Rechnung, die zweite Hälfte am
+    // Ort, im Blick und unter dem Wetter der ersten.
     _umweltLage() {
+        return this._umweltLageZwei(this._umweltLageEins());
+    }
+
+    // Die erste Hälfte der Lage: Ort, Blick (`_umweltPanorama`) und Wetter gefasst, dazu der Wind, der Ring (Ufer), der Fluss, der
+    // Wasserfall und die Vögel.
+    _umweltLageEins() {
         const um = this.state.symphony.umwelt;
         const pm = this.state.playerMesh;
         if (!um || !pm) return null;
         const px = pm.position.x;
         const pz = pm.position.z;
+        const py = pm.position.y;
         const wf = this._weatherFieldFor(this.state.weather);
         const wind = this._windAt(px, pz, this._bildZeit);
         const pan = this._umweltPanorama();
@@ -363,10 +397,18 @@ class AnazhRealm_klang {
         for (const v of this.state.voegel || []) {
             const dh = Math.hypot(v.x - px, v.z - pz);
             voegel.push({
-                d: Math.hypot(dh, v.y - pm.position.y),
+                d: Math.hypot(dh, v.y - py),
                 pan: pan(v.x - px, v.z - pz),
             });
         }
+        return { um, px, pz, py, wf, wind, pan, ufer, fluss, fall, voegel };
+    }
+
+    // Die zweite Hälfte am Ort der ersten (`e`, `_umweltLageEins`): die Glut, die Kronen-Deckung, der Raum (der Stand des Schwenks),
+    // Sonne, Wärme und die Antwort der Wertung — schließt die Lage.
+    _umweltLageZwei(e) {
+        if (!e) return null;
+        const { um, px, pz, py, wf, wind, pan } = e;
         const glut = this._glutAmOhr(px, pz, pan);
         const deckung = this._kronenStreuAt(px, pz);
         return {
@@ -376,17 +418,17 @@ class AnazhRealm_klang {
             boe: wind.boe,
             deckung,
             // der Raum am Ohr (klang.K3#2): Kronen, Bauten, Hang und Fels über dem Ohr — sein Nachhall (`umweltRaumNachhall`)
-            raum: this._raumAmOhr(um, px, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pz, deckung),
+            raum: this._raumAmOhr(um, deckung),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
             // die Wärme der Grillen (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt, mit
             // der Trägheit ihres Lebensraums (klang:UMWELT.stimmen.grille.traegTage, der Boden ihrer Röhre) — die Sommernacht der
             // Wiese zirpt, über dem gefrorenen Bergsee schweigen sie
-            temperatur: this._temperaturAt(pm.position.y, AnazhRealm._umweltGesetz().UMWELT.stimmen.grille.traegTage),
-            voegel,
-            ufer,
-            fluss,
-            fall,
+            temperatur: this._temperaturAt(py, AnazhRealm._umweltGesetz().UMWELT.stimmen.grille.traegTage),
+            voegel: e.voegel,
+            ufer: e.ufer,
+            fluss: e.fluss,
+            fall: e.fall,
             glut,
             antwort: this._tatAntwortAm(px, pz),
         };
@@ -430,11 +472,53 @@ class AnazhRealm_klang {
         const nah = this._blockerNahe(x, z, reich, -Infinity, (this._klangBauNah = this._klangBauNah || []));
         const aus = [];
         for (const e of nah) {
-            if (!e || !e.blockerAABBs || e._lodSpecies || /^(baum_|grown_)/.test(e.type || "")) continue;
+            if (!e || !e.blockerAABBs || AnazhRealm._klangWuchs(e)) continue;
             for (const b of e.blockerAABBs) if (b && Number.isFinite(b.minX)) aus.push(b);
         }
         nah.length = 0;
         return aus;
+    }
+
+    // Der Wuchs der Natur im Blocker-Netz (Bäume und Büsche: `baum_*`, `grown_*`, ein Leib der LOD-Kette) — kein Bau des Raums.
+    static _klangWuchs(e) {
+        return !!e._lodSpecies || /^(baum_|grown_)/.test(e.type || "");
+    }
+
+    // DIE BAUTEN DES SCHWENKS (`_raumStrahlen`): die Einträge des Netzes um (x, z), die ein Strahl treffen kann, ohne den Wuchs —
+    // gefragt (`_blockerNahe`) im Umkreis 2 · raum.weiteM um einen Anker und gemerkt, bis das Ohr eine weiteM vom Anker wandert,
+    // das Netz neu baut oder ein Fremder seine Wache regt (`_blockerWacheMelden`: jede Hülle, die im Rechteck ein- oder austritt oder
+    // neu gestempelt wird, auch der fahrende Wagen; die Gemerkten kennt sie, `kennt`). Der Strahl prüft die Gemerkten, die im Netz
+    // stehen, mit ihrer lebenden Hülle wie `_blockerNahe` an seinem Ohr: dieselbe Menge wie die Frage dort — der Wagen unter dem
+    // Spieler stempelt sich je Schwelle neu und weckt keine Frage. Bis w12-klang-lage fragte jedes Bild das Netz am Waldrand der Mess-Wiese
+    // (50–66 µs je Bild, diag-klang-zensus --takt); jetzt fragt der Anker. → true, wenn er neu fragte.
+    _klangBauten(S, x, z, weiteM) {
+        const N = this._blockerNetz();
+        let B = S.bauten;
+        if (
+            B &&
+            B.gen === N.gen &&
+            B.fremd === B.wache.fremd &&
+            Math.abs(x - B.x) <= weiteM &&
+            Math.abs(z - B.z) <= weiteM
+        )
+            return false;
+        if (!B) {
+            const kennt = new Set();
+            B = S.bauten = {
+                wache: { x0: 0, x1: 0, z0: 0, z1: 0, stand: 0, fremd: 0, verkehr: true, kennt },
+                liste: [],
+            };
+            (this._blockerWachen || (this._blockerWachen = new Set())).add(B.wache);
+        }
+        const reich = 2 * weiteM;
+        const nah = this._blockerNahe(x, z, reich, -Infinity, (this._klangBauNah = this._klangBauNah || []));
+        B.liste.length = 0;
+        B.wache.kennt.clear();
+        for (const e of nah) if (e && !AnazhRealm._klangWuchs(e)) (B.liste.push(e), B.wache.kennt.add(e));
+        nah.length = 0;
+        Object.assign(B, { x, z, gen: N.gen, fremd: B.wache.fremd });
+        Object.assign(B.wache, { x0: x - reich, x1: x + reich, z0: z - reich, z1: z + reich });
+        return true;
     }
 
     // Die Strecke a → b (Welt) gegen eine Hülle: der Bruchteil t ∈ [0, 1] des ersten Eintritts oder null (Platten-Probe in x, y, z).
@@ -461,51 +545,106 @@ class AnazhRealm_klang {
         return t0;
     }
 
-    // DIE RAUM-STRAHLEN (klang.K3#2): vom Ohr (Fuß `fy` + UMWELT.raum.augeM) je Bild `n` der raum.strahlen waagerechten Strahlen, rund
-    // um die Uhr wie der Hör-Ring (`_umweltRingProbe` ruft sie mit seiner Zahl) — trifft der Strahl binnen raum.weiteM einen Bau
-    // (`_klangBauHuellen`), steigt das Gelände-Gesetz dort über das Ohr (der Hang, Stützstellen je 2,5 m)? Kosten je Bild: n Strahlen
-    // (raum.weiteM / 2,5 Gesetz-Höhen und die Hüllen im Umkreis), nie die Weltgröße; bis zum Schnitt maß die Lage alle 16 Strahlen
-    // auf einmal: 0,3–0,4 ms je Misch-Takt (Null-Renderer, w5-s2-g1).
+    // DIE RAUM-STRAHLEN (klang.K3#2) — DER SCHWENK: am Ohr (Fuß `fy` + UMWELT.raum.augeM) zuerst das Dach (die oberste Fläche des
+    // Bodens `_voxelSurfaceY` mehr als 2 m über dem Auge: die Höhle), dann die raum.strahlen waagerechten Strahlen rund um die Uhr wie
+    // der Hör-Ring — trifft der Strahl binnen raum.weiteM einen Bau (`_klangBauten`), steigt das Gelände-Gesetz dort über das Auge
+    // (der Hang, Stützstellen je 2,5 m, der erste Treffer endet ihn)? Je Bild höchstens `n` Gesetz-Höhen (UMWELT.ohr.probenJeFrame,
+    // die Zahl des Rings, `_umweltRingProbe`); ein Strahl misst vom Ohr, an dem er begann, und schreibt sein Urteil, wenn er endet —
+    // an einem Ort dieselben Bytes wie der Strahl in einem Bild. Ging der Schwenk an diesem Ohr ganz, und regt sich weder Welt noch
+    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). Kosten je Bild: n Gesetz-Höhen,
+    // nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen und das Netz im Umkreis, 0,17–0,19 ms auf dem
+    // Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage fragte das Dach selbst.
     _raumStrahlen(um, px, fy, pz, n) {
         const S = um && um.raumStrahl;
         if (!S) return;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const ey = fy + R.augeM;
-        const huellen = this._klangBauHuellen(px, pz, R.weiteM);
-        for (let k = 0; k < n; k++) {
-            const i = S.idx;
-            S.idx = (S.idx + 1) % R.strahlen;
-            const w = (i / R.strahlen) * Math.PI * 2;
-            const ux = Math.cos(w);
-            const uz = Math.sin(w);
-            const a = [px, ey, pz];
-            const b = [px + ux * R.weiteM, ey, pz + uz * R.weiteM];
-            S.bau[i] = huellen.some((h) => AnazhRealm._klangStrecke(a, b, h) !== null) ? 1 : 0;
-            S.fels[i] = 0;
-            for (let d = 2.5; d <= R.weiteM; d += 2.5) {
-                const h = this.getTerrainHeightAt(px + ux * d, pz + uz * d);
-                if (Number.isFinite(h) && h > ey) {
-                    S.fels[i] = 1;
-                    break;
+        const N = this._blockerNetz();
+        const r = S.regung;
+        const [w, e, h, g, s] = [
+            this._weltRegung | 0,
+            this._editGenZaehler | 0,
+            this.state.hydroTiles ? this.state.hydroTiles.size : 0,
+            N.gen,
+            S.bauten ? S.bauten.wache.stand : 0,
+        ];
+        const regt = N.beweger.size > 0 || r.w !== w || r.e !== e || r.h !== h || r.g !== g || r.s !== s;
+        if (!regt && S.ruht && S.o.x === px && S.o.y === ey && S.o.z === pz) return;
+        if (regt) {
+            Object.assign(r, { w, e, h, g, s });
+            S.ganz = 0;
+            S.am.rein = false; // der Strahl im Gang sah die alte Welt
+        }
+        S.ruht = false;
+        const a = S.am;
+        for (let budget = n; budget > 0;) {
+            if (a.k < 0) {
+                // ein neuer Strahl (k 1 … strahlen; 0 das Dach) vom Ohr dieses Bilds
+                Object.assign(a, { k: S.idx, x: px, y: ey, z: pz, fy, d: 2.5, bau: 0, rein: true });
+                if (S.o.x !== px || S.o.y !== ey || S.o.z !== pz) {
+                    Object.assign(S.o, { x: px, y: ey, z: pz });
+                    S.ganz = 0;
+                }
+                if (a.k > 0) {
+                    const wi = ((a.k - 1) / R.strahlen) * Math.PI * 2;
+                    [a.ux, a.uz] = [Math.cos(wi), Math.sin(wi)];
+                    if (this._klangBauten(S, px, pz, R.weiteM)) budget = 0; // die Frage des Ankers trägt das Bild allein
+                    a.bau = this._raumBauTrifft(S.bauten.liste, a, R.weiteM, N.gen) ? 1 : 0;
                 }
             }
+            let fertig = false;
+            let fels = 0;
+            if (a.k === 0) {
+                budget--;
+                const dach = this._voxelSurfaceY(a.x, a.z);
+                S.hoehle = Number.isFinite(dach) && dach > a.fy + R.augeM + 2 ? 1 : 0;
+                fertig = true;
+            } else if (a.d > R.weiteM) fertig = true;
+            else if (budget > 0) {
+                budget--;
+                const hh = this.getTerrainHeightAt(a.x + a.ux * a.d, a.z + a.uz * a.d);
+                if (Number.isFinite(hh) && hh > a.y) [fertig, fels] = [true, 1];
+                else a.d += 2.5;
+            }
+            if (!fertig) continue;
+            if (a.k > 0) [S.bau[a.k - 1], S.fels[a.k - 1]] = [a.bau, fels];
+            if (a.rein && a.x === S.o.x && a.y === S.o.y && a.z === S.o.z && ++S.ganz > R.strahlen) S.ruht = true;
+            S.idx = (a.k + 1) % (R.strahlen + 1);
+            a.k = -1;
+            if (S.ruht) return;
         }
     }
 
-    // DER RAUM AM OHR (klang.K3#2) → { deckung, bau, fels, hoehle }: die Anteile der Raum-Strahlen (`_raumStrahlen`), die Bau bzw.
-    // Hang treffen, und Fels über dem Ohr (die oberste Fläche des Bodens `_voxelSurfaceY` mehr als 2 m über ihm: die Höhle).
-    _raumAmOhr(um, px, fy, pz, deckung) {
+    // Trifft die Strecke vom Ohr des Strahls `a` (raum.weiteM in seiner Richtung) eine Hülle der Bauten? Je Eintrag, der im Netz
+    // der Generation `gen` steht (ein Austritt nimmt sie ihm), zuerst die Hülle wie `_blockerNahe` am Ohr (weiter als `weiteM`
+    // fällt er), dann jede Box (`_klangStrecke`).
+    _raumBauTrifft(liste, a, weiteM, gen) {
+        const p = [a.x, a.y, a.z];
+        const q = [a.x + a.ux * weiteM, a.y, a.z + a.uz * weiteM];
+        for (const e of liste) {
+            if (e._blockerGen !== gen || !(e._blockerSeq > -Infinity)) continue;
+            const h = e._blockerHuelle;
+            if (h && (a.x < h[0] - weiteM || a.x > h[1] + weiteM || a.z < h[2] - weiteM || a.z > h[3] + weiteM))
+                continue;
+            for (const b of e.blockerAABBs || [])
+                if (b && Number.isFinite(b.minX) && AnazhRealm._klangStrecke(p, q, b) !== null) return true;
+        }
+        return false;
+    }
+
+    // DER RAUM AM OHR (klang.K3#2) → { deckung, bau, fels, hoehle }: die Anteile der Raum-Strahlen, die Bau bzw. Hang treffen, und
+    // das Dach über dem Ohr — der Stand des Schwenks (`_raumStrahlen`).
+    _raumAmOhr(um, deckung) {
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const S = um.raumStrahl;
         let bau = 0;
         let fels = 0;
         for (let i = 0; i < R.strahlen; i++) ((bau += S.bau[i]), (fels += S.fels[i]));
-        const dach = this._voxelSurfaceY(px, pz);
         return {
             deckung: Number.isFinite(deckung) ? deckung : 0,
             bau: bau / R.strahlen,
             fels: fels / R.strahlen,
-            hoehle: Number.isFinite(dach) && dach > fy + R.augeM + 2 ? 1 : 0,
+            hoehle: S.hoehle,
         };
     }
 
@@ -783,12 +922,13 @@ class AnazhRealm_klang {
         return true;
     }
 
-    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt).
+    // Symphonie-Tick (jeden Frame): die Lofi-Musik (eigener Akkord-Takt) und die Klang-Welt (eigener Misch-Takt) — spielt die Musik
+    // in diesem Bild einen Teil ihrer Folge, wartet die Klang-Welt mit ihrem (EIN schwerer Teil je Bild, klang.K5).
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
-        this._lofiTick();
-        this._umweltKlangTick();
+        const musik = this._lofiTick();
+        this._umweltKlangTick(musik);
         this._fahrtKlangTick();
     }
 
@@ -1392,23 +1532,31 @@ class AnazhRealm_klang {
     // das Rascheln), die Nacht nimmt Snare und Hihats zurück (ganz Nacht: aus, der Kick bleibt leiser als Herzschlag).
     // DIE FILTER DES GROOVE sind je Akkord-Dauer EINE: Klick-, Snare- und Hihat-Hochpass (`_lofiTrommelFilter`) — vorher baute
     // jeder Schlag seinen eigenen und jedes Hihat las das Feld am Ohr (`auraAt`) neu (klang.K5: der Groove trug den Klang-Takt).
-    _lofiPlayGroove(durSec, t0) {
+    // DIE HÄLFTE (`haelfte` 0 · 1, sonst der ganze Takt): je Hälfte ein Bild der Folge (`_lofiTick`), beide aus derselben Lage `g`,
+    // die die erste liest (Muster, Schicht, Swing, Filter) — dieselben Schläge auf denselben Einsätzen. klang.K5: der ganze Groove
+    // in einem Bild trug 0,1–0,18 ms (Null-Renderer, diag-klang-zensus --takt).
+    _lofiPlayGroove(durSec, t0, haelfte, g = {}) {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const STEPS = 8;
-        const stepDur = durSec / STEPS;
-        const now = t0 != null ? t0 : s.ctx.currentTime;
-        const pat = this._lofiGroovePattern(); // ZENSUS-REST V18.488 — das Genre wählt
-        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
-        const peace = Math.max(0, Math.min(1, emotions.peace || 0));
-        const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
-        const S = AnazhRealm._musikGesetz().schicht;
-        const sch = s.lofi.schicht || (s.lofi.schicht = this._musikSchicht());
-        const tag = 1 - sch.nacht; // Snare und Hihats: ganz Nacht schweigen sie (keine unhörbare Quelle)
-        const kick = 1 - sch.nacht * (1 - S.nacht.kickPegel);
-        const regen = sch.regen * S.regen.hihatPegel;
-        const F = this._lofiTrommelFilter();
-        for (let step = 0; step < STEPS; step++) {
+        if (!g.pat) {
+            const now = t0 != null ? t0 : s.ctx.currentTime;
+            const pat = this._lofiGroovePattern(); // ZENSUS-REST V18.488 — das Genre wählt
+            const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
+            const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+            const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
+            const S = AnazhRealm._musikGesetz().schicht;
+            const sch = s.lofi.schicht || (s.lofi.schicht = this._musikSchicht());
+            const tag = 1 - sch.nacht; // Snare und Hihats: ganz Nacht schweigen sie (keine unhörbare Quelle)
+            const kick = 1 - sch.nacht * (1 - S.nacht.kickPegel);
+            const regen = sch.regen * S.regen.hihatPegel;
+            const F = this._lofiTrommelFilter();
+            Object.assign(g, { stepDur: durSec / STEPS, now, pat, peace, swing, tag, kick, regen, F });
+        }
+        const { stepDur, now, pat, peace, swing, tag, kick, regen, F } = g;
+        const [von, bis] =
+            haelfte === 0 || haelfte === 1 ? [(haelfte * STEPS) / 2, ((haelfte + 1) * STEPS) / 2] : [0, STEPS];
+        for (let step = von; step < bis; step++) {
             const t = now + this._grooveStepTime(step, stepDur, swing);
             if (pat.kick.indexOf(step) >= 0) this._lofiKick(t, kick, F.klick);
             if (tag > 0.001 && pat.snare.indexOf(step) >= 0) this._lofiSnare(t, tag, F.snare);
@@ -1835,13 +1983,14 @@ class AnazhRealm_klang {
 
     // Lofi-Scheduler (aus symphonyTick): LOFI_VORLAUF_S vor dem Einsatz des nächsten Akkords (der letzte Einsatz + die
     // Akkord-Dauer) den Akkord der aktuellen Stufe planen, dann die nächste Stufe über _lofiNextDegree wählen. Pad, Melodie,
-    // Bass, Groove und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
+    // Bass, die zwei Hälften des Grooves und der Raum fallen je in EIN Bild, alle auf denselben Einsatz der Audio-Uhr
     // (klang.K5: in einem Bild trugen sie die Spitze des Klang-Takts, 2,6–3,4 ms auf der Radeon, diag-klang-zensus --takt).
+    // → true, wenn das Bild einen Teil der Musik spielte (die Klang-Welt wartet dann, `symphonyTick`).
     _lofiTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx || !s.lofi) return;
         const L = s.lofi;
-        if (L.folge && L.folge.length) return void L.folge.shift()();
+        if (L.folge && L.folge.length) return (L.folge.shift()(), true);
         const now = s.ctx.currentTime;
         const V = AnazhRealm.LOFI_VORLAUF_S;
         // der nächste Einsatz = der letzte + SEINE Dauer (gelesen, als er geplant wurde): das Feld am Ohr wird einmal je Akkord
@@ -1858,12 +2007,15 @@ class AnazhRealm_klang {
         L.degree = this._lofiNextDegree(degree);
         this._lofiPlayChord(this._lofiChordFromDegree(degree), t0, durSec);
         this._untertitel("musik", "lofi", null, 0);
+        const groove = {}; // die Lage des Grooves, die seine erste Hälfte liest
         L.folge = [
             () => this._lofiPlayMelody(degree, durSec, t0),
             () => this._lofiPlayBass(degree, durSec, t0),
-            () => this._lofiPlayGroove(durSec, t0),
+            () => this._lofiPlayGroove(durSec, t0, 0, groove),
+            () => this._lofiPlayGroove(durSec, t0, 1, groove),
             () => this._lofiRaum(durSec),
         ];
+        return true;
     }
 
     // Der Raum des Akkords und das Welt-Timbre — das letzte Bild seiner Folge (`_lofiTick`).
