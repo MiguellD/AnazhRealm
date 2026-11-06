@@ -406,43 +406,6 @@ class AnazhRealm_siedlung_bewohner {
                     this._streckeBoxAbstand2(pkt, ax, az, ex, ez) < G2
             );
         };
-        // DIE TRASSE IST EIN AUSSCHLUSS DES STANDS WIE EIN HAUS (PFLICHT-OFFEN C): wo der Plan Wagen fährt (fachwerk `verkehrVon`),
-        // liegt kein Stand vor einer Tür in der Fahrbahn einer Straße ab fachwerk `breiteM` (die halbe Trasse: Spur, halber Wagen,
-        // Kapsel und `spurRandM` — das Maß, mit dem der Stand der Spur weicht, `_bewohnerStandPruefen`) und keiner jenseits von
-        // ihr: die Linie von der Tür zum Stand kreuzt keine Mitte einer Trasse — der Stand eines Hauses gehört auf seine Seite.
-        // Bis hier wählte der Ring vor der Tür seinen Stand, bevor der Verkehr stand (`_verkehrAnlegen` liest die Liste), die
-        // Gasse hielt nur `gasseFreiM` frei, und wer in der Spur stand, rückte auf den nächsten freien Ort — auch hinüber: die
-        // sechs Leute des Gasthauses #846868 der Metropole querten zwischen ihrer Tür und ihren Ständen (stadt-voll 23 Uhr: 389
-        // von 695 Schritten auf der Fahrbahn). Leser: der Ring vor der Tür (`ringStand`: Heim, Station, Besuch).
-        const VG = FC.VERKEHR_GESETZ;
-        const trassen = new Map(); // das Raster der Trassen (Zellen `gasseZelleM`): je Zelle ax, az, ex, ez …
-        const TH = VG.spurM + VG.halbM + AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.VERKEHR.spurRandM;
-        if (plan.verkehr && FC.verkehrVon(plan).n > 0)
-            for (const rd of plan.roads || [])
-                for (let i = 1; (rd.w || 0) >= VG.breiteM && i < (rd.pts || []).length; i++) {
-                    const [a, e] = [rd.pts[i - 1], rd.pts[i]];
-                    const [ax, az, ex, ez] = [S.ox + a.x, S.oz + a.z, S.ox + e.x, S.oz + e.z];
-                    for (let ix = Math.floor((Math.min(ax, ex) - TH) / GZ); ix <= Math.floor((Math.max(ax, ex) + TH) / GZ); ix++) // prettier-ignore
-                        for (let iz = Math.floor((Math.min(az, ez) - TH) / GZ); iz <= Math.floor((Math.max(az, ez) + TH) / GZ); iz++) // prettier-ignore
-                            (trassen.get(ix * 2097152 + iz) || (trassen.set(ix * 2097152 + iz, []), trassen.get(ix * 2097152 + iz))).push(ax, az, ex, ez); // prettier-ignore
-                }
-        const kreuzt = (ax, az, bx, bz, cx, cz, dx, dz) => {
-            const o = (px, pz, qx, qz, rx, rz) => Math.sign((qx - px) * (rz - pz) - (qz - pz) * (rx - px));
-            return o(ax, az, bx, bz, cx, cz) * o(ax, az, bx, bz, dx, dz) < 0 && o(cx, cz, dx, dz, ax, az) * o(cx, cz, dx, dz, bx, bz) < 0; // prettier-ignore
-        };
-        const jenseits = (tx, tz, x, z) => {
-            if (!trassen.size) return false;
-            const [L, pkt] = [trassen.get(Math.floor(x / GZ) * 2097152 + Math.floor(z / GZ)) || [], { minX: x, maxX: x, minZ: z, maxZ: z }]; // prettier-ignore
-            for (let i = 0; i < L.length; i += 4)
-                if (this._streckeBoxAbstand2(pkt, L[i], L[i + 1], L[i + 2], L[i + 3]) < TH * TH) return true;
-            for (let ix = Math.floor(Math.min(tx, x) / GZ); ix <= Math.floor(Math.max(tx, x) / GZ); ix++)
-                for (let iz = Math.floor(Math.min(tz, z) / GZ); iz <= Math.floor(Math.max(tz, z) / GZ); iz++) {
-                    const M = trassen.get(ix * 2097152 + iz) || [];
-                    for (let i = 0; i < M.length; i += 4)
-                        if (kreuzt(tx, tz, x, z, M[i], M[i + 1], M[i + 2], M[i + 3])) return true;
-                }
-            return false;
-        };
         // DER PUNKT VOR JEDER TÜR BLEIBT FREI (mensch.K3 Staffel 2): über ihn geht jeder hinein und hinaus (`vorM`). Die
         // Regeln der Liste lesen nur den Plan und seine Bauten — was der Wald-Takt später bringt (Baum, Busch, Fels), richtet
         // der Stand selbst (`_bewohnerStandPruefen`): die Liste nach der Abwesenheit ist dieselbe Funktion
@@ -593,7 +556,7 @@ class AnazhRealm_siedlung_bewohner {
                     const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (2 + (v >> 3));
                     const x = tx + ux * vor - uz * quer;
                     const z = tz + uz * vor + ux * quer;
-                    if ((gilt && !gilt(x, z)) || jenseits(tx, tz, x, z)) continue;
+                    if (gilt && !gilt(x, z)) continue;
                     if (yield* frei(x, z, amRand))
                         return nimm(
                             {
@@ -2270,8 +2233,10 @@ class AnazhRealm_siedlung_bewohner {
         const um = this._bewohnerUm(S, b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
         // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
-        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen)
-        if (um && !um.spieler && !um.wagenLeib && this._bewohnerPlatz(S, um, p, q, b)) return halte({ vx: 0, vz: 0 });
+        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen; der Fahrer zu Fuß, `wagen`, auch nicht: bat man
+        // ihn um Platz, steckte im Start-Dorf wohnhaus #617311 um 6,92 Uhr — offen, Kreatur-Linse bewohner)
+        if (um && !um.spieler && !um.wagenLeib && !um.wagen && this._bewohnerPlatz(S, um, p, q, b))
+            return halte({ vx: 0, vz: 0 });
         // die Nachbarn als Zahlen, EINMAL je Wahl gelesen (die Lage zu ihm, ihr Tempo, die Kapseln): die Zeit liest die
         // Geachteten (der Stehende und der Gehende mit Vorrang), die Wache die Nächsten (näher als die Kapseln und ein Schritt)
         const nN = nb.length;
