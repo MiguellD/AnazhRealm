@@ -290,6 +290,14 @@ class AnazhRealm_speicher_laden {
             .filter((x) => x && x.wort in AnazhRealm.WEATHER_INTENSITY && Number.isFinite(x.w))
             .slice(-64)
             .map((x) => ({ wort: x.wort, quelle: String(x.quelle).slice(0, 80), w: x.w }));
+        // die Stempel des Regens (wetter.K3): Paare [t, rain] endlicher Zahlen, die Uhr aufsteigend — sonst keine (der Pegel ruht)
+        const rs = state.regenStempel;
+        this.state.regenStempel =
+            Array.isArray(rs) &&
+            rs.length % 2 === 0 &&
+            rs.every((v, i) => Number.isFinite(v) && (i % 2 || !i || v >= rs[i - 2]))
+                ? rs.slice()
+                : [];
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         // der Zug, der schon zog, und sein Übergang (feld.K2#2): im selben Zug zieht der erste Takt nicht neu

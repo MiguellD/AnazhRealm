@@ -148,6 +148,12 @@ class AnazhRealm_daten {
     static get DAY_LENGTH_DEFAULT_MINUTES() {
         return AnazhRealm.TAG_SZENE_MINUTEN * 4; // 60 min: Mittag bis Sonnenuntergang = eine Szene
     }
+    // DER SPIELTAG DES PEGELS (wetter.K3, gelaende-core `pegelLauf`): die Sekunden der Welt-Uhr, die der Lauf des Regens und die
+    // Dürre als einen Tag rechnen — der Tag des Gesetzes, nie die Wahl der Tag-Länge einer Seite (die Uhr reist nie, der Pegel
+    // ist auf jeder Seite derselbe).
+    static get PEGEL_TAG_S() {
+        return AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES * 60;
+    }
     // DER TAKT DES WETTER-ZUGS: das Wetter steht so lange, bevor der Zug das nächste Wort zieht (mit dem 45-s-Übergang steht
     // es ~75 s). Leser: der Zug (`_loopWeatherAndGrowth`) — und damit jeder Wunsch der Welt, den nur der Zug erfüllt.
     static get WETTER_ZUG_SEK() {

@@ -1496,6 +1496,7 @@ class AnazhRealm_dirigent_takt {
         // (`_wetterZugZiehen`). Steht das Wort des Spielers (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug
         // (danach steht das Wetter bis zum nächsten); er wartet auf die Bühne.
         const st = this.state;
+        this._pegelUhr(); // der Pegel folgt der Welt-Uhr: der Regen fließt über die Lag-Zeit seines Laufs ab, die Dürre senkt ihn
         const zug = Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
