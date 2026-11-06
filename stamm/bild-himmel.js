@@ -2103,8 +2103,8 @@ class AnazhRealm_bild_himmel {
         };
         // der Lichtmesser misst den Boden im Bild: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
         // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
-        const sicht = dy > 0 ? this._horizontSichtImBild(dir) : 1;
-        add(dl.color, dl.intensity * dy * sicht);
+        // … und auf dem Boden, wie das Bild ihn zeigt: je Fläche max(N·L, 0) ihrer Neigung (an der Stelle von sin h☉)
+        add(dl.color, dl.intensity * (dy > 0 ? this._horizontSichtImBild(dir) : 0));
         const he = this._himmelE || (this._himmelE = [0, 0, 0]);
         let himmel = this._himmelsBestrahlung(he);
         const A = st.atmoLut;

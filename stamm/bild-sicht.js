@@ -681,7 +681,7 @@ class AnazhRealm_bild_sicht {
         // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
         // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
         // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
-        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
+        const wirt = this;
         const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
@@ -691,7 +691,10 @@ class AnazhRealm_bild_sicht {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
                 if (konstant(stufe)) {
-                    return halbraum(builder.context.getUV(this, builder));
+                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden
+                    const n = builder.context.getUV(this, builder);
+                    const frei = T.max(himmel.sub(wirt._horizontHimmel(T.shadowPositionWorld, n)), T.vec3(0));
+                    return wirt._rueckstrahlHalbraum(frei, n);
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);

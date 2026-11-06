@@ -653,7 +653,8 @@ var __weltLicht = (function () {
             grenze,
             daemmerung: (mNacht - grenze) / (mNacht - mTag),
             tag: Math.max(0, Math.min(1, (h - nG) / (hN - nG))),
-            nacht: Math.max(0, Math.min(1, s / nachtE)),
+            // stetig in der Sonnenhöhe (C¹ an beiden Enden der Dämmerung): der Einsatz ist keine Stufe der Belichtung
+            nacht: ((x) => x * x * (3 - 2 * x))(Math.max(0, Math.min(1, s / nachtE))),
             hell: 0.045 + 0.955 * q * q * (3 - 2 * q),
         };
     }
