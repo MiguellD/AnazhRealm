@@ -584,6 +584,12 @@ async function probeBildWeg(H) {
     const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
+    // DIE SCHLEIFE DES SPIELS läuft wie im Spiel (wie probeVerben): der Haken der Linse sitzt am Render des Takts (`_loopRender`,
+    // wegHelfer bild), die Werkbank der Sitzung hält die Schleife zwischen ihren Befehlen an (`__loop()`). Ohne sie zog nie ein Bild
+    // und die Schublade öffnete nie — seit die Probe die Seite nicht mehr neu lädt (w4-stationen-schnell) jeder Lauf 0/8 an der Frist
+    // (GTX 8efb6318 80,2 s, headless am main dieselben 80,2 s, „#workshop-search: nicht offen“)
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
     await H.ereignisStrom(page);
     const { frei } = await page.evaluate(L.probe, { nurOrt: true });
     await buehne(page);
@@ -615,6 +621,25 @@ async function probeBildWeg(H) {
     return j;
 }
 const BILD_PROBE = probeBefehl(probeBildWeg, 60, { FAELLE: JSON.stringify(BILD_FAELLE) });
+// DIE ROHDATEI des Bild-Wegs als Probe des Urteils (selbsttest PROBEN): gesund jedes Werk steht über 3 echte Eingaben, je Werk der
+// erste Lauf kalt, 400 ms bis zum abgearbeiteten Bild, Bau-Hash = L0; `fall` ändert EINEN Lauf (Index in BILD_FAELLE)
+const bildRoh = (fall = {}, i0 = 0) => {
+    const j = { gestartet: true, bild: true, echt: true, wege: {}, faelle: BILD_FAELLE };
+    const gesehen = new Set();
+    BILD_FAELLE.forEach(([weg, lage, werk, sicht], i) => {
+        const e = { steht: 1, eingaben: 3, unecht: 0, zeiten: [100, 150, 200, 300, 400], bau: "b", soll: "b", kalt: !gesehen.has(werk), ...(i === i0 ? fall : {}) };
+        gesehen.add(werk);
+        (((j.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
+    });
+    return j;
+};
+const BILD_PROBEN = [
+    { name: "gesund: 8/8 Werke stehen in ≤ 3 Eingaben im Bild, p95 0,4 s", j: bildRoh(), gruen: true },
+    { name: "Mutante: ein Werk steht nicht (das Bild trägt den L0-Bau)", j: bildRoh({ steht: 0 }, 2), gruen: false },
+    { name: "Mutante: 4 Eingaben", j: bildRoh({ eingaben: 4 }, 5), gruen: false },
+    { name: "Mutante: warm 1,2 s bis zum Bild", j: bildRoh({ zeiten: [100, 150, 200, 300, 1200] }, 6), gruen: false },
+    { name: "Mutante: das Bild zeigt nicht den L0-Bau", j: bildRoh({ soll: "c" }, 1), gruen: false },
+];
 
 // DIE VERBEN (bauen.K5#2): die Linse diag-werkstatt-weg mit `--verben` (`wegHelfer`, `wegLauf`: gesetzt, dann das Verb über die echte
 // Taste — Haus W bis hinter die Schwelle, Wagen E · W · E, Tor E, Brücke W über das Deck, Leiter W bis aufs Podest, Bank E) in der Welt
@@ -1616,7 +1641,8 @@ const alle = [
                             const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
                             n++;
                             const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null; // [eingabe, steht, l0, bild, gpu] ab der ersten Eingabe
-                            const ok = e && !e.fehler && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
+                            // das Werk STEHT (genau eines, wie Staffel 1), über echte Eingaben, ≤ 3, im Bild mit dem L0-Bau
+                            const ok = e && !e.fehler && e.steht === 1 && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
                             if (!ok) {
                                 rot.push(weg + " · " + lage + " · " + werk + " · " + sicht);
                                 continue;
@@ -1658,6 +1684,7 @@ const alle = [
             "scripts/lib/ausgabe-aufnahme.cjs",
             "save-server.js",
         ],
+        proben: BILD_PROBEN,
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
     // ── bauen.K2 ── W9 SLOT (gate:haus-welt, Phase grund; w3t-grund): ein Haus in der Gestalt eines Dorf-Hauses (Rezept, Stempel,
