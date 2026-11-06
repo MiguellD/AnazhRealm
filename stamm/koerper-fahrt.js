@@ -1766,6 +1766,9 @@ class AnazhRealm_koerper_fahrt {
         const k = ks.map(Math.abs);
         return {
             pts: P,
+            // die Route je Meter vor der Glättung (Punkt für Punkt zu `pts`): wer die Linie fortschreibt, glättet aus IHR, nie aus
+            // der schon geglätteten (`_verkehrLinie`)
+            roh: M,
             bogen: s,
             k,
             ks,

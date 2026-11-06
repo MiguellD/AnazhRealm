@@ -286,16 +286,14 @@ class AnazhRealm_siedlung_verkehr {
                       )
                       .map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM))
                 : [];
+        // DIE WENDE IST IHR RING SAMT PLATZ (der Ort, an dem wer aus dem Platz oder in ihn fährt, den Weg der Durchfahrt kreuzt): ihre
+        // Bahnen hinein und heraus kreuzen keinen Wagen (fachwerk `verkehrsNetz`: zwei halbe Wagen auseinander, jede quert die Spur
+        // der anderen nur, wo keiner fährt) — wer auf ihnen fährt, folgt dem vor ihm. Bis w13-verkehr-heil reichte der Ort bis an den
+        // Abzweig beider Bahnen (stadt-voll, die Wende 924/354: 44,9 m, 105 m der Linie je Durchfahrt): wer ausparkte, wartete, bis
+        // keiner mehr auf 105 m der Bahn fuhr, die Plätze leerten sich einer nach dem anderen, und eine Reihe von sieben stand 90 s
+        // vor dem Abzweig (23 Uhr, 15–55 s nach dem Sprung fuhren 13 von 20 Wagen 30 m)
         for (const w of VK.wenden.values())
-            w.zone = zone(
-                "wende",
-                w.x,
-                w.z,
-                Math.max(
-                    w.r + VG.halbM + VG.parkRandM + VG.parkB + VG.parkL / 2,
-                    ...[w.bahn[0], w.bahn[w.bahn.length - 1]].map((q) => Math.hypot(q.x - w.x, q.z - w.z) + VG.halbM)
-                )
-            );
+            w.zone = zone("wende", w.x, w.z, w.r + VG.halbM + VG.parkRandM + VG.parkB + VG.parkL / 2);
         // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,
         // koerper-core TAGES_GESETZ: am Platz wechselt die Schicht, der Wagen fährt bei Tag und bei Nacht); steht das Haus nicht
         // oder trägt es die Person nicht, fährt die erste freie der folgenden Häuser (bis hier fuhr dort keiner: 4 von 20 Wagen
@@ -996,9 +994,13 @@ class AnazhRealm_siedlung_verkehr {
             if (p) L += Math.hypot(q.x - p.x, q.z - p.z);
             pts.push(q);
         };
+        // DER REST DER ALTEN LINIE AUS IHRER ROUTE (`roh`, die Punkte vor der Glättung): bis w13-verkehr-heil glättete jedes Anhängen
+        // und jedes Umfahren den schon geglätteten Rest noch einmal über ±`kurveM` — der Ring der Wende (7 m) schrumpfte mit jedem
+        // Durchgang zu seiner Mitte, und wer ihn fuhr, fuhr in sein Inneres (stadt-voll 23 Uhr: Wagen 1 stand 2,8 m neben der Mitte
+        // der Wende 924/354 vor dem Hang, 35 s ohne Grund)
         if (!anfang && alt) {
             dazu({ x: e.position.x, z: e.position.z });
-            for (let i = alt.i + 2; i < alt.pts.length; i++) dazu(alt.pts[i]);
+            for (let i = alt.i + 2; i < alt.roh.length; i++) dazu(alt.roh[i]);
             for (const z of W.zonen)
                 if (!z.weg)
                     Z.push({
@@ -1107,8 +1109,8 @@ class AnazhRealm_siedlung_verkehr {
                 const a2 = (e.position.x - auge.x) ** 2 + (e.position.z - auge.z) ** 2;
                 let k = 1;
                 for (const [m, n] of V.leiter) if (a2 >= m * m) k = n;
-                W.imBlick = W.d2 < V.huelleM * V.huelleM || this._verkehrImBlick(e, W.hl + 1);
-                if (!W.imBlick) k = Math.max(k, V.ausBlick);
+                W.imBlick = this._verkehrImBlick(e, W.hl + 1);
+                if (!W.imBlick && W.d2 >= V.huelleM * V.huelleM) k = Math.max(k, V.ausBlick);
                 W.k = k;
                 if ((W.takt = (W.takt + 1) % k) !== 0 && !W.aufgeschoben) continue;
                 faellig.push(W);
@@ -1443,9 +1445,9 @@ class AnazhRealm_siedlung_verkehr {
         const V = AnazhRealm.VERKEHR;
         const F = W.F;
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
-        const P = F.pts;
-        const a = P[u.i];
-        const b = P[Math.min(P.length - 1, u.i + 1)];
+        const P = F.roh; // die Route vor der Glättung: die neue Linie glättet aus ihr (`_verkehrLinie`)
+        const a = F.pts[u.i]; // der Stehende quer zur gefahrenen Linie
+        const b = F.pts[Math.min(F.pts.length - 1, u.i + 1)];
         const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
         const q = ((u.x - a.x) * -(b.z - a.z) + (u.z - a.z) * (b.x - a.x)) / l; // rechts der Fahrt (+): (−tz, tx)
         const noetig = W.hw + R + V.seitM + F.rund[u.i] + V.umfahrRandM;
@@ -1467,10 +1469,10 @@ class AnazhRealm_siedlung_verkehr {
             return { x: p.x - rx * off * g, z: p.z - rz * off * g };
         });
         const deckel = F.deckel;
-        F.pts = neu;
+        F.roh = neu;
         this._verkehrLinie(S, W, [], false);
         if (W.F === F) {
-            F.pts = P;
+            F.roh = P;
             return false;
         }
         W.F.deckel = deckel;
