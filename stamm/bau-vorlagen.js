@@ -949,7 +949,10 @@ class AnazhRealm_bau_vorlagen {
             for (const k of ["parts", "_skeleton"])
                 Object.defineProperty(bp, k, {
                     get: () => wachse()[k],
-                    set: (v) => (wachse(), alsWert(bp, k, v)),
+                    set: (v) => {
+                        wachse();
+                        alsWert(bp, k, v);
+                    },
                     enumerable: true,
                     configurable: true,
                 });
