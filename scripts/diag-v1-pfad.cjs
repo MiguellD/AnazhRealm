@@ -2054,13 +2054,13 @@ async function korpusSatz(a) {
     const antwort = (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo)).then(
         () => (e.antwortMs = Math.round(performance.now() - t0))
     );
-    // DIE ERSTE WIRKUNG (ki.K5): die Welt tickt, während der Strom der Antwort läuft, wie im Spiel — das Prädikat liest sie ab dem
-    // Satz, nie erst ab dem Ende der Antwort (die Tat läuft im Strom, `_llmStrom`); das Fenster danach zählt Takte der Welt (je
-    // 100 ms einer), nie die Wanduhr
+    // DIE ERSTE WIRKUNG (ki.K5): das Prädikat liest die Welt ab dem Satz, nie erst ab dem Ende der Antwort (die Tat läuft im
+    // Strom, `_llmStrom`); die Welt steht, solange die Antwort läuft (wie vor ki.K5 — eine tickende Welt schriebe ins Tagebuch
+    // und bräche den Prompt-Cache des Modells), das Fenster danach zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
     for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += e.antwortMs > 0) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
         if (e.praedikat) break;
-        await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
+        await new Promise((ok) => (gang && r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
     }
     e.weltMs = e.praedikat ? Math.round(performance.now() - t0) : null;
     await antwort;
@@ -2669,7 +2669,7 @@ hauptLauf(async () => {
                 ],
             ],
         ]) {
-            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
+            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
             for (const [name, bruch, soll] of brueche) {
                 const v = urteil(Object.assign({}, gesund, bruch));
                 check(

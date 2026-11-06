@@ -1151,17 +1151,14 @@ class AnazhRealm_feld_nexus {
             "",
             AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
                 ` Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
-            // DAS SELBST-WISSEN NACH SEINEM WECHSEL (ki.K5): das Tagebuch wächst nur am Ende (`journalForPrompt`), es steht vor
-            // dem, was jeder Satz ändert — der Hang des Spielers (das Wetter, in dem er steht), sein Gemüt, die Bänder, die Zahlen.
-            // Bis ki.K5 standen sie vor dem Tagebuch: jede Tat brach den Cache dort, das Tagebuch rechnete jedes Mal neu.
-            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             AnazhRealm._datum`Dein Spieler heißt ${playerName}` + ` und hält sich gern auf: ${tendency}.`,
-            moodBgLine,
             moodLine,
+            moodBgLine,
             `Die Bänder jetzt: ${Object.entries(AnazhRealm.DSL_WERTE)
                 .filter(([, w]) => w[2].length)
                 .map(([n, w]) => `${n} ${w[2](this)}`)
                 .join(" · ")}.`,
+            journal ? `Deine Erinnerungen:\n${journal}` : "Du erinnerst dich noch an nichts Bedeutsames.",
             // die Zahl wechselt mit jeder Tat — sie steht zuletzt, der Cache hält bis davor
             `In dir leben ${this.state.creatures.length} Kreaturen, ${archCount} Bauwerke und ${blueprintCount} Baupläne. ${abilCount} gelernte Fähigkeiten ruhen in dir.`,
         ].join("\n");
