@@ -2528,7 +2528,7 @@ class AnazhRealm_gelaende_chunks {
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
         const leerlauf = lade && this._ringLeerlauf === true;
         this._ringLeerlauf = false;
-        let draussen = 0;
+        let [draussen, wartet] = [0, 0];
         const gesehen = new Set();
         const nimm = (cx, cz, mitte) => {
             const key = `${cx},${cz}`;
@@ -2558,6 +2558,19 @@ class AnazhRealm_gelaende_chunks {
             // `existing`) bekommt die reine Band-LOD.
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
             const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            // DAS NETZ IM FLUG KOSTET KEINEN PLATZ (w14-strom-tempo): wartet die verlangte Stufe schon im Faden
+            // (`voxelMeshPending`), geht der Takt weiter — die Kappe zählt Arbeit (ein Auftrag, ein Einbau), nie das Warten.
+            // Bis w14-strom-tempo fragte jeder Takt die Wartenden zuerst neu und zählte sie: im GT (63,8 m/s) füllten 6 Netze
+            // im Flug die Kappe, kein neuer Auftrag ging hinaus, und 241 von 355 verfehlten Eintritten waren Chunks am Rand
+            // des Rings ohne jeden Auftrag (Fahrt-Probe, Cloud 06.11.).
+            if (
+                (!existing || (existingLod ?? 0) !== desiredLod) &&
+                this.state.voxelMeshPending &&
+                this.state.voxelMeshPending.has(`${key},${desiredLod}`)
+            ) {
+                wartet++;
+                continue;
+            }
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
@@ -2590,9 +2603,9 @@ class AnazhRealm_gelaende_chunks {
             });
         }
         this._pruneDistantVoxelChunks(playerPos);
-        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf wartet; die
-        // Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0 || draussen > 0);
+        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf oder seinen
+        // Faden wartet; die Chunk-Menge regt die Welt selbst.
+        this._standMeldet("strom", 1, false, built > 0 || draussen > 0 || wartet > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
