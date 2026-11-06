@@ -1216,12 +1216,8 @@ class AnazhRealm_speicher_laden {
         if (this.state.renderer._isHeadlessNull) this._weltbildSteht();
         this.p2pLoadPersisted();
         const verbunden = await this._weltVorlauf();
-        // DIE TAFELN DER SEITE NACH DEM ERSTEN BILD (tore.K1): Welt-Info und Werkstatt liest unter dem Ladeschirm niemand — ihr Bau
-        // (Werkstatt 19–50 ms) lag in der Aufgabe der Ankunft am Stück (Radeon, der Frame der Ankunft 101–109 ms)
-        this._weltbildKommt().then(() => {
-            this.updateWorldInfo();
-            this._renderWorkshopDOM();
-        });
+        this.updateWorldInfo();
+        this._renderWorkshopDOM();
         this._updateBuildModeHud();
         this._weltWechselSperre = false;
         // das Start-Dorf der neuen Welt wartet am Buch wie beim Boot (init, B5): das Buch steht schon, sein Wecker läuft im selben

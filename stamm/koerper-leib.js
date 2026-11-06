@@ -253,15 +253,7 @@ class AnazhRealm_koerper_leib {
         if (!st._leibVorwaermung) {
             if (!this._ofenVorratSteht) return false;
             st._leibVorwaermung = {
-                // der eigene Leib zuerst (tore.K1): er gehört der Seite wie die Stoffe der Welt — seine Programme stehen, bevor der
-                // Spieler ihn in Third zum ersten Mal sieht (bis hier baute ihn der erste Durchgang in Third, 249 ms am Stück)
-                offen: [
-                    ...new Set([
-                        (st.player && st.player.soul) || "human",
-                        "human",
-                        ...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a),
-                    ]),
-                ],
+                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
                 leib: null,
                 takte: 0,
             };
