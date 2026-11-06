@@ -150,9 +150,9 @@ function fernwaldLinse(opts) {
                     mitt.push(m);
                     hf.push(sl / k);
                 }
-            sig.sort((a, b) => a - b);
-            hf.sort((a, b) => a - b);
-            const mm = mitt.reduce((a, b) => a + b, 0) / Math.max(1, mitt.length);
+            sig.sort(aufsteigend);
+            hf.sort(aufsteigend);
+            const mm = mitt.reduce(addiere, 0) / Math.max(1, mitt.length);
             const vielfalt = Math.sqrt(mitt.reduce((p, q) => p + (q - mm) * (q - mm), 0) / Math.max(1, mitt.length));
             return {
                 kronenPx: n,
