@@ -1369,8 +1369,9 @@ class AnazhRealm_dirigent_ankunft {
     //     (x, z, false)) auf `gitter`² Punkten im Abstand `zelleM` um den Anker des Rings, gerechnet im Feld-Faden
     //     (`_fernAuftrag("gitter")`, `_horizontGitterTakt`), über dem Bezug (Meeresspiegel) als r16f;
     //   DIE KARTE — je Texel die SCHATTEN-HÖHE zur Sonne: H = max_s (h(x + â·s) − s · tan h☉) über den Marsch s = 60 … 3 000 m
-    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats und der Boden des Gitters (rgba16f) — ein Schirm-Pass über das
-    //     Gitter (`pass`), neu gemalt, wenn das Licht sich um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
+    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats und der Boden des Gitters (rgba16f,
+    //     `karte`² Texel über dem Quadrat des Gitters) — ein Schirm-Pass über das Gitter (`pass`), neu gemalt, wenn das Licht sich
+    //     um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
     // Ein Empfänger in der Höhe y liegt im Licht, wenn y über H steht — der Halbschatten so breit, wie die Sonne (`sonneTan`) ihn
     // über s* zieht (`_horizontSicht`). Die Höhe des Empfängers ist seine eigene (Boden, Dach, Krone), nie die des Gitters.
     // Bis ferne.K4 sah das Licht die drei Schalen des Rings orthografisch (Licht-Tiefe, Max-Blende, Bias 105–210 m am Abend):
@@ -1396,7 +1397,8 @@ class AnazhRealm_dirigent_ankunft {
         hoehen.magFilter = THREE.LinearFilter;
         hoehen.generateMipmaps = false;
         hoehen.needsUpdate = true;
-        const rt = new THREE.RenderTarget(n, n, {
+        // die Karte in ihrer eigenen Auflösung (`karte`² Texel über demselben Quadrat wie das Gitter: `zuUv` ist normiert)
+        const rt = new THREE.RenderTarget(H.karte, H.karte, {
             type: THREE.HalfFloatType,
             format: THREE.RGBAFormat,
             depthBuffer: false,
@@ -1526,11 +1528,11 @@ class AnazhRealm_dirigent_ankunft {
             };
         const g = this._horizontHoehen.g;
         const drin = (u, v) => u >= -0.5 && u <= n - 0.5 && v >= -0.5 && v <= n - 0.5;
-        // bilinear über die Texel-Mitten (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
-        const bilinear = (u, v, f) => {
+        // bilinear über die Texel-Mitten eines Gitters von `m`² Texeln (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
+        const bilinear = (u, v, f, m = n) => {
             const [i, j] = [Math.floor(u), Math.floor(v)];
             const [fu, fv] = [u - i, v - j];
-            const c = (a, b) => f(Math.min(n - 1, Math.max(0, a)), Math.min(n - 1, Math.max(0, b)));
+            const c = (a, b) => f(Math.min(m - 1, Math.max(0, a)), Math.min(m - 1, Math.max(0, b)));
             const [a, b, e, h] = [c(i, j), c(i + 1, j), c(i, j + 1), c(i + 1, j + 1)];
             return a.map((w, k) => (w * (1 - fu) + b[k] * fu) * (1 - fv) + (e[k] * (1 - fu) + h[k] * fu) * fv);
         };
@@ -1544,22 +1546,25 @@ class AnazhRealm_dirigent_ankunft {
         const merk = `${K.stand}|${L.x}|${L.y}|${L.z}`;
         if (!this._horizontMerk || this._horizontMerk.merk !== merk) this._horizontMerk = { merk, texel: new Map() };
         const memo = this._horizontMerk.texel;
+        // die Texel der Karte (`karte`² über dem Quadrat des Gitters): ihre Mitten in Gitter-Einheiten (i + ½) · n / karte − ½
+        const nk = H.karte;
+        const zuK = (g) => ((g + 0.5) * nk) / n - 0.5;
         const texel = (i, j) => {
-            const alt = memo.get(j * n + i);
+            const alt = memo.get(j * nk + i);
             if (alt) return alt;
-            const [cx, cz] = [ox + i * d, oz + j * d];
+            const [cx, cz] = [ox + (((i + 0.5) * n) / nk - 0.5) * d, oz + (((j + 0.5) * n) / nk - 0.5) * d];
             let [best, weg] = [-H.leerM, 0];
             for (let k = 1; k <= H.schritte; k++) {
                 const s = k * H.schrittM;
                 const h = hoehe(cx + ax * s, cz + az * s) - tanH * s;
                 if (h > best) [best, weg] = [h, s];
             }
-            memo.set(j * n + i, [best, weg]);
+            memo.set(j * nk + i, [best, weg]);
             return [best, weg];
         };
         const [u, v] = [(x - ox) / d, (z - oz) / d];
         if (!drin(u, v)) return 1;
-        const [schatten, weg] = bilinear(u, v, texel);
+        const [schatten, weg] = bilinear(zuK(u), zuK(v), texel, nk);
         const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
         const t = Math.max(0, Math.min(1, (y - K.U.bezug.value - (schatten - band)) / (2 * band)));
         return t * t * (3 - 2 * t);
@@ -1672,12 +1677,17 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
-// Speicher: Gitter r16f 128 KB + Karte rgba16f 512 KB (H, s*, Boden; vorher die Licht-Tiefe 512² r16f, 512 KB). `messer` der Lichtmesser der Kamera
+// `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest.
+// Speicher: Gitter r16f 128 KB + Karte rgba16f `karte`² 378 KB (H, s*, Boden), zusammen 0,494 MB unter der Ratsche 0,5
+// (spec/profiband/ratsche-*-gtx-*.json; vorher die Licht-Tiefe 512² r16f, 512 KB). Die Karte in der Auflösung des Gitters (256²,
+// 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an
+// 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
 // (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
 // je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
     messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
     gitter: 256,
+    karte: 220,
     zelleM: 96,
     schrittM: 60,
     schritte: 50,
@@ -1686,6 +1696,7 @@ AnazhRealm.HORIZONT_KARTE = Object.freeze({
     lichtRad: (0.05 * Math.PI) / 180,
     bandM: 1.5,
     leerM: 10000,
+    luftProben: 8,
 });
 
 // 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.

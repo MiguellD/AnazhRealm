@@ -1808,8 +1808,10 @@ class AnazhRealm_bild_himmel {
         };
         // DER MARSCH längs v: die Quellen (Richtung, Gewicht in Einheiten von E0 — die Sonne 1, der Mond `mondE`) und das
         // Sternen-Licht (`nacht`, in E0). Die Himmels-Sicht ruft ihn mit Sonne, Mond und Sternen, die Bestrahlungs-Tafel mit
-        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln.
-        const marsch = (v, quellen, nacht) => {
+        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln. `einfach` (ein vec3-Var, wenn der
+        // Rufer ihn reicht) sammelt die EINFACHE Streuung der ersten Quelle (die Sonne) — den Teil, den ein Schatten aus der Luft
+        // nimmt (`_luftEnsure`, der Luftschatten); die Mehrfachstreuung Ψ_ms bleibt im Schatten.
+        const marsch = (v, quellen, nacht, einfach = null) => {
             const r0 = U.hKm.add(RG).toVar();
             const mu = v.y;
             const boden = amBoden(r0, mu).toVar();
@@ -1821,6 +1823,7 @@ class AnazhRealm_bild_himmel {
             const thr = vec3(1).toVar();
             const L = vec3(0).toVar();
             const tAlt = float(0).toVar();
+            let erste = null;
             const N = Z.schritte.himmel;
             Loop({ start: 0, end: N, type: "float", name: "s" }, ({ s }) => {
                 const tE = tMax.mul(s.add(1).div(N).pow(2)).toVar();
@@ -1836,9 +1839,11 @@ class AnazhRealm_bild_himmel {
                 const S = quellen
                     .map((q, i) => {
                         const muQ = dot(p, q.dir).div(ri).toVar();
-                        const s = durchlass(ri, muQ)
+                        const ein = durchlass(ri, muQ)
                             .mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)))
-                            .add(mehrfach(hi, muQ).mul(sca));
+                            .toVar();
+                        if (i === 0) erste = ein;
+                        const s = ein.add(mehrfach(hi, muQ).mul(sca));
                         return q.gewicht ? q.gewicht.mul(s) : s;
                     })
                     .reduce((a, b) => a.add(b))
@@ -1846,6 +1851,7 @@ class AnazhRealm_bild_himmel {
                 const e = max(ext(hi), vec3(1e-7)).toVar();
                 const tr = exp(e.negate().mul(dt)).toVar();
                 L.addAssign(thr.mul(S).mul(tr.oneMinus().div(e)));
+                if (einfach) einfach.addAssign(thr.mul(erste).mul(tr.oneMinus().div(e)));
                 thr.mulAssign(tr);
             });
             // DAS STERNEN-LICHT (D3-2, `ATMO_GESETZ.nacht`): über dem Horizont leuchtet der Nachthimmel selbst — schräg durch die
@@ -1889,12 +1895,19 @@ class AnazhRealm_bild_himmel {
             ).toVar();
             const ce = el.cos().toVar();
             const v = vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar();
-            return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
+            // Alpha: der Anteil der einfachen Streuung der Sonne an der Leuchtdichte (der Luftschatten, `himmelEinfach`)
+            const einfach = vec3(0).toVar();
+            const L = marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE, einfach).toVar();
+            const Y = vec3(0.2126, 0.7152, 0.0722);
+            return vec4(L, clamp(dot(einfach, Y).div(max(dot(L, Y), 1e-12)), 0, 1));
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
         // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
         const himmelJeLicht = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb;
         const himmelFarbe = (dir) => himmelJeLicht(dir).mul(U.licht).mul(U.toenung);
+        // DER ANTEIL DER SONNE (0 … 1) an der Himmels-Sicht in Richtung `dir`: ihre einfache Streuung (Alpha der Tafel) — was der
+        // Grat der Luft hinter ihm nimmt (`_luftEnsure`, der Luftschatten); die Mehrfachstreuung und der Mond bleiben.
+        const himmelEinfach = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).a;
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht, JE
         // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
         const passUmgebung = Fn(() => vec4(himmelJeLicht(this._umgebungRichtung(uv()).toVar()), 1));
@@ -1955,6 +1968,7 @@ class AnazhRealm_bild_himmel {
             anker: null,
             belichtung: null,
             himmelFarbe,
+            himmelEinfach,
             durchlass,
             RG,
             mediumBeta: null,
@@ -2725,10 +2739,33 @@ class AnazhRealm_bild_himmel {
         // trägt sie die Mie-Keule des Aerosols aus der Phase (g des Gesetzes), am Horizont das Blau der Rayleigh-Streuung;
         // ein Blick unter den Horizont (auf das Gelände) liest den Horizont-Himmel (die In-Streuung längs eines langen
         // Wegs). Unter Wasser trägt `farbe` das Medium der Kamera.
+        // DER LUFTSCHATTEN (ferne.K4; Hillaire 2020 „shadowed in-scattering“, UE/Frostbite Sky Atmosphere): wo die Luft zwischen
+        // Auge und Punkt im Schatten des Grats liegt, streut die Sonne dort nicht hinein — nur Himmel und Mond (die Mehrfach-
+        // streuung). Der Strahl liest die EINE Horizont-Karte (`_horizontSicht`) an `luftProben` Punkten, je Punkt gewogen mit
+        // seinem Beitrag zur In-Streuung (Dichte der Luft × Durchlass bis zum Auge, dieselbe Extinktion wie `faktor`); die Farbe
+        // verliert davon den Anteil der einfachen Streuung der Sonne (`himmelEinfach`, Alpha der Himmels-Sicht). Wo die Karte
+        // ruht (ohne Gitter, ohne Wurf des Lichts, unter dem Horizont), ist die Sicht 1 — dasselbe Bild wie zuvor.
+        const luftSicht = T.Fn(([auge, punkt]) => {
+            const n = AnazhRealm.HORIZONT_KARTE.luftProben;
+            const v = punkt.sub(auge);
+            const ds = v.length().div(n);
+            const b = U.beta.mul(U.spektrum.y);
+            let [tau, summe, licht] = [T.float(0), T.float(0), T.float(0)];
+            for (let i = 0; i < n; i++) {
+                const p = auge.add(v.mul((i + 0.5) / n));
+                const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).mul(ds);
+                const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate()));
+                tau = tau.add(dtau);
+                summe = summe.add(w);
+                licht = licht.add(w.mul(this._horizontSicht(p)));
+            }
+            return licht.div(T.max(summe, 1e-12));
+        });
         const farbe = T.Fn(([auge, punkt]) => {
             const dir = punkt.sub(auge).normalize();
-            const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
-            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
+            const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize();
+            const schatten = T.float(1).sub(A.himmelEinfach(blick).mul(T.float(1).sub(luftSicht(auge, punkt))));
+            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick).mul(schatten));
         });
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
