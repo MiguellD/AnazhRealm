@@ -240,7 +240,11 @@ const P={
 let currentTrad=TRADITIONEN.Frank, currentGattung='Langschwert';
 SC.setTradition(currentTrad);   // Kern-Zustand spiegeln (measure liest die Tradition für die Gehilz-Masse)
 
-const show={spine:false,section:true,lehren:true,mass:false,steel:true};
+// DIE BÜHNE STEHT IM STAHL (studios.K4, Labor = Welt — wie die Garage seit 02.11.): die Wurzel `weapon` zeigt das Werk, das „In der
+// Welt ansehen" trägt; Schnitt-Karte, Lehren-Marken, Rückgrat und Maß-Streifen sind die Anatomie-Ansicht auf Knopfdruck (die Welt
+// trägt keine). Bis hier standen Schnitt-Karte und Lehren-Marken als Meshes IN der Wurzel: ihre Box 0,433 m hoch gegen die Klinge
+// der Welt 0,244 m (Tafel K4, Langschwert) — die Bühne rahmte ein anderes Ding als die Welt.
+const show={spine:false,section:false,lehren:false,mass:false,steel:true};
 let gSpine,gSection,gLehren,gMass,gWeapon,gBladeMesh;
 const weapon=new THREE.Group();weapon.position.y=0.30;scene.add(weapon);
 

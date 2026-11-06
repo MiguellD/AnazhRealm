@@ -212,7 +212,7 @@ function bodenFall(kind0, solid0){
     s.min=[s.min[0],s.min[1]+y,s.min[2]]; s.max=[s.max[0],s.max[1]+y,s.max[2]]; } }
 function buildDorf(dp){
   genesisAn=false;
-  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
+  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; parzelleSetzen(null); }
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
   tintM(DEFCOL);
   const plan=DORF(dp); dorfGroup=new THREE.Group(); dorfCellars=[]; doorList.length=0; solids=[];
@@ -553,7 +553,7 @@ function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; appl
 // Der Plan-Hash (FC.ortHash) steht in der Zeile unten und in window.__genesisOrt — die Linse nennt denselben (Studio = Welt).
 let genesisAn=false;
 function buildGenesis(){
-  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
+  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; parzelleSetzen(null); }
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
   dorf=null; dorfB=[]; dorfChunks={}; dorfCellars=[]; doorList.length=0; solids=[]; genesisAn=true;
   dorfGroup=new THREE.Group(); if(typeof ground!=='undefined') ground.visible=false;
@@ -685,6 +685,18 @@ document.getElementById('roh').onclick=()=>{if(!haus)return;const roh=['fundamen
 
 // ════════════════ HAUS — mutierbar, live regenerierbar ════════════════
 let haus, houseGroup, D, P;       // werden in buildHouse() gesetzt/getauscht
+// DIE WURZEL TRÄGT DAS WERK (studios.K4, Labor = Welt): `houseGroup` ist das Haus, das „In der Welt ansehen" setzt — die Parzelle
+// (Wiese, Vorderweg, Trittplatten, Hecke; HAUS `gelaende`) ist Möbel der Bühne und steht daneben, wie die Welt sie nie mitbaut
+// (fachwerk-core: „NICHT in buildInstance: die Parzelle"). Bis hier hing sie in der Wurzel: Box 31 × 13,3 × 31 m gegen das Haus der
+// Welt 10,0 × 13,2 × 8,8 m (Tafel K4, viktorianisch) — die Bühne rahmte aus dem 2,4-fachen Abstand.
+let parzelle=null;
+function parzelleSetzen(g){
+  if(parzelle){ parzelle.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(parzelle); }
+  parzelle=g||null;
+  if(!parzelle) return;
+  parzelle.position.y=0; scene.add(parzelle);
+  parzelle.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+}
 let lodSpawn=null;                 // Begeh-Spawn der LOD-Sonde (haus ist dort null)
 let solids=[], doorList=[];        // Kollision + Türen (von Closures referenziert)
 let explode=0;
@@ -695,13 +707,14 @@ function buildHouse(params){
     if(promoPend){ promoPend.st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); promoPend=null; }
     sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26;sun.shadow.camera.updateProjectionMatrix(); scene.fog.near=55; scene.fog.far=150; tintM(DEFCOL); if($('pK'))applyKultur($('pK').value,SEED); }
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); }
+  parzelleSetzen(null);
   if(typeof ground!=='undefined') ground.visible=true; const _ch=document.getElementById('chronik'); if(_ch)_ch.style.display='none'; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0; dorfRauch.quellen.length=0;
   const lodSt=RW.lod|0;   // LOD-SONDE: >0 = Dorf-Bake-Pfad statt Editor-Haus (Bedienungs-Zeile der Hülle)
   const ausId=document.getElementById('pAus')?document.getElementById('pAus').value:'haus';      // AUSSTATTUNG statt Haus (Feuerstelle · Marktstand · Ziehbrunnen)
   if(ausId!=='haus'&&FC.AUSSTATTUNG[ausId]){ buildAusstattungLab(ausId, lodSt); return; }
   if(lodSt>0){ buildHausLOD(params, lodSt); return; }
   { const inf=document.getElementById('lodInfo'); if(inf)inf.style.display='none'; }
-  haus=HAUS(THREE,mat,params); houseGroup=haus.build(); scene.add(houseGroup);
+  haus=HAUS(THREE,mat,params); houseGroup=haus.build({gelaende:false}); scene.add(houseGroup); parzelleSetzen(haus.subsystems.gelaende);
   houseGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   D=haus.dims; P=haus.P;
   solids=haus.solids;                                  // neue Kollisions-Liste
