@@ -513,13 +513,15 @@ function buehne(arg) {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);
         // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
-        // nach dem Bild die feine (`_leibFeinTausch`) — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der
+        // nach dem Bild die feine, sobald die Sicht sie zeigt (`_leibWunsch`) — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der
         // Stufe nach dem Foundry-Buch steht (sein Ingest gießt den Avatar neu), nie per Abfrage-Uhr: die Grobstufe lebt nur bis
         // zum Tausch. Danach ruht der Spiel-Loop, bis die Bühne den Leib zurückgibt.
         const halt = (stufe) =>
             page.evaluate(async (stufe) => {
                 const t0 = performance.now();
+                // die feine trägt der Leib nach dem Bild erst, wenn die Sicht sie zeigt (`_leibWunsch`, w14-ankunft-weg)
                 const steht = (r, st, pm = st.playerMesh) =>
+                    (stufe || !r._spielerVorlagen?.feinDa || !pm.userData._gelenk.nahStufe || (r.setCameraMode("third"), r.setCameraMode("first"))) &&
                     !!(r._foundry?.recipes && !st._deferredAvatarSoul && pm?.userData._gelenk) &&
                     pm.userData._gelenk.nahStufe === stufe &&
                     (stufe === 1 || !!st._weltbildDa) &&

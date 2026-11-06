@@ -99,7 +99,12 @@ class AnazhRealm_bild_schatten {
             auge: uniform(new THREE.Vector3()),
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
-        const atmoBoden = T.pmremTexture(st._skyEnvRT.texture, vec3(0, -1, 0), float(1)).mul(this._umgebungLicht());
+        const atmoBoden = __weltLicht.himmelDerStoffe(
+            st._skyEnvRT.texture,
+            this._atmoLutBau().U,
+            vec3(0, -1, 0),
+            float(1)
+        );
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "rueckstrahl:boden";
         mat.fog = false;
@@ -1518,7 +1523,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_bild_schatten]);
 // wirft auf ihr — die Haupt-Kamera sieht ihn nie.
 AnazhRealm.SHADOW_TWIN_LAYER = 2;
 AnazhRealm.PERF_SHADOW_RANGE_MAX = 170; // = der Default-Ceiling (Fallback, wenn atmosphere.shadowRange fehlt)
-// Die CSM-Tiefe (maxFar) je Meter Schatten-Reichweite: EINE Zahl für Boot und Regler (100–170 → 180–306 m).
+// Die CSM-Tiefe (maxFar) je Meter Schatten-Reichweite: EINE Zahl für Boot und den Schieber des Spielers (170 → 306 m).
 AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade (seit schatten.K1 die Kontakt-Kaskade, 15 m) rendert im
 // Regler-Intervall, höchstens jeden `nahMax`-ten Frame (laufende Tiere werfen nah); jede weitere im `fernFaktor`-fachen Takt.
