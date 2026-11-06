@@ -235,7 +235,7 @@ function albedoSicht(opts) {
                                 nah = Math.min(nah, dd);
                             }
                         }
-                if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !(r._nassAt && r._nassAt(x, zz)))
+                if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !r._nassAt(x, zz))
                     pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
                 else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
             }
@@ -251,7 +251,7 @@ function albedoSicht(opts) {
                 n = x.zeile.welt.exemplar.stufe,
                 D = AnazhRealm.LOD_DISTANCES;
             const zeigt = () => {
-                for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
+                for (const g of st.archInstanceGroups.values())
                     if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
                         for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                 return false;
@@ -356,7 +356,7 @@ function albedoSicht(opts) {
                     // trägt das Glied, nie die Arena. Verborgen fiel jede Senke, die gerade eine Arena zeichnet: die Birken-Karte
                     // stand nur im ersten Schuss (der Zeichner, bis die Arena folgte), drei von vier Schüssen leer, die Zeile las
                     // die Nachbar-Karten (swiftshader 12 797 · 0 · 0 · 0 Pixel)
-                    for (const m of meshes) m.visible = visAlt.get(m) && (sicht(m) || m.isGeometrieArena === true);
+                    for (const m of meshes) m.visible = visAlt.get(m) && (sicht(m) || m.isGeometrieArena);
                     bundles();
                     for (const [l] of lichtAlt) l.intensity = 0;
                     A.color.setRGB(1, 1, 1);
@@ -430,7 +430,7 @@ function albedoSicht(opts) {
             const ausschnitte = [];
             const satzAusschnitt = (m, eintrag, basis) => {
                 let s = null;
-                for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
+                for (const q of st.chunkSaetze.values()) if (q.mesh === m) s = q;
                 if (!s || !st.archInstanceGroups) return m;
                 const tri = [];
                 const stufen = new Set(); // die Stufen der Gruppen des Exemplars (die Täter-Klasse der Gruppe `f:<art>:L<n>`)
@@ -611,10 +611,9 @@ function albedoSicht(opts) {
                         [cam.near, cam.far] = nf || kamAlt.nf;
                         cam.updateProjectionMatrix();
                         cam.updateMatrixWorld(true);
-                        let t = await schuss((m) => set.has(m));
-                        // die Instanz einer eben gewechselten Stufe trägt erst das nächste Bild (swiftshader: die frische Karte der Birke
-                        // zeichnete im ersten Schuss kein Pixel, im zweiten 15 235) — ein leerer Schuss fährt einmal neu, bleibt er leer, laut
-                        if (nf && !t.hell.some((v, i) => i % 4 === 3 && v > 0)) t = await schuss((m) => set.has(m));
+                        // kein Neu-Schuss (material.K3#2): der leere Schuss einer frischen Karte war die verborgene Arena (der Pass oben) —
+                        // mit ihr zeichnete jeder der 96 Schüsse der acht Arten im ersten Bild
+                        const t = await schuss((m) => set.has(m));
                         if (nf) for (let p = 0; p < W * H; p++) if (Math.abs((p % W) + 0.5 - W / 2) > nf[2]) t.hell[p * 4 + 3] = 0;
                         hell.set(t.hell, i * W * H * 4);
                         dunkel.set(t.dunkel, i * W * H * 4);
