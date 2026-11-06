@@ -1689,17 +1689,17 @@ class AnazhRealm_bild_kosten {
     }
 
     // DER ZUGANG IM BILD (spielgang.K4), je Bild aus `_loopRender`: der Stand `state.zugang` (Einstellungen › Ton & Sicht, im
-    // Snapshot) ist die EINE Quelle, die Kette liest ihn hier — die Farbsicht (`farbsicht`: die Art, ihre Abbildung D aus
+    // Snapshot) ist die EINE Quelle, die Kette liest ihn hier — die Farbsicht (`farbsicht`: die Art, ihr Fehler und Schub aus
     // `_farbsichtMatrix`, gerechnet nur beim Wechsel) und die Unschärfe der Bewegung: sie IST die Geschichte der zeitlichen
     // Auflösung, die einem bewegten Pixel bis `maxVelocityLength` (r184: 128 px je Bild) nachzieht; aus (`unschaerfe` false)
     // weicht sie ab `ZUGANG.laufPxAus` Ausgabe-Pixeln Bewegung je Bild ganz dem Jetzt (`_laufPx` des Resolve).
     _zugangTakt(ppu) {
         const Z = this.state.zugang || {};
         const art = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
-        if (ppu && ppu.farbMatrix && ppu._farbArt !== art) {
+        if (ppu && ppu.farbSchub && ppu._farbArt !== art) {
             const m = AnazhRealm._farbsichtMatrix(art);
             ppu.farbsicht.value = m ? 1 : 0;
-            if (m) ppu.farbMatrix.value.set(...m.dalt[0], ...m.dalt[1], ...m.dalt[2]);
+            if (m) (ppu.farbFehler.value.set(...m.fehler), ppu.farbSchub.value.set(...m.schub));
             ppu._farbArt = art;
         }
         const traa = this.state.traaNode;
@@ -1816,10 +1816,11 @@ class AnazhRealm_bild_kosten {
                 // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
                 // Skala 1 null (die Stufe kostet dann nichts).
                 nachSchaerfe: uniform(0),
-                // DIE FARBSICHT (spielgang.K4): 1 = die Daltonisierung der gewählten Art (`state.zugang.farbsicht`) wirkt, ihre
-                // Abbildung D (`_farbsichtMatrix`) steht in `farbMatrix` — beide stellt `_zugangTakt` je Bild aus dem Stand.
+                // DIE FARBSICHT (spielgang.K4): 1 = die Daltonisierung der gewählten Art (`state.zugang.farbsicht`) wirkt, ihr
+                // Fehler e und ihr Schub v (`_farbsichtMatrix`) stehen daneben — alle stellt `_zugangTakt` je Bild aus dem Stand.
                 farbsicht: uniform(0),
-                farbMatrix: uniform(new THREE.Matrix3()),
+                farbFehler: uniform(new THREE.Vector3()),
+                farbSchub: uniform(new THREE.Vector3()),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -1953,10 +1954,10 @@ class AnazhRealm_bild_kosten {
             };
             const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
-            // Tonkurve — linear und Weiß-treu (D · 1 = 1): sie vertauscht mit dem Versatz der Tonkurve (PBR Neutral zieht unter
-            // ihrem Knie nur einen grauen Sockel ab), im ganzen Mittelbereich ist sie dieselbe wie auf dem getonten Bild. Aus
-            // (`farbsicht` 0) fällt der Zweig (`nurBeiStaerke`).
-            const farbsichtDelta = () => u.farbMatrix.mul(gesehen).sub(gesehen);
+            // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz
+            // der Tonkurve (PBR Neutral zieht unter ihrem Knie nur einen grauen Sockel ab), im Mittelbereich ist sie dieselbe wie
+            // auf dem getonten Bild. Aus (`farbsicht` 0) fällt der Zweig (`nurBeiStaerke`).
+            const farbsichtDelta = () => u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0));
             const graded = gesehen.add(nurBeiStaerke(farbsichtDelta(), u.farbsicht)).max(vec3(0, 0, 0));
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
@@ -3473,11 +3474,16 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
 `;
 // DIE FARBSICHT (spielgang.K4, `_farbsichtMatrix`, die Post-Kette `_ensurePostProcessing`): die Simulation der Dichromasie nach
 // Viénot, Brettel & Mollon 1999 („Digital video colourmaps for checking the legibility of displays by dichromats", Color Res. Appl.
-// 24:243) — linear-RGB → LMS (`lms`, die Zapfen-Antwort nach Smith & Pokorny), der fehlende Zapfen als Ebene durch Weiß und das
-// Blau bzw. Rot des Schirms (je Art `ebene`: L = a·M + b·S, M = a·L + b·S, S = a·L + b·M), zurück nach linear-RGB. Die
-// Daltonisierung nach dem Prinzip von Fidaner, Lin & Ozguven (2005): der Fehler, den der Dichromat nicht sieht (Bild − Simulation),
-// geht in die Achsen, die er sieht (`schub`: protan und deutan in Helligkeit und Blau-Gelb, tritan in Rot und Grün), mit `staerke`. Alles linear und
-// Weiß-treu (die Simulation hält Grau): EINE 3×3-Abbildung D = I + staerke · Schub · (I − Sim), gerechnet je Art beim Bau.
+// 24:243) — linear-RGB → LMS (`lms`, die Zapfen-Antwort nach Smith & Pokorny), der fehlende Zapfen als Ebene durch Weiß und einen
+// Anker des Schirms (`ebene`), zurück nach linear-RGB. Die Daltonisierung nach dem Prinzip von Fidaner, Lin & Ozguven (2005): der
+// Fehler, den der Dichromat nicht sieht (Bild − Simulation), geht in die Achsen, die er sieht — HALBSEITIG: nur die eine Seite des
+// Fehlers im Kanal des verlorenen Gegensatzes (`kanal`: Rot für protan und deutan, Blau für tritan; e = Zeile von I − Sim), Δ =
+// `schub` · staerke · max(e · Bild, 0). Rötliches wird dunkler und blauer, Grünes, Graues und das Blau des Himmels bleiben, wie der
+// Dichromat sie sah. Fidaners Schub (beidseitig, Rot-Fehler in Grün und Blau je 0,7) machte Braun blauer und dem Grau ähnlicher —
+// Genesis-Ort, swiftshader, Grenze Boden|Bau unter Machado-Deuteranopie ΔE 16,9 → 11,6 —, ein beidseitiger Schub kippte den
+// Himmel nach Khaki; dieser hebt jede Grenze des Bilds auf min ΔE 23,2 (Deuteranopie) bzw. 30,3 (Protanopie), acht klassische
+// Verwechslungs-Paare (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …) von min 6,4 auf 13,1 bzw. 4,1 auf 22,1, die Tritan-Paare
+// (Blau/Grün, Gelb/Rosa, Himmel/Grau …) von 10,4 auf 12,1 (Mittel 22,1 → 49,0). Weiß, Grau und Schwarz tragen e = 0.
 AnazhRealm.FARBSICHT = Object.freeze({
     arten: Object.freeze(["aus", "deuteranopie", "protanopie", "tritanopie"]),
     lms: Object.freeze([
@@ -3489,35 +3495,18 @@ AnazhRealm.FARBSICHT = Object.freeze({
     // 1999: die Konstanten L = 2,02344·M − 2,52581·S und M = 0,494207·L + 1,24827·S sind genau diese Ebene), tritan sein Rot (der
     // Anker 660 nm bei Brettel, Viénot & Mollon 1997 — die eine Ebene trägt ihn; ihre zwei Halb-Ebenen fallen am Rot zusammen)
     ebene: Object.freeze({ protanopie: [0, 2], deuteranopie: [1, 2], tritanopie: [2, 0] }),
-    // DER SCHUB des Fehlers (je Zeile R, G, B: wie viel des Fehlers im Rot-Kanal dorthin geht): protan und deutan tragen den
-    // verlorenen Rot-Grün-Unterschied in Helligkeit und Blau-Gelb — rötlich wird dunkler und blauer, grünlich heller und gelber.
-    // Fidaners Schub (Rot-Fehler ins Grün 0,7 und Blau 0,7) machte Braun blauer und damit dem Grau ähnlicher: am Genesis-Ort
-    // (swiftshader, Grenze Boden|Bau unter Machado-Deuteranopie) ΔE 16,9 → 11,6; dieser Schub 23,2 am ganzen Bild (jede Grenze),
-    // an acht klassischen Verwechslungs-Paaren (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …) min ΔE 6,4 → 18,1 (Fidaner 10,3),
-    // Protanopie 27,1 und 27,4. Tritan behält Fidaners Schub (der Blau-Gelb-Fehler in Rot und Grün).
+    kanal: Object.freeze({ protanopie: 0, deuteranopie: 0, tritanopie: 2 }),
     schub: Object.freeze({
-        protanopie: Object.freeze([
-            [-0.75, 0, 0],
-            [-1.2, 0, 0],
-            [1.8, 0, 0],
-        ]),
-        deuteranopie: Object.freeze([
-            [-0.75, 0, 0],
-            [-1.2, 0, 0],
-            [1.8, 0, 0],
-        ]),
-        tritanopie: Object.freeze([
-            [1, 0, 0.7],
-            [0, 1, 0.7],
-            [0, 0, 0],
-        ]),
+        protanopie: Object.freeze([-0.75, -1.2, 1.8]),
+        deuteranopie: Object.freeze([-0.75, -1.2, 1.8]),
+        tritanopie: Object.freeze([-0.75, -0.75, 0]),
     }),
     staerke: 1,
 });
 // DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
 // KAM_FOV_GRAD) in `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`).
 AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
-// die Abbildungen der Farbsicht als reine Funktion (die Linse rechnet dieselbe): { sim, dalt } je Art, Zeilen-Matrizen 3×3
+// die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
 AnazhRealm._farbsichtMatrix = function (art, staerke) {
     const F = AnazhRealm.FARBSICHT;
     const E = F.ebene[art];
@@ -3553,7 +3542,6 @@ AnazhRealm._farbsichtMatrix = function (art, staerke) {
     P[z][v] = k1;
     const sim = mul(inv(F.lms), mul(P, F.lms));
     const s = Number.isFinite(staerke) ? staerke : F.staerke;
-    const fehl = sim.map((z, i) => z.map((v, j) => (i === j ? 1 : 0) - v));
-    const dalt = mul(F.schub[art], fehl).map((z, i) => z.map((v, j) => (i === j ? 1 : 0) + s * v));
-    return { sim, dalt };
+    const k = F.kanal[art];
+    return { sim, fehler: sim[k].map((v, j) => (k === j ? 1 : 0) - v), schub: F.schub[art].map((v) => s * v) };
 };
