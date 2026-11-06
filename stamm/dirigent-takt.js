@@ -2175,9 +2175,9 @@ AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 AnazhRealm.ZEIT_SCHAERFE = 1;
-// DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
-// Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
-AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DIE GPU-LEINE (_gpuLeineFrei): die EINE Zahl der Frames im Flug steht im Baustein des Lichts, Welt und Bühne lesen sie
+// (welt-licht.js `GPU_FRAMES_IM_FLUG`).
+AnazhRealm.GPU_FRAMES_IM_FLUG = __weltLicht.GPU_FRAMES_IM_FLUG;
 // DIE WELT STEHT (`_weltSteht`, A9): so viele Takte ohne Regung und ohne Offenes (die Rundungs-Probe maß mit 30 die Ruhe)
 AnazhRealm.WELT_STEHT_TAKTE = 30;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),

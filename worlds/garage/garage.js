@@ -770,7 +770,7 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut); bis ihre Belichtung liegt, zeichnet sie nicht —
   // `welt.steht` weckt sie dann (`_kamAlt` fällt); trägt das sichtbare Werk ein ungebautes Programm, wartet das Bild auf den Vorbau
-  if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R))return;
+  if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R)){_kamAlt=null;return;}   // gespannte Leine: das Bild fragt im nächsten Takt
   // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewanderte Sonne (rebuild markiert selbst)
   if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!sonne.position.equals(_sonneAlt))){sonne.shadow.needsUpdate=true;_sonneAlt.copy(sonne.position);}
   _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}

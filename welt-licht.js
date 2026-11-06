@@ -78,6 +78,9 @@ var __weltLicht = (function () {
         b: KERN.ATMO_GESETZ.nacht.mond[2],
         intensity: 0.22,
     });
+    // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
+    // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
+    const GPU_FRAMES_IM_FLUG = 2;
 
     // DAS SCHIRM-DREIECK: EIN Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv
     // [0,-1 · 0,1 · 2,1], Ortho-Kamera ±1 in `userData.kamera`), sein Fragment aus `fn()` — die Pässe der Atmosphäre und das
@@ -787,6 +790,7 @@ var __weltLicht = (function () {
             knoten,
             achse,
             belichtung: null,
+            imFlug: 0,
         };
         const W = A.rtBS.width;
         B.steht = R.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then((px) => {
@@ -816,8 +820,14 @@ var __weltLicht = (function () {
     // die Sonne 30,9 / 1,55 (der Himmels-Spiegel steht, das Licht der Sonne auf Dach und Haube deckt ihn), bei Belichtung 1,04
     // 66,5 / 1,15, ein Chrom-Wagen (Spiegel 1) 80,9: unter dem Licht der Welt erreicht KEIN Stoff am Lack-Blick den Glanz von main —
     // der war das Studio-Licht. Die Welt zeigt denselben Lack (Lack-Kugel 35°/7 m: Welt 45,3, Bühne 48,2, w12-studio-buehne).
+    // DIE LEINE DER BÜHNE (wie die Welt, stamm/dirigent-takt.js `_gpuLeineFrei`): jedes gezeichnete Bild meldet die Arbeit davor an die
+    // Queue; sind GPU_FRAMES_IM_FLUG Meldungen offen, zeichnet die Bühne nicht (der Aufrufer fragt im nächsten Takt wieder). Ohne sie
+    // lief die Garage ihrer GPU beliebig voraus — auf dem CPU-Raster der CI (z259, Linux-swiftshader) stand ihre Schlange 25 s lang,
+    // jeder Pipeline-Bau und jedes Lesen wartete dahinter, die Labor-Linse riss in G8 nach 120 s.
     function buehneZeichnet(B, szene, R) {
         if (!B || B.belichtung == null) return false;
+        const q = R.backend && R.backend.device ? R.backend.device.queue : null;
+        if (q && B.imFlug >= GPU_FRAMES_IM_FLUG) return false;
         const fremd = new Set();
         let sonne = false;
         szene.traverse((o) => {
@@ -839,6 +849,11 @@ var __weltLicht = (function () {
             fremd.add("ein Himmel neben dem Knoten des Gesetzes");
         if (fremd.size)
             throw new Error(`DIE BÜHNE DER WELT zeichnet unter dem Licht der Welt allein: ${[...fremd].join(" · ")}`);
+        if (q) {
+            B.imFlug++;
+            const los = () => B.imFlug--;
+            q.onSubmittedWorkDone().then(los, los);
+        }
         return true;
     }
 
@@ -849,6 +864,7 @@ var __weltLicht = (function () {
         LEGACY_LICHT,
         BELICHTUNG,
         GRENZGROESSE,
+        GPU_FRAMES_IM_FLUG,
         MOONLIGHT,
         schirmDreieck,
         umgebungRichtung,
