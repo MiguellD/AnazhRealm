@@ -292,6 +292,14 @@ class AnazhRealm_speicher_laden {
             .map((x) => ({ wort: x.wort, quelle: String(x.quelle).slice(0, 80), w: x.w }));
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
+        // der Zug, der schon zog, und sein Übergang (feld.K2#2): im selben Zug zieht der erste Takt nicht neu
+        const [zug, wt] = Array.isArray(state.wetterZug) ? state.wetterZug : [];
+        this._wetterZug = Number.isInteger(zug) ? zug : undefined;
+        const ok = (x) => typeof x === "string" && x in AnazhRealm.WEATHER_INTENSITY;
+        this.state.weatherTransition =
+            wt && ok(wt.from) && ok(wt.to) && Number.isFinite(wt.startedAt) && wt.duration > 0
+                ? { from: wt.from, to: wt.to, progress: 0, duration: wt.duration, startedAt: wt.startedAt }
+                : null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -443,13 +451,21 @@ class AnazhRealm_speicher_laden {
         }
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
-        if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1)
+        if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1) {
             this.state.seasonPhase = state.seasonPhase;
+            // der Anker des Jahrs ist der Stand: seine Phase zu seiner Welt-Uhr (feld.K2#2, `_tickSeason`)
+            const t = Number.isFinite(state.spielZeit) ? state.spielZeit : this.state.spielZeit;
+            const jahr = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
+            this._saisonAnker = { anker: state.seasonPhase, t, jahr, phase: state.seasonPhase };
+        }
         // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
         // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das
         // erste Bild der Wiederkehr zählte das Intervall, das die Welt des Stands schon gezählt hatte, ein zweites Mal (607d0c73:
         // der gebundene Fuchs starb im ersten Bild am Hunger, Alter 10 s). Die Tiere des Stands kehren jetzt wieder, ihr Takt mit.
         this.state.faunaLifecycle.lastTick = this.state.spielZeit;
+        this.state.faunaLifecycle.feldUhr = this.state.spielZeit;
+        // DAS LEBEN DES STANDS (feld.K2#2): Feld, Bestand und offene Akte setzen fort, was der Stand trug (`_lebenAusStand`)
+        this._lebenAusStand(state.leben);
         // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
         // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`

@@ -977,16 +977,18 @@ class AnazhRealm_bild_himmel {
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
-        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
+        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
+        // Phase ist die ihres Ankers (`_saisonAnker`: Phase und Welt-Uhr, gesetzt vom Wort des Spielers, vom Laden eines Stands, vom
+        // Beginn des Drifts) plus die Welt-Zeit seitdem durch die Länge des Jahrs — zwei Seiten einer Uhr und ein Reload stehen am
+        // selben Tag, und der Pegel des Jahrs (`_pegelTafel`) steigt auf jeder gleich. Bis feld.K2#2 driftete sie mit der Wanduhr
+        // jeder Seite (dt ≤ 0,2 s je Bild): ein Reload und ein Sprung der Uhr ließen das Jahr der Seiten auseinanderlaufen.
         if (st.autoSeason !== false && this._buehneSteht()) {
-            const now = currentTime || 0;
-            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
-            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
-            this._lastSeasonTime = now;
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
-        }
+            let A = this._saisonAnker;
+            if (!A || A.phase !== st.seasonPhase || A.jahr !== yearSec)
+                A = this._saisonAnker = { anker: st.seasonPhase, t: st.spielZeit, jahr: yearSec };
+            A.phase = st.seasonPhase = (((A.anker + (st.spielZeit - A.t) / yearSec) % 1) + 1) % 1;
+        } else this._saisonAnker = null;
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -1003,7 +1005,7 @@ class AnazhRealm_bild_himmel {
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
-    setSeason(name) {
+    setSeason(name, uhr) {
         const map = {
             fruehling: "spring",
             frühling: "spring",
@@ -1019,6 +1021,10 @@ class AnazhRealm_bild_himmel {
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
         this.state.season = key;
+        // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
+        const yearSec = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
+        const t = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
+        this._saisonAnker = { anker: phaseFor[key], t, jahr: yearSec, phase: phaseFor[key] };
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -3449,7 +3455,8 @@ class AnazhRealm_bild_himmel {
     // eigener Nexus schrieb: unter Last zog A „rainy von rule:emotion:sorrow", B „sunny von rule:nexus" (2 von 3 Läufen).
     _wunschAkt(wort, quelle, akt) {
         const w = akt ? akt.w : this.state.spielZeit;
-        if (this._wunschNimm({ wort, quelle, w }) && !akt) this.p2pBroadcastDsl(["weather", wort], { w, quelle });
+        if (this._wunschNimm({ wort, quelle, w }) && !akt)
+            this._aktSenden({ type: "dsl", program: ["weather", wort], w, quelle });
     }
 
     // Ein Wunsch tritt in die Liste (je Stempel, Wort und Quelle EINMAL — ein doppelt empfangener Akt ist einer); sie trägt nur die

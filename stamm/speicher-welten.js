@@ -1291,8 +1291,7 @@ class AnazhRealm_speicher_welten {
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
             // alte Stand trug den 8-min-Tag und hielte ihn fest).
-            // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`);
-            // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
+            // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`).
             ["spielZeit", () => st().spielZeit, { augenblick: true }],
             ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5), { augenblick: true }],
             // DAS JAHR DER WELT (speicher.K4): die Phase der Saison reist — ohne sie begann jede Wiederkehr am Sommer-Anfang
@@ -1305,6 +1304,17 @@ class AnazhRealm_speicher_welten {
             // ebenso (feld.K2#2: ein Reload mitten im Zug zieht denselben Wunsch wie der Mitspieler)
             ["wetterWort", () => st().wetterWort || null],
             ["wetterWuensche", () => st().wetterWuensche || []],
+            // der Zug, der schon zog, und der Übergang, der gilt (feld.K2#2): nach dem Zug schreiben das Wort des Spielers und sein
+            // Gesetz das Wetter — ein Reload im selben Zug zieht ihn nicht neu (bis feld.K2#2 tat er es, und das Gesetz, das den Zug
+            // überschrieb, schrieb nach dem Reload ein zweites Mal mit einem anderen Übergang)
+            [
+                "wetterZug",
+                () => [Number.isInteger(this._wetterZug) ? this._wetterZug : null, st().weatherTransition || null],
+                { augenblick: true, marke: () => [this._wetterZug, st().weatherTransition, st().weather] },
+            ],
+            // DAS LEBEN DER WELT reist (feld.K2#2, `_lebenImStand`): Feld, Bestand und offene Akte — im Augenblick des Stands,
+            // gefragt nur, wenn eine Schrift es änderte (die Marke)
+            ["leben", () => this._lebenImStand(), { augenblick: true, marke: () => [this._lebenGen] }],
             // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
             ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).

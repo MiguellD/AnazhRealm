@@ -434,13 +434,16 @@ function wasserSchmelze(r, x, z, P) {
         st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
     };
     const lauf = () => {
-        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, (r._lastSeasonTime = 0)];
+        // das Jahr folgt der Welt-Uhr (feld.K2#2, `_tickSeason`): je Schritt 0,2 s Welt-Zeit, der Anker neu am Beginn
+        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit, (r._saisonAnker = null)];
         Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
+        r._saisonAnker = { anker: 0.375, t: st.spielZeit, jahr: 10.4, phase: 0.375 };
         const w = [];
         let neuBau = 0;
         try {
             for (let k = 1; k <= 52; k++) {
                 const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
+                st.spielZeit += 0.2;
                 r._tickSeason(k * 200);
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
@@ -451,7 +454,7 @@ function wasserSchmelze(r, x, z, P) {
                 Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
-            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, r._lastSeasonTime] = alt;
+            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit, r._saisonAnker] = alt;
             r._tickSeason(0);
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;

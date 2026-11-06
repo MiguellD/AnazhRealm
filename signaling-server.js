@@ -255,9 +255,18 @@ function handleClientMessage(ws, raw) {
         // Pfad laufen. Server validiert nicht (Vertrauen liegt im
         // Sandbox des Clients) — er begrenzt nur per-Frame-Größe via
         // Decode-Cap (1 MiB) und prüft, dass program ein Array ist.
-        if (!Array.isArray(msg.program)) return;
-        if (msg.program.length === 0 || msg.program.length > 256) return;
-        broadcastToRoom(ws.anazh.room, { type: "dsl", peerId: ws.anazh.peerId, program: msg.program }, ws);
+        // DER AKT TRÄGT SEINE ZEIT (feld.K2#2): der Relay trägt dieselbe Nachricht wie der Kanal — den Stempel der Welt-Uhr `w`
+        // (eine Zahl), die Quelle eines Wunschs der Welt (`quelle`) und den Feld-Akt ohne Programm (`feld`, ein Objekt; der
+        // Empfänger prüft ihn, `_feldAktFremd`). Bis feld.K2#2 strich er beides: ein Wunsch der Welt kam, solange das Mesh noch
+        // nicht stand (nach einem Reload), als Wort des Mitspielers an, und kein Feld-Akt reiste.
+        const akt = {};
+        const w = Number(msg.w);
+        if (Number.isFinite(w)) akt.w = w;
+        if (typeof msg.quelle === "string") akt.quelle = msg.quelle.slice(0, 80);
+        if (msg.feld && typeof msg.feld === "object" && !Array.isArray(msg.feld)) akt.feld = msg.feld;
+        else if (!Array.isArray(msg.program) || msg.program.length === 0 || msg.program.length > 256) return;
+        else akt.program = msg.program;
+        broadcastToRoom(ws.anazh.room, { type: "dsl", peerId: ws.anazh.peerId, ...akt }, ws);
         return;
     }
     if (msg.type === "soul") {

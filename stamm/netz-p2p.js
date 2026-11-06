@@ -1717,6 +1717,8 @@ class AnazhRealm_netz_p2p {
             this._p2pBroadcastSoul();
             // W13 Phase 3 — und meine Vibe-Pass-Identität.
             this._p2pBroadcastVibe();
+            // feld.K2#2 — und die Akte, die er seit seinem Stand nicht trug (`_akteNachholen`)
+            this._akteNachholen();
         }
     }
 
@@ -1834,8 +1836,11 @@ class AnazhRealm_netz_p2p {
     _p2pMsgPos(msg, p2p) {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
-        this._weltUhrNimm(this._fremdeZahl(msg.w));
+        const w = this._fremdeZahl(msg.w);
+        this._weltUhrNimm(w);
         const entry = this._p2pEnsurePeerEntry(pid);
+        // die Welt-Uhr, die der Mitspieler zuletzt trug: der Horizont des Felds wartet auf sie (`_feldHorizont`, feld.K2#2)
+        if (Number.isFinite(w)) entry.weltUhr = Math.max(entry.weltUhr || -Infinity, w);
         // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null): der ortlos geborene Mitspieler bleibt ohne
         // Ort und unsichtbar, statt in den Ursprung zu springen.
         const x = this._fremdeZahl(msg.x);
@@ -1885,8 +1890,10 @@ class AnazhRealm_netz_p2p {
         // schreibt zu ihr). Ein WUNSCH DER WELT (`_wunschAkt`) reist als ["weather", Wort] mit seiner Quelle: er läuft unter ihr (sie
         // ist eine Stimme der Welt, `_himmelSchreiber` → welt), nie als Wort des Mitspielers — eine andere Quelle oder ein anderes
         // Programm unter ihr fällt.
+        // Ein FELD-AKT (`_feldAkt`: Leben, Annahme, Fall eines Tiers) reist ohne Programm — er wirkt zu seinem Stempel.
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
+        if (msg.feld) return void this._feldAktFremd(msg.feld, this._fremdeZahl(msg.w));
         if (!Array.isArray(msg.program) || msg.program.length === 0) return;
         const w = this._fremdeZahl(msg.w);
         const akt = Number.isFinite(w) ? { w, von: pid } : null;

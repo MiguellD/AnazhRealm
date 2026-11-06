@@ -62,8 +62,9 @@ class AnazhRealm_feld_dsl {
             weil: null,
             tat: null,
             // DER AKT EINES MITSPIELERS (feld.K2#2): sein Stempel der Welt-Uhr `w` (die Tat-Uhr) — was der Akt schreibt, schreibt
-            // er zu DIESER Zeit, nie zur Ankunft (`_p2pMsgDsl`)
+            // er zu DIESER Zeit, nie zur Ankunft (`_p2pMsgDsl`); ein Gesetz wirkt zur Zeit seiner Scheibe (`uhr`, `_worldRuleCtx`)
             akt: opts.akt || null,
+            uhr: Number.isFinite(opts.uhr) ? opts.uhr : opts.akt ? opts.akt.w : null,
         };
     }
 
@@ -688,7 +689,10 @@ class AnazhRealm_feld_dsl {
             }
             if (r.disabled) continue; // V17.39 — pausiertes Gesetz feuert nicht (ttl/Eviction gelten weiter)
             if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
-            if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
+            // DAS TAKT-TOR IST DIE SCHEIBE DER WELT-UHR (feld.K2#2): ein Gesetz feuert höchstens einmal je Scheibe von everySec —
+            // auf jeder Seite in derselben Scheibe, mit dem Wurf der Scheibe (`_worldRuleSeed`), seine Wirkung zur Zeit der Scheibe
+            // (`ctx.uhr`). Bis feld.K2#2 zählte das Tor everySec ab dem letzten Feuern der Seite (je Seite ein anderes Bild).
+            if (Math.floor(currentTime / r.everySec) <= Math.floor(r.lastFired / r.everySec)) continue;
             const ctx = this._worldRuleCtx(r);
             let condTrue = false;
             try {
@@ -737,8 +741,10 @@ class AnazhRealm_feld_dsl {
     // Budget (ein Regel-Effekt ist klein). Die Quelle wird zu `rule:<urspr.>`
     // gestempelt (für Journal/Fitness in Phase C).
     _worldRuleCtx(rule) {
+        const scheibe = Math.floor(this.state.spielZeit / rule.everySec);
         return this.dslCtx({
-            seed: this._worldRuleSeed(rule, Math.floor(this.state.spielZeit / rule.everySec)),
+            uhr: scheibe * rule.everySec,
+            seed: this._worldRuleSeed(rule, scheibe),
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
             programId: `rule_${rule.id}`,
@@ -895,7 +901,10 @@ class AnazhRealm_feld_dsl {
                         ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
                     return;
                 }
-                const ok = this._setWeather(name, quelle, null, ctx && ctx.akt);
+                // das Wort des Spielers und sein Gesetz wirken zur Zeit ihres Akts (der Übergang ab dort, über die Dauer des Gesetzes
+                // — nie die Laune einer Seite, feld.K2#2); ein Wunsch der Welt nimmt nur den Stempel
+                const uhr = ctx && ctx.uhr != null ? ctx.uhr : this.state.spielZeit;
+                const ok = this._setWeather(name, quelle, { von: this.state.weather, beginn: uhr }, ctx && ctx.akt);
                 // die Welt schreibt das Wetter nie selbst, sie wünscht es (die Stimme sagt es so, `_feldStimmeZeile`)
                 if (ctx && ctx.tat) ctx.tat.wunsch = ok === "wunsch";
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
@@ -910,8 +919,8 @@ class AnazhRealm_feld_dsl {
             },
             // JAHRESZEIT setzen (Vorlagen-Phaenologie): "fruehling/sommer/herbst/winter" -> die
             // Foundry backt den Wald in dieser Saison um (Herbst golden, Winter kahl).
-            set_season: ([name]) => {
-                this.setSeason(name);
+            set_season: ([name], ctx) => {
+                this.setSeason(name, ctx && ctx.uhr != null ? ctx.uhr : undefined);
             },
             gravity: ([value]) => {
                 // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
@@ -1903,7 +1912,7 @@ class AnazhRealm_feld_dsl {
                 const pos = this._dslRulePos(positionNode, ctx);
                 const amt =
                     amount != null ? c(amount, 0, AnazhRealm.LIFE_FIELD.max) : AnazhRealm.LIFE_FIELD.pulseCenter;
-                this._depositLife(pos.x, pos.z, amt);
+                this._lebenGabe(pos.x, pos.z, amt, ctx); // ein Feld-Akt zur Welt-Uhr seines Akts (feld.K2#2)
             },
             deposit_emotion: ([axis, amount, positionNode], ctx) => {
                 if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;
@@ -2170,12 +2179,13 @@ class AnazhRealm_feld_dsl {
             // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
             // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
             // (kein Runaway).
-            if (born.userData) born.userData.tendsLife = true;
+            // Die Wesen eines empfangenen Akts träufeln nicht: ihr Träufeln reist als Akt der Seite, die sie rief (feld.K2#2).
+            if (born.userData) born.userData.tendsLife = !ctx.akt;
             lastBorn = born;
             // Eine Geburt TRÄGT Leben ins Feld: hebt lebendig an der Wiege → schließt den at_field_need-Loop
             // (Mangel sinkt, der Nexus zieht weiter), die Region ergrünt. NUR dieser intentionale Pfad
             // deponiert — ambiente Fauna + Restore nie (sonst positives Feedback-Runaway in üppigen Regionen).
-            this._depositLife(sx, sz);
+            this._lebenGabe(sx, sz, AnazhRealm.LIFE_FIELD.pulseCenter, ctx);
             spawned++;
         }
         return { spawned, gruende, lastBorn };

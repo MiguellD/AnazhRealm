@@ -65,8 +65,11 @@ class AnazhRealm_kreatur_leben {
     }
 
     clearCreatures() {
-        for (const l of this.state.leichname.slice()) this.removeCreature(l); // auch die Gefallenen gehen mit der Welt
-        this.state.faunaBestand = undefined; // und ihr Bestand (oekologie.K2#2): die Wiederkehr nimmt die Leiber an
+        // auch die Gefallenen gehen mit der Welt. Der BESTAND bleibt (feld.K2#2): er ist die Welt, die Leiber nur ihre Zeichnung —
+        // er reist im Stand (`_lebenImStand`), fällt mit der Saat (`_bestandRegionen`) und mit dem Leben eines geladenen Stands
+        // (`_lebenAusStand`); die Wiederkehr der Leiber findet ihre Tiere darin wieder (`_bestandLeibWieder`). Bis feld.K2#2 fiel er
+        // hier, die Wiederkehr nahm die Leiber neu an, und die Seite rechnete ihre Regionen ab leer nach.
+        for (const l of this.state.leichname.slice()) this.removeCreature(l);
         // Über eine KOPIE: removeCreature spliced die Liste selbst — ein forEach über das Original übersprang jedes
         // zweite Tier, das als eingefrorener Geist in der Szene blieb (Leben-Prüfung R-D14: 6 Tiere → 3 Geister,
         // je ~46 Befehle; jeder Welt-Wechsel und jede Neu-Genese).
@@ -242,6 +245,8 @@ class AnazhRealm_kreatur_leben {
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
+            // das Tier des Bestands, das der Leib zeichnet (feld.K2#2): die Wiederkehr findet es im Bestand des Stands wieder
+            bestand: ud._bestand ? ud._bestand.id : undefined,
             feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
@@ -299,7 +304,7 @@ class AnazhRealm_kreatur_leben {
         const m = [ud.name, ud.soul, mem, mem && mem.length, mem && mem[mem.length - 1], ud.bornAt, ud.alterS];
         m.push(p && p.x, p && p.y, p && p.z, rot && rot.y, ud.bodySize, ud.verband, ud.feldWurf, ud.hp, ud.hpMax);
         m.push(wa, wa && wa.x, wa && wa.z, pf, pf && pf.length, pf && pf[pf.length - 1], ud.bond, ud.gussDials);
-        m.push(eq, eq && eq.tool, eq && eq.armor, t, t && t.name, t && t.args);
+        m.push(eq, eq && eq.tool, eq && eq.armor, t, t && t.name, t && t.args, ud._bestand);
         if (t && t.args && typeof t.args === "object") m.push(...Object.values(t.args));
         return m;
     }
@@ -350,6 +355,7 @@ class AnazhRealm_kreatur_leben {
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
         if (snap.feldWurf === true) c.userData.feldWurf = true;
+        if (typeof snap.bestand === "string") this._bestandLeibWieder(c, snap.bestand);
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -1694,13 +1700,13 @@ class AnazhRealm_kreatur_leben {
         this._feelAction("loss", { magnitude: griefMag });
         // Der Tod nährt das Feld: das Wesen gibt seine Lebendigkeit (∝ lebendig-Substanz) an den Ort
         // zurück — im SELBEN Overlay, in das die Geburt schreibt.
-        if (naehrt && creature.position) {
-            this._depositLife(
+        if (naehrt && creature.position)
+            this._lebenGabe(
                 creature.position.x,
                 creature.position.z,
-                AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + lebendig)
+                AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + lebendig),
+                null
             );
-        }
         // Journal-Eintrag
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", ["journal.zur-erde", { name }], {
@@ -1895,8 +1901,8 @@ class AnazhRealm_kreatur_leben {
 
     // [ATMOSPHERE] Geburt (Ökologie K2, oekologie.K2#2): in der Region `key` (ohne: die des Spielers) 6 Kandidaten-Orte auf
     // freiem Grund der Kachel (`_kreaturGrundFrei`), je die Seele ihres Lebensraums und ihr Affinity-Score. DIE BILANZ
-    // (`_kreaturBestand`, tetrapoda bestandBilanz): jede Gattung unter ihrer Kapazität wirft mit IHRER Chance (die Hoffnung des
-    // Spielers hebt, sein Frieden dämpft), an ihrem Kandidaten mit dem höchsten Score (bei Gleichstand der frühere); ohne Bilanz
+    // (`_kreaturBestand`, tetrapoda bestandBilanz): jede Gattung unter ihrer Kapazität wirft mit IHRER Chance (kein Gemüt einer
+    // Seite rückt sie, feld.K2#2), an ihrem Kandidaten mit dem höchsten Score (bei Gleichstand der frühere); ohne Bilanz
     // wirft der beste Ort, was sein Lebensraum trägt (die Frage der Lebensraum-Linse). Vorher warf je Takt nur der beste Ort —
     // EINE Gattung, die anderen warteten: ohne Wölfe blieb das Rotwild bei n/K ≈ 0,65 (Zeitraffer 27.10.), das Alter nahm, was
     // die gedrosselte Geburt brachte. Geboren wird in den BESTAND, nie ein Körper: die Gruppe der Gattung (die Kopfzahl aus
@@ -1912,7 +1918,11 @@ class AnazhRealm_kreatur_leben {
         for (let i = 0; i < 6; i++) {
             const x = (ix + rng()) * S;
             const z = (iz + rng()) * S;
-            if (!this._kreaturGrundFrei(x, z)) continue; // die Wildnis trägt den Ort nicht
+            // DER WURF DES GESETZES FRAGT NUR DIE SAAT (feld.K2#2): ob die Wildnis den Ort trägt (`_wildnisTraegt`) — nie den Grundriss
+            // der Seite (Bauten, Wege der Dorf-Pläne: sie kommen je Seite zu anderer Zeit an); den Leib setzt die Zeichnung auf freien
+            // Grund (`_bestandLeibOrt`). Bis feld.K2#2 fragte er `_kreaturGrundFrei`: an (−138, −174) lag bei A ein Weg, bei B noch
+            // keiner, der Strom des Takts lief auseinander und mit ihm der Bestand der Region.
+            if (!this._wildnisTraegt(x, z)) continue;
             const field = this.worldFieldAt(x, z);
             const soul = this._pickFaunaSoulAtPlayer(x, z, rng);
             if (!soul) continue; // der Lebensraum trägt hier keine Gattung (Tiere K4)
@@ -1926,13 +1936,10 @@ class AnazhRealm_kreatur_leben {
             if (!bester[g] || score > bester[g].score) bester[g] = c;
             if (!alle || score > alle.score) alle = c;
         }
-        const mut = { hope: { mul: 1.5 }, peace: { mul: 0.75 } };
         const wuerfe = !bilanz
             ? [alle].filter(Boolean)
             : Object.keys(bilanz)
-                  .filter(
-                      (g) => bilanz[g].geburt > 0 && bester[g] && rng() < this._emotionModulate(bilanz[g].geburt, mut)
-                  )
+                  .filter((g) => bilanz[g].geburt > 0 && bester[g] && rng() < bilanz[g].geburt)
                   .map((g) => bester[g]);
         // die Nummer zählt je Region, die Größe würfelt ihr Strom (`_creatureBodySize`): keine Region rückt die Tiere einer
         // anderen
@@ -2200,21 +2207,18 @@ class AnazhRealm_kreatur_leben {
     // eigenen Zeit (die Spiel-Uhr steht für ihn auf seiner Stunde: Fraß, Gabe und Verblassen des Felds laufen wie damals), nur
     // das Journal schweigt. Vorher holte fern ein Takt ohne Fraß nach, am Substrat: fern trug das Rotwild das ganze Feld, nah
     // das abgeäste, und eine ferne Region stand unter der halben Nahrung still (27.10.: −4 %). Die Fälle gezeichneter Tiere
-    // sammelt `tode` (ohne: sie fallen am Ende). Liefert die Region.
+    // sammelt `tode` (ohne: sie fallen am Ende). Liefert die Region. JEDER TAKT STEHT AUF DEM RASTER DER WELT-UHR (feld.K2#2):
+    // der Beginn ist ein Vielfaches von taktS — zwei Seiten und ein Reload zählen dieselben Takte zu denselben Zeiten.
     _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
         const F = this._bestandRegionen();
         const B = AnazhRealm._bestandGesetz().B;
         const jetzt = this.state.spielZeit || 0;
-        const fern = Math.max(0, jetzt - AnazhRealm.BESTAND_REGION.aufholS);
+        const fern = Math.max(0, Math.floor((jetzt - AnazhRealm.BESTAND_REGION.aufholS) / B.taktS) * B.taktS);
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, seq: 0, tiere: [] });
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
-        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS; k++) {
-            this.state.spielZeit = R.t + B.taktS;
-            this._bestandSchritt(key, R, true, fall);
-        }
-        this.state.spielZeit = jetzt;
+        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS; k++) this._bestandSchritt(key, R, true, fall);
         if (!tode) this._bestandTode(fall);
         return R;
     }
@@ -2279,21 +2283,38 @@ class AnazhRealm_kreatur_leben {
     }
 
     // EIN TAKT DES GESETZES in der Region R (tetrapoda BESTAND_GESETZ): je Tier das Alter um taktS; die Bilanz am Feld der
-    // Region (`_kreaturBestand`), die Herde äst ihren Jungwuchs (`_kreaturFrass`); je Gattung über ihrer Kapazität mit ihrer Chance der Hungertod des Ältesten (die Trauer des Spielers
-    // hebt, sein Frieden dämpft), der Riss der Jäger am Ältesten ihrer Beute (Ökologie K1); darunter die Geburt einer Gruppe
+    // Region (`_kreaturBestand`), die Herde äst ihren Jungwuchs (`_kreaturFrass`); je Gattung über ihrer Kapazität mit ihrer
+    // Chance der Hungertod des Ältesten, der Riss der Jäger am Ältesten ihrer Beute (Ökologie K1); darunter die Geburt einer Gruppe
     // (`_creatureNaturalBirth`); jenseits der Lebensspanne der Tod des Ältesten. Entschieden wird am Verzeichnis, nie an
     // Körpern: der Tod eines gezeichneten Tiers wird zum Fall seines Leibs (`tode`) — dieselbe Zahl, ob gezeichnet oder nicht.
+    // DER TAKT IST EINE FUNKTION DER WELT-UHR UND DER AKTE (feld.K2#2, Lockstep): er steht auf SEINER Zeit (die Spiel-Uhr steht für
+    // ihn auf R.t, ein Vielfaches von taktS — was er ins Feld schreibt, trägt diesen Stempel), sein Wurf ist der Strom DIESES Takts
+    // (Saat, Region, Zeit — ein Reload und ein Mitspieler würfeln denselben), und kein Gemüt einer Seite rückt seine Chancen. Bis
+    // feld.K2#2 stand der frische Takt auf der Bild-Uhr der Seite (A 2041,016 · B 2041,586), der Strom zählte die Würfe der Sitzung,
+    // und die Trauer und der Frieden des eigenen Spielers hoben den Hungertod (Mehrspieler-Wand: Leben 15 von 1 172 Zellen gleich).
     _bestandSchritt(key, R, still, tode) {
         const B = AnazhRealm._bestandGesetz().B;
+        const jetzt = this.state.spielZeit;
         R.t += B.taktS;
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
+        this.state.spielZeit = R.t;
+        try {
+            this._bestandTakt(key, R, still, tode);
+        } finally {
+            this.state.spielZeit = jetzt;
+        }
+    }
+    _bestandTakt(key, R, still, tode) {
+        const B = AnazhRealm._bestandGesetz().B;
         for (const t of R.tiere) t.alterS += B.taktS;
-        const rng = this._faunaRng("bestand:" + key);
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const rng = this._streamRng(seed + "-bestand:" + key + "@" + R.t);
         const zellen = [];
         const bestand = this._kreaturBestand(zellen, key);
         this._kreaturFrass(bestand, zellen);
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
-            if (p > 0 && rng() < this._emotionModulate(p, { sorrow: { mul: 1.5 }, peace: { mul: 0.7 } })) {
+            if (p > 0 && rng() < p) {
                 const alt = this._bestandAeltester(R.tiere, g);
                 if (alt) this._bestandStirbt(R, alt, "hunger", tode);
             }
@@ -2341,38 +2362,34 @@ class AnazhRealm_kreatur_leben {
                     (!j || h.leib.position.distanceToSquared(c.position) < j.position.distanceToSquared(c.position))
                 )
                     j = h.leib;
-            const statt =
-                !j &&
-                this._kreaturNah(c) &&
-                this._bestandAeltester(
-                    R.tiere.filter((o) => !o.leib),
-                    t.g
-                );
+            // DAS GESETZ ENTSCHEIDET, DER LEIB FOLGT (feld.K2#2): steht das Opfer im Nah-Kreis ohne gezeichneten Jäger, bleibt sein Leib
+            // als Zeichnung ohne Tier (`_ohneTier`), bis er außer Blick geht (`_bestandVerkoerpern`) — kein Riss ohne Jäger vor dem
+            // Auge. Bis feld.K2#2 starb an seiner Stelle das älteste Ungezeichnete seiner Gattung: welches Tier fiel, hing an der
+            // Zeichnung der Seite, und die Bestände zweier Mitspieler liefen auseinander.
             if (j) this._kreaturRiss(c, j);
-            else if (!statt) this._creatureCombatDeath(c, "jagd");
-            else {
-                this._bestandStirbt(R, statt, "jagd", null);
-                R.tiere.push(t);
-                [c.userData._bestand, t.leib] = [t, c];
-            }
+            else if (this._kreaturNah(c)) c.userData._ohneTier = true;
+            else this._creatureCombatDeath(c, "jagd");
         }
     }
 
     // DIE ANNAHME: ein Leib, den kein Tier des Bestands zeichnet (der Boot-Wurf, der Nexus, ein Ruf, der Hof, ein
     // wiedergekehrter Stand), tritt in den Bestand der Region seines Ankers — eine Geburt außerhalb des Gesetzes ist eine Geburt.
-    // Ein gerissener Leib (`_rissVon`: sein Tier starb im Gesetz) und eine Seele ohne Gattung bleiben draußen.
+    // Ein gerissener Leib (`_rissVon`: sein Tier starb im Gesetz) und eine Seele ohne Gattung bleiben draußen. DIE ANNAHME IST EIN
+    // AKT DER SEITE (feld.K2#2, `_feldAkt`): der Leib ist ihre Zeichnung, sein Tier tritt auf jeder Seite zur selben Welt-Zeit in
+    // denselben Bestand (bis dahin hält der Leib es offen, `zu`); seine Kennung zählt die Seite, nie die Region (die Kennungen der
+    // Geburt im Gesetz, `R.seq`, bleiben auf jeder Seite dieselben). Bis feld.K2#2 nahm jede Seite ihre eigenen Leiber an.
     _bestandAdoptieren() {
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         for (const c of this.state.creatures) {
             const ud = c.userData;
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
-            if (ud._bestand || ud._rissVon || ud._faelltNach || !(g in L)) continue;
+            if (ud._bestand || ud._rissVon || ud._faelltNach || ud._ohneTier || !(g in L)) continue;
             const a = ud.wanderAnchor || c.position;
             const key = this._bestandKey(a.x, a.z);
-            const R = this._bestandRegion(key, false); // nachgeholt wird im Takt (der frische Schritt bleibt dem Spieler)
             const v = ud.verband != null ? "n" + ud.verband : null;
-            const t = {
-                id: key + "." + ++R.seq,
+            const p2p = this.state.p2p;
+            const id = key + "." + ((p2p && p2p.peerId) || "ich") + "." + (this._annahmeN = (this._annahmeN || 0) + 1);
+            const tier = {
                 soul: ud.soul,
                 g,
                 bs: ud.bodySize,
@@ -2380,20 +2397,35 @@ class AnazhRealm_kreatur_leben {
                 x: a.x,
                 z: a.z,
                 v,
+                name: ud.name,
             };
-            R.tiere.push(Object.assign(t, { name: ud.name, leib: c }));
+            const t = Object.assign({ id }, tier, { leib: c, zu: true });
             ud._bestand = t;
+            (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, t);
+            this._feldAkt({ art: "annahme", w: this.state.spielZeit, key, id, tier }, true);
         }
     }
 
-    // EIN LEIB FÄLLT AUSSERHALB DES GESETZES (der Kampf, die Jagd am Leib, ein Akt): sein Tier verlässt den Bestand mit ihm.
+    // DER LEIB FINDET SEIN TIER WIEDER (feld.K2#2): ein Leib des Stands zeichnete das Tier `id` — steht es im Bestand (oder tritt es
+    // mit einem offenen Akt der Annahme hinein), zeichnet er es wieder; fiel es im Gesetz, ist er ein Leib ohne Tier
+    // (`_ohneTier`, er geht außer Blick). Nie eine neue Annahme: das Tier trüge zweimal im Bestand, beim Mitspieler doppelt.
+    _bestandLeibWieder(c, id) {
+        const R = this._bestandRegionen().regionen[id.split(".")[0]];
+        const t = R && R.tiere.find((x) => x.id === id);
+        const a = !t && (this.state.feldAkte || []).find((x) => x.art === "annahme" && x.id === id);
+        const tier = t || (a && Object.assign({ id }, a.tier, { zu: true }));
+        if (!tier || tier.leib) return void (c.userData._ohneTier = true);
+        [tier.leib, c.userData._bestand] = [c, tier];
+        if (a) (this._annahmeOffen || (this._annahmeOffen = new Map())).set(id, tier);
+    }
+
+    // EIN LEIB FÄLLT AUSSERHALB DES GESETZES (der Kampf, die Jagd am Leib, ein Akt): sein Tier verlässt den Bestand mit ihm — ein
+    // Akt der Seite, deren Leib fiel (feld.K2#2, `_feldAkt`): auf jeder Seite zur selben Welt-Zeit.
     _bestandAus(c) {
         const t = c.userData && c.userData._bestand;
         if (!t) return;
         [c.userData._bestand, t.leib] = [null, null];
-        const R = this._bestandRegionen().regionen[this._bestandKey(t.x, t.z)];
-        const i = R ? R.tiere.indexOf(t) : -1;
-        if (i >= 0) R.tiere.splice(i, 1);
+        this._feldAkt({ art: "aus", w: this.state.spielZeit, key: this._bestandKey(t.x, t.z), id: t.id }, true);
     }
 
     // DIE ZEICHNUNG (die Kappe am Schirm): aus den nahen Regionen werden die Tiere gezeichnet, deren Gruppe dem Spieler am
@@ -2426,9 +2458,12 @@ class AnazhRealm_kreatur_leben {
         let platz = st.maxCreatures - bleibt.size;
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
-        // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz)
+        // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz);
+        // ein Leib ohne Tier (sein Tier fiel im Gesetz ohne Jäger am Leib, `_bestandTode`) geht, sobald er außer Blick steht
         for (const c of st.creatures.slice())
-            if (!bleibt.has(c) && !soll.has(c.userData._bestand) && this._bestandAusserBlick(c))
+            if (c.userData._ohneTier) {
+                if (this._bestandAusserBlick(c)) this.removeCreature(c);
+            } else if (!bleibt.has(c) && !soll.has(c.userData._bestand) && this._bestandAusserBlick(c))
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
         let suchen = 3;
@@ -2449,6 +2484,7 @@ class AnazhRealm_kreatur_leben {
         const ud = c.userData;
         return !!(
             !ud._bestand ||
+            ud._bestand.zu ||
             ud._rissVon ||
             jagen.has(c) ||
             ud.bond > 0 ||
@@ -2549,15 +2585,9 @@ class AnazhRealm_kreatur_leben {
         const st = this.state;
         const L = st.faunaLifecycle;
         const B = AnazhRealm._bestandGesetz().B;
-        if (!this._kreaturenBereit() || st.spielZeit - (L.lastTick || 0) < B.taktS) return;
-        // DAS AUFHOLEN FOLGT DER WELT-UHR: je taktS verstrichener Spiel-Zeit aufholJeTakt versäumte Takte — springt die Uhr (ein
-        // Stand lädt, `_weltUhrNimm`; eine Bühne rafft die Zeit), holen die nahen Regionen ihre Stunde im Takt des Sprungs nach, ehe
-        // die Welt danach etwas schreibt. Bis w13-brand-takt holte jeder Takt 20 nach, wie weit die Uhr auch sprang: die
-        // Vergangenheit lief über die folgenden Minuten und las das Feld der Gegenwart (Mess-Wiese: nach dem Sprung der Feld-Phase
-        // starben Tiere bis eine Stunde zurück im brennenden Gras, ihr Puls +0,45 fiel je nach Zünd-Zeit und Bild-Folge des Brands
-        // in die Zelle des Herds — BRAND-ASCHE lebendig 0,839 → 0,799 auf der Farm, → 0,539 lokal). Ohne Sprung (ein Takt je taktS,
-        // das Laden setzt die Marke an die Uhr des Stands) bleibt es bei 20.
-        const schritte = Math.max(1, Math.round((st.spielZeit - (L.lastTick || st.spielZeit)) / B.taktS));
+        if (!this._kreaturenBereit()) return;
+        this._feldTakt();
+        if (st.spielZeit - (L.lastTick || 0) < B.taktS) return;
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2571,24 +2601,44 @@ class AnazhRealm_kreatur_leben {
         for (const c of st.creatures.slice())
             if (c.userData._faelltNach && !st.creatures.some((o) => o.userData._rissVon === c))
                 this._creatureNaturalDeath(c, c.userData._faelltNach, false);
-        // je nahe Region ihre versäumten Takte (aus EINEM Budget je Takt), dann der Takt des Spielers
-        const tode = [];
-        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt * schritte;
-        const S = this._bestandSeite();
-        const p = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
-        const abstand = (key) => {
-            const [ix, iz] = key.split(",").map(Number);
-            return Math.hypot((ix + 0.5) * S - p.x, (iz + 0.5) * S - p.z);
-        };
-        for (const key of this._bestandNah().sort((a, b) => abstand(a) - abstand(b))) {
-            const vor = this._bestandRegion(key, false).t;
-            const R = this._bestandRegion(key, true, 1, budget, tode);
-            budget -= Math.round((R.t - vor) / B.taktS);
-            if (st.spielZeit - R.t >= B.taktS && st.spielZeit - R.t < 2 * B.taktS)
-                this._bestandSchritt(key, R, false, tode);
-        }
-        this._bestandTode(tode);
         this._bestandVerkoerpern();
+    }
+
+    // DER FELD-TAKT (feld.K2#2, Lockstep): das Leben der nahen Regionen ist eine Funktion der Welt-Uhr und der Akte, nie der
+    // Bild-Folge. Jeder Takt des Gesetzes steht auf dem Raster der Welt-Uhr (`_bestandSchritt`), und ALLE Takte der nahen Regionen
+    // laufen in EINER Folge: der früheste zuerst, bei gleicher Zeit die Regionen in der Ordnung ihrer Schlüssel — so schreibt die
+    // Herde zweier Nachbarn an ihrer gemeinsamen Grenze auf jeder Seite in derselben Reihe. DAS AUFHOLEN FOLGT DER WELT-UHR: je
+    // taktS verstrichener Spiel-Zeit aufholJeTakt Takte — springt die Uhr (ein Stand lädt, `_weltUhrNimm`; eine Bühne rafft die
+    // Zeit), holen die nahen Regionen ihre Stunde im Takt des Sprungs nach, ehe die Welt danach etwas schreibt (w13-brand-takt:
+    // bis dahin lief die Vergangenheit über die folgenden Minuten und las das Feld der Gegenwart). Gerufen je Takt des Spiels: was
+    // fällig ist, rechnet er, sonst ein Vergleich je Region. In DIESELBE Folge treten die Feld-Akte (`_feldAkt`, die Eingaben der
+    // Seiten): ein Akt vor dem Takt, der nicht früher ist als er. Mit Mitspielern rechnet er bis zum Horizont (`_feldHorizont`: die
+    // früheste Uhr der Mitspieler, weniger dem Vorlauf): bis dahin hat jeder Akt jede Seite erreicht. Bis feld.K2#2 holte jede Region für sich nach (die nächste
+    // zuerst, je Seite eine andere Reihe), der frische Takt stand auf der Bild-Uhr, und gerechnet wurde nur je taktS.
+    _feldTakt() {
+        const st = this.state;
+        const L = st.faunaLifecycle;
+        const B = AnazhRealm._bestandGesetz().B;
+        const bis = this._feldHorizont();
+        const schritte = Math.max(1, Math.round((bis - (L.feldUhr ?? bis)) / B.taktS));
+        L.feldUhr = Math.max(L.feldUhr ?? bis, bis);
+        const regionen = this._bestandNah()
+            .sort()
+            .map((key) => [key, this._bestandRegion(key, false)]);
+        const A = st.feldAkte || [];
+        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt * schritte;
+        const tode = [];
+        for (;;) {
+            let wahl = null;
+            for (const e of regionen) if (bis - e[1].t >= B.taktS && (!wahl || e[1].t < wahl[1].t)) wahl = e;
+            if (A.length && A[0].w <= bis && (!wahl || A[0].w <= wahl[1].t + B.taktS)) {
+                this._feldAktWirkt(A.shift());
+                continue;
+            }
+            if (!wahl || budget-- <= 0) break;
+            this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
+        }
+        if (tode.length) this._bestandTode(tode);
     }
 
     // DER NAH-KREIS (das Feld des Stufen-Gesetzes, `_feldGrenzen`): steht der Leib dort, wo das Bild ihn als Körper zeichnet? Mit
