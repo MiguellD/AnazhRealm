@@ -1091,6 +1091,7 @@ class AnazhRealm_vegetation_baum {
                     _lodSpecies: d.sp,
                     _lodVariantIndex: variantIndex,
                 },
+                d.alter < 1 ? { _schicht: d.alter } : null, // die Schicht am Eintrag (`entry._schicht`): die Leser des Unterstands
                 alter < 1 ? { studioOv: { alter } } : null
             )
         );
