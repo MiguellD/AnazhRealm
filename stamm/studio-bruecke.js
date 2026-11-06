@@ -1580,8 +1580,8 @@ class AnazhRealm_studio_bruecke {
     // DER KASTEN-ABSTAND DER BAHN zum Kasten [x0, x1] × [z0, z1] von `p` (ohne Angabe der Spieler): der kleinste Abstand
     // entlang derselben Strecke wie `_bedarfAbstand`, Chebyshev (die Stufe eines Chunks, `_voxelChunkLodFor`) oder `euklid`
     // (die Reichweite einer Streu-Region, `_streuRegionInReichweite`). Beide sind längs der Strecke konvex: die Dreiteilung
-    // findet ihr Minimum. `T` (s, ohne Angabe der Vorlauf): wie weit die Strecke reicht.
-    _bedarfKasten(x0, x1, z0, z1, p, euklid = false, T = AnazhRealm.BEDARF.vorlaufS) {
+    // findet ihr Minimum.
+    _bedarfKasten(x0, x1, z0, z1, p, euklid = false) {
         const e = p || (this.state.playerMesh && this.state.playerMesh.position);
         if (!e) return Infinity;
         const k = (x, z) => {
@@ -1589,7 +1589,8 @@ class AnazhRealm_studio_bruecke {
             return euklid ? Math.hypot(dx, dz) : Math.max(dx, dz);
         };
         const [vx, vz] = this._bedarfTempo();
-        if (!(vx || vz) || !(T > 0)) return k(e.x, e.z);
+        if (!(vx || vz)) return k(e.x, e.z);
+        const T = AnazhRealm.BEDARF.vorlaufS;
         const f = (u) => k(e.x + vx * T * u, e.z + vz * T * u);
         let [a, b] = [0, 1];
         for (let i = 0; i < 24; i++) {

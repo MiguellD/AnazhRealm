@@ -2531,6 +2531,7 @@ class AnazhRealm_gelaende_chunks {
         let [draussen, wartet] = [0, 0];
         const gesehen = new Set();
         const ST = AnazhRealm.BODEN_STUFEN;
+        const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
         // DIE SEKUNDEN BIS BEDARF (w14-strom-tempo, die Prioritäts-Schlange des Bodens): je Chunk, dem etwas fehlt, die Zeit, bis
         // die Bahn ihn braucht (`_bedarfKastenZeit`) — ein fehlender, bis er in den Ring des Spielers tritt (Kasten-Abstand
         // ≤ Ring · Spanne), ein stehender, bis seine Stufe nicht mehr trägt (Kasten-Abstand unter der Grenze der nächst feineren
@@ -2547,11 +2548,15 @@ class AnazhRealm_gelaende_chunks {
             // nichts (keine Re-Allokation bei stehendem Spieler). N3 — die jetzige LOD fließt in die Wahl (Hysterese am Grat).
             const existing = this.state.voxelChunks.get(key);
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            let desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
             if (existing && (existing.empty || (existingLod ?? 0) === desiredLod)) return;
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
             const grob = !!existing && desiredLod > (existingLod ?? 0);
+            // DAS VERGRÖBERN WARTET, SOLANGE DIE BAHN FÄHRT (w14-strom-tempo): was die fahrende Bahn hinter sich lässt, räumt die
+            // Pflege binnen Sekunden (`_pruneDistantVoxelChunks`) — ein Neubau in gröberer Stufe kostete den Faden die Zeit der
+            // Chunks voraus (GT: ~250 Vergröberungen je Minute, der Faden 87 % belegt). Im Stand und im Gang vergröbert er.
+            if (grob && faehrt) return;
             // die Grenze, unter der die Bahn den Chunk braucht: fehlt er, der Ring; steht er gröber, die nächst feinere Stufe
             const schwelle = !existing
                 ? ringRadius * span
@@ -2568,21 +2573,6 @@ class AnazhRealm_gelaende_chunks {
                         schwelle + (existing ? ST.vorlauf : 0),
                         playerPos
                     );
-            // GROB ZUERST (w14-strom-tempo): ein fehlender Chunk kommt in der Stufe, die die Bahn bis zu seinem Eintritt in den
-            // Ring verlangt (die Strecke reicht `t` Sekunden, höchstens den Vorlauf) — die feinere baut er danach, wenn ihre Zeit
-            // kommt (die Reihe oben). Ein L2-Netz baut der Faden in 2–13 ms, ein L0-Netz in 80 ms (Fahrt-Probe d5/d7, Cloud).
-            if (!existing && !mitte)
-                desiredLod = Math.max(
-                    desiredLod,
-                    this._voxelChunkLodFor(
-                        cx,
-                        cz,
-                        playerPos.x,
-                        playerPos.z,
-                        null,
-                        Math.min(Math.max(t, 0), AnazhRealm.BEDARF.vorlaufS)
-                    )
-                );
             zellen.push([cx, cz, bild, grob, t, mitte ? -1 : this._bedarfWeg(x, z), existing, existingLod, desiredLod]);
         };
         const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
