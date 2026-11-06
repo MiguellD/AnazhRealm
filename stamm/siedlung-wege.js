@@ -1303,7 +1303,7 @@ class AnazhRealm_siedlung_wege {
         if (key) this._stlWegeKeys.add(key);
         const wk = this._wegeKarteEnsure();
         let n = 0;
-        const MAX = 900; // Kappe je Siedlung
+        const MAX = plan.kappe || 900; // Kappe je Siedlung (der Boden des Verkehrs trägt keine: `_verkehrAnlegen`)
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {

@@ -3895,10 +3895,12 @@
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
-    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich — der Stoß zweier Trassen am Knoten des
-    // Straßengraphen liegt bis zu einem Schritt der Trasse (3 m, `strassengraph` DS) auseinander, `naheM` trägt ihn samt 0,1 m; bis
-    // w13-verkehr-heil 2,5: an stadt-voll endeten zwei Trassen am Knoten 961,6/387,7 und 732/570 im Stoß von 3,0 m, das Netz hieß dort
-    // „Ende", und das Ende im Osten (am Brunnen) trug keine Wende — Wenden 3 an 4 Enden), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich, und DER STOSS: das Ende einer Trasse trifft
+    // das Ende einer anderen bis `stossM` — am Knoten des Straßengraphen liegen sie bis zu einem Schritt der Trasse (3 m, `strassengraph`
+    // DS) auseinander. Bis w13-verkehr-heil trug nur `naheM` (2,5): an stadt-voll endeten zwei Trassen am Knoten 961,6/387,7 und 732/570
+    // im Stoß von 3,0 m, das Netz hieß dort „Ende", und das Ende im Osten (am Brunnen) trug keine Wende — Wenden 3 an 4 Enden; `naheM`
+    // 3,1 für jeden Punkt verband auch die Gabel zweier Trassen im Start-Dorf (-59/-141, ein Schritt Seite an Seite) und rückte sein
+    // Netz), ihr längster zusammenhängender Teil. Knoten mit drei und
     // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
     // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
@@ -3916,7 +3918,7 @@
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
@@ -3942,15 +3944,17 @@
       // DIE KNOTEN: je Punkt einer Trasse, die zwei Wagen trägt (über dem Wasser die Achse der Brücke, `wegUeberBruecken`), die
       // Folge ihre Kante, zwei Punkte zweier Trassen näher als `naheM` (sie treffen sich) verbunden; DIE LÄUFE aller Wege
       // (Straßen und Feldwege), an denen kein Platz liegt (`amWeg`)
-      const kn=[], nb=[], laeufe=[], netz=new Map(), zN=V.naheM;
+      const kn=[], nb=[], laeufe=[], netz=new Map(), ende=[], zN=Math.max(V.naheM,V.stossM);   /*das Raster trägt den weiteren Griff*/
       (plan.roads||[]).concat(plan.feldwege||[]).forEach((rd,ri)=>{ let vor=null;
-        for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue; const P={x:ox+q.x, z:oz+q.z};
+        const Q=wegUeberBruecken(rd.pts||[], rd.bruecken).filter(q=>q&&isFinite(q.x)&&isFinite(q.z));
+        for(let u=0;u<Q.length;u++){ const q=Q[u], P={x:ox+q.x, z:oz+q.z};
           if(vor) laeufe.push([vor,P]); vor=P;
-          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]);
+          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]); ende.push(u===0||u===Q.length-1);
           if(i>0&&kn[i-1].ri===ri){ nb[i].push(i-1); nb[i-1].push(i); } P.ri=ri;
           const ix=Math.floor(P.x/zN), iz=Math.floor(P.z/zN);
-          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[])
-            if(kn[j].ri!==ri&&(kn[j].x-P.x)**2+(kn[j].z-P.z)**2<zN*zN&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); }
+          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[]){
+            const d2=(kn[j].x-P.x)**2+(kn[j].z-P.z)**2;
+            if(kn[j].ri!==ri&&(d2<V.naheM*V.naheM||(ende[i]&&ende[j]&&d2<V.stossM*V.stossM))&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); } }
           (netz.get(ix*2097152+iz)||(netz.set(ix*2097152+iz,[]),netz.get(ix*2097152+iz))).push(i); } });
       const n=kn.length;
       const teil=new Int32Array(n).fill(-1); let best=-1, bestL=0;

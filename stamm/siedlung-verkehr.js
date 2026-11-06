@@ -196,6 +196,10 @@ class AnazhRealm_siedlung_verkehr {
                     w: 2 * (BW.gehwegM + BW.gehwegBreiteM + AnazhRealm.PLAYER_WALL_RADIUS),
                 }))
                 .concat(abbieger.map((pts) => ({ pts, w: 2 * VG.halbM }))),
+            // DER BODEN DES VERKEHRS FÄLLT NIE UNTER DIE KAPPE (`_stlWegeBuild`): jede Form trägt eine Spur, ihre Zahl folgt dem Netz
+            // (je Wende ~150). Bis w13-verkehr-heil schnitt die Kappe der Siedlung (900) still ab, was danach kam — im Netz der vier
+            // Wenden von stadt-voll die Plätze der letzten (983/324): die Nachtfahrer der Wagen 2, 5 und 9 stiegen neben dem Weg ein
+            kappe: Infinity,
         };
         for (const w of VK.wenden.values()) {
             const ring = [];
