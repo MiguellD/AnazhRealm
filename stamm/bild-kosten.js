@@ -3475,8 +3475,8 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
 // Viénot, Brettel & Mollon 1999 („Digital video colourmaps for checking the legibility of displays by dichromats", Color Res. Appl.
 // 24:243) — linear-RGB → LMS (`lms`, die Zapfen-Antwort nach Smith & Pokorny), der fehlende Zapfen als Ebene durch Weiß und das
 // Blau bzw. Rot des Schirms (je Art `ebene`: L = a·M + b·S, M = a·L + b·S, S = a·L + b·M), zurück nach linear-RGB. Die
-// Daltonisierung nach Fidaner, Lin & Ozguven (2005): der Fehler, den der Dichromat nicht sieht (Bild − Simulation), geht in die
-// Kanäle, die er sieht (`schub`: protan und deutan in Grün und Blau, tritan in Rot und Grün), mit `staerke`. Alles linear und
+// Daltonisierung nach dem Prinzip von Fidaner, Lin & Ozguven (2005): der Fehler, den der Dichromat nicht sieht (Bild − Simulation),
+// geht in die Achsen, die er sieht (`schub`: protan und deutan in Helligkeit und Blau-Gelb, tritan in Rot und Grün), mit `staerke`. Alles linear und
 // Weiß-treu (die Simulation hält Grau): EINE 3×3-Abbildung D = I + staerke · Schub · (I − Sim), gerechnet je Art beim Bau.
 AnazhRealm.FARBSICHT = Object.freeze({
     arten: Object.freeze(["aus", "deuteranopie", "protanopie", "tritanopie"]),
@@ -3489,16 +3489,22 @@ AnazhRealm.FARBSICHT = Object.freeze({
     // 1999: die Konstanten L = 2,02344·M − 2,52581·S und M = 0,494207·L + 1,24827·S sind genau diese Ebene), tritan sein Rot (der
     // Anker 660 nm bei Brettel, Viénot & Mollon 1997 — die eine Ebene trägt ihn; ihre zwei Halb-Ebenen fallen am Rot zusammen)
     ebene: Object.freeze({ protanopie: [0, 2], deuteranopie: [1, 2], tritanopie: [2, 0] }),
+    // DER SCHUB des Fehlers (je Zeile R, G, B: wie viel des Fehlers im Rot-Kanal dorthin geht): protan und deutan tragen den
+    // verlorenen Rot-Grün-Unterschied in Helligkeit und Blau-Gelb — rötlich wird dunkler und blauer, grünlich heller und gelber.
+    // Fidaners Schub (Rot-Fehler ins Grün 0,7 und Blau 0,7) machte Braun blauer und damit dem Grau ähnlicher: am Genesis-Ort
+    // (swiftshader, Grenze Boden|Bau unter Machado-Deuteranopie) ΔE 16,9 → 11,6; dieser Schub 23,2 am ganzen Bild (jede Grenze),
+    // an acht klassischen Verwechslungs-Paaren (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …) min ΔE 6,4 → 18,1 (Fidaner 10,3),
+    // Protanopie 27,1 und 27,4. Tritan behält Fidaners Schub (der Blau-Gelb-Fehler in Rot und Grün).
     schub: Object.freeze({
         protanopie: Object.freeze([
-            [0, 0, 0],
-            [0.7, 1, 0],
-            [0.7, 0, 1],
+            [-0.75, 0, 0],
+            [-1.2, 0, 0],
+            [1.8, 0, 0],
         ]),
         deuteranopie: Object.freeze([
-            [0, 0, 0],
-            [0.7, 1, 0],
-            [0.7, 0, 1],
+            [-0.75, 0, 0],
+            [-1.2, 0, 0],
+            [1.8, 0, 0],
         ]),
         tritanopie: Object.freeze([
             [1, 0, 0.7],
