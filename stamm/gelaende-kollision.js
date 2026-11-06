@@ -707,7 +707,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
-        if (!entry._verkehrFaehrt) this._blockerWacheMelden(entry._blockerHuelle);
+        this._blockerWacheMelden(entry._blockerHuelle, !!entry._verkehrFaehrt, entry);
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
         entry._blockerGen = 0;
@@ -734,9 +734,9 @@ class AnazhRealm_gelaende_kollision {
     _blockerNetzSetzen(entry) {
         const N = this._blockerNetz();
         // der fahrende Wagen des Verkehrs ist ein Leib im Gedränge, nie eine Wand der Wege (`_verkehrImRaster`): seine Hülle
-        // wandert je Schritt, die Wache sähe in jedem einen Wechsel
-        const wache = !entry._verkehrFaehrt;
-        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
+        // wandert je Schritt, die Wache der Wege sähe in jedem einen Wechsel — er meldet sich nur der Wache, die ihn hört (`verkehr`)
+        const verkehr = !!entry._verkehrFaehrt;
+        this._blockerWacheMelden(entry._blockerHuelle, verkehr, entry);
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
@@ -784,7 +784,7 @@ class AnazhRealm_gelaende_kollision {
                 ? [x0, x1, z0, z1]
                 : null;
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
-        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
+        this._blockerWacheMelden(entry._blockerHuelle, verkehr, entry);
     }
 
     // DER LEIB DES FLÜGELS (leib.K4): ein Tür- oder Tor-Flügel zeichnet als eigene Instanz (das Blatt mit Scharnier `tuer`, auch
@@ -895,13 +895,16 @@ class AnazhRealm_gelaende_kollision {
     // oder neu gestempelt wird (die Studio-Hülle nach der Kern-Hülle, das Haus des Spielers, der gefällte Baum), zählt ihren
     // Stand hoch — vor dem Stempel die alte Hülle, danach die neue. Der Leser vergleicht den Stand, nie den Bestand; DAS BUCH
     // der Wache (`wechsel`, die letzten 256) trägt je Stand die Hülle, die ihn zählte — ein Leser urteilt nur neu, was sie
-    // berührt (`_bewohnerWechsel`, Lehre 25).
-    _blockerWacheMelden(h) {
+    // berührt (`_bewohnerWechsel`, Lehre 25). Der fahrende Wagen des Verkehrs (`verkehr`) meldet sich nur einer Wache, die ihn hört
+    // (`w.verkehr`: die Bauten des Klang-Schwenks, `_klangBauten` — ein Wagen ist dort eine Wand des Raums). Eine Wache, die ihre
+    // Einträge kennt (`w.kennt`, sie liest deren Hülle lebend), zählt daneben nur die Fremden (`fremd`, `wer` der Meldende).
+    _blockerWacheMelden(h, verkehr, wer) {
         const W = this._blockerWachen;
         if (!W || !W.size || !h) return;
         for (const w of W)
-            if (h[1] >= w.x0 && h[0] <= w.x1 && h[3] >= w.z0 && h[2] <= w.z1) {
+            if ((!verkehr || w.verkehr) && h[1] >= w.x0 && h[0] <= w.x1 && h[3] >= w.z0 && h[2] <= w.z1) {
                 w.stand++;
+                if (w.kennt && !w.kennt.has(wer)) w.fremd++;
                 const L = w.wechsel || (w.wechsel = []);
                 if (L.push(h) > 256) L.shift();
             }
