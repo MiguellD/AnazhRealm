@@ -1172,6 +1172,8 @@ class AnazhRealm_siedlung_satz {
     // Nässe-Dosis, beide aus dem Stand). Nur der Bau-Satz (der Fels ist alt, als die Welt begann; der Wurf zeichnet keine
     // Farbe), und nie ein Werk, dessen Studio den Regler `verwitterung` trägt (`_werkAlterZeile`: es altert in seinem Kern, der
     // seine Rollen kennt). Gemerkt an der Gruppe (Stoff und Art wechseln nie); null: sie altert nicht.
+    // Gemessen (stoffe.K4#1, Dorf −704,2/−885,5, 16 Häuser, headless): bauSatz nach 30 trockenen Tagen nord/süd/oben
+    // 0,005/0,005/0,005 → 0,002/0,002/0,033 (die Flechte unter dem Himmel); ein Haus, dessen Bau-Akt heute war, Δ 0.
     _satzAlter(g) {
         if (g._satzAlter !== undefined) return g._satzAlter;
         let al = null;
