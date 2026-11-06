@@ -452,9 +452,13 @@ const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koe
 // Abnahme-Bild der Welt (`/bild` 4,3–9,7 s, das erste kompiliert) — Radeon 8ef49bef: fünf Studios in 34,9 s (7,0 s je Studio), an der
 // Frist 39 s fielen koerperstudio und tetrapoda aus; sieben ≈ 52 s Radeon, ≈ 68 s GTX (Faktor 1,3). Der Deckel je Karte in deckel.json.
 const K4_AUSNAHME = "sieben Studio-Seiten mit eigenem Renderer und je ein Abnahme-Bild der Welt: Radeon 7,0 s je Studio, sieben ≈ 52 s";
+// GRÜN zählt nur über der GESTALT beider Seiten (w16-studio-welt: das Werk allein in Weiß, Bühne SCHUSS · Welt WELT_GESTALT) —
+// eine Differenz über der Teilung der Werkbank trug den Boden (die Schatten-Sprenkel unter dem Wagen, Radeon 93fe1619: 51 762 Pixel
+// nur auf der Welt-Seite) und urteilt nie
+const k4Gestalt = (z) => !!(z && z.welt && z.buehne && z.welt.maske === "gestalt" && z.buehne.maske === "gestalt");
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
-    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true);
+    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true && k4Gestalt(s[id]));
     return {
         gruen,
         zahl:
@@ -462,10 +466,22 @@ const k4Zahl = (j) => {
             K4_STUDIOS.map((id) => {
                 const z = s[id] || {};
                 return id + " " + (z.differenz && z.differenz.anteil != null ? (100 * z.differenz.anteil).toFixed(1) + " %" : "–") +
-                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
+                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen && !k4Gestalt(z) ? " [ohne Gestalt beider Seiten]" : "") +
+                    (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
             }).join(" · ") + ((j.fehler || []).length ? " · " + j.fehler.join(" | ").slice(0, 200) : ""),
     };
 };
+// DIE PROBEN (die Schlupflöcher als Mutanten): drei Studios unter 2,1 % über der Gestalt beider Seiten sind GRÜN; dieselben Zahlen
+// über der Teilung der Werkbank (sie trägt den Boden) sind ROT; zwei Studios sind ROT
+const k4Probe = (n, maske) => {
+    const z = (id, d) => ({ [id]: { gruen: d <= 0.021, differenz: { anteil: d }, albedo: { max: 0.04 }, welt: { maske, pixel: 340155 }, buehne: { maske: "gestalt", pixel: 341300 } } });
+    return "K4 " + JSON.stringify({ geraet: "probe", studios: Object.assign({}, ...K4_STUDIOS.map((id, i) => z(id, i < n ? 0.018 : 0.3))), fehler: [] });
+};
+const K4_PROBEN = [
+    { name: "drei Studios unter dem Soll über der Gestalt beider Seiten", stdout: k4Probe(3, "gestalt"), gruen: true },
+    { name: "dieselben Zahlen über der Teilung der Werkbank (der Boden zählt als Werk)", stdout: k4Probe(3, "teilung"), gruen: false },
+    { name: "zwei Studios unter dem Soll", stdout: k4Probe(2, "gestalt"), gruen: false },
+];
 const K4_PFAD = [
     "worlds/huelle/",
     "worlds/garage/",
@@ -2132,10 +2148,12 @@ const alle = [
         zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^K4 \{/);
             if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + "): " + String(lauf.stdout || "").split(/\r?\n/).filter((l) => /^K4 /.test(l)).slice(-2).join(" | ").slice(0, 300) };
             const k = k4Zahl(j);
             return { gruen: k.gruen.length >= 3, zahl: k.zahl };
         },
+        proben: K4_PROBEN,
         pfad: K4_PFAD,
         quelle: "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10",
     },
@@ -2148,6 +2166,7 @@ const alle = [
         zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^K4 \{/);
             if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + ")" };
             const k = k4Zahl(j);
             return { gruen: k.gruen.length === 7, zahl: k.zahl };

@@ -20,10 +20,13 @@
 // im ruhenden Loop bestellt kein Takt die Stufe (kein Auftrag in der Foundry), und ein kleines Werk steht dort ohnehin als Karte
 // (Wagen, Sichthöhe 1,64 m: L2 ab 12,5 m, `fimp:atlas:L2`) — „steht nach 30 s nicht in der Welt" an GTX b4bcf19c, 24a0f3ef, Radeon
 // 715754fc.
-// DAS BILD: Welt `werkbank bild --klasse ^f:<preset>:L\d$ --wahl 0` (1920 × 1080, Ausgabe-Pfad); die Klasse liest die Probe
-// aus der Masken-Datei (jeder Klassen-Pixel trägt 0,6 · Bild + 0,4 · Ton seiner Klasse). Bühne: derselbe Schuss durch ihren
-// Ausgabe-Weg (Composer oder Renderer, scripts/lib/albedo-tafel.cjs STUDIOS), die Maske ein Schuss der Wurzel allein in Weiß.
-// Bild-Differenz = Anteil der Gestalt-Pixel (Vereinigung beider Masken), die nur eine Seite trägt oder deren Luma um mehr als
+// DAS BILD: Welt `werkbank bild --wahl 0` (1920 × 1080, Ausgabe-Pfad), Bühne derselbe Schuss durch ihren Ausgabe-Weg (Composer
+// oder Renderer, scripts/lib/albedo-tafel.cjs STUDIOS). DIE GESTALT beider Seiten mit DERSELBEN Rechnung: das Werk allein in Weiß
+// vor Schwarz unter derselben Kamera — die Bühne ihre Wurzel (SCHUSS), die Welt die Instanzen der Familie f: ihres Eintrags in
+// einer eigenen Szene (WELT_GESTALT). Bis w16-studio-welt las die Welt-Seite die Teilung der Werkbank (`bild --klasse`: ein Pixel
+// ist Werk, wo das Bild mit und ohne das Werk um > 18 springt) — sie trug den Boden: die Sprenkel des Schattens unter dem Wagen
+// (Radeon 93fe1619 garage-welt.maske.png, 51 762 Pixel nur auf der Welt-Seite) und fremde Exemplare derselben Klasse im Blick.
+// Bild-Differenz = Anteil der Gestalt-Pixel (Vereinigung beider Gestalten), die nur eine Seite trägt oder deren Luma um mehr als
 // 18 springt; Soll ≤ 2,1 %.
 // DIE ALBEDO: die Albedo-Tafel beider Seiten (spec/farbe/albedo-tafel.json; Welt `werkbank albedo --tafel` am Ort der Tafel,
 // Labor `diag-albedo-tafel` `messeLabor`), je Studio jede Zeile seines Labors: |Labor/Welt − 1| ≤ 0,10 — gemessen nur für die
@@ -52,7 +55,6 @@ const STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerpe
 const [W, HOEHE] = [1920, 1080];
 const SOLL = { differenz: 0.021, albedo: 0.1 };
 const POSE = { gier: 0.6, neigung: 0.32, fov: 45 };
-const TOENE = [[255, 80, 80], [80, 255, 80], [80, 120, 255], [255, 220, 60], [255, 80, 255], [60, 230, 230], [255, 150, 40], [180, 120, 255]];
 const sek = (t) => +((Date.now() - t) / 1000).toFixed(1);
 const ruf = (weg, o) => WB.werkbankRuf(H.W, weg, o);
 async function welt(code) {
@@ -111,20 +113,6 @@ function pngLesen(datei) {
     return { w, h, d: out };
 }
 const luma = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-// die Klasse aus der Maske der Werkbank: ein Klassen-Pixel trägt round(0,6 · Bild + 0,4 · Ton) seiner Klasse (dieselbe Prüfung,
-// ohne Abschluss je Pixel und Ton: 335 → 220 ms je Bild)
-function klasseAusMaske(bild, maske) {
-    const m = new Uint8Array(bild.w * bild.h), B = bild.d, M = maske.d;
-    for (let p = 0; p < m.length; p++) {
-        const i = p * 4;
-        for (const T of TOENE)
-            if (Math.abs(M[i] - Math.round(0.6 * B[i] + 0.4 * T[0])) <= 2 && Math.abs(M[i + 1] - Math.round(0.6 * B[i + 1] + 0.4 * T[1])) <= 2 && Math.abs(M[i + 2] - Math.round(0.6 * B[i + 2] + 0.4 * T[2])) <= 2) {
-                m[p] = 1;
-                break;
-            }
-    }
-    return m;
-}
 // die Bild-Differenz über der Vereinigung der Masken
 function differenz(lA, mA, lB, mB) {
     let [u, d, beide] = [0, 0, 0];
@@ -183,9 +171,15 @@ const SCHUSS = (o) => {
         }
     });
     const c = bb.getCenter(new T.Vector3()), rad = bb.getSize(new T.Vector3()).length() / 2;
+    // DIE KAMERA IM RAHMEN DES WERKS (w16-studio-welt): die Kamera der Welt, ausgedrückt im Rahmen ihres Eintrags (RAHMEN `lokal`), steht
+    // hier im Rahmen der Wurzel — dieselbe Lage zum Werk, unabhängig von seiner Drehung und Neigung in der Welt und von der Zerlegung der
+    // Boxen (Welt je Instanz-Gruppe, Bühne je Mesh: garage R 2,868 gegen 2,729, die Bühne stand 5 % näher). Bis hier stand sie an der
+    // Box der Bühne in Welt-Achsen: die Welt dreht einen Wagen um π/2 (`rotationY`) und neigt ihn zum Gelände.
+    const Ms = wz.matrixWorld;
     const cam = new T.PerspectiveCamera(o.fov, o.W / o.H, Math.min(0.1, rad / 10), Math.max(200, 32 * rad));
-    cam.position.copy(c).addScaledVector(new T.Vector3(...o.blick), o.abstandR * rad);
-    cam.lookAt(c);
+    cam.position.fromArray(o.lokal.kamera).applyMatrix4(Ms);
+    cam.up.fromArray(o.lokal.oben).transformDirection(Ms);
+    cam.lookAt(new T.Vector3().fromArray(o.lokal.ziel).applyMatrix4(Ms));
     cam.updateMatrixWorld(true);
     const lies = () => {
         const k = document.createElement("canvas");
@@ -194,31 +188,46 @@ const SCHUSS = (o) => {
         x.drawImage(R.domElement, 0, 0, o.W, o.H);
         return x.getImageData(0, 0, o.W, o.H).data;
     };
-    const alle = [];
-    sc.traverse((x) => (x.isMesh || x.isPoints || x.isLine || x.isSprite) && alle.push([x, x.visible]));
     const unter = (x) => {
         for (let p = x; p; p = p.parent) if (p === wz) return true;
         return false;
     };
+    // AUS DEM GRAPHEN, NIE NUR VERBORGEN (w16-studio-welt): r184 zeichnet Linien unter `visible = false` weiter (die Garage: Raster,
+    // Zifferblatt und Maß-Linien, 61 350 der Masken-Pixel in 1920 × 1080) — wer nicht ins Bild gehört, verlässt seinen Eltern für
+    // den Schuss und kehrt an seinen Platz zurück
+    const raus = [];
+    const nimm = (wer) => {
+        const liste = [];
+        sc.traverse((x) => (x.isMesh || x.isPoints || x.isLine || x.isSprite) && wer(x) && liste.push(x));
+        for (const x of liste) if (x.parent) raus.push([x, x.parent, x.parent.children.indexOf(x)]), x.parent.remove(x);
+    };
+    const zurueck = () => {
+        for (const [x, pa, i] of raus.reverse()) pa.children.splice(i, 0, x), (x.parent = pa);
+        raus.length = 0;
+    };
     // das Bild: die Bühne, wie sie steht, ohne ihre Lehren (Schilder, Maß-Linien, Raster: Sprite · Line · Points — auch IN der Wurzel,
     // die Welt trägt keine)
     const kams = [];
-    for (const [x] of alle) if (!x.isMesh) x.visible = false;
-    if (comp && comp.passes) for (const p of comp.passes) if (p && p.camera) kams.push([p, p.camera]), (p.camera = cam);
-    if (comp && comp.passes) comp.render();
-    else R.render(sc, cam);
-    const bild = lies();
-    for (const [p, k] of kams) p.camera = k;
-    for (const [x, v] of alle) x.visible = v;
+    let bild;
+    try {
+        nimm((x) => !x.isMesh);
+        if (comp && comp.passes) for (const p of comp.passes) if (p && p.camera) kams.push([p, p.camera]), (p.camera = cam);
+        if (comp && comp.passes) comp.render();
+        else R.render(sc, cam);
+        bild = lies();
+    } finally {
+        for (const [p, k] of kams) p.camera = k;
+        zurueck();
+    }
     const alt = { bg: sc.background, fog: sc.fog, ov: sc.overrideMaterial, tm: R.toneMapping };
     let maske;
     try {
-        for (const [x] of alle) x.visible = x.visible && x.isMesh && unter(x);
+        nimm((x) => !(x.isMesh && x.visible && unter(x)));
         [sc.background, sc.fog, sc.overrideMaterial, R.toneMapping] = [new T.Color(0, 0, 0), null, new T.MeshBasicMaterial({ color: 0xffffff }), T.NoToneMapping];
         R.render(sc, cam);
         maske = lies();
     } finally {
-        for (const [x, v] of alle) x.visible = v;
+        zurueck();
         [sc.background, sc.fog, sc.overrideMaterial, R.toneMapping] = [alt.bg, alt.fog, alt.ov, alt.tm];
     }
     const L = new Uint8Array(o.W * o.H), M = new Uint8Array(o.W * o.H);
@@ -274,32 +283,88 @@ if (bb.isEmpty()) bb.setFromCenterAndSize(new T.Vector3(E.position.x, E.position
 const { c, dist } = rahmen(bb);
 const [fx, fz] = [c.x + blick[0] * dist, c.z + blick[2] * dist];
 r.state.playerMesh.position.set(fx, r.getTerrainHeightAt(fx, fz) + K.PLAYER_FOOT_OFFSET, fz);
+// DIE STUFE AM ABSTAND (w16-studio-welt): das Werk steht, wenn die Welt seine Stufe am Auge der Pose bestätigt hat
+// („_lodAmAbstand“, die Wahl am echten Abstand — „_archStufeUrteil“) und eine Instanz dieser Stufe trägt (die Stufe davor hält
+// ihren Slot, die Blende am Auge verbirgt sie). Bis hier zählte jede Instanz der Familie f: — die Stufe vom Ort des Setzens
+// (16–24 m: garage L1) stand sofort, 0 Takte.
+E._lodAmAbstand = false;
 const steht = () => {
+    const kl = new Set();
     for (const [key, g] of r.state.archInstanceGroups || []) {
         const s = g.slotEntry ? g.slotEntry.indexOf(E) : -1;
-        if (s >= 0 && !g.shadowTwin && g.geom && /^f:/.test(K._instanzKlasse(key))) return true;
+        if (s >= 0 && !g.shadowTwin && g.geom && /^f:/.test(K._instanzKlasse(key))) kl.add(K._instanzKlasse(key));
     }
-    return false;
+    return E._lodAmAbstand === true && [...kl].some((k) => k.endsWith(":L" + (E._lodLevel | 0)));
 };
-const takte = await window.__gebautNach("das Werk " + E.type + " als Instanz der Familie f: am Auge der Pose", { fertig: steht, bau: () => {} });
-return { takte, fuss: [fx, fz].map((v) => +v.toFixed(2)) };`;
+const takte = await window.__gebautNach("das Werk " + E.type + " als Instanz der Familie f: in der Stufe am Auge der Pose", { fertig: steht, bau: () => {} });
+return { takte, fuss: [fx, fz].map((v) => +v.toFixed(2)), stufe: E._lodLevel | 0 };`;
 const RAHMEN = (pose) => `const E = window.__k4Werk, K = r.constructor, bb = new T.Box3(), b = new T.Box3(), m = new T.Matrix4(), klassen = new Set();
 ${POSE_TEXT(pose)}
 for (const [key, g] of r.state.archInstanceGroups || []) {
     const s = g.slotEntry ? g.slotEntry.indexOf(E) : -1;
     const kl = K._instanzKlasse(key);
-    if (s < 0 || g.shadowTwin || !/^f:/.test(kl) || !g.geom) continue;
+    if (s < 0 || g.shadowTwin || !/^f:/.test(kl) || !kl.endsWith(":L" + (E._lodLevel | 0)) || !g.geom) continue;
     if (!g.geom.boundingBox) g.geom.computeBoundingBox();
-    if (g.mesh && g.mesh.isInstancedMesh) g.mesh.getMatrixAt(s, m);
-    else r._archEntryWorldMatrix(E, m);
-    bb.union(b.copy(g.geom.boundingBox).applyMatrix4(m));
+    for (let i = s; i < g.slotEntry.length; i++) {
+        if (g.slotEntry[i] !== E) continue;
+        if (g.mesh && g.mesh.isInstancedMesh) g.mesh.getMatrixAt(i, m);
+        else r._archEntryWorldMatrix(E, m);
+        bb.union(b.copy(g.geom.boundingBox).applyMatrix4(m));
+    }
     klassen.add(kl);
 }
 if (bb.isEmpty()) return { fehler: "das Werk trägt keine Instanz der Familie f: mehr" };
 const { R, c, dist } = rahmen(bb);
-return { R: +R.toFixed(3), dist: +dist.toFixed(3), blick, mitte: c.toArray(), kamera: c.clone().addScaledVector(new T.Vector3(...blick), dist).toArray(), klassen: [...klassen] };`;
+const kamera = c.clone().addScaledVector(new T.Vector3(...blick), dist), Mw = new T.Matrix4();
+r._archEntryWorldMatrix(E, Mw);
+const Mi = Mw.clone().invert();
+// die Kamera im Rahmen des Eintrags (SCHUSS stellt sie in den Rahmen der Wurzel der Bühne)
+const lokal = { kamera: kamera.clone().applyMatrix4(Mi).toArray(), ziel: c.clone().applyMatrix4(Mi).toArray(), oben: new T.Vector3(0, 1, 0).transformDirection(Mi).toArray() };
+return { R: +R.toFixed(3), dist: +dist.toFixed(3), blick, mitte: c.toArray(), kamera: kamera.toArray(), lokal, klassen: [...klassen] };`;
+// DIE GESTALT DER WELT: die Instanzen der Familie f: des Eintrags in seiner Stufe (dieselben, die RAHMEN zählt) in einer eigenen Szene, Weiß vor
+// Schwarz, unter der Kamera des Bilds in ein Ziel 1920 × 1080 (linear, ungetont: Weiß bleibt 255) — ein Byte je Pixel, Zeile 0 oben
+const WELT_GESTALT = (k, l, fov) => `const E = window.__k4Werk, K = r.constructor, R = r.state.renderer, sc = new T.Scene(), weiss = new T.MeshBasicMaterial({ color: 0xffffff });
+for (const [key, g] of r.state.archInstanceGroups || []) {
+    const s = g.slotEntry ? g.slotEntry.indexOf(E) : -1;
+    if (s < 0 || g.shadowTwin || !g.geom || !/^f:/.test(K._instanzKlasse(key)) || !K._instanzKlasse(key).endsWith(":L" + (E._lodLevel | 0))) continue;
+    // jeder Slot des Eintrags (die Räder tragen vier in EINER Gruppe)
+    for (let i = s; i < g.slotEntry.length; i++) {
+        if (g.slotEntry[i] !== E) continue;
+        const m = new T.Matrix4(), me = new T.Mesh(g.geom, weiss);
+        if (g.mesh && g.mesh.isInstancedMesh) g.mesh.getMatrixAt(i, m), m.premultiply(g.mesh.matrixWorld);
+        else r._archEntryWorldMatrix(E, m);
+        me.matrixAutoUpdate = false;
+        me.matrix.copy(m);
+        me.frustumCulled = false;
+        sc.add(me);
+    }
+}
+if (!sc.children.length) return { fehler: "das Werk trägt keine Instanz der Familie f: für seine Gestalt" };
+sc.updateMatrixWorld(true);
+const cam = new T.PerspectiveCamera(${fov}, ${W} / ${HOEHE}, 0.05, 4000);
+cam.position.set(${k.join(", ")});
+cam.lookAt(${l.join(", ")});
+cam.updateMatrixWorld(true);
+const ziel = new T.RenderTarget(${W}, ${HOEHE}), vor = R.getRenderTarget(), farbe = R.getClearColor(new T.Color()), alpha = R.getClearAlpha();
+let px;
+try {
+    R.setRenderTarget(ziel);
+    R.setClearColor(0x000000, 0);
+    R.clear();
+    R.render(sc, cam);
+    px = await R.readRenderTargetPixelsAsync(ziel, 0, 0, ${W}, ${HOEHE});
+} finally {
+    R.setRenderTarget(vor);
+    R.setClearColor(farbe, alpha);
+    ziel.dispose();
+    weiss.dispose();
+}
+const oben = !!(R.backend && R.backend.isWebGPUBackend), M = new Uint8Array(${W * HOEHE});
+for (let y = 0; y < ${HOEHE}; y++) for (let x = 0; x < ${W}; x++) M[y * ${W} + x] = px[((oben ? y : ${HOEHE} - 1 - y) * ${W} + x) * 4] > 127 ? 1 : 0;
+let b = "";
+for (let i = 0; i < M.length; i += 0x8000) b += String.fromCharCode.apply(null, M.subarray(i, i + 0x8000));
+return { maske: btoa(b), teile: sc.children.length };`;
 const WEG = `if (window.__k4Werk) r.removeArchitecture(window.__k4Werk, { still: true }); window.__k4Werk = null; return 1;`;
-const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // `nur`: die Studios, deren Bild-Differenz im Soll liegt — nur ihre Albedo kann ein Urteil tragen (ein Studio ohne Differenz im Soll
 // ist nie GRÜN); das Labor misst nur sie, und nur ihre Zeilen gehen in die Zahl (für die übrigen trägt die Labor-Datei die Werte der
@@ -346,7 +411,8 @@ H.fahre(async function k4Bild(H) {
     const t0 = Date.now();
     // der Ort des Spielers beim Start: jedes Werk steht von hier aus (das Auge wandert je Studio an seine Pose)
     const P = await welt("const p = r.state.playerMesh.position; return { x: p.x, y: p.y, z: p.z };");
-    const dOk = (z) => !!(z && z.differenz && z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.pixel > 0 && z.buehne.pixel > 0);
+    // GRÜN zählt nur über der Gestalt beider Seiten (WELT_GESTALT · SCHUSS), nie über einer Teilung, die den Boden trägt
+    const dOk = (z) => !!(z && z.differenz && z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.maske === "gestalt" && z.buehne.maske === "gestalt" && z.welt.pixel > 0 && z.buehne.pixel > 0);
     for (const sid of STUDIOS) {
         // ein Studio an der Frist fällt aus: die Probe trägt kein ganzes Urteil (die EINE Marke, punkte.cjs FRIST_MARKE)
         if (H.rest() < 8) {
@@ -395,20 +461,21 @@ H.fahre(async function k4Bild(H) {
             teil("welt");
             const datei = path.join(DIR, sid + "-welt.png");
             const [k, l] = [rahmen.kamera, rahmen.mitte];
-            const bild = await ruf("/bild", { px: k[0], py: k[1], pz: k[2], lx: l[0], ly: l[1], lz: l[2], w: W, h: HOEHE, fov: POSE.fov, wahl: "0", klasse: "^f:" + esc(z.werk.preset) + ":L\\d$", datei });
+            const bild = await ruf("/bild", { px: k[0], py: k[1], pz: k[2], lx: l[0], ly: l[1], lz: l[2], w: W, h: HOEHE, fov: POSE.fov, wahl: "0", datei });
             if (!bild || !bild.datei || !fs.existsSync(datei)) throw new Error("bild: " + JSON.stringify(bild).slice(0, 300));
-            const bw = pngLesen(datei), mw = pngLesen(datei.replace(/\.png$/, ".maske.png"));
+            const bw = pngLesen(datei);
             const lw = new Uint8Array(W * HOEHE);
             for (let p = 0; p < lw.length; p++) lw[p] = Math.round(luma(bw.d, p * 4));
-            const kw = klasseAusMaske(bw, mw);
-            z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
+            const gw = await welt(WELT_GESTALT(k, l, POSE.fov));
+            const kw = new Uint8Array(Buffer.from(gw.maske, "base64"));
+            z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, maske: "gestalt", teile: gw.teile, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
             await welt(WEG);
             teil("bild");
             await page.bringToFront();
-            const s = await frame().evaluate(SCHUSS, { S, W, H: HOEHE, fov: POSE.fov, blick: rahmen.blick, abstandR: rahmen.dist / rahmen.R });
+            const s = await frame().evaluate(SCHUSS, { S, W, H: HOEHE, fov: POSE.fov, lokal: rahmen.lokal });
             WB.pngDatei(path.join(DIR, sid + "-buehne.png"), s.png);
             const [ls, ms] = [s.luma, s.maske].map((x) => new Uint8Array(Buffer.from(x, "base64")));
-            z.buehne = { R: s.rad, pixel: ms.reduce((a, v) => a + v, 0) };
+            z.buehne = { R: s.rad, maske: "gestalt", pixel: ms.reduce((a, v) => a + v, 0) };
             z.differenz = differenz(lw, kw, ls, ms);
             teil("schuss");
         } catch (e) {
@@ -453,6 +520,8 @@ H.fahre(async function k4Bild(H) {
     // ein Studio hinter der Frist trägt keinen Eintrag (oben): es ist nie GRÜN — kein Wurf an ihm (Radeon 6a571e3b: „gruen“ von undefined)
     aus.gruen = STUDIOS.filter((s) => aus.studios[s] && aus.studios[s].gruen);
     console.log(`K4 Gerät der Bühne: ${aus.geraet || "ungenannt"}`);
+    // die Zahlen der Probe als EINE Zeile (das Urteil liest sie, wo keine Datei steht — die Proben der Station)
+    console.log("K4 " + JSON.stringify({ geraet: aus.geraet, studios: Object.fromEntries(Object.entries(aus.studios).map(([id, z]) => [id, { gruen: z.gruen, grund: z.grund, differenz: z.differenz, albedo: z.albedo, welt: z.welt && { maske: z.welt.maske, pixel: z.welt.pixel }, buehne: z.buehne && { maske: z.buehne.maske, pixel: z.buehne.pixel } }])), fehler: aus.fehler }));
     console.log(`K4 ${aus.gruen.length}/${STUDIOS.length} Mesh-Studios mit Bild-Differenz ≤ ${SOLL.differenz} und Albedo im Rand ${SOLL.albedo} (${aus.sek} s)`);
     return aus;
 });
