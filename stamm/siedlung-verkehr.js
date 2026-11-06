@@ -454,7 +454,10 @@ class AnazhRealm_siedlung_verkehr {
     // außer der Wagen hält für b selbst (`W.wer`, `_verkehrFolge`): dann geht b zuerst. Wer steht, beansprucht nichts: vor dem
     // wartenden Wagen geht man hinüber. Bis hier beanspruchte auch der stehende Wagen den Punkt — der Gehende am Rand wartete auf
     // ihn, er auf einen anderen, und der Halter der Kreuzung auf den Gehenden (stadt-voll 10 Uhr, 250 s, 18 Wagen dahinter); davor
-    // hielt der Halter einer Enge für den, der in der Kurve am Rand auf ihn wartete. Leser: der Gang der Bewohner (`_bewohnerGehen`).
+    // hielt der Halter einer Enge für den, der in der Kurve am Rand auf ihn wartete. DIE LÜCKE IM STROM: wer schon `vorrangWarteS`
+    // vor Leibern steht, beansprucht seine Bahn (`vorrangM`) auch stehend — wer in ihr geht, geht zu Ende, wer an den Rand kommt,
+    // wartet. Bis w13-verkehr-heil querte der Markt um 10 Uhr ohne Ende vor dem Halter der Kreuzung (stadt-voll, Minute 5–9 nach
+    // dem Sprung: Reihen von 5–7 Wagen dahinter, je 27–29 m in der Minute). Leser: der Gang der Bewohner (`_bewohnerGehen`).
     _verkehrVorrang(S, x, z, b) {
         const V = AnazhRealm.VERKEHR;
         for (const W of S.verkehr.wagen) {
@@ -463,9 +466,10 @@ class AnazhRealm_siedlung_verkehr {
             const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
             const [dx, dz] = [x - e.position.x, z - e.position.z];
             const vor = dx * fx + dz * fz - W.hl;
+            const bahn = W.leibS >= V.vorrangWarteS ? V.vorrangM : Math.max(0, e._fahr.vlong) * V.lueckeS;
             if (
                 vor > 0 &&
-                vor < Math.min(V.vorrangM, Math.max(0, e._fahr.vlong) * V.lueckeS) &&
+                vor < Math.min(V.vorrangM, bahn) &&
                 Math.abs(dx * fz - dz * fx) < W.hw + AnazhRealm.PLAYER_WALL_RADIUS + V.seitM + 1
             )
                 return true;
@@ -1369,9 +1373,11 @@ class AnazhRealm_siedlung_verkehr {
                 "leib",
                 leib
             );
-            // WER NIE WEICHT UND STEHT (der Spieler: `leib` null — kein Gedränge fragt ihn nach Platz), um den fährt er
-            // (`_verkehrUmfahren`), den nächsten zuerst
-            if (!leib && Math.hypot(vx || 0, vz || 0) < V.umfahrMs && !(W.umfahr && W.umfahr.s <= a.s))
+            // WER STEHT UND NICHT WEICHT, um den fährt er (`_verkehrUmfahren`), den nächsten zuerst: der Spieler (`leib` null — kein
+            // Gedränge fragt ihn nach Platz) sofort, ein Bewohner, der nach `umfahrNachS` noch in der Bahn steht (sein Platz fand
+            // keinen Ort; bis w13-verkehr-heil hielt er drei Wagen eine Minute vor der Wende 924/354, 10 Uhr)
+            const steht = Math.hypot(vx || 0, vz || 0) < V.umfahrMs;
+            if (steht && (!leib || W.leibS >= V.umfahrNachS) && !(W.umfahr && W.umfahr.s <= a.s))
                 W.umfahr = { x, z, i: a.i, s: a.s };
             // Platz verlangt er von dem, der ihn `platzS` lang hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt
             // (ein langsamer Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der
@@ -1428,19 +1434,22 @@ class AnazhRealm_siedlung_verkehr {
         if (sp && !(this.state.player && this.state.player.mountedArch === e.id))
             pruefe(sp.x, sp.z, null, sa ? sa.vx : 0, sa ? sa.vz : 0);
         if (W.grund !== "leib" || v >= 0.5) W.warteS = 0;
+        // wie lange er schon vor Leibern steht (`_verkehrVorrang`: ab `vorrangWarteS` beansprucht er seine Bahn auch stehend)
+        W.leibS = W.grund === "leib" && v < 0.5 ? (W.leibS || 0) + h : 0;
         // DIE ORTE, DIE EINER ZUR ZEIT BEFÄHRT
         const z = this._verkehrZonen(S, W, v);
         if (z < deckel) [deckel, W.grund, W.wer] = [z, "ort", null];
         return deckel;
     }
 
-    // DER STEHENDE, DER NIE WEICHT (der Spieler in der Bahn, `_verkehrFolge`): der Wagen fährt um ihn herum — seine Linie schert im
-    // Stück um ihn aus (je `umfahrRampeM` davor und danach, dazwischen voll), so weit, dass zwischen der Flanke und der Kapsel
-    // `seitM` samt Ausscheren und `umfahrRandM` bleibt; zur Seite fort von ihm, rechts (fort vom Gegenverkehr), solange
-    // `umfahrMaxM` trägt, sonst links (wer entgegenkommt, sieht ihn in seiner Bahn, `_verkehrFolge`). Die Orte der Kette rechnet
-    // die neue Linie (`_verkehrLinie`). Bis w13-verkehr-heil hielt jeder vor ihm, bis er ging: an der Radeon stand der Spieler
-    // 0,5 m neben der Mitte der Kreuzung am Markt (der Ort des Messorts stadt-voll), ihre Halter warteten auf ihn, die Stadt
-    // dahinter — 15–55 s nach dem Sprung fuhren 8 und 9 von 20 Wagen 30 m. Liefert, ob die Linie neu ist.
+    // DER STEHENDE, DER NIE WEICHT (der Spieler in der Bahn, der Bewohner ohne Platz, `_verkehrFolge`): der Wagen fährt um ihn —
+    // seine Linie schert im Stück um ihn aus (je `umfahrRampeM` davor und danach, dazwischen voll), so weit, dass zwischen der
+    // Flanke und der Kapsel `seitM` samt Ausscheren und `umfahrRandM` bleibt; zur Seite fort von ihm, rechts (fort vom
+    // Gegenverkehr), solange `umfahrMaxM` trägt, sonst links (wer entgegenkommt, sieht ihn in seiner Bahn, `_verkehrFolge`). Die
+    // Orte der Kette rechnet die neue Linie (`_verkehrLinie`, aus der Route vor der Glättung). Bis w13-verkehr-heil hielt jeder
+    // vor ihm, bis er ging: an der Radeon stand der Spieler 0,5 m neben der Mitte der Kreuzung am Markt (der Ort des Messorts
+    // stadt-voll), ihre Halter warteten auf ihn, die Stadt dahinter — 15–55 s nach dem Sprung fuhren 8 und 9 von 20 Wagen 30 m.
+    // Liefert, ob die Linie neu ist.
     _verkehrUmfahren(S, W, u) {
         const V = AnazhRealm.VERKEHR;
         const F = W.F;
@@ -1758,7 +1767,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · querBreiten = so viele Breiten der
 // Fahrbahn trägt ein Bein des Fußes in ihr, das sie quert (`_verkehrQuert`; mehr geht längs) · vorrangM = so weit vor seinem
 // Bug beansprucht ein Wagen die Fahrbahn höchstens, lueckeS = so viele Sekunden seiner Fahrt (die Zeitlücke): wer dort in sie
-// treten will, wartet am Rand (`_verkehrVorrang`; wer steht, beansprucht nichts) · stil = der Fahrstil der Stadt (`_fahrerLinie`):
+// treten will, wartet am Rand (`_verkehrVorrang`; wer steht, beansprucht nichts — außer er wartet schon `vorrangWarteS` vor Leibern) · stil = der Fahrstil der Stadt (`_fahrerLinie`):
 // quer = so viel des Reibkreises trägt seine Kurve (3,9 m/s² quer), lenk = so viel des Einschlags, den die Säule bei diesem Tempo
 // trägt, brems = so fest bremst er vor ihr (3,9 m/s²), kriechMs = so langsam fährt er höchstens um eine Kehre; bis hier fuhr die
 // Stadt den Stil des Ritts (85 % des Reibkreises, 8,3 m/s²
@@ -1783,7 +1792,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // viele Wagen schreiten höchstens je Sim-Schritt (`_verkehrSchritt`: der Rest mit seiner Zeit im nächsten) · ausBlick = so selten
 // schreitet ein Wagen außer dem Blick der Kamera mindestens (jenseits der Hülle) · belegungM / belegungRandM = die Zelle der
 // Belegung (`_verkehrBelegung`) und der Weg, den ein Wagen in einem Schritt höchstens fährt · umfahrMs = unter diesem Tempo steht,
-// wen er umfährt (`_verkehrUmfahren`), umfahrRandM = so viel Raum hält er über `seitM` hinaus, umfahrRampeM = so lang schert er
+// wen er umfährt (`_verkehrUmfahren`; den Bewohner erst nach umfahrNachS), umfahrRandM = so viel Raum hält er über `seitM` hinaus, umfahrRampeM = so lang schert er
 // aus und ein, umfahrMaxM = so weit schert er höchstens rechts aus (sonst links). Wie nah der Leib sichtbar am Steuer sitzt, sagt
 // die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
 AnazhRealm.VERKEHR = Object.freeze({
@@ -1801,6 +1810,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     querBreiten: 2,
     vorrangM: 8,
     lueckeS: 3,
+    vorrangWarteS: 3,
     stil: Object.freeze({ quer: 0.4, lenk: 1, brems: 0.4, kriechMs: 2.5 }),
     bodenM: 0.5,
     bodenRandM: 1.5,
@@ -1825,6 +1835,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     belegungM: 16,
     belegungRandM: 2,
     umfahrMs: 0.3,
+    umfahrNachS: 4,
     umfahrRandM: 0.25,
     umfahrRampeM: 6,
     umfahrMaxM: 2.2,
