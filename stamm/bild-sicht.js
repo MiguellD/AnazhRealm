@@ -670,8 +670,9 @@ class AnazhRealm_bild_sicht {
         const T = THREE.TSL;
         const L = this._spiegelLeser();
         // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
-        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe (`_umgebungLicht`)
-        const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
+        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe — das EINE Gesetz der
+        // Umgebung der Stoffe (welt-licht.js `himmelDerStoffe`), dasselbe, das die Bühne der Studios jedem Stoff reicht
+        const himmel = __weltLicht.himmelDerStoffe(quelle, this._atmoLutBau().U);
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
@@ -2494,22 +2495,34 @@ class AnazhRealm_bild_sicht {
                     this._feldPanoramaMal(fp);
             }
         }
-        if (cam && fp.mesh.visible) {
-            fp.U.camPos.value.copy(cam.position);
-            // Stellvertreter und Strahl aus DERSELBEN Matrix (Raster-Deckung == Strahl-Treffer).
-            fp.U.vp.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-            fp.U.invVP.value.copy(fp.U.vp.value).invert();
-            // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
-            // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
-            fp.U.nah.value = cam.near;
-            fp.U.fern.value = cam.far;
-            const e = cam.matrixWorld.elements;
-            fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
-            // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
-            // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild.
-            const wm = st.weltMarch;
-            fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
-        }
+        // die Kamera, wie sie jetzt steht: ein Leser, der den Pass-Takt ruft und dann selbst zeichnet (die Laub-Licht-Linse, der
+        // Beweis E, die Fernwald-Linse), zeichnet aus ihr; das Bild des Loops setzt sie danach noch einmal (`_loopRender`)
+        this._feldPassKamera();
+    }
+
+    // DIE KAMERA DES FELDS AM BILD (`_loopRender`, w14-lod-uebergang): Stellvertreter und Strahl des Welt-Marchs lesen die Kamera
+    // DIESES Bilds — bis hier schrieb sie der Pass-Takt im Strom (`_tickFeldPass`), VOR `_loopCamera`: jedes Fern-Ding des Marchs
+    // (Hülle, Gesetz-Streu, Glieder-Kapsel) stand ein Bild hinter der Szene, und eine Aufnahme nach dem Setzen der Kamera
+    // zeichnete es aus der Kamera des letzten Takts (lod.K2#1, Radeon: 500–1 200 Pop-Pixel je Schritt bei gehaltener Uhr, der
+    // March verborgen 18–178).
+    _feldPassKamera() {
+        const fp = this.state.feldPass;
+        const cam = this.state.camera;
+        if (!fp || !cam || !fp.mesh.visible) return;
+        fp.U.camPos.value.copy(cam.position);
+        // Stellvertreter und Strahl aus DERSELBEN Matrix (Raster-Deckung == Strahl-Treffer).
+        fp.U.vp.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        fp.U.invVP.value.copy(fp.U.vp.value).invert();
+        // DER EINE WELT-MARCH: echte Tiefe braucht die Projektions-Wahrheit —
+        // near/far + Blick-Achse (Tiefe = View-Z, nie Strahl-Länge).
+        fp.U.nah.value = cam.near;
+        fp.U.fern.value = cam.far;
+        const e = cam.matrixWorld.elements;
+        fp.U.fwd.value.set(-e[8], -e[9], -e[10]).normalize();
+        // Die Stellvertreter: je vergebenem Feld-Slot ein Block von Plätzen (ein Satz nutzt Platz 0, ein Gesetz-
+        // Block jeden belegten) — der Vertex verwirft leere, die Kosten binden an die Hüllen im Bild.
+        const wm = this.state.weltMarch;
+        fp.march.geometry.instanceCount = wm ? wm.obergrenze * AnazhRealm.WELT_MARCH.gesetzBlock : 0;
     }
 
     // DAS LICHT DER WELT (Licht K3, EIN Lichtweg; Lehre 21): die diffuse Bestrahlung E(n)/π einer Fläche mit der Normale n, wie

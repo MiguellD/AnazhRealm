@@ -374,7 +374,6 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
     // Im pfad-Modus kostet das Aufschütten Material; in frieden +
     // schöpfer ist es frei (das Spielmodi-Muster).
     const voxelP3cResults = await safeEvaluate(page, () => {
-        if (!r || !st || !st.player) return null;
         const out = {};
         const invBackup = jsonKlon(st.player.inventory || []);
         const modeBackup = r.getGameMode();
