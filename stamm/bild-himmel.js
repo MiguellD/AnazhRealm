@@ -1143,10 +1143,10 @@ class AnazhRealm_bild_himmel {
     // Dämmerungs-Anker des Himmels (`HIMMEL.grenzgroesse`: die Grenzgröße der Sterne je Sonnenhöhe). Die Kanäle:
     //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
-    //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem ersten Ersatz-Licht der Nacht (wo `nacht` beginnt,
-    //               ~14,5°), linear über die Höhe der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
-    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 ab ~14,5°, 1 am
-    //               Horizont und darunter;
+    //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem Horizont (wo `nacht` beginnt), linear über die Höhe
+    //               der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
+    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 über dem Horizont,
+    //               1 ab −6° (die bürgerliche Dämmerung) — über dem Horizont tragen Sonne und Himmel allein (ferne.K4);
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
     // Bis S7 rechnete jeder Anwender seine eigene Achse (die Tafel nach der Uhr, der Horizont-Fade der Körper, der Nacht-Anteil
     // aus dem Sinus des Winkels, die Dämmerung aus der Grenzgröße, die Himmels-Helligkeit) — die Dämmerung (Uhr 0,27, Sonne 7°)
@@ -1403,7 +1403,7 @@ class AnazhRealm_bild_himmel {
     }
 
     // Reine Godray-Stärke aus Sonnenhöhe × Wetter-Klarheit (`weatherSun`, auf [0..1] remappt): über dem Horizont blenden sie
-    // im Maß der EINEN Tag-Achse auf (1 − `nacht`, geglättet: 0 am Horizont, voll ab ~14,5°) — keine eigene Schwelle.
+    // im Maß der EINEN Tag-Achse auf (1 − `nacht`, geglättet: 0 bei −6°, voll am Horizont) — keine eigene Schwelle.
     // Der Screen-Sichtbarkeits-Gate (Sonne im Bild) sitzt separat in `_loopRender`.
     _godrayFrameGate(sunDirY, weatherSun) {
         const sm = (a, b, x) => {
@@ -1445,7 +1445,7 @@ class AnazhRealm_bild_himmel {
         return this._atmoRechnung().medium(this._atmoGesetz(), betaLuft, AnazhRealm.ATMO_BODEN);
     }
 
-    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne
+    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom beleuchteten Ort (`_atmoOrtKm`) zur Sonne
     // (`ATMO_RECHNUNG.sonne`, dieselbe Rechnung, die die Transmittance-Tafel je Texel trägt). `col` = sein Farbton (unter dem
     // Horizont zum Mond-Hue, Purkinje), `lum` = sein hellster Kanal — `col`·`lum` IST der Durchlass; das Richtlicht trägt
     // E0 · Durchlass (E0 = die Sonne über der Atmosphäre, `_atmoE0`), dieselbe E0, mit der die Tafeln den Himmel rechnen:
@@ -1453,7 +1453,7 @@ class AnazhRealm_bild_himmel {
     _atmoSonne(e) {
         const T = this._atmoT || (this._atmoT = [0, 0, 0]);
         const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
-        return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoAugeKm(), e, N, T);
+        return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoOrtKm(), e, N, T);
     }
 
     // Das Medium des Wetters jetzt, in STUFEN der Extinktion um die klare Luft (`ATMO_LUT.mediumStufe`, logarithmisch; die
@@ -1469,6 +1469,19 @@ class AnazhRealm_bild_himmel {
         this._atmoMBeta = b;
         this._atmoMG = G; // das Gesetz der Welt gehört zum Schlüssel: ein Welt-Wechsel rechnet das Medium neu
         return (this._atmoM = this._atmoMedium(b));
+    }
+
+    // DIE HÖHE DES BELEUCHTETEN ORTS über dem Bezug der Luft (km, ≥ 1 m): der Spieler, auf dessen Boden die Welt um das Auge
+    // liegt — dort gilt der Durchlass des Richtlichts (Sonne und Mond), nie an der Kamera; ohne Spieler das Auge. Bis ferne.K4 trug
+    // das Richtlicht den Durchlass der Kamera: mit dem Auge 1 585 m über dem Dorf fiel die Sonne bei 5° auf den Hang 3,8× so
+    // stark wie mit dem Auge am Boden (je N·L 0,0354 gegen 0,0093), die Station maß je nach Reihenfolge des Rufs das eine oder
+    // das andere. Die Himmels-Sicht (die Kuppel, die Luft vor dem Auge) bleibt am Auge (`_atmoAugeKm`).
+    _atmoOrtKm() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return this._atmoAugeKm();
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        return Math.max(0.001, (pm.position.y - wl) / 1000);
     }
 
     // Die Höhe des Auges über dem Bezug der Luft (km, ≥ 1 m): die Kamera, ohne sie der Bezug.
@@ -1762,12 +1775,12 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER DURCHLASS ZUM MOND (S7): derselbe Durchlass der EINEN Atmosphäre wie zur Sonne (`ATMO_RECHNUNG.durchlass`, das Medium
-    // jetzt, die Höhe des Auges), in seiner Höhe y = sin(Höhe) relativ zum Zenit — die Eichung des Mondlichts (`MOONLIGHT`) gilt
+    // jetzt, die Höhe des beleuchteten Orts), in seiner Höhe y = sin(Höhe) relativ zum Zenit — die Eichung des Mondlichts (`MOONLIGHT`) gilt
     // dem hohen Mond, am Horizont geht er durch die ganze Luft (unter ihm 0). Bis S7 ein eigener Horizont-Fade (smoothstep bis 8°).
     _mondDurchlass(y) {
         const R = this._atmoRechnung();
         const M = this._atmoMediumJetzt();
-        const h = this._atmoAugeKm();
+        const h = this._atmoOrtKm();
         const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
         const T = this._mondT || (this._mondT = [0, 0, 0]);
         const lum = (t) => 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];

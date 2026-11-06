@@ -622,7 +622,7 @@ var __weltLicht = (function () {
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
     // grenze (die Grenzgröße der Sterne), daemmerung (1 im hellen Tag … 0 in astronomischer Nacht), tag (das Nacht-Auge der
-    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 ab ~14,5°, 1 am Horizont) und hell (die Leuchtdichte des Tageshimmels
+    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die Leuchtdichte des Tageshimmels
     // relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
     function tagAchse(e) {
         const A = GRENZGROESSE;
@@ -640,15 +640,18 @@ var __weltLicht = (function () {
         const mTag = A[0][1],
             mNacht = A[A.length - 1][1];
         const q = Math.max(0, Math.min(1, (s + 0.18) / 0.6));
-        const nachtE = 0.25; // die Sonnenhöhe (sin), unter der die Ersatz-Lichter der Nacht beginnen
-        const hN = (Math.asin(nachtE) * 180) / Math.PI;
+        // DIE ERSATZ-LICHTER DER NACHT leben in der Dämmerung (bürgerlich: die Sonne 0° … −6°, wie das physikalische Himmelsmodell
+        // ohne Ersatz-Licht sie liefert): über dem Horizont tragen Sonne und Himmel allein. Bis ferne.K4 begannen sie bei 14,5°
+        // (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten, ein Viertel des Himmels (Dorf, 18-%-Karte zur Sonne).
+        const nachtE = Math.sin((-6 * Math.PI) / 180);
+        const hN = 0;
         const nG = BELICHTUNG.nachtGrad;
         return {
             e,
             grenze,
             daemmerung: (mNacht - grenze) / (mNacht - mTag),
             tag: Math.max(0, Math.min(1, (h - nG) / (hN - nG))),
-            nacht: 1 - Math.max(0, Math.min(1, s / nachtE)),
+            nacht: Math.max(0, Math.min(1, s / nachtE)),
             hell: 0.045 + 0.955 * q * q * (3 - 2 * q),
         };
     }
