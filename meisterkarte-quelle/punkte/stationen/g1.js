@@ -1008,7 +1008,8 @@ function schneeUrteil(e) {
 // Bytes, die die GPU liest (die vierte Komponente der Normale im Satz), ihre Deckung über das Pfützen-Gesetz des Stamms
 // (`_pfuetzeGesetz`) unter dem Film der Welt und der Himmels-Sicht (das Normal-Ziel). Gegen sie die Senke des Kerns, FRISCH an der
 // Ecke gerechnet (das Kasten-Mittel `MULDE.kasten` × `MULDE.gitterM` um die Ecke minus die Höhe — ohne Gitter, Kappe und Gefälle): r
-// nach Pearson. Die MUTANTE im selben Lauf: das Gesetz mit gespiegelter Mulde (die Pfütze auf dem Rücken) — r muss fallen. Danach
+// nach Pearson. Die MUTANTE im selben Lauf: die Mulden-Bytes im Satz um 97 Ecken verrutscht (ein Pack-Fehler: die Pfütze am falschen
+// Ort), danach zurück — r muss fallen. Danach
 // klar: die Kurve der Nässe und der Pfützen-Fläche je 30 s (`_naesseTakt`), bis beide 0 sind; `fall` die Fall-Geschwindigkeit des
 // Regens, die die Welt zeichnet (`terrain:REGEN_GESETZ`).
 async function wetterK2Lauf() {
@@ -1070,12 +1071,12 @@ async function wetterK2Lauf() {
         r.setCameraMode("first");
         for (let k = 0; k < 4; k++) window.__handTakt();
         const l = ecken();
-        const echt = AnazhRealm._pfuetzeGesetz;
-        AnazhRealm._pfuetzeGesetz = (A, m, f) => echt(A, A.sub(A.k(1), m), f);
+        const w = l.map((i) => N[i * 4 + 3]);
+        l.forEach((i, j) => (N[i * 4 + 3] = w[(j + 97) % w.length]));
         try {
             erg.mutante = mass(l);
         } finally {
-            AnazhRealm._pfuetzeGesetz = echt;
+            l.forEach((i, j) => (N[i * 4 + 3] = w[j]));
         }
         const flaeche = () => l.filter((i) => deckung(i) > 0.5).length;
         const kurve = [[R(st.naesse), flaeche()]];
@@ -1121,7 +1122,7 @@ function wetterK2Urteil(lauf) {
         if (!(L[n].r >= 0.5)) rot.push(n + " r " + L[n].r + " < 0,5 (die Pfütze steht nicht in den Senken des Kerns)");
     }
     const erkannt = !(L.mutante.r >= 0.5);
-    if (!erkannt) rot.push("die Mutante (Pfütze auf dem Rücken) hält r " + L.mutante.r + " — die Probe ist blind");
+    if (!erkannt) rot.push("die Mutante (die Mulde verrutscht im Satz) hält r " + L.mutante.r + " — die Probe ist blind");
     const K = L.kurve.kurve || [[0, 0]];
     const [n0, f0] = K[0];
     const i0 = K.findIndex(([n, f]) => !n && !f);
@@ -1143,11 +1144,11 @@ const WETTER_K2_PROBEN = (() => {
     const sicht = (o = {}) => Object.assign({ ecken: 223, pfuetze: 116, r: 0.785 }, o);
     const kurve = (o = {}) => Object.assign({ kurve: [...[116, 88, 69, 48, 33, 11, 6, 2].map((f, i) => [+(0.909 - i * 0.048).toFixed(3), f]), ...Array.from({ length: 11 }, (_, i) => [+(0.525 - i * 0.048).toFixed(3), 0]), [0, 0]], fall: 9 }, o);
     const z = (ego, third, mutante, k) => ["PFUETZE ego " + JSON.stringify(ego), "PFUETZE third " + JSON.stringify(third), "PFUETZE mutante " + JSON.stringify(mutante), "PFUETZE kurve " + JSON.stringify(k)].join("\n");
-    const mut = sicht({ r: -0.79 });
+    const mut = sicht({ r: 0.04 });
     return [
         { name: "Pfützen in den Senken, Ego und Third, trocken nach 9,5 min, Fall 9 m/s, die Mutante erkannt", stdout: z(sicht(), sicht({ ecken: 237, pfuetze: 111, r: 0.736 }), mut, kurve()), gruen: true },
         { name: "main db431cf0: die Welt kennt keine Pfütze", stdout: "PFUETZE FEHLER keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz", gruen: false },
-        { name: "die Mutante (Pfütze auf dem Rücken) bleibt über der Wand — die Probe ist blind", stdout: z(sicht(), sicht(), sicht(), kurve()), gruen: false },
+        { name: "die Mutante (die Mulde verrutscht im Satz) bleibt über der Wand — die Probe ist blind", stdout: z(sicht(), sicht(), sicht(), kurve()), gruen: false },
         { name: "die Pfütze liegt überall (die Deckung folgt nur dem Film)", stdout: z(sicht({ r: 0.08 }), sicht(), mut, kurve()), gruen: false },
         { name: "Third sieht keine Pfütze", stdout: z(sicht(), sicht({ pfuetze: 0, r: 0.6 }), mut, kurve()), gruen: false },
         { name: "der Film trocknet mit τ 25 min (main: nach 40 min nicht trocken)", stdout: z(sicht(), sicht(), mut, kurve({ kurve: kurve().kurve.slice(0, -1) })), gruen: false },
