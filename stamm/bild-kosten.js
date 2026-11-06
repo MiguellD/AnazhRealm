@@ -1978,7 +1978,8 @@ class AnazhRealm_bild_kosten {
             // der Tonkurve (PBR Neutral zieht unter ihrem Knie nur einen grauen Sockel ab), im Mittelbereich ist sie dieselbe wie
             // auf dem getonten Bild. Sie ist eine eigene AUSGABE der Kette (`u.ausgabe`), die `_zugangTakt` beim Wechsel der Art
             // einhängt: aus fehlt ihr Knoten im Graphen, das Fragment ist byte-gleich dem ohne Zugang (vp-0611g: ein Zweig hinter
-            // einer Uniform rundete auf 6,2 % der Pixel um 1 LSB). DER HIMMEL BLEIBT (die EINE Himmels-Maske aller Arten): wo die
+            // einer Uniform rundete auf 6,2 % der Pixel um 1 LSB; swiftshader, Holz nah: Ausgabe 17 802 B und Resolve 23 397 B
+            // gleich main, der Zweig trug 18 191 / 23 449 B; die Wand: gate:post-kette (i)). DER HIMMEL BLEIBT (die EINE Himmels-Maske aller Arten): wo die
             // Szenen-Tiefe über der Himmels-Schwelle des Spiegels steht (0,99999, `bild-sicht`), zeichnete nur der Himmel
             // (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1 — die Sonne rastert ihre 1 eine Spur darunter,
             // gate:post-kette 80 Pixel unter Deuteranopie) — dort wirkt Δ nie. Deut und Prot trafen das Blau nie (e · Himmelsblau
