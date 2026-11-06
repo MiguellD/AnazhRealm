@@ -351,7 +351,10 @@ async function probeLeben(expected) {
             const G = g1._fahrSatz;
             const boden = r._fahrBoden(g1);
             // Die Labor-Spur: derselbe Kern (Stand an der Lage, dann Kräfte — die Folge der Probefahrt, um einen Stand
-            // versetzt), dieselben Eingaben, derselbe Boden. Wo der Kontakt-Löser griff, übernimmt sie die Lage der Welt.
+            // versetzt), dieselben Eingaben, derselbe Boden. Wo der Kontakt-Löser griff, übernimmt sie die Lage der Welt — im
+            // FOLGENDEN Schritt: der Kontakt des Schritts n−1 setzt die Lage, von der der Fahr-Plan des Schritts n ausgeht
+            // (`_fahrPlan`: z.x = die Lage nach dem Kontakt, dann Stand und Kräfte). Bis w17-bild-kollision übernahm die Spur
+            // ihn im Schritt n selbst — eine Fahrt-Länge zu früh (0,2 m bei 12 m/s), und S1 schlief, solange die Bahn frei lag.
             const q = Object.assign({}, z0);
             // der Boden UNTER dem Werk liest die Lage seines Fahr-Zustands (`_werkBoden`, Leben-Schau 2) — die Spur fährt als er
             const fahrRoh = g1._fahr;
@@ -362,7 +365,7 @@ async function probeLeben(expected) {
             let kontakte = 0;
             let hz = Infinity;
             for (let n = 0; n < spur.length; n++) {
-                const k = spur[n].kontakt;
+                const k = n > 0 ? spur[n - 1].kontakt : null;
                 if (k) {
                     kontakte++;
                     const cy = Math.cos(q.yaw);
