@@ -416,6 +416,15 @@ class AnazhRealm_wasser_hydro {
         return globalThis.__gelaendeCore.flussAm(this._gelaende(), x, z);
     }
 
+    // DIE ART DES WASSERS an (x, z) (w13-bach-klar) — der EINE Leser der Welt: das Gesetz des Kerns (gelaende-core
+    // `gewaesserArt`) über der Breite des Laufs an der Stelle (`_hydroRiverAt(...).breite`), sonst stehendes Wasser. Sie wählt
+    // den Körper des Wassers (`WASSER_GESETZ.koerper[art]`, die Trübung je Art: bach · see · fluss). Leser: das Medium der
+    // Kamera (`_applyDayNightToScene`). Bis dahin entschied der Leser selbst („im Kanal → fluss"): Sicht am Bach 1,1 m.
+    _wasserArtAt(x, z) {
+        const rv = this._hydroRiverAt(x, z);
+        return globalThis.__gelaendeCore.gewaesserArt(rv ? rv.breite : 0);
+    }
+
     // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der
     // Krone — der Fluss-Spiegel liegt quer waagrecht (`_hydroRiverSpiegel`). Nur das Wasser-Sheet liest ihn, für Rand-Vertices
     // jenseits der Krone (dort taucht das Sheet unter den Boden; das Mittel oder ein Extrem der Nachbar-Dächer setzte das Ende

@@ -2803,9 +2803,11 @@ class AnazhRealm_bild_himmel {
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
                 // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit
-                // (WASSER_GESETZ.koerper, je Art: der Fluss führt Schwebstoff, See und Meer stehen klar — `_hydroRiverAt`; dieselbe
-                // Zeile liest das Terrain-Studio). Die Farbe ist das Licht in der Tiefe der Kamera unter dem örtlichen Spiegel
-                // (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): Beer-Lambert exp(−kd · Tiefe) × das Tageslicht —
+                // (WASSER_GESETZ.koerper, je Art — der Bach klar, der See dazwischen, der Fluss trüb; die Art urteilt EIN Gesetz,
+                // `_wasserArtAt` → gelaende-core `gewaesserArt`, dasselbe ruft das Terrain-Studio; bis w13-bach-klar entschied
+                // dieser Leser selbst „im Kanal → fluss": Sicht am Bach 1,1 m). Die Farbe ist das Licht in der Tiefe der Kamera
+                // unter dem örtlichen Spiegel (`_koerperWasser`, die Wahrheit, die sie eben unter Wasser nannte): Beer-Lambert
+                // exp(−kd · Tiefe) × das Tageslicht —
                 // die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN Atmosphäre,
                 // `_himmelsIrradianz`): mittags unter dem Spiegel hell, mit jedem Meter dunkler und blauer, nachts dunkler als die
                 // Nacht darüber. β ist der 550-nm-Kanal der Strahl-Schwächung c (die Sicht des klaren Sees ~15 m). Bis w12-unterwasser
@@ -2815,7 +2817,7 @@ class AnazhRealm_bild_himmel {
                     AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
                     AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
                 const p = cam.position;
-                const WK = WGu.koerper[this._hydroRiverAt(p.x, p.z) ? "fluss" : "see"];
+                const WK = WGu.koerper[this._wasserArtAt(p.x, p.z)];
                 const tiefe = Math.max(0, this._koerperWasser(p.x, p.z, p.y) - p.y);
                 const e = this._himmelsIrradianz();
                 const tagesLicht = e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : 0;
