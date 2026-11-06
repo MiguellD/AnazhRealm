@@ -1022,8 +1022,8 @@ class AnazhRealm_bild_himmel {
             AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
         const T = THREE.TSL;
         const N = RG.anzahl;
-        // Die Saat je Schliere (Lage im Kasten 0..1, Länge) aus einem festen Strom — das Bild ist reproduzierbar.
-        const saat = new Float32Array(N * 4);
+        // Die Saat je Schliere (Lage im Kasten 0..1) aus einem festen Strom — das Bild ist reproduzierbar.
+        const saat = new Float32Array(N * 3);
         let h = 2166136261 >>> 0;
         const zufall = () => {
             h ^= h << 13;
@@ -1034,15 +1034,15 @@ class AnazhRealm_bild_himmel {
             return h / 4294967296;
         };
         for (let i = 0; i < N; i++) {
-            saat[i * 4] = zufall();
-            saat[i * 4 + 1] = zufall();
-            saat[i * 4 + 2] = zufall();
-            saat[i * 4 + 3] = RG.laenge[0] + zufall() * RG.laenge[1];
+            saat[i * 3] = zufall();
+            saat[i * 3 + 1] = zufall();
+            saat[i * 3 + 2] = zufall();
         }
-        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 4));
+        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 3));
         const uZeit = T.uniform(0);
         const uDrift = T.uniform(new THREE.Vector2(0, 0));
-        const uWinkel = T.uniform(0);
+        // der Weg des Tropfens in der Belichtung im Bild: (sin θ, cos θ) × |v| · `belichtung` (m), θ die Neigung quer zum Blick
+        const uWeg = T.uniform(new THREE.Vector2(0, RG.fall * RG.belichtung));
         const R = RG.raum;
         // Fallen (y) und Treiben (xz), je Achse in den Kasten um das Auge zurückgefaltet.
         const x = T.fract(s4.x.add(uDrift.x.mul(uZeit).div(R[0])))
@@ -1073,10 +1073,19 @@ class AnazhRealm_bild_himmel {
                 .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        // DIE SCHLIERE IST DER WEG DES TROPFENS IN DER BELICHTUNG DES AUGES (w15-pfuetze): v = (Drift, −`fall`), ihr Weg
+        // v × `belichtung` (`uWeg`: 9 m/s → 15 cm) — Länge und Neigung im Wind aus EINEM Gesetz. Das Quad trägt den Hüllkasten des
+        // Wegs (|sin θ| · L + Breite × cos θ · L), die Schliere ist seine Diagonale in der Richtung des Falls (die Deckung je Fragment
+        // nach dem Abstand zu ihr, `breiteM` breit). Bis w15-pfuetze trug sie eine eigene Länge (0,5–1,1 m, Radeon: Stäbe über halbe
+        // Baumhöhe) und eine Drehung, die r184 VOR der Größe anwendet (`rotate(uv) · size`, gelesen im Vendor): das schmale Quad
+        // kippte nie, nur seine Enden schrägten. Ein positionNode, der die Ecke des Quads liest (Lage oder UV), zeichnet in r184 nichts.
+        const kasten = T.vec2(uWeg.x.abs().add(breiteM), uWeg.y);
         mat.positionNode = T.vec3(x, y, z);
-        mat.sizeNode = T.vec2(breiteM, s4.w).mul(uProj);
-        mat.opacityNode = T.materialOpacity.mul(blende);
-        mat.rotationNode = uWinkel;
+        mat.sizeNode = kasten.mul(uProj);
+        const q = T.uv().sub(0.5).mul(kasten);
+        const abstand = q.x.mul(uWeg.y).add(q.y.mul(uWeg.x)).abs().div(uWeg.length().max(1e-4));
+        const strich = T.float(1).sub(T.smoothstep(breiteM.mul(0.25), breiteM.mul(0.75), abstand));
+        mat.opacityNode = T.materialOpacity.mul(blende).mul(strich);
         mat.sizeAttenuation = true;
         const mesh = new THREE.Sprite(mat);
         AnazhRealm._instanzZahl(mesh, N);
@@ -1087,7 +1096,7 @@ class AnazhRealm_bild_himmel {
         mesh.userData.inventar = "wetter-regen";
         mesh.visible = false;
         this.state.scene.add(mesh);
-        this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
+        this._rainSystem = { mesh, uZeit, uDrift, uWeg, uProj, RG };
         return this._rainSystem;
     }
     _tickRain() {
@@ -1124,10 +1133,11 @@ class AnazhRealm_bild_himmel {
         const wd = cam ? this._windAt(cam.position.x, cam.position.z, this._bildZeit) : { x: 0, z: 0, staerke: 0 };
         const v = RG.drift * Math.max(wd.staerke, 0.1);
         sys.uDrift.value.set(wd.x * v, wd.z * v);
-        // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
+        // der Weg im Bild: der Drift-Anteil quer zur Blickrichtung (Bild-Rechts = Spalte 0 der Kamera) gegen das Fallen
         if (cam) {
             const m = cam.matrixWorld.elements;
-            sys.uWinkel.value = Math.atan2(wd.x * v * m[0] + wd.z * v * m[2], RG.fall);
+            const quer = wd.x * v * m[0] + wd.z * v * m[2];
+            sys.uWeg.value.set(quer * RG.belichtung, RG.fall * RG.belichtung);
             sys.uProj.value = cam.projectionMatrix.elements[5];
         }
     }
@@ -2891,11 +2901,12 @@ class AnazhRealm_bild_himmel {
         return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
     }
 
-    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
-    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt, also
+    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass, der Film): Regen
+    // benetzt, ohne Regen verdunstet der Film nach Sonne, Wind und den Poren des Bodens (`_naesseKurve`) — exakt je Schritt, also
     // dieselbe Nässe nach 600 Takten wie nach einem Schritt von 600 s (die Bühne der Linse `werkbank licht --naesse`). Ohne `dt`
-    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
-    // `atmoUniforms.naesse`; den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
+    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Die Leser sind der EINE Welt-Stoff (`_naesseImStoff`) und die
+    // Pfütze in den Mulden des Bodens (`_pfuetzeKnoten`) über `atmoUniforms.naesse` (der Regen schlägt Ringe nach
+    // `atmoUniforms.regen`); den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
     _naesseTakt(dt) {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
@@ -2906,10 +2917,11 @@ class AnazhRealm_bild_himmel {
         const wf = this._weatherFieldFor(st.weather);
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
-        const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
-        const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        const n = AnazhRealm._naesseKurve(n0, wf, dt);
         st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
-        this._ensureAtmoUniforms().naesse.value = st.naesse;
+        const U = this._ensureAtmoUniforms();
+        U.naesse.value = st.naesse;
+        U.regen.value = ziel ? wf.rain : 0;
         this._dachTakt();
         this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;

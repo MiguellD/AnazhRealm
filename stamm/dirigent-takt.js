@@ -1471,6 +1471,8 @@ class AnazhRealm_dirigent_takt {
             // Kein Physik-Selbstheil hier: der EINE fps-Regler ist der Perf-Regelkreis — Physik-Resets heilen
             // keinen render-gebundenen fps-Drop.
             this.journalTick(currentTime);
+            // die Ruhe der Welt-KI (ki.K5): nach `KI_RUHE_S` ohne Satz und Eintrag wärmt sie ihren Vertrag vor (`_kiVorwaermen`)
+            this._kiRuhe();
             // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
             // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
             this.updateWorldInfo();
