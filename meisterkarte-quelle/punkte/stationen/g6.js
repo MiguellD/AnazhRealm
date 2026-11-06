@@ -1042,6 +1042,15 @@ async function probeAnkunftKalt(H) {
         return (x[1] + " ms bei " + (x[0] / 1000).toFixed(1) + " s: " + (auf ? auf.halter.slice(0, 3).map((h) => h.name + " " + h.ms).join(" · ") : "ohne Halter") +
             " · " + sync.length + " Pipelines synchron" + (sync.length ? " (" + sync.slice(0, 5).join(", ") + (sync.length > 5 ? ", …" : "") + ")" : "")).slice(0, 300);
     };
+    // WOHIN DIE BELEGUNG GEHT (Post 06.11. 18:15): je Klasse der Linse (`KALT_KLASSEN`: Bild, Jobs, Himmel, Knoten-Bau, Boden,
+    // Streu, Bauten …) die Stichproben-ms bis zur Sekunde der Kontrolle, dazu Collector und Programm — verschachtelte Klassen
+    // zählen je (der Knoten-Bau im Bild in beiden), die Familie Pflanzen nur außen
+    const klassenVon = (a, kontrolle) => {
+        const sek = Math.floor(kontrolle / 1000);
+        const z = Object.entries(a.kosten || {}).map(([k, je]) => [k, Object.entries(je).reduce((m, [t, ms]) => (+t <= sek ? m + ms : m), 0)]);
+        for (const k of ["(garbage collector)", "(program)"]) z.push([k.replace(/[()]/g, ""), (a.klasse || {})[k] || 0]);
+        return z.filter(([, ms]) => ms >= 50).sort((x, y) => y[1] - x[1]).map(([k, ms]) => k + " " + (ms / 1000).toFixed(2)).join(" · ");
+    };
     const K = H.linse("scripts/diag-boot-stage.cjs", ["KALT_PROBE", "KALT_KLASSEN", "KALT_PFLANZEN"]);
     const HL = require(H.path.resolve("scripts/lib/haenger-linse.cjs"));
     const spur = { stand: "kein Kalt-Boot" };
@@ -1092,6 +1101,7 @@ async function probeAnkunftKalt(H) {
                 langeMs: vor.reduce((s, x) => s + Math.min(x[1], L.kontrolle - x[0]), 0),
                 halter: a.befunde.slice(0, 3).map((x) => String(x).slice(0, 160)),
                 laengste: laengsteVon(vor, a.aufgaben, L.seite.gpu),
+                klassen: klassenVon(a, L.kontrolle),
             });
         } catch (e) {
             spur.stand = "die Spur brach: " + String(e.message).slice(0, 160);
@@ -2874,7 +2884,8 @@ module.exports = [
                 zahl:
                     "längste Aufgabe " + s.laengsteMs + " ms (Soll ≤ 250) · Haupt-Faden belegt " + (s.belegtMs / 1000).toFixed(2) + " s bis zur Kontrolle (Soll ≤ 4; " +
                     s.langeN + " LongTasks " + (s.langeMs / 1000).toFixed(2) + " s) · Kontrolle " + (s.kontrolleMs / 1000).toFixed(2) + " s Seiten-Uhr" +
-                    (s.laengste ? " · die längste: " + s.laengste : s.halter && s.halter.length ? " · " + s.halter[0] : "") + " · " + ad,
+                    (s.laengste ? " · die längste: " + s.laengste : s.halter && s.halter.length ? " · " + s.halter[0] : "") +
+                    (s.klassen ? " · belegt je Klasse (s): " + s.klassen : "") + " · " + ad,
             };
         },
         proben: [
@@ -2882,6 +2893,7 @@ module.exports = [
             { name: "die Arbeit in 49-ms-Stücken: keine LongTask, belegt 4,6 s", stdout: kaltRoh({ j: { tK: 6200, spur: { kontrolleMs: 6100, laengsteMs: 0, langeN: 0, langeMs: 0, belegtMs: 4600 } } }), gruen: false },
             { name: "eine Aufgabe 653 ms", stdout: kaltRoh({ j: { spur: { laengsteMs: 653 } } }), gruen: false },
             { name: "eine Aufgabe 1253 ms beim Namen (9 Pipelines synchron)", stdout: kaltRoh({ j: { spur: { laengsteMs: 1253, laengste: "1253 ms bei 2.9 s: (ohne Probe) 640 · 9 Pipelines synchron (atmo-durchlass_17, …)" } } }), gruen: false },
+            { name: "belegt 8,4 s je Klasse", stdout: kaltRoh({ j: { spur: { belegtMs: 8400, klassen: "Bild 2.10 · Jobs 1.80 · Knoten-Bau 1.20" } } }), gruen: false },
             { name: "die Spur ist blind", stdout: kaltRoh({ j: { spur: { stand: "blind: keine Stichproben auf den Marken der Kalt-Probe", belegtMs: null } } }), gruen: false },
         ],
         pfad: ANKUNFT_KALT_PFAD,
