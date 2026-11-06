@@ -323,7 +323,12 @@ class AnazhRealm_koerper_bewegung {
             umriss.push({ l: K.l0, q: K.q0, nl: nl / nn, nq: nq / nn });
             const m = Math.ceil(K.len - 1e-9);
             for (let t = 1; t < m; t++)
-                umriss.push({ l: K.l0 + ((K.l1 - K.l0) * t) / m, q: K.q0 + ((K.q1 - K.q0) * t) / m, nl: K.nl, nq: K.nq });
+                umriss.push({
+                    l: K.l0 + ((K.l1 - K.l0) * t) / m,
+                    q: K.q0 + ((K.q1 - K.q0) * t) / m,
+                    nl: K.nl,
+                    nq: K.nq,
+                });
         });
         entry._fahrHuelleKette = {
             bug,
@@ -451,7 +456,10 @@ class AnazhRealm_koerper_bewegung {
             const s = (l - k.l0) * k.nl + (q - k.q0) * k.nq;
             if (s > 0) innen = false;
             if (s > tief) [tief, kIn] = [s, k];
-            const t = Math.max(0, Math.min(1, ((l - k.l0) * (k.l1 - k.l0) + (q - k.q0) * (k.q1 - k.q0)) / (k.len * k.len)));
+            const t = Math.max(
+                0,
+                Math.min(1, ((l - k.l0) * (k.l1 - k.l0) + (q - k.q0) * (k.q1 - k.q0)) / (k.len * k.len))
+            );
             const [pl, pq] = [k.l0 + (k.l1 - k.l0) * t, k.q0 + (k.q1 - k.q0) * t];
             const e2 = (l - pl) * (l - pl) + (q - pq) * (q - pq);
             if (e2 < d2) [d2, bl, bq] = [e2, pl, pq];
@@ -665,7 +673,17 @@ class AnazhRealm_koerper_bewegung {
                     // der Wagen dort, wo er ihn berührte — nie dahinter. Vorher löste der Schritt nur am Ende: bei 81 m/s
                     // (1,36 m je Schritt) lag die Achse des Bären schon 0,95 m im Bug, der kürzeste Weg hinaus war die Flanke
                     // (seitwärts fuhr der Wagen nicht: die Kappe ließ 0) — der Wagen fuhr durch den Bären (gate:kollision-bild).
-                    if (this._huelleLeibFeger(k, ax * fX + az * fZ, ax * qX + az * qZ, dx * fX + dz * fZ, dx * qX + dz * qZ, rc, LS)) {
+                    if (
+                        this._huelleLeibFeger(
+                            k,
+                            ax * fX + az * fZ,
+                            ax * qX + az * qZ,
+                            dx * fX + dz * fZ,
+                            dx * qX + dz * qZ,
+                            rc,
+                            LS
+                        )
+                    ) {
                         const f = 1 - LS.t;
                         const [kx, kz] = [-(pos.x - x0) * f, -(pos.z - z0) * f];
                         pos.x += kx;
