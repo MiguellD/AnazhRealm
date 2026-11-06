@@ -2507,22 +2507,16 @@ class AnazhRealm_siedlung_ort {
                 if (preset)
                     bestelle(e, preset, fern ? this._foundryFernStufe(preset) : this._foundryLodForEntry(e, auge));
             }
-            // JEDES HAUS IN DER STUFE SEINES BEDARFS (w13-dorf-strom): dahinter bestellt der Vorrat für jedes Haus des Plans die
-            // Stufe, die es braucht, wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort
-            // seines Eintritts), in der Reihe des Zugs; die Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom
-            // backte der Vorrat vier Häuser in der Fernform, die Mesh-Stufe bestellte erst der Vorlauf der Bahn (3 s vor der
-            // Zone): im GT standen die Häuser von −5,−3 erst 10,3–11,7 s nach dem Erwachen, 81–139 m vor dem Spieler.
-            for (const si of reihe) {
-                const sl = w.v2.slots[si];
-                const type = this._slotBauplan(sl, f);
-                const e = type && {
-                    type,
-                    seed: sl.seed >>> 0,
-                    position: { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z },
-                    studioOv: AnazhRealm._stempelVon(sl.ov),
-                };
-                const preset = e && this._foundryPresetForEntry(e);
-                if (!preset) continue;
+            // JEDE GESTALT DES ORTS IN DER STUFE IHRES BEDARFS (w13-dorf-strom): dahinter bestellt der Vorrat für jedes Haus des
+            // Plans (in der Reihe des Zugs) und jedes Stück seiner Ausstattung, das das Erwachen hebt (Laternen an Mast und Wand,
+            // Brunnen, Stände: `_dorfErlebnis`, `_spawnSettlementSlot`, ihre Samen `_ausstattungSame`), die Stufe, die es braucht,
+            // wenn die Bahn es in die Mesh-Zone holt — am Auge `R` vor ihm auf dem Weg zum Spieler (der Ort seines Eintritts); die
+            // Foundry rangiert jede nach der Zeit bis Bedarf. Bis w13-dorf-strom backte der Vorrat vier Häuser in der Fernform,
+            // die Mesh-Stufe bestellte erst der Vorlauf der Bahn (3 s vor der Zone): im GT standen die Häuser von −5,−3 erst
+            // 10,3–11,7 s nach dem Erwachen, 81–139 m vor dem Spieler, die Marktstände von −4,−4 traten ungezeichnet in 150 m ein.
+            const bedarf = (e) => {
+                const preset = this._foundryPresetForEntry(e);
+                if (!preset) return;
                 const dh = Math.hypot(p.x - e.position.x, p.z - e.position.z) || 1;
                 const k2 = Math.min(1, R / dh);
                 const ein = {
@@ -2530,7 +2524,37 @@ class AnazhRealm_siedlung_ort {
                     z: e.position.z + (p.z - e.position.z) * k2,
                 };
                 bestelle(e, preset, this._foundryLodForEntry(e, ein));
+            };
+            for (const si of reihe) {
+                const sl = w.v2.slots[si];
+                const type = this._slotBauplan(sl, f);
+                if (type)
+                    bedarf({
+                        type,
+                        seed: sl.seed >>> 0,
+                        position: { x: o.x + sl.x, y: sl.y + 0.5, z: o.z + sl.z },
+                        studioOv: AnazhRealm._stempelVon(sl.ov),
+                    });
             }
+            const [AU, plan, bp] = [AnazhRealm.ORT_AUSSTATTUNG, w.v2, this.state.blueprints || {}];
+            const stuecke = [];
+            let mast = 0;
+            (plan.laternen || []).forEach((l, k) => {
+                if (l) stuecke.push([l.wand ? "wandlaterne_dorf" : "laterne_dorf", l, l.wand ? k : mast++, "laterne"]);
+            });
+            (plan.brunnen || [])
+                .slice(0, AU.brunnen.kappe)
+                .forEach((b, n) => stuecke.push(["brunnen_dorf", b, n, "brunnen"]));
+            (plan.staende || [])
+                .slice(0, AU.stand.kappe)
+                .forEach((s, m) => stuecke.push(["marktstand_dorf", s, m, "stand"]));
+            for (const [type, q, k, art] of stuecke)
+                if (bp[type] && q && Number.isFinite(q.x) && Number.isFinite(q.z))
+                    bedarf({
+                        type,
+                        seed: this._ausstattungSame(plan, art, k),
+                        position: { x: o.x + q.x, y: 0, z: o.z + q.z },
+                    });
         }
         // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei);
         // was steht, fragt der Takt nicht mehr (Lehre 25)

@@ -2203,9 +2203,10 @@ class AnazhRealm_vegetation_wiese {
     // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
     // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
     // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    // DER FALL IST EIN KASTEN AUCH FÜR DIE LIEFERUNG IM FLUG (w13-dorf-strom): der Kasten der Zellen samt Urteils-Nachbarn steht
+    // mit dem Stand des Erdbaus, der ihn warf, im Gedächtnis der Fälle (`_erdbauFaelle`) — eine Lieferung des Wald-Fadens, die vor
+    // ihm geschickt wurde, verwirft nur ihre Zellen darin (`_erdbauFielSeit`, `_waldDartsAn`).
     _forestDartsFallen(x0, z0, x1, z1) {
-        const memo = this._forestDartMemo;
-        if (!memo || !memo.size) return 0;
         const C = AnazhRealm.FOREST.cell;
         const U = AnazhRealm.WALD_PLAN.urteil;
         const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
@@ -2213,6 +2214,11 @@ class AnazhRealm_vegetation_wiese {
         const gb = Math.floor((x1 + R) / C);
         const ha = Math.floor((z0 - R) / C);
         const hb = Math.floor((z1 + R) / C);
+        const F = this._erdbauFaelle || (this._erdbauFaelle = []);
+        F.push([this._erdbauStand | 0, ga - U, gb + U, ha - U, hb + U]);
+        if (F.length > AnazhRealm.WALD_PLAN.faelle) F.shift();
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
         let n = 0;
         for (let gx = ga - U; gx <= gb + U; gx++)
             for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
@@ -2591,20 +2597,23 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
-    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
-    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft ihn — die Zellen bleiben in der Schlange, ein neuer
-    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je Feld merken die Objekte).
-    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
-    // Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft, nie erst im nächsten Takt.
+    // Der Bestand des Fadens ins Gedächtnis seines Stands: ein gewechselter Stand verwirft ihn, ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) nur die Zellen in seinem Kasten (`_erdbauFielSeit`) — sie bleiben
+    // in der Schlange, ein neuer Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Gedächtnisse je
+    // Feld merken die Objekte). Bis w13-dorf-strom verwarf jeder Erdbau der Welt jede Lieferung im Flug (Fahrt-Probe dorf: 10
+    // Lieferungen, 474 Zellen, auch im Kegel). Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr
+    // (Prüfung K60-3-1). Was seit dem letzten Takt bestellt wurde oder verworfen zurückblieb, reist mit dieser Ankunft.
     _waldDartsAn(memo, zellen, r, erd) {
         if (this._waldFlugVon === memo)
             for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
         const Q = this._waldPlanSchlange;
         let n = 0;
-        if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
+        const fiel = this._erdbauFielSeit(erd);
+        if (r && this._forestDartMemo === memo && fiel !== true) {
             this._forestDartRaum(memo, zellen.length / 2);
             const alle = this._waldDartsEntpacken(r, zellen.length / 2);
             for (let i = 0; i < alle.length; i++) {
+                if (fiel && fiel(zellen[i * 2], zellen[i * 2 + 1])) continue;
                 const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
                 if (!memo.has(k)) memo.set(k, alle[i]);
                 if (Q) Q.delete(k);
@@ -2614,6 +2623,17 @@ class AnazhRealm_vegetation_wiese {
         if (n > 0) this._waldPlanGeplant(performance.now());
         if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr())
             this._waldFadenSchicken(this._forestSeedInt());
+    }
+
+    // Was fiel seit dem Stand `erd` des Erdbaus (`_erdbauStand`)? null: kein Erdbau; sonst (gx, gz) → ob die Wald-Zelle im Kasten
+    // eines Falls liegt (`_erdbauFaelle`); true, wenn ein Erdbau ohne Kasten fiel (der Boden-Umzug) oder das Gedächtnis der Fälle
+    // nicht so weit reicht — dann gilt keine Zelle.
+    _erdbauFielSeit(erd) {
+        const jetzt = this._erdbauStand | 0;
+        if (jetzt === erd) return null;
+        const F = (this._erdbauFaelle || []).filter((f) => f[0] > erd && f[0] <= jetzt);
+        if (F.length !== jetzt - erd) return true;
+        return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
     // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
@@ -2803,4 +2823,6 @@ AnazhRealm.WALD_PLAN = Object.freeze({
     ms: 3,
     faden: 64,
     zellen: 8192,
+    // so viele Fälle des Erdbaus (`_erdbauFaelle`) kennt das Gedächtnis der Lieferungen im Flug (`_erdbauFielSeit`)
+    faelle: 64,
 });
