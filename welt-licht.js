@@ -712,7 +712,7 @@ var __weltLicht = (function () {
     // (Hemi, Ambient, Sterne) trüge, bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am Bezug der Luft (1 m, die Höhe
     // des Ankers). Gezeichnet werden die Tafeln einmal beim Ruf (der Renderer steht: nach `init()`); die Belichtung liegt, sobald
     // die Bestrahlungs-Tafel zurückkam (`steht`, ein Versprechen) — bis dahin zeichnet die Bühne kein Bild (`belichtung` null).
-    // → { sonne (DirectionalLight, Richtung `richtung`), tafeln, umgebung (das PMREM-Ziel), achse, steht, belichtung }.
+    // → { sonne (DirectionalLight, Richtung `richtung`), staerke, tafeln, umgebung (das PMREM-Ziel), knoten, achse, steht, belichtung }.
     function buehne(o) {
         const THREE = globalThis.THREE;
         const T = THREE && THREE.TSL;
@@ -763,7 +763,7 @@ var __weltLicht = (function () {
         A.tafelnFrisch = true;
         const umgebung = umgebungZeichnen(new THREE.PMREMGenerator(R), A);
         szene.environment = umgebung.texture;
-        szene.environmentNode = himmelDerStoffe(umgebung.texture, U);
+        const knoten = (szene.environmentNode = himmelDerStoffe(umgebung.texture, U));
         // der Grund ist der Himmel: die Equirekt-Tafel (je Einheit des Lichts) × E0 — als `background` (eine Textur, kein Knoten:
         // die Sonden schwärzen für ihre Masken `background`, ein `backgroundNode` hätte Vorrang und malte den Himmel in die Maske)
         szene.background = A.rtEq.texture;
@@ -776,7 +776,18 @@ var __weltLicht = (function () {
         sonne.intensity = E0 * a.lum;
         R.toneMapping = THREE[BELICHTUNG.kurve];
         R.outputColorSpace = THREE.SRGBColorSpace;
-        const B = { sonne, richtung: new THREE.Vector3(s[0], s[1], s[2]), tafeln: A, umgebung, achse, belichtung: null };
+        // `knoten` (die Umgebung jedes Stoffs) und `staerke` (die Sonne des Gesetzes) nennt die Bühne für die Wand H9
+        // (gate:studio-huelle): die Bühne zeichnet unter diesem Licht allein — Identität, nie ein Nachbau
+        const B = {
+            sonne,
+            staerke: sonne.intensity,
+            richtung: new THREE.Vector3(s[0], s[1], s[2]),
+            tafeln: A,
+            umgebung,
+            knoten,
+            achse,
+            belichtung: null,
+        };
         const W = A.rtBS.width;
         B.steht = R.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then((px) => {
             const werte = tafelAusPixeln(px, W);

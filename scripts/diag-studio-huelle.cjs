@@ -32,6 +32,14 @@
 //                     (VRAM und GPU-ms: ihr Anteil am Profi-Band) ROT beim Namen. Auf der Karte die GPU-ms der Zeitstempel
 //                     gegen die Bank-Runde von gpu-bank (`?bank=12`, nur GPU-gebunden eine Gegenzahl); beim Klang die
 //                     Audio-Graph-ms je Ort gegen den Echtzeit-Deckel des Quantums.
+//   H9 BÜHNE DER WELT (studios.K4, --engine, w13-buehne-lack) jede Seite auf der Engine der Welt zeichnet unter dem Licht der
+//                     Welt allein (welt-licht.js `buehne`): EIN Licht (die Sonne der Bühne in der Stärke des Gesetzes),
+//                     Belichtung und Tonkurve des Gesetzes, die Umgebung als SEIN Knoten in Stärke 1 mit dem Himmel als
+//                     Grund, kein Stoff mit eigener Umgebung (envNode/envMap). ROT beim Namen: ein Bühnen-Licht (die drei
+//                     Lichter der Matrix-Antike), eine eigene Belichtung (main 1,04 gegen die Welt 0,51), ein Bühnen-Himmel,
+//                     ein Lack mit eigener Umgebung. GEMESSEN 06.11. (swiftshader, garage iso): unter dem Licht der Welt
+//                     spiegelt selbst ein Chrom-Wagen am Lack-Blick nur Luma 80,9 — der Glanz von main (92,5, p95/p50 2,11)
+//                     waren die Lichter am Blick und die doppelte Belichtung (Bühne bei 1,04: 66,5, p95/p50 1,15).
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -85,6 +93,20 @@ const sitzungText = (z) => `Griff → Bild p95 Gesetz-Wert ${z.true ?? "–"} ms
 // H8 — das Urteil der Hülle je Zeile (AnazhHuelle.zeileUrteil: die Leiste färbt und benennt nach demselben), auf der Karte mit
 // GPU-ms und Bank; die Hülle lädt als UI-Modul auch in Node (ihr Wurzel-Objekt ist dann globalThis)
 require("../worlds/huelle/huelle.js");
+// H9 — der Leser an der Seite (sobald die Belichtung der Bühne liegt): ihre Lichter (die Sonne beim Namen), die Stoffe mit eigener
+// Umgebung, Sonne und Belichtung als Vielfache des Gesetzes, Tonkurve und Himmel als Identität mit dem Knoten der Bühne
+const BUEHNE_LESEN = () => {
+    const lichter = [],
+        stoffe = new Set();
+    scene.traverse((o) => {
+        if (o.isLight) lichter.push(o === welt.sonne ? "Sonne" : `${o.type} ${o.name}`.trim());
+        for (const m of [o.material].flat()) if (m && (m.envNode || m.envMap)) stoffe.add(m.name || m.type);
+    });
+    const k = R.toneMappingExposure / welt.belichtung,
+        kurve = R.toneMapping === THREE[__weltLicht.BELICHTUNG.kurve];
+    const himmel = scene.environmentNode === welt.knoten && scene.environmentIntensity === 1 && scene.background === welt.tafeln.rtEq.texture;
+    return { lichter, stoffe: [...stoffe], sonne: welt.sonne.intensity / welt.staerke, k, kurve, himmel };
+};
 function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
     const rot = [];
     for (const [id, pfade] of Object.entries(netz)) {
@@ -99,6 +121,19 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
             rot.push(`H6 ${id}: lädt keine fremde Engine mehr (${ratsche} fiel) — die Ratsche zieht an, ${id} fällt aus ENGINE_RATSCHE`);
         else if (!fremd.length && pfade.some((p) => /^\/vendor\/three/.test(p)) && !pfade.includes(ENGINE_EINE))
             rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
+        const b = seiten[id] && seiten[id].buehne;
+        if (pfade.includes(ENGINE_EINE) && !b) rot.push(`H9 ${id}: auf der Engine der Welt ohne die Bühne der Welt (welt-licht.js buehne)`);
+        const fremdLicht = b ? b.lichter.filter((l) => l !== "Sonne") : [];
+        for (const [falsch, was] of b
+            ? [
+                  [fremdLicht.length || b.lichter.length !== 1, `Licht ${fremdLicht.join(", ") || "ohne die EINE Sonne"}`],
+                  [b.sonne !== 1, `die Sonne ×${b.sonne} gegen E0 · Durchlass`],
+                  [b.k !== 1 || !b.kurve, `Belichtung ×${b.k}${b.kurve ? "" : " unter fremder Tonkurve"} gegen das Licht der Welt`],
+                  [!b.himmel, "eine Umgebung neben dem Knoten des Gesetzes (himmelDerStoffe, Stärke 1, der Himmel als Grund)"],
+                  [b.stoffe.length, `eine eigene Umgebung am Stoff (${b.stoffe.join(", ")})`],
+              ]
+            : [])
+            if (falsch) rot.push(`H9 ${id}: ${was} — die Bühne zeichnet unter eigenem Licht, nie unter dem der Welt`);
     }
     for (const [id, { folge: f, kosten }] of Object.entries(seiten)) {
         // H8 je gelesene Leiste: eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
@@ -310,8 +345,10 @@ function selbsttest() {
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
     const ort = (audio) => ({ kosten: audio ? [{ stufe: "sturm", audio, audioDeckel: 2.6667 }] : [] });
     const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)) }]));
+    const B = { lichter: ["Sonne"], stoffe: [], sonne: 1, k: 1, kurve: true, himmel: true }; // H9: die Bühne der Welt, rein
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)), ...(id === "garage" && { buehne: B }) }]));
     const mit = (id, o) => ({ [id]: { ...seiten[id], ...o } });
+    const buehne = (o) => ({ garage: { ...seiten.garage, buehne: o && { ...B, ...o } } });
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
@@ -342,6 +379,13 @@ function selbsttest() {
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
+        // H9 (studios.K4): die Täter, die den Lack der garage „glänzen" ließen, ohne das Licht der Welt zu tragen
+        ["H9 die garage stellt das Haupt der Matrix-Antike neben die Sonne", {}, /^H9 garage: Licht DirectionalLight key/, buehne({ lichter: ["Sonne", "DirectionalLight key"] })],
+        ["H9 die garage belichtet wie main (1,04 statt 0,51)", {}, /^H9 garage: Belichtung ×2\.03/, buehne({ k: 2.03 })],
+        ["H9 die garage hebt die Sonne", {}, /^H9 garage: die Sonne ×3/, buehne({ sonne: 3 })],
+        ["H9 die garage malt einen eigenen Himmel (oder hebt die Umgebung)", {}, /^H9 garage: eine Umgebung neben dem Knoten/, buehne({ himmel: false })],
+        ["H9 der Lack der garage trägt eine eigene Umgebung", {}, /^H9 garage: eine eigene Umgebung am Stoff \(lack\)/, buehne({ stoffe: ["lack"] })],
+        ["H9 die garage auf der Engine ohne die Bühne der Welt", {}, /^H9 garage: auf der Engine der Welt ohne die Bühne/, buehne(null)],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
@@ -394,6 +438,11 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
+            // H9: wer das Licht der Welt lädt, wird gelesen, sobald die Belichtung seiner Bühne liegt (das EINE Warten)
+            if (await page.evaluate(() => typeof __weltLicht === "object")) {
+                await waitFor(page, () => typeof welt === "object" && welt && welt.belichtung != null, `${id}: die Bühne der Welt steht`);
+                z.buehne = await page.evaluate(BUEHNE_LESEN);
+            }
             // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
             // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
             // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
