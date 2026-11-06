@@ -418,6 +418,10 @@ function laborZiel(R, W, H) {
     const T = window.THREE,
         gpu = !!R.isWebGPURenderer,
         gl = gpu ? null : R.getContext();
+    // DAS INSTRUMENT HÄLT DEN LOOP AN (Lehre 17: je Schuss ruht er): das Labor leiht Szene und Renderer der Bühne der Welt — ihr
+    // eigenes Bild zeichnet unter dem Licht der Welt allein und bräche unter dem Licht der Messung laut (welt-licht.js
+    // `buehneZeichnet`); r184 frischt die Uniformen je Bild auch ohne ihn. Die Seite gehört ab hier der Messung.
+    if (gpu) R.setAnimationLoop(null);
     if (gl) gl.getExtension("EXT_color_buffer_float");
     const rt = new T[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: T.HalfFloatType, depthBuffer: true });
     const lies = async () => {

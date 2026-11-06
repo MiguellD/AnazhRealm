@@ -1209,7 +1209,7 @@ function animate(){const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_last
   } else if(gBladeMesh){const pos=gBladeMesh.geometry.attributes.position,bz=gBladeMesh.userData.baseZ;
     let dirty=false;for(let i=0;i<pos.count;i++){if(pos.getZ(i)!==bz[i]){pos.setZ(i,bz[i]);dirty=true;}}
     if(dirty){pos.needsUpdate=true;gBladeMesh.geometry.computeVertexNormals();}}
-  if(welt&&welt.belichtung!=null)R.render(scene,cam);}   // die Bühne zeichnet erst im Licht der Welt (die Belichtung liegt)
+  if(__weltLicht.buehneZeichnet(welt,scene,R))R.render(scene,cam);}   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut)
 
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
   R.setSize(innerWidth,innerHeight);});

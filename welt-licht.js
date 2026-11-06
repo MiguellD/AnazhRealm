@@ -776,8 +776,8 @@ var __weltLicht = (function () {
         sonne.intensity = E0 * a.lum;
         R.toneMapping = THREE[BELICHTUNG.kurve];
         R.outputColorSpace = THREE.SRGBColorSpace;
-        // `knoten` (die Umgebung jedes Stoffs) und `staerke` (die Sonne des Gesetzes) nennt die Bühne für die Wand H9
-        // (gate:studio-huelle): die Bühne zeichnet unter diesem Licht allein — Identität, nie ein Nachbau
+        // `knoten` (die Umgebung jedes Stoffs) und `staerke` (die Sonne des Gesetzes) liest die Treue der Bühne (`buehneZeichnet`):
+        // die Bühne zeichnet unter diesem Licht allein — Identität, nie ein Nachbau
         const B = {
             sonne,
             staerke: sonne.intensity,
@@ -807,6 +807,41 @@ var __weltLicht = (function () {
         return B;
     }
 
+    // DIE TREUE DER BÜHNE (studios.K4, w13-buehne-lack): jedes Bild der Bühne fragt vor dem Zeichnen, ob es unter dem Licht der Welt
+    // ALLEIN steht — false, solange die Belichtung nicht liegt; ein Licht neben ihrer Sonne, die Sonne oder die Belichtung (samt
+    // Tonkurve) neben dem Gesetz, ein Himmel neben ihrem Knoten (Stärke 1, der Himmel als Grund in E0) oder ein Stoff mit eigener
+    // Umgebung (envNode/envMap) bricht LAUT beim Namen, nie still (der Sammler jeder Linse, die die Seite fährt, nennt ihn).
+    // Bis w12-studio-buehne zeichnete die garage unter drei Lichtern am Blick bei Belichtung 1,04: ihr Lack „glänzte" (iso, Lack-Pixel
+    // Luma 92,5, p95/p50 2,11). GEMESSEN 06.11. (swiftshader, garage iso, Lack-Pixel): im Licht der Welt 46,0 / p95/p50 1,14 — ohne
+    // die Sonne 30,9 / 1,55 (der Himmels-Spiegel steht, das Licht der Sonne auf Dach und Haube deckt ihn), bei Belichtung 1,04
+    // 66,5 / 1,15, ein Chrom-Wagen (Spiegel 1) 80,9: unter dem Licht der Welt erreicht KEIN Stoff am Lack-Blick den Glanz von main —
+    // der war das Studio-Licht. Die Welt zeigt denselben Lack (Lack-Kugel 35°/7 m: Welt 45,3, Bühne 48,2, w12-studio-buehne).
+    function buehneZeichnet(B, szene, R) {
+        if (!B || B.belichtung == null) return false;
+        const fremd = new Set();
+        let sonne = false;
+        szene.traverse((o) => {
+            if (o === B.sonne) sonne = true;
+            else if (o.isLight) fremd.add(`ein Licht ${o.type} „${o.name}"`);
+            for (const m of [o.material].flat())
+                if (m && (m.envNode || m.envMap)) fremd.add(`eine eigene Umgebung am Stoff „${m.name || m.type}"`);
+        });
+        if (!sonne || B.sonne.intensity !== B.staerke) fremd.add(`die Sonne ${B.sonne.intensity} statt ${B.staerke}`);
+        if (R.toneMappingExposure !== B.belichtung || R.toneMapping !== globalThis.THREE[BELICHTUNG.kurve])
+            fremd.add(`die Belichtung ${R.toneMappingExposure} statt ${B.belichtung}`);
+        const U = B.tafeln.U;
+        if (
+            szene.environmentNode !== B.knoten ||
+            szene.environmentIntensity !== 1 ||
+            szene.background !== B.tafeln.rtEq.texture ||
+            szene.backgroundIntensity !== U.licht.value
+        )
+            fremd.add("ein Himmel neben dem Knoten des Gesetzes");
+        if (fremd.size)
+            throw new Error(`DIE BÜHNE DER WELT zeichnet unter dem Licht der Welt allein: ${[...fremd].join(" · ")}`);
+        return true;
+    }
+
     return Object.freeze({
         ATMO_LUT,
         ATMO_BODEN,
@@ -833,5 +868,6 @@ var __weltLicht = (function () {
         umgebungZeichnen,
         himmelDerStoffe,
         buehne,
+        buehneZeichnet,
     });
 })();

@@ -669,8 +669,10 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   const open=kin?0.62:0;let tuerZieht=false;                        // Türen — in beiden Modi animiert
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
   const K=kamera();K.updateMatrixWorld();
-  if(!welt||welt.belichtung==null)return;   // die Bühne zeichnet erst im Licht der Welt (die Belichtung liegt)
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
+  // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut); bis ihre Belichtung liegt, zeichnet sie nicht —
+  // `welt.steht` weckt sie dann (`_kamAlt` fällt)
+  if(!__weltLicht.buehneZeichnet(welt,scene,R))return;
   _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
