@@ -289,6 +289,7 @@ class AnazhRealm_gelaende_chunks {
                 geoSchutt: AnazhRealm.TERRAIN_GEOLOGY.schutt,
                 felsMittel: AnazhRealm.FELS_STOFF.mittel,
                 memo: AnazhRealm.FERN_FARBE.memo,
+                geboren: AnazhRealm.WALD_PLAN.geboren, // die Schranke der geborenen Darts (`_waldGeborenRaum`)
             },
         };
         // DIE REGIONEN reisen nie im Stand: jeder Faden rechnet sie selbst an derselben Stelle seiner Reihe (`_hydroBestellen`),
@@ -838,16 +839,12 @@ class AnazhRealm_gelaende_chunks {
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
-        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte am Spieler ODER an seinem Ort am Ende des
-        // Vorlaufs (`_bedarfVoraus`) im Radius liegt — sein Wald steht, bevor die Bahn den Rand des Laubs über ihn schiebt. Bis
-        // w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in den Sichtkegel (streaming.K1, Null-Renderer).
-        const v = this._bedarfVoraus(pm.position);
-        const d = Math.hypot(ccx - pm.position.x, ccz - pm.position.z);
+        // DER LAUB-RAND DER BAHN (der EINE Rang, w7-rang): der Chunk sät, wenn seine Mitte entlang der Strecke, die der Spieler binnen
+        // des Vorlaufs fährt, im Radius liegt (`_bedarfAbstand`; bis w14-strom-tempo an ihren Endpunkten) — sein Wald steht, bevor
+        // die Bahn den Rand des Laubs über ihn schiebt. Bis w7-rang säte er erst am Spieler: jeder Baum am Rand trat ungesetzt in
+        // den Sichtkegel (streaming.K1, Null-Renderer).
         // vor dem ersten Weltbild sät nur der Chunk im Blick (`_blickDerAnkunft`), die übrigen sät der Nachlauf
-        return (
-            (d <= fr || (!!v && Math.hypot(ccx - v.x, ccz - v.z) <= fr)) &&
-            this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2)
-        );
+        return this._bedarfAbstand(ccx, ccz, pm.position) <= fr && this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2);
     }
 
     // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
@@ -866,6 +863,9 @@ class AnazhRealm_gelaende_chunks {
         if (!pending || pending.size === 0) return;
         const pm = this.state.playerMesh;
         const s = this._wuchsSchlaf;
+        // steht der Spieler genau, wo er einschlief, kann die Strecke des Vorlaufs nur schrumpfen (das Tempo klingt ab): der Schlaf
+        // hält ohne Ruf (gate:stand-takt RUHE-SIM) — sonst gingen beide Enden der Strecke weniger als `frei`
+        const bahnRuht = (sv) => (sv.x - s.vx) ** 2 + (sv.z - s.vz) ** 2 < s.frei * s.frei;
         if (
             s &&
             s.n === pending.size &&
@@ -873,7 +873,8 @@ class AnazhRealm_gelaende_chunks {
             s.karte === (this._karteRegung | 0) &&
             s.fr === this.state.foliageRadius &&
             pm &&
-            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei
+            (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
+            ((pm.position.x === s.x && pm.position.z === s.z) || bahnRuht(this._bedarfVoraus(pm.position)))
         )
             return;
         this._wuchsSchlaf = null;
@@ -883,9 +884,15 @@ class AnazhRealm_gelaende_chunks {
         const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
         const { span } = this._voxelChunkConfig();
         let frei = Infinity;
+        // DER SCHLAF MISST AN DER BAHN (w14-strom-tempo): ein Chunk wächst, wenn seine Mitte entlang der Strecke des Vorlaufs im
+        // Radius liegt (`_foliageChunkInRadius`, `_bedarfAbstand`) — sein Abstand zum Rand ist der zur Strecke, und der Schlaf
+        // hält nur, solange beide ihrer Enden weniger als `frei` gingen (die Strecke rückt nie weiter als ihre Enden). Bis
+        // w14-strom-tempo maß er am Spieler allein: im GT (63,8 m/s, Vorlauf 191 m) schlief der Wuchs, während die Bahn längst
+        // über dem nächsten Chunk stand.
+        const v = pm ? this._bedarfVoraus(pm.position) : null;
         const draussen = (cx, cz) => {
             if (!pm) return;
-            const d = Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z) - fr;
+            const d = this._bedarfAbstand(cx * span + span / 2, cz * span + span / 2, pm.position) - fr;
             if (d < frei) frei = d;
         };
         const schlafe = () => {
@@ -897,6 +904,8 @@ class AnazhRealm_gelaende_chunks {
                 fr: this.state.foliageRadius,
                 x: pm.position.x,
                 z: pm.position.z,
+                vx: v ? v.x : pm.position.x,
+                vz: v ? v.z : pm.position.z,
                 frei,
             };
         };
@@ -2521,15 +2530,52 @@ class AnazhRealm_gelaende_chunks {
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
         const leerlauf = lade && this._ringLeerlauf === true;
         this._ringLeerlauf = false;
-        let draussen = 0;
+        let [draussen, wartet] = [0, 0];
         const gesehen = new Set();
+        const ST = AnazhRealm.BODEN_STUFEN;
+        const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
+        // DIE SEKUNDEN BIS BEDARF (w14-strom-tempo, die Prioritäts-Schlange des Bodens): je Chunk, dem etwas fehlt, die Zeit, bis
+        // die Bahn ihn braucht (`_bedarfKastenZeit`) — ein fehlender, bis er in den Ring des Spielers tritt (Kasten-Abstand
+        // ≤ Ring · Spanne), ein stehender, bis seine Stufe nicht mehr trägt (Kasten-Abstand unter der Grenze der nächst feineren
+        // Stufe samt Vorlauf). Ein Chunk, der gröber werden darf (die Bahn ließ ihn hinter sich), kommt nach allem, was die Bahn
+        // braucht — der Faden baut ihn, wenn er sonst nichts zu tun hat. Unter Gleichen (im Stand: keine Zeit) die Zeit bis Bedarf
+        // in Metern zu Fuß (`_bedarfWeg`). Bis w14-strom-tempo ordnete der Rang allein nach `_bedarfWeg` der Mitte: im GT (Faden
+        // 87 % belegt, L0 81 ms · L1 27 ms · L2 13 ms je Bau) bauten die Vergröberungen hinter dem Spieler (Rang = ihr Abstand)
+        // vor den Chunks am Rand des Rings voraus — 294 von 336 verfehlten Boden-Eintritten waren Chunks ohne Netz am Rand.
         const nimm = (cx, cz, mitte) => {
             const key = `${cx},${cz}`;
             if (gesehen.has(key)) return;
             gesehen.add(key);
+            // Distanz-LOD: gewünschte LOD aus dem Kasten-Abstand der Bahn; trägt ein Chunk eine ANDERE, baut er neu, sonst
+            // nichts (keine Re-Allokation bei stehendem Spieler). N3 — die jetzige LOD fließt in die Wahl (Hysterese am Grat).
+            const existing = this.state.voxelChunks.get(key);
+            const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            if (existing && (existing.empty || (existingLod ?? 0) === desiredLod)) return;
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
-            zellen.push([cx, cz, bild, mitte ? -1 : this._bedarfWeg(x, z)]);
+            const grob = !!existing && desiredLod > (existingLod ?? 0);
+            // DAS VERGRÖBERN WARTET, SOLANGE DIE BAHN FÄHRT (w14-strom-tempo): was die fahrende Bahn hinter sich lässt, räumt die
+            // Pflege binnen Sekunden (`_pruneDistantVoxelChunks`) — ein Neubau in gröberer Stufe kostete den Faden die Zeit der
+            // Chunks voraus (GT: ~250 Vergröberungen je Minute, der Faden 87 % belegt). Im Stand und im Gang vergröbert er.
+            if (grob && faehrt) return;
+            // die Grenze, unter der die Bahn den Chunk braucht: fehlt er, der Ring; steht er gröber, die nächst feinere Stufe
+            const schwelle = !existing
+                ? ringRadius * span
+                : ST.stufen[desiredLod < (existingLod ?? 0) ? (existingLod ?? 0) - 1 : 0].bis;
+            const t = mitte
+                ? -1
+                : grob
+                  ? Infinity
+                  : this._bedarfKastenZeit(
+                        cx * span,
+                        (cx + 1) * span,
+                        cz * span,
+                        (cz + 1) * span,
+                        schwelle + (existing ? ST.vorlauf : 0),
+                        playerPos
+                    );
+            zellen.push([cx, cz, bild, grob, t, mitte ? -1 : this._bedarfWeg(x, z), existing, existingLod, desiredLod]);
         };
         const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
         if (vcx !== pcx || vcz !== pcz) anker.push([vcx, vcz]);
@@ -2537,20 +2583,40 @@ class AnazhRealm_gelaende_chunks {
             for (let dz = -ringRadius; dz <= ringRadius; dz++)
                 for (let dx = -ringRadius; dx <= ringRadius; dx++)
                     nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
-        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte nach der Zeit bis Bedarf; die Zelle des Spielers vorn
-        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3]);
-        for (const [cx, cz, bild] of zellen) {
+        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte das Vergröbern zuletzt, dann nach den Sekunden bis Bedarf und der
+        // Zeit bis Bedarf in Metern; die Zelle des Spielers vorn (Infinity − Infinity ist NaN: unter Gleichen der nächste Schlüssel)
+        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3] || a[4] - b[4] || a[5] - b[5]);
+        for (const [cx, cz, bild, , , , existing, existingLod, desiredLod] of zellen) {
             if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
             if (satt) continue;
             const key = `${cx},${cz}`;
-            // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
-            // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
-            const existing = this.state.voxelChunks.get(key);
-            // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
-            // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
-            // `existing`) bekommt die reine Band-LOD.
-            const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, voraus);
+            // DAS NETZ IM FLUG KOSTET KEINEN PLATZ (w14-strom-tempo): wartet die verlangte Stufe schon im Faden
+            // (`voxelMeshPending`), geht der Takt weiter — die Kappe zählt Arbeit (ein Auftrag, ein Einbau), nie das Warten.
+            // Bis w14-strom-tempo fragte jeder Takt die Wartenden zuerst neu und zählte sie: im GT (63,8 m/s) füllten 6 Netze
+            // im Flug die Kappe, kein neuer Auftrag ging hinaus, und 241 von 355 verfehlten Eintritten waren Chunks am Rand
+            // des Rings ohne jeden Auftrag (Fahrt-Probe, Cloud 06.11.).
+            // DAS FENSTER DES FADENS (w14-strom-tempo): der Faden baut seine Aufträge der Reihe nach (FIFO) — außerhalb des
+            // Ladeschirms gehen höchstens BODEN_IM_FLUG zugleich hinaus, in der Reihe des Rangs; ein fertiges Netz im Cache baut
+            // ein. Ohne Fenster lag der Faden im GT hinter Aufträgen für Chunks, die die Bahn längst hinter sich hatte (Fahrt-Probe
+            // d4: 1 457 von 1 593 Boden-Eintritten wartend im Flug).
+            const P = this.state.voxelMeshPending;
+            const baut = !existing || ((existingLod ?? 0) !== desiredLod && !existing.empty);
+            if (baut && P && P.has(`${key},${desiredLod}`)) {
+                wartet++;
+                continue;
+            }
+            const C = this.state.voxelMeshCache;
+            if (
+                baut &&
+                !lade &&
+                P &&
+                P.size >= AnazhRealm.BODEN_IM_FLUG &&
+                !(C && C.has(`${key},${desiredLod}`)) &&
+                this._voxelFadenTraegt()
+            ) {
+                wartet++;
+                continue;
+            }
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
@@ -2583,9 +2649,10 @@ class AnazhRealm_gelaende_chunks {
             });
         }
         this._pruneDistantVoxelChunks(playerPos);
-        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf wartet; die
-        // Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0 || draussen > 0);
+        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf oder seinen
+        // Faden wartet; die Chunk-Menge regt die Welt selbst.
+        this._standMeldet("strom", 1, false, built > 0 || draussen > 0 || wartet > 0);
+        this.state._frameBodenWartet = wartet > 0; // das Terrain arbeitet im Faden: die Deko trägt ihren Boden (scatterDeco)
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
@@ -3043,6 +3110,9 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// Das Fenster des Boden-Strom (`_tickVoxelChunkStreaming`, w14-strom-tempo): so viele Netze im Flug (`voxelMeshPending`, mit
+// dem Neubau-Takt) hält der Strom außerhalb des Ladeschirms höchstens — der Faden baut FIFO, das Fenster hält seine Reihe frisch.
+AnazhRealm.BODEN_IM_FLUG = 4;
 // DIE VORLÄUFIGE SÄULE (`_saeuleVorlaeufig`): so viele Ecken trägt ihr Rand — die Kante des Vielecks liegt bei r = 3,5 m höchstens
 // r · (1 − cos(π / 16)) = 7 cm innerhalb des Kreises, dessen Krone der Boden-Leser liest. Wirts-Auflösung.
 AnazhRealm.SAEULE_ECKEN = 16;
