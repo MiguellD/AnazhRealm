@@ -483,6 +483,9 @@ class AnazhRealm_daten {
     // mehr. Bis w14-wiese-saum lag die Übergabe bei 14 m und streckte erst die Fläche: das L2 der Nähe stand bei 10–14 m
     // ungestreckt und geklumpt (swiftshader, Mess-Wiese Third: 1 164 der 1 190 Boden-Pixel des Rings 10–20 m), jenseits der
     // Bogen der gespreizten Ferne; jenseits ~16,6 m ist das Gesetz das alte (die Kosten dort gleich, diesseits weniger Büschel).
+    // Die Station (vegetation.K1#1, swiftshader, 1920 × 1080): Boden-Pixel 10–20 m 1 190 → 881, LAI 1,95 → 2,06 bei 5–10 m
+    // 2,41 (Saum 19 % → 14,6 %), 20–40 m 1,71 → 1,76; nahWiese 63 548 → 52 158 Dreiecke, die Ferne 58 735 → 79 939 (sie trägt
+    // 10–14 m und füllt die zugewandten Hänge: 925 → 1 259 Büschel).
     // DER SAUM DER FESTEN RINGE (w10-wiese, vegetation.K1): bis dahin hielt `voll` 21 m und `fall` 1,5 — jenseits 21 m fiel
     // die Deckung, die Ringe der Meisterkarte maßen 10–20 m LAI 1,87 · 20–40 m 1,07 (Radeon 2674ff9a, der Saum sprang 43 %), und
     // jenseits der Streckung (~34 m) stiegen die Büschel je Pixel mit d^1,5 (bei 180 m 6× die der Übergabe). Jetzt hält die
