@@ -28,9 +28,13 @@
 //       so wenig wie seine Ankunft (`_stauWorkClusters` ist am Stand der stauenden Bauten gemerkt, nie an der Länge der
 //       Bau-Liste — bis w4-b-pflanzen warf jeder neue Eintrag die Werke, jeder gepflanzte Baum: am Damm bis 29 ms je Ruf).
 //       Messort stadt (Null-Renderer, je Takt im Stand): Decke 0,42 ms und Stau 0,42 ms, bis die Wand stand.
+//   T12 DIE UHR DER SKELETTE (w16-haenger, profiband.K4): nach dem Bild wächst je Takt höchstens EIN neues Baum-Skelett im
+//       Haupt-Faden (`_baumGestaltTeile`), die übrigen warten in der Hüllen-Schlange (`_huellenNach`) und tragen ihre Hülle Takt um
+//       Takt (`_tickHuellenNach`) — gezählt je Takt `_growTreeBlueprintRich`, die Blocker jedes Baums am Ende.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
-// allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser).
+// allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die Uhr der
+// Skelette ohne Gedächtnis T12.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -355,7 +359,59 @@ hauptLauf(async () => {
                 }
             })();
 
+            // T12 — DIE UHR DER SKELETTE (w16-haenger, profiband.K4): nach dem Bild wächst im laufenden Spiel je Takt höchstens EIN
+            // neues Baum-Skelett (`_baumGestaltTeile`), die übrigen warten in der Hüllen-Schlange und bekommen ihre Hülle Takt um Takt
+            // (`_tickHuellenNach`). Bäume verschiedener Arten, das Gedächtnis der Gestalten leer: im ersten Takt fühlt jeder seine
+            // Hülle (`_populateBlockerAABBs`), danach geht der Takt weiter, bis jeder seine Blocker trägt (der Konsum). Gezählt wird
+            // `_growTreeBlueprintRich` je Takt. Der Selbsttest nimmt der Uhr ihr Gedächtnis (`_skelettTakt` vergisst): alle wachsen
+            // im ersten Takt — die alte Klasse (headless Erst-Boot, Gehen: zwei Skelette 95 + 62 ms in EINEM Takt).
+            const t12 = await (async () => {
+                const o = { bild: !!st._weltbildDa, arten: 0, jeTakt: [], fertig: 0, n: 0 };
+                const P = Object.getPrototypeOf(r);
+                // fünf Arten neben dem Spieler (die Null-Welt pflanzt keinen Wald), je mit dem Stempel eines Werks (`studioOv.__gestalt`,
+                // `_foundryGestaltFor`: die Gestalt steht vor dem Ort, der in der Null-Welt nie kommt); die Wahl fragt sie im ruhenden
+                // Loop (ohne Uhr)
+                const baeume = ["baum_eiche", "baum_tanne", "baum_birke", "baum_buche", "baum_fichte"]
+                    .map((a, i) => {
+                        const x = pm.x + 40 + 9 * i, z = pm.z + 30; // prettier-ignore
+                        const e = r.spawnArchitecture(a, { x, y: r.getTerrainHeightAt(x, z), z }, { silent: true, precise: true });
+                        if (e) e.studioOv = Object.assign({}, e.studioOv, { __gestalt: 0 });
+                        return e;
+                    })
+                    .filter((e) => e && e._blockerGen);
+                const ruhe = leihe(r, { _loopRuht: () => true });
+                const mitGestalt = baeume.filter((e) => Array.isArray(r._baumGestaltTeile(e)));
+                ruhe();
+                o.n = mitGestalt.length;
+                o.arten = new Set(mitGestalt.map((e) => r._foundryPresetForEntry(e))).size;
+                let gewachsen = 0;
+                const vor = { merk: r._baumGestaltMerk, nach: r._huellenNach, reihe: r._huellenNachReihe, i: r._huellenNachI, takt: r._taktZeit }; // prettier-ignore
+                const zurueck = leihe(r, { _loopRuht: () => false, _growTreeBlueprintRich: function () { gewachsen++; return P._growTreeBlueprintRich.apply(this, arguments); } }); // prettier-ignore
+                if (selbst) Object.defineProperty(r, "_skelettTakt", { configurable: true, get: () => NaN, set: () => {} });
+                [r._baumGestaltMerk, r._huellenNach, r._huellenNachReihe] = [new Map(), new Set(), null];
+                try {
+                    for (const e of mitGestalt) e.blockerAABBs = null;
+                    r._taktZeit = (vor.takt || 0) + 1000;
+                    for (const e of mitGestalt) r._populateBlockerAABBs(e);
+                    o.jeTakt.push(gewachsen);
+                    for (let k = 0; k < 3 * mitGestalt.length && mitGestalt.some((e) => !e.blockerAABBs); k++) {
+                        r._taktZeit += 1 / 60;
+                        gewachsen = 0;
+                        r._tickHuellenNach();
+                        o.jeTakt.push(gewachsen);
+                    }
+                    o.fertig = mitGestalt.filter((e) => Array.isArray(e.blockerAABBs) && e.blockerAABBs.length).length;
+                    return o;
+                } finally {
+                    if (selbst) delete r._skelettTakt;
+                    zurueck();
+                    [r._baumGestaltMerk, r._huellenNach, r._huellenNachReihe, r._huellenNachI, r._taktZeit] = [vor.merk, vor.nach, vor.reihe, vor.i, vor.takt]; // prettier-ignore
+                    for (const e of baeume) r.removeArchitecture(e, { still: true });
+                }
+            })();
+
             return {
+                t12,
                 t11,
                 t10,
                 t3,
@@ -399,9 +455,13 @@ hauptLauf(async () => {
     const T11je = { _verkehrSchritt: t11.schritt > 0 && t11.schritt <= 31, _blockerBewegt: !t11.beweger, _stauWorkClusters: !t11.stau };
     const n11 = Object.keys(T11je).filter((k) => T11je[k] === SELBST);
     const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}`;
+    // T12 die Uhr der Skelette: je Takt höchstens EIN Wuchs, jeder Baum trägt am Ende seine Hülle; nie vakuös (≥ 2 Arten, nach dem Bild)
+    const t12 = aus.t12;
+    const T12 = t12.bild && t12.arten >= 2 && Math.max(...t12.jeTakt) === 1 && t12.fertig === t12.n;
+    const z12 = `${t12.arten} Arten nach dem Bild ${t12.bild} · Wuchs je Takt ${t12.jeTakt.join("·")} · Hülle ${t12.fertig}/${t12.n}`;
     if (SELBST) {
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10 && !n11.length; // prettier-ignore
+        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10 && !n11.length && !T12 && t12.arten >= 2 && t12.jeTakt[0] >= 2; // prettier-ignore
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
@@ -410,7 +470,8 @@ hauptLauf(async () => {
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}/${t9.stromMs} ms, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
                 `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}; ` +
-                `die alten Klassen des Verkehrs (${z11}) → T11 ${n11.length ? "vakuös: " + n11 : "rot"}`
+                `die alten Klassen des Verkehrs (${z11}) → T11 ${n11.length ? "vakuös: " + n11 : "rot"}; ` +
+                `die Uhr ohne Gedächtnis (${z12}) → T12 ${T12 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -443,7 +504,16 @@ hauptLauf(async () => {
                 : " — Täter _ensureAssetFoundry: die Buch-Frage reist nicht in der Geburt (Name „buch\"), sie wartet auf den Haupt-Faden")
     );
     zeile(!n11.length, `T11 Verkehr 300 m fern: ${z11}` + (n11.length ? ` — Täter ${n11}` : ""));
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10) || n11.length) {
+    zeile(T12, `T12 die Uhr der Skelette: ${z12}` +
+            (T12
+                ? ""
+                : Math.max(...t12.jeTakt) > 1
+                    ? " — Täter _baumGestaltTeile: nach dem Bild wachsen mehrere Skelette in EINEM Takt (die Uhr `_skelettTakt` hält nicht)"
+                    : t12.fertig < t12.n
+                        ? " — Täter _tickHuellenNach: ein zurückgestellter Baum bekommt seine Hülle nicht (die Hüllen-Schlange geht nicht weiter)"
+                        : " — vakuös: keine zwei Arten mit Gestalt nach dem Bild")
+    );
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T12) || n11.length) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }
