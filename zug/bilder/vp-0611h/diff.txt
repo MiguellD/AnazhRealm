@@ -1,0 +1,65 @@
+# vp-0611h Zahlen (OMEN GTX 1060, 06.11.): main 8efb6318 (Welten main1, main2) gegen w16-wald-innen 68256659 (Welten kand1, kand); Uhr 0,5, 1920x1080
+
+## Kosten je Pose (zaehlen --alle, gpu-bank 12x3): GPU ms main2 -> Zweig (Lauf 1), Befehle, Dreiecke, Baum-Befehle/-Dreiecke (Klassen f:, fscatter, fimp, krone, kamm), CPU ms
+wiese-ego      GPU 19.58 -> 21.7 (Lauf1 19.12 -> 21.83) | Befehle 66 -> 66 | Dreiecke 336793 -> 360310 | Baum 39/119924 -> 39/141508 | CPU 3.12 -> 3.16
+wiese-third    GPU 18.6 -> 20.85 (Lauf1 18.17 -> 20.72) | Befehle 74 -> 78 | Dreiecke 408517 -> 410310 | Baum 40/140838 -> 44/141346 | CPU 3.32 -> 4.2
+genesis-ego    GPU 12.09 -> 12.7 (Lauf1 12.06 -> 13.08) | Befehle 65 -> 66 | Dreiecke 344162 -> 365638 | Baum 19/60212 -> 19/77300 | CPU 3.54 -> 2.78
+genesis-third  GPU 12.05 -> 12.26 (Lauf1 11.9 -> 12.25) | Befehle 61 -> 60 | Dreiecke 239951 -> 251026 | Baum 23/64658 -> 21/71366 | CPU 3.86 -> 3.76
+dorf-ego       GPU 16.62 -> 23.33 (Lauf1 16.1 -> 24.62) | Befehle 71 -> 129 | Dreiecke 336978 -> 629303 | Baum 34/128892 -> 92/405966 | CPU 3.61 -> 3.99
+dorf-third     GPU 17.98 -> 22.9 (Lauf1 17.48 -> 23.58) | Befehle 74 -> 140 | Dreiecke 394359 -> 650733 | Baum 30/127438 -> 94/398008 | CPU 4.22 -> 4.83
+dorf-ego Baum-Klassen main: kamm-krone 1 55936, f:birke:L0 3 20790, f:fichte:L1 4 14128, f:fichte:L0 7 12988, fscatter:fichte:L1 4 5600, f:tanne:L1 4 5396
+dorf-ego Baum-Klassen Zweig: f:tanne:L0 27 144764, f:fichte:L0 7 53600, kamm-krone 1 48448, f:tanne:L1 12 46400, f:fichte:L1 12 34600, f:birke:L0 7 31094
+wiese-ego Baum-Klassen main: kamm-krone 1 44032, f:tanne:L0 12 26292, f:tanne:L1 4 12180, fimp:atlas:L2 1 5776, f:fichte:L1 2 5688, fscatter:fichte:L1 4 5600
+wiese-ego Baum-Klassen Zweig: kamm-krone 1 50240, f:tanne:L1 8 24764, f:fichte:L1 4 13184, fimp:atlas:L2 1 9544, f:tanne:L0 2 8696, f:fichte:L0 2 8400
+
+## Natur um den Spieler (Bäume ohne Busch/Fels; Radius 60 m, im Dorf 150 m; r25 = binnen 25 m; imBlick = binnen 40 m, ±40° Blick; alter = studioOv.alter)
+wiese      main {"baeume":79,"r25":8,"imBlick":6,"alter":{"1":79}}
+           Zweig {"baeume":156,"r25":11,"imBlick":9,"alter":{"1":67,"0.4":76,"0.7":13}}
+mischwald  main {"baeume":33,"r25":8,"imBlick":0,"alter":{"1":33}}
+           Zweig {"baeume":289,"r25":81,"imBlick":12,"alter":{"1":86,"0.7":28,"0.4":175}}
+genesis    main {"baeume":44,"r25":0,"imBlick":0,"alter":{"1":44}}
+           Zweig {"baeume":82,"r25":0,"imBlick":4,"alter":{"1":42,"0.4":34,"0.7":6}}
+dorf       main {"baeume":486,"r25":16,"imBlick":6,"alter":{"1":486}}
+           Zweig {"baeume":1117,"r25":80,"imBlick":55,"alter":{"1":530,"0.7":119,"0.4":468}}
+gipfel-blick Zweig {"baeume":168,"r25":46,"imBlick":16,"alter":{"1":90,"0.4":62,"0.7":16}} (main: kein Bild, siehe unten)
+buehne main {"baeume":0,"r25":0,"imBlick":0,"alter":{},"art":{}} Zweig {"baeume":0,"r25":0,"imBlick":0,"alter":{},"art":{}}
+
+## Mess-Wiese in der Welt (umstellen ort wiese, wieseMessen)
+main  {"x":-280.4,"z":-1045.6,"y":27.48,"hang":1.81,"rauh":0.14,"nass":0,"krone":0.108,"baeume":8,"kranz":0.204,"imBlick":0,"horizont":2.6,"blick":[-289.6,-1049.5],"gras":1}
+Zweig {"x":-280.4,"z":-1045.6,"y":27.48,"hang":1.81,"rauh":0.14,"nass":0,"krone":0.116,"baeume":11,"kranz":0.272,"imBlick":0,"horizont":2.6,"blick":[-289.6,-1049.5],"gras":1}
+
+## Dorf (Grundriss-Prüfung der Welt _imGrundriss/_aufWeg Rand 0 über alle Bäume binnen 150 m; je Haus _grundrissVon)
+main  natur haus/bau/weg 0/0/0 · {"bauten":77,"haeuser":10,"abstandSpieler":126.5,"stammImHaus":0,"stammAnWand2m":0,"sichtVerdeckt":8,"sicht":[["haus_griechisch",138.8,1],["haus_griechisch",144.2,0],["marktstand_dorf",133.8,2],["marktstand_dorf",142.4,2],["haus_griechisch",104,2],["haus_griechisch",111.2,3],["haus_griechisch",117.8,1],["haus_griechisch",126.3,1],["haus_roemisch",127.1,1],["haus_roemisch",140.6,0]]}
+Zweig natur haus/bau/weg 0/0/0 · {"bauten":77,"haeuser":10,"abstandSpieler":126.5,"stammImHaus":0,"stammAnWand2m":0,"sichtVerdeckt":6,"sicht":[["haus_griechisch",138.8,1],["haus_griechisch",144.2,3],["haus_griechisch",104,4],["haus_griechisch",111.2,3],["haus_griechisch",117.8,0],["haus_griechisch",126.3,2],["haus_roemisch",127.1,3],["haus_roemisch",140.6,0],["marktstand_dorf",133.8,0],["marktstand_dorf",142.4,0]]}
+
+## Bildmaße (freier Schuss je Pose, Satz messung): Luma, Dunkel-Anteil Y<30, Himmel-Anteil, unteres Drittel: Lichtflecken Y > max(1,8 x Median, Median+25), Inseln >= 40 px
+wiese-ego            main {"luma":57.8,"dunkelPct":14.6,"himmelPct":1.1,"bodenMedian":52,"fleckPct":12.65,"fleckInseln":129}
+                     Zweig {"luma":81.1,"dunkelPct":1.8,"himmelPct":1.1,"bodenMedian":117.7,"fleckPct":0,"fleckInseln":0}
+wiese-third          main {"luma":52.2,"dunkelPct":27.4,"himmelPct":0.9,"bodenMedian":49.9,"fleckPct":10.64,"fleckInseln":90}
+                     Zweig {"luma":86.6,"dunkelPct":1.9,"himmelPct":0.9,"bodenMedian":112.8,"fleckPct":0,"fleckInseln":0}
+mischwald-ego        main {"luma":104.6,"dunkelPct":0.4,"himmelPct":20.1,"bodenMedian":114.2,"fleckPct":0.02,"fleckInseln":0}
+                     Zweig {"luma":65.3,"dunkelPct":16.1,"himmelPct":11.5,"bodenMedian":42.4,"fleckPct":20.13,"fleckInseln":188}
+mischwald-third      main {"luma":95.3,"dunkelPct":1.8,"himmelPct":13.3,"bodenMedian":103.1,"fleckPct":0.41,"fleckInseln":1}
+                     Zweig {"luma":43.8,"dunkelPct":39.8,"himmelPct":3.3,"bodenMedian":34,"fleckPct":18.74,"fleckInseln":161}
+genesis-ego          main {"luma":102.7,"dunkelPct":1.1,"himmelPct":16.2,"bodenMedian":124.1,"fleckPct":0,"fleckInseln":0}
+                     Zweig {"luma":102.3,"dunkelPct":1,"himmelPct":14.4,"bodenMedian":124.1,"fleckPct":0,"fleckInseln":0}
+genesis-third        main {"luma":104.7,"dunkelPct":1.9,"himmelPct":9.3,"bodenMedian":124.1,"fleckPct":0,"fleckInseln":0}
+                     Zweig {"luma":104.6,"dunkelPct":1.8,"himmelPct":8.9,"bodenMedian":124.1,"fleckPct":0,"fleckInseln":0}
+dorf-ego             main {"luma":76.7,"dunkelPct":8.6,"himmelPct":18.4,"bodenMedian":50.9,"fleckPct":15.32,"fleckInseln":133}
+                     Zweig {"luma":37.5,"dunkelPct":60.9,"himmelPct":7.1,"bodenMedian":26.4,"fleckPct":4.49,"fleckInseln":66}
+dorf-third           main {"luma":86.2,"dunkelPct":3.8,"himmelPct":13,"bodenMedian":78.4,"fleckPct":5.29,"fleckInseln":131}
+                     Zweig {"luma":35.5,"dunkelPct":54.6,"himmelPct":3.2,"bodenMedian":31.4,"fleckPct":3.67,"fleckInseln":90}
+dorf-blick           main {"luma":80.9,"dunkelPct":0.9,"himmelPct":0.6,"bodenMedian":97.1,"fleckPct":0.13,"fleckInseln":6}
+                     Zweig {"luma":83.7,"dunkelPct":1,"himmelPct":0.6,"bodenMedian":100.8,"fleckPct":0.31,"fleckInseln":13}
+buehne-ego           main {"luma":111.1,"dunkelPct":0,"himmelPct":28.6,"bodenMedian":93.5,"fleckPct":0,"fleckInseln":0}
+                     Zweig {"luma":111.1,"dunkelPct":0,"himmelPct":28.6,"bodenMedian":93.5,"fleckPct":0,"fleckInseln":0}
+buehne-third         main {"luma":110.9,"dunkelPct":0.4,"himmelPct":22.1,"bodenMedian":93.7,"fleckPct":0,"fleckInseln":0}
+                     Zweig {"luma":110.9,"dunkelPct":0.4,"himmelPct":22.1,"bodenMedian":93.7,"fleckPct":0,"fleckInseln":0}
+gipfel-blick-ego     main null
+                     Zweig {"luma":44.5,"dunkelPct":47.5,"himmelPct":2.7,"bodenMedian":34.3,"fleckPct":22.1,"fleckInseln":173}
+gipfel-blick-third   main null
+                     Zweig {"luma":46.9,"dunkelPct":43.9,"himmelPct":0.9,"bodenMedian":45.3,"fleckPct":17.89,"fleckInseln":96}
+
+## Nicht aufgenommen
+stadt: beide Seiten FEHLER Messort stadt: die Bahn verlässt die Gasse bei 609.1 419.0 (frische Sitzung; in der langen Sitzung main1 kam die Stadt an, /bild ROT verdeckt, ohne freien Schuss)
+gipfel-blick: main 3 Versuche ohne Ankunft (19:04 nach Stadt, 20:44 frisch > 410 s, 21:24 frisch > 600 s, die Seite antwortet nicht mehr); Zweig 1 von 2 an (frisch, umstellen 352,5 s; nach dem Dorf > 420 s)

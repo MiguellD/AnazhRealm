@@ -1864,6 +1864,25 @@ function leibK3Urteil(lauf) {
         zahl: z.join(" · ") + " · Mutante Ruck " + L.mutante.ruckLeib.max + " m " + (sieht ? "erkannt" : "UNERKANNT") + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
     };
 }
+// fahrzeug.K2#1 — die Zeilen der Fahrt auf dem Wegenetz: der Lauf am Kopf von w16-fahrt-weg (Bezug aus der Tafel) GRÜN; die Mutante
+// des FUNDs (der Bezug = vmax des GT: der mittlere Bezug ist vmax, der Anteil fällt auf 0) ROT; eine Zeile ohne Bezug (ein Stand vor
+// der Tafel) ROT; der Anteil unter 80 % ROT.
+const WEGENETZ_PROBEN = (() => {
+    const tafel = { ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 };
+    const lauf = (o = {}) => ({ lang: 2440, weg: 2438, ende: true, schritte: 12946, steck: [], anteil: 0.894, wegAnteil: 0.987,
+        bezug: { kmh: tafel, vmax: 63.82, mittel: 12.17 }, boden: { wiese: 0.29, wald: 0.41, dorf: 0.3 }, ...o });
+    const z = (m) => "[linse-gpu] google/swiftshader\n  ✅ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — auf dem Netz\nWEGENETZ " + JSON.stringify(m) + "\nEXIT 0";
+    return [
+        { name: "der Bezug aus der Tafel, 89 % der Takte über 0,8 · Bezug", stdout: z(lauf()), gruen: true },
+        { name: "MUTANTE: der Bezug = vmax des GT (die Fahrt zählt gegen die Höchstgeschwindigkeit)", stdout: z(lauf({ anteil: 0, bezug: { kmh: tafel, vmax: 63.82, mittel: 63.82 } })), gruen: false },
+        { name: "MUTANTE: der Bezug = vmax, der Anteil geschönt", stdout: z(lauf({ bezug: { kmh: tafel, vmax: 63.82, mittel: 63.82 } })), gruen: false },
+        { name: "ein Stand ohne Bezug in der Zeile", stdout: z(lauf({ bezug: undefined })), gruen: false },
+        { name: "eine leere Tafel", stdout: z(lauf({ bezug: { kmh: {}, vmax: 63.82, mittel: 12.17 } })), gruen: false },
+        { name: "der Anteil unter 80 %", stdout: z(lauf({ anteil: 0.78 })), gruen: false },
+        { name: "ein Steckenbleiber", stdout: z(lauf({ steck: [424] })), gruen: false },
+    ];
+})();
+
 const LEIB_K3_PROBEN = (() => {
     const lauf = (o = {}) => Object.assign({ bilder: 1100, phasen: { ufer: { n: 470, unter: 60, augen: 0, geerdet: 400 }, schwimmen: { n: 200, unter: 200, augen: 0, geerdet: 0 }, tauchen: { n: 240, unter: 240, augen: 190, geerdet: 0 },
         auftrieb: { n: 120, unter: 120, augen: 100, geerdet: 0 } }, tiefe: 2.1, ruckLeib: { max: 0.016, wo: "ufer 40", p95: 0.003 }, ruckKamera: { max: 0.02, wo: "ufer 40", p95: 0.0011 } }, o);
@@ -4754,6 +4773,12 @@ const stationen = [
     // IN DER SITZUNG (29.10., proben-welt.cjs `fahrWegenetz`): die Seiten-Probe des Gates (`probeLeben`, `wegenetz`) in der warmen
     // Welt, der Dorf-Zug an wie das Gate vor dem Boot; die Route sind ~12 000 Sim-Schritte in den Bildern der Probe (die Welt kommt
     // je Bild) — die Ausnahme trägt sie. Kennt der Stand die Fahrt nicht, ROT beim Namen in Sekunden. Die Orte erwachen: mutiert.
+    // DER BEZUG (06.11., FUND w16-fahrt-weg, entschieden vom Koordinator mit der Vollmacht des Schöpfers): „vmax" der Staffel ist
+    // das Tempo, das das Wegenetz an der Stelle trägt — min(vmax des Wagens, Entwurfs-Tempo seiner Wegeklasse), die EINE Tafel des
+    // Wegenetz-Gesetzes (`WEGENETZ.entwurfKmh`, RASt 06 / DWA-A 904), gelesen vom Fahrer UND von dieser Station (die Zeile trägt
+    // `bezug`: die Tafel, vmax, den mittleren Bezug je Takt). Seit w11-fahrzeug (180d3a68) fährt der GT 63,8 m/s statt ~16: das
+    // ideale Profil der Kern-Physik trug auf dieser Route höchstens 35,0 m/s = 0,55 · vmax, der Anteil über 0,8 · vmax war für
+    // jeden Fahrer 0,0 %. Eine Zeile ohne Bezug aus der Tafel (der Bezug = vmax des Wagens) ist ROT beim Namen.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
@@ -4767,10 +4792,15 @@ const stationen = [
             const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
             if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
             const b = m.boden || {};
+            // der Bezug kommt aus der Tafel des Wegenetzes: sie steht in der Zeile (je Klasse ein Tempo in km/h), und der mittlere
+            // Bezug liegt unter vmax des Wagens — sonst zählte die Fahrt gegen die Höchstgeschwindigkeit (die Mutante der Proben)
+            const z = m.bezug || {};
+            const tafel = z.kmh && Object.keys(z.kmh).length > 0 && Object.values(z.kmh).every((v) => v > 0);
             const teile = {
                 route: m.lang >= 2000 && m.wegAnteil >= 0.95,
                 an: m.ende === true,
                 steck: (m.steck || []).length === 0,
+                bezug: !!tafel && z.mittel > 0 && z.mittel < 0.99 * z.vmax,
                 tempo: m.anteil >= 0.8,
                 boden: b.wiese > 0 && b.wald >= 0.1 && b.dorf >= 0.05,
             };
@@ -4779,10 +4809,12 @@ const stationen = [
             return {
                 gruen: !aus.length && lauf.exit === 0,
                 zahl: "Route " + m.lang + " m (Weg " + p(m.wegAnteil) + "), gefahren " + m.weg + " m · Steckenbleiber " + (m.steck || []).length +
-                    " · über 0,8 · vmax " + p(m.anteil) + " von " + m.schritte + " Sim-Schritten · Boden Wiese " + p(b.wiese) + " / Wald " + p(b.wald) +
+                    " · über 0,8 · Bezug " + p(m.anteil) + " von " + m.schritte + " Sim-Schritten (Bezug Ø " + (z.mittel > 0 ? (z.mittel * 3.6).toFixed(1) + " km/h" : "—") +
+                    ", vmax " + (z.vmax > 0 ? (z.vmax * 3.6).toFixed(1) + " km/h" : "—") + (tafel ? "" : ", keine Tafel") + ") · Boden Wiese " + p(b.wiese) + " / Wald " + p(b.wald) +
                     " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,
             };
         },
+        proben: WEGENETZ_PROBEN,
         pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
