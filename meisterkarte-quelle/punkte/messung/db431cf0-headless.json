@@ -1,8 +1,8 @@
 {
  "sha": "db431cf08b0df18a1da8b770622d1a18dc0c0fa1",
  "geraet": "headless",
- "zeit": "2026-11-06T12:59:45.173Z",
- "host": "farm:42219242855",
+ "zeit": "2026-11-06T13:34:58.278Z",
+ "host": "farm:42226551307",
  "je": {
   "affekt.K3#1": {
    "gruen": true,
@@ -41,28 +41,26 @@
    "zwilling": "streaming.K1#1"
   },
   "physik.K4#1": {
-   "gruen": false,
-   "zahl": "Probe: Cannot set properties of undefined (setting 'w')",
+   "gruen": true,
+   "zahl": "klinge_flegel Schwung 0.461 m, Länge (längs) 0.328–0.328 m, v² 3.018 → 0.261 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde)",
    "exit": 0,
-   "minuten": 1.2,
-   "grund": "ROT: Probe: Cannot set properties of undefined (setting 'w')",
-   "zeit": "2026-11-06T12:41:54.648Z",
-   "abdruck": "e5a717d28239",
+   "minuten": 1.27,
+   "zeit": "2026-11-06T13:34:55.109Z",
+   "abdruck": "074c6757ca0a",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42219242855/10"
+   "host": "farm:42226551307/1"
   },
   "physik.K5#1": {
-   "gruen": false,
-   "zahl": "Probe: Cannot set properties of undefined (setting 'w')",
+   "gruen": true,
+   "zahl": "200 N × 0,2 s quer im Gang (89.022 kg): Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Gegen-Richtung Ausfall 0.195 m, Wurzel quer 0.184 m, erholt 0.883 s · Masse ×2 Ausfall 0.077 m, Wurzel quer 0.07 m, erholt 0.617 s (Soll Ausfall ≥ 0,1 m, ≤ 1,5 s, kein Sturz)",
    "exit": 0,
-   "minuten": 1.2,
-   "grund": "ROT: Probe: Cannot set properties of undefined (setting 'w')",
-   "zeit": "2026-11-06T12:41:54.648Z",
-   "abdruck": "305972a203b1",
+   "minuten": 1.27,
+   "zeit": "2026-11-06T13:34:55.109Z",
+   "abdruck": "74969abb1a41",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42219242855/10",
+   "host": "farm:42226551307/1",
    "zwilling": "physik.K4#1"
   },
   "feld.K5#1": {
@@ -1376,16 +1374,15 @@
    "zwilling": "studios.K5#1"
   },
   "stoffe.K4#2": {
-   "gruen": false,
-   "zahl": "Probe: Cannot set properties of undefined (setting 'w')",
+   "gruen": true,
+   "zahl": "Tag 60, 100 Gänge · Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.032 (grünt 0.024), süd Δ nass 0.001, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 · nach dem Reload: Holz S 0.72 → 0.29 · Eisen im Regen 23° S 0.59 (Δ nass 0.139, trocken 0.000) · Stein nord Δ nass 0.032 (grünt 0.024), süd Δ nass 0.001, nord Δ trocken 0.000 · Weg 13 → 3 Büschel, daneben 17 → 17 (Soll Holz S −30 %, Rost 20–30°, Moos nass+nord, Weg −60 %, über den Reload)",
    "exit": 0,
-   "minuten": 0.49,
-   "grund": "ROT: Probe: Cannot set properties of undefined (setting 'w')",
-   "zeit": "2026-11-06T12:40:18.976Z",
-   "abdruck": "76c4e0aa99a3",
+   "minuten": 2.87,
+   "zeit": "2026-11-06T13:34:49.120Z",
+   "abdruck": "1adb932c5aaf",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42219242855/8"
+   "host": "farm:42226551307/2"
   },
   "haar.K3#1": {
    "gruen": true,
@@ -1639,15 +1636,15 @@
   },
   "leib.K3#1": {
    "gruen": false,
-   "zahl": "ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.15 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
+   "zahl": "ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.152 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
    "exit": 0,
-   "minuten": 0.37,
-   "grund": "ROT: ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.15 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
-   "zeit": "2026-11-06T12:49:58.781Z",
+   "minuten": 0.54,
+   "grund": "ROT: ego: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · third: schwimmt 0/900, taucht 0 m (Augen unter 0) · Ruck Leib 0 / Kamera 0 m (p95 0 / 0) · Mutante Ruck 0.152 m erkannt · ROT: ego Schwimmen 0/900 (geerdet 900), ego Tauchen Augen unter 0, 0 m unter der Schwimm-Linie, third Schwimmen 0/900 (geerdet 900), third Tauchen Augen unter 0, 0 m unter der Schwimm-Linie · Exit 0",
+   "zeit": "2026-11-06T13:34:58.278Z",
    "abdruck": "f9a66b51a01d",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:42219242855/9"
+   "host": "farm:42226551307/3"
   },
   "oekologie.K4#1": {
    "gruen": true,

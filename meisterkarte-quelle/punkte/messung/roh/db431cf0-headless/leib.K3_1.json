@@ -110,12 +110,12 @@
    },
    "tiefe": 0.3,
    "ruckLeib": {
-    "max": 0.15,
-    "wo": "tauchen 3359",
+    "max": 0.152,
+    "wo": "tauchen 3360",
     "p95": 0
    },
    "ruckKamera": {
-    "max": 0.027,
+    "max": 0.02,
     "wo": "tauchen 3361",
     "p95": 0
    }

@@ -1,12 +1,60 @@
 {
  "proben": {
   "seil": {
-   "fehler": "Cannot set properties of undefined (setting 'w')",
-   "sek": 11.3
+   "klingen": 23,
+   "seile": [
+    "klinge_flegel"
+   ],
+   "je": {
+    "klinge_flegel": {
+     "teile": 16,
+     "anker": [
+      0.545,
+      0,
+      0
+     ],
+     "laengeArt": "längs",
+     "schwungM": 0.461,
+     "laengeM": [
+      0.328,
+      0.328
+     ],
+     "energie": [
+      3.018,
+      0.261
+     ]
+    }
+   },
+   "sek": 13
   },
   "stoss": {
-   "fehler": "Cannot set properties of undefined (setting 'w')",
-   "sek": 6.3
+   "ort": [
+    -280.4,
+    -1045.6
+   ],
+   "knoechel": 4,
+   "echt": {
+    "masse": 89.022,
+    "ausfallM": 0.195,
+    "querM": 0.184,
+    "erholtS": 0.883,
+    "sturz": false
+   },
+   "gegen": {
+    "masse": 89.022,
+    "ausfallM": 0.195,
+    "querM": 0.184,
+    "erholtS": 0.883,
+    "sturz": false
+   },
+   "schwer": {
+    "masse": 178.043,
+    "ausfallM": 0.077,
+    "querM": 0.07,
+    "erholtS": 0.617,
+    "sturz": false
+   },
+   "sek": 8.4
   },
   "feld": {
    "zelleM": 16,
@@ -61,7 +109,7 @@
     ]
    },
    "akt": true,
-   "sek": 7.6
+   "sek": 7.8
   },
   "alter": {
    "dorf": [
@@ -89,9 +137,9 @@
      "rausch": 0
     },
     "bauSatz": {
-     "nord": 0.002,
-     "sued": 0.002,
-     "oben": 0.035,
+     "nord": 0.01,
+     "sued": 0.01,
+     "oben": 0.04,
      "rausch": 0
     },
     "streuSatz": {
@@ -153,7 +201,7 @@
      "rausch": 0
     }
    },
-   "sek": 37.3
+   "sek": 37
   },
   "schnee": {
    "ort": [
@@ -174,7 +222,7 @@
     "schnee": 0,
     "versatz": 0
    },
-   "sek": 5
+   "sek": 5.1
   }
  },
  "fehler": []
