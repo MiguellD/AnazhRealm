@@ -1863,7 +1863,8 @@ class AnazhRealm_kreatur_leben {
             const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
             if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
-                const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
+                const fern =
+                    Math.hypot(x - p.x, z - p.z) >= (tiere ? this._bestandFernM() : AnazhRealm.CREATURE_SPAWN_FAR_MIN);
                 if (!fern || !this._kreaturGrundFrei(x, z) || (imRaum && !lebt(x, z))) continue;
                 if (!geboren.some((g) => Math.hypot(g.position.x - x, g.position.z - z) <= fenster * abstand)) continue;
             }
@@ -2409,7 +2410,7 @@ class AnazhRealm_kreatur_leben {
         const st = this.state;
         if (!st.playerMesh || !this._kreaturenBereit()) return;
         const F = this._bestandRegionen();
-        const p = st.playerMesh.position;
+        const p = this._bestandVoraus();
         const gruppen = new Map();
         for (const key of this._bestandNah())
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {
@@ -2418,9 +2419,11 @@ class AnazhRealm_kreatur_leben {
                 if (!G) gruppen.set(gk, (G = { d: Math.hypot(t.x - p.x, t.z - p.z), tiere: [] }));
                 G.tiere.push(t);
             }
-        // eine Gruppe, die gezeichnet steht, hält ihren Platz um eine halbe Kachel (kein Flattern, wenn eine nähere geboren wird)
-        const S = this._bestandSeite();
-        for (const G of gruppen.values()) if (G.tiere.some((t) => t.leib)) G.d -= S / 2;
+        // eine Gruppe, die gezeichnet steht, hält ihren Platz gegen eine, die nicht um `BESTAND_REGION.haltAnteil` näher steht (kein
+        // Flattern zwischen zwei gleich fernen Gruppen). Bis w16-tier-blick hielt sie ihn um eine halbe Kachel (177 m): ein Rudel
+        // 200 m hinter dem Spieler schlug die Herde, die 59 m vor ihm stand — die Kappe trug den Bestand von gestern.
+        for (const G of gruppen.values())
+            if (G.tiere.some((t) => t.leib)) G.d *= 1 - AnazhRealm.BESTAND_REGION.haltAnteil;
         const reihe = [...gruppen.values()].sort((a, b) => a.d - b.d);
         const bleibt = new Set();
         // ein offener Riss hält Opfer UND Jäger am Leib (das Maul reißt den Körper; ein Jäger, der Zahl wird, ließe sein Opfer
@@ -2443,6 +2446,20 @@ class AnazhRealm_kreatur_leben {
             fehlt[0]._ohneOrt = st.spielZeit + 6 * AnazhRealm._bestandGesetz().B.taktS;
         }
         for (const c of st.creatures) if (c.userData._bestand) c.userData.alterS = c.userData._bestand.alterS;
+    }
+    // DER ORT DER BEGEGNUNG (tiere.K5, die Wahl der Zeichnung): wo der Spieler in `BESTAND_REGION.vorausS` s steht, wenn er
+    // seinen Lauf hält (`playerVel`, die Absicht des Leibs, ein Feld-Vektor mit `.x()`/`.z()`; im Stand sein Ort) — gezeichnet wird zuerst die Herde, der er
+    // begegnen wird, solange sie noch außer Blick steht, und die Herde hinter ihm gibt ihren Platz (das Streaming nach der
+    // Fahrtrichtung offener Welten: vor dem Spieler entsteht, hinter ihm fällt). Bis w16-tier-blick wählte die Zeichnung nach
+    // dem Abstand zum Spieler: die Herde am Weg voraus kam erst in die Kappe, wenn sie im Blick stand und nicht mehr
+    // gezeichnet werden durfte — der Spieler ging an ihr vorbei, gezeichnet stand sie hinter ihm.
+    _bestandVoraus() {
+        const p = this.state.playerMesh.position;
+        const v = this.state.playerVel;
+        const T = AnazhRealm.BESTAND_REGION.vorausS;
+        const vx = v ? v.x() : 0,
+            vz = v ? v.z() : 0;
+        return Number.isFinite(vx) && Number.isFinite(vz) ? { x: p.x + vx * T, z: p.z + vz * T } : p;
     }
     // WER BLEIBT GEZEICHNET (die EINE Frage der Zeichnung und des Weichens): ein Leib außerhalb des Bestands, einer im Riss (Opfer
     // oder Jäger), gebunden, mit Auftrag oder im Nah-Kreis. `jagen` = die Jäger der offenen Risse (`_bestandJagen`).
@@ -2507,6 +2524,16 @@ class AnazhRealm_kreatur_leben {
         this._kreaturVerbinden(gruppe.map((t) => t.leib).filter(Boolean));
         return neu;
     }
+    // DIE ZEICHNUNG AM ORT DES TIERS (tiere.K5 „Begegnung im Bild"): ein Tier des Bestands lebt an seinem Anker — sein Leib
+    // erscheint dort, wo der Spieler ihn nicht sieht (die Kugel außer Blick samt Rand, `_kreaturLeibImBlick`) und jenseits der
+    // Witterung des Spielers (tetrapoda VERHALTEN.furcht.noticeRadius: dort bemerkt ihn kein Tier — der Leib erscheint ruhig, nie
+    // auf der Flucht); die Ökologie-Dichten von RDR2 / theHunter: das Wild lebt in seinen Zonen am Weg, gezeichnet außer Sicht.
+    // Bis w16-tier-blick schob die Fern-Regel der Geburt (`CREATURE_SPAWN_FAR_MIN`, 130 m) jeden Leib des Bestands über 130 m
+    // vom Spieler: die Herde lebte am Weg, gezeichnet stand sie hinter dem Hügel (Kreis der Mess-Wiese, Null-Renderer, Ego 600
+    // Spiel-s: 76 % der Tier-Proben ≥ 150 m, 1 % unter 30 m; Radeon b3f9ae95: 0 Sichtungen in beiden Sichten).
+    _bestandFernM() {
+        return AnazhRealm._verhaltenGesetz().furcht.noticeRadius;
+    }
     _bestandLeibOrt(t) {
         const p = this.state.playerMesh.position;
         const LG = AnazhRealm._lebensraumGesetz();
@@ -2515,10 +2542,7 @@ class AnazhRealm_kreatur_leben {
         for (let k = 0; k < 64; k++) {
             const x = t.x + Math.cos(k * 2.39996) * 25 * Math.sqrt(k);
             const z = t.z + Math.sin(k * 2.39996) * 25 * Math.sqrt(k);
-            if (
-                Math.hypot(x - p.x, z - p.z) < AnazhRealm.CREATURE_SPAWN_FAR_MIN ||
-                this._kreaturLeibImBlick(x, z, t.g, t.bs)
-            )
+            if (Math.hypot(x - p.x, z - p.z) < this._bestandFernM() || this._kreaturLeibImBlick(x, z, t.g, t.bs))
                 continue;
             if (this._kreaturGrundFrei(x, z) && (!imRaum || lebt(x, z))) return { x, z };
         }
@@ -2533,7 +2557,14 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
         if (!c) return null;
-        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
+        // abseits seines Platzes gezeichnet (der Platz lag im Blick oder trug nicht): der Leib zieht heim (`_heimweg`)
+        const heimweg = Math.hypot(x - t.x, z - t.z) > this._creatureMoveCharacter(c).leashM;
+        Object.assign(c.userData, {
+            alterS: t.alterS,
+            wanderAnchor: { x: t.x, z: t.z },
+            name: this._bestandName(t),
+            _heimweg: heimweg,
+        });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }
@@ -3284,6 +3315,8 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
     aufholS: 3600,
     aufholJeTakt: 20,
     leiberJeTakt: 3,
+    vorausS: 60,
+    haltAnteil: 0.25,
 });
 // DER TIER-SATZ (profiband.K1, `_tickTierSatz`): `nahLeiber` Tiere leben im Nah-Kreis als Leib, jedes andere steht im Satz seiner
 // Gestalt — `phasen` Posen je Band (der Knoten legt zwischen zwei Zeilen linear: mit 16 glitt der Stand-Fuß an den Kanten des
