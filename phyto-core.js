@@ -2784,11 +2784,13 @@
             mammut: 9.2,
         },
         // DIE SCHICHTEN DES BESTANDS (vegetation.K3, w16-wald-innen): ein Dart, den die Kronen-Schüchternheit aus dem Dach
-        // nimmt (`forestSteht`), stirbt nicht — er steht im Zwischen- und Unterstand (Kraft'sche Baumklassen 3–5) im größten
-        // Alter `alter` (die Stufen der Jugend-Gestalt, stamm SUKZESSION.jugend), in dem seine Krone T·alter gegen jeden
-        // besseren geborenen Dart (T·alter) frei steht; unter dem Dach berühren sich die Kronen (`pack` 1): die Lücke der
-        // Schüchternheit reibt nur der Wind am offenen Dach (Putz et al. 1984). Gemessen (Wald-Gesetz, sd ≥ 0,7, flacher
-        // Grund): das Dach allein 44 Stämme/ha, mit den Schichten 375 — REF spec/abnahme/real-mischwald.json 370–900.
+        // nimmt (`forestSteht`), stirbt nicht, wenn er unter dem Schirm einer Dach-Krone steht — er wächst im Zwischen- und
+        // Unterstand (Kraft'sche Baumklassen 3–5) im größten Alter `alter` (die Stufen der Jugend-Gestalt, stamm
+        // SUKZESSION.jugend), in dem seine Krone T·alter gegen jeden besseren geborenen Dart (T·alter) frei steht; unter dem Dach
+        // berühren sich die Kronen (`pack` 1): die Lücke der Schüchternheit reibt nur der Wind am offenen Dach (Putz et al. 1984).
+        // Gemessen (`forestSchicht`, flacher Grund, sd 0,7–0,9): 42 → 70 Stämme/ha; im Wirt am Gesetz auf 1 km² um die
+        // Mess-Wiese (Kreise 20 m) Median 111, max 247 — die REF spec/abnahme/real-mischwald.json (370–900) trägt das Dach nicht:
+        // es deckt gesättigt 0,16 (Matérn II), der Schirm reicht nur so weit wie die Kronen.
         schicht: { alter: [0.7, 0.4], pack: 1 },
     };
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
@@ -2896,6 +2898,10 @@
             .sort((p, q) => Math.max(Math.abs(p[0]), Math.abs(p[1])) - Math.max(Math.abs(q[0]), Math.abs(q[1])))
             .flat()
     );
+    // DIE REICHWEITE DES BESTANDS (w16-wald-innen): die Zellen um eine Zelle, deren geborene Darts ihr Bestand liest — das Urteil
+    // des Dachs ±2 (FOREST_URTEIL_REIHE), der Schirm des Unterstands ±1 darüber (`forestSchicht`). Der Wirt plant und lädt sie
+    // (stamm WALD_PLAN.urteil).
+    const FOREST_URTEIL_REICH = 3;
     function forestSteht(d, gx, gz, geboren, pk) {
         const R = FOREST_URTEIL_REIHE;
         for (let q = 0; q < R.length; q += 2) {
@@ -2908,13 +2914,36 @@
         }
         return true;
     }
-    // DIE SCHICHT EINES DARTS (FOREST_PACK.schicht): 1 im Dach (`forestSteht`), sonst das größte Alter der Schicht, in dem seine
-    // Krone T·alter gegen jeden besseren geborenen Dart der Zellen ±2 (T·alter, Packung `schicht.pack`) frei steht, 0 ohne
-    // Platz. Rein, reihenfolge-frei wie das Urteil des Dachs (eine Existenz-Frage über die geborenen Darts).
+    // DIE SCHICHT EINES DARTS (FOREST_PACK.schicht): 1 im Dach (`forestSteht`), sonst — nur UNTER DEM SCHIRM: der Dart steht
+    // unter der Krone (|d − o| < o.T) eines Baums des Dachs der Zellen ±1 (Unterstand wächst im Schatten des Altholzes, nie auf der
+    // Lichtung: die Mess-Wiese trug ohne den Schirm 117 statt 8 Bäume im Ring von 25 m) — das größte Alter der Schicht, in dem
+    // seine Krone T·alter gegen jeden besseren geborenen Dart der Zellen ±2 (T·alter, Packung `schicht.pack`) frei steht, 0 ohne
+    // Platz. Rein, reihenfolge-frei wie das Urteil des Dachs; es liest die geborenen Darts ±FOREST_URTEIL_REICH (das Dach des
+    // Schirms ±1 urteilt über seine ±2). Das Urteil des Dachs je Dart merkt `_dachMemo` (rein je Dart-Objekt).
+    const _dachMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestImDach(o, gx, gz, geboren, pk) {
+        let v = _dachMemo ? _dachMemo.get(o) : undefined;
+        if (v === undefined) {
+            v = forestSteht(o, gx, gz, geboren, pk);
+            if (_dachMemo) _dachMemo.set(o, v);
+        }
+        return v;
+    }
     function forestSchicht(d, gx, gz, geboren, pk) {
-        if (forestSteht(d, gx, gz, geboren, pk)) return 1;
+        if (forestImDach(d, gx, gz, geboren, pk)) return 1;
         const S = FOREST_PACK.schicht;
         const R = FOREST_URTEIL_REIHE;
+        let schirm = false;
+        for (let q = 0; q < 18 && !schirm; q += 2) {
+            const nb = geboren(gx + R[q], gz + R[q + 1]);
+            for (let k = 0; k < nb.length && !schirm; k++) {
+                const o = nb[k];
+                const dx = d.x - o.x;
+                const dz = d.z - o.z;
+                schirm = o !== d && dx * dx + dz * dz < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+            }
+        }
+        if (!schirm) return 0;
         for (let i = 0; i < S.alter.length; i++) {
             const a = S.alter[i];
             let frei = true;
@@ -5827,6 +5856,7 @@
         forestSteht: forestSteht, // w4-b-pflanzen — DAS EINE Urteil der Kronen-Schüchternheit (Wald-Faden und Wirt)
         forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
         forestSchicht: forestSchicht, // w16-wald-innen — die Schicht eines Darts: 1 Dach, das Alter im Zwischen-/Unterstand, 0
+        FOREST_URTEIL_REICH: FOREST_URTEIL_REICH, // w16-wald-innen — die Zellen ±n, deren geborene Darts ein Bestand liest
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt
         KAMM_FELDER: KAMM_FELDER,
         planForestCell: planForestCell,

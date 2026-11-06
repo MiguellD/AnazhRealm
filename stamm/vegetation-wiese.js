@@ -2828,7 +2828,7 @@ AnazhRealm.STAND_RAND_M = 0.25;
 // `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
 AnazhRealm.WALD_PLAN = Object.freeze({
     reich: 4,
-    urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
+    urteil: globalThis.__phytoCore.FOREST_URTEIL_REICH,
     ms: 3,
     faden: 64,
     zellen: 8192,
