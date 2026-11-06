@@ -771,6 +771,7 @@ class AnazhRealm_speicher_laden {
                 this._cullArchitectureMesh(old);
             }
             this._kronenStreuWeg("a:" + old.id); // der Respawn trägt die Krone neu ein (neue id)
+            this._bauVerlaesstTakte(old); // der alte Bestand fällt aus jedem Takt (Löser, Gesetz, Nachlauf, Fahrt)
         }
         // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-
         // Buffer frei; geteilte Geom/Mat im Flatten-Cache bleiben). Die

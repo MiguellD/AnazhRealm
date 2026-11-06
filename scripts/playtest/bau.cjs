@@ -791,8 +791,9 @@ async function checkBandWave10b({ page, check }) {
             const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
             out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
 
-            // Cleanup spawned entry
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10b_car");
+            // Cleanup: der Wagen geht durch die EINE Tür (`removeArchitecture`) — sein Quarz-Block schwebt 0,1 m über den
+            // Rädern, das Gesetz bricht ihn im nächsten Takt; ein `filter` ließ ihn als Waise im Takt (z264, `_werkBricht`)
+            if (entry) r.removeArchitecture(entry, { still: true });
 
             // UI: Werkstatt-Status zeigt "fahrbar"
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1022,10 +1023,10 @@ async function checkBandWave10b({ page, check }) {
             out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
 
             // Mount-Range
-            r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
+            const fern = r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
             const farMountRes = r.toggleMountAtPlayer();
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
-            st.architectures = st.architectures.filter((e) => e.type !== "test_10b3_far");
+            if (fern) r.removeArchitecture(fern, { still: true }); // durch die EINE Tür, nie als Waise im Takt (z264)
 
             // Zoom-Test: _hasMagnifyingInSight raycastet gegen ALLE magnifying-Architekturen; eine autonom
             // gespawnte Geode im Strahl kippte die „kein Target“-Prüfung → Architektur-Liste kurz leeren.

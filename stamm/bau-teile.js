@@ -2506,7 +2506,11 @@ class AnazhRealm_bau_teile {
                   ? "knickt"
                   : null;
         const name = AnazhRealm._namensKopf(bp.label || entry.type);
-        const g = { pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
+        // DAS URTEIL TRÄGT SEINEN PLAN (`plan`): der Bruch nennt Teile des geurteilten Plans (Indizes), der Fall landet mit ihm —
+        // der Takt liest ihn hier, nie neu aus dem Buch. Befund z264: ein Plan, gelöscht oder umgeschrieben zwischen dem Setzen
+        // und dem ersten Takt (`deleteBlueprint`, die Aufräumer des Playtests), ließ `_werkBricht` je Bild an `undefined` brechen;
+        // der Fall eines Werks ohne Plan im Buch verschwand, statt zu landen.
+        const g = { plan: bp, pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
         if (grund === "schwebt") {
             // DER LASTPFAD BRICHT: die nicht getragenen Teile werden freie Körper, im ersten Takt des Gesetzes (`_werkBricht`)
             g.bruch = v.floatingParts.slice();
@@ -2563,7 +2567,7 @@ class AnazhRealm_bau_teile {
         const wf = this._weatherFieldFor(this.state.weather);
         for (const e of B) {
             const g = e._gesetz;
-            if (g.bruch) this._werkBricht(e, this.state.blueprints[e.type], g.bruch);
+            if (g.bruch) this._werkBricht(e, g.plan, g.bruch);
             else if (g.sturz) this._werkSturzSchritt(e, g, schwere, dt);
             else {
                 if (g.roll) this._werkRollSchritt(e, g, schwere, dt);
@@ -2588,14 +2592,14 @@ class AnazhRealm_bau_teile {
         }
         this._werkPoseZeigen(e);
         if (frei ? g.pose.sinken < s.hoehe : s.theta < Math.PI / 2) return;
-        const bp = this.state.blueprints && this.state.blueprints[e.type];
-        if (s.grund === "faellt" && bp) {
+        if (this._werkWaise(e, "der Sturz")) return;
+        if (s.grund === "faellt") {
             this._werkGesetzAus(e);
             delete e._gesetz;
             e.position.y -= s.hoehe;
             this._blockerBewegt(e);
             if (e.blockerAABBs) this._populateBlockerAABBs(e);
-            this._werkGesetzSetzen(e, bp, s.boden + s.hoehe);
+            this._werkGesetzSetzen(e, g.plan, s.boden + s.hoehe);
             return this._werkPoseZeigen(e);
         }
         this.removeArchitecture(e, { still: true });
@@ -2614,6 +2618,7 @@ class AnazhRealm_bau_teile {
     // Bauplan `truemmer_<hash>` (EIN Teil, `frei`): gleiche Teile teilen ihn, der Stand trägt ihn wie jeden eigenen Bauplan, die
     // Lage und Drehung seines Körpers jeder Bau (`architectures`). Vorher fiel das ganze Werk als ½ g t² und verschwand.
     _werkBricht(e, bp, frei) {
+        if (this._werkWaise(e, "der Bruch")) return;
         const fallend = new Set(frei);
         const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
         const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
@@ -2774,6 +2779,20 @@ class AnazhRealm_bau_teile {
     _werkWeltMatrix(e) {
         return this._archEntryWorldMatrix(e, this._werkPoseTmpW || (this._werkPoseTmpW = new THREE.Matrix4()));
     }
+    // DIE WAISE DES TAKTS: der Akt des Gesetzes (Bruch, Ende des Sturzes) ist ein Akt an der Welt — ein Eintrag, der die Welt
+    // verließ, ohne durch die EINE Tür zu gehen (`removeArchitecture` → `_bauVerlaesstTakte`), bricht nicht: kein Rest, kein
+    // Trümmer, kein Einsturz im Journal eines Werks, das es nicht mehr gibt. Er meldet sich laut beim Namen über den EINEN Melder
+    // und verlässt den Takt. Befund z264: der Playtest räumte seinen Wagen (`test_10b_car`, ein Quarz-Block 0,1 m über den
+    // Rädern: schwebt) per `filter` aus `state.architectures` — der Bruch lief je Bild weiter, vorher der Sturz eines Geists.
+    _werkWaise(e, akt) {
+        if (this.state.architectures.includes(e)) return false;
+        this._werkGesetzAus(e);
+        this._bruchMelden(
+            `WERK-WAISE: ${akt} an „${e.type}" (${e.id}) — der Eintrag verließ die Welt an removeArchitecture vorbei, sein Takt lief weiter`
+        );
+        return true;
+    }
+
     // Der Abbau nimmt das Werk aus dem Takt des Gesetzes, sein Wasser mit.
     _werkGesetzAus(entry) {
         if (!entry._gesetz || !this._werkGesetzImTakt) return;
