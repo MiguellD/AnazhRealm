@@ -2547,7 +2547,7 @@ class AnazhRealm_gelaende_chunks {
             // nichts (keine Re-Allokation bei stehendem Spieler). N3 — die jetzige LOD fließt in die Wahl (Hysterese am Grat).
             const existing = this.state.voxelChunks.get(key);
             const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            let desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
             if (existing && (existing.empty || (existingLod ?? 0) === desiredLod)) return;
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
@@ -2568,6 +2568,21 @@ class AnazhRealm_gelaende_chunks {
                         schwelle + (existing ? ST.vorlauf : 0),
                         playerPos
                     );
+            // GROB ZUERST (w14-strom-tempo): ein fehlender Chunk kommt in der Stufe, die die Bahn bis zu seinem Eintritt in den
+            // Ring verlangt (die Strecke reicht `t` Sekunden, höchstens den Vorlauf) — die feinere baut er danach, wenn ihre Zeit
+            // kommt (die Reihe oben). Ein L2-Netz baut der Faden in 2–13 ms, ein L0-Netz in 80 ms (Fahrt-Probe d5/d7, Cloud).
+            if (!existing && !mitte)
+                desiredLod = Math.max(
+                    desiredLod,
+                    this._voxelChunkLodFor(
+                        cx,
+                        cz,
+                        playerPos.x,
+                        playerPos.z,
+                        null,
+                        Math.min(Math.max(t, 0), AnazhRealm.BEDARF.vorlaufS)
+                    )
+                );
             zellen.push([cx, cz, bild, grob, t, mitte ? -1 : this._bedarfWeg(x, z), existing, existingLod, desiredLod]);
         };
         const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts

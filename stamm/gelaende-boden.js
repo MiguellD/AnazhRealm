@@ -2306,7 +2306,6 @@ class AnazhRealm_gelaende_boden {
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
         const sandNoise = this._gelaende().noise;
-        const base = this.state.terrainBaseHeight || 0;
         const P = AnazhRealm.BODEN_FARBE;
         const stone = P.rock;
         const earth = P.mead;
@@ -2513,12 +2512,13 @@ class AnazhRealm_gelaende_boden {
     // fein, bis sie vorbei ist. Weit voraus steht so erst die Grobstufe, die feinere folgt mit der Ankunft (Grob zuerst). Bis
     // w14-strom-tempo galt der nähere der Endpunkte (Spieler, Ende des Vorlaufs): im GT fiel ein Chunk der Bahnmitte zurück
     // auf die gröbere Stufe und baute neu, sobald das Ende des Vorlaufs an ihm vorbei war.
+    // `bahn` als Zahl: die Strecke reicht so viele Sekunden (der fehlende Chunk fragt bis zu seinem Eintritt in den Ring).
     _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, bahn = false) {
         const B = AnazhRealm.BODEN_STUFEN;
         const S = this._voxelChunkConfig(0).span;
         const [x0, x1, z0, z1] = [cx * S, (cx + 1) * S, cz * S, (cz + 1) * S];
         const d = bahn
-            ? this._bedarfKasten(x0, x1, z0, z1, { x: px, z: pz })
+            ? this._bedarfKasten(x0, x1, z0, z1, { x: px, z: pz }, false, bahn === true ? undefined : bahn)
             : Math.max(Math.max(x0 - px, 0, px - x1), Math.max(z0 - pz, 0, pz - z1));
         const st = B.stufen;
         let lod = st[st.length - 1].lod;
