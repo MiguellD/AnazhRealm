@@ -73,7 +73,12 @@ hauptLauf(async () => {
         } catch {}
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
-        if (f) await __gebautNach("noch: f.pending", { fertig: () => !f.pending?.size, takt: () => __streuTakte(1, 50), max: 400 });
+        if (f)
+            await __gebautNach("noch: f.pending", {
+                fertig: () => !f.pending?.size,
+                takt: () => __streuTakte(1, 50),
+                max: 400,
+            });
 
         // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer
         // zeichnet nie, ihre Senken stünden leer und würden als „leerer Pool" übersprungen. Die Linse legt den Satz
