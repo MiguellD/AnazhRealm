@@ -653,6 +653,8 @@ class AnazhRealm_stoff_material {
             schirmJeSzene: TSL.uniform(1).setName("schirmJeSzene"),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
+            // die Stärke des Regens (das Wetter-Feld `rain`, 0 ohne Regen): die Tropfen-Ringe der Pfütze (`_pfuetzeKnoten`)
+            regen: TSL.uniform(0),
             dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, 1, 0))
             ),
@@ -1666,6 +1668,12 @@ class AnazhRealm_stoff_material {
                         _baseN = _baseN.add(_mk.neigung.mul(_lod));
                         _mikroH = _mk.hoehe.mul(_lod);
                     }
+                    // DIE PFÜTZE (wetter.K2, `_pfuetzeKnoten`): ihr Spiegel steht waagrecht über der Mulde, im Regen kippen ihn die
+                    // Ringe der Tropfen — die Normale des Bodens geht mit ihrer Deckung in die des Wassers über
+                    if (opts.geomorph) {
+                        const _pf = this._pfuetzeKnoten();
+                        _baseN = _Tn.mix(_Tn.normalize(_baseN), _Tn.vec3(_pf.welle.x, 1, _pf.welle.y), _pf.deckung);
+                    }
                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView): die geflattete Welt-Normale
                     // über die Kamera-Matrix. Bis 05.10. stand sie roh als Welt-Normale darin — die Licht-Normale des
                     // Bodens kippte mit der Kamera-Neigung, und `normalWorld` (= normalView zurück in die Welt) las aus
@@ -1741,6 +1749,9 @@ class AnazhRealm_stoff_material {
         this._applyVegetationResponse(mat, opts);
         // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
         if (opts.pflanzenStoff && !opts.bark) mat.userData.poren = AnazhRealm.NAESSE.poren.foliage; // das Laub trägt Wachs
+        // der Boden: Erde (die Poren seines Stoffs, aus denen auch der Film verdunstet, `_trockenRate`), und in seinen Mulden
+        // steht der Regen (`_pfuetzeKnoten`)
+        if (opts.geomorph) Object.assign(mat.userData, { poren: AnazhRealm.NAESSE.poren.erde, pfuetze: true });
         this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
@@ -1772,17 +1783,28 @@ class AnazhRealm_stoff_material {
             );
         const bis = je("bis");
         const rel = T.positionLocal.xz.sub(U.stufeAuge).abs();
-        const w = T.smoothstep(bis.sub(je("band")), bis, T.max(rel.x, rel.y));
+        const abstand = T.max(rel.x, rel.y);
+        const w = T.smoothstep(bis.sub(je("band")), bis, abstand);
         const f = U.geomorph.mul(s.add(w).sub(s.mul(w)));
         const nZ4 = T.attribute("aNormalZiel", "vec4");
         const fZ4 = T.attribute("aFarbeZiel", "vec4");
         const nLokal = T.normalize(T.mix(T.normalGeometry, nZ4.xyz, f));
+        // die Mulde des Gesetzes (wetter.K2) liegt in der vierten Komponente der Normale (snorm8x4, `BODEN_SATZ_ATTR`). r184 teilt
+        // jeden Attribut-Knoten nach seinem NAMEN (`AttributeNode.getHash`, `Node.build` → `getShared`, gelesen im Vendor): der
+        // zuerst gebaute Knoten „normal" ist `normalGeometry` (vec3), ein zweiter `attribute("normal", "vec4")` las bis
+        // w15-pfuetze dessen Varying als vec4(n, 1.0).w — die Mulde war auf der GPU überall 1. Ihr Knoten trägt darum einen
+        // eigenen Schlüssel: dieselbe Vertex-Eingabe (vec4 nach dem Puffer), sein eigener Weg.
+        const normal4 = T.attribute("normal", "vec4");
+        normal4.getHash = () => "normal:vec4";
         this._bodenStufenK = {
             f,
+            abstand,
             farbe: T.mix(farbe4.xyz, fZ4.xyz, f),
             normalWelt: T.normalize(T.modelNormalMatrix.mul(nLokal)),
             himmel: nZ4.w,
             schutt: fZ4.w,
+            // die Mulde des Gesetzes (wetter.K2, gelaende-core `muldeEcken`) in der vierten Komponente der Normale
+            mulde: normal4.w,
         };
         return this._bodenStufenK;
     }
@@ -1846,7 +1868,8 @@ class AnazhRealm_stoff_material {
         const poren = ud.poren ?? AnazhRealm.NAESSE.poren[ud.foundryKind] ?? 1;
         if (mat.transparent || ud.shadowTwin || !(poren > 0)) return;
         const T = THREE.TSL;
-        const quellen = [mat.colorNode, mat.roughnessNode, mat.metalnessNode, himmel, ud.naesseFarbe];
+        const pfuetze = ud.pfuetze ? this._pfuetzeKnoten().deckung : null;
+        const quellen = [mat.colorNode, mat.roughnessNode, mat.metalnessNode, himmel, ud.naesseFarbe, pfuetze];
         const schluessel = quellen.map((n) => (n ? n.id : "-")).join("|") + "|" + poren;
         const karte = this._naesseKnoten || (this._naesseKnoten = new Map());
         if (!karte.has(schluessel)) {
@@ -1860,7 +1883,8 @@ class AnazhRealm_stoff_material {
                 ud.naesseFarbe ? farbe.rgb.mul(ud.naesseFarbe) : farbe.rgb,
                 mat.roughnessNode || T.materialRoughness,
                 mat.metalnessNode || T.materialMetalness,
-                w
+                w,
+                pfuetze
             );
             karte.set(schluessel, { farbe: T.vec4(farbe.rgb.mul(n.faktor), farbe.a), rauh: n.rauh });
         }
@@ -1869,17 +1893,92 @@ class AnazhRealm_stoff_material {
         mat.roughnessNode = k.rauh;
     }
 
+    // DIE PFÜTZE IM BODEN-STOFF (wetter.K2) — EIN Satz Knoten: die Mulde des Gesetzes (die vierte Komponente der Normale im
+    // Boden-Satz, `_bodenStufenKnoten`) unter dem Pfützen-Gesetz (`_pfuetzeGesetz`) mit dem Film der Welt (`atmoUniforms.naesse`)
+    // und der Nähe zum Auge der Stufen (`PFUETZE.fernM`), × die Himmels-Sicht des Bodens und des Dach-Pools (unter einer Decke
+    // regnet es nicht) → `deckung`. Das Gesetz ist affin in der Mulde: die ECKE rechnet es (EIN Varying), das Fragment klemmt nur —
+    // dieselbe Kante, ohne Rechnung im Pixel. `welle` die Neigung der Tropfen-Ringe (x, z) im Regen (`atmoUniforms.regen`): je
+    // Zelle ein Tropfen an einem Ort und in einem Takt aus ihrem Gitter-Hash (drei Zahlen aus EINER Ziehung, reine Arithmetik —
+    // kein Fn-Rumpf im Graph, RAUSCH-GESETZ (B)), sein Ring läuft bis `welle.radius` und verebbt. Leser: die Normale und der Stoff
+    // (`_naesseImStoff`) des Bodens.
+    _pfuetzeKnoten() {
+        if (this._pfuetzeK) return this._pfuetzeK;
+        const T = THREE.TSL;
+        const U = this._ensureAtmoUniforms();
+        const P = AnazhRealm.PFUETZE;
+        const B = this._bodenStufenKnoten();
+        const A = {
+            k: T.float,
+            mul: (a, b) => a.mul(b),
+            sub: (a, b) => a.sub(b),
+            max: T.max,
+            klemm: (x) => x.clamp(0, 1),
+            ecke: (x) => T.varying(x),
+        };
+        const nah = T.float(1).sub(T.smoothstep(P.fernM[0], P.fernM[1], B.abstand));
+        const deckung = AnazhRealm._pfuetzeGesetz(A, B.mulde, U.naesse, nah)
+            .deckung.mul(B.himmel)
+            .mul(this._naesseHimmel(T));
+        const W = P.welle;
+        const q = T.positionWorld.xz.mul(1 / W.zelleM);
+        // der Gitter-Hash der Zelle (Hoskins, „Hash without Sine" hash33): x, y die Lage des Tropfens, z sein Takt
+        const z = T.fract(q.floor().xyx.mul(T.vec3(0.1031, 0.103, 0.0973)));
+        const z3 = z.add(T.dot(z, z.yzx.add(33.33)));
+        const h = T.fract(z3.xxy.add(z3.yzz).mul(z3.zyx));
+        const t = T.fract(this._windUniformsEnsure().uWindTime.mul(W.takt).add(h.z));
+        const d = q.fract().sub(h.xy.mul(0.5).add(0.25));
+        const r = d.length().max(1e-4);
+        const vorn = r.sub(t.mul(W.radius / W.zelleM));
+        const ring = T.sin(vorn.mul(W.wellen))
+            .mul(T.float(1).sub(t))
+            .mul(T.float(1).sub(T.smoothstep(0, 0.18, vorn.abs())));
+        this._pfuetzeK = { deckung, welle: d.mul(ring.mul(W.hub).mul(U.regen).div(r)) };
+        return this._pfuetzeK;
+    }
+
     // DAS GESETZ NASSER OBERFLÄCHEN (Lagarde 2013, „Water drop 3b — Physically based wet surfaces"; Lekner & Dorf 1988): das
     // Wasser in den Poren hält das gestreute Licht länger im Stoff — die Albedo geht gegen ihr Quadrat (`faktor` auf die Farbe:
     // dunkle Stoffe dunkeln stärker), der Wasserfilm glättet die Rauheit; Metall hat keine Poren (Gewicht × 1 − Metall). Über einer Algebra A: TSL-Knoten
     // im Stoff (`_naesseImStoff`), Zahlen in der Linse (`werkbank licht --naesse`: dicht) — EINE Formel.
-    static _naesseGesetz(A, albedo, rauh, metall, w) {
+    // DIE PFÜTZE (`pfuetze`, optional, ihre Deckung 0 … 1, `_pfuetzeGesetz`): unter ihr ist der Boden ganz getränkt, ihr Spiegel
+    // ist Wasser (`PFUETZE.rauh`); ohne Pfütze dieselben Zahlen wie bisher.
+    static _naesseGesetz(A, albedo, rauh, metall, w, pfuetze) {
         const N = AnazhRealm.NAESSE;
-        const p = A.mul(w, A.sub(A.k(1), metall));
+        let p = A.mul(w, A.sub(A.k(1), metall));
+        if (pfuetze != null) p = A.mix(p, A.k(1), pfuetze);
+        const r = A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p);
         return {
             faktor: A.mix(A.k(1), albedo, p),
-            rauh: A.mix(rauh, A.mul(rauh, A.k(N.glatt)), p),
+            rauh: pfuetze != null ? A.mix(r, A.k(AnazhRealm.PFUETZE.rauh), pfuetze) : r,
         };
+    }
+
+    // DAS PFÜTZEN-GESETZ (wetter.K2) über einer Algebra A (k, mul, sub, max, klemm, ecke): `mulde` die Mulde des Gesetzes (0 … 1
+    // in Einheiten von `MULDE.tiefeM`, gelaende-core `muldeEcken`), `film` die Nässe der Welt (`state.naesse`), `nah` die Nähe
+    // zum Auge (1 nah … 0 jenseits `PFUETZE.fernM`: fern sinkt der Spiegel, die flachen Pfützen gehen zuerst, jenseits keine) →
+    // { wasser (in Einheiten von `tiefeM`), deckung 0 … 1 }. `roh` ist affin in Mulde, Film und Nähe: `A.ecke` markiert die
+    // Grenze, bis zu der die Ecke rechnet (TSL: ein Varying; Zahlen: dieselbe Zahl). TSL-Knoten im Boden-Stoff
+    // (`_pfuetzeKnoten`), Zahlen in jeder Linse.
+    static _pfuetzeGesetz(A, mulde, film, nah = A.k(1)) {
+        const saum = AnazhRealm.PFUETZE.saum;
+        const roh = A.ecke(A.mul(A.sub(A.sub(mulde, A.sub(A.k(1), film)), A.sub(A.k(1), nah)), A.k(1 / saum)));
+        return { wasser: A.mul(A.max(A.k(0), roh), A.k(saum)), deckung: A.klemm(roh) };
+    }
+
+    // DIE KURVE DER NÄSSE (wetter.K2) — EINE Rechnung für den Takt der Welt (`_naesseTakt`) und jede Linse: von `n0` nach `dt`
+    // Sekunden unter dem Wetter-Feld `wf` (rain · sun · wind). Regen benetzt (exakt je Schritt: 1 − (1 − n0)·e^(−dt·rain/benetzenS)),
+    // ohne Regen verdunstet der Film mit der Rate `_trockenRate` (linear bis 0, exakt je Schritt).
+    static _naesseKurve(n0, wf, dt) {
+        const N = AnazhRealm.NAESSE;
+        const t = Math.max(0, dt);
+        if (wf.rain > N.regenAb) return 1 + (n0 - 1) * Math.exp((-t * wf.rain) / N.benetzenS);
+        return Math.max(0, n0 - t * AnazhRealm._trockenRate(wf));
+    }
+    // die Rate, mit der der Film ohne Regen fällt (je s): Sonne, Wind und die Luft tragen ab, der Boden schluckt nach seinen Poren
+    static _trockenRate(wf) {
+        const N = AnazhRealm.NAESSE;
+        const luft = N.sonne * Math.max(0, wf.sun) + N.wind * Math.max(0, wf.wind) + N.luft;
+        return (luft * (1 - N.versickern + N.versickern * N.poren.erde)) / N.verdunstS;
     }
 
     // DIE NÄSSE UNTER DEM HIMMEL (EIN Knoten je Seite): die Himmels-Sicht des Regens (`_offenerHimmel`) am Welt-Ort des Fragments;
@@ -2346,7 +2445,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ao = T.float(1.0).add(hoehe.mul(B.kavitaet)).max(0.0);
         mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
-        const c = T.vec4(mat.colorNode || T.materialColor);
+        // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
+        // (`vec4(vec4)`, ConvertNode) aber nie — sie schrieb ihren ganzen Ausdruck je Leser aus (`.rgb` und `.a`: der Boden trug
+        // seine Stoff-Farbe zweimal, 727 Zeichen WGSL, w15-pfuetze). `toVar` legt sie in EINE Variable.
+        const c = T.vec4(mat.colorNode || T.materialColor).toVar();
         mat.colorNode = T.vec4(c.rgb.mul(T.float(1.0).add(hoehe.mul(B.korn)).max(0.0)), c.a);
     }
 
@@ -3577,24 +3679,46 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
 AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
-// DIE NÄSSE (wetter.K2, `_naesseTakt`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke (Wetter-Feld `rain` über
-// `regenAb`; Regen 0,6 nach 10 min 0,91), ohne Regen trocknet die Welt mit τ = `trocknenS` / max(Sonne, 0,2); voll nass geht die
-// Albedo zu ihrem Quadrat, die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs,
-// Haut Fett, der Schatten-Stoff zeichnet keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
+// DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
+// (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
+// Trocken-Stufe, Penman: die Luft trägt das Wasser ab, solange die Fläche nass ist) — die Rate (sonne · Sonne + wind · Wind + luft)
+// / `verdunstS`, × (1 − versickern + versickern · Poren des Bodens): ein trockener Wind und die Sonne trocknen schneller, ein
+// poröser Boden schluckt den Film (`poren.erde`, der Stoff des Bodens). Klar (Sonne 1, Wind 0,06) trocknet die Nässe des
+// zehnminütigen Regens (0,91) in 9,4 min, bewölkt in 15,7 min — ohne Sprung bis 0. Voll nass geht die Albedo zu ihrem Quadrat,
+// die Rauheit auf `glatt` × sich. `poren` je Art (sonst 1): Laub und Halm tragen Wachs, Haut Fett, der Schatten-Stoff zeichnet
+// keine Farbe. Der Dach-Pool: `dachPlaetze` Decken im `dachUmkreisM`, neu nach `dachSchrittM`;
 // Decken tragen die Häuser (Hülle) und die `dachArten` (Rezept oder Art: ihre Form schließt oben, `_dachKastenSetzen`). Näher als
 // `ruhe` an ihrem Ziel steht die Nässe dort (ein Tausendstel verschiebt eine Albedo um höchstens 2,5e-4) — der Fixpunkt, an dem
 // der Regen schläft (feld.K3, `_tickRain`). Wie nass ein Reifen greift, trägt die Stoff-Zeile je Stoff (`muRadNass`, `_fahrHaft`).
 AnazhRealm.NAESSE = Object.freeze({
     regenAb: 0.05,
     benetzenS: 150,
-    trocknenS: 1500,
+    verdunstS: 480,
+    sonne: 0.6,
+    wind: 0.4,
+    luft: 0.15,
+    versickern: 0.3,
     ruhe: 1e-3,
     glatt: 0.5,
-    poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0 }),
+    poren: Object.freeze({ foliage: 0.6, foliageTex: 0.6, grass: 0.6, skin: 0.3, haut: 0.3, schatten: 0, erde: 1 }),
     dachPlaetze: 8,
     dachUmkreisM: 64,
     dachSchrittM: 4,
     dachArten: Object.freeze(["marktstand", "brunnen", "gate"]),
+});
+// DIE PFÜTZE (wetter.K2, `_pfuetzeGesetz`, `_pfuetzeKnoten`): der Regen steht in den Mulden des Gesetzes (gelaende-core
+// `muldeEcken`, die Tiefe m in Einheiten von `MULDE.tiefeM` je Vertex des Bodens). Der Film der Welt (die EINE Nässe) hebt das
+// Wasser in jeder Mulde: Wasser = max(0, m − (1 − Nässe)) — nass steht jede Mulde voll, beim Trocknen fallen zuerst die flachen,
+// zuletzt die tiefen, trocken keine. Die Deckung steigt über `saum` (in Einheiten von `tiefeM`: 1,4 cm Wasser) auf 1. Unter der
+// Pfütze ist der Boden ganz getränkt, ihr Spiegel ist Wasser (Rauheit `rauh`, die Normale waagrecht); im Regen schlagen Tropfen
+// Ringe (je Zelle `welle.zelleM` ein Tropfen, `welle.takt` je s, bis `welle.radius` der Zelle, Neigung `welle.hub`). Über
+// `fernM` (Chebyshev zum Auge der Stufen) sinkt der Spiegel um die Ferne (die flachen Pfützen gehen zuerst, jenseits keine):
+// die gröberen Stufen tragen keine Mulde (`MULDE.bisStufe`).
+AnazhRealm.PFUETZE = Object.freeze({
+    saum: 0.12,
+    rauh: 0.05,
+    fernM: Object.freeze([64, 88]),
+    welle: Object.freeze({ zelleM: 0.45, takt: 0.9, radius: 0.45, wellen: 26, hub: 0.35 }),
 });
 // Substanz-Antwort: microStrength = Oberflächen-Mikrostruktur, ao* = Kavitäts-AO. Default-Quelle in
 // `_ensureAtmoUniforms` (SUBSTANCE_RESPONSE-Antennen lesen daraus); die Luftperspektive ist `LUFT`.

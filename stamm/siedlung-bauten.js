@@ -2998,12 +2998,13 @@ AnazhRealm.VORBAU_FRAGE_MS = 500;
 AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
 // DIE ATTRIBUTE DES BODEN-SATZES (K44, K51-2): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`), der Chunk
 // behält seine Float32-Arrays für jeden CPU-Leser; der Geomorph der Stufe bringt Normale und Stoff-Farbe des Ziels
-// (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (Morph-Code in der
-// Farbe, Himmels-Sicht im Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
+// (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (die Mulde des
+// Gesetzes in der Normale, gelaende-core `muldeEcken` — wetter.K2, die Pfütze; Morph-Code in der Farbe, Himmels-Sicht im
+// Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
 // voxel-worker, der jede Vorlage in DIESEN Formen packt (`_bodenSatzFormen`, gelaende-core `satzVorlage`, w4-b-boden2).
 AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["position", 3],
-    ["normal", 3, "snorm8"],
+    ["normal", 3, "snorm8", "aMulde"],
     ["color", 3, "half", "aMorphWeight"],
     ["aMorphTarget", 3],
     ["aNormalZiel", 3, "snorm8", "aHimmel"],
