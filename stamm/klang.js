@@ -38,7 +38,7 @@ class AnazhRealm_klang {
         // der erste Bau, headless 2,0–2,3 ms, w13-klang-fahrt).
         UM.kern.fahrtWelle(ctx);
         const warm = UM.kern.fahrtStimme(ctx, ctx.createGain());
-        warm.anwenden({ v: 0, vmax: 1, motor: true }, ctx.currentTime);
+        warm.anwenden({ v: 0, vmax: 1, motor: true, ...UM.kern.fahrtAmOhr({}, {}) }, ctx.currentTime);
         warm.stop(ctx.currentTime);
 
         s.ctx = ctx;
