@@ -1600,7 +1600,11 @@ class AnazhRealm_siedlung_verkehr {
             W.gesperrt = false;
             return Infinity;
         }
-        W.gesperrt = !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
+        // GESPERRT ist auch, wer hinter dem Ort keinen Platz hat (`platz`: der vor ihm steht in der Ausfahrt) — er ist nicht Kopf der
+        // Reihe, der Gegenverkehr fährt zuerst. Bis w13-verkehr-heil hielt er die Reihe: im Netz der vier Wenden (stadt-voll, 10 Uhr)
+        // wartete Wagen 12 an der Enge 818/467 auf ihren Kopf 13, 13 auf Platz hinter 3, 3 hinter 0, 0 an der Kreuzung am Markt auf
+        // ihren Kopf 16, 16 auf Platz hinter 9, 9 hinter 12 — ab Minute 1 fuhr keiner der 20 Wagen
+        W.gesperrt = !platz || !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
         AnazhRealm._verkehrReihe(Z, W, true);
         return halt;
     }

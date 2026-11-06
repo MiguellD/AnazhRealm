@@ -3895,7 +3895,10 @@
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
-    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich — der Stoß zweier Trassen am Knoten des
+    // Straßengraphen liegt bis zu einem Schritt der Trasse (3 m, `strassengraph` DS) auseinander, `naheM` trägt ihn samt 0,1 m; bis
+    // w13-verkehr-heil 2,5: an stadt-voll endeten zwei Trassen am Knoten 961,6/387,7 und 732/570 im Stoß von 3,0 m, das Netz hieß dort
+    // „Ende", und das Ende im Osten (am Brunnen) trug keine Wende — Wenden 3 an 4 Enden), ihr längster zusammenhängender Teil. Knoten mit drei und
     // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
     // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
@@ -3913,7 +3916,7 @@
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
     // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
@@ -4492,7 +4495,7 @@
       let done=false;
       const a0=rnd()*Math.PI*2, rB=(Rw?Rw-4.5-rq:34+rq);
       for(let k2=0;k2<10&&!done;k2++){ const a2=a0+k2*0.63;
-        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(-Math.sin(a2),-Math.cos(a2))*0+Math.atan2(-Math.cos(a2)*0-Math.sin(a2), -Math.cos(a2));
+        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(Math.cos(a2),Math.sin(a2));   /*die Front (lokal −z) zur Stadt: der Rücken (lokal +z → sin φ, cos φ) zeigt nach außen (cos a2, sin a2) — bis w13-verkehr-heil atan2(−sin, −cos), die Tür 90° quer zur Mauer (Stadt am Messort stadt: die Burg #304883 öffnete nach Westen, ihr Herr fand keinen Weg)*/
         const o={cx:ccx,cz:ccz,phi,ex:exB,ez:ezB};
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
