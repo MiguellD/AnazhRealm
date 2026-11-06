@@ -1601,6 +1601,36 @@ class AnazhRealm_studio_bruecke {
         }
         return Math.min(f(0), f(1), f((a + b) / 2));
     }
+    // DIE ZEIT BIS ZUM KASTEN (s, w14-strom-tempo): die Sekunden, bis die Bahn (`p`, ohne Angabe der Spieler, mit dem Tempo-Vektor
+    // `_bedarfTempo`) dem Kasten [x0, x1] × [z0, z1] auf den Chebyshev-Abstand `B` nahe kommt — 0, wenn sie es schon ist,
+    // Infinity, wenn sie es binnen zweier Vorläufe nicht wird (im Stand, seitab, dahinter). Der Abstand ist längs der Bahn
+    // konvex: die Dreiteilung findet sein Minimum, die Halbierung davor die erste Zeit unter `B`. Leser: die Reihe des
+    // Boden-Strom (`_tickVoxelChunkStreaming`).
+    _bedarfKastenZeit(x0, x1, z0, z1, B, p) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const k = (x, z) => Math.max(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
+        if (k(e.x, e.z) <= B) return 0;
+        const [vx, vz] = this._bedarfTempo();
+        if (!(vx || vz)) return Infinity;
+        const f = (t) => k(e.x + vx * t, e.z + vz * t);
+        let [a, b] = [0, 2 * AnazhRealm.BEDARF.vorlaufS];
+        for (let i = 0; i < 24; i++) {
+            const m1 = a + (b - a) / 3,
+                m2 = b - (b - a) / 3;
+            if (f(m1) <= f(m2)) b = m2;
+            else a = m1;
+        }
+        let hi = (a + b) / 2;
+        if (f(hi) > B) return Infinity;
+        let lo = 0;
+        for (let i = 0; i < 24; i++) {
+            const m = (lo + hi) / 2;
+            if (f(m) <= B) hi = m;
+            else lo = m;
+        }
+        return hi;
+    }
     // DIE ZEIT BIS ZUR SICHT eines Rings (w13-dorf-strom): die Sekunden, bis die Bahn (der Spieler mit dem Tempo-Vektor
     // `_bedarfTempo`) den Kreis `r` um (x, z) betritt — 0, wenn er darin steht, Infinity, wenn die Bahn ihn nicht trifft (im
     // Stand, seitab, dahinter). Ein Leser mit eigener Vorlaufzeit T lässt zu, was die Bahn binnen T erreicht — der Ring vor

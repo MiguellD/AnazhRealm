@@ -2530,13 +2530,37 @@ class AnazhRealm_gelaende_chunks {
         this._ringLeerlauf = false;
         let [draussen, wartet] = [0, 0];
         const gesehen = new Set();
+        const ST = AnazhRealm.BODEN_STUFEN;
+        // DIE SEKUNDEN BIS BEDARF (w14-strom-tempo, die Prioritäts-Schlange des Bodens): je Chunk, dem etwas fehlt, die Zeit, bis
+        // die Bahn ihn braucht (`_bedarfKastenZeit`) — ein fehlender, bis er in den Ring des Spielers tritt (Kasten-Abstand
+        // ≤ Ring · Spanne), ein stehender, bis seine Stufe nicht mehr trägt (Kasten-Abstand unter der Grenze der nächst feineren
+        // Stufe samt Vorlauf). Ein Chunk, der gröber werden darf (die Bahn ließ ihn hinter sich), kommt nach allem, was die Bahn
+        // braucht — der Faden baut ihn, wenn er sonst nichts zu tun hat. Unter Gleichen (im Stand: keine Zeit) die Zeit bis Bedarf
+        // in Metern zu Fuß (`_bedarfWeg`). Bis w14-strom-tempo ordnete der Rang allein nach `_bedarfWeg` der Mitte: im GT (Faden
+        // 87 % belegt, L0 81 ms · L1 27 ms · L2 13 ms je Bau) bauten die Vergröberungen hinter dem Spieler (Rang = ihr Abstand)
+        // vor den Chunks am Rand des Rings voraus — 294 von 336 verfehlten Boden-Eintritten waren Chunks ohne Netz am Rand.
         const nimm = (cx, cz, mitte) => {
             const key = `${cx},${cz}`;
             if (gesehen.has(key)) return;
             gesehen.add(key);
+            // Distanz-LOD: gewünschte LOD aus dem Kasten-Abstand der Bahn; trägt ein Chunk eine ANDERE, baut er neu, sonst
+            // nichts (keine Re-Allokation bei stehendem Spieler). N3 — die jetzige LOD fließt in die Wahl (Hysterese am Grat).
+            const existing = this.state.voxelChunks.get(key);
+            const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
+            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
+            if (existing && (existing.empty || (existingLod ?? 0) === desiredLod)) return;
             const [x, z] = [(cx + 0.5) * span, (cz + 0.5) * span];
             const bild = !lade || mitte || this._rangImBild({ x, z }, halb);
-            zellen.push([cx, cz, bild, mitte ? -1 : this._bedarfWeg(x, z)]);
+            const grob = !!existing && desiredLod > (existingLod ?? 0);
+            const schwelle = !existing
+                ? ringRadius * span
+                : ST.stufen.find((s) => s.lod === (existingLod ?? 0) - 1).bis + ST.vorlauf;
+            const t = mitte
+                ? -1
+                : grob
+                  ? Infinity
+                  : this._bedarfKastenZeit(cx * span, (cx + 1) * span, cz * span, (cz + 1) * span, schwelle, playerPos);
+            zellen.push([cx, cz, bild, grob, t, mitte ? -1 : this._bedarfWeg(x, z), existing, existingLod, desiredLod]);
         };
         const anker = [[pcx, pcz]]; // der Ring des Spielers und, wo die Bahn die Zelle wechselt, der Ring ihres Orts
         if (vcx !== pcx || vcz !== pcz) anker.push([vcx, vcz]);
@@ -2544,20 +2568,13 @@ class AnazhRealm_gelaende_chunks {
             for (let dz = -ringRadius; dz <= ringRadius; dz++)
                 for (let dx = -ringRadius; dx <= ringRadius; dx++)
                     nimm(ax + dx, az + dz, ax === pcx && az === pcz && !dx && !dz);
-        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte nach der Zeit bis Bedarf; die Zelle des Spielers vorn
-        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3]);
-        for (const [cx, cz, bild] of zellen) {
+        // im Lade-Takt das Bild zuerst (B-Blick), je Hälfte das Vergröbern zuletzt, dann nach den Sekunden bis Bedarf und der
+        // Zeit bis Bedarf in Metern; die Zelle des Spielers vorn (Infinity − Infinity ist NaN: unter Gleichen der nächste Schlüssel)
+        zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3] || a[4] - b[4] || a[5] - b[5]);
+        for (const [cx, cz, bild, , , , existing, existingLod, desiredLod] of zellen) {
             if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
             if (satt) continue;
             const key = `${cx},${cz}`;
-            // Distanz-LOD: gewünschte LOD je Frame aus der Spieler-Distanz; trägt ein Chunk eine ANDERE, wird
-            // er dirty + rebuildet, sonst skipt der Tick (keine Re-Allokation bei stehendem Spieler).
-            const existing = this.state.voxelChunks.get(key);
-            // N3 — die jetzige LOD des Chunks fliesst in die Distanz-Wahl
-            // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
-            // `existing`) bekommt die reine Band-LOD.
-            const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-            const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod, true);
             // DAS NETZ IM FLUG KOSTET KEINEN PLATZ (w14-strom-tempo): wartet die verlangte Stufe schon im Faden
             // (`voxelMeshPending`), geht der Takt weiter — die Kappe zählt Arbeit (ein Auftrag, ein Einbau), nie das Warten.
             // Bis w14-strom-tempo fragte jeder Takt die Wartenden zuerst neu und zählte sie: im GT (63,8 m/s) füllten 6 Netze
