@@ -1504,6 +1504,20 @@ class AnazhRealm_siedlung_bauten {
         return !!(entry && (entry.mesh || entry.instanced));
     }
 
+    // STEHT DER BAU IM BILD — in der Stufe, die seine Kette für seinen Abstand wählt: diesseits des Cull-Radius sein Mesh
+    // oder seine Instanz (`_archIsRendered`), dahinter seine Fernform im Welt-March (der Satz am Eintrag, `_archZiegelFern`:
+    // die Hülle des Gesetzbuchs oder der Box-Satz), solange der March gezeichnet wird und sein Feld zeichnet
+    // (`_weltFeldZeichnet`). Leser: die Abnahme des Blicks (scripts/lib/ausgabe-aufnahme.cjs, die Gestalt des Ziels). Bis
+    // w17-siedlung-abnahme fragte sie nur Mesh und Instanz — jedes Werk am Ziel jenseits von 150 m hieß UNGEZEICHNET, obwohl
+    // seine Hülle im Bild stand (siedlung.K4#2, GTX a4dc2a45: „wandlaterne_dorf 609 UNGEZEICHNET" in 210 m, in allen 42 Posen
+    // der Blick-Wahl).
+    _archImBild(entry) {
+        return (
+            this._archIsRendered(entry) ||
+            !!(entry && entry._ziegelSlot && this._weltMarchGezeichnet() && this._weltFeldZeichnet(entry._ziegelSlot))
+        );
+    }
+
     // DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz): trägt der Eintrag seine Passagiere (`_passagiere`, die Leiber, die er trägt —
     // der Fahrer am Steuer)? Nur gezeichnet (Instanz oder Mesh) und in einer Stufe unter 2 — Stufe 2 ist die Fernstufe jeder
     // Art (die Karte der Karten-Dinge, die Grobstufe der übrigen), in ihr sitzt kein Leib; ohne Bild (die Stufe lädt, der Satz
