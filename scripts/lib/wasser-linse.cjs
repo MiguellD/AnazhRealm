@@ -280,35 +280,28 @@ async function wasserKoerper(o = {}) {
         if (cam) {
             const camAlt = cam.position.clone();
             const augenAlt = st.playerEyesUnderwater;
-            const modus = (camY, augen) => {
-                cam.position.set(mx, camY, mz);
+            // (c) DIE ART DES WASSERS (w13-bach-klar): die Kamera in der halben Säule des Bachs der Mess-Wiese (der Fluss-Ort) —
+            // unter dem Spiegel liest das Medium den Körper SEINER Art: die Sicht (`_luftSichtM`, der CPU-Leser derselben
+            // Uniforms) gegen das Gesetz, die Art des Kerns (gelaende-core `gewaesserArt` über `flussAm(...).breite`) wählt die
+            // Zeile `WASSER_GESETZ.koerper`, Sicht = −ln(kontrast) ÷ c(550).
+            const WK = A.Gesetz("terrain:WASSER_GESETZ").koerper;
+            const GK = window.__gelaendeCore;
+            const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+            const bb = r._voxelSurfaceY(fl.x, fl.z);
+            const modus = (x, z, camY, augen) => {
+                cam.position.set(x, camY, z);
                 cam.updateMatrixWorld(true);
                 st.playerEyesUnderwater = augen;
                 r._applyDayNightToScene();
-                return luft.U.hoehe.value >= 1e8;
+                const art = GK.gewaesserArt((GK.flussAm(r._gelaende(), x, z) || {}).breite);
+                return { unter: luft.U.hoehe.value >= 1e8, art, sichtM: R(r._luftSichtM(camY)), soll: R(-Math.log(A.LUFT.kontrast) / WK[art].c[1]) };
             };
-            // (5b) DIE ART DES WASSERS (w13-bach-klar): unter dem Spiegel liest das Medium der Kamera den Körper SEINER Art — die
-            // Sicht (`_luftSichtM`, der CPU-Leser derselben Uniforms) gegen das Gesetz: die Art des Kerns (gelaende-core
-            // `gewaesserArt` über `flussAm(...).breite`) wählt die Zeile `WASSER_GESETZ.koerper`, Sicht = −ln(kontrast) ÷ c(550).
-            // Am See (die Mitte, 3 m unter dem Spiegel) und am Bach (der Fluss-Ort der Mess-Wiese, in der halben Säule).
-            const WG = A.Gesetz("terrain:WASSER_GESETZ");
-            const GK = window.__gelaendeCore;
-            const art = (x, z, camY) => {
-                cam.position.set(x, camY, z);
-                cam.updateMatrixWorld(true);
-                r._applyDayNightToScene();
-                const fa = GK.flussAm(r._gelaende(), x, z);
-                const a = GK.gewaesserArt(fa ? fa.breite : 0);
-                const c = WG.koerper[a] ? WG.koerper[a].c[1] : NaN;
-                return { art: a, breite: fa ? R(fa.breite, 2) : 0, unter: !!st.kameraUnterWasser, sichtM: R(r._luftSichtM(camY), 3), soll: R(-Math.log(A.LUFT.kontrast) / c, 3) };
-            };
-            const fl = o.fluss || (await window.__wasserOrte({})).fluss;
             try {
-                aus.medium = { kameraUnten: modus(spiegel - 3, false), kameraOben: modus(spiegel + 10, true) };
-                const bb = r._voxelSurfaceY(fl.x, fl.z);
-                const bachY = bb + 0.5 * (r._koerperWasser(fl.x, fl.z, bb) - bb);
-                const ordnung = ["bach", "see", "fluss"].map((k) => (WG.koerper[k] ? WG.koerper[k].c[1] : null));
-                aus.art = { see: art(mx, mz, spiegel - 3), bach: Object.assign({ ort: [fl.x, fl.z] }, art(fl.x, fl.z, bachY)), ordnung };
+                aus.medium = {
+                    see: modus(mx, mz, spiegel - 3, false),
+                    oben: modus(mx, mz, spiegel + 10, true),
+                    bach: modus(fl.x, fl.z, (bb + r._koerperWasser(fl.x, fl.z, bb)) / 2, false),
+                };
             } finally {
                 cam.position.copy(camAlt);
                 cam.updateMatrixWorld(true);

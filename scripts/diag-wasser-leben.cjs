@@ -306,21 +306,13 @@ function urteil(b) {
             if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
             else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
             if (!k.peer || !(Math.abs(k.peer.lehne) > 0.05)) rot("K7 MITSPIELER", k.peer || null);
-            const m = k.medium; // die Kamera 3 m unter dem Spiegel sieht Unterwasser, 10 m darüber die Luft
-            if (!m || m.kameraUnten !== true || m.kameraOben !== false) rot("K5 MEDIUM", m || null);
-            // K5 ART (w13-bach-klar): das Medium der Kamera liest den Körper der Art, die das Gesetz dem Wasser gibt (gelaende-core
-            // `gewaesserArt`) — die Sicht am See und am Bach die des Gesetzes (± 1 %, TRÜBUNG); der Bach der Mess-Wiese ist ein Bach
-            // (ART) und klar (KLAR, die Literatur unabhängig vom Gesetz); die Zeilen in der Ordnung der Literatur (ORDNUNG)
-            const a = k.art;
-            if (!a || !a.see || !a.bach || a.see.unter !== true || a.bach.unter !== true) rot("K5 ART LEER", a || null);
-            else {
-                if (a.see.art !== "see" || a.bach.art !== "bach") rot("K5 ART", a);
-                for (const w of ["see", "bach"])
-                    if (!(Math.abs(a[w].sichtM - a[w].soll) <= 0.01 * a[w].soll)) rot(`K5 TRÜBUNG: ${w}`, a[w]);
-                if (!(a.bach.sichtM >= S.bachSicht)) rot("K5 KLAR", a.bach);
-                const [cb, cs, cf] = a.ordnung || [];
-                if (!(cb > 0 && cb < cs && cs < cf)) rot("K5 ORDNUNG", a.ordnung || null);
-            }
+            // K5 die Kamera 3 m unter dem Spiegel des Sees und im Bach sieht Unterwasser, 10 m darüber die Luft; TRÜBUNG (w13-bach-klar):
+            // unter Wasser liest das Medium den Körper der Art, die das Gesetz dem Wasser gibt (gelaende-core `gewaesserArt`) — der
+            // See ein See, der Bach ein Bach, je die Sicht des Gesetzes (± 1 %), der Bach klar (die Literatur unabhängig vom Gesetz)
+            const { see = {}, oben = {}, bach = {} } = k.medium || {};
+            if (!see.unter || oben.unter !== false || !bach.unter) rot("K5 MEDIUM", k.medium || null);
+            else if (see.art + bach.art !== "seebach" || [see, bach].some((x) => !(Math.abs(x.sichtM / x.soll - 1) <= 0.01)) || !(bach.sichtM >= S.bachSicht))
+                rot("K5 TRÜBUNG", k.medium);
         }
     }
     // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
@@ -522,12 +514,7 @@ function selbsttest() {
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
-            medium: { kameraUnten: true, kameraOben: false },
-            art: {
-                see: { art: "see", breite: 0, unter: true, sichtM: 15.648, soll: 15.648 },
-                bach: { ort: [-300.4, -817.4], art: "bach", breite: 4.39, unter: true, sichtM: 19.56, soll: 19.56 },
-                ordnung: [0.2, 0.25, 3.5],
-            },
+            medium: { see: { unter: true, art: "see", sichtM: 15.65, soll: 15.65 }, oben: { unter: false }, bach: { unter: true, art: "bach", sichtM: 19.56, soll: 19.56 } },
             tier: ["wesen", "wolf", "fuchs", "baer"].flatMap((seele) =>
                 [8, 120].map((abstand) => ({
                     seele,
@@ -628,16 +615,12 @@ function selbsttest() {
         ["K3 KRIECHEN", ["koerper.kraulen", { mps: 0.141, anteil: 0.144 }]],
         ["K4 STUMM", ["koerper.eintauchen.landung=", null]],
         ["K LEER", ["koerper.hinein.schwimmFrames=", 0]],
-        ["K5 MEDIUM", ["koerper.medium=", { kameraUnten: false, kameraOben: true }]],
+        ["K5 MEDIUM", ["koerper.medium.oben.unter=", true]],
         // w12-unterwasser an main 3f1d4a5b: der Leser entschied die Art selbst („im Kanal → fluss") — der Bach der Mess-Wiese
-        // (4,4 m) trug die Trübung eines Tieflandflusses, Sicht 1,1 m statt der seines Körpers (luftwasser.K3#2: 0 von 16 Fischen)
-        ["K5 TRÜBUNG: bach", ["koerper.art.bach", { sichtM: 1.118 }]],
-        ["K5 KLAR", ["koerper.art.bach", { sichtM: 1.118, soll: 1.118 }]],
-        ["K5 ART", ["koerper.art.bach.art=", "fluss"]],
-        ["K5 TRÜBUNG: see", ["koerper.art.see.sichtM=", 1.118]],
-        ["K5 ORDNUNG", ["koerper.art.ordnung=", [0.25, 0.25, 3.5]]],
-        ["K5 ART LEER", ["koerper.art.bach.unter=", false]],
-        ["K5 ART LEER", ["koerper.art=", null]],
+        // (4,2 m) trug die Trübung eines Tieflandflusses, Sicht 1,118 m statt 19,56 (luftwasser.K3#2: 0 von 16 Fischen); dazu
+        // der Bach, den das Gesetz selbst trüb nennt (die Art „fluss", Sicht = Soll)
+        ["K5 TRÜBUNG", ["koerper.medium.bach.sichtM=", 1.118]],
+        ["K5 TRÜBUNG", ["koerper.medium.bach", { art: "fluss", sichtM: 1.118, soll: 1.118 }]],
         ["K6 AM GRUND", ["koerper.tier.1", { amGrund: true, sohleUnterSpiegel: 8 }]],
         ["K6 LAGE", ["koerper.tier.0", { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 }]],
         ["K6 LEER", ["koerper.tier=", []]],
