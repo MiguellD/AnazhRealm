@@ -706,7 +706,12 @@ async function probeLeben(expected) {
             );
         const aus = {};
         for (const stunde of o.stunden) {
-            stelle(S.ox, S.oz, 2);
+            // DER SPIELER STEHT, WO ER IM SPIEL STEHT: am Ort des Messorts (`spieler`, der Markt im Gedränge — das Profi-Band und die
+            // Radeon stellen ihn dorthin), vom Sprung der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
+            // ersten freien Punkt 4 m neben jeder Trasse (seit w4-verkehr-c3: auf der Kreuzung hielt der Wagen vor ihm die Stadt) —
+            // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
+            // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
+            stelle(...ort.spieler, 0.2);
             r._uhrSetzen(stunde / 24, "regler");
             // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
             // die Stadt vor dem ersten Bild nach dem Sprung bereit (jeder Fahrer der Stunde davor saß noch am Steuer): um 23 Uhr stand
@@ -714,13 +719,6 @@ async function probeLeben(expected) {
             frame(i++);
             const bereit = () =>
                 S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer); // prettier-ignore
-            // DER SPIELER STEHT, WO ER IM SPIEL STEHT: am Ort des Messorts (`spieler`, der Markt im Gedränge — das Profi-Band und die
-            // Radeon stellen ihn dorthin), vom Sprung der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
-            // ersten freien Punkt 4 m neben jeder Trasse (seit w4-verkehr-c3: auf der Kreuzung hielt der Wagen vor ihm die Stadt) —
-            // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
-            // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
-            const [px, pz] = ort.spieler;
-            stelle(px, pz, 0.2);
             for (const weiter = __deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
@@ -819,8 +817,8 @@ async function probeLeben(expected) {
             // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
             // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
             // `_aufWeg`, den die Natur-Wand liest) [Proben, ab, Orte]; DIE BEWEGUNG — je Wagen der Weg in jeder vollen Minute der Uhr
-            // der Bilder der kürzeste [Weg, sein Wagen, volle Minuten, die Minute, wie viele dort ≥ `weg60M` fuhren, sein Grund — der
-            // Täter beim Namen: `spieler`, ein Wagen, ein Ort, die Ankunft] (die Maße des Richters pflicht.C#1; bis w13-verkehr-heil
+            // der Bilder der kürzeste [Weg, sein Wagen, volle Minuten, die Minute, der Grund am Kopf seiner Reihe — der Täter beim
+            // Namen: `spieler`, ein Bewohner (`leib`), ein Ort, die Ankunft] (die Maße des Richters pflicht.C#1; bis w13-verkehr-heil
             // trug die Linse [die wenigsten, Minute, Weg, Wagen], und der Richter las die Zahl der Wagen als Meter) — der Richter misst
             // beide am SOLL des Gesetzes, nie an den gestellten (an der Stadt des Worts stellte sie 7 von 20, und „7 von 7“ hieß GRÜN);
             // DER FAHRER IM SITZ [Proben, außer der Kabine, je Wagen Probe, Höhe des Sitz-Knochens, Dach]. Die Täter (`o.taeter`):
@@ -829,6 +827,8 @@ async function probeLeben(expected) {
             const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity] }; // prettier-ignore
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
+            // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
+            if (o.taeter) r._verkehrUmfahren = () => false;
             // DIE KOSTEN DES VERKEHRS JE BILD-TAKT (Sim-Schritte, Wahl am Steuer, Wagen im Gedränge): ihr p95 — die Kappe hält ihn
             // (`VERKEHR.kappeMs`), gleich wie viele Wagen die Stadt fährt (Gebot 7)
             const jeBild = new Float64Array(Math.round(o.sek * 60));
@@ -838,10 +838,13 @@ async function probeLeben(expected) {
                 jeBild[k] = m.ms + m.bildMs - vorMs;
                 if (i % 8 === 7) await window.sleep();
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
-                    const d = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0]); // prettier-ignore
-                    const [w, W] = d[0];
-                    const wer = W.grund === "wagen" && W.vorne ? W.vorne.O.nr : W.grund === "leib" ? (W.wer ? "bewohner" : "spieler") : null; // prettier-ignore
-                    if (w < T.w60[0]) T.w60 = [w, W.nr, 0, T.min, d.filter((x) => x[0] >= o.weg60M).length, W.zustand, W.grund, wer]; // prettier-ignore
+                    const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
+                    // der Täter am Kopf seiner Reihe: wer vor ihm steht (der Wagen, der Halter des Orts, auf den er wartet), bis einer aus
+                    // anderem Grund hält (ein Leib — der Spieler oder ein Bewohner —, die Ankunft, ein Ort ohne Halter)
+                    let K = W;
+                    for (let n = 0; n < 20 && K.grund !== "leib"; n++)
+                        K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
+                    if (w < T.w60[0]) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
                     T.w60[2] = T.min;
                 }
                 if (k % 4) continue;
@@ -945,7 +948,7 @@ async function probeLeben(expected) {
                         if ((t = tiefe(LA[a][1], LA[b][1])) > 0.01 && ++m.wagen && t > m.tief[0])
                             m.tief = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
             }
-            for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster", "_verkehrUmfahren"]) delete r[n];
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
             // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
@@ -997,7 +1000,7 @@ async function probeLeben(expected) {
                     wer,
                 },
                 fahrbahn: { geh: m.geh, auf: m.fahrbahn, anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4) },
-                ...{ amSteuer: T.st, trasse: T.tr, weg60: T.w60.map((x, j) => (j < 5 ? Math.round(x) : x)), sitz: SZ },
+                ...{ amSteuer: T.st, trasse: T.tr, weg60: T.w60, sitz: SZ },
             };
         }
         return aus;

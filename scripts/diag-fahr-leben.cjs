@@ -784,11 +784,11 @@ const verkehrVerdict = (m) =>
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
         // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
         // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
-        // Minute, sein Wagen, volle Minuten, die Minute, wie viele dort fuhren, Zustand, Grund, wer — `spieler`: die Stadt floss
-        // nicht um den stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
+        // Minute, sein Wagen, volle Minuten, die Minute, der Grund am Kopf seiner Reihe — `spieler`: die Stadt floss nicht um den
+        // stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
         [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
-        [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)} (Soll ≥ ${VERKEHR.weg60M} m)`], // prettier-ignore
+        [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -2384,7 +2384,7 @@ hauptLauf(async () => {
                 ...{
                     amSteuer: [20, 0],
                     trasse: [9e4, 0, []],
-                    weg60: [210, 4, 10, 3, 20, "faehrt", null, null],
+                    weg60: [210, 4, 10],
                     sitz: [4800, 0],
                 },
                 ...{
@@ -2404,10 +2404,7 @@ hauptLauf(async () => {
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
                 [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
                 [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
-                [
-                    { weg60: [0, 17, 1, 1, 9, "faehrt", "leib", "spieler"] },
-                    /je Minute \[0,17,1,1,9,"faehrt","leib","spieler"\] \(Soll ≥ 30 m\)/,
-                ], // die Radeon 06.11.: der stehende Spieler in der Kreuzung
+                [{ weg60: [0, 17, 1, 1, "spieler"] }, /je Minute \[0,17,1,1,"spieler"\]/], // die Radeon 06.11.: der Spieler in der Kreuzung
                 [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
                 [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
@@ -2555,13 +2552,13 @@ hauptLauf(async () => {
             schalter("--verkehr"),
             probeLeben,
             // `--taeter` (pflicht.C#1): um 10 Uhr 70 s, Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2 in Wagen 3, der erste
-            // gemessene Fahrer auf dem Dach — jeder beim Namen
+            // gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder beim Namen
             { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 70, taeter: 1 }) } },
             (o) => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,1,1,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
