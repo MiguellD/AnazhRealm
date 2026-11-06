@@ -1272,15 +1272,20 @@ class AnazhRealm_vegetation_baum {
                     if (wurf >= 0.42) continue;
                     const bsy = this._voxelSurfaceY(bxp, bzp);
                     if (bsy === null || !Number.isFinite(bsy)) continue;
-                    if (!this._landAt(bxp, bzp, 0.1)) continue;
                     const bFeuchte = this._feuchteAt ? this._feuchteAt(bxp, bzp, bsy) : 0;
                     const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
-                    const slopeB = this._slopeAt(bxp, bzp);
-                    const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
                     const trail = this._pfadFeldAt(bxp, bzp, bsy);
                     const dL = L - 0.4;
-                    const pShrub = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    const glocke = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16));
+                    // DER HANG UND DAS LAND NACH DER GLOCKE (w15-strom-takt, Lehre 25): (1 − rk) ≤ 1, die Chance ohne Hang ist ihre
+                    // Grenze (das Produkt fällt im Gleitkomma monoton) — ein Wurf darüber fällt ohne die vier Proben des Hangs und die
+                    // Spalte des Lands; das Land urteilt erst, wo der Strauch stünde. Dieselben Würfe, dieselbe Reihe.
+                    if (wurf >= glocke * 0.42 * (1 - trail * 0.92)) continue;
+                    const slopeB = this._slopeAt(bxp, bzp);
+                    const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
+                    const pShrub = glocke * (1 - rk) * 0.42 * (1 - trail * 0.92);
                     if (wurf >= pShrub) continue;
+                    if (!this._landAt(bxp, bzp, 0.1)) continue;
                     // Busch-Spawn-Name ist ein GEWACHSENER Bauplan: busch_hazel ist eine Grammatik-Spezies, kein Built-in
                     // — der Bauplan entsteht über den Richter (`_growTreeBlueprintForSpawn`, region-gecacht), der Render
                     // kommt aus der Foundry (busch_hazel→strauch). Ohne gewachsenen Key fällt der Punkt (kein Phantom).
@@ -2418,15 +2423,26 @@ class AnazhRealm_vegetation_baum {
     // `saatFeld`: Fläche, Feuchte, Steilheit ±2 m und ±1 m, Stand von Wald und Wiese — dieselben Leser wie die Streu), der
     // Haupt-Faden urteilt nur (`_vegetationSampleSpawn` mit der Probe). Der Chunk bestellt es mit seinem ersten Schritt (die
     // Hydro-Kacheln um ihn stehen, sonst wartet er wie die Streu-Region) und wartet, bis es kam (undefined); ein Erdbau seit
-    // der Bestellung verwirft es (es fiel am alten Grund). Ohne Faden null: die Probe fragt selbst. Bis w15-strom-takt
-    // fragte jede Probe die Fläche und die Felder im Haupt-Faden (GT 64 m/s: die Saat 9 ms in den Bildern über p90,
-    // `_placementDensityFactor` 1,2 s, `getTerrainHeightAt` 0,5 s in der Minute).
+    // der Bestellung verwirft es (es fiel am alten Grund). DER BEDARF JETZT SÄT HIER: liegt der Chunk im Laub-Radius des
+    // Spielers und im Bild (`_imErstenBlick` am Schirm), braucht ihn das Bild in diesem Takt — er wartet nicht, die Probe fragt
+    // selbst (null); auf das Feld wartet nur, was die Bahn erst bald braucht. Ohne Faden null. Bis w15-strom-takt fragte jede
+    // Probe die Fläche und die Felder im Haupt-Faden (GT 64 m/s: die Saat 9 ms in den Bildern über p90,
+    // `_placementDensityFactor` 1,2 s, `getTerrainHeightAt` 0,5 s in der Minute); auf das Feld wartend trat der Wuchs im Sprint
+    // 38–40 Bilder ungesät in den Kegel.
     _saatFeldBestellen(c, span, n) {
         if (c.feld && c.feldErd === (this._erdbauStand | 0)) return c.feld;
         c.feld = null;
         if (!this._waldFadenLebt()) return null;
+        const [mx, mz] = [(c.cx + 0.5) * span, (c.cz + 0.5) * span];
+        const p = this.state.playerMesh && this.state.playerMesh.position;
+        if (
+            !p ||
+            (Math.hypot(mx - p.x, mz - p.z) <= AnazhRealm.PERF_FOLIAGE_RADIUS_MAX &&
+                this._imErstenBlick(mx, mz, span * Math.SQRT1_2, true))
+        )
+            return null;
         if (c.flug) return undefined;
-        if (this._ensureHydroTilesAround((c.cx + 0.5) * span, (c.cz + 0.5) * span, span / 2 + 16)) return undefined;
+        if (this._ensureHydroTilesAround(mx, mz, span / 2 + 16)) return undefined;
         const P = AnazhRealm.PLACEMENT_DENSITY;
         const erd = this._erdbauStand | 0;
         c.flug = true;
