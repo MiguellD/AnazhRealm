@@ -833,9 +833,11 @@ async function toreK3Seite(H) {
 // `createImageBitmap`, ohne Halt im Takt); jedes Bild dazwischen trägt seine Luma — der Ladeschirm mit seiner Deckkraft und seiner
 // eigenen Luma (der Verlauf aus `getComputedStyle`) über der Leinwand —, jeder Frame seine Dauer (rAF), dazu die Zahl der
 // Welt-Wechsel (ein Tor, das zurückwirft, wechselt dreimal) und je Lauf die Lücken des ersten Weltbilds (`_weltbildLuecken`, der Täter
-// beim Namen). Die Zeile `TOR_K1 {…}`; das Urteil `toreK1Urteil`. Am main 8efb6318 (Radeon, werkbank headless) ROT: das Heimtor
-// fällt am Ring (`_genesisUmzug`), mit gesetztem Heimtor t 5,8–12,3 s, 300–840 Bilder unter dem Ladeschirm (Luma 0,043), Frame bis
-// 933 ms, drei Wechsel je Durchgang. Mutiert: eine Welt mehr im Speicher, das Tor daheim.
+// beim Namen). Die Zeile `TOR_K1 {…}`; das Urteil `toreK1Urteil`. Der Anlauf zum Tor (W mit Sprint) misst nie; nach einem Bruch kehrt
+// die Probe ungemessen heim (die Grundstellung der Sitzung gilt nur in ihrer Welt). Am main 8efb6318 (Radeon, werkbank headless
+// 640 × 360) ROT: das Heimtor der Ferne fällt am Ring (`_genesisUmzug`) — kein Tor zurück; mit gesetztem Heimtor t 5,8–12,3 s, bis
+// drei Wechsel je Durchgang, 300–840 Bilder unter dem Ladeschirm (Luma 0,043), Frame bis 1 402 ms; am Zweig w16-tor-durchgang
+// t 5,3–6,4 s, ein Wechsel, Frame bis 598 ms, die Probe 55 s. Mutiert: eine Welt mehr im Speicher, das Tor daheim.
 async function toreK1Seite(H) {
     const GANG = async function toreK1Gang(o) {
         const R = window.anazhRealm;
@@ -871,6 +873,7 @@ async function toreK1Seite(H) {
                 const n = jetzt();
                 const st = R.state;
                 if (K.halte) st.verbTafel.gehalten.vor = true;
+                if (K.sprint) st.verbTafel.gehalten.sprint = true;
                 const s = schirmEl();
                 const p = st.playerMesh ? st.playerMesh.position : null;
                 K.B.push({
@@ -882,7 +885,7 @@ async function toreK1Seite(H) {
                     schirm: s && !s.hidden ? +getComputedStyle(s).opacity : 0,
                     x: p ? p.x : NaN,
                     z: p ? p.z : NaN,
-                    bmp: K.lauf ? createImageBitmap(st.renderer.domElement, { resizeWidth: 32, resizeHeight: 18 }).catch(() => null) : null,
+                    bmp: K.lauf && K.lauf.t0 != null ? createImageBitmap(st.renderer.domElement, { resizeWidth: 32, resizeHeight: 18 }).catch(() => null) : null,
                 });
                 if (K.luecken && K.lauf && s && !s.hidden && K.B.length % 10 === 0 && !R._weltTausch) {
                     let l = "?";
@@ -899,8 +902,8 @@ async function toreK1Seite(H) {
             const st = R.state;
             const p = st.playerMesh.position;
             const g = st.yaw;
-            const x = p.x + Math.sin(g) * 8;
-            const z = p.z + Math.cos(g) * 8;
+            const x = p.x + Math.sin(g) * 5;
+            const z = p.z + Math.cos(g) * 5;
             const e = R.spawnArchitecture(hol.blueprint, { x, y: R.getTerrainHeightAt(x, z), z }, { id: "tore-k1-" + Math.round(jetzt()), precise: true, rotationY: g });
             if (!e) throw new Error("das Tor in die Ferne steht nicht");
             K.erstesTor = e.id;
@@ -924,16 +927,28 @@ async function toreK1Seite(H) {
             window.__loop(1);
             R.setCameraMode(o.sicht);
             const p = R.state.playerMesh.position;
+            // DER ANLAUF misst nie (W mit Sprint, bis die Apertur gekreuzt ist): wer im Tor steht, durch das er ankam, tritt erst heraus —
+            // ein Tor nimmt nur, wer seine Zone von außen betritt
+            const weg = () => Math.hypot(tor.position.x - p.x, tor.position.z - p.z);
+            const anlauf = (an) => ((K.halte = an), (K.sprint = an), (R.state.verbTafel.gehalten.vor = an), (R.state.verbTafel.gehalten.sprint = an));
+            if (weg() < 3) {
+                R.state.yaw = Math.atan2(p.x - tor.position.x, p.z - tor.position.z);
+                anlauf(true);
+                await warte(() => weg() >= 3, 3000, "aus dem Tor getreten").catch(() => null);
+                anlauf(false);
+                for (let i = 0; i < 5; i++) await rahmen();
+            }
             R.state.yaw = Math.atan2(tor.position.x - p.x, tor.position.z - p.z);
             const pm = tor.portalMeta || {};
             const L = { nr: K.laeufe.length, sicht: o.sicht, von: R.state.worldMeta.worldId, tor: tor.id, ziel: pm.weltId || null, geboren: !pm.weltId, t0: null };
             K.lauf = L;
+            L.start = jetzt();
             const proto = Object.getPrototypeOf(R).enterPortal;
             R.enterPortal = function (e) {
-                if (L.t0 == null) L.t0 = jetzt();
+                if (L.t0 == null) (L.t0 = jetzt()), (K.sprint = false), (R.state.verbTafel.gehalten.sprint = false);
                 return proto.call(this, e);
             };
-            K.halte = true;
+            K.halte = K.sprint = true;
             try {
                 await warte(() => L.t0 != null, 15000, "die Apertur gekreuzt (enterPortal)");
                 if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
@@ -942,18 +957,18 @@ async function toreK1Seite(H) {
                 L.ankunft = jetzt();
                 const a = R.state.playerMesh.position.clone();
                 await warte(() => !R._ladeschirmSteht() && Math.hypot(R.state.playerMesh.position.x - a.x, R.state.playerMesh.position.z - a.z) > 0.3, 30000, "der Spieler geht in der Ziel-Welt");
-                for (let i = 0; i < 20; i++) await rahmen();
+                for (let i = 0; i < 12; i++) await rahmen();
             } catch (x) {
                 L.fehler = String((x && x.message) || x).split("\n")[0];
             } finally {
                 if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
-                K.halte = false;
-                R.state.verbTafel.gehalten.vor = false;
+                K.halte = K.sprint = false;
+                R.state.verbTafel.gehalten.vor = R.state.verbTafel.gehalten.sprint = false;
                 L.ende = jetzt();
                 K.lauf = null;
                 K.laeufe.push(L);
             }
-            for (let i = 0; i < 10; i++) await rahmen();
+            for (let i = 0; i < 5; i++) await rahmen();
             window.__loop();
             return { nr: L.nr, von: L.von.slice(0, 8), ziel: L.ziel && L.ziel.slice(0, 8), ms: L.ende && L.t0 ? Math.round(L.ende - L.t0) : null, fehler: L.fehler || null };
         }
@@ -1001,7 +1016,8 @@ async function toreK1Seite(H) {
             const bek = lum.filter((v) => v != null);
             const dts = bis.slice(1).map((f) => f.dt);
             let wechsel = 0;
-            for (let i = 1; i < z.length; i++) if (z[i].welt && z[i - 1].welt && z[i].welt !== z[i - 1].welt) wechsel++;
+            let wo = L.von;
+            for (const f of z) if (f.welt && f.welt !== wo) (wechsel++, (wo = f.welt));
             return {
                 nr: L.nr,
                 sicht: L.sicht === "third" ? "third" : "ego",
@@ -1009,6 +1025,7 @@ async function toreK1Seite(H) {
                 von: L.von && L.von.slice(0, 8),
                 ziel: L.ziel && L.ziel.slice(0, 8),
                 ms: t1 ? Math.round(t1.t - L.t0) : null,
+                anlaufMs: L.t0 ? Math.round(L.t0 - L.start) : null,
                 ankunftMs: L.ankunft && L.t0 ? Math.round(L.ankunft - L.t0) : null,
                 schirmMs: Math.round(bis.filter((f) => f.schirm >= 0.05).reduce((s, f) => s + f.dt, 0)),
                 bilder: bis.length,
@@ -1024,9 +1041,15 @@ async function toreK1Seite(H) {
             };
         });
         window.__torK1 = null;
+        const daheim = R.state.worldMeta.worldId === K.heim;
+        // DIE HEIMKEHR nach einem Bruch (ungemessen): die Sitzung stellt ihren Grund nur in IHRER Welt zurück
+        if (R.state.worldMeta.worldId !== K.heim && !R._weltTausch) {
+            window.__loop(1);
+            await Promise.race([R._weltWechsel(K.heim).then(() => window.__weltDa((r) => r.state._weltbildDa > 0)), new Promise((ok) => setTimeout(ok, 20000))]).catch(() => null);
+        }
         window.__loop();
         const luecken = K.luecken.map((v) => { const L = K.laeufe[v.nr]; return [v.nr, L && L.t0 ? Math.round(v.t - L.t0) : null, v.l.slice(0, 160)]; }) ;
-        return { luecken, schirmLuma: SL == null ? null : +SL.toFixed(3), heim: R.state.worldMeta.worldId === K.heim, laeufe };
+        return { luecken, schirmLuma: SL == null ? null : +SL.toFixed(3), heim: daheim, laeufe };
     };
     await H.frist();
     const lauf = (o) => H.seite("return (" + GANG + ")(" + JSON.stringify(o) + ");");
@@ -1059,11 +1082,11 @@ const TORE_K3 = seiteProbe(10, toreK3Seite, {
     mutiert: true,
     
 });
-// DER DURCHGANG (tore.K1): die Geburt der Ferne und fünf Läufe; heute je Wechsel 6–12 s unter dem Ladeschirm (Radeon 8efb6318), im Soll
-// höchstens 2 s je Lauf — der Deckel trägt die Messung von heute, nicht das Soll
+// DER DURCHGANG (tore.K1): die Geburt der Ferne und fünf Läufe, Radeon am Zweig w16-tor-durchgang 55 s (je Wechsel 5–7 s unter dem
+// Ladeschirm), im Soll höchstens 2 s je Lauf — der Deckel trägt die Messung von heute, nicht das Soll
 const TORE_K1 = seiteProbe(90, toreK1Seite, {
     mutiert: true,
-    ausnahme: "sechs Welt-Wechsel durch ein Welt-Tor (die Geburt der Ferne kalt, fünf Läufe in schon besuchte Welten, zurück daheim), heute je Wechsel 6–12 s bis zur ersten sichtbaren Eingabe (Radeon 8efb6318)",
+    ausnahme: "sechs Welt-Wechsel durch ein Welt-Tor (die Geburt der Ferne kalt, fünf Läufe in schon besuchte Welten, zurück daheim), heute je Wechsel 5–7 s bis zur ersten sichtbaren Eingabe — Radeon 55 s",
 });
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -5201,7 +5224,8 @@ function toreK1Urteil(lauf) {
     const geb = J.laeufe.find((l) => l.geboren);
     const zahl =
         "t " + besucht.map((l) => l.sicht + " " + (l.ms == null ? "—" : l.ms)).join(" · ") + " ms (Soll ≤ " + S.ms + ")" +
-        " · Luma min " + Math.min(1, ...besucht.map((l) => (l.lumaMin == null ? 1 : l.lumaMin))) + " · Frame max " + Math.max(0, ...besucht.map((l) => l.frameMax || 0)) + " ms" +
+        ((lm) => (lm.length ? " · Luma min " + Math.min(...lm) : ""))(besucht.map((l) => l.lumaMin).filter((v) => v != null)) +
+        ((fm) => (fm.length ? " · Frame max " + Math.max(...fm) + " ms" : ""))(besucht.map((l) => l.frameMax).filter((v) => v != null)) +
         (geb ? " · Geburt " + (geb.ms == null ? "—" : geb.ms) + " ms" : "") + (J.heim === false ? " · endet nicht daheim" : "") +
         (fehlt.length ? " · " + fehlt.join(", ") : "") + (rot.length ? " · rot: " + rot.join("; ") : "") +
         (luecke && rot.length ? " · es hielt (#" + lahm.nr + " bei " + luecke[1] + " ms): " + luecke[2] : "");
