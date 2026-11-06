@@ -167,22 +167,339 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\8efb6318-gtx\licht.K3_1.json {"vorher":["umstellen","--ort","dorf","--sicht","ego"],"args":["licht","--laub","ring,fichte,tanne","--karte","--uhr","0.5,0.27,0.05","--ort","dorf"],"fenster":[640,360],"ruheMax":600}
 [linse-gpu] nvidia/pascal
-VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.1 s
-BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.9 s
-RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 7.5 s · 11.4 s
-BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 11.4 s
-BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 13.3 s
-BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 13.6 s
-RUF /umstellen {"x":-841,"z":-861} · 3.0 s · 16.8 s
-BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 16.9 s
-BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 18.0 s
-BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 48 Takten, 0.7 s · 19.3 s
-BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 20.2 s
-BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 20.2 s
-BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 20.9 s
-BERUHIGUNG 11 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 21.7 s
-BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 21.8 s
-BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 22.6 s
+VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.0 s
+RUF /umstellen {"ort":"dorf"} · 2.5 s · 3.9 s
+BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 4.8 s
+RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 14.3 s · 19.1 s
+BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 19.1 s
+BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.2 s · 22.4 s
+BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 22.9 s
+RUF /umstellen {"x":-841,"z":-861} · 3.3 s · 26.4 s
+BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 26.5 s
+BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 27.5 s
+BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 47 Takten, 0.6 s · 29.7 s
+BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 30.4 s
+BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 30.4 s
+BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.1 s
+BERUHIGUNG 11 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.8 s
+BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 31.8 s
+BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 32.5 s
+BERUHIGUNG 14 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 33.5 s
+BERUHIGUNG 15 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 34.6 s
+RUF /umstellen {"x":-853.4286581941664,"z":-865.1071123109842} · 2.9 s · 37.5 s
+BERUHIGUNG 16 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 37.6 s
+BERUHIGUNG 17 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 165 Takten, 1.9 s · 40.1 s
+BERUHIGUNG 18 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 41.4 s
+BERUHIGUNG 19 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 41.5 s
+BERUHIGUNG 20 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 42.2 s
+BERUHIGUNG 21 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.7 s · 42.9 s
+BERUHIGUNG 22 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 43.0 s
+BERUHIGUNG 23 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 43.7 s
+BERUHIGUNG 24 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 44.4 s
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.37068,
+     "L": 67.33,
+     "C": 39.53,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.36611,
+     "L": 66.98,
+     "C": 39.41,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.988,
+    "dL": -0.35,
+    "dC": -0.12
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.06072,
+     "L": 29.59,
+     "C": 19.98,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.06189,
+     "L": 29.88,
+     "C": 20.2,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1.019,
+    "dL": 0.29,
+    "dC": 0.22
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03286,
+     "L": 21.16,
+     "C": 14.54,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.03273,
+     "L": 21.1,
+     "C": 14.54,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.996,
+    "dL": -0.06,
+    "dC": 0
+   }
+  },
+  "fichte@0.5": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 30407,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17302,
+     "L": 48.64,
+     "C": 23.15
+    },
+    "karte": {
+     "Y": 0.16598,
+     "L": 47.75,
+     "C": 22.08
+    },
+    "verhaeltnis": 0.959,
+    "dL": -0.89,
+    "dC": -1.07
+   }
+  },
+  "fichte@0.27": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 30737,
+   "karte": {
+    "gestalt": {
+     "Y": 0.04259,
+     "L": 24.51,
+     "C": 17.97
+    },
+    "karte": {
+     "Y": 0.03956,
+     "L": 23.52,
+     "C": 17.1
+    },
+    "verhaeltnis": 0.929,
+    "dL": -0.99,
+    "dC": -0.87
+   }
+  },
+  "fichte@0.05": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 30597,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02388,
+     "L": 17.4,
+     "C": 11.73
+    },
+    "karte": {
+     "Y": 0.02442,
+     "L": 17.65,
+     "C": 12.29
+    },
+    "verhaeltnis": 1.023,
+    "dL": 0.25,
+    "dC": 0.56
+   }
+  },
+  "tanne@0.5": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 37162,
+   "karte": {
+    "gestalt": {
+     "Y": 0.13173,
+     "L": 43.02,
+     "C": 22.45
+    },
+    "karte": {
+     "Y": 0.12739,
+     "L": 42.37,
+     "C": 20.87
+    },
+    "verhaeltnis": 0.967,
+    "dL": -0.65,
+    "dC": -1.58
+   }
+  },
+  "tanne@0.27": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 37042,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03531,
+     "L": 22.06,
+     "C": 16
+    },
+    "karte": {
+     "Y": 0.03633,
+     "L": 22.42,
+     "C": 16.49
+    },
+    "verhaeltnis": 1.029,
+    "dL": 0.36,
+    "dC": 0.49
+   }
+  },
+  "tanne@0.05": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 36932,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02713,
+     "L": 18.85,
+     "C": 11.86
+    },
+    "karte": {
+     "Y": 0.02776,
+     "L": 19.12,
+     "C": 11.81
+    },
+    "verhaeltnis": 1.023,
+    "dL": 0.27,
+    "dC": -0.05
+   }
+  }
+ },
+ "zeilen": [
+  {
+   "art": "ring@0.5",
+   "stufe": "bodenSatz → fern-ring",
+   "mittag": 0.988,
+   "dL": -0.35,
+   "dC": -0.12
+  },
+  {
+   "art": "ring@0.27",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.031,
+   "dL": 0.64,
+   "dC": 0.28,
+   "mittag": 0.988
+  },
+  {
+   "art": "ring@0.05",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.008,
+   "dL": 0.29,
+   "dC": 0.04,
+   "mittag": 0.988
+  },
+  {
+   "art": "fichte@0.5",
+   "stufe": "f:fichte:L0",
+   "karte": 0.959,
+   "dL": -0.89,
+   "dC": -1.07
+  },
+  {
+   "art": "fichte@0.27",
+   "stufe": "f:fichte:L0",
+   "karte": 0.929,
+   "dL": -0.99,
+   "dC": -0.87
+  },
+  {
+   "art": "fichte@0.05",
+   "stufe": "f:fichte:L0",
+   "karte": 1.023,
+   "dL": 0.25,
+   "dC": 0.56
+  },
+  {
+   "art": "tanne@0.5",
+   "stufe": "f:tanne:L0",
+   "karte": 0.967,
+   "dL": -0.65,
+   "dC": -1.58
+  },
+  {
+   "art": "tanne@0.27",
+   "stufe": "f:tanne:L0",
+   "karte": 1.029,
+   "dL": 0.36,
+   "dC": 0.49
+  },
+  {
+   "art": "tanne@0.05",
+   "stufe": "f:tanne:L0",
+   "karte": 1.023,
+   "dL": 0.27,
+   "dC": -0.05
+  }
+ ]
+}
+LAUB-LICHT GRUEN
+LINSE werkbank licht --laub ring,fichte,tanne --karte --uhr 0.5,0.27,0.05 --ort dorf EXIT=0 nach 44.5 s in der Welt der Sitzung (24 Beruhigungen, Fenster 640×360)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

@@ -1,7 +1,7 @@
 {
  "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
  "geraet": "gtx",
- "zeit": "2026-11-06T14:59:15.684Z",
+ "zeit": "2026-11-06T15:03:08.180Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -57,55 +57,58 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": true,
+   "zahl": "fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "nvidia/pascal",
+   "s": 44.6,
+   "zeit": "2026-11-06T15:03:08.180Z",
+   "abdruck": "714c60e3555d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T14:57:03.002Z",
+  "start": "2026-11-06T15:02:20.028Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
-  "grundstellungS": [
-   3
-  ],
-  "proben": 2,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 21.1,
-    "takte": 765,
+    "ort": "dorf",
+    "vor": "licht.K3#1",
+    "s": 39.5,
+    "takte": 1244,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 15.9,
-    "takte": 859,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 2,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 208,
+   "zapfen": 87,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 211.9,
-  "minuten": 3.61
+  "fahrtS": 92,
+  "minuten": 1.59
  },
  "ungemessen": {
   "licht.K3#2": {
@@ -118,21 +121,6 @@
    "s": 45.2,
    "zeit": "2026-11-06T14:00:47.814Z",
    "abdruck": "68214123d776",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "licht.K3#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.",
-   "exit": 1,
-   "minuten": 0.39,
-   "grund": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
-   "gpu": "nvidia/pascal",
-   "ungemessen": true,
-   "s": 23.5,
-   "zeit": "2026-11-06T14:02:00.508Z",
-   "abdruck": "714c60e3555d",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
