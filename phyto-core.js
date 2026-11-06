@@ -2783,6 +2783,13 @@
             fichte: 2.75,
             mammut: 9.2,
         },
+        // DIE SCHICHTEN DES BESTANDS (vegetation.K3, w16-wald-innen): ein Dart, den die Kronen-Schüchternheit aus dem Dach
+        // nimmt (`forestSteht`), stirbt nicht — er steht im Zwischen- und Unterstand (Kraft'sche Baumklassen 3–5) im größten
+        // Alter `alter` (die Stufen der Jugend-Gestalt, stamm SUKZESSION.jugend), in dem seine Krone T·alter gegen jeden
+        // besseren geborenen Dart (T·alter) frei steht; unter dem Dach berühren sich die Kronen (`pack` 1): die Lücke der
+        // Schüchternheit reibt nur der Wind am offenen Dach (Putz et al. 1984). Gemessen (Wald-Gesetz, sd ≥ 0,7, flacher
+        // Grund): das Dach allein 44 Stämme/ha, mit den Schichten 375 — REF spec/abnahme/real-mischwald.json 370–900.
+        schicht: { alter: [0.7, 0.4], pack: 1 },
     };
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
@@ -2901,11 +2908,42 @@
         }
         return true;
     }
-    // DER BESTAND EINER ZELLE: ihre geborenen Darts, die stehen (`forestSteht`) — in der Reihe ihrer Geburt.
-    function forestStehende(gx, gz, geboren, pk) {
+    // DIE SCHICHT EINES DARTS (FOREST_PACK.schicht): 1 im Dach (`forestSteht`), sonst das größte Alter der Schicht, in dem seine
+    // Krone T·alter gegen jeden besseren geborenen Dart der Zellen ±2 (T·alter, Packung `schicht.pack`) frei steht, 0 ohne
+    // Platz. Rein, reihenfolge-frei wie das Urteil des Dachs (eine Existenz-Frage über die geborenen Darts).
+    function forestSchicht(d, gx, gz, geboren, pk) {
+        if (forestSteht(d, gx, gz, geboren, pk)) return 1;
+        const S = FOREST_PACK.schicht;
+        const R = FOREST_URTEIL_REIHE;
+        for (let i = 0; i < S.alter.length; i++) {
+            const a = S.alter[i];
+            let frei = true;
+            for (let q = 0; q < R.length && frei; q += 2) {
+                const nb = geboren(gx + R[q], gz + R[q + 1]);
+                for (let k = 0; k < nb.length; k++) {
+                    const o = nb[k];
+                    if (o !== d && forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * a, S.pack) && forestPrioWins(o, d)) {
+                        frei = false;
+                        break;
+                    }
+                }
+            }
+            if (frei) return a;
+        }
+        return 0;
+    }
+    // DER BESTAND EINER ZELLE: ihre geborenen Darts, die stehen — in der Reihe ihrer Geburt. Das Dach (`forestSteht`) trägt
+    // den geborenen Dart selbst; Zwischen- und Unterstand (`forestSchicht` < 1) ein Abbild mit `alter` und der Krone T·alter.
+    // `nurDach`: nur die Kronen des Dachs (die Kamm-Krone der Ferne — kein Unterstand reicht über das Dach in den Himmel).
+    function forestStehende(gx, gz, geboren, pk, nurDach) {
         const own = geboren(gx, gz);
         const out = [];
-        for (let k = 0; k < own.length; k++) if (forestSteht(own[k], gx, gz, geboren, pk)) out.push(own[k]);
+        for (let k = 0; k < own.length; k++) {
+            const d = own[k];
+            const a = nurDach ? +forestSteht(d, gx, gz, geboren, pk) : forestSchicht(d, gx, gz, geboren, pk);
+            if (a === 1) out.push(d);
+            else if (a > 0) out.push(Object.assign({}, d, { T: d.T * a, alter: a }));
+        }
         return out;
     }
 
@@ -3005,7 +3043,7 @@
         const aus = [];
         const AP = new Map();
         for (const [cx, cz] of zellen.values()) {
-            const stehen = forestStehende(cx, cz, o.geboren, o.pk);
+            const stehen = forestStehende(cx, cz, o.geboren, o.pk, true);
             for (let j = 0; j < stehen.length; j++) {
                 const t = stehen[j];
                 let p = AP.get(t.sp);
@@ -5788,6 +5826,7 @@
         FOREST_URTEIL_REIHE: FOREST_URTEIL_REIHE, // w4-b-pflanzen — die Reihe des Urteils: die eigene Zelle, Ring 1, Ring 2
         forestSteht: forestSteht, // w4-b-pflanzen — DAS EINE Urteil der Kronen-Schüchternheit (Wald-Faden und Wirt)
         forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
+        forestSchicht: forestSchicht, // w16-wald-innen — die Schicht eines Darts: 1 Dach, das Alter im Zwischen-/Unterstand, 0
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt
         KAMM_FELDER: KAMM_FELDER,
         planForestCell: planForestCell,

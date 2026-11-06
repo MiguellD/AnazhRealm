@@ -2636,16 +2636,17 @@ class AnazhRealm_vegetation_wiese {
         return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
-    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
-    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort).
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 12 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort); der zwölfte Wert ist die Schicht
+    // (phyto-core `forestSchicht`: 1 das Dach, sonst `alter` des Zwischen- und Unterstands).
     _waldDartsEntpacken(r, zellenZahl) {
         const w = r.werte;
         const alle = [];
         let j = 0;
         for (let i = 0; i < zellenZahl; i++) {
             const out = [];
-            for (let m = r.anzahl[i]; m > 0; m--, j += 11)
-                out.push({
+            for (let m = r.anzahl[i]; m > 0; m--, j += 12) {
+                const d = {
                     x: w[j],
                     z: w[j + 1],
                     sp: r.arten[w[j + 2]],
@@ -2657,7 +2658,10 @@ class AnazhRealm_vegetation_wiese {
                     rotY: w[j + 8],
                     seed: w[j + 9],
                     surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
-                });
+                };
+                if (w[j + 11] < 1) d.alter = w[j + 11];
+                out.push(d);
+            }
             alle.push(out);
         }
         return alle;

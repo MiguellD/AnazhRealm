@@ -1,0 +1,9 @@
+{
+    "quelle": "Mischwald Buche-Eiche-Fichte: BWI4 2022 600/ha >7cm, 335 m3/ha; NW-FVA Buche 73J 434-892/ha; LWF Springenkopf 370/ha; Braun-Blanquet 3; Ehrenbuerg Kraut 50-60%, Brackel+Zintl 78%; Chazdon 1988",
+    "staemmeJeHa": [370, 900],
+    "bhdM": 0.25,
+    "ego": [75, 1.7778, 20],
+    "staemmeJeBildbreite": [12, 25],
+    "unterholzDeckung": [0.25, 0.78],
+    "flecken": { "cv": 0.3, "gegenOffen": 2, "wandernMax": 0.8 }
+}

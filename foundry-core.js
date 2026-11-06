@@ -691,9 +691,12 @@ const PORTAL_RENDER_CONFIG = {
         // labor: false = das Labor trägt die Art mit seinen eigenen Boden-Schichten (Blumen · Kies). leben = der Gewinn je
         // Einheit des Leben-Overlays am Ort (feld.K5: die gepflegte Wiese blüht auf, die abgeäste verliert ihre Blumen).
         boden: {
+            // der Farn (vegetation.K3, w16-wald-innen): 36 je 100 m² decken bei vollem Gewicht 1 − e^(−0,36 · 1,15 m²) = 34 %
+            // (Grundfläche der L0 r 0,6 m) — die Krautschicht des Buchenwalds 50–60 % (REF spec/abnahme/real-mischwald.json);
+            // mit dem Unterstand deckt der Boden 0–2 m im Mischwald 0,317 (vorher 0,051, Wald-Gesetz flach, sd 0,7–0,9)
             farn: {
                 ring: "nah",
-                dichte: 14,
+                dichte: 36,
                 skala: [0.75, 1.25],
                 hang: 0.95,
                 licht: [0.04, 0.16, 0.42, 0.72],

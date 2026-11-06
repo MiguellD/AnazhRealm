@@ -999,6 +999,7 @@ class AnazhRealm_vegetation_baum {
                     if (bx * bx + bz * bz >= rand * rand) continue;
                     for (let k = 0; k < nb.length; k++) {
                         const o = nb[k];
+                        if (o.alter) continue; // der Unterstand nimmt dem Dach kein Licht (phyto-core `forestSchicht`)
                         const r = FS.abstand * (T + o.T);
                         const dx = o.x - x;
                         const dz = o.z - z;
@@ -1144,7 +1145,7 @@ class AnazhRealm_vegetation_baum {
                 for (const d of this._forestCellDarts(gx, gz, seedInt)) {
                     if (d.x < x0 || d.x >= x1 || d.z < z0 || d.z >= z1 || !gepflanzt(d.x, d.z)) continue;
                     if (fd < 1 && d.keep >= fd) continue;
-                    const alter = this._baumAlter(d.x, d.z, zelle);
+                    const alter = Math.min(this._baumAlter(d.x, d.z, zelle), d.alter || 1);
                     const e = am(d);
                     const ov = e && (e.studioOv || (e.opts && e.opts.studioOv));
                     if ((e ? (ov && ov.alter) || 1 : 0) === alter) continue;
@@ -1204,8 +1205,9 @@ class AnazhRealm_vegetation_baum {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     // DAS ALTER DES ORTS (stoffe.K5#2, `_baumAlter`): wo ein Baum fiel oder die Narbe eines Brands liegt, steht
-                    // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4)
-                    const alter = this._baumAlter(d.x, d.z, zelle);
+                    // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4); der Zwischen- und Unterstand des Bestands
+                    // steht im Alter seiner Schicht (phyto-core `forestSchicht`, `d.alter`) — das jüngere gilt
+                    const alter = Math.min(this._baumAlter(d.x, d.z, zelle), d.alter || 1);
                     if (!(alter > 0)) continue;
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).

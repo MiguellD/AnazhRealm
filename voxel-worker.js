@@ -1023,7 +1023,7 @@ function waldDarts(msg) {
                 artIdx.set(d.sp, ai);
             }
             zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
-            zahl.push(d.surfaceY == null ? NaN : d.surfaceY);
+            zahl.push(d.surfaceY == null ? NaN : d.surfaceY, d.alter == null ? 1 : d.alter);
         }
     }
     const werte = new Float64Array(zahl);
