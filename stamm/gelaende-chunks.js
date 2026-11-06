@@ -2563,10 +2563,24 @@ class AnazhRealm_gelaende_chunks {
             // Bis w14-strom-tempo fragte jeder Takt die Wartenden zuerst neu und zählte sie: im GT (63,8 m/s) füllten 6 Netze
             // im Flug die Kappe, kein neuer Auftrag ging hinaus, und 241 von 355 verfehlten Eintritten waren Chunks am Rand
             // des Rings ohne jeden Auftrag (Fahrt-Probe, Cloud 06.11.).
+            // DAS FENSTER DES FADENS (w14-strom-tempo): der Faden baut seine Aufträge der Reihe nach (FIFO) — außerhalb des
+            // Ladeschirms gehen höchstens BODEN_IM_FLUG zugleich hinaus, in der Reihe des Rangs; ein fertiges Netz im Cache baut
+            // ein. Ohne Fenster lag der Faden im GT hinter Aufträgen für Chunks, die die Bahn längst hinter sich hatte (Fahrt-Probe
+            // d4: 1 457 von 1 593 Boden-Eintritten wartend im Flug).
+            const P = this.state.voxelMeshPending;
+            const baut = !existing || ((existingLod ?? 0) !== desiredLod && !existing.empty);
+            if (baut && P && P.has(`${key},${desiredLod}`)) {
+                wartet++;
+                continue;
+            }
+            const C = this.state.voxelMeshCache;
             if (
-                (!existing || (existingLod ?? 0) !== desiredLod) &&
-                this.state.voxelMeshPending &&
-                this.state.voxelMeshPending.has(`${key},${desiredLod}`)
+                baut &&
+                !lade &&
+                P &&
+                P.size >= AnazhRealm.BODEN_IM_FLUG &&
+                !(C && C.has(`${key},${desiredLod}`)) &&
+                this._voxelFadenTraegt()
             ) {
                 wartet++;
                 continue;
@@ -3063,6 +3077,9 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// Das Fenster des Boden-Strom (`_tickVoxelChunkStreaming`, w14-strom-tempo): so viele Netze im Flug (`voxelMeshPending`, mit
+// dem Neubau-Takt) hält der Strom außerhalb des Ladeschirms höchstens — der Faden baut FIFO, das Fenster hält seine Reihe frisch.
+AnazhRealm.BODEN_IM_FLUG = 4;
 // DIE VORLÄUFIGE SÄULE (`_saeuleVorlaeufig`): so viele Ecken trägt ihr Rand — die Kante des Vielecks liegt bei r = 3,5 m höchstens
 // r · (1 − cos(π / 16)) = 7 cm innerhalb des Kreises, dessen Krone der Boden-Leser liest. Wirts-Auflösung.
 AnazhRealm.SAEULE_ECKEN = 16;
