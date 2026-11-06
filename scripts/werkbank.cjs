@@ -2377,8 +2377,7 @@ async function starte() {
                     const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
                         liste = [];
                     for (const zeilen of [t.zeilen.filter((z) => !nahZ.includes(z)), ...nahZ.map((z) => [z])])
-                        for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhren: zeilen.length > 1 ? [0.5] : t.uhren, eichen: zeilen.length > 1 }))
-                            liste.push(e.id && e.uhr !== 0.5 ? Object.assign(e, { id: e.id + "@" + e.uhr }) : e);
+                        liste.push(...(await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhren: zeilen.length > 1 ? [0.5] : t.uhren, eichen: zeilen.length > 1 })));
                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};

@@ -518,9 +518,9 @@ function albedoSicht(opts) {
                             .map((m) => (m.isInstancedMesh ? m : satzAusschnitt(m, ex.eintrag, z.basis !== false)))
                             .filter(Boolean);
                     const e = {
-                        id: z.id,
+                        // jede Uhr nach der ersten (der Bühne, Mittag) steht als `<id>@<uhr>`
+                        id: uhr === 0.5 ? z.id : z.id + "@" + uhr,
                         name: z.id,
-                        uhr,
                         klasse: w.klasse,
                         exemplar: w.exemplar || null,
                         gesetzt: ex.gesetzt,
