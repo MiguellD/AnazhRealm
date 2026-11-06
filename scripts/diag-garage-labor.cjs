@@ -222,7 +222,7 @@ hauptLauf(async () => {
                     for (let x = Math.max(0, Math.floor(r.left / c)); x < Math.min(gx, Math.ceil(r.right / c)); x++) g[y * gx + x] = 1;
             }
             vehicle.traverseVisible((o) => o.isSprite && namen.push(o.name));
-            return { anteil: Math.round((g.reduce((a, b) => a + b, 0) / g.length) * 1000) / 10, schilder: namen.length, tafel: getComputedStyle(document.getElementById("lehren")).display !== "none" };
+            return { anteil: Math.round((g.reduce(addiere, 0) / g.length) * 1000) / 10, schilder: namen.length, tafel: getComputedStyle(document.getElementById("lehren")).display !== "none" };
         });
     const s0 = await schirm();
     await page.click("#lehrenB");
@@ -342,7 +342,7 @@ hauptLauf(async () => {
                 await R.backend.device?.queue?.onSubmittedWorkDone?.();
                 t.push(performance.now() - a);
             }
-            return Math.round(t.sort((a, b) => a - b)[4]);
+            return Math.round(t.sort(aufsteigend)[4]);
         };
         const voll = await zeit();
         document.getElementById("leichtB").click();

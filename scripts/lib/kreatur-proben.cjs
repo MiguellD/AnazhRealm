@@ -21,7 +21,7 @@ async function kreaturProben(r, T, opts) {
     const grad = (a) => (a * 180) / Math.PI;
     const quantil = (arr, q) => {
         if (!arr.length) return null;
-        const b = arr.slice().sort((a, b) => a - b);
+        const b = arr.slice().sort(aufsteigend);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
     const pm = s.playerMesh.position;
@@ -1881,7 +1881,7 @@ async function kreaturProben(r, T, opts) {
                 (c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand)
             );
         const luecke = (R) => {
-            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort(aufsteigend);
             return grad(Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + TAU) - a)));
         };
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
@@ -2558,7 +2558,7 @@ async function kreaturProben(r, T, opts) {
                 const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
-                    wandN: [...WG.wand.values()].reduce((a, b) => a + b, 0),
+                    wandN: [...WG.wand.values()].reduce(addiere, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 4)
@@ -2610,7 +2610,7 @@ async function kreaturProben(r, T, opts) {
             menge: (S) => {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
-                ms.sort((a, b) => a - b);
+                ms.sort(aufsteigend);
                 return {
                     je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah, b.farben]),
                     typ: S.gestalten.map((G) => ({
@@ -2625,7 +2625,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
+                    takt: [q3(ms.reduce(addiere, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
                 };
             },
         });
@@ -2972,7 +2972,7 @@ async function kreaturProben(r, T, opts) {
                     Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            blicke.sektor.reduce((a, b) => a + b, 0)
+                            blicke.sektor.reduce(addiere, 0)
                         )
                 ),
             },
