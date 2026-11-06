@@ -45,7 +45,8 @@ function laborVerdict(m) {
     if (!(s.anteil <= 15 && s.schilder === 0)) out.push(`schirm ${s.anteil} % Leiste, ${s.schilder} Schilder im Standard`);
     if (!(s.lehrenSchilder > 0 && s.lehrenTafel === true)) out.push(`lehren-knopf ${s.lehrenSchilder} Schilder, Tafel ${s.lehrenTafel}`);
     const l = m.leicht || {};
-    if (!(l.pr <= 0.5 && l.schatten === false && l.leicht < 0.6 * l.voll)) out.push(`leicht ${l.leicht} ms gegen ${l.voll} ms, Auflösung ×${l.pr}, Schatten ${l.schatten}`);
+    // die Bildzeit gilt nur auf der Leinwand: ein Ziel abseits (das Ausgabe-Ziel von G8, 160×90) halbiert keine Auflösung
+    if (!(l.pr <= 0.5 && l.schatten === false && l.leinwand && l.leicht < 0.6 * l.voll)) out.push(`leicht ${l.leicht} ms gegen ${l.voll} ms, Auflösung ×${l.pr}, Schatten ${l.schatten}, Leinwand ${l.leinwand}`);
     for (const n of ANSICHTEN) {
         // ein Bild ohne Spannweite trägt den Anteil „leer“: der blinde Leser (der 2D-Abzug der CI, z152), nie ein Wagen
         const [b, a] = m.ansicht?.[n] || [];
@@ -155,7 +156,7 @@ hauptLauf(async () => {
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
         const ansicht = Object.fromEntries(ANSICHTEN.map((n) => [n, [60, 0.2]]));
         const schirm = { anteil: 10.8, schilder: 0, lehrenSchilder: 5, lehrenTafel: true },
-            leicht = { voll: 186, leicht: 46, pr: 0.5, schatten: false };
+            leicht = { voll: 186, leicht: 46, pr: 0.5, schatten: false, leinwand: true };
         const gesund = { geladen: true, hudDisplay: "flex", hudAbstand: 22, tachoV: 10.5, tachoAnzeige: 38, kulturAb: true, schilderFahrt: 0, schilderWerkstatt: 6, ansicht, schirm, leicht };
         check("Selbst-Test 0: gesundes Labor == 0 Täter", !laborVerdict(gesund).length);
         for (const [soll, bruch] of [
@@ -174,6 +175,7 @@ hauptLauf(async () => {
             ["lehren-knopf", { schirm: { ...schirm, lehrenTafel: false } }],
             ["leicht", { leicht: { ...leicht, schatten: true } }],
             ["leicht", { leicht: { ...leicht, leicht: 160 } }],
+            ["leicht", { leicht: { ...leicht, leinwand: false } }],
         ]) {
             const v = laborVerdict({ ...gesund, ...bruch });
             check(`Selbst-Test ${JSON.stringify(bruch).slice(0, 60)} → ${soll}`, v[0]?.startsWith(soll), v.join(" · "));
@@ -292,7 +294,7 @@ hauptLauf(async () => {
     // 2D-Abzug der WebGPU-Leinwand (drawImage) las auf der CI (Linux, swiftshader ohne Vulkan-Oberfläche) ein leeres Bild —
     // z152 02.11.: 22/25/45/44 Befehle wie lokal, Wagen 0 in jedem Modus; das Ziel liest auf jedem Backend dasselbe Bild.
     m.ansicht = await page.evaluate(async (ANSICHTEN) => {
-        R.setAnimationLoop(null);
+        // die Schleife ruht seit G4 (`R.setAnimationLoop(null)` dort): gezeichnet wird nur, was G8 und G10 rufen
         P.epoche = 5;
         rebuild();
         const ziel = new THREE.RenderTarget(160, 90),
@@ -320,31 +322,33 @@ hauptLauf(async () => {
         }
         return a;
     }, ANSICHTEN);
-    // G10 Leicht: die Bildzeit der Isometrie (Median aus 5 Bildern bis zum Ende der GPU-Arbeit) voll gegen leicht, über den Knopf —
-    // am Wagen der Zukunft, dessen Programme G8 gebaut hat (Lehre 26: zwischen G4 und G8 baute dieser Aufruf die sieben kalten
-    // Programme der Kutsche, lokal 51 s, auf der CI über die Frist der Seite: z225)
+    // G10 Leicht: die Bildzeit der Isometrie AUF DER LEINWAND (Median aus 9 Bildern bis zum Ende der GPU-Arbeit; das erste baut)
+    // voll gegen leicht, über den Knopf — am Wagen der Zukunft, dessen Programme G8 gebaut hat (Lehre 26: zwischen G4 und G8 baute
+    // dieser Aufruf die sieben kalten Programme der Kutsche, lokal 51 s, auf der CI über die Frist der Seite: z225). DIE LEINWAND
+    // ZURÜCK heißt beide Ziele: r184 `_renderScene` stellt nach dem Ausgabe-Pass `_renderTarget || _outputRenderTarget` wieder her —
+    // nach einem Bild in das Ausgabe-Ziel von G8 IST es das Render-Ziel, `setOutputRenderTarget(null)` allein ließ es stehen (die
+    // anderen Linsen setzen beide zurück, ausgabe-aufnahme, kamera-laub, ziel-zensus). Bis w13-wackler-heil maß G10 so das Ziel
+    // 160×90 statt der Leinwand: dort halbiert „Leicht" nichts, es blieb der Schatten-Pass (swiftshader 9–13 gegen 7–9 ms, 10–38 %
+    // gespart, z245 zweimal ROT); auf der Leinwand 47–59 gegen 17–22 ms. Ein Bild, das nicht auf der Leinwand liegt, ist ROT beim Namen.
     m.leicht = await page.evaluate(async () => {
         R.setOutputRenderTarget(null);
-        projSetzen("iso");
-        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
-        R.setAnimationLoop(null);
+        R.setRenderTarget(null);
+        projSetzen("iso"); // die Schleife ruht seit G4, gezeichnet wird nur hier
         const zeit = async () => {
             const t = [];
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 9; i++) {
                 const a = performance.now();
                 R.render(scene, kamera());
                 await R.backend.device?.queue?.onSubmittedWorkDone?.();
                 t.push(performance.now() - a);
             }
-            return Math.round(t.sort((a, b) => a - b)[2]);
+            return Math.round(t.sort((a, b) => a - b)[4]);
         };
         const voll = await zeit();
         document.getElementById("leichtB").click();
         R.render(scene, kamera()); // das erste Bild ohne Schatten baut seine Programme
-        const r = { voll, leicht: await zeit(), pr: R.getPixelRatio(), schatten: sonne.shadow.autoUpdate };
-        document.getElementById("leichtB").click();
-        R.setAnimationLoop(animate);
-        return r;
+        // der letzte Blick der Seite (der Browser schließt danach): kein Zurückstellen
+        return { voll, leicht: await zeit(), pr: R.getPixelRatio(), schatten: sonne.shadow.autoUpdate, leinwand: !R.getRenderTarget() };
     });
     await browser.close();
     server.close();
