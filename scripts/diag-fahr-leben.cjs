@@ -788,7 +788,7 @@ const verkehrVerdict = (m) =>
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
         [
             m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M,
-            `fahrend je Minute ${JSON.stringify(m.weg60)}${m.weg60Ort ? " am Kopf " + JSON.stringify(m.weg60Ort) : ""}`,
+            `fahrend je Minute ${JSON.stringify(m.weg60)}${m.weg60Ort ? " am Kopf " + JSON.stringify(m.weg60Ort) : ""}${m.weg60Grund ? " in der Minute " + JSON.stringify(m.weg60Grund) : ""}`,
         ],
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],

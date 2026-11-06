@@ -847,7 +847,15 @@ async function probeLeben(expected) {
             // DER FAHRER IM SITZ [Proben, außer der Kabine, je Wagen Probe, Höhe des Sitz-Knochens, Dach]. Die Täter (`o.taeter`):
             // Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse 20 m neben seiner Lage, Wagen 2 1 m hinter Wagen 3, der
             // Sitz-Knochen des ersten gemessenen Fahrers 1,3 m höher (auf dem Dach, wie um 23 Uhr an der Radeon)
-            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity] }; // prettier-ignore
+            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], g: new Map() }; // prettier-ignore
+            // der Täter am Kopf seiner Reihe: wer vor ihm steht (der Wagen, der Halter des Orts, auf den er wartet), bis einer aus
+            // anderem Grund hält (ein Leib — der Spieler oder ein Bewohner —, die Ankunft, ein Ort ohne Halter)
+            const kopf = (W) => {
+                let K = W;
+                for (let n = 0; n < 20 && K.grund !== "leib"; n++)
+                    K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
+                return K;
+            };
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
@@ -862,18 +870,23 @@ async function probeLeben(expected) {
                 if (i % 8 === 7) await window.sleep();
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
                     const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
-                    // der Täter am Kopf seiner Reihe: wer vor ihm steht (der Wagen, der Halter des Orts, auf den er wartet), bis einer aus
-                    // anderem Grund hält (ein Leib — der Spieler oder ein Bewohner —, die Ankunft, ein Ort ohne Halter)
-                    let K = W;
-                    for (let n = 0; n < 20 && K.grund !== "leib"; n++)
-                        K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
+                    const K = kopf(W);
                     const tiefer = w < T.w60[0];
                     if (tiefer) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
                     // der Kopf der Reihe beim Ort: Nr., Zustand, Lage und je Ort, auf den er wartet, Art, Mitte, Halter und Wartende
                     if (tiefer) T.w60Ort = [K.nr, K.zustand, ...ort2(K.entry.position), [...K.reihe].map((z) => [z.art, ...ort2(z), z.halter.map((h) => h.nr), z.warte.map((h) => h.nr)])]; // prettier-ignore
+                    // und über die ganze Minute: woran er wie viele Proben hing (sein Grund > der Kopf seiner Reihe: Nr., Grund, wer)
+                    if (tiefer) T.w60Grund = [...(T.g.get(W) || [])].sort((a, b) => b[1] - a[1]).slice(0, 6); // prettier-ignore
+                    T.g = new Map();
                     T.w60[2] = T.min;
                 }
                 if (k % 4) continue;
+                for (const W of VK.wagen) {
+                    const K = kopf(W);
+                    const name = `${W.grund || "-"}>${K.nr}:${K.grund || "-"}${K.grund === "leib" ? "@" + (K.wer ? K.wer.seed : "spieler") : ""}`; // prettier-ignore
+                    const g = T.g.get(W) || T.g.set(W, new Map()).get(W);
+                    g.set(name, (g.get(name) || 0) + 1);
+                }
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
                 // DER SCHLÜSSEL OHNE DURCHFAHRT: kein Wagen steht unter den Haltern eines Orts, ohne eine gehaltene Durchfahrt dieses
                 // Orts vor sich (`hat`, nicht `weg`) — der Wagen, der den Ort hinter sich ließ und ihn doch hält [Proben, je Fall Wagen, Probe, Ort, Lage]
@@ -1060,6 +1073,7 @@ async function probeLeben(expected) {
                 trasse: T.tr,
                 weg60: T.w60,
                 weg60Ort: T.w60Ort || null,
+                weg60Grund: T.w60Grund || null,
                 leck: [m.leck, m.leckOrte],
                 sitz: SZ,
                 abdruck: abdruck >>> 0,
