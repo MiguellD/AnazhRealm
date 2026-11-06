@@ -1,8 +1,8 @@
 {
  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
  "geraet": "headless",
- "zeit": "2026-11-06T23:06:54.102Z",
- "host": "farm:42309443498",
+ "zeit": "2026-11-06T23:38:30.741Z",
+ "host": "farm:42313188754",
  "je": {
   "ki.K1#2": {
    "gruen": true,
@@ -27,6 +27,18 @@
    "bahn": "allein",
    "host": "farm:42309443498/1",
    "zwilling": "ki.K1#2"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "zahl": "keine PFUETZE-Zeile für ego, third, mutante, kurve — A.ecke is not a function (Exit 2)",
+   "exit": 2,
+   "minuten": 0.23,
+   "grund": "ROT: keine PFUETZE-Zeile für ego, third, mutante, kurve — A.ecke is not a function (Exit 2)",
+   "zeit": "2026-11-06T23:38:30.741Z",
+   "abdruck": "f9c8d36dc843",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42313188754/1"
   }
  }
 }
