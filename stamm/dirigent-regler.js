@@ -388,22 +388,11 @@ class AnazhRealm_dirigent_regler {
         // der Spieler setzt sie), die zeitliche Auflösung löst auf die Ausgabe auf — ein Ziel-Wechsel je Last war die
         // Destroyed-Klasse (realloc-tod 20.07.). Der Regler trägt die Pixel-Kappe der Geräte-Klasse (`_applyRenderScale`).
         if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale();
-        // Der Schatten-Pass (ein zweiter Voll-Render) unter dem EINEN Regler: `effArch` skaliert die
-        // Schatten-Reichweite zwischen Last-Floor und User-Ceiling (`atmosphere.shadowRange`) — unter Last
-        // schrumpft das Frustum (weniger Caster, schärfere Nah-Schatten); jenseits ~150 m deckt der Nebel.
-        // Die Reichweite liegt auf dem RASTER von 6 m ab der Decke, das Totband (¾ Stufe) hält gegen updateProjectionMatrix-
-        // Churn — der Wert ist eine Funktion der Last, nie des Wegs (A9-n2: das Totband hielt den Wert des letzten Sprungs, unter
-        // Regler voll stand die Karte je Rampe bei 167,8 oder 168,0 m statt 170, die Kaskaden-Scheiben mit ihr); headless → Ceiling.
-        if (!(st.renderer && st.renderer._isHeadlessNull) && typeof this._applyEffectiveShadowRange === "function") {
-            const srCeil =
-                st.atmosphere && Number.isFinite(st.atmosphere.shadowRange)
-                    ? st.atmosphere.shadowRange
-                    : AnazhRealm.PERF_SHADOW_RANGE_MAX;
-            const srTarget = lerp(AnazhRealm.PERF_SHADOW_RANGE_MIN, srCeil, effArch);
-            const srApplied = Number.isFinite(this._shadowRangeApplied) ? this._shadowRangeApplied : srCeil;
-            const srStufe = srCeil - 6 * Math.round((srCeil - srTarget) / 6);
-            if (srStufe !== srApplied && Math.abs(srTarget - srApplied) > 4.5) this._applyEffectiveShadowRange(srStufe);
-        }
+        // DIE SCHATTEN-REICHWEITE IST EIN RAND, kein Stellglied (w14-lod-uebergang): sie steht, wo der Spieler sie setzt
+        // (`atmosphere.shadowRange`, `setShadowRange`). Bis hier zog der Regler sie zwischen 100 m und der Decke in 6-m-Stufen —
+        // jede Stufe legte `maxFar` und mit ihm den Saum und den Rast jeder Kaskade neu (`_kaskadenSaum`, `_kaskadeSchritt`), die
+        // Texel der Kaskade 15–108 m sprangen, und die Schatten der ganzen Wiese wechselten im Stand (lod.K2#1, Radeon, Uhr
+        // gehalten: 6 600–7 800 Pop-Pixel je Schritt mit dem Regler, 550–660 ohne ihn).
         // Godray-Hebel unter dem EINEN Regler (`effArch`): die Licht-Schäfte sind reine Optik und geben
         // zuerst nach — Kopfraum → PERF_GODRAY_MAX, anhaltende Last → 0. `_loopRender` liest `_godrayScale`
         // × Sonnen-Sichtbarkeit. Headless → MAX.
@@ -2009,9 +1998,7 @@ AnazhRealm._forceWebGL = function () {
 // Performance-Regelkreis: die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
 // Die DECKE: über dieser Frame-Zeit drosselt der Regler die Qualität (≈59 fps); der Wachstums-Boden
-// liegt PERF_HEADROOM_MS darunter. Schatten-Reichweite: der Regler skaliert das Frustum des zweiten
-// Voll-Renders zwischen Last-Floor und User-Ceiling (atmosphere.shadowRange); MIN < fog-far.
-AnazhRealm.PERF_SHADOW_RANGE_MIN = 100;
+// liegt PERF_HEADROOM_MS darunter.
 // V8 (Kür) — der GODRAY-Pegel-Ceiling: der Perf-Regler skaliert `_godrayScale` zwischen 0
 // (anhaltende Last → Schäfte aus) und diesem Max (Kopfraum → volle Optik). Reine Optik, also
 // gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.

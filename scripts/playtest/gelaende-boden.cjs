@@ -1013,7 +1013,7 @@ async function checkBandV18130CsmShadow({ page, check }) {
             const span = r._voxelChunkConfig(0).span;
             const e0 = (A.DETAIL_CASCADE[0].maxRing + 0.5) * span;
             const F = A.SCHATTEN_FERN_FAKTOR;
-            const fars = [A.PERF_SHADOW_RANGE_MIN * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F];
+            const fars = [80 * F, A.PERF_SHADOW_RANGE_MAX * F, 400 * F]; // der Schieber des Spielers 80–400 m (`setShadowRange`)
             let kante = true,
                 minAnteil = 1;
             const zeilen = [];

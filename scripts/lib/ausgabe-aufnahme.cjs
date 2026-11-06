@@ -367,6 +367,12 @@ function buehne(o) {
     // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
+    // DER GANG DES TAGS STEHT (die Uhr der Zelle, Lehre 17): die Tag-Länge des Halts, mit der `werkbank sicht --tag steht` den Tag
+    // hält — eine Linse, die die Sonne laufen lässt, setzt ihre eigene (`sicht --sonne`, die Erstarrung der Wasser-Linse); das Laden
+    // setzt sie nie, die Grundstellung der Sitzung trägt sie zurück. Bis w14-lod-uebergang ging der Tag unter der Bühne nach der
+    // Wanduhr weiter: lod.K2#1 (Radeon, 1–3 s Wanduhr je Schuss-Paar) drehte die Sonne zwischen zwei Schüssen derselben Pose, jede
+    // Stufe der Sonne schob die Halm-Schatten der ganzen Wiese — im Stand 55 000 von 60 000 Pop-Pixeln je Schritt.
+    st.dayLengthMinutes = 1e12;
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
     r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
