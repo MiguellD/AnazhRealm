@@ -1309,5 +1309,8 @@ gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();animate(
             });
             return { kind: "weapon", preset: rezeptDerGattung(), seed: 1, ov: ov };
         },
+        wurzel: function () {
+            return weapon;
+        },
     });
 })();

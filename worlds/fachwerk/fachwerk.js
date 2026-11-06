@@ -1135,5 +1135,8 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
             });
             return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: SEED, ov: ov };
         },
+        wurzel: function () {
+            return houseGroup;
+        },
     });
 })();

@@ -779,5 +779,6 @@ AnazhHuelle.bruecke({
         PARAMS.forEach((z) => (ov[z.id] = P[z.id]));
         return { kind: "vehicle", preset: presetId, seed, ov };
     },
+    wurzel: () => vehicle,
     werkOrt: document.getElementById("werkOrt"),
 });

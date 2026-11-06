@@ -821,10 +821,11 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
 }
 
 // Fixture-Bausteine: der Kopf-Richter in seiner Form, ein Cache-Schritt
+const CHECKOUT = { uses: "actions/checkout@v4" };
 const kopfJob = () => ({
     if: VOLL_WENN,
     outputs: { voll: "${{ steps.kopf.outputs.voll }}", echt: "${{ steps.kopf.outputs.echt }}" },
-    steps: [{ uses: "actions/checkout@v4" }, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
+    steps: [CHECKOUT, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
 });
 const cacheSchritt = (p, key, restore = p.replace(/\W+/g, "") + "-") => ({
     uses: "actions/cache@v4",
@@ -838,7 +839,7 @@ function selbsttestSchluessel() {
         jobs: {
             voll: {
                 steps: [
-                    { uses: "actions/checkout@v4" },
+                    CHECKOUT,
                     { uses: "actions/setup-node@v4", with: { "node-version": "22" } },
                     { name: "Cache-Schlüssel", id: "schluessel", run: "node scripts/ci-schluessel.cjs" },
                     cacheSchritt("~/.npm", "npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}", "npm-${{ runner.os }}-"),
@@ -968,7 +969,7 @@ function selbsttestKopf(urteile = kopfUrteil) {
 
 // die Vorbereitung eines Fixture-Jobs (Checkout, Node, System-Libs, Dependencies), dahinter seine Schritte
 const prep = (...schritte) => [
-    { uses: "actions/checkout@v4" },
+    CHECKOUT,
     { uses: "actions/setup-node@v4" },
     { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
     { name: "Dependencies", id: "vorbereitung", run: "npm ci --no-audit --no-fund" },
@@ -1243,7 +1244,7 @@ function selbsttestGegenrichtung() {
             jobs: {
                 check: {
                     steps: [
-                        { uses: "actions/checkout@v4" },
+                        CHECKOUT,
                         { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
                         { name: "Lint", run: "npm run lint" },
                         { name: "Statik", run: "npm run check" },

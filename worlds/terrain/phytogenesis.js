@@ -4624,6 +4624,7 @@ init();
             for (const z of zeilen) if (typeof P[z.id] === "number") ov[z.id] = P[z.id];
             return { kind: pre.kind, preset: CURRENT, seed: SEED, ov };
         },
+        wurzel: () => subject,
     }));
     if (!window.parent || window.parent === window) _labHeimat = null; // ohne Heimat backt niemand (`_karteLaborFragen`)
 })();

@@ -1117,6 +1117,13 @@
             if (r[2] !== null && abw(r[1], r[2])) rot.push(wo + " ↔ " + r[2]);
             if (r[3] !== null && !(+r[1] <= +r[3])) rot.push(wo + " über dem Deckel " + r[3]);
         });
+        // die Bühne zeigt das Werk, das die Zeile zählt (studios.K4): das Maß ihrer Wurzel gegen den Bau des Kerns (`werkMass`)
+        var zahl = function (t) {
+            return String(t).split(",").map(Number);
+        };
+        if (k.werkWelt) werkUrteil({ buehne: zahl(k.werkBuehne), welt: zahl(k.werkWelt), werk: k.werk }).forEach(function (x) {
+            rot.push("L" + k.stufe + " " + x);
+        });
         return rot;
     }
     var MB = function (b) {
@@ -1250,6 +1257,7 @@
             var anteil = Math.min(1, c.tris / deckel);
             g = g || {};
             var daten = { stufe: s, leiste: c.tris, deckel: b.tris || 0, befehle: c.befehle, vram: c.vram, gezeichnet: g.tris, befehleGezeichnet: g.befehle };
+            if (zz.werk) Object.assign(daten, { werk: zz.werk.werk, werkBuehne: String(zz.werk.buehne), werkWelt: String(zz.werk.welt) });
             Object.assign(daten, { vramGpu: g.vram, vramDeckel: d.vram, msDeckel: d.ms, deckelFehlt: d.fehlt, ms: g.ms, zeitFehlt: g.zeitFehlt, bank: g.bank, bankCpu: g.bankCpu });
             // fertig: die Gegenzahl, die Zeit (oder ihr Grund) und die Deckel (oder ihr Grund) stehen — der Gang liest erst dann
             daten.fertig = g.tris != null && (g.ms != null || g.zeitFehlt) && (d.vram != null || d.fehlt) ? 1 : null;
@@ -1280,6 +1288,7 @@
             if (d.fehlt) t += " · Deckel: " + d.fehlt;
             t += " · " + c.stoffe + " Stoffe";
             if (urteil.length) t += " · ROT " + urteil.join(" · ");
+            else if (zz.werk) t += " · Werk = Welt";
             if (typeof b.schatten === "number") t += " · Wurf L" + b.schatten;
             zz.txt.textContent = t;
             zz.z.title =
@@ -1293,6 +1302,8 @@
                 lauf = ++zz.lauf;
             if (g) delete g.zeit;
             if (g) c.gezeichnet = g;
+            // DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4): die erste Stufe misst je Bau die Wurzel der Bühne gegen den Bau des Kerns
+            zz.werk = s === stufen[0] && werkWurzel ? werkMass() || { werk: "ohne Kern" } : null;
             stand[s] = zz.c = c;
             schreibe(s);
             var spaeter = function (fn) {
@@ -1595,9 +1606,55 @@
     }
 
     var reisender = null; // der Avatar, den die Heimat beim Betreten schickte (`bruecke`, enter)
-    // DAS WERK DER BÜHNE (studios.K4): `opt.werk` der Brücke — auch ohne Heimat lesbar (`AnazhHuelle.werk()`): gate:studio-huelle H9
-    // misst daran, ob die Wurzel der Bühne das Werk trägt, das der Kern der Welt für diese Übergabe baut
-    var werkDerBuehne = null;
+    // DAS MASS DES WERKS (studios.K4, Labor = Welt): `opt.werk` und `opt.wurzel` der Brücke — die Box der Wurzel der Bühne (die
+    // sichtbaren Meshes, eine Instanz je Instanz-Matrix) gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut
+    // (`buildInstance(preset, seed, 0, ov)` des Kerns, der die Art trägt — dasselbe baut die Brücke der Welt); null ohne Werk,
+    // Wurzel oder Kern. Leser: gate:studio-huelle H9 (die Wurzel trägt das Werk der Welt).
+    var werkDerBuehne = null,
+        werkWurzel = null;
+    function werkMass() {
+        var T = wurzel.THREE,
+            w = werkDerBuehne && werkDerBuehne(),
+            g = werkWurzel && werkWurzel();
+        var K = [wurzel]
+            .concat(Object.keys(wurzel).filter(function (n) {
+                return /^__\w+Core$/.test(n);
+            }).map(function (n) {
+                return wurzel[n];
+            }))
+            .filter(function (k) {
+                return w && k && k.PARAMS_BY_KIND && k.PARAMS_BY_KIND[w.kind] && typeof k.buildInstance === "function";
+            })[0];
+        if (!T || !g || !K) return null;
+        var mass = function (o, sicht) {
+            var b = new T.Box3(),
+                m = new T.Box3(),
+                im = new T.Matrix4();
+            o.updateMatrixWorld(true);
+            o[sicht ? "traverseVisible" : "traverse"](function (x) {
+                for (var i = 0; x.isMesh && i < (x.isInstancedMesh ? x.count : 1); i++) {
+                    if (!x.geometry.boundingBox) x.geometry.computeBoundingBox();
+                    m.copy(x.geometry.boundingBox);
+                    if (x.isInstancedMesh) x.getMatrixAt(i, im), m.applyMatrix4(im);
+                    b.union(m.applyMatrix4(x.matrixWorld));
+                }
+            });
+            return b.isEmpty() ? null : b.getSize(new T.Vector3()).toArray().map(function (v) {
+                return +v.toFixed(2);
+            });
+        };
+        return { werk: w.kind + " " + w.preset, buehne: mass(g, true), welt: mass(K.buildInstance(w.preset, w.seed, 0, w.ov), false) };
+    }
+    // das Urteil (die Leiste und gate:studio-huelle H9 lesen dasselbe): eine Achse über 2 % des Halbmessers des Werks der Welt
+    function werkUrteil(m) {
+        var d =
+            m && m.buehne && m.welt
+                ? (2 * Math.max.apply(null, m.welt.map(function (v, i) {
+                      return Math.abs(m.buehne[i] - v);
+                  }))) / Math.hypot.apply(null, m.welt)
+                : Infinity;
+        return d <= 0.02 ? [] : ["die Wurzel der Bühne " + (m && m.buehne) + " m, das Werk der Welt " + (m && m.welt) + " m (" + (m && m.werk) + ")"];
+    }
 
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
@@ -1608,11 +1665,12 @@
     //      bzw. `panoramaBild`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-Texel, übertragen);
     //      eine Welt ohne panorama() antwortet laut mit `fehler` · werk() → { kind, preset, seed, ov } das Werk der Bühne (Art und
     //      Rezept des Kerns, der Same des Baus, die Werte seiner Regler-Zeilen aus PARAMS_BY_KIND, beim Körper dazu die Wahlen)
-    //      oder null (die Bühne trägt kein Werk des Vertrags) · werkOrt das Element, das den Knopf trägt (sonst schwebt er)
+    //      oder null (die Bühne trägt kein Werk des Vertrags) · wurzel() das Objekt der Bühne, das dieses Werk zeigt (`werkMass`) · werkOrt das Element, das den Knopf trägt (sonst schwebt er)
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
         werkDerBuehne = opt.werk || null;
+        werkWurzel = opt.wurzel || null;
         function post(m) {
             if (!eltern) return;
             try {
@@ -1920,9 +1978,8 @@
         reisender: function () {
             return reisender;
         },
-        werk: function () {
-            return werkDerBuehne ? werkDerBuehne() : null;
-        },
+        werkMass: werkMass,
+        werkUrteil: werkUrteil,
         panorama: panorama,
         panoramaBild: panoramaBild,
         toast: toast,
