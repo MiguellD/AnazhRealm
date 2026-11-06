@@ -594,6 +594,12 @@ async function probeBildWeg(H) {
     const { frei } = await page.evaluate(L.probe, { nurOrt: true });
     await buehne(page);
     await H.binnen(page.evaluate(() => window.__weltStehtNach()), 15000);
+    // DAS WELTBILD STEHT, ehe die erste Taste fällt: unter dem Ladeschirm gehört keine Taste der Welt (`_ladeschirmSteht`,
+    // dirigent-ankunft) — die Werkbank bootet bis zum Backend und hält dann die Schleife an, der Schirm stand (headless am main 75 s
+    // Schleife bis zum Weltbild; davor „#workshop-search: nicht offen“: B fiel unter den Schirm). Steht er an der Frist, ist das der Täter.
+    await H.binnen(page.waitForFunction(() => !window.anazhRealm._ladeschirmSteht(), { timeout: 0, polling: 250 }), (H.rest() - 8) * 1000);
+    if (await page.evaluate(() => window.anazhRealm._ladeschirmSteht()))
+        throw new Error("der Ladeschirm steht nach " + H.sek() + " s laufender Schleife — kein Weltbild, keine Taste der Welt");
     await page.evaluate(L.wegHelfer, { frei, teile: { eigen_huette: L.TEILE.eigen_huette }, bild: true });
     let offen = true;
     H.beimAbbau(() => offen && L.bauWeg(page, "ende"));
