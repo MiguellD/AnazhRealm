@@ -1705,10 +1705,13 @@ class AnazhRealm_feld_leben {
         ];
     }
 
-    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): die Hilfe und der Tacho.
+    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): je Verb die Taste seiner Aktion
+    // aus der Belegung (`state.keybindings`) — die Hilfe und der Tacho.
     _fahrTastenZeile() {
+        const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
+        const taste = (a) => this._formatBindingCode(kb[a]);
         return Object.values(AnazhRealm.FAHR_TASTEN)
-            .map((t) => `${t.zeigen} ${t.label}`)
+            .map((t) => `${t.aktionen ? t.aktionen.map(taste).join(" · ") : taste(t.aktion)} ${t.label}`)
             .join(" · ");
     }
 
@@ -2558,14 +2561,16 @@ class AnazhRealm_feld_leben {
                 );
             return tafeln.get(N);
         };
-        // der Wind je Zelle des Felds EINMAL je Bild und Uhr (seine Form hängt an der Zelle, die Böe wandert über 100 m) — die
-        // Flammen lesen ihn zur Uhr des Brands, die Fahne zur Bild-Uhr
+        // DIE EINE WIND-UHR DES BRANDS: Front (`_brandTempo`), Flammen und Fahne lesen den Wind zur Welt-Uhr `t` — die Bild-Uhr
+        // (A9) trägt nur das Flackern und die Zeit des Shaders, sie wählt nie den Wind. Bis w13-brand-wind zog die Fahne zur
+        // Bild-Uhr (der Wanduhr der Seite): nach dem Laden eines Stands (`_weltUhrNimm`) lagen beide Stunden auseinander, und
+        // der Rauch wehte in einen anderen Wind als die Front, die ihn trug (der Mäander `windRichtung` bis ±41°). Je Zelle des
+        // Felds EINMAL je Bild (seine Form hängt an der Zelle, die Böe wandert über 100 m)
         const WM = new Map();
-        const wind = (x, z, uhr) => {
-            const M = WM.get(uhr) || WM.set(uhr, new Map()).get(uhr);
+        const wind = (x, z) => {
             const k = (Math.floor(x / 16) + 32768) * 65536 + Math.floor(z / 16) + 32768;
-            let w = M.get(k);
-            if (!w) M.set(k, (w = this._windAt(x, z, uhr)));
+            let w = WM.get(k);
+            if (!w) WM.set(k, (w = this._windAt(x, z, t)));
             return w;
         };
         // die brennenden Zellen im Bild, die nächste zuerst: die Deckel der Flammen und der Fahne fallen fern, nie nah
@@ -2584,7 +2589,7 @@ class AnazhRealm_feld_leben {
             if (fl.length >= B.flammenMax || qu.length >= B.zellenMax) break;
             const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
             const [px, pz] = b.kopf;
-            const w = wind(xc, zc, t);
+            const w = wind(xc, zc);
             const u = w.ms * B.flammenWind;
             const n0 = fl.length;
             // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7), eine junge nach ihrem Umfang
@@ -2624,8 +2629,9 @@ class AnazhRealm_feld_leben {
 
     // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild. Je Zelle und Sekunde
     // `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens
-    // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen).
-    _brandRauch(dt, qu, wind = (x, z, uhr) => this._windAt(x, z, uhr)) {
+    // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur
+    // Welt-Uhr wie die Front, die ihn trägt).
+    _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
         const st = this.state;
         const R = AnazhRealm.BRAND.bild.rauch;
         const T = st.brandRauch.teilchen;
@@ -2660,7 +2666,7 @@ class AnazhRealm_feld_leben {
         }
         for (let k = T.length - 1; k >= 0; k--) {
             const p = T[k];
-            const w = wind(p.x, p.z, this._bildZeit);
+            const w = wind(p.x, p.z);
             p.y += p.w * s;
             p.x += w.x * w.ms * s;
             p.z += w.z * w.ms * s;
@@ -3328,6 +3334,19 @@ AnazhRealm.FIELD_CHARACTER = Object.freeze({
 // Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
 // Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
+    vor: "taste.vor",
+    zurueck: "taste.zurueck",
+    links: "taste.links",
+    rechts: "taste.rechts",
+    slot0: "taste.slot-1",
+    slot1: "taste.slot-2",
+    slot2: "taste.slot-3",
+    slot3: "taste.slot-4",
+    slot4: "taste.slot-5",
+    slot5: "taste.slot-6",
+    slot6: "taste.slot-7",
+    slot7: "taste.slot-8",
+    slot8: "taste.slot-9",
     break: "taste.abbauen",
     place: "taste.platzieren",
     confirmBuild: "taste.bauen-bestaetigen",
@@ -3341,7 +3360,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     cameraToggle: "taste.kamera",
     swapHands: "taste.hand-tauschen",
     chat: "taste.gespraech",
-    // die Aktionen, die die Tastatur fest trägt und das Gamepad frei bindet (PAD_BELEGUNG, leib.K5)
+    // die Aktionen, die Tastatur und Gamepad frei binden (PAD_BELEGUNG, leib.K5)
     einsteigen: "taste.aufsitzen",
     handbremse: "taste.handbremse",
     sprint: "taste.sprinten",
