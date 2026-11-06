@@ -1938,7 +1938,9 @@ async function unterwasserSeite(o) {
     };
     if (o.teil === "wasser") {
         const WG = AnazhRealm.Gesetz("terrain:WASSER_GESETZ");
-        aus.art = r._hydroRiverAt(o.see.x, o.see.z) ? "fluss" : "see";
+        // die Art des Wassers liest der EINE Leser der Welt (`_wasserArtAt`, w13-bach-klar: gelaende-core `gewaesserArt` über der
+        // Breite des Laufs) — kein eigener Schluss „im Kanal → fluss“ neben ihm
+        aus.art = r._wasserArtAt(o.see.x, o.see.z);
         const sp0 = r._koerperWasser(o.see.x, o.see.z, -Infinity);
         const reihe = async (sicht, tiefen, name) => {
             r.setCameraMode(sicht);
@@ -1967,7 +1969,8 @@ async function unterwasserSeite(o) {
         aus.third = await reihe("third", o.tiefen, "third");
         const memo = AnazhRealm._gesetzStromMemo, key = "terrain:WASSER_GESETZ";
         const halb = (K) => Object.assign({}, K, { kd: K.kd.map((v) => v / 2) });
-        memo.set(key, Object.assign({}, WG, { koerper: { see: halb(WG.koerper.see), fluss: halb(WG.koerper.fluss) } }));
+        // die Mutante halbiert die Trübung JEDER Art (see · bach · fluss), nie nur die zwei, die die Probe einst kannte
+        memo.set(key, Object.assign({}, WG, { koerper: Object.fromEntries(Object.entries(WG.koerper).map(([art, K]) => [art, halb(K)])) }));
         try {
             aus.mutante = await reihe("first", [o.tiefen[0], o.tiefen[o.tiefen.length - 1]], "mutante");
         } finally {
