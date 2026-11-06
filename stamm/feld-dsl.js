@@ -2181,8 +2181,9 @@ class AnazhRealm_feld_dsl {
             // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
             // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
             // (kein Runaway).
-            // Die Wesen eines empfangenen Akts träufeln nicht: ihr Träufeln reist als Akt der Seite, die sie rief (feld.K2#2).
-            if (born.userData) born.userData.tendsLife = !ctx.akt;
+            // Die Wesen eines empfangenen Akts träufeln nicht und treten in keinen Bestand: ihr Träufeln und ihr Tier reisen als Akte
+            // der Seite, die sie rief (feld.K2#2) — hier sind sie ihre Zeichnung, bis sie außer Blick gehen (`_ohneTier`).
+            if (born.userData) [born.userData.tendsLife, born.userData._ohneTier] = [!ctx.akt, !!ctx.akt];
             lastBorn = born;
             // Eine Geburt TRÄGT Leben ins Feld: hebt lebendig an der Wiege → schließt den at_field_need-Loop
             // (Mangel sinkt, der Nexus zieht weiter), die Region ergrünt. NUR dieser intentionale Pfad
