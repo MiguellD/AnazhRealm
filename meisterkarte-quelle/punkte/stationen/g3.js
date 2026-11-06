@@ -1679,8 +1679,86 @@ async function neunSeite(r, T, C, kammSaum) {
             };
         });
         // ───── vegetation.K3 — der Wald von innen ─────
+        // DER WALD VON INNEN (w16-wald-innen): die REF real-mischwald (spec/abnahme/real-mischwald.json, die Seite holt sie vom Spiel-Baum)
+        // und der dichteste Wald-Ort ±C.waldSuchM um den Spieler (die meisten stehenden Bäume ±REF.ego.nahM, `_blockerUmPlatz`): dort
+        // Stämme/ha (jeder stehende Baum der Art baum_*, Dach und Unterstand), Stämme je Bildbreite (im Sichtkeil des Ego-Auges, Fov und
+        // Seite der REF, bis nahM, Gier zum Bestand) und die Deckung 0–2 m als senkrechte Projektion auf dem Raster C.waldRasterM: die
+        // Pflanzen des Boden-Gesetzes (`_nahStreuKachel`, dasselbe Gesetz wie der Ring der Nah-Streu, Grundfläche r90 ihrer Gestalt am
+        // Senken-Bau), die untere Krone des Unterstands (0,7 × Krone, `_kronenRadiusFuer`) und der Strauch (C.straeuchR × Skala)
         await teil("vegetation.K3", async () => {
             window.__buehne({});
+            let ref = null;
+            try {
+                const a = await fetch("spec/abnahme/real-mischwald.json", { cache: "no-store" });
+                ref = a.ok ? await a.json() : null;
+            } catch (_e) {
+                ref = null;
+            }
+            const wald = {};
+            if (ref && ref.ego) {
+                const R = ref.ego.nahM;
+                const baum = (e) => e && e.position && /^baum_/.test(String(e.type || e._lodSpecies || "")) && !/totholz/.test(String(e.type));
+                const um = (x, z) => r._blockerUmPlatz(x, z, R, []).filter((e) => baum(e) && Math.hypot(e.position.x - x, e.position.z - z) <= R);
+                let best = null;
+                for (let d = 0; d <= C.waldSuchM; d += 10)
+                    for (let k = 0; k < (d ? 12 : 1); k++) {
+                        const w = (k * Math.PI) / 6, x = P0.x + d * Math.sin(w), z = P0.z + d * Math.cos(w);
+                        const n = um(x, z).length;
+                        if (!best || n > best.n) best = { x, z, n };
+                    }
+                const S = um(best.x, best.z);
+                wald.ort = [+best.x.toFixed(1), +best.z.toFixed(1)];
+                wald.staemmeJeHa = Math.round((S.length / (Math.PI * R * R)) * 1e4);
+                wald.unterstand = S.filter((e) => ((e.studioOv || (e.opts && e.opts.studioOv) || {}).alter || 1) < 1).length;
+                let gier = 0, sx = 0, sz = 0;
+                for (const e of S) (sx += e.position.x - best.x), (sz += e.position.z - best.z);
+                gier = Math.atan2(sx, sz);
+                const halb = Math.atan(Math.tan(((ref.ego.fovGrad / 2) * Math.PI) / 180) * ref.ego.seite);
+                wald.staemmeJeBildbreite = S.filter((e) => {
+                    let a = Math.atan2(e.position.x - best.x, e.position.z - best.z) - gier;
+                    a = Math.atan2(Math.sin(a), Math.cos(a));
+                    return Math.abs(a) <= halb && Math.hypot(e.position.x - best.x, e.position.z - best.z) > 0.5;
+                }).length;
+                const arten = r._nahStreuArten() || [];
+                const rArt = new Map();
+                for (const sk of (st.nahStreu && st.nahStreu.senken.values()) || []) {
+                    if (rArt.has(sk.preset) || !sk.geo || !sk.geo.attributes.position) continue;
+                    const P = sk.geo.attributes.position, L = sk.lokal ? sk.lokal.elements : [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+                    const q = [];
+                    for (let i = 0; i < P.count; i += 3) q.push(Math.hypot(L[0] * P.getX(i) + L[8] * P.getZ(i), L[2] * P.getX(i) + L[10] * P.getZ(i)));
+                    q.sort((a, b) => a - b);
+                    rArt.set(sk.preset, q[Math.floor(q.length * 0.9)] || 0);
+                }
+                const K = A.NAH_STREU.kachel, flaechen = [], ohneR = new Set();
+                let kachelnOffen = arten.length ? 0 : 1;
+                for (let tz = Math.floor((best.z - R) / K); tz <= Math.floor((best.z + R) / K); tz++)
+                    for (let tx = Math.floor((best.x - R) / K); tx <= Math.floor((best.x + R) / K); tx++) {
+                        const satz = arten.length ? r._nahStreuKachel(tx, tz, arten) : null;
+                        if (!satz) kachelnOffen++;
+                        for (const it of (satz && satz.items) || []) {
+                            const rr = rArt.get(arten[it.art].id);
+                            if (rr) flaechen.push([it.x, it.z, rr * it.s]);
+                            else ohneR.add(arten[it.art].id);
+                        }
+                    }
+                wald.kachelnOffen = kachelnOffen;
+                for (const e of r._blockerUmPlatz(best.x, best.z, R + 5, [])) {
+                    if (!e || !e.position) continue;
+                    const al = (e.studioOv || (e.opts && e.opts.studioOv) || {}).alter;
+                    if (baum(e) && al < 1) flaechen.push([e.position.x, e.position.z, 0.7 * (r._kronenRadiusFuer(e.type, e.scale) || 0)]);
+                    else if (/^busch_|strauch/.test(String(e.type))) flaechen.push([e.position.x, e.position.z, C.straeuchR * (e.scale || 1)]);
+                }
+                let n = 0, g = 0;
+                for (let x = best.x - R; x <= best.x + R; x += C.waldRasterM)
+                    for (let z = best.z - R; z <= best.z + R; z += C.waldRasterM) {
+                        if (Math.hypot(x - best.x, z - best.z) > R) continue;
+                        n++;
+                        if (flaechen.some((f) => (f[0] - x) ** 2 + (f[1] - z) ** 2 <= f[2] * f[2])) g++;
+                    }
+                wald.unterholzDeckung = n ? r4(g / n) : null;
+                wald.pflanzen = flaechen.length;
+                wald.ohneGestalt = [...ohneR];
+            }
             const kandidat = [];
             for (let i = 0; i < 48 && kandidat.length < 2; i++) {
                 const w = (i * 2.399963) % (2 * Math.PI), d = 6 + 1.0 * i;
@@ -1720,7 +1798,7 @@ async function neunSeite(r, T, C, kammSaum) {
             const va = saa - (sa * sa) / n, vb = sbb - (sb * sb) / n;
             return {
                 fleckenCv: r4(cv(f1)), offenCv: r4(cv(fo)), wandern: va > 1e-12 && vb > 1e-12 ? r4((sab - (sa * sb) / n) / Math.sqrt(va * vb)) : null,
-                uhren: [0.5, C.fleckUhr], ref: null,
+                uhren: [0.5, C.fleckUhr], ref, ...wald,
             };
         });
         return aus;
@@ -1846,6 +1924,9 @@ const NEUN_C = {
     k3Gruen: 0.05,
     k3Feld: 150,
     k3Schritt: 6,
+    waldSuchM: 60,
+    waldRasterM: 0.5,
+    straeuchR: 0.73,
 };
 // die Seite samt dem Saum am Kamm (EINE Funktion: die Seite ruft sie, der Selbsttest urteilt sie, punkte.cjs `kammSaum`)
 const NEUN_SEITE = kompakt("async (r, T, C) => (" + neunSeite + ")(r, T, C, " + kammSaum + ")");
@@ -1905,6 +1986,8 @@ const neunStation = (kriterium, quelle, urteil, proben) => ({
     pfad: NEUN_PFAD,
     quelle,
 });
+// die REF real-mischwald der Proben (spec/abnahme/real-mischwald.json im Spiel-Baum, wörtlich die Bänder; das Urteil liest sie aus der Zeile)
+const WALD_REF = { staemmeJeHa: [370, 900], ego: { fovGrad: 75, seite: 1.7778, nahM: 20 }, staemmeJeBildbreite: [14, 34], unterholzDeckung: [0.25, 0.78], flecken: { cv: 0.3, gegenOffen: 2, wandernMax: 0.8 } };
 const NEUN = [
     neunStation(
         "schatten.K2",
@@ -2022,15 +2105,34 @@ const NEUN = [
             ["kein Wechsel im Bild", { versatzM: -4, pixel: 40, anteil: 0, lumaVor: 81, lumaNach: 81, sprung: 0, zweitonVor: 0, zweitonNach: 0, uhr: 0.5 }],
         ])
     ),
-    neunStation(
+    Object.assign(neunStation(
         "vegetation.K3",
         "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät",
-        (t) => [false, `REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Spiel-Baum): ROT · Licht-Flecken unter Kronen CV ${t.fleckenCv} gegen offen ${t.offenCv}, Wandern Uhr ${JSON.stringify(t.uhren)} r ${t.wandern}`],
-        neunProben("vegetation.K3", null, [
-            ["Flecken, die wandern — ohne REF ROT", { fleckenCv: 0.45, offenCv: 0.08, wandern: 0.3, uhren: [0.5, 0.56], ref: null }],
-            ["kein Fleck", { fleckenCv: 0.05, offenCv: 0.08, wandern: 0.99, uhren: [0.5, 0.56], ref: null }],
+        // DAS URTEIL GEGEN DIE REF (w16-wald-innen): die Bänder liest die Seite aus spec/abnahme/real-mischwald.json (BWI 4, NW-FVA,
+        // LWF, Braun-Blanquet, Chazdon 1988) und trägt sie in der Zeile — fehlt die REF, ist es ROT beim Namen; die Flecken streuen unter
+        // Kronen (CV ≥ ref.flecken.cv und ≥ gegenOffen × offen) und wandern mit der Sonne (r ≤ wandernMax), Stämme/ha, Stämme je
+        // Bildbreite und die Deckung 0–2 m stehen in ihren Bändern; eine Boden-Art ohne Gestalt im Ring macht die Deckung unvollständig
+        (t) => {
+            const R = t.ref;
+            if (!R || !R.staemmeJeHa) return [false, `REF real-mischwald fehlt (spec/abnahme/real-mischwald.json): ROT · Licht-Flecken unter Kronen CV ${t.fleckenCv} gegen offen ${t.offenCv}, Wandern r ${t.wandern}`];
+            const im = (v, b) => v != null && v >= b[0] && v <= b[1];
+            const F = R.flecken;
+            const fl = t.fleckenCv != null && t.offenCv != null && t.fleckenCv >= F.cv && t.fleckenCv >= F.gegenOffen * t.offenCv && t.wandern != null && t.wandern <= F.wandernMax;
+            const ganz = Array.isArray(t.ohneGestalt) && !t.ohneGestalt.length && t.kachelnOffen === 0;
+            const ok = fl && im(t.staemmeJeHa, R.staemmeJeHa) && im(t.staemmeJeBildbreite, R.staemmeJeBildbreite) && im(t.unterholzDeckung, R.unterholzDeckung) && ganz;
+            return [ok, `Stämme/ha ${t.staemmeJeHa} (REF ${R.staemmeJeHa.join("–")}; Unterstand ${t.unterstand}), je Bildbreite ${t.staemmeJeBildbreite} (REF ${R.staemmeJeBildbreite.join("–")}), Deckung 0–2 m ${t.unterholzDeckung} (REF ${R.unterholzDeckung.join("–")}; ${t.pflanzen} Pflanzen${ganz ? "" : ", unvollständig: ohne Gestalt " + (t.ohneGestalt || ["?"]).join(",") + ", Kacheln ohne Boden " + t.kachelnOffen}) am Wald-Ort ${JSON.stringify(t.ort)} · Licht-Flecken CV ${t.fleckenCv} gegen offen ${t.offenCv} (Soll ≥ ${F.cv}, ≥ ${F.gegenOffen} × offen), Wandern Uhr ${JSON.stringify(t.uhren)} r ${t.wandern} (Soll ≤ ${F.wandernMax})`];
+        },
+        neunProben("vegetation.K3", Object.assign({ fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.33, pflanzen: 1200, ohneGestalt: [], kachelnOffen: 0 }, { ref: WALD_REF }), [
+            ["REF real-mischwald fehlt (Radeon 8ef49bef: CV 0,9032)", { fleckenCv: 0.9032, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], ref: null }],
+            ["der Wald vor w16-wald-innen: 42 Stämme/ha, Deckung 0,051", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 42, unterstand: 0, staemmeJeBildbreite: 2, unterholzDeckung: 0.051, pflanzen: 90, ohneGestalt: [], kachelnOffen: 0, ref: WALD_REF }],
+            ["kein Fleck", { fleckenCv: 0.05, offenCv: 0.08, wandern: 0.99, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.33, pflanzen: 1200, ohneGestalt: [], ref: WALD_REF }],
+            ["ein gemaltes Muster steht (r 0,99)", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.99, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.33, pflanzen: 1200, ohneGestalt: [], ref: WALD_REF }],
+            ["der Boden ohne Unterholz", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.12, pflanzen: 300, ohneGestalt: [], kachelnOffen: 0, ref: WALD_REF }],
+            ["w16-wald-innen am Gesetz: Unterstand unter dem Schirm, 111 Stämme/ha, Deckung 0,095", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 111, unterstand: 30, staemmeJeBildbreite: 4, unterholzDeckung: 0.095, pflanzen: 400, ohneGestalt: [], kachelnOffen: 0, ref: WALD_REF }],
+            ["drei Kacheln ohne Boden (die Deckung zählte nicht alles)", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.33, pflanzen: 1100, ohneGestalt: [], kachelnOffen: 3, ref: WALD_REF }],
+            ["der Farn ohne Gestalt im Ring (Deckung unvollständig)", { fleckenCv: 0.9, offenCv: 0.1, wandern: 0.4, uhren: [0.5, 0.56], staemmeJeHa: 410, unterstand: 38, staemmeJeBildbreite: 16, unterholzDeckung: 0.3, pflanzen: 900, ohneGestalt: ["farn"], kachelnOffen: 0, ref: WALD_REF }],
         ])
-    ),
+    ), { pfad: [...NEUN_PFAD, "voxel-worker.js", "spec/abnahme/**"] }),
 ];
 const stationen = [
     {
