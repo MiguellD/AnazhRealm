@@ -1,0 +1,58 @@
+$ bash -c rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs; e=$?; cp artifacts/werkstatt-weg/weg.json "$PUNKTE_AUS" 2>/dev/null; exit $e
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)
+  ✅ W3 der Wort-Katalog liest den Stammbaum der Bücher (kein STUDIO_WORT, keine Wort-Literale in Stammbaum · Auflöser · Katalog · Wortliste · Gruppen)
+  ✅ W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)
+  ✅ W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · _workshopRecipeSpec · dslCompose · generateEvolution · confirmBuild)
+  ✅ W8 EIN Same-Hash (`_werkSame`)
+  ✅ W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #2 http://127.0.0.1:7704/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 120.0 s
+[stall-akte] Puls 258×, zuletzt vor 0.2 s — complete · renderer bereit · weltbild da · frames 6072 · welt 6072 Takte · Ruhe 340 · zuletzt Fege-Takt nahStreu 0/1 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 4883 12 % · GPU 4780 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:46 gpu 0/r 13 · 57:48 gpu 0/r 14 · 57:50 gpu 1 [VizCompositorTh 1 %]/r 27 · 57:52 gpu 0/r 13 · 57:54 gpu 0/r 12 · 57:56 gpu 0 [Chrome_ChildIOT 1 %]/r 21 · 57:58 gpu 0/r 14 · 58:00 gpu 0/r 13 · 58:02 gpu 0/r 13 · 58:04 gpu 0/r 27 · 58:06 gpu 0/r 12 · 58:08 gpu 0/r 13 · 58:10 gpu 0/r 11 · 58:12 gpu 0/r 12 · 58:14 gpu 0/r 12 · 58:16 gpu 0/r 13 · 58:18 gpu 0/r 12 · 58:20 gpu 1/r 25 · 58:22 gpu 0/r 11 · 58:24 gpu 0 [Chrome_ChildIOT 1 %]/r 13 · 58:26 gpu 0/r 12 · 58:28 gpu 0/r 12 · 58:30 gpu 0/r 11 · 58:32 gpu 0/r 12 · 58:34 gpu 0/r 12 · 58:36 gpu 0/r 24 · 58:38 gpu 0/r 11 · 58:40 gpu 0/r 11 · 58:42 gpu 0/r 12 · 58:44 gpu 0/r 12
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...
+[stall-akte] Konsole log: [AnazhRealm V18.546.199] [INFO] Spieler-Sichtbarkeit auf true gesetzt
+[stall-akte] Stderr [4744:4760:1106/095534.910731:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [4744:4760:1106/095602.864930:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr [4744:4760:1106/095657.807740:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr [4744:4760:1106/095841.263733:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.2 s), ein Versprechen der Seite kehrt nie zurück; zuletzt kein Stempel
+=== L-VERBEN — JEDES WERK TRÄGT SEIN VERB, EGAL WER ES SETZTE (Bauen K5) ===
+  ❌ L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte — 35/36 Herkunft × Sicht × Werk — Täter: ki · Third · Wagen × drive: kein Fahren
+=== D10 — DER SAME EINES SATZES KOMMT AUS DEM WELT-STROM ===
+  ✅ D10 kein Satz würfelt aus Math.random, derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain — Math.random-Züge hain 0 · insel 0 · fraktal 0 · ki ohne Seed 0 · Hain 5 Bäume, Samen [1853956538,1853956538], Orte ±0 m · KI ohne Seed ±0 m
+=== L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG ===
+  ✅ L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog — 11/11 Wörter bekannt (fachwerkhaus → haus_alemannisch, wagen → fahrzeug_gt) · Haus gebaut 1 · Absage „> bau mir eine scheune | „scheune“ kennt kein Studio. Die Studios baue…" · „bau hier" → „Unbekannter Befehl — sag „hilfe", dann zeigt dir die Welt, w…" · „mach licht" → „„licht“ kennt kein Studio. Die Studios bauen — Bäume: Baum, …"
+=== L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK ===
+  ✅ L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) stellt Eiche, Haus, GT und das eigene Teil-Werk über echte Eingaben in ≤ 3 Schritten — schöpfer, frieden, pfad, Ego und Third; frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum — werkstatt 24/24 stehen, Eingaben 3–3 · rezeptbuch 24/24 stehen, Eingaben 2–2 · hotbar 24/24 stehen, Eingaben 2–2 · Phantom {"studio":true,"meshes":2,"verworfen":0,"farbe":"grün"} · Suche „haus" 32 · Gerät „Spitzhacke: fehlt 1× Holz · 1× Eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)" · Lichtung {"steht":0,"zeile":"Eiche: die Flächen des Genesis-Orts bleiben frei, keine Krone steht über dem Rund der Tore — setz es ein paar Schritte weiter.","wand":"lichtung","toenung":{"stoffe":2,"lesen":2,"farbe":"rot"}}
+=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===
+  ✅ Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload — Math.random 0 · Phantom 10.11 m vor dem Spieler (Soll ≥ 10.11 m; die Studio-Gestalt reicht 6.61 m, die Spender-Teile 1.65 m, die Hülle des Werks 1.89 m) · Phantom eiche|2|0 @ -2.270796 rad → Werk eiche|2|0 @ -2.270796 rad (Same 2359572802, das nächste Phantom 2342795183) · gesendet Same 2359572802 → Mitspieler eiche|2|0 @ -2.270796 rad, Tönung gleich · Strom 540370045 → 490037188, nach Reload 490037188 · Vorbau im Freiraum vorbau:tor_drachentor,vorbau:bank_sitzbank,vorbau:leiter_podestleiter,vorbau:bruecke_jochfeld,vorbau:schaukel_doppelschaukel,vorbau:baum_eiche,vorbau:haus_alemannisch,vorbau:fahrzeug_gt
+=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===
+  ✅ Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts und bei Regen nie, außerhalb kühlt es — Plattform: steht nach 480 s (max. Wärme 0) · Linse: glimmt 3 s, brennt 7 s („Die Sonne entzündete durch „Brennglas" „Eiche" (30 m von dir") · Regen: die Eiche steht · Nacht Wärme 0 · Kühlung 119.672 → 42.228
+=== PRÜF-SATZ — STATIK UND WIRKUNG AUS DER FORM, IN DER WELT (Bauen K3) ===
+  ✅ Prüf-Satz über den Bau-Weg: das Stabile steht nach 150 Takten, das Instabile stürzt sichtbar und nennt den Grund; die Wirkung aus der Form hält — Statik 10/10 · Wirkung 5/5 — {"gestartet":true,"statik":{"Turm mit Fundament":{"art":"stabil","neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0},"kurzer Kragarm":{"art":"stabil","neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0},"Brücke auf zwei Pfeilern":{"art":"stabil","neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0},"Bogen":{"art":"stabil","neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0},"Plattform":{"art":"stabil","neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0},"Turm ohne Fuß":{"art":"instabil","neigung":87.2306929060432,"fall":0,"gesetzt":true,"steht":false,"zeile":"Turm ohne Fuß: kippt — der Schwerpunkt liegt außerhalb der Standfläche — es stürzt ein.","weg":0,"hinab":0},"überlanger Kragarm":{"art":"instabil","neigung":84.39765387366305,"fall":0,"gesetzt":true,"steht":false,"zeile":"überlanger Kragarm: kippt — der Schwerpunkt liegt außerhalb der Standfläche — es stürzt ein.","weg":0,"hinab":0},"Brücke ohne Pfeiler":{"art":"instabil","neigung":0,"fall":2.5,"gesetzt":true,"steht":false,"zeile":"Brücke ohne Pfeiler: 1× schwebendes Teil — der Lastpfad zum Boden ist gebrochen — es fällt.","weg":0,"hinab":2.5},"Bogen ohne Widerlager":{"art":"instabil","neigung":88.17514162384028,"fall":1.9989856768143142,"gesetzt":true,"steht":false,"zeile":"Bogen ohne Widerlager: kippt — der Schwerpunkt liegt außerhalb der Standfläche — es stürzt ein.","weg":0,"hinab":0},"überladene Plattform":{"art":"instabil","neigung":87.67640374750414,"fall":0,"gesetzt":true,"steht":false,"zeile":"überladene Plattform: zu schlank — ein tragendes Glied knickt unter der Last — es stürzt ein.","weg":0,"hinab":0}},"konsum":{"confirmBuild → _workshopPhysicsVerdict":true},"rad":{"rad":{"neigung":177.03303764313847,"fall":2.05075687370406,"gesetzt":true,"steht":false,"zeile":"","weg":6.13664399480119,"hinab":2.445349086330637},"klotz":{"neigung":0,"fall":0,"gesetzt":true,"steht":true,"zeile":"","weg":0,"hinab":0}},"schale":{"regen":0.45416666666666694,"sichtbar":true,"sonne":0.4125000000000004,"loch":0},"gruender":{"breit":0.20499999999999408,"hoch":0}}
+
+--- stderr ---
+
+❌ ROT — 1 Verletzung(en): L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte
