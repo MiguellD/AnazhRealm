@@ -2558,9 +2558,12 @@ class AnazhRealm_siedlung_ort {
         }
         // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei);
         // was steht, fragt der Takt nicht mehr (Lehre 25). Vorgebacken heißt: die Stufen am Auge des Erwachens stehen — die
-        // Stufen des Bedarfs (`vorbau`) gehen daneben, die Foundry rangiert sie nach der Zeit bis Bedarf.
+        // Stufen des Bedarfs (`vorbau`) gehen daneben, in der Reihe des Zugs höchstens `AUTO_SETTLEMENT.vorbauImFlug` zugleich
+        // (die Stadt nH 302 bestellte sonst jede Gestalt auf einmal und hielt die Bahnen der Foundry, gate:settlement C-K5).
         const offen = ([e, preset, lod]) => this._foundryFlattenFor(e, preset, lod) === null;
-        [w.vorback, w.vorbau] = [w.vorback.filter(offen), w.vorbau.filter(offen)];
+        let n = 0;
+        w.vorback = w.vorback.filter(offen);
+        w.vorbau = w.vorbau.filter((x) => n >= A.vorbauImFlug || (offen(x) && ++n > 0));
         return !w.vorback.length;
     }
     // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
@@ -3764,6 +3767,8 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     perTick: 2,
     // so viele Häuser des Vorrats bestellen ihre Studio-Stufen vor dem Erwachen (`_dorfVorbacken`)
     vorbackHaeuser: 4,
+    // so viele Stufen des Bedarfs eines Vorrats sind zugleich bestellt (`_dorfVorbacken`, w13-dorf-strom)
+    vorbauImFlug: 6,
     // so viel Weg des Spielers, und der Vorrat liest die Reihe des Zugs neu (`_dorfVorbacken`, sk5-haus)
     vorbackNeuM: 8,
     // über so viel ms eines Zug-Schritts trägt der Takt kein Haus mehr (`_dorfZugSchritt`, stadt-erwachen)
