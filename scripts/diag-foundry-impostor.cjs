@@ -17,9 +17,9 @@
 //     ist ROT beim Namen.
 //   C8 (lod.K1, w18-laub-kante): der Umriss der Karte gegen ihre Gestalt — je Art der Tafel `kante` der Karte (die Stufen der
 //     Ablage, trilinear) und der feinen isotropen Gestalt im selben Bild (96 px, Ringe −20°/0°): Δ ≤ 0,08, die Gestalt über dem
-//     Soll beim Namen (Selbsttest: die Karte als Hülle ±6 Texel MUSS reißen).
+//     Soll beim Namen (Selbsttest: die Karte zwei Stufen zu grob MUSS reißen).
 //   node scripts/diag-foundry-impostor.cjs
-const { statikServer, starteBrowser, hauptLauf, wandEnde, fehlerText, ausDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, wandEnde, fehlerText, studioKern } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -716,84 +716,37 @@ const REF_ZELLE = 384;
 async function umrissProbe(page) {
     return await page.evaluate(
         async (ARTEN, REF) => {
-            const T = THREE;
-            const out = { karte: {}, gestalt: {}, err: null };
-            const vor = st.renderer;
+            const out = { karte: {}, gestalt: {} },
+                pc = globalThis.__phytoCore,
+                rahmen = pc.impostorFrame,
+                rc = AnazhRealm._studioRenderConfig;
             try {
-                // die Gestalten der Karten laden (die Welt auf dem Null-Renderer)
-                const recs = {};
-                for (const weiter = __deckel("die Gestalten der Umriss-Arten", 3000); weiter(); ) {
-                    __handTakt();
-                    for (const a of ARTEN) recs[a] = recs[a] || r._foundryEnsureImpostorRecord(a, 1);
-                    if (ARTEN.every((a) => recs[a])) break;
-                    await sleep(30);
-                }
-                const fehlt = ARTEN.filter((a) => !recs[a]);
-                if (fehlt.length) throw new Error("keine Gestalt für " + fehlt.join(", "));
-                const pc = globalThis.__phytoCore;
-                const rahmen = pc.impostorFrame;
-                for (const modus of ["karte", "gestalt"]) {
-                    const ren = new T.WebGPURenderer({ antialias: false });
-                    await ren.init();
-                    ren.setSize(64, 64, false);
-                    r._kartenAtlas = undefined;
-                    st.renderer = ren;
-                    const zurueck = [];
-                    if (modus === "gestalt") {
-                        const rc = AnazhRealm._studioRenderConfig;
-                        zurueck.push(
-                            leihe(rc, { impostor: { views: rc.impostor.views, cellW: REF, cellH: REF, hebungen: [-20, 0], ringTeiler: 1 } }),
-                            leihe(pc, {
-                                impostorFrame: (y, R) => {
-                                    const f = rahmen(y, R),
-                                        s = Math.max(f.halfH, f.halfW);
-                                    return Object.assign({}, f, { halfW: s, halfH: s });
-                                },
-                            })
-                        );
-                    }
+                // die Gestalten der Karten (die Welt auf dem Null-Renderer)
+                for (const weiter = __deckel("die Gestalten von C8", 3000); weiter() && !ARTEN.every((a) => r._foundryEnsureImpostorRecord(a, 1)); ) __handTakt(), await sleep(30);
+                for (const modus in out) {
+                    // die Referenz: dieselbe Gestalt in REF² je Peilung, quadratischer Rahmen, Ringe −20° und 0°
+                    const zurueck =
+                        modus === "gestalt"
+                            ? [leihe(rc, { impostor: { ...rc.impostor, cellW: REF, cellH: REF, hebungen: [-20, 0], ringTeiler: 1 } }), leihe(pc, { impostorFrame: (y, R) => ((f) => ({ ...f, halfW: Math.max(f.halfH, f.halfW), halfH: Math.max(f.halfH, f.halfW) }))(rahmen(y, R)) })]
+                            : [];
+                    const { ren, at } = await window.__fimpProbe(64, 64, "rgba8");
                     try {
-                        const at = r._impostorAtlas();
-                        at.fmt = "rgba8";
                         for (const a of ARTEN) {
-                            const z = r._impostorZelleNeu(at, "fimp:gateUmriss|" + modus + "|" + a, a, 1, null);
-                            if (!r._impostorAtlasTexturen(at, z.idx + 1)) throw new Error("der Atlas hat keine Texturen");
-                            const zusage = new Promise((ja, nein) => (z._abzug = [{ ja, nein }]));
-                            z._weltNeu = true;
-                            let e = null;
-                            for (const weiter = __deckel(`der Bake ${modus} ${a}`, 6000); weiter() && e !== true; ) {
-                                e = r._karteWeltBacken(at, z);
-                                if (e === false) throw new Error(`der Bake ${modus} ${a} scheiterte`);
-                                if (e !== true) await sleep(50);
-                            }
-                            const ab = await zusage;
-                            const alpha = new Uint8Array(ab.w * ab.h);
-                            for (let y = 0; y < ab.h; y++) {
-                                const q = ab.oben ? y : ab.h - 1 - y;
-                                for (let x = 0; x < ab.w; x++) alpha[y * ab.w + x] = ab.albedo[(q * ab.w + x) * 4 + 3];
-                            }
+                            const z = r._impostorZelleNeu(at, "fimp:gateUmriss|" + modus + a, a, 1, null);
+                            r._impostorAtlasTexturen(at, z.idx + 1);
+                            const ab = await new Promise((ja, nein) => ((z._abzug = [{ ja, nein }]), window.__fimpBacke(ren, at, z).catch(nein)));
+                            const al = Uint8Array.from({ length: ab.w * ab.h }, (_, i) => ab.albedo[((ab.oben ? 0 : ab.h - 1) + (ab.oben ? 1 : -1) * Math.floor(i / ab.w)) * ab.w * 4 + (i % ab.w) * 4 + 3]);
                             let s = "";
-                            for (let i = 0; i < alpha.length; i += 8192) s += String.fromCharCode.apply(null, alpha.subarray(i, i + 8192));
-                            out[modus][a] = {
-                                frame: ab.frame,
-                                w: ab.w,
-                                h: ab.h,
-                                V: ab.V,
-                                ringe: ab.ringe,
-                                saum: Array.from(r._karteSaumVon(at, z, ab.frame, r._karteBuehneSatz.laub)),
-                                alpha: btoa(s),
-                            };
+                            for (let i = 0; i < al.length; i += 8192) s += String.fromCharCode(...al.subarray(i, i + 8192));
+                            out[modus][a] = { ...ab, albedo: null, normale: null, alpha: btoa(s), saum: Array.from(r._karteSaumVon(at, z, ab.frame, r._karteBuehneSatz.laub)) };
                         }
                     } finally {
                         zurueck.forEach((f) => f());
-                        st.renderer = vor;
                         ren.dispose();
                     }
                 }
             } catch (e) {
                 out.err = fehlerText(e);
-            } finally {
-                st.renderer = vor;
             }
             return out;
         },
@@ -803,153 +756,76 @@ async function umrissProbe(page) {
 }
 
 // DAS URTEIL VON C8: je Art und Ring (−20°, 0°) beide Schichten im Bild einer Krone UMRISS_PX hoch (die Rahmen-Höhe der Karte; die
-// Karten am Hang der Tafel stehen 50–200 px hoch), jede der Peilungen für sich: die Karte so, wie die Welt sie liest — die Stufen
-// der Ablage (phyto-core `impostorMips` mit dem Saum ihres Rings, dasselbe Gesetz rechnet die GPU, `KARTE_RECHNER_WGSL`), trilinear
-// auf der Stufe ihrer Texel-Größe, an der Schwelle des Karten-Gesetzes; die Gestalt als Deckung ≥ ½ ihrer feinen Schicht je Pixel
-// (die Bildebene der Gestalt liegt um (halfH − s)·cos e versetzt: der quadratische Rahmen hat seine Mitte bei s). `kante` aus
-// `klassenMasse` (die EINE Funktion der Tafel), gewogen über die Rand-Pixel. Δ = Karte − Gestalt urteilt; die Gestalt selbst steht
-// beim Namen gegen das Soll der Tafel. `huelle` (SELBSTTEST): die Stufe 0 der Karte als Hülle (Box-Mittel über ±huelle Texel des
-// Rings 0 an ½) — die Kante, die eine glättende Ablage backte.
+// Karten am Hang der Tafel stehen 50–200 px hoch), jede Peilung für sich: die Karte, wie die Welt sie liest — die Stufen der Ablage
+// (phyto-core `impostorMips` mit dem Saum ihres Rings; dasselbe Gesetz rechnet die GPU, `KARTE_RECHNER_WGSL`), trilinear auf der
+// Stufe ihrer Texel-Größe, an der Schwelle des Karten-Gesetzes; die Gestalt als Deckung ≥ ½ von 4 × 4 Proben ihrer feinen Schicht
+// je Pixel (ihre Bildebene liegt um (halfH − s)·cos e versetzt: der quadratische Rahmen hat seine Mitte bei s). `kante` aus
+// `klassenMasse` (die EINE Funktion der Tafel), gewogen über die Rand-Pixel; Δ = Karte − Gestalt urteilt, die Gestalt selbst steht
+// beim Namen gegen das Soll der Tafel. `grob` (SELBSTTEST): die Karte liest `grob` Stufen zu grob — der Umriss einer Hülle.
 const UMRISS_PX = 96;
 const UMRISS_DELTA = 0.08;
-function umrissUrteil(P, huelle = 0) {
-    const { klassenMasse } = require("./lib/abnahme-urteil.cjs");
-    const { kernAusText } = require("./lib/asset-worker-harness.cjs");
-    const pc = umrissUrteil.pc || (umrissUrteil.pc = kernAusText(ausDatei("phyto-core.js"), "__phytoCore"));
-    const G = pc.KARTEN_GESETZ,
-        THR = G.schwelle * 255;
-    const alphaVon = (A) => Uint8Array.from(Buffer.from(A.alpha, "base64"));
-    const kanteVon = (m, w, h, acc) => {
-        const pad = 12,
-            W = w + 2 * pad,
-            H = h + 2 * pad,
-            M = new Uint8Array(W * H);
-        let n = 0;
-        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) n += M[(y + pad) * W + x + pad] = m[y * w + x];
-        const k = klassenMasse(new Uint8Array(W * H * 4), M, W, H);
-        if (k.kante != null) (acc.s += k.kante * k.kr), (acc.kr += k.kr);
-        acc.px += n;
-    };
-    const je = {};
-    for (const art of Object.keys(P.karte)) {
-        const K = P.karte[art],
-            Gs = P.gestalt[art];
-        if (!Gs) continue;
-        const aK = alphaVon(K),
-            aG = alphaVon(Gs);
-        const nSt = pc.karteMasse(K.w, 256, K.V, G.normalTeiler, "bc", pc.karteRinge(K.V, K.w, 256, K.ringe.map((x) => x.hebung), K.ringe.find((x) => x.teiler > 1)?.teiler || 1)).a.length;
-        const acc = { karte: { s: 0, kr: 0, px: 0 }, gestalt: { s: 0, kr: 0, px: 0 } };
+function umrissUrteil(P, grob = 0) {
+    const { klassenMasse } = require("./lib/abnahme-urteil.cjs"),
+        pc = studioKern("phyto-core.js", "__phytoCore"),
+        THR = pc.KARTEN_GESETZ.schwelle * 255,
+        je = {};
+    for (const [art, K] of Object.entries(P.karte)) {
+        const G = P.gestalt[art],
+            [aK, aG] = [K, G].map((A) => Buffer.from(A.alpha, "base64")),
+            acc = [0, 0, 0, 0, 0, 0],
+            { halfW, halfH } = K.frame,
+            S = G.frame.halfW,
+            p = (2 * halfH) / UMRISS_PX;
         for (const e of [-20, 0]) {
             const iR = K.ringe.findIndex((x) => x.hebung === e),
-                rK = K.ringe[iR],
-                rG = Gs.ringe.find((x) => x.hebung === e);
-            const t = rK.teiler,
-                cw = K.w / t,
-                ch = rK.h / (K.V / t);
-            const cwG = Gs.w,
-                chG = rG.h / Gs.V;
-            const er = (e * Math.PI) / 180;
-            const { halfW, halfH } = K.frame,
-                S = Gs.frame.halfW;
-            const hh = pc.karteRingHalbe(pc.WIND_ZAHLEN, halfH, halfW, er),
-                hhG = pc.karteRingHalbe(pc.WIND_ZAHLEN, S, S, er),
-                dv = (halfH - S) * Math.cos(er);
-            // die Peilungen des Rings übereinander (cw × V·ch), rgba wie der Bäcker sie liest
-            const st = new Uint8Array(cw * ch * K.V * 4);
-            for (let a = 0; a < K.V; a++)
-                for (let y = 0; y < ch; y++)
-                    for (let x = 0; x < cw; x++) {
-                        const q = (rK.y + Math.floor(a / t) * ch + y) * K.w + (a % t) * cw + x;
-                        st[((a * ch + y) * cw + x) * 4 + 3] = aK[q];
-                    }
-            if (huelle) {
-                const rh = Math.max(1, Math.round(huelle / t)),
-                    roh = st.slice();
-                for (let a = 0; a < K.V; a++)
-                    for (let y = 0; y < ch; y++)
-                        for (let x = 0; x < cw; x++) {
-                            let c = 0,
-                                n = 0;
-                            for (let j = -rh; j <= rh; j++)
-                                for (let i = -rh; i <= rh; i++) {
-                                    const xx = x + i,
-                                        yy = y + j;
-                                    n++;
-                                    if (xx >= 0 && yy >= 0 && xx < cw && yy < ch) c += roh[((a * ch + yy) * cw + xx) * 4 + 3] >= THR ? 1 : 0;
-                                }
-                            st[((a * ch + y) * cw + x) * 4 + 3] = c / n >= 0.5 ? 255 : 0;
-                        }
-            }
-            const saum = K.saum[4 + iR] >= 0 ? { e: K.saum[iR], fuss: K.saum[4 + iR], nadel: K.saum[8] === 1 } : null;
-            const stufen = pc.impostorMips(st, cw, ch * K.V, K.V, null, nSt, saum ? { saum } : undefined).stufen;
-            // die Summen-Tafel der feinen Gestalt je Peilung
-            const sat = new Float64Array((cwG + 1) * (chG * Gs.V + 1));
-            for (let y = 0; y < chG * Gs.V; y++)
-                for (let x = 0; x < cwG; x++)
-                    sat[(y + 1) * (cwG + 1) + x + 1] =
-                        (aG[(rG.y + y) * Gs.w + x] >= THR ? 1 : 0) + sat[y * (cwG + 1) + x + 1] + sat[(y + 1) * (cwG + 1) + x] - sat[y * (cwG + 1) + x];
-            const tafel = (x, y) => {
-                const xi = Math.floor(x),
-                    yi = Math.floor(y),
-                    fx = x - xi,
-                    fy = y - yi,
-                    s = (i, j) => sat[j * (cwG + 1) + Math.min(cwG, i)];
-                return (s(xi, yi) * (1 - fx) + s(xi + 1, yi) * fx) * (1 - fy) + (s(xi, yi + 1) * (1 - fx) + s(xi + 1, yi + 1) * fx) * fy;
-            };
-            const p = (2 * halfH) / UMRISS_PX,
-                Wp = Math.round((2 * halfW) / p),
-                Hp = Math.round((2 * hh) / p);
-            const tw = (2 * halfW) / cw,
-                th = (2 * hh) / ch;
-            const lam = Math.min(stufen.length - 1, Math.max(0, Math.log2(Math.max(p / tw, p / th))));
-            const l0 = Math.floor(lam),
-                l1 = Math.min(stufen.length - 1, l0 + 1),
-                fl = lam - l0;
+                { teiler: t, y: y0, h } = K.ringe[iR],
+                rG = G.ringe.find((x) => x.hebung === e),
+                [cw, ch, cG, er] = [K.w / t, (h * t) / K.V, rG.h / G.V, (e * Math.PI) / 180],
+                [hh, hG] = [[halfH, halfW], [S, S]].map(([a, b]) => pc.karteRingHalbe(pc.WIND_ZAHLEN, a, b, er)),
+                [Wp, Hp] = [halfW, hh].map((x) => Math.round((2 * x) / p)),
+                saum = K.saum[4 + iR] >= 0 && { saum: { e: K.saum[iR], fuss: K.saum[4 + iR], nadel: K.saum[8] === 1 } };
+            // die Peilungen des Rings übereinander (cw × V·ch) und ihre Stufen nach dem Gesetz der Ablage
+            const stufen = pc.impostorMips(
+                new Uint8Array(cw * ch * K.V * 4).map((_, q) => (q % 4 < 3 ? 0 : ((i, a) => aK[(y0 + Math.floor(a / t) * ch + (Math.floor(i / cw) % ch)) * K.w + (a % t) * cw + (i % cw)])(q >> 2, Math.floor(q / 4 / cw / ch)))),
+                cw, ch * K.V, K.V, null, 8, saum || undefined
+            ).stufen;
+            const lam = Math.min(stufen.length - 1, grob + Math.max(0, Math.log2(p * Math.max(cw / 2 / halfW, ch / 2 / hh)))),
+                l0 = Math.floor(lam);
+            // bilinear in Stufe l, Peilung a, an (u, v) ∈ [0, 1]²
             const lies = (l, a, u, v) => {
-                const s = stufen[l],
-                    hl = ch >> l,
-                    x = Math.min(s.w - 1, Math.max(0, u / (1 << l) - 0.5)),
-                    y = Math.min(hl - 1, Math.max(0, v / (1 << l) - 0.5));
-                const x0 = Math.floor(x),
-                    y0 = Math.floor(y),
-                    x1 = Math.min(s.w - 1, x0 + 1),
-                    y1 = Math.min(hl - 1, y0 + 1),
-                    fx = x - x0,
-                    fy = y - y0,
-                    g = (i, j) => s.data[((a * hl + j) * s.w + i) * 4 + 3];
-                return (g(x0, y0) * (1 - fx) + g(x1, y0) * fx) * (1 - fy) + (g(x0, y1) * (1 - fx) + g(x1, y1) * fx) * fy;
+                const s = stufen[Math.min(stufen.length - 1, l)],
+                    hl = s.h / K.V,
+                    [x, y] = [u * s.w - 0.5, v * hl - 0.5],
+                    [fx, fy] = [x - Math.floor(x), y - Math.floor(y)],
+                    g = (i, j) => s.data[((a * hl + Math.min(hl - 1, Math.max(0, Math.floor(y) + j))) * s.w + Math.min(s.w - 1, Math.max(0, Math.floor(x) + i))) * 4 + 3];
+                return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
             };
             for (let a = 0; a < K.V; a++) {
-                const mK = new Uint8Array(Wp * Hp),
-                    mG = new Uint8Array(Wp * Hp);
-                for (let y = 0; y < Hp; y++)
-                    for (let x = 0; x < Wp; x++) {
-                        const X0 = -halfW + x * p,
-                            v1 = hh - y * p,
-                            u = ((X0 + 0.5 * p + halfW) / (2 * halfW)) * cw,
-                            v = ((hh - (v1 - 0.5 * p)) / (2 * hh)) * ch;
-                        const al = fl > 0 ? lies(l0, a, u, v) * (1 - fl) + lies(l1, a, u, v) * fl : lies(l0, a, u, v);
-                        mK[y * Wp + x] = al >= THR ? 1 : 0;
-                        const gx0 = ((X0 + S) / (2 * S)) * cwG,
-                            gx1 = ((X0 + p + S) / (2 * S)) * cwG,
-                            gy0 = ((hhG - (v1 + dv)) / (2 * hhG)) * chG,
-                            gy1 = ((hhG - (v1 - p + dv)) / (2 * hhG)) * chG;
-                        const cl = (q, m) => Math.max(0, Math.min(m, q));
-                        const [ax0, ax1, ay0, ay1] = [cl(gx0, cwG), cl(gx1, cwG), a * chG + cl(gy0, chG), a * chG + cl(gy1, chG)];
-                        const c = tafel(ax1, ay1) - tafel(ax0, ay1) - tafel(ax1, ay0) + tafel(ax0, ay0);
-                        mG[y * Wp + x] = c >= 0.5 * (gx1 - gx0) * (gy1 - gy0) ? 1 : 0;
+                const m = [new Uint8Array(Wp * Hp), new Uint8Array(Wp * Hp)];
+                for (let q = 0; q < Wp * Hp; q++) {
+                    const [x, y] = [(q % Wp) + 0.5, Math.floor(q / Wp) + 0.5],
+                        [u, v] = [(x * p) / 2 / halfW, (y * p) / 2 / hh];
+                    m[0][q] = lies(l0, a, u, v) * (l0 + 1 - lam) + lies(l0 + 1, a, u, v) * (lam - l0) >= THR;
+                    for (let k = 0; k < 16; k++) {
+                        const gx = Math.floor(((x - 0.375 + (k % 4) / 4) * p - halfW + S) * (G.w / 2 / S)),
+                            gy = Math.floor(((y - 0.375 + Math.floor(k / 4) / 4) * p - hh + hG - (halfH - S) * Math.cos(er)) * (cG / 2 / hG));
+                        m[1][q] += gx >= 0 && gy >= 0 && gx < G.w && gy < cG && aG[(rG.y + a * cG + gy) * G.w + gx] >= THR;
                     }
-                kanteVon(mK, Wp, Hp, acc.karte);
-                kanteVon(mG, Wp, Hp, acc.gestalt);
+                    m[1][q] = m[1][q] >= 8;
+                }
+                m.forEach((mm, i) => {
+                    const W = Wp + 24,
+                        M = new Uint8Array(W * (Hp + 24));
+                    mm.forEach((b, q) => (M[(Math.floor(q / Wp) + 12) * W + (q % Wp) + 12] = b));
+                    const k = klassenMasse(new Uint8Array(M.length * 4), M, W, Hp + 24);
+                    [k.kante * k.kr, k.kr, mm.reduce(addiere, 0)].forEach((v, j) => (acc[3 * i + j] += v));
+                });
             }
         }
-        const k = (o) => (o.kr ? +(o.s / o.kr).toFixed(4) : null);
-        je[art] = { karte: k(acc.karte), gestalt: k(acc.gestalt), deckung: +(acc.karte.px / Math.max(1, acc.gestalt.px)).toFixed(3) };
-        je[art].delta = je[art].karte != null && je[art].gestalt != null ? +(je[art].karte - je[art].gestalt).toFixed(4) : null;
+        const [karte, gestalt] = [0, 3].map((i) => +(acc[i] / acc[i + 1]).toFixed(4));
+        je[art] = { karte, gestalt, delta: +(karte - gestalt).toFixed(4), deckung: +(acc[2] / acc[5]).toFixed(3) };
     }
-    const arten = Object.entries(je);
-    const schlecht = arten.reduce((m, x) => (!m || x[1].delta > m[1].delta ? x : m), null);
-    return { je, schlecht: schlecht && { art: schlecht[0], delta: schlecht[1].delta } };
+    return { je, max: Math.max(...Object.values(je).map((w) => w.delta)) };
 }
 
 hauptLauf(async () => {
@@ -1138,27 +1014,17 @@ hauptLauf(async () => {
         if (!(s.zeilen >= 40 && s.treppe > 0.6))
             errs.push(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
     }
-    {
-        console.log(`\n=== TEIL C8 — DER UMRISS DER KARTE GEGEN IHRE GESTALT (lod.K1: kante je Art, ${UMRISS_PX} px, Ringe −20°/0°) ===`);
-        if (C8.err) errs.push(`C8: Umriss-Probe brach ab — ${C8.err}`);
-        else {
-            const U = umrissUrteil(C8),
-                H = umrissUrteil(C8, 6);
-            const f4 = (x) => (x == null ? "—" : x.toFixed(3).replace(".", ","));
-            for (const [a, w] of Object.entries(U.je))
-                console.log(`  ${a.padEnd(8)} Karte ${f4(w.karte)} · Gestalt ${f4(w.gestalt)} · Δ ${f4(w.delta)} · Deckung ${w.deckung} | Hülle Δ ${f4(H.je[a] && H.je[a].delta)}`);
-            const ueber = Object.entries(U.je).filter(([, w]) => w.gestalt > 0.22);
-            console.log(`  die Gestalt über dem Soll der Tafel (kante ≤ 0,22): ${ueber.map(([a, w]) => a + " " + f4(w.gestalt)).join(" · ") || "keine"} — dort trägt die Karte den Umriss ihrer Gestalt`);
-            console.log(`  schlechteste Karte gegen Gestalt ${U.schlecht && U.schlecht.art} Δ ${f4(U.schlecht && U.schlecht.delta)} (Soll ≤ ${UMRISS_DELTA}) · Selbsttest Hülle ±6 Texel ${H.schlecht && H.schlecht.art} Δ ${f4(H.schlecht && H.schlecht.delta)} (MUSS > ${UMRISS_DELTA})`);
-            if (Object.keys(U.je).length !== UMRISS_ARTEN.length) errs.push(`C8: gemessen ${Object.keys(U.je).join(", ")} statt ${UMRISS_ARTEN.join(", ")}`);
-            for (const [a, w] of Object.entries(U.je)) {
-                if (w.delta == null) errs.push(`C8: ${a} ohne Umriss (Karte ${w.karte}, Gestalt ${w.gestalt}) — die Probe ist blind`);
-                else if (w.delta > UMRISS_DELTA) errs.push(`C8: die Karte ${a} backt eine geradere Kante als ihre Gestalt (Δ ${w.delta} > ${UMRISS_DELTA})`);
-                if (!(w.deckung >= 0.9 && w.deckung <= 1.12)) errs.push(`C8: die Karte ${a} deckt ${w.deckung} ihrer Gestalt (Soll 0,9–1,12) — Bild und Referenz liegen nicht übereinander`);
-            }
-            if (!(H.schlecht && H.schlecht.delta > UMRISS_DELTA)) errs.push(`C8-SELBSTTEST: die Hülle (±6 Texel) besteht (Δ ${H.schlecht && H.schlecht.delta}) — die Linse ist blind`);
-        }
+    // C8: je Art Karte · Gestalt · Δ · Deckung; ROT, wo die Karte geradere Kanten backt als ihre Gestalt (Δ > UMRISS_DELTA) oder
+    // nicht über ihr liegt; der Selbsttest liest die Karte zwei Stufen zu grob
+    const U = C8.err ? null : umrissUrteil(C8),
+        H = U && umrissUrteil(C8, 2);
+    console.log(`\n=== TEIL C8 — DER UMRISS (lod.K1, ${UMRISS_PX} px): Karte · Gestalt · Δ · Deckung | grob Δ ===`);
+    for (const [a, w] of Object.entries(U ? U.je : {})) {
+        console.log(`  ${a} ${w.karte} · ${w.gestalt}${w.gestalt > 0.22 ? " ÜBER 0,22" : ""} · ${w.delta} · ${w.deckung} | ${H.je[a].delta}`);
+        if (!(w.delta <= UMRISS_DELTA && w.deckung >= 0.9 && w.deckung <= 1.12)) errs.push(`C8 ${a}: ${JSON.stringify(w)}`);
     }
+    if (!(U && Object.keys(U.je).length === UMRISS_ARTEN.length && H.max > UMRISS_DELTA))
+        errs.push(`C8 blind: ${C8.err || H && H.max}`);
     server.close();
     wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum und in der Tiefe ihrer Gestalt, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich).");
 });
