@@ -5,7 +5,7 @@
 
 const path = require("path");
 const stammLib = require("../lib/stamm.cjs");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
@@ -138,7 +138,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         return out;
     });
 
-    if (wave6g3Results && !wave6g3Results.error) {
+    if (erreichbar(check, "Welle 6.G3: alle Tests laufen", wave6g3Results)) {
         // --- a) Tag-Nacht
         check(
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
@@ -187,8 +187,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
             wave6g3Results.transitionClearedOnComplete
         );
-    } else {
-        check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }
 
     // ### Welle 6.G3 V2 — Vision-Invarianten ###
@@ -364,7 +362,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         return out;
     });
 
-    if (wave6g3v2Results && !wave6g3v2Results.error) {
+    if (erreichbar(check, "Welle 6.G3 V2: Vision-Tests laufen", wave6g3v2Results)) {
         check(
             "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
             wave6g3v2Results.affinityPicksMagieInMagieField
@@ -399,8 +397,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
             wave6g3v2Results.magieFieldRaisesBlue
         );
-    } else {
-        check("Welle 6.G3 V2: Vision-Tests laufen", false, wave6g3v2Results ? wave6g3v2Results.error : "no result");
     }
 }
 
@@ -501,7 +497,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         return out;
     });
 
-    if (v827Results && !v827Results.error) {
+    if (erreichbar(check, "Tiefe-Welle Tests laufen", v827Results)) {
         check(
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
@@ -517,8 +513,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
         );
-    } else {
-        check("Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
     }
 
     // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
@@ -678,7 +672,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         return out;
     });
 
-    if (v828Results && !v828Results.error) {
+    if (erreichbar(check, "Welt-Atem-Vollendung Tests laufen", v828Results)) {
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
@@ -737,8 +731,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
             v828Results.sliderHeadroom
         );
-    } else {
-        check("Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
@@ -885,7 +877,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         return out;
     });
 
-    if (v829Results && !v829Results.error) {
+    if (erreichbar(check, "Die lebendige Welt Tests laufen", v829Results)) {
         {
             const e = v829Results.egoEbene || {};
             check(
@@ -911,8 +903,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
         check("Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)", v829Results.genesisIdempotent);
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-    } else {
-        check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
@@ -1016,7 +1006,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         return out;
     });
 
-    if (v833Results && !v833Results.error) {
+    if (erreichbar(check, "Wasser-Vollendung Tests laufen", v833Results)) {
         check("Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
         check("Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
         check("Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
@@ -1030,8 +1020,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         check("Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
         check("(NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
         check("(NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-    } else {
-        check("Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
     }
 }
 
@@ -1056,11 +1044,9 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         stammLib.dateien(path.join(SKRIPTE, ".."))
     );
 
-    if (v840Results && !v840Results.error) {
+    if (erreichbar(check, "Regler-Tests laufen", v840Results)) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
-    } else {
-        check("Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
@@ -1127,15 +1113,13 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         return out;
     });
 
-    if (v848Results && !v848Results.error) {
+    if (erreichbar(check, "Terrain-Schatten-Tests laufen", v848Results)) {
         check("Light-Target im Szenengraph", v848Results.targetInScene);
         check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
             "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
             v848Results.shadowSnapStable
         );
-    } else {
-        check("Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
     }
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
@@ -1179,12 +1163,10 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         return out;
     });
 
-    if (v849Results && !v849Results.error) {
+    if (erreichbar(check, "updateCreatures-Politur-Tests laufen", v849Results)) {
         check("updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
         check("alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
-    } else {
-        check("updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
     }
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
@@ -1333,7 +1315,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         return out;
     });
 
-    if (wave6x4cResults && !wave6x4cResults.error) {
+    if (erreichbar(check, "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen", wave6x4cResults)) {
         check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
         check(
             "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
@@ -1346,15 +1328,9 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             "Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
             wave6x4cResults.domainBarsAppearAfterOp
         );
-    } else {
-        check(
-            "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
-            false,
-            wave6x4cResults ? wave6x4cResults.error : "no result"
-        );
     }
 
-    if (wave6x4bResults && !wave6x4bResults.error) {
+    if (erreichbar(check, "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen", wave6x4bResults)) {
         check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
         check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
@@ -1375,12 +1351,6 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         );
         check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
         check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
-    } else {
-        check(
-            "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
-            false,
-            wave6x4bResults ? wave6x4bResults.error : "no result"
-        );
     }
 }
 

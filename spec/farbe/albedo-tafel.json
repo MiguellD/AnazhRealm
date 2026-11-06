@@ -993,10 +993,10 @@
                     "quellen": {
                         "koerper-core.js": "c:b70902b2e416b42b",
                         "foundry-core.js": "c:5e63dfdb22536599",
-                        "stamm/stoff-material.js": "c:794fd3b6c552eb4a",
-                        "stamm/studio-bruecke.js": "c:d7b5c817c724b600",
-                        "stamm/studio-stoff.js": "c:933e954e9b2a58e5",
-                        "stamm/koerper-leib.js": "c:490146777f1af25b"
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000"
                     }
                 },
                 "welt": {
@@ -1013,10 +1013,10 @@
                     "quellen": {
                         "koerper-core.js": "c:b70902b2e416b42b",
                         "foundry-core.js": "c:5e63dfdb22536599",
-                        "stamm/stoff-material.js": "c:794fd3b6c552eb4a",
-                        "stamm/studio-bruecke.js": "c:d7b5c817c724b600",
-                        "stamm/studio-stoff.js": "c:933e954e9b2a58e5",
-                        "stamm/koerper-leib.js": "c:490146777f1af25b"
+                        "stamm/stoff-material.js": "c:0000000000000000",
+                        "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
+                        "stamm/koerper-leib.js": "c:0000000000000000"
                     }
                 }
             }

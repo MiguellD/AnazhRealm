@@ -56,6 +56,9 @@ const SCHWELLE = {
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
     grabenBauten: 300, // Sheet-Bauten bis zur Ruhe (F3; Bau-Ereignisse, nie Takte — die warten auf den Worker; Basis 2353–2609)
+    // K5 KLAR: die Sicht (m) unter Wasser am Bach bei Basis-Abfluss — klare Bäche tragen die schwarze Scheibe 5–20 m und mehr
+    // (Davies-Colley & Smith 2001), ihre Secchi-Tiefe liegt unter dem Bett; ein Tieflandfluss ~1–1,5 m
+    bachSicht: 5,
 };
 
 // B6 HASH: das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
@@ -303,8 +306,13 @@ function urteil(b) {
             if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
             else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
             if (!k.peer || !(Math.abs(k.peer.lehne) > 0.05)) rot("K7 MITSPIELER", k.peer || null);
-            const m = k.medium; // die Kamera 3 m unter dem Spiegel sieht Unterwasser, 10 m darüber die Luft
-            if (!m || m.kameraUnten !== true || m.kameraOben !== false) rot("K5 MEDIUM", m || null);
+            // K5 die Kamera 3 m unter dem Spiegel des Sees und im Bach sieht Unterwasser, 10 m darüber die Luft; TRÜBUNG (w13-bach-klar):
+            // unter Wasser liest das Medium den Körper der Art, die das Gesetz dem Wasser gibt (gelaende-core `gewaesserArt`) — der
+            // See ein See, der Bach ein Bach, je die Sicht des Gesetzes (± 1 %), der Bach klar (die Literatur unabhängig vom Gesetz)
+            const { see = {}, oben = {}, bach = {} } = k.medium || {};
+            if (!see.unter || oben.unter !== false || !bach.unter) rot("K5 MEDIUM", k.medium || null);
+            else if (see.art + bach.art !== "seebach" || [see, bach].some((x) => !(Math.abs(x.sichtM / x.soll - 1) <= 0.01)) || !(bach.sichtM >= S.bachSicht))
+                rot("K5 TRÜBUNG", k.medium);
         }
     }
     // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
@@ -506,7 +514,7 @@ function selbsttest() {
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
-            medium: { kameraUnten: true, kameraOben: false },
+            medium: { see: { unter: true, art: "see", sichtM: 15.65, soll: 15.65 }, oben: { unter: false }, bach: { unter: true, art: "bach", sichtM: 19.56, soll: 19.56 } },
             tier: ["wesen", "wolf", "fuchs", "baer"].flatMap((seele) =>
                 [8, 120].map((abstand) => ({
                     seele,
@@ -607,7 +615,12 @@ function selbsttest() {
         ["K3 KRIECHEN", ["koerper.kraulen", { mps: 0.141, anteil: 0.144 }]],
         ["K4 STUMM", ["koerper.eintauchen.landung=", null]],
         ["K LEER", ["koerper.hinein.schwimmFrames=", 0]],
-        ["K5 MEDIUM", ["koerper.medium=", { kameraUnten: false, kameraOben: true }]],
+        ["K5 MEDIUM", ["koerper.medium.oben.unter=", true]],
+        // w12-unterwasser an main 3f1d4a5b: der Leser entschied die Art selbst („im Kanal → fluss") — der Bach der Mess-Wiese
+        // (4,2 m) trug die Trübung eines Tieflandflusses, Sicht 1,118 m statt 19,56 (luftwasser.K3#2: 0 von 16 Fischen); dazu
+        // der Bach, den das Gesetz selbst trüb nennt (die Art „fluss", Sicht = Soll)
+        ["K5 TRÜBUNG", ["koerper.medium.bach.sichtM=", 1.118]],
+        ["K5 TRÜBUNG", ["koerper.medium.bach", { art: "fluss", sichtM: 1.118, soll: 1.118 }]],
         ["K6 AM GRUND", ["koerper.tier.1", { amGrund: true, sohleUnterSpiegel: 8 }]],
         ["K6 LAGE", ["koerper.tier.0", { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 }]],
         ["K6 LEER", ["koerper.tier=", []]],
