@@ -1312,6 +1312,9 @@ class AnazhRealm_speicher_welten {
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
+            // Die Stempel des Regens reisen (wetter.K3, `_regenStempel`): der Pegel ist ihre Funktion zur Welt-Uhr — nach dem Reload
+            // fällt der Bach weiter, wie er fiel, und die Dürre hält
+            ["regenStempel", () => (Array.isArray(st().regenStempel) ? st().regenStempel.slice() : null)],
             // und wer das Wetter schrieb (affekt.K4#2: die KI nennt ihn nach dem Laden wie davor)
             ["wetterSchreiber", () => (typeof st().wetterSchreiber === "string" ? st().wetterSchreiber : null)],
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
