@@ -2643,11 +2643,12 @@ class AnazhRealm_vegetation_baum {
                     this._cullArchitectureMesh(entry);
                     regung++;
                 }
+                const vor = this._archVorbau(entry, radius); // die Stufe des Eintritts, binnen `vorbauS` bestellt
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
-                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius); // der Satz steht
+                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius - vor); // der Satz steht
                 } else {
                     entry._ziegelD2 = rang;
                     ziegelOffen.push(entry);
@@ -2762,6 +2763,30 @@ class AnazhRealm_vegetation_baum {
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
+    }
+
+    // DER VORBAU DER MESH-ZONE (w13-dorf-strom, die Zeit bis Bedarf): holt die Bahn einen Eintrag jenseits der Zone binnen
+    // `BEDARF.vorbauS` in die Zone `R` (`_bedarfZeit`), bestellt er die Studio-Stufe seines Eintritts — am Auge `R` vor ihm auf
+    // dem Weg zum Spieler (`_foundryLodForEntry`), über DENSELBEN Chokepoint wie sein Bau (`_foundryFlattenFor`, die Foundry
+    // rangiert sie nach der Zeit bis Bedarf). Bis w13-dorf-strom bestellte erst die Zone samt dem Vorlauf der Bahn (3 s) die
+    // Stufe: im GT wartete ein Felsturm 6,4 s auf die Foundry und trat 23 Bilder ungezeichnet in den Kegel (Fahrt-Probe dorf).
+    // Rückgabe: der Weg der Bahn in `vorbauS` (m) — um ihn endet der Schlaf des Eintrags früher.
+    _archVorbau(entry, R) {
+        const [vx, vz] = this._bedarfTempo();
+        const weg = Math.hypot(vx, vz) * AnazhRealm.BEDARF.vorbauS;
+        const e = entry.position;
+        if (!weg || !this._foundryEnabled() || !(this._bedarfZeit(e.x, e.z, R) <= AnazhRealm.BEDARF.vorbauS))
+            return weg;
+        const preset = this._foundryPresetForEntry(entry);
+        const p = this.state.playerMesh.position;
+        const k = Math.min(1, R / (Math.hypot(p.x - e.x, p.z - e.z) || 1));
+        if (preset)
+            this._foundryFlattenFor(
+                entry,
+                preset,
+                this._foundryLodForEntry(entry, { x: e.x + (p.x - e.x) * k, z: e.z + (p.z - e.z) * k })
+            );
+        return weg;
     }
 
     // DIE WACHE DES CULLS (`tickArchitectureCulling`): je Bestand (`state.architectures`, eine neue Liste oder ein neues Buch

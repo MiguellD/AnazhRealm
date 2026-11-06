@@ -3774,7 +3774,9 @@ AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
 // schneller ist ein Sprung (Teleport, Tor, ein gestellter Stand), kein Tempo — über jedem Fahr-Gesetz der Welt (der GT 16 m/s),
 // so reicht der Vorlauf höchstens 180 m; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
 // `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
-AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
+// `vorbauS` (w13-dorf-strom): so viele Sekunden, bevor die Bahn ein Ding in seine Zone holt, bestellt sie seine Studio-Stufe
+// (`_archVorbau`, der Vorrat eines Orts `_dorfVorbacken`) — ein Bau wartete im GT bis 6,4 s auf die Foundry (Fahrt-Probe dorf)
+AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, vorbauS: 8, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind
