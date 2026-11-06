@@ -1862,9 +1862,12 @@ class AnazhRealm_vegetation_baum {
     // Kasten ganz. Leser: `_imGrundriss` und wer eine Antwort merkt, die durch die Natur-Wand geht (die Gestalt des Orts
     // `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein neues Haus über einem Nachbarn macht den Baum daneben frei).
     _grundrissStand() {
-        if (this._grundrissGitter) return this._grundrissGitter;
-        const gitter = (this._grundrissGitter = { zellen: new Map(), wege: new Map() });
-        for (const e of this.state.architectures || []) this._grundrissSetzen(gitter, e);
+        const liste = this.state.architectures || [];
+        if (this._grundrissGitter && this._grundrissGitter.liste === liste) return this._grundrissGitter;
+        // je Bestand EIN Gitter (wie das Blocker-Netz, `_blockerNetz`): ein neuer Bestand (eine neue Welt, der Stand eines Ladens,
+        // eine Linse) legt es neu an
+        const gitter = (this._grundrissGitter = { liste, zellen: new Map(), wege: new Map() });
+        for (const e of liste) this._grundrissSetzen(gitter, e);
         this._grundrissWegeIn(gitter, -Infinity, Infinity, -Infinity, Infinity);
         return gitter;
     }
@@ -1878,6 +1881,10 @@ class AnazhRealm_vegetation_baum {
     _grundrissAmOrt(x0, z0, x1, z1) {
         const g = this._grundrissGitter;
         if (!g) return;
+        if (g.liste !== this.state.architectures) {
+            this._grundrissGitter = null; // ein anderer Bestand: die nächste Frage legt sein Gitter an
+            return;
+        }
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const [mx, mz] = [(x0 + x1) / 2, (z0 + z1) / 2];
         for (const e of this._blockerUmPlatz(mx, mz, Math.hypot(x1 - x0, z1 - z0) / 2, [])) {

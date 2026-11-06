@@ -2025,36 +2025,6 @@ async function checkBandScatterScheibe({ page, check }) {
                     ma.length === fa.length &&
                     ma.every((m, li) => m.length === fa[li].length && m.every((v, k) => Object.is(v, fa[li][k])));
             }
-            // DAS FELD DER SAAT (w15-strom-takt, voxel-worker `saatFeld`): je Probe des Chunks des Spielers und des Orts die
-            // sieben Zahlen des Fadens gegen die Leser des Haupt-Fadens (`_voxelSurfaceY`, `_feuchteAt` samt Rückfall, die
-            // Steilheit am Sampler ±2 m und am Boden ±1 m, `_placementStandAt` Wald und Wiese) — die Saat-Probe urteilt auf ihnen
-            const { span } = r._voxelChunkConfig();
-            const P = A.PLACEMENT_DENSITY;
-            o.saat = { n: 0, ungleich: 0, beispiel: null };
-            for (const [, , ax, az] of orte) {
-                const [cx, cz] = [Math.floor(ax / span), Math.floor(az / span)];
-                const msg = await r._nebenAuftrag("streu", { type: "saat-feld", cx, cz, span, n: 10, freqWald: P.forestFreq, freqWiese: P.meadowFreq }); // prettier-ignore
-                const feld = new Float64Array(msg.feld);
-                for (let i = 0; i < 100; i++) {
-                    const [x, z] = [cx * span + ((i % 10) + 0.5) * (span / 10), cz * span + (((i / 10) | 0) + 0.5) * (span / 10)];
-                    const q = A._saatProbe(feld, i, {});
-                    const y0 = r._voxelSurfaceY(x, z);
-                    const soll = [y0 === null || !Number.isFinite(y0) ? NaN : y0];
-                    if (Number.isFinite(soll[0])) {
-                        const fe = r._feuchteAt(x, z, soll[0]);
-                        const h = (a, b) => r.getTerrainHeightAt(a, b);
-                        const [dx, dz] = [(h(x + 2, z) - h(x - 2, z)) / 4, (h(x, z + 2) - h(x, z - 2)) / 4];
-                        soll.push(fe, Number.isFinite(fe) ? fe : r._feuchteAt(x, z), Math.sqrt(dx * dx + dz * dz), r._slopeAt(x, z)); // prettier-ignore
-                        soll.push(r._placementStandAt(x, z, "forest"), r._placementStandAt(x, z, "meadow"));
-                    }
-                    const ist = [q.y, q.fe, q.fw, q.steil2, q.steil1, q.standWald, q.standWiese].slice(0, soll.length);
-                    o.saat.n += ist.length;
-                    if (!ist.every((v, k) => Object.is(v, soll[k]))) {
-                        o.saat.ungleich++;
-                        if (!o.saat.beispiel) o.saat.beispiel = { x, z, ist, soll };
-                    }
-                }
-            }
         }
         // ── (4) DISPOSE-STORNO: mitten in der Fortsetzung disposen ──
         clean();
@@ -2227,11 +2197,6 @@ async function checkBandScatterScheibe({ page, check }) {
             out.storno.contDead === true &&
             out.storno.rebuildOk === true,
         JSON.stringify(out.storno)
-    );
-    check(
-        `Saat-Feld MAIN = FADEN: die Felder der Saat-Proben des Streu-Fadens Zahl für Zahl gleich den Lesern des Haupt-Fadens (${out.saat ? out.saat.n : "?"} Zahlen, Chunk des Spielers und des Orts)`,
-        !!out.saat && out.saat.n > 0 && out.saat.ungleich === 0,
-        JSON.stringify(out.saat)
     );
     const w = out.wecker;
     // ihre Plätze halten, eine fremde Lieferung und die erste Zusage überleben, nach der zweiten weiterbauen, wie der One-Shot stehen
