@@ -1059,11 +1059,12 @@ function waterSurfaceAt(x, z) {
     if (s[0] < W.SW) return s[1];
     return null;
 }
-// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper, w12-unterwasser): der Bach fuehrt Schwebstoff, Teich und Meer stehen klar
+// Die Art des Wassers an (x, z) fuer den Koerper unter Wasser (WASSER_GESETZ.koerper): das EINE Gesetz der Welt (gelaende-core `gewaesserArt`,
+// w13-bach-klar) ueber der Breite des Bachs (2 * SW), Teich und Meer stehen — bis dahin entschied das Studio selbst („Bach → fluss", Sicht 1,1 m)
 function waterArtAt(x, z) {
     const W = water();
     const teich = Math.hypot(x - W.pondLo.x, z - W.pondLo.z) < W.pondLo.rs || Math.hypot(x - W.pondHi.x, z - W.pondHi.z) < W.pondHi.rs;
-    return !teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? "fluss" : "see";
+    return window.__gelaendeCore.gewaesserArt(!teich && !(seaward(x, z) > 0) && _streamDH(x, z)[0] < W.SW ? 2 * W.SW : 0);
 }
 function waterDepress(x, z) {
     const W = water();

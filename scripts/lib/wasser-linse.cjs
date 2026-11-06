@@ -39,11 +39,9 @@ function wasserFluss() {
     let schritte = 0,
         steigend = 0,
         anstieg = 0,
-        abstieg = 0,
         maxAnstieg = 0;
     const quer = [];
     const buckel = [];
-    const stufen = [];
     for (const rv of h.rivers) {
         const P = rv.points;
         let prev = null;
@@ -70,7 +68,7 @@ function wasserFluss() {
                         steigend++;
                         anstieg += d;
                         if (d > maxAnstieg) maxAnstieg = d;
-                    } else if (d < 0) abstieg -= d;
+                    }
                 }
                 prev = w;
             }
@@ -83,26 +81,18 @@ function wasserFluss() {
             const halbe = Math.max(1, (a.width || 3) * 0.5) * 0.9;
             const W = (d) => lauf(a.x + nx * d, a.z + nz * d);
             let lo = Infinity,
-                hi = -Infinity,
-                vor = null;
-            let stufe = 0;
+                hi = -Infinity;
             for (let d = -halbe; d <= halbe + 1e-6; d += 0.5) {
                 const w = W(d);
-                if (!Number.isFinite(w)) {
-                    vor = null;
-                    continue;
-                }
+                if (!Number.isFinite(w)) continue;
                 if (w < lo) lo = w;
                 if (w > hi) hi = w;
-                if (vor !== null && Math.abs(w - vor) > stufe) stufe = Math.abs(w - vor);
-                vor = w;
             }
             // Jeder Querschnitt mit Wasser zählt — auch der waagrechte (Spanne 0). Der BUCKEL ist die Wölbung: die Mitte
             // gegen das Mittel der beiden Ränder (ein Gefälle quer — in der Biegung eines breiten Flusses das Gefälle
-            // längs — wölbt nicht); die STUFE der größte Sprung zwischen zwei Proben 0,5 m auseinander.
+            // längs — wölbt nicht).
             if (hi >= lo) {
                 quer.push(hi - lo);
-                stufen.push(stufe);
                 const wl = W(-halbe),
                     wr = W(halbe),
                     wm = W(0);
@@ -113,7 +103,6 @@ function wasserFluss() {
     }
     quer.sort((a, b) => a - b);
     buckel.sort((a, b) => a - b);
-    stufen.sort((a, b) => a - b);
     const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
     const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
@@ -125,16 +114,12 @@ function wasserFluss() {
         steigend,
         anteilSteigend: R(schritte ? steigend / schritte : 0, 4),
         anstiegM: R(anstieg, 1),
-        abstiegM: R(abstieg, 1),
         maxAnstiegM: R(maxAnstieg),
         querschnitte: quer.length,
-        querP50M: R(q(0.5)),
         querP90M: R(q(0.9)),
         querMaxM: R(quer.length ? quer[quer.length - 1] : 0),
         buckelP90M: R(q(0.9, buckel)),
         buckelMaxM: R(buckel.length ? buckel[buckel.length - 1] : 0),
-        stufeP99M: R(q(0.99, stufen)),
-        stufeMaxM: R(stufen.length ? stufen[stufen.length - 1] : 0),
         wasserfaelle: wf.length,
         wasserfallOrte: orte.size,
     };
@@ -295,15 +280,28 @@ async function wasserKoerper(o = {}) {
         if (cam) {
             const camAlt = cam.position.clone();
             const augenAlt = st.playerEyesUnderwater;
-            const modus = (camY, augen) => {
-                cam.position.set(mx, camY, mz);
+            // (c) DIE ART DES WASSERS (w13-bach-klar): die Kamera in der halben Säule des Bachs der Mess-Wiese (der Fluss-Ort) —
+            // unter dem Spiegel liest das Medium den Körper SEINER Art: die Sicht (`_luftSichtM`, der CPU-Leser derselben
+            // Uniforms) gegen das Gesetz, die Art des Kerns (gelaende-core `gewaesserArt` über `flussAm(...).breite`) wählt die
+            // Zeile `WASSER_GESETZ.koerper`, Sicht = −ln(kontrast) ÷ c(550).
+            const WK = A.Gesetz("terrain:WASSER_GESETZ").koerper;
+            const GK = window.__gelaendeCore;
+            const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+            const bb = r._voxelSurfaceY(fl.x, fl.z);
+            const modus = (x, z, camY, augen) => {
+                cam.position.set(x, camY, z);
                 cam.updateMatrixWorld(true);
                 st.playerEyesUnderwater = augen;
                 r._applyDayNightToScene();
-                return luft.U.hoehe.value >= 1e8;
+                const art = GK.gewaesserArt((GK.flussAm(r._gelaende(), x, z) || {}).breite);
+                return { unter: luft.U.hoehe.value >= 1e8, art, sichtM: R(r._luftSichtM(camY)), soll: R(-Math.log(A.LUFT.kontrast) / WK[art].c[1]) };
             };
             try {
-                aus.medium = { kameraUnten: modus(spiegel - 3, false), kameraOben: modus(spiegel + 10, true) };
+                aus.medium = {
+                    see: modus(mx, mz, spiegel - 3, false),
+                    oben: modus(mx, mz, spiegel + 10, true),
+                    bach: modus(fl.x, fl.z, (bb + r._koerperWasser(fl.x, fl.z, bb)) / 2, false),
+                };
             } finally {
                 cam.position.copy(camAlt);
                 cam.updateMatrixWorld(true);
@@ -485,13 +483,15 @@ function wasserSchmelze(r, x, z, P) {
         // R (wetter.K3) DER REGEN SPEIST DEN BACH: das Wort des Spielers „Sturm", 20 min Welt-Uhr im Takt des Regens (`_tickRain`
         // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`), die Tafeln an den Faden (`post`), das
         // gezeichnete Wasser am See (`koerper`, wie P2); das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
+        // Danach fallen die Stempel des Regens mit der Probe (die Welt der Linse beginnt ihren Regen neu, der Grund im Mittel des
+        // Klimas): der Sturm flösse über die Lag-Zeit seines Laufs ab (gelaende-core `pegelLauf`), das Jahr danach (P3) misst ohne ihn.
         const sturm = () => {
             const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
             for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
             const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0, koerper: koerper(0.375)[0] };
-            return wort("sunny", 1e6), aus;
+            return wort("sunny", 1e6), (st.regenStempel = []), aus;
         };
         pg.regen = sturm();
         r._weatherFieldFor = () => r.constructor.prototype._weatherFieldFor.call(r, "sunny");
@@ -2557,9 +2557,8 @@ function wasserFlora(o = {}) {
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
 // (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
-// ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17). Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
-// des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
-// der Geometrie-Normale.
+// ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17).
+// (Bis w13-bach-klar zählte ein BILD-Teil die Mesh-Vertices an der Bank — kein Urteil las ihn: eine Sonde ohne Urteil.)
 async function wasserBank(o = {}) {
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
@@ -2618,75 +2617,6 @@ async function wasserBank(o = {}) {
             } else if (w > geroellGrad) geroell++;
         }
     }
-    // Das Bild: Mesh-Vertices der Nah-Chunks an der Bank.
-    let vertices = 0,
-        felsV = 0,
-        geroellV = 0,
-        gewicht = 0;
-    const ss = (e0, e1, v) => {
-        const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0)));
-        return t * t * (3 - 2 * t);
-    };
-    const ZELLE = 8;
-    const raster = new Map();
-    for (const [a, b] of punkte) {
-        const sp = spiegelVon(a);
-        const hw = Math.max(1, a.width * 0.5);
-        const L = Math.hypot(b.x - a.x, b.z - a.z);
-        for (let t = 0; t <= L; t += 0.5) {
-            const x = a.x + ((b.x - a.x) * t) / (L || 1),
-                z = a.z + ((b.z - a.z) * t) / (L || 1);
-            const k = Math.floor(x / ZELLE) + "," + Math.floor(z / ZELLE);
-            if (!raster.has(k)) raster.set(k, []);
-            raster.get(k).push([x, z, sp, hw]);
-        }
-    }
-    const naechster = (x, z) => {
-        const ci = Math.floor(x / ZELLE),
-            cj = Math.floor(z / ZELLE);
-        let best = null,
-            bd = Infinity;
-        for (let dj = -2; dj <= 2; dj++)
-            for (let di = -2; di <= 2; di++) {
-                const L = raster.get(ci + di + "," + (cj + dj));
-                if (!L) continue;
-                for (const p of L) {
-                    const d = Math.hypot(p[0] - x, p[1] - z);
-                    if (d < bd) {
-                        bd = d;
-                        best = p;
-                    }
-                }
-            }
-        return best ? { d: bd, sp: best[2], hw: best[3] } : null;
-    };
-    const T = window.THREE;
-    const v = new T.Vector3(),
-        n = new T.Vector3();
-    const nm = new T.Matrix3();
-    for (const [, e] of st.voxelChunks || []) {
-        if (!e || !e.mesh || e.lod !== 0 || !e.mesh.geometry) continue;
-        const g = e.mesh.geometry;
-        const pos = g.attributes.position,
-            nor = g.attributes.normal;
-        if (!pos || !nor) continue;
-        e.mesh.updateMatrixWorld(true);
-        nm.getNormalMatrix(e.mesh.matrixWorld);
-        for (let i = 0; i < pos.count; i++) {
-            v.fromBufferAttribute(pos, i).applyMatrix4(e.mesh.matrixWorld);
-            const nb = naechster(v.x, v.z);
-            if (!nb || nb.d > nb.hw + 8 || !(v.y > nb.sp) || v.y > nb.sp + 6) continue;
-            n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
-            const steile = Math.max(0, Math.min(1, 1 - n.y));
-            const rw = ss(G.rockLo, G.rockHi, steile);
-            const sch = e.mesh.geometry.attributes.aSchutt;
-            const sw = sch ? sch.getX(i) : 0;
-            vertices++;
-            gewicht += rw + sw;
-            if (steile > G.rockLo) felsV++;
-            else if (sw > 0.5) geroellV++;
-        }
-    }
     const s = winkel.slice().sort((a, b) => a - b);
     const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
     return {
@@ -2702,12 +2632,6 @@ async function wasserBank(o = {}) {
         geroell,
         felsAnteil: R(s.length ? fels / s.length : 0, 3),
         beispiele,
-        bild: {
-            vertices,
-            felsAnteil: R(vertices ? felsV / vertices : 0, 4),
-            geroellAnteil: R(vertices ? geroellV / vertices : 0, 4),
-            gewichtMittel: R(vertices ? gewicht / vertices : 0, 4),
-        },
     };
 }
 

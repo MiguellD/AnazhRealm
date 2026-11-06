@@ -69,23 +69,46 @@ class AnazhRealm_wasser_hydro {
     }
 
     // DER PEGEL DER WELT (stoffe.K3-2, wetter.K3, gelaende-core `pegelTafel`): der Hub jedes Sees und Flusses über seinem
-    // Ruhe-Spiegel je Höhe, aus der Schmelze am Tag der Saison auf dem Feld dieser Naht und dem Regen des Wetter-Felds
-    // (`_weatherFieldFor`, über den Übergang des Worts) — gerechnet je Tag der Welt (die Schmelze ist ein Tagesmittel) und je
-    // Stempel des Regens (`pegelRegen`, auf die Stufe des Hubs quantisiert), je Feld und Meer, nie je Bild. `_pegelGilt` ist die
-    // Tafel, die die Welt trägt: der Spiegel des Kerns liest sie über die Lage (`L.pegel`) im Main und im Faden (`pegel` im
-    // Stand), bit-gleich; `_pegelTakt` zieht sie nach — gerufen vom Takt der Saison und vom Takt der Nässe (`_naesseTakt`), der
-    // schläft, solange das Wetter-Feld steht (`_regenRuht`).
+    // Ruhe-Spiegel je Höhe und Lag-Klasse seines Laufs — die Schmelze am Tag der Saison auf dem Feld dieser Naht (je Tag der Welt,
+    // `pegelSchmelze`) und der Lauf des Regens zur Welt-Uhr (`pegelLauf`: die Faltung der Stempel des Regens, `_regenStempel`,
+    // mit der Ganglinie jeder Klasse, dazu die Dürre gegen das Mittel des Klimas, `_regenMittel`), ausgewertet an der vollen
+    // Sekunde der Uhr, auf die Stufe des Hubs quantisiert — die Tafel wechselt nur, wo ein Hub wechselt, nie je Bild. `_pegelGilt`
+    // ist die Tafel, die die Welt trägt: der Spiegel des Kerns liest sie über die Lage (`L.pegel`) im Main und im Faden (`pegel`
+    // im Stand), bit-gleich; `_pegelTakt` zieht sie nach — gerufen vom Takt der Saison, vom Takt der Nässe (`_naesseTakt`) und
+    // je Sekunde der Welt-Uhr (`_pegelUhr`: der Bach fällt nach dem Regen, die Dürre senkt ihn, auch wenn das Wetter ruht).
     _pegelTafel() {
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
+        const st = this.state;
         const n = K.TEMPERATUR.jahrTage;
-        const tag = Math.floor(this.state.seasonPhase * n) / n;
-        const regen = K.pegelRegen(L, this._weatherFieldFor().rain);
+        const tag = Math.floor(st.seasonPhase * n) / n;
+        const S = this._regenStempel();
+        const t = Math.floor(st.spielZeit || 0);
+        const mittel = this._regenMittel();
         const c = this._pegelStand;
-        if (c && c.tag === tag && c.regen === regen && c.feld === this._temperaturFeld && c.wl === L.waterLevel)
-            return c.tafel;
-        const tafel = K.pegelTafel(L, tag, (y, tr) => this._temperaturFeld(y, tr), regen);
-        this._pegelStand = { tag, regen, feld: this._temperaturFeld, wl: L.waterLevel, tafel };
+        const gleich =
+            c && c.t === t && c.S === S && c.n === S.length && c.letzt === S[S.length - 1] && c.mittel === mittel;
+        const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, AnazhRealm.PEGEL_TAG_S, mittel);
+        const q = lauf ? lauf.q.join() : "";
+        const schmelze =
+            c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel
+                ? c.schmelze
+                : K.pegelSchmelze(L, tag, (y, tr) => this._temperaturFeld(y, tr));
+        const tafel = c && c.schmelze === schmelze && c.q === q ? c.tafel : K.pegelTafel(L, schmelze, lauf);
+        this._pegelStand = {
+            tag,
+            feld: this._temperaturFeld,
+            wl: L.waterLevel,
+            schmelze,
+            t,
+            S,
+            n: S.length,
+            letzt: S[S.length - 1],
+            mittel,
+            lauf,
+            q,
+            tafel,
+        };
         return tafel;
     }
     _pegelGilt() {
@@ -93,75 +116,134 @@ class AnazhRealm_wasser_hydro {
         return this._pegelTafelGilt;
     }
 
-    // Die Marke des Pegels am Chunk (cx, cz) — sein Platten-Schlüssel und die Probe seines Auftrags: der Hub der Tafel über den
-    // Höhen, die sein Wasser tragen kann (die Makro-Höhe seiner Mitte ± PEGEL_RAND_M); "" wo nichts steigt (der Schlüssel bleibt).
+    // DIE STEMPEL DES REGENS (wetter.K3, `state.regenStempel`, reist im Stand): die Knoten [t0, r0, t1, r1, …] des Wetter-Felds
+    // der Welt (`_weatherFieldFor().rain` über den Übergang des Worts — wer es schrieb, der Zug, das Wort des Spielers, der
+    // Wunsch der Welt, schrieb, was hier fällt) auf der Welt-Uhr (`spielZeit`, nie die Wanduhr), gesetzt im Takt des Pegels: wo
+    // der Regen sich gegen den letzten Knoten ändert, stand er bis zur letzten Probe (`_regenSah`) — dann eine Stufe oder, über
+    // die Proben eines Übergangs, die Rampe (drei Knoten auf einer Geraden werden zwei). Nach dem Fenster des Grunds
+    // (`LAUF.fenster` Spieltage) fällt der älteste Knoten; die Uhr geht nie zurück, ein Stempel hinter ihr schreibt nichts.
+    _regenStempel() {
+        const st = this.state;
+        const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
+        const r = this._weatherFieldFor().rain;
+        if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
+        const S = st.regenStempel;
+        if (!S.length) S.push(t, r);
+        else if (t >= S[S.length - 2] && r !== S[S.length - 1]) {
+            const tl = S[S.length - 2];
+            const sah = this._regenSah >= tl && this._regenSah <= t ? this._regenSah : t;
+            if (sah > tl) S.push(sah, S[S.length - 1]);
+            S.push(t, r);
+            const n = S.length;
+            if (n >= 6) {
+                const [t1, r1, t2, r2, t3, r3] = S.slice(n - 6);
+                if (t1 < t2 && t2 < t3 && Math.abs((r2 - r1) * (t3 - t2) - (r3 - r2) * (t2 - t1)) <= 1e-9 * (t3 - t1))
+                    S.splice(n - 4, 2);
+            }
+        }
+        this._regenSah = t;
+        const ab = t - globalThis.__gelaendeCore.LAUF.fenster * AnazhRealm.PEGEL_TAG_S;
+        while (S.length > 4 && S[2] <= ab) S.splice(0, 2);
+        return S;
+    }
+
+    // DAS MITTEL DES KLIMAS (wetter.K3, der Grund des Pegels): der Regen der Front (`_wetterAmOrt`, das Wort der Welt über ihre
+    // Wetter-Tafel, sein Feld `WEATHER_FIELD`) über `REGEN_KLIMA_ZUEGE` Züge der Welt-Uhr — eine Zahl je Welt (Saat und Gesetz).
+    _regenMittel() {
+        const wm = this.state.worldMeta || null;
+        const c = this._regenKlima;
+        if (c && c.wm === wm) return c.mittel;
+        let s = 0;
+        const N = AnazhRealm.REGEN_KLIMA_ZUEGE;
+        for (let k = 0; k < N; k++)
+            s += AnazhRealm.WEATHER_FIELD[this._wetterAmOrt(0, 0, k * AnazhRealm.WETTER_ZUG_SEK)].rain;
+        this._regenKlima = { wm, mittel: s / N };
+        return s / N;
+    }
+
+    // DER PEGEL JE SEKUNDE DER WELT-UHR (`_loopWeatherAndGrowth`): der Lauf des Regens ist eine Funktion der Uhr — der Takt zieht
+    // die Tafel nach, wenn die volle Sekunde wechselt.
+    _pegelUhr() {
+        const s = Math.floor(this.state.spielZeit || 0);
+        if (s === this._pegelSek) return;
+        this._pegelSek = s;
+        this._pegelTakt();
+    }
+
+    // Die Marke des Pegels am Chunk (cx, cz) — sein Platten-Schlüssel und die Probe seines Auftrags: der Hub der Tafel T in jeder
+    // Lag-Klasse, deren Wasser den Chunk erreicht (gelaende-core `pegelKlassen`, je Chunk und Region gemerkt), über den Höhen, die
+    // sein Wasser tragen kann (die Makro-Höhe seiner Mitte ± PEGEL_RAND_M); "" wo nichts steigt oder fällt und wo kein Lauf und kein
+    // See den Chunk erreicht (der Schlüssel bleibt).
     _pegelMarke(cx, cz) {
-        const T = this._pegelGilt();
+        return this._pegelMarkeVon(this._pegelGilt(), cx, cz);
+    }
+    _pegelMarkeVon(T, cx, cz) {
         if (!T) return "";
-        if (!this._pegelMarken || this._pegelMarken.T !== T) this._pegelMarken = { T, je: new Map() };
+        if (!this._pegelMarken) this._pegelMarken = new WeakMap();
+        let je = this._pegelMarken.get(T);
+        if (!je) this._pegelMarken.set(T, (je = new Map()));
         const key = cx + "," + cz;
-        const je = this._pegelMarken.je;
         if (je.has(key)) return je.get(key);
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
         const { span } = this._voxelChunkConfig();
-        const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
+        const [x0, z0, x1, z1] = [cx * span, cz * span, (cx + 1) * span, (cz + 1) * span];
+        const reg = [
+            [x0, z0],
+            [x1, z0],
+            [x0, z1],
+            [x1, z1],
+        ].map(([x, z]) => K.hydroRegion(L, x, z));
+        if (!this._pegelOrte) this._pegelOrte = new Map();
+        let o = this._pegelOrte.get(key);
+        if (!o || o.reg.some((h, i) => h !== reg[i])) {
+            const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
+            this._pegelOrte.set(key, (o = { reg, y, klassen: K.pegelKlassen(L, x0, z0, x1, z1) }));
+        }
         const R = AnazhRealm.PEGEL_RAND_M;
-        const i0 = Math.max(0, Math.floor((y - R - T.y0) / T.dy));
-        const i1 = Math.min(T.hub.length - 1, Math.ceil((y + R - T.y0) / T.dy));
+        const n = T.a.length;
+        const i0 = Math.max(0, Math.floor((o.y - R - T.y0) / T.dy));
+        const i1 = Math.min(n - 1, Math.ceil((o.y + R - T.y0) / T.dy));
+        const P = { pegel: T };
         let h = 0;
-        for (let i = i0; i <= i1; i++) if (T.hub[i] > 0) h = (Math.imul(h ^ i, 31) + Math.round(T.hub[i] * 100)) | 0;
+        for (const j of o.klassen)
+            for (let i = i0; i <= i1; i++) {
+                const v = K.pegelHub(P, T.y0 + i * T.dy, j);
+                if (v !== 0) h = (Math.imul(h ^ (i + 512 * j), 31) + Math.round(v * 100)) | 0;
+            }
         const marke = h ? (h >>> 0).toString(36) : "";
         je.set(key, marke);
         return marke;
     }
 
-    // DER TAKT DES PEGELS (stoffe.K3-2, gerufen vom Takt der Saison mit der Schneegrenze und vom Takt der Nässe): ändert der
-    // neue Tag oder der neue Stempel des Regens den Hub an einer
-    // Höhe, trägt die Welt die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die
-    // gezeichneten Chunks, deren Wasser-Zellen die Höhen treffen, an denen der Hub wechselt (± eine Stufe der Tafel), und die
-    // Netze im Vorrat, deren Wasser sie trifft, fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser,
-    // kein Wasser anderer Höhe.
+    // DER TAKT DES PEGELS (stoffe.K3-2, wetter.K3): ändert der neue Tag, der Lauf des Regens oder die Dürre den Hub, trägt die Welt
+    // die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die gezeichneten Chunks mit
+    // Wasser, deren Marke wechselt (ihr Lauf, ihr See, ihre Höhen), und die Netze im Vorrat mit Wasser und gewechselter Marke
+    // fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser, kein Wasser eines anderen Laufs.
     _pegelTakt() {
         const alt = this._pegelTafelGilt;
         if (alt === undefined) return;
         const neu = this._pegelTafel();
         if (neu === alt) return;
         this._pegelTafelGilt = neu;
-        const K = globalThis.__gelaendeCore;
-        const T = neu || alt;
-        let [lo, hi] = [Infinity, -Infinity];
-        for (let i = 0; i < T.hub.length; i++) {
-            const y = T.y0 + i * T.dy;
-            if (K.pegelHub({ pegel: alt }, y) === K.pegelHub({ pegel: neu }, y)) continue;
-            [lo, hi] = [Math.min(lo, y - T.dy), Math.max(hi, y + T.dy)];
-        }
-        if (!(lo <= hi)) return;
         this._voxelZustandPost({ type: "state-update", delta: { pegel: neu } });
         const st = this.state;
-        const { dim, dimY, step, floorDrop } = this._voxelChunkConfig(0);
-        const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const WATER = AnazhRealm.CELL_STATE.WATER;
-        // trifft das Wasser des Eintrags `e` (ein gezeichneter Chunk, ein Netz im Vorrat) das Band? — die Höhen seiner Zellen, je
-        // Eintrag gemerkt (ein Neubau trägt einen neuen Eintrag)
-        const trifft = (e) => {
+        // trägt der Eintrag `e` (ein gezeichneter Chunk, ein Netz im Vorrat) Wasser, und wechselt die Marke seines Chunks?
+        const trifft = (e, key) => {
             const w = e && e.waterCells;
             if (!w || !w.length) return false;
-            if (!e._wasserY) {
-                let [a, b] = [dimY, -1];
-                for (let j = 0; j < dimY; j++)
-                    for (let q = j * dim * dim, z = q + dim * dim; q < z; q++)
-                        if (w[q] === WATER) {
-                            [a, b] = [Math.min(a, j), j];
-                            break;
-                        }
-                e._wasserY = b < 0 ? [Infinity, -Infinity] : [oy + a * step, oy + (b + 1) * step];
-            }
-            return e._wasserY[1] >= lo && e._wasserY[0] <= hi;
+            if (e._nass === undefined) e._nass = w.includes(WATER);
+            if (!e._nass) return false;
+            const [cx, cz] = key.split(",").map(Number);
+            return this._pegelMarkeVon(alt, cx, cz) !== this._pegelMarkeVon(neu, cx, cz);
         };
         if (st.voxelChunks && st.voxelChunks.size) {
             if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-            for (const [key, ch] of st.voxelChunks) if (trifft(ch)) st.dirtyVoxelChunks.add(key);
+            for (const [key, ch] of st.voxelChunks) if (trifft(ch, key)) st.dirtyVoxelChunks.add(key);
         }
-        if (st.voxelMeshCache) for (const [key, m] of st.voxelMeshCache) if (trifft(m)) st.voxelMeshCache.delete(key);
+        if (st.voxelMeshCache)
+            for (const [key, m] of st.voxelMeshCache) if (trifft(m, key)) st.voxelMeshCache.delete(key);
     }
 
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
@@ -414,6 +496,15 @@ class AnazhRealm_wasser_hydro {
     // nächste allein gäbe dort eine Stufe. O(1) über den Kanal (`kanal`); das Gesetz des Kerns (gelaende-core `flussAm`).
     _hydroRiverAt(x, z) {
         return globalThis.__gelaendeCore.flussAm(this._gelaende(), x, z);
+    }
+
+    // DIE ART DES WASSERS an (x, z) (w13-bach-klar) — der EINE Leser der Welt: das Gesetz des Kerns (gelaende-core
+    // `gewaesserArt`) über der Breite des Laufs an der Stelle (`_hydroRiverAt(...).breite`), sonst stehendes Wasser. Sie wählt
+    // den Körper des Wassers (`WASSER_GESETZ.koerper[art]`, die Trübung je Art: bach · see · fluss). Leser: das Medium der
+    // Kamera (`_applyDayNightToScene`). Bis dahin entschied der Leser selbst („im Kanal → fluss"): Sicht am Bach 1,1 m.
+    _wasserArtAt(x, z) {
+        const rv = this._hydroRiverAt(x, z);
+        return globalThis.__gelaendeCore.gewaesserArt(rv ? rv.breite : 0);
     }
 
     // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der
@@ -694,3 +785,6 @@ AnazhRealm._flussTiefe = function (p) {
 // DER RAND DER PEGEL-MARKE (`_pegelMarke`): so weit über und unter der Makro-Höhe seiner Mitte kann das Wasser eines Chunks stehen
 // (die Kante von 43,2 m an einem Hang, ein See über seinem Becken).
 AnazhRealm.PEGEL_RAND_M = 40;
+// DAS KLIMA DES REGENS (`_regenMittel`): so viele Züge der Front mittelt die Welt (die Wellen der Front kehren in 230–2 800 s der
+// Welt-Uhr wieder, 2 000 Züge sind 67 Stunden).
+AnazhRealm.REGEN_KLIMA_ZUEGE = 2000;

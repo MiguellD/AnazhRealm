@@ -66,7 +66,7 @@ const state = {
     noise: null,
     baseHeight: 0,
     waterLevel: 0,
-    hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
+    hydrosphere: null, // { ready, originX, originZ, cell, dim, kanal, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind, waterLauf} }
     hydroTiles: null, // A3 (V18.132) — Map key → tile, die fernen Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroWelt: null, // die Welt der Regionen (`_hydroWelt` des Mains): eine neue im Stand räumt sie
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
@@ -1372,12 +1372,16 @@ function hydroAntwort(h, daten) {
         lakeBedCell: h.lakeBedCell.slice(),
         lakeW: h.lakeW.slice(),
         lakeNear: h.lakeNear.slice(),
-        water: { waterY: h.water.waterY.slice(), waterKind: h.water.waterKind.slice() },
+        water: {
+            waterY: h.water.waterY.slice(),
+            waterKind: h.water.waterKind.slice(),
+            waterLauf: h.water.waterLauf.slice(),
+        },
     };
     const region = Object.assign(rest, felder, { kanal, fluesse: rivers.length, seen: lakes.length });
     if (daten) region.daten = new self.TextEncoder().encode(JSON.stringify({ rivers, lakes }));
     const transfer = [kanal.seg, kanal.ab, kanal.idx, felder.lakeBedCell, felder.lakeW, felder.lakeNear]
-        .concat(felder.water.waterY, felder.water.waterKind, daten ? region.daten : [])
+        .concat(felder.water.waterY, felder.water.waterKind, felder.water.waterLauf, daten ? region.daten : [])
         .map((a) => a.buffer);
     return { region, transfer };
 }

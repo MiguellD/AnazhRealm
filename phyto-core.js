@@ -1913,7 +1913,8 @@
     // Buche mit 8–9 statt 16–18 m und die Eiche unter der Referenz-Höhe (T2-Nachbesserung, gate:foundry-crossfade).
     // DIE JUGEND TRÄGT KEINEN SCHAFT (`jung`, stoffe.K5#2, JUGEND in `treeParams`): den Schaft schuf der Schatten des
     // Bestands, der die unteren Äste nahm — der Jungwuchs steht im Licht, seine Krone reicht zum Grund. Er wächst in seiner
-    // Form auf dieselbe Höhe h0 + dh (das Maß der Art, die Welt pflanzt ihn in `alter` × seiner Größe): jeder Punkt × (h0 +
+    // Form auf dieselbe Höhe h0 + dh (das Maß der Art, die Welt pflanzt ihn in `alter` × seiner Größe, gekappt auf das Maß seiner
+    // Kohorte: `SUKZESSION.kappe` im Stamm, w13-jung-gestalt): jeder Punkt × (h0 +
     // dh) / h0 um den Fuß, die Radien bleiben die des Welt-Maßes (H/D = hd); kein Hub (Rückgabe 0, die Sichthöhe misst die
     // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
     // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06

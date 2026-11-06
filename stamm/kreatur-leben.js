@@ -1805,11 +1805,15 @@ class AnazhRealm_kreatur_leben {
     // Wurf (`_weichtDemBau`): nie im Grundriss eines Baus und nie auf der Lichtung des Genesis-Platzes (`_imGrundriss`),
     // nie in der Hülle eines Dorfs (`wegeKarte.siedlungen`: Wege, Plätze, Äcker und die Häuser zwischen ihnen). Bis G4a
     // fragte die Geburt nur die Wildnis — ein Rudel hätte im Start-Dorf (110–170 m vom Genesis-Ort) geboren werden können.
+    // Und nur auf dem LAND (`_landAt`, die EINE Frage jedes Wurfs: das gezeichnete Wasser und das des Gesetzes über dem Boden;
+    // zuletzt, die teuerste): bis w13-pegel-heil fragte keine Geburt das Wasser — der Bestand ankerte Tiere im See und zeichnete
+    // sie auf seinem Grund (gate:werk-im-wasser am Seeufer 1849/−6111: am main Fuchs und drei Wölfe 3,64 m, an 43584419 sechs
+    // Hirsche 3,5–3,6 m unter dem Spiegel, gezeichnet und frei zum Weichen).
     _kreaturGrundFrei(x, z) {
         if (!this._wildnisTraegt(x, z) || this._imGrundriss(x, z)) return false;
         const wk = this.state.wegeKarte;
         if (wk) for (const b of wk.siedlungen) if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return false;
-        return true;
+        return this._landAt(x, z);
     }
 
     // DER WURF (G4a): die Geburt wirft eine GRUPPE nach dem Gesetz des Kerns (tetrapoda VERHALTEN.herde.wurf): die Kopfzahl
@@ -2427,16 +2431,8 @@ class AnazhRealm_kreatur_leben {
         const soll = new Set();
         for (const G of reihe) for (const t of G.tiere) if (!(t.leib && bleibt.has(t.leib)) && platz-- > 0) soll.add(t);
         // wer gehen soll, bleibt, solange er im Blick steht (sein Platz wartet, die Kappe hält: gezeichnet wird nur in freien Platz)
-        // (der Leib selbst, seine Kugel samt dem Rand des Blicks: `_kreaturAusserBlick`, `_kreaturBlickRand` — ohne Frustum fragt
-        // keiner)
-        const fr = this._frustumCache;
-        const rand = this._kreaturBlickRand();
         for (const c of st.creatures.slice())
-            if (
-                !bleibt.has(c) &&
-                !soll.has(c.userData._bestand) &&
-                (!fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand)))
-            )
+            if (!bleibt.has(c) && !soll.has(c.userData._bestand) && this._bestandAusserBlick(c))
                 this._bestandEntkoerpern(c);
         // je Takt höchstens drei Orts-Suchen; eine Gruppe ohne Ort (fern, außer Blick, frei) fragt erst sechs Takte später wieder
         let suchen = 3;
@@ -2464,9 +2460,18 @@ class AnazhRealm_kreatur_leben {
             this._kreaturNah(c)
         );
     }
+    // DARF DER LEIB `c` VOR DEM AUGE GEHEN (die EINE Frage der Zeichnung und des Weichens an den Blick)? Ohne Frustum ja, sonst
+    // nur, wenn der Leib selbst außer Blick steht — seine Kugel samt Saum und dem Rand des Blicks (`_kreaturAusserBlick`,
+    // `_kreaturBlickRand`). Bis w13-pegel-heil fragte das Weichen (`_bestandWeicht`) den Fuß-Punkt (`_kreaturImBlick`): ein Leib
+    // am Rand des Blicks, dessen Fuß eben draußen lag, verschwand an der vollen Kappe vor dem Auge.
+    _bestandAusserBlick(c) {
+        const fr = this._frustumCache;
+        const rand = this._kreaturBlickRand();
+        return !fr || (rand >= 0 && this._kreaturAusserBlick(c, fr, rand));
+    }
     // DER PLATZ FÜR EINEN AKT (`spawnCreatureAt` an der vollen Kappe): der gezeichnete Leib des Bestands, der gehen darf, außer
-    // Blick (keiner verschwindet vor dem Auge, wie in der Zeichnung) und am fernsten vom Spieler (die Zeichnung hält die nahen
-    // Gruppen) — oder keiner.
+    // Blick (`_bestandAusserBlick`, wie in der Zeichnung) und am fernsten vom Spieler (die Zeichnung hält die nahen Gruppen) —
+    // oder keiner.
     _bestandWeicht() {
         const st = this.state;
         if (!st.playerMesh) return null; // ohne Spieler keine Zeichnung, kein Nah-Kreis
@@ -2475,7 +2480,7 @@ class AnazhRealm_kreatur_leben {
         let wer = null,
             fern = -1;
         for (const c of st.creatures) {
-            if (this._bestandHaelt(c, jagen) || this._kreaturImBlick(c.position.x, c.position.z)) continue;
+            if (this._bestandHaelt(c, jagen) || !this._bestandAusserBlick(c)) continue;
             const d = Math.hypot(c.position.x - p.x, c.position.z - p.z);
             if (d > fern) [wer, fern] = [c, d];
         }
@@ -2549,6 +2554,14 @@ class AnazhRealm_kreatur_leben {
         const L = st.faunaLifecycle;
         const B = AnazhRealm._bestandGesetz().B;
         if (!this._kreaturenBereit() || st.spielZeit - (L.lastTick || 0) < B.taktS) return;
+        // DAS AUFHOLEN FOLGT DER WELT-UHR: je taktS verstrichener Spiel-Zeit aufholJeTakt versäumte Takte — springt die Uhr (ein
+        // Stand lädt, `_weltUhrNimm`; eine Bühne rafft die Zeit), holen die nahen Regionen ihre Stunde im Takt des Sprungs nach, ehe
+        // die Welt danach etwas schreibt. Bis w13-brand-takt holte jeder Takt 20 nach, wie weit die Uhr auch sprang: die
+        // Vergangenheit lief über die folgenden Minuten und las das Feld der Gegenwart (Mess-Wiese: nach dem Sprung der Feld-Phase
+        // starben Tiere bis eine Stunde zurück im brennenden Gras, ihr Puls +0,45 fiel je nach Zünd-Zeit und Bild-Folge des Brands
+        // in die Zelle des Herds — BRAND-ASCHE lebendig 0,839 → 0,799 auf der Farm, → 0,539 lokal). Ohne Sprung (ein Takt je taktS,
+        // das Laden setzt die Marke an die Uhr des Stands) bleibt es bei 20.
+        const schritte = Math.max(1, Math.round((st.spielZeit - (L.lastTick || st.spielZeit)) / B.taktS));
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2564,7 +2577,7 @@ class AnazhRealm_kreatur_leben {
                 this._creatureNaturalDeath(c, c.userData._faelltNach, false);
         // je nahe Region ihre versäumten Takte (aus EINEM Budget je Takt), dann der Takt des Spielers
         const tode = [];
-        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt;
+        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt * schritte;
         const S = this._bestandSeite();
         const p = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
         const abstand = (key) => {

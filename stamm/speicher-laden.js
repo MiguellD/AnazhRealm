@@ -286,6 +286,14 @@ class AnazhRealm_speicher_laden {
                 ? state.wetterWort
                 : null;
         this.state.wetterWunsch = null;
+        // die Stempel des Regens (wetter.K3): Paare [t, rain] endlicher Zahlen, die Uhr aufsteigend — sonst keine (der Pegel ruht)
+        const rs = state.regenStempel;
+        this.state.regenStempel =
+            Array.isArray(rs) &&
+            rs.length % 2 === 0 &&
+            rs.every((v, i) => Number.isFinite(v) && (i % 2 || !i || v >= rs[i - 2]))
+                ? rs.slice()
+                : [];
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         if (this.state.skybox) this.updateSkyboxWeather();

@@ -7,10 +7,11 @@
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera) {
+// Die Bühnen stehen an der Marke LEBEN_BUEHNEN im Leib von `kreaturProben` (scripts/lib/kreatur-proben.cjs): r, s, A, pm, buehne,
+// decke, kamera, ab und jeder Helfer der Proben sind dort im Gültigkeitsbereich — keine zweite Liste.
+async function lebenBuehnen() {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
-    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     await buehne("furcht", async (restore) => {
         if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
         if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
@@ -73,7 +74,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     R.abstand.push(ab(c.position, pm));
                 }
                 R.naeher.push(d0 - Math.min(...R.abstand.slice(-900)));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
             erinnert[rolle] = {
                 medianM: +quantil(R.abstand, 0.5).toFixed(2),
@@ -117,7 +118,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     for (const c of herde) if (zelle(c.position.x, c.position.z, mx, mz)) drin++;
                 }
                 ort[gegen ? "gegenlauf" : "riss"].push(+(drin / 5400 / herde.length).toFixed(3));
-                for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
+                leer(1);
             }
         const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
@@ -192,7 +193,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 if (je.alle > 3 * K + 10 && ++kappe) break;
                 n.push(je);
             }
-            for (const c of s.creatures.slice()) r.removeCreature(c);
+            leer();
             const mittel = (a, b, g) =>
                 +(n.slice(a, b).reduce((p, je) => p + (je[g || "alle"] || 0), 0) / (b - a)).toFixed(2);
             return { kappe, mittel, tod, ms, nah };
@@ -696,6 +697,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     (...a) =>
                         alt.apply(r, a).slice(0, 1)
             );
+        // der Täter: das Weichen vor w13-kreatur-blick — der Blick am Fuß-Punkt
+        if (taeter === "weichen-rand") decke("_bestandAusserBlick", () => (c) => !r._kreaturImBlick(c.position.x, c.position.z)); // prettier-ignore
         const LG = A._lebensraumGesetz();
         const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
         Object.assign(z, {
@@ -739,6 +742,33 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 }
                 for (const c of neu) r.removeCreature(c);
             }
+        }
+        // DER RAND DES BLICKS (das Weichen an der vollen Kappe, `_bestandWeicht`): ein gezeichneter Leib des Bestands allein in
+        // der Welt, der Blick so gedreht, dass sein Fuß-Punkt 0,2 m jenseits der Seiten-Ebene steht, sein Leib aber ins Bild ragt
+        // — ein Akt an der vollen Kappe nimmt ihm den Platz nicht; die Gegenprobe vom Leib weg: dort weicht er
+        pm.copy(p0);
+        kamera(1, 0);
+        let leib;
+        for (let k = 0; k < 25 && !leib; k++) {
+            const tiere = r._creatureNaturalBirth();
+            leib = tiere.length && r._bestandLeiber(tiere)[0];
+        }
+        if (leib) {
+            for (const c of s.creatures.slice()) if (c !== leib) r.removeCreature(c);
+            const [P, cam, kappe] = [leib.position, s.camera, s.maxCreatures];
+            const a = Math.atan2(P.z - pm.z, P.x - pm.x);
+            // der Blick um `w` neben dem Leib, ein Akt an der vollen Kappe (der Gerufene steht im Nah-Kreis: er hält)
+            const akt = (w) => {
+                kamera(Math.cos(a + w), Math.sin(a + w));
+                const [punktImBlick, leibAusser] = [r._kreaturImBlick(P.x, P.z), r._kreaturAusserBlick(leib, r._frustumCache, r._kreaturBlickRand())]; // prettier-ignore
+                s.maxCreatures = s.creatures.length;
+                r.spawnCreatureAt(pm.x + 3, pm.y, pm.z, "happy", "wesen", { precise: true });
+                s.maxCreatures = kappe;
+                return { punktImBlick, leibAusser, wich: !s.creatures.includes(leib) };
+            };
+            z.rand = akt(Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect) + 0.2 / ab(P, pm));
+            z.rand.fernWich = z.rand.wich ? null : akt(Math.PI).wich;
+            for (const c of s.creatures.slice()) r.removeCreature(c);
         }
         return Object.assign(z, {
             anteil: z.n ? +(z.drin / z.n).toFixed(3) : null,
@@ -839,6 +869,11 @@ function lebenUrteil(name, z, soll) {
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
     }
     if (name === "lebensraum") {
+        // DER RAND DES BLICKS: der Leib im Bild weicht dem Akt an der vollen Kappe nie, außer Blick weicht er
+        const RB = z.rand || {};
+        soll(RB.punktImBlick === false && RB.leibAusser === false, `LEER: kein Leib am Rand des Blicks: ${JSON.stringify(z.rand)}`); // prettier-ignore
+        soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
+        soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
@@ -847,8 +882,6 @@ function lebenUrteil(name, z, soll) {
         );
         soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
         soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
-    }
-    if (name === "lebensraum")
         for (const [wo, L] of [
             ["", z],
             ["Gegenprobe ", z.gegen || { fehler: "die Gegenprobe in einer Welt anderer Saat lief nicht" }],
@@ -863,7 +896,6 @@ function lebenUrteil(name, z, soll) {
                     `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
-    if (name === "lebensraum") {
         const gb = (z.gegen && z.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
         const [F, N] = ["fluss", "sonst"].map((k) => [z.baer[k][0] + gb[k][0], z.baer[k][1] + gb[k][1]]);
         soll(
@@ -900,7 +932,7 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera);`,
+    BUEHNEN: `await (${lebenQuelle})();`,
     PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
     TAETER: {
         tagesbudget: [
@@ -933,6 +965,7 @@ module.exports = {
             ],
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
+            ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],
         ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],

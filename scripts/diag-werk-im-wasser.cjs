@@ -14,7 +14,9 @@
 //       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
 //       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
-//       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
+//       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand. Dazu jeder
+//       Leib, den der Bestand zeichnet (`_bestandLeib`): über seinem Grund nie mehr Wasser als die Schwimm-Tiefe der Tiere
+//       (tetrapoda VERHALTEN.wasser).  Soll 0
 //   L — DIE WACHE DES GEFALLENEN (kommentarfrei, Node): `_waterLevelAt` nur als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`),
 //       der Wald liest den Bezug nie als Wasser, kein Bau weckt den Automaten am Setz-Punkt, der Stempel läuft nie den ganzen
 //       Bestand, keine Wurzel sagt still ab, `natur_weicht` ist fort (die gefallenen Namen trägt gate:altlasten).
@@ -28,7 +30,8 @@
 //       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Soll: der Chat sagt die tatsächliche Zahl
 //       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
 //   E — DAS ERGEBNIS JEDES SETZ-OPS: je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
-//       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
+//       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei; der Bestand ruht als Zahl, kein Leib weicht dem Akt),
+//       Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
 //       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Soll: die tatsächliche Zahl mit dem
 //       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
 //       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
@@ -551,6 +554,17 @@ async function probe(A) {
                 });
         }
         return e;
+    };
+    // DER LEIB DES BESTANDS (w13-pegel-heil): jeder gezeichnete Leib (`_bestandLeib`, der Weg der Zeichnung) steht auf Land — über
+    // seinem Grund nie mehr Wasser als die Schwimm-Tiefe der Tiere. Bis w13-pegel-heil zeichnete der Bestand Tiere auf dem
+    // Seegrund (am Seeufer 1849/−6111: am main Fuchs und drei Wölfe 3,64 m, an 43584419 sechs Hirsche 3,5–3,6 m tief).
+    const leibAlt = r._bestandLeib;
+    r._bestandLeib = function () {
+        const c = leibAlt.apply(this, arguments);
+        const t = c ? sichtbar(c.position.x, c.position.z, true) : 0;
+        if (t > r.constructor._verhaltenGesetz().wasser.schwimmTiefeM && zensus.imWasser.length < 40)
+            zensus.imWasser.push({ typ: c.userData.soul, id: c.userData.netId, ...c.position, wo: "Leib", tiefe: t, quelle: zensus.quelle }); // prettier-ignore
+        return c;
     };
     // Jedes festgehaltene Werk, wenn es steht: ein Haus wartet auf die Hülle seines Gesetzbuchs (`_hausHuelle`, die Solids
     // der Stufe 0), jedes andere misst seine Blocker. Gemessen wird jede Box, die den Boden trägt (Unterkante ≤ 0,6 m über
@@ -1288,27 +1302,18 @@ async function probe(A) {
                 const T = r.constructor.SETZ_GRUND || {};
                 const G = new Proxy({}, { get: (_, k) => (T[k] ? r._t(T[k]) : `(kein Grund „${String(k)}" in SETZ_GRUND)`) }); // je Grund ein Schlüssel der Tafel
                 stelle(cx + 40, cz + 40);
-                // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
+                // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner. An der vollen Kappe weicht jeder gezeichnete Leib des
+                // Bestands außer Blick dem Akt (`_bestandWeicht`, w5-studios-k1, oekologie.K2#2) — darum ruht der Bestand für die
+                // Fälle als Zahl (`_bestandEntkoerpern`, der Weg der Zeichnung; der nächste Takt zeichnet ihn neu): 3 frei sind 3.
+                // Bis w13-pegel-heil zählte „3 frei" die Leiber außer Blick mit — je Lauf 3 + 3 (main), 3 + 6, 3 + 7 (43584419:
+                // 10 von 10, kein Fehl-Grund).
                 const maxAlt = st.maxCreatures;
                 try {
-                    st.maxCreatures = st.creatures.length + 3;
-                    fall(
-                        "Kreaturen an der Obergrenze (3 frei)",
-                        "spawne kreaturen 10",
-                        10,
-                        "10 Kreaturen gespawnt",
-                        G.obergrenze,
-                        "kreatur"
-                    );
-                    st.maxCreatures = st.creatures.length;
-                    fall(
-                        "Kreaturen an der Obergrenze (0 frei)",
-                        "spawne kreaturen 10",
-                        10,
-                        "10 Kreaturen gespawnt",
-                        G.obergrenze,
-                        "kreatur"
-                    );
+                    for (const c of st.creatures.slice()) if (c.userData._bestand) r._bestandEntkoerpern(c);
+                    for (const frei of [3, 0]) {
+                        st.maxCreatures = st.creatures.length + frei;
+                        fall(`Kreaturen an der Obergrenze (${frei} frei)`, "spawne kreaturen 10", 10, "10 Kreaturen gespawnt", G.obergrenze, "kreatur"); // prettier-ignore
+                    }
                 } finally {
                     st.maxCreatures = maxAlt;
                 }
