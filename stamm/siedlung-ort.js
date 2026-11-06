@@ -2495,11 +2495,11 @@ class AnazhRealm_siedlung_ort {
                 if (haeuser.length >= A.vorbackHaeuser) break;
             }
             const R = this.state.architectureCullingRadius;
-            w.vorback = [];
+            [w.vorback, w.vorbau] = [[], []];
             const je = new Set();
-            const bestelle = (e, preset, lod) => {
+            const bestelle = (e, preset, lod, L = w.vorback) => {
                 const k = preset + ":" + e.seed + ":" + lod + ":" + JSON.stringify(e.studioOv || null);
-                if (!je.has(k)) (je.add(k), w.vorback.push([e, preset, lod]));
+                if (!je.has(k)) (je.add(k), L.push([e, preset, lod]));
             };
             for (const e of haeuser) {
                 const preset = this._foundryPresetForEntry(e);
@@ -2523,7 +2523,7 @@ class AnazhRealm_siedlung_ort {
                     x: e.position.x + (p.x - e.position.x) * k2,
                     z: e.position.z + (p.z - e.position.z) * k2,
                 };
-                bestelle(e, preset, this._foundryLodForEntry(e, ein));
+                bestelle(e, preset, this._foundryLodForEntry(e, ein), w.vorbau);
             };
             for (const si of reihe) {
                 const sl = w.v2.slots[si];
@@ -2557,8 +2557,10 @@ class AnazhRealm_siedlung_ort {
                     });
         }
         // bis jede Stufe steht: ein Flat setzt sich erst aus seinen Teilen zusammen (der Schatten-Zwilling bestellt sich dabei);
-        // was steht, fragt der Takt nicht mehr (Lehre 25)
-        w.vorback = w.vorback.filter(([e, preset, lod]) => this._foundryFlattenFor(e, preset, lod) === null);
+        // was steht, fragt der Takt nicht mehr (Lehre 25). Vorgebacken heißt: die Stufen am Auge des Erwachens stehen — die
+        // Stufen des Bedarfs (`vorbau`) gehen daneben, die Foundry rangiert sie nach der Zeit bis Bedarf.
+        const offen = ([e, preset, lod]) => this._foundryFlattenFor(e, preset, lod) === null;
+        [w.vorback, w.vorbau] = [w.vorback.filter(offen), w.vorbau.filter(offen)];
         return !w.vorback.length;
     }
     // Der Bauplan eines Slots: das Präfix seiner Studio-Art (KIND_POLICY) vor seiner Kultur, wenn die Welt ihn kennt — sonst null.
