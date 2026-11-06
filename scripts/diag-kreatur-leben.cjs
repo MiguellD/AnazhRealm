@@ -696,7 +696,9 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     (...a) =>
                         alt.apply(r, a).slice(0, 1)
             );
-        if (taeter === "geburt-wasser") decke("_kreaturImWasser", () => () => false);
+        // der Täter: die Geburt vor w13-pegel-heil — Wildnis und Grundriss, nie das Land
+        if (taeter === "geburt-wasser")
+            decke("_kreaturGrundFrei", () => (x, z) => r._wildnisTraegt(x, z) && !r._imGrundriss(x, z));
         const LG = A._lebensraumGesetz();
         const z = { n: 0, drin: 0, gattung: {}, klasse: {}, geburten: 0, gruppen: 0, journal: 0, minM: Infinity };
         // DAS WASSER (w13-pegel-heil): je Leib die Tiefe der EINEN Wasser-Wahrheit am Körper (`_koerperWasser`) über dem Grund,
@@ -747,6 +749,35 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                             .map((o) => ab(c.position, o.position) / paar)
                     );
                     if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
+                }
+                for (const c of neu) r.removeCreature(c);
+            }
+        }
+        // DER SEE: der Bestand ankert eine Geburt in der tiefsten Zelle eines Sees der Hydrosphäre (der Heimat und jeder Kachel),
+        // der Spieler 300 m davon, der Blick vom See weg — die Zeichnung (`_bestandLeiber`, der Weg des Spiels) stellt jeden Leib
+        // auf Land; gemessen wie oben (`imWasser`)
+        let see = null;
+        for (const h of [s.hydrosphere, ...(s.hydroTiles ? s.hydroTiles.values() : [])])
+            for (const lk of (h && h.lakes) || [])
+                for (const q of lk.cells || []) {
+                    const [x, zq] = [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
+                    const grund = r.getTerrainHeightAt(x, zq);
+                    const t = r._koerperWasser(x, zq, grund) - grund;
+                    if (!see || t > see.tiefe) see = { x, z: zq, tiefe: t };
+                }
+        z.see = see ? { x: +see.x.toFixed(1), z: +see.z.toFixed(1), tiefe: +see.tiefe.toFixed(2), leiber: 0 } : null;
+        if (see && see.tiefe > 3 * schwimm) {
+            pm.set(see.x + 300, boden(see.x + 300, see.z), see.z);
+            kamera(1, 0);
+            for (let k = 0; k < 25 && !z.see.leiber; k++) {
+                const tiere = r._creatureNaturalBirth();
+                for (const t of tiere) [t.x, t.z] = [see.x, see.z];
+                const neu = tiere.length ? r._bestandLeiber(tiere) : [];
+                for (const c of neu) {
+                    z.see.leiber++;
+                    const grund = r.getTerrainHeightAt(c.position.x, c.position.z);
+                    const tiefe = r._koerperWasser(c.position.x, c.position.z, grund) - grund;
+                    if (tiefe > schwimm) (z.imWasser++, (z.wasserMaxM = Math.max(z.wasserMaxM, +tiefe.toFixed(2))));
                 }
                 for (const c of neu) r.removeCreature(c);
             }
@@ -852,9 +883,19 @@ function lebenUrteil(name, z, soll) {
     if (name === "lebensraum") {
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
+        for (const [wo, L] of [
+            ["", z],
+            ["Gegenprobe ", z.gegen || {}],
+        ]) {
+            if (!L.see) continue;
+            soll(
+                L.imWasser === 0,
+                `${wo}${L.imWasser} Leiber im Wasser geboren — bis ${L.wasserMaxM} m über ihrem Grund (Soll 0 über der Schwimm-Tiefe ${L.schwimmM} m; der See ${JSON.stringify(L.see)})`
+            );
+        }
         soll(
-            z.imWasser === 0,
-            `${z.imWasser} Leiber im Wasser geboren — bis ${z.wasserMaxM} m über ihrem Grund (Soll 0 über der Schwimm-Tiefe ${z.schwimmM} m)`
+            [z, z.gegen || {}].some((L) => L.see && L.see.tiefe > 3 * L.schwimmM && L.see.leiber >= 1),
+            `LEER: kein See trug eine Geburt (der See ${JSON.stringify(z.see)}, Gegenprobe ${JSON.stringify((z.gegen || {}).see)})`
         );
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
