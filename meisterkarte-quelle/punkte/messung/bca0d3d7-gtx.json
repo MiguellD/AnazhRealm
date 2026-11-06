@@ -1,0 +1,138 @@
+{
+ "sha": "bca0d3d794e0c73ead8a9a9a4c4723f664421805",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T01:01:09.502Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: albedo --tafel ohne Messung: ) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-06T00:58:13.395Z",
+   "abdruck": "b64e0211e9fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-06T00:58:13.395Z",
+   "abdruck": "66b88461512c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#2",
+   "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 11.9 s · 28.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 11.9 s · 28.0 s)",
+   "s": 45.2,
+   "zeit": "2026-11-06T01:00:01.828Z",
+   "abdruck": "79f0a2495d1a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.3 σ 34.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.195 · Bühne sum)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72.3 σ 34.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.195 · Bühne sum)",
+   "s": 45.2,
+   "zeit": "2026-11-06T01:01:09.502Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T00:57:36.604Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 9.1,
+  "grundstellungS": [
+   4.5,
+   5.1
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 25.9,
+    "takte": 653,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 19.6,
+    "takte": 687,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 17.3,
+    "takte": 883,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 237,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 257.2,
+  "minuten": 4.36
+ }
+}
