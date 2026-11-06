@@ -398,6 +398,7 @@ function wand(quelle) {
         ["W1 der Satz für Unbekanntes trägt keine Befehlsliste von Hand", fehlt("_chatHandleConversationalFallback", /'Setze Wetter rainy'/)],
         ["W6 kein rohes Programm im Spieler-Chat (kein `JSON.stringify(reply|msg.program)`: die eigene KI und die Stimme eines Mitspielers)", fehlt(null, /JSON\.stringify\((reply|msg)\.program\)/)],
         ["W8 das Buch fragt die Köpfe der Ankunft (`_buchKoepfe` in `_foundryIngestBook`, B5)", !fehlt("_foundryIngestBook", /this\._buchKoepfe\(\)/)],
+        ["W9 Vorbacken nach der Ruhe (`_eingabeRuht`)", !fehlt("_tickBlueprintPrebake", /this\._eingabeRuht\(\)/)],
         [`W7 Streu-Pick, Lupe und Klingen-Achse rechnen keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzEigen.length ? " — mit: " + kreuzEigen.join(", ") : ""}`, kreuzEigen.length === 0],
     ];
 }
@@ -1960,11 +1961,12 @@ hauptLauf(async () => {
             ["maybeAnswerWithLlm", "tat: this.describeProgram(reply.program)", "tat: JSON.stringify(reply.program)"],
             kopfMit("_hasMagnifyingInSight", "this.camera.getWorldDirection(this._v)"),
             ["_foundryIngestBook", "this._buchKoepfe();", ""],
+            ["_tickBlueprintPrebake", "this._eingabeRuht()", "true"],
         ]);
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Liste von Hand, rohes Programm, eine eigene Kamera-Richtung, ein Buch ohne Köpfe) → W1, W6, W7, W8 feuern",
-            rot.filter((w) => !w[1]).length === 4,
+            "Selbst-Test W: der Vor-Stand → jede Wand feuert" /* Liste von Hand, rohes Programm, eigene Kamera-Richtung, Buch ohne Köpfe, Vorbacken ohne Ruhe */,
+            rot.filter((w) => !w[1]).length === 5,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         selbsttestEnde(errs, "die Ankunfts-Linse nennt ihre Täter beim Namen.");
@@ -2016,7 +2018,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle nach dem Bild, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, offen, Boxen danach, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle nach dem Bild, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring ${m.r}`); // prettier-ignore (die Reihen: der Kopf von `huelleVerdict`)
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

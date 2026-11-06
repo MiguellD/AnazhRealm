@@ -1737,7 +1737,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // DAS SOLO-HAUS (K69, B3c: Vorschau, KI) über die Wurzel — gezählt, wie oft der Wirt das ganze Haus im Kern baut,
                     // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
                     {
-                        const fc = globalThis.__fachwerkCore;
                         const [kx, kz] = [ox - 40, oz + 40];
                         const ky = r._voxelSurfaceY(kx, kz);
                         const tip = gemessen(globalThis.__fachwerkCore, "chimneyTipFromParams");
