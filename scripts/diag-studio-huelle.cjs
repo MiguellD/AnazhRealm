@@ -32,6 +32,13 @@
 //                     (VRAM und GPU-ms: ihr Anteil am Profi-Band) ROT beim Namen. Auf der Karte die GPU-ms der Zeitstempel
 //                     gegen die Bank-Runde von gpu-bank (`?bank=12`, nur GPU-gebunden eine Gegenzahl); beim Klang die
 //                     Audio-Graph-ms je Ort gegen den Echtzeit-Deckel des Quantums.
+//   H9 BÜHNE DER WELT (studios.K4, w13-buehne-lack) die Wand steht im Gesetz (welt-licht.js `buehneZeichnet`): jedes Bild einer
+//                     Bühne der Welt (garage, schmiede) bricht laut beim Namen, wenn sie neben dem Licht der Welt ein eigenes trägt
+//                     — ein Licht neben der Sonne, Sonne oder Belichtung neben dem Gesetz, ein Himmel neben seinem Knoten, ein Stoff
+//                     mit eigener Umgebung; der Gang (--engine) liest es über den EINEN Sammler der Seitenfehler. Der Selbsttest
+//                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
+//                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
+//                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -43,19 +50,16 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben, fadenScope } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 
 // Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
 // Panel über der Welt-Engine lebt (index.html?studio=gelaende: keine eigene Shell, keine Brücke — die Heimat IST die Welt).
 const STUDIOS = ["garage", "schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
 const NEBENWELTEN = ["skeleton", "fluid", "translated"];
-const SEITEN = [...STUDIOS, ...NEBENWELTEN];
 const GELAENDE = "worlds/gelaende/studio.js";
-const AUSGENOMMEN = {
-    begegnung: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
-    schwarm: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
-};
+const SAND = "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz";
+const AUSGENOMMEN = { begegnung: SAND, schwarm: SAND };
 // H4 — die Ofen-Studios (die Welt bäckt ihre Gestalt über BAKERS_BY_KIND); der Gang liest ihre L0 an der Kosten-Leiste (keine Ausnahme).
 const OFEN_STUDIOS = { tetrapoda: 1, koerperstudio: 1 };
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
@@ -67,8 +71,8 @@ const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
-const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
-// H9 — DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4, Labor = Welt): die erste Zeile der Kosten-Leiste trägt je Bau das Maß der Hülle
+const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// H10 — DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4, Labor = Welt): die erste Zeile der Kosten-Leiste trägt je Bau das Maß der Hülle
 // (`werkMass`: die Box der Wurzel der Bühne gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut), ihr Urteil liest
 // H8 (`zeileUrteil`, eine Achse über 2 % des Halbmessers) — ein Mesh-Studio ohne Maß ist ROT. Bis w16-studio-welt trug die Wurzel der
 // Schmiede ihre Schnitt-Karte (0,433 gegen 0,244 m), die des Fachwerks Parzelle und Flügel (31 × 13,3 × 31 gegen 10,0 × 13,2 × 8,8 m).
@@ -77,22 +81,6 @@ const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", ko
 // Phyto-Labors (nach dem Griff des Gangs 6,55 × 8,24 × 6,30 gegen 3,62 × 6,86 × 3,33 m), die Zeit-Achse des Fachwerks (`jahr`: Stil
 // und Dach der Epoche; auf 2025 Höhe 9,1 gegen 10,54 m).
 const WERK_RATSCHE = { terrain: 1, fachwerk: 1 };
-// H10 — EIN LICHT (studios.K4, w16-studio-welt): jede Bühne steht unter dem Himmel der Welt zur Uhr der Pose — ihre Seite ruft das
-// EINE Glied der Hülle (`AnazhHuelle.himmel`: Sonne, Umgebung, Belichtung, Tonkurve aus worlds/huelle/himmel.json und foundry-core
-// LICHT_DER_UHR) und trägt kein eigenes Licht daneben: keine Hemisphäre, kein Umgebungslicht, keine eigene Umgebung (PMREM), keine
-// eigene Kurve oder Belichtung. Der Spiegel der Kurve in der Hülle (`NEUTRAL_GLSL`, r128 über CustomToneMapping) steht byte-gleich
-// mit r184 (vendor/three.module.min.js). Bis w16-studio-welt: je Bühne ein eigenes Rig (die Garage drei Richtlichter, Key 10,29
-// Bernstein, Belichtung 1,04; die Schmiede ein Esse-Verlauf, ACES 1,06) — Radeon 93fe1619: die Bühne fast schwarz, 0/7.
-// DIE RATSCHE (sie zieht nur an): terrain (die eigene Tag-Maschine des Wald-Modus, `atmosphere(e)`, und die Kino-Kette), die zwei
-// Ofen-Labore (ihre Werke sind Prägung und Wesen, K4 misst sie nicht).
-const LICHT_SEITE = { garage: "worlds/garage/garage.js", portale: "worlds/portale/porta.js", schmiede: "worlds/schmiede/schmiede.js", fachwerk: "worlds/fachwerk/fachwerk.js", terrain: "worlds/terrain/phytogenesis.js", koerperstudio: "worlds/koerperstudio/koerperstudio.js", tetrapoda: "worlds/tetrapoda/tetrapoda.js" };
-const LICHT_RATSCHE = { terrain: 1, koerperstudio: 1, tetrapoda: 1 };
-const LICHT_RIG = /new THREE\.(?:HemisphereLight|AmbientLight)\(|PMREMGenerator|\.toneMapping(?:Exposure)?\s*=[^=]/g;
-const NEUTRAL_VENDOR = (() => {
-    const t = fs.readFileSync(path.join(ROOT, "vendor", "three.module.min.js"), "utf8");
-    const a = t.indexOf("vec3 NeutralToneMapping( vec3 color ) {");
-    return a < 0 ? null : t.slice(a, t.indexOf("\\nvec3 CustomToneMapping", a));
-})();
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -130,7 +118,7 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
         // H8 je gelesene Leiste: eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
         if (kosten && !kosten.some((k) => !k.audio === (id !== "klang"))) rot.push(`H8 ${id}: die Leiste ohne Zeile`);
         const werk = (kosten || []).flatMap((k) => AnazhHuelle.zeileUrteil(k, zeit, zeit)).filter((x) => (WERK_RATSCHE[id] && / Wurzel der Bühne /.test(x)) || !rot.push(`H8 ${id}: ${x}`));
-        if (kosten && !OFEN_STUDIOS[id] && id !== "klang" && !(kosten[0] || {}).werkWelt === !(WERK_RATSCHE[id] && !werk.length)) rot.push(`H9 ${id}: kein Maß des Werks, oder die Ratsche zieht an`);
+        if (kosten && !OFEN_STUDIOS[id] && id !== "klang" && !(kosten[0] || {}).werkWelt === !(WERK_RATSCHE[id] && !werk.length)) rot.push(`H10 ${id}: kein Maß des Werks, oder die Ratsche zieht an`);
         const fehl = f && (f[0] === f[1] ? 1 : VERLAUF.concat(0, 0).findIndex((_, i) => f[i] !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
@@ -242,25 +230,6 @@ function pruefe(karte) {
         if (!fehltIn(rel, ELEMENT_ADAPTER))
             rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
-    // H10 — EIN LICHT: je Bühne das Glied der Hülle, kein eigenes Rig; der Spiegel der Kurve byte-gleich mit r184
-    for (const [id, rel] of Object.entries(LICHT_SEITE)) {
-        if (karte[rel] == null) {
-            rot.push(`H10 ${id}: ${rel} fehlt der Karte`);
-            continue;
-        }
-        const ruft = !fehltIn(rel, /AnazhHuelle\.himmel\(/g);
-        const rig = fehltIn(rel, LICHT_RIG) ? null : stammLib.fehlt.wo;
-        if (LICHT_RATSCHE[id]) {
-            if (ruft && !rig) rot.push(`H10 ${id}: steht unter dem Himmel der Welt ohne eigenes Rig — die Ratsche zieht an, ${id} fällt aus LICHT_RATSCHE`);
-            continue;
-        }
-        if (!ruft) rot.push(`H10 ${rel}: die Bühne ruft AnazhHuelle.himmel nicht — sie steht nicht unter dem Himmel der Welt`);
-        if (rig) rot.push(`H10 ${rig}: ein eigenes Licht der Bühne (Hemisphäre, Umgebungslicht, PMREM oder Kurve) neben dem Himmel der Welt`);
-    }
-    const kurve = /var NEUTRAL_GLSL =\s*"((?:[^"\\]|\\.)*)"/.exec(karte["worlds/huelle/huelle.js"] || "");
-    if (!NEUTRAL_VENDOR) rot.push("H10 vendor/three.module.min.js: keine NeutralToneMapping (der Spiegel hat kein Original)");
-    else if (!kurve || kurve[1] !== NEUTRAL_VENDOR)
-        rot.push(`H10 worlds/huelle/huelle.js: NEUTRAL_GLSL ≠ die NeutralToneMapping von r184 (vendor/three.module.min.js) — der Spiegel der Kurve driftet`);
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -268,7 +237,7 @@ function pruefe(karte) {
     } catch (e) {
         rot.push(`H5 ${TOR_ZIELE}: ${karte[TOR_ZIELE] == null ? "fehlt" : "kein JSON (" + e.message + ")"} — node scripts/diag-studio-huelle.cjs --panorama`);
     }
-    const soll = SEITEN.filter((id) => !OHNE_PANORAMA[id]);
+    const soll = [...STUDIOS, ...NEBENWELTEN].filter((id) => !OHNE_PANORAMA[id]);
     Object.assign(zahl, { panorama: 0, soll: soll.length });
     if (K) {
         if (K.format !== PANO.format || K.w !== PANO.w || K.h !== PANO.h)
@@ -318,11 +287,6 @@ function selbsttest() {
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
         ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
         ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],
-        ["H10 die schmiede trägt wieder ihre Hemisphäre (das Rig vor w16-studio-welt)", "worlds/schmiede/schmiede.js", "AnazhHuelle.himmel(", "scene.add(new THREE.HemisphereLight(0x6a5a44,0x0c0806,0.5));\nAnazhHuelle.himmel(", /^H10 worlds\/schmiede\/schmiede\.js:\d+ .*: ein eigenes Licht der Bühne/],
-        ["H10 die portale setzt ihre eigene Kurve", "worlds/portale/porta.js", "AnazhHuelle.himmel(", "renderer.toneMapping=THREE.ACESFilmicToneMapping;AnazhHuelle.himmel(", /^H10 worlds\/portale\/porta\.js:\d+ .*: ein eigenes Licht der Bühne/],
-        ["H10 die fachwerk ruft den Himmel der Welt nicht", "worlds/fachwerk/fachwerk.js", "AnazhHuelle.himmel(", "AnazhHuelle.himmelNicht(", /^H10 worlds\/fachwerk\/fachwerk\.js: die Bühne ruft AnazhHuelle\.himmel nicht/],
-        ["H10 der Spiegel der Kurve driftet (eine Ziffer)", "worlds/huelle/huelle.js", "const float Desaturation = 0.15;", "const float Desaturation = 0.16;", /^H10 worlds\/huelle\/huelle\.js: NEUTRAL_GLSL ≠/],
-        ["H10 die Ratsche des terrain zieht an (Himmel ohne Rig)", "worlds/terrain/phytogenesis.js", /^[\s\S]*$/, "AnazhHuelle.himmel(THREE, renderer, scene, keyLight);", /^H10 terrain: steht unter dem Himmel der Welt ohne eigenes Rig/],
         ["H5 der Export ohne die fachwerk", TOR_ZIELE, '"worlds/fachwerk/index.html": {', '"worlds/fachwerk-fort/index.html": {', /^H5 fachwerk: kein Panorama im Export/],
         ["H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)", TOR_ZIELE, '"worlds/begegnung/index.html":', '"worlds/begegnung-fort/index.html":', /^H5 begegnung: steht nicht benannt unter ohne/],
     ];
@@ -355,7 +319,7 @@ function selbsttest() {
     // H3/H4/H6 — der Spruch des Gangs (dieselbe pure Funktion): die Ratsche fremd, die garage auf der EINEN Engine
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
-    const netz = Object.fromEntries(SEITEN.map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
+    const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
     // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
     const zeile = { werkBuehne: 2, werkWelt: 2, befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
@@ -368,7 +332,7 @@ function selbsttest() {
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
-        ["H6 die schmiede lädt keine Kopie mehr (die Ratsche zieht an)", { schmiede: eine }, /^H6 schmiede: lädt keine fremde Engine mehr/],
+        ["H6 die portale lädt keine Kopie mehr (die Ratsche zieht an)", { portale: eine }, /^H6 portale: lädt keine fremde Engine mehr/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
@@ -393,10 +357,10 @@ function selbsttest() {
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
-        // H9 (studios.K4): die Parzelle und der Flügel in der Wurzel der fachwerk, die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt)
-        ["H9 die Schnitt-Karte in der schmiede", {}, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/, mit("schmiede", wahr(9000, 9000, 0, 62000, { werkBuehne: 0.43, werkWelt: 0.24 }))],
-        ["H9 die garage misst ihr Werk nicht", {}, /^H9 garage: kein Maß/, mit("garage", wahr(9000, 9000, 0, 62000, { werkWelt: undefined }))],
-        ["H9 die Ratsche des terrain zieht an", {}, /^H9 terrain: .* die Ratsche zieht an/, mit("terrain", wahr(9000, 9000, 0, 62000, { werkWelt: 2 }))],
+        // H10 (studios.K4): die Parzelle und der Flügel in der Wurzel der fachwerk, die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt)
+        ["H10 die Schnitt-Karte in der schmiede", {}, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/, mit("schmiede", wahr(9000, 9000, 0, 62000, { werkBuehne: 0.43, werkWelt: 0.24 }))],
+        ["H10 die garage misst ihr Werk nicht", {}, /^H10 garage: kein Maß/, mit("garage", wahr(9000, 9000, 0, 62000, { werkWelt: undefined }))],
+        ["H10 die Ratsche des terrain zieht an", {}, /^H10 terrain: .* die Ratsche zieht an/, mit("terrain", wahr(9000, 9000, 0, 62000, { werkWelt: 2 }))],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
@@ -406,7 +370,18 @@ function selbsttest() {
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot"}`);
         if (!treffer) ok = false;
     }
-    return ok && !gangBasis.length;
+    // H9 — der Täter am Gesetz (Faden-Scope, three r184): ein Licht neben der Sonne (das Haupt der Matrix-Antike) und eine
+    // Belichtung neben der des Gesetzes brechen laut beim Namen; den sauberen Fall zeichnen garage und schmiede im Gang
+    const { THREE: T, __weltLicht: L } = fadenScope(["foundry-core.js", "welt-licht.js"]);
+    let h9 = "";
+    try {
+        L.buehneZeichnet({ sonne: 0, belichtung: 1, tafeln: { rtEq: {}, U: { licht: {} } } }, new T.Scene().add(new T.PointLight()), {});
+    } catch (e) {
+        h9 = e.message;
+    }
+    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1/.test(h9);
+    console.log(`${h9ok ? "✅" : "❌"} SELBST-TEST H9 ${h9}`);
+    return ok && h9ok && !gangBasis.length;
 }
 
 // ── DER GANG (`--engine`, Rezept linse: lokal die GPU, CI swiftshader): je Seite der Hülle EIN Besuch im echten Browser —
@@ -424,7 +399,7 @@ async function gang() {
     console.log(`=== H7 DIE SITZUNG — Saat ${saat}, die Zeit ${zeit ? "geurteilt (Karte)" : "ungeurteilt (Software-Adapter, Lehre 17)"}`);
     let sauber = 0;
     try {
-        for (const id of SEITEN) {
+        for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             let page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
@@ -517,23 +492,6 @@ async function sitzungsGang(page, saat, neuladen, n) {
     return { griffe, bleibt: [vorher.filter((x, i) => x === nachher[i]).length, vorher.length] };
 }
 
-// DER HIMMEL DER WELT (`--himmel`, studios.K4 „EIN Licht"): die Welt zur Uhr der Bühne (`__buehne`: Mittag, Sonne, Sommer) im echten
-// Renderer, ihr Himmel frisch (`_himmelFrisch`) — die Equirekt-Tafel je Einheit des Lichts (Halb-Float), E0, die Höhe des Auges, der
-// Anker und die Himmels-Bestrahlung der Belichtung — nach worlds/huelle/himmel.json; die Bühnen lesen ihn als Umgebung (garage `himmelLesen`)
-async function himmelBacken() {
-    const s = statikServer(), browser = await (await s.lausche(PORT), starteBrowser({ art: "linse", frist: 600000 }));
-    const page = await browser.newPage();
-    await s.zeige(page, 120000, "index.html?holz=kienspan");
-    await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
-    const h = await page.evaluate(async () => {
-        const r = await __weltDa((w) => w.state.atmoLut?.anker != null);
-        await (__buehne(), r._himmelFrisch()); // die Tafel der Uhr der Bühne: gemalt im Aufruf, gelesen danach
-        return (__buehne(), r._himmelDatei()); // die Zahlen zur selben Uhr (die Lesung wartete Bilder ab)
-    });
-    jsonSchreiben(path.join(ROOT, "worlds/huelle/himmel.json"), h);
-    await browser.close();
-    s.close();
-}
 // ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
 // Seite derselben Herkunft), ihre Brücke meldet `ready`, die Welt wächst, dann `panorama-bitte` → `panorama` (Halbfloat-Texel aus
 // IHREM Renderer, `AnazhHuelle.panorama`). Die Datei `worlds/<welt>/panorama.f16` (rgba16float 512 × 256, Zeile 0 unten) und ihr
@@ -556,7 +514,7 @@ async function panoramaBacken(nur) {
         await s.zeige(page, undefined, "__panorama.html", "load");
         const adapter = String(browser.adapter.renderer || browser.adapter.fehlt); // die Adapter-Zeile der Weiche ([linse-gpu])
         if (!istHardwareAdapter(browser.adapter)) throw new Error(`Panorama auf ${adapter}: das Ziel-Bild backt die echte GPU (Lehre 17)`);
-        for (const id of SEITEN) {
+        for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             if (OHNE_PANORAMA[id] || (nur && !nur.includes(id))) continue;
             const t0 = Date.now();
             const reift = ["koerperstudio", "fachwerk", "terrain"].includes(id) ? 9000 : 4000;
@@ -628,7 +586,6 @@ hauptLauf(async () => {
         await panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
         return;
     }
-    if (a.includes("--himmel")) return himmelBacken();
     if (a.includes("--engine")) return gang();
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
     const { rot, zahl, veraltet } = pruefe(baum());

@@ -6,27 +6,33 @@
 //   4. STAHL     — die Haut, ABGELEITET aus Rückgrat × Schnittprofil
 // Kernsatz: EIN Schnittpolygon → Loft-Mesh UND Massenintegral. Eine Wahrheit.
 // ════════════════════════════════════════════════════════════════════
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a0807);scene.fog=new THREE.FogExp2(0x0a0807,0.045);
+// DIE BÜHNE DER WELT (w12-studio-buehne, studios.K4 — Studio = Modus der Welt-Engine): die Schmiede zeichnet ihre Waffe auf der
+// Engine der Welt (three r184 WebGPU) im Licht der Welt (welt-licht.js `buehne`: Himmel, Sonne, Umgebung, Belichtung, Tonkurve
+// am Mittag). Es fielen: r128 mit ACES 1,06, die gemalte Esse-Umgebung (Leinwand-Verlauf als PMREM), Hemi + Key + Rim + Fill +
+// Punkt-Licht, der dunkle Grund 0x0a0807 mit Nebel und der Composer (UnrealBloom · FXAA · Vignette/Korn) — die Waffe stand unter
+// einem Licht, das die Welt nie zeigt (Radeon: Bild-Differenz Labor ↔ Welt 99,4 %).
+const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,0.05,100);cam.position.set(0.16,0.74,1.78);
-const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(R.domElement);
+const R=new THREE.WebGPURenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;document.body.appendChild(R.domElement);
 
-// ── Werkbank + Raster ──
+// ── Werkbank + Raster ── DER BODEN IST DER BODEN DER ATMOSPHÄRE (die gemessene Welt-Albedo `ATMO_BODEN`, matt), die Waffe wirft
+// ihren Schatten der Sonne auf ihn
 const FLOOR_Y=-0.26, LIFT=0.30;   // Waffe schwebt auf Augenhöhe, Boden als dezente Referenz darunter (verdeckt nichts)
 const bench=new THREE.Mesh(new THREE.PlaneGeometry(5,5),
-  new THREE.MeshStandardMaterial({color:0x090706,roughness:0.8,metalness:0.2,envMapIntensity:0.6}));
+  new THREE.MeshStandardMaterial({color:new THREE.Color().setRGB(...__weltLicht.ATMO_BODEN,THREE.LinearSRGBColorSpace),roughness:1,metalness:0}));
 bench.rotation.x=-Math.PI/2;bench.position.y=FLOOR_Y;bench.receiveShadow=true;scene.add(bench);
 const grid=new THREE.GridHelper(4.5,18,0x241b10,0x130d07);grid.position.y=FLOOR_Y+0.001;grid.material.opacity=0.26;grid.material.transparent=true;scene.add(grid);
 
-// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Schmiede steht unter dem Himmel der Welt zur Uhr der Pose — Sonne,
-// Umgebung, Belichtung und Tonkurve aus EINER Quelle (AnazhHuelle.himmel, worlds/huelle/himmel.json); der Renderer zeichnet direkt,
-// wie die Welt ihr Bild ausgibt. Bis w16-studio-welt: ein Esse-Verlauf als Env, Hemisphäre 0,5, Key 3,0, Kante 1,5 Blau, Füllung 0,6
-// Orange, ein Punkt-Glanz 0,8, ACES 1,06 und eine Kette Bloom · FXAA · Vignette/Korn ohne sRGB-Kodierung des Ausgangs.
-const key=new THREE.DirectionalLight(0xffffff,0);key.castShadow=true;
-key.shadow.mapSize.set(2048,2048);key.shadow.bias=-0.00018;Object.assign(key.shadow.camera,{left:-1.3,right:1.3,top:1.2,bottom:-0.8,near:0.5,far:9});scene.add(key);
-AnazhHuelle.himmel(THREE,R,scene,key,{abstand:4.6});
+// ── Licht ── DIE SONNE DER WELT: EIN Richtlicht, Farbe und Stärke setzt die Bühne der Welt, seine Richtung die der Sonne; es wirft
+// den Schatten (die Karte rahmt die Waffe über der Werkbank)
+const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
+sonne.shadow.mapSize.set(2048,2048);sonne.shadow.bias=-0.00018;Object.assign(sonne.shadow.camera,{left:-1.3,right:1.3,top:1.3,bottom:-1.3,near:0.5,far:9});
+scene.add(sonne);scene.add(sonne.target);sonne.target.position.set(0,LIFT,0);
+let welt=null;   // die Bühne der Welt, sobald der Renderer steht (`R.init`)
 
-const controls=new THREE.OrbitControls(cam,R.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
+// DIE KUGEL DES BLICKS (die Hülle, `AnazhHuelle.kugel` — dieselbe Gestalt wie die OrbitControls der terrain-Familie)
+const controls=AnazhHuelle.kugel(cam,R.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
 controls.target.set(0,0.30,0);controls.minDistance=0.5;controls.maxDistance=4.5;controls.maxPolarAngle=Math.PI*0.95;controls.update();
 // ════════════════════════════════════════════════════════════════════
 // DER KERN-ANSCHLUSS (W-A4a, Studio-Vertrag §7): die generative Substanz (Schnitt-
@@ -925,7 +931,7 @@ function bladeHitsColumn(handW,bladeDir,c,R,yLo,yHi){const e0=arena._edge0,e1=ar
   for(let i=0;i<=N;i++){const s=i/N,pt=handW.clone().addScaledVector(bladeDir,e0+s*eLen).add(bladeCurve(s));if(Math.hypot(pt.x-c.x,pt.z-c.z)<R&&pt.y>yLo&&pt.y<yHi)return pt;}return null;}
 
 function arenaEnter(){if(arena.active)return;arena.active=true;arena.besuch=(arena.besuch||0)+1;
-  weapon.visible=false;controls.enabled=false;scene.fog=new THREE.FogExp2(0x0a0807,0.006);
+  weapon.visible=false;controls.enabled=false;
   arena.group=new THREE.Group();scene.add(arena.group);arena.group.add(buildGround());arena.teile=[];arena.tonStoffe=[];
   for(const k of ['folge','ton','fall','bogen','kamera'])ZU[k]=SC.arenaStrom(arena.besuch,k.charCodeAt(0)*131+k.length);   // je Besuch eigene, feste Würfe
   arena.camSaved={pos:cam.position.clone(),tgt:controls.target.clone(),fov:cam.fov};
@@ -982,7 +988,7 @@ function arenaEnter(){if(arena.active)return;arena.active=true;arena.besuch=(are
   ['lehren','ctl','leg','hint','ring-info'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   document.getElementById('arena-toggle').textContent='← Werkstatt';hudHint();updateHUD();}
 function arenaExit(){if(!arena.active)return;arena.active=false;controls.enabled=true;weapon.visible=true;
-  if(document.pointerLockElement)document.exitPointerLock();scene.fog=new THREE.FogExp2(0x0a0807,0.045);
+  if(document.pointerLockElement)document.exitPointerLock();
   if(arena.group){clear(arena.group);arena.group=null;}arena.arrows.length=0;arena.stuck.length=0;arena.trail.mesh=null;arena.trail.pts=[];
   for(const m of arena.tonStoffe||[])m.dispose();arena.tonStoffe=[];arena.teile=[];
   arena.vm=arena.dummy=arena.pell=arena.target=arena.vmWeapon=arena.arm=null;arena.swinging=arena.thrusting=false;arena.drawing=false;
@@ -1192,7 +1198,7 @@ function seilTakt(g,dt){if(!g||!g.parent||!P.seil||P.modus!=='wucht')return;let 
   else if(!SC.seilSchritt(e.z,anker,dt,[0,-SC.SEIL_GESETZ.schwere*e.skala,0]))return;
   g.getWorldQuaternion(_sv.q);e.posen=SC.seilPosen(e.z,e.seil,[_sv.q.x,_sv.q.y,_sv.q.z,_sv.q.w],e.posen);
   e.teile.forEach((m,i)=>{_sv.inv.copy(m.parent.matrixWorld).invert();m.matrix.multiplyMatrices(_sv.inv,_sv.W.fromArray(e.posen,16*i));m.matrixWorldNeedsUpdate=true;});}
-function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_lastT);_lastT=t;
+function animate(){const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_lastT);_lastT=t;
   if(!arena.active)controls.update();
   if(arena.active)arenaUpdate(dt);
   seilTakt(gWeapon,dt);if(arena.active)seilTakt(arena.vmWeapon,dt);                                 // das Seil nach der Haltung dieses Bilds
@@ -1207,7 +1213,7 @@ function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime()
   } else if(gBladeMesh){const pos=gBladeMesh.geometry.attributes.position,bz=gBladeMesh.userData.baseZ;
     let dirty=false;for(let i=0;i<pos.count;i++){if(pos.getZ(i)!==bz[i]){pos.setZ(i,bz[i]);dirty=true;}}
     if(dirty){pos.needsUpdate=true;gBladeMesh.geometry.computeVertexNormals();}}
-  R.render(scene,cam);}
+  if(__weltLicht.buehneZeichnet(welt,scene,R))R.render(scene,cam);}   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut)
 
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
   R.setSize(innerWidth,innerHeight);});
@@ -1218,7 +1224,11 @@ addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase(
   else if(k==='t'){const ks=Object.keys(TRADITIONEN);const cur=Object.keys(TRADITIONEN).find(n=>TRADITIONEN[n]===currentTrad);const ni=(ks.indexOf(cur)+1)%ks.length;tdiv.children[ni].click();}});
 
 // — Start —
-gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();animate();
+gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();
+// DIE BÜHNE DER WELT steht, sobald der Renderer steht (Tafeln, Umgebung, Sonne, Tonkurve; die Belichtung, sobald die Bestrahlungs-
+// Tafel zurückkam); der Takt läuft an der Bild-Uhr des Renderers (r184 wartet mit ihm auf `init`)
+R.init().then(()=>{welt=__weltLicht.buehne({renderer:R,szene:scene,sonne});sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,4);});
+R.setAnimationLoop(animate);
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke (../huelle/huelle.js): die DSL spricht über die ECHTEN UI-Pfade (Button-click = eine Quelle) — die 21

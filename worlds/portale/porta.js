@@ -6,7 +6,7 @@
    Die Shell behält Szene/UI/Membran/Türsteuerung und LIEST den Kern. ── */
 var PC=window.__portaCore;
 var SLIDERS=PC.SLIDERS;
-var TOR_PRESETS={};Object.keys(PC.PRESETS).forEach(function(id){TOR_PRESETS[PC.PRESETS[id].lab]=PC.PRESETS[id].s;});  // Anzeige-Map: Schöpfer-Wortlaut → Dial-Vektor (byte-gleiche Werte)
+var PRESETS={};Object.keys(PC.PRESETS).forEach(function(id){PRESETS[PC.PRESETS[id].lab]=PC.PRESETS[id].s;});  // Anzeige-Map: Schöpfer-Wortlaut → Dial-Vektor (byte-gleiche Werte)
 var lerp=PC.lerp,clamp=PC.clamp,interpTop=PC.interpTop,pk=PC.pk;
 /* V18.464 — DIE MEMBRAN LIEST DAS GESETZ (W9-Muster): die Passage-Zahlen wohnen
    in porta-core.MEMBRAN_GESETZ; die Shell INJIZIERT sie in ihr GLSL (GN = Zahl →
@@ -14,7 +14,7 @@ var lerp=PC.lerp,clamp=PC.clamp,interpTop=PC.interpTop,pk=PC.pk;
 var MG=PC.MEMBRAN_GESETZ;
 function GN(x){var s=String(x);return s.indexOf('.')>=0||s.indexOf('e')>=0||s.indexOf('E')>=0?s:s+'.0';}
 
-var scene,camera,renderer,controls,clock;
+var scene,camera,renderer,composer,fxaa,cinePass,controls,clock;
 /* ZENSUS 17.07. — der Fluegel-Oeffnungswinkel wohnt im Kern (TUER_GESETZ.offen);
    Shell UND Welt (anazhRealm _tuerOffenRad) lesen die EINE Quelle (fail-soft 1.95). */
 var gate,membrane,memMat,rimMat,D,rebuildTimer=null,leafL=null,leafR=null,leafLB=null,leafRB=null,doorAngle=0,doorAngleB=0,doorTarget=0,doorTargetB=0,portalLight,DOOR_OPEN=(PC.TUER_GESETZ&&isFinite(PC.TUER_GESETZ.offen))?PC.TUER_GESETZ.offen:1.95;
@@ -169,16 +169,17 @@ function updateLaw(){var el=document.getElementById('law');if(!el)return;el.text
 function init(){
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080808);
   camera=new THREE.PerspectiveCamera(35,innerWidth/innerHeight,0.1,140);camera.position.set(0,3.6,15.6);
-  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
-  var key=new THREE.DirectionalLight(0xffffff,0);key.castShadow=true;key.shadow.mapSize.width=2048;key.shadow.mapSize.height=2048;key.shadow.bias=-0.0001;key.shadow.camera.left=-9;key.shadow.camera.right=9;key.shadow.camera.top=13;key.shadow.camera.bottom=-4;key.shadow.camera.near=0.5;key.shadow.camera.far=46;scene.add(key);
+  renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+  try{var c=document.createElement('canvas');c.width=256;c.height=256;var x=c.getContext('2d');var g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#aabbcc');g.addColorStop(0.5,'#333');g.addColorStop(1,'#050505');x.fillStyle=g;x.fillRect(0,0,256,256);var t=new THREE.CanvasTexture(c);var pm=new THREE.PMREMGenerator(renderer);scene.environment=pm.fromEquirectangular(t).texture;t.dispose();}catch(e){}
+  scene.add(new THREE.HemisphereLight(0xffffff,0x444444,0.6));
+  var key=new THREE.DirectionalLight(0xffe0b0,3.0);key.position.set(5,8,5);key.castShadow=true;key.shadow.mapSize.width=2048;key.shadow.mapSize.height=2048;key.shadow.bias=-0.0001;key.shadow.camera.left=-9;key.shadow.camera.right=9;key.shadow.camera.top=13;key.shadow.camera.bottom=-4;key.shadow.camera.near=0.5;key.shadow.camera.far=46;scene.add(key);
+  var rl=new THREE.DirectionalLight(0x33aaff,2.0);rl.position.set(-5,4,-5);scene.add(rl);
   /* V18.491.126 — GLUT_GESETZ: Lab+Host portal PointLight (fail-soft Literale). */
   var _G=(PC&&PC.GLUT_GESETZ)?PC.GLUT_GESETZ:{};portalLight=new THREE.PointLight(_G.color!=null?_G.color:0xffd9a0,_G.i0!=null?_G.i0:0.3,_G.dist!=null?_G.dist:14,_G.decay!=null?_G.decay:2);portalLight.position.set(0,3,0.4);scene.add(portalLight);
-  portalLight.userData.gesetz=true;   // die Glut ist Gesetz der Welt (GLUT_GESETZ), kein Licht des Rigs
-  // EIN LICHT (studios.K4, w16-studio-welt): die Bühne steht unter dem Himmel der Welt zur Uhr der Pose — Sonne, Umgebung, Belichtung und
-  // Tonkurve aus EINER Quelle (AnazhHuelle.himmel, worlds/huelle/himmel.json), der Renderer zeichnet direkt wie die Welt ihr Bild ausgibt.
-  // Bis w16-studio-welt: ein Verlaufs-Env, Hemisphäre 0,6, Key 3,0 Bernstein, Kante 2,0 Blau, ACES 1,1 und eine Kette Bloom · FXAA ·
-  // Kino (Vignette, Farbsaum, Korn) ohne sRGB-Kodierung des Ausgangs.
-  AnazhHuelle.himmel(THREE,renderer,scene,key,{abstand:24});
+  composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.24,0.5,1.05));
+  fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
+  var cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform sampler2D tDiffuse;uniform float time;varying vec2 vUv;float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 o=dir*dist*0.008;float r=texture2D(tDiffuse,uv+o).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-o).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0)),lR=getLum(uv+vec2(0.001,0.0)),lU=getLum(uv-vec2(0.0,0.001)),lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*2.0);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.03-0.015;gl_FragColor=vec4(color,1.0);}'};
+  cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
   controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4;controls.maxDistance=44;clock=new THREE.Clock();
   // DIE HÜLLE (K41): Sitzung (Undo/Redo · Same · Schloss je Achse) + der EINE Regler-Generator aus PARAMS_BY_KIND.gate
   // (die Vertrags-Sicht von SLIDERS; Entprellung 90 ms wie zuvor) + die Kosten-Leiste der Welt-Gestalt je Stufe.
@@ -187,15 +188,15 @@ function init(){
     zustandSetzen:function(z){presetMarke(z.preset);},anwenden:function(){buildGate();}});
   sitz.leiste(document.getElementById('sitzung'));
   regler=AnazhHuelle.regler(document.getElementById('sliders'),GATE_PARAMS,{werte:W,ruheMs:90,sitzung:sitz,
-    basis:function(){return TOR_PRESETS[aktivPreset]||null;},
+    basis:function(){return PRESETS[aktivPreset]||null;},
     bei:function(){presetMarke(null);},nachRuhe:function(ids,bau){if(bau)buildGate();else membranSetzen();}});
   kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:PC.PORTAL_RENDER_CONFIG.lod.budget.gate,
     stufen:PC.PORTAL_RENDER_CONFIG.lod.kindStages.gate,bauen:function(s){return PC.buildInstance(rezeptId(),1,s,W);},renderer:function(){return renderer;},
     quelle:'gemessen an der Welt-Gestalt (porta-core buildInstance, die Regler als ov); L3·Wurf = die NUR-WURF-Hülle'});
-  var pc=document.getElementById('presets');Object.keys(TOR_PRESETS).forEach(function(name){var b=document.createElement('button');b.textContent=name;b.onclick=function(){sitz.schritt(function(){presetMarke(name);setParams(TOR_PRESETS[name]);buildGate();});};pc.appendChild(b);});
+  var pc=document.getElementById('presets');Object.keys(PRESETS).forEach(function(name){var b=document.createElement('button');b.textContent=name;b.onclick=function(){sitz.schritt(function(){presetMarke(name);setParams(PRESETS[name]);buildGate();});};pc.appendChild(b);});
   // Der Zufallspunkt ist der Würfel der Sitzung: ein neuer Same zieht jede freie Achse (das Schloss hält eine fest).
   document.getElementById('rnd').onclick=function(){presetMarke(null);sitz.wuerfeln(GATE_PARAMS);};
-  presetMarke('Kathedrale');setParams(TOR_PRESETS.Kathedrale);buildGate();animate();
+  presetMarke('Kathedrale');setParams(PRESETS.Kathedrale);buildGate();animate();
 }
 function updatePrompt(){var dp=document.getElementById('doorPrompt');if(!dp)return;dp.innerHTML='[E] Vordertür '+(doorTarget>0.5?'schließen':'öffnen')+'  ·  [R] Hintertür '+(doorTargetB>0.5?'schließen':'öffnen');}
 function animate(){requestAnimationFrame(animate);var t=clock.getElapsedTime();
@@ -210,10 +211,10 @@ function animate(){requestAnimationFrame(animate);var t=clock.getElapsedTime();
  var pulse=0.5+0.5*Math.sin(t*MG.puls);                                // gemeinsamer Atem — Portal + Glut (Gesetz puls)
  // V18.491.159 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
  if(portalLight&&D){var _Gy=(PC&&PC.GLUT_GESETZ)?PC.GLUT_GESETZ:{};portalLight.position.set(0,D.springY*(_Gy.ySpring||0.55),0.0);portalLight.intensity=(PC&&typeof PC.glutIntensity==='function')?PC.glutIntensity(openM,pulse):((_Gy.i0||0.3)+openM*(_Gy.iOpen||3.4))*((_Gy.pulseBase||0.8)+(_Gy.pulseAmp||0.28)*pulse);}
- if(rimMat){var pr=0.85+0.15*Math.sin(t*1.6);rimMat.color.setHSL(0.11,0.6,0.55);rimMat.color.multiplyScalar((0.7+2.6*Math.max(D.p.glow,0.25))*pr*(1.0+openM*0.9));}
- controls.update();
- renderer.render(scene,camera);}
-addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+ cinePass.uniforms.time.value=t;if(rimMat){var pr=0.85+0.15*Math.sin(t*1.6);rimMat.color.setHSL(0.11,0.6,0.55);rimMat.color.multiplyScalar((0.7+2.6*Math.max(D.p.glow,0.25))*pr*(1.0+openM*0.9));}
+ fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();
+ composer.render();}
+addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
 addEventListener('keydown',function(e){if(e.repeat)return;var ch=false;if(e.key==='e'||e.key==='E'){doorTarget=doorTarget>0.5?0.0:DOOR_OPEN;ch=true;}if(e.key==='r'||e.key==='R'){doorTargetB=doorTargetB>0.5?0.0:DOOR_OPEN;ch=true;}if(ch)updatePrompt();});
 init();
 

@@ -8,11 +8,14 @@
 // Kernsatz: ändere den Rahmen → Haut und Lehren folgen live.
 // ════════════════════════════════════════════════════════════════════
 
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x070b10);scene.fog=new THREE.FogExp2(0x070b10,0.020);
+// DIE BÜHNE DER WELT (w12-studio-buehne, studios.K4 — Studio = Modus der Welt-Engine): die Werkstatt zeichnet ihr Werk im Licht der
+// Welt (welt-licht.js `buehne`): Himmel, Sonne, Umgebung, Belichtung und Tonkurve der Welt an ihrem Mittag. Bis hierher stand der
+// Wagen auf einer schwarzen Bühne (0x070b10) mit Nebel unter drei Studio-Lichtern (Key 2,93π Bernstein, Fill, Rim) bei Belichtung
+// 1,04 — die Welt zeigt denselben Wagen unter Sonne 6,9 und Himmel bei 0,51 (Radeon: Bild-Differenz Labor ↔ Welt 84,5 %).
+const scene=new THREE.Scene();
 const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,0.1,200);cam.position.set(6.2,3.1,7.4);
 // DIE EINE ENGINE (18.10.): die Werkstatt rendert auf der Engine der Welt — three r184 WebGPU (vendor/three-bootstrap.js),
-// Ausgabe sRGB mit der Tonkurve der Welt (BELICHTUNG.kurve, Khronos PBR Neutral); die Farben sind sRGB-Absichten
-// (ColorManagement an, Lehre 21), die Lichter physikalisch: r128 trug π im Legacy-Modus selbst, jetzt tragen es die Stärken.
+// Ausgabe sRGB; Tonkurve und Belichtung setzt die Bühne der Welt aus dem Licht (`welt.belichtung`, BELICHTUNG der Welt).
 // DER LEICHT-MODUS (w11-fahrzeug, `?leicht` oder der Knopf „Leicht"): die Werkstatt für Agenten ohne GPU (swiftshader) — halbe
 // Auflösung, der Schatten-Pass ruht (er rechnet nur, wenn Bau, Licht oder eine Bewegung ihn ändern), ohne Vielfach-Abtastung ab
 // dem ersten Bild. Gemessen (Isometrie 1280×720, swiftshader): 185 → 54 ms je Bild.
@@ -21,30 +24,27 @@ const R=new THREE.WebGPURenderer({antialias:!LEICHT});R.setSize(innerWidth,inner
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
 document.body.appendChild(R.domElement);
 
-// KEINE STUDIO-UMGEBUNG (01.11.): die gemalte Grauverlauf-Env lag als PMREM in jedem PBR-Stoff — unter swiftshader die Hälfte
-// des Bildes (Isometrie 1280×720: 262 → 86 ms mit der Abtastung unten), im Bild kaum sichtbar (Bildpaar v2-iso ↔ v2env0-iso).
-// Den Lack zeichnen die drei Lichter der Werkstatt; der Spiegel-Himmel gehört der Welt (Lehre 21).
+// DIE UMGEBUNG IST DER HIMMEL DER WELT (w12-studio-buehne): die PMREM-Lage der Equirekt-Tafel der EINEN Atmosphäre × das Licht
+// jetzt, wie die Welt sie jedem Stoff reicht — der Lack spiegelt den Himmel, den er in der Welt spiegelt. Die gemalte
+// Grauverlauf-Env fiel am 01.11. (swiftshader 262 → 86 ms je Bild), die drei Studio-Lichter fallen hier.
+// GEMESSEN (05.11., swiftshader, Lack-Pixel linear): die Spiegelung des Himmels trägt in der Isometrie 33 % des Lack-Lichts, im
+// Riss 65 %; die Umgebung insgesamt 47 %. Dieselbe Lack-Kugel aus demselben Blick (35° von oben, 7 m): Welt Luma 45,3, Bühne
+// 48,2. Der „Glanz" der Matrix-Antike (Isometrie 80 % gespiegelt, Luma 91) waren die drei Lichter am Blick — die Welt hat keine.
+// GEMESSEN (06.11., w13-buehne-lack, swiftshader, Isometrie, Lack-Pixel Luma Mittel · p95/p50): im Licht der Welt 46,0 · 1,14;
+// ohne die Sonne 30,9 · 1,55 (der Himmel spiegelt, das Licht der Sonne auf Dach und Haube überdeckt ihn); bei der Belichtung von
+// main (1,04) 66,5 · 1,15; ein Chrom-Wagen (Spiegel 1) 80,9 — kein Stoff erreicht unter dem Licht der Welt die 92,5 · 2,11 von
+// main. Im flacheren Blick (Perspektive) trägt der Lack den Himmel: p95/p50 1,58. Dass die Bühne kein eigenes Licht trägt,
+// hält die Wand im Gesetz (welt-licht.js `buehneZeichnet`, gate:studio-huelle H9): jedes Bild fragt sie vor dem Zeichnen.
 
-// ── DIE BÜHNE (Boden · Raster · Zifferblatt · Kontaktschatten) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
-// DER BODEN IST UNBELEUCHTET (01.11., gemessen unter swiftshader, Isometrie 1280×720): der metallische PBR-Boden spiegelte die
-// Umgebung über die halbe Fläche und kostete 813 → 505 ms je Bild; die Bronze-Kante färbte ihn sandfarben. Er ist jetzt Grund
-// der Matrix (ein Ton, kein Licht), der Wagen steht auf seinem Kontaktschatten (EIN Bild, EIN Befehl, aus der Hülle des Baus).
+// ── DIE BÜHNE (Boden · Raster · Zifferblatt) — das Möbel der Werkstatt, die Probefahrt fährt auf ihrem Gelände ──
+// DER BODEN IST DER BODEN DER ATMOSPHÄRE (w12-studio-buehne): die gemessene Welt-Albedo (`ATMO_BODEN`, linear — dieselbe, die die
+// untere Hälfte der Umgebung trägt), matt im Licht der Welt; der Wagen wirft seinen Schatten der Sonne auf ihn. Bis hierher war er
+// unbeleuchteter Grund der Matrix (0x080c11) und der Wagen stand auf einem gemalten Kontakt-Fleck (ein eigenes Bild je Bau) —
+// die Welt kennt keinen; der Schatten der Sonne trägt den Kontakt.
 const PI=Math.PI;
 const buehne=new THREE.Group();scene.add(buehne);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshBasicMaterial({color:0x080c11}));
-floor.rotation.x=-PI/2;buehne.add(floor);
-// DER WEICHE BODEN-KONTAKT (02.11.): drei Schichten in EINEM Bild am Bau gemalt — der weite Hof, der Kern unter dem Boden des
-// Wagens und je Rad (Kufe) der dunkle Auflagepunkt; das Bild spannt die Hülle des Baus plus 0,6 m, gezeichnet in EINEM Befehl.
-const kontaktBild=document.createElement('canvas');kontaktBild.width=256;kontaktBild.height=128;
-const kontaktTex=new THREE.CanvasTexture(kontaktBild);kontaktTex.colorSpace=THREE.SRGBColorSpace;
-const kontakt=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:kontaktTex,transparent:true,depthWrite:false,color:0x000000}));
-kontakt.rotation.x=-PI/2;kontakt.position.y=0.002;kontakt.renderOrder=1;buehne.add(kontakt);
-function kontaktMalen(H,P){const L=H.NOSE[0]-H.TAIL[0]+1.2,B=P.spur+1.2,xm=(H.NOSE[0]+H.TAIL[0])/2,x=kontaktBild.getContext('2d');
-  const u=wx=>(wx-xm)/L*256+128,v=wz=>wz/B*128+64,fleck=(a,b,c,d,r,al,bl)=>{x.filter=`blur(${bl}px)`;x.fillStyle=`rgba(0,0,0,${al})`;x.beginPath();x.roundRect(a,b,c,d,r);x.fill();};
-  x.clearRect(0,0,256,128);const k=0.6/L*256,q=0.6/B*128;
-  fleck(k*0.4,q*0.4,256-k*0.8,128-q*0.8,40,0.45,14);fleck(k,q,256-2*k,128-2*q,26,0.75,8);
-  const r=(P.radR||0.3)*256/L;for(const n of['HUB_FL','HUB_FR','HUB_RL','HUB_RR'])fleck(u(H[n][0])-r*0.9,v(H[n][2])-6,r*1.8,12,6,0.95,3);
-  kontaktTex.needsUpdate=true;kontakt.scale.set(L,B,1);kontakt.position.x=xm;}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:new THREE.Color().setRGB(...__weltLicht.ATMO_BODEN,THREE.LinearSRGBColorSpace),roughness:1,metalness:0}));
+floor.rotation.x=-PI/2;floor.receiveShadow=true;buehne.add(floor);
 // DAS RASTER DER MATRIX (Stahl-Cyan): ein feines Halbmeter-Netz und darüber das Fünfmeter-Netz — zwei Linien-Befehle
 const grid=new THREE.GridHelper(60,120,0x1e3c4a,0x0d1a22);grid.position.y=0.001;grid.material.opacity=0.55;grid.material.transparent=true;buehne.add(grid);
 const gridGrob=new THREE.GridHelper(60,12,0x2f6476,0x1d4352);gridGrob.position.y=0.0015;gridGrob.material.opacity=0.6;gridGrob.material.transparent=true;buehne.add(gridGrob);
@@ -57,15 +57,17 @@ const zifferblatt=(function(){const v=[],R0=3.35,R1=3.48,N=144;
   const ls=new THREE.LineSegments(ge,new THREE.LineBasicMaterial({color:0xb98a52,transparent:true,opacity:0.7}));ls.position.y=0.003;return ls;})();
 buehne.add(zifferblatt);
 
-// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Werkstatt steht unter dem Himmel der Welt zur Uhr der Pose — Sonne
-// (Bahn, Durchlass der EINEN Atmosphäre, E0 · lum aus foundry-core `LICHT_DER_UHR`), Umgebung (die Equirekt-Tafel der Welt × E0),
-// Belichtung (der Lichtmesser der Welt) und Tonkurve aus EINER Quelle: das Glied der Hülle `AnazhHuelle.himmel`, das jede Bühne liest
-// (worlds/huelle/himmel.json). Bis w16-studio-welt: drei eigene Richtlichter, die dem Blick folgten (Key 10,29 Bernstein, Füllung
-// Stahl, Kante Cyan), Belichtung 1,04.
-const key=new THREE.DirectionalLight(0xffffff,0);key.castShadow=true;
-key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0002;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
-const SONNE=new THREE.Vector3(0,1,0);
-AnazhHuelle.himmel(THREE,R,scene,key,{fertig:(H,s)=>{SONNE.fromArray(s.richtung);werkOrbit();}});
+// ── Licht ── DIE SONNE DER WELT (w12-studio-buehne): EIN Richtlicht, Farbe und Stärke setzt die Bühne der Welt (E0 · Durchlass
+// der EINEN Luft am Mittag), seine Richtung ist die der Sonne (`welt.richtung`); es wirft den Schatten. Die drei Lichter der
+// Matrix-Antike (Key Bernstein · Blick-Füllung Stahl · Gegenkante Cyan, dem Blick folgend) und ihr Regler „Licht" fielen —
+// sie zeichneten einen Wagen, den die Welt nie zeigt.
+const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
+sonne.shadow.mapSize.set(1024,1024);sonne.shadow.bias=-0.0002;Object.assign(sonne.shadow.camera,{left:-6,right:6,top:6,bottom:-6,far:40});
+scene.add(sonne);scene.add(sonne.target);
+let welt=null;   // die Bühne der Welt (welt-licht.js `buehne`), sobald der Renderer steht
+// die Sonne über dem Punkt (x, y, z): ihr Ziel dort, sie selbst 20 m die Richtung zur Sonne hinauf (der Schatten folgt dem Wagen)
+function sonneUeber(x,y,z){sonne.target.position.set(x,y,z);sonne.target.updateMatrixWorld();
+  if(welt)sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,20);}
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
@@ -77,7 +79,7 @@ const M=VC.materials();            // dieselben geteilten Materialien (nie dispo
 // DIE BÜHNE STEHT IM LACK (studios.K4, Labor = Welt): sie zeigt die Gestalt, die „In der Welt ansehen" trägt (`werkSame`) —
 // das Ton-Modell (Clay) ist die Anatomie-Ansicht auf Zuruf, die Welt kennt keins (LACK_VIS host).
 let lackMat=VC.lackStoff(5), bodyMat=lackMat; // Start Azurblau; umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS:GATTUNGEN}=VC;   // GATTUNGEN: der Name PRESETS gehört im Fenster dem Kern der Welt (foundry-core, das Licht der Uhr)
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES}=VC;   // die Gattungen liest die Werkstatt als VC.PRESETS (foundry-core trägt ein eigenes PRESETS im selben Raum der Seite)
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -186,7 +188,9 @@ function buildNeg(H,P){const g=new THREE.Group();const hz=P.spur/2;const bw=hz+0
 // ZUSTAND + AUFBAU
 // ════════════════════════════════════════════════════════════════════
 const P=Object.assign({},VC.DEFAULT_P);   // Regler-Zustand — Grundwerte aus der EINEN Kern-Quelle
-const show={frame:false,joints:false,cal:false,pkg:false,wheels:true,body:true,neg:false};   // das Bild des Wagens: die Lehren auf Knopfdruck
+// der Baukörper steht im Grundzustand (w12-studio-buehne): der Wagen der Welt trägt ihn hinter dem Glas (buildInstance: Baukörper ·
+// Haut · Räder) — die Bühne zeigt dieselbe Gestalt; die Lehren legt der Knopf „Lehren" darüber (w11-fahrzeug: das Bild des Wagens)
+const show={frame:false,joints:false,cal:false,pkg:true,wheels:true,body:true,neg:false};
 // Die EINE Sicht des gebauten Wagens (Haut + Räder + Zelle/Sitze, ohne Hilfsgeometrie und Notizen): der Ergebnis-Knopf zeigt
 // sie, die Probefahrt fährt in ihr — Lehren, Gelenke und Negativraum gehören der Werkstatt (Befund 0710-2: RADSTAND, ÜH-H …
 // lagen in der Fahrt über dem Wagen, die Probefahrt erbte die Werkstatt-Ebenen).
@@ -227,7 +231,7 @@ function falten(wurzel,gelenke){wurzel.updateMatrixWorld(true);const inv=wurzel.
     const ge=new THREE.BufferGeometry();for(const n of namen)ge.setAttribute(n,new THREE.BufferAttribute(feld[n],A0[n].itemSize));
     ge.setIndex(new THREE.BufferAttribute(new Uint32Array(ix),1));
     const me=new THREE.Mesh(ge,teile[0].material);me.castShadow=teile[0].castShadow;me.receiveShadow=teile[0].receiveShadow;me.renderOrder=teile[0].renderOrder;wurzel.add(me);}}
-function rebuild(){_wecke();RAEDER.length=0;key.shadow.needsUpdate=true;
+function rebuild(){_wecke();RAEDER.length=0;sonne.shadow.needsUpdate=true;
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
   const PE=VC.epocheForm(P);   // die Zeit-Achse (vehicle-core EPOCHE_GESETZ): EIN geformtes P für den Bau UND die Ebenen
   const H=hardpoints(PE);const res=evalLehren(PE);
@@ -247,7 +251,6 @@ function rebuild(){_wecke();RAEDER.length=0;key.shadow.needsUpdate=true;
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   const gelenke=new Set([...corners.flatMap(c=>[c.grp,c.wheelSpin]),...doors.map(d=>d.pv)]);
   for(const s of[gPackage,gBody,gWheels,gFrame])falten(s,gelenke);
-  kontaktMalen(H,PE);
   explosionsPlan(PE);   // die Achsen der Explosion stehen am neuen Bau; die Ansicht legt sie im selben Bild an
   raederFalten();
   if(mode!=='fahren'&&proj!=='persp')einpassen();   // orthografisch füllt jeder Bau (Schlitten 3 m bis Zukunft 5 m) das Bild
@@ -289,7 +292,7 @@ let presetId='gt',kulturId=null;
 // Gattung und Kultur (Strg+Z · Strg+Umschalt+Z); der Rückweg baut wie der Hinweg.
 // (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
 const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert:[...pdiv.children].some(c=>c.classList.contains('on'))}),
-  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(GATTUNGEN);
+  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(VC.PRESETS);
     [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',z.markiert&&ids[i]===presetId));
     const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
   anwenden:()=>rebuild()});
@@ -300,7 +303,7 @@ function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const bas
   for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
   kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
 const pdiv=document.getElementById('presets');
-for(const pid in GATTUNGEN){const b=document.createElement('button');b.className='btn';b.textContent=GATTUNGEN[pid].lab;
+for(const pid in VC.PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=VC.PRESETS[pid].lab;
   if(pid==='gt')b.classList.add('on');
   b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>presetSetzen(pid));};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
@@ -323,7 +326,7 @@ werkzeugB.onclick=()=>{werkzeugB.classList.toggle('on',document.body.classList.t
 // Der Werfer bleibt (r184 entsorgt beim Abschalten von castShadow die Schatten-Karte, und ein Stoff, der in der Zeit nicht
 // zeichnete, hält den toten Knoten: „depthTexture of null"); es ruht nur sein Pass (`shadow.autoUpdate`, vendor ShadowNode.updateBefore).
 function leichtSetzen(an){leicht=an;R.setPixelRatio(an?0.5:Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);
-  key.shadow.autoUpdate=!an;key.shadow.needsUpdate=true;
+  sonne.shadow.autoUpdate=!an;sonne.shadow.needsUpdate=true;
   leichtB.classList.toggle('on',an);document.body.classList.toggle('leicht',an);_wecke();}
 let leicht=false;leichtB.onclick=()=>leichtSetzen(!leicht);
 function applyVis(){const V=sicht();if(gFrame)gFrame.visible=V.frame;if(gJoints)gJoints.visible=V.joints;
@@ -351,7 +354,7 @@ PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className=
 const ergB=document.getElementById('ergebnis');let ergOn=false;
 ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
   if(ergOn)Object.assign(show,ERGEBNIS);
-  else     Object.assign(show,{frame:false,joints:false,cal:document.body.classList.contains('lehren'),pkg:false,wheels:true,body:true,neg:false});
+  else     Object.assign(show,{frame:false,joints:false,cal:document.body.classList.contains('lehren'),pkg:true,wheels:true,body:true,neg:false});
   applyVis();syncLayerButtons();};
 // Regler — die Hülle (K41): der EINE Generator aus PARAMS_BY_KIND.vehicle schreibt P in place; ein Aufbau je Bild
 // (ruheMs 0, der Zug bleibt flüssig), die Dynamik-Regler (dyn) wirken live ohne Neubau.
@@ -486,7 +489,7 @@ function ansichtSchritt(dt,t){
 // Ebene mit einem eigenen cos²-Hügel (ein Sonder-Gelände, das keine Welt kannte). Das Netz: das Gelände je 4 m (eine Spanne
 // tiefer gezeichnet, nie über der Bahn) und darüber die Bahn mit ihren Böschungen je Meter der Linie; die Probefahrt startet,
 // sobald die Strecke geladen ist (die Knöpfe warten).
-const GC=window.__gelaendeCore,ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(key.target);
+const GC=window.__gelaendeCore,ground=new THREE.Group();ground.visible=false;scene.add(ground);
 let bodenL=null,bahn=null,strecke=null;
 function bodenY(x,z){return GC.hoehe(bodenL,x,z,false);}
 fetch('../../spec/pruefbuehne/strecke.json').then(r=>r.json()).then(S=>{strecke=S;const T=GC.erbgutNormal(S.erbgut);bodenL={erbgut:{terme:T},baseHeight:0,erdbau:null};
@@ -591,7 +594,7 @@ function updateVehicle(dt,t){
   vehicle.position.set(car.x,car.y,car.z);vehicle.rotation.set(car.wank,car.yaw,car.steig,'YZX');
   // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw). Räder: Abrollen ω=v/r (der Kern zählt wheelAng).
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
-  key.position.set(car.x,car.y,car.z).addScaledVector(SONNE,12);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
+  sonneUeber(car.x,car.y,car.z); // der Schatten folgt dem Wagen
 }
 
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück.
@@ -618,7 +621,7 @@ let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=docume
 function enterDrive(mitFahrer){pruef=mitFahrer===true?{i:0}:null;
   // die Telemetrie der Prüffahrt: der Kern fährt zwei Runden mit festem Schritt (dieselbe Zahl richtet gate:garage-labor G11)
   const tele=document.getElementById('tele');if(tele)tele.textContent=pruef?(r=>r?`Prüffahrt · Runde ${r.zeit.toFixed(1)} s · Flug ${Math.max(0,...r.fluege.map(f=>f.weite))} m · Kontakt ${(r.kontakt*100).toFixed(1)} %`:'Prüffahrt · keine Runde')(VC.pruefFahrt(fahrGesetzLab(),bahn,bodenY,2,1/60).runden[1]):'';
-  mode='fahren';scene.fog.density=0.0035;   // in der Fahrt reicht der Blick über die Strecke (die Werkstatt liegt im dichten Grund)
+  mode='fahren';   // der Blick reicht über die Strecke: die Bühne der Welt trägt keinen Nebel (welt-licht `buehne`: fog null), in keinem Modus
   fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
   document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;oc.zug=-1;oc.vAz=oc.vEl=0;   // die Werkstatt-Kugel ruht, solange die Fahrt-Kamera führt
@@ -626,12 +629,12 @@ function enterDrive(mitFahrer){pruef=mitFahrer===true?{i:0}:null;
   Object.assign(car,VC.fahrZustand(0,0,0));VC.fahrStand(car,fahrGesetzLab(),bodenY,0);   // frischer Fahrzustand auf dem Boden
   input.throttle=input.brake=input.steer=input.hand=0;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
-function exitDrive(){mode='werkstatt';scene.fog.density=0.020;fahrSicht=false;applyVis();
+function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
   document.querySelectorAll(OVL).forEach(el=>el.style.display='');if(hud)hud.style.display='none';
   ground.visible=false;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
-  key.position.copy(SONNE).multiplyScalar(12);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
+  sonneUeber(0,0,0);
   buehne.visible=true;explosionAnwenden(eZeig);if(ANS.anim)animSetzen(true);
   camFov(0);werkOrbit();}   // der Blick kehrt auf die Werkstatt-Kugel zurück, wie er sie verließ
 
@@ -651,7 +654,7 @@ addEventListener('keydown',e=>{keys[e.code]=true;
   const pk={Digit8:'persp',Digit9:'iso',Digit0:'seite'}[e.code];if(pk)projSetzen(pk);
   const ak={KeyX:'explode',KeyN:'anim',KeyT:'dreh'}[e.code];   // X Explosion ganz/zu · N Animation · T Drehteller — über den Regler der Hülle
   if(ak){const inp=ansichtRegler.eingabe(ak);if(inp.type==='checkbox')inp.click();else{inp.value=String(ANS.explode>0.5?0:1);inp.dispatchEvent(new Event('input',{bubbles:true}));}}
-  if(e.code==='KeyP'){const names=Object.keys(GATTUNGEN);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
+  if(e.code==='KeyP'){const names=Object.keys(VC.PRESETS);const cur=[...pdiv.children].findIndex(c=>c.classList.contains('on'));
     pdiv.children[(cur+1+names.length)%names.length].click();}
 });
 function readKeys(){
@@ -680,8 +683,7 @@ function werkOrbit(dt){dt=dt||0;if(ANS.dreh)oc.az+=0.349*dt;
   cam.position.set(_ziel.x+dx*oc.dist,_ziel.y+dy*oc.dist,_ziel.z+dz*oc.dist);cam.lookAt(_ziel);
   const h=oc.dist*Math.tan(CAM_FOV*PI/360)+eZeig*explHub*0.35,w=h*cam.aspect;
   if(camO.top!==h||camO.right!==w){camO.left=-w;camO.right=w;camO.top=h;camO.bottom=-h;camO.updateProjectionMatrix();}
-  camO.position.copy(cam.position);camO.lookAt(_ziel);
-  key.position.copy(SONNE).multiplyScalar(12);}   // die Sonne steht, wo die Welt sie hat — der Blick wandert, sie nicht   // derselbe Ort wie die Perspektive: der Nebel liest dieselbe Tiefe
+  camO.position.copy(cam.position);camO.lookAt(_ziel);}
 // Maus/Touch: in der Werkstatt die Kugel (links drehen, rechts schieben, Rad zoomen); in der Fahrt greifen → frei umsehen,
 // loslassen → sanft zurück hinter das Auto
 R.domElement.style.touchAction='none';
@@ -703,6 +705,50 @@ addEventListener('pointerup',_los);addEventListener('pointercancel',_los);
 R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.preventDefault();
   oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
+// ── DER VORBAU (w13-buehne-async): kein Bild und kein Aufruf der Seite wartet auf einen synchronen Pipeline-Bau ──
+// Bis hierher baute das erste Bild jedes Werks seine Programme im Render (r184 `Pipelines.updateForRender` → synchrones
+// `createRenderPipeline`): 42 bis zum ersten Bild, je Gattungs-Wechsel 11–12, der GPU-Prozess reihte sie hintereinander (swiftshader:
+// erstes Bild fertig nach 2,8 s, 4× gedrosselt 4,5 s); auf dem CPU-Raster der CI kehrte
+// ein Versprechen der Seite nie zurück (z255: „URTEIL AWAIT … gpu.createRenderPipeline #50"). Jetzt hält ein sichtbares Objekt,
+// das mit seinem Stoff (samt Version) und seiner Gestalt noch durch keinen Vorbau ging, das Bild an — das letzte Bild
+// bleibt stehen — und EIN Bild des Werks in ein verborgenes Ziel (1×1) baut, was das sichtbare braucht: jede Pipeline dieses
+// Bilds (Haupt- und Schatten-Pass) entsteht asynchron in EINER Liste, alle zugleich (`createRenderPipelineAsync`), r184 zeichnet
+// nur, was steht (`isReady`). Derselbe Render-Kontext wie die Leinwand (der Bild-Puffer trägt Format, Farbraum und Abtastung des
+// Ausgabe-Ziels), darum trifft das nächste Bild jede Pipeline im Cache — r184 `compileAsync` traf ihn nicht: es teilt den
+// Kontext je Format mit fremden Zielen und schlüsselte den Farbraum leer (19 asynchron, danach dieselben 42 synchron). Steht die
+// Liste, zeichnet das nächste Bild das ganze Werk und der Schatten rechnet neu. Ein Bruch des Vorbaus bricht laut. GEMESSEN (06.11.,
+// swiftshader): bis zum ersten Bild 42 → 12 synchron (die Tafeln der Bühne und die Kosten-Leiste der Hülle), 31 asynchron, fertig
+// 2,8 → 2,1 s; je Gattungs-Wechsel 12 → 0 synchron. Der Knoten-Bau bleibt im Bild (4× gedrosselt längste Aufgabe ~1,3–1,5 s).
+// der Stand je Objekt (Stoff · Version · Gestalt), den der letzte Vorbau sah — ob eine Pipeline fehlt, weiß nur r184 selbst (sein
+// Schlüssel liest Spiegelung, Schatten, Attribute, Kontext): ein Vorbau, dessen Programme schon stehen, legt keine an und steht sofort
+let _bau=null;const _bauObjekt=new WeakMap(),_zeichnet=o=>o.isMesh||o.isLine||o.isPoints||o.isSprite;
+const _stand=o=>[o,o.material,o.material.version,o.geometry];
+function _werkNeu(){let neu=false;scene.traverseVisible(o=>{if(neu||!_zeichnet(o))return;const a=_bauObjekt.get(o);
+  neu=!a||a[1]!==o.material||a[2]!==o.material.version||a[3]!==o.geometry;});return neu;}
+const _vorbauZiel=new THREE.RenderTarget(1,1);
+// DER FEHLER BLEIBT LAUT (w13-buehne-lack-heim): r184 hält je asynchroner Pipeline `pushErrorScope` über ihr await offen
+// (vendor/three.webgpu.min.js 6:590389) — jede Validierung dazwischen, auch ein fremder Draw, fiel in diesen Bereich: als
+// THREE-Konsolenzeile gemeldet, DIESE Pipeline für immer kaputt, das `uncapturederror` des Geräts still (z259: K6 der Portal-
+// Konformanz sah den Submit mit dem zerstörten Sprite-Quad nicht mehr). Und ihr Versprechen löst erst nach `popErrorScope`, auf
+// swiftshader nie (Lehre der Erst-Zeichnung, stamm/bild-kosten.js `_erstWartet`): der Vorbau hing, das Bild stand, die Labor-
+// Linse riss in G8 nach 120 s. Darum zeichnet der Vorbau NICHTS (`isReady` nein: kein Draw, kein Submit im offenen Bereich) und
+// wartet auf die Pipelines des Geräts selbst (`createRenderPipelineAsync` je Bau), nie auf das Vendor-Versprechen — eine Absage
+// bricht als Ablehnung des Vorbaus laut (r184 verschluckt sie, `catch(e){}`), das nächste Bild submittet außerhalb jedes Bereichs.
+async function _vorbau(K){const P=R._pipelines,eigen=P.getForRender,liste=[],roh=[],werk=[],aus=R.getOutputRenderTarget(),ziel=R.getRenderTarget(),
+    dev=R.backend.device,baut=dev.createRenderPipelineAsync,eigenB=Object.getOwnPropertyDescriptor(dev,'createRenderPipelineAsync');
+  scene.traverseVisible(o=>{if(_zeichnet(o))werk.push(_stand(o));});
+  P.getForRender=function(ro){return eigen.call(this,ro,liste);};   // jede Pipeline dieses Bilds asynchron
+  P.isReady=()=>false;                                             // der Vorbau baut, er zeichnet nie
+  dev.createRenderPipelineAsync=function(d){const p=baut.call(this,d);roh.push(p);return p;};
+  try{try{R.setOutputRenderTarget(_vorbauZiel);R.render(scene,K);}finally{P.getForRender=eigen;delete P.isReady;
+      if(eigenB)Object.defineProperty(dev,'createRenderPipelineAsync',eigenB);else delete dev.createRenderPipelineAsync;
+      R.setOutputRenderTarget(aus);R.setRenderTarget(ziel);}
+    await Promise.all(roh);}finally{_bau=null;}
+  for(const a of werk)_bauObjekt.set(a[0],a);sonne.shadow.needsUpdate=true;_kamAlt=null;_wecke();}
+// ein Bild (der Loop) und jeder Leser, der ohne den Loop zeichnet (`werkSteht`), fragt hier: steht ein Vorbau an, läuft er
+function _bauWenn(K){if(!_bau&&welt&&_werkNeu())_bau=_vorbau(K);return _bau;}
+async function werkSteht(){const K=kamera();K.updateMatrixWorld();while(_bauWenn(K))await _bau;}
+
 // ── Loop (r184: setAnimationLoop wartet auf renderer.init(), die Zeit reicht der Takt herein) ──
 // DIE WERKSTATT ZEICHNET NUR BEI BEDARF (19.10.): wie ein Asset-Editor — nach einer Eingabe, einem Umbau, solange die Kugel
 // ausläuft oder eine Tür zieht, und in der Fahrt; in Ruhe staut die Seite keine Bilder vor der GPU (Befund garage-r184: unter
@@ -710,7 +756,7 @@ R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.prevent
 var wachBis=0;function _wecke(){wachBis=performance.now()+600;}
 ['pointerdown','pointermove','pointerup','wheel','keydown','keyup','input','change','click'].forEach(t=>addEventListener(t,_wecke,{capture:true,passive:true}));
 // gleich = dieselbe Kamera mit derselben Lage UND derselben Projektion (die orthografische Höhe wächst mit der Explosion)
-const _camAlt=new THREE.Matrix4(),_projAlt=new THREE.Matrix4();let _kamAlt=null;
+const _camAlt=new THREE.Matrix4(),_projAlt=new THREE.Matrix4();let _kamAlt=null,_bildN=0;   // _bildN: die gezeichneten Bilder der Leinwand (eine Linse wartet an ihnen auf ein Bild nach dem Werk)
 const _camGleich=K=>{if(K!==_kamAlt)return false;const a=_camAlt.elements,b=K.matrixWorld.elements,c=_projAlt.elements,d=K.projectionMatrix.elements;
   for(let i=0;i<16;i++)if(Math.abs(a[i]-b[i])>1e-6||Math.abs(c[i]-d[i])>1e-6)return false;return true;};
 let simT=0,tAlt=0;wachBis=performance.now()+2000;                  // die ersten Bilder nach dem Laden (Stoffe, Panorama)
@@ -722,15 +768,21 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;if(Math.abs(tgt-d.pv.rotation.y)>1e-3)tuerZieht=true;});
   const K=kamera();K.updateMatrixWorld();
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
-  // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewandertes Licht (rebuild markiert selbst)
-  if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!key.position.equals(_keyAlt))){key.shadow.needsUpdate=true;_keyAlt.copy(key.position);}
-  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}
-const _keyAlt=new THREE.Vector3();
+  // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut); bis ihre Belichtung liegt, zeichnet sie nicht —
+  // `welt.steht` weckt sie dann (`_kamAlt` fällt); trägt das sichtbare Werk ein ungebautes Programm, wartet das Bild auf den Vorbau
+  if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R)){_kamAlt=null;return;}   // gespannte Leine: das Bild fragt im nächsten Takt
+  // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewanderte Sonne (rebuild markiert selbst)
+  if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!sonne.position.equals(_sonneAlt))){sonne.shadow.needsUpdate=true;_sonneAlt.copy(sonne.position);}
+  _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);_bildN++;}
+const _sonneAlt=new THREE.Vector3();
 // DAS CPU-RASTER ZEICHNET OHNE VIELFACH-ABTASTUNG: liefert der Adapter Software (swiftshader, llvmpipe, lavapipe), fällt das
 // MSAA vor dem ersten Bild — wie three es im Kompatibilitäts-Modus selbst tut (backend.init: _samples = 0); die Karte behält es.
 // Gemessen (Isometrie 1280×720, swiftshader): 196 → 86 ms je Bild.
 const _softwareRaster=i=>!!i&&/swiftshader|llvmpipe|lavapipe|software|subzero/i.test([i.vendor,i.architecture,i.device,i.description].join(' '));
-R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;});
+// DIE BÜHNE DER WELT steht, sobald der Renderer steht: Tafeln, Umgebung, Sonne, Tonkurve — die Belichtung, sobald die
+// Bestrahlungs-Tafel zurückkam (`welt.steht`); ein Bruch der Bühne bricht laut (kein Bild unter einem anderen Licht)
+R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;
+  welt=__weltLicht.buehne({renderer:R,szene:scene,sonne});sonneUeber(0,0,0);welt.steht.then(()=>{_wecke();_kamAlt=null;});});
 presetSetzen('gt');if(LEICHT)leichtSetzen(true);werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(leicht)R.setPixelRatio(0.5);if(mode!=='fahren')werkOrbit();});
 

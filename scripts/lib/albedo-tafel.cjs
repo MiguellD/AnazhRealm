@@ -33,7 +33,7 @@ const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
 const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
-// DIE STUDIOS des Labors (r128): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
+// DIE STUDIOS des Labors (r128; garage und schmiede auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
 const STUDIOS = {
     terrain: {
@@ -48,7 +48,7 @@ const STUDIOS = {
         pfad: "worlds/portale/index.html",
         szene: "scene",
         renderer: "renderer",
-        ausgabe: null,
+        ausgabe: "composer",
         wurzel: "gate",
     },
     schmiede: {
@@ -56,7 +56,7 @@ const STUDIOS = {
         szene: "scene",
         renderer: "R",
         ausgabe: null,
-        wurzel: "weapon",
+        wurzel: "gWeapon", // das Werk allein (Rückgrat, Schnitt-Karte, Lehren und Massen-Streifen hängen daneben unter `weapon`)
     },
     fachwerk: {
         pfad: "worlds/fachwerk/index.html",
@@ -418,6 +418,10 @@ function laborZiel(R, W, H) {
     const T = window.THREE,
         gpu = !!R.isWebGPURenderer,
         gl = gpu ? null : R.getContext();
+    // DAS INSTRUMENT HÄLT DEN LOOP AN (Lehre 17: je Schuss ruht er): das Labor leiht Szene und Renderer der Bühne der Welt — ihr
+    // eigenes Bild zeichnet unter dem Licht der Welt allein und bräche unter dem Licht der Messung laut (welt-licht.js
+    // `buehneZeichnet`); r184 frischt die Uniformen je Bild auch ohne ihn. Die Seite gehört ab hier der Messung.
+    if (gpu) R.setAnimationLoop(null);
     if (gl) gl.getExtension("EXT_color_buffer_float");
     const rt = new T[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: T.HalfFloatType, depthBuffer: true });
     const lies = async () => {
