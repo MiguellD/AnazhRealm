@@ -2170,13 +2170,14 @@ class AnazhRealm_studio_bruecke {
                     .split(/[^A-Za-zÄÖÜäöüß]+/)
                     .filter(Boolean)
                     .map((n) => AnazhRealm._wortFalten(n));
-                const trifft = [d.id, ...namen].some(
-                    (n) =>
-                        genau.has(AnazhRealm._wortFalten(n)) ||
-                        (n !== d.id &&
-                            n.length >= 4 &&
-                            eigen.some((s) => ohneUmlaut(n).includes(s) || anfang(s, ohneUmlaut(n)) >= 6))
-                );
+                const trifft =
+                    genau.has(AnazhRealm._wortFalten(d.id)) ||
+                    namen.some(
+                        (n) =>
+                            genau.has(n) ||
+                            (n.length >= 4 &&
+                                eigen.some((s) => ohneUmlaut(n).includes(s) || anfang(s, ohneUmlaut(n)) >= 6))
+                    );
                 if (trifft) (regler[art] = regler[art] || []).push(d);
             }
         const zeile = Object.entries(regler)

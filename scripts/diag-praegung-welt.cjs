@@ -389,8 +389,10 @@ hauptLauf(async () => {
             };
             const sagbar = Object.keys(k.je).filter((art) => !k.ohneWort.some((n) => n.startsWith(art + ":")));
             k.prompt = sagbar.flatMap((art) => PBK[art].filter((d) => !traegt(art, d)).map((d) => `${art}:${d.id}`));
+            // die Form selbst: kein spawn_studio-Tupel mit sechstem Glied (am Kopf vor ki.K5 trug sie je Art eines: ROT)
             const ohne = r._kiAbruf("bau mir ein haus");
-            k.ohneName = !ohne.zeile && !JSON.stringify(r._kiAntwortSchema(ohne.regler)).includes("minProperties");
+            const sechs = r._kiAntwortSchema(ohne.regler).$defs.programm.anyOf.filter((t) => (t.prefixItems || []).length === 6);
+            k.ohneName = !ohne.zeile && !sechs.length ? true : `${ohne.zeile || "keine Zeile"} · ${sechs.length} Tupel mit Regler-Objekt`;
             const probe = { id: "probeRegler", lab: "Probe", min: 0, max: 1, step: 0.1 };
             PBK.haus.push(probe);
             try {

@@ -1330,11 +1330,13 @@ class AnazhRealm_feld_nexus {
             .map(([k, v]) => `${k}=${v.toFixed(2)}`);
         // der wahre Schreiber des Wetters (affekt.K4#2): die KI nennt, wer es schrieb, nie eine Vermutung
         const wer = this._wetterSchreiberZeile();
+        // DAS WECHSELNDE ZULETZT (ki.K5, wie im Vertrag, KI H1): der Prompt-Cache des Modells hält bis zum ersten geänderten
+        // Token — `fps` wechselt jeden Satz und stand vorn, die Zeilen dahinter rechnete das Modell jedes Mal neu
         return [
-            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
+            AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
             `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
             `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
-            AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
+            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
         ].join("\n");
     }
 
