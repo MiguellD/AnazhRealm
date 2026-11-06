@@ -181,7 +181,7 @@ var WASSER_GESETZ = {
 var REGEN_GESETZ = {
     anzahl: 1600,              // Schlieren im Kasten
     raum: [54, 30, 54],        // m — Breite x Hoehe x Tiefe des Kastens; das Auge in seiner Mitte
-    laenge: [0.5, 0.6],        // m — Schlieren-Laenge: laenge[0] + Zufall * laenge[1]
+    belichtung: 1 / 60,        // s — die Belichtung des Auges: die Schliere ist fall x belichtung lang (9 m/s: 15 cm)
     fall: 9,                   // m/s — die Endgeschwindigkeit des Regentropfens (Gunn & Kinzer 1949: 5 mm 9,1 m/s; wetter.K2 ≤ 9,2)
     drift: 7,                  // m/s je Wind-Einheit (der Wind mindestens 0,1)
     farbe: 0xbcd2e2,           // sRGB

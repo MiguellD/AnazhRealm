@@ -1036,8 +1036,10 @@ class AnazhRealm_bild_himmel {
             AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
         const T = THREE.TSL;
         const N = RG.anzahl;
-        // Die Saat je Schliere (Lage im Kasten 0..1, Länge) aus einem festen Strom — das Bild ist reproduzierbar.
-        const saat = new Float32Array(N * 4);
+        // Die Saat je Schliere (Lage im Kasten 0..1) aus einem festen Strom — das Bild ist reproduzierbar. Ihre Länge ist der Weg
+        // des Tropfens in der Belichtung des Auges (`fall` × `belichtung`, 9 m/s: 15 cm) — bis w15-pfuetze ein fester Wert neben
+        // dem Fall (0,5–1,1 m, Radeon: Stäbe über halbe Baumhöhe)
+        const saat = new Float32Array(N * 3);
         let h = 2166136261 >>> 0;
         const zufall = () => {
             h ^= h << 13;
@@ -1048,12 +1050,11 @@ class AnazhRealm_bild_himmel {
             return h / 4294967296;
         };
         for (let i = 0; i < N; i++) {
-            saat[i * 4] = zufall();
-            saat[i * 4 + 1] = zufall();
-            saat[i * 4 + 2] = zufall();
-            saat[i * 4 + 3] = RG.laenge[0] + zufall() * RG.laenge[1];
+            saat[i * 3] = zufall();
+            saat[i * 3 + 1] = zufall();
+            saat[i * 3 + 2] = zufall();
         }
-        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 4));
+        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 3));
         const uZeit = T.uniform(0);
         const uDrift = T.uniform(new THREE.Vector2(0, 0));
         const uWinkel = T.uniform(0);
@@ -1088,7 +1089,7 @@ class AnazhRealm_bild_himmel {
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
         mat.positionNode = T.vec3(x, y, z);
-        mat.sizeNode = T.vec2(breiteM, s4.w).mul(uProj);
+        mat.sizeNode = T.vec2(breiteM, T.float(RG.fall * RG.belichtung)).mul(uProj);
         mat.opacityNode = T.materialOpacity.mul(blende);
         mat.rotationNode = uWinkel;
         mat.sizeAttenuation = true;
