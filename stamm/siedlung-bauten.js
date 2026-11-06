@@ -193,7 +193,7 @@ class AnazhRealm_siedlung_bauten {
             if (bewegt + z.switches >= maxSwitchesPerFrame) break;
             besucht++;
             W.wach.delete(entry);
-            W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet (die Nachlese holt auch den Schläfer auf seiner Zusage)
+            W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
             let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
@@ -205,14 +205,16 @@ class AnazhRealm_siedlung_bauten {
                 W.zusage.add(entry); // er wartet: die Stufen-Wahl bleibt offen, bis seine Zusage kam
                 rest = AnazhRealm.LOD_DISTANCES.hysteresis;
             }
-            if (rest === Infinity)
+            if (rest === Infinity) {
                 entry._stufeEimer = undefined; // keine Wahl: erst ein Weckruf holt ihn
-            else if (rest >= AnazhRealm.CULL_EIMER_M) {
+                W.schlaf.add(entry);
+            } else if (rest >= AnazhRealm.CULL_EIMER_M) {
                 const b = Math.floor((W.odo + rest) / AnazhRealm.CULL_EIMER_M);
                 entry._stufeEimer = b;
                 const l = W.eimer.get(b);
                 if (l) l.push(entry);
                 else W.eimer.set(b, [entry]);
+                if (!W.zusage.has(entry)) W.schlaf.add(entry); // wer auf seine Zusage schläft, weckt seine Zusage
             } else W.wach.add(entry);
         }
         gang.length = 0;
@@ -240,9 +242,9 @@ class AnazhRealm_siedlung_bauten {
     // DER STEMPEL WECKT AUCH DIE SCHLÄFER (w15-strom-takt-2, das Gesetz der Stand-Wache `_standRuht`: was die Urteile eines
     // Fege-Takts liest, weckt ihn — hier jeden Eintrag, den er schlafen legte). Der Stand des WUNSCHS (`_standStempelWunsch`:
     // Buch, Wahrnehmung, LOD-Distanzen, Regler, Ankunft — ohne die Lieferungen) ist Teil der Epoche und weckt alle sofort;
-    // jede andere Regung des Stempels (`_weltRegt`, eine Lieferung, der Plan des Walds) startet die NACHLESE: ein Gang über den
-    // Bestand ab dem Cursor, der die Schläfer zurück in die Wache holt (`nach` Einträge noch — so lange bleibt die Stufen-Wahl
-    // offen). Bis hier hielt die Epoche eine eigene Teil-Liste des Stempels, und ein Schläfer hörte nur den Weg und seinen
+    // jede andere Regung des Stempels (`_weltRegt`, eine Lieferung, der Plan des Walds) startet die NACHLESE: sie holt die
+    // Schläfer ohne Zusage (`schlaf`) in der Reihe ihres Einschlafens zurück in die Wache (`nach` noch — so lange bleibt die
+    // Stufen-Wahl offen; wo keiner schläft, kostet sie nichts). Bis hier hielt die Epoche eine eigene Teil-Liste des Stempels, und ein Schläfer hörte nur den Weg und seinen
     // Weckruf: ein Tausch, den die Welt mit `_weltRegt` meldet, erreichte ihn nie (gate:fernwald SELBSTTEST 3: der Riese
     // schlief 123–146 Takte ohne Band, „die Welt hat nichts mehr offen").
     _stufenWache(auge) {
@@ -267,13 +269,13 @@ class AnazhRealm_siedlung_bauten {
                 ab: 0,
                 px: null,
                 stempel, // der Stempel, unter dem die Schläfer einschliefen
-                nach: 0, // die Nachlese: so viele Einträge des Bestands noch, ab `nachI`
-                nachI: 0,
+                schlaf: new Set(), // die Schläfer ohne Zusage (im Eimer oder ohne Wahl), in der Reihe ihres Einschlafens
+                nach: 0, // die Nachlese: so viele der ältesten Schläfer weckt sie noch
             };
             W.wach.delete(undefined);
             W.wach.delete(null);
         }
-        if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, liste.length];
+        if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, W.schlaf.size];
         const vb = this._bedarfVoraus(auge) || auge;
         if (W.px !== null)
             W.odo += Math.max(Math.hypot(auge.x - W.px, auge.z - W.pz), Math.hypot(vb.x - W.vx, vb.z - W.vz));
@@ -283,6 +285,7 @@ class AnazhRealm_siedlung_bauten {
             for (const e of W.eimer.get(b))
                 if (e._stufeEimer === b) {
                     e._stufeEimer = undefined;
+                    W.schlaf.delete(e);
                     W.wach.add(e);
                 }
             W.eimer.delete(b);
@@ -291,17 +294,18 @@ class AnazhRealm_siedlung_bauten {
         else for (let b = W.ab; b <= jetzt; b++) if (W.eimer.has(b)) wecke(b);
         W.ab = jetzt + 1;
         // DIE NACHLESE FOLGT DER BAHN: fährt sie (`_bedarfTempo` über dem Gehen, BEDARF.fahrtAb — dort weckt der Weg die
-        // Eimer ohnehin), weckt sie je Bild STUFEN_NACHLESE Einträge hinter den Wachen, sonst bis STUFEN_GANG: ein Stand (die
+        // Eimer ohnehin), weckt sie je Bild STUFEN_NACHLESE Schläfer hinter den Wachen, sonst bis STUFEN_GANG: ein Stand (die
         // Linse, der stehende Spieler) holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage.
-        if (!liste.length) W.nach = 0;
-        const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
-        const N = faehrt ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG;
-        for (let k = 0; W.nach > 0 && k < N; k++, W.nach--) {
-            W.nachI = (W.nachI + 1) % liste.length;
-            const e = liste[W.nachI];
-            if (!e || e._stufeEimer === -1 || W.wach.has(e) || W.zusage.has(e)) continue;
-            e._stufeEimer = undefined;
-            W.wach.add(e);
+        W.nach = Math.min(W.nach, W.schlaf.size);
+        if (W.nach > 0) {
+            const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
+            let k = faehrt ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG;
+            for (const e of W.schlaf) {
+                if (!(k-- > 0 && W.nach-- > 0)) break;
+                W.schlaf.delete(e);
+                e._stufeEimer = undefined;
+                W.wach.add(e);
+            }
         }
         return W;
     }
@@ -312,6 +316,7 @@ class AnazhRealm_siedlung_bauten {
         const W = this._stufenWacheStand;
         if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
         W.zusage.delete(entry);
+        W.schlaf.delete(entry);
         if (art === "weg") {
             entry._stufeEimer = -1;
             W.wach.delete(entry);
@@ -3196,8 +3201,8 @@ AnazhRealm.BUENDEL_ANKER_M = 16;
 // Der Gang der Stufen-Wahl (`_tickArchitectureLOD`, w15-strom-takt): so viele WACHE Einträge urteilt er je Bild höchstens — die
 // schlafenden (`_stufenWache`) kosten nichts, bis der Weg des Auges ihren Spielraum aufbraucht.
 AnazhRealm.STUFEN_GANG = 256;
-// Die Nachlese der Stufen-Wache (`_stufenWache`, w15-strom-takt-2): so viele Einträge des Bestands weckt sie je Bild, solange die
-// Bahn fährt (im Stand STUFEN_GANG) — die Kosten einer Regung folgen dem Takt, nie dem Bestand.
+// Die Nachlese der Stufen-Wache (`_stufenWache`, w15-strom-takt-2): so viele Schläfer weckt sie je Bild, solange die Bahn fährt
+// (im Stand STUFEN_GANG) — die Kosten einer Regung folgen dem Takt, nie dem Bestand.
 AnazhRealm.STUFEN_NACHLESE = 16;
 
 // Varianten PRO SPEZIES im gefrorenen Welt-Pool: jede Variante ist eine eigene Geometrie → eigene
