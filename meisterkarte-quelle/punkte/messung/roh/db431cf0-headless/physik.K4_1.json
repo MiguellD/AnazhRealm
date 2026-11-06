@@ -1,0 +1,181 @@
+{
+ "proben": {
+  "seil": {
+   "fehler": "Cannot set properties of undefined (setting 'w')",
+   "sek": 11.3
+  },
+  "stoss": {
+   "fehler": "Cannot set properties of undefined (setting 'w')",
+   "sek": 6.3
+  },
+  "feld": {
+   "zelleM": 16,
+   "mitte": [
+    -280,
+    -1048
+   ],
+   "nachbar": [
+    -248,
+    -1048
+   ],
+   "vor": {
+    "mitte": {
+     "alle": 29,
+     "blumen": 26
+    },
+    "nachbar": {
+     "alle": 30,
+     "blumen": 24
+    },
+    "feld": [
+     0.855,
+     0.658
+    ]
+   },
+   "ruhe": {
+    "mitte": {
+     "alle": 29,
+     "blumen": 26
+    },
+    "nachbar": {
+     "alle": 30,
+     "blumen": 24
+    },
+    "feld": [
+     0.855,
+     0.658
+    ]
+   },
+   "nach": {
+    "mitte": {
+     "alle": 35,
+     "blumen": 32
+    },
+    "nachbar": {
+     "alle": 30,
+     "blumen": 24
+    },
+    "feld": [
+     1,
+     0.658
+    ]
+   },
+   "akt": true,
+   "sek": 7.6
+  },
+  "alter": {
+   "dorf": [
+    -841,
+    -861
+   ],
+   "ort": [
+    -704.217,
+    -885.52
+   ],
+   "haeuser": 16,
+   "tag": 30,
+   "klassen": 13,
+   "je": {
+    "bodenSatz": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "formationenSatz": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "bauSatz": {
+     "nord": 0.002,
+     "sued": 0.002,
+     "oben": 0.035,
+     "rausch": 0
+    },
+    "streuSatz": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "dorf-rauch": {
+     "sued": 0,
+     "rausch": 0
+    },
+    "siedlung-zaun": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:fichte:L0": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:tanne:L0": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:fichte:L1": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:tanne:L1": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:strauch:L1": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:birke:L1": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    },
+    "f:eiche:L1": {
+     "nord": 0,
+     "sued": 0,
+     "oben": 0,
+     "rausch": 0
+    }
+   },
+   "sek": 37.3
+  },
+  "schnee": {
+   "ort": [
+    -280.4,
+    -1045.6
+   ],
+   "hoeheM": 27.612,
+   "versatz": -160,
+   "tag": 40,
+   "proben": 317,
+   "deckung": 1,
+   "fuss": {
+    "tiefeM": 0.204,
+    "schnee": 1
+   },
+   "gegen": {
+    "tiefeM": -0.01,
+    "schnee": 0,
+    "versatz": 0
+   },
+   "sek": 5
+  }
+ },
+ "fehler": []
+}

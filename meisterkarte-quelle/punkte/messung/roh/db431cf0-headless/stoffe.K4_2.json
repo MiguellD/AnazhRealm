@@ -1,0 +1,13 @@
+{
+ "proben": {
+  "alterspur": {
+   "fehler": "Cannot set properties of undefined (setting 'w')",
+   "sek": 19.8
+  },
+  "alterspur-reload": {
+   "fehler": "kein Notizbuch der Probe alterspur (sie lief nicht bis zum Stand)",
+   "sek": 4.8
+  }
+ },
+ "fehler": []
+}
