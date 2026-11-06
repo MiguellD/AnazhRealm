@@ -2,7 +2,7 @@
  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
  "geraet": "headless",
  "zeit": "2026-11-06T23:41:20.461Z",
- "host": "farm:42313459468",
+ "host": "farm:42313375491",
  "je": {
   "ki.K1#2": {
    "gruen": true,
@@ -39,6 +39,31 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:42313459468/1"
+  },
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "sprint 5.175 m/s 60.001 s: 0 von 4873 Bildern mit Lücke · gt 63.82 m/s 60.007 s: 2435 von 2609 Bildern mit Lücke (karte 209323, streu 1187, baum 82267, boden 212, bau 695, wuchs 5; a:-7775,-7714:karte karte 243 m · a:-7690,-7756:karte karte 234 m · a:-7702,-7436:karte karte 258 m) · Weg 4117 m, Ring 4, Takt p95 25.4 ms · ROT gt 2435 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "exit": 0,
+   "minuten": 2.42,
+   "grund": "ROT: sprint 5.175 m/s 60.001 s: 0 von 4873 Bildern mit Lücke · gt 63.82 m/s 60.007 s: 2435 von 2609 Bildern mit Lücke (karte 209323, streu 1187, baum 82267, boden 212, bau 695, wuchs 5; a:-7775,-7714:karte karte 243 m · a:-7690,-7756:karte karte 234 m · a:-7702,-7436:karte karte 258 m) · Weg 4117 m, Ring 4, Takt p95 25.4 ms · ROT gt 2435 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "zeit": "2026-11-06T23:40:19.186Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42313375491/1"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "fertig beim Eintritt: boden 405/1590 (25.5 %, spät -1/-1/-1 s) · baum 253/7039 (3.6 %, spät -1/-1/-1 s) · karte 2201/10088 (21.8 %, spät -1/-1/-1 s) · bau 819/856 (95.7 %, spät -1/-1/-1 s) · wuchs 651/653 (99.7 %, spät 0.089/0.053 s) · streu 4/47 (8.5 %, spät -1/-1/-1 s) · ROT boden 25.5 %, baum 3.6 %, karte 21.8 % (Soll je Klasse ≥ 95 %)",
+   "exit": 0,
+   "minuten": 2.42,
+   "grund": "ROT: fertig beim Eintritt: boden 405/1590 (25.5 %, spät -1/-1/-1 s) · baum 253/7039 (3.6 %, spät -1/-1/-1 s) · karte 2201/10088 (21.8 %, spät -1/-1/-1 s) · bau 819/856 (95.7 %, spät -1/-1/-1 s) · wuchs 651/653 (99.7 %, spät 0.089/0.053 s) · streu 4/47 (8.5 %, spät -1/-1/-1 s) · ROT boden 25.5 %, baum 3.6 %, karte 21.8 % (Soll je Klasse ≥ 95 %)",
+   "zeit": "2026-11-06T23:40:19.186Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42313375491/1",
+   "zwilling": "streaming.K1#1"
   }
  }
 }
