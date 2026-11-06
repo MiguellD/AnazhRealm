@@ -919,16 +919,16 @@ async function probe(arg) {
         // ruhen, der Spieler steht, dann geht er weit vom Baum, dann neben ihn
         const [kreaturen, pos] = [st.creatures, st.playerMesh.position.clone()];
         [r._baumGestaltMerk, st._weltbildDa, st.creatures, baum.blockerAABBs] = [new Map(), 0, [], null];
-        const boxen = (dx, n) => {
+        const boxen = (dx) => {
             if (dx) st.playerMesh.position.set(baum.position.x + dx, pos.y, baum.position.z);
-            for (let i = 0; i < n && (r._tickHuellenNach(), r._weltOffen().huellen); i++);
+            for (let i = 0; i < 400 && (r._tickHuellenNach(), r._weltOffen().huellen); i++);
             return (baum.blockerAABBs || []).length;
         };
         try {
             r._populateBlockerAABBs(baum);
             m.h = [r._baumGestaltMerk.size];
             st._weltbildDa = da;
-            m.h.push(boxen(0, 50), boxen(3 * AnazhRealm.HUELLE_BEDARF_M, 50), boxen(1, 400), r._weltOffen().huellen);
+            m.h.push(boxen(0), boxen(99), boxen(1), r._weltOffen().huellen); // 99 m: fern über HUELLE_BEDARF_M
         } finally {
             st.creatures = kreaturen;
             if (!baum.blockerAABBs) r._populateBlockerAABBs(baum);
