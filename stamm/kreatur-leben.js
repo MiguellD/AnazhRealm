@@ -2512,13 +2512,15 @@ class AnazhRealm_kreatur_leben {
     }
     // DIE ZEICHNUNG AM ORT DES TIERS (tiere.K5 „Begegnung im Bild"): ein Tier des Bestands lebt an seinem Anker — sein Leib
     // erscheint dort, wo der Spieler ihn nicht sieht (die Kugel außer Blick samt Rand, `_kreaturLeibImBlick`) und jenseits der
-    // Witterung des Spielers (tetrapoda VERHALTEN.furcht.noticeRadius: dort bemerkt ihn kein Tier — der Leib erscheint ruhig, nie
-    // auf der Flucht); die Ökologie-Dichten von RDR2 / theHunter: das Wild lebt in seinen Zonen am Weg, gezeichnet außer Sicht.
-    // Bis w16-tier-blick schob die Fern-Regel der Geburt (`CREATURE_SPAWN_FAR_MIN`, 130 m) jeden Leib des Bestands über 130 m
-    // vom Spieler: die Herde lebte am Weg, gezeichnet stand sie hinter dem Hügel (Kreis der Mess-Wiese, Null-Renderer, Ego 600
-    // Spiel-s: 76 % der Tier-Proben ≥ 150 m, 1 % unter 30 m; Radeon b3f9ae95: 0 Sichtungen in beiden Sichten).
+    // Nah-Grenze des Felds (`ANALOG_NAH_M`: dort trägt der Satz und blendet ein; diesseits entscheidet der Leib über den Bestand
+    // — der Riss am Leib, `_bestandTode` —, und das hinge an der Kappe); das Streaming offener Welten (RDR2 / theHunter: das
+    // Wild lebt in seinen Zonen am Weg, gezeichnet außer Sicht). Bis w16-tier-blick schob die Fern-Regel der Geburt
+    // (`CREATURE_SPAWN_FAR_MIN`, 130 m) jeden Leib des Bestands über 130 m vom Spieler: die Herde lebte am Weg, gezeichnet stand
+    // sie hinter dem Hügel (Kreis der Mess-Wiese, Null-Renderer, Ego 600 Spiel-s: 76 % der Tier-Proben ≥ 150 m, 1 % unter
+    // 30 m; Radeon b3f9ae95: 0 Sichtungen in beiden Sichten). An der Witterung (22 m) hing der Bestand an der Kappe
+    // (gate:kreatur-takt kaskade: 11 764 abweichende Takte bei halber Kappe).
     _bestandFernM() {
-        return AnazhRealm._verhaltenGesetz().furcht.noticeRadius;
+        return AnazhRealm.ANALOG_NAH_M;
     }
     _bestandLeibOrt(t) {
         const p = this.state.playerMesh.position;

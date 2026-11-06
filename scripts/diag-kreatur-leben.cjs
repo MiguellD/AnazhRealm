@@ -775,7 +775,7 @@ async function lebenBuehnen() {
             for (const c of s.creatures.slice()) r.removeCreature(c);
         }
         // DIE KAPPE TRÄGT DIE NAHE HERDE (tiere.K5): an der Kappe 3 eine Herde 200 m hinter dem Spieler gezeichnet, dann ankert
-        // eine 60 m hinter ihm — die ferne gibt ihren Platz (bis w16-tier-blick hielt sie ihn um eine halbe Kachel, 177 m)
+        // eine 80 m hinter ihm — die ferne gibt ihren Platz (bis w16-tier-blick hielt sie ihn um eine halbe Kachel, 177 m)
         const F = r._bestandRegionen();
         const herde = (dx) => {
             const T = [0, 1, 2].map((i) => ({ id: dx + i, soul: "wesen", g: "deer", bs: 1, alterS: 0, x: p0.x + dx, z: p0.z }));
@@ -788,7 +788,7 @@ async function lebenBuehnen() {
         [F.regionen, s.maxCreatures] = [{}, 3];
         const fern = herde(-200);
         const f0 = fern().length;
-        const nah = herde(-60)();
+        const nah = herde(-80)();
         z.halt = [f0, nah.length, fern().length];
         // DIE ZEICHNUNG AM PLATZ (tiere.K5): die nahe Herde steht an ihrem Platz — bis w16-tier-blick schob die Fern-Regel der
         // Geburt jeden Leib des Bestands ≥ 130 m vom Spieler
@@ -899,7 +899,7 @@ function lebenUrteil(name, z, soll) {
         soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
         soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
-        soll(z.platzM <= 40, `der Leib ${z.platzM} m neben seinem Platz`); // außer Blick, Soll ≤ 40 m
+        soll(z.platzM <= 25, `der Leib ${z.platzM} m neben seinem Platz`); // außer Blick, Soll ≤ 25 m
         soll(z.halt.join() === "3,3,0", `die ferne Herde hält die Kappe: ${z.halt}`); // gezeichnet fern · nah · fern danach
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
