@@ -1694,8 +1694,9 @@ class AnazhRealm_koerper_fahrt {
     // (`_verbTafelSammeln`) — dieselben Felder wie Tastatur und Pad, gefahren vom EINEN Fahr-Schritt des Kerns, nie ein Teleport.
     // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley — geteilt durch den
     // Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
-    // in Sicht (`sichtM`): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (μ des Bodens unter dem Rad, `_fahrHaft`)
-    // und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` reicht; am Ende hält er. `F.s` (Weg auf der Route),
+    // voraus (das Tempo-Profil im Reibkreis): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (der des Kerns am Boden
+    // unter dem Rad, `_fahrHaft`) und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` neben der Querlast reicht;
+    // am Ende hält er. `F.s` (Weg auf der Route),
     // `F.quer` (Abstand zu ihr) und die Zählung des Takts (`F.takte`, `F.tempo`, `F.fest`) lesen die Linse und wer der Fahrt folgt.
     // Der Fahrer des Spielers sitzt in `_fahrer`; jeder Wagen mit einem Bewohner am Steuer trägt seinen eigenen (`_verkehrSchritt`)
     // — dieselbe Linie (`_fahrerLinie`), derselbe Schritt, nur Wagen und Lage sind seine.
@@ -1831,9 +1832,17 @@ class AnazhRealm_koerper_fahrt {
             (P[fi].z + tz * ft - az0) * -cy -
             ((G.L * G.L - G.c * G.c) * F.ks[kv]) / 2;
         const psi = Math.atan2(-tz, tx) - z.yaw;
-        const delta = Math.atan2(Math.sin(psi), Math.cos(psi)) + Math.atan2(D.querK * ab, D.querV + Math.abs(v));
+        // DIE GIER GEDÄMPFT (der dritte Term des Stanley-Reglers, Hoffmann · Tomlin · Montemerlo · Thrun 2007): gierD · (v·κ −
+        // Gier-Rate) — dreht der Wagen schneller als die Linie, nimmt er Einschlag zurück. Ohne ihn schwang die Gier über 25 m/s
+        // auf gerader Linie (R > 500 m) von +0,38 auf −1,02 rad/s, das Heck brach aus (die Fahrt auf dem Wegenetz bei 370 m)
+        const delta =
+            Math.atan2(Math.sin(psi), Math.cos(psi)) +
+            Math.atan2(D.querK * ab, D.querV + Math.abs(v)) +
+            D.gierD * (v * F.ks[kv] - (z.yawRate || 0));
         T.lenken = Math.max(-1, Math.min(1, (delta * (1 + Math.abs(z.speed || 0) * G.sfK)) / G.maxSteer));
-        const mu = this._fahrHaft(z) * G.g;
+        // DER REIBKREIS DES FAHRERS ist der des Kerns (vehicle-core fahrKraefte `cap`: maxGrip · grip des Rezepts · der Boden,
+        // gekappt bei 1) — bis hier las der Fahrer nur den Boden (`_fahrHaft`): der Supersport (grip 0,85) plante 18 % zu schnell
+        const mu = G.maxGrip * G.grip * Math.min(1, this._fahrHaft(z)) * G.g;
         // die Kurve deckelt das Tempo zweimal: der Reibkreis (v² · κ ≤ quer · μ·g) und die Lenksäule, deren Einschlag mit dem
         // Tempo sinkt (lenk · maxSteer / (1 + v · sfK) muss den Bogen atan(κ · L) tragen) — nie unter das Kriechen (`kriechMs`:
         // im Stand dreht kein Rad den Wagen)
@@ -1851,17 +1860,36 @@ class AnazhRealm_koerper_fahrt {
         // was das Soll deckelt: der Bogen zurück auf die Route, eine Kurve in Sicht (wo, ihr Radius) oder das Ende
         let grund = F.ende ? "ende" : "bogen";
         let kWo = -1;
-        // (fern genug, dass schon der Bremsweg allein das Soll trägt, deckelt keine Kurve mehr: dort endet der Blick — Lehre 25)
-        for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
-            if (2 * ST.brems * mu * (S[i] - F.s) >= soll * soll) break;
-            const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
-            const w = Math.sqrt(vk * vk + 2 * ST.brems * mu * Math.max(0, S[i] - F.s));
-            if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];
+        // DAS TEMPO-PROFIL IM REIBKREIS (die Rückwärts-Integration im g-g-Diagramm der Ideallinien-Planer, Kapania · Subosits ·
+        // Gerdes 2016): vom Ende des Blicks zurück zum Wagen trägt jeder Meter so viel Bremse, wie der Reibkreis neben der Querlast
+        // seiner Krümmung bei diesem Tempo lässt (brems · μ·g · √(1 − (v²·κ / μ·g)²)), und keine Kurve fährt schneller als
+        // `vKurve`. Bis hier bremste der Plan vor jeder Kurve mit dem vollen brems · μ·g, auch im Bogen davor: der Fahrer kam
+        // zu schnell in die S-Kurve bei 360–390 m (R 181 / 135 m), bremste im Bogen und drehte sich. Der Blick reicht 1,5-mal so
+        // weit wie der Bremsweg aus dem Soll ohne Querlast (fern davon trägt schon der Bremsweg allein das Soll — Lehre 25).
+        const blick = (1.5 * soll * soll) / (ST.brems * mu) + 2;
+        let jb = F.i + 1;
+        while (jb < P.length - 1 && S[jb] - F.s < blick) jb++;
+        if (jb < P.length) {
+            let [w, wo] = [jb === P.length - 1 ? 0 : vKurve(F.k[jb]), jb];
+            const auf = (w, k, ds) =>
+                Math.sqrt(w * w + 2 * ds * ST.brems * mu * Math.sqrt(Math.max(0, 1 - ((w * w * k) / mu) ** 2)));
+            for (let i = jb - 1; i > F.i; i--) {
+                const [vk, wb] = [vKurve(F.k[i]), auf(w, F.k[i], S[i + 1] - S[i])];
+                [w, wo] = vk < wb ? [vk, i] : [wb, wo];
+            }
+            w = auf(w, F.k[F.i], Math.max(0, S[F.i + 1] - F.s));
+            if (w < soll) [soll, grund, kWo] = [w, wo === P.length - 1 ? "ende" : "kurve", wo];
         }
         if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
-        T.bremse = v > D.bremsV ? Math.max(0, Math.min(1, -e / D.bandMs)) : 0;
+        // DIE BREMSE IM REST DES REIBKREISES (Kamm; derselbe Satz wie der Fahrer der Linie des Kerns, vehicle-core
+        // `fahrerLinie`): neben der Querlast (`z.aLat`) bleibt μ·g·√(1 − (a_quer / μ·g)²) für die Bremse, umgerechnet in den
+        // Tritt über die Bremse des Wagens (`brakeDecel`). Bis hier trat er voll (14 m/s² gegen μ·g 6,9 auf dem Feldweg) im
+        // Bogen: die Last ging nach vorn, das Heck verlor seine Seitenführung, der GT drehte sich bei 25 m/s im Bogen R 135 m
+        // (die Fahrt auf dem Wegenetz: drei Dreher, Steckenbleiber an Hauswand und Böschung bei 424, 1493 und 1840 m)
+        const rest = Math.sqrt(Math.max(0, 1 - ((z.aLat || 0) / mu) ** 2));
+        T.bremse = v > D.bremsV ? Math.max(0, Math.min(-e / D.bandMs, (rest * mu) / G.brakeDecel)) : 0;
         // unter `haltMs` Soll hält er die Handbremse (unter bremsV bremst der Kern nicht: wer hinter einem Stehenden auf Soll 0
         // kam, rollte mit 0,3–0,5 m/s in ihn — 327 Berührungen in der Metropole)
         T.handbremse = F.ende || soll < D.haltMs;
@@ -2821,7 +2849,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // Trägheit der Lenksäule) · ld0 + ldV·v (bis ldMax) m voraus misst er den Bogen zurück auf die Route · quer / lenk / brems = die
 // Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
 // fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
-// kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
+// kurveM = über ±so viele Meter misst er die Drehung der Route · gierD (s) = so viel Einschlag je rad/s Gier über der Linie
+// nimmt er zurück (Stanley, der Dämpfer) · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
 // bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltMs = unter diesem Soll zieht er die
 // Handbremse · haltM = so nah am Ende hält er · festM / festS =
 // so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber · tempoTeil = unter diesem Anteil von vmax ist
@@ -2832,6 +2861,7 @@ AnazhRealm.HAFT_MERK_M = 1;
 AnazhRealm.FAHRER = Object.freeze({
     querK: 3,
     querV: 1,
+    gierD: 0.1,
     lenkVorS: 0.1,
     ld0: 3,
     ldV: 0.35,
@@ -2842,7 +2872,6 @@ AnazhRealm.FAHRER = Object.freeze({
     bogenM: 6,
     brems: 0.8,
     kurveM: 8,
-    sichtM: 120,
     bandMs: 1.5,
     bremsV: 0.5,
     haltMs: 0.1,
