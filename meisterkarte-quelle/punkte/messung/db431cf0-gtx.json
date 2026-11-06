@@ -1,0 +1,264 @@
+{
+ "sha": "db431cf08b0df18a1da8b770622d1a18dc0c0fa1",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T12:40:54.886Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.62 [-14, -4] · lippeA 13.75 [4, 14] · hoehleL -10.14 [-12, 0] · hoehleA 6.57 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.62 [-14, -4] · lippeA 13.75 [4, 14] · hoehleL -10.14 [-12, 0] · hoehleA 6.57 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 32.1,
+   "zeit": "2026-11-06T12:21:16.926Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0.0657 nyquist 0.161 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1749 (Arm 0.998), 2 m glatt 0.027 nyquist 0.1709 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0705 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.13,
+   "gpu": "nvidia/pascal",
+   "s": 67.9,
+   "zeit": "2026-11-06T12:21:49.083Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.15 · fahrt 0.32 · nacht 0.16 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: Klang-Takt p95 gehen 0.15 · fahrt 0.32 · nacht 0.16 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "s": 35.9,
+   "zeit": "2026-11-06T12:23:22.384Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158092 → 604210 px (×3.82) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.47,
+   "gpu": "nvidia/pascal",
+   "s": 28.4,
+   "zeit": "2026-11-06T12:24:09.782Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.0 %/– [Differenz 0.8404 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [Differenz 0.9447 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 99.4 %/– [Differenz 0.9944 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 99.6 %/– [Differenz 0.9958 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.1 %/– [Differenz 0.9914 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.3,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 84.0 %/– [Differenz 0.8404 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.5 %/– [Differenz 0.9447 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 99.4 %/– [Differenz 0.9944 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 99.6 %/– [Differenz 0.9958 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.1 %/– [Differenz 0.9914 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 77.8,
+   "zeit": "2026-11-06T12:30:48.786Z",
+   "abdruck": "968f1ccf5262",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.987/karte 0.944 · fichte@0.5 l1 0.994/karte 1.172 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.944 · fichte@0.27 l1 0.994/karte 1.172 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.39,
+   "grund": "ROT: haus@0.5 l1 1.004/l2 0.995 · birke@0.5 l1 0.987/karte 0.944 · fichte@0.5 l1 0.994/karte 1.172 · haus@0.27 l1 1.004/l2 0.995 · birke@0.27 l1 0.986/karte 0.944 · fichte@0.27 l1 0.994/karte 1.172 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 83.4,
+   "zeit": "2026-11-06T12:37:03.976Z",
+   "abdruck": "b64e0211e9fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T12:36:32.643Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [
+   3.6,
+   3.6,
+   3.6
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 23.2,
+    "takte": 683,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "vegetation.K4#2",
+    "s": 18.1,
+    "takte": 727,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 18.2,
+    "takte": 764,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 20.9,
+    "takte": 724,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "vegetation.K4#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 3.6
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 4,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1215,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 289,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 306.6,
+  "minuten": 5.19
+ },
+ "ungemessen": {
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-06T12:26:54.066Z",
+   "abdruck": "66b88461512c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.2 s · Exit 1",
+   "exit": 1,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 39.2 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 39.3,
+   "zeit": "2026-11-06T12:28:44.554Z",
+   "abdruck": "462e72b0bcca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72 σ 35.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.200 · Bühne summe)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 72 σ 35.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.200 · Bühne summe)",
+   "s": 45.2,
+   "zeit": "2026-11-06T12:29:43.879Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "zeit": "2026-11-06T12:38:49.256Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.00 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 34,
+   "zeit": "2026-11-06T12:39:56.307Z",
+   "abdruck": "a78f56e3db67",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "zeit": "2026-11-06T12:40:54.886Z",
+   "abdruck": "a303317755ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
