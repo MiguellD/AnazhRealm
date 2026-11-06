@@ -1590,15 +1590,21 @@ class AnazhRealm_bau_vorlagen {
             glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
             gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
         };
-        // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_werkAlterFaerbe`): je Stoff, der verwittert, das Ziel seiner
-        // Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis ihn 63 % dorthin tragen (null: die Achse wirkt nicht), und
-        // die Lage, an der er es zeigt. Holz vergraut zum Silber (Licht und Regen bauen das Lignin der Oberfläche ab — USDA Wood
-        // Handbook 2021 Kap. 16: bewittertes Holz in einem Jahr silbergrau, sRGB 0x6b665e) an jeder freien Fläche; Eisen rostet
-        // NUR nass (die Oxidation braucht den Wasserfilm; Rost FeO(OH) ockerbraun sRGB 0x8c5426, Farbton 25°) an jeder freien
-        // Fläche; Stein trägt das Moos des Fels-Gesetzes (gelaende-core `FELS.moos`) nur nass und nur an der Nordseite (schattig,
-        // lange nass). Leser: das Bau-Teil der Welt; ein eigener Stoff altert wie sein Verwandter (`_stoff`).
-        const MOOS = globalThis.__gelaendeCore && globalThis.__gelaendeCore.FELS && globalThis.__gelaendeCore.FELS.moos;
-        if (!MOOS) AnazhRealm._kernPflichtBruch("gelaende:FELS.moos");
+        // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_alterKern`): je Stoff, der verwittert, seine SCHICHTEN — je
+        // Schicht das Ziel der Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis sie 63 % dorthin tragen (null: die
+        // Achse wirkt nicht), und die Lage, an der sie wächst (die Exposition, `_alterLage`: frei · nord · oben · lauf). Holz
+        // vergraut zum Silber (Licht und Regen bauen das Lignin der Oberfläche ab — USDA Wood Handbook 2021 Kap. 16: bewittertes
+        // Holz in einem Jahr silbergrau, sRGB 0x6b665e) an jeder freien Fläche; Eisen rostet NUR nass (die Oxidation braucht den
+        // Wasserfilm; Rost FeO(OH) ockerbraun sRGB 0x8c5426, Farbton 25°) an jeder freien Fläche; Stein trägt das Leben des
+        // Fels-Gesetzes (gelaende-core `FELS`, die EINE Farbe jedes Bewuchses): das Moos nur nass und nur an der Nordseite
+        // (schattig, lange nass), die Krustenflechte OBEN (sie lebt vom Tau, wächst auch trocken — langsam, im Regen schneller; die
+        // Dachflechte alter Ziegel und Mauerkronen), die Algen im REGEN-LAUF (der Grünbelag, den das ablaufende Wasser auf der
+        // senkrechten Fläche nährt: je länger der Lauf über der Ecke, desto mehr, auf der Wetterseite voll — nur nass). Leser: das
+        // Bau-Teil der Welt (`_werkAlterFaerbe`) und jeder gesetzte Bau im Satz seines Stoffs (`_satzAlter`: die Seh-Klasse des
+        // Studio-Stoffs nennt die Zeile, `WERK_ALTER.seh`); ein eigener Stoff altert wie sein Verwandter (`_stoff`).
+        const FELS = globalThis.__gelaendeCore && globalThis.__gelaendeCore.FELS;
+        if (!FELS || !FELS.moos || !FELS.flechte) AnazhRealm._kernPflichtBruch("gelaende:FELS.moos/flechte");
+        const MOOS = FELS.moos;
         const lin = (h) =>
             [16, 8, 0].map((k) => {
                 const c = ((h >> k) & 0xff) / 255;
@@ -1606,9 +1612,13 @@ class AnazhRealm_bau_vorlagen {
             });
         // prettier-ignore
         const ALTER = {
-            holz: { ziel: lin(0x6b665e), zeitTage: 200, nassTage: 40, lage: "frei" },
-            eisen: { ziel: lin(0x8c5426), zeitTage: null, nassTage: 10, lage: "frei" },
-            stein: { ziel: MOOS.slice(0, 3), zeitTage: null, nassTage: 40, lage: "nord" },
+            holz: [{ ziel: lin(0x6b665e), zeitTage: 200, nassTage: 40, lage: "frei" }],
+            eisen: [{ ziel: lin(0x8c5426), zeitTage: null, nassTage: 10, lage: "frei" }],
+            stein: [
+                { ziel: MOOS.slice(0, 3), zeitTage: null, nassTage: 40, lage: "nord" },
+                { ziel: FELS.flechte.slice(0, 3), zeitTage: 300, nassTage: 60, lage: "oben" },
+                { ziel: MOOS.slice(0, 3), zeitTage: null, nassTage: 60, lage: "lauf" },
+            ],
         };
         const welt = this;
         const TB = AnazhRealm._schrittTimbre().material;
@@ -1645,7 +1655,9 @@ class AnazhRealm_bau_vorlagen {
             });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
             if (ALTER[name])
-                z.alter = Object.freeze(Object.assign({}, ALTER[name], { ziel: Object.freeze(ALTER[name].ziel) }));
+                z.alter = Object.freeze(
+                    ALTER[name].map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel) })))
+                );
             const optik = OPTIK[name];
             if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
             ["rauheit", "metall"].forEach((k, i) =>
