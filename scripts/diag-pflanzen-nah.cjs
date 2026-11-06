@@ -467,7 +467,7 @@ const KRONE_WEG_MAX = 0.05;
 function partienDerKrone(f, pre, sk) {
     const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
     if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;
-    const n = PC.growSkeleton(Object.assign({}, P, { leafBudget: 20000 }), PC.mulberry32(Math.floor(f.seed) >>> 0));
+    const n = PC.growSkeleton({ ...P, leafBudget: 20000 }, PC.mulberry32(Math.floor(f.seed) >>> 0));
     const partie = PC.kronenPartien(n.runMeta), L = n.leaves.slice().sort((a, b) => a.pos[0] - b.pos[0]); // prettier-ignore
     const suche = (c, i) => {
         let lo = 0, hi = L.length, best = -1, d2 = 1e-6; // prettier-ignore
@@ -1029,8 +1029,8 @@ function gliedAusschlag(f0, H, U) {
     for (let t = 0; t < 20; t += 0.005) {
         const e = { t, U, g: 1, f0, H, zeta: 1, rho: 0, phi: 0, psi: 1 };
         const s = PC.windAusschlag(A, e, true);
-        const a = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8, rho: 0.3 }), true);
-        const s8 = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8 }), true);
+        const a = PC.windAusschlag(A, { ...e, zeta: 0.8, rho: 0.3 }, true);
+        const s8 = PC.windAusschlag(A, { ...e, zeta: 0.8 }, true);
         m.stamm = Math.max(m.stamm, Math.abs(s.quer));
         m.ast = Math.max(m.ast, Math.hypot(a.quer - s8.quer, a.hoch - s8.hoch));
         m.blatt = Math.max(m.blatt, Math.abs(s.flattern));
@@ -1237,7 +1237,7 @@ hauptLauf(async () => {
     );
 
     // SELBSTTEST — jede Probe an einer kranken Kopie.
-    const kopie = (T) => T.map((t) => Object.assign({}, t, { col: t.col ? Float32Array.from(t.col) : null }));
+    const kopie = (T) => T.map((t) => ({ ...t, col: t.col ? Float32Array.from(t.col) : null }));
     const birke = roh["birke-s1-L0"],
         fichte = roh["fichte-s1-L0"],
         strauch = roh["strauch-s1-L0"],
@@ -1250,7 +1250,7 @@ hauptLauf(async () => {
             if (t.kind !== "foliageTex") return t;
             const p = Float32Array.from(t.pos);
             for (let i = 0; i < p.length; i++) p[i] *= k;
-            return Object.assign({}, t, { pos: p });
+            return { ...t, pos: p };
         });
     const st = [];
     if (birke) {
@@ -1270,7 +1270,7 @@ hauptLauf(async () => {
         ]);
     } else st.push(["Fichte gebaut", false]);
     if (strauch) {
-        const T = strauch.T.map((t) => (t.kind === "foliageTex" ? Object.assign({}, t, { kind: "foliage" }) : t));
+        const T = strauch.T.map((t) => (t.kind === "foliageTex" ? { ...t, kind: "foliage" } : t));
         st.push(["Klingen-Strauch", strauchUrteil("klinge", T).v.length > 0]);
     } else st.push(["Strauch gebaut", false]);
     if (blume) {
@@ -1293,21 +1293,21 @@ hauptLauf(async () => {
             "Klingen-L1",
             klingenL1(
                 "klinge",
-                weide1.T.map((t) => (t.kind === "foliageTex" ? Object.assign({}, t, { kind: "foliage" }) : t))
+                weide1.T.map((t) => (t.kind === "foliageTex" ? { ...t, kind: "foliage" } : t))
             ).v.length > 0,
         ]);
     else st.push(["Weide-L1 gebaut", false]);
     // (V) die Normale der Krone nach innen (gekehrt), der kehrende Leser, der Welt-Stoff mit Seite, die Kuppel des Wirts zurück
     if (tanne) {
         const innen = tanne.T.map((t) =>
-            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: t.nor.map((x) => -x) }) : t
+            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? { ...t, nor: t.nor.map((x) => -x) } : t
         );
         st.push(["Krone nach innen", kroneUrteil("innen", innen, true).v.length > 0]);
         st.push(["Leser kehrt die Krone", kroneUrteil("kehrt", tanne.T, false).v.length > 0]);
     } else st.push(["Tanne gebaut", false]);
     // (V) die Laubkrone als EINE gelichtet (K68, vor T2): dieselben Karten der Eiche, ihre Normalen neu aus dem einen Ellipsoid
     if (eiche) {
-        const eine = eiche.T.map((t) => ((t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t)); // prettier-ignore
+        const eine = eiche.T.map((t) => ((t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? { ...t, nor: Float32Array.from(t.nor) } : t)); // prettier-ignore
         PC.kronenNormalen(eine.filter((t) => t.kind === "foliage" || t.kind === "foliageTex").map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor })));
         const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
         st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
@@ -1321,7 +1321,7 @@ hauptLauf(async () => {
                     if (t.kind !== "foliageTex" || !t.uv) return t;
                     const uv = Float32Array.from(t.uv);
                     for (let i = 0; i < uv.length; i += 2) uv[i] += 0.25;
-                    return Object.assign({}, t, { uv });
+                    return { ...t, uv };
                 })
             ).v.length > 0,
         ]);
@@ -1356,22 +1356,20 @@ hauptLauf(async () => {
                     p[i + 1] *= ky;
                     p[i + 2] *= kxz;
                 }
-                return Object.assign({}, t, { pos: p });
+                return { ...t, pos: p };
             });
         const krank = (ky, kxz) => {
-            const r2 = Object.assign({}, roh);
+            const r2 = { ...roh };
             if (roh["buche-s1-L0"])
-                r2["buche-s1-L0"] = Object.assign({}, roh["buche-s1-L0"], {
-                    T: verzerrt(roh["buche-s1-L0"].T, ky, kxz),
-                });
+                r2["buche-s1-L0"] = { ...roh["buche-s1-L0"], T: verzerrt(roh["buche-s1-L0"].T, ky, kxz) };
             return hoehenUrteil(r2, skala).v;
         };
         st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
         st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
-        const rk = Object.assign({}, roh, { "eiche-s1-L0": { T: verzerrt(roh["eiche-s1-L0"].T, 1, 1.4) } });
+        const rk = { ...roh, "eiche-s1-L0": { T: verzerrt(roh["eiche-s1-L0"].T, 1, 1.4) } };
         st.push(["Krone × 1,4 (Eiche)", pflanzKroneUrteil(rk, skala, bild.mips[0], nadel).v.some((x) => /^Krone eiche:/.test(x))]);
         // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
-        const r3 = Object.assign({}, roh);
+        const r3 = { ...roh };
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
         st.push(["Solitär = Bestand (Eiche)", solitaerUrteil(r3, skala).v.some((x) => /^Solitär eiche:/.test(x))]);
         // der Busch-Solitär: die Krone des Solitärs auf den Boden gesenkt (kein Stamm unter ihr) muss beim Namen feuern
@@ -1381,9 +1379,9 @@ hauptLauf(async () => {
             const T = fr.T.map((t) =>
                 t.kind === "bark"
                     ? t
-                    : Object.assign({}, t, { pos: Array.from(t.pos, (v, i) => (i % 3 === 1 ? v - lo : v)) })
+                    : { ...t, pos: Array.from(t.pos, (v, i) => (i % 3 === 1 ? v - lo : v)) }
             );
-            const r4 = Object.assign({}, roh, { "eiche-s1-L0-frei": Object.assign({}, fr, { T }) });
+            const r4 = { ...roh, "eiche-s1-L0-frei": Object.assign({}, fr, { T }) };
             st.push([
                 "Busch-Solitär (Eiche)",
                 solitaerUrteil(r4, skala).v.some((x) => /^Solitär eiche: Kronenansatz .*kein Stamm/.test(x)),
