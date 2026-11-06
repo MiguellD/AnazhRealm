@@ -824,6 +824,225 @@ async function toreK3Seite(H) {
     console.log("K8 " + JSON.stringify(ring));
     return ring.length >= 10 ? 0 : 1;
 }
+// tore.K1 #1 (w16-tor-durchgang-pm): DER DURCHGANG DURCH EIN WELT-TOR — der Spieler hält W (`state.verbTafel.gehalten.vor`, nie
+// state.keys) und geht durch ein Welt-Tor des Ultiversums: zuerst in die Ferne (`obtainPortalForWorld("ferne")`, die Geburt, kalt,
+// nicht gezählt), dann fünfmal hin und her durch das Heimtor der Ferne (`_heimTorSetzen`) und das Tor daheim, das seine Welt kennt —
+// jede Ziel-Welt schon besucht, andere worldId, Ego und Third im Wechsel; die Probe endet daheim. t beginnt am Kreuzen der Apertur
+// (das Spiel ruft `enterPortal` selbst, stamm/siedlung-ort.js Tor-Takt) und endet am ersten Bild der Ziel-Welt, in dem der Spieler
+// unter gehaltenem W weiterging und das Bild der Leinwand sich gegen ihr erstes Bild änderte (32 × 18 Luma je Bild über
+// `createImageBitmap`, ohne Halt im Takt); jedes Bild dazwischen trägt seine Luma — der Ladeschirm mit seiner Deckkraft und seiner
+// eigenen Luma (der Verlauf aus `getComputedStyle`) über der Leinwand —, jeder Frame seine Dauer (rAF), dazu die Zahl der
+// Welt-Wechsel (ein Tor, das zurückwirft, wechselt dreimal) und je Lauf die Lücken des ersten Weltbilds (`_weltbildLuecken`, der Täter
+// beim Namen). Die Zeile `TOR_K1 {…}`; das Urteil `toreK1Urteil`. Am main 8efb6318 (Radeon, werkbank headless) ROT: das Heimtor
+// fällt am Ring (`_genesisUmzug`), mit gesetztem Heimtor t 5,8–12,3 s, 300–840 Bilder unter dem Ladeschirm (Luma 0,043), Frame bis
+// 933 ms, drei Wechsel je Durchgang. Mutiert: eine Welt mehr im Speicher, das Tor daheim.
+async function toreK1Seite(H) {
+    const GANG = async function toreK1Gang(o) {
+        const R = window.anazhRealm;
+        const jetzt = () => performance.now();
+        const rahmen = () => new Promise(requestAnimationFrame);
+        const warte = async (f, ms, was) => {
+            const t0 = jetzt();
+            for (;;) {
+                if (f()) return true;
+                if (jetzt() - t0 > ms) throw new Error("nach " + ms + " ms nicht: " + was);
+                await rahmen();
+            }
+        };
+        const lumaVon = (c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+        const schirmEl = () => document.getElementById("ladeschirm");
+        if (o.schritt === "an") {
+            const el = schirmEl();
+            let schirmLuma = null;
+            if (el) {
+                const cs = getComputedStyle(el);
+                const bg = cs.backgroundImage;
+                const lin = bg.lastIndexOf("linear-gradient") >= 0 ? bg.slice(bg.lastIndexOf("linear-gradient")) : "";
+                const c = [...lin.matchAll(/rgba?\(([^)]+)\)/g)].map((m) => m[1].split(",").map(Number)).filter((x) => x.length < 4 || x[3] >= 0.99);
+                const b = (/rgba?\(([^)]+)\)/.exec(cs.backgroundColor) || [])[1];
+                const bc = b ? b.split(",").map(Number) : null;
+                schirmLuma = c.length ? c.reduce((s, x) => s + lumaVon(x), 0) / c.length : bc && (bc.length < 4 || bc[3] > 0) ? lumaVon(bc) : null;
+            }
+            window.__loop(1);
+            await window.__weltDa((r) => r.state._weltbildDa > 0);
+            const K = (window.__torK1 = { B: [], laeufe: [], lauf: null, halte: false, an: true, vorT: null, schirmLuma, heim: R.state.worldMeta.worldId, luecken: [] });
+            const bild = () => {
+                if (!K.an) return;
+                const n = jetzt();
+                const st = R.state;
+                if (K.halte) st.verbTafel.gehalten.vor = true;
+                const s = schirmEl();
+                const p = st.playerMesh ? st.playerMesh.position : null;
+                K.B.push({
+                    t: n,
+                    dt: K.vorT == null ? 0 : n - K.vorT,
+                    nr: K.lauf ? K.lauf.nr : -1,
+                    welt: st.worldMeta ? st.worldMeta.worldId : null,
+                    tausch: !!R._weltTausch,
+                    schirm: s && !s.hidden ? +getComputedStyle(s).opacity : 0,
+                    x: p ? p.x : NaN,
+                    z: p ? p.z : NaN,
+                    bmp: K.lauf ? createImageBitmap(st.renderer.domElement, { resizeWidth: 32, resizeHeight: 18 }).catch(() => null) : null,
+                });
+                if (K.luecken && K.lauf && s && !s.hidden && K.B.length % 10 === 0 && !R._weltTausch) {
+                    let l = "?";
+                    try { l = R._weltbildLuecken().map((x) => x.satz).join(" · "); } catch (e) { l = "!" + e.message; }
+                    const v = K.luecken[K.luecken.length - 1];
+                    if (!v || v.l !== l || v.nr !== K.lauf.nr) K.luecken.push({ nr: K.lauf.nr, t: n, l });
+                }
+                K.vorT = n;
+                requestAnimationFrame(bild);
+            };
+            requestAnimationFrame(bild);
+            const hol = R.obtainPortalForWorld(o.gesetz || "ferne");
+            if (!hol || !hol.ok) throw new Error("obtainPortalForWorld " + JSON.stringify(hol));
+            const st = R.state;
+            const p = st.playerMesh.position;
+            const g = st.yaw;
+            const x = p.x + Math.sin(g) * 8;
+            const z = p.z + Math.cos(g) * 8;
+            const e = R.spawnArchitecture(hol.blueprint, { x, y: R.getTerrainHeightAt(x, z), z }, { id: "tore-k1-" + Math.round(jetzt()), precise: true, rotationY: g });
+            if (!e) throw new Error("das Tor in die Ferne steht nicht");
+            K.erstesTor = e.id;
+            for (let i = 0; i < 30; i++) await rahmen();
+            window.__loop();
+            return { tor: e.id, heim: K.heim.slice(0, 8), schirmLuma };
+        }
+        const K = window.__torK1;
+        if (!K) throw new Error("der Gang ist nicht angelegt (schritt an)");
+        if (o.schritt === "lauf") {
+            const vorig = K.laeufe[K.laeufe.length - 1];
+            const ziel = vorig ? vorig.von : null;
+            const tor = !vorig
+                ? (R.state.architectures || []).find((a) => a && a.id === K.erstesTor)
+                : (R.state.architectures || []).find((a) => a && a.affordances && a.affordances.isPortal && a.portalMeta && a.portalMeta.weltId === ziel);
+            if (!tor) {
+                const F = { nr: K.laeufe.length, sicht: o.sicht, von: R.state.worldMeta.worldId, ziel, geboren: !vorig, t0: null, fehler: "kein Tor nach " + (ziel ? ziel.slice(0, 8) : "der Ferne") + " in " + R.state.worldMeta.worldId.slice(0, 8) };
+                K.laeufe.push(F);
+                return { nr: F.nr, von: F.von.slice(0, 8), ziel: null, ms: null, fehler: F.fehler };
+            }
+            window.__loop(1);
+            R.setCameraMode(o.sicht);
+            const p = R.state.playerMesh.position;
+            R.state.yaw = Math.atan2(tor.position.x - p.x, tor.position.z - p.z);
+            const pm = tor.portalMeta || {};
+            const L = { nr: K.laeufe.length, sicht: o.sicht, von: R.state.worldMeta.worldId, tor: tor.id, ziel: pm.weltId || null, geboren: !pm.weltId, t0: null };
+            K.lauf = L;
+            const proto = Object.getPrototypeOf(R).enterPortal;
+            R.enterPortal = function (e) {
+                if (L.t0 == null) L.t0 = jetzt();
+                return proto.call(this, e);
+            };
+            K.halte = true;
+            try {
+                await warte(() => L.t0 != null, 15000, "die Apertur gekreuzt (enterPortal)");
+                if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
+                await warte(() => !R._weltTausch && R.state.worldMeta.worldId !== L.von, 60000, "die Ziel-Welt angekommen");
+                L.ziel = R.state.worldMeta.worldId;
+                L.ankunft = jetzt();
+                const a = R.state.playerMesh.position.clone();
+                await warte(() => !R._ladeschirmSteht() && Math.hypot(R.state.playerMesh.position.x - a.x, R.state.playerMesh.position.z - a.z) > 0.3, 30000, "der Spieler geht in der Ziel-Welt");
+                for (let i = 0; i < 20; i++) await rahmen();
+            } catch (x) {
+                L.fehler = String((x && x.message) || x).split("\n")[0];
+            } finally {
+                if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
+                K.halte = false;
+                R.state.verbTafel.gehalten.vor = false;
+                L.ende = jetzt();
+                K.lauf = null;
+                K.laeufe.push(L);
+            }
+            for (let i = 0; i < 10; i++) await rahmen();
+            window.__loop();
+            return { nr: L.nr, von: L.von.slice(0, 8), ziel: L.ziel && L.ziel.slice(0, 8), ms: L.ende && L.t0 ? Math.round(L.ende - L.t0) : null, fehler: L.fehler || null };
+        }
+        // schritt "ende": die Bilder (32 x 18 Luma), je Lauf t bis zur ersten sichtbaren Eingabe, die Zwischenbilder und die Frames
+        K.an = false;
+        const k = document.createElement("canvas");
+        k.width = 32;
+        k.height = 18;
+        const gx = k.getContext("2d", { willReadFrequently: true });
+        for (const f of K.B) {
+            if (!f.bmp) continue;
+            const bm = await f.bmp;
+            f.bmp = null;
+            if (!bm) continue;
+            gx.clearRect(0, 0, 32, 18);
+            gx.drawImage(bm, 0, 0);
+            bm.close();
+            const d = gx.getImageData(0, 0, 32, 18).data;
+            const l = new Float32Array(576);
+            let s = 0;
+            for (let i = 0; i < 576; i++) s += l[i] = lumaVon([d[4 * i], d[4 * i + 1], d[4 * i + 2]]);
+            f.l = l;
+            f.luma = s / 576;
+        }
+        const SL = K.schirmLuma;
+        const laeufe = K.laeufe.map((L) => {
+            const z = K.B.filter((f) => f.nr === L.nr && L.t0 != null && f.t >= L.t0);
+            const ankunft = z.find((f) => f.welt === L.ziel && !f.tausch && f.l);
+            let t1 = null;
+            let prev = null;
+            for (const f of z) {
+                if (ankunft && f.t > ankunft.t && f.welt === L.ziel && !f.tausch && f.schirm < 0.05 && f.l && prev &&
+                    Math.hypot(f.x - prev.x, f.z - prev.z) > 0.005 && Math.hypot(f.x - ankunft.x, f.z - ankunft.z) > 0.05) {
+                    let dsum = 0;
+                    for (let i = 0; i < 576; i++) dsum += Math.abs(f.l[i] - ankunft.l[i]);
+                    if (dsum / 576 > 0.002) {
+                        t1 = f;
+                        break;
+                    }
+                }
+                prev = f;
+            }
+            const bis = z.filter((f) => !t1 || f.t <= t1.t);
+            const lum = bis.map((f) => (f.luma == null ? null : f.schirm * (SL == null ? f.luma : SL) + (1 - f.schirm) * f.luma));
+            const bek = lum.filter((v) => v != null);
+            const dts = bis.slice(1).map((f) => f.dt);
+            let wechsel = 0;
+            for (let i = 1; i < z.length; i++) if (z[i].welt && z[i - 1].welt && z[i].welt !== z[i - 1].welt) wechsel++;
+            return {
+                nr: L.nr,
+                sicht: L.sicht === "third" ? "third" : "ego",
+                geboren: L.geboren,
+                von: L.von && L.von.slice(0, 8),
+                ziel: L.ziel && L.ziel.slice(0, 8),
+                ms: t1 ? Math.round(t1.t - L.t0) : null,
+                ankunftMs: L.ankunft && L.t0 ? Math.round(L.ankunft - L.t0) : null,
+                schirmMs: Math.round(bis.filter((f) => f.schirm >= 0.05).reduce((s, f) => s + f.dt, 0)),
+                bilder: bis.length,
+                lumaMin: bek.length ? +Math.min(...bek).toFixed(3) : null,
+                lumaMax: bek.length ? +Math.max(...bek).toFixed(3) : null,
+                dunkel: bek.filter((v) => v < 0.05).length,
+                hell: bek.filter((v) => v > 0.95).length,
+                ohneBild: lum.length - bek.length,
+                frameMax: dts.length ? Math.round(Math.max(...dts)) : null,
+                ueber100: dts.filter((v) => v > 100).length,
+                wechsel,
+                fehler: L.fehler || null,
+            };
+        });
+        window.__torK1 = null;
+        window.__loop();
+        const luecken = K.luecken.map((v) => { const L = K.laeufe[v.nr]; return [v.nr, L && L.t0 ? Math.round(v.t - L.t0) : null, v.l.slice(0, 160)]; }) ;
+        return { luecken, schirmLuma: SL == null ? null : +SL.toFixed(3), heim: R.state.worldMeta.worldId === K.heim, laeufe };
+    };
+    await H.frist();
+    const lauf = (o) => H.seite("return (" + GANG + ")(" + JSON.stringify(o) + ");");
+    const an = await lauf({ schritt: "an" });
+    H.schritt("an " + an.tor);
+    // die Geburt der Ferne (kalt) und fünf Läufe in schon besuchte Welten: die sechste Reise endet daheim (die Grundstellung danach)
+    for (const sicht of ["first", "first", "third", "first", "third", "first"]) {
+        const l = await lauf({ schritt: "lauf", sicht });
+        H.schritt("lauf " + l.nr + " " + l.von + " → " + l.ziel + (l.fehler ? " " + l.fehler : ""));
+        if (l.fehler) break;
+    }
+    const e = await lauf({ schritt: "ende" });
+    H.schritt("ende");
+    console.log("TOR_K1 " + JSON.stringify(e));
+    return 0;
+}
 // die Proben (Zwillinge tragen DIESELBE Probe: punkte.cjs gruppiere fährt sie einmal)
 // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 52,2 s GRÜN am Deckel 60): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
 const LEIB_K2 = seiteProbe(33, leibK2Seite, {
@@ -846,6 +1065,12 @@ const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
 const TORE_K3 = seiteProbe(10, toreK3Seite, {
     mutiert: true,
     
+});
+// DER DURCHGANG (tore.K1): die Geburt der Ferne und fünf Läufe; heute je Wechsel 6–12 s unter dem Ladeschirm (Radeon 8efb6318), im Soll
+// höchstens 2 s je Lauf — der Deckel trägt die Messung von heute, nicht das Soll
+const TORE_K1 = seiteProbe(90, toreK1Seite, {
+    mutiert: true,
+    ausnahme: "sechs Welt-Wechsel durch ein Welt-Tor (die Geburt der Ferne kalt, fünf Läufe in schon besuchte Welten, zurück daheim), heute je Wechsel 6–12 s bis zur ersten sichtbaren Eingabe (Radeon 8efb6318)",
 });
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -4795,6 +5020,30 @@ const stationen = [
         ],
         quelle: "2 = (a) + (b) + nass ≥ 1,3× aus der EINEN Nässe + Sim-Takt im Fahr-Schritt ≥ 240 Hz, Labor = Welt S1 ≤ 0,01 m",
     },
+    // ───────── tore.K1 — der Durchgang durch ein Welt-Tor (w16-tor-durchgang-pm) ─────────
+    // Die Probe TORE_K1 in der Welt der Sitzung (toreK1Seite): der Spieler geht mit gehaltenem W in Ego und Third durch ein Welt-Tor in
+    // eine schon besuchte Welt und zurück, t vom Kreuzen der Apertur bis zur ersten Eingabe mit Wirkung im Bild der Ziel-Welt, Luma je
+    // Zwischenbild, Frame-Dauer, Welt-Wechsel je Durchgang. Die Zeile Studio-Tor (Staffel 2: beide Zeilen) misst sie nicht: das
+    // Studio-Tor zeigt ein Vollbild-iframe ohne die Verb-Tafel der Welt. Am main 8efb6318 ROT (toreK1Seite, Kopf).
+    {
+        kriterium: "tore.K1", staffel: 1, geraet: ["radeon", "gtx"],
+        probe: TORE_K1, gpu: true, zeit: true, minuten: 2,
+        urteil: (j, lauf) => toreK1Urteil(lauf),
+        proben: toreK1Proben(),
+        pfad: [
+            "stamm/netz-portal.js",
+            "stamm/siedlung-ort.js",
+            "stamm/speicher-laden.js",
+            "stamm/speicher-welten.js",
+            "stamm/dirigent-ankunft.js",
+            "stamm/dirigent-takt.js",
+            "stamm/koerper-bewegung.js",
+            "index.html",
+            "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = eine Zeile (Studio-Tor oder Welt-Tor) ≤ 2 s an einem Gerät",
+    },
     // ───────── tore.K3 — was der Spieler trägt, reist mit (tore-k3-abdruck) ─────────
     // gate:portal-konformanz K8: der Spieler geht in der echten Heimat durch jedes Studio-Tor des Genesis-Rings (W durch die
     // Apertur, am Teile-Tor E — nie ein Ruf der Übergabe) und mit Esc zurück; je Ring-Welt × Teil (Leib = Seele · Teile ·
@@ -5439,6 +5688,70 @@ function pflichtCProben() {
     ];
 }
 
+// DAS SOLL VON tore.K1 Staffel 1 aus der Messung der Karte: je Lauf in eine schon besuchte Welt höchstens 2 s vom Kreuzen der Apertur bis
+// zur ersten Eingabe mit Wirkung im Bild, jedes Bild dazwischen in Luma 0,05–0,95, kein Frame über 100 ms, EIN Welt-Wechsel (ein Tor,
+// das den Ankommenden zurückwirft, ist kein Durchgang); mindestens vier Läufe, Ego und Third
+const TORE_K1_SOLL = { ms: 2000, luma: [0.05, 0.95], frameMs: 100, laeufe: 4 };
+function toreK1Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const J = jsonZeile(t, /^TOR_K1 \{/);
+    const bruch = (/^@@PUNKTE@@ (?:FEHLER|FRIST) (.*)$/m.exec(t) || [])[1];
+    if (!J || !Array.isArray(J.laeufe)) return { gruen: false, zahl: "keine TOR_K1-Zeile (Exit " + lauf.exit + ")" + (bruch ? ": " + bruch.slice(0, 200) : "") };
+    const S = TORE_K1_SOLL;
+    const besucht = J.laeufe.filter((l) => !l.geboren);
+    const rot = [];
+    for (const l of besucht) {
+        const f = [];
+        if (l.fehler) f.push(l.fehler);
+        if (!(l.ms != null && l.ms <= S.ms)) f.push("t " + (l.ms == null ? "ohne sichtbare Eingabe" : l.ms + " ms"));
+        if (l.dunkel || l.hell) f.push(l.dunkel + " Bilder schwarz und " + l.hell + " weiß (Luma " + l.lumaMin + "–" + l.lumaMax + ")");
+        if (l.ohneBild) f.push(l.ohneBild + " Bilder ohne Luma");
+        if (l.ueber100) f.push(l.ueber100 + " Frames über " + S.frameMs + " ms (bis " + l.frameMax + ")");
+        if (l.wechsel !== 1) f.push(l.wechsel + " Welt-Wechsel");
+        if (f.length) rot.push("#" + l.nr + " " + l.sicht + " " + l.von + "→" + l.ziel + ": " + f.join(", "));
+    }
+    const sichten = new Set(besucht.map((l) => l.sicht));
+    const fehlt = [];
+    if (besucht.length < S.laeufe) fehlt.push(besucht.length + " Läufe in schon besuchte Welten (Soll ≥ " + S.laeufe + ")");
+    for (const s of ["ego", "third"]) if (!sichten.has(s)) fehlt.push("keine Sicht " + s);
+    // der Täter des langsamsten Laufs: die letzte Lücke des ersten Weltbilds, die ihn hielt
+    const lahm = besucht.filter((l) => l.ms != null).sort((a, b) => b.ms - a.ms)[0];
+    const luecke = lahm && (J.luecken || []).filter((x) => x[0] === lahm.nr && x[2] && (x[1] == null || x[1] <= lahm.ms)).pop();
+    const geb = J.laeufe.find((l) => l.geboren);
+    const zahl =
+        "t " + besucht.map((l) => l.sicht + " " + (l.ms == null ? "—" : l.ms)).join(" · ") + " ms (Soll ≤ " + S.ms + ")" +
+        " · Luma min " + Math.min(1, ...besucht.map((l) => (l.lumaMin == null ? 1 : l.lumaMin))) + " · Frame max " + Math.max(0, ...besucht.map((l) => l.frameMax || 0)) + " ms" +
+        (geb ? " · Geburt " + (geb.ms == null ? "—" : geb.ms) + " ms" : "") + (J.heim === false ? " · endet nicht daheim" : "") +
+        (fehlt.length ? " · " + fehlt.join(", ") : "") + (rot.length ? " · rot: " + rot.join("; ") : "") +
+        (luecke && rot.length ? " · es hielt (#" + lahm.nr + " bei " + luecke[1] + " ms): " + luecke[2] : "");
+    return { gruen: !rot.length && !fehlt.length, zahl };
+}
+// die Roh-Ausgaben des Richters: fünf Läufe nach dem Soll und je Bruch der Staffel ein Mutant — das Tor ohne Vorwärmen (der Wechsel von
+// heute, 6,9 s) und das schwarze Zwischenbild (der Ladeschirm, Luma 0,043) zuerst
+function toreK1Proben() {
+    const lauf = (nr, sicht, an = {}) => ({ nr, sicht, geboren: false, von: nr % 2 ? "b0000000" : "a0000000", ziel: nr % 2 ? "a0000000" : "b0000000", ms: 1400, ankunftMs: 600,
+        schirmMs: 0, bilder: 84, lumaMin: 0.21, lumaMax: 0.48, dunkel: 0, hell: 0, ohneBild: 0, frameMax: 48, ueber100: 0, wechsel: 1, fehler: null, ...an });
+    const zeile = (an = {}, je = {}) => {
+        const laeufe = [{ ...lauf(0, "ego"), geboren: true, ms: 1900 }, ...["ego", "third", "ego", "third", "ego"].map((s, i) => lauf(i + 1, s, je[i + 1]))];
+        return "@@PUNKTE@@ ZEIT ende 41.0 s\nTOR_K1 " + JSON.stringify({ luecken: [[2, 400, "der Boden wächst (3 Stücke im Bild)"]], schirmLuma: 0.043, heim: true, laeufe, ...an });
+    };
+    return [
+        { name: "fünf Läufe nach dem Soll", stdout: zeile(), gruen: true },
+        { name: "ein Tor ohne Vorwärmen (der Wechsel von heute: 6,9 s)", stdout: zeile({}, { 2: { ms: 6900, schirmMs: 6850 } }), gruen: false },
+        { name: "ein schwarzes Zwischenbild (der Ladeschirm, Luma 0,043)", stdout: zeile({}, { 3: { lumaMin: 0.043, dunkel: 41, schirmMs: 700 } }), gruen: false },
+        { name: "ein weißes Zwischenbild", stdout: zeile({}, { 1: { lumaMax: 0.97, hell: 3 } }), gruen: false },
+        { name: "ein Frame von 734 ms", stdout: zeile({}, { 4: { frameMax: 734, ueber100: 1 } }), gruen: false },
+        { name: "das Tor wirft zurück (drei Welt-Wechsel)", stdout: zeile({}, { 1: { wechsel: 3 } }), gruen: false },
+        { name: "keine Eingabe sichtbar", stdout: zeile({}, { 5: { ms: null } }), gruen: false },
+        { name: "Bilder ohne Luma", stdout: zeile({}, { 2: { ohneBild: 12 } }), gruen: false },
+        { name: "nur Ego", stdout: zeile({}, { 2: { sicht: "ego" }, 4: { sicht: "ego" } }), gruen: false },
+        { name: "drei Läufe", stdout: zeile({ laeufe: [lauf(1, "ego"), lauf(2, "third"), lauf(3, "ego")] }), gruen: false },
+        { name: "nur die Geburt", stdout: zeile({ laeufe: [{ ...lauf(0, "ego"), geboren: true }] }), gruen: false },
+        { name: "kein Tor zurück (das Heimtor fiel am Ring)", stdout: zeile({}, { 1: { ms: null, fehler: "kein Tor nach a0000000 in b0000000" } }), gruen: false },
+        { name: "keine TOR_K1-Zeile", stdout: "@@PUNKTE@@ FEHLER Error: obtainPortalForWorld", gruen: false },
+    ];
+}
+
 module.exports = stationen;
 module.exports.spurAufnahme = spurAufnahme; // die Aufnahme der Spur von Hand (spielgang.K1#1)
 
@@ -5451,7 +5764,6 @@ module.exports.fehlt = [
     // p3-stationen-g456 (01.11.): DIE FAHRT trägt keine neue Probe — die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s
     // (FAHRT_MAX_S samt Boot); was hier steht, braucht einen eigenen Lauf mit Sekunden, die erst die Eich-Fahrt freigibt, oder ein
     // Werkzeug oder Spiel, das es nicht gibt — je Eintrag beim Namen
-    { kriterium: "tore.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): t vom Kreuzen der Apertur (`enterPortal`) bis zur ersten angenommenen Eingabe mit Wirkung im Ausgabe-Bild der Ziel-Welt, jedes Zwischenbild in Luma 0,05–0,95, kein Frame > 100 ms, ≥ 4 Läufe — die Probe TORE_K3 (gate:portal-konformanz K8) geht durch jedes Studio-Tor, nimmt aber weder Zeit noch Bild; ein Lauf mit Uhr und Luma je Bild hinter der Apertur hat in der Fahrt keinen Platz (10 s frei). Heute bootet jedes Studio-Tor ein Vollbild-iframe kalt mit eigenem Renderer, der Welt-Wechsel lädt die Seite neu (`_weltWechselNeuLaden`)" },
     { kriterium: "tore.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei Bilder aus dem Ausgabe-Pfad je Tor — die Membran 3 m vor der Apertur und das Welt-Bild nach der ersten Eingabe, die die Kamera ≥ 1° drehte — und Spearman r ≥ 0,5, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch; derselbe Gang wie tore.K1 (die Fahrt hat 10 s frei); die Klassen tor-fern, tor-bunt, tor-ziel der Soll-Tafel tragen am Kopf kein Ist" },
     { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
     { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
