@@ -253,20 +253,32 @@ class AnazhRealm_dienst {
     }
 
     // Die Ruhe der KI (`KI_RUHE_S` nach dem letzten Ruf oder Tagebuch-Eintrag): weicht der frische Vertrag vom gewärmten ab, gilt
-    // ab jetzt der frische, und ein Hintergrund-Ruf (ein Token, nur ollama: sein Prompt-Cache) rechnet ihn samt Kontext vor —
-    // spricht der Spieler dazwischen, weicht der Ruf (`hintergrund`), was er rechnete, bleibt im Cache.
+    // ab jetzt der frische, und Hintergrund-Rufe (ein Token, nur ollama: sein Prompt-Cache) rechnen ihn IN HAPPEN vor — ab der
+    // ersten Abweichung je `KI_HAPPEN_ZEICHEN` bis zum Zeilenende, zuletzt samt Kontext. Ein Prefill läuft bis zum Ende seines
+    // Batches, auch wenn der Ruf weicht: in einem Stück (450 Token, ~10 s an 4 CPU-Kernen) wartete ein Satz, der dazwischen kam,
+    // den Rest ab (ki.K5: „mach mir eine feuerstelle" 8,5 s). Spricht der Spieler, endet das Wärmen nach dem laufenden Happen;
+    // was es rechnete, bleibt im Cache.
     _kiVorwaermenPlanen() {
         clearTimeout(this._kiWarmUhr);
         this._kiWarmUhr = setTimeout(() => this._kiVorwaermen(), AnazhRealm.KI_RUHE_S * 1000);
     }
-    _kiVorwaermen() {
+    async _kiVorwaermen() {
         const llm = this.state.llm;
         if (!llm || !llm.enabled || llm.provider !== "ollama" || !this._kiWarm) return;
         if (llm.inFlight) return this._kiVorwaermenPlanen();
-        const text = this.llmBuildSystemPrompt();
-        if (text === this._kiWarm.text) return;
+        const [alt, text] = [this._kiWarm.text, this.llmBuildSystemPrompt()];
+        if (text === alt) return;
         this._kiWarm = { schluessel: this._kiWarm.schluessel, text };
-        this.llmCall("", null, { hintergrund: true, vorwaermen: true });
+        let ab = 0;
+        while (ab < alt.length && alt[ab] === text[ab]) ab++;
+        for (;;) {
+            const bis = text.indexOf("\n", ab + AnazhRealm.KI_HAPPEN_ZEICHEN);
+            const ganz = bis < 0;
+            const r = await this.llmCall("", ganz ? null : text.slice(0, bis), { hintergrund: true, vorwaermen: true });
+            // der Spieler sprach (der Ruf wich oder fand die Tür besetzt) oder der Vertrag wechselte: das Wärmen endet
+            if (ganz || !r || !r.vorgewaermt || this._kiWarm.text !== text) return;
+            ab = bis;
+        }
     }
 
     // DER STROM DER ANTWORT (ki.K5): jeder Anbieter schickt Zeilen — ollama NDJSON, die übrigen Server-Sent-Events (`data: {…}`)

@@ -1003,8 +1003,9 @@ class AnazhRealm_feld_nexus {
         const spawn = !alle.length
             ? []
             : [
-                  // <same> ohne Regler ist eine Zahl: ein leeres „,null" vor dem Ende kostete jedes Werk zwei Token (~0,4 s)
-                  ...[2, 3, 4, 5].map((n) => tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl, zahl].slice(0, n))),
+                  // ohne Regler endet ein Werk nach <anzahl>: ein fünftes Glied schrieb qwen3:4b als „,null" oder als erfundene Saat
+                  // („,0.8") — zwei Token je Werk (~0,4 s); <same> steht nur vor einem Regler-Objekt
+                  ...[2, 3, 4].map((n) => tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl].slice(0, n))),
                   ...Object.entries(regler)
                       .filter(([art, ds]) => ziele[art] && ds.length)
                       .map(([art, ds]) =>
@@ -1076,9 +1077,7 @@ class AnazhRealm_feld_nexus {
         const ops = Object.entries(this.dslEffects);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
-            'Die DSL kennt GENAU diese Verben: name(a, b) heißt ["name", a, b], „…" beliebig viele Programme (random_weighted je',
-            '{"weight":w,"effect":Programm}); positionNode/posNode ist ein Ort, condition/condNode eine Bedingung, sub/program/',
-            "effectNode/thenBranch/elseBranch ein Programm. Welt-Akte verändern die Welt, ihre Wesen oder den Spieler.",
+            'Die DSL kennt GENAU diese Verben: name(a, b) heißt ["name", a, b], „…" beliebig viele Programme; positionNode/posNode ist ein Ort, condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.',
             `  Welt-Akte: ${liste(welt)}.`,
             `  Weitere Ops: ${liste(ops.filter((o) => !welt.includes(o)))}.`,
             `  Orte: ${liste(Object.entries(this.dslPositions))}.`,
@@ -1149,10 +1148,10 @@ class AnazhRealm_feld_nexus {
             ...this._dslVokabular(),
             // DIE STUDIOS KNAPP (ki.K5, 06.11.): je Gruppe vier Wörter (`_studioWordsForPrompt`); die Regler, die ein Satz nennt,
             // stehen in SEINEM Kontext (`_kiAbruf`) — der feste Vertrag fiel von 5 532 auf ~2 000 Token
-            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen, z.B. ["spawn_studio","eiche",["near_water",60],6]: <wort> genau EIN Wort der Welt, nie seine Gruppe (eine Art der Welt wächst nur so), Anzahl 1–24, <same> Zahl oder null.',
+            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen, z.B. ["spawn_studio","eiche",["near_water",60],6]: <wort> genau EIN Wort der Welt, nie seine Gruppe (eine Art der Welt wächst nur so), Anzahl 1–24.',
             `  Wörter der Welt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
-            '<regler> nur aus „Regler, die der Satz nennt“ im Kontext: {Regler: Zahl}, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; die Gestalt des Spielers und die Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
-            'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion; es berührt nur Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
+            '<same> und <regler> nur, wenn der Kontext „Regler, die der Satz nennt“ trägt: {Regler: Zahl} aus genau diesen Zeilen, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; Gestalt des Spielers und Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
+            'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion, nur auf Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
             "Halte Programme klein (Tiefe ≤ 4). Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences.",
             "",
             AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
@@ -2095,9 +2094,14 @@ AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
 // DIE RUHE DER WELT-KI (ki.K5): so viele Sekunden ohne Ruf und ohne Tagebuch-Eintrag, dann wärmt sie ihren Vertrag vor
 // (`_kiVorwaermen`) — gleich der Pause ihrer Stimme (`llm.minGapSeconds`), das Vorwärmen ist ein Hintergrund-Ruf wie sie
 AnazhRealm.KI_RUHE_S = 3;
+// so viele Zeichen (bis zum Zeilenende) rechnet ein Happen des Vorwärmens vor (`_kiVorwaermen`): ~100 Token, ~2 s an 4 CPU-Kernen —
+// so lange wartet ein Satz, der in das Wärmen fällt, höchstens
+AnazhRealm.KI_HAPPEN_ZEICHEN = 300;
 // so viele Wörter je Gruppe nennt der Vertrag der Welt-KI (`_studioWordsForPrompt`); jedes andere Wort eines Satzes ruft der
-// Abruf je Satz ab (`_kiAbruf`)
-AnazhRealm.KI_WOERTER_JE_GRUPPE = 2;
+// Abruf je Satz ab (`_kiAbruf`). Gemessen (ki.K5, qwen3:4b, 4 CPU-Kerne): ein Wort im festen Vertrag kostet im Cache fast
+// nichts (+250 Token ≈ +4 ms je Antwort-Token), eine Zeile „Wörter des Satzes" je Satz ~1 s Prefill — 2 statt 8 je Gruppe hob
+// birke, weide, tanne, holzhuette in den Abruf und den Satz über 6 s
+AnazhRealm.KI_WOERTER_JE_GRUPPE = 8;
 // Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
 // Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
 AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";
@@ -2115,6 +2119,9 @@ AnazhRealm.KI_BEISPIELE = Object.freeze([
     ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"]]],
     // eine Stimmung der Wesen ist eine Tat, kein Schaden (ki.K5: mit dem Programm zuerst verweigerte die KI „traurig")
     ["schwermut", ["creatures_emotion", "sad"]],
+    // die Schwere ist negativ, weniger heißt näher an 0 (ki.K5: „verringere die schwerkraft" → ["gravity",0.1], außerhalb des
+    // Bands -30–0, in jedem zweiten Lauf; ein Satz im Band lenkte nicht, „leichter werden" lenkte auf -30)
+    ["schwere", ["gravity", -4]],
     ["name", null],
     ["eis", null],
     ["wald", null],

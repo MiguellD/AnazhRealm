@@ -2823,6 +2823,8 @@ class AnazhRealm_daten {
             "ki.beispiel-say.name": ["Ich bin die Stimme dieser Welt.", "I am the voice of this world."],
             "ki.beispiel-satz.regen": ["es soll regnen", "let it rain"],
             "ki.beispiel-say.regen": ["Ich lasse es regnen.", "I let it rain."],
+            "ki.beispiel-satz.schwere": ["weniger Schwerkraft bitte", "less gravity please"],
+            "ki.beispiel-say.schwere": ["Alles wird leichter.", "Everything grows lighter."],
             "ki.beispiel-satz.schwermut": ["die Wesen sollen schwermütig werden", "the creatures should grow melancholy"],
             "ki.beispiel-say.schwermut": ["Die Wesen werden still und schwermütig.", "The creatures grow quiet and melancholy."],
             "ki.beispiel-satz.sonne": ["Sonne und gute Laune", "sunshine and good spirits"],
