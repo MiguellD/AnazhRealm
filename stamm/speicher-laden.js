@@ -203,6 +203,11 @@ class AnazhRealm_speicher_laden {
                 : c
         );
         [a.creatures, a.spielZeit] = [J(wesen), "läuft"];
+        // Der Zustand des Pegels (`pegelZustand`, wetter.K3) trägt dieselbe Welt-Uhr in sich (`t`): sie zählt wie `spielZeit` in ihrer
+        // Form, Grund und Speicher in ihrer Zahl — sonst wich jede Grundstellung nach einem Takt ab (main d3708675: t 0 → 0,001, jede
+        // Probe der Mess-Sitzung fiel „abweichend vom Grund: pegelZustand“)
+        const pz = g.stand.pegelZustand;
+        if (pz && typeof pz === "object") a.pegelZustand = J({ ...pz, t: "läuft" });
         for (const [k, v] of Object.entries(g.augenblick)) a["augenblick." + k] = J(v);
         return a;
     }
