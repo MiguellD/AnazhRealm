@@ -1,0 +1,17 @@
+kand haus-oben frisch→30       {"mAbs":1.816,"mDelta":0.189,"ueber8":6.51,"pixelUngleich":49.39}
+main haus-oben frisch→30       {"mAbs":1.656,"mDelta":-0.01,"ueber8":6.68,"pixelUngleich":43.1}
+kand haus-nord frisch→30       {"mAbs":0.553,"mDelta":0.021,"ueber8":0.89,"pixelUngleich":38.87}
+main haus-nord frisch→30       {"mAbs":0.491,"mDelta":-0.076,"ueber8":0.87,"pixelUngleich":34.03}
+kand dorf-third frisch→30      {"mAbs":1.422,"mDelta":0.12,"ueber8":3.13,"pixelUngleich":70.64}
+main dorf-third frisch→30      {"mAbs":1.506,"mDelta":0.026,"ueber8":3.39,"pixelUngleich":76.52}
+main↔kand haus-oben frisch     {"mAbs":2.216,"mDelta":-0.097,"ueber8":7.94,"pixelUngleich":53.39}
+main↔kand haus-oben 30         {"mAbs":2.182,"mDelta":0.102,"ueber8":7.88,"pixelUngleich":52.89}
+main↔kand haus-nord 30         {"mAbs":1.288,"mDelta":0.017,"ueber8":2.15,"pixelUngleich":51.4}
+main↔kand haus-alt-neu 30      {"mAbs":2.668,"mDelta":1.003,"ueber8":7.57,"pixelUngleich":82.18}
+main↔kand jung-waldrand        {"mAbs":0.512,"mDelta":-0.014,"ueber8":0.97,"pixelUngleich":30.31}
+main↔kand wiese-10uhr          {"mAbs":0.595,"mDelta":-0.022,"ueber8":1.25,"pixelUngleich":29.52}
+main↔kand genesis-10uhr        {"mAbs":0.22,"mDelta":-0.025,"ueber8":0.36,"pixelUngleich":14.99}
+main↔kand see-unter            {"mAbs":0,"mDelta":0,"ueber8":0,"pixelUngleich":0.03}
+main↔kand see-oben             {"mAbs":0.005,"mDelta":0,"ueber8":0.01,"pixelUngleich":0.93}
+main↔kand bach-oben            {"mAbs":0,"mDelta":0,"ueber8":0,"pixelUngleich":0}
+main↔kand bach-unter-stromab   {"mAbs":28.634,"mDelta":28.565,"ueber8":96.55,"pixelUngleich":100}
