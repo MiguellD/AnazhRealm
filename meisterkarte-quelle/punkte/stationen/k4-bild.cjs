@@ -468,7 +468,7 @@ H.fahre(async function k4Bild(H) {
             for (let p = 0; p < lw.length; p++) lw[p] = Math.round(luma(bw.d, p * 4));
             const gw = await welt(WELT_GESTALT(k, l, POSE.fov));
             const kw = new Uint8Array(Buffer.from(gw.maske, "base64"));
-            z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, maske: "gestalt", teile: gw.teile, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
+            z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, stufe: auge.stufe, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, maske: "gestalt", teile: gw.teile, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
             await welt(WEG);
             teil("bild");
             await page.bringToFront();
@@ -511,7 +511,10 @@ H.fahre(async function k4Bild(H) {
         const ok = dOk(z);
         const aOk = z.albedo.max != null && z.albedo.max <= SOLL.albedo;
         z.gruen = ok && aOk;
+        // DIE STUFE DER WELT an der Pose beim Namen: die Bühne zeigt L0, die Welt zeichnet am Pose-Abstand die Stufe ihres Gesetzes
+        // (fachwerk viktorianisch in 28 m: L2 — ohne Veranda, ohne Gefache, eine andere Palette)
         z.grund =
+            (z.welt && z.welt.stufe ? "die Welt zeichnet an der Pose L" + z.welt.stufe + " (die Bühne L0) · " : "") +
             (ok ? "" : "Differenz " + z.differenz.anteil + " > " + SOLL.differenz + " ") +
             (aOk ? "" : "Albedo " + (!ok ? "ungemessen (die Differenz liegt über dem Soll)" : z.albedo.max == null ? "ohne Zeile" : "|L/W − 1| " + z.albedo.max + " > " + SOLL.albedo));
         console.log(`K4 ${sid}: ${z.gruen ? "GRÜN" : "ROT"} · Differenz ${z.differenz.anteil} · Albedo ${z.albedo.max} · ${z.grund || ""} (${z.sek} s)`);
@@ -521,7 +524,7 @@ H.fahre(async function k4Bild(H) {
     aus.gruen = STUDIOS.filter((s) => aus.studios[s] && aus.studios[s].gruen);
     console.log(`K4 Gerät der Bühne: ${aus.geraet || "ungenannt"}`);
     // die Zahlen der Probe als EINE Zeile (das Urteil liest sie, wo keine Datei steht — die Proben der Station)
-    console.log("K4 " + JSON.stringify({ geraet: aus.geraet, studios: Object.fromEntries(Object.entries(aus.studios).map(([id, z]) => [id, { gruen: z.gruen, grund: z.grund, differenz: z.differenz, albedo: z.albedo, welt: z.welt && { maske: z.welt.maske, pixel: z.welt.pixel }, buehne: z.buehne && { maske: z.buehne.maske, pixel: z.buehne.pixel } }])), fehler: aus.fehler }));
+    console.log("K4 " + JSON.stringify({ geraet: aus.geraet, studios: Object.fromEntries(Object.entries(aus.studios).map(([id, z]) => [id, { gruen: z.gruen, grund: z.grund, differenz: z.differenz, albedo: z.albedo, welt: z.welt && { maske: z.welt.maske, pixel: z.welt.pixel, stufe: z.welt.stufe }, buehne: z.buehne && { maske: z.buehne.maske, pixel: z.buehne.pixel } }])), fehler: aus.fehler }));
     console.log(`K4 ${aus.gruen.length}/${STUDIOS.length} Mesh-Studios mit Bild-Differenz ≤ ${SOLL.differenz} und Albedo im Rand ${SOLL.albedo} (${aus.sek} s)`);
     return aus;
 });
