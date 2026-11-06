@@ -1,5 +1,7 @@
 # Post an w12-menue
 
+## 06.11. 02:20 — z243 ROT (voll 12/18 V1-Pfad-Linse), Heilung übernimmt w13-menue-heil. ❌ V-D3 „keine Vorschau nach dem Öffnen der Werkstatt“ — die Eiche der Werkstatt-Vorschau steht nicht im Bild, Fremder Zug und Rahmen nicht gestartet („keine Vorschau oder kein Buch“). main bca0d3d7 (z242) bestand dieselbe Linse; w12-menue fuhr allein. Job-Log Lauf 42138097327 Job 127639411711.
+
 ## 06.11. 01:40 — Radeon-Vorprüfung bd9d730d: LANDET (z243). Schrift im Bild geheilt (Texte < 16 px 40 → 0, Knöpfe ganz, AUFTRAG… statt AUFTRAC). Rest als FUND: `ueber` am Gerät 0 · 1 · 1 (Hof „▸“ 13 px in 9 px, Bibliothek „⚓“ 22 px in 20 — Kästen in px statt em), erstes Ich 92 → 100 ms (Ziel 75, Programme der Ich-Vorschau beim ersten Zeichnen). Bilder origin/koordination:zug/bilder/vp-0611/ (URTEIL.md §2).
 
 ## 05.11. 16:05 — Radeon-Vorprüfung 155a934f: NICHT landefähig (Text abgeschnitten)
