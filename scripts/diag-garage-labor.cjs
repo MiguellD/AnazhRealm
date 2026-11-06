@@ -204,7 +204,7 @@ hauptLauf(async () => {
     }
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 120000 });
+    const browser = await starteBrowser({ art: "linse", frist: 120000, zeit: true }); // G10 die Bildzeit, auf swiftshader geeicht (W5)
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await server.zeige(page, 60000, "worlds/garage/index.html", "load");
