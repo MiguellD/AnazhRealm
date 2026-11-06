@@ -2504,7 +2504,12 @@ function spawnBlick(AUS, PORT) {
         return (/--klasse '([^']+)'/.exec(ma.werkzeug || "") || [])[1] || null;
     };
     const AUSDRUCK = Object.fromEntries(T.klassen.map((k) => [k.id, zeileAusdruck(k)]));
-    const VER = "^(?!bauSatz$)(?:" + [...new Set(Object.values(AUSDRUCK).filter(Boolean))].map((a) => "(?:" + a + ")").join("|") + ")";
+    // der Kopf des Spielers: sein Ausdruck ruft die Gesichts-Messung der Werkbank (die Haut am Gelenk head) — in Ego zeigt das Spiel
+    // den eigenen Kopf nie (`_applyEgoSicht`), die Vereinigung mit ihm scheiterte dort für JEDE Klasse („--gesicht: keine Kopf-Haut
+    // am Gelenk head", swiftshader 36 min); er fährt in Third je Blick als eigener Schuss, nie in der Vereinigung
+    const kopfA = (a) => /spieler:kopf\//.test(a || "");
+    const VER = "^(?!bauSatz$)(?:" + [...new Set(Object.values(AUSDRUCK).filter((a) => a && !kopfA(a)))].map((a) => "(?:" + a + ")").join("|") + ")";
+    const KOPF = [...new Set(Object.values(AUSDRUCK).filter(kopfA))].join("|");
     const quellen = Object.fromEntries([...new Set(T.klassen.flatMap((k) => k.quellen || []))].map((d) => [d, L.pruefsumme(d)]));
     const frisch = (me) => Object.assign(me, { stand: Object.assign({ version: L.stammVersion() }, me.stand), quellen });
     const BLICKE = [0, 45, 135, 225, 315];
@@ -2529,13 +2534,16 @@ function spawnBlick(AUS, PORT) {
                         " const c = st.camera.position, z = c.clone().addScaledVector(st.camera.getWorldDirection(new T.Vector3()), " + (sicht === "third" ? arm : 9) + ");" +
                         " return [c.x, c.y, c.z, z.x, z.y, z.z];"
                 );
-                const bild = path.join(D, sicht + "-" + b + ".png");
-                const o = await rufe("/bild", { px, py, pz, lx, ly, lz, uhr: 0.5, klasse: VER, wahl: 0, fuss: false, spieler: true, messung: true, abstand: true, datei: bild });
-                const p = { pose: sicht + "-" + b, bild, ms: Date.now() - t1 };
-                if (o.messung) p.messung = frisch(o.messung);
-                else p.fehlt = String(o.fehler || JSON.stringify(o).slice(0, 300)).replace(/\s+/g, " ").slice(0, 300);
-                posen.push(p);
-                console.log("POSE " + p.pose + " " + (p.fehlt ? "FEHLT " + p.fehlt : p.ms + " ms"));
+                // je Pose der Schuss der Vereinigung, in Third dazu der des Kopfs (dieselbe Kamera)
+                for (const [teil, klasse, mehr] of [["", VER, { abstand: true }]].concat(sicht === "third" && KOPF ? [["-kopf", KOPF, {}]] : [])) {
+                    const bild = path.join(D, sicht + "-" + b + teil + ".png");
+                    const o = await rufe("/bild", Object.assign({ px, py, pz, lx, ly, lz, uhr: 0.5, klasse, wahl: 0, fuss: false, spieler: true, messung: true, datei: bild }, mehr));
+                    const p = { pose: sicht + "-" + b, kopf: !!teil, bild, ms: Date.now() - t1 };
+                    if (o.messung) p.messung = frisch(o.messung);
+                    else p.fehlt = String(o.fehler || JSON.stringify(o).slice(0, 300)).replace(/\s+/g, " ").slice(0, 300);
+                    posen.push(p);
+                    console.log("POSE " + p.pose + teil + " " + (p.fehlt ? "FEHLT " + p.fehlt : p.ms + " ms"));
+                }
             }
         }
         // DAS URTEIL je Zeile × Pose (K5)
@@ -2555,7 +2563,7 @@ function spawnBlick(AUS, PORT) {
             const im = [];
             if (!a) im.push(licht.messung ? urteile(licht.messung, "licht", licht.messung.stand.sha) : { pose: "licht", urteil: "ROT", grund: licht.fehlt, stand: null });
             else
-                for (const p of posen) {
+                for (const p of posen.filter((x) => x.kopf === kopfA(a))) {
                     if (!p.messung) {
                         im.push({ pose: p.pose, urteil: "ROT", grund: "der Schuss fehlt: " + p.fehlt, stand: null });
                         continue;
@@ -2573,7 +2581,7 @@ function spawnBlick(AUS, PORT) {
                 }
             const urteil = im.length && im.every((x) => x.urteil === "GRÜN") ? "GRÜN" : "ROT";
             const z = { id: k.id, mass: ma.name, urteil, imBild: im.length, gruen: im.filter((x) => x.urteil === "GRÜN").length, rot: im.filter((x) => x.urteil !== "GRÜN"), stand: [...new Set(im.map((x) => x.stand))] };
-            if (!im.length) z.grund = "in keiner der " + posen.length + " Posen im Bild (/" + a + "/) — ungemessen";
+            if (!im.length) z.grund = "in keiner der " + new Set(posen.map((p) => p.pose)).size + " Posen im Bild (/" + a + "/) — ungemessen";
             console.log("KLASSE " + k.id + " " + JSON.stringify(z));
             return z;
         });
@@ -2581,8 +2589,8 @@ function spawnBlick(AUS, PORT) {
         const ad = (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0];
         const pm = posen.find((p) => p.messung);
         const adapter = ad || "[linse-gpu] " + (pm ? pm.messung.geraet.adapter : "ungenannt");
-        const sp = { kopf, adapter, klassen: zeilen.length, gruen: zeilen.filter((z) => z.urteil === "GRÜN").map((z) => z.id), posen: posen.length, s: Math.round((Date.now() - t0) / 1000) };
-        fs.writeFileSync(AUS, JSON.stringify({ spawn: sp, zeilen, posen: posen.map((p) => ({ pose: p.pose, bild: p.bild, ms: p.ms, fehlt: p.fehlt || null })) }, null, 1));
+        const sp = { kopf, adapter, klassen: zeilen.length, gruen: zeilen.filter((z) => z.urteil === "GRÜN").map((z) => z.id), posen: new Set(posen.map((p) => p.pose)).size, schuesse: posen.length, s: Math.round((Date.now() - t0) / 1000) };
+        fs.writeFileSync(AUS, JSON.stringify({ spawn: sp, zeilen, posen: posen.map((p) => ({ pose: p.pose, kopf: p.kopf, bild: p.bild, ms: p.ms, fehlt: p.fehlt || null })) }, null, 1));
         console.log(adapter);
         console.log("SPAWN " + JSON.stringify(sp));
     })().catch((e) => {
@@ -2658,7 +2666,7 @@ module.exports = [
         geraet: ["radeon", "gtx"],
         probe: {
             sek: 90,
-            ausnahme: "zehn Posen am Spawn (der erste Blick und vier Azimute, Ego und Third), je ein Schuss mit der Teilung aller Zeilen der Tafel, dazu die Licht-Bilanz — der Ring an Genesis kalt",
+            ausnahme: "zehn Posen am Spawn (der erste Blick und vier Azimute, Ego und Third), je ein Schuss mit der Teilung aller Zeilen der Tafel, in Third dazu der Kopf, und die Licht-Bilanz — der Ring an Genesis kalt",
             befehl: ["node", "-e", "(" + spawnBlick.toString() + ")(process.argv[1], process.argv[2])", "{AUS}", "{PORT}"],
         },
         gpu: true,
