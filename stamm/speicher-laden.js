@@ -290,14 +290,21 @@ class AnazhRealm_speicher_laden {
             .filter((x) => x && x.wort in AnazhRealm.WEATHER_INTENSITY && Number.isFinite(x.w))
             .slice(-64)
             .map((x) => ({ wort: x.wort, quelle: String(x.quelle).slice(0, 80), w: x.w }));
-        // die Stempel des Regens (wetter.K3): Paare [t, rain] endlicher Zahlen, die Uhr aufsteigend — sonst keine (der Pegel ruht)
-        const rs = state.regenStempel;
-        this.state.regenStempel =
-            Array.isArray(rs) &&
-            rs.length % 2 === 0 &&
-            rs.every((v, i) => Number.isFinite(v) && (i % 2 || !i || v >= rs[i - 2]))
-                ? rs.slice()
-                : [];
+        // der Zustand des Pegels (wetter.K3, speicher.K3, gelaende-core `pegelZustand`): die Uhr, der Grund und je Lag-Klasse zwei
+        // Speicher, endliche Zahlen — sonst keiner (der Pegel beginnt am Klima). Die Stempel des Regens beginnen an ihm neu; die
+        // Stempel eines Stands von 18.546.199 (`regenStempel`) gelten nicht mehr, sein Pegel beginnt am Klima.
+        const pz = state.pegelZustand;
+        const n2 = 2 * globalThis.__gelaendeCore.LAUF.n;
+        this.state.pegelZustand =
+            pz &&
+            Number.isFinite(pz.t) &&
+            Number.isFinite(pz.grund) &&
+            Array.isArray(pz.s) &&
+            pz.s.length === n2 &&
+            pz.s.every(Number.isFinite)
+                ? { t: pz.t, grund: pz.grund, s: pz.s.slice() }
+                : null;
+        this.state.regenStempel = [];
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         // der Zug, der schon zog, und sein Übergang (feld.K2#2): im selben Zug zieht der erste Takt nicht neu

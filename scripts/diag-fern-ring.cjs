@@ -96,7 +96,7 @@ hauptLauf(async () => {
         // Stamm c389e0f1 legte er die Nachricht, die er bei seiner Geburt in eine zweite Liste nahm, hinter seine Reihe: Puffer 2)
         const pumpe = async (
             pos,
-            fertig = (f) => f.cursor >= f.totalVerts,
+            fertig = (f) => f.cursor >= f.totalVerts && r._fernRingGeteilt(f), // die Teilung im Fern-Faden steht (w14-ankunft-weg)
             ms = 120000,
             takt = () => r._tickFernRing(pos)
         ) => {

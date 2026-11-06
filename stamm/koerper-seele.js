@@ -636,7 +636,9 @@ class AnazhRealm_koerper_seele {
         if (!bpName || !this.state.blueprints[bpName]) return { ok: false, reason: "blueprint_unknown" };
         eq.held = bpName;
         this.recomputePlayerStats();
-        this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
+        // die Hand liest die Hand-Mitte der feinen Stufe: der Wunsch tauscht den Leib (w14-ankunft-weg, `_leibWunsch`) und trägt
+        // die Hand dabei neu (`applyPlayerSoul`)
+        if (!this._leibWunsch()) this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
         this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
     }

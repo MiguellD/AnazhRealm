@@ -2424,7 +2424,13 @@ AnazhRealm.DSL_WERTE = (() => {
         set_time_of_day: [
             0,
             (v) => zahlIn(v, 0, 1),
-            () => "0–1 (0 Mitternacht, 0.25 Sonnenaufgang, 0.5 Mittag, 0.75 Sonnenuntergang)",
+            // die Nacht ist ein Wert der Uhr (ki.K5: „mach es nacht" → 0.8, der Abend des Beispiels — die Uhr nannte sie nicht)
+            () => "0–1 (0 Mitternacht, 0.25 Sonnenaufgang, 0.5 Mittag, 0.75 Sonnenuntergang, 0.9 Nacht)",
+        ],
+        set_season: [
+            0,
+            (v) => !!AnazhRealm.JAHRESZEITEN[String(v).toLowerCase()],
+            () => "spring | summer | autumn | winter (Jahreszeit — Winter, Herbst … sind nie Wetter)",
         ],
         creatures_emotion: [0, (v) => v === "happy" || v === "sad", () => "happy | sad"],
         spawn_creature: [2, (v) => v == null || v === "happy" || v === "sad", () => "emotion: happy | sad"],
