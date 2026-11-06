@@ -784,8 +784,10 @@ class AnazhRealm_gelaende_boden {
     // was sie liest (`_forestDartsFallen`). Bis K69 warf jeder Erdbau die Gedächtnisse der ganzen Welt: der Gang in ein Dorf
     // (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen synchron neu, der längste Takt 880 ms (Null-Renderer,
     // Dorfweg gehend), an der Radeon ein Frame von 3,1 s (`_forestCellDarts › planForestCell`, die Hänger-Linse).
-    // `nass`: das Urteil, das die Raten des Erwachens schon fällten (`_dorfErwachen`).
-    _erdbauSetzen(key, splats, nass) {
+    // `nass`: das Urteil, das die Raten des Erwachens schon fällten (`_dorfErwachen`). `ausGesetz`: der Erdbau aus dem Gesetz
+    // eines Orts (sein Vorlauf, sein Erwachen; wie der Bau `ausGesetz`) — seine Splats stehen in `_erdbauAusGesetz`, der Stand
+    // trägt ihn nie (die Stand-Zeile worldMeta, speicher.K3), der nächste Vorlauf legt ihn neu.
+    _erdbauSetzen(key, splats, nass, ausGesetz) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
         if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
@@ -793,6 +795,7 @@ class AnazhRealm_gelaende_boden {
         // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
         const amWasser = nass === undefined ? this._erdbauAmWasser(G.erdbauNormal(splats)) : nass;
         wm.erdbau[key] = splats;
+        if (ausGesetz) (this._erdbauAusGesetz || (this._erdbauAusGesetz = new WeakSet())).add(splats);
         this._erdbauWirkt(splats, amWasser, { erdbauDazu: splats });
         this._ortFremdPruefen(key, splats); // ein gesetztes Haus im Ortsradius: die Gasse weicht ihm (bauen.K2 Staffel 2)
         return true;
