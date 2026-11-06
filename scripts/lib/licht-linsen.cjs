@@ -115,380 +115,382 @@ function albedoSicht(opts) {
         // DIE TAFEL setzt fehlende Exemplare VOR der Inventur (sie sollen in der Mesh-Liste stehen); was sie setzt, bleibt
         // in der Welt — nach einer Tafel misst kein Band mehr in derselben Welt.
         const exemplare = [];
-        if (opts.zeilen) {
-            // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
-            // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
-            // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben.
-            // DER SATZ STEHT (ein Bau-Ereignis, nie eine Zahl von Takten): ein Bau-Bereich über BAU_SATZ_ECKEN_JE_TAKT tritt in Raten
-            // in seinen Satz (`_bauSatzRateNeu`) und zeichnet erst nach der letzten — offen steht er im EINEN Wort der Welt
-            // (`_weltOffen().bau`). Mit dem Takt der Werkbank (w4-stationen-schnell-a2, 007ec392) legt nur jeder zweite bis dritte Takt
-            // der Tafel den Satz (der Takt rendert nicht jedes Mal): die 20 gezählten Takte nach der Stufe trugen vom Haus L0 (drei
-            // Bereiche, 185k Ecken) nur den ersten — Dach und Gebälk fehlten im Schuss (Radeon, Genesis: Haus 0,2677 statt 0,1592,
-            // L1/L0 0,569; an 6dcad1b0 0,1592, an 91cf1ea3 kein Pixel). Jedes Warten der Tafel endet erst, wenn der Satz steht; steht
-            // er nach 600 Takten nicht, bricht die Tafel beim Namen (`__deckel`), nie mit einem halben Haus
-            const ticke = async (n, fertig) => {
-                for (let i = 0; i < n && !fertig(); i++) await window.__werkTakt();
-                for (const weiter = window.__deckel("Bau-Satz", 600, false); r._weltOffen().bau && weiter(); )
-                    await window.__werkTakt();
-            };
-            for (const z of opts.zeilen) {
-                const ex = (z.welt && z.welt.exemplar) || {};
-                let pos = null,
-                    gesetzt = false,
-                    verweigert = null,
-                    eintrag = null,
-                    kreatur = null;
-                if (ex.typ === "architektur") {
-                    let best = null;
-                    for (const e of st.architectures || [])
-                        if (e && e.type === ex.name && e.position) {
-                            const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            // `nah`: nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
-                            // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
-                            // `nah: 0`: nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
-                            // folgt dem LACK_GESETZ der Saat)
-                            if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
-                        }
-                    let e = best && best.e;
-                    if (!e) {
-                        // Der Platz des gesetzten Exemplars: fest neben dem Spieler (Versatz der Zeile), auf dem Boden.
-                        const off = ex.versatz || [8, 8];
-                        const x = pp.x + off[0],
-                            zz = pp.z + off[1];
-                        e = r.spawnArchitecture(
-                            ex.name,
-                            { x, y: r._voxelSurfaceY(x, zz) + 0.5, z: zz },
-                            { seed: ex.seed || 7 }
-                        );
-                        gesetzt = true;
-                        // ein verweigerter Platz (der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
-                        // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
-                        if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
+        // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
+        // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
+        // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben.
+        // DER SATZ STEHT (ein Bau-Ereignis, nie eine Zahl von Takten): ein Bau-Bereich über BAU_SATZ_ECKEN_JE_TAKT tritt in Raten
+        // in seinen Satz (`_bauSatzRateNeu`) und zeichnet erst nach der letzten — offen steht er im EINEN Wort der Welt
+        // (`_weltOffen().bau`). Mit dem Takt der Werkbank (w4-stationen-schnell-a2, 007ec392) legt nur jeder zweite bis dritte Takt
+        // der Tafel den Satz (der Takt rendert nicht jedes Mal): die 20 gezählten Takte nach der Stufe trugen vom Haus L0 (drei
+        // Bereiche, 185k Ecken) nur den ersten — Dach und Gebälk fehlten im Schuss (Radeon, Genesis: Haus 0,2677 statt 0,1592,
+        // L1/L0 0,569; an 6dcad1b0 0,1592, an 91cf1ea3 kein Pixel). Jedes Warten der Tafel endet erst, wenn der Satz steht; steht
+        // er nach 600 Takten nicht, bricht die Tafel beim Namen (`__deckel`), nie mit einem halben Haus
+        const ticke = async (n, fertig) => {
+            for (let i = 0; i < n && !fertig(); i++) await window.__werkTakt();
+            for (const weiter = window.__deckel("Bau-Satz", 600, false); r._weltOffen().bau && weiter(); )
+                await window.__werkTakt();
+        };
+        for (const z of opts.zeilen) {
+            const ex = (z.welt && z.welt.exemplar) || {};
+            let pos = null,
+                gesetzt = false,
+                verweigert = null,
+                eintrag = null,
+                kreatur = null;
+            if (ex.typ === "architektur") {
+                let best = null;
+                for (const e of st.architectures || [])
+                    if (e && e.type === ex.name && e.position) {
+                        const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
+                        // `nah`: nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
+                        // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
+                        // `nah: 0`: nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
+                        // folgt dem LACK_GESETZ der Saat)
+                        if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
                     }
-                    if (e) {
-                        await ticke(600, () => r._archIsRendered(e));
-                        // Ein frisch gesetztes Exemplar zieht seine Instanz-Gruppe erst im nächsten Takt nach.
-                        await ticke(gesetzt ? 20 : 0, () => false);
-                        pos = new T.Vector3(e.position.x, e.position.y, e.position.z);
-                        eintrag = e;
-                    }
-                } else if (ex.typ === "tier") {
-                    const tierOf = (c) => {
-                        let top = c;
-                        while (top && top.parent && top.parent !== sc) top = top.parent;
-                        return top && top.userData && top.userData._tierBaum ? top.userData.soul : null;
-                    };
-                    let best = null;
-                    for (const c of st.creatures || [])
-                        if (c && c.position && tierOf(c) === ex.name) {
-                            const d = Math.hypot(c.position.x - pp.x, c.position.z - pp.z);
-                            if (d <= 30 && (!best || d < best.d)) best = { c, d };
-                        }
-                    let c = best && best.c;
-                    if (!c) {
-                        const off = ex.versatz || [-8, 4];
-                        const x = pp.x + off[0],
-                            zz = pp.z + off[1];
-                        c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, zz) + 0.5, zz, "happy", ex.name, {
-                            precise: true,
-                        });
-                        gesetzt = true;
-                    }
-                    if (c) {
-                        await ticke(gesetzt ? 120 : 0, () => false);
-                        window.__halten?.();
-                        // DAS FELL IM BLICK DER TAFEL: die Schalen sind eine Stufe der Gestalt am Schirm (`_fellBildschirmGesetz`),
-                        // gesetzt in DEM Frame, in dem der Leib in den Blick kommt (`_leibSicht`, die EINE Stelle) — der Schuss tickt
-                        // nicht, und der Wolf außer Blick des Spielers trug seine Schalen aus (Radeon, Genesis: Fell 0,1846 ohne,
-                        // 0,1659 mit; das Labor zeigt sie: 0,1620). Das Auge der Tafel: 3,5 m schräg über dem Leib, wie ihre Blicke
-                        r._leibSicht(c, true, c.position.clone().addScalar(2));
-                        pos = c.position.clone();
-                        kreatur = c;
-                    }
-                } else if (ex.typ === "mensch") {
-                    // derselbe Bau wie Spieler und Bewohner, mit der Wahl des Labors (material.K1)
-                    const [x, zz] = [pp.x + 4, pp.z - 4];
-                    const g = r._buildHumanGroup(Object.assign({}, window.__koerperCore.START_PARAMS, ex.wahl));
-                    g.name = "mensch";
-                    g.position.set(x, r._voxelSurfaceY(x, zz) + AnazhRealm.PLAYER_FOOT_OFFSET, zz);
-                    sc.add(g);
+                let e = best && best.e;
+                if (!e) {
+                    // Der Platz des gesetzten Exemplars: fest neben dem Spieler (Versatz der Zeile), auf dem Boden.
+                    const off = ex.versatz || [8, 8];
+                    const x = pp.x + off[0],
+                        zz = pp.z + off[1];
+                    e = r.spawnArchitecture(
+                        ex.name,
+                        { x, y: r._voxelSurfaceY(x, zz) + 0.5, z: zz },
+                        { seed: ex.seed || 7 }
+                    );
                     gesetzt = true;
-                    await ticke(20, () => false);
-                    pos = g.position.clone();
-                    kreatur = g; // der Leib der Zeile (der Schuss zeichnet nur ihn, s. u.)
+                    // ein verweigerter Platz (der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
+                    // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
+                    if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
                 }
-                else if (ex.typ === "boden" && ex.wald) {
-                    // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
-                    // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (der Bestand
-                    // `_forestCellDarts` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
-                    const W0 = ex.wald,
-                        C = AnazhRealm.FOREST.cell,
-                        seedInt = r._forestSeedInt(),
-                        [x, zz] = ex.stelle;
-                    let b = 0,
-                        nah = Infinity;
-                    for (let gz = Math.floor((zz - W0.r) / C); gz <= Math.floor((zz + W0.r) / C); gz++)
-                        for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
-                            for (const d of r._forestCellDarts(gx, gz, seedInt)) {
-                                const dd = Math.hypot(d.x - x, d.z - zz);
-                                if (dd < W0.r && r._wildnisTraegt(d.x, d.z)) {
-                                    b++;
-                                    nah = Math.min(nah, dd);
-                                }
-                            }
-                    if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !(r._nassAt && r._nassAt(x, zz)))
-                        pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
-                    else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
+                if (e) {
+                    await ticke(600, () => r._archIsRendered(e));
+                    // Ein frisch gesetztes Exemplar zieht seine Instanz-Gruppe erst im nächsten Takt nach.
+                    await ticke(gesetzt ? 20 : 0, () => false);
+                    pos = new T.Vector3(e.position.x, e.position.y, e.position.z);
+                    eintrag = e;
                 }
-                exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
-            }
-            // DAS AUGE DER STUFE AM EXEMPLAR (`exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von einem Auge
-            // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
-            // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
-            const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
-            if (nahe.length > 1) throw new Error(`stufe: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
-            for (const x of nahe) {
-                const e = x.eintrag,
-                    n = x.zeile.welt.exemplar.stufe,
-                    D = AnazhRealm.LOD_DISTANCES;
-                const zeigt = () => {
-                    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
-                        if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
-                            for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
-                    return false;
+            } else if (ex.typ === "tier") {
+                const tierOf = (c) => {
+                    let top = c;
+                    while (top && top.parent && top.parent !== sc) top = top.parent;
+                    return top && top.userData && top.userData._tierBaum ? top.userData.soul : null;
                 };
-                // der Abstand in der EINEN Wahrnehmungs-Distanz der Wahl (`_lodPerceptionDistance`, linear im Abstand): ein hoher
-                // Baum schaltet später — die Fichte (26,7 m) stand aus 19 m noch in L0
-                const vh = r._lodTreeVisHeight(e),
-                    f = vh > 0 ? r._lodPerceptionDistance(1, vh) : 1;
-                const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / f / Math.SQRT2;
-                const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
-                r._lodAuge = () => auge;
-                try {
-                    await ticke(600, zeigt);
-                    await ticke(20, () => false);
-                } finally {
-                    delete r._lodAuge;
+                let best = null;
+                for (const c of st.creatures || [])
+                    if (c && c.position && tierOf(c) === ex.name) {
+                        const d = Math.hypot(c.position.x - pp.x, c.position.z - pp.z);
+                        if (d <= 30 && (!best || d < best.d)) best = { c, d };
+                    }
+                let c = best && best.c;
+                if (!c) {
+                    const off = ex.versatz || [-8, 4];
+                    const x = pp.x + off[0],
+                        zz = pp.z + off[1];
+                    c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, zz) + 0.5, zz, "happy", ex.name, {
+                        precise: true,
+                    });
+                    gesetzt = true;
                 }
-                if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
+                if (c) {
+                    await ticke(gesetzt ? 120 : 0, () => false);
+                    window.__halten?.();
+                    // DAS FELL IM BLICK DER TAFEL: die Schalen sind eine Stufe der Gestalt am Schirm (`_fellBildschirmGesetz`),
+                    // gesetzt in DEM Frame, in dem der Leib in den Blick kommt (`_leibSicht`, die EINE Stelle) — der Schuss tickt
+                    // nicht, und der Wolf außer Blick des Spielers trug seine Schalen aus (Radeon, Genesis: Fell 0,1846 ohne,
+                    // 0,1659 mit; das Labor zeigt sie: 0,1620). Das Auge der Tafel: 3,5 m schräg über dem Leib, wie ihre Blicke
+                    r._leibSicht(c, true, c.position.clone().addScalar(2));
+                    pos = c.position.clone();
+                    kreatur = c;
+                }
+            } else if (ex.typ === "mensch") {
+                // derselbe Bau wie Spieler und Bewohner, mit der Wahl des Labors (material.K1)
+                const [x, zz] = [pp.x + 4, pp.z - 4];
+                const g = r._buildHumanGroup(Object.assign({}, window.__koerperCore.START_PARAMS, ex.wahl));
+                g.name = "mensch";
+                g.position.set(x, r._voxelSurfaceY(x, zz) + AnazhRealm.PLAYER_FOOT_OFFSET, zz);
+                sc.add(g);
+                gesetzt = true;
+                await ticke(20, () => false);
+                pos = g.position.clone();
+                kreatur = g; // der Leib der Zeile (der Schuss zeichnet nur ihn, s. u.)
             }
-            // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach den Takten steht die Bühne zu ihr (ihr Wort `uhr`, wie
-            // `__laubGegenlicht`; bis w4-himmel-uhr sprang der Uhr-Schreiber hinter der Bühne des Mittags) — eine Stufe, deren Ton an
-            // einer Hand-Konstante hinge, bräche an der zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
-            window.__buehne({ uhr: opts.uhr });
+            else if (ex.typ === "boden" && ex.wald) {
+                // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
+                // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (der Bestand
+                // `_forestCellDarts` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
+                const W0 = ex.wald,
+                    C = AnazhRealm.FOREST.cell,
+                    seedInt = r._forestSeedInt(),
+                    [x, zz] = ex.stelle;
+                let b = 0,
+                    nah = Infinity;
+                for (let gz = Math.floor((zz - W0.r) / C); gz <= Math.floor((zz + W0.r) / C); gz++)
+                    for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
+                        for (const d of r._forestCellDarts(gx, gz, seedInt)) {
+                            const dd = Math.hypot(d.x - x, d.z - zz);
+                            if (dd < W0.r && r._wildnisTraegt(d.x, d.z)) {
+                                b++;
+                                nah = Math.min(nah, dd);
+                            }
+                        }
+                if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !(r._nassAt && r._nassAt(x, zz)))
+                    pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
+                else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
+            }
+            exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
         }
-        const karte = new T.Mesh(
-            new T.PlaneGeometry(2, 2),
-            new T.MeshStandardNodeMaterial({
-                color: new T.Color(0.18, 0.18, 0.18),
-                roughness: 1,
-                metalness: 0,
-                side: T.DoubleSide,
-            })
-        );
-        karte.name = "graukarte";
-        karte.position.set(pp.x + 40, pp.y + 30, pp.z + 40);
-        sc.add(karte);
-        karte.updateMatrixWorld(true);
-        const meshes = [];
-        sc.traverse((o) => {
-            if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
-        });
-        const visAlt = new Map(meshes.map((m) => [m, m.visible]));
-        const kl = new Map(meshes.map((m) => [m, klasse(m)]));
-        // Der STOFF eines Wirts-Materials: sein Schlüssel im Material-Cache (`_foundryMats`, `budgetStoff`):
-        // Art|Rauheit|Metall|flach|Umgebung … |cc:<k>@<r> … |v:<Seh-Klasse>. Ein Material außerhalb des Caches hat keinen.
-        const stoffInv = new Map();
-        for (const [k, m] of Object.entries(r._foundryMats || {})) stoffInv.set(m, k);
-        const stoffOf = (mat) => {
-            const k = stoffInv.get(mat);
-            if (!k) return null;
-            const t = k.split("|");
-            const zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null);
-            const cc = /\|cc:([\d.]+)@/.exec(k);
-            const v = /\|v:([a-z]+)/.exec(k);
-            return {
-                kind: t[0],
-                r: zahl(1),
-                mt: zahl(2),
-                cc: cc ? Number(cc[1]) : 0,
-                seh: v ? v[1] : null,
-                schluessel: k,
+        // DAS AUGE DER STUFE AM EXEMPLAR (`exemplar.stufe`): die Welt wählt die Stufe n ihres Exemplars von einem Auge
+        // in ihrem Abstand (`_lodAuge`, das EINE Auge der Stufen), bis sie steht. Die Schüsse danach ticken nicht — die Wahl
+        // bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+        const nahe = exemplare.filter((x) => x.eintrag && Number.isInteger((x.zeile.welt.exemplar || {}).stufe));
+        if (nahe.length > 1) throw new Error(`stufe: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+        for (const x of nahe) {
+            const e = x.eintrag,
+                n = x.zeile.welt.exemplar.stufe,
+                D = AnazhRealm.LOD_DISTANCES;
+            const zeigt = () => {
+                for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
+                    if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
+                        for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
+                return false;
             };
-        };
-        const matsOf = (m) => (Array.isArray(m.material) ? m.material : [m.material]).filter(Boolean);
-        const lichtAlt = [];
-        sc.traverse((o) => {
-            if (o.isLight) lichtAlt.push([o, o.intensity, o.color.clone()]);
-        });
-        // das EINE Umgebungslicht der Welt (dirigent-ankunft: `state.ambientLight`, je Boot) — ohne es bricht die Linse laut
-        const A = st.ambientLight;
-        const envAlt = sc.environment;
-        const kamAlt = {
-            p: st.camera.position.clone(),
-            q: st.camera.quaternion.clone(),
-            nf: [st.camera.near, st.camera.far],
-            fov: st.camera.fov,
-            aspect: st.camera.aspect,
-        };
-        // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
-        const { rt, lies, bundles, ruhe, ohneLuft } = window.__linsenZiel(W, H);
-        const luftZurueck = ohneLuft();
-        sc.environment = null;
-        const cam = st.camera;
-        // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
-        // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
-        // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
-        // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
-        const lu = st.lodUniforms;
-        const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
-        const schuss = async (sicht) => {
-            const pass = async (e) => {
-                // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
-                sc.traverse((o) => {
-                    if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && !visAlt.has(o))
-                        meshes.push(o) && visAlt.set(o, o.visible) && kl.set(o, klasse(o));
-                });
-                for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-                bundles();
-                for (const [l] of lichtAlt) l.intensity = 0;
-                A.color.setRGB(1, 1, 1);
-                A.intensity = e;
-                if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-                await ruhe(cam, "die Albedo-Sicht");
-                return lies();
-            };
-            await pass(Math.PI);
-            const hell = await pass(Math.PI);
-            const dunkel = await pass(0);
-            return { hell, dunkel };
-        };
-        // Ziel je Klasse: das nächste Exemplar. Die Kugel kommt aus den Positionen (die gespeicherte kann
-        // veraltet sein — die Linse schreibt nie die Engine-Kugel).
-        // `e` (der Eintrag des Exemplars): in seiner Gruppe nur SEIN Platz — die nächste Instanz war, solange seine Stufe reiste,
-        // ein Nachbar (die frische Birke maß als Karte 0,17 mit 73k Pixeln eines anderen Baums)
-        const ziel = (m, um, e) => {
-            const bb = new T.Box3().setFromBufferAttribute(m.geometry.attributes.position);
-            const bs = { center: bb.getCenter(new T.Vector3()), radius: bb.getSize(new T.Vector3()).length() / 2 };
-            const M = new T.Matrix4(),
-                mw = m.matrixWorld;
-            let best = null;
-            const n = m.isInstancedMesh ? m.count : 1;
-            const g = e && [...st.archInstanceGroups.values()].find((q) => q && q.mesh === m && q.slotEntry);
-            for (let i = 0; i < n; i++) {
-                if (g && g.slotEntry[i] !== e) continue;
-                if (m.isInstancedMesh) {
-                    m.getMatrixAt(i, M);
-                    M.premultiply(mw);
-                } else M.copy(mw);
-                const s = Math.max(
-                    new T.Vector3().setFromMatrixColumn(M, 0).length(),
-                    new T.Vector3().setFromMatrixColumn(M, 1).length()
-                );
-                // DIE KARTE: ihr Quad ist die Einheits-Strecke (0,0,0)–(0,1,0), ihr Rahmen reist je Instanz (`aKarte` y, z: Halbbreite
-                // und Höhe, × Skala) — aus der Strecke stand die Birke als Kugel von 1,6 m statt ihrer 15 m im Schuss
-                const ka = m.geometry.attributes.aKarte;
-                const hb = (ka ? ka.getY(i) : Math.max(bb.max.x, bb.max.z, -bb.min.x, -bb.min.z)) * s,
-                    hh = ka ? (ka.getZ(i) * s) / 2 : 0;
-                const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
-                const d = Math.hypot(c.x - um.x, c.z - um.z);
-                if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d, hb };
+            // der Abstand in der EINEN Wahrnehmungs-Distanz der Wahl (`_lodPerceptionDistance`, linear im Abstand): ein hoher
+            // Baum schaltet später — die Fichte (26,7 m) stand aus 19 m noch in L0
+            const vh = r._lodTreeVisHeight(e),
+                f = vh > 0 ? r._lodPerceptionDistance(1, vh) : 1;
+            const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / f / Math.SQRT2;
+            const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
+            r._lodAuge = () => auge;
+            try {
+                await ticke(600, zeigt);
+                await ticke(20, () => false);
+            } finally {
+                delete r._lodAuge;
             }
-            return best;
-        };
-        // Ein Satz (das Haus im Bau-Satz seines Stoffs, der Fels im Formationen-Satz) ist EIN Mesh über viele Exemplare:
-        // sein Ziel ist die Hülle seiner Ecken in der KUGEL R um das Exemplar (der Formationen-Satz legt seine freien Plätze
-        // auf den Ursprung — eine Säule über dem Exemplar nahm sie mit, die Hülle reichte 70 m hoch).
-        const zielSatz = (m, um, R) => {
-            const p = m.geometry.attributes.position;
-            const v = new T.Vector3();
-            const bb = new T.Box3();
-            // Eine geskinnte Haut (Tier, Spieler) liegt erst nach ihren Knochen an ihrem Ort (`getVertexPosition`).
-            for (let i = 0; i < p.count; i++) {
-                if (m.isSkinnedMesh && m.getVertexPosition) m.getVertexPosition(i, v);
-                else v.fromBufferAttribute(p, i);
-                v.applyMatrix4(m.matrixWorld);
-                if (v.distanceTo(um) <= R) bb.expandByPoint(v);
-            }
-            if (bb.isEmpty()) return null;
-            const c = bb.getCenter(new T.Vector3());
-            return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
-        };
-        // DER SATZ DES EXEMPLARS: ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
-        // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
-        // nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt, derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein
-        // Mesh, das kein Satz ist, bleibt. DIE BASIS IM SATZ: der Satz-Stoff liest sein Metall je Ecke (`aRegler.y`) — `metalness = 0`
-        // am Stoff erreicht ihn nie; mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke.
-        const ausschnitte = [];
-        const satzAusschnitt = (m, eintrag, basis) => {
-            let s = null;
-            for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
-            if (!s || !st.archInstanceGroups) return m;
-            const tri = [];
-            const stufen = new Set(); // die Stufen der Gruppen des Exemplars (die Täter-Klasse der Gruppe `f:<art>:L<n>`)
-            let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
-            for (const [key, g] of st.archInstanceGroups) {
-                if (!g || g.satz !== s.art || !g.slotEntry) continue;
-                bau = true;
-                const b = s.bloecke.get(key);
-                const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
-                for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
-                    if (g.slotEntry[i] !== eintrag) continue;
-                    const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
-                    if (sk) stufen.add(+sk[1]);
-                    const v0 = b.vStart + i * n,
-                        v1 = v0 + n;
-                    for (let t = 0; t + 2 < b.idx.length; t += 3)
-                        if (b.idx[t] >= v0 && b.idx[t] < v1) tri.push(b.idx[t], b.idx[t + 1], b.idx[t + 2]);
-                }
-            }
-            if (!bau) return m;
-            if (!tri.length) return null;
-            const neu = new Map(),
-                alt = [];
-            const ix = new Uint32Array(tri.length);
-            for (let k = 0; k < tri.length; k++) {
-                let j = neu.get(tri[k]);
-                if (j === undefined) {
-                    j = alt.length;
-                    neu.set(tri[k], j);
-                    alt.push(tri[k]);
-                }
-                ix[k] = j;
-            }
-            const g2 = new T.BufferGeometry();
-            for (const [name, a] of Object.entries(m.geometry.attributes)) {
-                if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
-                const w = a.itemSize;
-                const out = new a.array.constructor(alt.length * w);
-                for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
-                if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
-                g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
-            }
-            g2.setIndex(new T.BufferAttribute(ix, 1));
-            const t = new T.Mesh(g2, m.material);
-            t.name = m.name;
-            t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art, satzStufen: [...stufen] });
-            t.matrixAutoUpdate = false;
-            t.matrix.copy(m.matrixWorld);
-            t.matrixWorld.copy(m.matrixWorld);
-            t.frustumCulled = false;
-            t.layers.mask = m.layers.mask;
-            t.renderOrder = m.renderOrder;
-            sc.add(t);
-            ausschnitte.push(t);
-            return t;
-        };
-        const ausschnitteFort = () => {
-            for (const t of ausschnitte.splice(0)) {
-                sc.remove(t);
-                t.geometry.dispose();
-            }
-        };
+            if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
+        }
+        // DIE UHREN DER TAFEL (`uhren` 0..1, material.K3 Staffel 2): nach den Takten steht die Bühne zu jeder (ihr Wort `uhr`, wie
+        // `__laubGegenlicht`; bis w4-himmel-uhr sprang der Uhr-Schreiber hinter der Bühne des Mittags) — eine Stufe, deren Ton an
+        // einer Hand-Konstante hinge, bräche an der zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
+        // DIE GESTELLTE STUFE TRÄGT JEDE UHR (w13-gtx-proben): Exemplar und Stufe stehen EINMAL, je Uhr nur Bühne, Inventur und
+        // Schüsse (bis dahin stellte die Werkbank jede Uhr in einem eigenen Gang: zehn Stufen-Zeilen × zwei Uhren = 20 Gänge mit
+        // je ihrem Warten auf die Stufe; jetzt 10, dieselben Schüsse, dieselbe Bühne vor jedem Schuss).
         const ergebnisse = [];
-        const metallAlt = new Map();
-        try {
-            if (opts.zeilen) {
+        for (const uhr of opts.uhren) {
+            window.__buehne({ uhr });
+            const karte = new T.Mesh(
+                new T.PlaneGeometry(2, 2),
+                new T.MeshStandardNodeMaterial({
+                    color: new T.Color(0.18, 0.18, 0.18),
+                    roughness: 1,
+                    metalness: 0,
+                    side: T.DoubleSide,
+                })
+            );
+            karte.name = "graukarte";
+            karte.position.set(pp.x + 40, pp.y + 30, pp.z + 40);
+            sc.add(karte);
+            karte.updateMatrixWorld(true);
+            const meshes = [];
+            sc.traverse((o) => {
+                if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
+            });
+            const visAlt = new Map(meshes.map((m) => [m, m.visible]));
+            const kl = new Map(meshes.map((m) => [m, klasse(m)]));
+            // Der STOFF eines Wirts-Materials: sein Schlüssel im Material-Cache (`_foundryMats`, `budgetStoff`):
+            // Art|Rauheit|Metall|flach|Umgebung … |cc:<k>@<r> … |v:<Seh-Klasse>. Ein Material außerhalb des Caches hat keinen.
+            const stoffInv = new Map();
+            for (const [k, m] of Object.entries(r._foundryMats || {})) stoffInv.set(m, k);
+            const stoffOf = (mat) => {
+                const k = stoffInv.get(mat);
+                if (!k) return null;
+                const t = k.split("|");
+                const zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null);
+                const cc = /\|cc:([\d.]+)@/.exec(k);
+                const v = /\|v:([a-z]+)/.exec(k);
+                return {
+                    kind: t[0],
+                    r: zahl(1),
+                    mt: zahl(2),
+                    cc: cc ? Number(cc[1]) : 0,
+                    seh: v ? v[1] : null,
+                    schluessel: k,
+                };
+            };
+            const matsOf = (m) => (Array.isArray(m.material) ? m.material : [m.material]).filter(Boolean);
+            const lichtAlt = [];
+            sc.traverse((o) => {
+                if (o.isLight) lichtAlt.push([o, o.intensity, o.color.clone()]);
+            });
+            // das EINE Umgebungslicht der Welt (dirigent-ankunft: `state.ambientLight`, je Boot) — ohne es bricht die Linse laut
+            const A = st.ambientLight;
+            const envAlt = sc.environment;
+            const kamAlt = {
+                p: st.camera.position.clone(),
+                q: st.camera.quaternion.clone(),
+                nf: [st.camera.near, st.camera.far],
+                fov: st.camera.fov,
+                aspect: st.camera.aspect,
+            };
+            // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
+            const { rt, lies, bundles, ruhe, ohneLuft } = window.__linsenZiel(W, H);
+            const luftZurueck = ohneLuft();
+            sc.environment = null;
+            const cam = st.camera;
+            // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
+            // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
+            // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
+            // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
+            const lu = st.lodUniforms;
+            const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+            const schuss = async (sicht) => {
+                const pass = async (e) => {
+                    // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
+                    sc.traverse((o) => {
+                        if ((o.isMesh || o.isSprite || o.isPoints || o.isLine) && !visAlt.has(o))
+                            meshes.push(o) && visAlt.set(o, o.visible) && kl.set(o, klasse(o));
+                    });
+                    for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
+                    bundles();
+                    for (const [l] of lichtAlt) l.intensity = 0;
+                    A.color.setRGB(1, 1, 1);
+                    A.intensity = e;
+                    if (maskeAlt != null) lu.uLodMaskOn.value = 0;
+                    await ruhe(cam, "die Albedo-Sicht");
+                };
+                // der Vor-Pass zeichnet und ruht, gelesen wird er nie (bis w13-gtx-proben las er 640 × 400 Halb-Floats für den Papierkorb)
+                await pass(Math.PI);
+                await pass(Math.PI);
+                const hell = await lies();
+                await pass(0);
+                return { hell, dunkel: await lies() };
+            };
+            // Ziel je Klasse: das nächste Exemplar. Die Kugel kommt aus den Positionen (die gespeicherte kann
+            // veraltet sein — die Linse schreibt nie die Engine-Kugel).
+            // `e` (der Eintrag des Exemplars): in seiner Gruppe nur SEIN Platz — die nächste Instanz war, solange seine Stufe reiste,
+            // ein Nachbar (die frische Birke maß als Karte 0,17 mit 73k Pixeln eines anderen Baums)
+            const ziel = (m, um, e) => {
+                const bb = new T.Box3().setFromBufferAttribute(m.geometry.attributes.position);
+                const bs = { center: bb.getCenter(new T.Vector3()), radius: bb.getSize(new T.Vector3()).length() / 2 };
+                const M = new T.Matrix4(),
+                    mw = m.matrixWorld;
+                let best = null;
+                const n = m.isInstancedMesh ? m.count : 1;
+                const g = e && [...st.archInstanceGroups.values()].find((q) => q && q.mesh === m && q.slotEntry);
+                for (let i = 0; i < n; i++) {
+                    if (g && g.slotEntry[i] !== e) continue;
+                    if (m.isInstancedMesh) {
+                        m.getMatrixAt(i, M);
+                        M.premultiply(mw);
+                    } else M.copy(mw);
+                    const s = Math.max(
+                        new T.Vector3().setFromMatrixColumn(M, 0).length(),
+                        new T.Vector3().setFromMatrixColumn(M, 1).length()
+                    );
+                    // DIE KARTE: ihr Quad ist die Einheits-Strecke (0,0,0)–(0,1,0), ihr Rahmen reist je Instanz (`aKarte` y, z: Halbbreite
+                    // und Höhe, × Skala) — aus der Strecke stand die Birke als Kugel von 1,6 m statt ihrer 15 m im Schuss
+                    const ka = m.geometry.attributes.aKarte;
+                    const hb = (ka ? ka.getY(i) : Math.max(bb.max.x, bb.max.z, -bb.min.x, -bb.min.z)) * s,
+                        hh = ka ? (ka.getZ(i) * s) / 2 : 0;
+                    const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
+                    const d = Math.hypot(c.x - um.x, c.z - um.z);
+                    if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d, hb };
+                }
+                return best;
+            };
+            // Ein Satz (das Haus im Bau-Satz seines Stoffs, der Fels im Formationen-Satz) ist EIN Mesh über viele Exemplare:
+            // sein Ziel ist die Hülle seiner Ecken in der KUGEL R um das Exemplar (der Formationen-Satz legt seine freien Plätze
+            // auf den Ursprung — eine Säule über dem Exemplar nahm sie mit, die Hülle reichte 70 m hoch).
+            const zielSatz = (m, um, R) => {
+                const p = m.geometry.attributes.position;
+                const v = new T.Vector3();
+                const bb = new T.Box3();
+                // Eine geskinnte Haut (Tier, Spieler) liegt erst nach ihren Knochen an ihrem Ort (`getVertexPosition`).
+                for (let i = 0; i < p.count; i++) {
+                    if (m.isSkinnedMesh && m.getVertexPosition) m.getVertexPosition(i, v);
+                    else v.fromBufferAttribute(p, i);
+                    v.applyMatrix4(m.matrixWorld);
+                    if (v.distanceTo(um) <= R) bb.expandByPoint(v);
+                }
+                if (bb.isEmpty()) return null;
+                const c = bb.getCenter(new T.Vector3());
+                return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
+            };
+            // DER SATZ DES EXEMPLARS: ein Stoff-Satz trägt viele Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre
+            // n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr Eintrag) — sonst zeichnete der Schuss die Nachbarn mit. Ein Ausschnitt zeichnet
+            // nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt, derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein
+            // Mesh, das kein Satz ist, bleibt. DIE BASIS IM SATZ: der Satz-Stoff liest sein Metall je Ecke (`aRegler.y`) — `metalness = 0`
+            // am Stoff erreicht ihn nie; mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke.
+            const ausschnitte = [];
+            const satzAusschnitt = (m, eintrag, basis) => {
+                let s = null;
+                for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
+                if (!s || !st.archInstanceGroups) return m;
+                const tri = [];
+                const stufen = new Set(); // die Stufen der Gruppen des Exemplars (die Täter-Klasse der Gruppe `f:<art>:L<n>`)
+                let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
+                for (const [key, g] of st.archInstanceGroups) {
+                    if (!g || g.satz !== s.art || !g.slotEntry) continue;
+                    bau = true;
+                    const b = s.bloecke.get(key);
+                    const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                    for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
+                        if (g.slotEntry[i] !== eintrag) continue;
+                        const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
+                        if (sk) stufen.add(+sk[1]);
+                        const v0 = b.vStart + i * n,
+                            v1 = v0 + n;
+                        for (let t = 0; t + 2 < b.idx.length; t += 3)
+                            if (b.idx[t] >= v0 && b.idx[t] < v1) tri.push(b.idx[t], b.idx[t + 1], b.idx[t + 2]);
+                    }
+                }
+                if (!bau) return m;
+                if (!tri.length) return null;
+                const neu = new Map(),
+                    alt = [];
+                const ix = new Uint32Array(tri.length);
+                for (let k = 0; k < tri.length; k++) {
+                    let j = neu.get(tri[k]);
+                    if (j === undefined) {
+                        j = alt.length;
+                        neu.set(tri[k], j);
+                        alt.push(tri[k]);
+                    }
+                    ix[k] = j;
+                }
+                const g2 = new T.BufferGeometry();
+                for (const [name, a] of Object.entries(m.geometry.attributes)) {
+                    if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
+                    const w = a.itemSize;
+                    const out = new a.array.constructor(alt.length * w);
+                    for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
+                    if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
+                    g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
+                }
+                g2.setIndex(new T.BufferAttribute(ix, 1));
+                const t = new T.Mesh(g2, m.material);
+                t.name = m.name;
+                t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art, satzStufen: [...stufen] });
+                t.matrixAutoUpdate = false;
+                t.matrix.copy(m.matrixWorld);
+                t.matrixWorld.copy(m.matrixWorld);
+                t.frustumCulled = false;
+                t.layers.mask = m.layers.mask;
+                t.renderOrder = m.renderOrder;
+                sc.add(t);
+                ausschnitte.push(t);
+                return t;
+            };
+            const ausschnitteFort = () => {
+                for (const t of ausschnitte.splice(0)) {
+                    sc.remove(t);
+                    t.geometry.dispose();
+                }
+            };
+            const metallAlt = new Map();
+            try {
                 for (const ex of exemplare) {
                     ausschnitteFort(); // der Ausschnitt der vorigen Zeile zeichnet nie in dieser
                     const z = ex.zeile;
@@ -516,7 +518,8 @@ function albedoSicht(opts) {
                             .map((m) => (m.isInstancedMesh ? m : satzAusschnitt(m, ex.eintrag, z.basis !== false)))
                             .filter(Boolean);
                     const e = {
-                        id: z.id,
+                        // jede Uhr nach der ersten (der Bühne, Mittag) steht als `<id>@<uhr>`
+                        id: uhr === 0.5 ? z.id : z.id + "@" + uhr,
                         name: z.id,
                         klasse: w.klasse,
                         exemplar: w.exemplar || null,
@@ -640,29 +643,29 @@ function albedoSicht(opts) {
                     const sk = await schuss((m) => m === karte);
                     ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
                 }
+            } finally {
+                ausschnitteFort();
+                if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
+                for (const [mt, v] of metallAlt) mt.metalness = v;
+                for (const m of meshes) m.visible = visAlt.get(m);
+                bundles();
+                for (const [l, i, c] of lichtAlt) {
+                    l.intensity = i;
+                    l.color.copy(c);
+                }
+                luftZurueck();
+                sc.environment = envAlt;
+                sc.remove(karte);
+                cam.position.copy(kamAlt.p);
+                cam.quaternion.copy(kamAlt.q);
+                cam.fov = kamAlt.fov;
+                [cam.near, cam.far] = kamAlt.nf;
+                cam.aspect = kamAlt.aspect;
+                cam.updateProjectionMatrix();
+                cam.updateMatrixWorld(true);
+                rt.dispose();
+                r._applyDayNightToScene();
             }
-        } finally {
-            ausschnitteFort();
-            if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
-            for (const [mt, v] of metallAlt) mt.metalness = v;
-            for (const m of meshes) m.visible = visAlt.get(m);
-            bundles();
-            for (const [l, i, c] of lichtAlt) {
-                l.intensity = i;
-                l.color.copy(c);
-            }
-            luftZurueck();
-            sc.environment = envAlt;
-            sc.remove(karte);
-            cam.position.copy(kamAlt.p);
-            cam.quaternion.copy(kamAlt.q);
-            cam.fov = kamAlt.fov;
-            [cam.near, cam.far] = kamAlt.nf;
-            cam.aspect = kamAlt.aspect;
-            cam.updateProjectionMatrix();
-            cam.updateMatrixWorld(true);
-            rt.dispose();
-            r._applyDayNightToScene();
         }
         return ergebnisse;
     })();
@@ -1681,7 +1684,7 @@ function laubGegenlicht(opts) {
                 const g = window.__karteGestalt;
                 const lab = window.__lab;
                 if (opts.boden) {
-                    const mittel = (x, m = x.maske.reduce((a, b) => a + b, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
+                    const mittel = (x, m = x.maske.reduce(addiere, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
                     if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
                     return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
@@ -2064,7 +2067,7 @@ function kronenObenUrteil(messung) {
 function kantenLinie(Y, W, H, kante, schwelle, schritt) {
     const ln = (x, y) => Math.log(Y[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))] + 1e-4);
     let [lauf, linie, stufe, vor] = [0, 0, 0, {}];
-    for (const x of Object.keys(kante).map(Number).sort((a, b) => a - b)) {
+    for (const x of Object.keys(kante).map(Number).sort(aufsteigend)) {
         const [y0, j] = [kante[x], [0, 0, 0, 0]];
         for (let v = y0 - 2; v <= y0 + 1; v++)
             for (let u = x - 4; u <= x + 4; u++) {
@@ -2123,7 +2126,7 @@ function luftTiefe(o) {
             if (d < 1) return 0;
             return 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
         };
-        const med = (a) => (a.length ? +a.slice().sort((a, b) => a - b)[a.length >> 1].toPrecision(4) : null);
+        const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[a.length >> 1].toPrecision(4) : null);
         // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
         let blende = 1;
@@ -2417,7 +2420,7 @@ function wetterZug(o) {
 // über ≥ `mindest.azimute` Azimute gegen `sichtSturmM` ± `band`; der Zug — der größte Sprung |log2 Y_k/Y_k−1| je Sekunde der
 // Welt-Uhr ≤ `zugEvS`, und jedes Wort stand am Ende seiner Phase (sonst misst die Reihe keinen Übergang).
 function wetterLuftUrteil(m, R) {
-    const s = (m.zeilen || []).filter((z) => z.sicht.n >= R.mindest.n).map((z) => z.sicht.m).sort((a, b) => a - b);
+    const s = (m.zeilen || []).filter((z) => z.sicht.n >= R.mindest.n).map((z) => z.sicht.m).sort(aufsteigend);
     const ist = s.length >= R.mindest.azimute ? s[s.length >> 1] : null;
     const x = m.reihe || [];
     const d = x.slice(1).map((y, i) => ({ ...y, d: Math.abs(Math.log2(y.Y / x[i].Y)) / (y.t - x[i].t) }));
@@ -2610,7 +2613,7 @@ function naesseSicht(o) {
             for (let i = 0; i < W * H * 4; i += 4) s += Y(u8, i);
             return s / W / H;
         };
-        const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
+        const med = (l) => (l.length ? +l.sort(aufsteigend)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
         const dicht = AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1);
         // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
@@ -2726,13 +2729,13 @@ function kontaktSicht(o) {
         // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck; dunkle Flecken
         // (< 1/5 des Sonnen-Anteils) tragen kein f, Lücken bis 3 cm überbrückt die Gerade
         const kanten = (abc) => {
-            const sonne = abc.map(([, bb, c]) => bb - c).sort((a, b) => a - b)[abc.length >> 1];
+            const sonne = abc.map(([, bb, c]) => bb - c).sort(aufsteigend)[abc.length >> 1];
             const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
             for (let i = 1, j; i < f.length; i = j + 1) {
                 for (j = i; j < f.length && f[j] !== f[j]; j++);
                 for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
             }
-            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((a, b) => a - b)[1]);
+            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort(aufsteigend)[1]);
             const k = m3.reduce((m, x, i) => (x === x && !(m3[m] <= x) ? i : m), -1);
             return [m3.slice(0, k + 1).reverse(), m3.slice(k)].map((h) =>
                 k < 0 || h.some((x) => x !== x) ? "fleck" : !(h[0] <= 0.1) ? "kern" : !(h[h.length - 1] >= 0.9) ? "rand" : (h.filter((x) => x > 0.1 && x < 0.9).length * 3) / 10
@@ -2768,7 +2771,7 @@ function kontaktSicht(o) {
                 }
                 // der Fuß: der Median der gültigen Kanten; der Zuwachs: die Gerade w = a + k · L über alle
                 const P = linien.flatMap(([s, L, ...k]) => k.filter((w) => w >= 0).map((w) => [L, w, s]));
-                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((a, b) => a - b);
+                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort(aufsteigend);
                 const mi = (i) => P.reduce((s, q) => s + q[i], 0) / P.length;
                 const k = P.reduce((s, [L, w]) => s + (L - mi(0)) * (w - mi(1)), 0) / P.reduce((s, [L]) => s + (L - mi(0)) ** 2, 0);
                 const Ls = P.map((q) => q[0]);

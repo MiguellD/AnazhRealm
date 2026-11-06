@@ -3253,7 +3253,7 @@
         //    Felsblock (W 3 s 0,08 m). ──
         platz: {
             anfahrAnteil: 0.7, // die Anfahrt bergauf ≥ 70 % der Anfahrt in der Ebene (GT bis 14,2°, SUV bis 9,8°)
-            bahnLaengen: 1, // DIE BAHN: vor und hinter dem Wagen je so viele Wagenlaengen derselbe fahrbare Grund
+            bahnLaengen: 2, // DIE BAHN: vor und hinter dem Wagen je so viele Wagenlaengen derselbe fahrbare Grund (bis w13-wagen-ki 1: der GT stand 4,8 m vor der Eiche)
             suchRadiusM: 64, // um den Genesis-Ring liegt der naechste fahrbare Grund bis ~60 m weiter (Garage-Tor 58 m)
             suchSchrittM: 2,
             richtungen: 4, // je Ort die Fahrt-Richtung des Wagens, dann um je 360°/richtungen gedreht
