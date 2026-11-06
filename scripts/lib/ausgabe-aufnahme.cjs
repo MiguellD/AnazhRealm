@@ -708,13 +708,14 @@ function abnahmeMessen(opt) {
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
         },
         sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
-        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
+        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss im Bild stehen (`_archImBild`: Mesh, Instanz oder jenseits des
+        // Cull-Radius seine Fernform im Welt-March) — sonst ist das Ziel nicht im Bild
         ziel: nd.ziel
             ? Object.assign(nd.ziel, {
                   gestalt: ohne.map((id, _i, _a, e = werk(id)) =>
-                      e ? `${e.type} ${id}${r._archIsRendered(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
+                      e ? `${e.type} ${id}${r._archImBild(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
                   ),
-                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archIsRendered(e)),
+                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archImBild(e)),
               })
             : null,
         pose: {
