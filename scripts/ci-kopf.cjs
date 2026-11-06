@@ -6,6 +6,7 @@
 //   node scripts/ci-kopf.cjs        (im Job `kopf`: GITHUB_* aus der Umgebung, GH_TOKEN) → `voll=` und `echt=` nach $GITHUB_OUTPUT
 "use strict";
 const fs = require("fs");
+const { setTimeout: schlaf } = require("timers/promises");
 
 const IMMER = ["workflow_dispatch", "pull_request"];
 const BEWEIS = ["push", "schedule", "workflow_dispatch"];
@@ -52,7 +53,7 @@ async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens =
             gesamt = Math.max(gesamt, r.total_count);
             if (r.workflow_runs.length >= Math.min(je, gesamt - gelesen) && (seite > 1 || traegt(r.workflow_runs))) break;
             if (v === 3) throw new Error(`ROT: ${pfad} Seite ${seite} trägt ${r.workflow_runs.length} Läufe von ${gesamt} nach 3 Versuchen`);
-            await new Promise((ok) => setTimeout(ok, pause * v));
+            await schlaf(pause * v);
         }
         gelesen += r.workflow_runs.length;
         out.push(...r.workflow_runs.filter((x) => nimm(x) && neu(x)));
@@ -65,7 +66,7 @@ function apiMit(basis, token) {
     const api = async (p, v = 1) => {
         const kopf = { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } };
         const r = await fetch(basis + p, kopf).catch((e) => (v < 3 ? null : Promise.reject(e)));
-        if ((!r || r.status >= 500) && v < 5) return new Promise((ok) => setTimeout(ok, 3000 * v)).then(() => api(p, v + 1));
+        if ((!r || r.status >= 500) && v < 5) return schlaf(3000 * v).then(() => api(p, v + 1));
         if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
         return r.json();
     };
@@ -107,7 +108,7 @@ if (require.main === module) {
             console.log(
                 `Kopf ${String(env.GITHUB_SHA).slice(0, 8)}: wartet auf Lauf ${u.warte.id} (${u.warte.head_branch}, ${u.warte.status})`
             );
-            await new Promise((ok) => setTimeout(ok, TAKT_S * 1000));
+            await schlaf(TAKT_S * 1000);
         }
         if (u.rot) throw new Error(u.rot);
         console.log(

@@ -46,6 +46,10 @@
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
 //   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
+//   node scripts/werkbank.cjs bedienung --staffel 2        K3#2: jeder sichtbare Text von HUD und Menü ≥ 16 px und in seinem Kasten,
+//                                                           die Belegung frei (der Knopf „vor“, KeyO durch den Reload, der Leib
+//                                                           ≥ 0,1 m; `taeter` · `blind`) — der Kasten hält ab 800 px, headless 640 x 360
+//                                                           nicht (das Ich): dort `--echt`
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -1509,6 +1513,12 @@ async function starte() {
                             const kix = namen.indexOf(n) + 1;
                             for (const o of os) {
                                 if (r._leibWurzel(o) !== wahlLeib) continue;
+                                // DAS BILD DER ECKE (`gesichtMasse` bild): ob die Kamera dieses Schusses ihr Teil zeichnet (seine Ebene).
+                                // Der Wurf-Zwilling (die Grobstufe auf SHADOW_TWIN_LAYER, `_gelenkStufe`) trägt dieselbe Klasse und
+                                // wirft nur; bis w14-gesicht-fern lagen seine 6 299 Ecken der Kopf-Haut als Haut-Proben in jedem
+                                // Bildpunkt von Lippe und Höhle (Kamera des Spiels, Radeon 341ad089: 198 von 198 Lippen-Proben in
+                                // zwei Zonen, gesicht 0,333 mit Lippe und Höhle ungemessen). Mitte und Haarlinie liest nur der Kopf im Bild.
+                                const bild = o.layers.test(cam.layers);
                                 const pa = o.geometry.attributes.position;
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
@@ -1525,7 +1535,7 @@ async function starte() {
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
                                     v.applyMatrix4(o.matrixWorld);
-                                    if (z !== "iris" && z !== "braue") {
+                                    if (bild && z !== "iris" && z !== "braue") {
                                         minY = Math.min(minY, v.y);
                                         maxY = Math.max(maxY, v.y);
                                         mitte.add(v);
@@ -1535,6 +1545,7 @@ async function starte() {
                                     roh.push({
                                         z,
                                         seite,
+                                        bild,
                                         k: kix,
                                         a: z === "iris" ? null : albedo(o, i),
                                         w: v.clone(),
@@ -1551,7 +1562,7 @@ async function starte() {
                         const median = {};
                         for (const sd of ["irisL", "irisR"]) {
                             const ds = roh
-                                .filter((p) => p.seite === sd)
+                                .filter((p) => p.bild && p.seite === sd)
                                 .map((p) => p.d)
                                 .sort(aufsteigend);
                             median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
@@ -1582,12 +1593,7 @@ async function starte() {
                             .map((p) => {
                                 const vorn = p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0;
                                 return {
-                                    z: p.z,
-                                    x: p.x,
-                                    y: p.y,
-                                    k: p.k,
-                                    a: p.a,
-                                    seite: p.seite,
+                                    ...p,
                                     frei: p.z === "iris" && vorn ? frei(p) : undefined,
                                     vorn,
                                     kalotte: p.z !== "iris" && p.w.y > yHaar,
@@ -1917,6 +1923,17 @@ async function starte() {
                 // Esc schließt) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
                 if (req.url === "/bedienung") {
                     const r = "anazhRealm";
+                    // DIE STAFFEL 2 (spielgang.K3#2): die EINE Seiten-Probe (`__bedienung2`, welt-boot) vor und nach dem echten Reload
+                    if (+b.staffel === 2) {
+                        await page.evaluate("__loop(1)");
+                        const vor = await page.evaluate("__bedienung2()");
+                        await lade();
+                        await page.waitForFunction(`!${r}._ladeschirmSteht()`, { timeout: 600000 });
+                        await page.evaluate("__loop(1)");
+                        const o = await page.evaluate((v) => __bedienung2(v), vor);
+                        await loopAus();
+                        return send(Object.assign(o, { ort: aktOrt }));
+                    }
                     await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
                     if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
@@ -2372,13 +2389,12 @@ async function starte() {
                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang — nur er schießt sie (`eichen`)
                     // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
-                    // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
+                    // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`. Alle Uhren einer Zeile in IHREM Gang (w13-gtx-proben): die
+                    // gestellte Stufe trägt jede Uhr — bis dahin je Uhr ein Gang, 21 statt 11, an der GTX die Tafel über ihrer Frist
                     const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
                         liste = [];
-                    for (const uhr of t.uhren)
-                        for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
-                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr, eichen: zeilen.length > 1 }))
-                                liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
+                    for (const zeilen of [t.zeilen.filter((z) => !nahZ.includes(z)), ...nahZ.map((z) => [z])])
+                        liste.push(...(await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhren: zeilen.length > 1 ? [0.5] : t.uhren, eichen: zeilen.length > 1 })));
                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -3120,7 +3136,7 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3) });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
@@ -3294,8 +3310,7 @@ hauptLauf(async () => {
         // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
-        if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
-        const kurve = (uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
             for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
                 await umstellen({ ort, sicht: "ego" });

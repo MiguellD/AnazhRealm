@@ -33,8 +33,13 @@ class AnazhRealm_klang {
         s.lofi = this._buildLofiLayer(ctx, masterGain);
         // Welle 5 Klang — die Klang-Welt (klang:UMWELT) auf ihrem Bus.
         s.umwelt = this._umweltKlangBauen(ctx, masterGain, UM);
-        // Die Welle des Abrollens (klang:FAHRT, je Kontext einmal) backt beim Einschalten, nie beim Aufsitzen in Fahrt.
+        // Die Welle des Abrollens und die Tafel der Säge (klang:FAHRT, je Kontext einmal) backen beim Einschalten, und EINE stumme
+        // Stimme geht einmal Bau, Lage und Halt (ihr Code liegt warm) — nie im Bild des Aufsitzens in Fahrt (die Spitze der Fahrt:
+        // der erste Bau, headless 2,0–2,3 ms, w13-klang-fahrt).
         UM.kern.fahrtWelle(ctx);
+        const warm = UM.kern.fahrtStimme(ctx, ctx.createGain());
+        warm.anwenden({ v: 0, vmax: 1, motor: true, ...UM.kern.fahrtAmOhr({}, {}) }, ctx.currentTime);
+        warm.stop(ctx.currentTime);
 
         s.ctx = ctx;
         s.masterGain = masterGain;
@@ -101,6 +106,10 @@ class AnazhRealm_klang {
                 o: { x: NaN, y: NaN, z: NaN },
                 ganz: 0,
                 ruht: false,
+                wx: NaN, // das Ohr des letzten Bilds, das Guthaben seines Wegs (der Takt nach Weg) und der offene Sprung
+                wz: NaN,
+                kredit: 0,
+                sprung: false,
                 regung: { w: 0, e: 0, h: 0, g: 0, s: 0 },
                 bauten: null,
             },
@@ -131,11 +140,13 @@ class AnazhRealm_klang {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
             letzteMischung: -Infinity,
-            folge: 0, // der Teil des Misch-Takts im nächsten Bild (1 Lage · 2 Mischung · 3 Graph · 4 Tier-Rufe, `_umweltKlangTick`)
+            folge: 0, // der Teil des Misch-Takts im nächsten Bild (4 Lage · 1 Mischung · 2 Graph · 3 Tier-Rufe, `_umweltKlangTick`)
             lageEins: null, // die erste Hälfte der Lage (`_umweltLageEins`), geschlossen im nächsten Bild
             rufDt: 0,
             rufSaat: saat || 1,
-            lage: null,
+            tat: null, // die jüngste Tat im Buch, die der Takt hörte (eine neue ist ein Ereignis)
+            naechste: null, // die Lage im Takt, bis der Graph sie spielt
+            lage: null, // die Lage, die der Graph spielt
             mix: null,
         });
     }
@@ -203,23 +214,52 @@ class AnazhRealm_klang {
     // (`_raumStrahlen`) nur in einem Bild ohne schweren Teil (Lage, Graph). klang.K5: alle in einem Bild trugen jedes sechste
     // Bild über 0,2 ms; bis w12-klang-lage trug das Lage-Bild die ganze Lage (0,07–0,09 ms) über den Strahlen des Bilds
     // (diag-klang-zensus --takt). Spielte die Musik in diesem Bild (`musik`, `_lofiTick`), gehen nur die Ring-Proben.
+    // DER SPRUNG: ein Ohr ohne Lage (der erste Takt) oder ein Ortswechsel weiter als raum.weiteM / 2 in einem Bild (Tor, Portal,
+    // Teleport — kein Gang, kein Wagen) ist eine Änderung des Orts: im nächsten Bild ohne Musik gehen Ring und Schwenk ganz und
+    // die Lage ganz, danach Mischung (`folge` 1), Graph (2) und Ruf (3) — drei Takte nach der Ankunft klingt der Ort mit seinem
+    // Nachhall. Im Misch-Takt trägt die zweite Lage-Hälfte die 4. Bis w13-klang-fahrt verschob die geteilte Lage (w12) den Graph
+    // in den vierten Takt: der Ort blieb drei Takte nach der Ankunft trocken (klang.K3#2 RT60 0 s an Feld, Wald, Gasse, Höhle).
+    // DIE TAT ist ein Ereignis wie der Sprung: eine neue Wertung im Buch (`state.taten`) geht im nächsten Bild ohne Musik die Lage
+    // ganz (ihre Antwort, affekt K1, `_tatAntwortAm`), danach Mischung und Graph — zwei Takte nach der Tat singt der Chor ihre
+    // Antwort. `um.lage` ist die Lage, die der Graph spielt: der Takt rechnet die nächste in `um.naechste` und reicht sie im Takt
+    // des Graphs weiter (der Zensus und die Welt-Wache lesen Lage und Graph als Paar). Bis w13-klang-tat stand die Lage zwei Takte
+    // vor ihrem Graph, und die Tat wartete auf den Misch-Takt: die Welt-Wache hörte Tat 1 mit 1,78 dB (Lage) über dem Graph der
+    // vorigen (Mischung −37,35, Ausgabe −35,77 dB), Tat 2 mit der Antwort von Tat 1.
     _umweltKlangTick(musik) {
         const s = this.state.symphony;
         const um = s.umwelt;
         if (!um || !s.ctx || !this.state.playerMesh) return;
         const p = this.state.playerMesh.position;
-        const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
+        const U = AnazhRealm._umweltGesetz().UMWELT;
+        const O = U.ohr;
+        const ohr = um.ohr || (um.ohr = { x: NaN, z: NaN });
+        if (!(Math.hypot(p.x - ohr.x, p.z - ohr.z) <= U.raum.weiteM / 2)) um.sprung = true;
+        [ohr.x, ohr.z] = [p.x, p.z];
+        const buch = this.state.taten;
+        const tat = buch && buch.length ? buch[buch.length - 1] : null;
+        if (tat !== um.tat) [um.tat, um.ereignis] = [tat, true];
         if (musik) return void this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
         const jetzt = s.ctx.currentTime;
+        if (um.sprung || um.ereignis) {
+            if (um.sprung) this._umweltRingProbe(um, p.x, p.z, um.ring.punkte.length);
+            else this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, 0);
+            um.sprung = um.ereignis = false;
+            um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
+            um.letzteMischung = jetzt;
+            um.naechste = this._umweltLage();
+            um.folge = 1;
+            return;
+        }
         const teil = um.folge;
         const lage = !teil && jetzt - um.letzteMischung >= O.mischSek;
-        const schwer = lage || teil === 1 || teil === 3;
+        const schwer = lage || teil === 4 || teil === 2;
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame, schwer ? 0 : O.probenJeFrame);
         if (teil) {
-            um.folge = (teil + 1) % 5;
-            if (teil === 1) um.lage = this._umweltLageZwei(um.lageEins);
-            else if (teil === 2) um.mix = um.kern.umweltMischung(um.lage);
-            else if (teil === 3) {
+            um.folge = teil === 4 ? 1 : (teil + 1) % 4;
+            if (teil === 4) um.naechste = this._umweltLageZwei(um.lageEins);
+            else if (teil === 1) um.mix = um.kern.umweltMischung(um.naechste);
+            else if (teil === 2) {
+                um.lage = um.naechste;
                 um.graph.anwenden(um.mix, jetzt);
                 um.raum.setzen(um.kern.umweltRaumNachhall(um.lage && um.lage.raum), jetzt);
                 this._untertitelStimmen(um.graph);
@@ -230,7 +270,7 @@ class AnazhRealm_klang {
         um.rufDt = Number.isFinite(um.letzteMischung) ? Math.min(1, jetzt - um.letzteMischung) : 0;
         um.letzteMischung = jetzt;
         um.lageEins = this._umweltLageEins();
-        um.folge = 1;
+        um.folge = 4;
     }
 
     // Der Hör-Ring: je Frame `n` Punkte (rund um die Uhr), je Punkt nass (`_nassAt`) und Strömung (die EINE
@@ -551,14 +591,28 @@ class AnazhRealm_klang {
     // (der Hang, Stützstellen je 2,5 m, der erste Treffer endet ihn)? Je Bild höchstens `n` Gesetz-Höhen (UMWELT.ohr.probenJeFrame,
     // die Zahl des Rings, `_umweltRingProbe`); ein Strahl misst vom Ohr, an dem er begann, und schreibt sein Urteil, wenn er endet —
     // an einem Ort dieselben Bytes wie der Strahl in einem Bild. Ging der Schwenk an diesem Ohr ganz, und regt sich weder Welt noch
-    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). Kosten je Bild: n Gesetz-Höhen,
-    // nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen und das Netz im Umkreis, 0,17–0,19 ms auf dem
-    // Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage fragte das Dach selbst.
+    // Edit noch Wasser noch Bestand (`regung`, wie die Decke `_ceilingHeadroom`), ruht er (Gebot 7). DER TAKT NACH WEG: wandert das
+    // Ohr, geht der Schwenk so viele Höhen, wie sein Weg verdient — ein ganzer Schwenk (raum.strahlen × weiteM / 2,5 m Höhen und das
+    // Dach) je halber raum.weiteM, das Guthaben `kredit` höchstens probenJeFrame; steht es, geht er n je Bild, bis er an ihm ganz
+    // ging. DER SPRUNG (ein neues Ohr, ein Ortswechsel weiter als raum.weiteM / 2 in einem Bild): im ersten Ruf mit Höhen geht er
+    // ganz, auch im Stand und ohne die Frage des Ankers als Ende des Bilds — der Raum am neuen Ort ist sofort gemessen. Kosten je Bild: höchstens n Gesetz-Höhen, nie die Weltgröße. Bis w12-klang-lage ging je Bild zwei ganze Strahlen (12 Höhen
+    // und das Netz im Umkreis, 0,17–0,19 ms auf dem Null-Renderer, diag-klang-zensus --takt, der Träger des Klang-Takts) und die Lage
+    // fragte das Dach selbst; bis w13-klang-fahrt ging er n Höhen in jedem Bild, in dem das Ohr wanderte (Radeon Fahrt 0,07 ms, z242;
+    // headless je Fahrt-Bild 21,5 → 14,6 µs, am Ort byte-gleich: 162 Orte frisch und nach Anlauf, 324/324).
     _raumStrahlen(um, px, fy, pz, n) {
         const S = um && um.raumStrahl;
         if (!S) return;
         const R = AnazhRealm._umweltGesetz().UMWELT.raum;
         const ey = fy + R.augeM;
+        const weg = Math.hypot(px - S.wx, pz - S.wz);
+        [S.wx, S.wz] = [px, pz];
+        if (!(weg <= R.weiteM / 2)) S.sprung = true; // ein neues Ohr oder ein Ortswechsel: der Schwenk geht ganz, sobald er Höhen hat
+        const sprung = S.sprung && n > 0;
+        const wandert = !S.sprung && weg > 0;
+        if (wandert) {
+            const jeM = (R.strahlen * (R.weiteM / 2.5) + 1) / (R.weiteM / 2);
+            S.kredit = Math.min(AnazhRealm._umweltGesetz().UMWELT.ohr.probenJeFrame, S.kredit + weg * jeM);
+        }
         const N = this._blockerNetz();
         const r = S.regung;
         const [w, e, h, g, s] = [
@@ -577,7 +631,8 @@ class AnazhRealm_klang {
         }
         S.ruht = false;
         const a = S.am;
-        for (let budget = n; budget > 0;) {
+        const frei = sprung ? Infinity : wandert ? Math.min(n, Math.floor(S.kredit)) : n;
+        for (let budget = frei; budget > 0;) {
             if (a.k < 0) {
                 // ein neuer Strahl (k 1 … strahlen; 0 das Dach) vom Ohr dieses Bilds
                 Object.assign(a, { k: S.idx, x: px, y: ey, z: pz, fy, d: 2.5, bau: 0, rein: true });
@@ -588,7 +643,10 @@ class AnazhRealm_klang {
                 if (a.k > 0) {
                     const wi = ((a.k - 1) / R.strahlen) * Math.PI * 2;
                     [a.ux, a.uz] = [Math.cos(wi), Math.sin(wi)];
-                    if (this._klangBauten(S, px, pz, R.weiteM)) budget = 0; // die Frage des Ankers trägt das Bild allein
+                    if (this._klangBauten(S, px, pz, R.weiteM) && !sprung) {
+                        if (wandert) S.kredit -= budget;
+                        budget = 0; // die Frage des Ankers trägt das Bild allein
+                    }
                     a.bau = this._raumBauTrifft(S.bauten.liste, a, R.weiteM, N.gen) ? 1 : 0;
                 }
             }
@@ -596,19 +654,22 @@ class AnazhRealm_klang {
             let fels = 0;
             if (a.k === 0) {
                 budget--;
+                if (wandert) S.kredit--;
                 const dach = this._voxelSurfaceY(a.x, a.z);
                 S.hoehle = Number.isFinite(dach) && dach > a.fy + R.augeM + 2 ? 1 : 0;
                 fertig = true;
             } else if (a.d > R.weiteM) fertig = true;
             else if (budget > 0) {
                 budget--;
+                if (wandert) S.kredit--;
                 const hh = this.getTerrainHeightAt(a.x + a.ux * a.d, a.z + a.uz * a.d);
                 if (Number.isFinite(hh) && hh > a.y) [fertig, fels] = [true, 1];
                 else a.d += 2.5;
             }
             if (!fertig) continue;
             if (a.k > 0) [S.bau[a.k - 1], S.fels[a.k - 1]] = [a.bau, fels];
-            if (a.rein && a.x === S.o.x && a.y === S.o.y && a.z === S.o.z && ++S.ganz > R.strahlen) S.ruht = true;
+            if (a.rein && a.x === S.o.x && a.y === S.o.y && a.z === S.o.z && ++S.ganz > R.strahlen)
+                [S.ruht, S.sprung] = [true, false];
             S.idx = (a.k + 1) % (R.strahlen + 1);
             a.k = -1;
             if (S.ruht) return;
@@ -939,34 +1000,44 @@ class AnazhRealm_klang {
     // Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-Tasten (W, rückwärts S),
     // den Flug und das Ohr (klang:FAHRT_OHR, `fahrtAmOhr`: Doppler aus der Geschwindigkeit des Wagens `_fahrWagenGeschw`
     // gegen die des Leibs am Ohr, Abstand; im Sattel sitzt das Ohr im Wagen). Absteigen, ein Wagen-Wechsel, die Ruhe oder die
-    // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt.
+    // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt, ihre Ziele nur über der Hörschwelle
+    // (klang:FAHRT.schwelle: je Fahrt-Bild 5,08 → 2,09 Ziele); ohne Sattel, Nachlauf und Stimme kein Rechnen. Je Bild, nie geballt:
+    // ein Steuer-Takt (je halbe Rampe) senkte das Mittel, ballte aber den Kaltstart des Pfads in jedes zweite Bild — der zweite
+    // Aufruf im selben Bild kostet 3 µs, der erste 25 (w13-klang-fahrt, headless ABAB).
     _fahrtKlangTick() {
         const s = this.state.symphony;
         const st = this.state;
         const pl = st.player;
+        const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
+        const los = this._fahrLos;
+        const stimmen = s.fahrt || (s.fahrt = new Map());
+        if (!sattel && !(los && los.size) && !stimmen.size) return;
+        const { kern } = AnazhRealm._umweltGesetz();
+        const jetzt = s.ctx.currentTime;
         const pm = st.playerMesh;
         const v = st.playerVel;
-        const { kern } = AnazhRealm._umweltGesetz();
         const S = AnazhRealm._fahrSchrittGesetz().S;
         const T = st.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
-        const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
-        const ohr = pm && {
-            x: pm.position.x,
-            y: pm.position.y,
-            z: pm.position.z,
-            vx: v ? v.x() : 0,
-            vy: v ? v.y() : 0,
-            vz: v ? v.z() : 0,
-        };
-        const stimmen = s.fahrt || (s.fahrt = new Map());
-        const hoert = new Map();
-        for (const e of sattel ? [sattel, ...(this._fahrLos || [])] : this._fahrLos || []) {
+        // die Wagen dieses Bilds und die gehörten: je Bild geleert, nie neu gebaut; das Ohr am Leib erst für einen Wagen
+        // außerhalb des Sattels (im Sattel sitzt das Ohr im Wagen: `fahrtAmOhr` mit derselben Lage)
+        const wagen = this._fahrtWagen || (this._fahrtWagen = []);
+        const hoert = this._fahrtHoert || (this._fahrtHoert = new Map());
+        wagen.length = 0;
+        hoert.clear();
+        if (sattel) wagen.push(sattel);
+        if (los) for (const e of los) wagen.push(e);
+        let ohr = null;
+        for (const e of wagen) {
             const fz = e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
             const imSattel = e === sattel && e.id === pl.mountedArch;
-            const vw = fz && ohr && this._fahrWagenGeschw(e);
+            const vw = fz && pm && this._fahrWagenGeschw(e);
             if (!vw || hoert.has(e)) continue;
+            if (!imSattel && !ohr) {
+                const p = pm.position;
+                ohr = { x: p.x, y: p.y, z: p.z, vx: v ? v.x() : 0, vy: v ? v.y() : 0, vz: v ? v.z() : 0 };
+            }
             const am = imSattel
-                ? kern.fahrtAmOhr(ohr, ohr)
+                ? kern.fahrtAmOhr(pm, pm)
                 : kern.fahrtAmOhr(
                       {
                           x: fz.x,
@@ -993,12 +1064,13 @@ class AnazhRealm_klang {
         }
         for (const [e, stimme] of stimmen)
             if (!hoert.has(e)) {
-                stimme.stop(s.ctx.currentTime);
+                stimme.stop(jetzt);
                 stimmen.delete(e);
             }
         for (const [e, lage] of hoert) {
-            if (!stimmen.has(e)) stimmen.set(e, kern.fahrtStimme(s.ctx, s.masterGain));
-            stimmen.get(e).anwenden(lage, s.ctx.currentTime);
+            let stimme = stimmen.get(e);
+            if (!stimme) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            stimme.anwenden(lage, jetzt);
             this._untertitel("fahrt", lage.motor ? "motor" : "rollen", null, 0);
         }
     }

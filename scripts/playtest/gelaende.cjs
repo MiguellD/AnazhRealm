@@ -1139,9 +1139,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         const out = {};
         // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
         r.toggleInventoryOverlay(false);
-        if (!st.keys) st.keys = {};
-        st.keys.w = true;
-        st.keys.a = true;
+        halt.vor = true;
+        halt.links = true;
 
         // Inventar öffnen → exitPointerLock wird gerufen (headless per Stub gezählt); dazu crash-frei +
         // state.inventoryOpen true.
@@ -1173,8 +1172,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.exitLockCalledOnOpen = exitCalled >= 1;
         out.overlayOpenAfterToggle = st.inventoryOpen === true;
         // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
-        out.wKeyStillActiveAfterOpen = st.keys.w === true;
-        out.aKeyStillActiveAfterOpen = st.keys.a === true;
+        out.wKeyStillActiveAfterOpen = halt.vor === true;
+        out.aKeyStillActiveAfterOpen = halt.links === true;
 
         // Esc bei offenem Inventar → toggle close: direkter Aufruf statt synthetischem Keydown (headless
         // flaky); toggleInventoryOverlay(false) darf den Pointer-Lock nicht erneut setzen.
@@ -1183,8 +1182,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
 
         // Cleanup
         document.exitPointerLock = origExit;
-        st.keys.w = false;
-        st.keys.a = false;
+        halt.vor = false;
+        halt.links = false;
 
         return out;
     });
