@@ -1597,18 +1597,20 @@
         band.connect(rollG);
         rollG.connect(ausgang);
         var quellen = [saege, halb, roll, drehzahl];
+        // die sechs Ziele der Stimme, einmal gegriffen (je Griff ein Weg durch die Bindung des Browsers)
+        var pRoll = roll.frequency, pDreh = drehzahl.offset, pTief = tief.frequency, pMotor = motorG.gain, pBand = band.frequency, pRollG = rollG.gain;
         quellen.forEach(function (q) { knoten.add(q); q.start(t0); });
         return {
             knoten: knoten,
             anwenden: function (lage, t) {
                 if (!an) return;
                 var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtImOhr(lage));
-                ziel(roll.frequency, R.grundHz * m.doppler, zeit, F.rampeSek, ton);
-                ziel(drehzahl.offset, m.motorHz, zeit, F.rampeSek, ton);
-                ziel(tief.frequency, m.motorFilterHz, zeit, F.rampeSek, farbe);
-                ziel(motorG.gain, dbZuGain(m.motorDb, saegeRms), zeit, F.rampeSek, pegel, still / saegeRms);
-                ziel(band.frequency, m.rollHz, zeit, F.rampeSek, farbe);
-                ziel(rollG.gain, dbZuGain(m.rollDb, 1), zeit, F.rampeSek, pegel, still);
+                ziel(pRoll, R.grundHz * m.doppler, zeit, F.rampeSek, ton);
+                ziel(pDreh, m.motorHz, zeit, F.rampeSek, ton);
+                ziel(pTief, m.motorFilterHz, zeit, F.rampeSek, farbe);
+                ziel(pMotor, dbZuGain(m.motorDb, saegeRms), zeit, F.rampeSek, pegel, still / saegeRms);
+                ziel(pBand, m.rollHz, zeit, F.rampeSek, farbe);
+                ziel(pRollG, dbZuGain(m.rollDb, 1), zeit, F.rampeSek, pegel, still);
             },
             stop: function (t) {
                 if (!an) return;

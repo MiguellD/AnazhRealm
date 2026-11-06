@@ -964,35 +964,42 @@ class AnazhRealm_klang {
     // den Flug und das Ohr (klang:FAHRT_OHR, `fahrtAmOhr`: Doppler aus der Geschwindigkeit des Wagens `_fahrWagenGeschw`
     // gegen die des Leibs am Ohr, Abstand; im Sattel sitzt das Ohr im Wagen). Absteigen, ein Wagen-Wechsel, die Ruhe oder die
     // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt, ihre Ziele nur über der Hörschwelle
-    // (klang:FAHRT.schwelle); ohne Sattel, Nachlauf und Stimme kein Rechnen.
+    // (klang:FAHRT.schwelle); ohne Sattel, Nachlauf und Stimme kein Rechnen. Je Bild, nie geballt: ein Steuer-Takt (je halbe
+    // Rampe) senkte das Mittel, ballte aber den Kaltstart des Pfads in jedes zweite Bild (w13-klang-fahrt, headless ABAB).
     _fahrtKlangTick() {
         const s = this.state.symphony;
         const st = this.state;
         const pl = st.player;
         const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
-        if (!sattel && !(this._fahrLos && this._fahrLos.size) && !(s.fahrt && s.fahrt.size)) return;
+        const los = this._fahrLos;
+        const stimmen = s.fahrt || (s.fahrt = new Map());
+        if (!sattel && !(los && los.size) && !stimmen.size) return;
+        const { kern } = AnazhRealm._umweltGesetz();
+        const jetzt = s.ctx.currentTime;
         const pm = st.playerMesh;
         const v = st.playerVel;
-        const { kern } = AnazhRealm._umweltGesetz();
         const S = AnazhRealm._fahrSchrittGesetz().S;
         const T = st.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
-        const ohr = pm && {
-            x: pm.position.x,
-            y: pm.position.y,
-            z: pm.position.z,
-            vx: v ? v.x() : 0,
-            vy: v ? v.y() : 0,
-            vz: v ? v.z() : 0,
-        };
-        const stimmen = s.fahrt || (s.fahrt = new Map());
-        const hoert = new Map();
-        for (const e of sattel ? [sattel, ...(this._fahrLos || [])] : this._fahrLos || []) {
+        // die Wagen dieses Bilds und die gehörten: je Bild geleert, nie neu gebaut; das Ohr am Leib erst für einen Wagen
+        // außerhalb des Sattels (im Sattel sitzt das Ohr im Wagen: `fahrtAmOhr` mit derselben Lage)
+        const wagen = this._fahrtWagen || (this._fahrtWagen = []);
+        const hoert = this._fahrtHoert || (this._fahrtHoert = new Map());
+        wagen.length = 0;
+        hoert.clear();
+        if (sattel) wagen.push(sattel);
+        if (los) for (const e of los) wagen.push(e);
+        let ohr = null;
+        for (const e of wagen) {
             const fz = e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
             const imSattel = e === sattel && e.id === pl.mountedArch;
-            const vw = fz && ohr && this._fahrWagenGeschw(e);
+            const vw = fz && pm && this._fahrWagenGeschw(e);
             if (!vw || hoert.has(e)) continue;
+            if (!imSattel && !ohr) {
+                const p = pm.position;
+                ohr = { x: p.x, y: p.y, z: p.z, vx: v ? v.x() : 0, vy: v ? v.y() : 0, vz: v ? v.z() : 0 };
+            }
             const am = imSattel
-                ? kern.fahrtAmOhr(ohr, ohr)
+                ? kern.fahrtAmOhr(pm, pm)
                 : kern.fahrtAmOhr(
                       {
                           x: fz.x,
@@ -1019,12 +1026,13 @@ class AnazhRealm_klang {
         }
         for (const [e, stimme] of stimmen)
             if (!hoert.has(e)) {
-                stimme.stop(s.ctx.currentTime);
+                stimme.stop(jetzt);
                 stimmen.delete(e);
             }
         for (const [e, lage] of hoert) {
-            if (!stimmen.has(e)) stimmen.set(e, kern.fahrtStimme(s.ctx, s.masterGain));
-            stimmen.get(e).anwenden(lage, s.ctx.currentTime);
+            let stimme = stimmen.get(e);
+            if (!stimme) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            stimme.anwenden(lage, jetzt);
             this._untertitel("fahrt", lage.motor ? "motor" : "rollen", null, 0);
         }
     }
