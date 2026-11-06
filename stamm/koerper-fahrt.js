@@ -1692,8 +1692,8 @@ class AnazhRealm_koerper_fahrt {
     // DER FAHRER (fahrzeug.K2): wer am Steuer des gerittenen Gesetz-Wagens eine Route trägt (`fahrerSetzen`, die Punkte einer
     // Route über das Wegenetz, `_wegenetzRoute`), schreibt am Kopf jedes Sim-Schritts Gas, Bremse und Lenkung in die Verb-Tafel
     // (`_verbTafelSammeln`) — dieselben Felder wie Tastatur und Pad, gefahren vom EINEN Fahr-Schritt des Kerns, nie ein Teleport.
-    // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley — geteilt durch den
-    // Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
+    // Die Lenkung folgt der Linie am Vorderrad (ihre Krümmung, der Winkel zu ihr und der Abstand, Stanley mit dem Dämpfer der
+    // Gier — geteilt durch den Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
     // voraus (das Tempo-Profil im Reibkreis): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (der des Kerns am Boden
     // unter dem Rad, `_fahrHaft`) und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` neben der Querlast reicht;
     // am Ende hält er. `F.s` (Weg auf der Route),
