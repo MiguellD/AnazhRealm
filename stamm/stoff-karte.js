@@ -619,16 +619,19 @@ class AnazhRealm_stoff_karte {
             [0, 1, 2, 3].map((k) => inv[k] + inv[4 + k] * d.x + inv[8 + k] * d.y + inv[12 + k] * d.z)
         );
         B.tiefe = S.texture(B.leer.depthTexture);
+        // DER BIAS DER SONNEN-KACHELN ist das EINE Gesetz der Kaskaden (`_schattenBias`, 0710-12): je Bake aus der Texel-Kante
+        // seiner Kacheln (Normale, Tiefe 0..1 — `_karteWeltBacken` schreibt ihn), nie ein Meter-Wert für alle Kronen
+        B.uBias = S.uniform(new T.Vector2(0, 0));
         const gpuKoord = this.state.renderer.coordinateSystem === T.WebGPUCoordinateSystem;
         const sicht = S.Fn(() => {
             const nB = S.normalize(B.uBaum.mul(S.vec4(S.normalWorld, 0.0)).xyz).toVar();
-            const pB = B.uBaum.mul(S.vec4(S.positionWorld, 1.0)).xyz.add(nB.mul(SZ.normalBias)).toVar();
+            const pB = B.uBaum.mul(S.vec4(S.positionWorld, 1.0)).xyz.add(nB.mul(B.uBias.x)).toVar();
             const c = [0, 1, 2, 3].map(() => S.float(0.0).toVar());
             B.dirs.forEach((d, j) => {
                 const q = B.uVP[j].mul(S.vec4(pB, 1.0));
                 const u = q.x.mul(0.5).add(0.5);
                 const v = gpuKoord ? S.float(0.5).sub(q.y.mul(0.5)) : q.y.mul(0.5).add(0.5);
-                const ref = (gpuKoord ? q.z : q.z.mul(0.5).add(0.5)).add(SZ.bias);
+                const ref = (gpuKoord ? q.z : q.z.mul(0.5).add(0.5)).add(B.uBias.y);
                 const px = S.ivec2(
                     S.clamp(u.mul(K).floor(), 1.0, K - 2).add(j * K),
                     S.clamp(v.mul(K).floor(), 1.0, K - 2)
@@ -877,6 +880,12 @@ class AnazhRealm_stoff_karte {
             const L = B.licht;
             Object.assign(L, { left: -R, right: R, top: R, bottom: -R, near: 0.1, far: R * 6 });
             L.coordinateSystem = rend.coordinateSystem;
+            // der Bias der Kacheln nach dem Gesetz der Kaskaden (`_schattenBias`): die Texel-Kante 2R/K, die Tiefe der Box
+            const texel = (2 * R) / K;
+            B.uBias.value.set(
+                this._schattenNormalBias(texel),
+                (-AnazhRealm.SCHATTEN_KASKADE.tiefeTexel * texel) / (L.far - L.near)
+            );
             for (let j = 0; iR === 0 && j < B.dirs.length; j++) {
                 const d = B.dirs[j];
                 L.position.copy(B.mitte).addScaledVector(d, R * 3);
@@ -1491,7 +1500,9 @@ AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
 // Azimut) in Grad — der Zenit, der 45°-Kranz und versetzt der Kranz der tiefen Sonne (15°), acht Azimute im Ganzen; über sie
 // fittet die Bühne das lineare Feld v(d) = c0 + c·d (w14-nadel-licht). `spanne` je Beiwert (c0, cx, cy, cz) das Intervall,
 // das rgba8 trägt (die Grenzen des Fits über jede Sicht 0/1 der Richtungen: c0 −0,40…1,40, cx und cz ±0,72, cy ±1,76); die
-// Tiefen-Kachel je Richtung (px) und ihr Versatz (Tiefe, Normale in m) gegen die Selbst-Verschattung.
+// Tiefen-Kachel je Richtung (px). Ihren Versatz gegen die Selbst-Verschattung trägt das Gesetz der Kaskaden (`_schattenBias`:
+// `SCHATTEN_KASKADE.normalTexel` und `tiefeTexel` je Texel-Kante) — bis w14 stand hier ein Zwilling in Metern (0,04 m Normale,
+// −0,0005 Tiefe für jede Krone).
 AnazhRealm.KARTE_SONNEN_SICHT = Object.freeze({
     richtungen: Object.freeze([
         [90, 0],
@@ -1511,8 +1522,6 @@ AnazhRealm.KARTE_SONNEN_SICHT = Object.freeze({
         [-1, 1],
     ]),
     karte: 256,
-    bias: -0.0005,
-    normalBias: 0.04,
 });
 // DER RECHNER DER ABLAGE (`_karteRechenPlan`): Deckung, deckungstreue Mips, BC1, BC5 und die Sonnen-Sicht einer Schicht.
 AnazhRealm.KARTE_RECHNER_WGSL = `
