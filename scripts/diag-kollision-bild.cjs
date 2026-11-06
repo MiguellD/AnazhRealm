@@ -28,8 +28,10 @@
 //       Sprint, der Wagen — das schnellste Spiel-Rezept bei vmax × UEBER_VMAX (Staffel 2; die vmax aus `_vehicleProfile`,
 //       gemessen das gefahrene Tempo) — und der Bär, den er stößt, gegen Mauer · Fels · Haus · Baum · Bär, der Fall aus FALL_M —
 //       bei 144 · 60 · 30 fps und dem Takt-Deckel: nach jedem Sim-Schritt und jedem Bild Eindringen ≤ EINDRING_M, kein
-//       Durchtritt, Spalt ≤ SPALT_M (sonst vakuös); DAS BILD: Wagen und Bär an der Mauer — an jedem Bild, in dem sie anliegen,
-//       ihre gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ SPALT_M, Eindringen ≤
+//       Durchtritt, Spalt ≤ SPALT_M (sonst vakuös); DAS BILD: Wagen und Bär an der Mauer — an jedem Bild, in dem sie ZUR ZEIT
+//       DES BILDS anliegen (der Wagen, den das Bild zwischen zwei Sim-Schritten zeichnet: die Linse rechnet seinen Abstand
+//       zur Wand selbst, von der Lage vor dem Schritt mit seinem Tempo auf α des Schritts — nie an der Sim-Lage, die dem Bild
+//       vorausläuft), ihre gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ SPALT_M, Eindringen ≤
 //       EINDRING_M; was die Welt nicht trägt, steht OFFEN mit Zahl (die Station physik.K2#2 urteilt), kein Bild ist ROT; das
 //       Tempo × 1,2 des Wagens urteilt die Station an der Zeile (vmax und Faktor stehen dort);
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
