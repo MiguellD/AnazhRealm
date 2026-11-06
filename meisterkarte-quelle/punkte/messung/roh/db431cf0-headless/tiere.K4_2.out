@@ -1,0 +1,10 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben lebensraum,tagesbudget
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ lebensraum {"n":431,"drin":431,"gattung":{"fox":34,"deer":254,"bear":29,"wolf":114},"klasse":{"waldrand":237,"wiese":51,"hang":21,"wald":114,"fluss":8},"geburten":188,"gruppen":125,"journal":188,"minM":130.2,"imBlick":0,"fensterMax":1.84,"fernMin":130,"baer":{"fluss":[11,11],"sonst":[177,18]},"rand":{"punktImBlick":false,"leibAusser":false,"wich":false,"fernWich":true},"anteil":1,"saat":"anazh-realm-seed","fensterRaum":2.5,"gegen":{"n":405,"drin":405,"gattung":{"deer":255,"fox":32,"bear":37,"wolf":81},"klasse":{"waldrand":222,"wiese":65,"hang":28,"wald":81,"fluss":9},"geburten":184,"gruppen":115,"journal":184,"minM":130.2,"imBlick":0,"fensterMax":1.84,"fernMin":130,"baer":{"fluss":[13,13],"sonst":[171,24]},"rand":{"punktImBlick":false,"leibAusser":false,"wich":false,"fernWich":true},"anteil":1,"saat":"lebensraum-gegen","fensterRaum":2.5}}
+  ✅ tagesbudget {"budget":{"deer":{"ruhen":0.409,"nahrung":0.485,"ziehen":0.106},"bear":{"ruhen":0.446,"nahrung":0.409,"ziehen":0.144},"fox":{"ruhen":0.602,"nahrung":0,"ziehen":0.398},"wolf":{"ruhen":0.601,"nahrung":0,"ziehen":0.399}},"soll":{"deer":{"ruhen":0.4,"nahrung":0.5,"ziehen":0.1},"bear":{"ruhen":0.45,"nahrung":0.4,"ziehen":0.15},"fox":{"ruhen":0.6,"nahrung":0,"ziehen":0.4},"wolf":{"ruhen":0.6,"nahrung":0,"ziehen":0.4}},"ruhe":[219886,2693],"truenke":[4,4,4,4,4,4,4,4,4,4,4,4],"amWasser":48,"durstAus":0}
+
+  (31 s) — Sekunden je Probe: lebensraum: 12, tagesbudget: 9
+
+✅ GRÜN — lebensraum · tagesbudget
