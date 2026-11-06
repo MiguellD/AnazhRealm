@@ -79,3 +79,10 @@ Eine Zeile je Fund: Datei:Zeile · Wurzel · was es bewegt · Größe. Wer eine 
 - 06.11. w13-haus-alter: `phyto-core.js:5177` · die Faltung je Seh-Klasse tilgt die Rolle je Ecke (Putz, Holz, Ziegel altern als EIN Stoff) · stoffe.K4 rollentreu · L
 - 06.11. w13-jung-gestalt: `scripts/diag-pflanzen-nah.cjs:468` · baut P von Hand (`Object.assign(treeParams(…), f.ov)`, ohne `__praegeP`) — ein Zwilling der Prägung · gate:pflanzen-nah · S
 - 06.11. w13-kreatur-blick: die Nexus-Geburt fragt den Blick noch am Fuß-Punkt (`_kreaturImBlick`) statt am Leib (`_bestandAusserBlick`) · oekologie, A · S
+- 06.11. w13-buehne-lack (landet z247, Labor = Welt): der Lack spiegelt den Himmel auch in der WELT am iso-/Draufsicht-Blick kaum (Lack-Kugel Welt 45,3 / Bühne 48,2, p95/p50 1,14; main-Garage 2,11 kam von drei Studio-Lichtern am Blick) — Clearcoat/Umgebungs-Stärke des Lack-Stoffs im EINEN Stoff-Gesetz gegen REF (Autolack spiegelt den Himmel kräftig) · material.K4, A · M
+- 06.11. w13-buehne-lack: 46 Pipelines der Garage synchron gebaut (35 im ersten Bild), keine endlos — der 120-s-Hänger auf der Radeon ist der synchrone Bau · studios, ankunft · S–M
+- 06.11. w13-ankunft-faden: `stamm/koerper-leib.js:1970` feiner Leib (Ego: kein Pixel) wird vor der Kontrolle gegossen (111–152 ms) und eingetauscht (81–134 ms) · ankunft.K1/K5 · S
+- 06.11. w13-ankunft-faden: `stamm/studio-gestalt.js:55` `_tickHuellenNach` 124–296 ms im Fenster Weltbild→Kontrolle · ankunft.K1 · S
+- 06.11. w13-ankunft-faden: `stamm/gelaende-fern.js:1782` `_fernRingDeckWache`/`_fernRingY` 202 ms vor dem Bild im Haupt-Faden, `_fernRingKlassen` 134 ms · ankunft.K5 · M
+- 06.11. w13-ankunft-faden: `stamm/bild-kosten.js:1304` die zwei Resolve-Stoffe der TRAA bauen dasselbe Programm zweimal · ankunft.K5 · S
+- 06.11. w13-ankunft-faden: `stamm/bild-himmel.js:750` das erste Lade-Bild trägt Himmel, PMREM (133 ms), Atmosphäre (113 ms), 14 Programme und `_vogelTakt` in EINER Aufgabe (953–1460 ms) · ankunft.K5 · M

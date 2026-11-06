@@ -39,3 +39,4 @@ w5-studios-k1 760f9e2f GRÜN check+playtest-voll+praegung-welt+studio-uebergabe+
 w6-weiches 31b2519b ROT gate:kreatur-takt Φ5=67760B ❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
 w6-weiches 9db179aa GRÜN check+playtest-voll Φ5=69125B (main 71ef6a0d)
 w13-mikro-schirm b513b88a GRÜN Radeon-Bild vom Koordinator angesehen: Krume statt schwarzer Lücken, Fels-Korn, Weitsicht gleich; material.K2#1 Radeon GRÜN (zug/bilder/w13-mikro-schirm/)
+w13-buehne-lack 6dd6c330 GRÜN Labor = Welt (Wand H9); Welt-Blick 10/22 Uhr gleich (vp-0611 §3); der matte Lack ist Befund der Welt (FUND material.K4), kein Bruch der Bühne
