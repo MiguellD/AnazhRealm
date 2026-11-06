@@ -1717,6 +1717,22 @@ class AnazhRealm_werkstatt_hud {
     // Umgebungsgeräusche, Render-Ring-Radius. Lädt persistierte Werte
     // aus localStorage. Master + Umgebung wirken live auf den Master-Bus und
     // den Bus der Klang-Welt. Render-Ring greift im nächsten worldgen-Tick.
+    // DER ZUGANG IM MENÜ (spielgang.K4): die Schalter zeigen den Stand `state.zugang` und die Untertitel — beim Bau des Menüs und
+    // nach dem Laden des Stands (`loadState` läuft nach `slidersInitDOM`: bis hier zeigte das Menü nach dem Neuladen den Default)
+    _zugangDom() {
+        if (typeof document === "undefined") return;
+        const Z = this.state.zugang || {};
+        const el = (id) => document.getElementById(id);
+        if (el("farbsicht-wahl"))
+            el("farbsicht-wahl").value = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
+        const fov = Math.round(Number.isFinite(Z.fov) ? Z.fov : AnazhRealm.KAM_FOV_GRAD);
+        if (el("slider-sichtfeld")) el("slider-sichtfeld").value = String(fov);
+        if (el("slider-sichtfeld-val")) el("slider-sichtfeld-val").textContent = `${fov}°`;
+        if (el("kopfwackeln-toggle")) el("kopfwackeln-toggle").checked = Z.wackeln !== false;
+        if (el("unschaerfe-toggle")) el("unschaerfe-toggle").checked = Z.unschaerfe !== false;
+        if (el("untertitel-toggle")) el("untertitel-toggle").checked = this.state.untertitel === true;
+    }
+
     slidersInitDOM() {
         if (typeof document === "undefined") return;
         // Persistierte Werte laden
@@ -1899,6 +1915,30 @@ class AnazhRealm_werkstatt_hud {
                     for (const schl of [...buch.offen.keys()]) this._untertitelWeg(schl);
             });
         }
+        // spielgang.K4 — DER ZUGANG: jede Wahl schreibt `state.zugang` (die EINE Quelle; die Kette und das Rig lesen sie je Bild),
+        // die Schalter zeigt `_zugangDom` (auch nach dem Laden des Stands)
+        const zg = () => (this.state.zugang = this.state.zugang || {});
+        const fsW = document.getElementById("farbsicht-wahl");
+        if (fsW)
+            fsW.addEventListener(
+                "change",
+                () => (zg().farbsicht = AnazhRealm.FARBSICHT.arten.includes(fsW.value) ? fsW.value : "aus")
+            );
+        const svS = document.getElementById("slider-sichtfeld");
+        if (svS)
+            svS.addEventListener("input", () => {
+                const [f0, f1] = AnazhRealm.ZUGANG.fov;
+                zg().fov = Math.max(f0, Math.min(f1, parseInt(svS.value, 10) || AnazhRealm.KAM_FOV_GRAD));
+                this._zugangDom();
+            });
+        for (const [id, feld] of [
+            ["kopfwackeln-toggle", "wackeln"],
+            ["unschaerfe-toggle", "unschaerfe"],
+        ]) {
+            const cb = document.getElementById(id);
+            if (cb) cb.addEventListener("change", () => (zg()[feld] = !!cb.checked));
+        }
+        this._zugangDom();
         // V18.472 — der Perf-Export-Button (unter dem Panel-Toggle): lädt den
         // Flugschreiber-Trace (+ Sekunden-Ring) als .json herunter — die Datei,
         // die der Schöpfer im Chat zustellt. EINE Quelle (_flightRecorderBuildTrace).

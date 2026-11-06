@@ -9250,6 +9250,30 @@
                             <input type="checkbox" id="untertitel-toggle" />
                             <span data-t="ui.untertitel-jede-stimme-und-jeder"></span>
                         </label>
+                        <!-- spielgang.K4 — DER ZUGANG (state.zugang, im Snapshot): Farbsicht (Daltonisierung im EINEN Post-Pfad),
+                             Sichtfeld (`_kamFov`), Kopfwackeln und Bewegungsunschärfe -->
+                        <div class="slider-row">
+                            <label data-t="ui.farbsicht" for="farbsicht-wahl"></label>
+                            <select id="farbsicht-wahl">
+                                <option value="aus" data-t="ui.farbsicht-aus"></option>
+                                <option value="deuteranopie" data-t="ui.farbsicht-deuteranopie"></option>
+                                <option value="protanopie" data-t="ui.farbsicht-protanopie"></option>
+                                <option value="tritanopie" data-t="ui.farbsicht-tritanopie"></option>
+                            </select>
+                        </div>
+                        <div class="slider-row">
+                            <label data-t="ui.sichtfeld" for="slider-sichtfeld"></label>
+                            <input type="range" id="slider-sichtfeld" min="60" max="100" value="75" />
+                            <span class="slider-value" id="slider-sichtfeld-val">75°</span>
+                        </div>
+                        <label class="radio-label">
+                            <input type="checkbox" id="kopfwackeln-toggle" checked />
+                            <span data-t="ui.kopfwackeln"></span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="checkbox" id="unschaerfe-toggle" checked />
+                            <span data-t="ui.bewegungsunschaerfe"></span>
+                        </label>
                         <div class="slider-row">
                             <label data-t="ui.sicht-ring" for="slider-ring"></label>
                             <input type="range" id="slider-ring" min="1" max="12" value="4" />

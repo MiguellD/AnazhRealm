@@ -1251,6 +1251,9 @@ class AnazhRealm_bild_kosten {
                 // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
                 this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
+                // die Unschärfe der Bewegung (spielgang.K4, `_zugangTakt`): ab so vielen Ausgabe-Pixeln Bewegung je Bild trägt
+                // das Jetzt allein — an r184s `maxVelocityLength`, aus `ZUGANG.laufPxAus`
+                this._laufPx = uniform(this.maxVelocityLength);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 // DAS DECKUNGS-GEDÄCHTNIS (A3b): der Resolve schreibt neben dem Bild je Ausgabe-Pixel, wie oft sein 3×3 eine
                 // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT, Schlüssel = Name der Textur).
@@ -1466,7 +1469,7 @@ class AnazhRealm_bild_kosten {
                         // der ORT der Geschichte trägt (im Bild, keine Disokklusion); gültig ist sie dazu ohne Neubeginn
                         const ort = imBild.and(kante.or(frei.not()));
                         const gueltig = ort.and(this._neustart.equal(0));
-                        const lauf = uvA.sub(gUV).mul(ausGr).length().div(this.maxVelocityLength).saturate();
+                        const lauf = uvA.sub(gUV).mul(ausGr).length().div(this._laufPx).saturate();
                         // DAS DECKUNGS-GEDÄCHTNIS (A3b): eine stochastische Deckung (Laub, Nadeln, Halme, Karten, die Stufen-Blende)
                         // zeigt je Frame Fläche ODER Grund. In einem Frame, in dem ihre Lücke das 3×3 verlässt, ist die Box nur Fläche,
                         // und die Varianz-Klemme warf das Mittel der Geschichte weg (Radeon, Tafel-Pose, Abstand zum Mittel aus 256
@@ -1685,6 +1688,25 @@ class AnazhRealm_bild_kosten {
         return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, w));
     }
 
+    // DER ZUGANG IM BILD (spielgang.K4), je Bild aus `_loopRender`: der Stand `state.zugang` (Einstellungen › Ton & Sicht, im
+    // Snapshot) ist die EINE Quelle, die Kette liest ihn hier — die Farbsicht (`farbsicht`: die Art, ihre Abbildung D aus
+    // `_farbsichtMatrix`, gerechnet nur beim Wechsel) und die Unschärfe der Bewegung: sie IST die Geschichte der zeitlichen
+    // Auflösung, die einem bewegten Pixel bis `maxVelocityLength` (r184: 128 px je Bild) nachzieht; aus (`unschaerfe` false)
+    // weicht sie ab `ZUGANG.laufPxAus` Ausgabe-Pixeln Bewegung je Bild ganz dem Jetzt (`_laufPx` des Resolve).
+    _zugangTakt(ppu) {
+        const Z = this.state.zugang || {};
+        const art = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
+        if (ppu && ppu.farbMatrix && ppu._farbArt !== art) {
+            const m = AnazhRealm._farbsichtMatrix(art);
+            ppu.farbsicht.value = m ? 1 : 0;
+            if (m) ppu.farbMatrix.value.set(...m.dalt[0], ...m.dalt[1], ...m.dalt[2]);
+            ppu._farbArt = art;
+        }
+        const traa = this.state.traaNode;
+        if (traa && traa._laufPx)
+            traa._laufPx.value = Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength;
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -1794,6 +1816,10 @@ class AnazhRealm_bild_kosten {
                 // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
                 // Skala 1 null (die Stufe kostet dann nichts).
                 nachSchaerfe: uniform(0),
+                // DIE FARBSICHT (spielgang.K4): 1 = die Daltonisierung der gewählten Art (`state.zugang.farbsicht`) wirkt, ihre
+                // Abbildung D (`_farbsichtMatrix`) steht in `farbMatrix` — beide stellt `_zugangTakt` je Bild aus dem Stand.
+                farbsicht: uniform(0),
+                farbMatrix: uniform(new THREE.Matrix3()),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -1926,7 +1952,12 @@ class AnazhRealm_bild_kosten {
                 return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
             };
             const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
-            const graded = gesehen.max(vec3(0, 0, 0));
+            // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
+            // Tonkurve — linear und Weiß-treu (D · 1 = 1): sie vertauscht mit dem Versatz der Tonkurve (PBR Neutral zieht unter
+            // ihrem Knie nur einen grauen Sockel ab), im ganzen Mittelbereich ist sie dieselbe wie auf dem getonten Bild. Aus
+            // (`farbsicht` 0) fällt der Zweig (`nurBeiStaerke`).
+            const farbsichtDelta = () => u.farbMatrix.mul(gesehen).sub(gesehen);
+            const graded = gesehen.add(nurBeiStaerke(farbsichtDelta(), u.farbsicht)).max(vec3(0, 0, 0));
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
             // Ausgabe-Quad — keine Zwischen-Textur.
@@ -3440,3 +3471,83 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
     liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
 }
 `;
+// DIE FARBSICHT (spielgang.K4, `_farbsichtMatrix`, die Post-Kette `_ensurePostProcessing`): die Simulation der Dichromasie nach
+// Viénot, Brettel & Mollon 1999 („Digital video colourmaps for checking the legibility of displays by dichromats", Color Res. Appl.
+// 24:243) — linear-RGB → LMS (`lms`, die Zapfen-Antwort nach Smith & Pokorny), der fehlende Zapfen als Ebene durch Weiß und das
+// Blau bzw. Rot des Schirms (je Art `ebene`: L = a·M + b·S, M = a·L + b·S, S = a·L + b·M), zurück nach linear-RGB. Die
+// Daltonisierung nach Fidaner, Lin & Ozguven (2005): der Fehler, den der Dichromat nicht sieht (Bild − Simulation), geht in die
+// Kanäle, die er sieht (`schub`: protan und deutan in Grün und Blau, tritan in Rot und Grün), mit `staerke`. Alles linear und
+// Weiß-treu (die Simulation hält Grau): EINE 3×3-Abbildung D = I + staerke · Schub · (I − Sim), gerechnet je Art beim Bau.
+AnazhRealm.FARBSICHT = Object.freeze({
+    arten: Object.freeze(["aus", "deuteranopie", "protanopie", "tritanopie"]),
+    lms: Object.freeze([
+        [17.8824, 43.5161, 4.11935],
+        [3.45565, 27.1554, 3.86714],
+        [0.0299566, 0.184309, 1.46709],
+    ]),
+    // der fehlende Zapfen (Zeile von lms) und der Anker seiner Ebene neben Weiß: protan und deutan das Blau des Schirms (Viénot
+    // 1999: die Konstanten L = 2,02344·M − 2,52581·S und M = 0,494207·L + 1,24827·S sind genau diese Ebene), tritan sein Rot (der
+    // Anker 660 nm bei Brettel, Viénot & Mollon 1997 — die eine Ebene trägt ihn; ihre zwei Halb-Ebenen fallen am Rot zusammen)
+    ebene: Object.freeze({ protanopie: [0, 2], deuteranopie: [1, 2], tritanopie: [2, 0] }),
+    schub: Object.freeze({
+        protanopie: Object.freeze([
+            [0, 0, 0],
+            [0.7, 1, 0],
+            [0.7, 0, 1],
+        ]),
+        deuteranopie: Object.freeze([
+            [0, 0, 0],
+            [0.7, 1, 0],
+            [0.7, 0, 1],
+        ]),
+        tritanopie: Object.freeze([
+            [1, 0, 0.7],
+            [0, 1, 0.7],
+            [0, 0, 0],
+        ]),
+    }),
+    staerke: 1,
+});
+// DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
+// KAM_FOV_GRAD) in `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`).
+AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+// die Abbildungen der Farbsicht als reine Funktion (die Linse rechnet dieselbe): { sim, dalt } je Art, Zeilen-Matrizen 3×3
+AnazhRealm._farbsichtMatrix = function (art, staerke) {
+    const F = AnazhRealm.FARBSICHT;
+    const E = F.ebene[art];
+    if (!E) return null;
+    const mul = (A, B) => A.map((z) => [0, 1, 2].map((j) => z[0] * B[0][j] + z[1] * B[1][j] + z[2] * B[2][j]));
+    const inv = (m) => {
+        const [[a, b, c], [d, e, f], [g, h, i]] = m;
+        const A = e * i - f * h,
+            B = -(d * i - f * g),
+            C = d * h - e * g;
+        const det = a * A + b * B + c * C;
+        return [
+            [A / det, -(b * i - c * h) / det, (b * f - c * e) / det],
+            [B / det, (a * i - c * g) / det, -(a * f - c * d) / det],
+            [C / det, -(a * h - b * g) / det, (a * e - b * d) / det],
+        ];
+    };
+    // die Ebene durch Weiß (lms · 1) und den Anker: der fehlende Zapfen z = k0·u + k1·v aus den zwei anderen (u, v)
+    const [z, a] = E;
+    const [u, v] = [0, 1, 2].filter((i) => i !== z);
+    const w = F.lms.map((r) => r[0] + r[1] + r[2]);
+    const q = F.lms.map((r) => r[a]);
+    const det = w[u] * q[v] - w[v] * q[u];
+    const k0 = (w[z] * q[v] - w[v] * q[z]) / det,
+        k1 = (w[u] * q[z] - w[z] * q[u]) / det;
+    const P = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ];
+    P[z] = [0, 0, 0];
+    P[z][u] = k0;
+    P[z][v] = k1;
+    const sim = mul(inv(F.lms), mul(P, F.lms));
+    const s = Number.isFinite(staerke) ? staerke : F.staerke;
+    const fehl = sim.map((z, i) => z.map((v, j) => (i === j ? 1 : 0) - v));
+    const dalt = mul(F.schub[art], fehl).map((z, i) => z.map((v, j) => (i === j ? 1 : 0) + s * v));
+    return { sim, dalt };
+};

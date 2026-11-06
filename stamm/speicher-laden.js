@@ -478,6 +478,17 @@ class AnazhRealm_speicher_laden {
             // Boolean übersteuert; fehlt das Feld [Alt-Snapshot], bleibt der Default an).
             if (typeof state.perfPanel === "boolean") this.state.perfPanel = state.perfPanel;
             if (typeof state.untertitel === "boolean") this.state.untertitel = state.untertitel;
+            // spielgang.K4 — der Zugang: jede Wahl geprüft auf ihren Bereich (eine fremde Art fällt auf „aus“, das Sichtfeld klemmt)
+            const zg = state.zugang;
+            if (zg && typeof zg === "object") {
+                const Z = (this.state.zugang = Object.assign({}, this.state.zugang));
+                if (AnazhRealm.FARBSICHT.arten.includes(zg.farbsicht)) Z.farbsicht = zg.farbsicht;
+                const [f0, f1] = AnazhRealm.ZUGANG.fov;
+                if (zg.fov != null && Number.isFinite(+zg.fov)) Z.fov = Math.max(f0, Math.min(f1, +zg.fov));
+                if (typeof zg.wackeln === "boolean") Z.wackeln = zg.wackeln;
+                if (typeof zg.unschaerfe === "boolean") Z.unschaerfe = zg.unschaerfe;
+            }
+            this._zugangDom();
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
