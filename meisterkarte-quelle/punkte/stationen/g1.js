@@ -1031,7 +1031,7 @@ async function wetterK2Lauf() {
         const M = G.MULDE;
         if (!M || !AnazhRealm._pfuetzeGesetz) return { fehler: "keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz" };
         await window.__wasserStrom([-280.4, -1045.6], 1);
-        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)) };
+        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)), ecke: (x) => x };
         const S = st.chunkSaetze.get("boden");
         const [P, N, Z] = ["position", "normal", "aNormalZiel"].map((n) => S.geom.attributes[n].array);
         const senke = (x, z) => {
