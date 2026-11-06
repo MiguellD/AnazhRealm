@@ -26,11 +26,12 @@
 //                 von A bit-gleich (je seq). Selbsttests: B wendet jede Akt-Nachricht doppelt an und verschiebt den Samen des
 //                 Baus → Edits und Bauten ROT; A sendet eine Wetter-Nachricht → das Netz-Log ROT.
 //   (f) DIE WELT-UHR (feld.K2#2): alle Teil-Simulationen aus Saat + Akten. A springt 20 min Spielzeit in einen Zug, in dem
-//                 am Ort ein Sturm aufzieht (erst in den Zug davor, der jeden alten Wunsch nimmt); B folgt der Uhr von A
-//                 (`pos.w`, `_weltUhrNimm`) — der Zug der Welt-Uhr steht hart im Abdruck von (e), über Peers und den Reload
-//                 mitten im Sturm. Was Stufe 2 noch verlangt, steht als OFFEN mit Zahl: Wetter (Wort, Übergang) und Leben (A
-//                 pflegt im Gespräch) je Zelle gleich; Brand und Pegel sind hier ungemessen (das Entfachen reist nicht, kein
-//                 Wasser am Graben). Selbsttest: B mit eigener Uhr → der Zug ROT.
+//                 am Ort ein Sturm aufzieht (erst in den Zug davor); B folgt der Uhr von A (`pos.w`, `_weltUhrNimm`) — der Zug der
+//                 Welt-Uhr steht hart im Abdruck von (e), über Peers und den Reload mitten im Sturm. Je Seite gleich: das Wetter
+//                 (Wort, Übergang — der Wunsch der Welt reist als Akt), das Leben je lebender Zelle (Betrag und Stempel: der Fraß
+//                 des Bestands im Takt der Welt-Uhr, die Pflege von A im Gespräch als Akt), der Pegel des Jahrs (Hub je Höhe aus
+//                 Regen und Schmelze) und der Brand (je Zelle Ankunft, Zünd- und End-Zeit). Verglichen wird im selben Moment des
+//                 Felds (das zuletzt gerechnete Ereignis seiner Folge, `feldLetzt`). Selbsttest: B mit eigener Uhr → der Zug ROT.
 //   (g) STILLE (mp-leitung): ein stiller Partner ist nicht weg. A schweigt 15 s (die Pumpe ruht, der Loop steht wie in einem
 //                 verborgenen Tab), B tickt weiter; zurück ist A, wenn B's Ghost den ersten Anker von A nach der Stille rechnet
 //                 (geurteilt an diesem Ereignis, oder sofort, wenn die Leitung nicht mehr offen steht), und (e) Leib rechnet den
@@ -143,9 +144,10 @@ function kenntMitGestalt(id, rechnet) {
 }
 // Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
 // jedem Edit und (f) der Zug der Welt-Uhr — als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang) mit seinem
-// Schreiber (`wer`, der Täter beim Namen; ein Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern, heißt „Wunsch still")
-// und das Leben je Zelle, die Stufe 2 noch verlangt
-function abdruck(bauten) {
+// Schreiber (`wer`, der Täter beim Namen — auch der Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern),
+// das Leben je lebender Zelle, wie der Stand es trägt (`_lebenImStand`: eine Zelle unter epsilon ist tot, ihr Eintrag nur Gedächtnis
+// der Räumung), der Pegel (die Tafel `_pegelGilt`) und der Brand je Zelle
+function abdruck(bauten, nahe) {
     const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
     const B = (st.architectures || [])
@@ -162,11 +164,10 @@ function abdruck(bauten) {
             e.studioOv || null,
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
-    const [wt, p] = [st.weatherTransition, st.playerMesh.position];
+    const wt = st.weatherTransition;
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
-    const still = st.wetterSchreiber === "front" && st.weather !== r._wetterAmOrt(p.x, p.z, r._wetterZug * r.constructor.WETTER_ZUG_SEK);
-    const leben = [...(st.lifeField || [])].map(([k, e]) => JSON.stringify([k, e.a, e.t]));
-    return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + (still ? "Wunsch still" : st.wetterSchreiber), leben };
+    const leben = r._lebenImStand(nahe).feld.map(String).sort();
+    return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])] };
 }
 // (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
@@ -369,10 +370,9 @@ hauptLauf(async () => {
     [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
     SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    // `offen`: ein Teil der Staffel, der noch nicht gleich ist — gemessen und mit Zahl berichtet, ohne die Wand zu brechen
-    const check = (name, ok, detail = "", offen = false) => {
-        console.log(`  ${ok ? "OK  " : offen ? "OFFEN" : "ROT "} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok && !offen) fehler.push(name);
+    const check = (name, ok, detail = "") => {
+        console.log(`  ${ok ? "OK  " : "ROT "} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) fehler.push(name);
     };
     const t0 = Date.now();
     if (!SELBSTTEST) {
@@ -813,15 +813,30 @@ hauptLauf(async () => {
         await folgt(vorSturm);
         await pageA.evaluate((z) => (st.spielZeit = z), sturm);
         await folgt(sturm);
-        // (f) was Stufe 2 noch verlangt, gemessen und OFFEN, bis es gleich ist: Wetter (Wort, Übergang) und Leben je Zelle
-        const weich = (wann, A, B) =>
+        // (f) DIE TEIL-SIMULATIONEN beider Seiten im selben Moment: Wetter, Leben je lebender Zelle, Pegel, Brand — gleich, sonst ROT
+        const fTeile = ["wetter", "leben", "pegel", "brand"];
+        const teilSim = (wann, A, B) => {
+            const gl = gleichIn(A, B);
             check(
                 `(f) ${wann}: Teil-Simulationen gleich`,
-                false,
-                `Wetter ${A.wetter === B.wetter ? "gleich" : `VERSCHIEDEN (A ${A.wer} · B ${B.wer})`} · Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/` +
-                    `${A.leben.length} gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht`,
-                true
+                fTeile.every(gl),
+                `${satz(gl, fTeile)} — Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/${A.leben.length} Zellen, ` +
+                    `Brand ${A.brand.length} Zellen${gl("wetter") ? "" : ` (A ${A.wer} · B ${B.wer})`}`
             );
+        };
+
+        // DERSELBE MOMENT DES FELDS: jede Seite rechnet die Folge des Felds (Takte und Akte) bis zu ihrem Horizont (`_feldHorizont`, die
+        // früheste Uhr des Raums) — verglichen wird, wenn beide dasselbe Ereignis zuletzt rechneten (`feldLetzt`; die Seite dahinter bis
+        // zu ihrem Ereignis, nie nach der Uhr)
+        const moment = async (bauten) => {
+            for (let i = 0; ; i++) {
+                const nahe = await pageA.evaluate(() => r._bestandNah()); // die nahen Regionen von A auf beiden Seiten
+                const AB = await Promise.all([pageA, pageB].map((p) => p.evaluate(abdruck, bauten, nahe)));
+                const [a, b] = AB.map((x) => x.takt);
+                if (a === b || i > 3) return AB;
+                await waitFor(a < b ? pageA : pageB, (z) => st.faunaLifecycle.feldLetzt >= z, "die Seite rechnet das Feld des Raums", Math.max(a, b)).catch(() => {});
+            }
+        };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
         // B trägt denselben Abdruck der Schreib-Akte (`abdruck`). Täter, wenn B einen Edit weniger trägt: `_chatTryVoxelDebugCommand`
@@ -871,7 +886,7 @@ hauptLauf(async () => {
                 wB + a.length
             ).catch(() => {});
             await sleep(GRABEN_NACHLAUF_MS);
-            const [A, B] = [await pageA.evaluate(abdruck, a), await pageB.evaluate(abdruck, a)];
+            const [A, B] = await moment(a);
             return {
                 a,
                 edits: A.edits.length - nA,
@@ -882,7 +897,7 @@ hauptLauf(async () => {
         };
         const g = await akte();
         const teile = ["edits", "bauten", "boden", "zug"];
-        const satz = (gl) => teile.map((k) => `${k} ${gl(k) ? "gleich" : "VERSCHIEDEN"}`).join(" · ");
+        const satz = (gl, t = teile) => t.map((k) => `${k} ${gl(k) ? "gleich" : "VERSCHIEDEN"}`).join(" · ");
         check(
             "A gräbt, schüttet und baut per Chat (zwei Edits und ein Bau bei A)",
             g.edits === 2 && g.a.length === 1,
@@ -903,7 +918,7 @@ hauptLauf(async () => {
                     : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
-        weich("Peers", g.A, g.B);
+        teilSim("Peers", g.A, g.B);
 
         // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
         await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
@@ -981,15 +996,14 @@ hauptLauf(async () => {
         await waitFor(pageB, () => r._wetterZug !== undefined, "B zieht den Zug");
         // DERSELBE MOMENT auf beiden Seiten: die Welt-Uhr lief weiter, seit A seinen Abdruck der Akte nahm — unter Last stand B
         // im Reload bis 79 s, und der Zug wechselt je WETTER_ZUG_SEK (120 s); Edits, Bauten und Boden stehen seit den Akten still
-        const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
-        const jetztA = R && (await pageA.evaluate(abdruck, g.a));
+        const [jetztA, R] = nachReload ? await moment(g.a) : [];
         const rg = R && gleichIn(R, jetztA);
         check(
             "(e) Reload: B trägt nach dem Neuladen denselben Abdruck",
             !!R && teile.every(rg),
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        if (R) weich("Reload mitten im Sturm", jetztA, R);
+        if (R) teilSim("Reload mitten im Sturm", jetztA, R);
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
