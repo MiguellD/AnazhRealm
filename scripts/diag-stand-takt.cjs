@@ -791,7 +791,7 @@ function sukzessionUrteil(s) {
     if (!a || !a.asche || !n || !S || !W || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
     const [v, g, e, J] = [a.vor, a.gras, n.ernte, S.stufen || []];
     const jung = J.slice(1, -1);
-    const waechst = jung.every((q, i) => q.alter > 0 && q.alter < 1 && Math.abs(q.skala - q.alter) < 0.01 && (!i || q.alter >= jung[i - 1].alter));
+    const waechst = jung.every((q, i) => q.alter > 0 && q.alter < 1 && Math.abs(q.skala - q.alter * S.kappe) < 0.01 && (!i || q.alter >= jung[i - 1].alter));
     return rot([
         ["ASCHE", a.asche.voll >= 0.4 && a.asche.halmeVoll <= 0.05 * v.halme * a.asche.voll && a.asche.krautVoll === 0, a.asche],
         ["GRAS", g && g.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
@@ -803,6 +803,7 @@ function sukzessionUrteil(s) {
         ["GESTALT", S.gestalt && S.gestalt[0][0] < S.gestalt[1][0] && S.gestalt[0][1] < S.gestalt[1][1], S.gestalt],
         ["MUTANTE-GESTALT", S.mutante && S.mutante[0][1] === S.mutante[1][1], S.mutante],
         ["WALD", W.vor >= 3 && W.brand === 0 && W.jung >= 0.6 * W.vor && W.heil >= 0.9 * W.vor, W],
+        ["WALD-KAPPE", W.s > W.kappe && W.riese > 0 && W.riese <= W.kappe + 1e-3, W],
     ]);
 }
 
@@ -1056,6 +1057,7 @@ async function brandSeite(MESS) {
         const B0 = naechster();
         if (B0) {
             const [p, s0] = [{ x: B0.position.x, z: B0.position.z }, B0.scale];
+            S.kappe = r3(Math.min(1, C.SUKZESSION.kappe / s0));
             r.harvestArchitecture(B0, "welt");
             const a = L.find((q) => q.tat === "faellen" && ab(q, p) < 0.05);
             const h = (s) => a.h + s * r._tatIndex().dauer.get(a);
@@ -1076,19 +1078,19 @@ async function brandSeite(MESS) {
         const B1 = naechster();
         const W = (aus.wald = {});
         if (B1) {
-            const orte = baeume().filter((e) => ab(e.position, B1.position) < 96).map((e) => ({ x: e.position.x, z: e.position.z }));
+            const orte = baeume().filter((e) => ab(e.position, B1.position) < 96).map((e) => ({ x: e.position.x, z: e.position.z, s: e.scale }));
             r.setTimeOfDay(0.5, "regler"), r._brandEntfachen(B1.position.x, B1.position.z);
             brennen(900), await stehen(MESS);
             const N = orte.filter((o) => ((n) => n && n.m >= 0.5)(r._brandNarbe(o.x, o.z)));
             const T = r._tatIndex();
             const zaehl = (f) => N.filter((o) => f(alter(o))).length;
-            Object.assign(W, { vor: N.length, brand: zaehl((v) => v > 0) });
+            Object.assign(W, { vor: N.length, brand: zaehl((v) => v > 0), s: r3(Math.max(...N.map((o) => o.s))), riese: 0, kappe: C.SUKZESSION.kappe });
             // der Jungwuchs je Baum, solange seine Zelle im Wald der Sukzession steht: gesehen an sechs Stunden (die Zellen heilen
             // nach ihrem Wuchs verschieden schnell)
             const [Q, jung] = [asche().map((q) => q.h + 0.8 * T.dauer.get(q)).sort(aufsteigend), new Set()];
             for (let k = 0; k < 6; k++) {
                 await reif(Q[Math.floor(((Q.length - 1) * k) / 5)]);
-                N.forEach((o, i) => ((v) => v > 0 && v < 1 && jung.add(i))(alter(o)));
+                N.forEach((o, i) => ((v) => v > 0 && v < 1 && (jung.add(i), (W.riese = Math.max(W.riese, r3(am(o).scale / v)))))(alter(o)));
             }
             W.jung = jung.size;
             await reif(Math.max(...asche().map((q) => q.h + T.dauer.get(q))) + 0.1);
@@ -1176,12 +1178,13 @@ if (SELBSTTEST) {
                     naehr: { ernte: { n: 5, N0: 1, N: 0.9, W0: 0.8, W: 0.78 }, asche: 1.4, leichnam: 1.2, mutante: { W0: 0.8, W: 0.8 } },
                     saemling: {
                         stufen: [0, 0.06, 0.18, 0.4, 1].map((v) => ({ alter: v, skala: v })),
+                        kappe: 1,
                         gestalt: [[4, 600], [8, 2100]],
                         mutante: [[8, 2100], [8, 2100]],
                     },
-                    wald: { vor: 6, brand: 0, jung: 5, heil: 6 },
+                    wald: { vor: 6, brand: 0, jung: 5, heil: 6, s: 1.6, riese: 1, kappe: 1 },
                 },
-                [["ASCHE", "asche.asche.halmeVoll", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 8], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2]]
+                [["ASCHE", "asche.asche.halmeVoll", 30], ["GRAS", "asche.gras.kraut", 6], ["BUSCH", "asche.busch.kraut", 1], ["ERNTE", "naehr.ernte.N", 1], ["RÜCKGABE", "naehr.asche", 1], ["MUTANTE-NÄHRSTOFF", "naehr.mutante.W", 0.7], ["SÄMLING", "saemling.stufen.0.alter", 0.5], ["SÄMLING", "saemling.stufen.2.skala", 1], ["GESTALT", "saemling.gestalt.0.0", 8], ["MUTANTE-GESTALT", "saemling.mutante.0.1", 600], ["WALD", "wald.brand", 2], ["WALD-KAPPE", "wald.riese", 1.6]]
             ),
         ],
         "die Tat-, Nachwuchs-, Brand- und Sukzessions-Linse nennen jeden Täter."

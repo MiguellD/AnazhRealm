@@ -2672,7 +2672,12 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // `stufen` Schritten je Rampe, der Jungwuchs in den Stufen seiner Gestalt: `jugend` sind die Alter, in denen er wächst
 // (phyto-core `treeParams(…, alter)`, je Alter EIN Körper und EINE Karte je Art und Gestalt), gewachsen ist er bei der Heilung.
 // Die erste Stufe einer frischen Tat malt der Nachwuchs bis `malMs` je Bild (mindestens eine Tat).
+// DIE KAPPE DER JUGEND (w13-jung-gestalt): der Jungwuchs wächst als EINE Kohorte im Maß seiner Art — seine Größe ist `alter` ×
+// höchstens `kappe` × die Größe 1 der Art (`hoeheM`, `_waldDartSetzen`); das Übermaß des Überhälters (`forestTreeSize` bis 1,95)
+// ist Alter, kein Wuchs: er trägt es erst gewachsen. Bis w13 stand der Jungwuchs eines Überhälters der Stufe 0,7 mit 35,5 m
+// (Tanne, Größe 1,95) über seiner Kohorte (typisch 16,9 m) und jedem gewachsenen Bestandsbaum (24,2 m): die Riesenhalme der Narbe.
 AnazhRealm.SUKZESSION = Object.freeze({
+    kappe: 1,
     malMs: 1,
     asche: Object.freeze([0.08, 0.3]),
     busch: Object.freeze([0.3, 0.6]),

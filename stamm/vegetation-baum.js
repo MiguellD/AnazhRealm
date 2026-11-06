@@ -1062,7 +1062,7 @@ class AnazhRealm_vegetation_baum {
     // Index explizit, nie über `_growTreeBlueprintForSpawn` (baut ~170k-Geometrie eager). Der Render wählt die Quelle (Foundry,
     // ohne Studio lazy `_buildVariantLODs`); die LOD-Identität (`_lodSpecies`/`_lodVariantIndex`) reist durch die Spawn-Opts —
     // ohne sie kein L0/L1/L2/Impostor. IM ALTER SEINES ORTS (stoffe.K5#2, `_baumAlter`): der Jungwuchs (alter < 1) steht in
-    // `alter` × seiner Größe und trägt seine Gestalt als Prägung (`studioOv.alter`, phyto-core `treeParams(…, alter)` im
+    // `alter` × seiner Größe, gekappt auf das Maß der Kohorte (`SUKZESSION.kappe`), und trägt seine Gestalt als Prägung (`studioOv.alter`, phyto-core `treeParams(…, alter)` im
     // Foundry-Pfad — Körper, Karte und der gefühlte Baum aus EINER Ableitung, ihr ov-Hash trennt sie vom gewachsenen); kein
     // Sonder-Sämling. Die Krone streut Laub, sobald der
     // Baum als Eintrag steht (`spawnArchitecture`, Radius = die Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim
@@ -1080,7 +1080,7 @@ class AnazhRealm_vegetation_baum {
                 {
                     seed: d.seed,
                     silent: true,
-                    scale: alter < 1 ? d.s * alter : d.s,
+                    scale: alter < 1 ? Math.min(d.s, AnazhRealm.SUKZESSION.kappe) * alter : d.s,
                     rotationY: d.rotY,
                     _lodSpecies: d.sp,
                     _lodVariantIndex: variantIndex,

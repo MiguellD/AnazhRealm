@@ -289,9 +289,16 @@ ok(
 // nennt, wo die Krone des Jungwuchses um mehr als ein Zehntel der Höhe höher sitzt (bis w12-riesenhalm hob der Schaft-Hub die
 // Krone der jungen Tanne auf 0,54 H, gewachsen 0,36 H: die Riesenhalme der Narbe); die Mutante ist dieser Fall. Die Höhe des
 // Jungwuchses stand schon im Maß der Art (jung/gewachsen ≤ 1,008 vor und nach dem Schnitt).
+// DIE JUGEND AUS EINER HAND (w13-jung-gestalt): `ov.alter` reist nur in die Ableitung (phyto-core `treeParams(…, alter)`), die
+// Prägung (foundry-core `__praegeP`) schreibt es nie als Feld — wächst die Ableitung ohne das Alter (`ohne`: die Mutante der
+// Sukzession in gate:stand-takt --brand), steht jeder Jungwuchs im Kronen-Fuß des gewachsenen; die Mutante (`alt`) setzt die
+// Prägung bis w13 ein (Object.assign: `P.alter` trug den Schaft der Jugend ohne ihre Gestalt, Glieder [9, 2 928] statt
+// [9, 2 933]) und fällt beim Namen.
 hsb.__skelettArgs = { samen: [1, 7, 12345], stufen: [0, 1, 2], jugend: stammLib.ladeKlasse(ROOT).AnazhRealm.SUKZESSION.jugend };
-const hFaelle = vm.runInContext(
-    `(function () {
+const skelette = (ohne, alt) => vm.runInContext(
+    `(function (C, tp, pr) {
+        if (${ohne}) C.treeParams = (d, s, l, art, w, al, g) => tp(d, s, l, art, w, undefined, g);
+        if (${alt}) __praegeP = (P, ov) => Object.assign(P, ov);
         const a = self.__skelettArgs, out = [];
         const fuss = (k) => Math.min(...k.nodes.leaves.map((l) => l.pos[1])) / Math.max(...k.nodes.segs.map((q) => q.p1[1]));
         for (const [id, pre] of Object.entries(PRESETS)) {
@@ -308,34 +315,15 @@ const hFaelle = vm.runInContext(
                     }
                 }
         }
+        [C.treeParams, __praegeP] = [tp, pr];
         return out;
-    })()`,
+    })(self.__phytoCore, self.__phytoCore.treeParams, __praegeP)`,
     hsb
 );
-const jugendRot = (F) => F.flatMap((f) => (f.jung || []).filter(([, d]) => d > 0.1).map(([al, d]) => `${f.fall}@${al} +${d.toFixed(2)}H`));
+const [hFaelle, ohne, ohneM] = [skelette(0, 0), skelette(1, 0), skelette(1, 1)];
+const jugendRot = (F, t = 0.1) => F.flatMap((f) => (f.jung || []).filter(([, d]) => (t ? d : Math.abs(d)) > t).map(([al, d]) => `${f.fall}@${al} +${d.toFixed(2)}H`));
 ok("Jugend: die Krone nie über der gewachsenen", jugendRot([{ jung: [[0.06, 0.18]] }]).length === 1 && hFaelle.some((f) => f.jung?.length) && !jugendRot(hFaelle).length, jugendRot(hFaelle).slice(0, 3).join(" | "));
-// DIE JUGEND AUS EINER HAND (stoffe.K5#2, w13-jung-gestalt): `ov.alter` reist nur in die Ableitung (phyto-core `treeParams(…,
-// alter)`), die Prägung (foundry-core `__praegeP`) schreibt es nie als Feld — wächst die Ableitung ohne das Alter (die Mutante
-// der Sukzession in gate:stand-takt --brand), ist der Jungwuchs Glied für Glied und im Kronen-Fuß der gewachsene. `einHand`
-// nennt jeden Fall, an dem die Jugend dennoch wirkt; die Mutante setzt die Prägung bis w13 ein (Object.assign: `P.alter` trug
-// den Schaft der Jugend ohne ihre Gestalt, Glieder [9, 2 928] statt [9, 2 933]) und fällt beim Namen.
-const einHand = (alt) =>
-    vm.runInContext(
-        `(function (C, tp, pr) {
-            if (${alt}) __praegeP = (P, ov) => Object.assign(P, ov);
-            C.treeParams = (d, s, l, art, w, al, g) => tp(d, s, l, art, w, undefined, g);
-            const sig = (...a) => ((n) => n.segs.length + "/" + (Math.min(...n.leaves.map((l) => l.pos[1])) / Math.max(...n.segs.map((q) => q.p1[1]))).toFixed(3))(skelettDerGestalt(...a).nodes);
-            try {
-                return Object.keys(PRESETS).filter((id) => PRESETS[id].kind === "tree").flatMap((id) => self.__skelettArgs.samen.flatMap((s) =>
-                    self.__skelettArgs.jugend.map((alter) => [id + "/s" + s + "@" + alter, sig(id, s, 1, { alter }), sig(id, s, 1)]).filter(([, j, g]) => j !== g).map((f) => f[0] + " " + f[1] + " ≠ " + f[2])));
-            } finally {
-                [C.treeParams, __praegeP] = [tp, pr];
-            }
-        })(self.__phytoCore, self.__phytoCore.treeParams, __praegeP)`,
-        hsb
-    );
-const [hand, handM] = [einHand(false), einHand(true)];
-ok("Jugend aus EINER Hand: ohne das Alter der Ableitung wächst der gewachsene", handM.length > 0 && !hand.length, [...hand.slice(0, 3), "Mutante " + handM.length + ": " + handM[0]].join(" | "));
+ok("Jugend aus EINER Hand: ohne das Alter der Ableitung der gewachsene", jugendRot(ohneM, 0).length > 0 && !jugendRot(ohne, 0).length, [...jugendRot(ohne, 0), "Mutante " + jugendRot(ohneM, 0)[0]].slice(0, 3).join(" | "));
 const hRot = hFaelle.filter((f) => f.fehler || !(f.segs > 0));
 for (const f of hRot.slice(0, 6)) console.log("      SKELETT " + f.fall + ": " + (f.fehler || "0 Segmente"));
 ok(
