@@ -717,10 +717,26 @@ async function probeLeben(expected) {
             frame(i++);
             const bereit = () =>
                 S.liste && S.liste.every((b) => b.leib && !b.ankunft) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer); // prettier-ignore
-            for (const weiter = __deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
-                frame(i);
-                if (i % 8 === 7) await window.sleep();
+            const bis = async (was, ok) => {
+                for (const weiter = __deckel(was, 8000); weiter() && !ok(); i++) {
+                    frame(i);
+                    if (i % 8 === 7) await window.sleep();
+                }
+            };
+            // DER ANFANG AUS DEM GESETZ (gleiche Saat, gleiches Urteil): erst steht die Stadt samt jeder Hülle ihrer Häuser und jedem
+            // Erdbau im Boden (Foundry und Chunks ruhen — eine Stufe, die im Takt ankommt, wechselt die Wände der Wege, ein Edit den
+            // Boden der Spur), dann springt die Uhr noch einmal (6 h hin, zurück):
+            // jeder Bewohner und jeder Wagen steht, wo sein Tag ihn sieht (f(Same, t), `_verkehrSprung`), und der Takt beginnt am Rand
+            // eines Bilds mit dem ersten des Musters. Bis w13-verkehr-heil maß die Linse ab dem ersten Sprung, und wie viele Bilder die
+            // Geburt der Leiber und die Stufen der Häuser nach der Wanduhr brauchten, ging in die Stadt ein: drei Läufe desselben
+            // Stands urteilten dreimal anders (10 Uhr 21 m, 74 m, Stau ab Minute 3), zwei Läufe 180 s gingen 47 954 und 193 035 Schritte
+            await bis("verkehr: die Stadt steht", () => bereit() && !(r._weltOffen().foundry + r._weltOffen().chunks));
+            [st._fixedAccumulator, i] = [0, Math.ceil(i / 8) * 8];
+            for (const h of [stunde + 6, stunde]) {
+                r._uhrSetzen((h % 24) / 24, "regler");
+                frame(i++);
             }
+            await bis("verkehr: der Anfang", bereit);
             const VK = S.verkehr;
             if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
             const m = {
@@ -734,7 +750,12 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
-                ...{ fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
+                fahrt: 0,
+                fahrtWer: null,
+                geh: 0,
+                fahrbahn: 0,
+                bau: 0,
+                bauOrte: [],
             };
             // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
             // (fachwerk `planSperren`), die der Sehne von Spur zu Spur am nächsten liegt, oder die Stufe des Bodens (`zahl.stufen`)
@@ -947,6 +968,11 @@ async function probeLeben(expected) {
                             m.tief = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
             }
             for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster", "_verkehrUmfahren"]) delete r[n];
+            // DER ABDRUCK DER STUNDE (FNV-1a über die Lage jedes Wagens und jedes Leibs auf den Zentimeter): zwei Läufe derselben
+            // Saat tragen denselben — der Beweis, dass die Linse urteilt, nicht die Wanduhr
+            let abdruck = 2166136261;
+            for (const p of VK.wagen.map((W) => W.entry.position).concat(S.liste.map((b) => b.leib.position)))
+                for (const v of [p.x, p.z]) abdruck = Math.imul(abdruck ^ Math.round(v * 100), 16777619);
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
             // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
@@ -998,7 +1024,11 @@ async function probeLeben(expected) {
                     wer,
                 },
                 fahrbahn: { geh: m.geh, auf: m.fahrbahn, anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4) },
-                ...{ amSteuer: T.st, trasse: T.tr, weg60: T.w60, sitz: SZ },
+                amSteuer: T.st,
+                trasse: T.tr,
+                weg60: T.w60,
+                sitz: SZ,
+                abdruck: (abdruck >>> 0).toString(36),
             };
         }
         return aus;
