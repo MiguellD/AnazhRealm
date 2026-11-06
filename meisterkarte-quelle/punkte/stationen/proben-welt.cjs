@@ -271,11 +271,13 @@ async function bodenRollen(tor) {
 // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
 // Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
 // ein Raffer-Bild), nie je 250 ms Wanduhr (die lag n-mal weiter in der Spiel-Zeit), und ohne die Sperre von 2 Spiel-s zwischen zwei
-// Prüfungen. Steht ein ungesehenes Tier im Blick, das 200 px decken KANN, zeichnet DIE MASKE der Klasse tier: drei Bilder des
+// Prüfungen. Steht ein ungesehenes Tier im Blick, das 200 px decken KANN (je Tier wieder nach 2 Spiel-s oder sobald seine mögliche
+// Fläche um 20 % wuchs — ein Tier, das lange fern im Blick steht, zeichnet nicht jede Sekunde), zeichnet DIE MASKE der Klasse tier: drei Bilder des
 // Ausgabe-Pfads (`ausgabeAufnahme` aus dem Spiel-Baum, gekürzt um die Geschichte — der Neubeginn der Folge je Bild, gleicher Versatz,
 // gleiche Dither-Phase, die Schatten-Karten neu; ohne Erst-Ruhe, ohne Rückstrahl, ohne die 32 Bilder der zeitlichen Auflösung, ohne
 // die Abnahme des Beweisbilds): G und G2 mit, O ohne Tiere — dieselbe Klassen-Teilung wie vorher, ein Bild je Schuss statt 33 mit
-// Rücklese und Abnahme. Jede Begegnung wird so in jeder Spiel-Sekunde gemessen, die sie im Blick steht, bis ihr Tier ≥ 200 px deckt;
+// Rücklese und Abnahme; danach nimmt die Schleife sofort wieder auf (die Pause von 50 ms in `wieder` trägt einen rAF-Stempel über die
+// Lücke — die Stempel des Raffers sind gerechnet). Jede Begegnung wird so in jeder Spiel-Sekunde gemessen, die sie im Blick steht, bis ihr Tier ≥ 200 px deckt;
 // jedes Tier zählt einmal; die Sichtung zählt über alle 600 Spiel-s (keine Kappe bei der Staffel). `imBlick` zählt jedes Tier, das
 // in der Prüfung einer Spiel-Sekunde zum ersten Mal da ist und schon im Blick steht (das Schlupfloch). Der Anker `__kreis` legt den
 // Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Masken, Sichtungen; nie am Anfang `KREIS-`, die Zeile des
@@ -300,6 +302,10 @@ async function tierKreis(tor) {
         ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
             'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
         ["kreis.schuesse++;", "kreis.masken++;"],
+        ["neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });",
+            "neu: neu && window.__kreisNeu(c, s, 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f, soll) });"],
+        ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
+            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
     ]);
     const page = await tor.seite();
     tor.karte();
@@ -349,6 +355,14 @@ async function tierKreis(tor) {
                     Z.alt = Z.alt || [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS];
                     [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = [Z.alt[0] * u, Z.alt[1] * u];
                     Z.ms = 1000 * A.TAKT_DECKEL_S;
+                    // je Tier die letzte Maske [Spiel-s, mögliche Fläche]: wieder nach 2 Spiel-s oder wenn die Fläche um 20 % wuchs
+                    const zuletzt = new Map();
+                    window.__kreisNeu = (c, s, flaeche, soll) => {
+                        const m = zuletzt.get(c);
+                        if (flaeche < soll || (m && s - m[0] < 2 && flaeche < 1.2 * m[1])) return false;
+                        zuletzt.set(c, [s, flaeche]);
+                        return true;
+                    };
                 }, UHR);
                 o = await page.evaluate("(" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")");
             } catch (e) {
@@ -357,6 +371,7 @@ async function tierKreis(tor) {
                 clearInterval(zeile);
                 await page.evaluate(() => {
                     delete window.__kreis;
+                    delete window.__kreisNeu;
                     const A = window.anazhRealm.constructor;
                     const Z = window.__zeitraffer;
                     if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
