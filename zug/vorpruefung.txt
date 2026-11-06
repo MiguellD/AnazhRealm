@@ -69,3 +69,4 @@ w15-strom-takt a610a74b GRÜN (mit Nacharbeit) Eintritt Bäume 4,6 → 85,8 %, B
 06.11. 17:50 w16-lade-atem@30e27fa5 ROT Radeon-A/B gleiche Last: main 1253 ms/10,51 s ↔ Zweig 1270 ms/11,76 s; K2#1 GRÜN — Nacharbeit (Pipeline-Precache async)
 06.11. 17:55 w15-strom-takt@08c5588d GRÜN headless (Byte-Beweis 16 300 Proben; Bäume 88 %, Boden 92 %, Steh-Takt 7,2→5,1) → z266; kein Punkt allein (K2 Karten 75 %)
 06.11. 18:10 w16-haenger@bac15a56 GRÜN headless (Takt-Aufgabe 215→171/133 ms, Skelett je Takt 1, Byte-gleich rgb9e5) → z266; w14-wiese-saum@d0912123 GRÜN im Bild (vp-0611f) → z266; w12-g2-spiel@2042ef47 geparkt: haar.K4#2 3057→0 Tuch-Ecken, aber Takt +3,3 ms
+06.11. 18:25 z264 ROT: einsturz (_werkBricht label, pruef_mauer), pfuetze (Boden-Stoff 3 Fn-Rümpfe, Feuerkreis), buehne-lack-heim (K6 Sprite-Quad), ki-strom unschuldig → z266
