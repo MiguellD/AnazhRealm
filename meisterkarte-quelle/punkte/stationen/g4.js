@@ -433,7 +433,8 @@ const k1Zahl = (k) =>
     (k.bricht.length ? " · BRICHT " + k.bricht.join(", ") : "") + " · Baum-Zeilen " + (k.baum ? "gemessen" : "keine in PARAMS_BY_KIND") +
     " · Exits " + k.exits.join("/");
 
-// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord): das Skript im Koordinations-Baum (bericht/2910-w3w-studios/skripte/k4-bild.cjs)
+// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord; seit w16-studio-welt-pm eine Datei der Stationen, stationen/k4-bild.cjs — die
+// Box der Bühne zählt jede Instanz wie die Welt; bis dahin bericht/2910-w3w-studios/skripte/k4-bild.cjs im Koordinations-Baum)
 // fährt in der warmen Welt der Sitzung (Werkbank {PORT}+20000) je Mesh-Studio dasselbe Werk in Bühne und Welt — die Bühne nennt es
 // über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
 // Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
@@ -443,7 +444,7 @@ const k1Zahl = (k) =>
 const K4_BEFEHL = [
     "bash",
     "-c",
-    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT} {SEK}`,
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" {PORT} {SEK}`,
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
