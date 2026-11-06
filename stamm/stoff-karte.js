@@ -490,6 +490,7 @@ class AnazhRealm_stoff_karte {
         // die halbe Karte zuerst
         if (at.offen && q.includes(at.offen.z.key)) q.unshift(...q.splice(q.indexOf(at.offen.z.key), 1));
         let n = 0;
+        const frist = this._bauFrist(); // vor der Arbeit gefragt: der erste Leser stellt sie
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
         const v0 = gezeichnet();
         for (let i = 0; i < q.length;) {
@@ -504,12 +505,12 @@ class AnazhRealm_stoff_karte {
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
                 if (e === null) i++;
-                if (performance.now() >= this._bauFrist()) break;
+                if (performance.now() >= frist) break;
                 continue;
             }
             q.splice(i, 1);
             n++;
-            if (performance.now() >= this._bauFrist()) break;
+            if (performance.now() >= frist) break;
         }
         if (gezeichnet() !== v0) this._gpuLeineBinden();
         return n;
@@ -764,8 +765,12 @@ class AnazhRealm_stoff_karte {
         // fiel die Bühne zwischen zwei Ringen (Ruhe, ein anderer Renderer), beginnt die Karte beim ersten
         if (at.offen && (at.offen.B !== B || !B.bereit)) at.offen = null;
         const iR = at.offen ? at.offen.r : 0; // der Ring dieses Schritts
-        const v0 = at.offen ? at.offen.v | 0 : 0; // seine erste Ansicht in diesem Schritt
-        let vBis = at.V; // die erste Ansicht des nächsten Schritts (der Ring steht, wenn sie V ist)
+        // DIE SCHRITTE DES RINGS (w16-haenger): im ersten Ring je Richtung eine Sonnen-Kachel und die Leere (`kopf`), dann die V
+        // Ansichten — `v0` ist der erste Schritt dieses Aufrufs, `vBis` der des nächsten (der Ring steht, wenn er kopf + V ist)
+        const kopf = iR === 0 ? B.dirs.length + 1 : 0;
+        const v0 = at.offen ? at.offen.v | 0 : 0;
+        const frist = this._bauFrist();
+        let vBis = kopf + at.V;
         const ringe = at.ringe.ringe;
         const ring = ringe[iR];
         const t0 = performance.now();
@@ -889,51 +894,55 @@ class AnazhRealm_stoff_karte {
                 this._schattenNormalBias(texel),
                 (-AnazhRealm.SCHATTEN_KASKADE.tiefeTexel * texel) / (L.far - L.near)
             );
-            for (let j = 0; iR === 0 && v0 === 0 && j < B.dirs.length; j++) {
-                const d = B.dirs[j];
-                L.position.copy(B.mitte).addScaledVector(d, R * 3);
-                if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
-                else L.up.set(0, 1, 0);
-                L.lookAt(B.mitte);
-                L.updateMatrixWorld(true);
-                L.updateProjectionMatrix();
-                B.uVP[j].value.multiplyMatrices(L.projectionMatrix, L.matrixWorldInverse);
-                B.schatten.viewport.set(j * K, 0, K, K);
-                rend.autoClear = j === 0;
-                rend.setRenderTarget(B.schatten);
-                this._buehneRender(rend, B.szene, L, "Karten-Sonne");
-            }
-            B.tiefe.value = B.schatten.depthTexture;
             // das Ziel der Karte: BC die Bühne (die Ablage legt sie in ihre Schicht), rgba8 ihre Schicht im Array-Ziel
             const schicht = bc ? 0 : z.idx;
-            if (iR === 0 && v0 === 0) {
-                // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
-                for (const t of B.ziel.textures) t.generateMipmaps = false;
-                B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
-                rend.setMRT(B.leere.mrt);
-                rend.autoClear = true;
-                rend.autoClearColor = false;
-                rend.setRenderTarget(B.ziel, schicht);
-                this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
-                rend.autoClearColor = vor.acf;
-                rend.setMRT(B.mrt);
-            }
-            for (let v = v0; v < V; v++) {
-                // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
-                // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
-                B.wurzel.rotation.y = -v * dreh;
-                B.wurzel.updateMatrixWorld(true);
-                B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
-                rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
-                const zx = (v % tR) * bw,
-                    zy = ring.y + Math.floor(v / tR) * bh;
-                B.ziel.viewport.set(zx, zy, bw, bh);
-                // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
-                if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
-                rend.setRenderTarget(B.ziel, schicht);
-                this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
-                if (v + 1 < V && performance.now() >= this._bauFrist()) {
-                    vBis = v + 1;
+            for (let s = v0; s < kopf + V; s++) {
+                const j = s,
+                    v = s - kopf;
+                if (j < kopf - 1) {
+                    // die Sonnen-Kachel j: die Krone aus Richtung j (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht
+                    const d = B.dirs[j];
+                    B.tiefe.value = B.leer.depthTexture;
+                    L.position.copy(B.mitte).addScaledVector(d, R * 3);
+                    if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
+                    else L.up.set(0, 1, 0);
+                    L.lookAt(B.mitte);
+                    L.updateMatrixWorld(true);
+                    L.updateProjectionMatrix();
+                    B.uVP[j].value.multiplyMatrices(L.projectionMatrix, L.matrixWorldInverse);
+                    B.schatten.viewport.set(j * K, 0, K, K);
+                    rend.autoClear = j === 0;
+                    rend.setRenderTarget(B.schatten);
+                    this._buehneRender(rend, B.szene, L, "Karten-Sonne");
+                } else if (v < 0) {
+                    // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
+                    for (const t of B.ziel.textures) t.generateMipmaps = false;
+                    B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
+                    rend.setMRT(B.leere.mrt);
+                    rend.autoClear = true;
+                    rend.autoClearColor = false;
+                    rend.setRenderTarget(B.ziel, schicht);
+                    this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
+                    rend.autoClearColor = vor.acf;
+                    rend.setMRT(B.mrt);
+                } else {
+                    // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
+                    // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
+                    B.tiefe.value = B.schatten.depthTexture;
+                    B.wurzel.rotation.y = -v * dreh;
+                    B.wurzel.updateMatrixWorld(true);
+                    B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
+                    rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
+                    const zx = (v % tR) * bw,
+                        zy = ring.y + Math.floor(v / tR) * bh;
+                    B.ziel.viewport.set(zx, zy, bw, bh);
+                    // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
+                    if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
+                    rend.setRenderTarget(B.ziel, schicht);
+                    this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
+                }
+                if (s + 1 < kopf + V && performance.now() >= frist) {
+                    vBis = s + 1;
                     break;
                 }
             }
@@ -958,8 +967,9 @@ class AnazhRealm_stoff_karte {
         }
         const summe = at.offen ? at.offen.ms : 0;
         (at.schrittMs || (at.schrittMs = [])).push(+(performance.now() - t0).toFixed(2));
-        if (vBis < V || !letzter) {
-            at.offen = { z, B, r: vBis < V ? iR : iR + 1, v: vBis < V ? vBis : 0, ms: summe + performance.now() - t0 };
+        if (vBis < kopf + V || !letzter) {
+            const halb = vBis < kopf + V;
+            at.offen = { z, B, r: halb ? iR : iR + 1, v: halb ? vBis : 0, ms: summe + performance.now() - t0 };
             return 0;
         }
         at.offen = null;
