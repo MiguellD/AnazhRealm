@@ -2186,7 +2186,9 @@ class AnazhRealm_kreatur_leben {
         return pm ? this._bestandKey(pm.position.x, pm.position.z) : "0,0";
     }
     _bestandName(t) {
-        return t.name || (t.name = this._pickCreatureName("b" + t.id));
+        if (t.name) return t.name;
+        this._lebenGen = (this._lebenGen || 0) + 1; // der Name reist im Stand (`_lebenImStand`): eine Schrift wie jede
+        return (t.name = this._pickCreatureName("b" + t.id));
     }
 
     // DIE NAHEN REGIONEN: die Kacheln, die der Kreis der halben Seite um den Spieler schneidet (eine bis vier) — sie leben im Takt

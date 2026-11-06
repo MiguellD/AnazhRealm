@@ -2116,7 +2116,7 @@ class AnazhRealm_feld_leben {
     // Akt jede Seite erreicht (der Vorlauf des Lockstep), allein sofort; ein Akt, der später kam, wirkt bei Ankunft. Bis feld.K2#2
     // schrieb jede Seite sofort an ihrer Bild-Uhr, die Pflege des Mitspielers zur Ankunft, jede Seite nahm ihre eigenen Leiber in
     // ihren Bestand, und das Leben zweier Seiten lief auseinander (gate:mp-sync (f): 15 von 1 172 Zellen gleich, nach dem Reload 0).
-    _feldAkt(akt, reist, sofort = true) {
+    _feldAkt(akt, reist, sofort = true, fremd = false) {
         const st = this.state;
         const A = st.feldAkte || (st.feldAkte = []);
         akt.k = akt.k || JSON.stringify([akt.art, akt.key, akt.id, akt.x, akt.z, akt.a]);
@@ -2124,7 +2124,8 @@ class AnazhRealm_feld_leben {
         while (i > 0 && (A[i - 1].w > akt.w || (A[i - 1].w === akt.w && A[i - 1].k > akt.k))) i--;
         const gewirkt = this._feldAktGewirkt || (this._feldAktGewirkt = new Map());
         const id = akt.w + "|" + akt.k;
-        if ((i > 0 && A[i - 1].w === akt.w && A[i - 1].k === akt.k) || gewirkt.has(id)) return false; // doppelt empfangen: einer
+        // ein Akt eines Mitspielers, doppelt empfangen (nachgeholt, über zwei Wege), ist einer; die eigenen zählt die Seite selbst
+        if (fremd && ((i > 0 && A[i - 1].w === akt.w && A[i - 1].k === akt.k) || gewirkt.has(id))) return false;
         this._lebenGen = (this._lebenGen || 0) + 1;
         if (reist) {
             const feld = Object.assign({}, akt);
@@ -2146,14 +2147,16 @@ class AnazhRealm_feld_leben {
         if (!f || typeof f !== "object" || !zahl(w)) return false;
         if (f.art === "leben")
             return zahl(f.x) && zahl(f.z) && zahl(f.a) && Math.abs(f.a) <= 1
-                ? this._feldAkt({ art: "leben", w, x: f.x, z: f.z, a: f.a }, false, sofort)
+                ? this._feldAkt({ art: "leben", w, x: f.x, z: f.z, a: f.a }, false, sofort, true)
                 : false;
         if (f.art === "brand")
-            return zahl(f.x) && zahl(f.z) ? this._feldAkt({ art: "brand", w, x: f.x, z: f.z }, false, sofort) : false;
+            return zahl(f.x) && zahl(f.z)
+                ? this._feldAkt({ art: "brand", w, x: f.x, z: f.z }, false, sofort, true)
+                : false;
         const key = typeof f.key === "string" && /^-?\d+,-?\d+$/.test(f.key) ? f.key : null;
         const id = typeof f.id === "string" && f.id.length <= 96 ? f.id : null;
         if (!key || !id) return false;
-        if (f.art === "aus") return this._feldAkt({ art: "aus", w, key, id }, false, sofort);
+        if (f.art === "aus") return this._feldAkt({ art: "aus", w, key, id }, false, sofort, true);
         const t = f.tier;
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
@@ -2161,21 +2164,28 @@ class AnazhRealm_feld_leben {
         const tier = { soul: t.soul.slice(0, 48), g: t.g, bs: t.bs, alterS: t.alterS, x: t.x, z: t.z };
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
-        return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort);
+        return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort, true);
     }
 
-    // DAS LEBEN DER WELT IM STAND (feld.K2#2): das Feld (je Zelle Betrag und Stempel), der Bestand jeder Region (Takt, Zähler der
-    // Geburt, die Tiere ohne ihre Zeichnung) und die Akte, die noch wirken — ein Reload setzt denselben Zustand fort, den der
-    // Mitspieler weiterrechnet. Die Marke (`_lebenGen`) zählt jede Schrift: ein ruhiges Feld fragt der Stand nicht neu. Bis
-    // feld.K2#2 reiste keins davon (reaktiv wie das Wetter): nach dem Reload rechnete die Seite ihre Regionen ab leer nach, ihr Feld
-    // trug 0 von 1 172 Zellen des Mitspielers.
+    // DAS LEBEN DER WELT IM STAND (feld.K2#2): der Bestand der NAHEN Regionen (Takt, Zähler der Geburt, die Tiere ohne ihre
+    // Zeichnung), das Feld über ihnen samt dem Saum einer Zelle (je Zelle Betrag und Stempel, wie die Karte sie trägt — auch die
+    // Tote, die erst die nächste Schrift räumt, `_feldTod`) und die Akte, die noch wirken oder eben wirkten — ein Reload setzt
+    // denselben Zustand fort, den der Mitspieler weiterrechnet. Nur das Nahe reist: der Stand wächst nie mit dem Weg (speicher.K3);
+    // eine ferne Region holt ihre Stunde nach, wenn sie wieder nah wird (`_bestandRegion`). Eine Funktion seiner Marke (`_lebenGen`,
+    // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
+    // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers.
     _lebenImStand() {
         const st = this.state;
         const seed = (st.worldMeta && st.worldMeta.seed) || "";
         const F = st.faunaBestand && st.faunaBestand.seed === seed ? st.faunaBestand.regionen : {};
+        const [S, cs] = [this._bestandSeite(), AnazhRealm.LIFE_FIELD.cell];
         const bestand = {};
-        for (const key of Object.keys(F)) {
+        const kacheln = [];
+        for (const key of this._bestandNah()) {
+            const [ix, iz] = key.split(",").map(Number);
+            kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
+            if (!R) continue;
             const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name }) => ({
                 id,
                 soul,
@@ -2189,17 +2199,18 @@ class AnazhRealm_feld_leben {
             }));
             bestand[key] = { t: R.t, seq: R.seq, tiere };
         }
-        // nur die lebenden Zellen (eine Zelle unter epsilon ist tot — ihr Eintrag ist nur Gedächtnis der Räumung, `_feldTod`)
-        const L = AnazhRealm.LIFE_FIELD;
-        const lebt = ([, e]) => Math.abs(e.a * Math.exp(-L.decayPerSec * Math.max(0, st.spielZeit - e.t))) >= L.epsilon;
-        const feld = [...(st.lifeField || [])].filter(lebt).map(([k, e]) => [k, e.a, e.t]);
+        const nah = (k) => {
+            const [x, z] = k.split(",").map((n) => (Number(n) + 0.5) * cs);
+            return kacheln.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+        };
+        const feld = [...(st.lifeField || [])].filter(([k]) => nah(k)).map(([k, e]) => [k, e.a, e.t]);
         const akte = (st.feldAkte || []).map(({ k: _k, ...a }) =>
             a.art === "annahme" ? { ...a, tier: { ...a.tier } } : a
         );
         // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
-        const alt = st.spielZeit - 2 * AnazhRealm.AKT_NACHHOL_S;
-        const gewirkt = [...(this._feldAktGewirkt || [])].filter(([, w]) => w >= alt).map(([k]) => k);
-        return { feld, bestand, akte, gewirkt };
+        const G = [...(this._feldAktGewirkt || [])];
+        const bis = Math.max(-Infinity, ...G.map(([, w]) => w)) - 2 * AnazhRealm.AKT_NACHHOL_S;
+        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k) };
     }
     _lebenAusStand(v) {
         const st = this.state;
@@ -2211,6 +2222,7 @@ class AnazhRealm_feld_leben {
         [this._lebenStand, this._lebenWecker, this._annahmeOffen] = [null, null, null];
         st.feldAkte = [];
         st.faunaBestand = undefined;
+        this._lebenGen = (this._lebenGen || 0) + 1;
         const gewirkt = (this._feldAktGewirkt = new Map());
         for (const k of Array.isArray(v.gewirkt) ? v.gewirkt : [])
             if (typeof k === "string" && k.length < 400) gewirkt.set(k, Number(k.split("|")[0]));
@@ -2219,14 +2231,10 @@ class AnazhRealm_feld_leben {
                 continue;
             const zelle = { a: z[1], t: z[2] };
             lf.set(z[0], zelle);
-            this._feldTod(
-                lf,
-                z[0],
-                zelle,
-                z[2] + Math.max(0, Math.log(Math.abs(z[1]) / L.epsilon)) / L.decayPerSec,
-                jetzt
-            );
-            if (lf.has(z[0])) AnazhRealm._lebenWecken(this, z[0], jetzt);
+            // ihr Tod ins Rad, ohne zu räumen: die Karte trägt, was die des Mitspielers trägt, bis die nächste Schrift räumt
+            const tod = z[2] + Math.max(0, Math.log(Math.abs(z[1]) / L.epsilon)) / L.decayPerSec;
+            this._feldTod(lf, z[0], zelle, tod, -Infinity);
+            AnazhRealm._lebenWecken(this, z[0], jetzt);
         }
         const R = this._bestandRegionen().regionen;
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
@@ -2288,6 +2296,7 @@ class AnazhRealm_feld_leben {
         const jetzt = st.spielZeit;
         const gewirkt = this._feldAktGewirkt || (this._feldAktGewirkt = new Map());
         gewirkt.set(akt.w + "|" + akt.k, akt.w);
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand
         st.faunaLifecycle.feldLetzt = akt.w; // das zuletzt gerechnete Ereignis der Folge des Felds (`_feldTakt`)
         if (gewirkt.size > 512)
             for (const [k, w] of gewirkt) if (w < jetzt - 2 * AnazhRealm.AKT_NACHHOL_S) gewirkt.delete(k);
@@ -2321,7 +2330,7 @@ class AnazhRealm_feld_leben {
         const gesetz = !!(ctx && ctx.regel && this._gesetzGeber(ctx.regel)); // ein Gesetz eines Spielers: zur Zeit seiner Scheibe
         const reistSelbst = !!(ctx && ctx.akt) || (ctx && ctx.source === "human") || gesetz;
         const w = ctx && (ctx.akt || gesetz) && ctx.uhr != null ? ctx.uhr : this.state.spielZeit;
-        return this._feldAkt({ art: "leben", w, x, z, a }, !reistSelbst);
+        return this._feldAkt({ art: "leben", w, x, z, a }, !reistSelbst, true, !!(ctx && ctx.akt));
     }
 
     // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie

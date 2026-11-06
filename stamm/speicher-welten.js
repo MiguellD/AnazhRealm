@@ -1318,12 +1318,23 @@ class AnazhRealm_speicher_welten {
             // überschrieb, schrieb nach dem Reload ein zweites Mal mit einem anderen Übergang)
             [
                 "wetterZug",
-                () => [Number.isInteger(this._wetterZug) ? this._wetterZug : null, st().weatherTransition || null],
+                () => {
+                    const wt = st().weatherTransition; // ohne `progress`: der Takt rechnet ihn aus der Welt-Uhr
+                    const zug = Number.isInteger(this._wetterZug) ? this._wetterZug : null;
+                    return [
+                        zug,
+                        wt ? { from: wt.from, to: wt.to, duration: wt.duration, startedAt: wt.startedAt } : null,
+                    ];
+                },
                 { augenblick: true, marke: () => [this._wetterZug, st().weatherTransition, st().weather] },
             ],
             // DAS LEBEN DER WELT reist (feld.K2#2, `_lebenImStand`): Feld, Bestand und offene Akte — im Augenblick des Stands,
             // gefragt nur, wenn eine Schrift es änderte (die Marke)
-            ["leben", () => this._lebenImStand(), { augenblick: true, marke: () => [this._lebenGen] }],
+            [
+                "leben",
+                () => this._lebenImStand(),
+                { augenblick: true, marke: () => [this._lebenGen, this._bestandNah().join()] },
+            ],
             // Die Stempel des Regens reisen (wetter.K3, `_regenStempel`): der Pegel ist ihre Funktion zur Welt-Uhr — nach dem Reload
             // fällt der Bach weiter, wie er fiel, und die Dürre hält
             ["regenStempel", () => (Array.isArray(st().regenStempel) ? st().regenStempel.slice() : null)],

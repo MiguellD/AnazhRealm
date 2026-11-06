@@ -87,10 +87,10 @@ async function checkRing2Dsl({ page, check }) {
         // korrekt ruhen. Geprüft wird der DISPATCH (Ökonomie: checkBandPhasenBF) → Budget decken.
         st.nexusWirk = AnazhRealm.NEXUS_WIRK.max;
         st.nexusEvolutionQueue.push({
-            name: `playtest_evo_${Date.st.spielZeit}`,
+            name: `playtest_evo_${Date.now()}`,
             program: composed,
             source: "playtest",
-            createdAt: performance.st.spielZeit / 1000,
+            createdAt: performance.now() / 1000,
         });
         out.histBefore = histBefore;
 
@@ -112,7 +112,7 @@ async function checkRing2Dsl({ page, check }) {
     });
 
     const phase2Results = await safeEvaluate(page, () => {
-        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.st.spielZeit);
+        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: st.dsl.history.length,
             queueLen: st.nexusEvolutionQueue.length,
@@ -323,7 +323,7 @@ async function checkBandV1733WorldRules({ page, check }) {
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(st.worldRules);
-        out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.st.spielZeit]); // der Takt ruft sie
+        out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
         const savedRules = st.worldRules.slice();
