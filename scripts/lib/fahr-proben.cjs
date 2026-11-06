@@ -337,7 +337,7 @@ async function probeLeben(expected) {
         const g1 = await gtAmStart();
         let labor = null;
         if (g1 && g1._fahr) {
-            const z0 = Object.assign({}, g1._fahr);
+            const z0 = { ...g1._fahr };
             z.ent = g1;
             z.spur = [];
             tasten(true, false);
@@ -352,7 +352,7 @@ async function probeLeben(expected) {
             const boden = r._fahrBoden(g1);
             // Die Labor-Spur: derselbe Kern (Stand an der Lage, dann Kräfte — die Folge der Probefahrt, um einen Stand
             // versetzt), dieselben Eingaben, derselbe Boden. Wo der Kontakt-Löser griff, übernimmt sie die Lage der Welt.
-            const q = Object.assign({}, z0);
+            const q = { ...z0 };
             // der Boden UNTER dem Werk liest die Lage seines Fahr-Zustands (`_werkBoden`, Leben-Schau 2) — die Spur fährt als er
             const fahrRoh = g1._fahr;
             g1._fahr = q;
@@ -1364,7 +1364,7 @@ async function probeLeben(expected) {
         const gP = await gtAmStart();
         if (gP) {
             const echt = window.__vehicleCore;
-            const alt = Object.assign({}, echt);
+            const alt = { ...echt };
             delete alt.fahrGesetz;
             delete alt.fahrEbene;
             const fang = (fn) => {
@@ -1678,7 +1678,7 @@ async function probeLeben(expected) {
                 bilder(4);
                 const kEcht = r._fahrHuelle(gT);
                 if (kEcht) {
-                    const k = Object.assign({}, kEcht, { schub: [] });
+                    const k = { ...kEcht, schub: [] };
                     const WX = k.hw + 0.3;
                     const w = Object.create(r);
                     w.state = {

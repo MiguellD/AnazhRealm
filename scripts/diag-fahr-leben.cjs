@@ -100,7 +100,7 @@ function wechselVerdict(m) {
 }
 
 // DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
-const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
+const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive({ ...VC.DEFAULT_P, ...VC.presetPatch(pid) }));
 // ── K2–K4, K6–K8 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
@@ -202,7 +202,7 @@ function kernProbe(VC) {
     // K6 — DIE VERWINDUNG: bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
     // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
     // Federweg trägt, hebt die Verwindung den Wagen nicht.
-    const Pv = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
+    const Pv = { ...VC.DEFAULT_P, ...VC.presetPatch("gt") };
     const Dv = VC.exportDrive(Pv);
     const Ggt = VC.fahrGesetz(Dv);
     const av = Ggt.auf;
@@ -247,6 +247,12 @@ function kernProbe(VC) {
         return { throttle: 1, steer: +(i >= 150) };
     });
     out.push(["K9 Fahr-Gefühl: Gas, dann voller Einschlag — Fahrt an der Bug-Achse ≤ 10°, v·ω ≤ 1,8 g·μ, Schwimmwinkel ≤ 40°", !gefuehlVerdict(m9).length, JSON.stringify(m9)]);
+    // K10 DER TRITT IST ANALOG (w16-fahrt-weg): der GT nach 4 s Gas 0,5 s Bremse — ein Viertel Tritt verliert halb so viel
+    // Tempo wie ein halber (0,4–0,6; beide unter dem Reibkreis, der Fahrtwind zählt in beide). Bis hier bremste jeder Druck voll:
+    // der Abzug des Pads ein Schalter, der Fahrer der Welt drehte sich im Bogen (am Kern von main ROT: 1,00).
+    const ab = (b) => lauf("gt", () => 0, 270, (i) => (i < 240 ? { throttle: 1 } : { brake: b })).z.speed;
+    const k10 = (ab(0) - ab(0.25)) / (ab(0) - ab(0.5));
+    out.push(["K10 der Tritt ist analog", Math.abs(k10 - 0.5) <= 0.1, k10.toFixed(2)]);
     return out;
 }
 // K9 DAS FAHR-GEFÜHL AM KERN (bis w12-fahrzeug-decke gate:vehicle-drive B-e am Ritt der Welt — die Welt fährt diesen Schritt,
@@ -262,7 +268,7 @@ const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50, boden: 1.
 // DER TAKT des Fahr-Schritts an EINEM Aufruf (z, e, G, dt): die gröbste Teilung in n gleiche Aufrufe, die Tempo, Gier und
 // Lenkung nicht mehr ändert, als Rate n / dt — K8 am Kern, in der Seite (`__taktHz`) an jedem Schritt der Welt (S1).
 function taktHz(VC, z0, e, G, dt) {
-    const lauf = (n, z = Object.assign({}, z0)) => {
+    const lauf = (n, z = { ...z0 }) => {
         for (let k = 0; k < n; k++) VC.fahrKraefte(z, e, G, dt / n);
         return [z.vlong, z.vlat, z.yawRate, z.yaw, z.steer].join();
     };
@@ -1639,7 +1645,7 @@ hauptLauf(async () => {
             [{ festRegen: lg(0, 1, 35) }, 1, /Nässe steht nicht/],
             [{ stern: lg(1, 0, 20) }, 4, /blind/],
         ]) {
-            const v = ketteVerdict(Object.assign({}, kg, bruch));
+            const v = ketteVerdict({ ...kg, ...bruch });
             check(
                 `Selbst-Test W ${soll} → Tiefe ${tiefe}`,
                 v.tiefe === tiefe && soll.test(v.befunde.join()),
@@ -1726,7 +1732,7 @@ hauptLauf(async () => {
             ["82,4° Gier in Frames ohne Sim-Schritt (F-D2)", { gierGrad: 82.4 }, "gier"],
             ["keine Fahrt (0 m)", { simWeg: 0, fahrWeg: 0 }, "sim-weg"],
         ]) {
-            const v = taktVerdict(Object.assign({}, gesund, bruch));
+            const v = taktVerdict({ ...gesund, ...bruch });
             check(
                 `Selbst-Test: ‚${name}' → die Linse nennt ${soll}`,
                 v.length >= 1 && v[0].startsWith(soll),
@@ -1736,7 +1742,7 @@ hauptLauf(async () => {
         check("Selbst-Test: nicht gestartet → die Linse feuert", taktVerdict({ gestartet: false }).length === 1);
         const steht = { gestartet: true, frames: 180, teleport: 0, fahrWeg: 0.0, gierGesamt: 0, v: 0 };
         check("Selbst-Test H0: der haltende Wagen == 0 Täter", haltVerdict(steht).length === 0);
-        const rollt = haltVerdict(Object.assign({}, steht, { fahrWeg: 9.7, v: 4.7, gierGesamt: 84 }));
+        const rollt = haltVerdict({ ...steht, fahrWeg: 9.7, v: 4.7, gierGesamt: 84 });
         check(
             "Selbst-Test H: ‚rollt 9,7 m mit 4,7 m/s zurück und dreht 84°' → rollt + gier",
             rollt.length === 2 && rollt[0].startsWith("rollt") && rollt[1].startsWith("gier"),
@@ -1775,7 +1781,7 @@ hauptLauf(async () => {
             ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
         ]) {
-            const v = wechselVerdict(Object.assign({}, wechsel, bruch));
+            const v = wechselVerdict({ ...wechsel, ...bruch });
             check(
                 `Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`,
                 v.length === 1 && v[0].startsWith(soll),
@@ -1842,7 +1848,7 @@ hauptLauf(async () => {
             [{ zoom: false }, "zoom"],
             [{ laut: false }, "laut"],
         ]) {
-            const v = tempoVerdict(Object.assign({}, gut5, bruch));
+            const v = tempoVerdict({ ...gut5, ...bruch });
             check(
                 `Selbst-Test T5: ${JSON.stringify(bruch)} → die Linse nennt ${soll}`,
                 v.length === 1 && v[0].startsWith(soll),
@@ -2140,7 +2146,7 @@ hauptLauf(async () => {
                 "huelle-konsum gleiten",
             ],
         ]) {
-            const v = stationVerdict(Object.assign({}, gutS, bruch));
+            const v = stationVerdict({ ...gutS, ...bruch });
             check(
                 `Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`,
                 v.length >= 1 && v[0].startsWith(soll),
@@ -2192,35 +2198,28 @@ hauptLauf(async () => {
                 [
                     "F1 Fels (Schau 2 #6: 38° steil, 40° gewankt)",
                     bahnPlatzVerdict(
-                        Object.assign({}, gutP, {
-                            neigung: 41,
-                            steig: 38,
-                            wank: -17,
-                            waende: 3,
-                            vor: 0.08,
-                            zurueck: 0.2,
-                        })
+                        { ...gutP, neigung: 41, steig: 38, wank: -17, waende: 3, vor: 0.08, zurueck: 0.2 }
                     ),
                     /Neigung 41°.*3 Wände.*W 2 s 0\.08.*S 2,5 s 0\.20/,
                 ],
                 [
                     "F1 16° (über der Platz-Grenze)",
-                    bahnPlatzVerdict(Object.assign({}, gutP, { neigung: 16.4, steig: 13, wank: 11 })),
+                    bahnPlatzVerdict({ ...gutP, neigung: 16.4, steig: 13, wank: 11 }),
                     /Neigung 16°/,
                 ],
                 [
                     "F1 Tanne in der Hülle",
-                    bahnPlatzVerdict(Object.assign({}, gutP, { blocker: 2, blockerNamen: ["baum_tanne"] })),
+                    bahnPlatzVerdict({ ...gutP, blocker: 2, blockerNamen: ["baum_tanne"] }),
                     /Blocker im Band \(baum_tanne\)/,
                 ],
                 [
                     "F1 E betritt das Tor (P2 welt_portal)",
-                    bahnPlatzVerdict(Object.assign({}, gutP, { eingestiegen: false, statt: "Portal betreten" })),
+                    bahnPlatzVerdict({ ...gutP, eingestiegen: false, statt: "Portal betreten" }),
                     /E steigt nicht ein \(Portal betreten\)/,
                 ],
                 [
                     "F1 rückwärts 0,1 m (Auge 06)",
-                    bahnPlatzVerdict(Object.assign({}, gutP, { zurueck: 0.1 })),
+                    bahnPlatzVerdict({ ...gutP, zurueck: 0.1 }),
                     /S 2,5 s 0\.10 m/,
                 ],
                 [
@@ -2236,26 +2235,24 @@ hauptLauf(async () => {
                 [
                     "F4 Befreiung −0,9 km/h",
                     bahnStossVerdict(
-                        Object.assign({}, gutS, {
-                            versuche: [{ seite: "mit A", freiFrame: -1, weg: 0.25, vMinKmh: -0.9 }],
-                        })
+                        { ...gutS, versuche: [{ seite: "mit A", freiFrame: -1, weg: 0.25, vMinKmh: -0.9 }] }
                     ),
                     /glutbrunnen mit A: nach 2 s 0\.25 m/,
                 ],
                 [
                     "F4 kein Stoß",
-                    bahnStossVerdict(Object.assign({}, gutS, { stoss: false })),
+                    bahnStossVerdict({ ...gutS, stoss: false }),
                     /kein Stoß am glutbrunnen/,
                 ],
                 ["F5 kein Tacho", bahnTachoVerdict({ element: false }), /kein Tacho/],
                 [
                     "F5 falsche Zahl",
-                    bahnTachoVerdict(Object.assign({}, gutT, { falsch: 3, beispiel: "zeigt 12, Fahrt 40 km/h" })),
+                    bahnTachoVerdict({ ...gutT, falsch: 3, beispiel: "zeigt 12, Fahrt 40 km/h" }),
                     /3\/10 Proben ≠/,
                 ],
                 [
                     "F5 nach dem Absteigen",
-                    bahnTachoVerdict(Object.assign({}, gutT, { nachAbsteigenSichtbar: true })),
+                    bahnTachoVerdict({ ...gutT, nachAbsteigenSichtbar: true }),
                     /nach dem Absteigen/,
                 ],
                 [
@@ -2266,10 +2263,7 @@ hauptLauf(async () => {
                 [
                     "F7 Shift wirkungslos",
                     bahnTastenVerdict(
-                        Object.assign({}, gutH, {
-                            handbremseWirkt: false,
-                            handbremseDetail: "Shift im Fahr-Schritt 0/30",
-                        })
+                        { ...gutH, handbremseWirkt: false, handbremseDetail: "Shift im Fahr-Schritt 0/30" }
                     ),
                     /Shift kommt im Fahr-Schritt nicht/,
                 ],
@@ -2295,7 +2289,7 @@ hauptLauf(async () => {
                     kAlt.slice(0, 2).join(" · ")
                 );
                 const mischung = KCs.fahrtMischung;
-                KCs.fahrtMischung = (l) => Object.assign({}, mischung(l), { upm: 800, motorHz: 53.3 });
+                KCs.fahrtMischung = (l) => ({ ...mischung(l), upm: 800, motorHz: 53.3 });
                 const sAlt = bahnKernStimme(KCs, VCs);
                 KCs.fahrtMischung = mischung;
                 check(
@@ -2603,7 +2597,7 @@ hauptLauf(async () => {
             : "kein Hang gefunden"
     );
     // Das Pferd geht Schritt (≈ 1,3 m/s): 2 m Weg in 180 Frames sind Fahrt; seine Gier folgt der Fahrt (kein Maß).
-    const vRoss = taktVerdict(Object.assign({}, out.ross, { gierGrad: undefined }), 2);
+    const vRoss = taktVerdict({ ...out.ross, gierGrad: undefined }, 2);
     check(
         "T3 Pferd (richtungs-folgender Ritt): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt",
         vRoss.length === 0,
