@@ -31,6 +31,10 @@
 //       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 //       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
+//   (i) ZUGANG (spielgang.K4, vp-0611g) — aus ist die Ausgabe der Kette die ohne Zugang: kein Knoten der Farbsicht im Graphen
+//       (Suche nach ihren Uniformen), der Rückweg auf aus byte-gleich im Fragment, die Lauf-Grenze des Resolve eine Konstante.
+//       Steil in den Himmel mit einer blauen Kiste: Tritanopie und Deuteranopie ändern kein Himmels-Pixel (die EINE
+//       Himmels-Maske), die Tritanopie ändert die Kiste (sonst blind).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
@@ -225,6 +229,12 @@ function urteil(z) {
         v.push(
             `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
         );
+    const zg = z.zugang || { abbruch: "lief nicht" };
+    const t = zg.tritanopie || {};
+    if (zg.abbruch || zg.ausTraegt) v.push(`ZUGANG: ${zg.abbruch || "aus trägt den Knoten der Farbsicht (vp-0611g)"}`);
+    else if (!(zg.anTraegt && zg.himmel.includes("himmel") && t.himmelPx > 2000 && t.kiste > t.kistePx / 5))
+        v.push(`ZUGANG: blind ${JSON.stringify(zg)}`);
+    for (const art of ["tritanopie", "deuteranopie"]) if (zg[art]?.himmel) v.push(`ZUGANG: ${art} färbt den Himmel ${JSON.stringify(zg[art])}`);
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -287,168 +297,65 @@ function selbsttest() {
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
+        zugang: {
+            himmel: ["himmel"],
+            anTraegt: true,
+            tritanopie: { himmel: 0, himmelPx: 4700, kiste: 90, kistePx: 100 },
+        },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (f) => {
-        const z = jsonKlon(gruen);
-        f(z);
-        return z;
-    };
     const faelle = [
-        {
-            name: "Direktpfad stürzt",
-            z: mit((z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"])),
-            muss: /Direktpfad — TypeError/,
-        },
-        {
-            name: "Direktpfad ohne Tiefe",
-            z: mit((z) => (z.schritte[1].tiefe = false)),
-            muss: /Direktpfad zeichnet ohne Tiefe/,
-        },
-        {
-            name: "Leinwand-Tiefe in der Kette",
-            z: mit((z) => (z.schritte[2].tiefe = true)),
-            muss: /trägt eine Leinwand-Tiefe/,
-        },
-        {
-            name: "GPU-Textur bleibt",
-            z: mit((z) => (z.schritte[2].leinwandTiefeGpu = true)),
-            muss: /GPU-Textur der Leinwand-Tiefe lebt/,
-        },
-        {
-            name: "Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)",
-            z: mit((z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 })),
-            muss: /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/,
-        },
-        {
-            name: "Rahmen-Ziel am Ende",
-            z: mit((z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/,
-        },
-        {
-            name: "Direktpfad ohne Rahmen-Ziel (blind)",
-            z: mit((z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/,
-        },
-        { name: "Rahmen-Ziel ungemessen", z: mit((z) => delete z.schritte[0].rahmenZiel), muss: /nicht gemessen/ },
-        {
-            name: "Drift: das Ziel bleibt ohne r184s Hörer",
-            z: mit((z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 })),
-            muss: /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/,
-        },
-        {
-            name: "Drift: der Abschied fällt still",
-            z: mit((z) => (z.drift.fehler = [])),
-            muss: /ohne r184s Hörer fiel der Abschied STILL/,
-        },
-        {
-            name: "Drift: kein r184-Hörer zu finden (Vendor-Drift)",
-            z: mit((z) => (z.drift.hoererWeg = 0)),
-            muss: /kein r184-Abschied .* die Probe ist blind/,
-        },
-        { name: "Drift-Probe fehlt", z: mit((z) => delete z.drift), muss: /die Drift-Probe lief nicht/ },
-        {
-            name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
-            muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht still",
-            z: mit((z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x)))),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht doppelt",
-            z: mit((z) => z.konsolenFehler.push(z.konsolenFehler[0])),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/,
-        },
-        {
-            name: "ein fremder Stoff-Bruch der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt")),
-            muss: /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/,
-        },
-        {
-            name: "eine fremde ERROR-Zeile der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
-            muss: /KONSOLE: .*Post-Processing fehlt/,
-        },
-        { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
-        {
-            name: "Abbild in voller Auflösung",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [32, 24])),
-            muss: /statt r32float 16×24/,
-        },
-        {
-            name: "Abbild als 2×2-Block (die Zeile halbiert)",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [16, 12])),
-            muss: /statt r32float 16×24/,
-        },
-        { name: "Abbild leer", z: mit((z) => (z.schritte[2].abbild.mitte = 1)), muss: /trägt die Szene nicht/ },
-        {
-            name: "Wasser liest eine andere Tiefe (vec4-Weg)",
-            z: mit((z) => (z.wasser.r184 = [75, 118, 105])),
-            muss: /das Wasser liest eine andere Tiefe/,
-        },
-        { name: "Wasser-Probe blind", z: mit((z) => (z.wasser.ohneGrund = z.wasser.abbild)), muss: /Probe ist blind/ },
+        ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
+        ["Direktpfad ohne Tiefe", ["schritte.1.tiefe=", false], /Direktpfad zeichnet ohne Tiefe/],
+        ["Leinwand-Tiefe in der Kette", ["schritte.2.tiefe=", true], /trägt eine Leinwand-Tiefe/],
+        ["GPU-Textur bleibt", ["schritte.2.leinwandTiefeGpu=", true], /GPU-Textur der Leinwand-Tiefe lebt/],
+        ["Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)", (z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 }), /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/],
+        ["Rahmen-Ziel am Ende", (z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 }), /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/],
+        ["Direktpfad ohne Rahmen-Ziel (blind)", (z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 }), /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/],
+        ["Rahmen-Ziel ungemessen", ["schritte.0.rahmenZiel"], /nicht gemessen/],
+        ["Drift: das Ziel bleibt ohne r184s Hörer", (z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 }), /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/],
+        ["Drift: der Abschied fällt still", (z) => (z.drift.fehler = []), /ohne r184s Hörer fiel der Abschied STILL/],
+        ["Drift: kein r184-Hörer zu finden (Vendor-Drift)", ["drift.hoererWeg=", 0], /kein r184-Abschied .* die Probe ist blind/],
+        ["Drift-Probe fehlt", ["drift"], /die Drift-Probe lief nicht/],
+        ["ERROR von _rahmenZielAbschied außerhalb der Drift", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)"), /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/],
+        ["der erzwungene Render-Fehler bricht still", (z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x))), /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/],
+        ["der erzwungene Render-Fehler bricht doppelt", (z) => z.konsolenFehler.push(z.konsolenFehler[0]), /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/],
+        ["ein fremder Stoff-Bruch der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt"), /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/],
+        ["eine fremde ERROR-Zeile der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt"), /KONSOLE: .*Post-Processing fehlt/],
+        ["Abbild fehlt", (z) => (z.schritte[0].abbild = { fehlt: true }), /kein Tiefen-Abbild/],
+        ["Abbild in voller Auflösung", (z) => (z.schritte[1].abbild.groesse = [32, 24]), /statt r32float 16×24/],
+        ["Abbild als 2×2-Block (die Zeile halbiert)", (z) => (z.schritte[1].abbild.groesse = [16, 12]), /statt r32float 16×24/],
+        ["Abbild leer", ["schritte.2.abbild.mitte=", 1], /trägt die Szene nicht/],
+        ["Wasser liest eine andere Tiefe (vec4-Weg)", (z) => (z.wasser.r184 = [75, 118, 105]), /das Wasser liest eine andere Tiefe/],
+        ["Wasser-Probe blind", (z) => (z.wasser.ohneGrund = z.wasser.abbild), /Probe ist blind/],
         // stoffe-k3-phasen a3b87db1: die Bühne 160 m über Genesis (247,3 m) über der Eis-Linie 157,1 m
-        { name: "Bühne im Eis", z: mit((z) => (z.buehne.wasserY = 247.3)), muss: /über der Eis-Linie/ },
-        { name: "Wasser nicht umgehängt", z: mit((z) => (z.wasser.umgehaengt = [0, 1])), muss: /nicht umgehängt/ },
-        { name: "Wasser-Probe fehlt", z: mit((z) => delete z.wasser), muss: /lief nicht/ },
-        {
-            name: "Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)",
-            z: mit((z) => Object.assign(z.saum, { abweichend: 14, dMax: 25 })),
-            muss: /Nachbar-Block/,
-        },
-        {
-            name: "Saum-Probe auf gerader Leinwand (blind)",
-            z: mit((z) => (z.saum.leinwand = [320, 240])),
-            muss: /nicht ungerade/,
-        },
-        {
-            name: "kein Gegenstand vor dem Wasser (blind)",
-            z: mit((z) => Object.assign(z.saum, { kanten: 0, paritaeten: 0 })),
-            muss: /kein Gegenstand vor dem Wasser/,
-        },
-        { name: "ferne Kiste vorn", z: mit((z) => (z.schritte[1].mitte = [40, 190, 40])), muss: /Tiefentest fehlt/ },
-        { name: "Tiefen-Leser blind", z: mit((z) => (z.schritte[0].tiefenKopien = 0)), muss: /kopierte nie/ },
-        { name: "Fang ohne Direktpfad", z: mit((z) => (z.schritte[3].direkt = false)), muss: /nicht den Direktpfad/ },
-        {
-            name: "GPU-Validierung",
-            z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])),
-            muss: /Validierungs-Fehler/,
-        },
-        {
-            name: "Godrays unbedingt",
-            z: mit((z) => Object.assign(z.ausgabe.abtastungen, { unbedingt: 29, zweig: 4 })),
-            muss: /29 unbedingte Abtastungen/,
-        },
-        { name: "Shader blind", z: mit((z) => (z.ausgabe = null)), muss: /kein Fragment der Ausgabe/ },
-        { name: "Bühne bricht ab", z: mit((z) => (z.abbruch = "TypeError: x")), muss: /ABBRUCH/ },
-        { name: "Godray-Zweig trägt nicht", z: mit((z) => (z.godray.aenderungPct = 0)), muss: /der Zweig trägt nicht/ },
-        { name: "Godray-Probe blind", z: mit((z) => (z.godray.staerke = 0)), muss: /die Probe ist blind/ },
-        {
-            name: "Grading schneidet dunkles Licht ab",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 0, luma4: 0 })),
-            muss: /DUNKEL: .*schneidet dunkles Licht ab/,
-        },
-        {
-            name: "Grading hängt an der Belichtung",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 12, luma4: 7 })),
-            muss: /DUNKEL: .*hängt an der Belichtung/,
-        },
-        { name: "Dunkel-Probe fehlt", z: mit((z) => delete z.dunkel), muss: /DUNKEL: die Probe lief nicht/ },
-        {
-            name: "Kontrast schwärzt die Nacht",
-            z: mit((z) => (z.dunkel.lumaNacht = 0)),
-            muss: /DUNKEL: das Licht der Nacht .*Post-Kette 25c/,
-        },
-        {
-            name: "Nacht-Probe blind",
-            z: mit((z) => (z.dunkel.nachtFaktor = 0)),
-            muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
-        },
+        ["Bühne im Eis", ["buehne.wasserY=", 247.3], /über der Eis-Linie/],
+        ["Wasser nicht umgehängt", (z) => (z.wasser.umgehaengt = [0, 1]), /nicht umgehängt/],
+        ["Wasser-Probe fehlt", ["wasser"], /lief nicht/],
+        ["Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)", ["saum", { abweichend: 14, dMax: 25 }], /Nachbar-Block/],
+        ["Saum-Probe auf gerader Leinwand (blind)", (z) => (z.saum.leinwand = [320, 240]), /nicht ungerade/],
+        ["kein Gegenstand vor dem Wasser (blind)", ["saum", { kanten: 0, paritaeten: 0 }], /kein Gegenstand vor dem Wasser/],
+        ["ferne Kiste vorn", (z) => (z.schritte[1].mitte = [40, 190, 40]), /Tiefentest fehlt/],
+        ["Tiefen-Leser blind", ["schritte.0.tiefenKopien=", 0], /kopierte nie/],
+        ["Fang ohne Direktpfad", ["schritte.3.direkt=", false], /nicht den Direktpfad/],
+        ["GPU-Validierung", (z) => (z.gpuFehler = ["Attachment state mismatch"]), /Validierungs-Fehler/],
+        ["Godrays unbedingt", ["ausgabe.abtastungen", { unbedingt: 29, zweig: 4 }], /29 unbedingte Abtastungen/],
+        ["Shader blind", ["ausgabe=", null], /kein Fragment der Ausgabe/],
+        ["Bühne bricht ab", ["abbruch=", "TypeError: x"], /ABBRUCH/],
+        ["Godray-Zweig trägt nicht", ["godray.aenderungPct=", 0], /der Zweig trägt nicht/],
+        ["Godray-Probe blind", ["godray.staerke=", 0], /die Probe ist blind/],
+        ["Grading schneidet dunkles Licht ab", ["dunkel", { luma1: 0, luma4: 0 }], /DUNKEL: .*schneidet dunkles Licht ab/],
+        ["Grading hängt an der Belichtung", ["dunkel", { luma1: 12, luma4: 7 }], /DUNKEL: .*hängt an der Belichtung/],
+        ["Dunkel-Probe fehlt", ["dunkel"], /DUNKEL: die Probe lief nicht/],
+        ["Kontrast schwärzt die Nacht", ["dunkel.lumaNacht=", 0], /DUNKEL: das Licht der Nacht .*Post-Kette 25c/],
+        ["Nacht-Probe blind", ["dunkel.nachtFaktor=", 0], /DUNKEL: die Nacht stand bei nightFactor 0/],
+        // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht stand aus im Graphen, die Tritanopie färbte den Himmel
+        ["aus trägt die Farbsicht", ["zugang.ausTraegt=", true], /Knoten der Farbsicht/],
+        ["Tritanopie färbt den Himmel", ["zugang.tritanopie", { himmel: 9 }], /tritanopie färbt/],
+        ["Zugang blind", ["zugang.tritanopie", { kiste: 0 }], /ZUGANG: blind/],
+        ["Zugang fehlt", ["zugang"], /ZUGANG: lief nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
@@ -545,7 +452,7 @@ function saumProbe(ort) {
             }
             Object.assign(aus, { kanten, abweichend, dMax: +dMax.toFixed(1), paritaeten: paritaet.size });
         } catch (e) {
-            aus.abbruch = String((e && (e.stack || e.message)) || e)
+            aus.abbruch = fehlerStapel(e)
                 .split("\n")
                 .slice(0, 4)
                 .join(" ← ");
@@ -653,7 +560,7 @@ function buehne(nFrames, nachtLicht) {
                     frame();
                 } catch (e) {
                     s.fehler.push(
-                        String((e && (e.stack || e.message)) || e)
+                        fehlerStapel(e)
                             .split("\n")
                             .slice(0, 3)
                             .join(" ← ")
@@ -879,7 +786,7 @@ function buehne(nFrames, nachtLicht) {
             await dev.queue.onSubmittedWorkDone();
             aus.rahmenEnde = rahmenZiel();
         } catch (e) {
-            aus.abbruch = String((e && (e.stack || e.message)) || e)
+            aus.abbruch = fehlerStapel(e)
                 .split("\n")
                 .slice(0, 4)
                 .join(" ← ");
@@ -892,9 +799,66 @@ function buehne(nFrames, nachtLicht) {
     })();
 }
 
+// (i) DER ZUGANG (spielgang.K4, Seiten-Kontext, nach `buehne`): aus trägt der Graph der Ausgabe keinen Knoten der Farbsicht
+// (die Suche nach ihren Uniformen). Die Kamera sieht nur den Himmel (die Gegenstände im Unendlichen, `_himmelImUnendlichen`) und
+// eine blaue Kiste, steil nach oben: unter Tritanopie und Deuteranopie bleibt jedes Himmels-Pixel wie aus, die Kiste wechselt
+// unter Tritanopie (sonst blind). Kiste = die Pixel, die sie zeichnet (aus mit ↔ ohne Kiste).
+function zugangProbe() {
+    return (async () => {
+        const T = window.THREE;
+        st.renderer.setAnimationLoop(null);
+        window.__buehne();
+        const [Z, pp, ppu, cam, S] = [st.zugang, st.postProcessing, st.postProcessingUniforms, st.camera, 30];
+        const [vor, p0, maske] = [{ ...Z }, cam.position.clone(), cam.layers.mask];
+        const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicNodeMaterial({ color: 0x2050ff }));
+        kiste.position.set(p0.x, p0.y + 7.5, p0.z - 2.7);
+        const himmel = [kiste];
+        st.scene.traverse((o) => o.material?.vertexNode === r.constructor._unendlichKnoten && himmel.push(o));
+        for (const o of himmel) o.layers.enable(S);
+        st.scene.add(kiste);
+        cam.layers.set(S);
+        const bild = async () => {
+            for (let i = 0; i < 5; i++) {
+                cam.position.copy(p0);
+                cam.lookAt(p0.x, p0.y + 10, p0.z - 3.6);
+                cam.updateMatrixWorld(true);
+                window.__loopBild();
+            }
+            return (await window.__ausgabeAufnahme(80, 60, 1, { satz: "messung" })).u8;
+        };
+        const traegt = (n, such = [ppu.farbFehler, ppu.farbSchub], weg = new Set()) =>
+            !!n && typeof n === "object" && !weg.has(n) && (weg.add(n), such.includes(n) || Object.values(n).flat().some((k) => k?.isNode && traegt(k, such, weg)));
+        const aus = { himmel: himmel.map((o) => o.name), ausTraegt: traegt(pp.outputNode) };
+        try {
+            const a = await bild();
+            kiste.visible = false;
+            const ohne = await bild();
+            kiste.visible = true;
+            const d = (b, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(b[i + c] - a[i + c])));
+            for (const art of ["tritanopie", "deuteranopie"]) {
+                Z.farbsicht = art;
+                const b = await bild();
+                const e = (aus[art] = { himmel: 0, kiste: 0, kistePx: 0, himmelPx: 0 });
+                aus.anTraegt ||= traegt(pp.outputNode);
+                for (let i = 0; i < b.length; i += 4)
+                    if (d(ohne, i) > 0) (e.kistePx++, (e.kiste += d(b, i) >= 4));
+                    else (e.himmelPx++, (e.himmel += d(b, i) > 0));
+            }
+        } catch (e) {
+            aus.abbruch = fehlerStapel(e);
+        } finally {
+            Object.assign(Z, vor);
+            cam.layers.mask = maske;
+            for (const o of himmel) o.layers.disable(S);
+            st.scene.remove(kiste);
+        }
+        return aus;
+    })();
+}
+
 (async () => {
     console.log(
-        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
+        "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang ==="
     );
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
@@ -927,6 +891,8 @@ function buehne(nFrames, nachtLicht) {
         const b = out.buehne;
         log(`Bühne: Boden ${b.boden.toFixed(1)} m · Wasser ${b.wasserY.toFixed(1)} m · Eis-Linie ${b.eisNull.toFixed(1)} m`);
         out.saum = await page.evaluate(saumProbe, b);
+        out.zugang = await page.evaluate(zugangProbe);
+        log(`Zugang: ${JSON.stringify(out.zugang)}`);
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
@@ -974,6 +940,6 @@ function buehne(nFrames, nachtLicht) {
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
-            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}).`
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
     );
 })();

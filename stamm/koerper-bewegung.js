@@ -1991,9 +1991,13 @@ class AnazhRealm_koerper_bewegung {
                 // LANDUNG zuerst: der Dip absorbiert den Aufprall (∝ Tempo, gedeckelt); die Glättung
                 // snappt auf die Füße (sonst hebt ihr Lag das Auge genau so viel an, wie der Dip es
                 // senkt → sie fechten, der Dip verpufft, gemessen).
+                // DER ZUGANG (spielgang.K4): ohne Kopfwackeln (`state.zugang.wackeln` false) nickt das Auge bei der Landung nicht
+                const nickt = !(this.state.zugang && this.state.zugang.wackeln === false);
                 if (pendingImpact > 0) {
                     smoothBodyY = bodyY;
-                    const kick = -Math.min(AnazhRealm.LAND_DIP_MAX, pendingImpact * AnazhRealm.LAND_DIP_SCALE);
+                    const kick = nickt
+                        ? -Math.min(AnazhRealm.LAND_DIP_MAX, pendingImpact * AnazhRealm.LAND_DIP_SCALE)
+                        : 0;
                     if (kick < landDip) landDip = kick;
                     this.state._landImpactPending = 0;
                 } else if (
@@ -2061,9 +2065,13 @@ class AnazhRealm_koerper_bewegung {
         const st = this.state;
         const d = st.player && st.player._bogenDraw;
         const A = d && Number.isFinite(d.frac) ? AnazhRealm._arenaGesetz().bogen : null;
+        // DER ZUGANG (spielgang.K4, `state.zugang`): die Ruhe ist das Sichtfeld des Spielers (`sichtfeld`, sonst KAM_FOV_GRAD); ohne
+        // Kopfwackeln (`wackeln` false) atmet das Sichtfeld nicht mit dem Tempo
+        const Z = st.zugang || {};
+        const ruhe = Number.isFinite(Z.sichtfeld) ? Z.sichtfeld : AnazhRealm.KAM_FOV_GRAD;
         let roh = st._zoomActive
             ? AnazhRealm.ZOOM_FOV_DEG
-            : AnazhRealm.KAM_FOV_GRAD + (tempo || 0) + (A ? (A.fovZug - A.fovRuhe) * d.frac : 0);
+            : ruhe + (Z.wackeln === false ? 0 : tempo || 0) + (A ? (A.fovZug - A.fovRuhe) * d.frac : 0);
         if (Number.isFinite(st._kamFovVon)) st._kamFovVersatz = { f: st._kamFovVon - roh, t };
         st._kamFovVon = null;
         const g = st._kamFovVersatz;

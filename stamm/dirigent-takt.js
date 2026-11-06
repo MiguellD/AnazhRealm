@@ -2082,6 +2082,7 @@ class AnazhRealm_dirigent_takt {
         const ppu = this.state.postProcessingUniforms;
         if (ppu && ppu.nachSchaerfe)
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
+        this._zugangTakt(ppu); // die Farbsicht und die Unschärfe der Bewegung aus dem Stand (spielgang.K4)
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
