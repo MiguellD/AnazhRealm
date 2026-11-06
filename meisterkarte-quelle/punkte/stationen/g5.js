@@ -876,6 +876,16 @@ async function toreK1Seite(H) {
                 if (K.sprint) st.verbTafel.gehalten.sprint = true;
                 const s = schirmEl();
                 const p = st.playerMesh ? st.playerMesh.position : null;
+                // was der Schirm zeigt: ein Bild in ihm (eine Leinwand, die er hält) oder seine Tafel (der Verlauf, schirmLuma)
+                const sb = s && !s.hidden ? s.querySelector("canvas") : null;
+                let schirmL = null;
+                if (sb && sb.width > 0 && getComputedStyle(sb).display !== "none") {
+                    K.kg = K.kg || Object.assign(document.createElement("canvas"), { width: 8, height: 5 }).getContext("2d", { willReadFrequently: true });
+                    K.kg.drawImage(sb, 0, 0, 8, 5);
+                    const d = K.kg.getImageData(0, 0, 8, 5).data;
+                    schirmL = 0;
+                    for (let i = 0; i < 40; i++) schirmL += lumaVon([d[4 * i], d[4 * i + 1], d[4 * i + 2]]) / 40;
+                }
                 K.B.push({
                     t: n,
                     dt: K.vorT == null ? 0 : n - K.vorT,
@@ -883,6 +893,7 @@ async function toreK1Seite(H) {
                     welt: st.worldMeta ? st.worldMeta.worldId : null,
                     tausch: !!R._weltTausch,
                     schirm: s && !s.hidden ? +getComputedStyle(s).opacity : 0,
+                    schirmL,
                     x: p ? p.x : NaN,
                     z: p ? p.z : NaN,
                     bmp: K.lauf && K.lauf.t0 != null ? createImageBitmap(st.renderer.domElement, { resizeWidth: 32, resizeHeight: 18 }).catch(() => null) : null,
@@ -1012,7 +1023,7 @@ async function toreK1Seite(H) {
                 prev = f;
             }
             const bis = z.filter((f) => !t1 || f.t <= t1.t);
-            const lum = bis.map((f) => (f.luma == null ? null : f.schirm * (SL == null ? f.luma : SL) + (1 - f.schirm) * f.luma));
+            const lum = bis.map((f) => (f.luma == null ? null : f.schirm * (f.schirmL != null ? f.schirmL : SL == null ? f.luma : SL) + (1 - f.schirm) * f.luma));
             const bek = lum.filter((v) => v != null);
             const dts = bis.slice(1).map((f) => f.dt);
             let wechsel = 0;
