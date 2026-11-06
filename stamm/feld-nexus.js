@@ -1150,7 +1150,7 @@ class AnazhRealm_feld_nexus {
             // stehen in SEINEM Kontext (`_kiAbruf`) — der feste Vertrag fiel von 5 532 auf ~2 000 Token
             '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen, z.B. ["spawn_studio","eiche",["near_water",60],6]: <wort> genau EIN Wort der Welt, nie seine Gruppe (eine Art der Welt wächst nur so), Anzahl 1–24.',
             `  Wörter der Welt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
-            '<same> und <regler> nur, wenn der Kontext „Regler, die der Satz nennt“ trägt: {Regler: Zahl} aus genau diesen Zeilen, im Bereich der Zeile, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften (groß, klein, schlank) wächst über spawn_studio mit dem Wort seiner Gattung, nie über spawn_creature; Musik der Welt und Gestalt des Spielers prägen die Welt ohne Ort: ["spawn_studio","lofi",["at_player"],1,null,{"bpm":70}] (ruhige Musik), ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
+            '<same> und <regler> nur, wenn der Kontext „Regler, die der Satz nennt“ trägt: {Regler: Zahl} aus genau diesen Zeilen, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; Gestalt des Spielers und Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
             'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion, nur auf Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
             "Halte Programme klein (Tiefe ≤ 4). Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences.",
             "",
@@ -2094,9 +2094,9 @@ AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
 // DIE RUHE DER WELT-KI (ki.K5): so viele Sekunden ohne Ruf und ohne Tagebuch-Eintrag, dann wärmt sie ihren Vertrag vor
 // (`_kiVorwaermen`) — gleich der Pause ihrer Stimme (`llm.minGapSeconds`), das Vorwärmen ist ein Hintergrund-Ruf wie sie
 AnazhRealm.KI_RUHE_S = 3;
-// so viele Zeichen (bis zum Zeilenende) rechnet ein Happen des Vorwärmens vor (`_kiVorwaermen`): ~100 Token, ~2 s an 4 CPU-Kernen —
+// so viele Zeichen (bis zum Zeilenende) rechnet ein Happen des Vorwärmens vor (`_kiVorwaermen`): ~50 Token, ~1 s an 4 CPU-Kernen —
 // so lange wartet ein Satz, der in das Wärmen fällt, höchstens
-AnazhRealm.KI_HAPPEN_ZEICHEN = 300;
+AnazhRealm.KI_HAPPEN_ZEICHEN = 150;
 // so viele Wörter je Gruppe nennt der Vertrag der Welt-KI (`_studioWordsForPrompt`); jedes andere Wort eines Satzes ruft der
 // Abruf je Satz ab (`_kiAbruf`). Gemessen (ki.K5, qwen3:4b, 4 CPU-Kerne): ein Wort im festen Vertrag kostet im Cache fast
 // nichts (+250 Token ≈ +4 ms je Antwort-Token), eine Zeile „Wörter des Satzes" je Satz ~1 s Prefill — 2 statt 8 je Gruppe hob
