@@ -395,8 +395,8 @@ function zensusMax(proben) {
         }
     const klassen = [...je.values()];
     for (const k of klassen) {
-        k.cmd = Object.values(k.je || {}).reduce((s, x) => s + x, 0);
-        k.tris = Object.values(k.jeTris || {}).reduce((s, x) => s + x, 0);
+        k.cmd = Object.values(k.je || {}).reduce(addiere, 0);
+        k.tris = Object.values(k.jeTris || {}).reduce(addiere, 0);
     }
     klassen.sort((a, b) => b.cmd - a.cmd);
     return { klassen, proben: proben.length, unbenannt: proben.flatMap((z) => z.unbenannt || []).slice(0, 24) };
@@ -996,7 +996,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
     const kappe = (key, zeilen, name) => {
         const alt = neu.gesamt[key];
         if (alt == null || zeilen.some((v) => v == null)) return;
-        const summe = key === "vramMB" ? +zeilen.reduce((a, b) => a + b, 0).toFixed(1) : zeilen.reduce((a, b) => a + b, 0);
+        const summe = key === "vramMB" ? +zeilen.reduce(addiere, 0).toFixed(1) : zeilen.reduce(addiere, 0);
         if (alt > summe) {
             neu.gesamt[key] = summe;
             aenderungen.push(`gesamt.${key}: ${alt} → ${summe} (die Summe ihrer Zeilen, ${name})`);
