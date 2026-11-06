@@ -693,8 +693,8 @@ const PORTAL_RENDER_CONFIG = {
         boden: {
             // der Farn (vegetation.K3, w16-wald-innen): 36 je 100 m² decken bei vollem Gewicht 1 − e^(−0,36 · 1,15 m²) = 34 %
             // (Grundfläche der L0 r 0,6 m) — die Krautschicht des Buchenwalds 50–60 % (REF spec/abnahme/real-mischwald.json);
-            // der Boden 0–2 m deckt im Mischwald 0,051 → 0,095 (Wald-Gesetz flach, sd 0,7–0,9): das Licht am Boden steht bei 0,84,
-            // der Schatten-Farn wächst nur unter den Kronen
+            // der Boden 0–2 m deckt im Mischwald (Stand ≥ 0,4, Wald-Gesetz flach) 0,051 → 0,291: unter dem geschlossenen Bestand
+            // fällt das Licht am Boden 0,84 → 0,57, der Schatten-Farn wächst unter den Kronen
             farn: {
                 ring: "nah",
                 dichte: 36,

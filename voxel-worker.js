@@ -1023,7 +1023,7 @@ function waldDarts(msg) {
                 artIdx.set(d.sp, ai);
             }
             zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
-            zahl.push(d.surfaceY == null ? NaN : d.surfaceY, d.alter == null ? 1 : d.alter);
+            zahl.push(d.surfaceY == null ? NaN : d.surfaceY, d.schluss, d.alter == null ? 1 : d.alter);
         }
     }
     const werte = new Float64Array(zahl);
@@ -1121,6 +1121,13 @@ function forestFbm(px, pz) {
     return a * 0.65 + b * 0.35;
 }
 
+// Mirror von `_placementStandAt(x, z, "forest")`: der Stand des Bestands (phyto-core FOREST_PACK.bestand) aus derselben Saat.
+function waldStand(x, z) {
+    forestFbm(0, 0);
+    const f = fernK().forest.standFreq;
+    return waldRausch.n.noise2D(x * f, z * f);
+}
+
 // Mirror von `_ortFrei`: trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Erdbau zu berühren?
 function ortFrei(x, z, T) {
     const E = state.erdbau;
@@ -1158,6 +1165,7 @@ function waldCtx(msg) {
         baseH: state.baseHeight || 0,
         extras: msg.extras,
         fbm: forestFbm,
+        stand: waldStand,
         surfaceYAt: (x, z) => {
             bodenX = x;
             bodenZ = z;
@@ -3923,7 +3931,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
         FERN_KRONEN.C = C;
     }
     for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
-    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest);
+    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z));
     const S = K.kronenSchatten;
     let summe = 0;
     let r = 0;
@@ -4022,6 +4030,7 @@ function kammKrone(msg) {
         baseH: state.baseHeight || 0,
         extras: msg.extras,
         fbm: forestFbm,
+        stand: waldStand,
         surfaceYAt: (x, z) => {
             [bx, bz, by] = [x, z, law(x, z)];
             return by;

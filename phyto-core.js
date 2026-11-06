@@ -2609,8 +2609,11 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F) {
-        const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
+    function forestKronenDeckung(sd, geburt, kronen, F, st) {
+        // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht
+        const schluss = forestSchluss(st);
+        const g = geburt * forestLichtung(st);
+        const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
@@ -2654,7 +2657,7 @@
                 const st = S[g];
                 const t = kronen[k][1] * V[st];
                 if (!H[st]) {
-                    const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+                    const A = Math.PI * F.pack * F.pack * schluss * schluss * (t * t + 2 * t * mT + mT2);
                     Q[st] = (1 - Math.exp(-lambda * A)) / A;
                     H[st] = 1;
                 }
@@ -2788,11 +2791,32 @@
         // Unterstand (Kraft'sche Baumklassen 3–5) im größten Alter `alter` (die Stufen der Jugend-Gestalt, stamm
         // SUKZESSION.jugend), in dem seine Krone T·alter gegen jeden besseren geborenen Dart (T·alter) frei steht; unter dem Dach
         // berühren sich die Kronen (`pack` 1): die Lücke der Schüchternheit reibt nur der Wind am offenen Dach (Putz et al. 1984).
-        // Gemessen (`forestSchicht`, flacher Grund, sd 0,7–0,9): 42 → 70 Stämme/ha; im Wirt am Gesetz auf 1 km² um die
-        // Mess-Wiese (Kreise 20 m) Median 111, max 247 — die REF spec/abnahme/real-mischwald.json (370–900) trägt das Dach nicht:
-        // es deckt gesättigt 0,16 (Matérn II), der Schirm reicht nur so weit wie die Kronen.
+        // Gemessen mit dem Bestand (`bestand` unten, flacher Grund, Stand ≥ 0,4): Dach 105 + Zwischen-/Unterstand 244 = 349
+        // Stämme/ha (vorher 42) — REF spec/abnahme/real-mischwald.json 370–900; im Wirt 1 km² um das Dorf 90 % 501, max 716.
         schicht: { alter: [0.7, 0.4], pack: 1 },
+        // DER BESTAND AUS DEM STANDORT (vegetation.K3 Nacharbeit, w16-wald-innen): der Stand `st` ∈ [−1, 1] ist das EINE Feld
+        // „Wald ↔ Lichtung" des Wirts (`_placementStandAt(…, "forest")`, λ ~170 m, Saat `:forest` — dasselbe, das Streu,
+        // Strauch-Teppich und Boden lesen; der Faden zieht es aus derselben Saat). LICHTUNG: unter `lichtung[0]` wird kein Baum
+        // geboren, bis `lichtung[1]` wächst die Geburt an (Wiesen und Blößen als Klasse des Gesetzes, nie ein Loch des Zufalls).
+        // SCHLUSS: der Mindestabstand zweier Kronen (Dach und Schichten) ist pack × (Ti + Tj) × min(ci, cj), c = 1 bis
+        // `schluss[0]`, `min` ab `schluss[1]` — im geschlossenen Bestand greifen die Kronen ineinander, die Stammzahl folgt dem
+        // Standort wie in der Ertragstafel (BWI 4). Bis hierher sättigte Matérn II bei fester Packung: 36–48 Stämme/ha bei
+        // jeder Dichte, das Dach deckte 0,16, die Mess-Wiese war ein Loch des Zufalls. Gemessen (flach, 3 600 Zellen, Stand-Bänder
+        // < −0,1 · −0,1–0,15 · 0,15–0,4 · ≥ 0,4): 1 · 61 · 131 · 349 Stämme/ha; Mess-Wiese Kronen-Deckung 0,108 → 0,116 (≤ 0,12).
+        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6 },
     };
+    function forestLichtung(st) {
+        const B = FOREST_PACK.bestand;
+        let t = (st - B.lichtung[0]) / (B.lichtung[1] - B.lichtung[0]);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    }
+    function forestSchluss(st) {
+        const B = FOREST_PACK.bestand;
+        let t = (st - B.schluss[0]) / (B.schluss[1] - B.schluss[0]);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return 1 - (1 - B.min) * t * t * (3 - 2 * t);
+    }
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
     const FOREST_LAB = {
@@ -2909,7 +2933,8 @@
             for (let k = 0; k < nb.length; k++) {
                 const o = nb[k];
                 if (o === d) continue;
-                if (forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk) && forestPrioWins(o, d)) return false;
+                if (forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk * Math.min(d.schluss, o.schluss)) && forestPrioWins(o, d))
+                    return false;
             }
         }
         return true;
@@ -2951,7 +2976,8 @@
                 const nb = geboren(gx + R[q], gz + R[q + 1]);
                 for (let k = 0; k < nb.length; k++) {
                     const o = nb[k];
-                    if (o !== d && forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * a, S.pack) && forestPrioWins(o, d)) {
+                    const pa = S.pack * Math.min(d.schluss, o.schluss);
+                    if (o !== d && forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * a, pa) && forestPrioWins(o, d)) {
                         frei = false;
                         break;
                     }
@@ -3159,7 +3185,8 @@
             const x = (cx + rng()) * CELL;
             const z = (cz + rng()) * CELL;
             const sd = forestStandDensity(ctx.fbm, x, z);
-            if (rng() > forestGeburt(sd)) continue;
+            const st = ctx.stand(x, z); // der Stand des Standorts (FOREST_PACK.bestand): Lichtung und Schluss
+            if (rng() > forestGeburt(sd) * forestLichtung(st)) continue;
             // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet.
             const surfaceY = ctx.surfaceYAt(x, z);
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
@@ -3231,7 +3258,7 @@
             // DER ORT VOR DEM WALD (K10): reserviert ein Ort den Grund (ctx.ortFrei, der Erdbau des Wirts), fällt die Krone,
             // die ihn berührt — NACH allen Würfen des Darts, die folgenden Darts bleiben byte-gleich.
             if (ctx.ortFrei && !ctx.ortFrei(x, z, T)) continue;
-            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
+            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) });
         }
         return out;
     }
@@ -5855,6 +5882,8 @@
         FOREST_URTEIL_REIHE: FOREST_URTEIL_REIHE, // w4-b-pflanzen — die Reihe des Urteils: die eigene Zelle, Ring 1, Ring 2
         forestSteht: forestSteht, // w4-b-pflanzen — DAS EINE Urteil der Kronen-Schüchternheit (Wald-Faden und Wirt)
         forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
+        forestSchluss: forestSchluss, // w16-wald-innen — der Kronen-Schluss des Bestands aus dem Stand (Mindestabstand × c)
+        forestLichtung: forestLichtung, // w16-wald-innen — die Geburt des Walds am Stand (0 = Lichtung/Wiese)
         forestSchicht: forestSchicht, // w16-wald-innen — die Schicht eines Darts: 1 Dach, das Alter im Zwischen-/Unterstand, 0
         FOREST_URTEIL_REICH: FOREST_URTEIL_REICH, // w16-wald-innen — die Zellen ±n, deren geborene Darts ein Bestand liest
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt

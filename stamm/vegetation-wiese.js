@@ -2330,6 +2330,7 @@ class AnazhRealm_vegetation_wiese {
                       baseH: (this.state && this.state.terrainBaseHeight) || 0,
                       extras: this._forestExtraSpecies(),
                       fbm: (px, pz) => this._forestFbm(px, pz),
+                      stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
@@ -2636,16 +2637,16 @@ class AnazhRealm_vegetation_wiese {
         return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
-    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 12 Werte, die Arten als Tafel) → je Zelle die Darts, wie
-    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort); der zwölfte Wert ist die Schicht
-    // (phyto-core `forestSchicht`: 1 das Dach, sonst `alter` des Zwischen- und Unterstands).
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 13 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort); der zwölfte der Schluss des Bestands
+    // (phyto-core `forestSchluss`), der dreizehnte die Schicht (`forestSchicht`: 1 das Dach, sonst `alter` des Unterstands).
     _waldDartsEntpacken(r, zellenZahl) {
         const w = r.werte;
         const alle = [];
         let j = 0;
         for (let i = 0; i < zellenZahl; i++) {
             const out = [];
-            for (let m = r.anzahl[i]; m > 0; m--, j += 12) {
+            for (let m = r.anzahl[i]; m > 0; m--, j += 13) {
                 const d = {
                     x: w[j],
                     z: w[j + 1],
@@ -2658,8 +2659,9 @@ class AnazhRealm_vegetation_wiese {
                     rotY: w[j + 8],
                     seed: w[j + 9],
                     surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
+                    schluss: w[j + 11],
                 };
-                if (w[j + 11] < 1) d.alter = w[j + 11];
+                if (w[j + 12] < 1) d.alter = w[j + 12];
                 out.push(d);
             }
             alle.push(out);
@@ -2799,6 +2801,7 @@ AnazhRealm.FOREST = Object.freeze({
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
+    standFreq: AnazhRealm.PLACEMENT_DENSITY.forestFreq, // der Stand des Bestands im Faden (`_placementStandAt`, phyto-core bestand)
     // DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2): phyto-core FOREST_PACK.crown (die gewachsene Krone je Art) unter den
     // Wirts-Namen (FOREST_SPECIES.labToHost, eine Auto-Art des Buchs unter dem Präfix ihrer Art) — kein zweiter Wert hier.
     crown: (() => {
