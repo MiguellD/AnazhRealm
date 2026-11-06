@@ -967,6 +967,26 @@ async function naesseDorf(tor) {
     fs.writeFileSync(tor.aus, JSON.stringify({ dorf }, null, 1));
 }
 
+// ───────── wetter.K2#2 — DIE NÄSSE AN DER MESS-WIESE IN EGO UND THIRD (w15-pfuetze) ─────────
+// Die Seiten-Funktion der Linse (`naesseSicht`, scripts/lib/licht-linsen.cjs am SHA — `werkbank licht --naesse wiese,wiese:third`)
+// je Sicht: der Messort Wiese in der Sicht (`/umstellen`), dann klar gegen 10 min Regen aus dem Ausgabe-Pfad. Die Dorfgasse misst
+// die Staffel 1 (`naesseDorf`): dort stellt die Linse die Kamera selbst an die Schwelle, Ego und Third sind derselbe Schuss.
+async function naesseWiese(tor) {
+    const fs = require("fs");
+    const sicht = tor.quelle("scripts/lib/licht-linsen.cjs", "naesseSicht");
+    tor.karte();
+    const wiese = {};
+    for (const s of ["ego", "third"])
+        try {
+            await tor.ruf("/umstellen", { ort: "wiese", sicht: s }, 300000);
+            wiese[s] = (await tor.ruf("/eval", { code: "return await (" + sicht + ")(" + JSON.stringify({ ort: "wiese" }) + ");" }, 120000)).ergebnis;
+        } catch (e) {
+            wiese[s] = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+        }
+    console.log(JSON.stringify({ wiese }, null, 1));
+    fs.writeFileSync(tor.aus, JSON.stringify({ wiese }, null, 1));
+}
+
 // ───────── DIE LINSE DER WERKBANK IN DER WELT DER SITZUNG (licht.K1#1 · licht.K3#1/#2, w4-fehlt-acht) ─────────
 // Der Befehl der Linse selbst (scripts/werkbank.cjs am SHA, Byte für Byte) gegen die Welt der Sitzung, ohne `--eigen`: sein Tor
 // (welt-boot `werkbankTor`) bootete eine eigene Welt — `werkbank start` OHNE `--echt`, headless im Fenster 640×360 — und stand darum
@@ -1277,4 +1297,4 @@ function hebungScheiben(acorn, text) {
     return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung, hebungScheiben };
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };

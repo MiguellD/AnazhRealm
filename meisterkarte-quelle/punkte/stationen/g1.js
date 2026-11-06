@@ -1003,6 +1003,177 @@ function schneeUrteil(e) {
     };
 }
 
+// wetter.K2#2 — DIE PFÜTZE UND DIE TROCKEN-KURVE (w15-pfuetze), headless: die Welt mit Null-Renderer an der Mess-Wiese, 10 min Regen
+// als Wort des Spielers (ohne Cross-Fade), dann je Sicht (Ego, Third) die Ecken des Boden-Satzes im Blick bis 40 m — ihre Mulde aus den
+// Bytes, die die GPU liest (die vierte Komponente der Normale im Satz), ihre Deckung über das Pfützen-Gesetz des Stamms
+// (`_pfuetzeGesetz`) unter dem Film der Welt und der Himmels-Sicht (das Normal-Ziel). Gegen sie die Senke des Kerns, FRISCH an der
+// Ecke gerechnet (das Kasten-Mittel `MULDE.kasten` × `MULDE.gitterM` um die Ecke minus die Höhe — ohne Gitter, Kappe und Gefälle): r
+// nach Pearson. Die MUTANTE im selben Lauf: das Gesetz mit gespiegelter Mulde (die Pfütze auf dem Rücken) — r muss fallen. Danach
+// klar: die Kurve der Nässe und der Pfützen-Fläche je 30 s (`_naesseTakt`), bis beide 0 sind; `fall` die Fall-Geschwindigkeit des
+// Regens, die die Welt zeichnet (`terrain:REGEN_GESETZ`).
+async function wetterK2Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 600000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    const out = {};
+    let code = 2;
+    const probe = async () => {
+        const R = (x) => (Number.isFinite(x) ? +x.toFixed(3) : null);
+        const [G, L] = [globalThis.__gelaendeCore, r._gelaende()];
+        const M = G.MULDE;
+        if (!M || !AnazhRealm._pfuetzeGesetz) return { fehler: "keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz" };
+        await window.__wasserStrom([-280.4, -1045.6], 1);
+        const A = { k: (x) => x, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (x) => Math.min(1, Math.max(0, x)) };
+        const S = st.chunkSaetze.get("boden");
+        const [P, N, Z] = ["position", "normal", "aNormalZiel"].map((n) => S.geom.attributes[n].array);
+        const senke = (x, z) => {
+            let s = -G.hoehe(L, x, z, true);
+            for (let b = -M.kasten; b <= M.kasten; b++) for (let a = -M.kasten; a <= M.kasten; a++) s += G.hoehe(L, x + a * M.gitterM, z + b * M.gitterM, true);
+            return s / ((2 * M.kasten + 1) ** 2 - 1) - G.hoehe(L, x, z, true);
+        };
+        const deckung = (i) => AnazhRealm._pfuetzeGesetz(A, Math.max(0, N[i * 4 + 3] / 127), st.naesse).deckung * Math.max(0, Z[i * 4 + 3] / 127);
+        const blick = new THREE.Frustum();
+        const ecken = () => {
+            st.camera.updateMatrixWorld(true);
+            blick.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(st.camera.projectionMatrix, st.camera.matrixWorldInverse));
+            const v = new THREE.Vector3();
+            const l = [];
+            for (const b of S.bloecke.values())
+                for (let i = b.vStart; i < b.vStart + b.vAnzahl; i += 2)
+                    if (v.fromArray(P, i * 3).distanceTo(st.camera.position) < 40 && blick.containsPoint(v) && N[i * 4 + 1] > 90) l.push(i);
+            return l;
+        };
+        const mass = (l) => {
+            const [d, m] = [l.map(deckung), l.map((i) => senke(P[i * 3], P[i * 3 + 2]))];
+            const mw = (x) => x.reduce((a, b) => a + b, 0) / x.length;
+            const [md, mm] = [mw(d), mw(m)];
+            let [sdm, sdd, smm] = [0, 0, 0];
+            for (let j = 0; j < l.length; j++) [sdm, sdd, smm] = [sdm + (d[j] - md) * (m[j] - mm), sdd + (d[j] - md) ** 2, smm + (m[j] - mm) ** 2];
+            return { ecken: l.length, pfuetze: d.filter((x) => x > 0.5).length, r: R(sdm / Math.sqrt(sdd * smm)) };
+        };
+        const wort = (w) => (r._setWeather(w, "human"), (st.weatherTransition = null));
+        wort("rainy");
+        r._naesseTakt(600);
+        const erg = {};
+        for (const s of ["first", "third"]) {
+            r.setCameraMode(s);
+            for (let k = 0; k < 4; k++) window.__handTakt();
+            erg[s === "first" ? "ego" : "third"] = mass(ecken());
+        }
+        r.setCameraMode("first");
+        for (let k = 0; k < 4; k++) window.__handTakt();
+        const l = ecken();
+        const echt = AnazhRealm._pfuetzeGesetz;
+        AnazhRealm._pfuetzeGesetz = (A, m, f) => echt(A, A.sub(A.k(1), m), f);
+        try {
+            erg.mutante = mass(l);
+        } finally {
+            AnazhRealm._pfuetzeGesetz = echt;
+        }
+        const flaeche = () => l.filter((i) => deckung(i) > 0.5).length;
+        const kurve = [[R(st.naesse), flaeche()]];
+        wort("sunny");
+        while (kurve.length < 80 && (st.naesse > 0 || kurve[kurve.length - 1][1] > 0)) kurve.push([R(r._naesseTakt(30)), flaeche()]);
+        erg.kurve = { kurve, fall: AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null).fall };
+        return erg;
+    };
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r.state.hydrosphere && r.state.hydrosphere.ready, { timeout: 300000, polling: 250 });
+        await page.evaluate(WASSER_INSTALL);
+        await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6)));
+        const erg = await page.evaluate(probe);
+        if (erg.fehler) throw new Error(erg.fehler);
+        for (const n of ["ego", "third", "mutante", "kurve"]) {
+            out[n] = erg[n];
+            console.log("PFUETZE " + n + " " + JSON.stringify(erg[n]));
+        }
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("PFUETZE FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        server.close();
+    }
+    process.exit(code);
+}
+// DAS URTEIL der headless-Hälfte: je Sicht ≥ 20 Ecken Pfütze in den Senken des Kerns (r ≥ 0,5), die Mutante erkannt (r < 0,5),
+// benetzt (Nässe ≥ 0,85, Pfützen > 0), trocken nach 5–15 min ohne Sprung (je 30 s fällt die Fläche höchstens um ein Viertel ihres
+// Anfangs, Nässe und Fläche steigen nie), der Regen fällt ≤ 9,2 m/s
+function wetterK2Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^PFUETZE FEHLER (.*)$/m.exec(t) || [])[1];
+    const L = Object.fromEntries(["ego", "third", "mutante", "kurve"].map((n) => [n, jsonZeile(t, new RegExp("^PFUETZE " + n + " \\{"))]));
+    const fehlt = Object.keys(L).filter((n) => !L[n]);
+    if (fehlt.length) return { gruen: false, zahl: "keine PFUETZE-Zeile für " + fehlt.join(", ") + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    for (const n of ["ego", "third"]) {
+        if (!(L[n].pfuetze >= 20)) rot.push(n + " nur " + L[n].pfuetze + " Ecken Pfütze");
+        if (!(L[n].r >= 0.5)) rot.push(n + " r " + L[n].r + " < 0,5 (die Pfütze steht nicht in den Senken des Kerns)");
+    }
+    const erkannt = !(L.mutante.r >= 0.5);
+    if (!erkannt) rot.push("die Mutante (Pfütze auf dem Rücken) hält r " + L.mutante.r + " — die Probe ist blind");
+    const K = L.kurve.kurve || [[0, 0]];
+    const [n0, f0] = K[0];
+    const i0 = K.findIndex(([n, f]) => !n && !f);
+    const tS = i0 < 0 ? null : i0 * 30;
+    if (!(n0 >= 0.85 && f0 > 0)) rot.push("nicht benetzt (Nässe " + n0 + ", Pfützen " + f0 + ")");
+    else if (!(tS >= 300 && tS <= 900)) rot.push("trocken nach " + tS + " s (Soll 300–900)");
+    const sprung = K.findIndex(([n, f], i) => i && (n > K[i - 1][0] || f > K[i - 1][1] || K[i - 1][1] - f > f0 / 4));
+    if (sprung > 0) rot.push("Sprung bei " + sprung * 30 + " s: " + JSON.stringify(K.slice(sprung - 1, sprung + 1)));
+    if (!(L.kurve.fall <= 9.2)) rot.push("der Regen fällt " + L.kurve.fall + " m/s (Soll ≤ 9,2)");
+    const z = ["ego", "third"].map((n) => n + " r " + L[n].r + " (" + L[n].pfuetze + "/" + L[n].ecken + " Ecken Pfütze)");
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: z.join(" · ") + " · Mutante r " + L.mutante.r + " " + (erkannt ? "erkannt" : "UNERKANNT") + " · benetzt " + n0 + " → trocken nach " + tS + " s · Fall " + L.kurve.fall + " m/s" +
+            (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+// die Roh-Ausgaben der Probe mit ihrem Urteil (der Selbsttest urteilt jede): grün an w15-pfuetze, die Mutanten beim Namen
+const WETTER_K2_PROBEN = (() => {
+    const sicht = (o = {}) => Object.assign({ ecken: 223, pfuetze: 116, r: 0.785 }, o);
+    const kurve = (o = {}) => Object.assign({ kurve: [...[116, 88, 69, 48, 33, 11, 6, 2].map((f, i) => [+(0.909 - i * 0.048).toFixed(3), f]), ...Array.from({ length: 11 }, (_, i) => [+(0.525 - i * 0.048).toFixed(3), 0]), [0, 0]], fall: 9 }, o);
+    const z = (ego, third, mutante, k) => ["PFUETZE ego " + JSON.stringify(ego), "PFUETZE third " + JSON.stringify(third), "PFUETZE mutante " + JSON.stringify(mutante), "PFUETZE kurve " + JSON.stringify(k)].join("\n");
+    const mut = sicht({ r: -0.79 });
+    return [
+        { name: "Pfützen in den Senken, Ego und Third, trocken nach 9,5 min, Fall 9 m/s, die Mutante erkannt", stdout: z(sicht(), sicht({ ecken: 237, pfuetze: 111, r: 0.736 }), mut, kurve()), gruen: true },
+        { name: "main db431cf0: die Welt kennt keine Pfütze", stdout: "PFUETZE FEHLER keine Pfütze: der Kern trägt keine Mulde (MULDE), der Stamm kein Pfützen-Gesetz", gruen: false },
+        { name: "die Mutante (Pfütze auf dem Rücken) bleibt über der Wand — die Probe ist blind", stdout: z(sicht(), sicht(), sicht(), kurve()), gruen: false },
+        { name: "die Pfütze liegt überall (die Deckung folgt nur dem Film)", stdout: z(sicht({ r: 0.08 }), sicht(), mut, kurve()), gruen: false },
+        { name: "Third sieht keine Pfütze", stdout: z(sicht(), sicht({ pfuetze: 0, r: 0.6 }), mut, kurve()), gruen: false },
+        { name: "der Film trocknet mit τ 25 min (main: nach 40 min nicht trocken)", stdout: z(sicht(), sicht(), mut, kurve({ kurve: kurve().kurve.slice(0, -1) })), gruen: false },
+        { name: "die Pfütze springt weg (ein Schritt nimmt die Hälfte)", stdout: z(sicht(), sicht(), mut, kurve({ kurve: [[0.909, 116], [0.861, 20], ...kurve().kurve.slice(2)] })), gruen: false },
+        { name: "der Regen fällt 42 m/s", stdout: z(sicht(), sicht(), mut, kurve({ fall: 42 })), gruen: false },
+        { name: "Third fehlt in der Ausgabe", stdout: z(sicht(), sicht(), mut, kurve()).split("\n").filter((l) => !/third/.test(l)).join("\n"), gruen: false },
+    ];
+})();
+// DAS URTEIL der Karten-Hälfte (`naesseWiese`, die Linse `naesseSicht` in der Welt der Sitzung): je Sicht porös draußen 0,5–0,8 aus
+// ≥ 100 Rasterpunkten, Glanz nass/trocken ≥ 2 (das Gesetz der Linse), Regenbild ≤ Sonne, die Zählung sieht den Regen draußen
+function naesseWieseUrteil(j) {
+    const w = (j && j.wiese) || {};
+    const rot = [];
+    const z = ["ego", "third"].map((s) => {
+        const m = w[s];
+        if (!m || m.fehler) return rot.push(s + ": " + (m ? m.fehler : "keine Messung")), s + " —";
+        const a = m.aussen || {};
+        if (!(a.n >= 100 && a.verhaeltnis >= 0.5 && a.verhaeltnis <= 0.8)) rot.push(s + " porös " + a.verhaeltnis + " (n " + a.n + ")");
+        if (!(m.glanz >= 2)) rot.push(s + " Glanz " + m.glanz);
+        if (!(m.regenbild <= 1)) rot.push(s + " Regenbild " + m.regenbild);
+        if (!(m.regen && m.regen.aussen >= 1)) rot.push(s + " keine Schliere draußen");
+        return s + " porös " + a.verhaeltnis + " (n " + a.n + ") · Glanz " + m.glanz + " · Regenbild " + m.regenbild + " · Regen " + (m.regen || {}).aussen;
+    });
+    return { gruen: !rot.length, zahl: "Wiese " + z.join(" | ") + (rot.length ? " · ROT: " + rot.join(", ") : "") };
+}
+
 // DER BEFEHL der Welt-Probe: der Lauf, der Grund und die Proben [name, Seiten-Funktion] als Text (eine Hilfe der Seite, `helfer`,
 // steht vor der Probe in ihrem Rumpf); `weltZeile` liest das Maß einer Probe aus {AUS} oder der Zeile des Laufs
 const weltBefehl = (proben, helfer = []) => [
@@ -1762,6 +1933,63 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose",
+    },
+    // wetter.K2 Staffel 2 (w15-pfuetze) — ZWEI Hälften unter EINEM Schlüssel: headless die Pfütze in den Senken des Kerns (Ego und Third),
+    // die Trocken-Kurve und der Fall (`wetterK2Lauf`, die Mutante im selben Lauf); auf beiden Karten die Nässe der Mess-Wiese im Bild in
+    // Ego und Third (`naesseWiese`, die Linse `werkbank licht --naesse wiese,wiese:third`). Die Dorfgasse trägt die Staffel 1 auf beiden
+    // Karten (die Linse stellt dort die Kamera selbst an die Schwelle). An main db431cf0 ROT: die Welt kennt keine Pfütze.
+    {
+        kriterium: "wetter.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + wetterK2Lauf + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => wetterK2Urteil(lauf),
+        proben: WETTER_K2_PROBEN,
+        pfad: [
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "foundry-core.js",
+            "voxel-worker.js",
+            "index.html",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
+    },
+    {
+        kriterium: "wetter.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 30, befehl: PW.torBefehl(PW.naesseWiese), mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: (j) => naesseWieseUrteil(j),
+        pfad: [
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-bauten.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "foundry-core.js",
+            "voxel-worker.js",
+            "index.html",
+            "scripts/werkbank.cjs",
+            "scripts/lib/licht-linsen.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = Mess-Wiese und Dorfgasse, Ego/Third, beide Geräte, mit Pfützen und Trocken-Kurve",
     },
 
     // ── wetter.K3 ── gate:wasser-leben P4 im Block koerper (Null-Renderer, Mess-Wiese): das Wort des Spielers „Sturm", 20 min
@@ -3165,7 +3393,6 @@ module.exports = [
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
-    { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: 7/7 verlangt je Stoff Albedo → Luma im Ausgabe-Bild (die Karte; headless zählt sie nie), die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "wetter.K4", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „Ego/Third, beide Geräte“ verlangt das Ausgabe-Bild beider Karten in beiden Sichten, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Die Welt dazu (03.11. an 5fba36ea, Staffel 1 ROT): der Fuß steht 0,01 m ÜBER der Decke — keine Tiefe, also keine Spur, die bleiben könnte" },
     { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "GPU-Station wartet auf die Prüfbühne: „100 freie Körper ≤ 1 ms CPU an der GTX-CPU“ ist eine Zeit am Gerät, die Fahrt der Karten steht bei Radeon 1 783 s, GTX 1 784 s von 1 800 s (03.11., w5-s2-g1) — 16 s frei, keine Probe dieser Staffel passt. Dazu nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
