@@ -1211,29 +1211,21 @@ class AnazhRealm_koerper_frei {
                 : Math.abs(R[5]) > 0.9998
                   ? 2
                   : -1;
-        const obb = (box) => {
-            if (auf < 0) return delete box.obb;
+        const box = { minX: k[0], maxX: k[3], minZ: k[2], maxZ: k[5], topY: k[4], botY: k[1] };
+        if (auf >= 0) {
             const [a, b] = [(auf + 1) % 3, (auf + 2) % 3];
-            const o = box.obb || (box.obb = {});
-            [o.cx, o.cz, o.c, o.s, o.hx, o.hz] = [K.p[0], K.p[2], R[a], -R[6 + a], K.halb[a], K.halb[b]];
-        };
+            box.obb = { cx: K.p[0], cz: K.p[2], c: R[a], s: -R[6 + a], hx: K.halb[a], hz: K.halb[b] };
+        }
+        box.stoff = K.stoff;
+        box.stempelfrei = true; // er wandert: er staut kein Wasser
+        e.blockerAABBs = [box];
         // DER STEMPEL WANDERT MIT: das Netz trägt den Körper in der überstrichenen Hülle (`_streichHuelle`, FREI.huelleM um seine
-        // Box beim Stempel) — bis er sie verlässt oder einschläft, folgt die Box an Ort und Stelle (Kapsel, Tier und Strahl lesen
-        // sie), ohne neuen Stempel; vorher stempelte er je 2 cm neu: im fallenden Trümmerfeld je Schritt jeden Körper (100 Kisten:
-        // 1,1 → 0,8 ms je Schritt, Null-Renderer)
+        // Box beim Stempel) — bis er sie verlässt oder einschläft, folgt nur die Box (Kapsel, Tier und Strahl lesen sie), das Netz
+        // bleibt; vorher stempelte er je 2 cm neu: im fallenden Trümmerfeld je Schritt jeden Körper (100 Kisten: 1,1 → 0,8 ms je
+        // Schritt, Null-Renderer)
         const H = AnazhRealm.FREI.huelleM;
         const sp = K.stempel;
-        const box = e.blockerAABBs && e.blockerAABBs[0];
-        if (sp && box && !K.schlaf && Math.abs(sp[0] - K.p[0]) < H && Math.abs(sp[2] - K.p[2]) < H) {
-            [box.minX, box.botY, box.minZ, box.maxX, box.topY, box.maxZ] = k;
-            obb(box);
-            return;
-        }
-        const neu = { minX: k[0], maxX: k[3], minZ: k[2], maxZ: k[5], topY: k[4], botY: k[1] };
-        obb(neu);
-        neu.stoff = K.stoff;
-        neu.stempelfrei = true; // er wandert: er staut kein Wasser
-        e.blockerAABBs = [neu];
+        if (sp && !K.schlaf && Math.abs(sp[0] - K.p[0]) < H && Math.abs(sp[2] - K.p[2]) < H) return;
         e._streichHuelle = K.schlaf ? null : [k[0] - H, k[3] + H, k[2] - H, k[5] + H];
         K.stempel = K.p.slice();
         this._blockerBewegt(e);
