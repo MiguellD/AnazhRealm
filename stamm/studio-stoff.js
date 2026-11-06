@@ -178,10 +178,15 @@ class AnazhRealm_studio_stoff {
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.
         const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
+        // Die Rauheit (`rauh`) wiegt das Mikro-Relief des Steins außerhalb des Satzes (`_mikroGestalt`, `_steinStoff`): bis
+        // w13-fels-korn stand sie als Zahl im Graphen, und der zweite Stoff einer Signatur zeichnete mit der Rauheit des ersten.
         mat.userData.stoffWerte = {
             leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
             tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
+            rauh: rough,
         };
+        // DAS MIKRO-RELIEF DER FACETTE (unten, `_mikroGestalt`): der facettierte Studio-Stein, eine Weiche des Baus
+        const mikro = flat && kind === "unknown";
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
@@ -414,7 +419,7 @@ class AnazhRealm_studio_stoff {
             const G = AnazhRealm.Gesetz("porta:STEIN_GESETZ." + mp.stein);
             if (!G || !(G.fuge > 0) || !(G.fase > 0) || !(G.ton >= 0) || !(G.fugeTon > 0))
                 throw this._stoffBruch("das Stein-Gesetz " + mp.stein + " fehlt in porta:STEIN_GESETZ");
-            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : this._stoffWert(TSL, "userData.stoffWerte.rauh");
             this._steinStoff(TSL, mat, vcol, G, TSL.smoothstep(0.3, 0.6, rauh));
             mat.userData.stein = mp.stein; // der Bau-Satz trägt das uv seiner Ecken (`BAU_STEIN_ATTR`)
         } else {
@@ -447,9 +452,10 @@ class AnazhRealm_studio_stoff {
         if (kind === "grass") this._halmStoff(TSL, mat);
         // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
         // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
-        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
-        if (flat && kind === "unknown") {
-            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs als Stoff-Wert (`_stoffWert`). Das Korn lebt im
+        // colorNode, einem geteilten Platz: der Zweig steht in der Signatur (`mikro`, unten).
+        if (mikro) {
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : this._stoffWert(TSL, "userData.stoffWerte.rauh");
             this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
         }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
@@ -545,6 +551,12 @@ class AnazhRealm_studio_stoff {
             // das Unbeleuchtete (schwarz, nur Leuchten) und der Stein (Fuge, Kante, Ton aus dem uv) bauen eigene Graphen
             R.ub ? "ub" : "",
             mp && typeof mp.stein === "string" && !R.ub ? "stein:" + mp.stein : "",
+            // DAS MIKRO-RELIEF DER FACETTE (`_mikroGestalt`) schreibt das Korn in colorNode: bis w13-fels-korn fehlte der Zweig
+            // hier — der facettierte Fels (`unknown|…|1|0.50|xf|satz`) und ein glatter Bau-Stoff (`…|0|1.00|s2|v:stoff|xf|satz`)
+            // trugen EINE Signatur, und wer zuerst baute, gab beiden den colorNode: baute die Wand zuerst, verlor der Fels sein Korn
+            // (Radeon main 25374f6f, material.K2#1 am Fels der Genesis 0,5/1/2 m: glatt 0,606/0,559/0,237 → 0/0,029/0), baute der
+            // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
+            mikro ? "mikro" : "",
         ].join("|");
         this._graphTeilen(mat, _sig, [
             "colorNode",
