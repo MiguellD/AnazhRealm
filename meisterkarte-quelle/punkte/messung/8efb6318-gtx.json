@@ -1,0 +1,154 @@
+{
+ "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
+ "geraet": "gtx",
+ "zeit": "2026-11-06T13:41:33.169Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -18.38 [-14, -4] · lippeA 9.86 [4, 14] · hoehleL -6.59 [-12, 0] · hoehleA 2.11 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -18.38 [-14, -4] · lippeA 9.86 [4, 14] · hoehleL -6.59 [-12, 0] · hoehleA 2.11 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 32.7,
+   "zeit": "2026-11-06T13:34:32.064Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "gpu": "nvidia/pascal",
+   "s": 67.5,
+   "zeit": "2026-11-06T13:35:04.793Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.15 · fahrt 0.29 · nacht 0.13 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.59,
+   "grund": "ROT: Klang-Takt p95 gehen 0.15 · fahrt 0.29 · nacht 0.13 ms · Aussetzer 0 in 31.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "s": 35.5,
+   "zeit": "2026-11-06T13:36:40.050Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 158085 → 604080 px (×3.82) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.47,
+   "gpu": "nvidia/pascal",
+   "s": 28.1,
+   "zeit": "2026-11-06T13:37:28.093Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T13:39:37.583Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [
+   4.3
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 39.8,
+    "takte": 1133,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#1",
+    "s": 18.8,
+    "fehler": "read ECONNRESET",
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   }
+  ],
+  "zeichnerBlind": [
+   {
+    "probe": "licht.K3#1",
+    "wann": "vor",
+    "fehler": "connect ECONNREFUSED 127.0.0.1:27804"
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr nach licht.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an",
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 107,
+   "luecken": 5,
+   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
+  },
+  "fahrtS": 115.3,
+  "minuten": 2.45
+ },
+ "ungemessen": {
+  "licht.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 15 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 44.1 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 15 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 44.1 s)",
+   "s": 45.2,
+   "zeit": "2026-11-06T13:40:24.745Z",
+   "abdruck": "68214123d776",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.",
+   "exit": 1,
+   "minuten": 0.01,
+   "grund": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.5,
+   "zeit": "2026-11-06T13:41:33.169Z",
+   "abdruck": "714c60e3555d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}

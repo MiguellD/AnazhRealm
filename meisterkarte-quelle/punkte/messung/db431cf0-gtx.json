@@ -1,7 +1,7 @@
 {
  "sha": "db431cf08b0df18a1da8b770622d1a18dc0c0fa1",
  "geraet": "gtx",
- "zeit": "2026-11-06T12:40:54.886Z",
+ "zeit": "2026-11-06T13:28:00.678Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -85,92 +85,66 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.24 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.53°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "exit": 0,
+   "minuten": 0.7,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.24 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.53°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 41.9,
+   "zeit": "2026-11-06T13:13:34.888Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T12:36:32.643Z",
+  "start": "2026-11-06T13:27:28.443Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.8,
-  "grundstellungS": [
-   3.6,
-   3.6,
-   3.6
-  ],
-  "proben": 4,
+  "warten": 0.02,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 23.2,
-    "takte": 683,
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 22.9,
+    "takte": 745,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 18.1,
-    "takte": 727,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 18.2,
-    "takte": 764,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 20.9,
-    "takte": 724,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "vegetation.K4#2",
-    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 3.6
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 5,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 4,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "fahrzeug.K2#1",
-     "m": 1215,
+     "probe": "leib.K3#2",
+     "m": 6430,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 289,
+   "zapfen": 67,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 306.6,
-  "minuten": 5.19
+  "fahrtS": 70.5,
+  "minuten": 1.25
  },
  "ungemessen": {
   "material.K1#2": {
@@ -256,6 +230,21 @@
    "s": 45.2,
    "zeit": "2026-11-06T12:40:54.886Z",
    "abdruck": "a303317755ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD (Exit 3)) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD (Exit 3)) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 39.2,
+   "zeit": "2026-11-06T13:28:00.678Z",
+   "abdruck": "3f71569bd385",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
