@@ -5275,6 +5275,16 @@ var PARAMS_BY_KIND = {
         { id: "flare", lab: "Stammfuß", min: 0, max: 1.2, step: 0.01, def: 0.3, law: "Wurzelanlauf: der Stamm weitet sich zum Boden (Strebepfeiler)", grp: "Stamm" },
     ],
 };
+// DIE PRÄGUNG AUF DEN P-VEKTOR (stoffe.K5#2, w13-jung-gestalt) — der EINE Weg eines `ov` in die Parameter, für den Körper
+// (buildInstance) wie für den gefühlten Baum (skelettDerGestalt): jeder Schlüssel ersetzt sein Feld NACH der Ableitung (die
+// Regler der Werkstatt, die Wald-Overrides), das Alter nie — `ov.alter` ist der Eingang der Ableitung (phyto-core
+// `treeParams(…, alter)`: Tiefe, Kronenansatz, Anlauf, Blatt und der Schaft der Jugend aus EINER Hand), kein Feld. Bis
+// w13-jung-gestalt schrieb die Prägung `P.alter` ein zweites Mal: ein Wuchs ohne die Jugend der Ableitung trug ihren Schaft
+// doch (die Mutante der Sukzession [9, 2 928] statt [9, 2 933] Glieder, gate:stand-takt --brand; gate:phyto-core „Jugend").
+function __praegeP(P, ov) {
+    if (ov) for (const k of Object.keys(ov)) if (k !== "alter") P[k] = ov[k];
+    return P;
+}
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
         sSeed = SEED,
@@ -5295,14 +5305,12 @@ function buildInstance(presetId, seed, lod, ov) {
     try {
         const pre = PRESETS[presetId];
         if (pre.panel === "rock") {
-            const P = deriveParamsRock(pre);
-            if (ov) Object.assign(P, ov);
+            const P = __praegeP(deriveParamsRock(pre), ov);
             __rockKind = P.kind;
             emitRock(P);
         } else {
             // die Jugend-Gestalt (stoffe.K5#2) reist als Prägung `ov.alter` in die EINE Ableitung (phyto-core `treeParams`)
-            const P = deriveParamsPlant(pre, ov ? ov.alter : undefined);
-            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
+            const P = __praegeP(deriveParamsPlant(pre, ov ? ov.alter : undefined), ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") {
                 const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
                 try {
@@ -5319,7 +5327,7 @@ function buildInstance(presetId, seed, lod, ov) {
                         }
                         __blueteDetail *= Math.min(0.97, zeile / n);
                         RNG = mulberry32(Math.floor(seed) >>> 0); // derselbe Strom wie beim ersten Bau
-                        Object.assign(P, deriveParamsPlant(pre), ov || {});
+                        __praegeP(Object.assign(P, deriveParamsPlant(pre)), ov);
                     }
                 } finally {
                     __blueteDetail = 1;
@@ -5372,7 +5380,7 @@ function skelettDerGestalt(presetId, seed, lod, ov) {
         ov ? ov.alter : undefined,
         __gestaltenArt(presetId)
     );
-    if (ov) Object.assign(P, ov);
+    __praegeP(P, ov);
     const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
     if (P.tot) __totholzSchnitt(nodes, P, seed);
     return { P, nodes };

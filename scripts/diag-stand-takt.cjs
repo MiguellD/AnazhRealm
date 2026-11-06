@@ -783,7 +783,8 @@ function brandUrteil(b) {
 // Die Folge (stoffe.K5#2): auf der vollen Asche (mindestens 40 % der Zelle) kein Halm und kein Kraut, nach der Stufe Gras die
 // Halme (≥ 80 %) vor den Kräutern (≤ 30 %), nach der Stufe Busch die Kräuter (≥ 80 %); die Ernte nimmt Nährstoff und Wuchs, Asche
 // und Leichnam geben ihn zurück, die Mutante lässt den Wuchs gleich. Der SÄMLING: am Stubben erst kein Baum, dann der Jungwuchs
-// älter je Stufe in seiner Größe (Skala = Alter), nach der Heilung der gewachsene; seine Gestalt trägt weniger Ordnungen und
+// älter je Stufe in seiner Größe (Skala = Alter im Maß seiner Kohorte: die Größe des Gefällten, gekappt auf `SUKZESSION.kappe` —
+// der Stubben der Mess-Wiese trug 1,135, ohne die Kappe stünde er bei 1,135 × Alter), nach der Heilung der gewachsene; seine Gestalt trägt weniger Ordnungen und
 // Glieder (die Mutante ohne `alter` dieselben). Der WALD: der Brand nimmt jeden Baum seiner Narbe (≥ 3), der Wald kehrt als
 // Jungwuchs (≥ 60 %) und nach der Heilung gewachsen (≥ 90 %) zurück.
 function sukzessionUrteil(s) {
@@ -1038,7 +1039,7 @@ async function brandSeite(MESS) {
         if (tier) r._creatureCombatDeath(tier, "player");
         N.leichnam = r3(r._naehrstoffAt(Dx, Dz));
         // DER SÄMLING (stoffe.K5#2): der nächste Baum des Walds fällt (`harvestArchitecture`) — an seinem Ort steht bis zum
-        // Austrieb des Stubbens kein Baum, dann sein Jungwuchs (`studioOv.alter` in `alter` × seiner Größe), Stufe um Stufe
+        // Austrieb des Stubbens kein Baum, dann sein Jungwuchs (`studioOv.alter` in `alter` × seiner Größe, gekappt auf `SUKZESSION.kappe`), Stufe um Stufe
         // älter, nach der Heilung der gewachsene; die Gestalt der Jugend liest der gefühlte Baum (das Skelett der Prägung,
         // `skelettDerGestalt`: weniger Ordnungen und Glieder als der gewachsene), die Mutante (treeParams ohne `alter`) wächst ihn
         // als den alten. DER WALD NACH DEM BRAND: der nächste Baum zündet mittags; die Bäume, die danach in der Narbe stünden (Narbe ≥ ½),
@@ -1062,7 +1063,7 @@ async function brandSeite(MESS) {
             for (const s of [0.1, 0.35, 0.6, 0.85, 1.02]) {
                 await reif(s > 1 ? h(1) + 0.1 : h(s));
                 const e = am(p);
-                S.stufen.push({ alter: alter(p), skala: e ? r3(e.scale / s0) : 0 });
+                S.stufen.push({ alter: alter(p), skala: e ? r3(e.scale / Math.min(s0, e.studioOv ? C.SUKZESSION.kappe : s0)) : 0 });
                 if (!e || !e.studioOv || S.gestalt) continue;
                 const PC = globalThis.__phytoCore;
                 const tp = PC.treeParams;
