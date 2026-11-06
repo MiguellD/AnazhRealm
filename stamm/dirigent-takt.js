@@ -13,8 +13,8 @@ class AnazhRealm_dirigent_takt {
             // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis
             // 5 km, `gate:move-under-load` (d)). `delta` (der Spiel-Takt) liest jede Bewegung: Fix-Schritt, Tiere, Ritt,
             // Rauch, Wetter-Zug. Die Wanduhr lesen nur, die sie benannt brauchen: `wandDelta` das Mess-Instrument
-            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange) und das Foundry-Laden (die Welt lädt mit der
-            // Wanduhr); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
+            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange), das Foundry-Laden und die Pflanz-Schlange (die
+            // Welt lädt mit der Wanduhr, `_pflanzKappe`); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
             const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
@@ -230,7 +230,7 @@ class AnazhRealm_dirigent_takt {
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
-                this._loopVoxelStreaming();
+                this._loopVoxelStreaming(wandDelta);
                 this._perfSenseLap("streaming", _pt);
 
                 if (!ruht) {
@@ -1740,9 +1740,16 @@ class AnazhRealm_dirigent_takt {
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
                     // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
+                    // DER BODEN IM FADEN IST TERRAIN (w15-strom-takt, die Konkurrenz um den Takt): wartet ein Netz des Boden-Strom
+                    // im Fenster seines Fadens (`_frameBodenWartet`), arbeitet das Terrain — die Deko trägt dann ihren Boden wie im
+                    // Takt mit Terrain-Bau, nie das ganze Bild. Bis w15-strom-takt galt nur der Einbau als Terrain: im GT stand der
+                    // Strom fast jedes Bild am Fenster (BODEN_IM_FLUG), headless nahm sich die Deko jedes Bild ganz (die Nah-Wiese
+                    // 8,5 ms in den Bildern über p90, an main 1,2 ms).
                     const lade = this._ladeTakt();
                     const msDeko =
-                        st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                        (st._frameChunksBuilt || st._frameBodenWartet) && !lade
+                            ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
+                            : ms;
                     const _dl = !Number.isFinite(msDeko)
                         ? undefined
                         : lade
@@ -1845,6 +1852,19 @@ class AnazhRealm_dirigent_takt {
         return b.stempel;
     }
 
+    // DIE PFLANZ-SCHLANGE LÄDT MIT DER WANDUHR (w15-strom-takt, das Muster der Foundry-Freigabe `_tickFoundryIngest`): ein Bild
+    // setzt die Würfe des Ziel-Takts (PFLANZ_RATE_PER_S / 60) und mehr, wenn es länger dauert — so viele, wie die Rate in
+    // seiner Wanduhr trägt (`dt` s), gedeckelt durch PFLANZ_BURST_CAP; ohne Uhr (Linse, Test) die des Ziel-Takts. Bis
+    // w15-strom-takt setzte jedes Bild 4 — der Durchsatz der Karten folgte der Bildrate (GT 64 m/s, Station headless:
+    // 2 131 Bilder → Karten 51,6 % fertig beim Eintritt, 2 542 → 59,6 %; die Bäume der Bahn warteten in der Schlange, als
+    // sie in den Kegel traten).
+    _pflanzKappe(dt) {
+        const R = AnazhRealm.PFLANZ_RATE_PER_S;
+        const ziel = Math.round(R / 60);
+        if (!(dt > 0)) return ziel;
+        return Math.max(ziel, Math.min(AnazhRealm.PFLANZ_BURST_CAP, Math.round(R * Math.min(0.25, dt))));
+    }
+
     // Ein Bau-Eintrag änderte Stufe oder Gestalt (ein Bau-Takt wirkte, ein Studio-Asset dockte an): die Bau-Takte gehen.
     _bauRegt() {
         this._bauRegung = (this._bauRegung | 0) + 1;
@@ -1853,7 +1873,8 @@ class AnazhRealm_dirigent_takt {
     // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
     // archLOD/canopy/waterCA/dirtyChunks) laufen immer, die budgetierten durch `_dispatchFrameJobs`.
     // `_frameOverBudget` ist die FOLGE des Schedulers (Budget leer).
-    _runFrameScheduler(playerPos) {
+    // `wandDelta` (s, optional): die Wanduhr des Bilds — die Pflanz-Schlange lädt mit ihr (`_pflanzKappe`), nie mit der Bildrate.
+    _runFrameScheduler(playerPos, wandDelta) {
         const st = this.state;
         this._bedarfTakt(); // DER EINE RANG (w7-rang): das Tempo der Bahn, bevor eine Schlange dieses Bilds nach ihm fragt
         this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
@@ -1861,10 +1882,11 @@ class AnazhRealm_dirigent_takt {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
-        this._tickPendingVegSpawns(4);
+        this._tickPendingVegSpawns(this._pflanzKappe(wandDelta));
         this._tickHuellenNach(); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
@@ -1891,10 +1913,10 @@ class AnazhRealm_dirigent_takt {
         if (B.remainingMs() <= 0 && !this._ladeTakt() && st._nachlauf == null) st._frameOverBudget = true;
     }
 
-    _loopVoxelStreaming() {
+    _loopVoxelStreaming(wandDelta) {
         // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
         // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
-        return this._runFrameScheduler(this.state.playerMesh.position);
+        return this._runFrameScheduler(this.state.playerMesh.position, wandDelta);
     }
 
     // DAS SPEICHERN IM LEERLAUF (fahrt-takt, Lehre 14): der Takt entscheidet nur, dass ein Stand fällig ist; Schnappschuss,
@@ -2190,6 +2212,10 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// Die Pflanz-Schlange (`_pflanzKappe`): Würfe je Sekunde der Wanduhr (= 4 je Bild bei 60 fps, byte-alt am Ziel-Takt) und je
+// einzelnem Bild höchstens (Anti-LongTask-Deckel).
+AnazhRealm.PFLANZ_RATE_PER_S = 240;
+AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;

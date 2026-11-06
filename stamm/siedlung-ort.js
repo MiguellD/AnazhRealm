@@ -3402,9 +3402,12 @@ class AnazhRealm_siedlung_ort {
     // (`_forestStehtFrei`) samt dessen Krone — die Reichweite `ORT_SAME_REICH`. Bis K51-4 fiel jede Antwort der Welt mit
     // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
     _grundrissFaellt(x0, z0, x1, z1) {
-        this._grundrissGitter = null;
+        const amOrt = [x0, z0, x1, z1].every(Number.isFinite);
+        if (amOrt)
+            this._grundrissAmOrt(x0, z0, x1, z1); // das Gitter legt nur den Kasten neu (`_grundrissAmOrt`)
+        else this._grundrissGitter = null;
         if (!this._ortSame) return;
-        if (![x0, z0, x1, z1].every(Number.isFinite)) {
+        if (!amOrt) {
             this._ortSame = null;
             this._ortSameGen = (this._ortSameGen | 0) + 1; // die Bereitschaft wartender Einträge fragt neu (`_bereitStand`)
             return;
