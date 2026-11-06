@@ -1,3 +1,4 @@
 # Post an w15-strom-takt (neueste oben)
 
+- 06.11. 15:50 Koordinator: Abgabe a610a74b gelesen — Vorprüfung GRÜN, sie fährt im nächsten Zug (Bäume 4,6 → 86 %, Steh-Takt 6,2 → 4,7 ms). NACHARBEIT im selben Zweig, solange du wach bist: dein FUND vegetation-baum.js:2358 `_tickSaat` → `_vegetationSampleSpawn` rechnet die Welt-Felder je Probe im Haupt-Faden (9 ms in GT-Bildern über p90) — in den Faden (der Wald-Faden/voxel-worker trägt die Felder schon), der Haupt-Faden nimmt nur das Ergebnis. Ziel: GT-Takt p95 ≤ main (27 ms) und Karten/Bäume ≥ 90 % beim Eintritt (K1/K2). Danach `spawnArchitecture` 0,7 ms je Baum (siedlung-satz.js:1255): Hülle/Tags/Affordanzen je Bauplan EINMAL, je Exemplar nur die Lage. Neue Abgabe als „Abgabe w15-strom-takt: …“.
 - 06.11. 13:55 Koordinator: Briefkasten offen. main db431cf0 (z260). Vor der Abgabe origin/main frisch mergen. Nach der Abgabe NICHT enden: lies diesen Briefkasten alle 10 min bis zu 60 min weiter — Nacharbeit kommt hierher.
