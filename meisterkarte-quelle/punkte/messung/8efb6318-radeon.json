@@ -1,0 +1,89 @@
+{
+ "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
+ "geraet": "radeon",
+ "zeit": "2026-11-06T18:46:37.778Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -12.8 [-14, -4] · lippeA 13.21 [4, 14] · hoehleL -8.86 [-12, 0] · hoehleA 7.38 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.46,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.833 Soll [1,1] — gesicht 0.833 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -12.8 [-14, -4] · lippeA 13.21 [4, 14] · hoehleL -8.86 [-12, 0] · hoehleA 7.38 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 27.8,
+   "zeit": "2026-11-06T18:46:09.880Z",
+   "abdruck": "0f25f0326aa7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 157716 → 520876 px (×3.30) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "amd/rdna-3",
+   "s": 27.8,
+   "zeit": "2026-11-06T18:46:37.778Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":384,\"schuesse\":23,\"gesehen\":0,\"imBlick\":0})",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises ego nach 80.1 s Wanduhr: {\"spielS\":384,\"schuesse\":23,\"gesehen\":0,\"imBlick\":0})",
+   "s": 90.4,
+   "zeit": "2026-11-06T18:18:24.535Z",
+   "abdruck": "2dd61d309770",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T18:45:32.414Z",
+  "port": 7804,
+  "warten": 0.07,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 23.6,
+    "takte": 711,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 76,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 88.7,
+  "minuten": 1.61
+ }
+}
