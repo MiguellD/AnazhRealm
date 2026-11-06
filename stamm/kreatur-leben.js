@@ -1808,11 +1808,15 @@ class AnazhRealm_kreatur_leben {
     // Und nur auf dem LAND (`_landAt`, die EINE Frage jedes Wurfs: das gezeichnete Wasser und das des Gesetzes über dem Boden;
     // zuletzt, die teuerste): bis w13-pegel-heil fragte keine Geburt das Wasser — der Bestand ankerte Tiere im See und zeichnete
     // sie auf seinem Grund (gate:werk-im-wasser am Seeufer 1849/−6111: am main Fuchs und drei Wölfe 3,64 m, an 43584419 sechs
-    // Hirsche 3,5–3,6 m unter dem Spiegel, gezeichnet und frei zum Weichen).
+    // Hirsche 3,5–3,6 m unter dem Spiegel, gezeichnet und frei zum Weichen). Und nie im Reich eines Orts, der kommt
+    // (`_imReichEinesOrts`: das Gesetz der Zellen, solange seine Hülle nicht steht) — bis tiere.K1#2 warf die Geburt in den Grund
+    // eines Dorfs, das noch nicht erwacht war, und sein Erdbau trug den Boden unter dem Wurf ab (Herde am Hang: 2 von 5 Leibern
+    // hinter der Böschung).
     _kreaturGrundFrei(x, z) {
         if (!this._wildnisTraegt(x, z) || this._imGrundriss(x, z)) return false;
         const wk = this.state.wegeKarte;
         if (wk) for (const b of wk.siedlungen) if (x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1) return false;
+        if (this._imReichEinesOrts(x, z)) return false;
         return this._landAt(x, z);
     }
 

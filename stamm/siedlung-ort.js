@@ -1977,6 +1977,67 @@ class AnazhRealm_siedlung_ort {
         const reich = AnazhRealm.Gesetz("fachwerk:siedlungsReich");
         return Math.max(0, reich(A, nH) - reich(A, A.nHMin + A.nHSpan - 1));
     }
+    // DAS REICH EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang): liegt (x, z) in der Reichweite eines Orts, den das Gesetz der
+    // Zellen trägt (`_autoSettlementCellInfo`: Existenz, Anker, Größe; das Start-Dorf `_autoSettlementStartInfo`) und dessen
+    // Hülle in dieser Sitzung noch nicht steht? Steht sie (`_stlWegeKeys`), urteilt sie selbst (`wegeKarte.siedlungen`). Das Reich
+    // ist das des Gesetzes (fachwerk `siedlungsReich`: kern + jeWurzel·√nH um den Ort — dieselbe Scheibe, mit der der Rang
+    // verdrängt), sein Ort der gewählte, sobald es ihn gibt (das Gedächtnis der Zelle `settlementCells`, ihr Vorrat
+    // `_dorfBereiten`), davor der Anker des Gesetzes; eine verworfene Zelle trägt keinen. Kaltes Buch → keine Zelle (wie
+    // `_autoSettlementCellInfo`). Bis hier kannte die Geburt nur die Hüllen erwachter Orte: GTX a4dc2a45 warf die Herde am Hang
+    // 98 m vom Anker des Dorfs −2,−4 (Reich 112 m), dessen Erdbau danach den Hang um 1,7–5,4 m abtrug — zwei der fünf Leiber
+    // standen hinter der Böschung (3 von 5 sichtbar bei 43 m).
+    _imReichEinesOrts(x, z) {
+        const S = AnazhRealm._siedlungGesetz();
+        if (!S) return false;
+        const reich = AnazhRealm.Gesetz("fachwerk:siedlungsReich");
+        const st = this.state;
+        const cells = (st.worldMeta && st.worldMeta.settlementCells) || {};
+        const steht = this._stlWegeKeys;
+        const V = this._dorfVorraete;
+        const R = AnazhRealm.ORT_REICH_ZELLEN;
+        const ws = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
+        if (!this._ortReichMemo || this._ortReichMemo.ws !== ws) this._ortReichMemo = { ws, M: new Map() };
+        const M = this._ortReichMemo.M;
+        // die Zelle des Gesetzes: [Anker x, z, Reich] oder null — eine Stadt, deren Reich über R Zellen hinausreicht, bricht laut
+        const zelle = (cx, cz) => {
+            const k = cx + "," + cz;
+            if (M.has(k)) return M.get(k);
+            const i = this._autoSettlementCellInfo(cx, cz);
+            const o = i ? [i.x, i.z, reich(S, i.nH)] : null;
+            if (o && o[2] > (R + 0.25) * S.cellM)
+                throw new Error(`das Reich des Orts ${k} (${o[2].toFixed(0)} m) reicht über ${R} Zellen (ORT_REICH_ZELLEN)`);
+            M.set(k, o);
+            return o;
+        };
+        const drin = (ox, oz, r) => (x - ox) * (x - ox) + (z - oz) * (z - oz) <= r * r;
+        const cx0 = Math.floor(x / S.cellM);
+        const cz0 = Math.floor(z / S.cellM);
+        for (let dz = -R; dz <= R; dz++)
+            for (let dx = -R; dx <= R; dx++) {
+                const k = cx0 + dx + "," + (cz0 + dz);
+                if ((steht && steht.has(k)) || (this._autoSettlementRejected && this._autoSettlementRejected.has(k)))
+                    continue;
+                const o = zelle(cx0 + dx, cz0 + dz);
+                if (!o) continue;
+                const c = cells[k];
+                const v = V && V.get(k);
+                const [ox, oz] =
+                    c && Number.isFinite(c.x) ? [c.x, c.z] : v && v.da ? [v.x, v.z] : [o[0], o[1]];
+                if (drin(ox, oz, o[2])) return true;
+            }
+        // das Start-Dorf: sein Gedächtnis, bevor es steht, sonst die Stelle seines Gesetzes (gemerkt je Plan des Genesis-Orts)
+        if (!(steht && steht.has("start"))) {
+            let c = cells.start;
+            if (!c && !this._autoSettlementStartHopeless) {
+                const P = this._genesisPlan;
+                if (!this._ortReichStart || this._ortReichStart.P !== P)
+                    this._ortReichStart = { P, si: P ? this._autoSettlementStartInfo() : null };
+                c = this._ortReichStart.si;
+            }
+            if (c && Number.isFinite(c.x) && Number.isFinite(c.nH) && drin(c.x, c.z, reich(S, c.nH))) return true;
+        }
+        return false;
+    }
     // Site-Wände am Anker (die Slot-Wände prüft `_spawnSettlementSlot` je Haus zusätzlich). `noSpawnClear`
     // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser und Hang bleiben für jede Site dieselbe Wand. DIE STEIL-WAND IST DIE
     // BÖSCHUNG DES ERDBAUS (siedlung.K3): ein Ort steht am Hang, solange er flacher liegt als die Böschung, mit der sein Erdbau den
@@ -3757,6 +3818,11 @@ AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
 AnazhRealm.SIEDLUNG_WACHS = Object.freeze({ taktS: 300 });
+// DAS REICH EINES KOMMENDEN ORTS (`_imReichEinesOrts`): so viele Zellen um die eigene fragt die Geburt. Der Anker einer Zelle
+// liegt in ihrer Mitte ± ¼ Zelle (fachwerk `siedlungsZelle`) — eine Zelle k Zellen fort trägt ihn mindestens (k − ¾) × 256 m
+// weit, die nächste jenseits von 2 also ≥ 576 m; die größte Stadt (GROESSE_WAND 500 Häuser) reicht 30 + 22·√500 = 522 m.
+// Ein Reich über (Zellen + ¼) × cellM bricht laut.
+AnazhRealm.ORT_REICH_ZELLEN = 2;
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nearM: 260,
     // der Ring der Sicht vor `nearM` (siedlung.K5, `_autoSettlementZelle`): so weit vor dem Erwachen plant der Wald um den Ort —
