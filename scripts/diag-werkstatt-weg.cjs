@@ -988,13 +988,27 @@ function wegHelfer(arg) {
             if (ro.camera === st.camera) zog.add(ro.object);
             return draw.call(this, ro, ...x);
         };
+        // DAS BÜNDEL ZIEHT MIT: eine Region-BundleGroup (Bäume, Bauten, Wagen — der statische Bestand) ruft `backend.draw` nur beim
+        // Aufnehmen; ihr Abspielen (r184 `_renderBundle`, Versions-Treffer, dann `addBundle`) zieht die aufgenommenen RenderObjects
+        // ohne ihn — nach dem Haken nahm keine Region neu auf, ihre Bürger zogen für den Zähler nie (headless am main: die Eiche 240 s
+        // in `_zuegeB` der Kamera, nie in `zog`; Radeon b3f9ae95: beide Eiche-Läufe 600 s an der Frist, Haus 1 773 ms). Wie das Spiel
+        // den Replay bucht (bild-kosten DRAW-WAHRHEIT) und diag-hitch-telemetrie ihn liest: nach dem Aufruf seine RenderObjects.
+        const [rend, rbEigen, rbRoh] = [st.renderer, Object.prototype.hasOwnProperty.call(st.renderer, "_renderBundle"), st.renderer._renderBundle];
+        rend._renderBundle = function (bundle, ...x) {
+            const aus = rbRoh.call(this, bundle, ...x);
+            if (bundle.camera === st.camera)
+                for (const ro of this.backend.get(this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext)).renderObjects || []) zog.add(ro.object);
+            return aus;
+        };
         // die L0-Senken eines Werks — ein eigener Bauplan ist klassisch (`entry.mesh`: jedes Mesh seiner Gruppe zieht selbst)
         const l0 = (e) =>
             e?.instSlots?.length ? (!e.instFoundry || e._servedLod === 0) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin) : e?.mesh?.parent && klassisch(e.mesh);
         // eine Satz-Art (Haus, Ausstattung, Tor: `BAU_SATZ`) zieht nie selbst: ihr Bereich liegt ganz im Satz ihres Stoffs (keine
         // offene Rate) und seine Zelle des Platzes im Abschnitt des Hauptbilds — die Lesung des Zug-Zählers (`satzInhalt`)
         const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && zog.has(S?.mesh) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
-        const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && [st.camera, null].some((k) => g.mesh.__arena._zuege.get(k)?.zuege.includes(g.mesh)) : zog.has(g.mesh.__zeichner || g.mesh)));
+        // der Zug dieses Bilds: lose je Pass (`_zuege`), in der festen Arena der des Bündels (`_zuegeB`, seine Aufträge schreibt der Takt)
+        const imZug = (A, m) => [st.camera, null].some((k) => A._zuege.get(k)?.zuege.includes(m)) || !!A._zuegeB?.get(st.camera)?.zuege.includes(m);
+        const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && imZug(g.mesh.__arena, g.mesh) : zog.has(g.mesh.__zeichner || g.mesh)));
         r._loopRender = function (...a) {
             const [L, e] = [lauf, lauf && lauf.bild == null && neue()[0]];
             if (e) jetzt(L, "standT");
@@ -1007,7 +1021,11 @@ function wegHelfer(arg) {
             }
             return aus;
         };
-        abbau = () => ([r._loopRender, b.draw] = [roh, draw]);
+        abbau = () => {
+            [r._loopRender, b.draw] = [roh, draw];
+            if (rbEigen) rend._renderBundle = rbRoh;
+            else delete rend._renderBundle;
+        };
     } else {
         // der Null-Renderer tickt nur hier, mit echtem Renderer (--verben) tickt die Schleife selbst (wie `__seitenTakt`)
         let vor;
