@@ -1268,26 +1268,29 @@ class AnazhRealm_stoff_material {
                                     //    Krone durchlässt (`_karteBuehne`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
                                     //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
                                     //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
-                                    //    BC: rg8 (r der Zenit, g der 45°-Kranz), leer = das Mittel der Schicht; rgba8: r und b,
-                                    //    vormultipliziert mit der Deckung (g). DIE HÖHE DES LICHTS (F6): die Sicht folgt der Höhe
-                                    //    des aktiven Körpers (`uSunDir`, dieselbe Richtung wie das Richtlicht) — bis 45° der Kranz,
-                                    //    darüber zum Zenit, im Sinus der Höhe. Das eine Mittel aller Richtungen ließ die
-                                    //    Mittagssonne durch die hohe Fichte wie durch ihre Flanke (ihr Sonnen-Licht 1,42 × das der
-                                    //    Gestalt).
-                                    const _lP = _Ta.mix(_probeA(_at.lmapNode, _uvA), _probeA(_at.lmapNode, _uvB), _fb);
-                                    const _s2 = _vm
-                                        ? _Ta
-                                              .vec2(_lP.r, _lP.b)
-                                              .div(_lP.g.max(_Ta.float(1e-3)))
-                                              .min(_Ta.vec2(1.0))
-                                        : _lP.rg;
-                                    const _sk = Math.SQRT1_2;
-                                    const _hoch = _Ta
-                                        .normalize(this._windUniformsEnsure().uSunDir)
-                                        .y.sub(_sk)
-                                        .div(1 - _sk)
-                                        .clamp(0.0, 1.0);
-                                    const _sicht = _Ta.mix(_s2.y, _s2.x, _hoch);
+                                    //    DIE SICHT ALS FUNKTION DER RICHTUNG (w14-nadel-licht): der Atlas trägt je Texel das lineare
+                                    //    Feld v(d) = c0 + c·d über die Richtungen der Bühne (`KARTE_SONNEN_SICHT`, je Beiwert seine
+                                    //    `spanne`; BC: rgba8, leer = das Mittel der Schicht; rgba8: vormultipliziert mit der Deckung,
+                                    //    die das Alpha der Albedo trägt), gelesen an der Richtung des aktiven Körpers (`uSunDir`,
+                                    //    Sonne oder Mond, dieselbe Richtung wie das Richtlicht) im Raum der Vorlage — die EINE Naht
+                                    //    (`_weltNaht.vorlage`) dreht sie je Instanz, wie die Bühne die Krone in ihren Kacheln sah.
+                                    //    Bis w14 mischte der Stoff den Zenit und das N·L-Mittel des 45°-Kranzes nach der Höhe: die
+                                    //    vom Licht abgewandte Krone las die Sicht ihrer eigenen Seite (Radeon, Messort dorf: die
+                                    //    Tanne unter dem Mond der Uhr 0,05 stand 1,234 × über ihrer Gestalt, jetzt 1,028).
+                                    const _SZ = AnazhRealm.KARTE_SONNEN_SICHT;
+                                    const _beide = (tex) => _Ta.mix(_probeA(tex, _uvA), _probeA(tex, _uvB), _fb);
+                                    const _lP = _beide(_at.lmapNode);
+                                    const _kod = _vm
+                                        ? _lP.div(_beide(_at.mapNode).a.max(_Ta.float(1e-3))).min(_Ta.vec4(1.0))
+                                        : _lP;
+                                    const _feld = _kod
+                                        .mul(_Ta.vec4(..._SZ.spanne.map(([a, b]) => b - a)))
+                                        .add(_Ta.vec4(..._SZ.spanne.map(([a]) => a)));
+                                    const _sonneV = _Ta.varying(
+                                        _Ta.normalize(_naht.vorlage(this._windUniformsEnsure().uSunDir)),
+                                        "vKarteSonne"
+                                    );
+                                    const _sicht = _feld.x.add(_feld.yzw.dot(_Ta.normalize(_sonneV))).clamp(0.0, 1.0);
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── DIE KARTE IN DER TIEFE IHRER GESTALT (w4-laub-karte; im Vertex seit heil-laub-tiefe): sie steht
                                     //    nicht auf ihrer Ebene durch die Stammachse — jede Ecke ihres Gitters (`KARTE_GITTER`) rückt
