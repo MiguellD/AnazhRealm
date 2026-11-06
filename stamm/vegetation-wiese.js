@@ -690,6 +690,7 @@ class AnazhRealm_vegetation_wiese {
                 // um die Hochachse
                 if (Math.max(Math.abs(e[1]), Math.abs(e[4]), Math.abs(e[6]), Math.abs(e[9])) > 1e-6 * Math.abs(e[5]))
                     throw new Error(`Nah-Wiese: Vorlage ${kopf} Teil ${p} kippt die Hochachse — die Ferne liest den Hang aus ihren waagrechten Achsen`); // prettier-ignore
+                AnazhRealm._wieseAehrenFuss(lf.geom, kopf);
                 fern.push(senke(`fern:${v}:${p}`, `nahWiese:Lf:${v}:${p}`, this._halmFerne(lf.mat)));
             }
             if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
@@ -703,6 +704,34 @@ class AnazhRealm_vegetation_wiese {
         }
         nw.vorlagen.set(kopf, { flat: fl, senken, fern, cy: cy || 0, r, weite });
         nw.neu = true;
+    }
+
+    // DIE ÄHRE AM FUSS IHRES STÄNGELS (die Ferne, `_halmFerne`): das Studio legt den Anker der Ähre (`aCenter`) auf die Spitze
+    // ihres Stängels — die Spitze ist eine Ecke des Stängels, dessen Anker sein Fuß ist. Die Ferne spreizt jeden Halm um seinen
+    // Fuß; die Ähre wandert mit ihrem Stängel, also trägt ihr Anker den Fuß des Stängels in der Höhe seiner Spitze (y > 0
+    // bleibt die Marke der Ähre). EINMAL je Vorlage (`userData.aehrenFuss`), vor dem ersten Bild; eine Ähre ohne Stängel, eine
+    // Vorlage ohne Ecken bricht laut. Bis w14-wiese-saum streckte die Ferne die Ähre um ihre Spitze (Schale ohne Ecken: um 0).
+    static _wieseAehrenFuss(geo, kopf) {
+        if (geo.userData.aehrenFuss) return;
+        const P = geo.attributes.position,
+            C = geo.attributes.aCenter;
+        if (!C)
+            throw new Error(
+                `Nah-Wiese: Vorlage ${kopf} ohne Ecken (aCenter) — die Ferne spreizt ihre Halme um ihre Füße`
+            );
+        const fuss = new Map();
+        const k = (x, y, z) => x + "|" + y + "|" + z;
+        for (let i = 0; i < P.count; i++)
+            if (!(C.getY(i) > 1e-4)) fuss.set(k(P.getX(i), P.getY(i), P.getZ(i)), [C.getX(i), C.getZ(i)]);
+        for (let i = 0; i < C.count; i++) {
+            if (!(C.getY(i) > 1e-4)) continue;
+            const f = fuss.get(k(C.getX(i), C.getY(i), C.getZ(i)));
+            if (!f) throw new Error(`Nah-Wiese: Vorlage ${kopf} trägt eine Ähre ohne Stängel (Anker ${C.getX(i)}, ${C.getY(i)}, ${C.getZ(i)})`); // prettier-ignore
+            C.setX(i, f[0]);
+            C.setZ(i, f[1]);
+        }
+        (C.isInterleavedBufferAttribute ? C.data : C).needsUpdate = true;
+        geo.userData.aehrenFuss = true;
     }
 
     // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war

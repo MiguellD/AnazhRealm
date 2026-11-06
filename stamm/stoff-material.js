@@ -47,12 +47,11 @@ class AnazhRealm_stoff_material {
     // oberen 24 Bit), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
     // rechnen es in Zahlen). Steht o unter a, steht das
     // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
-    // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: die ganze Gestalt des
-    // Büschels waagrecht um s — die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und der Halm um sie (Fuß UND
-    // Spitze), die Höhe bleibt; die Ähre (ihr `aCenter` die Spitze des Stängels, über dem Fuß) wandert mit der Spitze, ihre
-    // Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als helle Striche am Horizont). Bis
-    // w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme blieben schmal, jenseits 30 m lag der
-    // Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es
+    // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
+    // Halme um s (ihre Füße, `aCenter`, um den Fuß des Büschels), jeder Halm wird quer um s breiter, Neigung und Höhe bleiben;
+    // die Ähre wandert mit ihrem Stängel, ihre Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als
+    // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
+    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es
     // nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
@@ -89,22 +88,28 @@ class AnazhRealm_stoff_material {
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
+            // DIE BREITE AUS DEM FUSSABDRUCK: der Fuß jedes Halms (`aCenter`) rückt um s vom Fuß des Büschels fort, der Halm wird
+            // QUER um s breiter — längs seiner Breiten-Richtung t = Y × n (u wächst längs t, wie im Halm-Stoff `_halmStoff`) um
+            // u · aderM je Welt-Meter (uv.x zählt die Adern seiner halben Breite) —, Neigung und Höhe bleiben. Die Ähre (ihr Anker
+            // über dem Boden: der Fuß ihres Stängels in der Höhe seiner Spitze, `_wieseAehrenFuss`) wandert mit ihrem Stängel, in
+            // ihrer Größe. Bis w14-wiese-saum streckte der Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der
+            // Höhe) mit ihr — bei s = 14 lag der Halm 12° über dem Boden, die Ferne ein flacher Teppich hinter einem Bogen
+            // stehender Halme bei `radius` (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
             const c = T.attribute("aCenter", "vec3");
-            const rel = T.positionLocal.sub(c);
-            // die Mitte rückt um s, der Halm streckt sich um sie waagrecht um s (quer); die Ähre (aCenter über dem Fuß) wandert
-            // nur, in ihrer Größe (quer 1)
-            const s = G.streck;
-            const quer = T.mix(s, T.float(1), T.step(1e-4, c.y));
+            const s1 = G.streck.sub(1);
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            const nG = T.normalGeometry;
+            const quer = T.vec3(nG.z, 0, nG.x.negate());
+            const ql = quer.length();
+            const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
+            const breit = T.uv()
+                .x.mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk)
+                .mul(s1)
+                .mul(T.step(c.y, 1e-4));
+            const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(s1)).add(t.mul(breit));
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
-            this._halmFerneKnoten = T.vec3(
-                c.x.mul(s).add(rel.x.mul(quer)),
-                c.y.add(rel.y).mul(ha),
-                c.z.mul(s).add(rel.z.mul(quer))
-            )
-                .mul(v)
-                .add(sway.mul(v));
+            this._halmFerneKnoten = T.vec3(lage.x, lage.y.mul(ha), lage.z).mul(v).add(sway.mul(v));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
