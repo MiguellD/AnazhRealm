@@ -495,9 +495,19 @@ class AnazhRealm_siedlung_verkehr {
         vc.fahrStand(fz, G, this._fahrBoden(e), 0);
         if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
         const um = this._fahrUmriss(e);
-        [W.hl, W.hw, W.bug] = [(um.bug - um.heck) / 2, um.hw, um.bug];
+        [W.hl, W.hw, W.bug, W.poly] = [(um.bug - um.heck) / 2, um.hw, um.bug, um.poly];
         this._verkehrBild(e);
         return true;
+    }
+
+    // DIE AUSSCHERUNG IN DER KURVE (m über die halbe Breite hinaus): auf einer Linie der Krümmung κ steht ein Punkt (l, q) des
+    // Grundrisses um |q| + l²·κ/2 neben ihr — die weiteste Ecke des GRUNDRISSES (`W.poly`, die gezeichnete Gestalt), weniger
+    // W.hw. Vorher rechnete der Wirt die Ecke des Rechtecks (hl²·κ/2): mit der wahren Länge und Breite stand sie in der
+    // engsten Kurve (kurveR 5,5 m, Gasse 4,9 m) dort, wo der Wagen rund ist, und Gegenverkehr blockierte sich (gate:fahr-leben VK).
+    _verkehrRund(W, kappa) {
+        let r = 0;
+        for (const [l, q] of W.poly) r = Math.max(r, Math.abs(q) + (l * l * kappa) / 2);
+        return Math.max(0, r - W.hw);
     }
 
     // IM BLICK DER KAMERA: die Kugel (Mitte des Wagens, Radius r) schneidet das Frustum der Kamera dieses Schritts (ohne Kamera:
@@ -1022,7 +1032,7 @@ class AnazhRealm_siedlung_verkehr {
             let k = 0;
             for (let j = i; j >= 0 && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
             for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
-            return (W.hl * W.hl * Math.min(2 * k, 1 / kR)) / 2;
+            return this._verkehrRund(W, Math.min(2 * k, 1 / kR));
         });
         const vorher = W.zonen;
         W.zonen = [];
@@ -1235,7 +1245,7 @@ class AnazhRealm_siedlung_verkehr {
             if (F.k[i] > kMax) kMax = F.k[i];
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
-        const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / kurveR)) / 2;
+        const rund = this._verkehrRund(W, Math.min(2 * kMax, 1 / kurveR));
         const rundAn = (i) => F.rund[i];
         const rand = W.hw + V.seitM + 3;
         for (const O of S.verkehr.wagen) {
@@ -1260,14 +1270,11 @@ class AnazhRealm_siedlung_verkehr {
             const [fx, fzz] = [Math.sin(ry), Math.cos(ry)];
             let a = null;
             let lt = 0;
-            for (let ek = 0; ek < 5; ek++) {
-                const [u, w] = AnazhRealm._verkehrEcken[ek];
-                const q = auf(
-                    o.position.x + fx * O.hl * u + fzz * O.hw * w,
-                    o.position.z + fzz * O.hl * u - fx * O.hw * w,
-                    bis,
-                    von
-                );
+            // seine Mitte und jede Ecke seines GRUNDRISSES (die gezeichnete Gestalt, `_fahrUmriss`: die runden Ecken stehen innen —
+            // ihr Rahmen stand dort bis 24 cm in der Luft)
+            for (let ek = -1; ek < O.poly.length; ek++) {
+                const [l, w] = ek < 0 ? [0, 0] : O.poly[ek];
+                const q = auf(o.position.x + fx * l + fzz * w, o.position.z + fzz * l - fx * w, bis, von);
                 if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
@@ -1613,13 +1620,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_verkehr]);
 
 // ===== ATLAS · Siedlung/verkehr — Außen-Konstanten =====
 // die Mitte und die vier Ecken eines Wagens (je ±halbe Länge, ±halbe Breite: `_verkehrFolge`)
-AnazhRealm._verkehrEcken = Object.freeze([
-    [0, 0],
-    [1, 1],
-    [1, -1],
-    [-1, 1],
-    [-1, -1],
-]);
 // DER VERKEHR DES WIRTS (das Gesetz der Menge, des Netzes, der Wende und des Platzes lebt in fachwerk VERKEHR_GESETZ; hier, wie
 // der Wirt fährt): wagen = die Gestalten des Fahrzeug-Kerns, die die Stadt fährt (der Same des Fahrers wählt; Sport- und
 // Geländewagen fahren nicht in der Stadt) · stufeM = so viel darf der Boden der Spur je halben Meter springen (mehr ist eine
