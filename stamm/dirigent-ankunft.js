@@ -1604,7 +1604,9 @@ class AnazhRealm_dirigent_ankunft {
                 const s = r.y < 0 ? Math.min(M.weitM, (p.y - ebene) / -r.y) : 0;
                 if (!(s > 0)) continue;
                 const [x, z] = [p.x + r.x * s, p.z + r.z * s];
-                summe += this._horizontSichtAm(x, this._terrainMacroSurfaceY(x, z, true), z, L);
+                const y = this._terrainMacroSurfaceY(x, z, true);
+                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung)
+                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L);
                 zahl++;
             }
         return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L);
