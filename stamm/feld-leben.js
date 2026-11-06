@@ -2174,14 +2174,14 @@ class AnazhRealm_feld_leben {
     // eine ferne Region holt ihre Stunde nach, wenn sie wieder nah wird (`_bestandRegion`). Eine Funktion seiner Marke (`_lebenGen`,
     // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
     // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers.
-    _lebenImStand() {
+    _lebenImStand(nahe = this._bestandNah()) {
         const st = this.state;
         const seed = (st.worldMeta && st.worldMeta.seed) || "";
         const F = st.faunaBestand && st.faunaBestand.seed === seed ? st.faunaBestand.regionen : {};
         const [S, cs] = [this._bestandSeite(), AnazhRealm.LIFE_FIELD.cell];
         const bestand = {};
         const kacheln = [];
-        for (const key of this._bestandNah()) {
+        for (const key of nahe) {
             const [ix, iz] = key.split(",").map(Number);
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];

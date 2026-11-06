@@ -147,7 +147,7 @@ function kenntMitGestalt(id, rechnet) {
 // Schreiber (`wer`, der Täter beim Namen — auch der Wunsch der Welt, den der Zug zog, ohne das Wort zu ändern),
 // das Leben je lebender Zelle, wie der Stand es trägt (`_lebenImStand`: eine Zelle unter epsilon ist tot, ihr Eintrag nur Gedächtnis
 // der Räumung), der Pegel (die Tafel `_pegelGilt`) und der Brand je Zelle
-function abdruck(bauten) {
+function abdruck(bauten, nahe) {
     const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
     const B = (st.architectures || [])
@@ -166,7 +166,7 @@ function abdruck(bauten) {
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     const wt = st.weatherTransition;
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
-    const leben = r._lebenImStand().feld.map(String).sort();
+    const leben = r._lebenImStand(nahe).feld.map(String).sort();
     return { takt: st.faunaLifecycle.feldLetzt, edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, wer: st.weather + " von " + st.wetterSchreiber, leben, pegel: r._pegelGilt(), brand: [...(st.brandFeld || [])] };
 }
 // (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
@@ -820,8 +820,8 @@ hauptLauf(async () => {
             check(
                 `(f) ${wann}: Teil-Simulationen gleich`,
                 fTeile.every(gl),
-                `${satz(gl, fTeile)} — Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/${A.leben.length} Zellen, Pegel ` +
-                    `${A.pegel ? "steigt" : "ruht"}, Brand ${A.brand.length} Zellen${gl("wetter") ? "" : ` (A ${A.wer} · B ${B.wer})`}`
+                `${satz(gl, fTeile)} — Leben ${B.leben.filter((z) => A.leben.includes(z)).length}/${A.leben.length} Zellen, ` +
+                    `Brand ${A.brand.length} Zellen${gl("wetter") ? "" : ` (A ${A.wer} · B ${B.wer})`}`
             );
         };
 
@@ -830,7 +830,8 @@ hauptLauf(async () => {
         // zu ihrem Ereignis, nie nach der Uhr)
         const moment = async (bauten) => {
             for (let i = 0; ; i++) {
-                const AB = await Promise.all([pageA, pageB].map((p) => p.evaluate(abdruck, bauten)));
+                const nahe = await pageA.evaluate(() => r._bestandNah()); // die nahen Regionen von A auf beiden Seiten
+                const AB = await Promise.all([pageA, pageB].map((p) => p.evaluate(abdruck, bauten, nahe)));
                 const [a, b] = AB.map((x) => x.takt);
                 if (a === b || i > 3) return AB;
                 await waitFor(a < b ? pageA : pageB, (z) => st.faunaLifecycle.feldLetzt >= z, "die Seite rechnet das Feld des Raums", Math.max(a, b)).catch(() => {});
