@@ -835,7 +835,7 @@ async function brandSeite(MESS) {
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const neu = () => (leer(), trocken(), wort("cloudy"));
     const brennen = (max) => {
-        for (let i = 0; i < max && bf().size; i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
+        for (let i = 0; i < max && r._brandLebt(); i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
     const nass = (f) => r._brandFeuchte(f.boden) >= f.zeile.brenn.mx;
@@ -984,7 +984,7 @@ async function brandSeite(MESS) {
             delete r._naesseTakt;
             r._naesseUhr = st.spielZeit;
             wort("rainy");
-            for (R.s = 0; R.s < 300 && bf().size; R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+            for (R.s = 0; R.s < 300 && r._brandLebt(); R.s++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
             delete r._brandFeuchte;
             wort("cloudy"), trocken();
             return R;
@@ -2155,7 +2155,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && st.brandFeld.size; Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);

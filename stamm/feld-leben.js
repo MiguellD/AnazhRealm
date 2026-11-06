@@ -2308,9 +2308,12 @@ class AnazhRealm_feld_leben {
         const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
         const n = bf.get(cx + "," + cz);
         if (n && n.t0 !== null) return null;
-        // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet
-        if (!bf.size)
+        // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet: die Aschen, die der erloschene noch trug, liegen
+        // zuerst (ohne Feld zündet der Rest nichts mehr) — bis w13-brand-takt fielen sie hier weg
+        if (!bf.size) {
+            if (this._brandRest) this._brandArbeit(Infinity);
             [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
+        }
         return this._brandZuenden(cx, cz, st.spielZeit, x, z);
     }
 
@@ -2404,9 +2407,20 @@ class AnazhRealm_feld_leben {
     // (`BRAND.budgetMs`, mindestens `BRAND.mindestJeBild` Stück), den Rest im nächsten (`_brandArbeit`); der nächste Schritt beginnt
     // erst, wenn der vorige ganz ist, und jede Zelle fängt zur Zeit ihrer Ankunft, nie zur Zeit des Bilds. Bis stoffe.K2#2 ging ein
     // Schritt in einem Bild: 2 000 brennende Zellen kosteten 7,4 ms (headless, Radeon-Laptop), die Aschen eines Schritts zusammen.
+    // DER BRAND LEBT, solange sein Feld brennt oder sein Rest Arbeit trägt — die EINE Frage, ob er noch etwas tut (der Takt, die
+    // Linsen, die ihn bis zum Ende fahren)
+    _brandLebt() {
+        const bf = this.state.brandFeld;
+        return !!(bf && bf.size) || !!this._brandRest;
+    }
+
+    // DER REST NACH DEM ERLÖSCHEN: leert ein Schritt das Feld (der Regen löscht jede Zelle zugleich), trägt sein Rest die Aschen
+    // aller gelöschten Zellen — der Takt geht ihn weiter in seinem Budget, bis er ganz ist. Bis w13-brand-takt kehrte er am
+    // leeren Feld um: was die Frist des Bilds nicht schrieb, fiel (Mess-Wiese, Regen, CPU zweifach gedrosselt 1 von 9 Aschen,
+    // vierfach 2 von 10) — die Asche hing an der Wanduhr.
     _tickBrand() {
         const bf = this.state.brandFeld;
-        if (!bf || !bf.size) return;
+        if (!this._brandLebt()) return;
         const B = AnazhRealm.BRAND;
         const frist = performance.now() + B.budgetMs;
         // der Schritt fällt, sobald die Uhr ihn erreicht — im Gleitkomma mit einem Hauch (`(a + 1) − a` ist für ~0,1 % der Uhren

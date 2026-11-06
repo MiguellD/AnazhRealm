@@ -2549,6 +2549,14 @@ class AnazhRealm_kreatur_leben {
         const L = st.faunaLifecycle;
         const B = AnazhRealm._bestandGesetz().B;
         if (!this._kreaturenBereit() || st.spielZeit - (L.lastTick || 0) < B.taktS) return;
+        // DAS AUFHOLEN FOLGT DER WELT-UHR: je taktS verstrichener Spiel-Zeit aufholJeTakt versäumte Takte — springt die Uhr (ein
+        // Stand lädt, `_weltUhrNimm`; eine Bühne rafft die Zeit), holen die nahen Regionen ihre Stunde im Takt des Sprungs nach, ehe
+        // die Welt danach etwas schreibt. Bis w13-brand-takt holte jeder Takt 20 nach, wie weit die Uhr auch sprang: die
+        // Vergangenheit lief über die folgenden Minuten und las das Feld der Gegenwart (Mess-Wiese: nach dem Sprung der Feld-Phase
+        // starben Tiere bis eine Stunde zurück im brennenden Gras, ihr Puls +0,45 fiel je nach Zünd-Zeit und Bild-Folge des Brands
+        // in die Zelle des Herds — BRAND-ASCHE lebendig 0,839 → 0,799 auf der Farm, → 0,539 lokal). Ohne Sprung (ein Takt je taktS,
+        // das Laden setzt die Marke an die Uhr des Stands) bleibt es bei 20.
+        const schritte = Math.max(1, Math.round((st.spielZeit - (L.lastTick || st.spielZeit)) / B.taktS));
         L.lastTick = st.spielZeit;
         this._bestandAdoptieren();
         // DIE OFFENEN RISSE (oekologie.K2): ein Leib, den ein Riss im Nah-Kreis seinem Jäger nannte (sein Tier starb im Gesetz),
@@ -2564,7 +2572,7 @@ class AnazhRealm_kreatur_leben {
                 this._creatureNaturalDeath(c, c.userData._faelltNach, false);
         // je nahe Region ihre versäumten Takte (aus EINEM Budget je Takt), dann der Takt des Spielers
         const tode = [];
-        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt;
+        let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt * schritte;
         const S = this._bestandSeite();
         const p = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
         const abstand = (key) => {
