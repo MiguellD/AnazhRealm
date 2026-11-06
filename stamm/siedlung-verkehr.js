@@ -554,6 +554,13 @@ class AnazhRealm_siedlung_verkehr {
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
             for (const W of VK.wagen) {
+                // DAS BILD DES WAGENS je Bild (`_verkehrSchritt` merkt, wer sich bewegte, `bildAlt`): die Instanz-Matrix samt Rädern
+                // schreibt das Bild, nicht der Schritt — bis w13-verkehr-heil schrieb sie jeder Sim-Schritt (stadt-voll 10 Uhr 0,25 von
+                // 1,53 ms je Schritt, `_archInstanceUpdate`)
+                if (W.bildAlt && W.entry && W.zustand === "faehrt" && (W.d2 < V.blickNahM * V.blickNahM || W.imBlick)) {
+                    this._verkehrBild(W.entry);
+                    W.bildAlt = false;
+                }
                 // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll
                 if (W.zustand === "steht" && !W.b.amSteuer && W.b.ziel !== W.b.orte.werk) {
                     const f = W.fahrer.find((x) => x.ziel === x.orte.werk);
@@ -1210,14 +1217,10 @@ class AnazhRealm_siedlung_verkehr {
                     if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
                     e._rideSteerYaw = fz.steer;
                 }
-                // DAS BILD zahlt, wer sich bewegte und im Blick ist (Gebot 7: Kosten an Schirm und Änderung) — wer außer Blick
-                // fuhr, zeichnet nach, sobald er hineinkommt
+                // DAS BILD zahlt, wer sich bewegte und im Blick ist (Gebot 7: Kosten an Schirm und Änderung) — einmal je Bild im
+                // Takt des Verkehrs (`_tickVerkehr`), nie je Sim-Schritt: wer außer Blick fuhr, zeichnet nach, sobald er hineinkommt
                 W.bildAlt = W.bildAlt || !ruht || !W.bildRuht;
                 W.bildRuht = ruht;
-                if (W.bildAlt && (d2 < V.blickNahM * V.blickNahM || W.imBlick)) {
-                    this._verkehrBild(e);
-                    W.bildAlt = false;
-                }
                 const dw = Math.hypot(fz.x - x0, fz.z - z0);
                 W.weg += dw;
                 VK.zahl.km += dw / 1000;
