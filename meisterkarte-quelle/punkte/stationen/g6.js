@@ -1018,6 +1018,30 @@ const HW = (t) => {
 // Kern-Wechsel danach laufen ohne Probe und ohne Spur. Bis p3 fuhren ankunft.K2#1 · K3#1 · pipeline.K4#1/#2 dieselbe Ankunft ohne
 // Spur — sie tragen jetzt diese Probe (EIN Lauf, sechs Zwillinge; der Deckel der Sitzung bleibt 10 s, die Eich-Fahrt nennt ihn neu).
 async function probeAnkunftKalt(H) {
+    // DIE LÄNGSTE AUFGABE BEIM NAMEN (w16-lade-atem-pm, Post 06.11. 17:50): die Seite zählt je Pipeline des Geräts ihre Art und ihr
+    // Label (`gpuHaken`, ab dem ersten Skript: eine synchrone übersetzt der GPU-Prozess vor dem nächsten Bild — ihre Zeit trägt
+    // die Seite als Aufgabe ohne JS-Probe), und die Zahl der Station nennt die längste LongTask vor der Kontrolle mit ihren Haltern
+    // (`ankunftsHalter`) und den Pipelines, die sie und die Sekunde davor synchron anlegten.
+    function gpuHaken() {
+        const A = (window.__kaltGpu = []);
+        const P = window.GPUDevice && GPUDevice.prototype;
+        if (!P) return;
+        for (const [m, art] of [["createRenderPipeline", "sync"], ["createRenderPipelineAsync", "async"], ["createComputePipeline", "sync"]]) {
+            const o = P[m];
+            P[m] = function (d) {
+                A.push([Math.round(performance.now()), art, String((d && d.label) || "?").replace(/^renderPipeline_/, "")]);
+                return o.call(this, d);
+            };
+        }
+    }
+    const laengsteVon = (vor, aufgaben, gpu) => {
+        const x = vor.reduce((m, y) => (y[1] > m[1] ? y : m), [0, 0]);
+        if (!x[1]) return null;
+        const auf = aufgaben.find((y) => y.t === Math.round(x[0]));
+        const sync = gpu.filter((g) => g[1] === "sync" && g[0] >= x[0] - 1000 && g[0] <= x[0] + x[1]).map((g) => g[2]);
+        return (x[1] + " ms bei " + (x[0] / 1000).toFixed(1) + " s: " + (auf ? auf.halter.slice(0, 3).map((h) => h.name + " " + h.ms).join(" · ") : "ohne Halter") +
+            " · " + sync.length + " Pipelines synchron" + (sync.length ? " (" + sync.slice(0, 5).join(", ") + (sync.length > 5 ? ", …" : "") + ")" : "")).slice(0, 300);
+    };
     const K = H.linse("scripts/diag-boot-stage.cjs", ["KALT_PROBE", "KALT_KLASSEN", "KALT_PFLANZEN"]);
     const HL = require(H.path.resolve("scripts/lib/haenger-linse.cjs"));
     const spur = { stand: "kein Kalt-Boot" };
@@ -1029,7 +1053,7 @@ async function probeAnkunftKalt(H) {
         if (!L || L.kontrolle != null) return;
         try {
             L.kontrolle = await L.page.evaluate(() => performance.now());
-            L.seite = await L.page.evaluate(() => ({ lang: (window.__kalt || {}).lang || [], marken: (window.__kalt || {}).marken || [] }));
+            L.seite = await L.page.evaluate(() => ({ lang: (window.__kalt || {}).lang || [], marken: (window.__kalt || {}).marken || [], gpu: window.__kaltGpu || [] }));
             await L.cdp.send("Tracing.end");
             L.ende = true;
         } catch (e) {
@@ -1067,6 +1091,7 @@ async function probeAnkunftKalt(H) {
                 langeN: vor.length,
                 langeMs: vor.reduce((s, x) => s + Math.min(x[1], L.kontrolle - x[0]), 0),
                 halter: a.befunde.slice(0, 3).map((x) => String(x).slice(0, 160)),
+                laengste: laengsteVon(vor, a.aufgaben, L.seite.gpu),
             });
         } catch (e) {
             spur.stand = "die Spur brach: " + String(e.message).slice(0, 160);
@@ -1082,7 +1107,7 @@ async function probeAnkunftKalt(H) {
         if (!o.kalt || spur.stand !== "kein Kalt-Boot") return lade(page, o);
         spur.stand = "läuft";
         // nur in der Welt (nie in about:blank, das die kalte Ladung zuerst betritt): ihre Marken tragen den Faden der Spur
-        const skript = await page.evaluateOnNewDocument('if (/^https?:/.test(location.protocol)) (' + String(K.KALT_PROBE) + ")();");
+        const skript = await page.evaluateOnNewDocument('if (/^https?:/.test(location.protocol)) { (' + String(K.KALT_PROBE) + ")(); (" + String(gpuHaken) + ")(); }");
         const cdp = await page.target().createCDPSession();
         const ev = [];
         cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
@@ -2849,13 +2874,14 @@ module.exports = [
                 zahl:
                     "längste Aufgabe " + s.laengsteMs + " ms (Soll ≤ 250) · Haupt-Faden belegt " + (s.belegtMs / 1000).toFixed(2) + " s bis zur Kontrolle (Soll ≤ 4; " +
                     s.langeN + " LongTasks " + (s.langeMs / 1000).toFixed(2) + " s) · Kontrolle " + (s.kontrolleMs / 1000).toFixed(2) + " s Seiten-Uhr" +
-                    (s.halter && s.halter.length ? " · " + s.halter[0] : "") + " · " + ad,
+                    (s.laengste ? " · die längste: " + s.laengste : s.halter && s.halter.length ? " · " + s.halter[0] : "") + " · " + ad,
             };
         },
         proben: [
             { name: "längste 180 ms, belegt 3,1 s", stdout: kaltRoh({}), gruen: true },
             { name: "die Arbeit in 49-ms-Stücken: keine LongTask, belegt 4,6 s", stdout: kaltRoh({ j: { tK: 6200, spur: { kontrolleMs: 6100, laengsteMs: 0, langeN: 0, langeMs: 0, belegtMs: 4600 } } }), gruen: false },
             { name: "eine Aufgabe 653 ms", stdout: kaltRoh({ j: { spur: { laengsteMs: 653 } } }), gruen: false },
+            { name: "eine Aufgabe 1253 ms beim Namen (9 Pipelines synchron)", stdout: kaltRoh({ j: { spur: { laengsteMs: 1253, laengste: "1253 ms bei 2.9 s: (ohne Probe) 640 · 9 Pipelines synchron (atmo-durchlass_17, …)" } } }), gruen: false },
             { name: "die Spur ist blind", stdout: kaltRoh({ j: { spur: { stand: "blind: keine Stichproben auf den Marken der Kalt-Probe", belegtMs: null } } }), gruen: false },
         ],
         pfad: ANKUNFT_KALT_PFAD,
