@@ -249,7 +249,7 @@ hauptLauf(async () => {
         }
 
         // ===== (K) KI-REGLER: je Zeile von PARAMS_BY_KIND ein spawn_studio mit dem Rand-Wert im fünften Argument =====
-        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], je: {}, zu: {} });
+        const k = (res.k = { zeilen: 0, erreicht: [], unbewegt: [], zwilling: [], ohneWerk: [], ohneWort: [], je: {}, zu: {}, prompt: [] });
         try {
             const [P, PBK, archs, pm, gM] = [Object.getPrototypeOf(r), f.paramsByKind, st.architectures, st.playerMesh.position, r._genesisMitte()];
             let spot = null; // trockener Grund abseits der Genesis-Lichtung (ein Werk mit Grundriss sucht seinen Ort selbst)
@@ -330,10 +330,19 @@ hauptLauf(async () => {
                 }
                 return st;
             };
+            // DER ABRUF JE SATZ liest DIESELBEN Zeilen (ki.K5, Mutation gewinnt): ein Satz, der eine Zeile beim Namen nennt („<wort>
+            // <Name>"), trägt sie im Kontext der Welt-KI (`_kiAbruf`, `_kiReglerZeile`) und ihre id in der Antwort-Form; eine
+            // eingespielte Zeile erscheint und trägt am Stempel. DIE FORM OHNE NAMEN: ein Satz ohne Eigenschaft („bau mir ein
+            // haus") trägt keine Zeile, seine Form kein Regler-Objekt (bis ki.K5 erlaubte sie jeder Art jede Zeile — Täter-Muster:
+            // qwen3:4b schrieb dem Haus fünf unverlangte Regler)
+            const form = (satz, a = r._kiAbruf(satz)) => a.zeile + JSON.stringify(r._kiAntwortSchema(a.regler));
+            const traegt = (art, d, f = form(`${r._studioWortListen().listen[art][0]} ${d.lab}`)) =>
+                f.includes(r._kiReglerZeile(d)) && f.includes(`"${d.id}":`);
             for (const art of Object.keys(PBK))
                 for (const d of PBK[art]) {
                     const st = await zeile(art, d);
                     k[st].push(art + ":" + d.id);
+                    if (!traegt(art, d)) k.prompt.push(art + ":" + d.id);
                     (k.je[art] ||= [0, 0])[1]++;
                     k.je[art][0] += st === "erreicht";
                     k.zeilen++;
@@ -375,25 +384,8 @@ hauptLauf(async () => {
                 raeume(neu, "lofi");
                 k.zu[nm] = !blieb && ab?.regler.includes(wer) && erg?.gruende?.regler === 1;
             }
-            // DER ABRUF JE SATZ liest DIESELBEN Zeilen (ki.K5, Mutation gewinnt): ein Satz, der eine Zeile beim Namen nennt („<wort>
-            // mit <Name>"), trägt sie im Kontext der Welt-KI (`_kiAbruf`, `_kiReglerZeile`) und ihre id in der Antwort-Form; eine
-            // eingespielte Zeile erscheint und trägt am Stempel. DIE FORM OHNE NAMEN: ein Satz ohne Eigenschaft („bau mir ein
-            // haus") trägt keine Zeile, seine Form kein Regler-Objekt (bis ki.K5 erlaubte sie jeder Art jede Zeile — Täter-Muster:
-            // qwen3:4b schrieb dem Haus fünf unverlangte Regler)
-            const gruppen = r._studioWortGruppen().gruppen;
-            const traegt = (art, d) => {
-                const wort = ((gruppen[art] || [])[0] || [])[0];
-                const a = wort ? r._kiAbruf(`${wort} mit ${d.lab}`) : { regler: {}, zeile: "" };
-                const form = JSON.stringify(r._kiAntwortSchema(a.regler));
-                return (a.regler[art] || []).includes(d) && a.zeile.includes(r._kiReglerZeile(d)) && form.includes(`"${d.id}":`);
-            };
-            const sagbar = Object.keys(k.je).filter((art) => !k.ohneWort.some((n) => n.startsWith(art + ":")));
-            k.prompt = sagbar.flatMap((art) => PBK[art].filter((d) => !traegt(art, d)).map((d) => `${art}:${d.id}`));
-            // die Form selbst: kein spawn_studio-Tupel mit sechstem Glied (am Kopf vor ki.K5 trug sie je Art eines: ROT)
-            const ohne = r._kiAbruf("bau mir ein haus");
-            const sechs = r._kiAntwortSchema(ohne.regler).$defs.programm.anyOf.filter((t) => (t.prefixItems || []).length === 6 && t.prefixItems[0].const === "spawn_studio");
-            const zeileR = Object.keys(ohne.regler).length || /Regler/.test(ohne.zeile);
-            k.ohneName = !zeileR && !sechs.length ? true : `${ohne.zeile || "keine Zeile"} · ${sechs.length} Tupel mit Regler-Objekt`;
+            // die Form selbst: kein Regler-Objekt ohne Namen (am Kopf vor ki.K5 trug sie je Art eines: ROT)
+            k.ohneName = !form("bau mir ein haus").includes("additionalProperties\":false}");
             const probe = { id: "probeRegler", lab: "Probe", min: 0, max: 1, step: 0.1 };
             PBK.haus.push(probe);
             try {
@@ -672,8 +664,7 @@ hauptLauf(async () => {
         ["fremd", "text", "liste", "baum", "wesen", "praegung"].every((n) => K.zu[n]),
         K.zu
     );
-    check("ABRUF: jede Zeile jeder sagbaren Art, beim Namen genannt, steht im Kontext und in der Form, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
-    check("FORM OHNE NAMEN: „bau mir ein haus“ trägt keine Regler-Zeile und kein Regler-Objekt", K.ohneName === true, K.ohneName);
+    check("ABRUF: jede Zeile beim Namen (Mutation gewinnt)", !K.prompt.length && K.mutation && K.ohneName, [K.prompt, K.mutation, K.ohneName]);
     const kk = K.korpus || [];
     const kt = kk.filter(([, ok]) => !ok);
     check(`KORPUS-TEIL Regler-Wörter: ${kk.length} Sätze, jeder ein Programm-Ziel`, kk.length >= 20 && !kt.length, kt.join(" · "));

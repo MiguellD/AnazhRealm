@@ -257,9 +257,15 @@ class AnazhRealm_dienst {
     // Batches, auch wenn der Ruf weicht: in einem Stück (450 Token, ~10 s an 4 CPU-Kernen) wartete ein Satz, der dazwischen kam,
     // den Rest ab (ki.K5: „mach mir eine feuerstelle" 8,5 s). Spricht der Spieler, endet das Wärmen nach dem laufenden Happen;
     // was es rechnete, bleibt im Cache.
-    _kiVorwaermenPlanen() {
-        clearTimeout(this._kiWarmUhr);
-        this._kiWarmUhr = setTimeout(() => this._kiVorwaermen(), AnazhRealm.KI_RUHE_S * 1000);
+    // die Regung (ein Satz, ein Eintrag ins Tagebuch) merkt nur ihre Zeit; die Ruhe prüft der Takt der Welt (`_kiRuhe`, nach
+    // `journalTick`) — kein Timer: ein Timer, der das Wärmen ruft, dessen Ruf ins Tagebuch schreibt, wäre ein Zeit-Kreis (W7)
+    _kiRegung() {
+        this._kiRegungT = performance.now() / 1000;
+    }
+    _kiRuhe() {
+        if (!this._kiRegungT || performance.now() / 1000 - this._kiRegungT < AnazhRealm.KI_RUHE_S) return;
+        this._kiRegungT = 0;
+        this._kiVorwaermen();
     }
     async _kiVorwaermen() {
         const llm = this.state.llm;
@@ -394,7 +400,7 @@ class AnazhRealm_dienst {
             if (ctx && typeof ctx === "object") entry.ctx = ctx;
             j.entries.push(entry);
             if (j.entries.length > (j.entryCap || 200)) j.entries = j.entries.slice(-j.entryCap);
-            this._kiVorwaermenPlanen();
+            this._kiRegung();
             return;
         }
         if (typeof zeile !== "string" || zeile.length === 0) return;
@@ -407,7 +413,7 @@ class AnazhRealm_dienst {
         if (j.entries.length > (j.entryCap || 200)) {
             j.entries = j.entries.slice(-j.entryCap);
         }
-        this._kiVorwaermenPlanen();
+        this._kiRegung();
     }
 
     // die Zeile einer Erinnerung: `t` ist die EINE Quelle, `text` ihre Lesart in der Quell-Sprache (de) — nie gespeichert

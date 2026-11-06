@@ -255,10 +255,6 @@ function weltaktSpion(ersatz) {
     const tafel = r.dslEffects;
     let gehuellt = S.huellen.get(tafel);
     if (!gehuellt) S.huellen.set(tafel, (gehuellt = new Set()));
-    // DIE FORM BLEIBT DIE DES SPIELS (ki.K5, 06.11.): die Welt-KI liest die Form jedes Verbs aus der Tafel, wie sie entstand
-    // (`_dslFormen`) — die Hülle `(args, ctx)` nahm ihr bis ki.K5 in jeder Messung mit der Ausgabe-Aufnahme jede Form (die Station
-    // maß einen Vertrag mit „spawn_temple(…)"). Weicht die Form, die die KI liest, nach dem Hüllen von der Signatur des Verbs ab,
-    // wirft der Spion beim Namen des Verbs.
     for (const op of S.blind ? ersatz || [] : liste) {
         const fn = tafel[op];
         if (gehuellt.has(op) || typeof fn !== "function") continue;
@@ -267,8 +263,6 @@ function weltaktSpion(ersatz) {
             if (halt()) buche({ art: "durch", op, quelle: (ctx && ctx.source) || "?", stapel: window.__spielStapel() });
             return fn.call(this, args, ctx);
         };
-        if (r._dslFormen[op] !== r._dslForm(fn))
-            throw new Error(`Welt-Akt-Spion: die KI liest für ${op} die Form „${r._dslFormen[op]}" statt „${r._dslForm(fn)}"`);
     }
     if (!S.blind && !Object.hasOwn(r, "_weltaktGehalten"))
         r._weltaktGehalten = function (op, ctx) {

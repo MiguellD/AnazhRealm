@@ -1467,8 +1467,8 @@ class AnazhRealm_feld_nexus {
         // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
         const tat = (program) => this.dslRun(program, { source: "llm:grok", grund: userText });
         const reply = await this.llmCall(userText, null, { tat });
-        // nach dem Satz: die Ruhe der KI beginnt (`_kiVorwaermenPlanen`) — der Satz, nie die Tür (`llmCall`), plant das Wärmen
-        this._kiVorwaermenPlanen();
+        // nach dem Satz: die Ruhe der KI beginnt (`_kiRegung`) — der Satz, nie die Tür (`llmCall`), regt das Wärmen an
+        this._kiRegung();
         if (reply.error) {
             appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
