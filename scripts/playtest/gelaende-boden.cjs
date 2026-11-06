@@ -3,7 +3,7 @@
 // 14 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Abenteuer graduiert: `explore` feuert nicht flach je Chunk-Wechsel, die Magnitude emergiert aus
 // Neuheit (visitedRegions) + Distanz vom Ursprung + Kühnheit (karge/glut-Aura via auraAt);
@@ -305,7 +305,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         return out;
     });
 
-    if (voxelP1Results && !voxelP1Results.error) {
+    if (erreichbar(check, "Voxel-Terrain: Dichte-Feld + Surface Nets — Tests laufen", voxelP1Results)) {
         check("Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)", voxelP1Results.densityIs3D);
         check("Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)", voxelP1Results.densityCanCave);
         check(
@@ -582,7 +582,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         return out;
     });
 
-    if (voxelP2bResults && !voxelP2bResults.error) {
+    if (erreichbar(check, "Voxel-Terrain P2b: der Voxel-Chunk-Ring — Tests laufen", voxelP2bResults)) {
         check(
             "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
             voxelP2bResults.activated && voxelP2bResults.ringFilled
@@ -686,7 +686,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         return out;
     });
 
-    if (voxelV935ToggleResults && !voxelV935ToggleResults.error) {
+    if (erreichbar(check, "Voxel permanent (kein Toggle) — Tests laufen", voxelV935ToggleResults)) {
         check(
             "Voxel V9.35: voxelTerrainActive ist permanent true (Default + nie umschaltbar)",
             voxelV935ToggleResults.voxelPermanent
@@ -743,7 +743,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         return out;
     });
 
-    if (voxelP5c1Results && !voxelP5c1Results.error) {
+    if (erreichbar(check, "Voxel-Welt ohne Heightfield — Tests laufen", voxelP5c1Results)) {
         check(
             "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
             voxelP5c1Results.voxelChunkMapEmpty
@@ -776,7 +776,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         };
     });
 
-    if (voxelV939Results && !voxelV939Results.error) {
+    if (erreichbar(check, "Voxel: Lösch-Beweise der Heightfield-Pipeline — Tests laufen", voxelV939Results)) {
         check("Voxel V9.39: populateChunkVegetation ist gelöscht", voxelV939Results.noPopulateChunkVegetation);
         check(
             "Voxel V9.39: state.terrainMaterial wird nicht mehr gesetzt (null nach Welt-Aufbau)",
@@ -2502,7 +2502,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
         if (selftest) o.dAus = pauseLauf(true);
         return o;
     }, true);
-    if (!out || out.error) return check("Bewegung unter Last: die Bühne steht (Land für NAH und FERN)", false, out ? out.error : "keine Antwort der Seite");
+    if (!erreichbar(check, "Bewegung unter Last: die Bühne steht (Land für NAH und FERN)", out, "keine Antwort der Seite")) return;
     const { a, b, d, pinned: p, dAus: da } = out;
     check(`Bewegung unter Last (a): > 1 m über 60 schwere Ticks (${a.movedXZ.toFixed(2)} m), die Last war ECHT (_frameOverBudget stand)`, a.movedXZ > 1.0 && a.overBudgetSeen === true);
     check(

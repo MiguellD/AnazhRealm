@@ -1334,7 +1334,7 @@ const ZWILLINGE = [
         gesetzbuch: "scripts/lib/kronen-linse.cjs",
         verboten: gelaendeLeser()
             .filter((d) => /^scripts\/(?!lib\/kronen|diag-pflanzen)/.test(d))
-            .concat(baender(true)),
+            .concat(baender()),
         fiel: "Decke w3w-studios — das Dreiecks-Raster wohnt in kronen-linse",
     },
     // DECKE w3w-studios — die Erreichbarkeit einer Probe: der Wurf trägt sich selbst (safeEvaluate → WUERFE), Fehler und Wurf liest
@@ -1379,14 +1379,10 @@ function gelaendeLeser() {
             .map((f) => d + "/" + f);
     return wurzel.concat(skripte("scripts"), skripte("scripts/lib"), skripte("worlds/gelaende"));
 }
-// die Bänder des Läufers; ohne `mitRest` ohne die sieben der Karte spike-ci-konsum (sie zieht die Erreichbarkeit dort selbst,
-// 759c0e1b · dc6fc0b3 — bis sie landet, der Rest der Wände)
-function baender(mitRest) {
-    const rest = /^(bild|gelaende-boden|kreatur|netz-portal|siedlung|studio|vegetation)\./;
-    return fs
-        .readdirSync(path.join(__dirname, "playtest"))
-        .filter((f) => mitRest || !rest.test(f))
-        .map((f) => "scripts/playtest/" + f);
+// die Bänder des Läufers — alle (w13-kreatur-blick: die sieben, die die Karte spike-ci-konsum ziehen sollte, lesen die
+// Erreichbarkeit über `erreichbar`; die Rest-Liste fiel)
+function baender() {
+    return fs.readdirSync(path.join(__dirname, "playtest")).map((f) => "scripts/playtest/" + f);
 }
 
 // `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
