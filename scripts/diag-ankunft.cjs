@@ -10,7 +10,7 @@
 //       bis zum Bild wünscht jedes Ding seine billigste ganze Stufe (Baum Karte, Bau Grobstufe), danach verfeinert es.
 //   LH  WAS DAS BILD NICHT LIEST (w4-ankunft-2) — vor dem ersten Weltbild wächst kein Skelett einer Baum-Hülle (die Kollision,
 //       `_baumGestaltTeile`): sie wartet beim Namen (`_huellenNach`, `_weltOffen().huellen`) und kommt nach dem Bild
-//       (`_tickHuellenNach`); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
+//       (`_tickHuellenNach`), höchstens EIN Skelett je Takt (die Uhr der Skelette, w16-haenger); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -372,13 +372,14 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
-// m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach] · m.r = [hinten ohne Leerlauf, vorn,
+// m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach, Skelette in einem Takt danach] · m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
-    const [[wuchs, offen, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const [[wuchs, offen, boxen, rest, takt], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
+        takt !== 1 && "nach dem Bild nicht EIN Skelett je Takt (`_baumGestaltTeile`)",
         !offen && "die wartende Hülle steht nicht offen (`_weltOffen`)",
         (!boxen || rest) && "nach dem Bild fehlt die Hülle (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
@@ -912,6 +913,12 @@ async function probe(arg) {
         st._weltbildDa = da;
         for (let n = 0; n < 400 && r._weltOffen().huellen; n++) r._tickHuellenNach();
         m.h.push(baum.blockerAABBs.length, r._weltOffen().huellen);
+        // DIE UHR DER SKELETTE (w16-haenger): nach dem Bild, im laufenden Spiel, fühlen zwei Bäume verschiedener Art ihre Hülle im
+        // selben Takt — es wächst EIN Skelett (das Gedächtnis zählt sie), der andere wartet in der Hüllen-Schlange
+        [r._baumGestaltMerk, r._loopRuht, r._skelettTakt] = [new Map(), () => false, -1];
+        [baum, st.architectures.find((e) => e && e._huelleG != null && e.type !== baum.type)].forEach((e) => r._populateBlockerAABBs(e));
+        m.h.push(r._baumGestaltMerk.size);
+        delete r._loopRuht;
         r._baumGestaltMerk = merk;
         const stuecke = [[], []];
         st._weltbildDa = 0;
@@ -1920,7 +1927,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 1, 3, 0, 1], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0, 1] }, "die Hülle wuchs vor dem Bild"], ["zwei Skelette in einem Takt", { h: [0, 1, 3, 0, 2] }, "nach dem Bild nicht EIN Skelett je Takt"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",

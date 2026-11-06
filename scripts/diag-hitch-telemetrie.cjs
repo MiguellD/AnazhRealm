@@ -13,7 +13,7 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, seiteZu } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
@@ -913,14 +913,7 @@ hauptLauf(async () => {
         });
     }
 
-    await browser.close();
-    server.close();
-
-    console.log("\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====");
-    if (!out || out.fatal) {
-        console.log("FATAL:", out ? out.fatal : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out, "\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====", "fatal");
     console.log(
         `Renderer: ${out.rendererArt} · frames=${out.frames} (Δ Laufzeit ${out.framesDelta})` +
             ` · performance.memory=${out.gc.memoryApi ? "da" : "FEHLT"}`
