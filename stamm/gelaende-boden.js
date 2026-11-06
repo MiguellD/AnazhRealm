@@ -907,11 +907,15 @@ class AnazhRealm_gelaende_boden {
                 if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
-        this._forestDartsFallen(x0, z0, x1, z1);
+        const waldFall = this._forestDartsFallen(x0, z0, x1, z1);
         // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`) — als
         // Änderung (`delta`, voxel-worker `applyStateDelta`), nie als Klon der Welt je Haus (Gebot 7; stadt-erwachen: im Zug
-        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt)
-        this._voxelZustandPost({ type: "state-update", delta: delta || { erdbau: this._erdbauRoh() } });
+        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt); mit ihm der Kasten der Wald-Zellen,
+        // deren geborene Darts er fällt (`waldFall`, w14-strom-tempo) — im selben Zustand, nie davor
+        this._voxelZustandPost({
+            type: "state-update",
+            delta: Object.assign({ waldFall }, delta || { erdbau: this._erdbauRoh() }),
+        });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
@@ -2779,6 +2783,7 @@ class AnazhRealm_gelaende_boden {
         if (wmU && wmU.erdbau) {
             delete wmU.erdbau;
             this._erdbauStand = (this._erdbauStand || 0) + 1;
+            this._erdbauGanz = (this._erdbauGanz || 0) + 1; // ein Erdbau ohne Kasten: der Stand des Walds wechselt (`_waldStandSchluessel`)
         }
         // DIE GRUBEN ZIEHEN MIT, vor den Bauten (die auf dem gegrabenen Grund stehen): der Hieb traf den alten Boden, die oberste
         // Grube (die unterste Schüttung) einer Säule lag an ihm. Jeder Edit steht danach in seiner Lage zu ihr auf dem Gesetz

@@ -1494,9 +1494,9 @@ class AnazhRealm_studio_bruecke {
     }
     // DER TEMPO-VEKTOR DER BAHN (EIN Ruf je Bild, der Takt `_runFrameScheduler`): der Weg des Spielers je Sekunde der Spiel-Uhr
     // (`state.spielZeit`, der gedeckelte Takt jeder Bewegung — nie die Wanduhr: eine Linse, die Takte dicht fährt, sähe sonst ein
-    // Tempo, das der Spieler nie hat), geglättet mit der Zeit-Konstante BEDARF.tauS. Ein Schritt schneller als BEDARF.tempoMax
-    // (Teleport, Tor, ein Sprung des Stands) oder eine Lücke über 1 s setzt ihn auf 0 — die Bahn beginnt neu, nie ein Tempo aus
-    // dem Sprung.
+    // Tempo, das der Spieler nie hat), geglättet mit der Zeit-Konstante BEDARF.tauS. Ein Schritt schneller als ein Sprung
+    // (`_bedarfSprung`: Teleport, Tor, ein Sprung des Stands) oder eine Lücke über 1 s setzt ihn auf 0 — die Bahn beginnt neu,
+    // nie ein Tempo aus dem Sprung.
     _bedarfTakt() {
         const e = this.state.playerMesh && this.state.playerMesh.position;
         if (!e) return;
@@ -1509,7 +1509,7 @@ class AnazhRealm_studio_bruecke {
             if (dx || dz) [B.x, B.z, B.vx, B.vz] = [e.x, e.z, 0, 0]; // gestellt ohne Takt: ein Sprung
             return;
         }
-        if (dt > 1 || Math.hypot(dx, dz) > AnazhRealm.BEDARF.tempoMax * dt) {
+        if (dt > 1 || Math.hypot(dx, dz) > this._bedarfSprung() * dt) {
             B.vx = B.vz = 0;
         } else {
             const k = 1 - Math.exp(-dt / AnazhRealm.BEDARF.tauS);
@@ -1517,6 +1517,26 @@ class AnazhRealm_studio_bruecke {
             B.vz += (dz / dt - B.vz) * k;
         }
         [B.x, B.z, B.t, B.wand] = [e.x, e.z, t, performance.now()];
+    }
+    // DAS TEMPO EINES SPRUNGS (m/s, w14-strom-tempo): schneller als das schnellste Fahr-Gesetz der Welt — die `vmax` jeder Art
+    // des Fahrzeug-Kerns (vehicle-core `exportDrive`, das Antriebs-Gesetz) mal BEDARF.sprungUeber — bewegt sich nichts; ein
+    // Schritt darüber ist ein Sprung. Gemerkt je Kern. Bis w14-strom-tempo stand hier eine Kopie (`tempoMax` 60 m/s, „über dem
+    // GT 16 m/s“): das Antriebs-Gesetz (w11-fahrzeug) hob den GT auf 63,8 m/s, jeder Schritt galt als Sprung, das Tempo der
+    // Bahn blieb 0 und mit ihm jeder Vorlauf (streaming.K2 Null-Renderer GT an main a4dc2a45: Boden 11,3 %, Bäume 5,2 %).
+    // Ohne Fahrzeug-Kern bricht es laut (der Kern ist Pflicht).
+    _bedarfSprung() {
+        const VC = globalThis.__vehicleCore;
+        if (this._bedarfSprungVon === VC) return this._bedarfSprungMs;
+        if (!VC || !VC.PRESETS || typeof VC.exportDrive !== "function" || typeof VC.presetPatch !== "function")
+            return AnazhRealm._kernPflichtBruch("vehicle:exportDrive");
+        let v = 0;
+        for (const id of Object.keys(VC.PRESETS))
+            if (VC.PRESETS[id] && VC.PRESETS[id].kind === "vehicle")
+                v = Math.max(v, VC.exportDrive(VC.presetPatch(id)).vmax);
+        if (!(v > 0)) return AnazhRealm._kernPflichtBruch("vehicle:vmax");
+        this._bedarfSprungVon = VC;
+        this._bedarfSprungMs = v * AnazhRealm.BEDARF.sprungUeber;
+        return this._bedarfSprungMs;
     }
     // DAS TEMPO DER BAHN [vx, vz] — nur, solange ein Takt es erneuert (`_bedarfTakt`, je Bild): ruht der Loop länger als
     // BEDARF.frischMs (eine Linse fährt den Strom von Hand, das Spiel steht), gilt es nicht mehr — ein stehengebliebenes Tempo
@@ -3770,13 +3790,20 @@ AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
 // die Bahn braucht (`_bedarfVoraus`). Die Kette eines Walds am Rand des Rings — der Chunk im Faden (0,15–0,4 s), seine Saat,
 // der Plan seiner Zellen im Wald-Faden, die Pflanzung, die Karte — braucht beim GT-Tempo mehr als 1,5 s (Null-Renderer: Karten
 // 81,7 % fertig beim Eintritt bei 1,5 s, 100 % bei 3 s); die Bahn legt in 3 s 48 m zurück, ihr Ring hält die Pflege
-// (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `tempoMax` (m/s) — ein Schritt
-// schneller ist ein Sprung (Teleport, Tor, ein gestellter Stand), kein Tempo — über jedem Fahr-Gesetz der Welt (der GT 16 m/s),
-// so reicht der Vorlauf höchstens 180 m; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
+// (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `sprungUeber` — ein Schritt
+// schneller als dieses Vielfache des schnellsten Fahr-Gesetzes (`_bedarfSprung`, vehicle-core `vmax`) ist ein Sprung
+// (Teleport, Tor, ein gestellter Stand), kein Tempo; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
 // `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
 // `vorbauS` (w13-dorf-strom): so viele Sekunden, bevor die Bahn ein Ding in seine Zone holt, bestellt sie seine Studio-Stufe
 // (`_archVorbau`, der Vorrat eines Orts `_dorfVorbacken`) — ein Bau wartete im GT bis 6,4 s auf die Foundry (Fahrt-Probe dorf)
-AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, vorbauS: 8, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
+AnazhRealm.BEDARF = Object.freeze({
+    vorlaufS: 3,
+    vorbauS: 8,
+    tauS: 0.3,
+    sprungUeber: 1.5,
+    fahrtAb: 1.05,
+    frischMs: 500,
+});
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind

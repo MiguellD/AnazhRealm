@@ -289,6 +289,7 @@ class AnazhRealm_gelaende_chunks {
                 geoSchutt: AnazhRealm.TERRAIN_GEOLOGY.schutt,
                 felsMittel: AnazhRealm.FELS_STOFF.mittel,
                 memo: AnazhRealm.FERN_FARBE.memo,
+                geboren: AnazhRealm.WALD_PLAN.geboren, // die Schranke der geborenen Darts (`_waldGeborenRaum`)
             },
         };
         // DIE REGIONEN reisen nie im Stand: jeder Faden rechnet sie selbst an derselben Stelle seiner Reihe (`_hydroBestellen`),

@@ -993,13 +993,38 @@ waldTakt.port1.onmessage = () => {
 // nächsten. Gepackt per Transfer: je Dart WALD_FELDER Zahlen, die Art als Index in `arten`; der Main legt sie ins
 // Dart-Gedächtnis seines Stands (`_waldDartsAn`) und urteilt keinen Dart mehr (bis w4-b-pflanzen reisten alle geborenen,
 // headless kalt bis zum Bild 58 562, von denen der Haupt-Faden jeden selbst urteilte).
+// Ein Erdbau mit Kasten fällt nur die Zellen seines Kastens (`waldFaellt`), voll fallen die ältesten (`geborenRaum`); bis
+// w14-strom-tempo legte jeder Erdbau (ein neuer Stand) und jedes volle Gedächtnis den Bestand ganz neu an.
 let waldGeboren = { stand: null, karte: new Map() };
+// Der Kasten [ga, gb, ha, hb] der Wald-Zellen, deren geborene Darts ein Erdbau fällt (`_forestDartsFallen` des Mains): beide
+// Gedächtnisse verlieren sie (der Wald-Faden je "cx,cz", die Kamm-Krone je cx · 2^20 + cz).
+function waldFaellt(k) {
+    const [ga, gb, ha, hb] = k;
+    for (let gx = ga; gx <= gb; gx++)
+        for (let gz = ha; gz <= hb; gz++) {
+            waldGeboren.karte.delete(gx + "," + gz);
+            kammGeboren.karte.delete(gx * 1048576 + gz);
+        }
+}
+// DIE SCHRANKE DER GEBORENEN (Mirror `AnazhRealm._waldGeborenRaum`): über `cap` fallen die ältesten bis auf drei Viertel.
+function geborenRaum(karte, cap) {
+    if (karte.size <= cap) return 0;
+    const weg = karte.size - ((cap * 3) >> 2);
+    let n = 0;
+    for (const k of karte.keys()) {
+        if (n >= weg) break;
+        karte.delete(k);
+        n++;
+    }
+    return n;
+}
 function waldDarts(msg) {
     const z = msg.zellen;
     const n = (z.length / 2) | 0;
     const ctx = waldCtx(msg);
-    if (msg.stand == null || waldGeboren.stand !== msg.stand || waldGeboren.karte.size > 16384)
+    if (msg.stand == null || waldGeboren.stand !== msg.stand)
         waldGeboren = { stand: msg.stand == null ? null : msg.stand, karte: new Map() };
+    geborenRaum(waldGeboren.karte, fernK().geboren);
     const K = waldGeboren.karte;
     const geboren = (cx, cz) => {
         const k = cx + "," + cz;
@@ -1249,6 +1274,10 @@ function applyStateDelta(delta) {
         state.voxelEdits.push(delta.voxelEditAppend);
         return;
     }
+    // DER WALD FÄLLT IM KASTEN (w14-strom-tempo, `_forestDartsFallen`): mit dem Erdbau, der ihn wirft, verlieren die
+    // Gedächtnisse der geborenen Darts (`waldGeboren`, `kammGeboren`) die Zellen [ga, gb] × [ha, hb] — im selben Zustand, kein
+    // Wald-Takt dazwischen. Bis w14-strom-tempo trug der Stand des Mains den Erdbau, und jeder Ort warf beide ganz.
+    if (delta.waldFall) waldFaellt(delta.waldFall);
     // DER ERDBAU ALS ÄNDERUNG (stadt-erwachen, `_erdbauWirkt`): die Splats eines neuen Orts hängen an, die Stellen gefallener
     // (in der Reihe vor dem Fall) fallen — dieselbe Liste wie `_erdbauRoh` im Main, ohne ihren Klon je Haus
     if (delta.erdbauDazu || delta.erdbauOhne) {
