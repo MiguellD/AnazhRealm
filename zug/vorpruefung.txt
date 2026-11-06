@@ -73,3 +73,4 @@ w15-strom-takt a610a74b GRÜN (mit Nacharbeit) Eintritt Bäume 4,6 → 85,8 %, B
 06.11. 19:00 w16-wald-innen@68256659 offen: Deckung 0–2 m 0,051→0,291 GRÜN, Stämme 349/ha < 370; Kronen-Deckung jeder Pose ändert sich (dorf 0,17→0,50, stadt →0) → OMEN vp-0611h bestellt, landet nur mit Bild
 06.11. 19:00 w16-tor-durchgang@a6f8535f GRÜN (t 6,1→4,0 s, Luma min 0,043→0,382, Heimtor bleibt) → z266 (Kopf); tore.K1 ROT bis Vorrechnen
 06.11. 19:20 w13-buehne-lack-heim@0cab87e2 GRÜN (K6 Linux 3/3, Radeon portal-konformanz + garage-labor) → z266; S0-Täter = w15-pfuetze (Boden-WGSL 101 179 > 100 000)
+06.11. 18:15 w16-lade-atem@801a7c4d GRÜN Radeon-ABAB ×2: Kontrolle 12,4 → 9,8–10,1 s, Bild ganz; K5 belegt +1,4 s → z267
