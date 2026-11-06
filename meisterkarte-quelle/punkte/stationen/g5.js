@@ -1761,7 +1761,8 @@ async function leibK3Lauf() {
         let tMs = performance.now();
         let nr = 0;
         const bild = (keys, phase) => {
-            st.keys = Object.assign({}, keys);
+            // die Eingabe über die EINE Verb-Tafel (seit w12-menue liest kein Verb state.keys): W = vor, Shift = sprint (taucht ab)
+            Object.assign(st.verbTafel.gehalten, { vor: !!keys.w, sprint: !!keys.shift });
             tMs += MUSTER[nr++ % MUSTER.length];
             r._gameLoopTick(tMs);
             if (mut && phase === "tauchen" && B.filter((b) => b[1] === "tauchen").length === 30) {
@@ -1777,7 +1778,7 @@ async function leibK3Lauf() {
         for (let i = 0; i < 900 && (i < 60 || !tief()); i++) bild({ w: true }, "schwimmen");
         for (let i = 0; i < 240; i++) bild({ w: true, shift: true }, "tauchen");
         for (let i = 0; i < 120; i++) bild({}, "auftrieb");
-        st.keys = {};
+        Object.assign(st.verbTafel.gehalten, { vor: false, sprint: false });
         return B;
     };
     // je Phase die Lage, über alle Bilder nach dem Stand der Ruck von Leib und Kamera (max, wo, p95)
