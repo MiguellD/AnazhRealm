@@ -457,16 +457,81 @@ class AnazhRealm_gelaende_chunks {
     // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
     // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %). Das Gitter
     // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring.
+    // DAS GEDÄCHTNIS DER FERNE (tore.K1, der Durchgang): Ring und Feld sind reine Funktionen der Welt und ihres Auftrags — die
+    // Antwort des Fadens steht unter dem Abdruck des ganzen Auftrags (`_fernAbdruck`: jede Zahl der Bestellung) samt Welt,
+    // Edit-Stand und Schneegrenze (`_schneeGilt`, sie liest der Faden aus seinem Zustand; die Generation `memo` leert nur sein
+    // eigenes Gedächtnis der Farben und zählt nicht) am Wirt (`_fernGedaechtnis`, `WELT_GRENZE.wirt`) und überlebt den Wechsel.
+    // Kehrt der Spieler durch ein Tor in eine besuchte Welt zurück, bestellt der Horizont DENSELBEN Auftrag und hängt die
+    // gemerkte Antwort ein (derselbe Weg, `_fernRingEinhaengen`, `_feldPassMal`); der Ring nimmt den Anker, an dem die Welt ihn
+    // verließ (`anker`, innerhalb `reanchorDist`). Bis hier rechnete jede Rückkehr den Horizont neu: Radeon a6f8535f, der Ring
+    // 1,1 s und das Feld bis 2,9 s nach dem Wechsel — das Feld hielt als „der Horizont wird gemalt" das Bild.
     _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        return this._nebenAuftrag(
-            art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
-            Object.assign(
-                { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
-                msg
-            ),
-            transfer
+        const auftrag = Object.assign(
+            { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
+            msg
         );
+        const G = AnazhRealm.FERN_GEDAECHTNIS;
+        const wm = this.state.worldMeta;
+        if (!G.arten.includes(art) || !wm || !wm.worldId)
+            return this._nebenAuftrag(
+                art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
+                auftrag,
+                transfer
+            );
+        const M =
+            this._fernGedaechtnis || (this._fernGedaechtnis = { antworten: new Map(), anker: new Map(), bytes: 0 });
+        if (art === "ring") M.anker.set(wm.worldId, [msg.ax, msg.az]);
+        const ed = Array.isArray(wm.voxelEdits) ? wm.voxelEdits.length : 0;
+        const k = `${wm.worldId}|${ed}|${this._schneeGilt()}|${AnazhRealm._fernAbdruck(auftrag, "memo")}`;
+        const da = M.antworten.get(k);
+        if (da) {
+            M.antworten.delete(k); // die zuletzt gelesene bleibt am längsten
+            M.antworten.set(k, da);
+            return Promise.resolve(da.a);
+        }
+        return this._nebenAuftrag(art === "feld" ? "feld" : "fern", auftrag, transfer).then((a) => {
+            let n = 0;
+            for (const v of Object.values(a)) if (ArrayBuffer.isView(v)) n += v.byteLength;
+            M.antworten.set(k, { a, n });
+            M.bytes += n;
+            for (const [alt, x] of M.antworten) {
+                if (M.bytes <= G.bytes) break;
+                M.antworten.delete(alt);
+                M.bytes -= x.n;
+            }
+            return a;
+        });
+    }
+    // Der Abdruck eines Auftrags der Ferne (`_fernAuftrag`): jede Zahl der Bestellung — die Felder in fester Folge, je Feld seine
+    // Bytes (Zahlen-Felder) oder sein JSON — in zwei 32-Bit-Hashes (cyrb53); `ohne` zählt nicht.
+    static _fernAbdruck(o, ohne) {
+        let h1 = 0xdeadbeef;
+        let h2 = 0x41c6ce57;
+        const mische = (x) => {
+            h1 = Math.imul(h1 ^ x, 2654435761);
+            h2 = Math.imul(h2 ^ x, 1597334677);
+        };
+        for (const k of Object.keys(o).sort()) {
+            if (k === ohne) continue;
+            const v = o[k];
+            for (let i = 0; i < k.length; i++) mische(k.charCodeAt(i));
+            if (ArrayBuffer.isView(v)) {
+                const b = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+                const w = b.byteLength >> 2;
+                const u = (v.byteOffset & 3) === 0 ? new Uint32Array(v.buffer, v.byteOffset, w) : null;
+                for (let i = 0; i < w; i++)
+                    mische(u ? u[i] : b[4 * i] | (b[4 * i + 1] << 8) | (b[4 * i + 2] << 16) | (b[4 * i + 3] << 24));
+                for (let i = w << 2; i < b.byteLength; i++) mische(b[i]);
+                mische(b.byteLength);
+            } else {
+                const s = JSON.stringify(v === undefined ? null : v);
+                for (let i = 0; i < s.length; i++) mische(s.charCodeAt(i));
+            }
+        }
+        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+        return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
     }
 
     // Wasser-Sheet off-thread: der 3×3-Zell-Block geht an den Worker — als Verweis auf seine eigenen Zellen, wo der Main sie
@@ -3043,6 +3108,9 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// DAS GEDÄCHTNIS DER FERNE (`_fernAuftrag`, tore.K1): die Arten der Ferne, deren Antwort es trägt (der Ring und das Feld — die
+// Lücke „horizont" des ersten Weltbilds), und seine Decke in Bytes (ein Ring ~2,6 MB, ein Feld 0,15 MB je Welt und Anker).
+AnazhRealm.FERN_GEDAECHTNIS = Object.freeze({ arten: Object.freeze(["ring", "feld"]), bytes: 32 * 1024 * 1024 });
 // DIE VORLÄUFIGE SÄULE (`_saeuleVorlaeufig`): so viele Ecken trägt ihr Rand — die Kante des Vielecks liegt bei r = 3,5 m höchstens
 // r · (1 − cos(π / 16)) = 7 cm innerhalb des Kreises, dessen Krone der Boden-Leser liest. Wirts-Auflösung.
 AnazhRealm.SAEULE_ECKEN = 16;

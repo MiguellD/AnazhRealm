@@ -199,6 +199,17 @@ class AnazhRealm_gelaende_fern {
         if (!st.scene || typeof THREE === "undefined" || !playerPos) return null;
         const F = AnazhRealm.FERN_RING;
         const cfg = this._voxelChunkConfig();
+        // DER ANKER: der Spieler QUANTISIERT (kein Höhen-Schwimmen) — in einer besuchten Welt der, an dem sie den Ring verließ,
+        // solange der Spieler in seiner Reichweite steht (`_fernAuftrag`, das Gedächtnis der Ferne: dieselbe Bestellung)
+        const wid = st.worldMeta && st.worldMeta.worldId;
+        const gemerkt = wid && this._fernGedaechtnis ? this._fernGedaechtnis.anker.get(wid) : null;
+        const anker =
+            gemerkt && Math.hypot(playerPos.x - gemerkt[0], playerPos.z - gemerkt[1]) <= F.reanchorDist
+                ? gemerkt
+                : [
+                      Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
+                      Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant,
+                  ];
         // Schale 1 beginnt AUSSERHALB des Ziel-Rings (nicht des Boot-Ramp-Ists — nie das nahe Terrain
         // durchschneiden): (target+0.5)·span + randPad. Das 24-m-Snap zieht Punkte ≤ ~17 m einwärts →
         // randPad 40.
@@ -277,12 +288,7 @@ class AnazhRealm_gelaende_fern {
         const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
         // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
-        const uAnker = TSL.uniform(
-            new THREE.Vector2(
-                Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
-                Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant
-            )
-        );
+        const uAnker = TSL.uniform(new THREE.Vector2(anker[0], anker[1]));
         // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
         // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
         this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
@@ -426,9 +432,8 @@ class AnazhRealm_gelaende_fern {
             },
             xzGen: 0, // wandert eine Ecke der Schale 0 (Anker), teilt sie neu
             schalen,
-            // der Anker folgt dem Spieler QUANTISIERT (kein Höhen-Schwimmen):
-            anchorX: Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
-            anchorZ: Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant,
+            anchorX: anker[0], // der Anker (oben)
+            anchorZ: anker[1],
             builtRing: targetRing, // Sicht-Regler-Wechsel → Neubau (Deck-Zone folgt)
             // Bis zu diesem Radius (Chunk-Ziel-Zone + Blende) tragen die Schale-0-Reihen das VOLLE Gesetz
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).

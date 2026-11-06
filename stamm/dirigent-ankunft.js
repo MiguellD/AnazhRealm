@@ -1315,7 +1315,7 @@ class AnazhRealm_dirigent_ankunft {
         const rd = this.state.renderer;
         const cv = rd && !rd._isHeadlessNull && this.state._weltbildDa ? rd.domElement : null;
         if (!cv || !(cv.width > 0)) return void zeige(false);
-        queueMicrotask(() => {
+        Promise.resolve().then(() => {
             let bild = el.querySelector("canvas.ladeschirm-bild");
             if (!bild) {
                 bild = document.createElement("canvas");
