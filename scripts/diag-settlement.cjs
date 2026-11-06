@@ -2176,7 +2176,7 @@ hauptLauf(async () => {
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
                 // bereitet sich vor, weil sie ihn binnen `bereitS` erreicht (`_bedarfZeit`); nH 13 (Selbsttest) steht still: dort
                 // ist es eine Strecke (nah + 200 m: der Ring der Sicht `vorlaufM` 160 m und 40 m)
-                if (nH !== 13) r._bedarf = { t: 0, vx: -16, vz: 0, wand: performance.now() };
+                if (nH - 13) r._bedarf = { t: 0, vx: -16, vz: 0, wand: performance.now() }; // nH 13: ohne Bahn
                 if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);

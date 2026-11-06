@@ -385,10 +385,10 @@ hauptLauf(async () => {
             const start = { x: pm.x, z: pm.z };
             const slots = JSON.stringify(e.instSlots);
             const d0 = dist(e);
-            // den Spieler radial vom Baum weg setzen, bis der Baum RMAX + 15 m entfernt steht
+            // den Spieler radial vom Baum weg setzen, bis der Baum 15 m hinter RMAX und dem Totband steht
             const ux = (pm.x - e.position.x) / d0,
                 uz = (pm.z - e.position.z) / d0;
-            const weg = RMAX + 15 - d0;
+            const weg = RMAX + TOT + 15 - d0; // das Totband jeder Zone des Culls (`CULL_TOTBAND_M`, w13-dorf-strom)
             let luecke = 0,
                 takte = 0;
             const folge = async (n) => {
