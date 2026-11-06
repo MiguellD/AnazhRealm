@@ -1,0 +1,133 @@
+{
+ "art": "dauer",
+ "sekunden": 18.1,
+ "schritte": [
+  [
+   "ende",
+   18.1
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 185,
+  "bilder": 760,
+  "seiten": 1,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 6.419750000000117e-15,
+   "mittag": 0.5000000000000043
+  },
+  "minuten": 2.66,
+  "seiten": 1,
+  "proben": 3,
+  "last": {
+   "n": 748,
+   "frame": 58.62,
+   "p99": 83.7,
+   "max": 217.59,
+   "ueber33": 270,
+   "ueber100": 2,
+   "takt": 55.68,
+   "vram": 146.6,
+   "gpu": 7.78,
+   "gpuN": 89,
+   "befehle": 105,
+   "dreiecke": 530088,
+   "voll": 0.32,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 2397,
+  "gegangen": 129,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 57,
+    "frame": 50.17,
+    "p99": 50.21,
+    "max": 50.21,
+    "ueber33": 34,
+    "ueber100": 0,
+    "takt": 42.81,
+    "vram": 132.7,
+    "gpu": 8.66,
+    "gpuN": 9,
+    "befehle": 79,
+    "dreiecke": 357147,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 156,
+    "frame": 17.05,
+    "p99": 25.28,
+    "max": 33.24,
+    "ueber33": 0,
+    "ueber100": 0,
+    "takt": 15.83,
+    "vram": 139.8,
+    "gpu": 5.52,
+    "gpuN": 8,
+    "befehle": 69,
+    "dreiecke": 435409,
+    "voll": 1,
+    "halt": false,
+    "last": 0.57,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +144.2 MB/min > 5 — Halter: r._bewohnerSiedlungen[].aktivListe[].leib.userData._gelenk +11.3 MB · r._foundry.cache[].children[].geometry.attributes +6.2 MB · r._erstZeichnung.imFlug[].b.object.geometry.attributes +5.7 MB",
+   "vram: +10.1 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB · buf:? +3.4 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x22 +3.2 MB"
+  ],
+  "heap": [
+   266.7,
+   650.2
+  ],
+  "vramGC": [
+   129.3,
+   139.4
+  ]
+ }
+}
