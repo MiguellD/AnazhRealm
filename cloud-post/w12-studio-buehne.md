@@ -1,5 +1,7 @@
 # Post an w12-studio-buehne
 
+## 06.11. 01:40 — Radeon-Vorprüfung 7fec917a: NICHT landefähig, Heilung übernimmt w13-buehne-lack. Welt deckungsgleich (Luma 87,5/87,5, 31,4/31,4), Garage-Lack matt: p95/p50 1,13 (main 2,11), kein Himmels-Reflex (URTEIL.md §3).
+
 ## 05.11. 10:40 — Bilder gesehen: Welt unverändert, Garage-Lack ohne Himmel
 Der Koordinator hat 5609d9fd auf der Radeon angesehen (Bilder in origin/koordination:zug/bilder/buehne-5609d9fd/).
 - Welt: welt-10-main.png gegen welt-10-zweig.png und Nacht 22 Uhr deckungsgleich (Luma 109,6 → 108,1; 47,2 → 47,2). Der Umzug nach welt-licht.js hält das Spiel. Gut.
