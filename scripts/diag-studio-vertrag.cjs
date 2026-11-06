@@ -607,10 +607,11 @@ function validateManifest(m, kern) {
             for (const st of [0, 1]) {
                 const z = B.tree[st];
                 if (!z) continue;
-                for (const f of ["lagen", "geruest", "blattKarte", "wedel"])
-                    if (!(f in z)) v.push(`B2c: lod.budget.tree[${st}].${f} fehlt (S3-Pflicht)`);
-                for (const f of ["nadelKarte"])
-                    if (f in z) v.push(`B2c: lod.budget.tree[${st}].${f} ist gefallen (S3: der Wedel)`);
+                // je Feld: Pflicht (1) oder gefallen (0) — Lagen und Laub-Kante der Krone stehen nur in tree[0] (w10-lod: die Laub-Krone
+                // der L1 ist die der L0, die Krone hat EIN Lagen-Maß), die Nadel-Karte fiel mit dem Wedel (S3)
+                const soll = { lagen: !st, geruest: 1, blattKarte: !st, wedel: 1, nadelKarte: 0 };
+                for (const f in soll)
+                    if (f in z !== !!soll[f]) v.push(`B2c: lod.budget.tree[${st}].${f} ${f in z ? "ist gefallen" : "fehlt"} (S3)`);
                 if (z.dichte && ("laub" in z.dichte || "nadel" in z.dichte))
                     v.push(`B2c: lod.budget.tree[${st}].dichte.laub/nadel ist gefallen (S3: die Lagen-Wahl)`);
             }
@@ -899,7 +900,7 @@ function validateManifest(m, kern) {
     // §0 — das Vertrags-Dokument selbst steht + trägt die sechs Blöcke.
     const docPath = path.join(root, "docs/studio-vertrag.md");
     const doc = fs.existsSync(docPath) ? ausDatei(docPath) : "";
-    check("Vertrag existiert (docs/studio-vertrag.md)", doc.length > 0);
+    check("Vertrag existiert (docs/studio-vertrag.md)", doc.length);
     check(
         "Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze",
         [
@@ -1466,7 +1467,7 @@ function validateManifest(m, kern) {
                     budget: {
                         tree: {
                             0: { tris: 100, draws: 1, schatten: 1, nadelKarte: 2, dichte: { laub: 0.4 } },
-                            1: { tris: 50, draws: 1, schatten: 1, wurf: { durchmesserM: 0.17 } },
+                            1: { tris: 50, draws: 1, schatten: 1, wurf: { durchmesserM: 0.17 }, lagen: 2 },
                             fernform: "gesetz",
                         },
                         rock: {
@@ -1496,13 +1497,14 @@ function validateManifest(m, kern) {
                 "tree[0].blattKarte fehlt",
                 "tree[0].wedel fehlt",
                 "tree[0].nadelKarte ist gefallen",
+                "tree[1].lagen ist gefallen",
                 "dichte.laub/nadel ist gefallen",
                 "tree[1].quote fehlt",
                 'wurf.teil "schatten" fehlt',
                 "rock ist [0]",
             ].every((t) => pflicht.some((s) => s.includes(t))) &&
-                falten.length > 0 &&
-                laub.length > 0,
+                falten.length &&
+                laub.length,
             `${pflicht.length} Zeilen-Befunde · Falten ${falten.length} · laub ${laub.length}`
         );
     }
