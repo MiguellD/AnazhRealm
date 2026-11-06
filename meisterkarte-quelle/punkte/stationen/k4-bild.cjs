@@ -272,18 +272,16 @@ const POSE_TEXT = (pose) => `const cosP = Math.cos(${pose.neigung}), blick = [co
 const rahmen = (bb) => { const R = bb.getSize(new T.Vector3()).length() / 2, c = bb.getCenter(new T.Vector3());
     const cam = new T.PerspectiveCamera(${pose.fov}, ${W} / ${HOEHE}, Math.min(0.1, R / 10), Math.max(200, 32 * R));
     return { R, c, dist: r._workshopRahmen({ rahmen: { box: bb, R }, camera: cam, orbit: { yaw: ${pose.gier}, pitch: ${pose.neigung} } }) }; };`;
-// DAS AUGE AN DER POSE: die Box des Eintrags aus seinen Blockern (die Instanz steht noch nicht), der Spieler am Fuß der Kamera, die
-// Welt taktet, bis das Werk als Instanz der Familie f: steht — das EINE Warten auf einen Bau (`__gebautNach`: der Takt der Seite,
-// der Deckel zählt nur Takte ohne Offenes und wirft beim Namen)
-const AUGE = (pose) => `const E = window.__k4Werk, K = r.constructor;
-${POSE_TEXT(pose)}
-const bb = new T.Box3();
-for (const b of E.blockerAABBs || []) bb.union(new T.Box3(new T.Vector3(b.minX, b.botY, b.minZ), new T.Vector3(b.maxX, b.topY, b.maxZ)));
-if (bb.isEmpty()) bb.setFromCenterAndSize(new T.Vector3(E.position.x, E.position.y + 1, E.position.z), new T.Vector3(2, 2, 2));
-const { c, dist } = rahmen(bb);
-const [fx, fz] = [c.x + blick[0] * dist, c.z + blick[2] * dist];
+// DAS AUGE AM WERK: die Box des Eintrags aus seinen Blockern (die Instanz steht noch nicht), das Auge der Stufen (der Spieler,
+// `_lodAuge`) AM Werk — die Welt zeichnet dort ihre L0, die Gestalt, die die Bühne zeigt; die Kamera steht an der Pose, `/bild`
+// verbirgt den Spieler. Die Welt taktet, bis das Werk als Instanz der Familie f: steht — das EINE Warten auf einen Bau (`__gebautNach`:
+// der Takt der Seite, der Deckel zählt nur Takte ohne Offenes und wirft beim Namen). Bis w16-studio-welt stand das Auge am Fuß der
+// Kamera: ein Haus in 28 m ist nach seinem Gesetzbuch L2 (ab 26 m; L1 ab 5,6 m) — die Welt zeigte ein anderes, schlichtes Haus ohne
+// Veranda gegen die L0 der Bühne (Radeon 7c70c478, fachwerk 97,5 %).
+const AUGE = () => `const E = window.__k4Werk, K = r.constructor;
+const [fx, fz] = [E.position.x, E.position.z];
 r.state.playerMesh.position.set(fx, r.getTerrainHeightAt(fx, fz) + K.PLAYER_FOOT_OFFSET, fz);
-// DIE STUFE AM ABSTAND (w16-studio-welt): das Werk steht, wenn die Welt seine Stufe am Auge der Pose bestätigt hat
+// DIE STUFE AM ABSTAND (w16-studio-welt): das Werk steht, wenn die Welt seine Stufe an ihrem Auge bestätigt hat
 // („_lodAmAbstand“, die Wahl am echten Abstand — „_archStufeUrteil“) und eine Instanz dieser Stufe trägt (die Stufe davor hält
 // ihren Slot, die Blende am Auge verbirgt sie). Bis hier zählte jede Instanz der Familie f: — die Stufe vom Ort des Setzens
 // (16–24 m: garage L1) stand sofort, 0 Takte.
@@ -456,7 +454,7 @@ H.fahre(async function k4Bild(H) {
             }
             // die Welt nach vorn: ihr Takt läuft am Bild (`__seitenTakt`), ein Tab dahinter zeichnet nie
             await weltSeite.bringToFront();
-            const auge = await welt(AUGE(POSE));
+            const auge = await welt(AUGE());
             const rahmen = await welt(RAHMEN(POSE));
             teil("welt");
             const datei = path.join(DIR, sid + "-welt.png");
