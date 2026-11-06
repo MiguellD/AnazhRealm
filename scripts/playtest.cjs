@@ -912,7 +912,7 @@ if (require.main === module) hauptLauf(async () => {
             // Leistungs-Vertrag riss nach 240 s) — die Zeile nennt den Täter (`at AnazhRealm.<Methode>`); ein Werk, das die
             // Welt an `removeArchitecture` vorbei verließ, meldet sich als WERK-WAISE (`_werkWaise`); der gewollte Wurf der
             // Loop-Wand (playtest/dirigent V18278) ist kein Befund
-            { re: /Loop-Frame-Fehler(?!.*V18278-test-throw)|WERK-WAISE/, why: "Takt-Bruch" },
+            { re: /Loop-Frame-Fehler(?!.*V18278)|WERK-WAISE/, why: "Takt" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));

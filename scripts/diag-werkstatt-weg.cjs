@@ -245,7 +245,7 @@ function pruefVerdict(m, b) {
     const rest = [...konsumTaeter(m.konsum), ...(z.length === 10 ? [] : [`${z.length} von 10 gesetzt`])];
     // der Takt des Gesetzes (Soll 2,0,1,0): [Bauten der Laube ohne Plan (Rest + Trümmer), der Waise, ihre WERK-WAISE-Meldungen,
     // Pläne des Gesetzes im Katalog]
-    if (m.takt + "" !== "2,0,1,0") rest.push("Takt " + m.takt);
+    if (m.takt + "" != "2,0,1,0") rest.push("Takt " + m.takt);
     return { statik: [...rest, ...statik], wirkung: WIRKUNGEN.filter((_, i) => !ok[i]), richtig: z.length - statik.length };
 }
 
@@ -921,14 +921,13 @@ async function probe(argW) {
         // `removeArchitecture` vorbei (sie bricht nie als Geist, meldet sich EINMAL als „WERK-WAISE"); die Pläne des Gesetzes
         // stehen nie im Katalog des Spielers (`_katalogSichtbar`). Ein Wurf im Takt fällt als Ausnahme der Probe.
         const um = (d) => st.architectures.filter((e) => /Laube|truemmer_/.test(e.type) && Math.hypot(e.position.x - frei.x - 9, e.position.z - frei.z - d) < 4);
-        [9, 18].forEach((d) => setze("Laube" + d, satz.einsturz.Laube, frei.x + 9, frei.z + d));
-        r._loadStateRestoreArchitectures(r.buildStateSnapshot(), false);
+        for (const d of [9, 18]) setze("Laube" + d, satz.einsturz.Laube, frei.x + 9, frei.z + d);
+        r._loadStateRestoreArchitectures(r.buildStateSnapshot());
         r.deleteBlueprint(um(9)[0].type);
-        const w = um(18)[0];
-        st.architectures = st.architectures.filter((e) => e !== w);
+        st.architectures = st.architectures.filter((e) => e != um(18)[0]);
         takte(3, 1 / 30);
         m.takt = [um(9).length, um(18).length, [...r._bruchBuch.keys()].join().split("Laube18").length - 1, Object.keys(st.blueprints).filter((n) => /truemmer_|_rest_/.test(n) && r._katalogSichtbar(n)).length];
-        um(9).forEach((e) => r.removeArchitecture(e));
+        for (const e of um(9)) r.removeArchitecture(e);
         for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
     });
     return out;
