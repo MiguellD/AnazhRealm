@@ -450,7 +450,8 @@ function png(u8, W, H) {
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
-const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
+// der Ordner des Bilds entsteht mit ihm (`licht --laub --ordner d` legte ihn nie an: der Lauf brach am ersten Bild ab)
+const pngDatei = (datei, url) => (fs.mkdirSync(path.dirname(datei), { recursive: true }), fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64")));
 // DER RAHMEN EINER BOX (`rahmen(b)`, in jeder Seite als `window.rahmen`, `WARTEN_SEITE`): ihre OBB, sonst die achsgleiche im
 // selben Maß wie `_boxAbstand2` (Mitte, Achsen c/s, Halb-Maße) — die Linsen der Blocker (kollision-bild, kreatur-leben, werk-im-wasser)
 const rahmen = (b) =>
