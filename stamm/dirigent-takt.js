@@ -1719,9 +1719,16 @@ class AnazhRealm_dirigent_takt {
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
                     // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
+                    // DER BODEN IM FADEN IST TERRAIN (w15-strom-takt, die Konkurrenz um den Takt): wartet ein Netz des Boden-Strom
+                    // im Fenster seines Fadens (`_frameBodenWartet`), arbeitet das Terrain — die Deko trägt dann ihren Boden wie im
+                    // Takt mit Terrain-Bau, nie das ganze Bild. Bis w15-strom-takt galt nur der Einbau als Terrain: im GT stand der
+                    // Strom fast jedes Bild am Fenster (BODEN_IM_FLUG), headless nahm sich die Deko jedes Bild ganz (die Nah-Wiese
+                    // 8,5 ms in den Bildern über p90, an main 1,2 ms).
                     const lade = this._ladeTakt();
                     const msDeko =
-                        st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                        (st._frameChunksBuilt || st._frameBodenWartet) && !lade
+                            ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
+                            : ms;
                     const _dl = !Number.isFinite(msDeko)
                         ? undefined
                         : lade
@@ -1840,6 +1847,7 @@ class AnazhRealm_dirigent_takt {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)

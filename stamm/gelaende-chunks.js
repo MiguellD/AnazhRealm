@@ -2652,6 +2652,7 @@ class AnazhRealm_gelaende_chunks {
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf oder seinen
         // Faden wartet; die Chunk-Menge regt die Welt selbst.
         this._standMeldet("strom", 1, false, built > 0 || draussen > 0 || wartet > 0);
+        this.state._frameBodenWartet = wartet > 0; // das Terrain arbeitet im Faden: die Deko trägt ihren Boden (scatterDeco)
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
