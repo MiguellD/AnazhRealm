@@ -1002,7 +1002,9 @@ Dials `s`) beim Namen.
 (der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
 K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
-den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
+den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, die Art des Gewässers
+`GEWAESSER_ART`/`gewaesserArt` (w13-bach-klar: see · bach · fluss nach der LAWA-Größenklasse, Bach < 100 km² Einzugsgebiet,
+über die Breite — sie wählt `WASSER_GESETZ.koerper` in Welt und Studio), der Mäander `MAEANDER`, das
 Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
 Temperatur `TEMPERATUR`/`temperatur` (stoffe.K3: Höhe × Saison × Uhr; das Feld in Wellen `temperaturFeld`, mit der Trägheit
 eines Körpers, ausgewertet von `temperaturAus` unter dem Wetter `WOLKE`, wetter.K4: die Wolke dämpft den Tagesgang, der Regen
