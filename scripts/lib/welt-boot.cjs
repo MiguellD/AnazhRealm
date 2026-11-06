@@ -106,8 +106,8 @@ async function seitenTakt() {
 }
 // DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
 // Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
-// Konstruktor liest: `_loadKeybindings`). Vorher die Schrift, ihre Größe und ihr Kasten (das HUD mit einem gepflanzten 14-px-Text
-// und einem 2 em engen Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
+// Konstruktor liest: `_loadKeybindings`). Vorher die Schrift, ihre Größe und ihr Kasten (das HUD mit einem gepflanzten 14-px-Text,
+// einem 2 em engen Kasten und einem Zeichen im px-Kasten, das Ich und jede Schublade über den EINEN Schalter, je `_schriftZensus`) und die Umbelegung (der Knopf „vor“ der Belegung, dann KeyO als KeyboardEvent);
 // nachher die Belegung, der Weg des Leibs je Taste (KeyO, KeyW und KeyW mit einem festverdrahteten Mutanten), die Standard-
 // Belegung zurück. `taeter` nennt jeden Bruch, `blind` jeden Mutanten, den die Probe nicht sah. Ein Bild ist am Gerät ein Bild
 // des laufenden Loops, am Null-Renderer EIN Sim-Schritt des Leibs (`_loopFixedStep`: Sammler, Bewegung, Physik) — die Probe
@@ -135,33 +135,26 @@ async function bedienung2(vor) {
         ...(o.standardM >= 0.1 ? [] : [`die Standard-Belegung kehrt nicht zurück (W ${o.standardM} m)`]),
     ];
     if (!vor) {
-        const probe = Object.assign(document.createElement("span"), { textContent: "Probe 14 px" });
-        probe.style.fontSize = "14px";
-        // der zu enge Kasten: 2 em breit, der Text schneidet ohne „…“ ab
-        const eng = Object.assign(document.createElement("span"), { textContent: "Probe Kasten zu eng" });
-        eng.style.cssText = "display: inline-block; width: 2em; overflow: hidden; white-space: nowrap";
-        // das Zeichen im px-Kasten (der Hof vor w13-menue-heil): headless 8 px in 9 hält es, am Gerät ragt es — die Dehnprobe nennt es
-        const zeichen = Object.assign(document.createElement("span"), { id: "probe-zeichen", textContent: "▸" });
-        zeichen.style.cssText = "display: inline-block; width: 9px";
-        document.getElementById("hotbar").append(probe, eng, zeichen);
+        // die Täter des Selbsttests in der Hotbar, je [Liste, Stil, Text]: ein 14-px-Text · ein 2 em enger Kasten (der Text schneidet
+        // ohne „…“ ab) · ein Zeichen im px-Kasten (der Hof vor w13-menue-heil: headless 8 px in 9 hält es, am Gerät ragt es — die
+        // Dehnprobe des Zensus nennt es)
+        const gepflanzt = [
+            ["klein", "font-size: 14px", "Probe 14 px"],
+            ["ueber", "display: inline-block; width: 2em; overflow: hidden; white-space: nowrap", "Probe Kasten zu eng"],
+            ["ueber", "display: inline-block; width: 9px", "▸"],
+        ].map(([liste, cssText, textContent]) => {
+            const el = Object.assign(document.createElement("span"), { textContent });
+            el.style.cssText = cssText;
+            document.getElementById("hotbar").append(el);
+            return [liste, el.textContent, el];
+        });
         r._menueZeigen(null);
         const schrift = { hud: r._schriftZensus() };
-        probe.remove();
-        eng.remove();
-        zeichen.remove();
-        const blind = [
-            ...(schrift.hud.klein.some((z) => z.text === probe.textContent)
-                ? []
-                : ["der 14-px-Text der Hotbar fehlt im Zensus"]),
-            ...(schrift.hud.ueber.some((z) => z.text === eng.textContent)
-                ? []
-                : ["der zu enge Kasten der Hotbar fehlt im Zensus"]),
-            ...(schrift.hud.ueber.some((z) => z.wo === "#probe-zeichen" && /Zeichen des Geräts/.test(z.grund))
-                ? []
-                : ["das Zeichen im px-Kasten der Hotbar fehlt im Zensus"]),
-        ];
-        schrift.hud.klein = schrift.hud.klein.filter((z) => z.text !== probe.textContent);
-        schrift.hud.ueber = schrift.hud.ueber.filter((z) => z.text !== eng.textContent && z.wo !== "#probe-zeichen");
+        const blind = gepflanzt
+            .filter(([liste, text, el]) => (el.remove(), !schrift.hud[liste].some((z) => z.text === text)))
+            .map(([liste, text]) => `„${text}“ der Hotbar fehlt in ${liste} des Zensus`);
+        for (const liste of ["klein", "ueber"])
+            schrift.hud[liste] = schrift.hud[liste].filter((z) => !gepflanzt.some(([, text]) => text === z.text));
         for (const d of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
