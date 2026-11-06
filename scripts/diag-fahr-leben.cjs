@@ -53,7 +53,7 @@ function haltVerdict(m) {
     return out;
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
-// nach 10 Bildern an der Gier, Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
+// nach 10 Bildern am Ziel ihres Gesetzes (Gier + driftFolge · Drift, H3), Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
 // Gleichlauf p95, Höhe über der Ebene des Wagens p05.
 const WECHSEL = {
     stufeM: 0.2,
@@ -101,7 +101,7 @@ function wechselVerdict(m) {
 
 // DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
 const gesetzVon = (VC, pid) => VC.fahrGesetz(VC.exportDrive(Object.assign({}, VC.DEFAULT_P, VC.presetPatch(pid))));
-// ── K2–K5 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
+// ── K2–K4, K6–K8 — DER FAHR-SCHRITT AM KERN SELBST (Node; dieselbe Funktion, die Probefahrt und Welt rufen). ──
 function kernProbe(VC) {
     if (!VC || typeof VC.fahrSchritt !== "function" || typeof VC.fahrGesetz !== "function")
         return [["K2 der Kern trägt den Fahr-Schritt", false, "vehicle-core ohne fahrSchritt/fahrGesetz"]];
@@ -174,24 +174,8 @@ function kernProbe(VC) {
         q35.z.z > 0.3 && Math.abs(q30.z.z) <= 0.01 && q50.z.z > 1,
         `35° Fahrt ${q35.z.z.toFixed(2)} m · 30° Stand ${q30.z.z.toFixed(3)} m · 50° Stand ${q50.z.z.toFixed(2)} m`,
     ]);
-    // K5 — die Vertikale: Kuppe (R 12 m hebt bei Vollgas ab, R 40 m nicht), Klippe 7 m (ballistisch, landet).
-    const kuppe = (R) => (x) => {
-        const x1 = R * 0.3;
-        return Math.abs(x) < x1 ? -(x * x) / (2 * R) : -(x1 * x1) / (2 * R) - (Math.abs(x) - x1) * 0.3;
-    };
-    const k12 = lauf("gt", kuppe(12), 600, () => ({ throttle: 1 }), -60);
-    const k40 = lauf("gt", kuppe(40), 600, () => ({ throttle: 1 }), -60);
-    const kl = lauf(
-        "gt",
-        (x) => (x < 10 ? 0 : -7),
-        240,
-        () => ({ throttle: 1 })
-    );
-    out.push([
-        "K5 Vertikale: Kuppe R 12 m hebt ab, R 40 m nicht; die 7-m-Klippe ohne Höhen-Sprung > 0,5 m je Schritt, gelandet",
-        k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
-        `Kuppe R12 Luft ${k12.luft} · R40 Luft ${k40.luft} · Klippe Luft ${kl.luft}, größter Sprung ${kl.sprung.toFixed(2)} m, Ende y ${kl.z.y.toFixed(2)}`,
-    ]);
+    // K5 (die Vertikale: Kuppe, Klippe) richtet seit w11-fahrzeug die Prüfstrecke der Garage — Kuppe, Kicker, Lücke, Tisch und
+    // Landung im Gelände-Gesetz, gefahren vom Fahrer der Linie (gate:garage-labor G11: Flug, Landestoß, Bodenkontakt, Federweg).
     // K7 — DIE WAND IST EIN SPRUNG DES BODENS: der GT steht auf ebenem Boden, dann liegt der Boden
     // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
     // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe.
@@ -255,8 +239,22 @@ function kernProbe(VC) {
         !v8.length,
         `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
     ]);
+    const [G9, m9] = [gesetzVon(VC, "gt"), { achse: 0, lenk: 0, schwimm: 0 }];
+    lauf("gt", () => 0, 270, (i, z) => {
+        const w = +((Math.abs(Math.atan2(z.vlat, z.vlong)) * 180) / Math.PI).toFixed(1);
+        if (i < 150) m9.achse = Math.max(m9.achse, w);
+        else [m9.schwimm, m9.lenk] = [Math.max(m9.schwimm, w), Math.max(m9.lenk, +(Math.abs(z.yawRate * z.speed) / (G9.g * G9.maxGrip * G9.grip)).toFixed(2))];
+        return { throttle: 1, steer: +(i >= 150) };
+    });
+    out.push(["K9 Fahr-Gefühl: Gas, dann voller Einschlag — Fahrt an der Bug-Achse ≤ 10°, v·ω ≤ 1,8 g·μ, Schwimmwinkel ≤ 40°", !gefuehlVerdict(m9).length, JSON.stringify(m9)]);
     return out;
 }
+// K9 DAS FAHR-GEFÜHL AM KERN (bis w12-fahrzeug-decke gate:vehicle-drive B-e am Ritt der Welt — die Welt fährt diesen Schritt,
+// S1 Labor = Welt; das Bild folgt der Gier: Playtest V18150Ride; der Rad-Kontakt: Station R, p75 ≤ 0,03 m): der GT 150 Schritte
+// Gas geradeaus, dann 120 mit vollem Einschlag — achse die Fahrt an der Bug-Achse · lenk die Quer-Kinematik v·ω in der
+// Reifen-Grenze g·μ · schwimm im vollen Einschlag läuft er nicht quer.
+const GEFUEHL = { achse: 10, lenk: 1.8, schwimm: 40 };
+const gefuehlVerdict = (m) => Object.keys(GEFUEHL).filter((k) => !(m[k] <= GEFUEHL[k])).map((k) => `${k} ${m[k]}`);
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
 // der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
 // 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(gras) halb in der Stoff-Zeile (`zeile`) ──
@@ -1827,7 +1825,7 @@ hauptLauf(async () => {
             [
                 kernTempo({
                     ...VCk,
-                    chaseKamera: (c, g, s, dt, K, z, vm) => VCk.chaseKamera(c, g, s, dt, K, z && { ...z, vlat: 0 }, vm),
+                    chaseKamera: (c, g, s, dt, K, z) => VCk.chaseKamera(c, g, s, dt, K, z && { ...z, vlat: 0 }),
                 }),
                 "drift",
             ],
@@ -2305,6 +2303,9 @@ hauptLauf(async () => {
                     sAlt.some((t) => /vmax 800 U\/min ≠ Begrenzer/.test(t)),
                     sAlt.slice(0, 2).join(" · ")
                 );
+                // K9 (wie bis dahin gate:vehicle-drive B-e): quer 90°, Aufdrehen 3,4 g·μ, Schwimmwinkel 70° — jeder beim Namen
+                const v9 = [{ achse: 2.1, lenk: 1.45, schwimm: 6 }, { achse: 90, lenk: 3.4, schwimm: 70 }].map(gefuehlVerdict);
+                check("Selbst-Test K9: quer, Aufdrehen, Schwimmen → beim Namen", v9.join("|") === "|achse 90,lenk 3.4,schwimm 70", v9.join("|"));
                 // K8: der Kern verstimmt; Kosten, keine Achse
                 const R8 = VCs.FAHR.reifen;
                 const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
