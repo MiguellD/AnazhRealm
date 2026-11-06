@@ -1,0 +1,9 @@
+wiese-10uhr              {"lumaMain":82.13,"lumaKand":82.13,"mAbs":0.001,"mDelta":-0.001,"ueber8":0}
+1-frisch-ego             {"lumaMain":53.49,"lumaKand":51.51,"mAbs":13.473,"mDelta":-1.98,"ueber8":33.75}
+1-frisch-third           {"lumaMain":43.78,"lumaKand":46.01,"mAbs":14.779,"mDelta":2.234,"ueber8":46.03}
+1-frisch-fahne-seite     {"lumaMain":47.96,"lumaKand":47.76,"mAbs":3.822,"mDelta":-0.199,"ueber8":14.73}
+1-frisch-fahne-oben      {"lumaMain":49.23,"lumaKand":48.46,"mAbs":4.747,"mDelta":-0.771,"ueber8":15.92}
+2-geladen-ego            {"lumaMain":44.29,"lumaKand":46.11,"mAbs":18.945,"mDelta":1.82,"ueber8":41.86}
+2-geladen-third          {"lumaMain":53.74,"lumaKand":51.55,"mAbs":21.903,"mDelta":-2.187,"ueber8":60.4}
+2-geladen-fahne-seite    {"lumaMain":49.65,"lumaKand":47.95,"mAbs":7.925,"mDelta":-1.699,"ueber8":30.62}
+2-geladen-fahne-oben     {"lumaMain":46.92,"lumaKand":48.11,"mAbs":5.937,"mDelta":1.195,"ueber8":21.38}
