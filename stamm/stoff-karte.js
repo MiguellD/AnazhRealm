@@ -386,9 +386,14 @@ class AnazhRealm_stoff_karte {
     // steht er zum Licht, seine Maske misst vom Auge der Stufen), nur auf der Wurf-Ebene, in seiner EIGENEN Atlas-Gruppe
     // (`IMPOSTOR_ATLAS_GRUPPE` + "#S") mit der Wahl je Kaskade. Bis hier warf die Karte nie: am Wechsel L1 → Karte fiel der
     // Schatten jedes Baums vom Boden (lod.K4, Radeon am Dorf −44 462 Luma über 7 474 px, ohne Kaskaden-Schatten −5 209).
-    // null = die Art wirft ihre Karte nicht.
+    // null = die Art wirft ihre Karte nicht; eine Art ohne Karten-Zeile im Studio-Budget (der Wagen: kindStages [0, 1], seine
+    // Karte ist die des Wirts) wirft sie nie.
     _impostorWurfLeaf(leaf, preset) {
-        if (!leaf || this._foundryBudgetZeile(preset, 2).schatten !== 2) return null;
+        if (!leaf) return null;
+        const rec = this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = rec && L && L.budget ? L.budget[rec.kind] : null;
+        if (!art || !art[2] || this._foundryBudgetZeile(preset, 2).schatten !== 2) return null;
         return Object.assign({}, leaf, {
             leafKey: leaf.leafKey + "#S",
             atlasGruppe: leaf.atlasGruppe + "#S",

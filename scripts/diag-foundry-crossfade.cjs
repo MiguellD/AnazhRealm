@@ -876,9 +876,8 @@ async function runPartB() {
                     const d3 = bild.filter((t) => !t.karte);
                     if (zw.length) zwBekannt = true;
                     // die Karte wirft sich selbst (ihr Zwilling, w14-lod-sprung): wirft sie, steht ihre gezeichnete Deckung auf der
-                    // Seite der Gestalt, ihr Zwilling auf der des Wurfs
-                    const kb = zw.some((t) => t.karte) ? bild.filter((t) => t.karte) : [];
-                    const S = { wurf: deckung(zw), gestalt: deckung(d3.concat(kb)) };
+                    // Seite der Gestalt (das Bild: 3D-Stufen und Karte), ihr Zwilling auf der des Wurfs
+                    const S = { wurf: deckung(zw), gestalt: deckung(zw.some((t) => t.karte) ? bild : d3) };
                     const werte = Object.values(D);
                     return {
                         D,
