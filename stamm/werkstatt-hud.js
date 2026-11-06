@@ -718,7 +718,9 @@ class AnazhRealm_werkstatt_hud {
         weiter();
     }
 
-    // Das Ende des laufenden Nachbaus der Tafel (`_menueNachbau`): wer nach dem Öffnen liest, was die Tafel füllt, wartet darauf.
+    // Das Ende des laufenden Nachbaus der Tafel (`_menueNachbau`): wer nach dem Öffnen liest, was die Tafel füllt, wartet darauf
+    // — die Bedienung (`__bedienung2`, welt-boot) und V-D3 der V1-Pfad-Linse (die Werkstatt-Vorschau entsteht erst in der Scheibe;
+    // im Takt der Taste gelesen fehlte sie, Zug z243).
     _menueSteht() {
         return this._menueStand ? this._menueStand.fertig : Promise.resolve();
     }
