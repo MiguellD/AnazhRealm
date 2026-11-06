@@ -880,8 +880,9 @@ class AnazhRealm_stoff_karte {
         try {
             rend.setMRT(B.mrt);
             rend.setClearColor(0x000000, 0);
-            // die Sonnen-Kacheln: die Krone aus jeder Richtung (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht — im
-            // ersten Ring; die Ringe danach lesen dieselben Kacheln (die Bühne gehört der Zelle bis zum letzten Ring)
+            // die Sonnen-Kacheln: die Krone aus jeder Richtung (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht — die
+            // ersten Schritte des ersten Rings (unten, `kopf`); die Ringe danach lesen dieselben Kacheln (die Bühne gehört der Zelle
+            // bis zum letzten Ring)
             B.tiefe.value = B.leer.depthTexture;
             const R = Math.max(fr.halfW, fr.halfH) * 1.15;
             B.mitte.set(0, fr.halfH, 0);
