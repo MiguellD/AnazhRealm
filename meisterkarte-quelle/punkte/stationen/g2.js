@@ -4369,6 +4369,10 @@ const stationen = [
     // DER DECKEL 90 s (die Ausnahme der Fahrt, geschätzt): 6 000 Takte mit vollem Leben, die Masken nur bei einem ungesehenen Tier im
     // Blick; die Radeon trug im alten Raffer ~6,8 ms je Takt (3ef20f9f: 146 Spiel-s in den ersten 10 s) — reißt er, nennt FORTSCHRITT
     // Spiel-s, Prüfungen, Masken und Sichtungen am Deckel.
+    // HEADLESS an main 8efb6318 (swiftshader, Fenster 320×180, die Schwelle am Puffer normiert 12,5 px; 06.11., w16-tier-blick-pm):
+    // Ego 2 Sichtungen in 600 Spiel-s (Bär 21 m, Wesen 65 m; 601 Prüfungen, 47 Masken), Third 5 (Wolf 23 m, Fuchs 15 m, Wesen 54/55/75 m;
+    // 601 Prüfungen, 230 Masken), Bestand bis 20, im Blick erschienen 0 — ROT an Ego (2 < 3); die Vor-Fassung (Prüfung jede zweite
+    // Spiel-s) Ego 2 (Bär 19 m, Wesen 49 m). Wanduhr headless 678 s Ego, 1 630 s Third: die Zahl der Radeon steht aus.
     {
         kriterium: "tiere.K5",
         staffel: 1,
