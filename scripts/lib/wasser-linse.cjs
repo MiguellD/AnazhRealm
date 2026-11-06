@@ -1382,7 +1382,8 @@ async function wasserBild(o = {}) {
 
 // ── Q7-Regen ──
 // Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
-// Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
+// Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein Lauf ≥ 4 lit Pixel in Fall-Richtung (je Schritt eine
+// Zeile tiefer, gerade oder schräg: im Sturm fällt der Regen unter 38°, w15-pfuetze — senkrecht gezählt trug er 2–3 Pixel je Spalte); die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
 async function wasserRegen(o = {}) {
     const T = window.THREE;
@@ -1439,16 +1440,12 @@ async function wasserRegen(o = {}) {
     let schlieren = 0,
         rechts = 0,
         links = 0;
-    for (let x = 0; x < W; x++) {
-        let lauf = 0;
-        for (let y = 0; y <= H; y++) {
-            const an = y < H && lit[x + y * W];
-            if (an) lauf++;
-            else {
-                if (lauf >= 4) schlieren++;
-                lauf = 0;
-            }
-        }
+    const unter = (q) => (lit[q + W] ? q + W : lit[q + W + 1] ? q + W + 1 : lit[q + W - 1] ? q + W - 1 : -1);
+    for (let p = W; p < W * H; p++) {
+        if (!lit[p] || lit[p - W] || lit[p - W - 1] || lit[p - W + 1]) continue;
+        let lauf = 1;
+        for (let q = unter(p); q >= 0; q = unter(q)) lauf++;
+        if (lauf >= 4) schlieren++;
     }
     for (let y = 0; y + 1 < H; y++)
         for (let x = 1; x + 1 < W; x++) {
@@ -3137,14 +3134,14 @@ module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
-        wasserRund.toString() +
-        wasserFlaechen.toString() +
-        wasserBoot.toString() +
-        wasserTier.toString() +
-        wasserPflanzen.toString() +
-        wasserSchmelze.toString() +
-        wasserErstarrung.toString() +
-        wasserGluehen.toString() +
+        wasserRund +
+        wasserFlaechen +
+        wasserBoot +
+        wasserTier +
+        wasserPflanzen +
+        wasserSchmelze +
+        wasserErstarrung +
+        wasserGluehen +
         // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
         Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserDamm, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
             .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)
