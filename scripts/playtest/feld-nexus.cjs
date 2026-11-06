@@ -1410,11 +1410,11 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 800;
         out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
 
-        // 11. buildBody — beide haben model + messages + stream:false
+        // 11. buildBody — beide haben model + messages + stream:true (der Strom, ki.K5)
         out.bodyHasCommon =
             bodyNative.model === "llama3.1" &&
             Array.isArray(bodyNative.messages) &&
-            bodyNative.stream === false &&
+            bodyNative.stream === true &&
             bodyOpenAi.messages.length === 2;
 
         return out;
@@ -1447,7 +1447,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
         );
         check(
-            "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
+            "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:true",
             v795Results.bodyHasCommon
         );
     }
