@@ -982,10 +982,14 @@
     // ZIEL_SCHWELLE (relativ: 0,3 % ≈ 5 Cent, 0,03 dB — unter der Hoerschwelle) vom zuletzt geschriebenen
     // unterscheidet. Jede Schreibung kostet den Haupt-Faden und die Zeitleiste des Audio-Fadens; die Mischung im
     // Takt schrieb jedes Ziel neu, die Fahrt je Bild sechs (diag-klang-zensus --takt).
+    // Eine Stimme mit eigener Hoerschwelle je Parameter-Art reicht sie als `schwelle` (FAHRT.schwelle).
     var ZIEL_SCHWELLE = 0.003, zielAlt = new WeakMap();
-    function ziel(param, wert, t, tau) {
+    // Ein Pegel unter seinem `boden` (der Hoerschwelle) ist so still wie jeder andere darunter: kein Schreiben, bis er ihn
+    // kreuzt oder ganz schweigt.
+    function ziel(param, wert, t, tau, schwelle, boden) {
         var alt = zielAlt.get(param);
-        if (alt !== undefined && Math.abs(wert - alt) <= ZIEL_SCHWELLE * Math.abs(alt)) return false;
+        if (alt !== undefined && Math.abs(wert - alt) <= (schwelle || ZIEL_SCHWELLE) * Math.abs(alt)) return false;
+        if (wert > 0 && wert < boden && !(alt >= boden)) return false;
         zielAlt.set(param, wert);
         param.setTargetAtTime(wert, t, tau);
         return true;
@@ -1481,6 +1485,13 @@
     //     Teiltoene der Grundfrequenz grundHz mit Saat-Phasen, Amplitude ∝ 1/√k):
     //     der Haupt-Thread rechnet keinen Sample, nur die Teilton-Tafel.
     //   IM FLUG greift kein Reifen: das Abrollen schweigt.
+    //   DIE HOERSCHWELLE je Parameter (klang.K5 Staffel 2, wie die RTPC-Schwelle
+    //     der Renn-Motoren): eine Rampe wird nur geschrieben, wenn ihr Ziel sich
+    //     ueber die Schwelle seiner Art bewegt — TON (Zuend-Folge, Grund des
+    //     Abrollens) 5 Cent, FARBE (Eck- und Mitten-Frequenz der Filter) 1/24
+    //     Oktave, PEGEL 0,25 dB: je die Haelfte der Unterschieds-Schwelle des
+    //     Ohrs. Die Fahrt schrieb je Bild sechs Ziele (die Rampe glaettet ohnehin
+    //     ueber rampeSek), der Haupt-Faden trug 0,10 ms je Bild (Radeon, z242).
     //  fahrtMischung(lage) ist rein (die Linse rechnet nach), fahrtStimme baut
     //  die Quellen (Lab, Welt, Linse: derselbe Graph).
     // ═══════════════════════════════════════════════════════════════════════
@@ -1490,7 +1501,8 @@
         motor: { leerDb: -32, lastDb: -20, upmDb: 6, halbeOrdnungDb: -8, hzBasis: 320, hzLast: 1600, hzObertoene: 3, q: 0.8 },
         abrollen: { refDb: -26, vRef: 15, exponent: 1.75, vMin: 0.3, hzBasis: 260, hzProMs: 45, q: 0.7,
                     grundHz: 1.5, teiltoene: 1024, saat: 131 },
-        rampeSek: 0.06, abklangSek: 0.08
+        rampeSek: 0.06, abklangSek: 0.08,
+        schwelle: { cent: 5, oktave: 1 / 24, db: 0.25 }
     };
     // Die Drehzahl (Upm) zu Tempo v (m/s, rueckwaerts negativ) und den Deckeln vmax/rueckVmax (m/s).
     function fahrtUpm(v, vmax, rueckVmax) {
@@ -1520,14 +1532,20 @@
     }
     // fahrtStimme(ctx, ausgang) → { anwenden(lage, t), stop(t), zensus(), knoten } — die Stimme EINES Wagens: zwei
     // Motor-Oszillatoren (Saegezahn f, Sinus f/2) → Tiefpass → Gain, das Abrollen (Perioden-Welle) → Bandpass → Gain.
+    // DIE DREHZAHL ist EIN Parameter: eine Gleichspannung (`drehzahl`, die Zuend-Folge f in Hz) treibt die Frequenz der Saege
+    // und, halbiert, die des Sinus — je Aenderung EIN Ziel statt zweier (bis w13-klang-fahrt je Bild zwei).
     // Pegel: dB am Bus fuer die Quelle mit RMS 1 (der Saegezahn traegt 1/√3, der Sinus 1/√2 — ausgeglichen).
     // DIE WELLE DES ABROLLENS — EINMAL je Kontext (fahrtWelle(ctx)): die Teilton-Tafel (Saat-Phasen, ∝ 1/√k, auf RMS 1
     // geeicht), die Welle laeuft ohne Normalisierung. Ihr Bau (1024 Teiltoene → die band-begrenzten Tafeln des Browsers)
     // trug beim Aufsitzen 6,3 ms in EINEM Bild (Radeon, diag-klang-zensus --takt); der Wirt backt sie im Leerlauf vor.
+    // Mit ihr backt die Tafel der SAEGE des Motors: der Browser baut die band-begrenzten Tafeln eines Wellen-Typs beim ersten
+    // Oszillator dieses Typs im Kontext (0,6–0,8 ms headless) — bis w13-klang-fahrt im Bild des Aufsitzens (die Spitze der
+    // Fahrt, Radeon max 1,94 ms, z242: der Bau der Stimme `fahrtStimme`).
     var wellen = new WeakMap();
     function fahrtWelle(ctx) {
         var w = wellen.get(ctx);
         if (w) return w;
+        ctx.createOscillator().type = "sawtooth";
         var R = FAHRT.abrollen, n = R.teiltoene, re = new Float32Array(n + 1), im = new Float32Array(n + 1), rnd = umweltRng(R.saat), summe = 0;
         for (var k = 1; k <= n; k++) {
             var amp = 1 / Math.sqrt(k), ph = rnd() * 2 * Math.PI;
@@ -1544,10 +1562,20 @@
     function fahrtStimme(ctx, ausgang) {
         var F = FAHRT, M = F.motor, R = F.abrollen, knoten = new WeakSet(), letzte = null, an = true;
         var dbZuGain = function (db, rms) { return db === -Infinity ? 0 : Math.pow(10, db / 20) / rms; };
+        var ton = Math.pow(2, F.schwelle.cent / 1200) - 1, farbe = Math.pow(2, F.schwelle.oktave) - 1, pegel = Math.pow(10, F.schwelle.db / 20) - 1;
+        var still = Math.pow(10, UMWELT.hoerschwelleDb / 20), saegeRms = Math.sqrt(1 / 3); // der Boden: die Hoerschwelle am Welt-Bus
         var t0 = ctx.currentTime;
         var saege = ctx.createOscillator(), halb = ctx.createOscillator(), halbG = ctx.createGain();
+        var drehzahl = ctx.createConstantSource(), halbe = ctx.createGain();
         saege.type = "sawtooth";
         halb.type = "sine";
+        drehzahl.offset.value = saege.frequency.defaultValue; // der Ruhe-Ton eines Oszillators (440 Hz), wie bisher der Start
+        halbe.gain.value = 0.5;
+        drehzahl.connect(saege.frequency);
+        drehzahl.connect(halbe);
+        halbe.connect(halb.frequency);
+        saege.frequency.value = 0; // die Frequenz traegt allein die Drehzahl
+        halb.frequency.value = 0;
         halbG.gain.value = Math.pow(10, M.halbeOrdnungDb / 20) * (Math.sqrt(1 / 3) / Math.SQRT1_2);
         var tief = ctx.createBiquadFilter(), motorG = ctx.createGain();
         tief.type = "lowpass";
@@ -1568,27 +1596,28 @@
         roll.connect(band);
         band.connect(rollG);
         rollG.connect(ausgang);
-        var quellen = [saege, halb, roll];
+        var quellen = [saege, halb, roll, drehzahl];
+        // die sechs Ziele der Stimme, einmal gegriffen (je Griff ein Weg durch die Bindung des Browsers)
+        var pRoll = roll.frequency, pDreh = drehzahl.offset, pTief = tief.frequency, pMotor = motorG.gain, pBand = band.frequency, pRollG = rollG.gain;
         quellen.forEach(function (q) { knoten.add(q); q.start(t0); });
         return {
             knoten: knoten,
             anwenden: function (lage, t) {
                 if (!an) return;
                 var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtImOhr(lage));
-                ziel(roll.frequency, R.grundHz * m.doppler, zeit, F.rampeSek);
-                ziel(saege.frequency, m.motorHz, zeit, F.rampeSek);
-                ziel(halb.frequency, m.motorHz / 2, zeit, F.rampeSek);
-                ziel(tief.frequency, m.motorFilterHz, zeit, F.rampeSek);
-                ziel(motorG.gain, dbZuGain(m.motorDb, Math.sqrt(1 / 3)), zeit, F.rampeSek);
-                ziel(band.frequency, m.rollHz, zeit, F.rampeSek);
-                ziel(rollG.gain, dbZuGain(m.rollDb, 1), zeit, F.rampeSek);
+                ziel(pRoll, R.grundHz * m.doppler, zeit, F.rampeSek, ton);
+                ziel(pDreh, m.motorHz, zeit, F.rampeSek, ton);
+                ziel(pTief, m.motorFilterHz, zeit, F.rampeSek, farbe);
+                ziel(pMotor, dbZuGain(m.motorDb, saegeRms), zeit, F.rampeSek, pegel, still / saegeRms);
+                ziel(pBand, m.rollHz, zeit, F.rampeSek, farbe);
+                ziel(pRollG, dbZuGain(m.rollDb, 1), zeit, F.rampeSek, pegel, still);
             },
             stop: function (t) {
                 if (!an) return;
                 an = false;
                 var zeit = typeof t === "number" ? t : ctx.currentTime;
                 [motorG, rollG].forEach(function (g) { g.gain.cancelScheduledValues(zeit); g.gain.setTargetAtTime(0, zeit, F.abklangSek); });
-                var alle = [halbG, tief, motorG, band, rollG];
+                var alle = [halbG, halbe, tief, motorG, band, rollG];
                 quellen.forEach(function (q, i) {
                     q.stop(zeit + 8 * F.abklangSek);
                     if (i === 0) q.onended = function () { alle.concat(quellen).forEach(function (nd) { try { nd.disconnect(); } catch (_e) {} }); };

@@ -993,14 +993,11 @@ class AnazhRealm_werkstatt_bauen {
             if (!raw) return defaults;
             const parsed = JSON.parse(raw);
             if (!parsed || typeof parsed !== "object") return defaults;
+            // eine Taste oder eine Liste von Tasten (die Tastatur-Tafel, `DEFAULT_KEYBINDINGS`); das Pad bindet je Aktion EINEN Knopf
+            const gilt = (c) => typeof c === "string" && c.length > 0 && (!pad || /^Pad\d+$/.test(c));
             for (const action of pad ? Object.keys(parsed) : AnazhRealm.KEYBINDING_ACTIONS) {
-                if (
-                    typeof parsed[action] === "string" &&
-                    parsed[action].length > 0 &&
-                    (!pad || /^Pad\d+$/.test(parsed[action]))
-                ) {
-                    defaults[action] = parsed[action];
-                }
+                const c = parsed[action];
+                if (gilt(c) || (!pad && Array.isArray(c) && c.length > 0 && c.every(gilt))) defaults[action] = c;
             }
         } catch {
             /* corrupt JSON → defaults */
@@ -1026,14 +1023,15 @@ class AnazhRealm_werkstatt_bauen {
         const frei =
             pad && (AnazhRealm.KEYBINDING_ACTIONS.includes(action) || Object.hasOwn(this.state.abilities, action));
         if (!action || !B || !(action in B || frei)) return false;
-        // Konflikt-Schutz per Swap: belegt der Code schon eine andere Aktion, bekommt diese das alte
-        // Binding — keine toten Bindings, keine unbelegten Aktionen (eine Fähigkeit ohne altes Binding fällt).
+        // Konflikt-Schutz per Swap: belegt der Code schon eine andere Aktion, verliert sie ihn; bleibt ihr keine Taste, bekommt
+        // sie das alte Binding — keine toten Bindings, keine unbelegten Aktionen (eine Fähigkeit ohne altes Binding fällt).
         const oldCode = B[action];
         for (const k of Object.keys(B)) {
-            if (k !== action && B[k] === code) {
-                if (oldCode) B[k] = oldCode;
-                else delete B[k];
-            }
+            if (k === action || !AnazhRealm._tastenListe(B[k]).includes(code)) continue;
+            const rest = AnazhRealm._tastenListe(B[k]).filter((c) => c !== code);
+            if (rest.length) B[k] = rest.length === 1 ? rest[0] : rest;
+            else if (oldCode) B[k] = oldCode;
+            else delete B[k];
         }
         B[action] = code;
         this._saveKeybindings();
@@ -1068,7 +1066,7 @@ class AnazhRealm_werkstatt_bauen {
     _actionForBindingCode(code) {
         if (!code || !this.state.keybindings) return null;
         for (const action of AnazhRealm.KEYBINDING_ACTIONS) {
-            if (this.state.keybindings[action] === code) return action;
+            if (AnazhRealm._tastenListe(this.state.keybindings[action]).includes(code)) return action;
         }
         return null;
     }
@@ -1224,7 +1222,10 @@ class AnazhRealm_werkstatt_bauen {
             slot.setAttribute("data-slot", String(i));
             const num = document.createElement("span");
             num.className = "num";
-            num.textContent = String(i + 1);
+            // der Slot zeigt die erste seiner Tasten (die Ziffer, nicht ihr Numpad-Zwilling)
+            num.textContent = this._formatBindingCode(
+                AnazhRealm._tastenListe((this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS)["slot" + i])[0]
+            );
             const label = document.createElement("span");
             label.className = "label";
             if (name && this.state.blueprints[name]) {
@@ -3547,10 +3548,33 @@ AnazhRealm._aktionAusdauer = function () {
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.aktionAusdauer");
 };
 
-// Default-Keybindings (Aktion → Code): KeyboardEvent.code (layout-unabhängig, "KeyF"),
-// "Mouse0/1/2" für Maus-Buttons; Rebinds persistiert in localStorage "anazh.keybindings".
-// WASD und 1-9 bleiben hardcoded.
+// DIE EINE TASTEN-TAFEL (spielgang.K3#2: die Belegung ist frei) — Aktion → Code: KeyboardEvent.code (layout-unabhängig, „KeyF"),
+// „Mouse0/1/2" für Maus-Buttons, eine Liste trägt mehrere Tasten derselben Aktion (W und ↑); die Umbelegung im Einstellungen-
+// Drawer (`setKeybinding`) lebt in localStorage „anazh.keybindings" und übersteht den Reload. Jede Taste des Spiels geht durch
+// sie: der Hörer findet die Aktion (`_tastenAktion` → `_actionForBindingCode`), der EINE Auslöser hält sie (`_verbTaste` →
+// `verbTafel.gehalten`), der Sammler liest NUR das Halten (`_verbTafelSammeln`), die Fahrt dieselben Aktionen (`FAHR_TASTEN`),
+// Hotbar, Hilfe, Tacho und Bau-HUD nennen ihre Taste aus ihr. Vorher lasen Gehen, Sprint, Sprung, Rutschen und die Fahrt die
+// rohen Zeichen (`state.keys.w`, event.key — auf AZERTY lief Z vorwärts), die Ziffern der Hotbar ihr Zeichen, E · Z · H standen
+// fest (TASTEN_FEST): keine dieser Tasten ließ sich umlegen. Fest bleibt Esc, das Zurück (der Browser löst mit ihm den Zeiger).
 AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
+    vor: Object.freeze(["KeyW", "ArrowUp"]),
+    zurueck: Object.freeze(["KeyS", "ArrowDown"]),
+    links: Object.freeze(["KeyA", "ArrowLeft"]),
+    rechts: Object.freeze(["KeyD", "ArrowRight"]),
+    sprint: Object.freeze(["ShiftLeft", "ShiftRight"]),
+    rutschen: "KeyC",
+    einsteigen: "KeyE",
+    zoom: "KeyZ",
+    hud: "KeyH",
+    slot0: Object.freeze(["Digit1", "Numpad1"]),
+    slot1: Object.freeze(["Digit2", "Numpad2"]),
+    slot2: Object.freeze(["Digit3", "Numpad3"]),
+    slot3: Object.freeze(["Digit4", "Numpad4"]),
+    slot4: Object.freeze(["Digit5", "Numpad5"]),
+    slot5: Object.freeze(["Digit6", "Numpad6"]),
+    slot6: Object.freeze(["Digit7", "Numpad7"]),
+    slot7: Object.freeze(["Digit8", "Numpad8"]),
+    slot8: Object.freeze(["Digit9", "Numpad9"]),
     break: "Mouse0",
     place: "Mouse2",
     confirmBuild: "KeyF",
@@ -3570,6 +3594,8 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     chat: "Enter",
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
+// Die Tasten einer Belegung als Liste (eine Taste, eine Liste oder keine).
+AnazhRealm._tastenListe = (c) => (Array.isArray(c) ? c : c ? [c] : []);
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →
 // 1×1×1-Box = 4 Einheiten, 0.5³ → 1 (min 1).
