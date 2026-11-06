@@ -337,7 +337,7 @@ async function probeLeben(expected) {
         const g1 = await gtAmStart();
         let labor = null;
         if (g1 && g1._fahr) {
-            const z0 = Object.assign({}, g1._fahr);
+            const z0 = { ...g1._fahr };
             z.ent = g1;
             z.spur = [];
             tasten(true, false);
@@ -355,7 +355,7 @@ async function probeLeben(expected) {
             // FOLGENDEN Schritt: der Kontakt des Schritts n−1 setzt die Lage, von der der Fahr-Plan des Schritts n ausgeht
             // (`_fahrPlan`: z.x = die Lage nach dem Kontakt, dann Stand und Kräfte). Bis w17-bild-kollision übernahm die Spur
             // ihn im Schritt n selbst — eine Fahrt-Länge zu früh (0,2 m bei 12 m/s), und S1 schlief, solange die Bahn frei lag.
-            const q = Object.assign({}, z0);
+            const q = { ...z0 };
             // der Boden UNTER dem Werk liest die Lage seines Fahr-Zustands (`_werkBoden`, Leben-Schau 2) — die Spur fährt als er
             const fahrRoh = g1._fahr;
             g1._fahr = q;
@@ -641,6 +641,8 @@ async function probeLeben(expected) {
             tempo: t,
             steck: F.fest,
             anteil: (t[8] + t[9] + t[10]) / F.takte,
+            // der Bezug der Takte (fahrzeug.K2): die Tafel des Wegenetzes, vmax des Wagens und der mittlere Bezug
+            bezug: { kmh: A.WEGENETZ.entwurfKmh, vmax: F.vmax, mittel: F.bezug / F.takte },
             wegAnteil: b.weg / b.n,
             boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n },
             lage: [p.x, p.z],
@@ -1380,7 +1382,7 @@ async function probeLeben(expected) {
         const gP = await gtAmStart();
         if (gP) {
             const echt = window.__vehicleCore;
-            const alt = Object.assign({}, echt);
+            const alt = { ...echt };
             delete alt.fahrGesetz;
             delete alt.fahrEbene;
             const fang = (fn) => {
@@ -1694,7 +1696,7 @@ async function probeLeben(expected) {
                 bilder(4);
                 const kEcht = r._fahrHuelle(gT);
                 if (kEcht) {
-                    const k = Object.assign({}, kEcht, { schub: [] });
+                    const k = { ...kEcht, schub: [] };
                     const WX = k.hw + 0.3;
                     const w = Object.create(r);
                     w.state = {

@@ -61,9 +61,6 @@ async function welt() {
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await __weltDa(() => !!(!(f && !f.ready)));
         o.foundry = !!(f && f.ready);
-        // Der Spieler LIVE: nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte Position zöge nur
-        // die Streu mit, Kamera und Nah-Wiese blieben am Start.
-        const spieler = () => st.playerMesh.position;
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register
         // (`buf:verwaist`); ein Abschied einer Senke, die noch im Graphen steht, zerstört einen gezeichneten Speicher-Puffer.
@@ -86,16 +83,6 @@ async function welt() {
             return false;
         };
         let abschiede = 0;
-        const takt = async (n) => {
-            for (let i = 0; i < n; i++) {
-                st._frameOverBudget = false;
-                try {
-                    r._gameLoopTick(performance.now());
-                    r._tickScatterStreaming(spieler());
-                } catch {}
-                await sleep(6);
-            }
-        };
 
         // ── der Zensus: jede Instanz-Senke gegen ihre Lebenden ──
         const dreieckeJe = (geo) =>
@@ -239,9 +226,10 @@ async function welt() {
         };
 
         // ── die Wander-Sequenz: fort und zurück, mehrere Umzüge (je Umzug ein Teleport + Takte bis der Bau ruht) ──
-        await takt(120);
-        const sx = spieler().x,
-            sz = spieler().z;
+        await __streuTakte(120, 6);
+        // Der Spieler LIVE (`pm`, welt-boot): nach dem Boot tauscht die Welt das Spieler-Mesh (die Seele) — eine gemerkte
+        // Position zöge nur die Streu mit, Kamera und Nah-Wiese blieben am Start.
+        const { x: sx, z: sz } = pm.position;
         const umzuege = [
             [600, 0],
             [0, 0],
@@ -255,10 +243,9 @@ async function welt() {
         for (const [dx, dz] of umzuege) {
             const x = sx + dx,
                 zz = sz + dz;
-            const pm = spieler();
             const y = r._voxelSurfaceY(x, zz);
-            pm.set(x, (Number.isFinite(y) ? y : pm.y) + 1.8, zz);
-            await takt(160);
+            pm.position.set(x, (Number.isFinite(y) ? y : pm.position.y) + 1.8, zz);
+            await __streuTakte(160, 6);
             const wiese = window.__wieseSicht(r);
             const { z, befunde } = zensus();
             wieseUrteil(wiese, befunde);
@@ -273,7 +260,7 @@ async function welt() {
                 });
             o.umzuege.push({
                 ziel: [Math.round(x), Math.round(zz)],
-                spieler: [Math.round(spieler().x), Math.round(spieler().z)],
+                spieler: [Math.round(pm.position.x), Math.round(pm.position.z)],
                 ...z,
                 wiese: wieseKurz(wiese),
                 befunde: befunde.slice(0, 12),
@@ -348,7 +335,9 @@ async function welt() {
                 geboren.delete(lebt);
             }
             // (5) W blind: der Sicht-Satz legt nichts (jede Senke anzahl 0) — die Linse nennt jede Senke mit Soll > 0; der
-            // Blick in den Himmel hat kein Soll, dort schweigt sie (kein Fehlalarm, wo leer richtig ist)
+            // Blick in den Himmel hat kein Soll, dort schweigt sie (kein Fehlalarm, wo leer richtig ist). Der letzte Umzug endet am
+            // Start (der Platz: die Nähe legt dort nichts, die Ferne trägt) — die Linse rückt das Auge erst an die Wiese.
+            st_.wieseSchritt = await window.__wieseZurWiese(r);
             const himmel = window.__wieseSicht(r, true);
             const bH = [];
             wieseUrteil(himmel, bH);
@@ -363,7 +352,8 @@ async function welt() {
             st_.wieseHimmel = bH.length;
             // (6) eine gelegte Instanz mit Null-3×3 und (7) eine gelegte Instanz fort aus dem Ring (die veraltete Matrix)
             const nw = st.nahWiese;
-            const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1) : null;
+            // eine Senke der NÄHE: die Ferne (`:Lf:`) legt ihre Kacheln jenseits des Rings, die Ring-Wahrheit gilt ihr nicht
+            const voll = nw ? [...nw.senken.values()].find((a) => a.anzahl > 1 && !/:Lf:/.test(a.name)) : null;
             if (voll) {
                 const arr = voll.mesh.instanceMatrix.array;
                 const merk = arr.slice(0, 16);
@@ -457,7 +447,7 @@ hauptLauf(async () => {
         if (!s.ohneGenannt) fails.push("SELBSTTEST: die Senke ohne Abschied blieb ungesehen");
         if (!s.lebendGenannt) fails.push("SELBSTTEST: der Abschied einer Senke im Graphen blieb ungesehen");
         console.log(
-            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W: der blinde Sicht-Satz — jede leere Senke mit Soll genannt (${s.wieseLeer || 0}), der Himmel ohne Soll still (${s.wieseHimmel || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
+            `  ${s.wieseLeerGenannt ? "✅" : "❌"} SELBSTTEST W (Schritt zur Wiese ${s.wieseSchritt} m): der blinde Sicht-Satz — jede leere Senke mit Soll genannt (${s.wieseLeer || 0}), der Himmel ohne Soll still (${s.wieseHimmel || 0}) · ${s.wieseNullGenannt ? "✅" : "❌"} eine gelegte Null-3×3 genannt · ${s.wieseRingGenannt ? "✅" : "❌"} eine Instanz fort aus dem Ring genannt · ${s.wieseAltGenannt ? "✅" : "❌"} veraltete Instanzen im leeren Ring genannt`
         );
         if (!s.wieseAltGenannt) fails.push("SELBSTTEST: veraltete Instanzen im Ring ohne Büschel blieben ungesehen");
         if (!s.wieseLeerGenannt)

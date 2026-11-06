@@ -3986,7 +3986,11 @@
             //    Bremsweg ist v² / 2 (μ·g + Rollwiderstand). Gas, Ausrollen und Lenken auf μ 1 byte-gleich. ──
             let aDrive = 0;
             if (thr > 0) aDrive += Math.min(G.aEngine, G.aLeist / Math.max(0.1, Math.abs(vL))) * thr;
-            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
+            // DER TRITT IST ANALOG wie das Gas (w16-fahrt-weg): die Bremse verzögert brakeDecel · brk, der Rückwärtsgang zieht
+            // aEngine · rueckAntrieb · brk. Bis hier las der Schritt nur brk > 0: jeder Druck bremste voll — der Abzug des Pads
+            // (`lt`) war ein Schalter, und der Fahrer der Linie (`fahrerLinie`: im Rest des Reibkreises) wie der Fahrer der Welt
+            // traten im Bogen 14 m/s² gegen μ·g, das Heck brach aus. Taste (brk 1) byte-gleich.
+            if (brk > 0) aDrive -= (vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0) * brk;
             let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
             if (hand) Fr -= G.handDecel * m * sgn;
             // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,

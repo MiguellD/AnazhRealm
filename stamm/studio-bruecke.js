@@ -72,8 +72,9 @@ class AnazhRealm_studio_bruecke {
                 v: "?v=" + AnazhRealm.VERSION,
                 base: typeof window !== "undefined" && window.location ? window.location.href : "",
                 lesen: AnazhRealm.FOUNDRY_LESEN,
-                // die Typen, deren Ecken das Jahr trägt (SAISON_GESETZ `typ`): nur deren Teile behalten aCenter · aType
-                jahr: Object.values(AnazhRealm._saisonGesetz().typ),
+                // die Typen, deren Ecken ein Leser des Wirts liest (SAISON_GESETZ `typ`: Laub und Blüte das Jahr, den Halm die
+                // Ferne der Wiese): nur deren Teile behalten aCenter · aType
+                ecken: Object.values(AnazhRealm._saisonGesetz().typ),
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
                 module,
@@ -714,7 +715,14 @@ class AnazhRealm_studio_bruecke {
                         ? c.scripts.slice()
                         : liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
                 }));
-                schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+                schale({
+                    lesen: b.lesen,
+                    ecken: b.ecken,
+                    format: b.format,
+                    platte: b.platte,
+                    kerne,
+                    wirt: b.wirt || [],
+                });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
                 W.__PHYTO_FOUNDRY_WORKER = true;
@@ -766,8 +774,10 @@ class AnazhRealm_studio_bruecke {
     //                 `__stamp` (alle Kern-SHA) ab, fegt das Öffnen die Schlüssel, deren SHA kein Kern mehr trägt. Der
     //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte; die
-    //                 Jahres-Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ des Jahrs trägt (`cfg.jahr`,
-    //                 SAISON_GESETZ `typ`: Laub, Blüte) — Rinde, Nadel und Halm stehen im Jahr, sie tragen nichts davon.
+    //                 Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ trägt, den ein Leser des Wirts liest
+    //                 (`cfg.ecken`, SAISON_GESETZ `typ`: Laub und Blüte das Jahr, der Halm die Ferne der Wiese `_halmFerne`) —
+    //                 Rinde und Nadel stehen im Jahr, sie tragen nichts davon. Bis w14-wiese-saum strich die Schale sie am Halm:
+    //                 r184 las das fehlende Attribut als 0, jede Ähre der Ferne streckte sich wie ein Halm (helle Striche am Horizont).
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
@@ -783,11 +793,11 @@ class AnazhRealm_studio_bruecke {
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
-        if (!Array.isArray(cfg.jahr) || !cfg.jahr.length)
+        if (!Array.isArray(cfg.ecken) || !cfg.ecken.length)
             throw new Error(
-                "STOFF: die Transport-Schale kennt die Typen des Jahrs nicht (cfg.jahr, SAISON_GESETZ typ)"
+                "STOFF: die Transport-Schale kennt die Typen der gelesenen Ecken nicht (cfg.ecken, SAISON_GESETZ typ)"
             );
-        const JAHR = new Set(cfg.jahr);
+        const ECKEN = new Set(cfg.ecken);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -953,11 +963,11 @@ class AnazhRealm_studio_bruecke {
                     const a = m[k];
                     if (a && a.array && ArrayBuffer.isView(a.array) && !LESEN.has(k)) delete m[k];
                 }
-                // die Jahres-Ecken: nur, wo eine Ecke einen Typ des Jahrs trägt — sonst reisen sie nie (die Nadel-Krone)
+                // die Ecken: nur, wo eine Ecke einen gelesenen Typ trägt — sonst reisen sie nie (die Nadel-Krone)
                 const typ = m.aType && m.aCenter && m.aCenter.array ? m.aType.array : null;
-                let jahr = false;
-                for (let i = 0; typ && i < typ.length && !jahr; i++) jahr = JAHR.has(typ[i]);
-                if (!jahr) {
+                let gelesen = false;
+                for (let i = 0; typ && i < typ.length && !gelesen; i++) gelesen = ECKEN.has(typ[i]);
+                if (!gelesen) {
                     delete m.aCenter;
                     delete m.aType;
                 }
@@ -3739,9 +3749,10 @@ AnazhRealm._wortFalten = function (wort) {
 // DIE KONSUM-WAND des Foundry-Kanals (V18.511): GENAU die Vertex-Attribute, die `_foundryBuildMesh` liest — die
 // Transport-Schale (`_foundrySchale`) streicht im Worker jedes andere VOR Kopie, Platte und Transfer (aWind · aCenter ·
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
-// beide Seiten gegeneinander). DIE JAHRES-ECKEN aCenter · aType (vegetation.K5): die Mitte jedes Blatts und sein Typ — das
-// Laub fällt im Winter auf seine Mitte (`_jahrLage`); sie reisen nur an Teilen mit Laub oder Blüte (die Schale streicht sie
-// an jedem anderen, `cfg.jahr`), aWind bleibt ohne Leser.
+// beide Seiten gegeneinander). DIE ECKEN aCenter · aType: die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf
+// seine Mitte (`_jahrLage`, vegetation.K5), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`);
+// sie reisen nur an Teilen mit Laub, Blüte oder Halm (die Schale streicht sie an jedem anderen, `cfg.ecken`), aWind bleibt
+// ohne Leser.
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3759,8 +3770,9 @@ AnazhRealm.FOUNDRY_LESEN = [
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
 // Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
-// stünde still im Winter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 4;
+// stünde still im Winter); 5 = dazu am Halm (w14-wiese-saum — ein Gras der Platte 4 trüge sie nie, die Ähre der Ferne
+// streckte sich weiter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 5;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
