@@ -1252,6 +1252,19 @@ class AnazhRealm_siedlung_satz {
         }
     }
 
+    // DIE SUBSTANZ EINES BAUPLANS (Tags, Affordanzen, ihre Stärke): rein aus Bauplan und Stoffen. Ein Gang, in dem beide stehen
+    // (die Pflanz-Schlange, `_tickPendingVegSpawns` → `_bauplanJe`), rechnet sie EINMAL je Bauplan; sonst je Ruf.
+    _bauplanSubstanz(bp) {
+        const M = this._bauplanJe;
+        const alt = M ? M.get(bp) : null;
+        if (alt) return alt;
+        const tags = this.computeCompoundTags(bp);
+        const aff = this.computeBlueprintAffordances(bp, tags);
+        const sub = { tags, aff, staerke: this.computeAffordanceStrength(bp, aff, tags) };
+        if (M) M.set(bp, sub);
+        return sub;
+    }
+
     spawnArchitecture(type, position, opts = {}) {
         // JEDE ABSAGE DER WURZEL TRÄGT IHREN GRUND (Schau-2, Gegenprüfung Runde 3): `opts.absage(grund)` — der Setz-Op zählt sie,
         // der Satz des Ergebnisses (`_ergebnisSatz`, `SETZ_GRUND`) sagt sie; vorher fiel ein Wurf hier still.
@@ -1284,8 +1297,9 @@ class AnazhRealm_siedlung_satz {
                 return nein("unbekannt");
             }
         }
-        const builders = this._architectureBuilders();
-        if (!builders[type]) {
+        // der Bauer eines Typs ist sein Bauplan (`_architectureBuilders`: je Bauplan einer) — die Frage liest den Bauplan, nie die
+        // Karte aller Bauer (w15-strom-takt: je Wurf eine Schließung je Bauplan, 0,31 s Haupt-Faden in der Minute GT)
+        if (!Object.prototype.hasOwnProperty.call(this.state.blueprints || {}, type)) {
             if (this._foundryEnabled() && this._foundryNeedsBookForType(type)) {
                 const f = this._foundry;
                 this.log(
@@ -1442,11 +1456,12 @@ class AnazhRealm_siedlung_satz {
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];
         if (bp) {
-            const tags = this.computeCompoundTags(bp); // EINMAL je Spawn: Urteil und Stärke lesen dieselben Tags
-            entry.affordances = this.computeBlueprintAffordances(bp, tags);
-            // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
-            // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
-            entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
+            // EINMAL je Spawn: Urteil und Stärke lesen dieselben Tags; in einem Gang der Pflanz-Schlange EINMAL je Bauplan
+            // (`_bauplanSubstanz`). W10 ext. Politur — die Affordance-Stärke wird wie das Profil EINMAL beim Spawn eingefroren
+            // (Substanz-Schnappschuss); der Eintrag trägt eigene Objekte.
+            const sub = this._bauplanSubstanz(bp);
+            entry.affordances = Object.assign({}, sub.aff);
+            entry.affordanceStrength = Object.assign({}, sub.staerke);
             this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
             this._freiKoerperSetzen(entry, bp); // ein freier Bauplan (Kiste, Fass) ist ein Starrkörper des Lösers (physik.K3)
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die

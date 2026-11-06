@@ -1992,7 +1992,8 @@ class AnazhRealm_vegetation_wiese {
     // Höhe. Achsen: (1) STAND-Klump `_placementStandAt` (mittelwert-neutral) · (2) SLOPE `_slopeAt`
     // (flach favorisiert, auf |∇h| kalibriert) · (3) FEUCHTE `_feuchteAt` (nass → dichter) · (4) HÖHE
     // über Terrain-Basis (hoch → licht). Perf: × `_foliageDensityScale` (headless 1 = voll).
-    _placementDensityFactor(x, z, surfaceY, purpose) {
+    // `probe` (optional, `AnazhRealm._saatProbe`): Stand, Steilheit und Feuchte dieses Orts aus dem Feld der Saat (im Faden gerechnet).
+    _placementDensityFactor(x, z, surfaceY, purpose, probe) {
         const P = AnazhRealm.PLACEMENT_DENSITY;
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
@@ -2000,13 +2001,17 @@ class AnazhRealm_vegetation_wiese {
             return t * t * (3 - 2 * t);
         };
         // (1) STAND-Klumpung — Wald ↔ Lichtung / Dickicht ↔ magere Stelle.
-        const stand = this._placementStandAt(x, z, purpose); // [-1,1]
+        const stand = probe
+            ? purpose === "meadow"
+                ? probe.standWiese
+                : probe.standWald
+            : this._placementStandAt(x, z, purpose); // [-1,1]
         const clump = Math.max(P.clumpLo, Math.min(P.clumpHi, 1 + P.clumpAmp * stand));
         // (2) SLOPE-Gate — flach dicht, Steilwand kahl (die Vorlagen-Flach-Präferenz).
-        const slope = typeof this._slopeAt === "function" ? this._slopeAt(x, z) : 0;
+        const slope = probe ? probe.steil1 : typeof this._slopeAt === "function" ? this._slopeAt(x, z) : 0;
         const slopeF = 1 - ss(P.slopeLo, P.slopeHi, slope);
         // (3) FEUCHTE-Antrieb — nass → dichter, trocken → licht.
-        let wet = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, surfaceY) : 0;
+        let wet = probe ? probe.fe : typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, surfaceY) : 0;
         wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
         const wetF = P.wetBase + P.wetGain * wet;
         // (4) HÖHE über Terrain-Basis — die Höhe lichtet (Vorlagen-`dry`).

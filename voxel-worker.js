@@ -280,6 +280,11 @@ function nachricht(e) {
                 { type: "streu-region-result", requestId: msg.requestId, wuerfe: w.map((a) => a.buffer) },
                 w.map((a) => a.buffer)
             );
+        } else if (msg.type === "saat-feld") {
+            // DIE SAAT IM FADEN (w15-strom-takt, `saatFeld`): die Felder der Proben eines Chunks per Transfer zurück (Lehre 24) —
+            // der Haupt-Faden urteilt nur (Affinität, Würfe, Land) und setzt (`_vegetationSampleSpawn`)
+            const feld = saatFeld(msg);
+            self.postMessage({ type: "saat-feld-result", requestId: msg.requestId, feld: feld.buffer }, [feld.buffer]);
         } else if (msg.type === "ort-wahl") {
             // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
             // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
@@ -1217,6 +1222,53 @@ const STREU_LESER = {
     feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
     fieldAt: worldFieldAt,
 };
+
+// DIE SAAT-FELDER EINES CHUNKS (w15-strom-takt): je Probe des n×n-Rasters des Chunks (cx, cz) — derselbe Ort wie `_tickSaat`
+// — die Fläche (`voxelSurfaceY`, NaN ohne), die Feuchte an ihr und ohne sie (der Rückfall der Probe), die Steilheit am Sampler
+// ±2 m (`bodenHoehe`, die Wand der Art) und ±1 m (`_slopeAt` am Boden, die Ökologie der Platzierung) und den Stand des Walds und
+// der Wiese (Mirror `_placementStandAt`: der Rausch am Same + ":forest" / ":meadow", die Frequenz reist im Auftrag). Dieselben
+// Leser wie die Streu (`STREU_LESER`, Byte-Wand gate:scatter-slice); der Haupt-Faden liest das Feld in `_vegetationSampleSpawn`.
+const SAAT_FELD_K = 7;
+let standRausch = null;
+function placementStand(x, z, art, freq) {
+    const seed = state.seed || "anazh-realm-seed";
+    if (!standRausch || standRausch.seed !== seed) standRausch = { seed };
+    const k = art === "meadow" ? ":meadow" : ":forest";
+    const n = standRausch[k] || (standRausch[k] = new SimplexNoise(seed + k));
+    return n.noise2D(x * freq, z * freq);
+}
+function saatFeld({ cx, cz, span, n, freqWald, freqWiese }) {
+    const f = new Float64Array(n * n * SAAT_FELD_K);
+    const step = span / n;
+    const fl = (x, z) => {
+        const y = voxelSurfaceY(x, z);
+        return y === null || !Number.isFinite(y) ? NaN : y;
+    };
+    for (let i = 0; i < n * n; i++) {
+        const xi = i % n,
+            zi = (i / n) | 0;
+        const x = cx * span + (xi + 0.5) * step;
+        const z = cz * span + (zi + 0.5) * step;
+        const o = i * SAAT_FELD_K;
+        const y = fl(x, z);
+        f[o] = y;
+        if (!Number.isFinite(y)) continue;
+        const fe = feuchteAt(x, z, y);
+        f[o + 1] = fe;
+        f[o + 2] = Number.isFinite(fe) ? fe : feuchteAt(x, z);
+        const dhx = (bodenHoehe(x + 2, z) - bodenHoehe(x - 2, z)) / 4;
+        const dhz = (bodenHoehe(x, z + 2) - bodenHoehe(x, z - 2)) / 4;
+        f[o + 3] = Math.sqrt(dhx * dhx + dhz * dhz);
+        const [yE, yW, yN, yS] = [fl(x + 1, z), fl(x - 1, z), fl(x, z - 1), fl(x, z + 1)];
+        f[o + 4] =
+            Number.isFinite(yE) && Number.isFinite(yW) && Number.isFinite(yN) && Number.isFinite(yS)
+                ? Math.hypot((yE - yW) / 2, (yS - yN) / 2)
+                : 0;
+        f[o + 5] = placementStand(x, z, "forest", freqWald);
+        f[o + 6] = placementStand(x, z, "meadow", freqWiese);
+    }
+    return f;
+}
 
 function applyStateSnapshot(snap) {
     if (!snap) return;

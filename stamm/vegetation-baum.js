@@ -1383,10 +1383,15 @@ class AnazhRealm_vegetation_baum {
         return `fels_var${idx}`;
     }
 
-    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe) {
+    // `saat` (optional, `AnazhRealm._saatProbe`): die Felder dieser Probe aus dem Faden — sonst fragt sie selbst.
+    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe, saat) {
         // Nichts wächst im Wasser (0.4 m Marge gegen knöcheltiefes Ufer). Eine Quelle: die Spalten-Probe `_nassAt` —
-        // alle wasser-respektierenden Welt-Schichten lesen denselben Helfer.
-        if (!this._landAt(sampleX, sampleZ, 0.4)) return 0;
+        // alle wasser-respektierenden Welt-Schichten lesen denselben Helfer. DAS LAND URTEILT VOR DER WIRKUNG (w15-strom-takt,
+        // Lehre 25): die Probe fragt es vor jedem Wurf und jedem Wuchs eines Bauplans (`land`), nie vor den Urteilen, die
+        // ohne Wurf enden — der Gewinner Baum ist hier nur Wald-Marker (die Bäume pflanzt `_forestPlantChunk`), jede seiner
+        // Proben ohne Busch endet mit 0, im Wasser wie auf dem Land. Bis w15-strom-takt fragte jede Probe zuerst die Spalte
+        // (GT 64 m/s: `_landAt` 1,0 s Haupt-Faden in der Minute, die Saat 9 ms in den Bildern über p90).
+        const land = () => this._landAt(sampleX, sampleZ, 0.4);
 
         // Landmark-Pass: seltener, UNIFORMER Hash-Wurf. Eine Felsformation spawnt nur, wo die Region sie trägt
         // (dichte-getrieben); Bogen oder Turm entscheidet ein Hash-Münzwurf, kein Affinitäts-Wettstreit.
@@ -1411,8 +1416,18 @@ class AnazhRealm_vegetation_baum {
         // Γ1 — die FEUCHTE einmal pro Sample (surfaceY liegt hier schon vor;
         // der Bucket-Walk läuft 1× statt 1× je Kandidat) → alle Affinitäts-
         // Aufrufe dieses Samples lesen denselben Wert.
-        const feuchte = this._feuchteAt(sampleX, sampleZ, surfaceY);
-        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(sampleX, sampleZ);
+        const feuchte = saat ? saat.fe : this._feuchteAt(sampleX, sampleZ, surfaceY);
+        const fw = saat ? saat.fw : Number.isFinite(feuchte) ? feuchte : this._feuchteAt(sampleX, sampleZ);
+        // die Steilheit am Sampler ±2 m (die Wand der Art) und am Boden ±1 m (Fels, Wahrzeichen) — aus dem Feld oder gefragt
+        const steil2 = () => {
+            if (saat) return saat.steil2;
+            const dhx =
+                (this.getTerrainHeightAt(sampleX + 2, sampleZ) - this.getTerrainHeightAt(sampleX - 2, sampleZ)) / 4;
+            const dhz =
+                (this.getTerrainHeightAt(sampleX, sampleZ + 2) - this.getTerrainHeightAt(sampleX, sampleZ - 2)) / 4;
+            return Math.sqrt(dhx * dhx + dhz * dhz);
+        };
+        const steil1 = () => (saat ? saat.steil1 : this._slopeAt(sampleX, sampleZ));
         // die Tags je Bauplan aus der Tafel des Chunks (`_populateVoxelChunkVegetation`), sonst einmal hier
         const tafel = tagsJe || new Map();
         const affinitaet = (name) => {
@@ -1427,6 +1442,7 @@ class AnazhRealm_vegetation_baum {
             const affBogen = affinitaet("felsbogen");
             const affTurm = affinitaet("felsturm");
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
+                if (!land()) return 0;
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 // Enqueue statt sofort spawnen: der Streaming-Pump öffnet 9+ Chunks mit je bis zu 64 Samples, jeder
                 // Spawn kostet ~5-15 ms (Builder + Ammo-Body + BlockerAABBs + Remesh) → verteilt 4 Spawns/Frame.
@@ -1479,18 +1495,7 @@ class AnazhRealm_vegetation_baum {
             // Slope: |∇surf| über 4m-Fenster. Eine echte Hang-Steilheit, NICHT
             // pro-Frame teuer (4× getTerrainHeightAt ≈ 4 Density-Samples).
             const slopeMax = +sParams2.slopeMax || 1.5;
-            if (slopeMax < 1.5 && typeof this.getTerrainHeightAt === "function") {
-                const hxp = this.getTerrainHeightAt(sampleX + 2, sampleZ);
-                const hxn = this.getTerrainHeightAt(sampleX - 2, sampleZ);
-                const hzp = this.getTerrainHeightAt(sampleX, sampleZ + 2);
-                const hzn = this.getTerrainHeightAt(sampleX, sampleZ - 2);
-                if (Number.isFinite(hxp) && Number.isFinite(hxn) && Number.isFinite(hzp) && Number.isFinite(hzn)) {
-                    const dhx = (hxp - hxn) / 4;
-                    const dhz = (hzp - hzn) / 4;
-                    const slope = Math.sqrt(dhx * dhx + dhz * dhz);
-                    if (slope > slopeMax) return 0;
-                }
-            }
+            if (slopeMax < 1.5 && steil2() > slopeMax) return 0;
         }
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
@@ -1527,7 +1532,7 @@ class AnazhRealm_vegetation_baum {
             // Wald-Maske = die volle Platzierungs-Ökologie aus der EINEN Quelle `_placementDensityFactor` (Stand-
             // Klump × Slope-flach × Feuchte × Höhe × Perf): echte Wälder mit Rand + Lichtungen statt glatter
             // Gradienten; mittelwert-neutral, tag-neutral (chance-Skalar).
-            const forest = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "forest");
+            const forest = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "forest", saat);
             chance = Math.min(0.5, chance * forest);
         }
         if (probe >= chance) {
@@ -1540,9 +1545,10 @@ class AnazhRealm_vegetation_baum {
                 const lebendig2 = welt.lebendig;
                 // Der Unterwuchs folgt derselben Platzierungs-Ökologie über den ':meadow'-Stand (λ~40 m Dickicht) →
                 // dicht in feuchten flachen Lücken, licht am Hang.
-                const meadowF = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "meadow");
+                const meadowF = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "meadow", saat);
                 const bushChance = BUSH_RATE * (0.4 + lebendig2 * 0.9) * meadowF;
                 if (bushProbe < bushChance) {
+                    if (!land()) return 0;
                     // Spezies-Wahl: Feuchte > 0.55 → Farn; sonst lebendig >
                     // 0.5 → Blume; sonst Hazel. Deterministisch über noise2D.
                     const SB = AnazhRealm.SAAT_BUSCH;
@@ -1562,23 +1568,7 @@ class AnazhRealm_vegetation_baum {
                             if (relH2 < bhr[0] || relH2 > bhr[1]) return 0;
                         }
                         const bushSlopeMax = +bushParams.slopeMax || 1.5;
-                        if (bushSlopeMax < 1.5 && typeof this.getTerrainHeightAt === "function") {
-                            const hxp = this.getTerrainHeightAt(sampleX + 2, sampleZ);
-                            const hxn = this.getTerrainHeightAt(sampleX - 2, sampleZ);
-                            const hzp = this.getTerrainHeightAt(sampleX, sampleZ + 2);
-                            const hzn = this.getTerrainHeightAt(sampleX, sampleZ - 2);
-                            if (
-                                Number.isFinite(hxp) &&
-                                Number.isFinite(hxn) &&
-                                Number.isFinite(hzp) &&
-                                Number.isFinite(hzn)
-                            ) {
-                                const dhx = (hxp - hxn) / 4;
-                                const dhz = (hzp - hzn) / 4;
-                                const slope = Math.sqrt(dhx * dhx + dhz * dhz);
-                                if (slope > bushSlopeMax) return 0;
-                            }
-                        }
+                        if (bushSlopeMax < 1.5 && steil2() > bushSlopeMax) return 0;
                     }
                     // gen ≥ 4: durch den Wachstums-Pfad (rich Grammar baut den
                     // Busch genauso wie einen Baum — multi-level branches +
@@ -1624,7 +1614,7 @@ class AnazhRealm_vegetation_baum {
         if (bestName === "stein_block") {
             // Geologie-Regel: der Fels folgt dem HANG (`_rockGeologyClass`) — Form-Klasse UND Größe (Findling
             // groß, Talus klein), Mittelhang ohne Fels. EINE Quelle: `_slopeAt` speist Nische, Form und Skala.
-            const slopeR = typeof this._slopeAt === "function" ? this._slopeAt(sampleX, sampleZ) : 0;
+            const slopeR = steil1();
             const baseHr = (this.state && this.state.terrainBaseHeight) || 0;
             const relHr = surfaceY - baseHr;
             const geoCls = this._rockGeologyClass(slopeR, relHr);
@@ -1643,14 +1633,7 @@ class AnazhRealm_vegetation_baum {
             // Die Form folgt dem Terrain (`_landmarkVariantIdx`): steil → aufragend (Nadel/Stapel/Druse/tiefe
             // Esse), flach → gedrungen (Brocken/Geröll/Cluster/Lava-See); der Region-Hash bricht Gleichstände
             // (HISM-kohärent). Affinität unberührt (Variante, nicht Art).
-            const idx = this._landmarkVariantIdx(
-                landmarkPool.prefix,
-                landmarkPool.n,
-                regX,
-                regZ,
-                this._slopeAt(sampleX, sampleZ),
-                worldSeed
-            );
+            const idx = this._landmarkVariantIdx(landmarkPool.prefix, landmarkPool.n, regX, regZ, steil1(), worldSeed);
             const key = `${landmarkPool.prefix}_var${idx}`;
             if (this.state.blueprints && this.state.blueprints[key]) spawnName = key;
         }
@@ -1662,6 +1645,7 @@ class AnazhRealm_vegetation_baum {
         }
         // Yaw aus eigenen Seed-Bits — Bäume UND Felsen (alle ~radial-symmetrisch
         // im Footprint → der Quadrat-AABB der Kollision über-deckt; Gotcha).
+        if (!land()) return 0;
         const yawRoll = (rng.noise2D(sampleX * 0.71 - 5.2, sampleZ * 0.71 + 3.9) + 1) / 2;
         spawnYaw = yawRoll * Math.PI * 2;
 
@@ -2298,6 +2282,19 @@ class AnazhRealm_vegetation_baum {
         if (!queue || queue.length === 0) return 0;
         const rang = [];
         let spawned = 0;
+        // die Substanz je Bauplan EINMAL in diesem Gang (`_bauplanSubstanz`: Pläne und Stoffe ändern sich in ihm nicht)
+        const vorJe = this._bauplanJe;
+        this._bauplanJe = new Map();
+        try {
+            spawned = this._pflanzGang(queue, rang, maxPerFrame);
+        } finally {
+            this._bauplanJe = vorJe;
+        }
+        return spawned;
+    }
+    // Der Gang der Pflanz-Schlange: nah zuerst im Rang der Ankunft, höchstens `maxPerFrame` Würfe.
+    _pflanzGang(queue, rang, maxPerFrame) {
+        let spawned = 0;
         for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
             // ein Wurf, der während des Takts dazukam, trägt seinen Rang ab hier (der Stand der Bahn EINMAL je Runde)
             const bahn = rang.length < queue.length ? this._bedarfBahn() : null;
@@ -2386,6 +2383,9 @@ class AnazhRealm_vegetation_baum {
                 // (`_wuchsFehlt`) — ihr erster Schritt geht erst, wenn jeder Bauplan steht oder im Vorrat liegt; der synchrone
                 // Pfad (`sofort`) wächst selbst
                 if (!sofort && c.i === 0 && this._wuchsFehlt(c.cx, c.cz)) continue;
+                // DAS FELD DER SAAT AUS DEM FADEN (`_saatFeldBestellen`): im Takt wartet der Chunk, bis es kam
+                const feld = sofort ? null : this._saatFeldBestellen(c, span, SAMPLES);
+                if (feld === undefined) continue;
                 while (n < mindestens || performance.now() < frist) {
                     n++;
                     if (c.i === SAMPLES * SAMPLES) {
@@ -2401,16 +2401,55 @@ class AnazhRealm_vegetation_baum {
                     c.i++;
                     const sampleX = c.cx * span + (xi + 0.5) * step;
                     const sampleZ = c.cz * span + (zi + 0.5) * step;
-                    const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
+                    const probe = feld ? AnazhRealm._saatProbe(feld, c.i - 1, c.probe || (c.probe = {})) : null;
+                    const surfaceY = probe ? probe.y : this._voxelSurfaceY(sampleX, sampleZ);
                     if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
                     const seedForSpawn = ((c.cx * 73856093) ^ (c.cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
-                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe);
+                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe, probe);
                 }
             }
         } finally {
             this._vegSpawnImmediate = prevImmediate;
         }
         return spawned;
+    }
+
+    // DAS FELD DER SAAT (w15-strom-takt, Lehre 14): die Felder der 100 Proben eines Chunks rechnet der Streu-Faden (voxel-worker
+    // `saatFeld`: Fläche, Feuchte, Steilheit ±2 m und ±1 m, Stand von Wald und Wiese — dieselben Leser wie die Streu), der
+    // Haupt-Faden urteilt nur (`_vegetationSampleSpawn` mit der Probe). Der Chunk bestellt es mit seinem ersten Schritt (die
+    // Hydro-Kacheln um ihn stehen, sonst wartet er wie die Streu-Region) und wartet, bis es kam (undefined); ein Erdbau seit
+    // der Bestellung verwirft es (es fiel am alten Grund). Ohne Faden null: die Probe fragt selbst. Bis w15-strom-takt
+    // fragte jede Probe die Fläche und die Felder im Haupt-Faden (GT 64 m/s: die Saat 9 ms in den Bildern über p90,
+    // `_placementDensityFactor` 1,2 s, `getTerrainHeightAt` 0,5 s in der Minute).
+    _saatFeldBestellen(c, span, n) {
+        if (c.feld && c.feldErd === (this._erdbauStand | 0)) return c.feld;
+        c.feld = null;
+        if (!this._waldFadenLebt()) return null;
+        if (c.flug) return undefined;
+        if (this._ensureHydroTilesAround((c.cx + 0.5) * span, (c.cz + 0.5) * span, span / 2 + 16)) return undefined;
+        const P = AnazhRealm.PLACEMENT_DENSITY;
+        const erd = this._erdbauStand | 0;
+        c.flug = true;
+        this._nebenAuftrag("streu", {
+            type: "saat-feld",
+            cx: c.cx,
+            cz: c.cz,
+            span,
+            n,
+            freqWald: P.forestFreq,
+            freqWiese: P.meadowFreq,
+        }).then(
+            (msg) => {
+                c.flug = false;
+                if ((this._erdbauStand | 0) !== erd) return;
+                [c.feld, c.feldErd] = [new Float64Array(msg.feld), erd];
+            },
+            (e) => {
+                c.flug = false;
+                this._bruchMelden("SAAT: der Faden rechnete das Feld nicht — " + (e && e.message ? e.message : e));
+            }
+        );
+        return undefined;
     }
 
     // ### emergente Welt-Effekte ###
@@ -3101,6 +3140,14 @@ AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Eimer der Cull-Wache (m Spieler-Weg): ein Eintrag schläft nur, wenn sein Urteil mindestens einen Eimer weit steht.
 AnazhRealm.CULL_EIMER_M = 2;
+// DIE PROBE IM FELD DER SAAT (`_saatFeldBestellen`, voxel-worker `saatFeld`, je Probe SAAT_FELD_K = 7 Zahlen): `p` gefüllt mit
+// der Fläche `y`, der Feuchte an ihr (`fe`) und mit Rückfall (`fw`), der Steilheit ±2 m (`steil2`) und ±1 m (`steil1`) und dem
+// Stand von Wald und Wiese (`standWald`, `standWiese`) — der Leser `_vegetationSampleSpawn` und `_placementDensityFactor`.
+AnazhRealm._saatProbe = function (feld, i, p) {
+    const o = i * 7;
+    [p.y, p.fe, p.fw, p.steil2, p.steil1, p.standWald, p.standWiese] = [feld[o], feld[o + 1], feld[o + 2], feld[o + 3], feld[o + 4], feld[o + 5], feld[o + 6]]; // prettier-ignore
+    return p;
+};
 // V18.297 — wie viele autonom (vom Nexus) gespawnte Bauten gleichzeitig leben dürfen.
 // Großzügig (eine reiche ferne Welt), aber gedeckelt → der Heap kann nicht über Stunden
 // volllaufen (das war das Leck). Über dem Cap verblasst das Fernste (_capNexusStructures).
