@@ -1122,6 +1122,23 @@ class AnazhRealm_siedlung_verkehr {
             });
         }
         W.zonen.sort((a, b) => a.ein - b.ein);
+        // DIE DURCHFAHRT HÄLT, SOLANGE ER ZWISCHEN DEN ORTEN NIE HÄLT (das Gesetz der Kette: wer zwischen zwei Orten nicht halten
+        // kann, fährt beide mit einem Schlüssel): verlässt die Linie den Kreis einer Enge und tritt sie wieder in ihn, ohne
+        // dazwischen einen Punkt außerhalb jedes Orts seiner Linie zu berühren (der Ring der Wende, deren Bahn hinein und heraus
+        // den Kreis kreuzen), reicht die Durchfahrt bis zum letzten Punkt dieses Wiedereintritts — vor der nächsten Durchfahrt
+        // desselben Orts. Bis hier endete sie am ersten Austritt: an der Wende 994/372 von stadt-voll fuhr die Bahn heraus durch
+        // den Kreis der Enge 980,8/366, ohne dass eine Durchfahrt sie trug — Wagen 18 fuhr dort ohne Schlüssel (10 Uhr 207×,
+        // 23 Uhr 247×), verdeckt, solange die Kette den Schlüssel der gefahrenen Durchfahrt noch einmal nahm und nie abgab.
+        const imOrt = (k) => W.zonen.some((y) => Math.hypot(F.pts[k].x - y.Z.x, F.pts[k].z - y.Z.z) < y.Z.r);
+        for (const [n, y] of W.zonen.entries()) {
+            if (y.Z.art !== "enge") continue;
+            const naechste = W.zonen.slice(n + 1).find((x) => x.Z === y.Z);
+            const drin = (k) => Math.hypot(F.pts[k].x - y.Z.x, F.pts[k].z - y.Z.z) < y.Z.r;
+            let k = 0;
+            while (k < F.pts.length && F.bogen[k] <= y.aus) k++;
+            for (; k < F.pts.length && imOrt(k) && !(naechste && F.bogen[k] >= naechste.ein); k++)
+                if (drin(k)) y.aus = F.bogen[k];
+        }
         // was er hielt und in der neuen Linie nicht mehr hält (keine gehaltene Durchfahrt desselben Orts), gibt er frei
         for (const a of vorher) if (a.hat && !W.zonen.some((z) => z.hat && z.Z === a.Z)) AnazhRealm._verkehrLos(a.Z, W);
     }
@@ -1562,9 +1579,15 @@ class AnazhRealm_siedlung_verkehr {
             }
         const i0 = W.zonen.findIndex((z) => !z.weg);
         if (i0 < 0) return Infinity;
+        // DIE KETTE TRÄGT NUR, WAS VOR IHM LIEGT: eine Durchfahrt, die er schon hinter sich hat (`weg`), gehört ihr nie — auch wo sie
+        // in der Folge nach dem ersten offenen Ort steht (die Enge, die die Bahn hinein der Wende kreuzt, endet vor der Wende). Bis
+        // hier trug die Kette sie mit, und er nahm ihren Schlüssel noch einmal (`drinnen`), den er nie wieder abgab: stadt-voll
+        // 23 Uhr hielt Wagen 7 die Enge 980,8/366 vor der Wende 994/372 vom Ring bis ans Ende, Wagen 15 wartete davor auf sie,
+        // die Reihe hinter ihm füllte die Enge 956/394, und ab Minute 9 fuhr dort keiner mehr.
         const voll = [W.zonen[i0]];
         for (let k = i0 + 1; k < W.zonen.length; k++) {
             const z = W.zonen[k];
+            if (z.weg) continue;
             if (
                 z.ein - voll[voll.length - 1].aus < 2 * W.hl + V.abstandM &&
                 !voll.some((y) => y.Z === z.Z && y.dir === z.dir)

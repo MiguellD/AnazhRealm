@@ -755,6 +755,9 @@ async function probeLeben(expected) {
                 fahrtWer: null,
                 geh: 0,
                 fahrbahn: 0,
+                fahrbahnWer: new Map(),
+                leck: 0,
+                leckOrte: [],
                 bau: 0,
                 bauOrte: [],
             };
@@ -864,11 +867,20 @@ async function probeLeben(expected) {
                     let K = W;
                     for (let n = 0; n < 20 && K.grund !== "leib"; n++)
                         K = (K.grund === "wagen" ? K.vorne.O : [...K.reihe].flatMap((z) => z.halter).find((h) => h !== K)) || K; // prettier-ignore
-                    if (w < T.w60[0]) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
+                    const tiefer = w < T.w60[0];
+                    if (tiefer) T.w60 = [Math.round(w), W.nr, 0, T.min, K.grund === "leib" && !K.wer ? "spieler" : K.grund]; // prettier-ignore
+                    // der Kopf der Reihe beim Ort: Nr., Zustand, Lage und je Ort, auf den er wartet, Art, Mitte, Halter und Wartende
+                    if (tiefer) T.w60Ort = [K.nr, K.zustand, ...ort2(K.entry.position), [...K.reihe].map((z) => [z.art, ...ort2(z), z.halter.map((h) => h.nr), z.warte.map((h) => h.nr)])]; // prettier-ignore
                     T.w60[2] = T.min;
                 }
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
+                // DER SCHLÜSSEL OHNE DURCHFAHRT: kein Wagen steht unter den Haltern eines Orts, ohne eine gehaltene Durchfahrt dieses
+                // Orts vor sich (`hat`, nicht `weg`) — der Wagen, der den Ort hinter sich ließ und ihn doch hält [Proben, je Fall Wagen, Probe, Ort, Lage]
+                for (const Z of VK.zonen)
+                    for (const H of Z.halter)
+                        if (!H.zonen.some((y) => y.Z === Z && y.hat && !y.weg) && m.leck++ < 4)
+                            m.leckOrte.push([H.nr, k, Z.art, ...ort2(Z), ...ort2(H.entry.position), H.zustand, H.zonen.filter((y) => y.Z === Z).map((y) => [Math.round(y.ein), Math.round(y.aus), y.weg, y.hat])]); // prettier-ignore
                 const L = fahrend.map(lage);
                 const nicht = VK.wagen.filter((W) => !fahrend.includes(W) || !W.b.amSteuer || !W.b.leib);
                 if (VK.wagen.length - nicht.length < T.st[0]) T.st = [VK.wagen.length - nicht.length, k, ...nicht.map((W) => [W.nr, W.zustand])]; // prettier-ignore
@@ -877,9 +889,18 @@ async function probeLeben(expected) {
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
                 for (const W of fahrend)
                     if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
+                // DER TÄTER DER FAHRBAHN beim Namen: je Bewohner (sein Haus, sein Platz in der Liste) und dem Ort seines Tags, auf den
+                // er zugeht, die Schritte in der Bahn und der erste Punkt
                 for (const b of S.liste)
-                    if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
-                        [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + r._verkehrAufSpur(S, b.leib.position.x, b.leib.position.z, -R)]; // prettier-ignore
+                    if (b.leib && b.weg && !b.drinnen && !b.amSteuer) {
+                        const [x, z] = [b.leib.position.x, b.leib.position.z];
+                        const auf = r._verkehrAufSpur(S, x, z, -R);
+                        [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + auf];
+                        if (!auf) continue;
+                        const name = `#${b.heim}:${b.seed.split(":")[2]} ${b.rolle}/${b.beruf}→${Object.keys(b.orte).find((n) => b.orte[n] === b.ziel) || "?"}`; // prettier-ignore
+                        const t = m.fahrbahnWer.get(name) || m.fahrbahnWer.set(name, [0, Math.round(x * 10) / 10, Math.round(z * 10) / 10]).get(name); // prettier-ignore
+                        t[0]++;
+                    }
                 const [a, sp] = [r._lodAuge(), st.playerMesh.position];
                 for (const [n, W] of fahrend.entries()) {
                     const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
@@ -909,7 +930,7 @@ async function probeLeben(expected) {
                             !Z.halter.includes(W) &&
                             (Z.art !== "wende" || e._fahr.speed > 0.3)
                         )
-                            m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, Z.art, ...ort2(L[n])]);
+                            m.ohne++ < 6 && m.ohneOrte.push([W.nr, k, Z.art, ...ort2(L[n]), Math.round(W.F.s), W.zonen.filter((y) => y.Z === Z).map((y) => [Math.round(y.ein), Math.round(y.aus), y.weg, y.hat, y.dir]), Z.halter.map((h) => h.nr), W.zonen.filter((y) => !y.weg).map((y) => [y.Z.art, Math.round(y.ein), Math.round(y.aus), y.hat])]); // prettier-ignore
                     const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
                     if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
                     for (const b of S.liste)
@@ -922,6 +943,11 @@ async function probeLeben(expected) {
                                     ...ort2(L[n]),
                                     W.grund,
                                     b.weg ? "geht" : "steht",
+                                    // die Fahrt des Wagens, der Schritt des Leibs und der Ort seines Tags, auf den er zugeht
+                                    +((e._fahr && e._fahr.speed) || 0).toFixed(2),
+                                    +(b.vx || 0).toFixed(2),
+                                    +(b.vz || 0).toFixed(2),
+                                    Object.keys(b.orte).find((n) => b.orte[n] === b.ziel) || "?",
                                 ]);
                         }
                     // der Spieler zu Fuß ist ein Leib wie jeder Bewohner
@@ -1024,10 +1050,17 @@ async function probeLeben(expected) {
                     laengsteS: Math.round(m.fahrt),
                     wer,
                 },
-                fahrbahn: { geh: m.geh, auf: m.fahrbahn, anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4) },
+                fahrbahn: {
+                    geh: m.geh,
+                    auf: m.fahrbahn,
+                    anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4),
+                    wer: [...m.fahrbahnWer].sort((a, b) => b[1][0] - a[1][0]).slice(0, 12).map(([n, t]) => [n, ...t]), // prettier-ignore
+                },
                 amSteuer: T.st,
                 trasse: T.tr,
                 weg60: T.w60,
+                weg60Ort: T.w60Ort || null,
+                leck: [m.leck, m.leckOrte],
                 sitz: SZ,
                 abdruck: abdruck >>> 0,
             };

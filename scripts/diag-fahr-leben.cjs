@@ -786,7 +786,10 @@ const verkehrVerdict = (m) =>
         // stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
         [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
-        [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
+        [
+            m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M,
+            `fahrend je Minute ${JSON.stringify(m.weg60)}${m.weg60Ort ? " am Kopf " + JSON.stringify(m.weg60Ort) : ""}`,
+        ],
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -810,7 +813,7 @@ const verkehrVerdict = (m) =>
         ],
         [
             m.fahrbahn.anteil <= VERKEHR.fahrbahn,
-            `Bewohner auf der Fahrbahn ${m.fahrbahn.auf}/${m.fahrbahn.geh} Schritte (Soll ≤ ${VERKEHR.fahrbahn})`,
+            `Bewohner auf der Fahrbahn ${m.fahrbahn.auf}/${m.fahrbahn.geh} Schritte (Soll ≤ ${VERKEHR.fahrbahn}; die meisten ${JSON.stringify((m.fahrbahn.wer || []).slice(0, 3))})`,
         ],
         [!m.fest.length, `steckt: ${JSON.stringify(m.fest)}`],
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
@@ -823,6 +826,8 @@ const verkehrVerdict = (m) =>
         [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× tiefste ${JSON.stringify(m.beruehrt.tief)}`],
         [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
+        // DER SCHLÜSSEL OHNE DURCHFAHRT [Proben, je Fall Wagen, Probe, Ort, Lage, Zustand, seine Durchfahrten des Orts]
+        [!m.leck || !m.leck[0], `Schlüssel ohne Durchfahrt ${JSON.stringify(m.leck)}`],
         [!m.stoss.bau && !m.stoss.wagen && !m.stoss.leib, `Stoß ${JSON.stringify(m.stoss)}`],
         [
             m.querMax <= 1.5,
@@ -2423,6 +2428,11 @@ hauptLauf(async () => {
                     /ohne Schlüssel im Ort 1× \[\[14,9,"enge"/,
                 ],
                 [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
+                // stadt-voll 23 Uhr: Wagen 7 hielt die Enge 980,8/366 hinter sich (`weg`), Wagen 15 wartete auf sie bis zum Ende
+                [
+                    { leck: [1, [[7, 30720, "enge", 981, 366, 964, 383, "faehrt", [[24, 31, true, true]]]]] },
+                    /Schlüssel ohne Durchfahrt \[1,\[\[7,30720,"enge",981,366/,
+                ],
                 [{ querMax: 2.3 }, /Spur/],
                 [{ msJeSchritt: 2.4 }, /Takt 2.4/],
                 [{ stufe: { nah: 3 } }, /kein Wagen im 3D-Raum \(3/],
