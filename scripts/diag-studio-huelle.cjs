@@ -32,6 +32,13 @@
 //                     (VRAM und GPU-ms: ihr Anteil am Profi-Band) ROT beim Namen. Auf der Karte die GPU-ms der Zeitstempel
 //                     gegen die Bank-Runde von gpu-bank (`?bank=12`, nur GPU-gebunden eine Gegenzahl); beim Klang die
 //                     Audio-Graph-ms je Ort gegen den Echtzeit-Deckel des Quantums.
+//   H9 BÜHNE DER WELT (studios.K4, w13-buehne-lack) die Wand steht im Gesetz (welt-licht.js `buehneZeichnet`): jedes Bild einer
+//                     Bühne der Welt (garage, schmiede) bricht laut beim Namen, wenn sie neben dem Licht der Welt ein eigenes trägt
+//                     — ein Licht neben der Sonne, Sonne oder Belichtung neben dem Gesetz, ein Himmel neben seinem Knoten, ein Stoff
+//                     mit eigener Umgebung; der Gang (--engine) liest es über den EINEN Sammler der Seitenfehler. Der Selbsttest
+//                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
+//                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
+//                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -43,7 +50,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben, fadenScope } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 
 // Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
@@ -51,10 +58,8 @@ const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const STUDIOS = ["garage", "schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
 const NEBENWELTEN = ["skeleton", "fluid", "translated"];
 const GELAENDE = "worlds/gelaende/studio.js";
-const AUSGENOMMEN = {
-    begegnung: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
-    schwarm: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
-};
+const SAND = "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz";
+const AUSGENOMMEN = { begegnung: SAND, schwarm: SAND };
 // H4 — die Ofen-Studios (die Welt bäckt ihre Gestalt über BAKERS_BY_KIND); der Gang liest ihre L0 an der Kosten-Leiste (keine Ausnahme).
 const OFEN_STUDIOS = { tetrapoda: 1, koerperstudio: 1 };
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
@@ -66,7 +71,7 @@ const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
-const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -317,7 +322,7 @@ function selbsttest() {
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
         ["H6 die klang lädt das r160-UMD", { klang: ["/vendor/three.min.js"] }, /^H6 klang: die Seite lädt eine fremde Engine \(\/vendor\/three\.min\.js/],
         ["H6 die garage aufgelöst in die Welt (index.html?studio=garage)", { garage: ["/index.html", "/stamm/dirigent-kern.js", ...eine] }, /^H6 garage: die Seite lädt die Welt/],
-        ["H6 die schmiede lädt keine Kopie mehr (die Ratsche zieht an)", { schmiede: eine }, /^H6 schmiede: lädt keine fremde Engine mehr/],
+        ["H6 die portale lädt keine Kopie mehr (die Ratsche zieht an)", { portale: eine }, /^H6 portale: lädt keine fremde Engine mehr/],
         ["H3 die garage schreibt den offenen Zug nicht (Strg+Z stumm, 83df2052)", {}, /^H3 garage: Strg\+Z wirkt nicht/, { garage: { folge: [..."122222"] } }],
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
@@ -351,7 +356,18 @@ function selbsttest() {
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot"}`);
         if (!treffer) ok = false;
     }
-    return ok && !gangBasis.length;
+    // H9 — der Täter am Gesetz (Faden-Scope, three r184): ein Licht neben der Sonne (das Haupt der Matrix-Antike) und eine
+    // Belichtung neben der des Gesetzes brechen laut beim Namen; den sauberen Fall zeichnen garage und schmiede im Gang
+    const { THREE: T, __weltLicht: L } = fadenScope(["foundry-core.js", "welt-licht.js"]);
+    let h9 = "";
+    try {
+        L.buehneZeichnet({ sonne: 0, belichtung: 1, tafeln: { rtEq: {}, U: { licht: {} } } }, new T.Scene().add(new T.PointLight()), {});
+    } catch (e) {
+        h9 = e.message;
+    }
+    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1/.test(h9);
+    console.log(`${h9ok ? "✅" : "❌"} SELBST-TEST H9 ${h9}`);
+    return ok && h9ok && !gangBasis.length;
 }
 
 // ── DER GANG (`--engine`, Rezept linse: lokal die GPU, CI swiftshader): je Seite der Hülle EIN Besuch im echten Browser —

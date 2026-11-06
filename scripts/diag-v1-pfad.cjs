@@ -969,7 +969,7 @@ function wand(src) {
         ],
         [
             "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
+            WARTENDE.every((n) => foundryNamen.has(n)) && !polls.length,
             `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n))
                 .map((n) => " · ungezählt " + n)
                 .join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
@@ -2051,15 +2051,20 @@ async function korpusSatz(a) {
     }
     const t0 = performance.now();
     const echo = (z) => r._chatEcho(z);
-    await (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo));
-    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
-    // das Fenster zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
-    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang++) {
+    const antwort = (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo)).then(
+        () => (e.antwortMs = Math.round(performance.now() - t0))
+    );
+    // DIE ERSTE WIRKUNG (ki.K5): das Prädikat liest die Welt ab dem Satz, nie erst ab dem Ende der Antwort (die Tat läuft im
+    // Strom, `_llmStrom`); die Welt steht, solange die Antwort läuft (wie vor ki.K5 — eine tickende Welt schriebe ins Tagebuch
+    // und bräche den Prompt-Cache des Modells), das Fenster danach zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
+    for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += e.antwortMs > 0) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
         if (e.praedikat) break;
-        await new Promise((ok) => (r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
+        await new Promise((ok) => (gang && r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
     }
-    Object.assign(e, { weltMs: e.praedikat ? Math.round(performance.now() - t0) : null, lauf: K.lauf });
+    e.weltMs = e.praedikat ? Math.round(performance.now() - t0) : null;
+    await antwort;
+    Object.assign(e, { antwort: K.antwort, lauf: K.lauf });
     e.fehler = (window.__seitenfehler || 0) - f0;
     return e;
 }
@@ -2128,7 +2133,7 @@ const mitschnitt = (ratsche) => (req) =>
             const inhalt = p === false ? "kein JSON" : JSON.stringify({ say: "Aus dem Mitschnitt.", program: p });
             fertig(
                 JSON.stringify(
-                    p === undefined ? { error: "kein Mitschnitt" } : { message: { role: "assistant", content: inhalt } }
+                    p === undefined ? { error: "kein Mitschnitt" } : { message: { content: inhalt } }
                 )
             );
         });
@@ -2224,7 +2229,7 @@ async function korpusHaupt() {
     const ist = `${m.saetze.length} Sätze · ${[teil, mutante, modell].filter(Boolean).join(" · ")} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
     check(
         `WORT der Korpus über den echten Chat-Pfad (${echt ? "echter Anbieter" : "Mitschnitt"}): das Soll, 0 Brüche, Negativ-Sätze ohne Tat`,
-        v.length === 0,
+        !v.length,
         ist + (v.length ? " — Täter: " + v.join(" · ") : "")
     );
     console.log(errs.length ? `\n❌ ROT — ${errs.length} Verletzung(en).` : "\n✅ GRÜN — der Korpus hält sein Soll.");
@@ -2664,7 +2669,7 @@ hauptLauf(async () => {
                 ],
             ],
         ]) {
-            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
+            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
             for (const [name, bruch, soll] of brueche) {
                 const v = urteil(Object.assign({}, gesund, bruch));
                 check(
@@ -3264,7 +3269,7 @@ hauptLauf(async () => {
         const v = urteil(mm);
         check(
             `${kurz} ${name}`,
-            v.length === 0,
+            !v.length,
             `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
         );
     }
