@@ -8,7 +8,7 @@ class AnazhRealm_stoff_karte {
     // IN DER WELT (S2, `_karteWeltBacken`): der Welt-Renderer zeichnet die L1-Gestalt, die GPU zieht die deckungstreuen Mips
     // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer; die BC-Bytes reisen
     // EINMAL zurück auf die Platte der Schale, der Zweit-Boot legt sie, ohne zu backen (pipeline.K4 Stufe 2). Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
-    // Albedo + BC5-Normale auf 1/normalTeiler + rg8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
+    // Albedo + BC5-Normale auf 1/normalTeiler + rgba8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,55 MiB je
     // Schicht), ohne es (WebGL2, WebGPU ohne BC) zeichnet die Karte direkt in die Schicht eines rgba8-Array-Ziels, die GPU
     // zieht die Mips (2,8 MiB je Schicht; `_impostorAtlasTexturen` meldet es EINMAL laut). Befund V18.528: je Karte zwei
     // CanvasTextures, ein Material, eine Gruppe und ein Programm — 31 MB, ~90 Pipelines.
@@ -136,7 +136,7 @@ class AnazhRealm_stoff_karte {
                 at.nmap.name = "karte-normal:atlas";
                 at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
                 at.lmap.name = "karte-licht:atlas";
-                at.lmap.format = T.RGFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6)
+                at.lmap.format = T.RGBAFormat; // die Sonnen-Sicht: die vier Beiwerte ihres linearen Felds (w14-nadel-licht)
                 // die Tiefe je Texel (w4-laub-karte, phyto-core `karteTiefe`): BC4 im Maß und mit der Kette der Normale
                 at.tmap = new T.CompressedArrayTexture(mips(M.t), M.nw, M.nh, cap, T.RED_RGTC1_Format);
                 at.tmap.name = "karte-tiefe:atlas";
@@ -585,16 +585,16 @@ class AnazhRealm_stoff_karte {
         // die Lese-Tiefe der Sonnen-Kacheln, solange sie selbst Ziel sind (eine Textur ist nie Ziel und Bindung zugleich)
         B.leer = ziel(4, 4, 1);
         // DIE SONNEN-SICHT DER KRONE (A7-Term, `KARTE_SONNEN_SICHT`): die Krone wirft in der Welt ihren Schatten auf sich
-        // selbst, die Karte wirft nie. Je Texel der Anteil des Richtlichts aus dem oberen Halbraum, den die eigene Krone
-        // durchlässt — N·L-gewichtet über die Richtungen, im Baum-Raum (sie drehen mit jeder Ansicht), aus den Tiefen-
-        // Kacheln derselben Krone (3×3 Abgriffe). Der Kartenstoff legt sie auf den EMPFANGENEN Schatten (`receivedShadowNode`),
-        // nie auf die Albedo: der Himmel bleibt frei wie an der Gestalt.
-        // DIE HÖHE DES LICHTS (F6): die Sicht reist ZWEIFACH — die des Zenits (die erste Richtung) und das N·L-Mittel des
-        // 45°-Kranzes —, und der Kartenstoff liest sie nach der Höhe des aktiven Körpers (`uSunDir`, Sonne oder Mond). Das eine
-        // Mittel über alle Richtungen ließ die Mittagssonne durch die hohe Fichte wie durch ihre Flanke: ihr Sonnen-Licht stand
-        // 1,42 × über dem ihrer Gestalt (Radeon, Mess-Wiese, Mittag), die Sicht des Zenits allein 0,75 ×.
-        if (SZ.richtungen[0][0] !== 90 || SZ.richtungen.slice(1).some(([h]) => h !== 45))
-            throw this._stoffBruch("die Karte: KARTE_SONNEN_SICHT trägt den Zenit zuerst, dann den 45°-Kranz");
+        // selbst, die Karte wirft nie. Je Texel misst die Bühne, welchen Teil des Richtlichts die eigene Krone aus JEDER
+        // Richtung der Tafel durchlässt (die Tiefen-Kacheln derselben Krone, 3×3 Abgriffe, im Baum-Raum — sie drehen mit
+        // jeder Ansicht), und legt die Sicht als FUNKTION DER RICHTUNG ab: ihr lineares Feld v(d) = c0 + c·d (die erste
+        // Ordnung der Kugelflächen-Funktionen, vorberechneter Licht-Transport nach Sloan, Kautz und Snyder 2002), über die
+        // Richtungen der Tafel nach kleinsten Quadraten gefittet (`B.fit`). Der Kartenstoff liest das Feld an der Richtung des
+        // aktiven Körpers im Baum-Raum (`uSunDir`, Sonne oder Mond, über die EINE Naht) und legt es auf den EMPFANGENEN
+        // Schatten (`receivedShadowNode`), nie auf die Albedo: dieselbe Richtung, die die Kaskade an der Gestalt prüft, der
+        // Himmel bleibt frei wie an ihr. Bis w14-nadel-licht trug die Sicht zwei Zahlen, den Zenit und das N·L-gewichtete Mittel
+        // des 45°-Kranzes, und der Stoff mischte sie nach der Höhe: die der tiefen Sonne abgewandte Seite der Krone las die Sicht
+        // IHRER Seite, ihr Durchlass leuchtete (Radeon, Messort dorf, Sonne 7°: Karte/Gestalt Fichte 1,217, Tanne 1,146).
         B.uBaum = S.uniform(new T.Matrix4());
         B.uVP = SZ.richtungen.map(() => S.uniform(new T.Matrix4()));
         B.dirs = SZ.richtungen.map(([h, a]) => {
@@ -602,17 +602,28 @@ class AnazhRealm_stoff_karte {
                 ea = (a * Math.PI) / 180;
             return new T.Vector3(Math.cos(eh) * Math.cos(ea), Math.sin(eh), Math.cos(eh) * Math.sin(ea));
         });
+        // DER FIT (kleinste Quadrate): je Richtung j die Gewichte ihrer Sicht in (c0, cx, cy, cz) — (AᵀA)⁻¹ · (1, d_j)
+        const AtA = new T.Matrix4();
+        AtA.elements.fill(0);
+        for (const d of B.dirs) {
+            const a = [1, d.x, d.y, d.z];
+            for (let i = 0; i < 16; i++) AtA.elements[i] += a[i >> 2] * a[i & 3];
+        }
+        if (!(Math.abs(AtA.determinant()) > 1e-6))
+            throw this._stoffBruch(
+                "die Karte: die Richtungen der KARTE_SONNEN_SICHT spannen das lineare Feld der Sicht nicht auf"
+            );
+        const inv = AtA.invert().elements;
+        B.fit = B.dirs.map((d) =>
+            [0, 1, 2, 3].map((k) => inv[k] + inv[4 + k] * d.x + inv[8 + k] * d.y + inv[12 + k] * d.z)
+        );
         B.tiefe = S.texture(B.leer.depthTexture);
         const gpuKoord = this.state.renderer.coordinateSystem === T.WebGPUCoordinateSystem;
         const sicht = S.Fn(() => {
             const nB = S.normalize(B.uBaum.mul(S.vec4(S.normalWorld, 0.0)).xyz).toVar();
             const pB = B.uBaum.mul(S.vec4(S.positionWorld, 1.0)).xyz.add(nB.mul(SZ.normalBias)).toVar();
-            const zenit = S.float(1.0).toVar();
-            const summe = S.float(0.0).toVar();
-            const gew = S.float(0.0).toVar();
-            const roh = S.float(0.0).toVar();
+            const c = [0, 1, 2, 3].map(() => S.float(0.0).toVar());
             B.dirs.forEach((d, j) => {
-                const nl = S.max(S.dot(nB, S.vec3(d.x, d.y, d.z)), 0.0);
                 const q = B.uVP[j].mul(S.vec4(pB, 1.0));
                 const u = q.x.mul(0.5).add(0.5);
                 const v = gpuKoord ? S.float(0.5).sub(q.y.mul(0.5)) : q.y.mul(0.5).add(0.5);
@@ -624,14 +635,11 @@ class AnazhRealm_stoff_karte {
                 let vis = S.float(0.0);
                 for (let dy = -1; dy <= 1; dy++)
                     for (let dx = -1; dx <= 1; dx++) vis = vis.add(S.step(ref, B.tiefe.load(px.add(S.ivec2(dx, dy)))));
-                if (j === 0) zenit.assign(vis.div(9.0));
-                else {
-                    summe.addAssign(vis.div(9.0).mul(nl));
-                    gew.addAssign(nl);
-                    roh.addAssign(vis.div(9.0));
-                }
+                const sj = vis.div(9.0).toVar();
+                c.forEach((ck, k) => ck.addAssign(sj.mul(B.fit[j][k])));
             });
-            return S.vec2(zenit, S.select(gew.greaterThan(1e-4), summe.div(gew), roh.div(B.dirs.length - 1)));
+            // das Feld in rgba8: je Beiwert seine Spanne (`KARTE_SONNEN_SICHT.spanne`) auf 0..1
+            return S.vec4(...c.map((ck, k) => ck.sub(SZ.spanne[k][0]).div(SZ.spanne[k][1] - SZ.spanne[k][0])));
         })();
         // DIE GANZE NORMALE (F6): die Krone lichtet flip-frei (`_laubStoffNormale`) — durch ihre Lücken zeigt sie Nadeln der
         // Rückseite, deren Normale vom Auge weg steht. Zwei Kanäle tragen die Kugel oktaedrisch (`oktZu`, gelesen in `oktAuf` und
@@ -653,14 +661,16 @@ class AnazhRealm_stoff_karte {
         const tiefe = globalThis.__phytoCore
             .karteTiefe(AnazhRealm._windTsl(S), S.positionView.z.add(B.uTiefe.x), B.uTiefe.y, B.uTiefe.z)
             .clamp(0.0, 1.0);
-        // die Leere trägt jedes Ziel außer dem ersten als (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
+        // die Leere trägt die Normale als (0, 0, 0, 1): die Deckung reist dort in z; die Sonnen-Sicht als (0, 0, 0, 0) — ihre
+        // vier Beiwerte stehen vormultipliziert mit der Deckung, und die Deckung ist das Alpha der Albedo (rgba8: der Stoff
+        // teilt durch sie; BC: die Ablage mittelt nur deckende Texel)
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
             [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, tiefe),
-            [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
+            [namen[2]]: sicht,
         });
         // DIE LEERE DES ZIELS (z120): vor der ersten Ansicht einer Karte ZEICHNET die Bühne ihr Ziel leer — ein Viereck über das
-        // ganze Ziel, Albedo (0, 0, 0, 0), Normale und Sonnen-Sicht (0, 0, 0, 1) —, ihr Pass leert nur die Tiefe. Bis z120 trug
+        // ganze Ziel, Albedo (0, 0, 0, 0), Normale (0, 0, 0, 1) und Sonnen-Sicht (0, 0, 0, 0) —, ihr Pass leert nur die Tiefe. Bis z120 trug
         // das Leeren des Passes die Leere: das WebGL2-Rückend von r184 erreicht mit keinem Leeren (autoClear wie clear()) eine
         // Schicht ≥ 1 des Array-Ziels, eine Zeichnung erreicht sie (gemessen, Radeon WebGL2). Ihre Normale trug w = 0, die Mips
         // der Tiefe (1 − (1 − w)/z) liefen an der Silhouette bis −90 m — jede Karte ab der zweiten Schicht stand hinter allem,
@@ -674,7 +684,7 @@ class AnazhRealm_stoff_karte {
             mrt: S.mrt({
                 [namen[0]]: S.vec4(0, 0, 0, 0),
                 [namen[1]]: S.vec4(0, 0, 0, 1),
-                [namen[2]]: S.vec4(0, 0, 0, 1),
+                [namen[2]]: S.vec4(0, 0, 0, 0),
             }),
         };
         this._karteBuehneSatz = B;
@@ -1178,7 +1188,7 @@ class AnazhRealm_stoff_karte {
             zuege.push({ pipe, slot: slots.length - 1, x: Math.max(1, x), y: Math.max(1, y || 1) });
         };
         const ablage = (tex, mip, w, h, blockB, vonW) => {
-            // vonW: Texel je Wort-Spalte (bc: 4 Texel je Block; rg8: 2 Texel je Wort) — die Zeile auf 256 B gepolstert
+            // blockB: Bytes je Block (bc: 4×4 Texel; die Sonnen-Sicht rgba8: 4 Texel einer Zeile, 16 B) — die Zeile auf 256 B gepolstert
             const zeileB = pad((w / 4) * blockB);
             const zeilen = tex === 2 ? h : h / 4;
             const off = ausB;
@@ -1280,12 +1290,12 @@ class AnazhRealm_stoff_karte {
             nq = no;
             no += wj * hj;
         }
-        // Sonnen-Sicht: rg8 (Zenit, 45°-Kranz), eine Stufe
-        const l = ablage(2, 0, M.lw, M.lh, 8);
+        // Sonnen-Sicht: rgba8 (die vier Beiwerte ihres linearen Felds), eine Stufe
+        const l = ablage(2, 0, M.lw, M.lh, 16);
         zug(
             "sicht",
             Object.assign({}, base, { w: M.lw, h: M.lh, t: G.lichtTeiler, aus: l.aus, zeile: l.zeile }),
-            Math.ceil((M.lw * M.lh) / 2 / 64),
+            Math.ceil((M.lw * M.lh) / 64),
             1
         );
         if (nurLage) return { kopien, ausB };
@@ -1298,7 +1308,7 @@ class AnazhRealm_stoff_karte {
             nsum: mk("nsum", no * 16, U.STORAGE),
             dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
             dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
-            zahl: mk("zahl", (V + 3) * 4, U.STORAGE | U.COPY_DST),
+            zahl: mk("zahl", (V + 5) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
             saum: mk("saum", 48, U.UNIFORM | U.COPY_DST), // [e je Ring, Kronen-Fuß je Ring, nadel, Stärke] je Bake (`_karteSaumVon`)
@@ -1459,8 +1469,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_karte]);
 // W6 — DIE EINE Karten-Gruppe: jede Impostor-Instanz jeder Art (Streu, gesetzt, Band-Partner) zeichnet in DIESER
 // globalen Gruppe (`_archInstanceGroupFor`), die Schicht wählt aKarte.x (`_impostorAtlas`).
 AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
-// Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht 0,49 MiB mit den Hebungs-Ringen (lod.K3:
-// BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht 56 KB, 128 × 3584 samt Mips; waagrecht allein 0,28 MiB), das Wachsen
+// Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht 0,55 MiB mit den Hebungs-Ringen (lod.K3:
+// BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht rgba8 112 KB, 128 × 3584 samt Mips; waagrecht allein 0,3 MiB), das Wachsen
 // kopiert nur beim Einzug einer Art (Mess-Wiese 18 Karten in 18 Schichten).
 AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // DAS GITTER DER KARTE (heil-laub-tiefe, `_impostorQuad` und der Stoff): `zellen` Spalten × Zeilen, an deren Ecken der Stoff die
@@ -1476,8 +1486,11 @@ AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Obj
 AnazhRealm.KARTE_WELT_MS = 4;
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
 AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
-// DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): Richtlichter aus dem oberen Halbraum als (Höhe, Azimut) in Grad, je
-// gleich stark; die Tiefen-Kachel je Richtung (px) und ihr Versatz (Tiefe, Normale in m) gegen die Selbst-Verschattung.
+// DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): die Richtungen, aus denen die Bühne die Sicht misst, als (Höhe,
+// Azimut) in Grad — der Zenit, der 45°-Kranz und versetzt der Kranz der tiefen Sonne (15°), acht Azimute im Ganzen; über sie
+// fittet die Bühne das lineare Feld v(d) = c0 + c·d (w14-nadel-licht). `spanne` je Beiwert (c0, cx, cy, cz) das Intervall,
+// das rgba8 trägt (die Grenzen des Fits über jede Sicht 0/1 der Richtungen: c0 −0,40…1,40, cx und cz ±0,72, cy ±1,76); die
+// Tiefen-Kachel je Richtung (px) und ihr Versatz (Tiefe, Normale in m) gegen die Selbst-Verschattung.
 AnazhRealm.KARTE_SONNEN_SICHT = Object.freeze({
     richtungen: Object.freeze([
         [90, 0],
@@ -1485,6 +1498,16 @@ AnazhRealm.KARTE_SONNEN_SICHT = Object.freeze({
         [45, 90],
         [45, 180],
         [45, 270],
+        [15, 45],
+        [15, 135],
+        [15, 225],
+        [15, 315],
+    ]),
+    spanne: Object.freeze([
+        [-0.5, 1.5],
+        [-1, 1],
+        [-2, 2],
+        [-1, 1],
     ]),
     karte: 256,
     bias: -0.0005,
@@ -1543,17 +1566,16 @@ fn imFeld(f: vec4<u32>, i: u32) -> u32 {
     return (f.y + i / f.z) * p.w + f.x + i % f.z;
 }
 
-// Stufe 0: die Deckung je Ansicht und die Sonnen-Sicht über die deckenden Texel (zahl: [0, V) Deckung, V Summe des Zenits,
-// V+1 Zahl, V+2 Summe des 45°-Kranzes)
+// Stufe 0: die Deckung je Ansicht und die Sonnen-Sicht über die deckenden Texel (zahl: [0, V) Deckung, V … V+3 die Summen
+// der vier Beiwerte ihres Felds, V+4 Zahl)
 @compute @workgroup_size(16, 16)
 fn stufe0(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
     if (!deckt(g.x, g.y)) { return; }
     atomicAdd(&zahl[ansicht(g.x, g.y)], 1u);
-    let s = textureLoad(tSicht, vec2<i32>(g.xy), 0);
-    atomicAdd(&zahl[p.V], u32(round(clamp(s.r, 0.0, 1.0) * 255.0)));
-    atomicAdd(&zahl[p.V + 1u], 1u);
-    atomicAdd(&zahl[p.V + 2u], u32(round(clamp(s.b, 0.0, 1.0) * 255.0)));
+    let s = vec4<u32>(round(clamp(textureLoad(tSicht, vec2<i32>(g.xy), 0), vec4<f32>(0.0), vec4<f32>(1.0)) * 255.0));
+    for (var c = 0u; c < 4u; c++) { atomicAdd(&zahl[p.V + c], s[c]); }
+    atomicAdd(&zahl[p.V + 4u], 1u);
 }
 
 // Stufe k aus k-1: die Summe (r·a, g·a, b·a, a) der vier Kinder — a zählt die deckenden Stufe-0-Texel des Fußabdrucks;
@@ -1988,39 +2010,37 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne
-// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rg8 (r der Zenit, g der
-// 45°-Kranz, F6), 2 Texel je Wort
+// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rgba8, die vier Beiwerte
+// ihres linearen Felds (w14-nadel-licht), 1 Texel je Wort — eine Schicht ohne Blatt die freie Sicht (c0 1, c 0)
 @compute @workgroup_size(64)
 fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
-    let je = p.w / 2u;
-    let y = g.x / je;
+    let y = g.x / p.w;
     if (y >= p.h) { return; }
-    let wx = g.x - y * je;
-    let zz = atomicLoad(&zahl[p.V + 1u]);
-    var mittel = vec2<f32>(1.0);
+    let x = g.x - y * p.w;
+    let zz = atomicLoad(&zahl[p.V + 4u]);
+    var mittel = vec4<f32>(${AnazhRealm.KARTE_SONNEN_SICHT.spanne.map(([a, b], k) => (+!k - a) / (b - a)).join(", ")});
     if (zz > 0u) {
-        mittel = vec2<f32>(f32(atomicLoad(&zahl[p.V])), f32(atomicLoad(&zahl[p.V + 2u]))) / f32(zz) / 255.0;
+        mittel = vec4<f32>(
+            f32(atomicLoad(&zahl[p.V])),
+            f32(atomicLoad(&zahl[p.V + 1u])),
+            f32(atomicLoad(&zahl[p.V + 2u])),
+            f32(atomicLoad(&zahl[p.V + 3u]))
+        ) / f32(zz) / 255.0;
     }
-    var wort = 0u;
-    for (var j = 0u; j < 2u; j++) {
-        let x = wx * 2u + j;
-        var s = vec2<f32>(0.0);
-        var n = 0.0;
-        for (var dy = 0u; dy < p.t; dy++) {
-            for (var dx = 0u; dx < p.t; dx++) {
-                let sx = x * p.t + dx;
-                let sy = y * p.t + dy;
-                if (deckt(sx, sy)) {
-                    s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0).rb;
-                    n += 1.0;
-                }
+    var s = vec4<f32>(0.0);
+    var n = 0.0;
+    for (var dy = 0u; dy < p.t; dy++) {
+        for (var dx = 0u; dx < p.t; dx++) {
+            let sx = x * p.t + dx;
+            let sy = y * p.t + dy;
+            if (deckt(sx, sy)) {
+                s += textureLoad(tSicht, vec2<i32>(i32(sx), i32(sy)), 0);
+                n += 1.0;
             }
         }
-        var wert = mittel;
-        if (n > 0.0) { wert = s / n; }
-        let q = vec2<u32>(round(clamp(wert, vec2<f32>(0.0), vec2<f32>(1.0)) * 255.0));
-        wort |= (q.x | (q.y << 8u)) << (16u * j);
     }
-    aus[p.aus + y * p.zeile + wx] = wort;
+    var wert = mittel;
+    if (n > 0.0) { wert = s / n; }
+    aus[p.aus + y * p.zeile + x] = pack4x8unorm(wert);
 }
 `;
