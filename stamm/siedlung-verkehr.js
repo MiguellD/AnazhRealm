@@ -1464,7 +1464,7 @@ class AnazhRealm_siedlung_verkehr {
                         if (!l || l.vkStempel === st) continue;
                         l.vkStempel = st;
                         for (const o of l) {
-                            if (o.wagen || !o.leib || o.drinnen) continue;
+                            if (o.wagenLeib || !o.leib || o.drinnen) continue;
                             const lp = o.leib.position;
                             let nah = false;
                             for (let k = 0; !nah && k < P.length; k++)
@@ -1801,7 +1801,12 @@ class AnazhRealm_siedlung_verkehr {
                     rueck: Infinity,
                     same: -2,
                     drinnen: false,
-                    wagen: W,
+                    // DER LEIB DES WAGENS heißt `wagenLeib`, nie `wagen`: `wagen` trägt der Bewohner, der ihn fährt (Fahrer und
+                    // Nachtfahrer, `_verkehrAnlegen`) — auch zu Fuß. Bis hier hieß beides `wagen`, und jeder Leser, der den Leib des
+                    // Wagens überging, überging den Fahrer mit: kein Wagen hielt vor einem Fahrer, der über seine Bahn ging, keiner
+                    // bat ihn um Platz (stadt-voll 10 Uhr: Wagen 3 fuhr mit 7,6 m/s durch den Nachtfahrer 7:82:1 an der Bahn der
+                    // Wende 924/354, 9 Proben „berührt Bewohner")
+                    wagenLeib: W,
                     kR: W.hw * Math.SQRT2 + AnazhRealm.PLAYER_WALL_RADIUS + 0.05,
                     rk: undefined, // seine Zelle (`_bewohnerRasterLage`): die Gestalt steht ab der Geburt (Lehre 25)
                 })));
