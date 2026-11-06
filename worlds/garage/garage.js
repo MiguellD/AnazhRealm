@@ -726,11 +726,24 @@ const _stand=o=>[o,o.material,o.material.version,o.geometry];
 function _werkNeu(){let neu=false;scene.traverseVisible(o=>{if(neu||!_zeichnet(o))return;const a=_bauObjekt.get(o);
   neu=!a||a[1]!==o.material||a[2]!==o.material.version||a[3]!==o.geometry;});return neu;}
 const _vorbauZiel=new THREE.RenderTarget(1,1);
-async function _vorbau(K){const P=R._pipelines,eigen=P.getForRender,liste=[],werk=[],aus=R.getOutputRenderTarget(),ziel=R.getRenderTarget();
+// DER FEHLER BLEIBT LAUT (w13-buehne-lack-heim): r184 hält je asynchroner Pipeline `pushErrorScope` über ihr await offen
+// (vendor/three.webgpu.min.js 6:590389) — jede Validierung dazwischen, auch ein fremder Draw, fiel in diesen Bereich: als
+// THREE-Konsolenzeile gemeldet, DIESE Pipeline für immer kaputt, das `uncapturederror` des Geräts still (z259: K6 der Portal-
+// Konformanz sah den Submit mit dem zerstörten Sprite-Quad nicht mehr). Und ihr Versprechen löst erst nach `popErrorScope`, auf
+// swiftshader nie (Lehre der Erst-Zeichnung, stamm/bild-kosten.js `_erstWartet`): der Vorbau hing, das Bild stand, die Labor-
+// Linse riss in G8 nach 120 s. Darum zeichnet der Vorbau NICHTS (`isReady` nein: kein Draw, kein Submit im offenen Bereich) und
+// wartet auf die Pipelines des Geräts selbst (`createRenderPipelineAsync` je Bau), nie auf das Vendor-Versprechen — eine Absage
+// bricht als Ablehnung des Vorbaus laut (r184 verschluckt sie, `catch(e){}`), das nächste Bild submittet außerhalb jedes Bereichs.
+async function _vorbau(K){const P=R._pipelines,eigen=P.getForRender,liste=[],roh=[],werk=[],aus=R.getOutputRenderTarget(),ziel=R.getRenderTarget(),
+    dev=R.backend.device,baut=dev.createRenderPipelineAsync,eigenB=Object.getOwnPropertyDescriptor(dev,'createRenderPipelineAsync');
   scene.traverseVisible(o=>{if(_zeichnet(o))werk.push(_stand(o));});
-  P.getForRender=function(ro){return eigen.call(this,ro,liste);};   // jede Pipeline dieses Bilds asynchron in die EINE Liste
-  try{try{R.setOutputRenderTarget(_vorbauZiel);R.render(scene,K);}finally{P.getForRender=eigen;R.setOutputRenderTarget(aus);R.setRenderTarget(ziel);}
-    await Promise.all(liste);}finally{_bau=null;}
+  P.getForRender=function(ro){return eigen.call(this,ro,liste);};   // jede Pipeline dieses Bilds asynchron
+  P.isReady=()=>false;                                             // der Vorbau baut, er zeichnet nie
+  dev.createRenderPipelineAsync=function(d){const p=baut.call(this,d);roh.push(p);return p;};
+  try{try{R.setOutputRenderTarget(_vorbauZiel);R.render(scene,K);}finally{P.getForRender=eigen;delete P.isReady;
+      if(eigenB)Object.defineProperty(dev,'createRenderPipelineAsync',eigenB);else delete dev.createRenderPipelineAsync;
+      R.setOutputRenderTarget(aus);R.setRenderTarget(ziel);}
+    await Promise.all(roh);}finally{_bau=null;}
   for(const a of werk)_bauObjekt.set(a[0],a);sonne.shadow.needsUpdate=true;_kamAlt=null;_wecke();}
 // ein Bild (der Loop) und jeder Leser, der ohne den Loop zeichnet (`werkSteht`), fragt hier: steht ein Vorbau an, läuft er
 function _bauWenn(K){if(!_bau&&welt&&_werkNeu())_bau=_vorbau(K);return _bau;}
