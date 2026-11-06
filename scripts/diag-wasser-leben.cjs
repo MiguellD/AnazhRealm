@@ -56,6 +56,9 @@ const SCHWELLE = {
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
     grabenBauten: 300, // Sheet-Bauten bis zur Ruhe (F3; Bau-Ereignisse, nie Takte — die warten auf den Worker; Basis 2353–2609)
+    // K5 KLAR: die Sicht (m) unter Wasser am Bach bei Basis-Abfluss — klare Bäche tragen die schwarze Scheibe 5–20 m und mehr
+    // (Davies-Colley & Smith 2001), ihre Secchi-Tiefe liegt unter dem Bett; ein Tieflandfluss ~1–1,5 m
+    bachSicht: 5,
 };
 
 // B6 HASH: das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
@@ -305,6 +308,19 @@ function urteil(b) {
             if (!k.peer || !(Math.abs(k.peer.lehne) > 0.05)) rot("K7 MITSPIELER", k.peer || null);
             const m = k.medium; // die Kamera 3 m unter dem Spiegel sieht Unterwasser, 10 m darüber die Luft
             if (!m || m.kameraUnten !== true || m.kameraOben !== false) rot("K5 MEDIUM", m || null);
+            // K5 ART (w13-bach-klar): das Medium der Kamera liest den Körper der Art, die das Gesetz dem Wasser gibt (gelaende-core
+            // `gewaesserArt`) — die Sicht am See und am Bach die des Gesetzes (± 1 %, TRÜBUNG); der Bach der Mess-Wiese ist ein Bach
+            // (ART) und klar (KLAR, die Literatur unabhängig vom Gesetz); die Zeilen in der Ordnung der Literatur (ORDNUNG)
+            const a = k.art;
+            if (!a || !a.see || !a.bach || a.see.unter !== true || a.bach.unter !== true) rot("K5 ART LEER", a || null);
+            else {
+                if (a.see.art !== "see" || a.bach.art !== "bach") rot("K5 ART", a);
+                for (const w of ["see", "bach"])
+                    if (!(Math.abs(a[w].sichtM - a[w].soll) <= 0.01 * a[w].soll)) rot(`K5 TRÜBUNG: ${w}`, a[w]);
+                if (!(a.bach.sichtM >= S.bachSicht)) rot("K5 KLAR", a.bach);
+                const [cb, cs, cf] = a.ordnung || [];
+                if (!(cb > 0 && cb < cs && cs < cf)) rot("K5 ORDNUNG", a.ordnung || null);
+            }
         }
     }
     // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
@@ -507,6 +523,11 @@ function selbsttest() {
             kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
             eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
             medium: { kameraUnten: true, kameraOben: false },
+            art: {
+                see: { art: "see", breite: 0, unter: true, sichtM: 15.648, soll: 15.648 },
+                bach: { ort: [-300.4, -817.4], art: "bach", breite: 4.39, unter: true, sichtM: 19.56, soll: 19.56 },
+                ordnung: [0.2, 0.25, 3.5],
+            },
             tier: ["wesen", "wolf", "fuchs", "baer"].flatMap((seele) =>
                 [8, 120].map((abstand) => ({
                     seele,
@@ -608,6 +629,15 @@ function selbsttest() {
         ["K4 STUMM", ["koerper.eintauchen.landung=", null]],
         ["K LEER", ["koerper.hinein.schwimmFrames=", 0]],
         ["K5 MEDIUM", ["koerper.medium=", { kameraUnten: false, kameraOben: true }]],
+        // w12-unterwasser an main 3f1d4a5b: der Leser entschied die Art selbst („im Kanal → fluss") — der Bach der Mess-Wiese
+        // (4,4 m) trug die Trübung eines Tieflandflusses, Sicht 1,1 m statt der seines Körpers (luftwasser.K3#2: 0 von 16 Fischen)
+        ["K5 TRÜBUNG: bach", ["koerper.art.bach", { sichtM: 1.118 }]],
+        ["K5 KLAR", ["koerper.art.bach", { sichtM: 1.118, soll: 1.118 }]],
+        ["K5 ART", ["koerper.art.bach.art=", "fluss"]],
+        ["K5 TRÜBUNG: see", ["koerper.art.see.sichtM=", 1.118]],
+        ["K5 ORDNUNG", ["koerper.art.ordnung=", [0.25, 0.25, 3.5]]],
+        ["K5 ART LEER", ["koerper.art.bach.unter=", false]],
+        ["K5 ART LEER", ["koerper.art=", null]],
         ["K6 AM GRUND", ["koerper.tier.1", { amGrund: true, sohleUnterSpiegel: 8 }]],
         ["K6 LAGE", ["koerper.tier.0", { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 }]],
         ["K6 LEER", ["koerper.tier=", []]],
