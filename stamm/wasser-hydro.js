@@ -165,7 +165,13 @@ class AnazhRealm_wasser_hydro {
         const S = st.regenStempel;
         if (!(Array.isArray(S) && S.length >= 2) && !st.pegelZustand) return null;
         const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
-        return globalThis.__gelaendeCore.pegelZustand(S, t, AnazhRealm.PEGEL_TAG_S, this._regenMittel(), st.pegelZustand);
+        return globalThis.__gelaendeCore.pegelZustand(
+            S,
+            t,
+            AnazhRealm.PEGEL_TAG_S,
+            this._regenMittel(),
+            st.pegelZustand
+        );
     }
 
     // DAS MITTEL DES KLIMAS (wetter.K3, der Grund des Pegels): der Regen der Front (`_wetterAmOrt`, das Wort der Welt über ihre
