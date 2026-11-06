@@ -450,7 +450,7 @@ class AnazhRealm_kreatur_verhalten {
         // der Spalt zwischen Maul (die Brust halb + radius vor der Mitte) und dem liegenden Leib; gefressen wird, wo das Maul
         // ihn irgendwo auf seiner Länge erreicht (± halb um seine Mitte) — am Kadaver drängen sich die Fresser, der Paar-Raum
         // weicht (kein Anstellen, _kreaturZiel ohne den freien Weg; die Separation hält die Leiber auseinander)
-        const rest = Math.hypot(dx, dz) - lE.halb - lE.radius - lK.radius;
+        const rest = Math.hypot(dx, dz) - lE.mitte - lE.halb - lE.radius - lK.radius;
         const now = this.state.creatureAnimationTime;
         if (rest > lK.halb) {
             ud._fressT = null;
@@ -792,7 +792,7 @@ class AnazhRealm_kreatur_verhalten {
         if (ud._raumL === l && Number.isFinite(ud._raum)) return ud._raum;
         const lb = this._kreaturLeib(creature, l, this._kreaturRaumLeib || (this._kreaturRaumLeib = {}));
         ud._raumL = l;
-        ud._raum = (lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
+        ud._raum = (Math.abs(lb.mitte) + lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
         return ud._raum;
     }
 
@@ -878,24 +878,36 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
-    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
-    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang — die Schnauze
-    // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
-    // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
-    // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
-    // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte: an den End-Achsen hängt höchstens ein Glied
-    // von Leib-Höhe (Hals mit Kopf, Rute) — halb + Höhe. Sie liest, wer wissen muss, ob eine Strecke das Tier ÜBERHAUPT
-    // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
-    // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
-    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
+    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). DIE GESTALT IST DER LEIB
+    // (physik.K2 Staffel 2: Bild = Kollision): drei Kreise längs der Gier bei mitte + (−1 · 0 · +1) · halb (Heck · Rumpf · Brust
+    // mit Kopf), je mit dem Radius seines Drittels (`radien`), die Höhe bis zum Scheitel — der Grundriss der Nah-Gestalt in
+    // Hüft-Höhen L, den der Ofen misst (`_tierBaum.leibUmriss`, `_leibUmriss`); ein Stellvertreter einer Geburt trägt den seiner
+    // Gattung. Vorher geschätzt (EIN Radius 0,3 L, halb 0,8 L, Höhe 1,8 L, mitte 0): beim Bären ragte die Flanke 5,6 cm, der Kopf
+    // 29 cm über den Leib. L ist die Hüft-Höhe der Gestalt (dieselbe L, an der Gang- und Steuer-Gesetz messen; die Art
+    // unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt). Die REICHWEITE ist die
+    // waagrechte Spanne der ganzen Gestalt um die Lage: |mitte| + halb + Höhe (an den End-Achsen hängt höchstens ein Glied von
+    // Leib-Höhe) — das Grob-Tor des Treffers (_trefferErreichbar), bevor die Gestalt selbst richtet (gate:kampf-gefuehl T12:
+    // über die Treffer-Glieder gemessen Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L).
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
+        const tb = creature.userData && creature.userData._tierBaum;
+        const U = tb && tb.leibUmriss;
+        const R = o.radien || (o.radien = [0, 0, 0]); // je Kreis (Heck · Rumpf · Brust) sein Radius; `radius` der größte
         o.L = l;
-        o.radius = Math.max(0.12, 0.3 * l);
-        o.halb = 0.8 * l;
-        o.hoehe = Math.max(0.5, 1.8 * l);
-        o.reichweite = o.halb + o.hoehe;
+        if (U) {
+            [R[0], R[1], R[2]] = [U.radien[0] * l, U.radien[1] * l, U.radien[2] * l];
+            o.radius = U.radius * l;
+            o.halb = U.halb * l;
+            o.mitte = U.mitte * l;
+            o.hoehe = U.hoehe * l;
+        } else {
+            o.radius = R[0] = R[1] = R[2] = Math.max(0.12, 0.3 * l);
+            o.halb = 0.8 * l;
+            o.mitte = 0;
+            o.hoehe = Math.max(0.5, 1.8 * l);
+        }
+        o.reichweite = Math.abs(o.mitte) + o.halb + o.hoehe;
         o.fx = Math.sin(creature.rotation.y);
         o.fz = Math.cos(creature.rotation.y);
         return o;
@@ -1101,8 +1113,8 @@ class AnazhRealm_kreatur_verhalten {
             return t;
         }
         const lb = this._kreaturLeib(q, 0, t.leib || (t.leib = {}));
-        t.x = q.position.x;
-        t.z = q.position.z;
+        t.x = q.position.x + lb.fx * lb.mitte; // die Mitte seiner Achse (der Grundriss der Gestalt, `_kreaturLeib`)
+        t.z = q.position.z + lb.fz * lb.mitte;
         t.hx = lb.fx * lb.halb;
         t.hz = lb.fz * lb.halb;
         t.r = lb.radius;
@@ -1453,11 +1465,10 @@ class AnazhRealm_kreatur_verhalten {
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
-        const rInnen2 = 0.81 * radius * radius;
         // Kosten an Betroffene: eine Box, die der Leib weder erreicht (waagrecht jenseits halb + radius) noch in der Höhe
         // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
         // jeder Achse heraus. Reichweite und Innen-Test messen im Rahmen der gedrehten Box (`_boxAbstand2`, D5).
-        const reich2 = (halb + radius) * (halb + radius);
+        const reich2 = (Math.abs(leib.mitte) + halb + radius) ** 2;
         const stufe = feetY + AnazhRealm.PLAYER_STEP_UP;
         for (const e of nah.liste) {
             const boxes = e.blockerAABBs;
@@ -1467,13 +1478,14 @@ class AnazhRealm_kreatur_verhalten {
                 if (box.topY <= stufe || box.botY >= headY) continue;
                 if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
-                    const off = o * halb;
-                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < rInnen2) continue;
+                    const off = leib.mitte + o * halb;
+                    const ro = leib.radien[o + 1]; // der Kreis dieses Drittels der Gestalt
+                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < 0.81 * ro * ro) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
                         az = q.z;
-                    this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
+                    this._resolveCapsuleVsAABB(box, q, feetY, headY, ro, -Infinity, k);
                     p.x += q.x - ax;
                     p.z += q.z - az;
                     if (q.x !== ax || q.z !== az)
@@ -1500,8 +1512,7 @@ class AnazhRealm_kreatur_verhalten {
         const leib = this._kreaturLeib(creature, L, this._kreaturLeibAuflage || (this._kreaturLeibAuflage = {}));
         const lo = p.y - AnazhRealm.PLAYER_GROUND_SNAP,
             hi = p.y + AnazhRealm.PLAYER_STEP_UP;
-        const r2 = leib.radius * leib.radius;
-        const reich = leib.halb + leib.radius; // der grobe Filter: ein Bau, dessen Reichweite den Leib nicht erreicht
+        const reich = Math.abs(leib.mitte) + leib.halb + leib.radius; // der grobe Filter: ein Bau, dessen Reichweite den Leib nicht erreicht
         let top = -Infinity;
         for (const e of nah.liste) {
             const boxes = e.blockerAABBs;
@@ -1519,8 +1530,8 @@ class AnazhRealm_kreatur_verhalten {
                 )
                     continue;
                 for (let o = -1; o <= 1; o++) {
-                    const off = o * leib.halb;
-                    if (this._boxAbstand2(box, p.x + leib.fx * off, p.z + leib.fz * off) <= r2) {
+                    const off = leib.mitte + o * leib.halb;
+                    if (this._boxAbstand2(box, p.x + leib.fx * off, p.z + leib.fz * off) <= leib.radien[o + 1] ** 2) {
                         top = box.topY;
                         break;
                     }

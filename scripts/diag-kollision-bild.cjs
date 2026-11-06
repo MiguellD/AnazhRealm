@@ -476,7 +476,8 @@ async function tempo(K) {
     // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Rahmen seiner Hülle
     const leibKreise = (c) => {
         const [l, p] = [r._kreaturLeib(c, 0, {}), c.position];
-        return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * o * l.halb, p.z + l.fz * o * l.halb, l.radius]) };
+        const m = (o) => l.mitte + o * l.halb; // die Achse um ihre Mitte (der Grundriss der Gestalt)
+        return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * m(o), p.z + l.fz * m(o), l.radien[o + 1]]) };
     };
     const tierK = (c) => () => {
         const { l, p, kreise } = leibKreise(c);
@@ -543,13 +544,15 @@ async function tempo(K) {
         wer: "baer#" + q.userData.netId,
         durch: (k) => k.mx > q.position.x,
         tiefe: (k) => {
-            const { l, p, kreise: [a, , b] } = leibKreise(q);
+            const { l, p, kreise } = leibKreise(q);
             if (!(k.y1 > p.y && k.y0 < p.y + l.hoehe)) return -Infinity;
             let t = -Infinity;
+            // die Achse als Kapsel, ihr Radius zwischen den Kreisen ihrer Drittel geführt
             for (let i = 0; i <= 8; i++) {
-                const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, l.radius - zuPoly(k.re.ecken, x, z));
-                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.radius - Math.hypot(kx - x, kz - z));
+                const [A, B, f] = i < 4 ? [kreise[0], kreise[1], i / 4] : [kreise[1], kreise[2], (i - 4) / 4];
+                const [x, z, rl] = [0, 1, 2].map((j) => A[j] + (B[j] - A[j]) * f);
+                if (k.re) t = Math.max(t, rl - zuPoly(k.re.ecken, x, z));
+                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + rl - Math.hypot(kx - x, kz - z));
             }
             return t;
         },

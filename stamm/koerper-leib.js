@@ -2254,12 +2254,13 @@ class AnazhRealm_koerper_leib {
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
             group2.userData._gelenk = gelenk;
+            // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
+            const beinL2 = (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
                 f: f2,
-                // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
-                beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
+                beinL: beinL2,
                 bein: window.__tetrapodaCore.tierBeinMass(THREE, t0, f2),
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
@@ -2275,6 +2276,13 @@ class AnazhRealm_koerper_leib {
                         return R;
                     })()),
             };
+            // DER GRUNDRISS DER NAH-GESTALT in Hüft-Höhen (`_leibUmriss`, je Vorlage einmal, in der Stand-Pose des Kerns, in
+            // der das Tier ruht) — der Leib liest ihn (`_kreaturLeib`)
+            if (!t0.leibUmriss) {
+                this._tierBaumNeutralStance(group2);
+                t0.leibUmriss = AnazhRealm._leibUmriss(klon, group2, beinL2);
+            }
+            group2.userData._tierBaum.leibUmriss = t0.leibUmriss;
             this._gelenkStufe(group2, 0);
             return group2;
         }
@@ -3073,6 +3081,46 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
         v += g.v * Math.abs(m.determinant());
     });
     return v;
+};
+
+// DER GRUNDRISS EINER GESTALT (physik.K2 Staffel 2: Bild = Kollision) — der Leib eines Tiers (`_kreaturLeib`) aus der
+// gezeichneten Nah-Gestalt `teil` in Ruhe (jede Ecke jedes Meshs, die Haut mit ihren Knochen, die Schalen des Fells, Augen
+// und Krallen) im Rahmen `rahmen` (x quer, z längs der Gier, y vom Fuß), je Hüft-Höhe `L`: längs geteilt in Drittel (Heck ·
+// Rumpf · Brust mit Kopf), je Drittel die größte Weite quer als Radius seines Kreises (`radien`, `radius` der größte); die
+// End-Kreise stehen je ihren Radius vor dem hintersten und dem vordersten Punkt (`halb` um die `mitte` der Achse), die Höhe
+// reicht bis zum Scheitel. Vorher schätzte der Leib die Gestalt aus L (EIN Radius 0,3 L, halb 0,8 L, Höhe 1,8 L): beim Bären
+// ragte die Flanke 5,6 cm, der Kopf 29 cm über den Leib — im Bild steckte der gestoßene Bär bis 13,5 cm in der Mauer.
+AnazhRealm._leibUmriss = function (teil, rahmen, L) {
+    rahmen.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(rahmen.matrixWorld).invert();
+    const m = new THREE.Matrix4();
+    const v = new THREE.Vector3();
+    const P = [];
+    let [z0, z1, y1] = [Infinity, -Infinity, 0];
+    teil.traverse((o) => {
+        const A = o.isMesh && o.geometry && o.geometry.attributes ? o.geometry.attributes.position : null;
+        if (!A) return;
+        m.multiplyMatrices(inv, o.matrixWorld);
+        for (let i = 0; i < A.count; i++) {
+            o.getVertexPosition(i, v).applyMatrix4(m);
+            P.push(Math.abs(v.x), v.z);
+            [z0, z1, y1] = [Math.min(z0, v.z), Math.max(z1, v.z), Math.max(y1, v.y)];
+        }
+    });
+    if (!(L > 0) || !(z1 > z0)) return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Grundriss");
+    const r = [0, 0, 0];
+    for (let i = 0; i < P.length; i += 2) {
+        const k = Math.min(2, Math.floor((3 * (P[i + 1] - z0)) / (z1 - z0)));
+        r[k] = Math.max(r[k], P[i]);
+    }
+    const [c0, c1] = [z0 + r[0], z1 - r[2]];
+    return {
+        radien: r.map((x) => x / L),
+        radius: Math.max(...r) / L,
+        halb: Math.max(0, (c1 - c0) / 2) / L,
+        mitte: (c0 + c1) / 2 / L,
+        hoehe: y1 / L,
+    };
 };
 
 // MOTION_ROLE_SIGNATURES — die BEWEGUNGS-Rolle eines PARTS emergiert als argmax-Resonanz seines

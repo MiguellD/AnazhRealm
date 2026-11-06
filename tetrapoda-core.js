@@ -2870,6 +2870,11 @@
             vLage = core.lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
             if (vLage === null) g.fuss = null;
         }
+        // DER GETRAGENE LEIB (physik.K2 Staffel 2, rein additiv): trägt ein Stoß den Leib (der Wirt stempelt
+        // group.userData._stossV, solange er gleitet), steht er nicht auf seinen Pfoten — sie gleiten mit ihm, kein Fuß bleibt
+        // weltfest zurück. Vorher hielt die Pfoten-IK die Pfoten des gleitenden Bären, wo sie standen: unter 15 m/s
+        // (`lageTempo`) streckten sich die Läufe bis 0,5 m hinter den Leib (im Bild 13,5 cm in der Mauer, gate:kollision-bild).
+        if (group.userData && group.userData._stossV) g.fuss = null;
         g.lageX = lage.x;
         g.lageZ = lage.z;
         var skala = group.scale.x || 1;

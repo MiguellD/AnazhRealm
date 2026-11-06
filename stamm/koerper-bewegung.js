@@ -413,6 +413,29 @@ class AnazhRealm_koerper_bewegung {
         if (h.schubQuelle) h.schubQuelle.push(h.quelle || null);
     }
 
+    // DER EINTRITT EINES LEIBS-PUNKTS in den Grundriss `h.poly`, um seinen Radius rc erweitert (Cyrus–Beck): der Punkt läuft
+    // im Fahrt-Rahmen von (l0, q0) vor dem Schritt nach (l1, q1) danach; trat er in diesem Schritt ein, steht in `aus` der
+    // Anteil t ∈ [0, 1] des Schritts, an dem er die Kante berührte, und ihre Außen-Normale (nl, nq) — true. Stand er vor dem
+    // Schritt schon im Grundriss oder trat nicht ein: false (der Schub am Ende, `_huelleLeibSchub`, trägt).
+    _huelleLeibFeger(h, l0, q0, l1, q1, rc, aus) {
+        let [tE, tL, kE] = [-Infinity, Infinity, null];
+        for (const k of h.kanten) {
+            const zahl = (l0 - k.l0) * k.nl + (q0 - k.q0) * k.nq - rc;
+            const nenn = (l1 - l0) * k.nl + (q1 - q0) * k.nq;
+            if (Math.abs(nenn) < 1e-12) {
+                if (zahl > 0) return false; // parallel außerhalb dieser Kante: nie im Grundriss
+                continue;
+            }
+            const t = -zahl / nenn;
+            if (nenn < 0) {
+                if (t > tE) [tE, kE] = [t, k];
+            } else if (t < tL) tL = t;
+        }
+        if (!kE || !(tE >= 0) || tE > 1 || tE > tL) return false;
+        [aus.t, aus.nl, aus.nq] = [tE, kE.nl, kE.nq];
+        return true;
+    }
+
     // DER SCHUB EINES LEIBS-PUNKTS (l, q im Fahrt-Rahmen um den Ursprung der Hülle, Radius rc) gegen den Grundriss `h.poly`:
     // um wie viel der Wagen ausweicht (in `aus`: sl, sq) — außen längs des kürzesten Wegs vom Polygon zum Punkt, bis rc frei
     // ist; innen über die nächste Kante hinaus. Null-Schub, wenn der Punkt rc weit frei liegt.
@@ -620,6 +643,8 @@ class AnazhRealm_koerper_bewegung {
                     const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
                     leib.radius = AnazhRealm.PLAYER_WALL_RADIUS;
                     leib.halb = 0;
+                    leib.mitte = 0;
+                    leib.radien = [leib.radius, leib.radius, leib.radius];
                     leib.hoehe = 2 * fd + stufeTier;
                     leib.fx = 0;
                     leib.fz = 1;
@@ -629,12 +654,28 @@ class AnazhRealm_koerper_bewegung {
                     leib.fuss = cr.position.y;
                 }
                 if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
-                const rc = leib.radius;
-                const LS = this._huelleLeibS || (this._huelleLeibS = { sl: 0, sq: 0 });
+                const LS = this._huelleLeibS || (this._huelleLeibS = { sl: 0, sq: 0, t: 0, nl: 0, nq: 0 });
                 for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
+                    const rc = leib.radien[o + 1]; // der Kreis dieses Drittels der Gestalt
                     // der Punkt der Leib-Achse im Fahrt-Rahmen um den Ursprung der Hülle, gegen ihren Grundriss
-                    const dx = cr.position.x + leib.fx * o * leib.halb - pos.x;
-                    const dz = cr.position.z + leib.fz * o * leib.halb - pos.z;
+                    const px = cr.position.x + leib.fx * (leib.mitte + o * leib.halb);
+                    const pz = cr.position.z + leib.fz * (leib.mitte + o * leib.halb);
+                    const [dx, dz, ax, az] = [px - pos.x, pz - pos.z, px - x0, pz - z0];
+                    // DER GEFEGTE KONTAKT (Cyrus–Beck): trat der Punkt in DIESEM Schritt in den Grundriss (um rc erweitert), hält
+                    // der Wagen dort, wo er ihn berührte — nie dahinter. Vorher löste der Schritt nur am Ende: bei 81 m/s
+                    // (1,36 m je Schritt) lag die Achse des Bären schon 0,95 m im Bug, der kürzeste Weg hinaus war die Flanke
+                    // (seitwärts fuhr der Wagen nicht: die Kappe ließ 0) — der Wagen fuhr durch den Bären (gate:kollision-bild).
+                    if (this._huelleLeibFeger(k, ax * fX + az * fZ, ax * qX + az * qZ, dx * fX + dz * fZ, dx * qX + dz * qZ, rc, LS)) {
+                        const f = 1 - LS.t;
+                        const [kx, kz] = [-(pos.x - x0) * f, -(pos.z - z0) * f];
+                        pos.x += kx;
+                        pos.z += kz;
+                        // der Schub reist längs der Kante, durch die der Leib trat (vom Leib zum Wagen) — die Normale des Stoßes
+                        const m = Math.hypot(kx, kz);
+                        k.schub.push(-(LS.nl * fX + LS.nq * qX) * m, -(LS.nl * fZ + LS.nq * qZ) * m);
+                        k.schubQuelle.push(cr);
+                        continue;
+                    }
                     const { sl, sq } = this._huelleLeibSchub(k, dx * fX + dz * fZ, dx * qX + dz * qZ, rc, LS);
                     if (sl === 0 && sq === 0) continue;
                     let sx = sl * fX + sq * qX;

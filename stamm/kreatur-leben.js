@@ -1777,8 +1777,9 @@ class AnazhRealm_kreatur_leben {
         if (!fr) return false;
         const rand = this._kreaturBlickRand();
         if (rand < 0) return true; // die Kamera dreht schneller, als der Rand trägt: keine Geburt in diesem Takt
-        // der Leib, der dort erst stünde: ein Stellvertreter ohne Gier trägt seine Hüfte (`_kreaturLeib` liest nur die Gier)
-        const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 } });
+        // der Leib, der dort erst stünde: ein Stellvertreter ohne Gier trägt seine Hüfte und den Grundriss seiner Gattung
+        const stell = this._geburtsStell || (this._geburtsStell = { rotation: { y: 0 }, userData: { _tierBaum: {} } });
+        stell.userData._tierBaum.leibUmriss = this._gattungLeib(g).leibUmriss; // der Grundriss seiner Gattung
         const leib = this._kreaturLeib(
             stell,
             this._gattungLeib(g).beinL * bs,
@@ -2267,7 +2268,7 @@ class AnazhRealm_kreatur_leben {
         const soul = AnazhRealm.CREATURE_SOUL_NAMES.find((n) => AnazhRealm.TETRAPODA_SOUL_MAP[n] === g);
         const leib = soul && this._buildCreatureGroup(soul);
         const tb = leib && leib.userData._tierBaum;
-        const o = { v: tb ? tb.leibV : 0, beinL: tb ? tb.beinL : 0 };
+        const o = { v: tb ? tb.leibV : 0, beinL: tb ? tb.beinL : 0, leibUmriss: tb ? tb.leibUmriss : null };
         if (leib) this._disposeSoulGroup(leib);
         return o.v > 0 && o.beinL > 0
             ? (M[g] = o)
