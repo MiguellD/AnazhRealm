@@ -866,6 +866,29 @@ class AnazhRealm_bild_himmel {
         return st._skyEnvLesung;
     }
 
+    // DER HIMMEL ALS DATEI (studios.K4 „EIN Licht"): die Equirekt-Tafel der letzten Lesung (Halb-Float, base64) samt den Zahlen
+    // ihrer Uhr — E0, die Höhe des Auges, der Anker und die Himmels-Bestrahlung der Belichtung. Die Bühnen stehen unter ihr
+    // (worlds/huelle/himmel.json, garage `himmelSetzen`; gebacken von `node scripts/diag-studio-huelle.cjs --himmel`). Ohne Lesung
+    // bricht es laut (`_himmelFrisch` zuerst).
+    _himmelDatei() {
+        const st = this.state;
+        const A = st.atmoLut;
+        if (!st._skyEnvData) throw new Error("Der Himmel als Datei: keine Lesung der Umgebung — `_himmelFrisch` zuerst");
+        const d = new Uint8Array(Uint16Array.from(st._skyEnvData, THREE.DataUtils.toHalfFloat).buffer);
+        let s = "";
+        for (let i = 0; i < d.length; i += 0x8000) s += String.fromCharCode.apply(null, d.subarray(i, i + 0x8000));
+        return {
+            uhr: st.timeOfDay,
+            augeKm: this._atmoAugeKm(),
+            licht: A.U.licht.value,
+            anker: A.anker,
+            himmelE: this._himmelsBestrahlung([0, 0, 0]),
+            W: A.rtEq.width,
+            H: A.rtEq.height,
+            daten: btoa(s),
+        };
+    }
+
     // Halb-Float (IEEE 754 binary16) → Zahl.
     static _halbZuFloat(h) {
         const s = h & 0x8000 ? -1 : 1;

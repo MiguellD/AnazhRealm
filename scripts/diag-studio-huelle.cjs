@@ -477,6 +477,23 @@ async function sitzungsGang(page, saat, neuladen, n) {
     return { griffe, bleibt: [vorher.filter((x, i) => x === nachher[i]).length, vorher.length] };
 }
 
+// DER HIMMEL DER WELT (`--himmel`, studios.K4 „EIN Licht"): die Welt zur Uhr der Bühne (`__buehne`: Mittag, Sonne, Sommer) im echten
+// Renderer, ihr Himmel frisch (`_himmelFrisch`) — die Equirekt-Tafel je Einheit des Lichts (Halb-Float), E0, die Höhe des Auges, der
+// Anker und die Himmels-Bestrahlung der Belichtung — nach worlds/huelle/himmel.json; die Bühnen lesen ihn als Umgebung (garage `himmelLesen`)
+async function himmelBacken() {
+    const s = statikServer(), browser = await (await s.lausche(PORT), starteBrowser({ art: "linse", frist: 600000 }));
+    const page = await browser.newPage();
+    await s.zeige(page, 120000, "index.html?holz=kienspan");
+    await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
+    const h = await page.evaluate(async () => {
+        const r = await __weltDa((w) => w.state.atmoLut?.anker != null);
+        await (__buehne(), r._himmelFrisch()); // die Tafel der Uhr der Bühne: gemalt im Aufruf, gelesen danach
+        return (__buehne(), r._himmelDatei()); // die Zahlen zur selben Uhr (die Lesung wartete Bilder ab)
+    });
+    jsonSchreiben(path.join(ROOT, "worlds/huelle/himmel.json"), h);
+    await browser.close();
+    s.close();
+}
 // ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
 // Seite derselben Herkunft), ihre Brücke meldet `ready`, die Welt wächst, dann `panorama-bitte` → `panorama` (Halbfloat-Texel aus
 // IHREM Renderer, `AnazhHuelle.panorama`). Die Datei `worlds/<welt>/panorama.f16` (rgba16float 512 × 256, Zeile 0 unten) und ihr
@@ -571,6 +588,7 @@ hauptLauf(async () => {
         await panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
         return;
     }
+    if (a.includes("--himmel")) return himmelBacken();
     if (a.includes("--engine")) return gang();
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
     const { rot, zahl, veraltet } = pruefe(baum());

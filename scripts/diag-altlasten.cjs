@@ -16,6 +16,7 @@ const { scanWarteWand, ausDatei, SELBSTTEST, path, fs, stammLib, jsonLesen } = r
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
+const TETRAPODA_KERN = ["tetrapoda-core.js"];
 const PHYTO_BRUECKE = ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"];
 const FORBIDDEN = [
     { token: "tickPhoenixDeath", fiel: "W1a — der Tod ist feld-nativ (_playerDeathRespawn)" },
@@ -522,7 +523,7 @@ const FORBIDDEN = [
     {
         token: "impulsProM",
         fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
@@ -547,47 +548,47 @@ const FORBIDDEN = [
     {
         token: "boldFromDichte",
         fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "shyFromLebendig",
         fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "radiusBaseM",
         fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "minAbstSq",
         fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
-    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
-    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: ["tetrapoda-core.js"] },
+    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: TETRAPODA_KERN },
+    { token: "herdeZug", fiel: "S6 — die Herde ist ein Verband (tetrapoda verbandZug)", auch: TETRAPODA_KERN },
     { token: "_flockGrid", fiel: "S6 — die Glieder je Verband statt der Gattungs-Zellen (_verbaende)" },
-    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: TETRAPODA_KERN },
     {
         token: "scentProbeM",
         fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
     {
         token: "fleeSpeedBoost",
         fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "strikeRange",
         fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "pirschStoppM",
         fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     {
         token: "kippNachklangSec",
@@ -648,7 +649,7 @@ const FORBIDDEN = [
     {
         token: "emissiv: 0x442200",
         fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe",
-        auch: ["tetrapoda-core.js"],
+        auch: TETRAPODA_KERN,
     },
     { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
     { token: "_applyCreatureAllometry", fiel: "Integration W5-Körper — die Glied-Dicke trägt ART_GESTALT.bein" },
