@@ -1844,7 +1844,7 @@ class AnazhRealm_koerper_bewegung {
                 // hält r vor jeder Fläche): der Deckel tastet nie das Feld (Prüfung 1: der Stand-Leser der Füße las am 30°-Hang
                 // je Bild das Gesetz unter der Kamera). Vorher die Füße − 0,2 m, das Gesetz statt des Bildes (Lehre 22: der
                 // Boden des Mesh liegt bis 0,6 m über ihm): R-CAM unterBoden 9 von 50.
-                const KAM = AnazhRealm._bewegungsBlock("kamera", ["armRadiusM", "armRuhe", "armTempoM"]);
+                const KAM = AnazhRealm._bewegungsBlock("kamera", ["armRadiusM", "armRuhe"]);
                 const kr = KAM.armRadiusM;
                 const fussY = player.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
                 const aufBau = this.state._kapselStruktur === true;
@@ -1892,7 +1892,7 @@ class AnazhRealm_koerper_bewegung {
                     return w.t >= 1 ? y1 : Math.max(y0, y0 + (y1 - y0) * w.t - AnazhRealm.KAMERA_SPIEL_M);
                 };
                 // DER GLEITENDE RIG (leib.K4 Staffel 2): jeder Freiheitsgrad des Rigs folgt dem Gesetz des Arms — ein Hindernis
-                // zieht ihn sofort heran, frei gleitet er hinaus (der Rest `armRuhe` je Sekunde, höchstens `armTempoM` m/s): der
+                // zieht ihn sofort heran, frei gleitet er hinaus (der Rest `armRuhe` je Sekunde, höchstens KAMERA_TEMPO_M): der
                 // Aufstieg des Drehpunkts und die Schulter sprangen je Bild zwischen ihrem Hindernis und dem freien Maß (unter der
                 // Treppe des haus_alemannisch 0,23 ↔ 1,0 m und 0 ↔ 0,6 m: Ruck p95 0,06–0,085 m im Sprint). Beide bleiben in der frei
                 // gewürfelten Strecke (vom Start des Aufstiegs bis zu seinem Halt, von der Säule bis zur Schulter) — sicher wie der Arm.
@@ -1900,7 +1900,11 @@ class AnazhRealm_koerper_bewegung {
                     Number.isFinite(alt) && frei > alt
                         ? Math.max(
                               lo,
-                              alt + Math.min((frei - alt) * (1 - Math.pow(KAM.armRuhe, rigDt)), KAM.armTempoM * rigDt)
+                              alt +
+                                  Math.min(
+                                      (frei - alt) * (1 - Math.pow(KAM.armRuhe, rigDt)),
+                                      AnazhRealm.KAMERA_TEMPO_M * rigDt
+                                  )
                           )
                         : frei;
                 const rigDt = Math.min(0.1, Math.max(0.0001, currentTime - (kamT || currentTime)));
@@ -1972,10 +1976,11 @@ class AnazhRealm_koerper_bewegung {
                 else {
                     const ruhe =
                         _fahrRitt && _fahrRitt.kam && _fahrRitt.kam.posEase > 0 ? _fahrRitt.kam.posEase : KAM.armRuhe;
-                    // zu Fuß höchstens `armTempoM` m/s hinaus (der Arm misst in Teilen seiner Wunsch-Länge)
+                    // zu Fuß höchstens KAMERA_TEMPO_M hinaus (der Arm misst in Teilen seiner Wunsch-Länge)
                     const lang = Math.hypot(camX - tx, camY - ty, camZ - tz);
                     const frei = (t - arm) * (1 - Math.pow(ruhe, armDt));
-                    arm += _fahrRitt || !(lang > 1e-3) ? frei : Math.min(frei, (KAM.armTempoM * armDt) / lang);
+                    arm +=
+                        _fahrRitt || !(lang > 1e-3) ? frei : Math.min(frei, (AnazhRealm.KAMERA_TEMPO_M * armDt) / lang);
                 }
                 this.state._kamArm = arm;
                 const kx = tx + (camX - tx) * arm;
@@ -3444,6 +3449,10 @@ AnazhRealm.KAMERA_SCHULTER_M = 0.6;
 // geweiteten Box), an der sie halten. Stand er AUF ihr, kannte der Wurf des Arms von dort nur „hinaus frei, hinein 0" — der Arm
 // sprang beim Orbit in EINEM Bild von 0,99 auf 0 (5,9 m, innen-sprint); mit Spielraum wächst der Wurf stetig mit der Richtung.
 AnazhRealm.KAMERA_SPIEL_M = 0.05;
+// DAS TEMPO DES RIGS (m/s, leib.K4 Staffel 2): so schnell gleitet ein Freiheitsgrad des Rigs zu Fuß höchstens hinaus (Arm, Schulter,
+// Aufstieg) — der lange Arm lief frei bis 0,2 m je Bild hinaus, die Krümmung der Ruhe-Kurve allein riss den Ruck 0,02 m (innen-sprint
+// p95 0,039 → 0,026 headless).
+AnazhRealm.KAMERA_TEMPO_M = 3;
 // Der Übergang des Rigs (`_kamRest`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
 // der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt;
 // das Sichtfeld gleitet mit dem Deckel fovGradS (°/s: 0,4° im längsten Bild von 33 ms, ein Tempo-FOV von 9° in ~0,8 s).

@@ -681,11 +681,7 @@
                         // armRuhe der Rest je Sekunde, den der Arm frei noch vor sich
                         // hat (Wirt: der gleitende Arm; Lab: die Kamera-Glaettung).
                         // Byte-gleich zum Wirt-Literal KAMERA_ARM_RUHE (0.0016).
-                        // armTempoM (m/s, additiv, leib.K4 Staffel 2): so schnell gleitet
-                        // ein Freiheitsgrad des Rigs zu Fuss hoechstens hinaus (Arm,
-                        // Schulter, Aufstieg) -- der lange Arm lief frei 0,2 m je Bild
-                        // hinaus, die Kruemmung der Ruhe-Kurve allein riss den Ruck 0,02 m.
-                        kamera: { armRadiusM: 0.3, armRuhe: 0.0016, armTempoM: 3 },
+                        kamera: { armRadiusM: 0.3, armRuhe: 0.0016 },
                     },
                     // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
                     // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE

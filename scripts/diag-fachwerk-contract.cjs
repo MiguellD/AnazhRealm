@@ -555,7 +555,7 @@ function posenLinse() {
         huellen[caseKey(c)] =
             hu && Array.isArray(hu.teile)
                 ? hu.teile
-                      .filter((t) => t.art === "box" && (t.rolle === "fest" || t.rolle === "beide" || t.rolle === "strahl"))
+                      .filter((t) => t.art === "box" && (t.rolle === "fest" || t.rolle === "beide"))
                       .flatMap((t) => [t.c[0] - t.h[0], t.c[1] - t.h[1], t.c[2] - t.h[2], t.c[0] + t.h[0], t.c[1] + t.h[1], t.c[2] + t.h[2]])
                 : null;
         disposeGroup(g);
