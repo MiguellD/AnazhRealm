@@ -481,6 +481,10 @@ async function checkBandLeistungsVertrag({ page, check }) {
             // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
             const _oTM = r._foundryTreeMaterial;
             r._foundryTreeMaterial = nullKarte(_oTM);
+            // DER HIMMEL IST EIN GPU-ANWENDER (z264-Nacharbeit): gelüftet zeichnete `_atmoTakt` seine Tafel und las sie über
+            // readRenderTargetPixelsAsync zurück, das der Null-Renderer nicht trägt — der Takt warf im Bild („Die Bestrahlung")
+            const _oAT = r._atmoTakt;
+            r._atmoTakt = nullKarte(_oAT);
             const feed = (ms) => {
                 st._perfFrame = {
                     render: 90,
@@ -652,6 +656,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             o.v2HeadlessSofort = hlSofort;
             st.renderer._isHeadlessNull = _oH0;
             r._foundryTreeMaterial = _oTM;
+            r._atmoTakt = _oAT;
             // ── V4: LINSEN-KONSUM im gebauten Trace ──
             const trace = r._flightRecorderBuildTrace();
             const ss = trace && trace.steadyState;
