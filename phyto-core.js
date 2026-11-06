@@ -3830,8 +3830,8 @@
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
     //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
-    //                 Auflösung als rg8 (Zenit, 45°-Kranz; F6), Stufe 0 (die GPU zieht die Mips) — ein weiches
-    //                 Licht-Feld der Krone
+    //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
+    //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums der Art im Wahl-Schlüssel der Stufen (`karteSaum`): so weit verschiebt das Muster
     //                 der Blattgröße die Deckung eines Rand-Texels
     var KARTEN_GESETZ = {
@@ -3986,7 +3986,7 @@
         const a = ebene(w, h, bc ? karteMipZahl(zb, zh) : 1, bc ? 8 : 4);
         const n = ebene(nw, nh, bc ? karteMipZahl((zb / nt) | 0, (zh / nt) | 0) : 1, bc ? 16 : 2);
         const t = bc ? ebene(nw, nh, n.stufen.length, 8) : { stufen: [], bytes: 0 };
-        // die Sonnen-Sicht (A7; F6 zweifach: der Zenit und der 45°-Kranz): rg8, eine Stufe, in jedem Format
+        // die Sonnen-Sicht (A7; w14 ihr lineares Feld über die Richtung): rgba8, eine Stufe, in jedem Format
         const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
             lh = Math.max(1, (h / KARTEN_GESETZ.lichtTeiler) | 0);
         return {
@@ -4003,7 +4003,7 @@
             tBytes: t.bytes,
             lw: lw,
             lh: lh,
-            lBytes: lw * lh * 2,
+            lBytes: lw * lh * 4,
         };
     }
 

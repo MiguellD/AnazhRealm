@@ -3310,8 +3310,7 @@ hauptLauf(async () => {
         // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
-        if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
-        const kurve = (uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
             for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
                 await umstellen({ ort, sicht: "ego" });
