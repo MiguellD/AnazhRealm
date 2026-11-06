@@ -977,7 +977,11 @@ class AnazhRealm_feld_nexus {
     // spawn_studio mit <regler> trägt nur die Zeilen der Art seines Worts, jeder Wert eine Zahl. ollama (llama.cpp) liest ein
     // Tupel nur als `prefixItems` fester Länge (`items: false` bricht die Anfrage, `items` neben `prefixItems` verdrängt es) —
     // darum je Länge eine Form; kein anderes Array darf mit "spawn_studio" beginnen.
-    _kiAntwortSchema() {
+    // DER REGLER NUR, WENN DER SATZ IHN NENNT (ki.K5, 06.11.): `regler` ist der Abruf des Satzes (`_kiAbruf`, {art: [Zeile …]}) —
+    // ein spawn_studio mit <regler> steht nur für dessen Arten, das Objekt trägt GENAU die genannten Schlüssel (mindestens einen).
+    // Ohne Abruf erlaubt die Form kein Regler-Objekt. Bis ki.K5 erlaubte sie jeder Art jede Zeile: qwen3:4b schrieb „bau mir ein
+    // haus" fünf unverlangte Regler (81 statt 19 Token, je Token ~250 ms) — der Vertrag allein hielt es in keiner Fassung.
+    _kiAntwortSchema(regler = {}) {
         const W = { $ref: "#/$defs/wert" };
         const zahl = { type: "number" };
         const tupel = (glieder) => ({
@@ -989,31 +993,48 @@ class AnazhRealm_feld_nexus {
         const kopfMitRest = (namen, bis) =>
             Array.from({ length: bis + 1 }, (_, n) => tupel([{ enum: namen }, ...Array(n).fill(W)]));
         const { ziele } = this._studioWortGruppen();
-        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const ss = { const: "spawn_studio" };
         const alle = Object.values(ziele).flat();
+        // DER ORT IST EIN ORT (ki.K5, 06.11.): wo die Signatur eines Verbs einen Ort liest (`_dslForm`: positionNode/posNode), steht
+        // in der Form ein Ort-Tupel ["at_player_forward", 12] — nie ein beliebiger Wert. Mit dem knappen Vertrag schrieb qwen3:4b
+        // den Ort nackt („at_player_forward"), fünf von 41 Programmen fielen ungültig.
+        const ORT = { $ref: "#/$defs/ort" };
+        const istOrt = (p) => p === "positionNode" || p === "posNode";
         const spawn = !alle.length
             ? []
             : [
-                  ...[2, 3, 4, 5].map((n) =>
-                      tupel([ss, { $ref: "#/$defs/wort" }, W, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
-                  ),
-                  ...Object.entries(ziele).map(([art, ws]) =>
-                      tupel([
-                          ss,
-                          { enum: ws },
-                          W,
-                          zahl,
-                          { anyOf: [zahl, { type: "null" }] },
-                          {
-                              type: "object",
-                              properties: Object.fromEntries((PBK[art] || []).map((d) => [d.id, zahl])),
-                              additionalProperties: false,
-                          },
-                      ])
-                  ),
+                  // ohne Regler endet ein Werk nach <anzahl>: ein fünftes Glied schrieb qwen3:4b als „,null" oder als erfundene Saat
+                  // („,0.8") — zwei Token je Werk (~0,4 s); <same> steht nur vor einem Regler-Objekt
+                  ...[2, 3, 4].map((n) => tupel([ss, { $ref: "#/$defs/wort" }, ORT, zahl].slice(0, n))),
+                  ...Object.entries(regler)
+                      .filter(([art, ds]) => ziele[art] && ds.length)
+                      .map(([art, ds]) =>
+                          tupel([
+                              ss,
+                              { enum: ziele[art] },
+                              ORT,
+                              zahl,
+                              { anyOf: [zahl, { type: "null" }] },
+                              {
+                                  type: "object",
+                                  properties: Object.fromEntries(ds.map((d) => [d.id, zahl])),
+                                  minProperties: 1,
+                                  additionalProperties: false,
+                              },
+                          ])
+                      ),
               ];
-        const verben = Object.keys(this.dslEffects).filter((n) => n !== "spawn_studio");
+        // je Verb mit Ort die Tupel jeder Länge (die hinteren Argumente sind frei), die übrigen Verben über den Kopf mit Rest
+        const mitOrt = [];
+        const verben = [];
+        for (const n of Object.keys(this.dslEffects)) {
+            if (n === "spawn_studio") continue;
+            const ps = this._dslFormen[n].split(", ");
+            if (!ps.some(istOrt)) verben.push(n);
+            else
+                for (let k = 0; k <= ps.length; k++)
+                    mitOrt.push(tupel([{ const: n }, ...ps.slice(0, k).map((p) => (istOrt(p) ? ORT : W))]));
+        }
         const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
         return {
             type: "object",
@@ -1027,7 +1048,8 @@ class AnazhRealm_feld_nexus {
             additionalProperties: false,
             $defs: {
                 ...(alle.length ? { wort: { enum: alle } } : {}),
-                programm: { anyOf: [...spawn, ...kopfMitRest(verben, 8)] },
+                programm: { anyOf: [...spawn, ...mitOrt, ...kopfMitRest(verben, 8)] },
+                ort: { anyOf: kopfMitRest(Object.keys(this.dslPositions), 4) },
                 wert: {
                     anyOf: [
                         zahl,
@@ -1045,24 +1067,20 @@ class AnazhRealm_feld_nexus {
 
     _dslVokabular() {
         const W = AnazhRealm.DSL_WERTE;
+        // je Eintrag [Name, Form]: die Verben in der Form ihrer Tafel (`_dslFormen`), die Orte und Bedingungen in ihrer Signatur
         const liste = (eintraege) =>
             eintraege
-                .map(
-                    ([n, fn]) =>
-                        `${n}(${this._dslForm(fn)})${W[n] ? ` [${W[n][2].length ? "Band: am Ende" : W[n][2]()}]` : ""}`
-                )
+                .map(([n, f]) => `${n}(${f})${W[n] ? ` [${W[n][2].length ? "Band: am Ende" : W[n][2]()}]` : ""}`)
                 .join(", ");
-        const ops = Object.entries(this.dslEffects);
+        const signatur = (tafel) => Object.entries(tafel).map(([n, fn]) => [n, this._dslForm(fn)]);
+        const ops = Object.keys(this.dslEffects).map((n) => [n, this._dslFormen[n]]);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
-            'Die DSL kennt GENAU diese Verben, je mit Form: name(a, b) heißt ["name", a, b]; „…" heißt beliebig viele',
-            'Unterprogramme (bei random_weighted je {"weight":w,"effect":Programm}). Ein positionNode/posNode ist ein Ort,',
-            "condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.",
-            "Welt-Akte verändern die Welt, ihre Wesen oder den Spieler.",
+            'Die DSL kennt GENAU diese Verben: name(a, b) heißt ["name", a, b], „…" beliebig viele Programme; positionNode/posNode ist ein Ort, condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.',
             `  Welt-Akte: ${liste(welt)}.`,
             `  Weitere Ops: ${liste(ops.filter((o) => !welt.includes(o)))}.`,
-            `  Orte: ${liste(Object.entries(this.dslPositions))}.`,
-            `  Bedingungen: ${liste(Object.entries(this.dslConditions))}.`,
+            `  Orte: ${liste(signatur(this.dslPositions))}.`,
+            `  Bedingungen: ${liste(signatur(this.dslConditions))}.`,
         ];
     }
 
@@ -1127,27 +1145,13 @@ class AnazhRealm_feld_nexus {
                 })
             ),
             ...this._dslVokabular(),
-            "",
-            "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
-            '  ["spawn_studio", <wort>, <position>, <anzahl>, <same>, <regler>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1,null,{"storeys":3,"pitchDeg":50}] (ein dreigeschossiges Haus mit steilem Dach).',
-            `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
-            "  <wort> ist genau EIN Wort dieser Liste, nie der Name seiner Gruppe; eine Art der Liste wächst nur über spawn_studio.",
-            "  Position: jeder der Orte oben. Anzahl 1–24. <same> eine Zahl oder null.",
-            "  <regler> (optional) ein Objekt {Regler: Zahl}: jeder Name GENAU aus den Klammern der Gruppe des Worts, jeder Wert eine Zahl —",
-            "  ein erfundener Name oder ein Wort statt einer Zahl lässt die GANZE Tat ausfallen, lass weg, was nicht in den Klammern steht.",
-            "  So prägt ein Satz das Werk (knorrig, schmal und hoch, alt): jede genannte Eigenschaft bekommt ihren Regler, ein starkes Wort",
-            "  (sehr, riesig, viel, schnell) setzt ihn nahe an den Rand seines Bereichs; der Kern klemmt jede Zahl auf ihren Bereich.",
-            "  Ein Wesen mit Eigenschaften (groß, klein, schlank) wächst über spawn_studio mit dem Wort seiner Gattung, nie über spawn_creature.",
-            '  Musik der Welt und Gestalt des Spielers stehen an keinem Ort: ihr Wort prägt die Welt (Ort und Anzahl zählen nicht), z.B. ["spawn_studio","lofi",["at_player"],1,null,{"bpm":70}] (ruhige Musik) oder ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer) — jede Gestalt des Spielers (größer, kräftiger, schlanker) über spawn_studio mit mensch.',
-            "",
-            "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
-            '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
-            'Bedingungen LESEN die Welt: ["weather_is","rainy"], ["emotion_above","joy",0.5], ["field_below","lebendig",0.3] (wenig Leben am Ort), ["field_above","glut",0.5].',
-            'Effekte SCHREIBEN die reaktive Welt — u.a. ["deposit_life",["at_field_need"]] (trägt Leben dorthin, wo es fehlt), ["deposit_emotion","hope",0.5], ["weather","sunny"], ["creatures_emotion","happy"].',
-            'Beispiel-Gesetz: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]],{"everySec":3}] — heilt karge Regionen von selbst.',
-            "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
-            "Halte Programme klein (Tiefe ≤ 4).",
-            "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
+            // DIE STUDIOS KNAPP (ki.K5, 06.11.): je Gruppe vier Wörter (`_studioWordsForPrompt`); die Regler, die ein Satz nennt,
+            // stehen in SEINEM Kontext (`_kiAbruf`) — der feste Vertrag fiel von 5 532 auf ~2 000 Token
+            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen, z.B. ["spawn_studio","eiche",["near_water",60],6]: <wort> genau EIN Wort der Welt, nie seine Gruppe (eine Art der Welt wächst nur so), Anzahl 1–24.',
+            `  Wörter der Welt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
+            '<same> und <regler> nur, wenn der Kontext „Regler, die der Satz nennt“ trägt: {Regler: Zahl} aus genau diesen Zeilen, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; Gestalt des Spielers und Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
+            'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion, nur auf Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
+            "Halte Programme klein (Tiefe ≤ 4). Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences.",
             "",
             AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
                 ` Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
@@ -1331,19 +1335,15 @@ class AnazhRealm_feld_nexus {
         return { error: ["llm.fehler.keine-erinnerung", { ist }] };
     }
 
+    // DER KONTEXT DES SATZES: was der Vertrag nicht trägt — die Seele des Spielers und der wahre Schreiber des Wetters
+    // (affekt.K4#2: die KI nennt, wer es schrieb, nie eine Vermutung). OHNE ZWILLING (ki.K5, 06.11.): die Emotionen als Zahlen
+    // (die Stimmung nennt der Vertrag, `_emotionState`), Wetter und Kreaturen (der Vertrag zählt sie) und die Bildrate fielen —
+    // ihre Zahlen wechselten jeden Satz, das Modell rechnete dahinter alles neu (3 s je Satz an 4 CPU-Kernen).
     llmBuildContext() {
-        const e = (this.state.player && this.state.player.emotions) || {};
-        const top = Object.entries(e)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 3)
-            .map(([k, v]) => `${k}=${v.toFixed(2)}`);
-        // der wahre Schreiber des Wetters (affekt.K4#2): die KI nennt, wer es schrieb, nie eine Vermutung
         const wer = this._wetterSchreiberZeile();
         return [
-            `Welt-Status: weather=${this.state.weather}, creatures=${this.state.creatures.length}, fps=${(this.state.fps || 0).toFixed(0)}.`,
-            `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
-            `Spieler-Emotionen (Top 3): ${top.join(", ") || "still"}.`,
             AnazhRealm._datum`Spieler-Seele: ${this.state.player.soul || "human"}.`,
+            `Das Wetter „${this.state.weather}“ schrieb: ${AnazhRealm._tIn(AnazhRealm._spracheKi(), wer[0], wer[1], AnazhRealm._datum)}.`,
         ].join("\n");
     }
 
@@ -1467,6 +1467,8 @@ class AnazhRealm_feld_nexus {
         // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
         const tat = (program) => this.dslRun(program, { source: "llm:grok", grund: userText });
         const reply = await this.llmCall(userText, null, { tat });
+        // nach dem Satz: die Ruhe der KI beginnt (`_kiRegung`) — der Satz, nie die Tür (`llmCall`), regt das Wärmen an
+        this._kiRegung();
         if (reply.error) {
             appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
@@ -2090,6 +2092,17 @@ AnazhRealm.GESTURE_CRYSTAL = Object.freeze({
 // Infrastruktur-Defaults an EINER Stelle (Drift-Schutz): lokaler Ollama-Server und
 // Default-Signaling-Adresse.
 AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
+// DIE RUHE DER WELT-KI (ki.K5): so viele Sekunden ohne Ruf und ohne Tagebuch-Eintrag, dann wärmt sie ihren Vertrag vor
+// (`_kiVorwaermen`) — gleich der Pause ihrer Stimme (`llm.minGapSeconds`), das Vorwärmen ist ein Hintergrund-Ruf wie sie
+AnazhRealm.KI_RUHE_S = 3;
+// so viele Zeichen (bis zum Zeilenende) rechnet ein Happen des Vorwärmens vor (`_kiVorwaermen`): ~50 Token, ~1 s an 4 CPU-Kernen —
+// so lange wartet ein Satz, der in das Wärmen fällt, höchstens
+AnazhRealm.KI_HAPPEN_ZEICHEN = 150;
+// so viele Wörter je Gruppe nennt der Vertrag der Welt-KI (`_studioWordsForPrompt`); jedes andere Wort eines Satzes ruft der
+// Abruf je Satz ab (`_kiAbruf`). Gemessen (ki.K5, qwen3:4b, 4 CPU-Kerne): ein Wort im festen Vertrag kostet im Cache fast
+// nichts (+250 Token ≈ +4 ms je Antwort-Token), eine Zeile „Wörter des Satzes" je Satz ~1 s Prefill — 2 statt 8 je Gruppe hob
+// birke, weide, tanne, holzhuette in den Abruf und den Satz über 6 s
+AnazhRealm.KI_WOERTER_JE_GRUPPE = 8;
 // Die Kopfzeile des Vertrags der Welt-KI ({say, program}): der Prompt trägt sie, der ollama-Body erkennt an ihr, dass die
 // Antwort-Form (`_kiAntwortSchema`) gilt — Persona-, Übersetzer- und Reflexions-Prompts tragen sie nie.
 AnazhRealm.KI_WELT_FORM = "Antworte IMMER als striktes JSON-Objekt mit zwei Feldern:";
@@ -2102,10 +2115,14 @@ AnazhRealm.KI_BEISPIELE = Object.freeze([
     ["eichen", ["spawn_studio", "eiche", ["at_player_forward", 12], 3]],
     ["tiere", ["spawn_creature", ["near_player", 10], 3, "happy"]],
     ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
-    // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"])
-    ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"], { everySec: 3 }]],
+    // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"]); ohne
+    // {everySec} (die Welt nimmt `WORLD_RULES.defaultEverySec`): das Gesetz war mit 25 Token das längste Programm des Korpus
+    ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"]]],
     // eine Stimmung der Wesen ist eine Tat, kein Schaden (ki.K5: mit dem Programm zuerst verweigerte die KI „traurig")
     ["schwermut", ["creatures_emotion", "sad"]],
+    // die Schwere ist negativ, weniger heißt näher an 0 (ki.K5: „verringere die schwerkraft" → ["gravity",0.1], außerhalb des
+    // Bands -30–0, in jedem zweiten Lauf; ein Satz im Band lenkte nicht, „leichter werden" lenkte auf -30)
+    ["schwere", ["gravity", -4]],
     ["name", null],
     ["eis", null],
     ["wald", null],
