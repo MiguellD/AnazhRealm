@@ -455,18 +455,19 @@ class AnazhRealm_dienst {
     // Liefert einen knappen Auszug für den LLM-System-Prompt (Welle 1 A):
     // die ersten 3 Erinnerungen (Genesis-Anker) + die letzten 7 (jüngstes
     // Erleben). Reicht für Identitäts-Verankerung ohne Token-Bloat.
-    // DAS TAGEBUCH IM PROMPT WÄCHST IN SEITEN (ki.K5): die ersten 3 Einträge, dann die laufende und die vorige Seite zu je 7 —
-    // zwischen zwei Seiten-Kanten wird nur angehängt, der Prompt-Cache des Modells hält alles davor. Bis ki.K5 glitten „die
-    // letzten 7": jeder neue Eintrag verschob den ganzen Block, das Modell rechnete je Satz 350–550 Token neu (qwen3:4b-instruct).
     journalForPrompt() {
         const j = this.state.worldJournal;
         if (!j || !Array.isArray(j.entries) || j.entries.length === 0) return "";
-        const [KOPF, SEITE] = [3, 7];
-        const rest = j.entries.length - KOPF;
-        const ab = KOPF + Math.max(0, (Math.ceil(rest / SEITE) - 2) * SEITE);
-        return [...j.entries.slice(0, KOPF), ...j.entries.slice(ab)]
-            .map((e) => `- ${this._erinnerungFuerKi(e)}`)
-            .join("\n");
+        const head = j.entries.slice(0, 3);
+        const tail = j.entries.slice(-7);
+        const seen = new Set();
+        const ordered = [];
+        for (const e of [...head, ...tail]) {
+            if (seen.has(e.id)) continue;
+            seen.add(e.id);
+            ordered.push(e);
+        }
+        return ordered.map((e) => `- ${this._erinnerungFuerKi(e)}`).join("\n");
     }
 
     setVec(v, x, y, z) {
