@@ -863,7 +863,9 @@ class AnazhRealm_gelaende_chunks {
         if (!pending || pending.size === 0) return;
         const pm = this.state.playerMesh;
         const s = this._wuchsSchlaf;
-        const sv = s && pm ? this._bedarfVoraus(pm.position) : null;
+        // steht der Spieler genau, wo er einschlief, kann die Strecke des Vorlaufs nur schrumpfen (das Tempo klingt ab): der Schlaf
+        // hält ohne Ruf (gate:stand-takt RUHE-SIM) — sonst gingen beide Enden der Strecke weniger als `frei`
+        const bahnRuht = (sv) => (sv.x - s.vx) ** 2 + (sv.z - s.vz) ** 2 < s.frei * s.frei;
         if (
             s &&
             s.n === pending.size &&
@@ -872,7 +874,7 @@ class AnazhRealm_gelaende_chunks {
             s.fr === this.state.foliageRadius &&
             pm &&
             (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
-            (sv.x - s.vx) ** 2 + (sv.z - s.vz) ** 2 < s.frei * s.frei
+            ((pm.position.x === s.x && pm.position.z === s.z) || bahnRuht(this._bedarfVoraus(pm.position)))
         )
             return;
         this._wuchsSchlaf = null;
