@@ -651,13 +651,9 @@ async function pruefeWelt(page, welt, lies) {
     await zaehlerAus(page);
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
     // `vorher` steht GEZEICHNET vor der Tat: der Vorbau der garage zeichnet ein neues Werk erst, wenn seine Pipelines stehen
-    // (`werkSteht`) — ohne Bild dazwischen trägt das Sprite-Quad keinen Puffer, den der Neubau zerstören könnte (K6 blind, z259)
-    const vorher = async (id) => {
-        document.getElementById(id).click();
-        await werkSteht();
-        for (let i = 0; i < 2; i++) await new Promise(requestAnimationFrame);
-    };
-    if (welt.vorher) await hinFrame.evaluate(vorher, welt.vorher);
+    // (`werkSteht`, dann ein Bild) — ohne Bild dazwischen trägt das Sprite-Quad keinen Puffer, den der Neubau zerstören könnte
+    // (K6 blind, z259)
+    if (welt.vorher) await hinFrame.evaluate((id) => (document.getElementById(id).click(), werkSteht().then(() => new Promise(requestAnimationFrame))), welt.vorher);
     await fremdBereit(page, PORT);
     const programm = welt.wort
         ? await page.evaluate((w) => r._portalParseWorldCommand(w), welt.wort)
