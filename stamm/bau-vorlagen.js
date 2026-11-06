@@ -914,17 +914,22 @@ class AnazhRealm_bau_vorlagen {
             this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
         }
         const rausch = this._growTreeNoise;
+        // die Arten, deren Wuchs noch auf seinen Leser wartet (Art → Same): die Saat bestellt ihr Skelett beim Wald-Faden, bevor
+        // ihre Affinität sie liest (`_wuchsFehlt`) — der Haupt-Faden setzt dann nur noch zusammen
+        const offen = (this._builtinWuchsOffen = new Map());
         const alsWert = (bp, k, value) =>
             Object.defineProperty(bp, k, { value, writable: true, enumerable: true, configurable: true });
         const wuchsAmLeser = (bp, species) => {
             let w = null;
+            offen.set(species, `builtin-${species}-v1`);
             const wachse = () => {
                 if (w) return w;
+                offen.delete(species);
                 const welt = this._growTreeNoise;
                 this._growTreeNoise = rausch;
                 let parts = null;
                 try {
-                    parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`);
+                    parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`); // das Skelett aus dem Vorrat, wenn bestellt
                 } catch (e) {
                     this._bruchMelden(`BAUM-BUILTIN ${species}: der Wuchs warf (${(e && e.message) || e})`);
                 } finally {

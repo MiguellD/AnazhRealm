@@ -595,14 +595,21 @@ class AnazhRealm_bild_kosten {
                     }
                 } else if (ungebaut) {
                     const aufruf = buehne ? B.versuch : this.info.calls;
+                    // DIE FRIST DES LADE-BILDS (w16-lade-atem, ankunft.K5): unter dem Ladeschirm baut jeder Render-Aufruf
+                    // seinen ersten Stoff (ein Einmal-Render — Atmosphären-Tafel, Umgebung — zeichnet nie leer), jeden
+                    // weiteren nur bis zur EINEN Frist des Lade-Frames (`_ladeFrist`, die die Arbeit des Takts mit allen Lesern
+                    // teilt) und LADE_BILD_BAU_MS danach — dann wartet er auf das nächste Lade-Bild, das gleich fällig ist
+                    // (`_ladeBildFaellig`). Bis hier trug JEDER Aufruf eigene LADE_TAKT_MS (Hauptbild, Kaskaden, Kontakt,
+                    // Rückstrahl, Atmosphäre, Umgebung): ein Lade-Bild summierte sie (Radeon kalt längste Aufgabe 615–1075 ms,
+                    // headless 1 570 ms). Die Karten-Bühne hält ihre Frist je Bake-Versuch (13 Aufrufe) wie bisher.
+                    const frist = !buehne && welt._ladeTakt() ? welt._ladeFrist() + AnazhRealm.LADE_BILD_BAU_MS : null;
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
-                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
-                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
-                    } else if (E.aufrufMs >= E.deckel) {
+                    } else if (frist !== null ? performance.now() >= frist : E.aufrufMs >= E.deckel) {
                         E.verschoben++;
+                        if (frist !== null) E.ladeVerschoben++; // das nächste Lade-Bild ist fällig (`_ladeBildFaellig`)
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -640,6 +647,7 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
+                ladeVerschoben: 0, // davon an der Frist des Lade-Bilds (w16-lade-atem): sie rufen das nächste (`_ladeBildFaellig`)
                 rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
                 rateMs: 0,
                 rateFrist: null,

@@ -648,11 +648,20 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DER BAU RUFT DAS NÄCHSTE BILD (w16-lade-atem): verschob das letzte Lade-Bild Knoten-Bauten an seiner Frist (die
+    // Erst-Zeichnung, `E.ladeVerschoben`), ist das nächste sofort fällig — der Bau geht in Bildern zu LADE_BILD_BAU_MS weiter,
+    // nie in EINER Aufgabe, und wartet nie LADE_BILD_MS auf sein Bild.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        const verschoben = this._erstZeichnung ? this._erstZeichnung.ladeVerschoben : 0;
+        if (
+            jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
+            verschoben !== (L.verschoben || 0) ||
+            this._weltbildLuecken().length === 0
+        ) {
             L.ladeBild = jetzt;
+            L.verschoben = verschoben;
             return true;
         }
         L.ladeAus = (L.ladeAus || 0) + 1;
@@ -2170,6 +2179,9 @@ AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
+// Der Anteil des Bilds am Lade-Frame (ms nach der Frist des Takts, `_ladeFrist`): so lange baut die Erst-Zeichnung eines
+// Lade-Bilds über ihren ersten Stoff je Render-Aufruf hinaus — ein Lade-Frame trägt Arbeit und Bild, nie mehr (ankunft.K5).
+AnazhRealm.LADE_BILD_BAU_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
