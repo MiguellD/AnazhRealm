@@ -22,15 +22,9 @@
 // kippt kein Byte — die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; sin/cos/atan2/hypot
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
-const {
-    fingerabdruck: fingerprint,
-    goldenSelbsttest,
-    vertragIst,
-    goldenWand,
-    kernProbe,
-} = require("./lib/plattform-probe.cjs");
+const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path, jsonKlon } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 
@@ -77,52 +71,21 @@ function caseKey(c) {
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
     //     der Same wählt den Lack.
-    await kernProbe("v3", "vehicle-core.js", "__vehicleCore", CASES, check, {
-        bau: (K, c) => buildCase(c, K),
-        schluessel: caseKey,
-    });
+    await kernProbe("v3", "vehicle-core.js", "__vehicleCore", CASES, check, { bau: (K, c) => buildCase(c, K), schluessel: caseKey });
 
-    // 4c) DER UMRISS DER GESTALT: die gemintete Tafel `FAHRZEUG_UMRISS`, mit der der Wirt den Wagen fährt und stößt, IST der
-    //     Grundriss der gebauten Gestalt (k-DOP: Stützweite je 22,5° über der des Stations-Rechtecks) und ihr Dach — je Rezept
-    //     und Zahl deckt die Tafel das Gemessene (Stufe 0 und 1) und liegt höchstens 1 cm darüber
-    //     (scripts/lib/fahrzeug-umriss.cjs). `MINT_FAHRZEUG_UMRISS=1` druckt die Tafel.
-    {
-        const { fahrzeugUmrissMessen, fahrzeugUmrissTafel, fahrzeugUmrissTreue } = require("./lib/fahrzeug-umriss.cjs");
-        const gemessen = {};
-        for (const id of Object.keys(VC.PRESETS)) {
-            const m = fahrzeugUmrissMessen(VC, global.THREE, id);
-            if (m) gemessen[id] = m;
-        }
-        if (process.env.MINT_FAHRZEUG_UMRISS === "1") {
-            console.log("  FAHRZEUG_UMRISS (gemintet, für vehicle-core.js):");
-            for (const [id, z] of Object.entries(fahrzeugUmrissTafel(VC, global.THREE)))
-                console.log(`        ${id}: { ueber: ${JSON.stringify(z.ueber).replace(/,/g, ", ")}, dach: ${z.dach} },`);
-        }
-        const treue = fahrzeugUmrissTreue(VC.FAHRZEUG_UMRISS, gemessen);
-        check(
-            `Umriss der Gestalt: FAHRZEUG_UMRISS ist die gebaute Gestalt (${Object.keys(gemessen).length} Rezepte, je 10 Zahlen, ≤ 1 cm darüber)`,
-            Object.keys(gemessen).length === GATTUNGEN.length && treue.length === 0,
-            treue[0] || ""
-        );
-        for (let i = 1; i < treue.length; i++) console.log(`      ↳ ${treue[i]}`);
-        // der eingeschmuggelte Täter: ein Bug 10 cm hinter dem Bild (die Stationen allein), eine fehlende Zeile
-        const kurz = JSON.parse(JSON.stringify(VC.FAHRZEUG_UMRISS));
-        kurz.supersport.ueber[0] -= 0.1;
-        delete kurz.suv;
-        const t = fahrzeugUmrissTreue(kurz, gemessen);
-        check(
-            "SELBST-TEST: ein zu kurzer Umriss und eine fehlende Zeile werden beim Namen genannt",
-            t.some((s) => /^supersport\.ueber\[0\]: Tafel 0\.04/.test(s)) && t.some((s) => /^suv: keine Zeile/.test(s)),
-            t.join(" · ")
-        );
-    }
+    // 4c) DER UMRISS DER GESTALT: die Tafel `FAHRZEUG_UMRISS`, mit der der Wirt den Wagen fährt und stößt, IST die gebaute Gestalt
+    //     (die Lehre des Buchs `umrissTreue`: je Zahl ≥ gemessen, ≤ 1 cm darüber); ein Mutant fällt beim Namen.
+    const tr = VC.umrissTreue(VC.FAHRZEUG_UMRISS).join(" · ");
+    check("FAHRZEUG_UMRISS ist die gebaute Gestalt", !tr, tr);
+    const kurz = jsonKlon(VC.FAHRZEUG_UMRISS);
+    kurz.gt.ueber[0] = 0;
+    delete kurz.suv;
+    const tk = VC.umrissTreue(kurz).join(" · ");
+    check("SELBST-TEST: Umriss-Mutant beim Namen", /gt\.ueber\[0\].*suv: keine/.test(tk), tk);
 
     // 5) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    wandEnde(
-        errs,
-        "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
-    );
+    wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

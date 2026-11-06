@@ -1146,11 +1146,9 @@ async function probeBahn(B) {
         const fzg = r._fahrzeugGesetzFor(e);
         const h = fzg && fzg.drive && fzg.drive.huelle;
         if (!G || !h) return { da: false, grund: "kein Fahr-Gesetz am Wagen" };
-        const sc = Number.isFinite(e.scale) ? e.scale : 1;
-        const bug = h.noseX * sc;
-        const heck = h.tailX * sc;
-        const hw = h.bw * sc;
-        const dach = (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc;
+        // der Wagen ist der GRUNDRISS seiner gezeichneten Gestalt (`_fahrUmriss`, physik.K2 Staffel 2) — bis w17-bild-kollision
+        // die Stationen der Hülle allein (noseX · tailX · bw · yRoof: 0,3 m zu kurz, 0,2 m zu schmal)
+        const { poly, dach } = r._fahrUmriss(e);
         const stufe = VC.FAHR.schritt.stufeRad * G.radR;
         const ry = fahrtGier(e);
         const x = e.position.x;
@@ -1169,52 +1167,31 @@ async function probeBahn(B) {
         const nrm = {};
         const steilY = Math.cos(VC.FAHR.schritt.ebeneMax);
         const brust = Math.min(dach, 1.2);
-        for (let i = 0; i <= 4; i++) {
-            const l = heck + ((bug - heck) * i) / 4;
-            for (const q of [-hw, 0, hw]) {
-                const px = x + l * fX + q * qX;
-                const pz = z + l * fZ + q * qZ;
-                const ctx = r._terrainColumnContext(px, pz);
-                const yS = ebeneY(l, q) + stufe + 0.02;
-                let wand = false;
-                if (r._fieldSolid(px, yS, pz, ctx)) {
-                    r._fieldGradient(px, yS, pz, nrm);
-                    wand = !(nrm.mag > 1e-6) || nrm.y < steilY;
-                }
-                if (wand || r._fieldSolid(px, ebeneY(l, q) + brust, pz, ctx)) waende++;
+        for (const [l, q] of [[0, 0], ...poly]) {
+            const px = x + l * fX + q * qX;
+            const pz = z + l * fZ + q * qZ;
+            const ctx = r._terrainColumnContext(px, pz);
+            const yS = ebeneY(l, q) + stufe + 0.02;
+            let wand = false;
+            if (r._fieldSolid(px, yS, pz, ctx)) {
+                r._fieldGradient(px, yS, pz, nrm);
+                wand = !(nrm.mag > 1e-6) || nrm.y < steilY;
             }
+            if (wand || r._fieldSolid(px, ebeneY(l, q) + brust, pz, ctx)) waende++;
         }
-        // Blocker: das Rechteck der Hülle gegen jede Box (gedreht: ihre obb) im Band Ebene + Stufe … Dach.
-        const hl = (bug - heck) / 2;
-        const cx = x + fX * ((bug + heck) / 2);
-        const cz = z + fZ * ((bug + heck) / 2);
-        const unten = eb.y + stufe;
-        const oben = eb.y + dach;
+        // Blocker: der Grundriss gegen jede Box (gedreht: ihr Rahmen) im Band Ebene + Stufe … Dach, getrennt auf den Achsen beider
+        const g = grundriss(poly.map(([l, q]) => [x + l * fX + q * qX, z + l * fZ + q * qZ]));
+        const [unten, oben] = [eb.y + stufe, eb.y + dach];
         let blocker = 0;
         const namen = new Set();
         for (const a of st.architectures) {
             if (!a || a === e || !a.blockerAABBs || !a.position) continue;
             if (Math.abs(a.position.x - x) > 30 || Math.abs(a.position.z - z) > 30) continue;
             for (const b of a.blockerAABBs) {
-                if (!(b.topY > unten && b.botY < oben)) continue;
-                if (b.dick < stufe) continue; // ein Trieb dünner als die Rad-Stufe wird überrollt
-                const ob = b.obb;
-                const b1 = ob ? [ob.c, -ob.s] : [1, 0];
-                const b2 = ob ? [ob.s, ob.c] : [0, 1];
-                const ex = ob ? ob.hx : (b.maxX - b.minX) / 2;
-                const ez = ob ? ob.hz : (b.maxZ - b.minZ) / 2;
-                const dx = cx - (ob ? ob.cx : (b.minX + b.maxX) / 2);
-                const dz = cz - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
-                let getrennt = false;
-                for (const u of [b1, b2, [fX, fZ], [qX, qZ]]) {
-                    const rO = hl * Math.abs(fX * u[0] + fZ * u[1]) + hw * Math.abs(qX * u[0] + qZ * u[1]);
-                    const rA = ex * Math.abs(b1[0] * u[0] + b1[1] * u[1]) + ez * Math.abs(b2[0] * u[0] + b2[1] * u[1]);
-                    if (Math.abs(dx * u[0] + dz * u[1]) >= rO + rA) {
-                        getrennt = true;
-                        break;
-                    }
-                }
-                if (!getrennt) {
+                if (!(b.topY > unten && b.botY < oben) || b.dick < stufe) continue; // ein Trieb dünner als die Rad-Stufe wird überrollt
+                const R = rahmen(b);
+                const trennt = ([u, w], [a0, a1] = g.spanne(u, w), m = R.cx * u + R.cz * w, rB = R.hx * Math.abs(R.c * u - R.s * w) + R.hz * Math.abs(R.s * u + R.c * w)) => a1 <= m - rB || a0 >= m + rB;
+                if (![[R.c, -R.s], [R.s, R.c], ...g.K.map((k) => k.slice(2))].some(trennt)) {
                     blocker++;
                     namen.add(a.type);
                 }

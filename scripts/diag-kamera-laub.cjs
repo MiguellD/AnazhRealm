@@ -356,16 +356,9 @@ function leibInstall(cfg) {
         return Number.isFinite(k) ? k : null;
     };
     // die Kugel vom Radius m um p trifft die Box, wenn der Abstand der Mitte zur Box kleiner als m ist (die Minkowski-Summe ist
-    // rund: bis w17-bild-kollision urteilte die Linse an der scharfkantig aufgeblasenen Box und nannte eine Linse, die r neben
-    // einer Kante in der Luft steht, „in der Box")
-    L.inBox = (p, b, m) => {
-        const ob = b.obb;
-        const [qx, qz] = ob ? [p.x - ob.cx, p.z - ob.cz] : [0, 0];
-        const [lx, lz] = ob ? [qx * ob.c - qz * ob.s, qx * ob.s + qz * ob.c] : [p.x, p.z];
-        const [x0, x1, z0, z1] = ob ? [-ob.hx, ob.hx, -ob.hz, ob.hz] : [b.minX, b.maxX, b.minZ, b.maxZ];
-        const aus = (v, a0, a1) => (v < a0 ? a0 - v : v > a1 ? v - a1 : 0);
-        return Math.hypot(aus(lx, x0, x1), aus(p.y, b.botY, b.topY), aus(lz, z0, z1)) < m;
-    };
+    // rund: bis w17-bild-kollision urteilte die Linse an der scharfkantig aufgeblasenen Box)
+    L.inBox = (p, b, m, R = rahmen(b), x = p.x - R.cx, z = p.z - R.cz) =>
+        Math.hypot(Math.max(0, Math.abs(x * R.c - z * R.s) - R.hx), Math.max(0, b.botY - p.y, p.y - b.topY), Math.max(0, Math.abs(x * R.s + z * R.c) - R.hz)) < m;
     L.boxen = (x, z, rad) => {
         const out = [];
         for (const a of st.architectures || []) {
@@ -471,13 +464,7 @@ function leibInstall(cfg) {
     // die Stelle vor einer Box: die Fläche `seite` (0..3, die Normale im Rahmen der Box), der Abstand vor ihr; { x, z, gier }
     // mit dem Blick von der Box fort (die Kamera hinter dem Spieler steht zu ihr hin)
     L.vor = (b, seite, ab) => {
-        const ob = b.obb;
-        const cx = ob ? ob.cx : (b.minX + b.maxX) / 2;
-        const cz = ob ? ob.cz : (b.minZ + b.maxZ) / 2;
-        const hx = ob ? ob.hx : (b.maxX - b.minX) / 2;
-        const hz = ob ? ob.hz : (b.maxZ - b.minZ) / 2;
-        const c = ob ? ob.c : 1;
-        const s = ob ? ob.s : 0;
+        const { cx, cz, hx, hz, c, s } = rahmen(b);
         // der Leib steht frei: zu Fuß 0,35 m um den Fuß, im Ritt die halbe Länge des Wagens — je 0,25 m hinaus (bis 6 m), sonst die
         // nächste Fläche
         const rand = ab > 2 ? 2.3 : 0.35;
@@ -604,10 +591,8 @@ async function leibWiese(arg) {
         const h = je.haus[0] || je.fels[0];
         if (h) {
             const b = h.b;
-            const ob = b.obb;
-            const cx = ob ? ob.cx : (b.minX + b.maxX) / 2;
-            const cz = ob ? ob.cz : (b.minZ + b.maxZ) / 2;
-            const rad = Math.max(ob ? ob.hx : (b.maxX - b.minX) / 2, ob ? ob.hz : (b.maxZ - b.minZ) / 2) + 1.2;
+            const { cx, cz, hx, hz } = rahmen(b);
+            const rad = Math.max(hx, hz) + 1.2;
             r.setCameraMode("third");
             st._kamArm = undefined;
             let vor = null;

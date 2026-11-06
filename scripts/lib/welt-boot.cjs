@@ -463,7 +463,19 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+// DER GRUNDRISS EINES KÖRPERS (`grundriss(E)`, in jeder Seite als `window.grundriss`): ein konvexes Polygon [[x, z], …] gegen
+// den Uhrzeigersinn (der Wagen, `_fahrUmriss`) — seine Kanten [x0, z0, nx, nz] mit Außen-Normale, sein Intervall auf einer Achse,
+// der Abstand eines Punkts: der größte zu einer Kanten-Ebene (innen negativ; außen beim k-DOP des Wagens, Kanten je 22,5°,
+// höchstens 2 % unter dem euklidischen) — die Linsen des Wagens (kollision-bild, fahr-leben)
+const grundriss = (E) => {
+    const K = E.map(([x, z], i, [a, b] = E[(i + 1) % E.length], n = Math.hypot(a - x, b - z)) => [x, z, (b - z) / n, (x - a) / n]);
+    return {
+        K,
+        spanne: (u, w, P = E.map(([x, z]) => x * u + z * w)) => [Math.min(...P), Math.max(...P)],
+        abstand: (x, z) => Math.max(...K.map(([a, b, u, w]) => (x - a) * u + (z - b) * w)),
+    };
+};
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.grundriss = ${grundriss}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1779,6 +1791,7 @@ module.exports = {
     uferStellen,
     postKetteBereit,
     rahmen,
+    grundriss,
     pruefer,
     taeterFaelle,
     abwandlung,

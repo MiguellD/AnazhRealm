@@ -306,13 +306,7 @@ class AnazhRealm_koerper_bewegung {
         const { bug, heck, hw, dach, poly } = this._fahrUmriss(entry);
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
         const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
-        // DIE KANTEN des Grundrisses (Fahrt-Rahmen: längs l, quer q) mit ihrer Außen-Normale — die Achsen des Struktur-Lösers
-        // (`_resolveHuelleVsAABB`) und die Ebenen des Leib-Kontakts (`_huelleLeibSchub`)
-        const kanten = poly.map(([l0, q0], i) => {
-            const [l1, q1] = poly[(i + 1) % poly.length];
-            const n = Math.hypot(l1 - l0, q1 - q0) || 1;
-            return { l0, q0, l1, q1, nl: (q1 - q0) / n, nq: -(l1 - l0) / n, len: n };
-        });
+        const kanten = this._huelleKanten(poly);
         // Der UMRISS (Außen-Normale nl/nq): jede Ecke des Grundrisses (die Normale halbiert ihre zwei Kanten) und auf jeder
         // Kante Punkte höchstens 1 m auseinander — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
         const umriss = [];
@@ -356,6 +350,16 @@ class AnazhRealm_koerper_bewegung {
         return entry._fahrHuelleKette;
     }
 
+    // DIE KANTEN eines Grundrisses (Fahrt-Rahmen: längs l, quer q, gegen den Uhrzeigersinn) mit ihrer Außen-Normale — die Achsen
+    // des Struktur-Lösers (`_resolveHuelleVsAABB`) und die Ebenen des Leib-Kontakts (`_huelleLeibSchub`, `_huelleLeibFeger`)
+    _huelleKanten(poly) {
+        return poly.map(([l0, q0], i) => {
+            const [l1, q1] = poly[(i + 1) % poly.length];
+            const n = Math.hypot(l1 - l0, q1 - q0) || 1;
+            return { l0, q0, l1, q1, nl: (q1 - q0) / n, nq: -(l1 - l0) / n, len: n };
+        });
+    }
+
     // DIE HÜLLE GEGEN EINE BOX (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
     // `_resolveCapsuleVsAABB`): der GRUNDRISS der Hülle (das konvexe Polygon der gezeichneten Gestalt, `poly` im Fahrt-Rahmen
     // um pos) gegen die Box, getrennt auf den Achsen beider (die zwei der Box, die Kanten-Normalen des Polygons — SAT);
@@ -378,7 +382,7 @@ class AnazhRealm_koerper_bewegung {
         const cx = (ob ? ob.cx : (box.minX + box.maxX) * 0.5) - pos.x;
         const cz = (ob ? ob.cz : (box.minZ + box.maxZ) * 0.5) - pos.z;
         const P = h.poly;
-        const K = h.kanten;
+        const K = h.kanten || (h.kanten = this._huelleKanten(P));
         let best = Infinity;
         let ax = 0;
         let az = 0;

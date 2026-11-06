@@ -365,7 +365,7 @@ async function probeLeben(expected) {
             let kontakte = 0;
             let hz = Infinity;
             for (let n = 0; n < spur.length; n++) {
-                const k = n > 0 ? spur[n - 1].kontakt : null;
+                const k = n > 0 && spur[n - 1].kontakt;
                 if (k) {
                     kontakte++;
                     const cy = Math.cos(q.yaw);
@@ -681,36 +681,17 @@ async function probeLeben(expected) {
                 fz: Math.cos(f),
                 hl: W.hl,
                 hw: W.hw,
-                // der Grundriss der gezeichneten Gestalt in der Welt (die Ecken gegen den Uhrzeigersinn, `_fahrUmriss`)
-                ecken: W.poly.map(([l, q]) => [W.entry.position.x + l * Math.sin(f) + q * Math.cos(f), W.entry.position.z + l * Math.cos(f) - q * Math.sin(f)]),
+                // der Grundriss der gezeichneten Gestalt in der Welt (`_fahrUmriss`, `grundriss` aus welt-boot)
+                g: grundriss(W.poly.map(([l, q]) => [W.entry.position.x + l * Math.sin(f) + q * Math.cos(f), W.entry.position.z + l * Math.cos(f) - q * Math.sin(f)])),
             };
         };
         // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m — ihr Abstand zum Rechteck unter R − 0,1, an seiner Ecke rund
         // (bis w4-verkehr-c2 eckig: der Gehende, der die Ecke des stehenden Wagens streifte, 0,343 m von ihr bei R 0,35, hieß
         // „berührt“ 0,105 m tief); zwei Rechtecke über die vier Achsen beider
-        // (w17-bild-kollision) der Wagen ist der GRUNDRISS seiner gezeichneten Gestalt (`ecken`, konvex): der Abstand der Kapsel zu
-        // ihm, zwei Wagen über die Kanten-Normalen beider (SAT) — bis dahin das Rechteck, das die runden Ecken bis 24 cm überschätzt
-        const kanten = (E) => E.map(([x0, z0], i) => ((x1, z1, n) => [x0, z0, x1, z1, (z1 - z0) / n, -(x1 - x0) / n])(...E[(i + 1) % E.length], Math.hypot(E[(i + 1) % E.length][0] - x0, E[(i + 1) % E.length][1] - z0) || 1));
-        const drin = (L, x, z) => {
-            const K = kanten(L.ecken);
-            const innen = Math.max(...K.map(([x0, z0, , , nx, nz]) => (x - x0) * nx + (z - z0) * nz));
-            const ab =
-                innen <= 0
-                    ? innen
-                    : Math.min(
-                          ...K.map(([x0, z0, x1, z1]) => {
-                              const t = Math.max(0, Math.min(1, ((x - x0) * (x1 - x0) + (z - z0) * (z1 - z0)) / ((x1 - x0) ** 2 + (z1 - z0) ** 2 || 1)));
-                              return Math.hypot(x - x0 - (x1 - x0) * t, z - z0 - (z1 - z0) * t);
-                          })
-                      );
-            return ab < R - 0.1;
-        };
-        const schnitt = (a, b) =>
-            [...kanten(a.ecken), ...kanten(b.ecken)].every(([, , , , ux, uz]) => {
-                const sp = (E) => E.reduce(([lo, hi], [x, z]) => [Math.min(lo, x * ux + z * uz), Math.max(hi, x * ux + z * uz)], [Infinity, -Infinity]);
-                const [[a0, a1], [b0, b1]] = [sp(a.ecken), sp(b.ecken)];
-                return Math.min(a1 - b0, b1 - a0) > 0.05;
-            });
+        // der Wagen ist der GRUNDRISS seiner gezeichneten Gestalt (`g`): der Abstand der Kapsel zu ihm, zwei Wagen über die
+        // Kanten-Normalen beider (SAT) — bis w17-bild-kollision das Rechteck, das die runden Ecken bis 24 cm überschätzt
+        const drin = (L, x, z) => L.g.abstand(x, z) < R - 0.1;
+        const schnitt = (a, b) => [...a.g.K, ...b.g.K].every(([, , u, w], _, __, [a0, a1] = a.g.spanne(u, w), [b0, b1] = b.g.spanne(u, w)) => Math.min(a1 - b0, b1 - a0) > 0.05);
         const aus = {};
         for (const stunde of o.stunden) {
             stelle(S.ox, S.oz, 2);
@@ -2158,13 +2139,8 @@ async function probeLeben(expected) {
                 let d = Infinity;
                 for (const b of e.blockerAABBs) {
                     if (!(b.topY > fuss + A.PLAYER_STEP_UP && b.botY < kopf)) continue;
-                    const ob = b.obb;
-                    const dx = pmP.x - (ob ? ob.cx : (b.minX + b.maxX) / 2);
-                    const dz = pmP.z - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
-                    const lx = ob ? dx * ob.c - dz * ob.s : dx;
-                    const lz = ob ? dx * ob.s + dz * ob.c : dz;
-                    const hx = ob ? ob.hx : (b.maxX - b.minX) / 2;
-                    const hz = ob ? ob.hz : (b.maxZ - b.minZ) / 2;
+                    const { cx, cz, c, s, hx, hz } = rahmen(b);
+                    const [lx, lz] = [(pmP.x - cx) * c - (pmP.z - cz) * s, (pmP.x - cx) * s + (pmP.z - cz) * c];
                     const ix = Math.max(Math.abs(lx) - hx, 0);
                     const iz = Math.max(Math.abs(lz) - hz, 0);
                     const aussen = Math.hypot(ix, iz);

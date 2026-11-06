@@ -4922,8 +4922,8 @@
     // (Lichter, Lippe, Schürze, Kotflügel, Spiegel), negativ bleibt sie innen (die gerundeten Ecken). Der Wirt fährt und stößt
     // den Wagen mit diesem Grundriss (`_fahrzeugGestaltUmriss`); bis dahin waren die Stationen allein die Hülle — das Bild
     // ragte 13–15 cm über Bug und Heck, 9–12 cm über die Flanke (der Supersport 0,14 m in der Mauer), und an der schrägen Mauer
-    // berührte die Ecke des Rechtecks, wo die Gestalt 7,5 cm Luft ließ (gate:kollision-bild). Gemintet und gemessen von
-    // gate:vehicle-contract (scripts/lib/fahrzeug-umriss.cjs, Mint-Treue je Zahl); der Bau liest sie nie.
+    // berührte die Ecke des Rechtecks, wo die Gestalt 7,5 cm Luft ließ (gate:kollision-bild). Gemintet an `umrissGemessen`, Mint-Treue je Zahl in
+    // gate:vehicle-contract; der Bau liest sie nie.
     // prettier-ignore
     const FAHRZEUG_UMRISS = {
         gt: { ueber: [0.15, 0.03, -0.06, -0.08, 0.09, -0.07, -0.03, 0.04, 0.15], dach: 0.11 },
@@ -4932,6 +4932,50 @@
         kompakt_fwd: { ueber: [0.15, 0.05, -0.01, -0.04, 0.11, 0, 0.01, 0.05, 0.15], dach: 0.1 },
         suv: { ueber: [0.13, 0.06, 0.01, -0.02, 0.12, -0.01, 0.02, 0.06, 0.15], dach: 0.1 },
     };
+
+    // DER UMRISS, GEMESSEN (rein additive Mess-Fläche wie `messen`; der Wirt liest sie nie, gate:vehicle-contract mintet und prüft
+    // FAHRZEUG_UMRISS an ihr): je Richtung θ = k · 22,5° die Stützweite jeder Ecke der gebauten Gestalt (Stufe 0 und 1) über der
+    // des Stations-Rechtecks, und das Dach über yRoof — ungerundet.
+    function umrissGemessen(id) {
+        const pre = PRESETS[id];
+        if (!pre || pre.kind !== "vehicle") return null;
+        const h = exportDrive(Object.assign({}, pre.s, pre.fx)).huelle;
+        const t = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((k) => (k * Math.PI) / 8);
+        const ueber = t.map((w) => -Math.max(h.noseX * Math.cos(w), h.tailX * Math.cos(w)) - h.bw * Math.sin(w));
+        let dach = -h.yRoof;
+        const v = new THREE.Vector3();
+        for (const lod of [0, 1]) {
+            const g = buildInstance(id, 7, lod);
+            g.updateMatrixWorld(true);
+            g.traverse((o) => {
+                const A = o.isMesh ? o.geometry.attributes.position : null;
+                for (let i = 0; A && i < A.count; i++) {
+                    v.fromBufferAttribute(A, i).applyMatrix4(o.matrixWorld);
+                    dach = Math.max(dach, v.y - h.yRoof);
+                    t.forEach((w, k) => (ueber[k] = Math.max(ueber[k], v.x * Math.cos(w) + Math.abs(v.z) * Math.sin(w) - Math.max(h.noseX * Math.cos(w), h.tailX * Math.cos(w)) - h.bw * Math.sin(w))));
+                }
+            });
+        }
+        return { ueber, dach };
+    }
+    // DIE MINT-TREUE als Lehre des Buchs (wie LEHREN): je Rezept deckt die Tafel `T` (FAHRZEUG_UMRISS oder ein Mutant) das
+    // Gemessene und liegt höchstens 1 cm darüber — die Liste der Abweichungen beim Namen (gate:vehicle-contract).
+    function umrissTreue(T) {
+        const bad = [];
+        for (const id of Object.keys(PRESETS)) {
+            const m = umrissGemessen(id);
+            if (!m) continue;
+            if (!T[id]) {
+                bad.push(id + ": keine Zeile");
+                continue;
+            }
+            m.ueber.concat(m.dach).forEach((x, k) => {
+                const a = k < 9 ? T[id].ueber[k] : T[id].dach;
+                if (!(a >= x - 1e-9 && a - x <= 0.01 + 1e-9)) bad.push(id + "." + (k < 9 ? "ueber[" + k + "]" : "dach") + ": Tafel " + a + " gegen gebaut " + x.toFixed(4));
+            });
+        }
+        return bad;
+    }
 
     // W8 — die Gestalten je Rezept (B2c): JEDES Fahrzeug trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (const _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
@@ -4943,6 +4987,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         FAHRZEUG_UMRISS: FAHRZEUG_UMRISS,
+        umrissGemessen: umrissGemessen,
+        umrissTreue: umrissTreue,
         PARAMS_BY_KIND: { vehicle: PARAMS },
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
         STAMMBAUM: { studio: "Garage", arten: { vehicle: "Fahrzeuge" } },

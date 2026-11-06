@@ -1237,9 +1237,15 @@ class AnazhRealm_gelaende_kollision {
         if (!h || !Number.isFinite(h.noseX) || !Number.isFinite(h.tailX) || !(h.noseX > h.tailX)) return null;
         if (fzg.umriss) return fzg.umriss;
         const U = AnazhRealm.Gesetz("vehicle:FAHRZEUG_UMRISS." + fzg.gestalt, null);
-        const n = U && Array.isArray(U.ueber) ? U.ueber.length : 0;
-        if (n < 3 || !U.ueber.every(Number.isFinite) || !Number.isFinite(U.dach))
+        if (
+            !U ||
+            !Array.isArray(U.ueber) ||
+            U.ueber.length < 3 ||
+            !U.ueber.every(Number.isFinite) ||
+            !Number.isFinite(U.dach)
+        )
             return AnazhRealm._kernPflichtBruch("vehicle:FAHRZEUG_UMRISS." + fzg.gestalt);
+        const n = U.ueber.length;
         // die Halb-Ebenen l·cos θ + q·sin θ ≤ S(θ), θ über den vollen Kreis (die Flanke gespiegelt), geschnitten aus einem
         // Quadrat, das jede Gestalt umfasst (Sutherland–Hodgman: das Polygon bleibt konvex und gegen den Uhrzeigersinn)
         let poly = [
@@ -1266,7 +1272,8 @@ class AnazhRealm_gelaende_kollision {
         }
         let [bug, heck, hw] = [-Infinity, Infinity, 0];
         for (const [l, q] of poly) [bug, heck, hw] = [Math.max(bug, l), Math.min(heck, l), Math.max(hw, Math.abs(q))];
-        fzg.umriss = { bug, heck, hw, dach: (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) + U.dach, poly };
+        if (!Number.isFinite(h.yRoof)) return AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle.yRoof");
+        fzg.umriss = { bug, heck, hw, dach: h.yRoof + U.dach, poly };
         return fzg.umriss;
     }
 
