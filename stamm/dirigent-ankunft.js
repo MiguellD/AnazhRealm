@@ -1304,8 +1304,10 @@ class AnazhRealm_dirigent_ankunft {
     // erste Bild der Ziel-Welt steht (`_ladeschirmWeg`); die Tafel trägt nur, was kein Bild hatte (Kalt-Boot, Null-Renderer).
     // Bis hier zeigte jeder Wechsel 5–12 s Luma 0,043 (Radeon 8efb6318). DIE KOPIE AM ENDE DES TAKTS: WebGPU hält das Bild nur im
     // Frame, der es zeichnet — mitten im Takt des Kreuzens (vor dem Zeichnen) und im nächsten Bild (der Tausch zeichnet nicht) war die
-    // Kopie durchsichtig; die Mikro-Aufgabe nach dem Takt liest das eben gezeichnete (halbe Auflösung, EIN Lese-Weg). Zeichnete der
-    // Takt nicht (die Leine hielt sein Bild), ist die Kopie leer — dann steht die Tafel, laut im Log.
+    // Kopie durchsichtig; die Mikro-Aufgabe nach dem Takt liest das eben gezeichnete (halbe Auflösung, EIN Lese-Weg). DER TAKT DES
+    // KREUZENS ZEICHNET IMMER (`_durchgangBild`, der Takt in dirigent-takt.js): hielt die GPU-Leine sein Bild (`versuch`), zeichnet er
+    // es doch — bis hier war die Kopie dann leer und die schwarze Tafel stand (Radeon 77cbeec6: 1 von 5 Läufen, 89 Bilder Luma
+    // 0,043). Bleibt sie leer (kein Takt rief den Wechsel), steht die Tafel, laut im Log.
     _ladeschirmHalt(el) {
         const zeige = (halt) => {
             el.classList.toggle("halt", halt);
@@ -1315,6 +1317,7 @@ class AnazhRealm_dirigent_ankunft {
         const rd = this.state.renderer;
         const cv = rd && !rd._isHeadlessNull && this.state._weltbildDa ? rd.domElement : null;
         if (!cv || !(cv.width > 0)) return void zeige(false);
+        if (!(this._gpuLeine && this._gpuLeine.versuch)) this._durchgangBild = true;
         Promise.resolve().then(() => {
             let bild = el.querySelector("canvas.ladeschirm-bild");
             if (!bild) {

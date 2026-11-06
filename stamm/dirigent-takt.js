@@ -320,8 +320,10 @@ class AnazhRealm_dirigent_takt {
                 this._kernPflichtWand();
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
                 // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (`bild`, die Phase
-                // des Takts oben).
-                if (bild) {
+                // des Takts oben). Der Takt, der eine Welt durch ein Tor verlässt, zeichnet immer: der Ladeschirm hält sein Bild
+                // (`_durchgangBild`, `_ladeschirmHalt`).
+                if (bild || this._durchgangBild) {
+                    this._durchgangBild = false;
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender();
@@ -648,10 +650,18 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DIE STUFE AM ABSTAND SCHLIESST IM BILD (tore.K1): nach dem Bild aus der Ferne (`_fernbildDa`) ist jede Lücke eine Stufe, die
+    // ihre Arenen zeichnen muss und danach ein Bild auf ihr braucht (`_stufeOffen`) — ab dann schickt jeder Lade-Takt sein Bild.
+    // Bis hier wartete jede dieser Proben auf das nächste fällige Bild: Radeon 77cbeec6, der Durchgang durch das Welt-Tor, die
+    // Stufe am Abstand 450–480 ms (zwei fällige Bilder je Arena), mit jedem Bild 150 ms.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        if (
+            jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
+            this.state._fernbildDa ||
+            this._weltbildLuecken().length === 0
+        ) {
             L.ladeBild = jetzt;
             return true;
         }
