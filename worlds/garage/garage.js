@@ -705,6 +705,37 @@ addEventListener('pointerup',_los);addEventListener('pointercancel',_los);
 R.domElement.addEventListener('wheel',e=>{if(mode!=='werkstatt')return;e.preventDefault();
   oc.dist=Math.max(3.5,Math.min(16,oc.dist*(e.deltaY>0?1/0.95:0.95)));},{passive:false});
 
+// ── DER VORBAU (w13-buehne-async): kein Bild und kein Aufruf der Seite wartet auf einen synchronen Pipeline-Bau ──
+// Bis hierher baute das erste Bild jedes Werks seine Programme im Render (r184 `Pipelines.updateForRender` → synchrones
+// `createRenderPipeline`): 42 bis zum ersten Bild, je Gattungs-Wechsel 11–12, der GPU-Prozess reihte sie hintereinander (swiftshader:
+// erstes Bild fertig nach 2,8 s, 4× gedrosselt 4,5 s); auf dem CPU-Raster der CI kehrte
+// ein Versprechen der Seite nie zurück (z255: „URTEIL AWAIT … gpu.createRenderPipeline #50"). Jetzt hält ein sichtbares Objekt,
+// das mit seinem Stoff (samt Version) und seiner Gestalt noch durch keinen Vorbau ging, das Bild an — das letzte Bild
+// bleibt stehen — und EIN Bild des Werks in ein verborgenes Ziel (1×1) baut, was das sichtbare braucht: jede Pipeline dieses
+// Bilds (Haupt- und Schatten-Pass) entsteht asynchron in EINER Liste, alle zugleich (`createRenderPipelineAsync`), r184 zeichnet
+// nur, was steht (`isReady`). Derselbe Render-Kontext wie die Leinwand (der Bild-Puffer trägt Format, Farbraum und Abtastung des
+// Ausgabe-Ziels), darum trifft das nächste Bild jede Pipeline im Cache — r184 `compileAsync` traf ihn nicht: es teilt den
+// Kontext je Format mit fremden Zielen und schlüsselte den Farbraum leer (19 asynchron, danach dieselben 42 synchron). Steht die
+// Liste, zeichnet das nächste Bild das ganze Werk und der Schatten rechnet neu. Ein Bruch des Vorbaus bricht laut. GEMESSEN (06.11.,
+// swiftshader): bis zum ersten Bild 42 → 12 synchron (die Tafeln der Bühne und die Kosten-Leiste der Hülle), 31 asynchron, fertig
+// 2,8 → 2,1 s; je Gattungs-Wechsel 12 → 0 synchron. Der Knoten-Bau bleibt im Bild (4× gedrosselt längste Aufgabe ~1,3–1,5 s).
+// der Stand je Objekt (Stoff · Version · Gestalt), den der letzte Vorbau sah — ob eine Pipeline fehlt, weiß nur r184 selbst (sein
+// Schlüssel liest Spiegelung, Schatten, Attribute, Kontext): ein Vorbau, dessen Programme schon stehen, legt keine an und steht sofort
+let _bau=null;const _bauObjekt=new WeakMap(),_zeichnet=o=>o.isMesh||o.isLine||o.isPoints||o.isSprite;
+const _stand=o=>[o,o.material,o.material.version,o.geometry];
+function _werkNeu(){let neu=false;scene.traverseVisible(o=>{if(neu||!_zeichnet(o))return;const a=_bauObjekt.get(o);
+  neu=!a||a[1]!==o.material||a[2]!==o.material.version||a[3]!==o.geometry;});return neu;}
+const _vorbauZiel=new THREE.RenderTarget(1,1);
+async function _vorbau(K){const P=R._pipelines,eigen=P.getForRender,liste=[],werk=[],aus=R.getOutputRenderTarget(),ziel=R.getRenderTarget();
+  scene.traverseVisible(o=>{if(_zeichnet(o))werk.push(_stand(o));});
+  P.getForRender=function(ro){return eigen.call(this,ro,liste);};   // jede Pipeline dieses Bilds asynchron in die EINE Liste
+  try{try{R.setOutputRenderTarget(_vorbauZiel);R.render(scene,K);}finally{P.getForRender=eigen;R.setOutputRenderTarget(aus);R.setRenderTarget(ziel);}
+    await Promise.all(liste);}finally{_bau=null;}
+  for(const a of werk)_bauObjekt.set(a[0],a);sonne.shadow.needsUpdate=true;_kamAlt=null;_wecke();}
+// ein Bild (der Loop) und jeder Leser, der ohne den Loop zeichnet (`werkSteht`), fragt hier: steht ein Vorbau an, läuft er
+function _bauWenn(K){if(!_bau&&welt&&_werkNeu())_bau=_vorbau(K);return _bau;}
+async function werkSteht(){const K=kamera();K.updateMatrixWorld();while(_bauWenn(K))await _bau;}
+
 // ── Loop (r184: setAnimationLoop wartet auf renderer.init(), die Zeit reicht der Takt herein) ──
 // DIE WERKSTATT ZEICHNET NUR BEI BEDARF (19.10.): wie ein Asset-Editor — nach einer Eingabe, einem Umbau, solange die Kugel
 // ausläuft oder eine Tür zieht, und in der Fahrt; in Ruhe staut die Seite keine Bilder vor der GPU (Befund garage-r184: unter
@@ -725,8 +756,8 @@ function animate(zeit){const dt=tAlt?Math.min(1/30,(zeit-tAlt)/1000):0;tAlt=zeit
   const K=kamera();K.updateMatrixWorld();
   if(mode!=='fahren'&&!tuerZieht&&!ansichtLebt()&&performance.now()>wachBis&&_camGleich(K))return;
   // die Bühne zeichnet erst und allein im Licht der Welt (sonst bricht sie laut); bis ihre Belichtung liegt, zeichnet sie nicht —
-  // `welt.steht` weckt sie dann (`_kamAlt` fällt)
-  if(!__weltLicht.buehneZeichnet(welt,scene,R))return;
+  // `welt.steht` weckt sie dann (`_kamAlt` fällt); trägt das sichtbare Werk ein ungebautes Programm, wartet das Bild auf den Vorbau
+  if(_bauWenn(K)||!__weltLicht.buehneZeichnet(welt,scene,R))return;
   // im Leicht-Modus rechnet der Schatten nur, wenn er sich ändert: Fahrt, Ansicht in Bewegung, Tür, gewanderte Sonne (rebuild markiert selbst)
   if(leicht&&(mode==='fahren'||ansichtLebt()||tuerZieht||!sonne.position.equals(_sonneAlt))){sonne.shadow.needsUpdate=true;_sonneAlt.copy(sonne.position);}
   _kamAlt=K;_camAlt.copy(K.matrixWorld);_projAlt.copy(K.projectionMatrix);raederSetzen();R.render(scene,K);}

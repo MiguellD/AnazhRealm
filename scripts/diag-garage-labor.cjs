@@ -302,9 +302,9 @@ hauptLauf(async () => {
         R.setOutputRenderTarget(ziel);
         const bild = async (an) => {
             vehicle.visible = an;
-            // ein Bild wie im Loop: erst ein Frame der Seite (der Takt des Renderers setzt Zähler und Node-Frame, der Schatten-Pass
-            // zählt mit wie in jedem Frame der Werkstatt), sonst hinge die Zahl daran, ob zwischen zwei Lesungen einer lief
-            await new Promise(requestAnimationFrame);
+            // ein Bild wie im Loop: erst ein Frame der Seite (Zähler, Node-Frame, der Schatten-Pass zählt mit wie in jedem Frame), dann
+            // wie der Loop auf den Vorbau des Werks (`werkSteht`, w13-buehne-async: kein Bild baut seine Programme synchron)
+            await new Promise(requestAnimationFrame).then(werkSteht);
             R.render(scene, kamera());
             return [R.info.render.drawCalls, await __zielLesen(ziel, 160, 90, R)];
         };
@@ -346,7 +346,7 @@ hauptLauf(async () => {
         };
         const voll = await zeit();
         document.getElementById("leichtB").click();
-        R.render(scene, kamera()); // das erste Bild ohne Schatten baut seine Programme
+        await werkSteht(), R.render(scene, kamera()); // das erste Bild ohne Schatten (der Vorbau trägt seine Programme)
         // der letzte Blick der Seite (der Browser schließt danach): kein Zurückstellen
         return { voll, leicht: await zeit(), pr: R.getPixelRatio(), schatten: sonne.shadow.autoUpdate, leinwand: !R.getRenderTarget() };
     });
