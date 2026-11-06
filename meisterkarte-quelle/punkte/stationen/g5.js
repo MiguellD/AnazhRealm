@@ -2073,7 +2073,8 @@ const HOEHLE_BLENDEN = 2;
 // DER STEHENDE BLICK (w14-unterwasser): unter diesem Anteil weichen die Gitter zweier Aufnahmen voneinander ab, die das Gesetz
 // verschieden sehen muss — Ego 0,5 ↔ 2,5 m, Third 0,5 ↔ 2,5 m (die Farbe des Mediums fällt mit exp(−kd · 2 m), REF ≥ 0,17 /m:
 // ≥ 29 %), Ego ↔ Third in 0,5 m (andere Kamera, der eigene Leib im Bild). Frische Aufnahmen (Radeon 341ad089, fünf Läufe: frisch,
-// Zweit-Boot, Grundstellung durch die Tür, nach wetter.K3#2, die Takte vor __werkTakt) liegen bei 55–61 % und 7–10 %; die Läufe,
+// Zweit-Boot, Grundstellung durch die Tür, nach wetter.K3#2, die Takte vor __werkTakt) liegen bei 55–61 % und 7–10 % (diese Probe:
+// 58,4 · 55,1 · 7,0 %, die Höhle ↔ hinaus 186,7 %; je Schuss 60–290 Knoten-Frames, 200–660 Render-Rufe, 27–35 Befehle); die Läufe,
 // die die Zeile ROT nannte (GTX 341ad089 nach wetter.K3#2: L 0,17442/0,17444/0,17460, Ego = Third auf 10⁻⁶; GTX und Radeon
 // f5db8d90, Radeon b5aa8779 — dort pixelgleich auch 3 m über dem Spiegel), zeigten in jeder Aufnahme dasselbe Bild
 const UNTERWASSER_STEHT = 0.02;
