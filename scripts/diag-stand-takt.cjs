@@ -1737,7 +1737,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // DAS SOLO-HAUS (K69, B3c: Vorschau, KI) über die Wurzel — gezählt, wie oft der Wirt das ganze Haus im Kern baut,
                     // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
                     {
-                        const fc = globalThis.__fachwerkCore;
                         const [kx, kz] = [ox - 40, oz + 40];
                         const ky = r._voxelSurfaceY(kx, kz);
                         const tip = gemessen(globalThis.__fachwerkCore, "chimneyTipFromParams");
@@ -1979,7 +1978,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                         }),
                     ];
                     let n = 0;
-                    let nach = 0;
                     try {
                         const gang = () => {
                             jetztTakt = 0;
@@ -1988,7 +1986,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         };
                         n = await bisDa("der Spieler-Chunk am fremden Ort", () => !!st.voxelChunks?.has(key), 600, gang); // prettier-ignore
                         // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach (240 ohne Offenes)
-                        nach = await bisDa("der Wald am fremden Ort", () => false, 240, gang);
+                        await bisDa("der Wald am fremden Ort", () => false, 240, gang);
                     } finally {
                         ab.forEach((f) => f());
                     }

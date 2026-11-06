@@ -3304,15 +3304,23 @@ class AnazhRealm_siedlung_ort {
         const imRing = (x, z, r, T) =>
             (x - playerPos.x) ** 2 + (z - playerPos.z) ** 2 <= r * r || this._bedarfZeit(x, z, r) <= T;
         const w = V.get(key);
-        // die Stelle liegt höchstens `siteProbeR` Zellen neben dem Zellpunkt — ferner fragt der Takt sie nicht
-        if (
-            !w &&
-            !imRing(info.x, info.z, sicht + Math.max(...A.siteProbeR) * AnazhRealm._siedlungGesetz().cellM, A.bereitS)
-        )
-            return false;
+        // OHNE VORRAT FRAGT DER TAKT DIE STELLE NUR, WENN EIN AKT MÖGLICH IST: sie liegt höchstens `siteProbeR` Zellen neben dem
+        // Zellpunkt (`um`) — erwachen kann die Zelle, wenn die Bahn diesen Ring um `nah` binnen ihres Vorlaufs erreicht, bereiten,
+        // wenn kein Export fliegt und sie den Ring der Sicht binnen `bereitS` erreicht. DIE WAHRHEIT VOR DEM URTEIL (wie der
+        // Chunk-Bau, `_hydroSteht`): die Wasser-Wand der Stelle (`_landAt`) liest die Hydro-Kacheln um die Probe-Ringe — fehlt
+        // eine, ist sie bestellt, und die Zelle wartet (kein Urteil, kein Verwerfen). Ein Takt, der am Zellpunkt maß, fragte die
+        // Stelle erst im Ring; am Ort gemessen urteilte sie über die halb geladene Welt (gate:settlement C-K3: am Hang-Ort fiel
+        // nach dem Sprung jede Zelle als „Wasser").
+        const um = Math.max(...A.siteProbeR) * AnazhRealm._siedlungGesetz().cellM;
         let i3 = info;
         if (!w) {
-            const site = this._autoSettlementStelle(info);
+            if (
+                !imRing(info.x, info.z, nah + um, AnazhRealm.BEDARF.vorlaufS) &&
+                (fliegt || !imRing(info.x, info.z, sicht + um, A.bereitS))
+            )
+                return false;
+            if (this._ensureHydroTilesAround(info.x, info.z, um)) return false;
+            const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
             if (!site) {
                 this._autoSettlementRejected.add(key); // die ganze Zelle untauglich (Wasser/steil/Spawn-nah)
                 return false;
@@ -3325,17 +3333,6 @@ class AnazhRealm_siedlung_ort {
             this._dorfBereiten(key, i3).catch(this._ortWahlWartet(key));
         else return false;
         return true;
-    }
-    // Die Stelle der Zelle (`_autoSettlementFindSite`), gemerkt je Zelle, Same und Größe: der Takt fragt sie, bevor die Zelle in
-    // den Vorlauf tritt (`_autoSettlementZelle`), und jede Antwort ist eine Funktion der Zelle.
-    _autoSettlementStelle(info) {
-        const M = this._autoSettlementStellen || (this._autoSettlementStellen = new Map());
-        const k = info.key + ":" + info.seed + ":" + info.nH;
-        if (M.has(k)) return M.get(k);
-        if (M.size > 512) M.clear();
-        const s = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
-        M.set(k, s);
-        return s;
     }
 
     // DER ORT KEHRT WIEDER (speicher.K3, Lehre 7): der Stand trägt je Ort nur sein Gedächtnis (`settlementCells`), nie seine
