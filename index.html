@@ -312,13 +312,14 @@
                 display: none;
             }
             /* DER DURCHGANG (tore.K1): beim Welt-Wechsel der lebenden Seite hält der Schirm ihr letztes Bild (`_ladeschirmHalt`) statt
-               der schwarzen Tafel und weicht im Schnitt */
+               der schwarzen Tafel und weicht im Schnitt — ohne Blende: bis hier lag das erste Bild der Ziel-Welt 0,12 s unter dem
+               weichenden Bild der alten (Radeon e82fbee3, die erste sichtbare Eingabe je Lauf 120 ms später) */
             #ladeschirm .ladeschirm-bild {
                 display: none;
             }
             #ladeschirm.halt {
                 background: none;
-                transition: opacity 0.12s linear;
+                transition: none;
             }
             #ladeschirm.halt > :not(.ladeschirm-bild) {
                 visibility: hidden;

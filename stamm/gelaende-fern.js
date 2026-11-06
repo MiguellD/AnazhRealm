@@ -1744,7 +1744,9 @@ class AnazhRealm_gelaende_fern {
 
     // DAS EINHÄNGEN (B2): die Antworten des Fern-Fadens in Index-Folge — je Punkt das Gesetz in die Gedächtnisse des Rings
     // (Höhe, Schutt, voll, Fläche, Spiegel, Fluss, Teile), dann Lage und Farbe durch die EINE Setz-Naht; EIN Hochladen je Takt.
-    // Erst der volle Ring wird sichtbar (kein Null-Blob).
+    // Erst der volle Ring wird sichtbar (kein Null-Blob). DAS EINHÄNGEN IN RATEN (tore.K1): je Takt Scheiben bis `einhaengenMs` (die
+    // erste immer) — aus dem Gedächtnis der Ferne (`_fernAuftrag`) kommt der ganze Ring in EINEM Takt, sein Einhängen hielt den
+    // Frame (Radeon e82fbee3: 13 056 Punkte, 70–90 ms in einem Takt, der Frame 259–443 ms).
     _fernRingEinhaengen(fr) {
         if (!fr.einhaengen.length && !fr.nachEdit.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
@@ -1760,7 +1762,8 @@ class AnazhRealm_gelaende_fern {
         };
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
-        while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
+        const bis = performance.now() + AnazhRealm.FERN_RING.einhaengenMs;
+        while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor && (!done || performance.now() < bis)) {
             const { von, antwort: a } = fr.einhaengen.shift();
             const n = a.law.length;
             for (let k = 0; k < n; k++) setze(von + k, a, k);
@@ -1906,6 +1909,8 @@ AnazhRealm.FERN_RING = Object.freeze({
     anchorQuant: 24,
     scheibe: 512,
     scheibenImFlug: 3,
+    // die Zeit je Takt, in der der Ring Antworten einhängt (`_fernRingEinhaengen`, je Scheibe ~3 ms auf der Radeon)
+    einhaengenMs: 8,
 });
 // DIE KAMM-KRONE (ferne.K3, `_kammKroneTakt`): die Augen über dem Grund des Ankers, für die der Umriss gilt (m: der Spieler,
 // die Schulter der dritten Person, der Blick vom Hügel und vom Turm — ein Baum trägt, wenn er einem von ihnen den Himmel nimmt);

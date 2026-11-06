@@ -1337,7 +1337,7 @@ class AnazhRealm_dirigent_ankunft {
     }
 
     // Der Ladeschirm weicht: nach dem ersten fertigen Weltbild, oder dem WebGPU-Tor (das Tor IST die Antwort — unter dem
-    // Ladeschirm läge es unsichtbar). Hielt er ein Bild (`_ladeschirmHalt`), weicht er im Schnitt, nie in einer Blende über 0,7 s.
+    // Ladeschirm läge es unsichtbar). Hielt er ein Bild (`_ladeschirmHalt`), weicht er im Schnitt (ohne Blende), nie in einer Blende über 0,7 s.
     _ladeschirmWeg() {
         if (typeof document === "undefined") return;
         const el = document.getElementById("ladeschirm");
@@ -1348,7 +1348,7 @@ class AnazhRealm_dirigent_ankunft {
                 el.hidden = true;
                 el.classList.remove("halt");
             },
-            el.classList.contains("halt") ? 150 : 750
+            el.classList.contains("halt") ? 0 : 750
         );
     }
 
