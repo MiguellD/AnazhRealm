@@ -1709,7 +1709,10 @@ async function neunSeite(r, T, C, kammSaum) {
                 const S = um(best.x, best.z);
                 wald.ort = [+best.x.toFixed(1), +best.z.toFixed(1)];
                 wald.staemmeJeHa = Math.round((S.length / (Math.PI * R * R)) * 1e4);
-                wald.unterstand = S.filter((e) => ((e.studioOv || (e.opts && e.opts.studioOv) || {}).alter || 1) < 1).length;
+                // der Unterstand: die Schicht des Bestands am Eintrag (`entry._schicht`, phyto-core `forestSchicht` — eine Größe im Satz
+                // der Art, keine Prägung) oder der Jungwuchs der Sukzession (`studioOv.alter`)
+                const jung = (e) => Math.min(e._schicht || 1, (e.studioOv || (e.opts && e.opts.studioOv) || {}).alter || 1);
+                wald.unterstand = S.filter((e) => jung(e) < 1).length;
                 let gier = 0, sx = 0, sz = 0;
                 for (const e of S) (sx += e.position.x - best.x), (sz += e.position.z - best.z);
                 gier = Math.atan2(sx, sz);
@@ -1744,8 +1747,7 @@ async function neunSeite(r, T, C, kammSaum) {
                 wald.kachelnOffen = kachelnOffen;
                 for (const e of r._blockerUmPlatz(best.x, best.z, R + 5, [])) {
                     if (!e || !e.position) continue;
-                    const al = (e.studioOv || (e.opts && e.opts.studioOv) || {}).alter;
-                    if (baum(e) && al < 1) flaechen.push([e.position.x, e.position.z, 0.7 * (r._kronenRadiusFuer(e.type, e.scale) || 0)]);
+                    if (baum(e) && jung(e) < 1) flaechen.push([e.position.x, e.position.z, 0.7 * (r._kronenRadiusFuer(e.type, e.scale) || 0)]);
                     else if (/^busch_|strauch/.test(String(e.type))) flaechen.push([e.position.x, e.position.z, C.straeuchR * (e.scale || 1)]);
                 }
                 let n = 0, g = 0;
