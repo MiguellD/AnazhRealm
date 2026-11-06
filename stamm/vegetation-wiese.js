@@ -489,12 +489,15 @@ class AnazhRealm_vegetation_wiese {
         return a * (1 + F.rand);
     }
 
-    // DIE LAGE EINER KACHEL DER FERNE (vor ihrem Bau): die Höhe und die Neigung ihres gezeichneten Bodens an einem Gitter von
-    // 4 × 4 Proben (dieselben Leser wie der Bau der Büschel: `_bodenSichtAt`, `_slopeAt`), um den Rand eines Büschels
-    // zwischen den Proben geweitet (0,1 m · 0,02) — die Schranke des Takts (`_wieseFernSchranke`) liest sie. null, solange
-    // ein Chunk unter ihr keine Karte trägt.
+    // DIE LAGE EINER KACHEL DER FERNE (vor ihrem Bau): die Höhe und die Neigung ihres gezeichneten Bodens an 2 × 2 Proben je
+    // Kachel der Nähe, die ihr Bau liest (dieselben Leser: `_bodenSichtAt`, `_slopeAt`; eine Kachel der Nähe jenseits des
+    // Chunk-Rings, `_bodenKommtNie`, trägt nichts und wird nicht gefragt), um den Rand eines Büschels zwischen den Proben
+    // geweitet (0,1 m · 0,02) — die Schranke des Takts (`_wieseFernSchranke`) liest sie. null, solange ein Chunk unter ihr
+    // seine Karte noch bekommt (`_bodenSichtChunks`, wie der Bau); eine Probe ohne Boden zählt nicht.
     _wieseFernLage(fx, fz) {
-        const K = AnazhRealm.NAH_WIESE.fern.kachel;
+        const NW = AnazhRealm.NAH_WIESE;
+        const [K, k6] = [NW.fern.kachel, NW.kachel];
+        const n = K / k6;
         const L = { x0: fx * K - 0.34, x1: (fx + 1) * K + 0.34, z0: fz * K - 0.34, z1: (fz + 1) * K + 0.34 };
         Object.assign(L, { y0: Infinity, y1: -Infinity, gx0: Infinity, gx1: -Infinity, gz0: Infinity, gz1: -Infinity });
         const boden = (px, pz) => {
@@ -502,16 +505,26 @@ class AnazhRealm_vegetation_wiese {
             return v === null ? NaN : v;
         };
         const eb = {};
-        for (let j = 0; j < 4; j++)
-            for (let i = 0; i < 4; i++) {
-                const [x, z] = [L.x0 + ((i + 0.5) / 4) * (L.x1 - L.x0), L.z0 + ((j + 0.5) / 4) * (L.z1 - L.z0)];
-                const y = this._bodenSichtAt(x, z);
-                if (y === null) return null;
-                this._slopeAt(x, z, boden, 1, eb);
-                [L.y0, L.y1] = [Math.min(L.y0, y - 0.1), Math.max(L.y1, y + 0.1)];
-                [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 0.02), Math.max(L.gx1, eb.gx + 0.02)];
-                [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 0.02), Math.max(L.gz1, eb.gz + 0.02)];
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) {
+                const [x0, z0] = [(fx * n + i) * k6 - 0.34, (fz * n + j) * k6 - 0.34];
+                if (this._bodenKommtNie(x0, z0, x0 + k6 + 0.68, z0 + k6 + 0.68)) continue;
+                if (!this._bodenSichtChunks(x0, z0, x0 + k6 + 0.68, z0 + k6 + 0.68)) return null;
+                for (let q = 0; q < 4; q++) {
+                    const [x, z] = [
+                        x0 + (((q & 1) + 0.5) / 2) * (k6 + 0.68),
+                        z0 + (((q >> 1) + 0.5) / 2) * (k6 + 0.68),
+                    ];
+                    const y = this._bodenSichtAt(x, z);
+                    if (y === null) continue; // kein Boden an der Probe (Wasser): dort steht kein Büschel
+                    this._slopeAt(x, z, boden, 1, eb);
+                    [L.y0, L.y1] = [Math.min(L.y0, y - 0.1), Math.max(L.y1, y + 0.1)];
+                    [L.gx0, L.gx1] = [Math.min(L.gx0, eb.gx - 0.02), Math.max(L.gx1, eb.gx + 0.02)];
+                    [L.gz0, L.gz1] = [Math.min(L.gz0, eb.gz - 0.02), Math.max(L.gz1, eb.gz + 0.02)];
+                }
             }
+        // ganz jenseits des Rings: keine Probe, die Kachel trägt nichts (ihr Bau überspringt jede Kachel der Nähe)
+        if (L.y0 === Infinity) Object.assign(L, { y0: 0, y1: 0, gx0: 0, gx1: 0, gz0: 0, gz1: 0 });
         return L;
     }
 

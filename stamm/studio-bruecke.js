@@ -715,7 +715,14 @@ class AnazhRealm_studio_bruecke {
                         ? c.scripts.slice()
                         : liste("scripts", [c]).concat(c.engine ? [motor] : [], liste("bruecke", [c])),
                 }));
-                schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+                schale({
+                    lesen: b.lesen,
+                    ecken: b.ecken,
+                    format: b.format,
+                    platte: b.platte,
+                    kerne,
+                    wirt: b.wirt || [],
+                });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
                 W.__PHYTO_FOUNDRY_WORKER = true;
