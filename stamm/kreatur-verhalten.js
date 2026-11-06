@@ -1560,13 +1560,9 @@ class AnazhRealm_kreatur_verhalten {
         const d = Math.hypot(dx, dz);
         // das Wandern zeigt die Tätigkeit des Tiers (Tiere K4, _kreaturTaetigkeit) — in seiner Leine; jenseits zieht es heim:
         // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter)
-        // DER HEIMWEG (tiere.K5): ein Leib, den die Zeichnung abseits seines Platzes stellte (`_bestandLeib`: der Platz lag im
-        // Blick), zieht in vollem Zug bis in die halbe Leine — die Herde tritt an ihren Platz, wo der Spieler sie sieht; bis
-        // w16-tier-blick verebbte der Zug am Rand der Leine, und die Herde blieb 18–27 m neben ihrem Platz außer Blick stehen.
-        if (ud._heimweg && d <= 0.5 * leash) ud._heimweg = false;
-        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash || ud._heimweg ? "ziehen" : ud._taetigkeit) : null;
-        if (d > leash || ud._heimweg) {
-            const pull = K.anchorPull * speed * (ud._heimweg ? 1 : Math.min(1, (d - leash) / Math.max(1, leash)));
+        ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash ? "ziehen" : ud._taetigkeit) : null;
+        if (d > leash) {
+            const pull = K.anchorPull * speed * Math.min(1, (d - leash) / Math.max(1, leash));
             direction.x += (dx / d) * pull;
             direction.z += (dz / d) * pull;
         }

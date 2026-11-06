@@ -2557,14 +2557,7 @@ class AnazhRealm_kreatur_leben {
               )
             : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
         if (!c) return null;
-        // abseits seines Platzes gezeichnet (der Platz lag im Blick oder trug nicht): der Leib zieht heim (`_heimweg`)
-        const heimweg = Math.hypot(x - t.x, z - t.z) > this._creatureMoveCharacter(c).leashM;
-        Object.assign(c.userData, {
-            alterS: t.alterS,
-            wanderAnchor: { x: t.x, z: t.z },
-            name: this._bestandName(t),
-            _heimweg: heimweg,
-        });
+        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }

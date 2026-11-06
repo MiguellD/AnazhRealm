@@ -248,7 +248,7 @@ async function lebenBuehnen() {
         // um 0,222 statt 0,391 (dieselben Saaten, die Flächen still). Täter (Selbsttest): der Zeitraffer an der Ankunft
         const park = () => r._bestandNah().flatMap((k) => r._bestandFeld(k).zellen).filter((c) => r._genesisFlaeche(c.x, c.z)).length; // prettier-ignore
         for (let x = pm.x; taeter !== "kaskade-park" && park(); kamera(0, -1))
-            (x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z);
+            ((x -= r._bestandSeite()), pm.set(x, boden(x, pm.z), pm.z));
         if (park()) throw new Error(`das Tal liegt im Genesis-Ort: ${park()} Zellen`);
         // die vier Regionen schräg an den Ecken des Tals (nicht nah, ihr Bestand nur als Zahl)
         const [ix, iz] = [pm.x, pm.z].map((v) => Math.round(v / r._bestandSeite()));
@@ -660,8 +660,7 @@ async function lebenBuehnen() {
                         if (i >= ein * 10) {
                             const B = z.budget[t.g] || (z.budget[t.g] = { ruhen: 0, nahrung: 0, ziehen: 0 });
                             B[kat]++;
-                            if (t.ruhK > 20)
-                                (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
+                            if (t.ruhK > 20) (z.ruhe[0]++, (z.ruhe[1] += ab(p, t) > 0.01 ? 1 : 0));
                         }
                         [t.x, t.z] = [p.x, p.z];
                     }
@@ -686,7 +685,15 @@ async function lebenBuehnen() {
     });
     // ── lebensraum (Tiere K4; die Geburt fern, außer Blick, in Gruppen): an neun Orten (Raster 300 m) je 25 Geburten — je Tier
     // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe, je Wurf der Bär am Fluss; die Gegenprobe in anderer Saat ──
-    await buehne("lebensraum", async () => {
+    await buehne("lebensraum", async (restore) => {
+        // die Täter der Zeichnung am Platz (w16-tier-blick): die Fern-Regel der Geburt, der Zug, der am Rand der Leine verebbt,
+        // und der Halt um eine halbe Kachel (der Anteil, der ihn trägt: 177 m bei 200 m)
+        if (taeter === "zeichnung-fern") decke("_bestandFernM", () => () => A.CREATURE_SPAWN_FAR_MIN);
+        if (taeter === "zeichnung-halt") {
+            const alt = A.BESTAND_REGION;
+            A.BESTAND_REGION = Object.freeze(Object.assign({}, alt, { haltAnteil: 0.9 }));
+            restore.push(() => (A.BESTAND_REGION = alt));
+        }
         if (taeter === "lebensraum")
             decke("_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
         if (taeter === "geburt") decke("_bestandLeibOrt", () => () => ({ x: pm.x + 15, z: pm.z }));
@@ -704,7 +711,7 @@ async function lebenBuehnen() {
         Object.assign(z, {
             imBlick: 0,
             fensterMax: 0,
-            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+            fernMin: r._bestandFernM(), // die Zeichnung des Bestands: jenseits der Witterung des Spielers (w16-tier-blick)
             baer: { fluss: [0, 0], sonst: [0, 0] },
         });
         const p0 = pm.clone();
@@ -733,11 +740,7 @@ async function lebenBuehnen() {
                     z.klasse[kl] = (z.klasse[kl] || 0) + 1;
                     z.minM = Math.min(z.minM, +ab(c.position, pm).toFixed(1));
                     if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
-                    const nn = Math.min(
-                        ...neu
-                            .filter((o) => o !== c)
-                            .map((o) => ab(c.position, o.position) / paar)
-                    );
+                    const nn = Math.min(...neu.filter((o) => o !== c).map((o) => ab(c.position, o.position) / paar));
                     if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
                 }
                 for (const c of neu) r.removeCreature(c);
@@ -770,6 +773,59 @@ async function lebenBuehnen() {
             z.rand.fernWich = z.rand.wich ? null : akt(Math.PI).wich;
             for (const c of s.creatures.slice()) r.removeCreature(c);
         }
+        // DIE ZEICHNUNG AM PLATZ (tiere.K5, w16-tier-blick): EINE Herde des Bestands (drei Hirsche) im Bestand der Bühne allein,
+        // der Blick nach +x — (a) ihr Platz 60 m hinter dem Spieler: ihr Leib steht an ihm (vorher schob die Fern-Regel der
+        // Geburt ihn ≥ 130 m vom Spieler); (b) eine Herde 200 m hinter ihm, gezeichnet an der vollen Kappe, gibt ihren Platz
+        // der Herde, die 60 m hinter ihm ankert (vorher hielt sie ihn um eine halbe Kachel)
+        z.zeichnung = (() => {
+            const F = r._bestandRegionen();
+            const [regionen, kappe] = [F.regionen, s.maxCreatures];
+            const raeumen = () => s.creatures.slice().forEach((c) => r.removeCreature(c));
+            const herde = (dx, n) => {
+                const pl = spirale(
+                    pm.x + dx - P0.x,
+                    pm.z - P0.z,
+                    30,
+                    3,
+                    (x, zz) => r._kreaturGrundFrei(x, zz) && { x, z: zz }
+                );
+                if (!pl) throw new Error("zeichnung: kein freier Platz " + dx + " m vor dem Spieler");
+                const key = r._bestandKey(pl.x, pl.z);
+                const R = F.regionen[key] || (F.regionen[key] = { t: s.spielZeit, seq: 0, tiere: [] });
+                const id0 = key + ".z" + ++R.seq;
+                const T0 = [...Array(n).keys()].map((k) => ({ id: k ? id0 + k : id0, soul: "wesen", g: "deer", bs: 1, alterS: 0, x: pl.x, z: pl.z, v: id0 })); // prettier-ignore
+                R.tiere.push(...T0);
+                return { pl, tiere: T0 };
+            };
+            const ziehe = (n) => {
+                for (let i = 0; i < n; i++) r._bestandVerkoerpern();
+            };
+            const weit = (H) => Math.max(...H.tiere.map((t) => (t.leib ? ab(t.leib.position, { x: H.pl.x, z: H.pl.z, y: t.leib.position.y }) : Infinity))); // prettier-ignore
+            const o = {};
+            try {
+                pm.copy(p0);
+                kamera(1, 0);
+                // (a) der Platz hinter dem Spieler
+                [F.regionen, s.maxCreatures] = [{}, 20];
+                raeumen();
+                const A1 = herde(-60, 3);
+                ziehe(2);
+                o.platzM = +weit(A1).toFixed(1);
+                // (b) die volle Kappe: die ferne Herde gezeichnet, dann ankert eine nahe
+                [F.regionen, s.maxCreatures] = [{}, 3];
+                raeumen();
+                const C1 = herde(-200, 3);
+                ziehe(2);
+                o.fernGezeichnet = C1.tiere.filter((t) => t.leib).length;
+                const C2 = herde(-60, 3);
+                ziehe(3);
+                [o.fernHaelt, o.nahGezeichnet] = [C1, C2].map((H) => H.tiere.filter((t) => t.leib).length);
+            } finally {
+                raeumen();
+                [F.regionen, s.maxCreatures] = [regionen, kappe];
+            }
+            return o;
+        })();
         return Object.assign(z, {
             anteil: z.n ? +(z.drin / z.n).toFixed(3) : null,
             saat: s.worldMeta.seed,
@@ -861,9 +917,7 @@ function lebenUrteil(name, z, soll) {
             `${((100 * z.ruhe[1]) / z.ruhe[0]).toFixed(1)} % bewegt während ruhen (${z.ruhe[0]} Takte)`
         );
         soll(
-            z.truenke.length >= 12 &&
-                z.truenke.every((n) => n >= 1) &&
-                z.amWasser === z.truenke.reduce(addiere, 0),
+            z.truenke.length >= 12 && z.truenke.every((n) => n >= 1) && z.amWasser === z.truenke.reduce(addiere, 0),
             `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
         );
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);
@@ -875,6 +929,13 @@ function lebenUrteil(name, z, soll) {
         soll(!RB.wich, `ein Leib wich dem Akt vor dem Auge — sein Fuß-Punkt 0,2 m draußen (${JSON.stringify(RB)})`);
         soll(RB.wich || RB.fernWich, "der Leib außer Blick wich dem Akt an der vollen Kappe nicht (vakuös)");
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
+        // DIE ZEICHNUNG AM PLATZ (tiere.K5): der Leib steht an seinem Platz, und die Kappe trägt die nahe Herde
+        const Z = z.zeichnung || {};
+        soll(Z.platzM <= 25, `der Leib steht ${Z.platzM} m neben seinem Platz 60 m hinter dem Spieler (Soll ≤ 25 m)`);
+        soll(
+            Z.fernGezeichnet === 3 && Z.fernHaelt === 0 && Z.nahGezeichnet === 3,
+            `die Herde 200 m hinter dem Spieler hält die volle Kappe gegen die auf 60 m: fern ${Z.fernGezeichnet} → ${Z.fernHaelt}, nah ${Z.nahGezeichnet} von 3`
+        );
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
         soll(
             z.gruppen >= 10 && z.gattung.wolf && z.gattung.deer,
@@ -966,6 +1027,8 @@ module.exports = {
             ["geburt", /vor dem Spieler/],
             ["geburt-einzeln", /keine Gruppe/],
             ["weichen-rand", /ein Leib wich dem Akt vor dem Auge/],
+            ["zeichnung-fern", /neben seinem Platz/],
+            ["zeichnung-halt", /hält die volle Kappe/],
         ],
         furcht: [
             ["furcht-gedaechtnis", /vergisst, wer es schlug[\s\S]*nähert sich nicht/],
