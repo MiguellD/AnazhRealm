@@ -1684,7 +1684,7 @@ function laubGegenlicht(opts) {
                 const g = window.__karteGestalt;
                 const lab = window.__lab;
                 if (opts.boden) {
-                    const mittel = (x, m = x.maske.reduce((a, b) => a + b, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
+                    const mittel = (x, m = x.maske.reduce(addiere, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
                     if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
                     return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
@@ -2067,7 +2067,7 @@ function kronenObenUrteil(messung) {
 function kantenLinie(Y, W, H, kante, schwelle, schritt) {
     const ln = (x, y) => Math.log(Y[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))] + 1e-4);
     let [lauf, linie, stufe, vor] = [0, 0, 0, {}];
-    for (const x of Object.keys(kante).map(Number).sort((a, b) => a - b)) {
+    for (const x of Object.keys(kante).map(Number).sort(aufsteigend)) {
         const [y0, j] = [kante[x], [0, 0, 0, 0]];
         for (let v = y0 - 2; v <= y0 + 1; v++)
             for (let u = x - 4; u <= x + 4; u++) {
@@ -2126,7 +2126,7 @@ function luftTiefe(o) {
             if (d < 1) return 0;
             return 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
         };
-        const med = (a) => (a.length ? +a.slice().sort((a, b) => a - b)[a.length >> 1].toPrecision(4) : null);
+        const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[a.length >> 1].toPrecision(4) : null);
         // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
         let blende = 1;
@@ -2420,7 +2420,7 @@ function wetterZug(o) {
 // über ≥ `mindest.azimute` Azimute gegen `sichtSturmM` ± `band`; der Zug — der größte Sprung |log2 Y_k/Y_k−1| je Sekunde der
 // Welt-Uhr ≤ `zugEvS`, und jedes Wort stand am Ende seiner Phase (sonst misst die Reihe keinen Übergang).
 function wetterLuftUrteil(m, R) {
-    const s = (m.zeilen || []).filter((z) => z.sicht.n >= R.mindest.n).map((z) => z.sicht.m).sort((a, b) => a - b);
+    const s = (m.zeilen || []).filter((z) => z.sicht.n >= R.mindest.n).map((z) => z.sicht.m).sort(aufsteigend);
     const ist = s.length >= R.mindest.azimute ? s[s.length >> 1] : null;
     const x = m.reihe || [];
     const d = x.slice(1).map((y, i) => ({ ...y, d: Math.abs(Math.log2(y.Y / x[i].Y)) / (y.t - x[i].t) }));
@@ -2613,7 +2613,7 @@ function naesseSicht(o) {
             for (let i = 0; i < W * H * 4; i += 4) s += Y(u8, i);
             return s / W / H;
         };
-        const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
+        const med = (l) => (l.length ? +l.sort(aufsteigend)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
         const dicht = AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1);
         // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
@@ -2729,13 +2729,13 @@ function kontaktSicht(o) {
         // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck; dunkle Flecken
         // (< 1/5 des Sonnen-Anteils) tragen kein f, Lücken bis 3 cm überbrückt die Gerade
         const kanten = (abc) => {
-            const sonne = abc.map(([, bb, c]) => bb - c).sort((a, b) => a - b)[abc.length >> 1];
+            const sonne = abc.map(([, bb, c]) => bb - c).sort(aufsteigend)[abc.length >> 1];
             const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
             for (let i = 1, j; i < f.length; i = j + 1) {
                 for (j = i; j < f.length && f[j] !== f[j]; j++);
                 for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
             }
-            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((a, b) => a - b)[1]);
+            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort(aufsteigend)[1]);
             const k = m3.reduce((m, x, i) => (x === x && !(m3[m] <= x) ? i : m), -1);
             return [m3.slice(0, k + 1).reverse(), m3.slice(k)].map((h) =>
                 k < 0 || h.some((x) => x !== x) ? "fleck" : !(h[0] <= 0.1) ? "kern" : !(h[h.length - 1] >= 0.9) ? "rand" : (h.filter((x) => x > 0.1 && x < 0.9).length * 3) / 10
@@ -2771,7 +2771,7 @@ function kontaktSicht(o) {
                 }
                 // der Fuß: der Median der gültigen Kanten; der Zuwachs: die Gerade w = a + k · L über alle
                 const P = linien.flatMap(([s, L, ...k]) => k.filter((w) => w >= 0).map((w) => [L, w, s]));
-                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((a, b) => a - b);
+                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort(aufsteigend);
                 const mi = (i) => P.reduce((s, q) => s + q[i], 0) / P.length;
                 const k = P.reduce((s, [L, w]) => s + (L - mi(0)) * (w - mi(1)), 0) / P.reduce((s, [L]) => s + (L - mi(0)) ** 2, 0);
                 const Ls = P.map((q) => q[0]);
