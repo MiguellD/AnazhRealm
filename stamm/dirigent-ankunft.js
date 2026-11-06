@@ -1494,7 +1494,7 @@ class AnazhRealm_dirigent_ankunft {
     // über die Breite der Abtastung (`strahlung`: die Umgebung der Stoffe in der Rauheit `gratRauheit` — eine Richtung allein
     // träfe die Aureole 2° neben der Sonne und wöge ihren Gipfel über das ganze Band) × max(n·ω, 0) × Δω/π — der Abzug von der
     // mittleren Strahlung der Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der
-    // Hang hinter dem Grat den ganzen Himmel.
+    // Hang hinter dem Grat den ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684).
     _horizontHimmel(p, n, strahlung) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
