@@ -1013,24 +1013,29 @@ class AnazhRealm_siedlung_ort {
     }
 
     // Steht der Wagen bei (x, z) in Fahrt-Richtung `ry` frei, und hat er eine BAHN? null = ja, sonst der Grund beim Namen:
-    // der Stand dort (`_fahrStandFrei`) und derselbe Stand je bahnLaengen Wagenlängen vor und hinter ihm (vehicle-core
-    // FAHR.platz) — er fährt in beide Richtungen los, ohne sofort anzustoßen. Die billige Probe zuerst (Lehre 25): die Ebene der
-    // Räder an allen drei (vehicle-core fahrPlatz), erst dann die Welt des Wirts.
+    // der Stand dort (`_fahrStandFrei`) und derselbe Stand je Wagenlänge bis bahnLaengen Wagenlängen vor und hinter ihm
+    // (vehicle-core FAHR.platz) — die Stände liegen Hülle an Hülle, die Bahn trägt keine Lücke; er fährt in beide Richtungen
+    // los, ohne sofort anzustoßen. Bis w13-wagen-ki trug die Bahn EINE Wagenlänge (GT 4,6 m): der Wagen der KI stand mit einer
+    // Eiche 4,8 m vor dem Bug, W hielt 120 s, er fuhr 4,78–4,82 m und stand (diag-werkstatt-weg L-Verben, ki · Third · Wagen,
+    // main a4dc2a45 rot in 2 von 5 Läufen). Die billige Probe zuerst (Lehre 25): die Ebene der Räder an jedem Stand
+    // (vehicle-core fahrPlatz), erst dann die Welt des Wirts.
     _fahrPlatzFrei(entry, G, k, x, z, ry) {
         const { vc, P } = AnazhRealm._fahrPlatzGesetz();
-        const L = (k.bug - k.heck) * P.bahnLaengen;
+        const L = k.bug - k.heck;
         const fX = Math.sin(ry);
         const fZ = Math.cos(ry);
         const boden = this._werkBoden(entry);
         const wo = (s) => (s === 0 ? "" : ` ${s > 0 ? "vor" : "hinter"} ihm`);
+        const staende = [0];
+        for (let n = 1; n <= P.bahnLaengen; n++) staende.push(n, -n);
         const ebenen = [];
-        for (const s of [0, 1, -1]) {
+        for (const s of staende) {
             const pl = vc.fahrPlatz(G, boden, x + fX * L * s, z + fZ * L * s, ry - Math.PI / 2);
             if (!pl.ok) return pl.grund + wo(s);
             ebenen.push(pl.eb);
         }
-        for (let i = 0; i < 3; i++) {
-            const s = [0, 1, -1][i];
+        for (let i = 0; i < staende.length; i++) {
+            const s = staende[i];
             const g = this._fahrStandFrei(entry, k, x + fX * L * s, z + fZ * L * s, ry, ebenen[i]);
             if (g) return g + wo(s);
         }
