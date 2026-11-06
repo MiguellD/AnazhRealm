@@ -3271,7 +3271,10 @@ module.exports = [
     // die Mess-Wiese; oben bei einsturzProbe): ein Werk mit fehlenden Pfosten bricht — was der Lastpfad nicht trägt, wird je Teil
     // ein freier Körper des EINEN Lösers (`_werkBricht` → `_freiSchritt`), der Rest steht; die Trümmer ruhen, bleiben 10 min und
     // kehren über den Reload mit Lage und Drehung wieder; 100 wache Körper kosten ≤ 1 ms je Takt (das Vorzeichen headless, die Zeit
-    // an der GTX-CPU misst der Koordinator). Die Zeit fällt an der Wanduhr: die Station fährt allein.
+    // an der GTX-CPU misst der Koordinator). Die Zeit fällt an der Wanduhr: die Station fährt allein. Gefahren 06.11. in der Cloud:
+    // am main 8efb6318 / db431cf0 ROT (das Werk fällt als Ganzes, kein Trümmer, kein Reload; 100 Körper Trümmerfeld 4,8 ms, Haufen
+    // 8,8 ms), am Zweig w15-einsturz f9f3d0db GRÜN (3 Mutationen, Ruhe 2,2 s, 10 min 0 m, Reload 8/8 Lage 0 m Drehung 0° — ohne sie
+    // ≥ 24°; Trümmerfeld 0,7 ms, Haufen 4 hoch 1,2 ms gemeldet, schlafend 0 ms).
     {
         kriterium: "physik.K3",
         staffel: 2,
