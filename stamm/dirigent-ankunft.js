@@ -1154,6 +1154,9 @@ class AnazhRealm_dirigent_ankunft {
                     "horizont",
                     `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
                 );
+            // die Teilung der Schale 0 im Fern-Faden (`_fernRingTeilung`, w14-ankunft-weg): bis sie zum Stand der Maske steht,
+            // zeichnete der Ring frei über dem Gebauten
+            else if (!this._fernRingGeteilt(fr)) luecke("horizont", "der Horizont wird geteilt", true);
             // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
             // auch headless, dort malt nie ein Panorama)
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
