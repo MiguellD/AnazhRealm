@@ -9,16 +9,7 @@
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a0807);scene.fog=new THREE.FogExp2(0x0a0807,0.045);
 const cam=new THREE.PerspectiveCamera(33,innerWidth/innerHeight,0.05,100);cam.position.set(0.16,0.74,1.78);
 const R=new THREE.WebGLRenderer({antialias:true});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.06;
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(R.domElement);
-
-// ── Schmiede-Env (PMREM aus Leinwand-Verlauf, wie mkEnv): warmes Oberlicht, Funken-Streifen ──
-(function(){const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d');
-  const g=x.createLinearGradient(0,0,0,512);g.addColorStop(0,'#5a4836');g.addColorStop(.4,'#241a12');g.addColorStop(1,'#080604');
-  x.fillStyle=g;x.fillRect(0,0,1024,512);
-  x.fillStyle='rgba(255,180,90,.30)';x.fillRect(140,30,200,90);x.fillRect(650,40,170,70);  // Esse-Fenster (Glanzlichter)
-  x.fillStyle='rgba(255,120,40,.18)';x.fillRect(420,300,260,40);
-  const t=new THREE.CanvasTexture(c);const p=new THREE.PMREMGenerator(R);scene.environment=p.fromEquirectangular(t).texture;t.dispose();})();
 
 // ── Werkbank + Raster ──
 const FLOOR_Y=-0.26, LIFT=0.30;   // Waffe schwebt auf Augenhöhe, Boden als dezente Referenz darunter (verdeckt nichts)
@@ -27,25 +18,13 @@ const bench=new THREE.Mesh(new THREE.PlaneGeometry(5,5),
 bench.rotation.x=-Math.PI/2;bench.position.y=FLOOR_Y;bench.receiveShadow=true;scene.add(bench);
 const grid=new THREE.GridHelper(4.5,18,0x241b10,0x130d07);grid.position.y=FLOOR_Y+0.001;grid.material.opacity=0.26;grid.material.transparent=true;scene.add(grid);
 
-// ── Licht (Avatar/Schmiede-Stack) ──
-scene.add(new THREE.HemisphereLight(0x6a5a44,0x0c0806,0.5));
-const key=new THREE.DirectionalLight(0xffe8c8,3.0);key.position.set(2.4,3.6,2.2);key.castShadow=true;
+// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Schmiede steht unter dem Himmel der Welt zur Uhr der Pose — Sonne,
+// Umgebung, Belichtung und Tonkurve aus EINER Quelle (AnazhHuelle.himmel, worlds/huelle/himmel.json); der Renderer zeichnet direkt,
+// wie die Welt ihr Bild ausgibt. Bis w16-studio-welt: ein Esse-Verlauf als Env, Hemisphäre 0,5, Key 3,0, Kante 1,5 Blau, Füllung 0,6
+// Orange, ein Punkt-Glanz 0,8, ACES 1,06 und eine Kette Bloom · FXAA · Vignette/Korn ohne sRGB-Kodierung des Ausgangs.
+const key=new THREE.DirectionalLight(0xffffff,0);key.castShadow=true;
 key.shadow.mapSize.set(2048,2048);key.shadow.bias=-0.00018;Object.assign(key.shadow.camera,{left:-1.3,right:1.3,top:1.2,bottom:-0.8,near:0.5,far:9});scene.add(key);
-const rim=new THREE.DirectionalLight(0x66a8ff,1.5);rim.position.set(-2.6,1.6,-2.2);scene.add(rim);   // kühles Gegenlicht → Stahlkante singt
-const fill=new THREE.DirectionalLight(0xff8a44,0.6);fill.position.set(0.4,0.8,-2.6);scene.add(fill);
-const edgeL=new THREE.PointLight(0xfff0d8,0.8,4);edgeL.position.set(0.6,0.5,0.9);scene.add(edgeL);
-
-// ── Post: Bloom auf Glanzlichtern + FXAA + leichte Vignette/Korn ──
-const composer=new THREE.EffectComposer(R);composer.addPass(new THREE.RenderPass(scene,cam));
-const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.42,0.65,0.82);composer.addPass(bloom);
-const fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms.resolution.value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
-const grade={uniforms:{tDiffuse:{value:null},t:{value:0}},
-  vertexShader:'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:['uniform sampler2D tDiffuse;uniform float t;varying vec2 v;',
-   'float rnd(vec2 s){return fract(sin(dot(s,vec2(12.9898,78.233)))*43758.5453);}',
-   'void main(){vec3 c=texture2D(tDiffuse,v).rgb;float d=length(v-0.5);',
-   'c*=smoothstep(1.15,0.18,d*1.25);c+=(rnd(v+t)*0.03-0.015);gl_FragColor=vec4(c,1.0);}'].join('\n')};
-const gradePass=new THREE.ShaderPass(grade);gradePass.renderToScreen=true;composer.addPass(gradePass);
+AnazhHuelle.himmel(THREE,R,scene,key,{abstand:4.6});
 
 const controls=new THREE.OrbitControls(cam,R.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
 controls.target.set(0,0.30,0);controls.minDistance=0.5;controls.maxDistance=4.5;controls.maxPolarAngle=Math.PI*0.95;controls.update();
@@ -1214,7 +1193,7 @@ function seilTakt(g,dt){if(!g||!g.parent||!P.seil||P.modus!=='wucht')return;let 
   g.getWorldQuaternion(_sv.q);e.posen=SC.seilPosen(e.z,e.seil,[_sv.q.x,_sv.q.y,_sv.q.z,_sv.q.w],e.posen);
   e.teile.forEach((m,i)=>{_sv.inv.copy(m.parent.matrixWorld).invert();m.matrix.multiplyMatrices(_sv.inv,_sv.W.fromArray(e.posen,16*i));m.matrixWorldNeedsUpdate=true;});}
 function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_lastT);_lastT=t;
-  if(!arena.active)controls.update();gradePass.uniforms.t.value=t;
+  if(!arena.active)controls.update();
   if(arena.active)arenaUpdate(dt);
   seilTakt(gWeapon,dt);if(arena.active)seilTakt(arena.vmWeapon,dt);                                 // das Seil nach der Haltung dieses Bilds
   // Harmonik-Welle auf der Klinge (verlangsamt zur Sichtbarkeit)
@@ -1228,10 +1207,10 @@ function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime()
   } else if(gBladeMesh){const pos=gBladeMesh.geometry.attributes.position,bz=gBladeMesh.userData.baseZ;
     let dirty=false;for(let i=0;i<pos.count;i++){if(pos.getZ(i)!==bz[i]){pos.setZ(i,bz[i]);dirty=true;}}
     if(dirty){pos.needsUpdate=true;gBladeMesh.geometry.computeVertexNormals();}}
-  composer.render();}
+  R.render(scene,cam);}
 
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
-  R.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);fxaa.uniforms.resolution.value.set(1/innerWidth,1/innerHeight);});
+  R.setSize(innerWidth,innerHeight);});
 addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase();
   if('12345'.includes(k)){const i=+k-1;if(LY[i]){show[LY[i][0]]=!show[LY[i][0]];ldiv.children[i].classList.toggle('on');applyVis();}}
   else if(k===' '){e.preventDefault();triggerRing();}

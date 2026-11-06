@@ -633,29 +633,27 @@ const app=document.getElementById('app');
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12; renderer.localClippingEnabled=true; app.appendChild(renderer.domElement);
+renderer.localClippingEnabled=true; app.appendChild(renderer.domElement);
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9fb2c4); scene.fog=new THREE.Fog(0x9fb2c4,55,150);
 const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.05,800);
-const sun=new THREE.DirectionalLight(0xfff1dc,2.1); sun.position.set(24,34,16); sun.castShadow=true;
+const sun=new THREE.DirectionalLight(0xffffff,0); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.far=140; sun.shadow.bias=-0.00045; sun.shadow.normalBias=0.02;
 sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26; sun.shadow.bias=-0.0004;
-scene.add(sun); const hemi=new THREE.HemisphereLight(0xbcd2f0,0x4d4636,0.62); const amb=new THREE.AmbientLight(0xffffff,0.22); scene.add(hemi); scene.add(amb);
+scene.add(sun);
+// EIN LICHT (studios.K4, w16-studio-welt): das Fachwerk steht unter dem Himmel der Welt zur Uhr der Pose — Sonne, Umgebung, Belichtung
+// und Tonkurve aus EINER Quelle (AnazhHuelle.himmel, worlds/huelle/himmel.json). Bis w16-studio-welt: Sonne 2,1, Hemisphäre 0,62 und
+// Ambient 0,22 je Tageszeit aus ZEIT_GESETZ (lab-lokal: Sonne, Himmel, Nebel), ACES 1,12 — ein zweites Licht neben der Welt.
+AnazhHuelle.himmel(THREE,renderer,scene,sun,{abstand:45});
 // ════ Tageszeiten ════
-// V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host: das Licht (ZEIT_VIS, K11).
 // Herdfeuer und Fenster-Glut lesen das Leuchtquellen-Gesetz des Kerns (FC.LICHT_GESETZ) — dasselbe Datum wie die Welt.
 const _LG=FC.LICHT_GESETZ, _FEU=_LG.feuer, _FEN=_LG.fenster, _FENF=FC.lichtFarbe(_FEN.kelvin), _LAT=_LG.laterne, _LATF=FC.lichtFarbe(_LAT.kelvin); let _feuerZeit=_FEU.zeit.mittag;
-// r128 zeichnet den Legacy-Abfall (1 − d/R)^abfall, nicht das Gesetz (FC.lichtAbfall: 1/d² mit Kern und Saum) — das Herdfeuer des Labors trifft die Welt in 2 m
-const _FEU_LAB=FC.lichtAbfall(_FEU,2)/Math.pow(1-2/_FEU.reichweiteM,_FEU.abfall);   // der Lichtstrom des Herdfeuers zur Tageszeit (setZeit), das Flackern im Bild-Takt
-const _ZG=(FC&&FC.ZEIT_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.ZEIT_GESETZ)||null;
-function _zeitPart(k,fb){ const s=_ZG&&_ZG[k]; if(!s) return {p:fb.p.slice(),c:fb.c,i:fb.i,h:fb.h,a:fb.a,bg:fb.bg};
-  return { p:(Array.isArray(s.p)&&s.p.length===3)?[s.p[0],s.p[1],s.p[2]]:fb.p.slice(),
-    c:(s.c!=null)?s.c:fb.c, i:Number.isFinite(s.i)?s.i:fb.i, h:Number.isFinite(s.h)?s.h:fb.h,
-    a:Number.isFinite(s.a)?s.a:fb.a, bg:(s.bg!=null)?s.bg:fb.bg }; }
-const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0.22,bg:0x9fb2c4}),
-  morgen:_zeitPart('morgen',{p:[34,14,20],c:0xffd9a8,i:1.7,h:0.55,a:0.26,bg:0xc8baa0}),
-  abend:_zeitPart('abend',{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a}),
-  nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
-function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
+// r128 zeichnet den physikalischen Abfall 1/d^abfall × (1 − (d/R)⁴)² (AnazhHuelle.himmel: physikalische Lichter), nicht das Gesetz
+// (FC.lichtAbfall: 1/d² mit Kern und Saum), und die Welt rechnet die Stärke des Labors × π (`_laborLichtStaerke`, LICHT_DER_UHR.legacy)
+// — das Herdfeuer des Labors trifft die Welt in 2 m
+const _FEU_LAB=window.__terrainCore.LICHT_DER_UHR.legacy*FC.lichtAbfall(_FEU,2)/(Math.pow(2,-_FEU.abfall)*Math.pow(1-Math.pow(2/_FEU.reichweiteM,4),2));   // der Lichtstrom des Herdfeuers zur Tageszeit (setZeit), das Flackern im Bild-Takt
+// die Tageszeit des Labors stellt die Gesetz-Lichter der Welt (Herdfeuer, Fenster, Laterne: LICHT_GESETZ `zeit`); Sonne und Himmel
+// sind die der Welt zur Uhr der Pose (AnazhHuelle.himmel)
+function setZeit(t){ _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
   const glut=_FEN.zeit[t]||0;                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
   for(const gm of Object.values(M).concat(typeof _MM!=='undefined'?Object.values(_MM):[])){ if(!gm||!gm.userData||gm.userData.__licht!=='fenster') continue;   // wer glüht, sagt der Stoff selbst (LICHT_GESETZ via __licht) — keine Liste
     gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; }
@@ -664,7 +662,7 @@ function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1
     gm.emissive=gm.emissive||new THREE.Color(0); if(lat) gm.emissive.setRGB(..._LATF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=lat; } }
 const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const fire=new THREE.PointLight(0xffffff,_FEU.staerke,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)
+const fire=new THREE.PointLight(0xffffff,_FEU.staerke,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire); fire.userData.gesetz=true;   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)
 
 // ════════════════ Subsystem-UI (einmal angelegt) ════════════════
 const ORDER=['fundament','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];

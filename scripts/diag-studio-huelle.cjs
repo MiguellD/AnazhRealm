@@ -77,6 +77,22 @@ const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", ko
 // Phyto-Labors (nach dem Griff des Gangs 6,55 × 8,24 × 6,30 gegen 3,62 × 6,86 × 3,33 m), die Zeit-Achse des Fachwerks (`jahr`: Stil
 // und Dach der Epoche; auf 2025 Höhe 9,1 gegen 10,54 m).
 const WERK_RATSCHE = { terrain: 1, fachwerk: 1 };
+// H10 — EIN LICHT (studios.K4, w16-studio-welt): jede Bühne steht unter dem Himmel der Welt zur Uhr der Pose — ihre Seite ruft das
+// EINE Glied der Hülle (`AnazhHuelle.himmel`: Sonne, Umgebung, Belichtung, Tonkurve aus worlds/huelle/himmel.json und foundry-core
+// LICHT_DER_UHR) und trägt kein eigenes Licht daneben: keine Hemisphäre, kein Umgebungslicht, keine eigene Umgebung (PMREM), keine
+// eigene Kurve oder Belichtung. Der Spiegel der Kurve in der Hülle (`NEUTRAL_GLSL`, r128 über CustomToneMapping) steht byte-gleich
+// mit r184 (vendor/three.module.min.js). Bis w16-studio-welt: je Bühne ein eigenes Rig (die Garage drei Richtlichter, Key 10,29
+// Bernstein, Belichtung 1,04; die Schmiede ein Esse-Verlauf, ACES 1,06) — Radeon 93fe1619: die Bühne fast schwarz, 0/7.
+// DIE RATSCHE (sie zieht nur an): terrain (die eigene Tag-Maschine des Wald-Modus, `atmosphere(e)`, und die Kino-Kette), die zwei
+// Ofen-Labore (ihre Werke sind Prägung und Wesen, K4 misst sie nicht).
+const LICHT_SEITE = { garage: "worlds/garage/garage.js", portale: "worlds/portale/porta.js", schmiede: "worlds/schmiede/schmiede.js", fachwerk: "worlds/fachwerk/fachwerk.js", terrain: "worlds/terrain/phytogenesis.js", koerperstudio: "worlds/koerperstudio/koerperstudio.js", tetrapoda: "worlds/tetrapoda/tetrapoda.js" };
+const LICHT_RATSCHE = { terrain: 1, koerperstudio: 1, tetrapoda: 1 };
+const LICHT_RIG = /new THREE\.(?:HemisphereLight|AmbientLight)\(|PMREMGenerator|\.toneMapping(?:Exposure)?\s*=[^=]/g;
+const NEUTRAL_VENDOR = (() => {
+    const t = fs.readFileSync(path.join(ROOT, "vendor", "three.module.min.js"), "utf8");
+    const a = t.indexOf("vec3 NeutralToneMapping( vec3 color ) {");
+    return a < 0 ? null : t.slice(a, t.indexOf("\\nvec3 CustomToneMapping", a));
+})();
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -226,6 +242,25 @@ function pruefe(karte) {
         if (!fehltIn(rel, ELEMENT_ADAPTER))
             rot.push(`H2 ${stammLib.fehlt.wo}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
+    // H10 — EIN LICHT: je Bühne das Glied der Hülle, kein eigenes Rig; der Spiegel der Kurve byte-gleich mit r184
+    for (const [id, rel] of Object.entries(LICHT_SEITE)) {
+        if (karte[rel] == null) {
+            rot.push(`H10 ${id}: ${rel} fehlt der Karte`);
+            continue;
+        }
+        const ruft = !fehltIn(rel, /AnazhHuelle\.himmel\(/g);
+        const rig = fehltIn(rel, LICHT_RIG) ? null : stammLib.fehlt.wo;
+        if (LICHT_RATSCHE[id]) {
+            if (ruft && !rig) rot.push(`H10 ${id}: steht unter dem Himmel der Welt ohne eigenes Rig — die Ratsche zieht an, ${id} fällt aus LICHT_RATSCHE`);
+            continue;
+        }
+        if (!ruft) rot.push(`H10 ${rel}: die Bühne ruft AnazhHuelle.himmel nicht — sie steht nicht unter dem Himmel der Welt`);
+        if (rig) rot.push(`H10 ${rig}: ein eigenes Licht der Bühne (Hemisphäre, Umgebungslicht, PMREM oder Kurve) neben dem Himmel der Welt`);
+    }
+    const kurve = /var NEUTRAL_GLSL =\s*"((?:[^"\\]|\\.)*)"/.exec(karte["worlds/huelle/huelle.js"] || "");
+    if (!NEUTRAL_VENDOR) rot.push("H10 vendor/three.module.min.js: keine NeutralToneMapping (der Spiegel hat kein Original)");
+    else if (!kurve || kurve[1] !== NEUTRAL_VENDOR)
+        rot.push(`H10 worlds/huelle/huelle.js: NEUTRAL_GLSL ≠ die NeutralToneMapping von r184 (vendor/three.module.min.js) — der Spiegel der Kurve driftet`);
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
     let K = null;
     try {
@@ -283,6 +318,11 @@ function selbsttest() {
         ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
         ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
         ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],
+        ["H10 die schmiede trägt wieder ihre Hemisphäre (das Rig vor w16-studio-welt)", "worlds/schmiede/schmiede.js", "AnazhHuelle.himmel(", "scene.add(new THREE.HemisphereLight(0x6a5a44,0x0c0806,0.5));\nAnazhHuelle.himmel(", /^H10 worlds\/schmiede\/schmiede\.js:\d+ .*: ein eigenes Licht der Bühne/],
+        ["H10 die portale setzt ihre eigene Kurve", "worlds/portale/porta.js", "AnazhHuelle.himmel(", "renderer.toneMapping=THREE.ACESFilmicToneMapping;AnazhHuelle.himmel(", /^H10 worlds\/portale\/porta\.js:\d+ .*: ein eigenes Licht der Bühne/],
+        ["H10 die fachwerk ruft den Himmel der Welt nicht", "worlds/fachwerk/fachwerk.js", "AnazhHuelle.himmel(", "AnazhHuelle.himmelNicht(", /^H10 worlds\/fachwerk\/fachwerk\.js: die Bühne ruft AnazhHuelle\.himmel nicht/],
+        ["H10 der Spiegel der Kurve driftet (eine Ziffer)", "worlds/huelle/huelle.js", "const float Desaturation = 0.15;", "const float Desaturation = 0.16;", /^H10 worlds\/huelle\/huelle\.js: NEUTRAL_GLSL ≠/],
+        ["H10 die Ratsche des terrain zieht an (Himmel ohne Rig)", "worlds/terrain/phytogenesis.js", /^[\s\S]*$/, "AnazhHuelle.himmel(THREE, renderer, scene, keyLight);", /^H10 terrain: steht unter dem Himmel der Welt ohne eigenes Rig/],
         ["H5 der Export ohne die fachwerk", TOR_ZIELE, '"worlds/fachwerk/index.html": {', '"worlds/fachwerk-fort/index.html": {', /^H5 fachwerk: kein Panorama im Export/],
         ["H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)", TOR_ZIELE, '"worlds/begegnung/index.html":', '"worlds/begegnung-fort/index.html":', /^H5 begegnung: steht nicht benannt unter ohne/],
     ];

@@ -1605,6 +1605,116 @@
         return { w: PANO_W, h: PANO_H, daten: halbPuffer(f) };
     }
 
+    // ── DER HIMMEL DER WELT (studios.K4 „EIN Licht", w16-studio-welt) — das EINE Licht jeder Bühne ──
+    // Jede Bühne steht unter dem Himmel, den die Welt zur Uhr der Pose selbst rechnet: ihre Equirekt-Tafel je Einheit des Lichts
+    // (Halb-Float) × E0, die Höhe ihres Auges, ihr Anker und ihre Himmels-Bestrahlung — gebacken von der Welt
+    // (`node scripts/diag-studio-huelle.cjs --himmel` → worlds/huelle/himmel.json, stamm `_himmelDatei`). Daraus stehen Sonne (Bahn,
+    // Farbe aus dem Durchlass der EINEN Atmosphäre in der Höhe des Auges der Welt, Stärke E0 · lum: foundry-core `LICHT_DER_UHR`),
+    // Umgebung (Spiegel und Licht jedes PBR-Stoffs, der Hintergrund), Belichtung (der Lichtmesser der Welt: Sonne · sin Höhe +
+    // Himmel gegen den Anker der klaren Luft samt Himmel, `_waagrechtIrradianz`) und Tonkurve (`belichtung.kurve`) aus EINER Quelle.
+    // `sonne` ist das Richtlicht der Bühne (es wirft ihren Schatten); jedes andere Licht ihres Rigs fällt (Hemisphäre, Füllung,
+    // Kante: die Welt hat sie nicht) — Gesetz-Lichter, die die Welt auch zeichnet (Herdfeuer, Portal-Glut), bleiben. Beide Engines:
+    // r184 WebGPU (die Garage) trägt Kurve und Umgebungsstärke selbst; r128 bekommt physikalische Lichter (die Rechnung von r184:
+    // E · Albedo/π), die Kurve der Welt als CustomToneMapping (NEUTRAL_GLSL, wörtlich aus vendor/three.module.min.js — H10 in
+    // gate:studio-huelle hält den Spiegel byte-gleich) und die Tafel × E0 als PMREM. opt: abstand (m der Sonne vor ihrem Ziel,
+    // Standard 12), ziel (THREE.Vector3, Standard der Ursprung), fertig(H, s) nach dem Setzen. Rückgabe ein Versprechen auf
+    // { richtung, belichtung, H }; fehlt die Datei oder der Kern, bricht es laut (nie ein stilles eigenes Licht).
+    var NEUTRAL_GLSL =
+        "vec3 NeutralToneMapping( vec3 color ) {\n\tconst float StartCompression = 0.8 - 0.04;\n\tconst float Desaturation = 0.15;\n\tcolor *= toneMappingExposure;\n\tfloat x = min( color.r, min( color.g, color.b ) );\n\tfloat offset = x < 0.08 ? x - 6.25 * x * x : 0.04;\n\tcolor -= offset;\n\tfloat peak = max( color.r, max( color.g, color.b ) );\n\tif ( peak < StartCompression ) return color;\n\tfloat d = 1. - StartCompression;\n\tfloat newPeak = 1. - d * d / ( peak + d - StartCompression );\n\tcolor *= newPeak / peak;\n\tfloat g = 1. - 1. / ( Desaturation * ( peak - newPeak ) + 1. );\n\treturn mix( color, vec3( newPeak ), g );\n}";
+    var HIMMEL_DATEI = "himmel.json";
+    function ganz(h) {
+        // float16 → float32 (die Umkehr von `halb`)
+        var s = h & 0x8000 ? -1 : 1,
+            e = (h >> 10) & 0x1f,
+            m = h & 0x3ff;
+        return e === 0 ? s * Math.pow(2, -14) * (m / 1024) : e === 31 ? (m ? NaN : s * Infinity) : s * Math.pow(2, e - 15) * (1 + m / 1024);
+    }
+    function himmelQuelle() {
+        var s = doc.querySelector('script[src*="huelle/huelle.js"]'),
+            v = s && /[?&]v=([^&]+)/.exec(s.getAttribute("src"));
+        return new URL(HIMMEL_DATEI + (v ? "?v=" + v[1] : ""), s ? s.src : wurzel.location.href).href;
+    }
+    function himmel(T, renderer, scene, sonne, opt) {
+        opt = opt || {};
+        var TC = wurzel.__terrainCore;
+        if (!TC || !TC.LICHT_DER_UHR || !TC.ATMO_RECHNUNG) throw new Error("Der Himmel der Welt: foundry-core.js (LICHT_DER_UHR) fehlt der Seite");
+        var LU = TC.LICHT_DER_UHR,
+            AG = TC.ATMO_GESETZ,
+            AM = TC.ATMO_RECHNUNG.medium(AG, TC.ATMO_RECHNUNG.betaKlar(AG), null),
+            r184 = !!renderer.isWebGPURenderer,
+            abstand = opt.abstand || 12;
+        // das Rig der Bühne fällt: jedes Licht außer der Sonne und den Gesetz-Lichtern (`userData.gesetz`)
+        var weg = [];
+        scene.traverse(function (x) {
+            if (x.isLight && x !== sonne && !(x.userData && x.userData.gesetz)) weg.push(x);
+        });
+        weg.forEach(function (x) {
+            x.parent.remove(x);
+        });
+        sonne.intensity = 0; // bis der Himmel steht, zeichnet kein eigenes Licht
+        if (r184) renderer.toneMapping = T[LU.belichtung.kurve];
+        else {
+            if (LU.belichtung.kurve !== "NeutralToneMapping") throw new Error("Der Himmel der Welt: r128 trägt nur die Kurve NeutralToneMapping (NEUTRAL_GLSL)");
+            var pars = T.ShaderChunk.tonemapping_pars_fragment,
+                leer = "vec3 CustomToneMapping( vec3 color ) { return color; }";
+            if (pars.indexOf(leer) >= 0) T.ShaderChunk.tonemapping_pars_fragment = pars.replace(leer, NEUTRAL_GLSL.replace("NeutralToneMapping", "CustomToneMapping"));
+            else if (pars.indexOf("color *= toneMappingExposure;\n\tfloat x = min") < 0) throw new Error("Der Himmel der Welt: r128 ohne den Platz der CustomToneMapping");
+            renderer.toneMapping = T.CustomToneMapping;
+            renderer.physicallyCorrectLights = true;
+            renderer.outputEncoding = T.sRGBEncoding;
+        }
+        return fetch(himmelQuelle())
+            .then(function (r) {
+                if (!r.ok) throw new Error("Der Himmel der Welt: worlds/huelle/" + HIMMEL_DATEI + " HTTP " + r.status);
+                return r.json();
+            })
+            .then(function (H) {
+                var s = LU.sonne(AG, AM, H.augeKm, H.uhr),
+                    e = s.richtung[1],
+                    roh = Uint8Array.from(atob(H.daten), function (c) {
+                        return c.charCodeAt(0);
+                    }),
+                    halbe = new Uint16Array(roh.buffer),
+                    tafel;
+                if (r184) {
+                    tafel = new T.DataTexture(halbe, H.W, H.H, T.RGBAFormat, T.HalfFloatType);
+                    tafel.mapping = T.EquirectangularReflectionMapping;
+                    tafel.needsUpdate = true;
+                    scene.environment = tafel;
+                    scene.environmentIntensity = H.licht;
+                    scene.background = tafel;
+                    scene.backgroundIntensity = H.licht;
+                } else {
+                    // r128 kennt keine Umgebungsstärke der Szene: die Tafel trägt E0 selbst (dieselben Texel × H.licht), PMREM wie r184
+                    var z = new Uint16Array(halbe.length);
+                    for (var i = 0; i < z.length; i++) z[i] = halb(ganz(halbe[i]) * H.licht);
+                    tafel = new T.DataTexture(z, H.W, H.H, T.RGBAFormat, T.HalfFloatType);
+                    tafel.minFilter = tafel.magFilter = T.LinearFilter;
+                    tafel.mapping = T.EquirectangularReflectionMapping;
+                    tafel.needsUpdate = true;
+                    var pm = new T.PMREMGenerator(renderer);
+                    scene.environment = pm.fromEquirectangular(tafel).texture;
+                    pm.dispose();
+                    // der Hintergrund: der Würfel der Tafel in Halb-Float (r128 wandelt ein Equirekt sonst in 8 Bit — der Himmel × E0 risse weiß)
+                    scene.background = new T.WebGLCubeRenderTarget(H.H, { type: T.HalfFloatType }).fromEquirectangularTexture(renderer, tafel).texture;
+                }
+                sonne.color.setRGB(s.farbe[0], s.farbe[1], s.farbe[2]);
+                sonne.intensity = e > 0 ? s.staerke : 0;
+                var ziel = opt.ziel || sonne.target.position;
+                sonne.position.copy(ziel).add(new T.Vector3(s.richtung[0], s.richtung[1], s.richtung[2]).multiplyScalar(abstand));
+                if (sonne.shadow) sonne.shadow.needsUpdate = true;
+                var k = sonne.intensity * Math.max(0, e),
+                    w = [0, 1, 2].map(function (i) {
+                        return s.farbe[i] * k + H.himmelE[i];
+                    }),
+                    E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
+                renderer.toneMappingExposure = LU.kamera(LU.belichtung, e, E, LU.anker(AG, AM, H.anker));
+                var aus = { richtung: s.richtung, belichtung: renderer.toneMappingExposure, H: H };
+                if (opt.fertig) opt.fertig(H, s);
+                return aus;
+            });
+    }
+
     var reisender = null; // der Avatar, den die Heimat beim Betreten schickte (`bruecke`, enter)
     // DAS MASS DES WERKS (studios.K4, Labor = Welt): `opt.werk` und `opt.wurzel` der Brücke — die Box der Wurzel der Bühne (die
     // sichtbaren Meshes, eine Instanz je Instanz-Matrix) gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut
@@ -1982,6 +2092,8 @@
         werkUrteil: werkUrteil,
         panorama: panorama,
         panoramaBild: panoramaBild,
+        himmel: himmel,
+        NEUTRAL_GLSL: NEUTRAL_GLSL,
         toast: toast,
         zufall: zufall,
         knopfMitText: knopfMitText,

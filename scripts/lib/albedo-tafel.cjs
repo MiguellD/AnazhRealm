@@ -48,14 +48,14 @@ const STUDIOS = {
         pfad: "worlds/portale/index.html",
         szene: "scene",
         renderer: "renderer",
-        ausgabe: "composer",
+        ausgabe: null,
         wurzel: "gate",
     },
     schmiede: {
         pfad: "worlds/schmiede/index.html",
         szene: "scene",
         renderer: "R",
-        ausgabe: "composer",
+        ausgabe: null,
         wurzel: "weapon",
     },
     fachwerk: {

@@ -18,7 +18,6 @@ const CAM_FOV=34,cam=new THREE.PerspectiveCamera(CAM_FOV,innerWidth/innerHeight,
 // dem ersten Bild. Gemessen (Isometrie 1280×720, swiftshader): 185 → 54 ms je Bild.
 const LEICHT=new URLSearchParams(location.search).has('leicht');
 const R=new THREE.WebGPURenderer({antialias:!LEICHT});R.setSize(innerWidth,innerHeight);R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.toneMapping=THREE.NeutralToneMapping;   // die Belichtung setzt das Gesetz der Kamera der Welt (`himmelSetzen`)
 R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFShadowMap;   // PCF statt PCF-weich: swiftshader Iso 105 → 90 ms (02.11.)
 document.body.appendChild(R.domElement);
 
@@ -58,28 +57,15 @@ const zifferblatt=(function(){const v=[],R0=3.35,R1=3.48,N=144;
   const ls=new THREE.LineSegments(ge,new THREE.LineBasicMaterial({color:0xb98a52,transparent:true,opacity:0.7}));ls.position.y=0.003;return ls;})();
 buehne.add(zifferblatt);
 
-// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Werkstatt steht unter der Sonne der Welt — Bahn, Farbe (der Durchlass
-// der EINEN Atmosphäre) und Stärke E0 · lum aus dem Licht der Uhr im Kern (foundry-core `LICHT_DER_UHR`, dieselben Glieder, die die
-// Welt liest: `_dayNightSunDirection`, KEY_BASE · LEGACY_LICHT, `_belichtungAnker`, `_belichtungAusLicht`), die Belichtung aus dem
-// Gesetz ihrer Kamera (die 18-%-Karte auf zielKarte gegen den Anker) unter ihrer Tonkurve, zur Uhr des Himmels der Welt (unten).
-// Bis w16-studio-welt: drei eigene Richtlichter, die dem Blick folgten (Key 10,29 Bernstein, Füllung Stahl, Kante Cyan), Belichtung 1,04.
-const TC=window.__terrainCore,LU=TC.LICHT_DER_UHR,AG=TC.ATMO_GESETZ,AM=TC.ATMO_RECHNUNG.medium(AG,TC.ATMO_RECHNUNG.betaKlar(AG),null);
-const key=new THREE.DirectionalLight(0xffffff,1);key.castShadow=true;
+// ── Licht ── EIN LICHT (studios.K4, w16-studio-welt): die Werkstatt steht unter dem Himmel der Welt zur Uhr der Pose — Sonne
+// (Bahn, Durchlass der EINEN Atmosphäre, E0 · lum aus foundry-core `LICHT_DER_UHR`), Umgebung (die Equirekt-Tafel der Welt × E0),
+// Belichtung (der Lichtmesser der Welt) und Tonkurve aus EINER Quelle: das Glied der Hülle `AnazhHuelle.himmel`, das jede Bühne liest
+// (worlds/huelle/himmel.json). Bis w16-studio-welt: drei eigene Richtlichter, die dem Blick folgten (Key 10,29 Bernstein, Füllung
+// Stahl, Kante Cyan), Belichtung 1,04.
+const key=new THREE.DirectionalLight(0xffffff,0);key.castShadow=true;
 key.shadow.mapSize.set(1024,1024);key.shadow.bias=-0.0002;Object.assign(key.shadow.camera,{left:-6,right:6,top:5,bottom:-3,far:26});scene.add(key);
 const SONNE=new THREE.Vector3(0,1,0);
-// DER HIMMEL DER WELT (studios.K4, Nacharbeit 18:30): die Umgebung der Bühne ist der Himmel, den die Welt zur Uhr der Pose selbst
-// rechnet — ihre Equirekt-Tafel je Einheit des Lichts (Halb-Float) × E0, dazu die Höhe ihres Auges, ihr Anker und ihre Himmels-
-// Bestrahlung, gebacken von der Welt (`node scripts/diag-studio-huelle.cjs --himmel` → worlds/huelle/himmel.json). Daraus stehen
-// Sonne (Bahn, Durchlass in der Höhe des Auges der Welt), Umgebung (Spiegel und Licht jedes PBR-Stoffs) und Belichtung (der
-// Lichtmesser der Welt: Sonne · sin Höhe + Himmel gegen den Anker der klaren Luft samt Himmel) aus EINER Quelle; die Uhr ist die
-// der Tafel (Mittag). Fehlt die Datei, bricht es laut.
-function himmelSetzen(H){const s=LU.sonne(AG,AM,H.augeKm,H.uhr),e=s.richtung[1];SONNE.fromArray(s.richtung);
-  key.color.setRGB(s.farbe[0],s.farbe[1],s.farbe[2]);key.intensity=e>0?s.staerke:0;
-  const b=Uint8Array.from(atob(H.daten),c=>c.charCodeAt(0)),t=new THREE.DataTexture(new Uint16Array(b.buffer),H.W,H.H,THREE.RGBAFormat,THREE.HalfFloatType);
-  t.mapping=THREE.EquirectangularReflectionMapping;t.needsUpdate=true;scene.environment=t;scene.environmentIntensity=H.licht;
-  const k=key.intensity*Math.max(0,e),w=[0,1,2].map(i=>s.farbe[i]*k+H.himmelE[i]),E=Math.max(0.2126*w[0]+0.7152*w[1]+0.0722*w[2],1e-6);   // die Rechnung des Lichtmessers der Welt (`_waagrechtIrradianz`)
-  R.toneMappingExposure=LU.kamera(LU.belichtung,e,E,LU.anker(AG,AM,H.anker));key.shadow.needsUpdate=true;werkOrbit();}
-fetch('../huelle/himmel.json?v=18.546.201').then(r=>{if(!r.ok)throw new Error('der Himmel der Welt: worlds/huelle/himmel.json HTTP '+r.status);return r.json();}).then(himmelSetzen);
+AnazhHuelle.himmel(THREE,R,scene,key,{fertig:(H,s)=>{SONNE.fromArray(s.richtung);werkOrbit();}});
 
 /* ── DER KERN-ANSCHLUSS (W7a, Studio-Vertrag Phase 1 — docs/studio-vertrag.md §7):
    die generative Substanz (Lehren · Rahmen · Räder · Haut · Baukörper · Presets/
