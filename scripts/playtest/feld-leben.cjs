@@ -573,7 +573,6 @@ async function checkBandWelle6APolish({ page, check }) {
     // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
     // damit der y-Offset eines Sub-Compounds auf einer Plattform den Sprung nicht blockiert.
     const wave6aResults = await safeEvaluate(page, () => {
-        if (!r || !st.playerVel) return null;
         const out = {};
 
         // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):

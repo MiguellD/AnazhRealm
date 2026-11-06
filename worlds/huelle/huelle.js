@@ -1901,6 +1901,98 @@
         };
     }
 
+    // DIE KUGEL DES BLICKS (w12-studio-buehne): der Orbit einer Studio-Bühne als Glied der EINEN Hülle — die Kamera kreist um
+    // `target` (Links-Zug dreht, Rechts-Zug oder Strg/Umschalt schiebt, Rad und Zwei-Finger-Kneifen zoomen), gedämpft wie die
+    // three-OrbitControls, deren Gestalt sie trägt (target · enabled · enableDamping · dampingFactor · minDistance · maxDistance ·
+    // minPolarAngle · maxPolarAngle · update). `update()` liest die Lage der Kamera neu: wer die Kamera setzt, setzt den Orbit.
+    // Die Engine der Welt (three r184, vendor/) trägt kein Addon — bis hierher lud jede r128-Bühne das OrbitControls der
+    // terrain-Familie (worlds/terrain/lib/OrbitControls.js).
+    function kugel(kamera, dom) {
+        const T = wurzel.THREE;
+        const k = {
+            target: new T.Vector3(),
+            enabled: true,
+            enableDamping: false,
+            dampingFactor: 0.05,
+            minDistance: 0,
+            maxDistance: Infinity,
+            minPolarAngle: 0,
+            maxPolarAngle: Math.PI,
+        };
+        const off = new T.Vector3(),
+            sph = new T.Spherical(),
+            v = new T.Vector3(),
+            schub = new T.Vector3(),
+            finger = new Map();
+        let [dTheta, dPhi, skala, zug, lx, ly, kneif] = [0, 0, 1, -1, 0, 0, 0];
+        const mitte = () => {
+            const [a, b] = [...finger.values()];
+            return b ? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) } : a;
+        };
+        dom.style.touchAction = "none";
+        dom.addEventListener("contextmenu", (e) => e.preventDefault());
+        dom.addEventListener("pointerdown", (e) => {
+            if (!k.enabled) return;
+            finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            const m = mitte();
+            [lx, ly, kneif] = [m.x, m.y, m.d || 0];
+            zug = finger.size > 1 || e.button === 2 || e.ctrlKey || e.metaKey || e.shiftKey ? 2 : 0;
+            if (dom.setPointerCapture) dom.setPointerCapture(e.pointerId);
+        });
+        dom.addEventListener("pointermove", (e) => {
+            if (!finger.has(e.pointerId) || !k.enabled) return;
+            finger.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            const m = mitte();
+            const [dx, dy] = [m.x - lx, m.y - ly];
+            [lx, ly] = [m.x, m.y];
+            if (m.d && kneif) skala *= kneif / m.d;
+            kneif = m.d || 0;
+            const h = dom.clientHeight || 1;
+            if (zug === 0) {
+                dTheta -= (2 * Math.PI * dx) / h;
+                dPhi -= (2 * Math.PI * dy) / h;
+            } else if (zug === 2) {
+                // ein Pixel am Schirm = ein Pixel am Ziel
+                const d = (2 * off.copy(kamera.position).sub(k.target).length() * Math.tan(((kamera.fov || 50) * Math.PI) / 360)) / h;
+                schub.addScaledVector(v.setFromMatrixColumn(kamera.matrix, 0), -dx * d);
+                schub.addScaledVector(v.setFromMatrixColumn(kamera.matrix, 1), dy * d);
+            }
+        });
+        const los = (e) => {
+            finger.delete(e.pointerId);
+            if (!finger.size) return void (zug = -1);
+            const m = mitte();
+            [lx, ly, kneif, zug] = [m.x, m.y, m.d || 0, 0];
+        };
+        dom.addEventListener("pointerup", los);
+        dom.addEventListener("pointercancel", los);
+        dom.addEventListener(
+            "wheel",
+            (e) => {
+                if (!k.enabled) return;
+                e.preventDefault();
+                skala *= e.deltaY > 0 ? 1 / 0.95 : 0.95;
+            },
+            { passive: false }
+        );
+        k.update = () => {
+            off.copy(kamera.position).sub(k.target);
+            sph.setFromVector3(off);
+            const f = k.enableDamping ? k.dampingFactor : 1;
+            sph.theta += dTheta * f;
+            sph.phi = Math.max(k.minPolarAngle, Math.min(k.maxPolarAngle, sph.phi + dPhi * f));
+            sph.makeSafe();
+            sph.radius = Math.max(k.minDistance, Math.min(k.maxDistance, sph.radius * skala));
+            k.target.addScaledVector(schub, f);
+            kamera.position.copy(k.target).add(off.setFromSpherical(sph));
+            kamera.lookAt(k.target);
+            [dTheta, dPhi, skala] = [dTheta * (1 - f), dPhi * (1 - f), 1];
+            schub.multiplyScalar(1 - f);
+            return true;
+        };
+        return k;
+    }
+
     wurzel.AnazhHuelle = {
         matrix: matrix,
         regler: regler,
@@ -1921,5 +2013,6 @@
         toast: toast,
         zufall: zufall,
         knopfMitText: knopfMitText,
+        kugel: kugel,
     };
 })(typeof window !== "undefined" ? window : globalThis);
