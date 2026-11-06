@@ -830,9 +830,15 @@ const LEIB_K2 = seiteProbe(33, leibK2Seite, {
     mutiert: true,
     
 });
+// LEIB_K4 ÜBER DEM BUDGET (06.11., w18-kamera-haus): seit 04.11. riss die Probe an Radeon und GTX ihre Frist 39 s (Deckel 45), ohne
+// eine Gang-Zeile. Der Gang ist volle Abdeckung im echten Takt: sieben Gänge zu je zwei 360°-Orbits à 6 s, rückwärts heran, der
+// Schmuggel (seit w18 endet er beim ersten genannten Bau-Pixel: 1091 → 438 Bilder) und der Weg zum Steilhang (318 m, ~8 s Strom) —
+// 7 920 Bilder, headless (Null-Renderer, Cloud-CPU) 48–52 s, davon der Takt 26 s und die Nah-Frage 10–14 s (kamera-nah filtert seit
+// w18 billig zuerst: 7,0 → 4,8 ms je Frage). Weniger Bilder bei gleicher Abdeckung gibt es nicht: der Orbit in 3 s (die Nah-Frage
+// je Grad gleich dicht) misst eine andere Maus (headless neu ROT: haus orbit fern Bau 34 %, Ruck innen 0,024 m).
 const LEIB_K4 = seiteProbe(33, leibK4Seite, {
     mutiert: true,
-    
+    ausnahme: "der Gang in voller Abdeckung im echten Takt: 7 920 Bilder (7 Gänge × 2 Orbits à 6 s, der Schmuggel, der Steilhang 318 m fern) — headless 48–52 s, der Takt allein 26 s",
 });
 const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
 const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
