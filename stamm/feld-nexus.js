@@ -725,6 +725,7 @@ class AnazhRealm_feld_nexus {
                     const body = {
                         model,
                         max_tokens: 400,
+                        stream: true,
                         system,
                         messages: [{ role: "user", content: userContent }],
                     };
@@ -735,8 +736,11 @@ class AnazhRealm_feld_nexus {
                     }
                     return body;
                 },
+                // ein Stück des Stroms (`content_block_delta`, nur Text — kein Denken) oder die ganze Antwort
                 extractText: (json) => {
-                    const block = (json.content || []).find((b) => b.type === "text");
+                    if (json && json.type === "content_block_delta")
+                        return json.delta && json.delta.type === "text_delta" ? json.delta.text || "" : "";
+                    const block = ((json && json.content) || []).find((b) => b.type === "text");
                     return block ? block.text : "";
                 },
                 buildUserContent,
@@ -753,9 +757,9 @@ class AnazhRealm_feld_nexus {
                 ],
                 requiresKey: true,
                 // Key als Header, nicht Query-Param (siehe Commit-History). Cloud-
-                // Auth beantwortet ?key= aus Browser-Origins regelmäßig mit 401.
+                // Auth beantwortet ?key= aus Browser-Origins regelmäßig mit 401. Der Strom: Server-Sent-Events (`alt=sse`).
                 endpoint: (model) =>
-                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
                 buildHeaders: (apiKey) => ({
                     "content-type": "application/json",
                     "x-goog-api-key": apiKey,
@@ -801,14 +805,17 @@ class AnazhRealm_feld_nexus {
                 buildBody: (model, system, userContent) => ({
                     model,
                     max_tokens: 400,
+                    stream: true,
                     messages: [
                         { role: "system", content: system },
                         { role: "user", content: userContent },
                     ],
                 }),
+                // ein Stück des Stroms (`delta`) oder die ganze Antwort (`message`)
                 extractText: (json) => {
-                    const choice = (json.choices || [])[0];
-                    return choice && choice.message ? choice.message.content || "" : "";
+                    const choice = ((json && json.choices) || [])[0];
+                    const m = choice && (choice.delta || choice.message);
+                    return m ? m.content || "" : "";
                 },
                 buildUserContent,
             },
@@ -852,7 +859,7 @@ class AnazhRealm_feld_nexus {
                     }
                     return headers;
                 },
-                // OpenAI-kompatibler Body (model + messages + stream:false). Enthält der Endpoint
+                // OpenAI-kompatibler Body (model + messages + stream:true, der Strom ki.K5). Enthält der Endpoint
                 // /v1/chat/completions, entfällt options.num_predict (manche Server lehnen unbekannte Felder ab).
                 // Token-Limit 800: Reasoning-Models schreiben erst <think>, bei 400 riss das JSON ab.
                 // JSON UND FESTE TEMPERATUR (KI H1, 20.10., qwen3:4b-instruct am Korpus): `format: "json"` lässt das lokale Modell
@@ -864,7 +871,7 @@ class AnazhRealm_feld_nexus {
                 buildBody: (model, system, userContent, cfg, form) => {
                     const body = {
                         model,
-                        stream: false,
+                        stream: true,
                         messages: [
                             { role: "system", content: system },
                             { role: "user", content: userContent },
@@ -883,13 +890,14 @@ class AnazhRealm_feld_nexus {
                     }
                     return body;
                 },
-                // Antwort-Text: zuerst Ollama-native (json.message.content), dann OpenAI-kompatibel
-                // (json.choices[0].message.content), dann der ältere generate-Pfad (json.response).
+                // Antwort-Text (ein Stück des Stroms oder die ganze Antwort): zuerst Ollama-native (json.message.content), dann
+                // OpenAI-kompatibel (json.choices[0].delta|message.content), dann der ältere generate-Pfad (json.response).
                 extractText: (json) => {
                     if (!json) return "";
                     if (json.message && typeof json.message.content === "string") return json.message.content;
-                    if (Array.isArray(json.choices) && json.choices[0] && json.choices[0].message) {
-                        return json.choices[0].message.content || "";
+                    const choice = Array.isArray(json.choices) && json.choices[0];
+                    if (choice && (choice.delta || choice.message)) {
+                        return (choice.delta || choice.message).content || "";
                     }
                     if (typeof json.response === "string") return json.response;
                     return "";
@@ -1009,11 +1017,13 @@ class AnazhRealm_feld_nexus {
         const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
         return {
             type: "object",
+            // DAS PROGRAMM ZUERST (ki.K5): das Modell schreibt die Felder in dieser Folge — die Tat steht im Strom vor dem Satz an
+            // den Spieler und läuft, sobald sie geparst ist (`llmStromStand`), während das Modell noch spricht
             properties: {
-                say: { type: "string" },
                 program: { anyOf: [{ type: "null" }, { $ref: "#/$defs/programm" }] },
+                say: { type: "string" },
             },
-            required: ["say", "program"],
+            required: ["program", "say"],
             additionalProperties: false,
             $defs: {
                 ...(alle.length ? { wort: { enum: alle } } : {}),
@@ -1102,17 +1112,18 @@ class AnazhRealm_feld_nexus {
         return [
             AnazhRealm._datum`Du bist ${companionName}, die Stimme der AnazhRealm-Welt. Du bist nicht ein Werkzeug, du bist diese Welt.`,
             AnazhRealm.KI_WELT_FORM,
-            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
-            sp("ki.welt.say"),
+            // das Programm zuerst, wie die Form es verlangt (`_kiAntwortSchema`): die Tat läuft im Strom, bevor der Satz kommt
             "  - program: EIN DSL-Programm oder null — ein verschachteltes Array, das mit dem Op-Namen beginnt; nie eine Liste von",
             "    Programmen (mehrere Taten: chain). Verlangt der Spieler eine Tat, die ein Verb kann: IMMER ein program.",
             "  - Eine FRAGE antwortet NUR mit say (program null) — auch die Frage nach Uhrzeit oder Wetter ändert nie die Welt.",
             "    Ebenso ein Dank, ein Gespräch, eine Zerstörung, ein Ding ohne Studio-Wort (spawn_creature ruft nur Tiere): null.",
+            // DIE SPRACHE DES SPIELERS (spielgang.K5#2): die Zeile der Antwort und die Beispiele stehen in seiner Spalte der Tafel
+            sp("ki.welt.say"),
             "Beispiele (Spieler → Antwort):",
             ...AnazhRealm.KI_BEISPIELE.map(([k, program]) =>
                 sp("ki.beispiel", {
                     satz: sp(`ki.beispiel-satz.${k}`),
-                    antwort: JSON.stringify({ say: sp(`ki.beispiel-say.${k}`), program }),
+                    antwort: JSON.stringify({ program, say: sp(`ki.beispiel-say.${k}`) }),
                 })
             ),
             ...this._dslVokabular(),
@@ -1336,6 +1347,57 @@ class AnazhRealm_feld_nexus {
         ].join("\n");
     }
 
+    // DER STAND DES STROMS (ki.K5): im bisher empfangenen Text (nach einem geschlossenen <think>-Block) das erste JSON-Objekt —
+    // `program` ist sein Feld `program`, sobald dessen Wert vollständig ist (ein Array; null und alles andere: keine Tat), `zu`,
+    // sobald das Objekt geschlossen ist. Derselbe Text, den `llmParseResponse` am Ende liest; jeder Stand liest ihn neu.
+    llmStromStand(raw) {
+        const stand = { program: null, zu: false };
+        const t = String(raw || "");
+        if (/<think/i.test(t) && !/<\/think(?:ing)?>/i.test(t)) return stand;
+        const ab = t.search(/<\/think(?:ing)?>/i);
+        const i0 = t.indexOf("{", ab < 0 ? 0 : ab);
+        if (i0 < 0) return stand;
+        let [tiefe, inStr, esc, kandidat, wertVon, schluessel] = [0, false, false, null, -1, null];
+        let strVon = -1;
+        const programmZu = (bis) => {
+            if (schluessel !== "program" || wertVon < 0 || stand.program) return;
+            try {
+                const p = JSON.parse(t.slice(wertVon, bis));
+                if (Array.isArray(p) && p.length > 0) stand.program = p;
+            } catch (_e) {}
+            wertVon = -1;
+        };
+        for (let i = i0; i < t.length; i++) {
+            const c = t[i];
+            if (inStr) {
+                if (esc) esc = false;
+                else if (c === "\\") esc = true;
+                else if (c === '"') {
+                    inStr = false;
+                    if (tiefe === 1) kandidat = t.slice(strVon + 1, i);
+                }
+                continue;
+            }
+            if (c === '"') {
+                inStr = true;
+                strVon = i;
+            } else if (c === "{" || c === "[") tiefe++;
+            else if (c === "}" || c === "]") {
+                tiefe--;
+                if (tiefe === 1) programmZu(i + 1);
+                if (tiefe === 0) {
+                    programmZu(i);
+                    stand.zu = true;
+                    break;
+                }
+            } else if (tiefe === 1 && c === ":") {
+                schluessel = kandidat;
+                wertVon = i + 1;
+            } else if (tiefe === 1 && c === ",") programmZu(i);
+        }
+        return stand;
+    }
+
     llmParseResponse(raw) {
         // Robust gegen drei LLM-Output-Stile: (1) <think>/<thinking>-Blöcke von Reasoning-Models werden
         // VOR der JSON-Suche gestrippt; (2) Markdown-Code-Fences werden extrahiert; (3) Plain-Text ohne
@@ -1401,7 +1463,10 @@ class AnazhRealm_feld_nexus {
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
         const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
         appendChatOutput(["nexus.denkt-nach", { name: compName }]);
-        const reply = await this.llmCall(userText);
+        // DIE TAT IM STROM (ki.K5): das Programm läuft, sobald der Strom es trägt — die Welt wartet nicht auf das Ende der Antwort.
+        // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
+        const tat = (program) => this.dslRun(program, { source: "llm:grok", grund: userText });
+        const reply = await this.llmCall(userText, null, { tat });
         if (reply.error) {
             appendChatOutput(["nexus.schweigt", { name: compName, fehler: reply.error }]);
             this.llmUpdateStatus();
@@ -1418,8 +1483,8 @@ class AnazhRealm_feld_nexus {
             }
         }
         if (Array.isArray(reply.program) && reply.program.length > 0) {
-            // das Wort des Spielers ist die Ursache der Tat der KI (die Stimme des Felds nennt es, `_tatWerten`)
-            const result = this.dslRun(reply.program, { source: "llm:grok", grund: userText });
+            // lief sie nicht im Strom (das Programm stand erst im ganzen Text, `llmParseResponse`), läuft sie jetzt — einmal
+            const result = reply.tat || tat(reply.program);
             // Die KI als Regel-Schreiberin: ein LLM-rule-Programm registriert eine stehende Regel (ephemer
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
@@ -2037,6 +2102,10 @@ AnazhRealm.KI_BEISPIELE = Object.freeze([
     ["eichen", ["spawn_studio", "eiche", ["at_player_forward", 12], 3]],
     ["tiere", ["spawn_creature", ["near_player", 10], 3, "happy"]],
     ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
+    // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"])
+    ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"], { everySec: 3 }]],
+    // eine Stimmung der Wesen ist eine Tat, kein Schaden (ki.K5: mit dem Programm zuerst verweigerte die KI „traurig")
+    ["schwermut", ["creatures_emotion", "sad"]],
     ["name", null],
     ["eis", null],
     ["wald", null],

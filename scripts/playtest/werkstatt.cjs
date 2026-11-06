@@ -845,7 +845,6 @@ async function checkBandCadWorkshop({ page, check }) {
 async function checkBandEarlyRingsAndUi({ page, check }) {
     // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, async () => {
-        if (!r || !st || !st.player) return null;
         const out = {};
 
         // Reset: für deterministische Tests alle Werte + die Takte der Gesetze des Gemüts löschen.
@@ -956,7 +955,6 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
 
     // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.player) return null;
         const out = {};
         const p = st.player;
 
@@ -1077,7 +1075,6 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
 
     // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
-        if (!r || !st || !st.symphony) return null;
         const out = {};
 
         // (a) initSymphony erfolgreich — EIN Master (UMWELT.masterBasis × Regler), die Klang-Welt auf ihrem Bus
