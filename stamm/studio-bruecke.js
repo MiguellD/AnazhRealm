@@ -303,10 +303,12 @@ class AnazhRealm_studio_bruecke {
         const bps = this.state.blueprints || {};
         const arten = new Set();
         const gurt = [];
+        // der billige Filter zuerst (Lehre 25): die Art liest das Rezept, die Platzierbarkeit die Rolle des Bauplans (seine
+        // Analyse) — nur ein Name, dessen Art noch frei ist, fragt sie (w16-lade-atem: headless kalt 61 ms im Buch-Ingest)
         for (const name of Object.keys(bps)) {
-            if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
             const art = this._gurtArt(name);
             if (!art || arten.has(art)) continue;
+            if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
             arten.add(art);
             gurt.push(name);
         }
