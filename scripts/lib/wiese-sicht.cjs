@@ -39,55 +39,36 @@ function installWieseSicht() {
         }
         return o;
     };
-    // DER SCHRITT ZUR WIESE (`await __wieseZurWiese(r, takt)`): seit w14-wiese-saum liegt die Übergabe bei `radius` 10 m —
-    // am Start (der Platz) steht der nächste Büschel 10,8 m vom Auge, die Nähe legt dort nichts, die Ferne trägt (ihre
-    // Senken `:Lf:` haben kein Soll und keine Ring-Wahrheit). Eine Linse, die die Nähe misst, stellt ihre Voraussetzung
-    // HER: liegt der nächste Büschel des Rings nicht diesseits der feinen Stufe (`stufe1`), rückt der Spieler, bis das Auge
-    // `naehe` m vor ihm steht, und `takt(n)` legt den Ring neu (je Takt eine Kachel). Ein Ring ohne Büschel bleibt, wo er
-    // ist (dort ist leer richtig, das W-Urteil prüft es). Rückgabe: der Schritt in m (0 = kein Schritt) und der Abstand danach.
-    window.__wieseZurWiese = async (r, takt, naehe = 3) => {
-        const st = r.state;
-        const nw = st.nahWiese;
-        const NW = r.constructor.NAH_WIESE;
-        const naechst = () => {
-            const c = st.camera.position;
-            let b0 = null,
-                d0 = Infinity;
-            for (const k of nw.kacheln.values())
-                for (const b of k.bueschel) {
-                    const d = Math.hypot(b.x - c.x, b.z - c.z);
-                    if (d > 2 && d < d0) [b0, d0] = [b, d];
-                }
-            return { b: b0, d: d0, c };
-        };
-        if (!nw || !st.camera || !st.playerMesh) return { schritt: 0, d: null };
-        const { b, d, c } = naechst();
-        if (!b || d <= NW.stufe1) return { schritt: 0, d: b ? Math.round(d * 10) / 10 : null };
-        const k = (d - naehe) / d;
-        const [dx, dz] = [(b.x - c.x) * k, (b.z - c.z) * k];
-        const pm = st.playerMesh.position;
-        const [x, z] = [pm.x + dx, pm.z + dz];
-        const y = r._voxelSurfaceY(x, z);
-        pm.set(x, (Number.isFinite(y) ? y : pm.y) + 1.8, z);
-        await takt(160);
-        const n = naechst();
-        return { schritt: Math.round(Math.hypot(dx, dz) * 10) / 10, d: n.b ? Math.round(n.d * 10) / 10 : null };
+    // der nächste Büschel des Rings jenseits 2 m von p — das Ziel der Linsen-Kamera und des Schritts zur Wiese
+    const naechst = (nw, p) => {
+        let z = [null, Infinity];
+        for (const k of nw.kacheln.values())
+            for (const b of k.bueschel) {
+                const d = Math.hypot(b.x - p.x, b.z - p.z);
+                if (d > 2 && d < z[1]) z = [b, d];
+            }
+        return z;
+    };
+    // DER SCHRITT ZUR WIESE (`await __wieseZurWiese(r)`): seit w14-wiese-saum liegt die Übergabe bei `radius` 10 m — am
+    // Start (der Platz) steht der nächste Büschel 10,8 m vom Auge, die Nähe legt dort nichts, die Ferne trägt (ihre Senken
+    // `:Lf:` haben kein Soll und keine Ring-Wahrheit). Eine Linse, die die Nähe misst, stellt ihre Voraussetzung HER: liegt
+    // der nächste Büschel jenseits der feinen Stufe (`stufe1`), tritt der Spieler auf ihn (den Rand der Wiese), und die
+    // Streu-Pumpe legt den Ring neu (je Takt eine Kachel). Ein Ring ohne Büschel bleibt (dort ist leer richtig, das W-Urteil
+    // prüft es). Rückgabe: der Schritt in m.
+    window.__wieseZurWiese = async (r) => {
+        const { nahWiese: nw, camera: c, playerMesh: pm } = r.state;
+        const [b, d] = naechst(nw, c.position);
+        if (!b || d <= r.constructor.NAH_WIESE.stufe1) return 0;
+        pm.position.set(b.x, b.y + 1.8, b.z);
+        await __streuTakte(160, 6);
+        return Math.round(d);
     };
     window.__wieseSicht = (r, himmel) => {
         const st = r.state;
         const nw = st.nahWiese;
         if (!nw || !st.camera) return window.__wieseZaehle(r, null);
         const auge = st.camera.position;
-        let ziel = null;
-        let dBest = Infinity;
-        for (const k of nw.kacheln.values())
-            for (const b of k.bueschel) {
-                const d = Math.hypot(b.x - auge.x, b.z - auge.z);
-                if (d > 2 && d < dBest) {
-                    dBest = d;
-                    ziel = b;
-                }
-            }
+        const [ziel, dBest] = naechst(nw, auge);
         // Ein Ring ohne Büschel (Waldboden, Fels, Wasser — kein Wiesen-Grün) legt den Satz trotzdem: Blick schräg
         // abwärts am Auge, jede Senke muss danach leer stehen.
         const kam = new window.THREE.PerspectiveCamera(90, 16 / 9, 0.1, 200);

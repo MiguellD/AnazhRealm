@@ -57,43 +57,23 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (doSelftest) => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        for (const weiter = __deckel("der Ring der Inventur", 9000); weiter();) {
-            const r0 = r;
-            if (r0 && typeof r0._gameLoopTick === "function") {
-                try {
-                    r0._gameLoopTick(performance.now());
-                } catch {}
-                const sz = r0.state.voxelChunks ? r0.state.voxelChunks.size : 0;
-                if (sz >= 25) break;
-            }
-            await sleep(6);
-        }
-        const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
-        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        await __weltDa();
+        await __gebautNach("der Ring der Inventur", { fertig: () => st.voxelChunks?.size >= 25, takt: () => __streuTakte(1, 6), max: 9000 }); // prettier-ignore
+        const o = { foundryEnabled: !!r._foundryEnabled?.() };
+        const f = r._ensureAssetFoundry();
         await __weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
         await __streuTakte(350, 8);
         // ── Die Nähe der Wiese misst nur, wo sie legt: am Start (der Platz) steht der nächste Büschel jenseits der Übergabe —
         // die Linse rückt das Auge an die Wiese (scripts/lib/wiese-sicht.cjs), VOR dem Ausklingen der Inventur.
-        o.wieseSchritt = await window.__wieseZurWiese(r, (n) => __streuTakte(n, 6));
+        await window.__wieseZurWiese(r);
         try {
             r._drainPendingWaterIso && r._drainPendingWaterIso();
             r._drainPendingGrass && r._drainPendingGrass();
         } catch {}
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
-        if (f) {
-            await __gebautNach("noch: f.pending && f.pending.size > 0", {
-                fertig: () => !!!(f.pending && f.pending.size > 0),
-                takt: async () => {
-                    try {
-                        r._gameLoopTick && r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(50);
-                },
-                max: 400,
-            });
-        }
+        if (f) await __gebautNach("noch: f.pending", { fertig: () => !f.pending?.size, takt: () => __streuTakte(1, 50), max: 400 });
 
         // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer
         // zeichnet nie, ihre Senken stünden leer und würden als „leerer Pool" übersprungen. Die Linse legt den Satz
@@ -515,7 +495,6 @@ hauptLauf(async () => {
                 o.selftestWiese.blind = wieseUrteil(Object.assign({}, echt, { je: nullJe }), census()).filter((x) =>
                     /leer bewiesen/.test(x)
                 );
-                window.__wieseSicht(r);
             }
         }
         return o;
@@ -553,7 +532,7 @@ hauptLauf(async () => {
 
     const w = out.wiese || { je: {} };
     console.log(
-        `  ── NAH-WIESE (Sicht-Satz von der Linse gelegt, Schritt zur Wiese ${out.wieseSchritt ? out.wieseSchritt.schritt + " m, nächster Büschel " + out.wieseSchritt.d + " m" : "—"}): ${w.senken} Senken · ${w.bueschel} Büschel im Ring · gelegt ${Object.values(w.je).join("/")} · als Studio-Emitter gezählt ${out.wieseZensus}`
+        `  ── NAH-WIESE (Sicht-Satz von der Linse gelegt): ${w.senken} Senken · ${w.bueschel} Büschel im Ring · gelegt ${Object.values(w.je).join("/")} · als Studio-Emitter gezählt ${out.wieseZensus}`
     );
     for (const x of out.wieseFehl || []) console.log(`     ❌ ${x}`);
 
