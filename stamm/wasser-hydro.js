@@ -85,10 +85,17 @@ class AnazhRealm_wasser_hydro {
         const S = this._regenStempel();
         const t = Math.floor(st.spielZeit || 0);
         const mittel = this._regenMittel();
+        const Z = st.pegelZustand || null;
         const c = this._pegelStand;
         const gleich =
-            c && c.t === t && c.S === S && c.n === S.length && c.letzt === S[S.length - 1] && c.mittel === mittel;
-        const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, AnazhRealm.PEGEL_TAG_S, mittel);
+            c &&
+            c.t === t &&
+            c.S === S &&
+            c.n === S.length &&
+            c.letzt === S[S.length - 1] &&
+            c.mittel === mittel &&
+            c.Z === Z;
+        const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, AnazhRealm.PEGEL_TAG_S, mittel, Z);
         const q = lauf ? lauf.q.join() : "";
         const schmelze =
             c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel
@@ -105,6 +112,7 @@ class AnazhRealm_wasser_hydro {
             n: S.length,
             letzt: S[S.length - 1],
             mittel,
+            Z,
             lauf,
             q,
             tafel,
@@ -116,7 +124,7 @@ class AnazhRealm_wasser_hydro {
         return this._pegelTafelGilt;
     }
 
-    // DIE STEMPEL DES REGENS (wetter.K3, `state.regenStempel`, reist im Stand): die Knoten [t0, r0, t1, r1, …] des Wetter-Felds
+    // DIE STEMPEL DES REGENS (wetter.K3, `state.regenStempel`, leben in der Sitzung): die Knoten [t0, r0, t1, r1, …] des Wetter-Felds
     // der Welt (`_weatherFieldFor().rain` über den Übergang des Worts — wer es schrieb, der Zug, das Wort des Spielers, der
     // Wunsch der Welt, schrieb, was hier fällt) auf der Welt-Uhr (`spielZeit`, nie die Wanduhr), gesetzt im Takt des Pegels: wo
     // der Regen sich gegen den letzten Knoten ändert, stand er bis zur letzten Probe (`_regenSah`) — dann eine Stufe oder, über
@@ -145,6 +153,19 @@ class AnazhRealm_wasser_hydro {
         const ab = t - globalThis.__gelaendeCore.LAUF.fenster * AnazhRealm.PEGEL_TAG_S;
         while (S.length > 4 && S[2] <= ab) S.splice(0, 2);
         return S;
+    }
+
+    // DER ZUSTAND DES PEGELS ZUR WELT-UHR (speicher.K3, gelaende-core `pegelZustand`, reist im Stand als `pegelZustand`): die Stempel
+    // der Sitzung und der geladene Zustand (`state.pegelZustand`), gefaltet in den Grund und die zwei Speicher je Lag-Klasse —
+    // 50 Zahlen, wie lange es auch regnete. Nach dem Reload läuft der Pegel aus ihm weiter (der Bach fällt, wie er fiel, die Dürre
+    // hält), die Stempel beginnen an ihm neu. Bis w13-pegel-nach reisten die Stempel selbst: der Stand wuchs mit der Spielzeit
+    // (5 km in 30 min, gate:persistence (D): regenStempel Δ 834 B roh, die Platte 9,7 → 11,0 kB).
+    _pegelZustand() {
+        const st = this.state;
+        const S = st.regenStempel;
+        if (!(Array.isArray(S) && S.length >= 2) && !st.pegelZustand) return null;
+        const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
+        return globalThis.__gelaendeCore.pegelZustand(S, t, AnazhRealm.PEGEL_TAG_S, this._regenMittel(), st.pegelZustand);
     }
 
     // DAS MITTEL DES KLIMAS (wetter.K3, der Grund des Pegels): der Regen der Front (`_wetterAmOrt`, das Wort der Welt über ihre
