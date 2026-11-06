@@ -300,9 +300,9 @@ async function seilProbe(r, T, o, G) {
             inv.copy(h.matrixWorld).invert();
             return teile.map((m) => new T.Box3().setFromObject(m).getCenter(new T.Vector3()).applyMatrix4(inv));
         };
-        s.keys.w = true;
+        s.verbTafel.gehalten.vor = true;
         takt(90);
-        s.keys.w = false;
+        s.verbTafel.gehalten.vor = false;
         const L0 = lage();
         const sg = gesetz(name);
         const anker = sg && Array.isArray(sg.anker) && sg.anker.length === 3 ? new T.Vector3().fromArray(sg.anker) : null;
@@ -392,7 +392,7 @@ async function stossProbe(r, T, o, G) {
             s.yaw = 0;
             const quer = new T.Vector3(Math.cos(s.yaw), 0, -Math.sin(s.yaw));
             const m = r._leibMasse(pm);
-            s.keys.w = true;
+            s.verbTafel.gehalten.vor = true;
             takt(90);
             const bahn = [];
             const w = new T.Vector3();
@@ -406,7 +406,7 @@ async function stossProbe(r, T, o, G) {
                 pm.updateMatrixWorld(true);
                 bahn.push([pm.position.dot(quer), pm.position.y, ...knoechel.map((n) => n.getWorldPosition(w).dot(quer))]);
             }
-            s.keys.w = false;
+            s.verbTafel.gehalten.vor = false;
             return { m, bahn, tot: !!(s.player && s.player.dead) };
         } finally {
             r._leibMasse = masse0;
@@ -763,9 +763,9 @@ async function alterSpurProbe(r, T, o, G) {
     const pm = s.playerMesh;
     const p0 = pm.position.clone();
     s.yaw = 0;
-    s.keys.w = true;
+    s.verbTafel.gehalten.vor = true;
     takt(60);
-    s.keys.w = false;
+    s.verbTafel.gehalten.vor = false;
     const dw = [pm.position.x - p0.x, pm.position.z - p0.z];
     const lw = Math.hypot(dw[0], dw[1]);
     if (!(lw > 0.5)) return { fehler: "w trägt den Spieler nicht (" + r3(lw) + " m in 1 s)", tag, vor, zwei, mitte, nach, plan };
@@ -781,9 +781,9 @@ async function alterSpurProbe(r, T, o, G) {
         s.playerVel.setValue(0, 0, 0);
         s.yaw = 0;
         takt(2);
-        s.keys.w = true;
+        s.verbTafel.gehalten.vor = true;
         for (let i = 0; i < 1200 && Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) < 8; i++) takt();
-        s.keys.w = false;
+        s.verbTafel.gehalten.vor = false;
         if (Math.hypot(pm.position.x - a[0], pm.position.z - a[1]) >= 7.9) gaenge++;
     }
     s.playerVel.setValue(0, 0, 0);

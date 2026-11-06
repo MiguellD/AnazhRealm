@@ -1,0 +1,43 @@
+{
+ "laeufe": [
+  {
+   "mutante": null,
+   "minuten": 30,
+   "zeilen": 55,
+   "falschN": 0,
+   "falsch": [],
+   "abstand": 30,
+   "offen": -6.9,
+   "ohneTat": [],
+   "begleiter": 1,
+   "klassen": {
+    "nexus": 80,
+    "rule:nexus": 399,
+    "llm": 3,
+    "rule:llm": 11,
+    "wunsch": 21,
+    "human": 2,
+    "fern": 103
+   },
+   "beispiele": [
+    "[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)",
+    "[450 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "[810 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 28 weitere Taten seit der letzten Zeile)",
+    "[1170.8 s] Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.33. (Gesetz Nr. 23 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)",
+    "[1596.4 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 30 des Nexus; dazu 2 weitere Taten seit der letzten Zeile)"
+   ],
+   "verworfen": {
+    "weather@kappe rule": 26,
+    "weather rule": 26,
+    "weather nexus": 1,
+    "spawn_village nexus Unbekannter Ort „spawn_creature“": 1,
+    "weather@kappe nexus": 15,
+    "spawn_creature@kappe nexus": 6,
+    "deposit_life@kappe rule Unbekannter Ort „creatures_color“": 22,
+    "spawn_creature@kappe nexus Unbekannter Ort „spawn_waterfall“": 1,
+    "spawn_creature@kappe nexus Unbekannter Ort „spawn_creature“": 1
+   },
+   "rot": []
+  }
+ ]
+}
