@@ -2374,12 +2374,9 @@ async function starte() {
                     // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
                     // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`. Alle Uhren einer Zeile in IHREM Gang (w13-gtx-proben): die
                     // gestellte Stufe trägt jede Uhr — bis dahin je Uhr ein Gang, 21 statt 11, an der GTX die Tafel über ihrer Frist
-                    // DER MITTAG ALLEIN (`mittag`, die Probe material.K1 der Punkte-Maschine, w13-gtx-proben): nur die Zeilen der Tafel selbst
-                    // (ihre Folge-Stufen nie) — K1 liest nichts sonst, die Probe läuft neben dem Labor; die Folge-Stufen misst die Probe material.K3
-                    const alle = t.zeilen.filter((z) => !(b.mittag && z.welt.exemplar.stufe)),
-                        nahZ = alle.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
+                    const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
                         liste = [];
-                    for (const zeilen of [alle.filter((z) => !nahZ.includes(z)), ...nahZ.map((z) => [z])])
+                    for (const zeilen of [t.zeilen.filter((z) => !nahZ.includes(z)), ...nahZ.map((z) => [z])])
                         liste.push(...(await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhren: zeilen.length > 1 ? [0.5] : t.uhren, eichen: zeilen.length > 1 })));
                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
