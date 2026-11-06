@@ -1946,8 +1946,9 @@ class AnazhRealm_studio_bruecke {
     // Art-Gesetz (`KIND_POLICY`) und die Studios (`WORLD_REGISTRY`) —, nie über eine Hand-Liste (die Brücke STUDIO_WORT
     // kannte neun Wörter, „bau mir ein fachwerkhaus" war unbekannt). Gefragt werden das Wort, seine Stämme (-en/-n/-e/-s/-er,
     // der Plural-Umlaut: Häuser → Haus) und als Kompositum der Anfang eines Werk-Namens („fels" → Felsformation, ≥ 4
-    // Buchstaben, das erste in Katalog-Reihenfolge). null = unbekannt (kein Raten).
-    _studioBlueprintForWord(word) {
+    // Buchstaben, das erste in Katalog-Reihenfolge). null = unbekannt (kein Raten). `genau`: ohne den Kompositum-Anfang — der
+    // Abruf der Welt-KI (`_kiAbruf`) liest jedes Wort eines Satzes, dort hieße „große" sonst Großschwert, „langen" Langschwert.
+    _studioBlueprintForWord(word, genau = false) {
         if (typeof word !== "string" || !word.trim()) return null;
         const K = this._studioWortKatalog();
         const w = AnazhRealm._wortFalten(word);
@@ -1959,7 +1960,7 @@ class AnazhRealm_studio_bruecke {
             if (ohne !== k) kandidaten.push(ohne);
         }
         for (const stufe of K.stufen) for (const t of kandidaten) if (stufe.has(t)) return stufe.get(t);
-        for (const t of kandidaten) {
+        for (const t of genau ? [] : kandidaten) {
             if (t.length < 4) continue;
             for (const s of [1, 3])
                 for (const [name, ziel] of K.stufen[s]) if (name.length > t.length && name.startsWith(t)) return ziel;
@@ -1993,11 +1994,13 @@ class AnazhRealm_studio_bruecke {
         const namen = Object.keys(bps).sort();
         const KP = AnazhRealm.KIND_POLICY;
         const falte = AnazhRealm._wortFalten;
+        // die Wörter eines Etiketts sind seine Nomen und Namen (groß geschrieben): „Dojo mit Pergola" gab der Welt das Wort
+        // „mit" (ki.K5: jeder Satz mit „mit" nannte die Arena)
         const kopf = (label) =>
             String(label || "")
                 .split(/\s[·—(]|\s-\s/)[0]
                 .split(/[^A-Za-zÄÖÜäöüß]+/)
-                .filter((x) => x.length >= 3)
+                .filter((x) => x.length >= 3 && x[0] !== x[0].toLowerCase())
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
         // die Wörter der DSL sprechen die Quell-Sprache des Gesetzes (de), nie die Sprache des Spielers
@@ -2083,27 +2086,103 @@ class AnazhRealm_studio_bruecke {
     }
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
-    // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
-    // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
-    // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
+    // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst die
+    // Wörter des Programms („fachwerkhaus", „eiche"). DIE KOMPAKTE FORM (ki.K5, 06.11.): der Vertrag trägt je Gruppe vier Wörter
+    // und keinen Regler — die Regler, die ein Satz nennt, ruft `_kiAbruf` je Satz ab. Bis ki.K5 trug diese Zeile jede Regler-
+    // Zeile jeder Art (2 812 von 5 532 Token des Vertrags, `"id" min–max Name` Ziffer um Ziffer): qwen3:4b an 4 CPU-Kernen
+    // rechnete je Token der Antwort 305 statt ~200 ms und kopierte die Zeilen als Rauschen in jedes Werk.
     _studioWordsForPrompt(nennen = false) {
-        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
         const gruppen = {};
         for (const [art, ps] of Object.entries(paare))
             gruppen[art] = [...new Set(ps.map(([w, nennung]) => (nennen ? nennung : w)))];
-        const kappe = nennen ? 5 : 8;
-        const regler = (a) =>
-            !nennen && Array.isArray(PBK[a]) && PBK[a].length
-                ? ` (Regler: ${PBK[a].map((d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`).join(", ")})`
-                : "";
+        const kappe = nennen ? 5 : 4;
         return Object.keys(GRUPPE)
             .filter((a) => gruppen[a] && gruppen[a].length)
             .map(
-                (a) =>
-                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
+                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
             )
             .join(" · ");
+    }
+
+    // EINE Regler-Zeile der Welt-KI: `id Name` und der Bereich, wenn er nicht 0–1 ist (der Vertrag nennt 0–1 als Regel).
+    // Leser: der Abruf je Satz (`_kiAbruf`) und seine Linse (diag-praegung-welt K2 „prompt").
+    _kiReglerZeile(d) {
+        return `${d.id} ${d.lab}${d.min === 0 && d.max === 1 ? "" : ` ${d.min}–${d.max}`}`;
+    }
+
+    // DER ABRUF JE SATZ (ki.K5, 06.11.; Tool-Retrieval über die EINE Regler-Tafel PARAMS_BY_KIND): die Regler, die der Satz beim
+    // NAMEN nennt — sein Name (`lab`, gefaltet wie jedes Wort der Welt: `_wortFalten`, Stämme -en/-e/-s/-er/-es/-em, Umlaut; ein
+    // Teil genügt: „dach" → Dachneigung, „blüten" → Blüten-Zahl) oder genau seine id („turm"). Gesucht wird in den Arten, die der
+    // Satz nennt (ein Wort des Katalogs, genau — `_studioBlueprintForWord(w, true)` —, oder der Kopf einer Gruppe: „musik");
+    // nennt er keine, in den Arten ohne Ort (KIND_POLICY `werk` "praegung"), dann mit Stamm ≥ 5 („mach mich größer" → die
+    // Gestalt des Spielers; in allen Arten hätte „höher springen" die Federrate des Wagens gerufen). Leser: der Kontext der Welt-KI
+    // (`zeile`, hinter dem Prompt-Cache: nur die genannten Zeilen kosten Prefill) und ihre Antwort-Form (`regler`: ein
+    // Regler-Objekt trägt GENAU diese Schlüssel, ohne Treffer gibt es keines — „bau mir ein haus" kann keinen Regler mehr
+    // schreiben). { regler: {art: [Zeile …]}, zeile }.
+    _kiAbruf(satz) {
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
+        const K = this._studioWortKatalog();
+        const { GRUPPE } = this._studioWortGruppen();
+        const ohneUmlaut = (w) => w.replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
+        const woerter = (t) =>
+            AnazhRealm._wortFalten(t)
+                .split(/[^a-z]+/)
+                .filter((w) => w.length >= 3);
+        const stamm = (w) => [
+            w,
+            ...["en", "es", "em", "er", "e", "n", "s"].filter((s) => w.endsWith(s)).map((s) => w.slice(0, -s.length)),
+        ];
+        const artVon = (w) => {
+            const z = this._studioBlueprintForWord(w, true);
+            return z ? K.artVon[z] : null;
+        };
+        const kopf = {};
+        for (const [art, lab] of Object.entries(GRUPPE)) kopf[ohneUmlaut(woerter(lab)[0] || "")] = art;
+        const genannt = new Set();
+        const werkWort = new Set();
+        for (const w of woerter(satz)) {
+            const art =
+                artVon(w) ||
+                stamm(ohneUmlaut(w))
+                    .map((s) => kopf[s])
+                    .find(Boolean);
+            if (art && GRUPPE[art]) (genannt.add(art), werkWort.add(w));
+        }
+        const ohneArt = !genannt.size;
+        const eigen = woerter(satz)
+            .filter((w) => !werkWort.has(w))
+            .flatMap((w) => stamm(w).map(ohneUmlaut))
+            .filter((s) => s.length >= (ohneArt ? 5 : 4));
+        const genau = new Set(woerter(satz));
+        // ein Teil des Namens („dach" in Dachneigung) oder ein gemeinsamer Anfang ≥ 6 (das Partizip: „verwitterte" ↔ Verwitterung)
+        const anfang = (a, b) => {
+            let i = 0;
+            while (i < a.length && a[i] === b[i]) i++;
+            return i;
+        };
+        const regler = {};
+        const KP = AnazhRealm.KIND_POLICY || {};
+        const arten = ohneArt ? Object.keys(GRUPPE).filter((a) => KP[a] && KP[a].werk === "praegung") : genannt;
+        for (const art of arten)
+            for (const d of Array.isArray(PBK[art]) ? PBK[art] : []) {
+                const namen = String(d.lab)
+                    .split(/[^A-Za-zÄÖÜäöüß]+/)
+                    .filter(Boolean)
+                    .map((n) => AnazhRealm._wortFalten(n));
+                const trifft = [d.id, ...namen].some(
+                    (n) =>
+                        genau.has(AnazhRealm._wortFalten(n)) ||
+                        (n !== d.id &&
+                            n.length >= 4 &&
+                            eigen.some((s) => ohneUmlaut(n).includes(s) || anfang(s, ohneUmlaut(n)) >= 6))
+                );
+                if (trifft) (regler[art] = regler[art] || []).push(d);
+            }
+        const zeile = Object.entries(regler)
+            .map(([art, ds]) => `${GRUPPE[art]}: ${ds.map((d) => this._kiReglerZeile(d)).join("; ")}`)
+            .join(" · ");
+        return { regler, zeile: zeile && `Regler, die der Satz nennt: ${zeile}.` };
     }
 
     // Die lebenden Wörter je benannter Art aus dem EINEN Wort-Katalog: { GRUPPE: {art: Name}, gruppen: {art: [[wort, nennung], …]} }

@@ -375,16 +375,27 @@ hauptLauf(async () => {
                 raeume(neu, "lofi");
                 k.zu[nm] = !blieb && ab?.regler.includes(wer) && erg?.gruende?.regler === 1;
             }
-            // DER PROMPT liest DIESELBEN Zeilen (Mutation gewinnt): jede Zeile jeder sagbaren Art mit Bereich, eine eingespielte
-            // Zeile erscheint im Prompt und trägt am Stempel
-            const zeigt = (d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`;
+            // DER ABRUF JE SATZ liest DIESELBEN Zeilen (ki.K5, Mutation gewinnt): ein Satz, der eine Zeile beim Namen nennt („<wort>
+            // mit <Name>"), trägt sie im Kontext der Welt-KI (`_kiAbruf`, `_kiReglerZeile`) und ihre id in der Antwort-Form; eine
+            // eingespielte Zeile erscheint und trägt am Stempel. DIE FORM OHNE NAMEN: ein Satz ohne Eigenschaft („bau mir ein
+            // haus") trägt keine Zeile, seine Form kein Regler-Objekt (bis ki.K5 erlaubte sie jeder Art jede Zeile — Täter-Muster:
+            // qwen3:4b schrieb dem Haus fünf unverlangte Regler)
+            const gruppen = r._studioWortGruppen().gruppen;
+            const traegt = (art, d) => {
+                const wort = ((gruppen[art] || [])[0] || [])[0];
+                const a = wort ? r._kiAbruf(`${wort} mit ${d.lab}`) : { regler: {}, zeile: "" };
+                const form = JSON.stringify(r._kiAntwortSchema(a.regler));
+                return (a.regler[art] || []).includes(d) && a.zeile.includes(r._kiReglerZeile(d)) && form.includes(`"${d.id}":`);
+            };
             const sagbar = Object.keys(k.je).filter((art) => !k.ohneWort.some((n) => n.startsWith(art + ":")));
-            k.prompt = sagbar.filter((art) => !PBK[art].every((d) => r.llmBuildSystemPrompt().includes(zeigt(d))));
+            k.prompt = sagbar.flatMap((art) => PBK[art].filter((d) => !traegt(art, d)).map((d) => `${art}:${d.id}`));
+            const ohne = r._kiAbruf("bau mir ein haus");
+            k.ohneName = !ohne.zeile && !JSON.stringify(r._kiAntwortSchema(ohne.regler)).includes("minProperties");
             const probe = { id: "probeRegler", lab: "Probe", min: 0, max: 1, step: 0.1 };
             PBK.haus.push(probe);
             try {
                 const { e } = setze("haus", { probeRegler: 0.5 });
-                k.mutation = r.llmBuildSystemPrompt().includes(zeigt(probe)) && e?.studioOv.probeRegler === 0.5;
+                k.mutation = traegt("haus", probe) && e?.studioOv.probeRegler === 0.5;
                 if (e) r.removeArchitecture(e);
             } finally {
                 PBK.haus.pop();
@@ -658,7 +669,8 @@ hauptLauf(async () => {
         ["fremd", "text", "liste", "baum", "wesen", "praegung"].every((n) => K.zu[n]),
         K.zu
     );
-    check("PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
+    check("ABRUF: jede Zeile jeder sagbaren Art, beim Namen genannt, steht im Kontext und in der Form, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
+    check("FORM OHNE NAMEN: „bau mir ein haus“ trägt keine Regler-Zeile und kein Regler-Objekt", K.ohneName === true, K.ohneName);
     const kk = K.korpus || [];
     const kt = kk.filter(([, ok]) => !ok);
     check(`KORPUS-TEIL Regler-Wörter: ${kk.length} Sätze, jeder ein Programm-Ziel`, kk.length >= 20 && !kt.length, kt.join(" · "));

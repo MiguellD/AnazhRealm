@@ -977,7 +977,11 @@ class AnazhRealm_feld_nexus {
     // spawn_studio mit <regler> trägt nur die Zeilen der Art seines Worts, jeder Wert eine Zahl. ollama (llama.cpp) liest ein
     // Tupel nur als `prefixItems` fester Länge (`items: false` bricht die Anfrage, `items` neben `prefixItems` verdrängt es) —
     // darum je Länge eine Form; kein anderes Array darf mit "spawn_studio" beginnen.
-    _kiAntwortSchema() {
+    // DER REGLER NUR, WENN DER SATZ IHN NENNT (ki.K5, 06.11.): `regler` ist der Abruf des Satzes (`_kiAbruf`, {art: [Zeile …]}) —
+    // ein spawn_studio mit <regler> steht nur für dessen Arten, das Objekt trägt GENAU die genannten Schlüssel (mindestens einen).
+    // Ohne Abruf erlaubt die Form kein Regler-Objekt. Bis ki.K5 erlaubte sie jeder Art jede Zeile: qwen3:4b schrieb „bau mir ein
+    // haus" fünf unverlangte Regler (81 statt 19 Token, je Token ~250 ms) — der Vertrag allein hielt es in keiner Fassung.
+    _kiAntwortSchema(regler = {}) {
         const W = { $ref: "#/$defs/wert" };
         const zahl = { type: "number" };
         const tupel = (glieder) => ({
@@ -989,7 +993,6 @@ class AnazhRealm_feld_nexus {
         const kopfMitRest = (namen, bis) =>
             Array.from({ length: bis + 1 }, (_, n) => tupel([{ enum: namen }, ...Array(n).fill(W)]));
         const { ziele } = this._studioWortGruppen();
-        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
         const ss = { const: "spawn_studio" };
         const alle = Object.values(ziele).flat();
         const spawn = !alle.length
@@ -998,20 +1001,23 @@ class AnazhRealm_feld_nexus {
                   ...[2, 3, 4, 5].map((n) =>
                       tupel([ss, { $ref: "#/$defs/wort" }, W, zahl, { anyOf: [zahl, { type: "null" }] }].slice(0, n))
                   ),
-                  ...Object.entries(ziele).map(([art, ws]) =>
-                      tupel([
-                          ss,
-                          { enum: ws },
-                          W,
-                          zahl,
-                          { anyOf: [zahl, { type: "null" }] },
-                          {
-                              type: "object",
-                              properties: Object.fromEntries((PBK[art] || []).map((d) => [d.id, zahl])),
-                              additionalProperties: false,
-                          },
-                      ])
-                  ),
+                  ...Object.entries(regler)
+                      .filter(([art, ds]) => ziele[art] && ds.length)
+                      .map(([art, ds]) =>
+                          tupel([
+                              ss,
+                              { enum: ziele[art] },
+                              W,
+                              zahl,
+                              { anyOf: [zahl, { type: "null" }] },
+                              {
+                                  type: "object",
+                                  properties: Object.fromEntries(ds.map((d) => [d.id, zahl])),
+                                  minProperties: 1,
+                                  additionalProperties: false,
+                              },
+                          ])
+                      ),
               ];
         const verben = Object.keys(this.dslEffects).filter((n) => n !== "spawn_studio");
         const orte = [...Object.keys(this.dslPositions), ...Object.keys(this.dslConditions)];
@@ -1055,10 +1061,9 @@ class AnazhRealm_feld_nexus {
         const ops = Object.entries(this.dslEffects);
         const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
         return [
-            'Die DSL kennt GENAU diese Verben, je mit Form: name(a, b) heißt ["name", a, b]; „…" heißt beliebig viele',
-            'Unterprogramme (bei random_weighted je {"weight":w,"effect":Programm}). Ein positionNode/posNode ist ein Ort,',
-            "condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.",
-            "Welt-Akte verändern die Welt, ihre Wesen oder den Spieler.",
+            'Die DSL kennt GENAU diese Verben: name(a, b) heißt ["name", a, b], „…" beliebig viele Programme (random_weighted je',
+            '{"weight":w,"effect":Programm}); positionNode/posNode ist ein Ort, condition/condNode eine Bedingung, sub/program/',
+            "effectNode/thenBranch/elseBranch ein Programm. Welt-Akte verändern die Welt, ihre Wesen oder den Spieler.",
             `  Welt-Akte: ${liste(welt)}.`,
             `  Weitere Ops: ${liste(ops.filter((o) => !welt.includes(o)))}.`,
             `  Orte: ${liste(Object.entries(this.dslPositions))}.`,
@@ -1127,27 +1132,13 @@ class AnazhRealm_feld_nexus {
                 })
             ),
             ...this._dslVokabular(),
-            "",
-            "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
-            '  ["spawn_studio", <wort>, <position>, <anzahl>, <same>, <regler>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1,null,{"storeys":3,"pitchDeg":50}] (ein dreigeschossiges Haus mit steilem Dach).',
-            `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
-            "  <wort> ist genau EIN Wort dieser Liste, nie der Name seiner Gruppe; eine Art der Liste wächst nur über spawn_studio.",
-            "  Position: jeder der Orte oben. Anzahl 1–24. <same> eine Zahl oder null.",
-            "  <regler> (optional) ein Objekt {Regler: Zahl}: jeder Name GENAU aus den Klammern der Gruppe des Worts, jeder Wert eine Zahl —",
-            "  ein erfundener Name oder ein Wort statt einer Zahl lässt die GANZE Tat ausfallen, lass weg, was nicht in den Klammern steht.",
-            "  So prägt ein Satz das Werk (knorrig, schmal und hoch, alt): jede genannte Eigenschaft bekommt ihren Regler, ein starkes Wort",
-            "  (sehr, riesig, viel, schnell) setzt ihn nahe an den Rand seines Bereichs; der Kern klemmt jede Zahl auf ihren Bereich.",
-            "  Ein Wesen mit Eigenschaften (groß, klein, schlank) wächst über spawn_studio mit dem Wort seiner Gattung, nie über spawn_creature.",
-            '  Musik der Welt und Gestalt des Spielers stehen an keinem Ort: ihr Wort prägt die Welt (Ort und Anzahl zählen nicht), z.B. ["spawn_studio","lofi",["at_player"],1,null,{"bpm":70}] (ruhige Musik) oder ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer) — jede Gestalt des Spielers (größer, kräftiger, schlanker) über spawn_studio mit mensch.',
-            "",
-            "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
-            '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
-            'Bedingungen LESEN die Welt: ["weather_is","rainy"], ["emotion_above","joy",0.5], ["field_below","lebendig",0.3] (wenig Leben am Ort), ["field_above","glut",0.5].',
-            'Effekte SCHREIBEN die reaktive Welt — u.a. ["deposit_life",["at_field_need"]] (trägt Leben dorthin, wo es fehlt), ["deposit_emotion","hope",0.5], ["weather","sunny"], ["creatures_emotion","happy"].',
-            'Beispiel-Gesetz: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]],{"everySec":3}] — heilt karge Regionen von selbst.',
-            "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
-            "Halte Programme klein (Tiefe ≤ 4).",
-            "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
+            // DIE STUDIOS KNAPP (ki.K5, 06.11.): je Gruppe vier Wörter (`_studioWordsForPrompt`); die Regler, die ein Satz nennt,
+            // stehen in SEINEM Kontext (`_kiAbruf`) — der feste Vertrag fiel von 5 532 auf ~2 000 Token
+            '["spawn_studio", <wort>, <ort>, <anzahl>, <same>, <regler>] lässt die Baupläne der Werkstatt wachsen: <wort> genau EIN Wort der Welt, nie seine Gruppe; Anzahl 1–24; <same> Zahl oder null.',
+            `  Wörter der Welt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
+            '<regler> nur aus „Regler, die der Satz nennt“ im Kontext: {Regler: Zahl}, Bereich 0–1, wo keiner steht, ein starkes Wort nahe am Rand. Ein Wesen mit Eigenschaften wächst über das Wort seiner Gattung; die Gestalt des Spielers und die Musik prägen ohne Ort: ["spawn_studio","mensch",["at_player"],1,null,{"height":1.1}] (mach mich größer).',
+            'Ein GESETZ (rule) nur für eine DAUERHAFTE Reaktion; es berührt nur Wetter, Leben, Stimmung (emotion_above, deposit_emotion "joy"/"hope"), Kreaturen, nie Gelände oder Bau: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]]] heilt karge Orte.',
+            "Halte Programme klein (Tiefe ≤ 4). Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences.",
             "",
             AnazhRealm._datum`Du heißt ${m.slug || "namenlos"}. Deine worldId ist ${m.worldId || "?"}.` +
                 ` Du existierst seit ${ageDays} Tag${ageDays === 1 ? "" : "en"}.`,
@@ -2102,8 +2093,9 @@ AnazhRealm.KI_BEISPIELE = Object.freeze([
     ["eichen", ["spawn_studio", "eiche", ["at_player_forward", 12], 3]],
     ["tiere", ["spawn_creature", ["near_player", 10], 3, "happy"]],
     ["sonne", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]],
-    // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"])
-    ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"], { everySec: 3 }]],
+    // „immer wenn …" ist ein stehendes Gesetz (ki.K5: die KI schrieb dafür eine einmalige Geste, ["weather","sunny"]); ohne
+    // {everySec} (die Welt nimmt `WORLD_RULES.defaultEverySec`): das Gesetz war mit 25 Token das längste Programm des Korpus
+    ["gesetz", ["rule", ["emotion_above", "sorrow", 0.5], ["weather", "sunny"]]],
     // eine Stimmung der Wesen ist eine Tat, kein Schaden (ki.K5: mit dem Programm zuerst verweigerte die KI „traurig")
     ["schwermut", ["creatures_emotion", "sad"]],
     ["name", null],
