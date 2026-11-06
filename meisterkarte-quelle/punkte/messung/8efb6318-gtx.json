@@ -1,7 +1,7 @@
 {
  "sha": "8efb6318181690d3eb5b1742d886c2ea15716920",
  "geraet": "gtx",
- "zeit": "2026-11-06T14:35:05.871Z",
+ "zeit": "2026-11-06T14:59:15.684Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -60,83 +60,52 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-06T14:30:37.572Z",
+  "start": "2026-11-06T14:57:03.002Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.9,
+  "warten": 0.02,
+  "bootS": 6.8,
   "grundstellungS": [
-   4.2,
-   3.5,
-   3.5
+   3
   ],
-  "proben": 4,
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 26,
-    "takte": 771,
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 21.1,
+    "takte": 765,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 19,
-    "takte": 734,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 18.1,
-    "takte": 723,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 20.8,
-    "takte": 715,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 15.9,
+    "takte": 859,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 5,
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 4,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 1215,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 295,
+   "ortImDeckel": [],
+   "zapfen": 208,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 312.7,
-  "minuten": 5.3
+  "fahrtS": 211.9,
+  "minuten": 3.61
  },
  "ungemessen": {
   "licht.K3#2": {
@@ -281,6 +250,52 @@
    "s": 45.2,
    "zeit": "2026-11-06T14:35:05.871Z",
    "abdruck": "a303317755ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 591 ms garage, je Studio null Griffe) · Neuladen 4/8 · A/B 4/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 591 ms garage, je Studio null Griffe) · Neuladen 4/8 · A/B 4/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.4,
+   "zeit": "2026-11-06T14:57:32.192Z",
+   "abdruck": "b170768bb8c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.136 ms), ohne garage L0 GPU 0.0236 ms↔Bank 5.6621 (+1), schmiede L0 GPU 0.0031 ms↔Bank 0.2904, portale L0 Bank 1.9704) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.136 ms), ohne garage L0 GPU 0.0236 ms↔Bank 5.6621 (+1), schmiede L0 GPU 0.0031 ms↔Bank 0.2904, portale L0 Bank 1.9704) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.4,
+   "zeit": "2026-11-06T14:57:32.192Z",
+   "abdruck": "3f9bc64ecac8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · schöpfer · Eiche · ) · Täter: [bild] werkstatt · schöpfer · Eiche · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · schöpfer · Eiche · ) · Täter: [bild] werkstatt · schöpfer · Eiche · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 80.2,
+   "zeit": "2026-11-06T14:59:15.684Z",
+   "abdruck": "b62204fdd902",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
