@@ -892,13 +892,15 @@ class AnazhRealm_werkstatt_bauen {
     // `removeArchitecture` und der neue Bestand des Ladens `_loadStateRestoreArchitectures`): was einen Takt außerhalb von
     // `state.architectures` trägt, hält den Eintrag selbst — ein Wagen im Nachlauf (`_fahrNachlauf`), ein fahrender Bau
     // (`_archFahrt`), ein freier Körper im Löser (`_freiSchritt`), ein Werk im Takt des Gesetzes (Sturz, Bruch, Rollen, Schale,
-    // Gerät). Befund z264: das Laden tauschte den Bestand, die Takte rechneten die alten Werke weiter — ein Bruch ohne Plan
+    // Gerät), ein Bewegter vor seinem Stufen-Urteil, ein Baum vor seiner Hülle. Befund z264: das Laden tauschte den Bestand, die Takte rechneten die alten Werke weiter — ein Bruch ohne Plan
     // im Buch brach je Bild an `_werkBricht`, ein Sturz endete als Einsturz im Journal eines Werks, das es nicht mehr gab.
     _bauVerlaesstTakte(entry) {
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         if (this._archFahrende) this._archFahrende.delete(entry); // und fährt nicht weiter (`_archFahrt`)
         if (this._freiImTakt) this._freiImTakt.delete(entry); // ein abgebauter freier Körper verlässt den Löser
         this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
+        if (this._archBewegte) this._archBewegte.delete(entry); // seine Stufe urteilt nicht mehr (`_archBewegteUrteilen`)
+        if (this._huellenNach) this._huellenNach.delete(entry); // und keine Hülle wächst ihm nach (`_tickHuellenNach`)
     }
 
     // Wasser strömt zurück (Abbau) oder um den Damm (Bau) — nur wo Wasser IST: liegt ein Punkt eines Fußabdrucks
