@@ -1258,9 +1258,9 @@ class AnazhRealm_bild_kosten {
                 // (`updateBefore`), keines wird kopiert. Bis G7 kopierte r184s Weg das Bild in die Geschichte und A3b das
                 // Gedächtnis in seine — jede Kopie ein eigener Befehls-Puffer mit Submit außerhalb jedes Pass-Stempels (Radeon,
                 // Mess-Wiese, gpu-bank in EINER Welt, 120 Paare: die zwei Kopien 0,69 ± 0,25 ms je Frame, die eine von main
-                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. Je Ziel EIN Resolve-Stoff, der fest
-                // das andere liest (seine Bindung steht); die Kette liest das Ziel der Lage über EINE Textur, deren Wert wechselt
-                // (`updateBefore`, DIE LAGE IST DIE GENERATION). Ein Zweig je Abtastung der Kette kostete den Post-Pass 1,67 → 3,14
+                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. EIN Resolve-Stoff liest das Ziel der
+                // Lage und schreibt in das andere; er und die Kette lesen es über Texturen, deren Wert wechselt (`updateBefore`,
+                // DIE LAGE IST DIE GENERATION). Ein Zweig je Abtastung der Kette kostete den Post-Pass 1,67 → 3,14
                 // ms (Radeon, Genesis, Pass-Stempel).
                 const zielBau = () => {
                     const z = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
@@ -1280,9 +1280,14 @@ class AnazhRealm_bild_kosten {
                 this._historyRenderTarget = this._ziele[0];
                 this._resolveRenderTarget = this._ziele[1];
                 this._textureNode = T.passTexture(this, this._ziele[0].texture);
-                const zweiter = new this._resolveMaterial.constructor(); // r184 NodeMaterial (der Stoff des Vendors)
-                zweiter.name = this._resolveMaterial.name;
-                this._resolveStoffe = [this._resolveMaterial, zweiter]; // Stoff k schreibt in Ziel k
+                // EIN RESOLVE-STOFF (w14-ankunft-weg, FUND 06.11. `bild-kosten.js:1304`): er liest die Geschichte und ihr
+                // Gedächtnis über zwei Texturen, deren Wert die Lage wechselt (`updateBefore`, wie die Kette `_textureNode`) —
+                // r184 hält je Paar der Texturen eine Bindegruppe (`createBindings`, Schlüssel = ihre Ids). Bis hier stand je
+                // Ziel ein eigener Stoff, der fest das andere las: zwei Knoten-Bauten desselben Programms im ersten Lade-Bild
+                // (swiftshader kalt `updateBefore` 593 ms in der längsten Aufgabe).
+                const vor = this._ziele[1];
+                this._geschichte = texture(vor.textures[0]);
+                this._flackerAlt = texture(vor.textures[1]);
                 const F = AnazhRealm.FLACKER;
                 this._flacker = {
                     kante: uniform(F.kante),
@@ -1291,12 +1296,8 @@ class AnazhRealm_bild_kosten {
                     ruhePx: uniform(F.ruhePx),
                 };
                 this._versatzIndex = 0;
-                this._quads = this._resolveStoffe.map((m) => Object.assign(new Quad(m), { name: "TRAA" }));
+                this._quad = Object.assign(new Quad(this._resolveMaterial), { name: "TRAA" });
                 this._gr = new THREE.Vector2();
-            }
-            dispose() {
-                super.dispose();
-                this._resolveStoffe[1].dispose();
             }
             // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
             eingang(aus) {
@@ -1373,8 +1374,10 @@ class AnazhRealm_bild_kosten {
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
                 const k = 1 - this._lage;
+                this._geschichte.value = this._ziele[this._lage].textures[0];
+                this._flackerAlt.value = this._ziele[this._lage].textures[1];
                 r.setRenderTarget(this._ziele[k]);
-                this._quads[k].render(r);
+                this._quad.render(r);
                 r.setRenderTarget(null);
                 this._lage = k;
                 this._textureNode.value = this._ziele[k].texture;
@@ -1401,11 +1404,10 @@ class AnazhRealm_bild_kosten {
                 const ein = this.beautyNode;
                 const tief = this.depthNode;
                 const { x: nah, y: fern } = this._cameraNearFar;
-                // Stoff k schreibt in Ziel k und liest fest das andere: die Geschichte und ihr Gedächtnis (G7)
-                const stoff = (k) => {
-                    const vor = this._ziele[1 - k];
-                    const geschichte = texture(vor.textures[0]);
-                    const flackerAlt = texture(vor.textures[1]);
+                // der EINE Stoff liest die Geschichte und ihr Gedächtnis aus dem Ziel der Lage (G7, `updateBefore`)
+                {
+                    const geschichte = this._geschichte;
+                    const flackerAlt = this._flackerAlt;
                     const flackerNeu = T.property("float", "flackerNeu");
                     const resolve = Fn(() => {
                         const uvA = uv();
@@ -1522,13 +1524,11 @@ class AnazhRealm_bild_kosten {
                     // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
                     // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
                     // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
-                    this._resolveStoffe[k].mrtNode = T.mrt({
+                    this._resolveMaterial.mrtNode = T.mrt({
                         "TRAANode.resolve": resolve(),
                         "TRAANode.flacker": flackerNeu,
                     });
-                };
-                stoff(0);
-                stoff(1);
+                }
                 return this._textureNode;
             }
         }
