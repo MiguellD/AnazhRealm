@@ -205,12 +205,16 @@ class AnazhRealm_studio_gestalt {
             }
             geo.setAttribute("color", new T.BufferAttribute(carr, 3));
         }
-        // DIE JAHRES-ECKEN (vegetation.K5): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine Mitte
-        // (`_jahrLage`); die Schale liefert sie nur an Teilen mit Laub oder Blüte, immer als Paar. Sie liegen mit uv in EINEM
-        // verschränkten Puffer (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`).
-        const jahr = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
-        if (jahr === 1) throw new Error("_foundryBuildMesh: die Jahres-Ecken reisen nur als Paar (aCenter · aType)");
-        if (jahr) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
+        // DIE ECKEN (vegetation.K5, w14-wiese-saum): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine
+        // Mitte (`_jahrLage`), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`); die Schale
+        // liefert sie nur an Teilen mit Laub, Blüte oder Halm, immer als Paar. Sie liegen mit uv in EINEM verschränkten Puffer
+        // (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`). Das JAHR trägt der
+        // Stoff nur, wo eine Ecke Laub oder Blüte ist — der Halm steht im Jahr (seine Gestalt staucht der Gras-Stoff, `ha`).
+        const paar = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
+        if (paar === 1) throw new Error("_foundryBuildMesh: die Ecken reisen nur als Paar (aCenter · aType)");
+        const SG = paar ? AnazhRealm._saisonGesetz().typ : null;
+        const jahr = !!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete);
+        if (paar) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
         else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
@@ -222,7 +226,7 @@ class AnazhRealm_studio_gestalt {
         const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
-        const ecken = { ton, jahr: jahr === 2 };
+        const ecken = { ton, jahr };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
