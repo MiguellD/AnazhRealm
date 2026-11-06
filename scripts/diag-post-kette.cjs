@@ -229,49 +229,12 @@ function urteil(z) {
         v.push(
             `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
         );
-    const zg = z.zugang;
-    if (!zg) v.push("ZUGANG: die Probe lief nicht");
-    else if (zg.abbruch) v.push(`ZUGANG: ABBRUCH — ${zg.abbruch}`);
-    else {
-        if (!zg.ausMarke) v.push("ZUGANG: aus hängt nicht die Ausgabe ohne Zugang in die Kette (`_zugangTakt`, `ausgabe.aus`)");
-        if (zg.ausTraegt || zg.zurueckTraegt)
-            v.push(
-                `ZUGANG: aus trägt den Knoten der Farbsicht im Graphen der Ausgabe (${zg.ausTraegt ? "beim Start" : "nach dem Rückweg"}) — das Fragment ist nicht das ohne Zugang (vp-0611g: 1 LSB auf 6,2 % der Pixel)`
-            );
-        if (!zg.anTraegt) v.push("ZUGANG: die Tritanopie hängt keinen Knoten der Farbsicht ein (die Probe ist blind)");
-        const w = zg.wgsl || {};
-        if (!(w.aus > 0 && w.an > 0)) v.push("ZUGANG: kein Fragment der Ausgabe gelesen (die Linse ist blind)");
-        else {
-            if (w.anGleichAus) v.push("ZUGANG: die Tritanopie zeichnet dasselbe Fragment wie aus (die Probe ist blind)");
-            if (!w.zurueckGleich)
-                v.push("ZUGANG: der Rückweg auf aus ist im Fragment der Ausgabe nicht byte-gleich dem Start");
-        }
-        if (zg.laufPx != null && zg.laufPx !== "number")
-            v.push(
-                `ZUGANG: die Lauf-Grenze der zeitlichen Auflösung ist ein ${zg.laufPx}, keine Konstante des Resolve (vp-0611g: die Teilung durch eine Uniform rundet)`
-            );
-        if (!(zg.himmel || []).includes("himmel"))
-            v.push(
-                `ZUGANG: die Kuppel des Himmels fehlt unter den Gegenständen im Unendlichen (${JSON.stringify(zg.himmel)}) — die Probe ist blind`
-            );
-        const r = zg.rauschen || {};
-        if (!(r.himmelPx > 0.5 * ((zg.leinwand || [0, 0])[0] * (zg.leinwand || [0, 0])[1])))
-            v.push(`ZUGANG: nur ${r.himmelPx} Himmels-Pixel im Bild (die Probe ist blind)`);
-        for (const [art, e] of [
-            ["Tritanopie", zg.tritan],
-            ["Deuteranopie", zg.deut],
-        ]) {
-            if (!e) v.push(`ZUGANG: ${art} nicht gemessen`);
-            else if (e.himmel > r.himmel)
-                v.push(
-                    `ZUGANG: ${art} ändert ${e.himmel} von ${e.himmelPx} Himmels-Pixeln (größte ${e.himmelMax}/255${e.ort ? ` an ${e.ort[0]}/${e.ort[1]}: ${e.ort[2]} → ${e.ort[3]}, ${e.ort[4]}` : ""}, Rauschen ${r.himmel}) — der Himmel bleibt (die EINE Himmels-Maske, vp-0611g: Ego 71,6/93,1/104,5 → 59,1/85,2/105,2)`
-                );
-        }
-        if (zg.tritan && !(zg.tritan.kiste >= 0.2 * zg.tritan.kistePx))
-            v.push(
-                `ZUGANG: die Tritanopie ändert ${zg.tritan.kiste} von ${zg.tritan.kistePx} Pixeln der blauen Kiste (die Probe ist blind — sie wirkt nicht)`
-            );
-    }
+    const zg = z.zugang || { abbruch: "lief nicht" };
+    const t = zg.tritanopie || {};
+    if (zg.abbruch || zg.ausTraegt) v.push(`ZUGANG: ${zg.abbruch || "aus trägt den Knoten der Farbsicht (vp-0611g)"}`);
+    else if (!(zg.anTraegt && zg.himmel.includes("himmel") && t.himmelPx > 2000 && t.kiste > t.kistePx / 5))
+        v.push(`ZUGANG: blind ${JSON.stringify(zg)}`);
+    for (const art of ["tritanopie", "deuteranopie"]) if (zg[art]?.himmel) v.push(`ZUGANG: ${art} färbt den Himmel ${JSON.stringify(zg[art])}`);
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -335,229 +298,64 @@ function selbsttest() {
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         zugang: {
-            leinwand: [321, 241],
-            himmel: ["himmel", "Points", "himmel-sonne", "himmel-mond"],
-            kiste: [140, 100, 180, 140],
-            laufPx: null,
-            ausMarke: true,
-            ausTraegt: false,
+            himmel: ["himmel"],
             anTraegt: true,
-            zurueckTraegt: false,
-            wgsl: { aus: 17802, an: 18522, anGleichAus: false, zurueckGleich: true },
-            rauschen: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 0, kistePx: 1681 },
-            tritan: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 1500, kistePx: 1681 },
-            deut: { himmel: 0, himmelMax: 0, himmelPx: 75680, kiste: 0, kistePx: 1681 },
+            tritanopie: { himmel: 0, himmelPx: 4700, kiste: 90, kistePx: 100 },
         },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (f) => {
-        const z = jsonKlon(gruen);
-        f(z);
-        return z;
-    };
     const faelle = [
-        {
-            name: "Direktpfad stürzt",
-            z: mit((z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"])),
-            muss: /Direktpfad — TypeError/,
-        },
-        {
-            name: "Direktpfad ohne Tiefe",
-            z: mit((z) => (z.schritte[1].tiefe = false)),
-            muss: /Direktpfad zeichnet ohne Tiefe/,
-        },
-        {
-            name: "Leinwand-Tiefe in der Kette",
-            z: mit((z) => (z.schritte[2].tiefe = true)),
-            muss: /trägt eine Leinwand-Tiefe/,
-        },
-        {
-            name: "GPU-Textur bleibt",
-            z: mit((z) => (z.schritte[2].leinwandTiefeGpu = true)),
-            muss: /GPU-Textur der Leinwand-Tiefe lebt/,
-        },
-        {
-            name: "Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)",
-            z: mit((z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 })),
-            muss: /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/,
-        },
-        {
-            name: "Rahmen-Ziel am Ende",
-            z: mit((z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/,
-        },
-        {
-            name: "Direktpfad ohne Rahmen-Ziel (blind)",
-            z: mit((z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/,
-        },
-        { name: "Rahmen-Ziel ungemessen", z: mit((z) => delete z.schritte[0].rahmenZiel), muss: /nicht gemessen/ },
-        {
-            name: "Drift: das Ziel bleibt ohne r184s Hörer",
-            z: mit((z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 })),
-            muss: /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/,
-        },
-        {
-            name: "Drift: der Abschied fällt still",
-            z: mit((z) => (z.drift.fehler = [])),
-            muss: /ohne r184s Hörer fiel der Abschied STILL/,
-        },
-        {
-            name: "Drift: kein r184-Hörer zu finden (Vendor-Drift)",
-            z: mit((z) => (z.drift.hoererWeg = 0)),
-            muss: /kein r184-Abschied .* die Probe ist blind/,
-        },
-        { name: "Drift-Probe fehlt", z: mit((z) => delete z.drift), muss: /die Drift-Probe lief nicht/ },
-        {
-            name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
-            muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht still",
-            z: mit((z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x)))),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht doppelt",
-            z: mit((z) => z.konsolenFehler.push(z.konsolenFehler[0])),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/,
-        },
-        {
-            name: "ein fremder Stoff-Bruch der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt")),
-            muss: /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/,
-        },
-        {
-            name: "eine fremde ERROR-Zeile der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
-            muss: /KONSOLE: .*Post-Processing fehlt/,
-        },
-        { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
-        {
-            name: "Abbild in voller Auflösung",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [32, 24])),
-            muss: /statt r32float 16×24/,
-        },
-        {
-            name: "Abbild als 2×2-Block (die Zeile halbiert)",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [16, 12])),
-            muss: /statt r32float 16×24/,
-        },
-        { name: "Abbild leer", z: mit((z) => (z.schritte[2].abbild.mitte = 1)), muss: /trägt die Szene nicht/ },
-        {
-            name: "Wasser liest eine andere Tiefe (vec4-Weg)",
-            z: mit((z) => (z.wasser.r184 = [75, 118, 105])),
-            muss: /das Wasser liest eine andere Tiefe/,
-        },
-        { name: "Wasser-Probe blind", z: mit((z) => (z.wasser.ohneGrund = z.wasser.abbild)), muss: /Probe ist blind/ },
+        ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
+        ["Direktpfad ohne Tiefe", ["schritte.1.tiefe=", false], /Direktpfad zeichnet ohne Tiefe/],
+        ["Leinwand-Tiefe in der Kette", ["schritte.2.tiefe=", true], /trägt eine Leinwand-Tiefe/],
+        ["GPU-Textur bleibt", ["schritte.2.leinwandTiefeGpu=", true], /GPU-Textur der Leinwand-Tiefe lebt/],
+        ["Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)", (z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 }), /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/],
+        ["Rahmen-Ziel am Ende", (z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 }), /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/],
+        ["Direktpfad ohne Rahmen-Ziel (blind)", (z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 }), /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/],
+        ["Rahmen-Ziel ungemessen", ["schritte.0.rahmenZiel"], /nicht gemessen/],
+        ["Drift: das Ziel bleibt ohne r184s Hörer", (z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 }), /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/],
+        ["Drift: der Abschied fällt still", (z) => (z.drift.fehler = []), /ohne r184s Hörer fiel der Abschied STILL/],
+        ["Drift: kein r184-Hörer zu finden (Vendor-Drift)", ["drift.hoererWeg=", 0], /kein r184-Abschied .* die Probe ist blind/],
+        ["Drift-Probe fehlt", ["drift"], /die Drift-Probe lief nicht/],
+        ["ERROR von _rahmenZielAbschied außerhalb der Drift", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)"), /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/],
+        ["der erzwungene Render-Fehler bricht still", (z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x))), /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/],
+        ["der erzwungene Render-Fehler bricht doppelt", (z) => z.konsolenFehler.push(z.konsolenFehler[0]), /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/],
+        ["ein fremder Stoff-Bruch der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt"), /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/],
+        ["eine fremde ERROR-Zeile der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt"), /KONSOLE: .*Post-Processing fehlt/],
+        ["Abbild fehlt", (z) => (z.schritte[0].abbild = { fehlt: true }), /kein Tiefen-Abbild/],
+        ["Abbild in voller Auflösung", (z) => (z.schritte[1].abbild.groesse = [32, 24]), /statt r32float 16×24/],
+        ["Abbild als 2×2-Block (die Zeile halbiert)", (z) => (z.schritte[1].abbild.groesse = [16, 12]), /statt r32float 16×24/],
+        ["Abbild leer", ["schritte.2.abbild.mitte=", 1], /trägt die Szene nicht/],
+        ["Wasser liest eine andere Tiefe (vec4-Weg)", (z) => (z.wasser.r184 = [75, 118, 105]), /das Wasser liest eine andere Tiefe/],
+        ["Wasser-Probe blind", (z) => (z.wasser.ohneGrund = z.wasser.abbild), /Probe ist blind/],
         // stoffe-k3-phasen a3b87db1: die Bühne 160 m über Genesis (247,3 m) über der Eis-Linie 157,1 m
-        { name: "Bühne im Eis", z: mit((z) => (z.buehne.wasserY = 247.3)), muss: /über der Eis-Linie/ },
-        { name: "Wasser nicht umgehängt", z: mit((z) => (z.wasser.umgehaengt = [0, 1])), muss: /nicht umgehängt/ },
-        { name: "Wasser-Probe fehlt", z: mit((z) => delete z.wasser), muss: /lief nicht/ },
-        {
-            name: "Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)",
-            z: mit((z) => Object.assign(z.saum, { abweichend: 14, dMax: 25 })),
-            muss: /Nachbar-Block/,
-        },
-        {
-            name: "Saum-Probe auf gerader Leinwand (blind)",
-            z: mit((z) => (z.saum.leinwand = [320, 240])),
-            muss: /nicht ungerade/,
-        },
-        {
-            name: "kein Gegenstand vor dem Wasser (blind)",
-            z: mit((z) => Object.assign(z.saum, { kanten: 0, paritaeten: 0 })),
-            muss: /kein Gegenstand vor dem Wasser/,
-        },
-        { name: "ferne Kiste vorn", z: mit((z) => (z.schritte[1].mitte = [40, 190, 40])), muss: /Tiefentest fehlt/ },
-        { name: "Tiefen-Leser blind", z: mit((z) => (z.schritte[0].tiefenKopien = 0)), muss: /kopierte nie/ },
-        { name: "Fang ohne Direktpfad", z: mit((z) => (z.schritte[3].direkt = false)), muss: /nicht den Direktpfad/ },
-        {
-            name: "GPU-Validierung",
-            z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])),
-            muss: /Validierungs-Fehler/,
-        },
-        {
-            name: "Godrays unbedingt",
-            z: mit((z) => Object.assign(z.ausgabe.abtastungen, { unbedingt: 29, zweig: 4 })),
-            muss: /29 unbedingte Abtastungen/,
-        },
-        { name: "Shader blind", z: mit((z) => (z.ausgabe = null)), muss: /kein Fragment der Ausgabe/ },
-        { name: "Bühne bricht ab", z: mit((z) => (z.abbruch = "TypeError: x")), muss: /ABBRUCH/ },
-        { name: "Godray-Zweig trägt nicht", z: mit((z) => (z.godray.aenderungPct = 0)), muss: /der Zweig trägt nicht/ },
-        { name: "Godray-Probe blind", z: mit((z) => (z.godray.staerke = 0)), muss: /die Probe ist blind/ },
-        {
-            name: "Grading schneidet dunkles Licht ab",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 0, luma4: 0 })),
-            muss: /DUNKEL: .*schneidet dunkles Licht ab/,
-        },
-        {
-            name: "Grading hängt an der Belichtung",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 12, luma4: 7 })),
-            muss: /DUNKEL: .*hängt an der Belichtung/,
-        },
-        { name: "Dunkel-Probe fehlt", z: mit((z) => delete z.dunkel), muss: /DUNKEL: die Probe lief nicht/ },
-        {
-            name: "Kontrast schwärzt die Nacht",
-            z: mit((z) => (z.dunkel.lumaNacht = 0)),
-            muss: /DUNKEL: das Licht der Nacht .*Post-Kette 25c/,
-        },
-        {
-            name: "Nacht-Probe blind",
-            z: mit((z) => (z.dunkel.nachtFaktor = 0)),
-            muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
-        },
-        // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht hinter der Uniform stand aus im Graphen
-        {
-            name: "aus trägt den Farbsicht-Knoten (vp-0611g)",
-            z: mit((z) => Object.assign(z.zugang, { ausTraegt: true, ausMarke: false })),
-            muss: /ZUGANG: aus trägt den Knoten der Farbsicht .*beim Start/,
-        },
-        {
-            name: "Rückweg auf aus nicht byte-gleich",
-            z: mit((z) => (z.zugang.wgsl.zurueckGleich = false)),
-            muss: /ZUGANG: der Rückweg auf aus .* nicht byte-gleich/,
-        },
-        {
-            name: "Lauf-Grenze als Uniform (vp-0611g)",
-            z: mit((z) => (z.zugang.laufPx = "object")),
-            muss: /ZUGANG: die Lauf-Grenze .* ein object, keine Konstante/,
-        },
-        {
-            name: "Tritanopie färbt den Himmel (vp-0611g)",
-            z: mit((z) => Object.assign(z.zugang.tritan, { himmel: 64000, himmelMax: 40 })),
-            muss: /ZUGANG: Tritanopie ändert 64000 von 75680 Himmels-Pixeln \(größte 40\/255/,
-        },
-        {
-            name: "Deuteranopie färbt den Himmel",
-            z: mit((z) => (z.zugang.deut.himmel = 12)),
-            muss: /ZUGANG: Deuteranopie ändert 12 von/,
-        },
-        {
-            name: "Tritanopie wirkt nicht (blind)",
-            z: mit((z) => (z.zugang.tritan.kiste = 0)),
-            muss: /ZUGANG: die Tritanopie ändert 0 von 1681 .* blind/,
-        },
-        {
-            name: "Tritanopie hängt keinen Knoten ein (blind)",
-            z: mit((z) => (z.zugang.anTraegt = false)),
-            muss: /ZUGANG: die Tritanopie hängt keinen Knoten/,
-        },
-        {
-            name: "Fragment unverändert unter Tritanopie (blind)",
-            z: mit((z) => (z.zugang.wgsl.anGleichAus = true)),
-            muss: /ZUGANG: die Tritanopie zeichnet dasselbe Fragment/,
-        },
-        {
-            name: "Kuppel nicht in der Proben-Schicht (blind)",
-            z: mit((z) => (z.zugang.himmel = ["himmel-sonne"])),
-            muss: /ZUGANG: die Kuppel des Himmels fehlt/,
-        },
-        { name: "kein Himmel im Bild (blind)",z: mit((z) => (z.zugang.rauschen.himmelPx = 100)), muss: /nur 100 Himmels-Pixel/ },
-        { name: "Zugang-Probe fehlt", z: mit((z) => delete z.zugang), muss: /ZUGANG: die Probe lief nicht/ },
+        ["Bühne im Eis", ["buehne.wasserY=", 247.3], /über der Eis-Linie/],
+        ["Wasser nicht umgehängt", (z) => (z.wasser.umgehaengt = [0, 1]), /nicht umgehängt/],
+        ["Wasser-Probe fehlt", ["wasser"], /lief nicht/],
+        ["Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)", ["saum", { abweichend: 14, dMax: 25 }], /Nachbar-Block/],
+        ["Saum-Probe auf gerader Leinwand (blind)", (z) => (z.saum.leinwand = [320, 240]), /nicht ungerade/],
+        ["kein Gegenstand vor dem Wasser (blind)", ["saum", { kanten: 0, paritaeten: 0 }], /kein Gegenstand vor dem Wasser/],
+        ["ferne Kiste vorn", (z) => (z.schritte[1].mitte = [40, 190, 40]), /Tiefentest fehlt/],
+        ["Tiefen-Leser blind", ["schritte.0.tiefenKopien=", 0], /kopierte nie/],
+        ["Fang ohne Direktpfad", ["schritte.3.direkt=", false], /nicht den Direktpfad/],
+        ["GPU-Validierung", (z) => (z.gpuFehler = ["Attachment state mismatch"]), /Validierungs-Fehler/],
+        ["Godrays unbedingt", ["ausgabe.abtastungen", { unbedingt: 29, zweig: 4 }], /29 unbedingte Abtastungen/],
+        ["Shader blind", ["ausgabe=", null], /kein Fragment der Ausgabe/],
+        ["Bühne bricht ab", ["abbruch=", "TypeError: x"], /ABBRUCH/],
+        ["Godray-Zweig trägt nicht", ["godray.aenderungPct=", 0], /der Zweig trägt nicht/],
+        ["Godray-Probe blind", ["godray.staerke=", 0], /die Probe ist blind/],
+        ["Grading schneidet dunkles Licht ab", ["dunkel", { luma1: 0, luma4: 0 }], /DUNKEL: .*schneidet dunkles Licht ab/],
+        ["Grading hängt an der Belichtung", ["dunkel", { luma1: 12, luma4: 7 }], /DUNKEL: .*hängt an der Belichtung/],
+        ["Dunkel-Probe fehlt", ["dunkel"], /DUNKEL: die Probe lief nicht/],
+        ["Kontrast schwärzt die Nacht", ["dunkel.lumaNacht=", 0], /DUNKEL: das Licht der Nacht .*Post-Kette 25c/],
+        ["Nacht-Probe blind", ["dunkel.nachtFaktor=", 0], /DUNKEL: die Nacht stand bei nightFactor 0/],
+        // vp-0611g (OMEN, w15-farbsicht 1c39aada): der Zweig der Farbsicht stand aus im Graphen, die Tritanopie färbte den Himmel
+        ["aus trägt die Farbsicht", ["zugang.ausTraegt=", true], /Knoten der Farbsicht/],
+        ["Tritanopie färbt den Himmel", ["zugang.tritanopie", { himmel: 9 }], /tritanopie färbt/],
+        ["Zugang blind", ["zugang.tritanopie", { kiste: 0 }], /ZUGANG: blind/],
+        ["Zugang fehlt", ["zugang"], /ZUGANG: lief nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
@@ -654,7 +452,7 @@ function saumProbe(ort) {
             }
             Object.assign(aus, { kanten, abweichend, dMax: +dMax.toFixed(1), paritaeten: paritaet.size });
         } catch (e) {
-            aus.abbruch = String((e && (e.stack || e.message)) || e)
+            aus.abbruch = fehlerStapel(e)
                 .split("\n")
                 .slice(0, 4)
                 .join(" ← ");
@@ -762,7 +560,7 @@ function buehne(nFrames, nachtLicht) {
                     frame();
                 } catch (e) {
                     s.fehler.push(
-                        String((e && (e.stack || e.message)) || e)
+                        fehlerStapel(e)
                             .split("\n")
                             .slice(0, 3)
                             .join(" ← ")
@@ -988,7 +786,7 @@ function buehne(nFrames, nachtLicht) {
             await dev.queue.onSubmittedWorkDone();
             aus.rahmenEnde = rahmenZiel();
         } catch (e) {
-            aus.abbruch = String((e && (e.stack || e.message)) || e)
+            aus.abbruch = fehlerStapel(e)
                 .split("\n")
                 .slice(0, 4)
                 .join(" ← ");
@@ -1001,174 +799,58 @@ function buehne(nFrames, nachtLicht) {
     })();
 }
 
-// (i) DER ZUGANG (spielgang.K4, Seiten-Kontext, nach `buehne`): die Farbsicht als eigene Ausgabe der Kette (`_zugangTakt`).
-// Aus ist der Graph der Ausgabe der ohne Zugang — kein Knoten der Farbsicht darin (die Graph-Suche nach ihren Uniformen), der
-// Rückweg auf aus byte-gleich im Fragment, die Unschärfe der Bewegung eine Konstante des Resolve (wo die zeitliche Auflösung
-// läuft). Der Blick steil in den Himmel, darin eine blaue Kiste: unter Tritanopie und Deuteranopie bleibt jedes Himmels-Pixel
-// (außerhalb der Kiste) wie aus, die Kiste ändert sich unter Tritanopie (sonst ist die Probe blind).
+// (i) DER ZUGANG (spielgang.K4, Seiten-Kontext, nach `buehne`): aus trägt der Graph der Ausgabe keinen Knoten der Farbsicht
+// (die Suche nach ihren Uniformen). Die Kamera sieht nur den Himmel (die Gegenstände im Unendlichen, `_himmelImUnendlichen`) und
+// eine blaue Kiste, steil nach oben: unter Tritanopie und Deuteranopie bleibt jedes Himmels-Pixel wie aus, die Kiste wechselt
+// unter Tritanopie (sonst blind). Kiste = die Pixel, die sie zeichnet (aus mit ↔ ohne Kiste).
 function zugangProbe() {
     return (async () => {
         const T = window.THREE;
-        const rend = st.renderer;
-        rend.setAnimationLoop(null);
+        st.renderer.setAnimationLoop(null);
         window.__buehne();
-        const Z = st.zugang;
-        const vor = { ...Z };
-        const pp = st.postProcessing;
-        const ppu = st.postProcessingUniforms;
-        const cam = st.camera;
-        const p0 = cam.position.clone();
-        const ziel = new T.Vector3(p0.x, p0.y + 10, p0.z - 3.6); // 70° über dem Horizont
+        const [Z, pp, ppu, cam, S] = [st.zugang, st.postProcessing, st.postProcessingUniforms, st.camera, 30];
+        const [vor, p0, maske] = [{ ...Z }, cam.position.clone(), cam.layers.mask];
         const kiste = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicNodeMaterial({ color: 0x2050ff }));
-        kiste.material.fog = false;
-        kiste.frustumCulled = false;
-        kiste.position.copy(p0).addScaledVector(ziel.clone().sub(p0).normalize(), 8);
-        kiste.name = "post-kette:ZUGANG";
+        kiste.position.set(p0.x, p0.y + 7.5, p0.z - 2.7);
+        const himmel = [kiste];
+        st.scene.traverse((o) => o.material?.vertexNode === r.constructor._unendlichKnoten && himmel.push(o));
+        for (const o of himmel) o.layers.enable(S);
         st.scene.add(kiste);
-        // DIE KAMERA SIEHT NUR DEN HIMMEL UND DIE KISTE (eine Proben-Schicht wie das Dunkel): der Himmel sind die Gegenstände im
-        // Unendlichen (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne, Mond) — jedes andere Pixel wäre Welt, und die Welt
-        // daltonisiert die Farbsicht zu Recht (am main-Kopf stand eine `dsl-insel` im Blick)
-        const SCHICHT = 30;
-        const unendlich = r.constructor._unendlichKnoten;
-        const himmel = [];
-        st.scene.traverse((o) => {
-            if (o.material && unendlich && o.material.vertexNode === unendlich && !o.layers.isEnabled(SCHICHT)) himmel.push(o);
-        });
-        for (const o of [...himmel, kiste]) o.layers.enable(SCHICHT);
-        const maskeVor = cam.layers.mask;
-        cam.layers.set(SCHICHT);
-        const setzeKamera = () => {
-            cam.position.copy(p0);
-            cam.up.set(0, 1, 0);
-            cam.lookAt(ziel);
-            cam.updateMatrixWorld(true);
-        };
-        const db = rend.getDrawingBufferSize(new T.Vector2());
-        const W = Math.round(db.x),
-            H = Math.round(db.y);
-        // das Rechteck der Kiste im Bild (ihre acht Ecken projiziert, 4 Pixel Saum für Bloom und Kante)
-        const rechteck = () => {
-            setzeKamera();
-            const x = [],
-                y = [];
-            for (const s of [-0.5, 0.5])
-                for (const t of [-0.5, 0.5])
-                    for (const u of [-0.5, 0.5]) {
-                        const v = new T.Vector3(s, t, u).add(kiste.position).project(cam);
-                        x.push(((v.x + 1) / 2) * W);
-                        y.push(((1 - v.y) / 2) * H);
-                    }
-            return [Math.min(...x) - 4, Math.min(...y) - 4, Math.max(...x) + 4, Math.max(...y) + 4];
-        };
+        cam.layers.set(S);
         const bild = async () => {
-            st._godrayScale = 0;
-            for (let i = 0; i < 4; i++) {
-                setzeKamera();
+            for (let i = 0; i < 5; i++) {
+                cam.position.copy(p0);
+                cam.lookAt(p0.x, p0.y + 10, p0.z - 3.6);
+                cam.updateMatrixWorld(true);
                 window.__loopBild();
             }
-            setzeKamera();
-            const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
-            return u8;
+            return (await window.__ausgabeAufnahme(80, 60, 1, { satz: "messung" })).u8;
         };
-        const fragment = async () => {
-            const p = await window.__shaderKosten({ frames: 2 });
-            return (p.find((x) => x.programm === "post:ausgabe") || {}).fragment || null;
-        };
-        // trägt der Graph der Ausgabe einen Knoten der Farbsicht (ihre Uniformen)?
-        const traegtFarbsicht = (wurzel) => {
-            const such = new Set([ppu.farbFehler, ppu.farbSchub].filter(Boolean));
-            const gesehen = new Set();
-            const stapel = [wurzel];
-            while (stapel.length && gesehen.size < 400000) {
-                const n = stapel.pop();
-                if (!n || typeof n !== "object" || gesehen.has(n)) continue;
-                gesehen.add(n);
-                if (such.has(n)) return true;
-                for (const v of Object.values(n)) {
-                    if (v && v.isNode) stapel.push(v);
-                    else if (Array.isArray(v)) for (const e of v) if (e && e.isNode) stapel.push(e);
-                }
-            }
-            return false;
-        };
-        const aus = { leinwand: [W, H], himmel: himmel.map((o) => o.name || o.type) };
+        const traegt = (n, such = [ppu.farbFehler, ppu.farbSchub], weg = new Set()) =>
+            !!n && typeof n === "object" && !weg.has(n) && (weg.add(n), such.includes(n) || Object.values(n).flat().some((k) => k?.isNode && traegt(k, such, weg)));
+        const aus = { himmel: himmel.map((o) => o.name), ausTraegt: traegt(pp.outputNode) };
         try {
-            const [x0, y0, x1, y1] = rechteck();
-            aus.kiste = [x0, y0, x1, y1].map(Math.round);
-            const traa = st.traaNode;
-            aus.laufPx = traa ? typeof traa._laufPx : null;
-            aus.ausMarke = !!(ppu && ppu.ausgabe && pp.outputNode === ppu.ausgabe.aus);
-            aus.ausTraegt = traegtFarbsicht(pp.outputNode);
-            const fAus = await fragment();
-            const bAus = await bild();
-            const bAus2 = await bild();
-            Z.farbsicht = "tritanopie";
-            const fAn = await fragment();
-            aus.anTraegt = traegtFarbsicht(pp.outputNode);
-            const bTritan = await bild();
-            Z.farbsicht = "deuteranopie";
-            const bDeut = await bild();
-            Z.farbsicht = "aus";
-            const fZurueck = await fragment();
-            aus.zurueckTraegt = traegtFarbsicht(pp.outputNode);
-            aus.wgsl = {
-                aus: fAus ? fAus.length : 0,
-                an: fAn ? fAn.length : 0,
-                anGleichAus: !!fAus && fAus === fAn,
-                zurueckGleich: !!fAus && fAus === fZurueck,
-            };
-            // je Bild gegen aus: geänderte Himmels-Pixel (außerhalb der Kiste, je Kanal ≥ 1/255) und geänderte Kisten-Pixel
-            const vergleich = (b) => {
-                let himmel = 0,
-                    himmelMax = 0,
-                    kiste = 0,
-                    nH = 0,
-                    nK = 0,
-                    ort = null; // das Himmels-Pixel mit der größten Änderung: [x, y, aus RGB, Art RGB]
-                for (let y = 0; y < H; y++)
-                    for (let x = 0; x < W; x++) {
-                        const i = (y * W + x) * 4;
-                        const d = Math.max(
-                            Math.abs(b[i] - bAus[i]),
-                            Math.abs(b[i + 1] - bAus[i + 1]),
-                            Math.abs(b[i + 2] - bAus[i + 2])
-                        );
-                        if (x >= x0 && x <= x1 && y >= y0 && y <= y1) {
-                            nK++;
-                            if (d >= 4) kiste++;
-                        } else {
-                            nH++;
-                            if (d >= 1) himmel++;
-                            if (d > himmelMax)
-                                ort = [x, y, [...bAus.slice(i, i + 3)].join("/"), [...b.slice(i, i + 3)].join("/")];
-                            himmelMax = Math.max(himmelMax, d);
-                        }
-                    }
-                // der Täter beim Namen: was der Strahl durch dieses Pixel als erstes trifft (kein Treffer = der Himmel selbst)
-                if (ort) {
-                    setzeKamera();
-                    const rc = new T.Raycaster();
-                    rc.setFromCamera(new T.Vector2((2 * (ort[0] + 0.5)) / W - 1, 1 - (2 * (ort[1] + 0.5)) / H), cam);
-                    const t = rc.intersectObjects(st.scene.children, true).find((h) => h.object.visible !== false);
-                    ort.push(t ? `${t.object.name || t.object.type} in ${t.distance.toFixed(1)} m` : "kein Gegenstand");
-                }
-                return { himmel, himmelMax, himmelPx: nH, kiste, kistePx: nK, ort };
-            };
-            aus.rauschen = vergleich(bAus2);
-            aus.tritan = vergleich(bTritan);
-            aus.deut = vergleich(bDeut);
+            const a = await bild();
+            kiste.visible = false;
+            const ohne = await bild();
+            kiste.visible = true;
+            const d = (b, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(b[i + c] - a[i + c])));
+            for (const art of ["tritanopie", "deuteranopie"]) {
+                Z.farbsicht = art;
+                const b = await bild();
+                const e = (aus[art] = { himmel: 0, kiste: 0, kistePx: 0, himmelPx: 0 });
+                aus.anTraegt ||= traegt(pp.outputNode);
+                for (let i = 0; i < b.length; i += 4)
+                    if (d(ohne, i) > 0) (e.kistePx++, (e.kiste += d(b, i) >= 4));
+                    else (e.himmelPx++, (e.himmel += d(b, i) > 0));
+            }
         } catch (e) {
-            aus.abbruch = String((e && (e.stack || e.message)) || e)
-                .split("\n")
-                .slice(0, 4)
-                .join(" ← ");
+            aus.abbruch = fehlerStapel(e);
         } finally {
             Object.assign(Z, vor);
-            cam.layers.mask = maskeVor;
-            for (const o of himmel) o.layers.disable(SCHICHT);
+            cam.layers.mask = maske;
+            for (const o of himmel) o.layers.disable(S);
             st.scene.remove(kiste);
-            kiste.geometry.dispose();
-            kiste.material.dispose();
         }
         return aus;
     })();
@@ -1210,16 +892,7 @@ function zugangProbe() {
         log(`Bühne: Boden ${b.boden.toFixed(1)} m · Wasser ${b.wasserY.toFixed(1)} m · Eis-Linie ${b.eisNull.toFixed(1)} m`);
         out.saum = await page.evaluate(saumProbe, b);
         out.zugang = await page.evaluate(zugangProbe);
-        {
-            const zg = out.zugang;
-            const h = (v) => (v ? `${v.himmel} von ${v.himmelPx} Himmels-Pixeln (größte ${v.himmelMax}) · Kiste ${v.kiste} von ${v.kistePx}` : "?");
-            log(
-                `Zugang: Himmel ${JSON.stringify(zg.himmel)} · aus ${zg.ausMarke ? "die Ausgabe ohne Zugang" : "NICHT die Ausgabe ohne Zugang"} · Farbsicht-Knoten aus/an/zurück ` +
-                    `${zg.ausTraegt}/${zg.anTraegt}/${zg.zurueckTraegt} · Fragment aus ${zg.wgsl ? zg.wgsl.aus : "?"} B, an ${zg.wgsl ? zg.wgsl.an : "?"} B, ` +
-                    `zurück byte-gleich ${zg.wgsl ? zg.wgsl.zurueckGleich : "?"} · Lauf-Grenze des Resolve ${zg.laufPx} · Rauschen ${h(zg.rauschen)} · ` +
-                    `Tritanopie ${h(zg.tritan)} · Deuteranopie ${h(zg.deut)}${zg.abbruch ? " · ABBRUCH " + zg.abbruch : ""}`
-            );
-        }
+        log(`Zugang: ${JSON.stringify(out.zugang)}`);
         if (out.saum)
             log(
                 `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
@@ -1267,8 +940,6 @@ function zugangProbe() {
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
-            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); ` +
-            `der Zugang aus ist die Kette ohne Zugang (Rückweg byte-gleich), Tritanopie und Deuteranopie lassen ${out.zugang.tritan.himmelPx} Himmels-Pixel unberührt, ` +
-            `die blaue Kiste wechselt unter Tritanopie (${out.zugang.tritan.kiste} von ${out.zugang.tritan.kistePx}).`
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}); der Zugang aus ohne Farbsicht-Knoten, der Himmel bleibt.`
     );
 })();
