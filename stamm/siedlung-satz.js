@@ -146,8 +146,8 @@ class AnazhRealm_siedlung_satz {
             return 0;
         }
         const a = g.mesh.instanceMatrix.array;
-        const nb = this._chunkSatzEin(art, key, this._bauSatzBlock(g), this._bauSatzChunk(a));
-        nb.bau = this._bauSatzStand(g);
+        const bau = this._bauSatzStand(g); // der Stempel zuerst: er trägt die Stufen des Alters, die der Block liest
+        this._chunkSatzEin(art, key, this._bauSatzBlock(g, bau), this._bauSatzChunk(a)).bau = bau;
         return N;
     }
 
@@ -158,7 +158,8 @@ class AnazhRealm_siedlung_satz {
     }
 
     // Der Stand eines Bau-Bereichs (`b.bau`): seine Vorlage, sein Stoff, seine Instanzen und je Slot der STEMPEL dessen, was
-    // seine Ecken trägt — Matrix (16), Farbe (3), die Instanz-Attribute der Fassade (`je`).
+    // seine Ecken trägt — Matrix (16), Farbe (3), die Instanz-Attribute der Fassade (`je`), die Stufen des Alters seines Werks
+    // (je Schicht eine, `_satzAlter`: wo der Stoff altert).
     _bauSatzStand(g) {
         const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
@@ -171,6 +172,8 @@ class AnazhRealm_siedlung_satz {
                 K += is;
             }
         }
+        const alter = this._satzAlter(g);
+        if (alter) K += alter.L;
         const cnt = g.liveCount | 0;
         const bau = {
             geom: g.geom,
@@ -178,6 +181,7 @@ class AnazhRealm_siedlung_satz {
             n: g.geom.attributes.position.count,
             cnt,
             je,
+            alter,
             K,
             stempel: new Float32Array(Math.max(1, cnt) * K),
             gelegt: 0,
@@ -215,6 +219,18 @@ class AnazhRealm_siedlung_satz {
                 }
             }
         }
+        if (bau.alter) {
+            const e = g.slotEntry[i];
+            const alter = e && e.position ? this._werkAlter(e) : null;
+            for (const a of bau.alter.schichten) {
+                const v = alter ? AnazhRealm._werkAlterStufe(a, alter) : 0;
+                if (S[k] !== v) {
+                    S[k] = v;
+                    anders = true;
+                }
+                k++;
+            }
+        }
         return anders;
     }
 
@@ -250,14 +266,14 @@ class AnazhRealm_siedlung_satz {
                 continue;
             }
             if (lauf < 0) continue;
-            const A = this._satzBlockEcken(g.geom, im, ic, i - lauf, attr, g.key, regler, lauf);
+            const A = this._satzBlockEcken(g.geom, im, ic, i - lauf, attr, g.key, regler, lauf, 0, -1, bau);
             this._chunkSatzLege(s, b.vStart + lauf * bau.n, A, (i - lauf) * bau.n, false);
             bau.gelegt += (i - lauf) * bau.n;
             if (erst < 0) erst = lauf;
             letzt = i;
             lauf = -1;
         }
-        b.geom.quelle = [g.geom, im, ic, c2, attr, g.key, regler];
+        b.geom.quelle = [g.geom, im, ic, c2, attr, g.key, regler, bau];
         if (c2 !== c || b.vStart !== v0) {
             const I = this._satzBlockIndex(g.geom, c2);
             const iAlt = b.iAnzahl;
@@ -353,7 +369,7 @@ class AnazhRealm_siedlung_satz {
             const ganz = r.v === 0 && rest >= n;
             const k = ganz ? Math.min(r.cnt - r.i, Math.floor(rest / n)) : 1;
             const v1 = ganz ? n : Math.min(n, r.v + rest);
-            const A = this._satzBlockEcken(g.geom, im, ic, k, attr, g.key, regler, r.i, r.v, v1);
+            const A = this._satzBlockEcken(g.geom, im, ic, k, attr, g.key, regler, r.i, r.v, v1, r.bau);
             const m = k * (v1 - r.v);
             this._chunkSatzLege(r.s, r.vStart + r.i * n + r.v, A, m, false);
             gelegt += m;
@@ -367,7 +383,7 @@ class AnazhRealm_siedlung_satz {
         const B = this._satzBlockIndex(r.geom, r.cnt);
         B.attributes = {};
         for (const { name, is } of r.s.attr) B.attributes[name] = { array: null, itemSize: is, count: N };
-        B.quelle = [r.geom, im, ic, r.cnt, attr, r.key, regler];
+        B.quelle = [r.geom, im, ic, r.cnt, attr, r.key, regler, r.bau];
         this._bauSatzRateFort(r, false);
         if (r.s.bloecke.has(r.key)) this._chunkSatzAus(r.art, r.key);
         this._chunkSatzBuerger(r.s, r.key, B, r.vStart, N, this._bauSatzChunk(im)).bau = r.bau;
@@ -382,8 +398,9 @@ class AnazhRealm_siedlung_satz {
         if (frei) this._chunkSatzVFrei(r.s, r.vStart, r.n * r.cnt);
     }
 
-    // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes).
-    _bauSatzBlock(g) {
+    // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes),
+    // im Alter ihrer Werke (`bau`, der Stand mit den Stempeln).
+    _bauSatzBlock(g, bau) {
         const st = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         const attr = (st && st.attr) || AnazhRealm.BAU_SATZ_ATTR;
         return this._satzBlock(
@@ -393,7 +410,8 @@ class AnazhRealm_siedlung_satz {
             g.liveCount | 0,
             attr,
             g.key,
-            attr !== AnazhRealm.BAU_WURF_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null
+            attr !== AnazhRealm.BAU_WURF_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null,
+            bau
         );
     }
 
@@ -411,17 +429,19 @@ class AnazhRealm_siedlung_satz {
     // ihn daraus nach). Befund (Null-Gang ins Dorf, `_tickBauSatz` 137 ms): der Wechsel eines Hauses auf die Stufe 0 legte
     // 142k Ecken frisch an (~10 MB je Wechsel, dazu die Kopie beim Austritt) — der Heap sprang, die volle Sammlung fiel
     // mitten in den Takt (ein Teil mit 56k Ecken 89–92 ms, sein Nachbar mit 72k Ecken 15 ms).
-    _satzBlock(geo, im, ic, cnt, attr, wer, regler) {
+    // `bau` (der Bau-Satz, `_bauSatzStand`): trägt der Stand das Alter seines Stoffs (`bau.alter`), altert jede Ecke im Alter ihres
+    // Werks (`_satzAlterEcken`) — die Quelle trägt ihn mit, die Linse rechnet dasselbe nach.
+    _satzBlock(geo, im, ic, cnt, attr, wer, regler, bau = null) {
         if (!geo.index || !geo.index.array) throw new Error(`_satzBlock(${wer}): kein Index`);
         const b = this._satzBlockIndex(geo, cnt);
-        b.attributes = this._satzBlockEcken(geo, im, ic, cnt, attr, wer, regler);
-        b.quelle = [geo, im, ic, cnt, attr, wer, regler];
+        b.attributes = this._satzBlockEcken(geo, im, ic, cnt, attr, wer, regler, 0, 0, -1, bau);
+        b.quelle = [geo, im, ic, cnt, attr, wer, regler, bau];
         return b;
     }
 
     // Die Ecken eines Blocks (`_satzBlock`): die Instanzen [ab, ab + cnt), je Instanz das Fenster ihrer Ecken [v0, v1) —
     // der Bau-Satz legt so je Slot (`_bauSatzSlots`) und einen großen Bereich in Raten (`_bauSatzRate`), mit denselben Kernen.
-    _satzBlockEcken(geo, im, ic, cnt, attr, wer, regler, ab = 0, v0 = 0, v1 = -1) {
+    _satzBlockEcken(geo, im, ic, cnt, attr, wer, regler, ab = 0, v0 = 0, v1 = -1, bau = null) {
         const A = geo.attributes;
         const n0 = A.position.count;
         if (v1 < 0) v1 = n0;
@@ -470,6 +490,7 @@ class AnazhRealm_siedlung_satz {
             }
             attributes[name] = { array: out, itemSize: is, count: N };
         }
+        if (bau && bau.alter) AnazhRealm._satzAlterEcken(attributes, geo, im, cnt, ab, n, bau);
         return attributes;
     }
 
@@ -867,52 +888,127 @@ class AnazhRealm_siedlung_satz {
     // Die Stufen der alternden Stoffe eines gebauten Werks (die Namen merkt der Bau, `_werkAlterFaerbe`) als EIN Schlüssel.
     _werkAlterSchluessel(entry, stoffe) {
         const alter = this._werkAlter(entry);
-        return stoffe.map((n) => AnazhRealm._werkAlterStufe(this._stoff(n).alter, alter)).join(",");
+        return stoffe
+            .map((n) =>
+                this._stoff(n)
+                    .alter.map((a) => AnazhRealm._werkAlterStufe(a, alter))
+                    .join("/")
+            )
+            .join(",");
+    }
+    // DIE LAGE EINER FLÄCHE IM ALTER (stoffe.K4, die Exposition — die Weathering-Masken der Werkzeuge: Substance, Houdini) —
+    // EIN Gesetz für jeden Leser (`_alterKern`): wie sehr die Ecke mit der Welt-Normale n einer Schicht ausgesetzt ist, 0..1.
+    // `lage` ist der Index in `WERK_ALTER.lagen`:
+    //   frei — die freie Fläche (Licht und Regen), oben am meisten: frei[0] + frei[1]·max(0, n_y)
+    //   nord — die Fläche, die nach Norden −z schaut: max(0, −n_z) (schattig, lange nass)
+    //   oben — die Fläche unter dem Himmel (Dach, Mauerkrone, Sims): n_y von oben[0] bis oben[1] linear
+    //   lauf — der REGEN-LAUF: die senkrechte Fläche (1 − |n_y|/steil), × die Lauf-Länge des Wassers über der Ecke (`lauf` m:
+    //          wie viel Werk über ihr steht, voll ab `m`), × der Schlagregen: auf der WETTERSEITE (die Fläche, die den Fronten
+    //          entgegenschaut — phyto-core `windGrund` (gx, gz), `_alterWind`) voll, im Lee `lee`.
+    static _alterLage(lage, nx, ny, nz, lauf, gx, gz) {
+        const A = AnazhRealm.WERK_ALTER;
+        if (lage === 0) return A.frei[0] + A.frei[1] * Math.max(0, ny);
+        if (lage === 1) return Math.max(0, -nz);
+        if (lage === 2) return Math.max(0, Math.min(1, (ny - A.oben[0]) / (A.oben[1] - A.oben[0])));
+        const L = A.lauf;
+        const senk = 1 - Math.abs(ny) / L.steil;
+        if (!(senk > 0) || !(lauf > 0)) return 0;
+        return senk * Math.min(1, lauf / L.m) * (L.lee + (1 - L.lee) * Math.max(0, -(nx * gx + nz * gz)));
+    }
+    // DIE SCHICHTEN EINES STOFFS für den Kern (`_alterKern`): je Schicht ihre Lage als Index und ihr Ziel auf der Stoff-Farbe
+    // `mc` (die Welt liest Vertex-Farbe × Stoff-Farbe, Lehre 19: die Ecke trägt Ziel/Stoff-Farbe), dazu die Wetterseite.
+    // Fail-closed: eine Lage, die das Gesetz nicht kennt, ist ein Bruch beim Namen.
+    _alterSchichten(schichten, mc) {
+        const L = schichten.length;
+        const lagen = new Int8Array(L);
+        const ziele = new Float32Array(L * 3);
+        const c = mc || { r: 1, g: 1, b: 1 };
+        schichten.forEach((s, l) => {
+            lagen[l] = AnazhRealm.WERK_ALTER.lagen.indexOf(s.lage);
+            if (lagen[l] < 0) throw this._stoffBruch("die Lage einer Schicht des Alters", new Error(String(s.lage)));
+            ziele[l * 3] = s.ziel[0] / Math.max(1e-4, c.r);
+            ziele[l * 3 + 1] = s.ziel[1] / Math.max(1e-4, c.g);
+            ziele[l * 3 + 2] = s.ziel[2] / Math.max(1e-4, c.b);
+        });
+        return { schichten, L, lagen, ziele, wind: this._alterWind() };
+    }
+    // DIE WETTERSEITE (`_alterLage` lauf): die Grundrichtung, mit der die Fronten ziehen (phyto-core `windGrund` aus der Saat
+    // der Welt, derselbe Zug, den der Himmel trägt) — die Fläche, die ihr entgegenschaut, fängt den Schlagregen.
+    _alterWind() {
+        const g = globalThis.__phytoCore.windGrund(
+            (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed"
+        );
+        return { x: g.x, z: g.z };
+    }
+    // DER KERN DES ALTERS (stoffe.K4) — EINE Rechnung für jede Ecke jedes alternden Stoffs (das Bau-Teil `_werkAlterFaerbe`,
+    // der gesetzte Bau im Satz `_satzAlterEcken`): die Farbe `col` der Ecken [o0/3, o0/3 + n) zieht je Schicht l zu ihrem Ziel
+    // um P[p0 + l] (die Stufe, `_werkAlterStufe`) × die Lage der Fläche (`_alterLage`); `nor` die Welt-Normale, `pos` die
+    // Welt-Lage (die Lauf-Länge ist `oben` − y: die Höhe des Werks über der Ecke). Alle drei Felder mit Breite 3, ab `o0`.
+    static _alterKern(col, nor, pos, o0, n, oben, P, p0, al) {
+        const { L, lagen, ziele } = al;
+        const gx = al.wind.x,
+            gz = al.wind.z;
+        for (let v = 0, k = o0; v < n; v++, k += 3) {
+            const nx = nor[k],
+                ny = nor[k + 1],
+                nz = nor[k + 2],
+                lauf = oben - pos[k + 1];
+            for (let l = 0; l < L; l++) {
+                const S = P[p0 + l];
+                if (!(S > 0)) continue;
+                const p = S * AnazhRealm._alterLage(lagen[l], nx, ny, nz, lauf, gx, gz);
+                if (!(p > 0)) continue;
+                col[k] += (ziele[l * 3] - col[k]) * p;
+                col[k + 1] += (ziele[l * 3 + 1] - col[k + 1]) * p;
+                col[k + 2] += (ziele[l * 3 + 2] - col[k + 2]) * p;
+            }
+        }
     }
     // DIE STOFF-ANTWORT AUF DAS ALTER am gebauten Körper eines Werks (`_rebuildArchitectureMesh`, der Bau-Teil-Pfad): je Teil
-    // liest sein Stoff (`userData.stoff`, die Zeile der Stoff-Tafel `_stoff`) seine Stufe P und zieht die Albedo jeder Ecke zum
-    // Ziel seiner Zeile (`alter.ziel`, linear) um P × die Lage der Fläche in der Welt: `frei` (Holz vergraut, Eisen rostet — die
-    // freie Fläche, oben am meisten: `WERK_ALTER.frei`, frei[0] + frei[1]·n_y) oder `nord` (das Moos des Steins: die Fläche,
-    // die nach Norden −z schaut, max(0, −n_z) — schattig, lange nass). Die Welt liest Vertex-Farbe × Stoff-Farbe (Lehre 19):
-    // die Ecke trägt (1 − p)·vc + p·Ziel/Stoff-Farbe. Alter 0 trägt keinen Kanal (die Bytes byte-alt).
+    // liest sein Stoff (`userData.stoff`, die Zeile der Stoff-Tafel `_stoff`) die Stufen seiner Schichten und zieht die Albedo
+    // jeder Ecke über den EINEN Kern (`_alterKern`) zu ihren Zielen — die Lauf-Länge zählt von der Höhe des ganzen Werks.
+    // Alter 0 trägt keinen Kanal (die Bytes byte-alt).
     _werkAlterFaerbe(entry, group) {
         if (!group || !entry || !entry.position) return;
         const alter = this._werkAlter(entry);
-        const frei = AnazhRealm.WERK_ALTER.frei;
         const stufen = new Map();
         const n = new THREE.Vector3();
         const nm = new THREE.Matrix3();
         group.updateMatrixWorld(true);
+        const oben = new THREE.Box3().setFromObject(group).max.y;
         group.traverse((m) => {
             const name = m.isMesh && m.geometry && m.userData ? m.userData.stoff : null;
             if (!name) return;
             const zeile = this._stoff(name, "das Bau-Teil aus „" + name + "“ altert ohne Zeile");
-            const a = zeile && zeile.alter;
-            if (!a) return;
-            if (!stufen.has(name)) stufen.set(name, AnazhRealm._werkAlterStufe(a, alter));
+            const schichten = zeile && zeile.alter;
+            if (!schichten) return;
+            if (!stufen.has(name))
+                stufen.set(
+                    name,
+                    schichten.map((a) => AnazhRealm._werkAlterStufe(a, alter))
+                );
             const P = stufen.get(name);
             const g = m.geometry;
             const nor = g.attributes.normal;
-            if (!(P > 0) || !nor || !m.material || Array.isArray(m.material)) return;
-            const mc = m.material.color || { r: 1, g: 1, b: 1 };
-            const ziel = [
-                a.ziel[0] / Math.max(1e-4, mc.r),
-                a.ziel[1] / Math.max(1e-4, mc.g),
-                a.ziel[2] / Math.max(1e-4, mc.b),
-            ];
+            const pos = g.attributes.position;
+            if (!P.some((x) => x > 0) || !nor || !pos || !m.material || Array.isArray(m.material)) return;
+            const al = this._alterSchichten(schichten, m.material.color);
             const alt = g.attributes.color;
             const N = nor.count;
             const c = new Float32Array(N * 3);
+            const wn = new Float32Array(N * 3);
+            const wp = new Float32Array(N * 3);
             nm.getNormalMatrix(m.matrixWorld);
             for (let i = 0; i < N; i++) {
                 n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
-                const w = a.lage === "nord" ? Math.max(0, -n.z) : frei[0] + frei[1] * Math.max(0, n.y);
-                const p = P * w;
-                for (let k = 0; k < 3; k++) {
-                    const v = alt ? alt.array[i * alt.itemSize + k] : 1;
-                    c[i * 3 + k] = v * (1 - p) + ziel[k] * p;
-                }
+                wn[i * 3] = n.x;
+                wn[i * 3 + 1] = n.y;
+                wn[i * 3 + 2] = n.z;
+                n.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+                wp[i * 3 + 1] = n.y;
+                for (let k = 0; k < 3; k++) c[i * 3 + k] = alt ? alt.array[i * alt.itemSize + k] : 1;
             }
+            AnazhRealm._alterKern(c, wn, wp, 0, N, oben, P, 0, al);
             g.setAttribute("color", new THREE.BufferAttribute(c, 3));
             // DIE ECKE EINMAL (Farbe einmal G1/G2): ein Stoff, dessen colorNode die Ecke schon liest (`eckeImKnoten`: der
             // verschmolzene Bau teilt `_sharedFoliageMaterial`, das Teil mit Vertex-Farbe), liest das neue Attribut — er
@@ -965,6 +1061,73 @@ class AnazhRealm_siedlung_satz {
             const vor = e._alter ? e._alter.ov : this._artifactStudioOv({ studioOv: e.studioOv });
             if (this._artifactStudioOv(e) !== vor) offen.add(e);
         }
+        // DER GESETZTE BAU IM SATZ (`_satzAlter`): jede Gruppe, deren Stoff altert, gleicht ihre Slots ab — der Stempel trägt die
+        // Stufen (`_bauSatzStempel`), es legt sich nur neu, was sprang; die Gruppen, die der Satz nicht zeichnet, kosten nichts
+        const gruppen = this.state.archInstanceGroups;
+        if (gruppen)
+            for (const g of gruppen.values())
+                if (g.satz && (g.liveCount || 0) > 0 && this._satzAlter(g)) this._bauSatzMarke(g.key, g.satz);
+    }
+    // DAS ALTER IM SATZ (stoffe.K4): ein gesetzter Bau zeichnet im Satz seines Stoffs (`_bauSatzArt`) — dort, wo seine Albedo
+    // entsteht (`_satzBlockEcken`: Farbe × Instanz-Farbe in Welt-Lage), altert er nach dem EINEN Gesetz der Stoff-Tafel: die
+    // Seh-Klasse seines Studio-Stoffs (phyto-core `BUDGET_GESETZ.seh`) nennt den Stoff der Welt (`WERK_ALTER.seh`: das Matte eines
+    // Baus — Putz, Stein, Ziegel — altert wie Stein, sein Metall wie Eisen; Glas und Glut altern nicht), dessen Schichten
+    // (`_stoff(...).alter`) altern je Slot mit dem Alter seines Werks (`_werkAlter`: die Zeit seit dem Bau-Akt und die
+    // Nässe-Dosis, beide aus dem Stand). Nur der Bau-Satz (der Fels ist alt, als die Welt begann; der Wurf zeichnet keine
+    // Farbe), und nie ein Werk, dessen Studio den Regler `verwitterung` trägt (`_werkAlterZeile`: es altert in seinem Kern, der
+    // seine Rollen kennt). Gemerkt an der Gruppe (Stoff und Art wechseln nie); null: sie altert nicht.
+    _satzAlter(g) {
+        if (g._satzAlter !== undefined) return g._satzAlter;
+        let al = null;
+        const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
+        const preset = /^f:([^|]+)\|/.exec(String(g.key));
+        const u = g.mesh && g.mesh.material && g.mesh.material.userData;
+        const name = u && u.foundryMp ? AnazhRealm.WERK_ALTER.seh[u.foundryMp.seh] : null;
+        if (
+            sts &&
+            sts.name === "bauSatz" &&
+            sts.nurWurf !== true &&
+            preset &&
+            name &&
+            !this._werkAlterZeile(preset[1])
+        ) {
+            const zeile = this._stoff(name, "der Bau-Satz aus „" + name + "“ altert ohne Zeile");
+            if (zeile && zeile.alter && zeile.alter.length) al = this._alterSchichten(zeile.alter, sts.mat.color);
+        }
+        g._satzAlter = al;
+        return al;
+    }
+    // Die Ecken der Instanzen [ab, ab + cnt) eines Bau-Bereichs im Alter ihres Werks (`_satzBlockEcken`, nach Lage · Normale ·
+    // Farbe): je Instanz ihre Stufen aus dem Stempel ihres Slots (`bau.stempel`, `_bauSatzStempel`), die Lauf-Länge von der
+    // Höhe ihrer Gestalt in der Welt (`_satzOben`). Eine Instanz ohne Stufe bleibt byte-alt.
+    static _satzAlterEcken(A, geo, im, cnt, ab, n, bau) {
+        const al = bau.alter;
+        const S = bau.stempel,
+            K = bau.K;
+        if (!A.color || !A.normal || !A.position || A.color.itemSize !== 3)
+            throw new Error("_satzAlterEcken: der Bereich trägt Lage, Normale und Farbe (3) nicht");
+        if (!geo.boundingBox) geo.computeBoundingBox();
+        for (let j = 0; j < cnt; j++) {
+            const i = ab + j,
+                p0 = i * K + K - al.L;
+            let an = false;
+            for (let l = 0; l < al.L; l++) if (S[p0 + l] > 0) an = true;
+            if (!an) continue;
+            const oben = AnazhRealm._satzOben(geo.boundingBox, im, i * 16);
+            AnazhRealm._alterKern(A.color.array, A.normal.array, A.position.array, j * n * 3, n, oben, S, p0, al);
+        }
+    }
+    // Die Höhe einer Gestalt in der Welt: die höchste Ecke ihrer Hülle `bb` unter der Instanz-Matrix (ab `o` in `e`).
+    static _satzOben(bb, e, o) {
+        let y = -Infinity;
+        for (let c = 0; c < 8; c++) {
+            const x = c & 1 ? bb.max.x : bb.min.x,
+                h = c & 2 ? bb.max.y : bb.min.y,
+                z = c & 4 ? bb.max.z : bb.min.z;
+            const w = e[o + 1] * x + e[o + 5] * h + e[o + 9] * z + e[o + 13];
+            if (w > y) y = w;
+        }
+        return y;
     }
     // Der neue Körper eines alternden Werks tritt ein, sobald er da ist (dieselbe Stufe, der Stempel mit dem Alter); ein Werk aus
     // Bau-Teilen baut seinen Körper im selben Takt neu.
@@ -1681,12 +1844,21 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // Wasser doppelt). Geeicht an der Staffel (stoffe.K4#2): nach 30 Tagen am trockenen Ort W 0,75 — Holz −35 % Sättigung.
 // `regen`: die Tage, um die ein voller Regen-Tag (Regen-Stärke × Tag, `worldMeta.nassTage`) den Studio-Regler weiter altern lässt.
 // `stufen`: das Raster der Stoff-Antwort der Bau-Teile (`_werkAlterFaerbe`) — ein Körper baut neu nur beim Sprung einer Stufe.
-// `frei`: die Lage der Fläche im Alter der Bau-Teile (`_werkAlterFaerbe`) — Sockel und Gewicht der Oberseite (die freie Fläche
-// trägt Licht und Regen, die oben liegende am meisten, die Unterseite den Sockel).
+// DIE LAGEN DES ALTERS (`_alterLage`, die Exposition je Schicht der Stoff-Tafel): `lagen` ihre Namen (der Index ist der Code
+// des Kerns). `frei`: Sockel und Gewicht der Oberseite (die freie Fläche trägt Licht und Regen, die oben liegende am meisten,
+// die Unterseite den Sockel). `oben`: die Fläche unter dem Himmel, n_y von 0,3 (73°: ein steiles Dach trägt sie kaum) bis 0,9
+// voll. `lauf`: der Regen-Lauf — senkrecht bis |n_y| < steil, voll ab `m` Metern Werk über der Ecke (anderthalb Geschosse: der
+// Lauf eines Würfels am Boden bleibt kurz, der Fuß einer Hauswand trägt ihn ganz), im Lee `lee` des Schlagregens der Wetterseite.
+// `seh`: der Stoff der Welt je Seh-Klasse eines Studio-Stoffs (`_satzAlter`; phyto-core `BUDGET_GESETZ.seh`) — das Matte eines
+// gesetzten Baus altert wie Stein, sein Metall wie Eisen, Glas und Glut tragen keine Zeile.
 AnazhRealm.WERK_ALTER = Object.freeze({
     tauTage: 40,
     nassMin: 1,
     regen: 1,
     stufen: 32,
+    lagen: Object.freeze(["frei", "nord", "oben", "lauf"]),
     frei: Object.freeze([0.7, 0.3]),
+    oben: Object.freeze([0.3, 0.9]),
+    lauf: Object.freeze({ m: 6, lee: 0.35, steil: 0.5 }),
+    seh: Object.freeze({ stoff: "stein", metall: "eisen" }),
 });
