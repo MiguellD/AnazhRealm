@@ -643,6 +643,8 @@ var __weltLicht = (function () {
         // DIE ERSATZ-LICHTER DER NACHT leben in der Dämmerung (bürgerlich: die Sonne 0° … −6°, wie das physikalische Himmelsmodell
         // ohne Ersatz-Licht sie liefert): über dem Horizont tragen Sonne und Himmel allein. Bis ferne.K4 begannen sie bei 14,5°
         // (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten, ein Viertel des Himmels (Dorf, 18-%-Karte zur Sonne).
+        // Die Belichtung folgt dem Licht ohne Kante: über 0,25–0,30 und 0,70–0,75 je 0,002 der Uhr steigt sie glatt um 0,14–0,20 EV
+        // (vorher 0,11–0,16 EV: das Ersatz-Licht füllte die sinkende Sonne auf).
         const nachtE = Math.sin((-6 * Math.PI) / 180);
         const hN = 0;
         const nG = BELICHTUNG.nachtGrad;
