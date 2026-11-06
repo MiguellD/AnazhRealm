@@ -3084,7 +3084,7 @@ Object.defineProperties(AnazhRealm, {
 });
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
-AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal) ohne Wahl des Spielers (`state.zugang.fov`, 60–100°); `_kamFov` legt Tempo und Bogen-Auszug darauf
+AnazhRealm.KAM_FOV_GRAD = 75; // die Ruhe des Sichtfelds (vertikal) ohne Wahl des Spielers (`state.zugang.sichtfeld`, 60–100°); `_kamFov` legt Tempo und Bogen-Auszug darauf
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen
 AnazhRealm.FOCUSING_HEAT_RANGE_M = 4; // Architekturen in diesem Radius einer Linse können ihren Brennpunkt tragen
 // DAS WÄRME-GESETZ DES BRENNGLASES (stoffe.K1, `_brennWaerme`): die Sonne trägt FOCUSING_SONNE_W_M2 auf die Linse (π r² mal

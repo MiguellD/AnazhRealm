@@ -3537,9 +3537,9 @@ AnazhRealm.FARBSICHT = Object.freeze({
     staerke: 1,
 });
 // DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
-// KAM_FOV_GRAD) in `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
+// KAM_FOV_GRAD) in `sichtfeld` — nie `fov`: `.fov =` schreibt allein `_kamFov` (gate:fahr-leben T5) —, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
 // swiftshader, 1,5° Drehung je Bild über 12 Bilder: Kanten-Energie an 3,6, aus 12,5, in Ruhe beide 7,8 — spielgang.K4#2).
-AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+AnazhRealm.ZUGANG = Object.freeze({ sichtfeld: Object.freeze([60, 100]), laufPxAus: 4 });
 // die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
 AnazhRealm._farbsichtMatrix = function (art, staerke) {
     const F = AnazhRealm.FARBSICHT;

@@ -2065,10 +2065,10 @@ class AnazhRealm_koerper_bewegung {
         const st = this.state;
         const d = st.player && st.player._bogenDraw;
         const A = d && Number.isFinite(d.frac) ? AnazhRealm._arenaGesetz().bogen : null;
-        // DER ZUGANG (spielgang.K4, `state.zugang`): die Ruhe ist das Sichtfeld des Spielers (`fov`, sonst KAM_FOV_GRAD); ohne
+        // DER ZUGANG (spielgang.K4, `state.zugang`): die Ruhe ist das Sichtfeld des Spielers (`sichtfeld`, sonst KAM_FOV_GRAD); ohne
         // Kopfwackeln (`wackeln` false) atmet das Sichtfeld nicht mit dem Tempo
         const Z = st.zugang || {};
-        const ruhe = Number.isFinite(Z.fov) ? Z.fov : AnazhRealm.KAM_FOV_GRAD;
+        const ruhe = Number.isFinite(Z.sichtfeld) ? Z.sichtfeld : AnazhRealm.KAM_FOV_GRAD;
         let roh = st._zoomActive
             ? AnazhRealm.ZOOM_FOV_DEG
             : ruhe + (Z.wackeln === false ? 0 : tempo || 0) + (A ? (A.fovZug - A.fovRuhe) * d.frac : 0);
