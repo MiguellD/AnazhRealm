@@ -196,7 +196,7 @@ async function verhalten(schaleSrc) {
                 const neu = (format, platte, b) => {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
-                        ecken: [1, 3, 4],
+                        ecken: [1, 3],
                         format,
                         platte,
                         kerne: [{ id: "basis", ns: null, basis: true, urls: [o + "/kern.js"] }].concat(

@@ -264,7 +264,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // im Modell der Station — flache Wiese, Third 2,43 m, Nilson je Ring — 1,82 · 1,29, jetzt 1,82 · 1,73), und die Ferne
 // zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe (jetzt ≤ 1,67×).
 function ferneWand(A) {
-    const [R, F, T] = [A.NAH_WIESE.radius, A.NAH_WIESE.fern, A.WIESE_FERN_TAFEL];
+    const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
     let [deckung, schirm] = [1, 0];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
         [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
