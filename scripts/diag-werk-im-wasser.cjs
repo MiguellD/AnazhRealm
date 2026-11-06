@@ -220,6 +220,10 @@ function urteil(b) {
                 v.push(`E LEER: ${wo} setzte ${x.gesetzt} von ${x.gewollt} — der Fehl-Grund griff nicht`);
                 continue;
             }
+            if (x.frei != null && x.gesetzt !== x.frei)
+                v.push(
+                    `E: ${wo} setzte ${x.gesetzt} von ${x.gewollt} — die Obergrenze trägt genau ${x.frei} (ein Leib wich oder ein Platz blieb leer)`
+                );
             if (x.chat.includes(x.wunsch))
                 v.push(
                     `E: ${wo} — der Satz sagt den Wunsch „${x.wunsch}" bei ${x.gesetzt} von ${x.gewollt}: „${x.chat}"`
@@ -1275,22 +1279,28 @@ async function probe(A) {
                     r.processChatCommand(satz);
                     return chatSeit(t0);
                 };
-                const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
+                // `frei`: so viele Plätze trägt die Kappe (die Kreatur-Fälle) — gesetzt wird genau so viel
+                const fall = (name, satz, gewollt, wunsch, grund, setzen, frei) => {
                     const vorA = new Set(st.architectures);
                     const vorK = new Set(st.creatures); // je Leib: weicht an der Kappe ein Tier des Bestands, bleibt die Zahl gleich
                     const chat = sprich(satz);
                     const neuA = neueWerke(vorA);
                     const gesetzt = setzen === "kreatur" ? st.creatures.filter((c) => !vorK.has(c)).length : neuA.length;
-                    E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
+                    E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat, ...(frei == null ? {} : { frei }) });
                     for (const e of neuA) r.removeArchitecture(e);
                 };
                 // die Gründe aus der EINEN Tafel des Stamms (fehlt sie, nennt der Satz keinen — das Urteil sagt es)
                 const T = r.constructor.SETZ_GRUND || {};
                 const G = new Proxy({}, { get: (_, k) => (T[k] ? r._t(T[k]) : `(kein Grund „${String(k)}" in SETZ_GRUND)`) }); // je Grund ein Schlüssel der Tafel
                 stelle(cx + 40, cz + 40);
-                // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
+                // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner. An der vollen Kappe weicht jeder gezeichnete Leib des
+                // Bestands außer Blick dem Akt (`_bestandWeicht`, w5-studios-k1, oekologie.K2#2) — darum ruht der Bestand für die
+                // Fälle als Zahl (`_bestandEntkoerpern`, der Weg der Zeichnung; der nächste Takt zeichnet ihn neu): 3 frei sind 3.
+                // Bis w13-pegel-heil zählte „3 frei" die Leiber außer Blick mit — je Lauf 3 + 3 (main), 3 + 6, 3 + 7 (43584419:
+                // 10 von 10, kein Fehl-Grund).
                 const maxAlt = st.maxCreatures;
                 try {
+                    for (const c of st.creatures.slice()) if (c.userData._bestand) r._bestandEntkoerpern(c);
                     st.maxCreatures = st.creatures.length + 3;
                     fall(
                         "Kreaturen an der Obergrenze (3 frei)",
@@ -1298,7 +1308,8 @@ async function probe(A) {
                         10,
                         "10 Kreaturen gespawnt",
                         G.obergrenze,
-                        "kreatur"
+                        "kreatur",
+                        3
                     );
                     st.maxCreatures = st.creatures.length;
                     fall(
@@ -1307,7 +1318,8 @@ async function probe(A) {
                         10,
                         "10 Kreaturen gespawnt",
                         G.obergrenze,
-                        "kreatur"
+                        "kreatur",
+                        0
                     );
                 } finally {
                     st.maxCreatures = maxAlt;
@@ -1881,6 +1893,7 @@ function selbsttest() {
                     satz: "spawne kreaturen 10",
                     gewollt: 10,
                     gesetzt: 3,
+                    frei: 3,
                     wunsch: "10 Kreaturen gespawnt",
                     grund: "die Welt trägt nicht mehr Kreaturen",
                     chat: "> spawne kreaturen 103 von 10 Kreaturen erschienen — 7 nicht: die Welt trägt nicht mehr Kreaturen (20).",
@@ -2083,6 +2096,12 @@ function selbsttest() {
             /E: Tempel bei kaltem Buch .* eine Absage ohne Grund/,
         ],
         ["E Fehl-Grund griff nicht", ["setzen.faelle.1.gesetzt=", 1], /E LEER: Tempel bei kaltem Buch/],
+        // w13-pegel-heil: 6 Leiber des Bestands wichen an der Kappe — „3 frei" setzte 9 (der Grund stimmt, die Zahl nicht)
+        [
+            "E die Kappe trägt mehr als frei",
+            ["setzen.faelle.0", { gesetzt: 9, chat: "> spawne kreaturen 109 von 10 Kreaturen erschienen — 1 nicht: die Welt trägt nicht mehr Kreaturen (höchstens 9)." }],
+            /E: Kreaturen an der Obergrenze \(3 frei\) .* setzte 9 von 10 — die Obergrenze trägt genau 3/,
+        ],
         [
             "E Dorf sofort gebaut",
             ["setzen.dorf.sofort=", "> baue dorf hierdorf vor dir gebaut"],
