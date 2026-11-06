@@ -588,29 +588,34 @@ class AnazhRealm_gelaende_chunks {
     // Boot liest den Ring von der Platte. DIE PLATTE LEBT IM FADEN (Karte hydro-faden, Lehre 24: ein IDB-Put klont synchron im
     // Aufrufer) — bis dahin klonte der Haupt-Faden jeden Reply hinein und jeden Treffer heraus (38 MB je Minute Fahrt). Hier
     // nur, was der Faden über sie wissen muss: ob sie gilt (headless AUS; window.__anazhChunkIdb: true → an, diag-warm-start,
-    // false → aus), ihr Stempel (AnazhRealm.VERSION — jeder Release bustet — + genVersion + der Hash des Erbguts: ein fremdes
-    // Erbgut liest nie alte Bytes + die Form des Replys `CHUNK_IDB_FORM`; Mismatch → der Faden leert sie) und ihr Deckel.
-    // Der SEED lebt im KEY (`_chunkIdbKey`).
+    // false → aus), ihr Stempel (AnazhRealm.VERSION — jeder Release bustet — + die Form des Replys `CHUNK_IDB_FORM`; Mismatch →
+    // der Faden leert sie) und ihr Deckel. DIE WELT LEBT IM KEY (`_chunkIdbKey`: Seed, Generation, Erbgut): bis tore.K1 stand das
+    // Erbgut im Stempel, und jeder Wechsel zwischen zwei Welten verschiedener Gesetze (das Welt-Tor in die Ferne und zurück)
+    // leerte die Platte — jede schon besuchte Welt kam kalt an (Radeon 8efb6318: der Boden 15–17 Stücke im Bild, bis 4 s).
     _chunkPlatte() {
         const hook = typeof window !== "undefined" ? window.__anazhChunkIdb : undefined;
         const an =
             typeof indexedDB !== "undefined" &&
             hook !== false &&
             (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull));
-        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        const stempel =
-            AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
+        const stempel = AnazhRealm.VERSION + "|landform|" + AnazhRealm.CHUNK_IDB_FORM;
         return { an, stempel, max: AnazhRealm.CHUNK_IDB_MAX };
     }
-    // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
-    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
+    // Der Warm-Start-Key: seed|cx,cz|lod|w<Generation>.<Erbgut> — jede Welt, die der Spieler besuchte, liegt neben den anderen im
+    // Store (der Stempel bustet nur bei Version und Form, s. _chunkPlatte; voll leert ihn der Deckel).
     // Ein Versatz der Schneegrenze (stoffe.K3-2, `_schneeGilt`) färbt den Chunk: er trägt seinen Schlüssel (die Sommer-Mitte 0
     // den alten); ebenso der Pegel, der sein Wasser hebt (`_pegelMarke`, "" wo nichts steigt).
     _chunkIdbKey(cx, cz, lod) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const schnee = this._schneeGilt();
         const pegel = this._pegelMarke(cx, cz);
-        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        return (
+            `${seed}|${cx},${cz}|${lod}` +
+            (schnee ? `|s${schnee}` : "") +
+            (pegel ? `|p${pegel}` : "") +
+            `|w${genV}.${this._erbgut().hash}`
+        );
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
