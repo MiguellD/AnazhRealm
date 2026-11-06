@@ -219,18 +219,7 @@ class AnazhRealm_siedlung_satz {
                 }
             }
         }
-        if (bau.alter) {
-            const e = g.slotEntry[i];
-            const alter = e && e.position ? this._werkAlter(e) : null;
-            for (const a of bau.alter.schichten) {
-                const v = alter ? AnazhRealm._werkAlterStufe(a, alter) : 0;
-                if (S[k] !== v) {
-                    S[k] = v;
-                    anders = true;
-                }
-                k++;
-            }
-        }
+        if (bau.alter && this._satzAlterStempel(bau, g, i)) anders = true;
         return anders;
     }
 
@@ -1061,12 +1050,119 @@ class AnazhRealm_siedlung_satz {
             const vor = e._alter ? e._alter.ov : this._artifactStudioOv({ studioOv: e.studioOv });
             if (this._artifactStudioOv(e) !== vor) offen.add(e);
         }
-        // DER GESETZTE BAU IM SATZ (`_satzAlter`): jede Gruppe, deren Stoff altert, gleicht ihre Slots ab — der Stempel trägt die
-        // Stufen (`_bauSatzStempel`), es legt sich nur neu, was sprang; die Gruppen, die der Satz nicht zeichnet, kosten nichts
+        // DER GESETZTE BAU IM SATZ (`_satzAlter`): jede Gruppe, deren Stoff altert, wartet auf ihren Abgleich (`_satzAltern`),
+        // nah zuerst; die Gruppen, die der Satz nicht zeichnet, kosten nichts (sie lesen ihr Alter, wenn sie gelegt werden)
         const gruppen = this.state.archInstanceGroups;
-        if (gruppen)
-            for (const g of gruppen.values())
-                if (g.satz && (g.liveCount || 0) > 0 && this._satzAlter(g)) this._bauSatzMarke(g.key, g.satz);
+        if (!gruppen) return;
+        const reihe = [];
+        for (const g of gruppen.values())
+            if (g.satz && (g.liveCount || 0) > 0 && this._satzAlter(g)) {
+                const im = g.mesh.instanceMatrix.array;
+                reihe.push([this._spielerD2(im[12], im[14]), g]);
+            }
+        // eine Arbeit mitten im Slot bleibt vorn (ihr Stempel trägt die neue Stufe schon)
+        const alt = this._satzAltertOffen;
+        const halb = alt && alt.length && alt[0].v > 0 ? alt[0] : null;
+        reihe.sort((a, b) => a[0] - b[0]);
+        this._satzAltertOffen = (halb ? [halb] : []).concat(
+            reihe.filter((x) => !halb || x[1] !== halb.g).map((x) => ({ g: x[1], i: 0, v: 0, stand: 0 }))
+        );
+    }
+    // DER ABGLEICH DES ALTERS IM SATZ (Lehre 14 und 25, Kosten an der Änderung): je Takt die wartenden Gruppen, nah zuerst, Slot
+    // für Slot — ein Slot, dessen Stufen nicht sprangen, kostet den Vergleich mit seinem Stempel (`_satzAlterStempel`); einer,
+    // dessen Stufe sprang, trägt die neue in seinen Stempel und legt seine Ecken AM ORT neu, in Fenstern unter dem Deckel des
+    // Takts (BAU_SATZ_ECKEN_JE_TAKT, der Deckel des Bau-Satzes; `_chunkSatzLege` am Ort lädt nur den Lauf, der sich änderte — die
+    // Farbe: Lage, Normale, Zellen und Hüllen bleiben). Ändert sich die Gruppe mitten im Slot (Belegen · Freigeben · Stufe),
+    // fällt die Arbeit: ihre Alters-Stempel werden ungültig, der Slot-Abgleich legt sie ganz (`_bauSatzSlots`). Vor dem ersten
+    // Weltbild gilt kein Deckel. Gemessen (Dorf, 43 Gruppen, 170 036 Ecken, Cloud headless): ein Sprung der Stufe lag als EIN
+    // Takt von 25 ms, am Ort in Fenstern ≤ 8192 Ecken je Takt.
+    _satzAltern() {
+        const reihe = this._satzAltertOffen;
+        if (!reihe || !reihe.length) return;
+        const st = this.state;
+        let budget = st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
+        while (budget > 0 && reihe.length) {
+            const a = reihe[0];
+            const g = a.g;
+            const s = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
+            const b = s ? s.bloecke.get(g.key) : null;
+            const bau = b ? b.bau : null;
+            const steht =
+                !!bau &&
+                !!bau.alter &&
+                st.archInstanceGroups.get(g.key) === g &&
+                bau.geom === g.geom &&
+                bau.mat === g.mesh.material &&
+                bau.cnt === (g.liveCount | 0) &&
+                !(st.bauSatzRaten && st.bauSatzRaten.has(g.key));
+            if (a.v > 0 && (!steht || g.slotStand !== a.stand)) {
+                if (bau && bau.alter) {
+                    AnazhRealm._satzAlterUngueltig(bau);
+                    this._bauSatzMarke(g.key, g.satz);
+                }
+                reihe.shift();
+                continue;
+            }
+            if (!steht) {
+                reihe.shift();
+                continue;
+            }
+            if (a.v === 0) {
+                while (a.i < bau.cnt && !this._satzAlterStempel(bau, g, a.i)) a.i++;
+                if (a.i >= bau.cnt) {
+                    reihe.shift();
+                    continue;
+                }
+                a.stand = g.slotStand;
+            }
+            const n = bau.n;
+            const v1 = Math.min(n, a.v + budget);
+            const sts = st.satzStoffe ? st.satzStoffe.get(g.satz) : null;
+            const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
+            const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
+            const regler = AnazhRealm._satzRegler(g.mesh.material);
+            const A = this._satzBlockEcken(
+                g.geom,
+                g.mesh.instanceMatrix.array,
+                ic,
+                1,
+                attr,
+                g.key,
+                regler,
+                a.i,
+                a.v,
+                v1,
+                bau
+            );
+            this._chunkSatzLege(s, b.vStart + a.i * n + a.v, A, v1 - a.v, true);
+            budget -= v1 - a.v;
+            if (v1 === n) {
+                a.i++;
+                a.v = 0;
+            } else a.v = v1;
+        }
+    }
+    // Die Stufen des Alters im Stempel von Slot `i` (`_bauSatzStempel`): sprang eine, trägt der Stempel die neue — true.
+    _satzAlterStempel(bau, g, i) {
+        const { L, schichten } = bau.alter;
+        const S = bau.stempel,
+            k = i * bau.K + bau.K - L;
+        const e = g.slotEntry[i];
+        const alter = e && e.position ? this._werkAlter(e) : null;
+        let sprang = false;
+        for (let l = 0; l < L; l++) {
+            const v = alter ? AnazhRealm._werkAlterStufe(schichten[l], alter) : 0;
+            if (S[k + l] !== v) {
+                S[k + l] = v;
+                sprang = true;
+            }
+        }
+        return sprang;
+    }
+    // Die Stufen des Alters jedes Slots ungültig (der nächste Slot-Abgleich legt sie ganz).
+    static _satzAlterUngueltig(bau) {
+        const L = bau.alter.L;
+        for (let i = 0; i < bau.cnt; i++) for (let l = 0; l < L; l++) bau.stempel[i * bau.K + bau.K - L + l] = -1;
     }
     // DAS ALTER IM SATZ (stoffe.K4): ein gesetzter Bau zeichnet im Satz seines Stoffs (`_bauSatzArt`) — dort, wo seine Albedo
     // entsteht (`_satzBlockEcken`: Farbe × Instanz-Farbe in Welt-Lage), altert er nach dem EINEN Gesetz der Stoff-Tafel: die
@@ -1133,6 +1229,7 @@ class AnazhRealm_siedlung_satz {
     // Bau-Teilen baut seinen Körper im selben Takt neu.
     _tickWerkAlter() {
         this._werkeAltern();
+        this._satzAltern();
         const offen = this._werkAltertOffen;
         if (!offen || !offen.size) return;
         for (const e of offen) {
