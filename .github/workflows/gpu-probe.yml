@@ -249,8 +249,8 @@ jobs:
                       esac
                       case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; esac
                       KOPF="$KOPF${KOPF:+ · }$p $U $d s"
-                      Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-400)
-                      [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-400)
+                      Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-600)
+                      [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-600)
                       {
                           echo "### $p — $U · $d s"
                           echo
