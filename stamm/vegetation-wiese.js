@@ -491,7 +491,8 @@ class AnazhRealm_vegetation_wiese {
     // TSL für den Stoff `_halmFerne`; bis w4-gras-l2 standen hier und im Stoff zwei Abschriften desselben Terms): je
     // Büschel aus seinem FUSSABDRUCK-ABSTAND Q (`_wieseFuss`: die Bodenfläche je Pixel an seinem Fuß als der Abstand, in dem
     // die flache Wiese denselben Pixel trägt) die STRECKUNG s = max(Q/radius, (Q/fuss)³) in [1, streckMax] — die Gestalt des
-    // Büschels waagrecht um s, es trägt die Fläche von s² Zellen; ab der Übergabe wächst der Halm mit der Breite des Pixels,
+    // Büschels waagrecht um s, es trägt die Fläche von s² Zellen (die Spreizung; der Halm selbst hält nur den
+    // Pixel, `_halmFerne`, nie um s breiter); ab der Übergabe wächst sie mit der Breite des Pixels,
     // ab ~16,6 m mit der Bodenfläche je Pixel (das Verhältnis zu der bei `fuss`: die Büschel je Pixel bleiben) —
     // und der ANTEIL der stehenden Büschel a = min(1, Ziel/s) × (1 − Saum vor `bis`), das Ziel der Deckung je Fläche 1 bis
     // `voll` (Anzahl × s = 1: an der Übergabe die Wiese der Nähe), dahinter (voll/Q)^fall; der Saum am waagrechten Abstand d
@@ -1119,9 +1120,14 @@ class AnazhRealm_vegetation_wiese {
         // Fußabdruck-Abstand `_wieseFuss`, samt dem Band, in dem es sinkt) und dessen gestreckte Kugel der Pass trifft (Radius ×
         // s: bis w4-gras-l2 zog die Kachel jedes ihrer Büschel, auch die neben dem Blick) — seine Matrizen stehen im Block der
         // Kachel, der Satz kopiert nur; wie weit es sich streckt und wie hoch es steht, rechnet der Stoff am Auge dieses Passes
-        // (`_halmFerneAuge`: die Lage und die Höhe über dem eigenen Boden, `_wieseAuge`) mit derselben Rechnung
+        // (`_halmFerneAuge`: die Lage und die Höhe über dem eigenen Boden, `_wieseAuge`) mit derselben Rechnung; die Breite
+        // seiner Halme liest den Pixel der Szene (`_halmFernePixel`: der EINE Schirm `_schirm` × die Szenen-Skala)
         const auge = this._wieseAuge({ x: ax, y: we[13], z: az });
         if (this._halmFerneAuge) this._halmFerneAuge.value.set(ax, we[13], az, auge.h);
+        if (this._halmFernePixel) {
+            const pxJeM = this._schirm().pxJeM;
+            this._halmFernePixel.value = pxJeM > 0 ? 1 / (pxJeM * this._szeneSkalaWirk()) : 0;
+        }
         const F = NW.fern;
         const HF = F.kachel * 0.5;
         const [ZAHLEN, TF] = [globalThis.__phytoCore.WIND_ZAHLEN, AnazhRealm.WIESE_FERN_TAFEL];
