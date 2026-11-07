@@ -1894,7 +1894,7 @@ class AnazhRealm_koerper_bewegung {
                 // DER GLEITENDE RIG (leib.K4 Staffel 2): jeder Freiheitsgrad des Rigs folgt dem Gesetz des Arms — ein Hindernis
                 // zieht ihn sofort heran, frei gleitet er hinaus (der Rest `armRuhe` je Sekunde): der
                 // Aufstieg des Drehpunkts und die Schulter sprangen je Bild zwischen ihrem Hindernis und dem freien Maß (unter der
-                // Treppe des haus_alemannisch 0,23 ↔ 1,0 m und 0 ↔ 0,6 m: Ruck p95 0,06–0,085 m im Sprint). Beide bleiben in der frei
+                // Treppe des haus_alemannisch 0,23 ↔ 1,0 m und 0 ↔ 0,6 m: Ruck p95 0,06–0,085 m im Sprint, gleitend 0,034–0,046). Beide bleiben in der frei
                 // gewürfelten Strecke (vom Start des Aufstiegs bis zu seinem Halt, von der Säule bis zur Schulter) — sicher wie der Arm.
                 const gleit = (alt, frei, lo) =>
                     Number.isFinite(alt) && frei > alt
