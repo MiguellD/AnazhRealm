@@ -85,7 +85,7 @@ for (let i = 0; i < 40; i++) for (let j = 0; j < 40; j++) {
   const k = (py * W + px) * 4;
   va.push(luma709(an, k)); vb.push(luma709(aus, k));
 }
-const med = (a) => { const b = a.slice().sort(aufsteigend); return b[b.length >> 1]; };
+const med = (a) => rang(a.slice().sort(aufsteigend));
 const flecken = (a) => { const m = med(a); return a.filter((w) => Math.abs(w - m) > 0.25 * Math.max(m, 4)).length / a.length; };
 const e = 0.5, hx = r._voxelSurfaceY(cx + e, cz) - r._voxelSurfaceY(cx - e, cz), hz = r._voxelSurfaceY(cx, cz + e) - r._voxelSurfaceY(cx, cz - e);
 const nrm = new T.Vector3(-hx, 2 * e, -hz).normalize();

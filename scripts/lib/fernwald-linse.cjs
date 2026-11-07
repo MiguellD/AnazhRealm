@@ -158,7 +158,7 @@ function fernwaldLinse(opts) {
                 kronenPx: n,
                 bloecke: sig.length,
                 glatt: sig.length ? +(sig.filter((v) => v < 4).length / sig.length).toFixed(3) : null,
-                hf: hf.length ? +hf[Math.floor(hf.length / 2)].toFixed(2) : null,
+                hf: hf.length ? +rang(hf).toFixed(2) : null,
                 vielfalt: +vielfalt.toFixed(2),
                 farbe: n ? [sr / n, sg / n, sb / n].map((v) => Math.round(v)) : null,
             };

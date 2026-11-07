@@ -2604,7 +2604,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
+                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(rang(ms, 0.95))],
                 };
             },
         });

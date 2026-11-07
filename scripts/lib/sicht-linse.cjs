@@ -729,7 +729,7 @@ function sichtPhase(frames, ab) {
         if (!x.length) return { mittel: 0, median: 0, max: 0 };
         return {
             mittel: +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(1),
-            median: x[Math.floor(x.length / 2)],
+            median: rang(x),
             max: x[x.length - 1],
         };
     };
@@ -834,7 +834,7 @@ function sichtPhase(frames, ab) {
     return {
         lichtFrames: fs.filter((f) => f.licht).length,
         sonneRad: +sonneRad.toFixed(5),
-        stufe: stufen.length ? stufen[Math.floor(stufen.length / 2)] : null,
+        stufe: stufen.length ? rang(stufen) : null,
         // die Kaskaden mit Box und ihr Licht-Rand in Texeln (0, wenn ein Frame ohne ihn wählte)
         mitBox: fs.some((f) => f.mitBox),
         lichtRand: fs.some((f) => f.mitBox) ? Math.min(...fs.filter((f) => f.mitBox).map((f) => f.lichtRand || 0)) : 0,
@@ -865,7 +865,7 @@ function sichtPhase(frames, ab) {
             const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
             return {
                 frames: x.filter((a) => a > 0).length,
-                median: x.length ? x[Math.floor(x.length / 2)] : 0,
+                median: x.length ? rang(x) : 0,
                 max: x.length ? x[x.length - 1] : 0,
             };
         })(),

@@ -218,7 +218,7 @@ function messeKopf(sb, eingriff) {
             if (d >= rb && d <= 1.8 * rb && p[2] > sz.a) ring.push(i);
         });
         const zs = ring.map((i) => hp[i][2]).sort(aufsteigend);
-        const zMed = zs.length ? zs[zs.length >> 1] : NaN;
+        const zMed = zs.length ? rang(zs) : NaN;
         vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
     }
     // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut

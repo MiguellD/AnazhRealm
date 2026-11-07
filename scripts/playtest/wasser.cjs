@@ -366,7 +366,7 @@ async function checkBandHydrosphere({ page, check }) {
             let rp = null;
             for (const rv of hydro.rivers || []) {
                 if (rv.points && rv.points.length > 2) {
-                    rp = rv.points[Math.floor(rv.points.length / 2)];
+                    rp = rang(rv.points);
                     break;
                 }
             }

@@ -126,7 +126,7 @@ const PROBEN_VORSTAND = Object.freeze({ mittel: 35.4, median: 34, hoechstens: 50
 const PROBEN_RING = 4;
 const quantil = (a, q) => {
     const s = [...a].sort(aufsteigend);
-    return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+    return rang(s, q);
 };
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
 const SPRUENGE_MAX = 4;

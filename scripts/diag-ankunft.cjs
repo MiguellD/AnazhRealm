@@ -887,7 +887,7 @@ async function probe(arg) {
                 try {
                     let g = ((st._weltbildDa = 0), neu());
                     if (!(b.n[0] && b.n[1])) {
-                        [st.yaw, b.n] = [w.sort(aufsteigend)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
+                        [st.yaw, b.n] = [rang(w.sort(aufsteigend)) + r._ersterBlick().halb, [0, 0]];
                         g = neu();
                     }
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
@@ -1152,7 +1152,7 @@ async function probe(arg) {
                 for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
                 return arm();
             };
-            const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[Math.floor(a.length / 2)].toFixed(2) : null);
+            const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toFixed(2) : null);
             // EIN WEG zu Fuß (3rd, Neigung 0) oder im Ritt (die Verfolger-Kamera des GT): `stelle(x, z, gier)` setzt Spieler/Wagen.
             const weg = (name, stelle, schritt, sprungM, bildM) => {
                 const z = { proben: 0, pflanzeHaelt: 0, taeter: [], sprungM };

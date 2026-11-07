@@ -246,7 +246,7 @@ function spurProfil(ev, marke = "anazh-takt") {
 function versatzVon(spur, T, P) {
     const nT = T.t.length;
     if (!P || spur.marken.length !== nT) return null;
-    return spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((a, b) => a - b)[nT >> 1];
+    return rang(spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((a, b) => a - b));
 }
 // Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms; ohne Versatz keine).
 function probenIn(P, versatz, von, bis) {
@@ -267,7 +267,7 @@ function probenIn(P, versatz, von, bis) {
 // Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
 function quantil(werte) {
     const s = werte.slice().sort((a, b) => a - b);
-    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
+    const q = (p) => (s.length ? +rang(s, p).toFixed(2) : null);
     return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
 }
 
@@ -362,7 +362,7 @@ function haengerAuswerten(roh, spur, opts) {
     const nT = T.t.length;
     const versatz = versatzVon(spur, T, P);
     const abst = T.c0.slice(1).map((c, q) => c - T.c0[q]).sort((a, b) => a - b);
-    const periode = abst.length ? abst[abst.length >> 1] : 16.7;
+    const periode = abst.length ? rang(abst) : 16.7;
     const proben = (von, bis) => probenIn(P, versatz, von, bis);
     const gerendert = [...T.g.keys()].filter((i) => T.g[i]);
     const [dts, haenger] = [[], []];
@@ -723,7 +723,7 @@ function ankunftsHalter(spur, seite, opts) {
     const paare = [];
     for (let i = 0; i < n; i++) paare.push(spur.marken[i] - s.marken[i] * 1000);
     paare.sort((a, b) => a - b);
-    const versatz = P && n ? paare[n >> 1] : null;
+    const versatz = P && n ? rang(paare) : null;
     const out = {
         profil: !!P,
         verlust: P?.verlust,
@@ -1305,7 +1305,7 @@ function latenzAn(k) {
         st.playerMesh.position.copy(L.start);
         r.setCameraMode(L.sicht);
         const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
-        return d[d.length >> 1];
+        return rang(d);
     };
 }
 

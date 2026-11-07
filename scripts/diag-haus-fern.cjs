@@ -429,7 +429,7 @@ function entsorge(g) {
 }
 const median = (a) => {
     const s = a.filter((x) => x != null).sort(aufsteigend);
-    return s.length ? s[s.length >> 1] : null;
+    return s.length ? rang(s) : null;
 };
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 

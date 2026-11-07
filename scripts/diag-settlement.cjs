@@ -243,7 +243,7 @@ async function weltWachstum() {
         .haeuser()
         .filter((e) => !E1.includes(e))
         .map((e) => [e.position.x, e.position.z]);
-    const med = (q) => ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort(aufsteigend)[ring.length >> 1];
+    const med = (q) => rang(ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort(aufsteigend));
     res.ring = { neu: ring.length, zumHaus: med(res.haus), zumOrt: med([p.x, p.z]) };
     return res;
 }
@@ -275,7 +275,7 @@ function erdbauMedian(v2, grund) {
                 }
             return v;
         });
-    return Math.round(vs.sort(aufsteigend)[vs.length >> 1]);
+    return Math.round(rang(vs.sort(aufsteigend)));
 }
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
@@ -432,7 +432,7 @@ function ortUrteil(v2, hoehe, o) {
     });
     sockel.sort(aufsteigend);
     return {
-        sockelMedian: sockel.length ? Math.round(1000 * sockel[sockel.length >> 1]) / 1000 : null,
+        sockelMedian: sockel.length ? Math.round(1000 * rang(sockel)) / 1000 : null,
         sockelMax: sockel.length ? Math.round(1000 * sockel[sockel.length - 1]) / 1000 : null,
         tuerenOk: tueren.filter((t) => t.ok).length,
         tuerenN: tueren.length,
@@ -1517,7 +1517,7 @@ hauptLauf(async () => {
         }
         alleDs.sort(aufsteigend);
         const mq = (q) =>
-            alleDs.length ? alleDs[Math.min(alleDs.length - 1, Math.floor(alleDs.length * q))] : Infinity;
+            alleDs.length ? rang(alleDs, q) : Infinity;
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
         if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
         console.log(

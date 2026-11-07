@@ -93,7 +93,7 @@ function energieVerdict(E) {
             v.push(
                 `energie-ort: ${x.name}@${x.d} trifft mit ${x.eff} ohne benannten Ort — die Streuung ist nicht benannt`
             );
-    const med = (a) => a.slice().sort(aufsteigend)[a.length >> 1];
+    const med = (a) => rang(a.slice().sort(aufsteigend));
     if (!(med(g) >= med(d)))
         v.push(`energie-waffe: Großschwert ${med(g).toFixed(1)} J im Mittel unter dem Dolch ${med(d).toFixed(1)} J`);
     // zu nah: der Ort ist benannt (nicht der Schlagpunkt), die Wirkung steht auf oder über dem Boden des Kerns (0,25)

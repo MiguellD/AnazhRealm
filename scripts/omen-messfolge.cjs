@@ -115,7 +115,7 @@ function streuungUrteil(sitzungen, soll) {
             );
         else {
             const ts = t.slice().sort(aufsteigend);
-            const med = ts.length % 2 ? ts[ts.length >> 1] : (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
+            const med = ts.length % 2 ? rang(ts) : (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
             sitzungen.forEach((s, i) => {
                 if (Math.abs(t[i] - med) > med * TAKT_TOLERANZ)
                     befunde.push(

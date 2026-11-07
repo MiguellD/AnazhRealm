@@ -1110,7 +1110,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
         const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
-        const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
+        const p = fl ? rang(fl.points) : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
         const g = [cx * cfg.span - cfg.step, (st.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
