@@ -4375,6 +4375,17 @@ const stationen = [
     // Ego 2 Sichtungen in 600 Spiel-s (Bär 21 m, Wesen 65 m; 601 Prüfungen, 47 Masken), Third 5 (Wolf 23 m, Fuchs 15 m, Wesen 54/55/75 m;
     // 601 Prüfungen, 230 Masken), Bestand bis 20, im Blick erschienen 0 — ROT an Ego (2 < 3); die Vor-Fassung (Prüfung jede zweite
     // Spiel-s) Ego 2 (Bär 19 m, Wesen 49 m). Wanduhr headless 678 s Ego, 1 630 s Third: die Zahl der Radeon steht aus.
+    // RADEON an main 94d9c5a6 (Uhr ×2): Ego 4 Sichtungen (Bär 647 px 25 m, Wesen 241/207/246 px 56/47/129 m; 613 Prüfungen, 63 Masken)
+    // in 74,8 s Wanduhr, Third ungemessen — der Deckel riss.
+    // DER KREIS IM DECKEL (w19-tier-kreis-pm, headless an main 5fb21e29, 320×180): die Uhr ×5 (proben-welt.cjs) — ohne Masken je Sicht
+    // 22–36 s Wanduhr (Uhr ×2: 47–52 s; ein Takt zu 1 s brachte nichts mehr, 22–27 s: der Rest folgt der Spiel-Zeit); je Raffer-Bild
+    // EIN Bild (die Leine hält das des ersten Takts, `bilder` in der KREIS-Zeile); DIE MASKE BÜNDELT: jede Maske zählt JEDES Tier im
+    // Blick, und ein Tier, dessen hochgerechnete Fläche (px der letzten Maske × Wachstum der möglichen Fläche) unter der halben
+    // Schwelle bleibt, kehrt erst nach 6 Spiel-s wieder (sonst wie bisher nach 2 Spiel-s oder bei 20 % mehr) — zwei ferne Wesen
+    // (90–240 m, 0–0,4 der Schwelle) lösten versetzt alle 3 Spiel-s eine Maske aus. Gemessen voll: Ego 31 Masken, 0 Sichtungen (kein
+    // Tier näher als 54 m mit Masken-Chance), Third 30 Masken, 3 Sichtungen (Fuchs 272 px 18 m, Wesen 208 px 63 m und 35 m) — die
+    // Masken an swiftshader 212–223 s je Sicht (≈ 7 s je Maske), die Takte ~36 s. Das Urteil bleibt: GRÜN nur ≥ 3 je Sicht über
+    // ≥ 600 Spiel-s ohne Tier im Blick; die Radeon-Zahl im Deckel steht aus (FORTSCHRITT nennt `maskeS`).
     {
         kriterium: "tiere.K5",
         staffel: 1,

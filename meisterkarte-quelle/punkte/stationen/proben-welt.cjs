@@ -274,7 +274,9 @@ async function bodenRollen(tor) {
 // — gemessen headless ohne Masken, je zwei Läufe (Tier-Sekunden im Blick · davon ≥ 200 px möglich · Tiere ≥ 200 px möglich):
 // Uhr ×2 Ego 1 844/2 270 · 241/694 · 7/7, Third 1 144/1 935 · 297/879 · 6/14; Uhr ×5 Ego 1 118/1 757 · 291/746 · 7/7, Third
 // 1 675/1 071 · 283/394 · 9/5; Bestand bis 20 in allen — die Uhr ×5 liegt im Band der Streuung zweier Läufe der Uhr ×2. Wanduhr headless
-// Ego 52,1/46,8 → 29,7/35,7 s, Third 47,7/50,8 → 24,0/23,3 s. `maskeMs` im Kreis und in FORTSCHRITT nennt die Zeit der Masken.
+// Ego 52,1/46,8 → 29,7/35,7 s, Third 47,7/50,8 → 24,0/23,3 s; ein Takt zu 1 s (×10) brachte nichts mehr (Ego 26,5/22,2 s, Third
+// 23,6/27,0 s — der Rest folgt der Spiel-Zeit: Fix-Schritte, Teil-Schritte der Leiber, der Strom des Wegs). `maskeMs` im Kreis und
+// in FORTSCHRITT nennt die Zeit der Masken.
 // Danach steht die Uhr des Spiels wieder (auch im Abbau des Raffers).
 // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
 // Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
