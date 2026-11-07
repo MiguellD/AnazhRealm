@@ -1,0 +1,172 @@
+{
+ "sha": "f69173b022098343b8966dd1f38f642bc14225b5",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T08:43:30.038Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.24 · 10–20 2.00 · 20–40 satt, Farbton 2–5 m 13.53°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.69,
+   "gpu": "nvidia/pascal",
+   "s": 41.3,
+   "zeit": "2026-11-07T08:40:32.804Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 183515 px · winter 20962 px · fruehling 142983 px → Winter 0.114 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer",
+   "exit": 0,
+   "minuten": 1.4,
+   "gpu": "nvidia/pascal",
+   "s": 84,
+   "zeit": "2026-11-07T08:41:14.168Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "zeit": "2026-11-07T08:39:14.207Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "zeit": "2026-11-07T08:39:14.207Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.3,
+   "zeit": "2026-11-07T08:42:38.188Z",
+   "abdruck": "be3337863a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T08:43:30.034Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T08:43:30.035Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T08:43:30.036Z",
+   "abdruck": "bdb360bc9bf7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T08:43:30.038Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T08:39:05.475Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.4,
+  "grundstellungS": [
+   0.2
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 28.3,
+    "takte": 749,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr vor gelaende.K3#1: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}",
+  "ciBlicke": 6,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 336,
+   "frameP95": 108.28,
+   "taktP95": 95.99,
+   "vramMax": 173.6,
+   "seiten": 3,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 190,
+   "luecken": 7,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 263.7,
+  "minuten": 4.48
+ }
+}
