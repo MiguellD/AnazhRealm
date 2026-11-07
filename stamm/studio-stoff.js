@@ -333,7 +333,9 @@ class AnazhRealm_studio_stoff {
                                 const h = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
                                 haar = haar ? TSL.max(haar, h) : h;
                                 // DER QUERSCHNITT (w20-haar-arm): der Ton der Locke dünnt vom Kern zur Kante auf den Unterton aus
-                                const g = h.mul(TSL.float(1).sub(TSL.smoothstep(FS.kern, 1, dist.div(radius.max(1e-6)))));
+                                const g = h.mul(
+                                    TSL.float(1).sub(TSL.smoothstep(FS.kern, 1, dist.div(radius.max(1e-6))))
+                                );
                                 quer = quer ? TSL.max(quer, g) : g;
                             }
                             const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
