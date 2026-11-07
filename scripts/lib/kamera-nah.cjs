@@ -57,7 +57,7 @@ function nahDeckungInSeite(o) {
         );
     };
     const player = pm;
-    const ritt = st.player && st.player.mountedArch != null ? r._mountedEntry : null;
+    const ritt = st.player?.mountedArch != null ? r._mountedEntry : null;
     const unter = (obj, wurzel) => {
         for (let p = obj; p; p = p.parent) if (p === wurzel) return true;
         return false;
@@ -65,8 +65,8 @@ function nahDeckungInSeite(o) {
     const archNachMesh = new Map();
     const eintragNachId = new Map();
     for (const e of st.architectures || []) {
-        if (e && e.mesh) archNachMesh.set(e.mesh, e);
-        if (e && e.id != null) eintragNachId.set(e.id, e);
+        if (e?.mesh) archNachMesh.set(e.mesh, e);
+        if (e?.id != null) eintragNachId.set(e.id, e);
     }
     const eintragVon = (obj, inst) => {
         // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags)
@@ -80,7 +80,7 @@ function nahDeckungInSeite(o) {
         return null;
     };
     const artVonStoff = (mat) => {
-        const k = mat && mat.userData ? mat.userData.foundryKind : null;
+        const k = mat?.userData?.foundryKind;
         if (k === "foliage" || k === "foliageTex") return "laub";
         if (k === "bark" || k === "stem") return "rinde";
         return null;
@@ -107,11 +107,11 @@ function nahDeckungInSeite(o) {
         // ohne Eintrag und Namen nennt die EINE Täter-Klasse des Stamms den Täter (`_taeterKlasse`: die Gruppe einer Instanz
         // `fscatter:<art>:L<n>` · `f:<art>:L<n>`, sonst der oberste Knoten) — bis w10-wiese hieß jede solche Fläche „Streu“, und
         // vegetation.K2 nannte am Kopf 2674ff9a „Rinde Streu 14,4 %“, ohne dass ein Leser wusste, welche Gestalt dort stand
-        const wer = () => (e && e.type) || nm || r._taeterKlasse(obj);
+        const wer = () => e?.type || nm || r._taeterKlasse(obj);
         if (art === "laub") return { klasse: "Laub", name: "Laub " + wer() };
         if (art === "rinde") return { klasse: "Rinde", name: "Rinde " + wer() };
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
-        return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
+        return { klasse: "Bau", name: e?.type || nm || r._taeterKlasse(obj) };
     };
     // EIN LEIB IST NIE FLÄCHE DER LINSE — als Leib (skinned) wie im Satz seiner Gestalt (`_gangSatz`: Tier und Bewohner, die
     // Senke trägt `userData.gang`): bis tiere.K1#2 hieß ein Hirsch im Satz „Bau“ und verdeckte das Glied seiner eigenen Herde
@@ -131,9 +131,9 @@ function nahDeckungInSeite(o) {
     const wiegend = new Set();
     for (const [k, m] of Object.entries(r._foundryMats || {})) if (k.includes("|wiegt")) wiegend.add(m);
     // die Blatt-Karte schneidet ihr Alpha aus dem EINEN Atlas (RGBA; ein komprimierter Atlas zählt die ganze Karte)
-    const atlas = r._foliageAtlasTex && r._foliageAtlasTex.image ? r._foliageAtlasTex.image : null;
+    const atlas = r._foliageAtlasTex?.image || null;
     const atlasA =
-        atlas && atlas.data && atlas.data.length === atlas.width * atlas.height * 4
+        atlas?.data?.length === atlas.width * atlas.height * 4
             ? (u, v) => {
                   const x = Math.min(atlas.width - 1, Math.max(0, Math.floor(u * atlas.width)));
                   const y = Math.min(atlas.height - 1, Math.max(0, Math.floor(v * atlas.height)));
@@ -188,7 +188,7 @@ function nahDeckungInSeite(o) {
                 });
             }
         else
-            for (const gr of g.groups && g.groups.length && Array.isArray(obj.material)
+            for (const gr of g.groups?.length && Array.isArray(obj.material)
                 ? g.groups
                 : [{ start: dr0, count: dr1 - dr0, materialIndex: 0 }])
                 gruppen.push([idx, Math.max(dr0, gr.start), Math.min(dr1, gr.start + gr.count), gr.materialIndex]);
@@ -199,7 +199,7 @@ function nahDeckungInSeite(o) {
             if (!mat || mat.visible === false) continue;
             const kl = klasseVon(obj, mat, e);
             if (!kl) continue;
-            const karte = !!(atlasA && uv && mat.userData && mat.userData.foundryKind === "foliageTex");
+            const karte = !!(atlasA && uv && mat.userData?.foundryKind === "foliageTex");
             const me = metaFuer(kl, mat, karte);
             for (let t = s0; t + 2 < s1; t += 3) {
                 const [i0, i1, i2] = I ? [I[t], I[t + 1], I[t + 2]] : [t, t + 1, t + 2];
@@ -352,7 +352,7 @@ function nahDeckungInSeite(o) {
     const maskeArt = (me) => {
         if (maskeVon.has(me.mat)) return maskeVon.get(me.mat);
         const mat = me.mat;
-        const maske = !!(mat.maskNode && mat.maskNode.isNode);
+        const maske = !!mat.maskNode?.isNode;
         const a = !maske ? null : knoten ? ["laub", "rinde", "boden"].find((k) => mat.maskNode === knoten[k]) || "fremd" : me.art || "rinde";
         maskeVon.set(mat, a);
         return a;
@@ -408,7 +408,7 @@ function nahDeckungInSeite(o) {
         for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) zellen[cy * gw + cx].push(t);
     }
     // DER SCHNITT (Möller–Trumbore): der Strahl e + s·r gegen das Dreieck (Ecke a, Kanten k, l) — s, die Lage im Dreieck in UV,
-    // NaN ohne Treffer; ihn rufen die Strahlen und die Linie zum Ziel
+    // NaN ohne Treffer; ihn rufen die Strahlen
     const UV = { u: 0, v: 0 };
     const schnitt = (rx, ry, rz, ax, ay, az, kx, ky, kz, lx, ly, lz) => {
         const px = ry * lz - rz * ly;
@@ -488,16 +488,24 @@ function nahDeckungInSeite(o) {
                 if (m >= 1) break;
             }
         }
-    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, punkte }): liegt es im Bild (Projektion der
-    // Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und verdeckt es nichts? Der Strahl Auge → Ziel fragt jede gezeichnete
-    // Fläche bis `saum` (0,5 m) vor dem Ziel — Laub · Rinde · Fels · Bau · Gelände · Wagen, nie die Nah-Streu (Gras und Blumen
-    // sind die Boden-Schicht) und nie das Ziel selbst (`o.ohne`); Blatt-Karten mit dem Alpha ihres Atlas, Flächen mit der
-    // Durchsicht der Kamera mit dem Gewicht der EINEN Formel (verdeckt ab 0,5). Der erste Verdecker steht beim Namen.
-    // Ein Ziel aus mehreren Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte` ([x, y, z]): jeder liegt im Bild
-    // und frei, sonst ist das Ziel verdeckt — die Mitte einer Herde zwischen Stämmen sagt nichts über ihre Glieder. ──
+    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, r, punkte, tiefe }): liegt es im Bild
+    // (Projektion der Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und zeigt das BILD es? Die EINE Quelle ist die Tiefe der
+    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`) und ihr Zwilling-Bild OHNE die Boden-Schicht (`tiefe.boden`, `__zielMessen`: Halme der
+    // Nah-Wiese, Streu, Wasser verborgen). Je Punkt die Fläche W am Pixel: liegt sie höchstens `saum` (0,5 m) vor ihm, näher als `r`
+    // (1,5 m) an ihm oder ist es Himmel, ist der Punkt frei. Sonst fragt das Bild ohne Boden-Schicht: zeigt es den Punkt, stand nur die
+    // Boden-Schicht davor — sie verdeckt nur näher als der halbe Ziel-Abstand (wie der Vordergrund der Abnahme); in der fernen Hälfte
+    // ist sie der Boden, auf dem das Ziel steht (vegetation.K1#1: der Blick-Punkt im Gras in 14,76 m, das Bild zeigt Halme in 12,62
+    // m). Zeigt auch es eine Fläche davor, verdeckt sie — es sei denn, sie gehört dem Ziel (`o.ohne`). Das Urteil fällt allein in den
+    // zwei Bildern; die Hülle nennt nur den Namen: die kleinste gezeichnete Hülle, über deren Fuß die Fläche senkrecht steht (eine
+    // Fläche, die erst der Shader spannt, hält auf der CPU nur ihren Fuß: die Karte der Fern-Stufe eine Einheits-Linie, 0,9 m Hülle
+    // für 3 m Bild; der breite Halm der Ferne, `_halmFerne`). Ohne Tiefe ist `frei` ungemessen. Ein Ziel aus mehreren
+    // Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte`: jeder liegt im Bild und frei, sonst ist das Ziel verdeckt.
+    // BIS w18-abnahme-sicht urteilte ein Strahl Auge → Ziel über die Dreiecke der CPU, ohne die Streu, blind für jede Shader-Fläche:
+    // siedlung.K4#2 Radeon f3911ab9 „frei 210,41 m“, am Ziel-Pixel stand die Karte einer Erle in 33,31 m — Wald.
     let zielOut = null;
     if (o.ziel) {
         const Z = o.ziel;
+        const S = Z.tiefe;
         const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
         const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
         const imBild = punkte.every(([x, y, z]) => {
@@ -506,64 +514,37 @@ function nahDeckungInSeite(o) {
             v.project(cam);
             return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
         });
-        // DIE LINIE Auge → Punkt bis `saum` davor: der erste Verdecker und sein Abstand
-        const linie = (px, py, pz, saum) => {
-            const zx = px - ex,
-                zy = py - ey,
-                zz = pz - ez;
-            const L = Math.hypot(zx, zy, zz) || 1e-6;
-            const ux = zx / L,
-                uy = zy / L,
-                uz = zz / L;
-            const bis = Math.max(0, L - saum);
-            // die Hülle einer Instanz schneidet die Strecke [0, bis]
-            const amStrahl = (s) => {
-                const cx = s.center.x - ex,
-                    cy = s.center.y - ey,
-                    cz = s.center.z - ez;
-                const t = Math.max(0, Math.min(bis, cx * ux + cy * uy + cz * uz));
-                return (cx - ux * t) ** 2 + (cy - uy * t) ** 2 + (cz - uz * t) ** 2 <= s.radius * s.radius;
-            };
-            let vor = null;
-            let vorD = Infinity;
-            const pruefe = (a, b, c, uvs, me) => {
-                if (me.k.klasse === "Streu") return;
-                const d = schnitt(ux, uy, uz, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
-                if (!(d > near && d < bis && d < vorD)) return;
-                const { u, v } = UV;
-                if (me.karte && uvs) {
-                    const w0 = 1 - u - v;
-                    if (atlasA(w0 * uvs[0] + u * uvs[2] + v * uvs[4], w0 * uvs[1] + u * uvs[3] + v * uvs[5]) < me.cut)
-                        return;
-                }
-                const ma = maskeArt(me);
-                if (
-                    ma &&
-                    gewicht({ x: ex + ux * d, y: ey + uy * d, z: ez + uz * d }, ma === "fremd" ? me.art : ma) < 0.5
-                )
-                    return;
-                vorD = d;
-                vor = me.k.name;
-            };
-            st.scene.traverseVisible((obj) => {
-                if (!zaehlt(obj)) return;
-                jeInstanz(obj, amStrahl, (ob, i) => legeDreiecke(ob, i, () => true, pruefe, amStrahl));
-            });
-            return { vor, vorD, L };
+        const sieht = ([x, y, z]) => {
+            const P = new T.Vector3(x, y, z);
+            const L = P.distanceTo(E);
+            const v = P.clone().project(cam);
+            // außerhalb des Bilds liest der Index ein fremdes Pixel — dann ist `imBild` schon ROT
+            const i = Math.floor(((1 - v.y) / 2) * S.th) * S.tw + Math.floor(((v.x + 1) / 2) * S.tw);
+            const vor = (W) => W && W.distanceTo(E) < L - (Z.saum ?? 0.5) && W.distanceTo(P) > (Z.r ?? 1.5);
+            const [W, W0] = [S.punkt(i), S.boden?.punkt(i)];
+            const d = W?.distanceTo(E);
+            if (!vor(W)) return { d };
+            if (!S.boden) return { d, offen: true };
+            if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
+            let h = null;
+            const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
+            if (h?.e && OHNE.has(h.e.id)) return { d };
+            return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
         };
-        const saum = Z.saum != null ? Z.saum : 0.5;
-        const linien = punkte.map(([x, y, z]) => linie(x, y, z, saum));
-        const i = linien.findIndex((l) => l.vor != null);
+        const blick = S ? punkte.map(sieht) : [];
+        const i = blick.findIndex((b) => b.vor);
         zielOut = {
             name: Z.name || "Ziel",
             imBild,
             ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
-            frei: i < 0,
-            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + linien[i].vor,
-            vorAbstand: i < 0 ? null : +linien[i].vorD.toFixed(2),
-            abstand: +linien[0].L.toFixed(2),
+            frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
+            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
+            vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            abstand: +Math.hypot(Z.x - ex, Z.y - ey, Z.z - ez).toFixed(2),
         };
     }
+
     const N = gw * gh;
     const rund = (x) => +(x / N).toFixed(4);
     const kl = {};
