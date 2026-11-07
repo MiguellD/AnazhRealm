@@ -261,13 +261,13 @@ function weltaktSpion(ersatz) {
         if (gehuellt.has(op) || typeof fn !== "function") continue;
         gehuellt.add(op);
         tafel[op] = function (args, ctx) {
-            if (halt()) buche({ art: "durch", op, quelle: (ctx && ctx.source) || "?", stapel: window.__spielStapel() });
+            if (halt()) buche({ art: "durch", op, quelle: ctx?.source || "?", stapel: window.__spielStapel() });
             return fn.call(this, args, ctx);
         };
     }
     if (!S.blind && !Object.hasOwn(r, "_weltaktGehalten"))
         r._weltaktGehalten = function (op, ctx) {
-            buche({ art: "verweigert", op, quelle: (ctx && ctx.source) || "?" });
+            buche({ art: "verweigert", op, quelle: ctx?.source || "?" });
             return Object.getPrototypeOf(this)._weltaktGehalten.call(this, op, ctx);
         };
     return S;
@@ -288,16 +288,16 @@ function weltaktBuch(seit) {
 // DIE LESER DER BILD-UHR `_bildZeit` (A9), [Name, Halter, Schlüssel] — die Uhr-Wache prüft, dass jeder mit ihr steht.
 function bildUhren() {
     const wu = st.windUniforms || {};
-    const v2 = wu.uWindDir && wu.uWindDir.value;
+    const v2 = wu.uWindDir?.value;
     const u = [
-        ["himmel", st.skyboxUniforms && st.skyboxUniforms.time, "value"],
-        ["wasser", st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.time, "value"],
+        ["himmel", st.skyboxUniforms?.time, "value"],
+        ["wasser", st.hydroSurfaceUniforms?.time, "value"],
         ["wind", wu.uWindTime, "value"],
         ["wind-x", v2, "x"],
         ["wind-z", v2, "y"],
         ["böe", r, "_weatherWob"],
-        ["fell", st.renderer && st.renderer._nodes && st.renderer._nodes.nodeFrame, "time"],
-        ["regen", r._rainSystem && r._rainSystem.uZeit, "value"],
+        ["fell", st.renderer?._nodes?.nodeFrame, "time"],
+        ["regen", r._rainSystem?.uZeit, "value"],
     ];
     for (const [n, m] of r._portalMembranes || [])
         if (m.u) u.push([`tor ${n}`, m.u.time, "value"], [`puls ${n}`, m.u.pulse, "value"], [`glut ${n}`, m, "puls"]);
@@ -333,7 +333,7 @@ async function weltStehtWarten(max) {
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
-    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
+    for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
     r._applyDayNightToScene();
     await r._himmelFrisch();
     r._applyDayNightToScene();
@@ -379,7 +379,7 @@ function buehne(o) {
     r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
-    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
+    for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
     // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
@@ -470,11 +470,11 @@ function membranOhneFilm(an) {
     let n = 0,
         ohneZiel = 0;
     for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
-        const mat = rec.mesh && rec.mesh.material;
+        const mat = rec.mesh?.material;
         if (!mat) continue;
         n++;
         const G =
-            rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+            rec.tor?.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
         if (G?.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
@@ -562,7 +562,7 @@ function erstRuhe(frame, opt, wer) {
     return (async () => {
         const E = r._erstZeichnung;
         if (!E) return null;
-        const offenZaehlt = !(opt && opt.nurGezeichnete);
+        const offenZaehlt = !opt?.nurGezeichnete;
         const tE = performance.now();
         let tFort = tE,
             stand = "";
@@ -581,8 +581,8 @@ function erstRuhe(frame, opt, wer) {
         };
         // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
         const name = (p) =>
-            (E.namen && E.namen.get(p)) ||
-            `${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
+            E.namen?.get(p) ||
+            `${p.vertexProgram?.name || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
         for (;;) {
             const b0 = E.bauN,
                 v0 = E.verschoben,
@@ -603,13 +603,13 @@ function erstRuhe(frame, opt, wer) {
                 stand = s;
                 tFort = jetzt;
             }
-            const frist = opt && opt.erstFristMs > 0 ? opt.erstFristMs : 120000;
+            const frist = opt?.erstFristMs > 0 ? opt.erstFristMs : 120000;
             if (jetzt - tFort > frist || jetzt - tE > 5 * frist) {
                 const namen = [];
                 for (const p of E.offen.keys()) namen.push(name(p));
                 const wartet =
                     E.wartetN !== w0 && E.wartetAuf
-                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
+                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt?.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
                         : "";
                 throw new Error(
                     `ERST-ZEICHNUNG OFFEN — ${wer || "die Aufnahme"} bricht ab: offen ${E.offen.size} nach ${Math.round(
@@ -684,7 +684,7 @@ function abnahmeMessen(opt) {
         vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
     }
     const rend = st.renderer;
-    const be = rend && rend.backend;
+    const be = rend?.backend;
     const db =
         rend && typeof rend.getDrawingBufferSize === "function" ? rend.getDrawingBufferSize(new T.Vector2()) : null;
     const dir = cam.getWorldDirection(new T.Vector3());
@@ -702,7 +702,7 @@ function abnahmeMessen(opt) {
         geraet: {
             backend: !be ? null : be.isWebGPUBackend ? "WebGPU" : be.isWebGLBackend ? "WebGL" : null,
             adapter: (() => {
-                const i = (be && be.device && be.device.adapterInfo) || (be && be.adapter && be.adapter.info) || null;
+                const i = be?.device?.adapterInfo || be?.adapter?.info || null;
                 return i ? [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") : null;
             })(),
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
@@ -788,9 +788,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const prevZiel = rend.getRenderTarget();
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         const weltTakte =
-            window.__buehneUhr && !(opt && opt.satz === "messung") ? await window.__weltStehtWarten() : null;
+            window.__buehneUhr && !(opt?.satz === "messung") ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
-        const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
+        const wahl = opt?.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
@@ -831,6 +831,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // derselben Szene wichen in 1 786 078 Bytes ab, die zweite gleich der dritten
             const neubeginn = () => {
                 r._schattenAlleNeu();
+                // DER SPIEGEL DIESER SZENE (w20-lack-spiegel): der gehaltene Pass (`__halten` spiegel) rechnet im ersten Bild danach
+                // neu (`an` 0 → `_spiegelPassZeichne`). Bis hier tat das nur der Sprung der zeitlichen Auflösung (`_traaR.neu`): ohne
+                // sie (Holz kienspan, swiftshader) hielt der Schuss den Pass von VOR dem Wagen — sein Lack las ein leeres Pass-Ziel
+                // (Grund der Sitzung, GT am Spawn: an 1, Deckung 0 an jedem Lack-Pixel)
+                if (st.spiegelLeser) st.spiegelLeser.an.value = 0;
                 if (window.__offen?.has("zitter")) return;
                 const tn = st.traaNode;
                 if (tn) {
@@ -841,7 +846,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 }
                 if (st._traaR) st._traaR.neu = true;
                 const lu = st.lodUniforms;
-                if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+                if (lu?.uDitherT) lu.uDitherT.value = 0;
             };
             // DIE ERST-ZEICHNUNG (`_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
@@ -876,7 +881,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // sich nur, wo die Szene sich unterscheidet; `__spiegelDaten` liest den Szenen-Pass dieses Bilds), ohne die 32 Bilder
             // der Geschichte, ohne Rücklese der Farbe. Bis dahin las der Arm sie hinter zwei ganzen Aufnahmen (material.K2: je
             // Armlänge 2 × 33 Bilder, sechs Armlängen)
-            if (opt && opt.tiefe) return frame();
+            if (opt?.tiefe) return frame();
             const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
@@ -884,7 +889,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Die Frame-Last liest die EINE Quelle des Spiels (HUD/Flugschreiber): `_loopRender` setzt
             // renderer.info je Frame zurück und legt die Summe ALLER Pässe in state._perfFrame ab.
             const pf = st._perfFrame || {};
-            const ri = (rend.info && rend.info.render) || {};
+            const ri = rend.info?.render || {};
             const info = {
                 drawCalls: pf.renderCalls != null ? pf.renderCalls : ri.drawCalls,
                 triangles: pf.renderTris != null ? pf.renderTris : ri.triangles,
@@ -1116,7 +1121,7 @@ function himmelUrteil(g) {
         const buch = t.wo === "uhr" ? U.buch || [] : W.buch || [];
         const da = buch.some(
             (e) =>
-                (t.quelle && e.quelle && e.quelle.startsWith(t.quelle)) ||
+                (t.quelle && e.quelle?.startsWith(t.quelle)) ||
                 (t.stapel && String(e.stapel).includes(t.stapel))
         );
         if (!da) taeter.push(`${t.name}: nicht im Buch (${t.wo}) — er schrieb nicht oder der Spion ist blind`);
