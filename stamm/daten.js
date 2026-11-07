@@ -494,13 +494,6 @@ class AnazhRealm_daten {
     // 1319 je Zelle; der Sicht-Satz trägt den CPU-Takt, E): die Büschel je Pixel bleiben jenseits der Übergabe ≤ 1,67× (der
     // Sprung der Streckung zwischen ~34 und 40 m) — weniger, größere Büschel statt eines Saums. Modell der Station
     // (flache Wiese, Third 2,43 m, Nilson je Ring): 20–40 m 1,29 → 1,73; die Wand gate:profiband P-Ferne.
-    // DIE ANZAHL TRÄGT DIE BLATTFLÄCHE (w22-wiese-nachzug): seit das Blatt der Ferne nur den Pixel hält (w22-strauch-karte, keine
-    // Keile) steht bis `voll` jedes Büschel der Nähe (`_wieseFern`), dahinter fällt der Anteil mit `fall` 8 statt 3,25. Die
-    // Station vegetation.K1#1 (Radeon, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m mit den Keilen 2,40 · 2,22 · 1,95 ·
-    // 1,08, ohne sie (das Blatt am Pixel, a = Ziel/s) 2,40 · 2,23 · 1,72 · 0,32, jetzt 2,40 · 2,23 · 1,97 · 1,83. DER PREIS: die
-    // Ferne im Blick derselben Pose (Null-Renderer, der Sicht-Satz) 1 168 → 4 567 Büschel, 74 173 → 289 832 Dreiecke — die
-    // Blattfläche der Nähe bis 40 m kostet die Anzahl der Nähe; mit `fall` 3,25 wären es im Modell der Station 1,8× so viele.
-    // Die Blattfläche bei 50 · 60 · 80 m 0,17 · 0,04 · 0,004 der Nähe (bis dahin 0,48 · 0,27 · 0,11 aus breiten Blättern).
     // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
     // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
     // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
@@ -550,7 +543,7 @@ class AnazhRealm_daten {
                     bis: 200,
                     saum: 20,
                     voll: 40,
-                    fall: 8,
+                    fall: 3.25,
                     streckMax: 14,
                     fuss: 14,
                     auge: 1.5,
