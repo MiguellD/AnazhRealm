@@ -739,9 +739,10 @@ function nahFolgt() {
 // je Runde von 14 Posen vier Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
 // Abnahme nach dem Schuss wirft beim Namen.
-// DIE REIHE (w18-abnahme-sicht-3): die genannte Pose zuerst, dann die übrigen nach ihrem Blick von oben — der Höhe des Auges über dem
-// Ziel je Meter Abstand (gehoben, vom Hügel): wer über Mauer und Wald schaut, kommt vor dem, der zwischen ihnen steht. Bis dahin lief
-// sie Runde um Runde, siedlung.K4#2 fand die freie Pose als 39. (Radeon f83813df, 16,5 s im Schritt BILD; die GTX riss dort 90 s).
+// DIE REIHE BLEIBT RUNDE UM RUNDE (w18-abnahme-sicht-3, gemessen): nach dem Blick von oben geordnet (gehoben, vom Hügel zuerst) fand
+// siedlung.K4#2 die freie Pose als 11. statt als 39., aber siedlung.K2#1 verwarf alle 42 — die weiten Sprünge zwischen den Posen ließen
+// das Bild des Augenblicks den Fern-Ring tragen, der sich erst an der neuen Kamera verankert („fern-ring in 6,3 m“, k = 1 „an Punkt 1
+// fern-ring in 84,82 m“, die Pose, die Runde um Runde als zweite frei steht). Billig macht die Wahl die Stufe je Pose, nicht die Reihe.
 // DIE STUFEN JE POSE, die billige zuerst: (1) das Ziel im Bild und gezeichnet (`nurZiel`, ohne Bild); (2) das Ziel frei im Augenblick, an
 // EINEM Bild des Loops (`__zielMessen` mit `nurZiel`: ohne die Strahlen der Nah-Deckung, das Bild ohne Boden-Schicht nur, wo etwas vor
 // dem Ziel steht); (3) die Nah-Deckung der CPU (Sicht, Vordergrund); (4) IN IHRER WELT: unter der Bühne wartet die Wahl, bis die Welt an
@@ -762,23 +763,20 @@ async function blickWahl(opt) {
     const d0 = Math.max(0.5, Math.hypot(P0.x - z.x, P0.z - z.z));
     const a0 = Math.atan2(P0.z - z.z, P0.x - z.x);
     const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
-    const reihe = [];
-    for (let k = 0; k < n; k++) {
-        const ring = Math.floor(k / winkel.length);
-        const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
-        const d = d0 * Math.pow(0.8, ring);
-        const p = [z.x + Math.cos(a) * d, 0, z.z + Math.sin(a) * d];
-        p[1] = boden(p[0], p[2]) + h0 + 4 * ring;
-        if (Number.isFinite(p[1])) reihe.push({ k, p, oben: k ? (p[1] - z.y) / d : Infinity });
-    }
-    reihe.sort((a, b) => b.oben - a.oben);
     const posen = [];
     const ms = (t) => Math.round(performance.now() - t);
     const t0 = performance.now();
     let gewaehlt = null;
-    for (const { k, p } of reihe) {
+    for (let k = 0; k < n; k++) {
         const tk = performance.now();
-        cam.position.set(...p);
+        const ring = Math.floor(k / winkel.length);
+        const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
+        const d = d0 * Math.pow(0.8, ring);
+        const x = z.x + Math.cos(a) * d,
+            zz = z.z + Math.sin(a) * d;
+        const g = boden(x, zz);
+        if (!Number.isFinite(g)) continue;
+        cam.position.set(x, g + h0 + 4 * ring, zz);
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
         const nur = { ...opt, nurZiel: true };
