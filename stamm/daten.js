@@ -518,11 +518,12 @@ class AnazhRealm_daten {
     // Mess-Wiese 10 Büschel mit Füßen auf ihm; die Maske dehnt sich um eine Kante). `boden` 0,5 m: über dem Rauschen
     // der Facetten (Surface-Nets auf 1,8 m trägt ±0,2 m, Lehre 22; mit 0,25 m setzten am Genesis-Ort 558 von 1 277 Büscheln ihre
     // Grenze an Abweichungen von 0,26–0,38 m), unter der Höhe des Halms (L2 0,69–0,72 m). Gemessen (Null-Renderer, je Pose
-    // alle stehenden Büschel der Ferne, die Füße, die erst die Streckung auf eine Maske trug): Stadt (dorf 7 120) auf den Gassen
-    // 56 → 2, Nicht-Wiese 91 → 0, Wasser 15 → 0; Hang am Genesis-Ort (26°) auf Wegen 155 → 0, Nicht-Wiese 197 → 0; Mess-Wiese
-    // auf dem Weg 236 → 0, Nicht-Wiese 107 → 0; die Höhe eines Büschels 83,6 · 72,0 · 95,4 m → 8,6 · 9,9 · 2,1 m (Genesis · Hang ·
-    // Mess-Wiese), die Füße p999 14,0 · 4,2 · 6,7 m neben dem Boden → 0,43 · 0,39 · 0,08 m. Die Stadt trägt wieder Ferne zwischen
-    // den Häusern (504 → 1 099 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
+    // alle stehenden Büschel der Ferne, die Füße, die erst die Streckung auf eine Maske trug; mit dem Teil-Gitter von
+    // w19-saum-lai): Stadt (dorf 7 120) auf den Gassen 56 → 4, Nicht-Wiese 91 → 0, Wasser 15 → 0; Hang am Genesis-Ort (26°) auf
+    // Wegen 155 → 0, Nicht-Wiese 197 → 0; Genesis-Ort auf Wegen 29 → 0, Nicht-Wiese 44 → 0; Mess-Wiese auf dem Weg 236 → 0,
+    // Nicht-Wiese 107 → 0; die Höhe eines Büschels 83,6 · 72,0 · 95,4 m → 8,7 · 11,5 · 2,0 m (Genesis · Hang · Mess-Wiese), die
+    // Füße p999 14,0 · 4,2 · 6,7 m neben dem Boden → 0,46 · 0,42 · 0,08 m. Die Stadt trägt wieder Ferne zwischen den Häusern
+    // (504 → 1 069 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
