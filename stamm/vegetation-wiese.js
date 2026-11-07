@@ -494,16 +494,17 @@ class AnazhRealm_vegetation_wiese {
     // Büschels waagrecht um s, es trägt die Fläche von s² Zellen (die Spreizung; der Halm selbst hält nur den
     // Pixel, `_halmFerne`, nie um s breiter); ab der Übergabe wächst sie mit der Breite des Pixels,
     // ab ~16,6 m mit der Bodenfläche je Pixel (das Verhältnis zu der bei `fuss`: die Büschel je Pixel bleiben) —
-    // und der ANTEIL der stehenden Büschel a = min(1, Ziel/s) × (1 − Saum vor `bis`), das Ziel der Deckung je Fläche 1 bis
-    // `voll` (Anzahl × s = 1: an der Übergabe die Wiese der Nähe), dahinter (voll/Q)^fall; der Saum am waagrechten Abstand d
+    // und der ANTEIL der stehenden Büschel a = Ziel × (1 − Saum vor `bis`): DIE BLATTFLÄCHE JE BODEN TRÄGT DIE ANZAHL
+    // (w22-wiese-nachzug) — das Blatt hält nur den Pixel (`_halmFerne`, w22-strauch-karte), ein Büschel trägt die Blattfläche
+    // eines Büschels der Nähe, also stehen bis `voll` alle (das Ziel 1: die Wiese der Nähe), dahinter (voll/Q)^fall; die
+    // Spreizung verteilt die Halme nur. Bis dahin a = min(1, Ziel/s) mit Halmen quer um s breiter (Anteil × s = 1): ohne die
+    // Keile lag die Ferne kahl (Radeon, Mess-Wiese Third: LAI 20–40 m 0,32, 10–20 m 1,72); der Saum am waagrechten Abstand d
     // (der Ring der Chunks). So hält die Ferne die Deckung am Schirm, die Büschel je Pixel bleiben (Lehre 25). Bis
     // w14-wiese-saum las das Gesetz nur d: am zugewandten Hang lagen Platten, über die Kuppe flog der Pixel ungestreckt.
     // DIE GRENZE (w21-wiese-fern): `grenze` (optional) ist die Grenze der Streckung DIESES Büschels (`_wieseFernGrenzen`: so weit
-    // tragen es die Wiese der Nähe und sein Boden). Die Streckung wirkt zweifach: sie SPREIZT die Füße der Halme um s (wo sie
-    // stehen) und macht jeden Halm quer um s breiter (wie viel des Pixels er füllt). `spreiz` = min(s, grenze) — die Füße
-    // stehen nie über der Wiese der Nähe und ihrem Boden hinaus; die Breite und der Anteil folgen dem Gesetz des Pixels (s): die
-    // Blattfläche je Zelle bleibt Anteil × s, vor einer Gasse, an einem Kamm steht sie dichter um den Fuß statt auf der Gasse oder
-    // in der Luft. Bis dahin spreizte das Gesetz jedes Büschel bis `streckMax`, auch neben einem Riss oder einer Kante: am
+    // tragen es die Wiese der Nähe und sein Boden). Die Streckung SPREIZT die Füße der Halme um s (wo sie stehen); `spreiz` =
+    // min(s, grenze) — die Füße stehen nie über der Wiese der Nähe und ihrem Boden hinaus; die Blattfläche je Boden trägt der
+    // Anteil: vor einer Gasse, an einem Kamm steht sie dichter um den Fuß statt auf der Gasse oder in der Luft. Bis dahin spreizte das Gesetz jedes Büschel bis `streckMax`, auch neben einem Riss oder einer Kante: am
     // abgewandten Hang (S → 0) schon in 15 m vom Auge.
     static _wieseFern(A, d, Q, grenze) {
         const NW = AnazhRealm.NAH_WIESE,
@@ -517,7 +518,7 @@ class AnazhRealm_vegetation_wiese {
         return {
             streck: s,
             spreiz: grenze === undefined ? s : A.min(s, grenze),
-            anteil: A.mul(A.min(A.k(1), A.mul(ziel, A.pow(s, A.k(-1)))), saum),
+            anteil: A.mul(ziel, saum),
         };
     }
 
