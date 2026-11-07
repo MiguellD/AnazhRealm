@@ -297,7 +297,8 @@ class AnazhRealm_studio_stoff {
                             // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
                             const FS = tkC.FELL_SCHALE;
                             const t = aS.x;
-                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                            // das Raster der Locke: `locke` Strähnen-Zellen weit (w20-haar-arm — die Locke klumpt)
+                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z.div(FS.locke));
                             const hA = FS.hashA,
                                 hB = FS.hashB;
                             // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu;
