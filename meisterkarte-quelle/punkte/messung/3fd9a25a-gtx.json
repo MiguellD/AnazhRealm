@@ -1,17 +1,18 @@
 {
  "sha": "3fd9a25af94cb325e20d6bce49d8db97bb12f0f0",
  "geraet": "gtx",
- "zeit": "2026-11-07T21:00:12.816Z",
+ "zeit": "2026-11-07T21:12:57.986Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
-   "gruen": true,
-   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.22 · 10–20 1.97 · 20–40 1.94, Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gruen": false,
+   "zahl": "ohne alle Schüsse: /umstellen: {\"ms\":35057,\"fehler\":\"DIE WELT STEHT NICHT nach 1800 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 1800 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazh",
    "exit": 0,
-   "minuten": 0.65,
+   "minuten": 0.59,
+   "grund": "ROT: ohne alle Schüsse: /umstellen: {\"ms\":35057,\"fehler\":\"DIE WELT STEHT NICHT nach 1800 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 1800 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazh",
    "gpu": "nvidia/pascal",
-   "s": 39,
-   "zeit": "2026-11-07T20:59:33.773Z",
+   "s": 35.2,
+   "zeit": "2026-11-07T21:11:14.013Z",
    "abdruck": "ac8a53c780af",
    "port": 7804,
    "bahn": "sitzung",
@@ -63,32 +64,42 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T20:58:29.701Z",
+  "start": "2026-11-07T21:09:11.366Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7,
-  "grundstellungS": [],
+  "bootS": 7.7,
+  "grundstellungS": [
+   5.5,
+   5.4
+  ],
   "proben": 2,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
     "vor": "vegetation.K1#1",
-    "s": 55.7,
-    "takte": 2069,
+    "s": 113.7,
+    "fehler": "DIE WELT STEHT NICHT nach 2095 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2095 Takten — die Welt hat nichts mehr offen)",
+    "nach": "der Tür (die Welt hing)"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 68.7,
+    "takte": 1115,
     "chunks": 81,
-    "nach": null
+    "nach": "der Tür (die Welt hing)"
    }
   ],
   "wegeTueren": [],
   "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 391,
-   "frameP95": 33.49,
-   "taktP95": 37.43,
-   "vramMax": 129.1,
-   "seiten": 1,
+   "bilder": 316,
+   "frameP95": 66.61,
+   "taktP95": 62.26,
+   "vramMax": 135.9,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
@@ -100,11 +111,57 @@
      "ringMin": 0
     }
    ],
-   "zapfen": 160,
+   "zapfen": 310,
    "luecken": 2,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 187.5,
-  "minuten": 3.2
+  "fahrtS": 316.1,
+  "minuten": 5.35
+ },
+ "ungemessen": {
+  "profiband.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.3,
+   "zeit": "2026-11-07T21:12:57.986Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.3,
+   "zeit": "2026-11-07T21:12:57.986Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.3,
+   "zeit": "2026-11-07T21:12:57.986Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  }
  }
 }

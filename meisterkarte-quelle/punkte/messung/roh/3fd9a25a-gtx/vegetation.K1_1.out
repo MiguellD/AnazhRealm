@@ -63,11 +63,8 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\3fd9a25a-gtx\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
 [linse-gpu] nvidia/pascal
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 4.2 s
-SCHRITT /eval 0.0 s
-SCHRITT /bild 34.4 s
-SCHRITT /zaehlen 0.2 s
-VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 51.4 σ 29.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.211 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":1160391,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.5674,0.3577,0.1881,0.0827,0.0369,0.0222],"klassen":{"nahWiese:Lf":[0,0,40,147400,123250,34054,501],"bodenSatz":[0,45649,16656,1069,1,1563,6151],"nahWiese:L2":[0,263,269914,48614,0,0,62],"streuSatz":[0,1002,5258,4119,871,0,0],"nahWiese:L1":[0,333266,81479,0,0,0,0]},"farbton":[["-140,-523",10260,-4482.806,8774.12,10242],["-140,-524",2685,-1302.853,2301.573,2685],["-140,-522",18229,-9191.699,15079.168,18208],["-139,-524",23514,-10603.26,20241.915,23491],["-139,-525",2874,-1197.592,2547.81,2874],["-139,-523",22045,-8832.253,19553.519,22026],["-140,-521",8277,-4389.396,6709.46,8229],["-139,-522",10666,-5122.815,8963.21,10626],["-138,-525",3483,-1471.105,3094.881,3483],["-138,-524",2387,-877.104,2164.143,2387],["-139,-521",22,-16.526,14.337,22]],"budget":[4,52158]}]}
+SCHRITT /umstellen 35.1 s
+VEGETATION {"schuesse":[],"fehler":"/umstellen: {\"ms\":35057,\"fehler\":\"DIE WELT STEHT NICHT nach 1800 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 1800 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazh"}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
