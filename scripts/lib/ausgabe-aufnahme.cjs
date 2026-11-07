@@ -737,8 +737,10 @@ function abnahmeMessen(opt) {
 // um den Ort — der Abstand zum Ziel und die Augenhöhe über dem Boden bleiben, der Azimut dreht 0, ±15° … ±90°, ±135°, 180°,
 // je Runde von 14 Posen ein Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
-// Abnahme nach dem Schuss wirft beim Namen. JEDE POSE IN IHRER WELT (w18-abnahme-sicht): unter der Bühne urteilt die Wahl eine Pose
-// erst, wenn die Welt an ihr steht (`__weltStehtAn`) und die Nah-Sätze ihr folgen — dieselbe Welt, die der Schuss danach zeichnet. Bis
+// Abnahme nach dem Schuss wirft beim Namen. JEDE POSE IN IHRER WELT (w18-abnahme-sicht): eine Pose, die im Augenblick frei ist, steht
+// erst, wenn sie es auch in IHRER Welt bleibt — unter der Bühne wartet die Wahl, bis die Welt an ihr steht (`__weltStehtAn`), die
+// Nah-Sätze folgen ihr, und das Urteil fällt dort neu: dieselbe Welt, die der Schuss danach zeichnet (die Wartezeit, die sonst sein
+// Einschwingen zahlt). Was schon im Augenblick verdeckt ist, fällt ohne Warten. Bis
 // dahin urteilte sie in der Welt der vorigen Pose: siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, und der
 // zweite Schuss dort fand die Tanne, die die Welt erst dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
 async function blickWahl(opt) {
@@ -766,11 +768,16 @@ async function blickWahl(opt) {
         cam.position.set(x, g + h0 + ring, zz);
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
-        if (window.__buehneUhr) takte += await window.__weltStehtAn();
-        for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
-        const m = window.__abnahmeMessen(opt);
-        const u = window.__abnahmeUrteil(m);
-        const rest = u.rot.filter((q) => !q.feld.startsWith("bild."));
+        const urteil = () => {
+            const m = window.__abnahmeMessen(opt);
+            return [m, window.__abnahmeUrteil(m).rot.filter((q) => !q.feld.startsWith("bild."))];
+        };
+        let [m, rest] = urteil();
+        if (!rest.length && window.__buehneUhr) {
+            takte += await window.__weltStehtAn();
+            for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
+            [m, rest] = urteil();
+        }
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
         if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, takte, posen };
         if (!beste || rest.length < beste.n) beste = { n: rest.length, k };
