@@ -636,15 +636,23 @@ class AnazhRealm_stoff_karte {
         let n = 0;
         const frist = this._bauFrist("karte"); // vor der Arbeit gefragt
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
-        const v0 = gezeichnet();
+        // DIE LEINE FRAGT JEDE KARTE BEI IHREM BEGINN, AUCH IM SELBEN TAKT (w19-gang-hitch, Nacharbeit): was eine Karte zeichnete,
+        // bindet sich sofort an (`_gpuLeineBinden`), und die nächste beginnt nur an loser Leine — die Frist misst CPU-Zeit, die
+        // Leine die Schlange der GPU. Bis hier fragte nur der Anfang des Takts: im ruhenden Loop (Frist ohne Ende) begann EIN Takt
+        // jede Karte der Schlange am Stück und legte Minuten swiftshader-Arbeit in die Schlange (CI z289 · z292 · z293, umstellen an
+        // die Mess-Wiese: die Leine blieb gespannt, das Panorama und die letzten Karten zeichneten nie, das Weltbild fehlte, und die
+        // 90 Würfe außer Blick warteten — „Wald offen 90"); auf main verdeckte das Budget KARTE_WELT_MS (ein Ring je Takt) die Lücke.
+        let v = gezeichnet();
+        const binden = () => gezeichnet() !== v && (this._gpuLeineBinden(), (v = gezeichnet()));
         for (let i = 0; i < q.length;) {
             const z = at.zellen.get(q[i]);
             if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
                 q.splice(i, 1);
                 continue;
             }
-            if (nurHalbe && !(at.offen && at.offen.z === z)) break; // an gespannter Leine nur die begonnene Karte
+            if (!(at.offen && at.offen.z === z) && this._gpuLeineStraff()) break; // an gespannter Leine nur die begonnene Karte
             const e = this._karteWeltBacken(at, z);
+            binden();
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
@@ -656,7 +664,6 @@ class AnazhRealm_stoff_karte {
             n++;
             if (performance.now() >= frist) break;
         }
-        if (gezeichnet() !== v0) this._gpuLeineBinden();
         return n;
     }
 
