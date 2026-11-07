@@ -45,6 +45,39 @@ function baumZeilen(zeilen, kopf, n) {
     return aus.slice(0, n).map((x, i) => `${kopf} B${i + 1}: ${x}`);
 }
 
+// DER KNOTEN-BAU IM GANG (`_knotenRate`, der Bau in Raten): je Bau-Schlüssel Stoff | Täter-Klasse | Pass, ms, Schritte, der
+// längste Schritt und wie oft der Schlüssel VOR dem Gang schon im Bau-Cache stand und aus ihm fiel (r184 `Nodes.delete`: der
+// letzte Leser nimmt den Eintrag mit)
+const KB_AN = `if (!window.__kb) {
+    const C = r.state.renderer._nodes.nodeBuilderCache;
+    const G = (window.__kb = { gebaut: new Map(), geloescht: new Map(), je: new Map(), an: false, del: 0 });
+    const s0 = C.set.bind(C), d0 = C.delete.bind(C);
+    C.set = (k, v) => (C.has(k) || G.gebaut.set(k, (G.gebaut.get(k) || 0) + 1), s0(k, v));
+    C.delete = (k) => (C.has(k) && (G.geloescht.set(k, (G.geloescht.get(k) || 0) + 1), G.an && G.del++), d0(k));
+    const kr = r._knotenRate;
+    r._knotenRate = function (N, ro, E) {
+        if (!G.an) return kr.call(this, N, ro, E);
+        const k = N.getForRenderCacheKey(ro), vor = G.gebaut.get(k) || 0, weg = G.geloescht.get(k) || 0;
+        const t0 = performance.now(), ok = kr.call(this, N, ro, E), ms = performance.now() - t0;
+        let e = G.je.get(k);
+        if (!e) {
+            const m = ro.material || {};
+            let kl = "?", pass = "?";
+            try { kl = r._taeterKlasse(ro.object); } catch (_e) {}
+            try { pass = window.__passName ? window.__passName(ro.scene, ro.camera) : "?"; } catch (_e) {}
+            G.je.set(k, (e = { name: (m.name || m.type || "?") + "|" + kl + "|" + pass, ms: 0, n: 0, max: 0, fertig: 0, vor, weg }));
+        }
+        e.ms += ms; e.n++; if (ms > e.max) e.max = ms; if (ok) e.fertig++;
+        return ok;
+    };
+}
+window.__kb.an = true; window.__kb.je.clear(); window.__kb.del = 0; return 1;`;
+const KB_LESEN = `const G = window.__kb; G.an = false; const a = [...G.je.values()].sort((x, y) => y.ms - x.ms);
+const s = (f) => +a.reduce((t, e) => t + f(e), 0).toFixed(1);
+return { schluessel: a.length, ms: s((e) => e.ms), schritte: s((e) => e.n), fertig: s((e) => e.fertig), wieder: a.filter((e) => e.vor > 0).length,
+    wiederMs: s((e) => (e.vor > 0 ? e.ms : 0)), geloeschtImGang: G.del,
+    top: a.slice(0, 7).map((e) => [e.name.slice(0, 70), +e.ms.toFixed(1), e.n, +e.max.toFixed(1), e.vor, e.weg]) };`;
+
 (async () => {
     const tor = werkbankTor(PORT);
     let gruen = true;
@@ -55,6 +88,22 @@ function baumZeilen(zeilen, kopf, n) {
             const o = tor.rufe([...args, "--port", String(PORT)], s * 1000);
             fs.appendFileSync(path.join(D, "werkbank.log"), `\n$ ${args.join(" ")}\n${o.stdout}${o.stderr}`);
             return o.stdout || "";
+        };
+        const ev = (code) => {
+            const out = wb(["eval", code], 60);
+            try {
+                return JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1)).ergebnis;
+            } catch {
+                return { fehler: out.slice(0, 200) };
+            }
+        };
+        const knoten = (name, gang) => {
+            const k = ev(KB_LESEN);
+            zeile(
+                `GEH ROT ${name} Knoten-Bau ${gang}: ${k.schluessel} Schlüssel · Σ ${k.ms} ms in ${k.schritte} Schritten · ${k.fertig} fertig · ` +
+                    `${k.wieder} davon standen vor dem Gang schon im Cache (Σ ${k.wiederMs} ms) · im Gang ${k.geloeschtImGang} Einträge gelöscht · ` +
+                    `[Stoff|Klasse|Pass ms Schritte max vorher gelöscht]: ${JSON.stringify(k.top || k)}`
+            );
         };
         const lauf = (name) => {
             const out = wb(
@@ -81,6 +130,7 @@ function baumZeilen(zeilen, kopf, n) {
         const name = "wiese-ego",
             json = path.join(D, `${name}.json`);
         wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
+        ev(KB_AN);
         wb(
             [
                 "haenger",
@@ -114,9 +164,12 @@ function baumZeilen(zeilen, kopf, n) {
                         .map((e) => `${e.n} ${e.summeMs} ${e.maxMs} ${e.ursache}`)
                         .join(" | ")
             );
-            for (const z of baumZeilen(s.zeilen, `GEH ${U} ${name}`, 7)) zeile(z);
+            for (const z of baumZeilen(s.zeilen, `GEH ${U} ${name}`, 5)) zeile(z);
         } else ((gruen = false), zeile(`GEH ROT ${name}: die Hänger-Linse lieferte nichts`));
+        knoten(name, "Gang 1");
+        ev(KB_AN);
         lauf(name);
+        knoten(name, "Gang 2 (dieselbe Bahn)");
         wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
         lauf("genesis-third");
     } catch (e) {
