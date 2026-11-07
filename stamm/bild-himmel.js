@@ -1512,6 +1512,31 @@ class AnazhRealm_bild_himmel {
         return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoOrtKm(), e, N, T);
     }
 
+    // DER WEG ZUR SONNE JE ART DER LUFT (die Sonne in der Höhe jeder Probe der Luft, `_luftEnsure` `tauSonne`): die optische Tiefe
+    // am Boden (1 m) für Rayleigh und Mie getrennt, als Leuchtdichte — dieselbe Rechnung wie die Transmittance-Tafel
+    // (`ATMO_RECHNUNG.durchlass`, das Medium jetzt), je Art ihr Medium allein (das Ozon trägt jede Höhe der Luft gleich, es
+    // kürzt sich im Verhältnis zum Auge). Unter dem Horizont 0 (die einfache Streuung der Sonne ruht dort). Neu, wenn Sonne
+    // oder Medium wechseln (Kosten an Änderung).
+    _luftSonneTakt(U) {
+        const A = this.state.atmoLut;
+        const e = A && A.U ? A.U.sonne.value.y : -1;
+        const M = this._atmoMediumJetzt();
+        const m = this._luftSonneMerk;
+        if (m && m.e === e && m.M === M) return;
+        this._luftSonneMerk = { e, M };
+        const R = this._atmoRechnung();
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const T = [0, 0, 0];
+        const leer = [0, 0, 0];
+        const tau = (Mk) => {
+            R.durchlass(Mk, 0.001, e, N, T);
+            const y = 0.2126 * T[0] + 0.7152 * T[1] + 0.0722 * T[2];
+            return y > 1e-12 ? -Math.log(y) : 28;
+        };
+        U.sonneR.value = e > 0 ? tau(Object.assign({}, M, { mieExt: leer, ozon: leer })) : 0;
+        U.sonneM.value = e > 0 ? tau(Object.assign({}, M, { betaR: leer, ozon: leer })) : 0;
+    }
+
     // Das Medium des Wetters jetzt, in STUFEN der Extinktion um die klare Luft (`ATMO_LUT.mediumStufe`, logarithmisch; die
     // klare Luft selbst ist exakt eine Stufe): ein Wetter-Übergang zeichnet die Tafeln je Stufe neu, nie je Anwendung — bis
     // zur Nachbesserung zeichnete jedes Anwenden eines Übergangs Durchlass, Ψ_ms und Himmels-Sicht neu. Sonne und Tafeln
@@ -2285,6 +2310,9 @@ class AnazhRealm_bild_himmel {
             unterWasser: T.uniform(0),
             spiegelY: T.uniform(0),
             abfall: T.uniform(new THREE.Vector3(0, 0, 0)),
+            // die optische Tiefe des Wegs zur Sonne am Boden je Art (Rayleigh, Mie; Leuchtdichte) — `_luftSonneTakt`
+            sonneR: T.uniform(0),
+            sonneM: T.uniform(0),
         });
         const faktor = T.Fn(([auge, punkt]) => {
             const v = punkt.sub(auge);
@@ -2315,27 +2343,27 @@ class AnazhRealm_bild_himmel {
         // EINE Schleife (wie `falte` des Fels-Gesetzes, K17-3): der Zustand (τ, Summe, Licht) lebt in Variablen, je Durchlauf
         // EINE Abtastung der Karte — ausgeschrieben stand der Strahl achtmal in jedem Stoff (Boden der Bühne S0: +8 060 Zeichen
         // WGSL, das Programm 122 088 über der Decke 100 000).
-        // DIE SONNE IN DER HÖHE DER PROBE (ferne.K4; Hillaire 2020 „Aerial Perspective“: je Probe des Strahls der Durchlass zur Sonne
-        // aus der Transmittance-Tafel): die Himmels-Sicht trägt die In-Streuung in der Höhe des AUGES — aus 1 585 m über dem Dorf
-        // bei Sonne 5° lag dort ein Durchlass zur Sonne, den die dichte Luft über dem Hang 5 km weiter nie bekommt (sie liegt unter
-        // dem langen Weg durch die Luft). Jede Probe trägt den Durchlass in ihrer Höhe gegen den am Auge (Leuchtdichte, ≤ 1): die
-        // Luft über dem tiefen Hang streut am Abend weniger Sonne als die Luft vor dem Auge. Der Mittag ändert sich nicht (der Weg
-        // zur Sonne ist kurz in jeder Höhe).
-        const Y709 = T.vec3(0.2126, 0.7152, 0.0722);
-        const sonneIn = (hKm) => T.dot(A.durchlass(T.float(A.RG).add(hKm), A.U.sonne.y), Y709);
+        // DIE SONNE IN DER HÖHE DER PROBE (Hillaire 2020 „Aerial Perspective“: je Probe des Strahls der Durchlass zur Sonne): die
+        // Himmels-Sicht trägt die einfache Streuung der Sonne in der Höhe ihrer Tafel (`hKm`, das Auge der letzten Anwendung des
+        // Tags) — die Luft in anderer Höhe bekommt am Abend eine andere Sonne (bei 5° am Boden Durchlass 0,068, in 1,5 km 0,96).
+        // Jede Probe trägt den Durchlass in ihrer Höhe gegen den der Tafel (Leuchtdichte): tiefer streut die Luft am Abend weniger
+        // Sonne, höher mehr (der Dunst um ferne Gipfel); mittags ist der Weg zur Sonne in jeder Höhe kurz. Der Weg trägt je Art der
+        // Luft ihre optische Tiefe am Boden (`sonneR`, `sonneM` — die Rechnung der Transmittance-Tafel, `_luftSonneTakt`), mit
+        // ihrer Dichte in der Höhe skaliert (die Skalenhöhen der EINEN Atmosphäre): keine Tafel im Stoff, der Ring-Stoff trägt 16
+        // von 16 Texturen (mit ihr band er 17, die Pipeline fiel).
+        const tauSonne = (hKm) =>
+            U.sonneR.mul(T.exp(hKm.div(A.U.HR).negate())).add(U.sonneM.mul(T.exp(hKm.div(A.U.HM).negate())));
         const luftSicht = T.Fn(([auge, punkt]) => {
             const n = AnazhRealm.HORIZONT_KARTE.luftProben;
             const v = punkt.sub(auge).toVar();
             const b = U.beta.mul(U.spektrum.y).mul(v.length().div(n)).toVar();
-            const amAuge = T.max(sonneIn(A.U.hKm), 1e-6).toVar();
+            const inTafel = tauSonne(A.U.hKm).toVar();
             const [tau, summe, licht] = [T.float(0).toVar(), T.float(0).toVar(), T.float(0).toVar()];
             T.Loop(n, ({ i }) => {
                 const p = auge.add(v.mul(T.float(i).add(0.5).div(n))).toVar();
                 const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).toVar();
                 const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate())).toVar();
-                const sonne = sonneIn(T.max(p.y.sub(U.bezugY).mul(0.001), 0.001))
-                    .div(amAuge)
-                    .clamp(0, 1);
+                const sonne = T.exp(inTafel.sub(tauSonne(T.max(p.y.sub(U.bezugY).mul(0.001), 0.001))));
                 tau.addAssign(dtau);
                 summe.addAssign(w);
                 licht.addAssign(w.mul(this._horizontSicht(p)).mul(sonne));
@@ -2424,6 +2452,7 @@ class AnazhRealm_bild_himmel {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+            this._luftSonneTakt(U);
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
                 // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit
