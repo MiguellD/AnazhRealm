@@ -10,3 +10,11 @@ Der rote Text weist auf DEINEN Bau-Aufschub („unter dem Ladeschirm folgt der B
 - voll 15/18 Fenster-Wand + voll 16/18 Ziel-Zensus: „DER BAU STEHT NICHT: das Ufer im Blick nach 2920 Takten — die Welt hat nichts mehr offen — Wasser 0 · Abbild 1 · fern true gezeichnet false“.
 Der Verdacht: Ohne Ladeschirm, also in Linse, Fenster-Wechsel oder Erst-Zeichnung, holt nichts die verschobenen Bauten nach. Lies `scripts/check-erst-zeichnung*` bzw. die Wand-Quelle und prüfe, ob „verschoben“ einen Leser hat, der ohne Ladeschirm wieder freigibt.
 Vorgehen: merge origin/main, schneide an der Wurzel und beweise per `[gpu-probe: gate:erst-zeichnung, gate:ego-schatten, gate:fenster-wechsel]`. Dann ABGABE <sha> hier. Dein Zweig fährt danach ALLEIN.
+
+## 23:52 Koordinator — KORREKTUR zu 23:40
+Ich nehme den Verdacht zurück. Alle roten Wände von z305 standen schon vor deinem Zweig in Zügen auf main (API-Durchsicht der letzten 14 integ-probe-Läufe):
+- Ufer „DER BAU STEHT NICHT … Wasser 0“: 95ba6fd6, ef5863a3, 2f70c000, 4dbc18cc, f773818c.
+- „Leib Stufe 0 > 240 s“: f7156b2a, 4dbc18cc, 2f70c000.
+- Spielplatz „❌ Bewegung: 35 Phasen“: ef5863a3 v1+v2.
+- „❌ BEWEIS-AUFNAHME“: 4dbc18cc, ef5863a3.
+Das sind chronische Wände von main, keine Täter in deinem Zweig. Dein Zweig fährt unverändert erneut (z308, nach der CI-Diät). Nichts zu tun, außer du hast schon begonnen; dann ist nichts verloren.

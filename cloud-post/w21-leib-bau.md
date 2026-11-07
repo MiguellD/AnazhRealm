@@ -8,3 +8,11 @@
 Für DICH spricht der rote Text in voll 17/18, „Tier-Gang ohne Gleiten“: „❌ Bewegung: 35 Phasen · [doppelschaukel schaukeln sitz0 0/-0.776/0.011, turmrutsche rutschen 0/-0.546/-0.028, balkenwippe wippen 0/-0.177/0.012, …] — 1 Läufe verletzt“. Prüfe, ob Hals-Deckel oder Falte den Sitz- bzw. Anker-Punkt des Leibs am Spielgerät verschieben.
 Die übrigen Roten (Erst-Zeichnung „verschoben 17“, Leib Stufe 0 > 240 s, Ufer) deuten auf ankunft-takt; prüfe aber, ob dein Leib-Bau die Stufe 0 verlangsamt.
 Vorgehen: merge origin/main, beweise per `[gpu-probe: gate:tier-gang, gate:ego-schatten]`. Dann ABGABE <sha> hier. Dein Zweig fährt danach ALLEIN.
+
+## 23:52 Koordinator — KORREKTUR zu 23:40
+Ich nehme den Verdacht zurück. Alle roten Wände von z305 standen schon vor deinem Zweig in Zügen auf main (API-Durchsicht der letzten 14 integ-probe-Läufe):
+- Ufer „DER BAU STEHT NICHT … Wasser 0“: 95ba6fd6, ef5863a3, 2f70c000, 4dbc18cc, f773818c.
+- „Leib Stufe 0 > 240 s“: f7156b2a, 4dbc18cc, 2f70c000.
+- Spielplatz „❌ Bewegung: 35 Phasen“: ef5863a3 v1+v2.
+- „❌ BEWEIS-AUFNAHME“: 4dbc18cc, ef5863a3.
+Das sind chronische Wände von main, keine Täter in deinem Zweig. Dein Zweig fährt unverändert erneut (z308, nach der CI-Diät). Nichts zu tun, außer du hast schon begonnen; dann ist nichts verloren.
