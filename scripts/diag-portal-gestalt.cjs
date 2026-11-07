@@ -26,7 +26,7 @@
 //     Spawn baut den klassischen Part-Group-Mesh: entry.mesh non-null, instFoundry false;
 //     blockerAABBs relativ IDENTISCH zum Studio-Spawn = die Substanz ist regime-frei).
 //   node scripts/diag-portal-gestalt.cjs
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -34,9 +34,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 300000 });
 
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {

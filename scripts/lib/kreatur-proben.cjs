@@ -39,42 +39,35 @@ async function kreaturProben(r, T, opts) {
     const buehne = async (name, fn) => {
         if (nur && !nur.includes(name)) return;
         Object.assign(dorf, { probe: name, hier: false });
-        const altK = s.creatures;
-        const altE = s.creatureEmotions;
-        const altMax = s.maxCreatures;
         const altModus = r.getGameMode();
         const altGefuehl = Object.assign({}, s.player.emotions || {});
-        const altNetSeq = s._creatureNetSeq;
+        const altSpieler = Object.assign({}, s.player);
+        const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
         const restore = (aufraeumen = []);
-        s.creatures = [];
-        s.creatureEmotions = [];
-        s.maxCreatures = 64;
+        if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+        // DIE BÜHNE ÜBER DIE EINE LEIHE (`leihe`, w18-mensch-deckel; bis dahin je Größe ein eigenes Merken und Zurück): eigene Tiere (die
+        // Welt-Tiere ruhen); das Tempo des Spielers und die Spiel-Zeit samt dem Takt des Lebenszyklus kehren nach jeder Probe zurück.
         // DIE UHR DER BÜHNE: jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts, mit frischen Fauna-Strömen
         // und dem Blick nach Norden — gleich, wie lange die Welt einschwang und welche Probe vorher lief.
-        const altUhr = s.creatureAnimationTime;
-        const altAi = r._creatureAiFrame;
-        const altStroeme = r._faunaStroeme;
-        const altFelder = [s.lifeField, s.emotionField, s.faunaBestand];
-        const altSpieler = Object.assign({}, s.player);
-        // das Tempo des Spielers und die Spiel-Zeit samt dem Takt des Lebenszyklus kehren nach jeder Probe zurück
-        const altTempo = [s.speed, s.sprintSpeed, s.jumpPower, s.spielZeit, s.faunaLifecycle];
+        // DER TAG DES SPIELERS (w18-mensch-deckel): jede Probe lebt den Tag des Gesetzes (`DAY_LENGTH_DEFAULT_MINUTES`) — die Bühne der
+        // Werkbank hält ihn an (ausgabe-aufnahme `buehne`: die Tag-Länge des Halts 1e12, „eine Linse, die die Sonne laufen lässt,
+        // setzt ihre eigene“), und nach jedem `umstellen` rechnete der Tag der Probe bewohner 2,5e11 Takte je Zehntel-Stunde
+        // (`takte` aus der Tag-Länge der Welt), die Spielstunde der Bewohner (`_bewohnerStundeSek`) 2,5e12 s: der Faden blieb nach
+        // dem Deckel belegt, die Sitzung der GTX starb an der Grundstellung danach (fe57747a, 5fb21e29: „/eval ohne Antwort“)
         // DER LEIB DES SPIELERS: sein Lauf (`playerVel`), seine Lage des Vor-Takts (`_spielerLageAlt`) und der Herden-Takt
         // beginnen je Probe in Ruhe.
-        const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
-        const altLage = r._spielerLageAlt;
-        const altHerde = s._herdContagionAcc;
-        if (s.playerVel) s.playerVel.setValue(0, 0, 0);
-        r._spielerLageAlt = null;
-        s._herdContagionAcc = 0;
-        [s.lifeField, s.emotionField, s.faunaBestand] = [];
-        s.creatureAnimationTime = 100;
-        r._creatureAiFrame = 0;
-        r._faunaStroeme = null;
         // DIE NAMEN DER BÜHNE: ihre Tiere zählen ihre netId ab derselben Marke, jenseits jedes Tiers der Welt — gleich, wie viele
         // die Welt vor der Bühne gebar. Die Identität trägt die Phase ihres Tages (der erste Ruhe-Pegel aus dem Hash der netId,
         // `_kreaturTaetigkeit`): bis hierher erbte sie den Zähler des Boots, die Ankunft des Plans gebar 10 Tiere statt 8, und
         // das Rotwild des Tages-Budgets zog 0,079 statt 0,081 (an den Marken 1000 · 3000 · 5000: 0,111 · 0,102 · 0,093)
-        s._creatureNetSeq = 1e6;
+        const zurueck = [
+            leihe(s, {
+                creatures: [], creatureEmotions: [], maxCreatures: 64, creatureAnimationTime: 100, _herdContagionAcc: 0, _creatureNetSeq: 1e6, // prettier-ignore
+                dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES, lifeField: undefined, emotionField: undefined, faunaBestand: undefined, // prettier-ignore
+                speed: s.speed, sprintSpeed: s.sprintSpeed, jumpPower: s.jumpPower, spielZeit: s.spielZeit, faunaLifecycle: s.faunaLifecycle, // prettier-ignore
+            }),
+            leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null }),
+        ];
         pm.copy(P0);
         kamera(0, -1);
         try {
@@ -100,23 +93,13 @@ async function kreaturProben(r, T, opts) {
             const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
             if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
                 await __weltStehtNach();
-            s.creatures = altK;
-            s.creatureEmotions = altE;
-            s.maxCreatures = altMax;
-            s._creatureNetSeq = altNetSeq;
+            for (const f of zurueck) f();
             r.setGameMode(altModus);
             if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
             pm.copy(P0);
-            s.creatureAnimationTime = altUhr;
-            r._creatureAiFrame = altAi;
-            r._faunaStroeme = altStroeme;
             for (const k of Object.keys(s.player)) if (!(k in altSpieler)) delete s.player[k];
             Object.assign(s.player, altSpieler);
-            [s.speed, s.sprintSpeed, s.jumpPower, s.spielZeit, s.faunaLifecycle] = altTempo;
             if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
-            r._spielerLageAlt = altLage;
-            s._herdContagionAcc = altHerde;
-            [s.lifeField, s.emotionField, s.faunaBestand] = altFelder;
         }
     };
     // Ein Ort auf Land (nicht im Wasser), relativ zum Spieler.
@@ -258,15 +241,7 @@ async function kreaturProben(r, T, opts) {
         return { ps, lokal, glieder: noch.map((k) => Tt[k]) };
     };
     // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen der Bühne zurück (oder früher über `ab`).
-    const decke = (name, fn, ab = aufraeumen) => {
-        const hatte = Object.prototype.hasOwnProperty.call(r, name);
-        const alt = r[name];
-        r[name] = fn(alt);
-        ab.push(() => {
-            if (hatte) r[name] = alt;
-            else delete r[name];
-        });
-    };
+    const decke = (name, fn, ab = aufraeumen) => ab.push(leihe(r, { [name]: fn(r[name]) }));
     // DER ALTE JAGD-WEG als Täter (jagdkreis, rudel): im Schritt-Tempo geradewegs auf das Ziel, kein Platz im Rudel, keine Hetze
     const schrittJagd = () =>
         decke(
@@ -1288,14 +1263,11 @@ async function kreaturProben(r, T, opts) {
                 "_p2pTickRemoteCreatures",
                 (alt) =>
                     function (t, dt) {
-                        const hatte = Object.prototype.hasOwnProperty.call(this, "_animateCompoundMotion");
-                        const gang = this._animateCompoundMotion;
-                        this._animateCompoundMotion = function () {};
+                        const zurueck = leihe(this, { _animateCompoundMotion() {} });
                         try {
                             return alt.call(this, t, dt);
                         } finally {
-                            if (hatte) this._animateCompoundMotion = gang;
-                            else delete this._animateCompoundMotion;
+                            zurueck();
                         }
                     }
             );
@@ -2451,7 +2423,7 @@ async function kreaturProben(r, T, opts) {
         const [hat, sicht] = [(t) => [].concat(taeter).includes(t), {}];
         const FC = globalThis.__fachwerkCore;
         const q3 = (v) => Math.round(v * 1000) / 1000;
-        const [DT, tagS] = [0.1, (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 60];
+        const [DT, tagS] = [0.1, s.dayLengthMinutes * 60];
         const takte = Math.round((0.1 / 24) * tagS * 10);
         const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
         // DER SPIELER AM RAND DES PLATZES, frei von Grundrissen (Lehre 17: Achsen-Enden, Seiten, Diagonalen) — im Start-Dorf und

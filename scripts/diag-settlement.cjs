@@ -9,7 +9,7 @@ const {
     waitFor,
     ROOT: root,
     hauptLauf,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     selbsttestEnde,
@@ -1652,9 +1652,7 @@ hauptLauf(async () => {
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
     const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
     const server = statikServer();
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 240000 });
     // DIE PROBEN JE LAUFZEIT-MARKE: `fn` läuft in der Seite, jede Probe setzt ihre Marke (`__marke(name)`); gewartet wird Marke um
     // Marke über das EINE Warten (`waitFor`, sein Name im Puls der Stall-Akte), höchstens eine Runde je Marke — so trägt jede Probe
     // die Frist des Browsers allein, nie die Summe (bis 26.10. EIN Ruf über Teil B und C: am belasteten Laptop riss er nach 240 s

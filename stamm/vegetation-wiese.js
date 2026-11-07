@@ -171,32 +171,82 @@ class AnazhRealm_vegetation_wiese {
         return u && Number.isFinite(u.grassStep) ? u.grassStep : 0.72;
     }
 
-    // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes — der Stoff der Ferne rechnet dieselbe
-    // Zahl aus dem Ursprung seiner Instanz (`_halmFerne`). Die oberen 8 Bit sind der BAYER-RANG seiner Gitter-Zelle (gi, gj =
-    // die Lage durch den Schritt, gerundet: der Jitter ±0,34 m bleibt unter dem halben Schritt) in der Tafel 16 × 16 — die
-    // Bit-Umkehr von (gi ⊕ gj, gi) verschränkt; die unteren 16 Bit der PCG über der Lage auf 1/256 m (versetzt um 2²³, beide
-    // Achsen) ordnen innerhalb eines Rangs. 24 Bit: in f32 exakt. So ist jeder Anteil a (o < a) ein gleichmäßiges TEIL-GITTER
-    // der Nähe (bei a = 1/4 jede zweite Zelle je Achse, der Abstand der Nachbarn 1/√a Zellen), nie ein Poisson-Wurf.
+    // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes, Zug 0 der Ziehung des Orts
+    // (`_ortZiehung`), GESCHICHTET über dem Gitter der Wiese (`_wieseSchritt`) — die CPU (`_nahWieseKachelBueschel`) und der Stoff
+    // der Ferne (`_halmFerne`, über der Wort-Algebra des Stoffs aus dem Ursprung seiner Instanz) rufen DIESE Funktion, EINE Rechnung.
+    // Die oberen 8 Bit sind der BAYER-RANG seiner Gitter-Zelle, die unteren 16 die oberen 16 Bit des Worts der Ziehung: jeder
+    // Anteil a (o < a) ist ein gleichmäßiges TEIL-GITTER der Nähe (bei a = 1/4 jede zweite Zelle je Achse, der Abstand der
+    // Nachbarn 1/√a Zellen), nie ein Poisson-Wurf.
     // Bis w19-saum-lai war o die PCG allein: die Nähe steht im geschichteten Gitter (eine Zelle je Schritt, gleichmäßiger als
     // Poisson), die Ferne dünnte es ZUFÄLLIG — Klumpen und Lücken, durch die der flache Blick den Boden sah. Die Blattfläche je
     // Boden hielt das Gesetz (Probe am Keil ±30° der Station, swiftshader: 10–20 m 2,64 · 20–40 m 2,25–2,75, nah 2,48–2,74),
     // der Pixel-LAI fiel dort, wo die Ferne dünnt: je Fläche 1,02 · 0,97 · 0,78 · 0,72 (2–5 · 5–10 · 10–20 · 20–40 m). Die
     // Station an derselben Pose (swiftshader): Boden-Pixel 10–20 m 881 → 809, 20–40 m 3 → 0 (satt), 40–80 m 9 → 3,
     // 80–200 m 1 106 → 626, zurückgetauscht in derselben Welt wieder 880 · 3 · 9 · 1 105; der Bestand der Ferne 13 748 → 13 680
-    // Büschel, im Blick 1 259 → 1 282 (dieselbe Erwartung a je Zelle). Die Wand: gate:profiband P-Ferne, das Teil-Gitter.
-    static _wieseOrdnung(x, z) {
-        const S = AnazhRealm._wieseSchritt();
-        const [gi, gj] = [Math.floor(x / S + 0.5), Math.floor(z / S + 0.5)];
-        const [u, v] = [(gi ^ gj) & 15, gi & 15];
-        let rang = 0;
-        for (let k = 0; k < 4; k++) rang = (rang << 2) | (((u >> k) & 1) << 1) | ((v >> k) & 1);
-        const q = (w) => (Math.floor(Math.fround(w) * 256 + 0.5) + 8388608) >>> 0;
-        const pcg = (w0) => {
-            const s = (Math.imul(w0, 747796405) + 2891336453) >>> 0;
-            const w = Math.imul(((s >>> ((s >>> 28) + 4)) ^ s) >>> 0, 277803737) >>> 0;
-            return ((w >>> 22) ^ w) >>> 0;
+    // Büschel, im Blick 1 259 → 1 282 (dieselbe Erwartung a je Zelle). Die Wand: gate:profiband P-Ferne (das Teil-Gitter, und
+    // die Ordnung der CPU gegen die des Stoffs an 16 384 Lagen).
+    static _wieseOrdnung(x, z, W = AnazhRealm._wortAlgebra()) {
+        return AnazhRealm._ortZiehung(W, x, z, 0, AnazhRealm._wieseSchritt());
+    }
+    // DIE ZIEHUNG DES ORTS (rein, über einer Wort-Algebra W, `_wortAlgebra`): das Wort einer Lage — x und z auf 1/256 m (in f32
+    // exakt bis ±32 km, keine Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen —, je `zug` eine
+    // PCG-Runde weiter, die oberen 24 Bit als Zahl in [0, 1). Zug 0 ist die Ordnung der Ferne (`_wieseOrdnung`, `_halmFerne`), Zug 1
+    // das Rauschen des Halms: die Phase seines Wiegens (`_windSwayOffset` am Fuß des Büschels; die Nah-Streu trägt es je Pflanze im
+    // Satz, `_satzKernWiege`; die Strähne des Haars am Ort ihrer ersten Sicht, `_haarFederTakt`). EINE Rechnung für CPU und Stoff.
+    // GESCHICHTET (`schritt` > 0, die Ordnung der Ferne): über dem Gitter dieser Schrittweite tragen die oberen 8 Bit den
+    // BAYER-RANG der Zelle (gi, gj = die Lage durch den Schritt, gerundet: der Jitter ±0,34 m der Wiese bleibt unter dem halben
+    // Schritt) in der Tafel 16 × 16 — die Bit-Umkehr von (gi ⊕ gj, gi) verschränkt —, darunter die oberen 16 Bit des Worts
+    // (24 Bit: in f32 exakt). Die Kette der Züge läuft über dem ungeschichteten Wort: Zug 1 bleibt, was er ohne Schichtung ist.
+    static _ortZiehung(W, x, z, zug = 0, schritt = 0) {
+        const pcg = (u) => {
+            const s = W.add(W.mul(u, 747796405), 2891336453);
+            const w = W.mul(W.xor(W.shr(s, W.add(W.shr(s, 28), 4)), s), 277803737);
+            return W.xor(W.shr(w, 22), w);
         };
-        return ((rang << 16) | (pcg((q(x) ^ pcg(q(z))) >>> 0) >>> 16)) / 16777216;
+        let h = pcg(W.xor(W.lage(x), pcg(W.lage(z))));
+        for (let i = 0; i < zug; i++) h = pcg(h);
+        if (!(schritt > 0)) return W.anteil(h);
+        const [gi, gj] = [W.zelle(x, schritt), W.zelle(z, schritt)];
+        const [u, v] = [W.xor(gi, gj), gi];
+        h = W.shr(h, 8);
+        for (let k = 0; k < 4; k++)
+            h = W.or(h, W.or(W.shl(W.and(W.shr(u, k), 1), 31 - 2 * k), W.shl(W.and(W.shr(v, k), 1), 30 - 2 * k)));
+        return W.anteil(h);
+    }
+    // DIE WORT-ALGEBRA der Ziehung (u32, modulo 2³²): ohne T die Zahlen der CPU, mit T die TSL-Knoten (WGSL u32). `zelle` die
+    // Gitter-Zelle einer Lage (gerundet, versetzt um 2²³ — ein Vielfaches von 16: die unteren Bits bleiben die der Zelle).
+    static _wortAlgebra(T) {
+        if (T)
+            return {
+                lage: (v) => T.floor(v.mul(256).add(0.5)).add(8388608).toUint(),
+                zelle: (v, s) => T.floor(v.div(s).add(0.5)).add(8388608).toUint(),
+                add: (a, b) => a.add(b),
+                mul: (a, b) => a.mul(b),
+                xor: (a, b) => a.bitXor(b),
+                and: (a, b) => a.bitAnd(b),
+                or: (a, b) => a.bitOr(b),
+                shr: (a, b) => a.shiftRight(b),
+                shl: (a, b) => a.shiftLeft(b),
+                anteil: (u) =>
+                    u
+                        .shiftRight(8)
+                        .toFloat()
+                        .mul(1 / 16777216),
+            };
+        if (!AnazhRealm._wortZahlen)
+            AnazhRealm._wortZahlen = Object.freeze({
+                lage: (v) => (Math.floor(Math.fround(v) * 256 + 0.5) + 8388608) >>> 0,
+                zelle: (v, s) => (Math.floor(Math.fround(v) / s + 0.5) + 8388608) >>> 0,
+                add: (a, b) => (a + b) >>> 0,
+                mul: (a, b) => Math.imul(a, b) >>> 0,
+                xor: (a, b) => (a ^ b) >>> 0,
+                and: (a, b) => (a & b) >>> 0,
+                or: (a, b) => (a | b) >>> 0,
+                shr: (a, b) => a >>> b,
+                shl: (a, b) => (a << b) >>> 0,
+                anteil: (u) => (u >>> 8) / 16777216,
+            });
+        return AnazhRealm._wortZahlen;
     }
 
     // Eine Kachel baut neu (eine Tat, ihr Heilen, ein Weg): sie trägt nur Daten, der Sicht-Satz legt sich neu — und die
@@ -1333,7 +1383,7 @@ class AnazhRealm_vegetation_wiese {
     // Gestalt. Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine
     // LRU-Räumung zerstört sie nie (ein eintretender Block rechnet sich aus ihr). `wiegt`: die Art trägt weiches Gewebe —
     // jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer `_foundryTreeMaterial`; die Höhe über der
-    // Wurzel in Metern reist im Satz als `aWiege`, `_satzBlock`).
+    // Wurzel in Metern und das Rauschen der Pflanze reisen im Satz als `aWiege`, `_satzBlock`).
     _streuNahSenke(art, v, stufe, p, lf, wiegt) {
         const ns = this.state.nahStreu;
         const key = `${art.id}:${v}:L${stufe}:${p}`;
@@ -3055,12 +3105,13 @@ AnazhRealm.STREU_FEST_ATTR = Object.freeze([
     Object.freeze(["aH0L", 1]),
 ]);
 // Die Attribute eines wiegenden Streu-Satz-Bereichs (`_streuSatzArt`, W7): was der wiegende Stoff liest — Welt-Lage,
-// Normale, Farbe × Tint und die Höhe über der Wurzel (`aWiege`, m); er blendet nie, Dither-Stempel trägt er keine.
+// Normale, Farbe × Tint und das Wiegen der Ecke (`aWiege`: die Höhe über der Wurzel in m, das Rauschen der Pflanze aus ihrem
+// Fuß, `_satzKernWiege`); er blendet nie, Dither-Stempel trägt er keine.
 AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3]),
     Object.freeze(["color", 3]),
-    Object.freeze(["aWiege", 1]),
+    Object.freeze(["aWiege", 2]),
 ]);
 // Dazu das JAHR (vegetation.K5) jedes Stoffs mit Laub oder Blüte (`userData.jahr`): die Mitte jedes Blatts in Welt-Lage
 // (`_satzBlock` rechnet sie wie die Lage) und sein Typ — der Stoff zieht das Laub im Winter auf seine Mitte (`_jahrLage`).

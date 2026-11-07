@@ -15,7 +15,7 @@
 // sonst rot („Selbst-Test vakuös").
 //   node scripts/diag-place-policy.cjs --selftest
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde, fehlerText, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const SELFTEST = SELBSTTEST;
 const server = statikServer();
 
@@ -23,9 +23,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 180000 });
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, e: {}, st: {} };

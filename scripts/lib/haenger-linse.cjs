@@ -1177,13 +1177,17 @@ function ankunftsSelbsttest() {
 // DER HIEB (halten.K2): der Klick (CDP, Zeiger gefangen) auf ein gehaltenes Tier unter dem Fadenkreuz; Ende das Bild, in dem
 // die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
 // präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
+// DER LEIB DES BILDS (w20-leib-takt): Hand und Lage liest die Linse am Leib, den das Spiel JETZT trägt (`st.playerMesh`) — bis
+// hier hielt sie den Leib ihres Starts; tauschte ein Verb ihn (der Griff der Klinge goss die feine Stufe, `applyPlayerSoul`), las
+// sie die Hand eines Leibs, der nicht mehr zeichnet (GTX ed7d3d23 „hieb fehlt 15/15 je Sicht", das Spiel setzte 29 Treffer). Den
+// Leib, den ein Verb neu baut, nennt die Ankunfts-Linse beim Namen (gate:ankunft L2a: Ego und der Wechsel auf Third bauen nichts).
 function latenzAn(k) {
     const rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
     window.__halten?.();
-    const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
+    const hand = () => st.playerMesh.userData.rig.armR.wrist.getWorldPosition(st.playerMesh.position.clone()).sub(st.playerMesh.position);
     const lage = () =>
-        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
+        L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), st.playerMesh.position.toArray()];
     const weg = (a, b) => (b && a.length === b.length ? Math.max(...a.map((v, i) => Math.hypot(...v.map((x, j) => x - b[i][j])))) : Infinity);
     const L = (window.__latenz = { takt: 0, still: 0, bilder: [], offen: [], sicht: st.cameraMode });
     L.start = st.playerMesh.position.clone();

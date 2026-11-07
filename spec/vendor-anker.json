@@ -1250,5 +1250,14 @@
                 "organ": "_kontaktVerdeckung (indirectDiffuse · indirectSpecular)"
             }
         ]
+    },
+    {
+        "warum": "DER ZEILEN-SCHRITT EINER LESUNG: die letzte Zeile trägt kein Polster (w21-laub-unten)",
+        "anker": [
+            {
+                "sub": "let c=s*d;c=256*Math.ceil(c/256);const h=a.createBuffer({size:(i-1)*c+s*d,",
+                "organ": "__weltLicht.zeilenSchritt"
+            }
+        ]
     }
 ]

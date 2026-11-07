@@ -42,7 +42,7 @@ const {
     statikServer,
     starteBrowser,
     hauptLauf,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     fehlerText,
@@ -451,9 +451,7 @@ async function blickStufe(check) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 300000 });
 
     const out = await page.evaluate(async () => {
         const res = {};
