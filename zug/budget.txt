@@ -229,3 +229,5 @@
 2026-11-07T20:40 woche=9 karte=218 (Konto 9; z296 gelandet 185e99bb, z300 fährt; ehrlich 215, 3 Rückfälle in Heilung)
 2026-11-07T21:29 karte=218 (gebucht am e84fd1fb, buche.sh)
 2026-11-07T21:30 woche=11 karte=218 (Konto 9; gebucht am e84fd1fb = z300: material.K1 + halten.K1#2 geheilt, fahrzeug.K2#1 GRÜN; Rückfall lod.K2#1)
+2026-11-07T23:36 woche=14 karte=218 kopf=cbe910ed
+2026-11-07T23:34 karte=218 (gebucht am cbe910ed, buche.sh)
