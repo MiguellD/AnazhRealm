@@ -720,11 +720,11 @@ class AnazhRealm_bild_kosten {
         const d = N.get(ro);
         // die Frist der Aufgabe: im Spiel ERST_BAU_MS ab dem ersten Schritt, unter dem Ladeschirm die EINE Frist des Lade-Frames
         // (`_ladeFrist`, geteilt mit jedem Leser) — der erste Schritt der Aufgabe geht immer (nie verhungert).
-        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget der Precache-Lader — je Bild so viel
-        // Arbeit, wie seit dem letzten verging, Unreals PSO-Precache `BatchTime` —, hier wie der Ingest mit `INGEST_RATE_PER_S`):
-        // unter dem Ladeschirm baut das fällige Bild ab seinem ersten Schritt mindestens so lange, wie die GPU-Leine es hielt, während
-        // die Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), höchstens einen Lade-Bild-Takt (LADE_BILD_MS);
-        // ohne gespannte Leine bleibt es die EINE Frist. Bis hier baute es nur deren Rest, den die Leser des Takts oft schon
+        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
+        // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
+        // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
+        // Zeit, höchstens die Frist EINES Lade-Frames (LADE_TAKT_MS — keine Aufgabe trägt mehr Bau als der Lade-Frame); ohne
+        // gespannte Leine bleibt es der Rest der EINEN Frist. Bis hier baute es nur diesen Rest, den die Leser des Takts oft schon
         // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
         // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
         // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
@@ -733,7 +733,7 @@ class AnazhRealm_bild_kosten {
         if (E.rateFrist === null) {
             const jetzt = performance.now();
             E.rateFrist = this._ladeTakt()
-                ? Math.max(this._ladeFrist(true), jetzt + Math.min(E.ladeGuthaben, AnazhRealm.LADE_BILD_MS))
+                ? Math.max(this._ladeFrist(true), jetzt + Math.min(E.ladeGuthaben, AnazhRealm.LADE_TAKT_MS))
                 : jetzt + AnazhRealm.ERST_BAU_MS;
             E.ladeGuthaben = 0;
             erster = true;
@@ -761,9 +761,10 @@ class AnazhRealm_bild_kosten {
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
             // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
             // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
-            // kommt das Bild nur bei freier GPU-Leine (swiftshader, 2 Kerne, CPU ×6: 6 Knoten-Bauten bis zur Messung, je Aufgabe ein
-            // Schritt je Objekt, bis zu 13 Bauten zugleich im Flug). Der erste Schritt geht immer (nie verhungert); jeder weitere,
-            // solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt darüber endet wie bisher.
+            // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
+            // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
+            // geht immer (nie verhungert); jeder weitere, solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt
+            // darüber endet wie bisher.
             const ueber = () => performance.now() >= E.rateFrist;
             for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
                 const stufe = STUFE[(R.i / 3) | 0];
