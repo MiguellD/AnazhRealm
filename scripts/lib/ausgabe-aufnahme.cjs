@@ -788,9 +788,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const prevZiel = rend.getRenderTarget();
         // DIE WELT STEHT (A9): unter der Bühne wartet jeder Beweis-Schuss auf sie (Mess-Frames eines Satzes schießen in derselben)
         const weltTakte =
-            window.__buehneUhr && !(opt?.satz === "messung") ? await window.__weltStehtWarten() : null;
+            window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
-        const wahl = opt?.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
+        const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
@@ -882,7 +882,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // der Geschichte, ohne Rücklese der Farbe. Bis dahin las der Arm sie hinter zwei ganzen Aufnahmen (material.K2: je
             // Armlänge 2 × 33 Bilder, sechs Armlängen)
             if (opt?.tiefe) return frame();
-            const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);
+            const nWarm = Math.max(warm ?? 1, st.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
             frame();
