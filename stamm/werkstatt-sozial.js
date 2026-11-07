@@ -1933,7 +1933,8 @@ class AnazhRealm_werkstatt_sozial {
             b.dataset.tabWired = "1";
             b.addEventListener("click", () => this._setFeedTab(b.dataset.feedTab));
         });
-        this.renderLibraryUI();
+        // die Karten der Bibliothek baut ihr Öffner (`_menueScheiben` bibliothek), nie der Init unter dem Ladeschirm
+        // (w16-lade-atem, ankunft.K5: headless kalt 70 ms im Init-Task, je Rezept-Karte die Bauplan-Analyse)
     }
 
     // V18.73 — der Feed-Tab-Wechsel (Für dich = der Strom · Aus dem Mesh = der Peer-Welt-Katalog).

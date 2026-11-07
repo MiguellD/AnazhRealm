@@ -1415,16 +1415,16 @@ const BRANDLAUF = process.argv.includes("--brand");
                 aus.taeter = await (async () => {
                     const je = {};
                     const pp = st.playerMesh.position;
-                    // die Stufen-Wahl (`_tickArchitectureLOD`: Einträge ab `_archLODCursor`): ein Baum hält still ein Verdeckt-
-                    // Urteil, das der Gang ohne Verdeckung (Null-Renderer) oder im Nahbereich zurücknimmt
+                    // die Stufen-Wahl (`_tickArchitectureLOD`: die WACHEN Einträge in der Reihe ihrer Wache, `_stufenWache` — die
+                    // schlafenden holt der Weg oder ein Weckruf, nie der Gang): ein Baum hält still ein Verdeckt-Urteil, das der
+                    // Gang ohne Verdeckung (Null-Renderer) oder im Nahbereich zurücknimmt
                     {
-                        const archs = st.architectures || [];
+                        const archs = r._stufenWacheStand ? [...r._stufenWacheStand.wach] : [];
                         const n = archs.length;
-                        const c0 = Number.isFinite(r._archLODCursor) ? r._archLODCursor : 0;
                         const occlOn =
                             st.useOcclusionDemotion !== false && !st.renderer?._isHeadlessNull;
                         for (let o = n - 1; o >= 0; o--) {
-                            const e = archs[(c0 + o) % n];
+                            const e = archs[o];
                             if (!e || !e.instanced || e._occluded || e._bruecke) continue;
                             const treeLike = !!e._lodSpecies && Number.isFinite(e._lodVariantIndex);
                             if (!treeLike && e.instFoundry !== true) continue;

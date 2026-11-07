@@ -900,7 +900,14 @@ async function starte() {
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
         for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
-        await page.evaluate(() => __weltDa((r) => !!(r.state.renderer?.backend)));
+        // DIE SEITE IST GELADEN, WENN IHR ERSTES BILD DIE KETTE ENTSCHIED (w18-grund-post): die Post-Kette entsteht erst im ersten
+        // gezeichneten Bild (`_ensurePostProcessing` in `_loopRender`), und `loopAus` hält die Welt danach still. Bis hier galt die Seite
+        // mit dem Backend als geladen — vor ihrem ersten Bild: nach `/reload` stand die Kette in 2 von 3 Ladungen nie (Radeon 94d9c5a6,
+        // die Tür der Grundstellung), und die Sitzung endete an „zeichner.postKette fort“ (GTX und Radeon, 102 von 113 Stationen
+        // UNGEMESSEN). Gewartet wird, bis das Spiel die Kette gebaut hat — oder seine Weiche sie fallen ließ (`postProcessingFailed`)
+        // oder das Gerät verloren ist: beides nennt danach die Zeichenkette der Sitzung beim Namen, nie hängt die Ladung daran (alle
+        // drei setzt erst der bereite Renderer)
+        await page.evaluate(() => __weltDa(() => st.postProcessing || st.postProcessingFailed || st._deviceLost));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
