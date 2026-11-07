@@ -604,7 +604,16 @@ class AnazhRealm_bild_kosten {
                 // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
                 // Schritt bis zur EINEN Frist der Aufgabe (`_ladeFrist`, im Bild-Takt die Hälfte der Zeichnung); was wartet, macht
                 // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
-                if (ungebaut && (welt._ladeTakt() || (welt.state._weltbildDa && !welt._loopRuht()))) {
+                // DAS LADE-BILD IST DIE WELT: unter dem Ladeschirm baut in Raten, was das Lade-Bild zeichnet (Welt-Szene, Kaskaden,
+                // Bündel, Karten-Bühne) — nie eine Bühne (`_buehneJetzt`: Ich, Hof, Feed, Werkstatt). Sie öffnet die Eingabe, ihr
+                // Vorbau läuft erst nach dem Weltbild (`_vorbauBedienung`); unter dem Ladeschirm zeichnet sie eine Probe, und dort baut
+                // sie wie vor w19-ankunft-takt am Stück bis LADE_TAKT_MS je Aufruf. In Raten ließ der Seelenwechsel unter dem
+                // Ladeschirm die Bauten der Zwischen-Seelen offen, der zweite Durchgang baute nach (Frost-Wand S2 headless, swiftshader:
+                // +13 Module / +11 Pipelines, am Stück +0 / +0; z287 2/2 rot).
+                if (
+                    ungebaut &&
+                    ((welt._ladeTakt() && scene !== welt._buehneJetzt) || (welt.state._weltbildDa && !welt._loopRuht()))
+                ) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         if (welt._ladeTakt()) E.ladeSchuld = true;
@@ -616,6 +625,8 @@ class AnazhRealm_bild_kosten {
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
+                        // unter dem Ladeschirm (nur noch eine Bühne, oben) baut ein Aufruf bis zur Frist des Lade-Frames
+                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
@@ -651,15 +662,13 @@ class AnazhRealm_bild_kosten {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
-                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm die Frist der Aufgabe, `_ladeFrist`)
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
                 ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
-                bauN: 0,
+                bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
-                rateMs: 0,
-                rateFrist: null,
+                rateFrist: null, // der Bau in Raten (`_knotenRate`): die Frist der laufenden Aufgabe
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -731,7 +740,7 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null }));
+                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null, ms: 0 }));
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
@@ -746,8 +755,7 @@ class AnazhRealm_bild_kosten {
                 for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
                 arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
             }
-            [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
-            if (arbeit) return false;
+            if (arbeit) return ((R.ms += performance.now() - t0), false);
             if (R) {
                 b.setBuildStage(null);
                 b.setShaderStage(null);
@@ -755,6 +763,12 @@ class AnazhRealm_bild_kosten {
                 b.buildUpdateNodes();
                 N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
                 E.imFlug.delete(key);
+                // DER FERTIGE BAU ZÄHLT AM EINEN ZÄHLER der Erst-Zeichnung (`bauN`, `bauMs` = Σ seiner Schritte), wie ein Bau am
+                // Stück: bis hier zählte der Bau in Raten nur in einem eigenen Paar (`rateN`/`rateMs`, ohne Leser) — seit der Bau
+                // unter dem Ladeschirm in Raten geht (w19-ankunft-takt), las der Flugschreiber (`erstBauN`) und die Erst-Zeichnungs-
+                // Wand (Konsum im Boot) 0 Knoten-Bauten bei 714 verschobenen (swiftshader, Teil 1)
+                E.bauN++;
+                E.bauMs += R.ms + performance.now() - t0;
             }
         } catch (e) {
             d.rate = undefined;

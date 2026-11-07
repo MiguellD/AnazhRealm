@@ -140,8 +140,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const aus = gfr.apply(this, arguments);
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
-            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort trägt (`E.deckel`: ERST_BAU_MS; unter dem Ladeschirm baut er in
-            // Raten bis zur Frist des Lade-Frames, `_knotenRate`) — nie eine Konstante der Linse
+            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort trägt (`E.deckel`: ERST_BAU_MS, eine Bühne unter dem Ladeschirm
+            // LADE_TAKT_MS; das Lade-Bild der Welt baut dort in Raten bis zur Frist des Lade-Frames, `_knotenRate`) — nie eine
+            // Konstante der Linse
             const E = r._erstZeichnung;
             const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
