@@ -1,7 +1,7 @@
 {
  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
  "geraet": "gtx",
- "zeit": "2026-11-07T22:14:01.586Z",
+ "zeit": "2026-11-07T22:19:18.835Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K2#1": {
@@ -180,22 +180,36 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.2,
+   "zeit": "2026-11-07T22:19:18.835Z",
+   "abdruck": "bf81faa399c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T22:13:29.029Z",
+  "start": "2026-11-07T22:18:46.732Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7,
+  "warten": 0.01,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 24.2,
-    "takte": 683,
+    "vor": "mensch.K2#2",
+    "s": 23.4,
+    "takte": 654,
     "chunks": 81,
     "nach": null
    }
@@ -213,11 +227,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 96,
+   "zapfen": 95,
    "luecken": 2,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 122,
-  "minuten": 2.12
+  "fahrtS": 121.4,
+  "minuten": 2.1
  }
 }
