@@ -1316,18 +1316,18 @@ function latenzAn(k) {
 // Jede gemessene Probe trägt die Pflicht-Größen, sonst ROT beim Namen (bis latenz-verben brach jede Tasten-Reihe an imHoerer).
 const PFLICHT = ["eingabe", "imHoerer", "regung", "takte"];
 function latenzUrteil(proben, bildMs, soll = 50) {
-    const rang = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
+    const rangAuf = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
-        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]), 0.5);
+        const ok = ps.filter((p) => p.ms != null), med = (f) => rangAuf(ok.map((p) => p[f]), 0.5);
         const ohne = PFLICHT.filter((g) => ok.some((p) => !Number.isFinite(p[g])));
         if (ohne.length) rot.push(`${name} ohne ${ohne.join(", ")}`);
         for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
         const z = { eingabe: med("eingabe"), hoerer: med("imHoerer"), kette: med("kette"), kurve: med("kurve") };
-        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
+        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rangAuf(ms, 0.5), p95: rangAuf(ms, 0.95), max: rangAuf(ms, 1) });
         Object.assign(e, z, { takte: med("takte") });
         if (name.endsWith("hieb")) {
-            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(ps.map((p) => p.halt || 0), 0.5));
+            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rangAuf(ps.map((p) => p.halt || 0), 0.5));
             if (/[^,]/.test(verben.replace(/hieb/g, "")) || !(halt >= 2)) rot.push(`${name} Verben ${verben}, Hit-Stop ${halt} Bilder`);
         }
         if (e.fehlt || !(e.p95 <= soll)) {
