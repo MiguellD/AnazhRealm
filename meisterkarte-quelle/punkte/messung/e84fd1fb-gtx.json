@@ -1,0 +1,211 @@
+{
+ "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T20:11:44.635Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.0585 % Pop-Pixel je Sekunde (1214 px, Soll ≤ 0,05 %), je Schritt 18*/20*/31*/316/40*/23*/714*/52 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.31,
+   "grund": "ROT: Gehen 4 m/s: 0.0585 % Pop-Pixel je Sekunde (1214 px, Soll ≤ 0,05 %), je Schritt 18*/20*/31*/316/40*/23*/714*/52 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 18.4,
+   "zeit": "2026-11-07T20:06:03.659Z",
+   "abdruck": "6578ee2ff478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 91.9 · third/gehen 56.8 · ego/wechsel 100.6 · third/wechsel 33.1 · Bild 23.03 ms",
+   "exit": 0,
+   "minuten": 0.55,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 91.9 · third/gehen 56.8 · ego/wechsel 100.6 · third/wechsel 33.1 · Bild 23.03 ms",
+   "gpu": "nvidia/pascal",
+   "s": 32.8,
+   "zeit": "2026-11-07T20:06:22.115Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.73 (wasserSatz 25525 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.5 σ 37.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "zeit": "2026-11-07T20:06:55.011Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.4468 (114732 px in der Ebene, 59 Blöcke, Einfall 58.1°, Normale [0.077,0.996,0.04]) · glas spiegelTreue 0.7656 (6259 px in der Ebene, 28 Blöcke, Einfall 72.6°, Normale [-0.001,1,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000301 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.11,
+   "gpu": "nvidia/pascal",
+   "s": 6.8,
+   "zeit": "2026-11-07T20:07:18.824Z",
+   "abdruck": "f348340da034",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": true,
+   "zahl": "in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0",
+   "exit": 0,
+   "minuten": 3.59,
+   "gpu": "nvidia/pascal",
+   "s": 38.5,
+   "teile": [
+    38.2,
+    38.2,
+    38.5,
+    38.4,
+    38.2,
+    24
+   ],
+   "zeit": "2026-11-07T20:07:25.733Z",
+   "abdruck": "11a0fae9c05b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 76.8 J · p 6.67 · v 20.9 · Schaden 16.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 78.1 J · p 5.85 · v 22.8 · Schaden 16.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "nvidia/pascal",
+   "s": 9.6,
+   "zeit": "2026-11-07T20:11:44.635Z",
+   "abdruck": "e5a8f60ac4b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T20:04:13.330Z",
+   "abdruck": "98240f6809a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T20:04:13.330Z",
+   "abdruck": "a434d5e796c8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T20:03:41.052Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.5,
+  "grundstellungS": [
+   4.1,
+   25.6
+  ],
+  "proben": 7,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 23.4,
+    "takte": 598,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 21.9,
+    "takte": 700,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 17.7,
+    "takte": 767,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "halten.K1#2",
+    "wege": "wege +25 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
+    "s": 25.6
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 8,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1323,
+   "frameP95": 58.34,
+   "taktP95": 47.27,
+   "vramMax": 135.6,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 5454,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 465,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 492.3,
+  "minuten": 8.28
+ }
+}
