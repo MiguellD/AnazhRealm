@@ -1070,15 +1070,18 @@ class AnazhRealm_studio_bruecke {
                 return platte.then(
                     (d) => d && m.karte && wirtSha().then((w) => w && schreib(l, Object.assign({ w }, m.karte)))
                 );
+            // die Platte trägt die Karte EINER Stufe des Jahrs (der Wert nennt sie, `_karteJahr`): eine andere ist ein Miss
             return lies(l)
-                .then((wert) => wert && wirtSha().then((w) => (w && wert.w === w ? wert : null)))
+                .then((wert) =>
+                    wert && wert.jahr === m.jahr ? wirtSha().then((w) => (w && wert.w === w ? wert : null)) : null
+                )
                 .then((wert) =>
                     roh(
                         {
                             type: "karte",
                             world: "terrain",
                             reqId: m.reqId,
-                            karte: wert ? { bytes: wert.bytes, frame: wert.frame } : null,
+                            karte: wert ? { bytes: wert.bytes, frame: wert.frame, jahr: wert.jahr } : null,
                             platte: !!wert,
                             liefer: liest(l),
                         },
@@ -2649,7 +2652,8 @@ class AnazhRealm_studio_bruecke {
         const at = this._impostorAtlas();
         if (!at) return null;
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seine eigene Zelle: Schlüssel und Bake tragen den
-        // ov-Hash (die EINE _studioOvHash-Quelle). Keine Saison: die Karte ist Golden-Sommer, das Jahr färbt der Stoff.
+        // ov-Hash (die EINE _studioOvHash-Quelle). Keine Saison im Schlüssel: die Schicht trägt die Stufe des Jahrs, in der
+        // sie gebacken ist (`_karteJahr`), und backt mit der Welt neu (`_karteJahrTakt`).
         const ovK = ov && typeof ov === "object" ? ov : null;
         const key = "fimp:" + this._foundryKartenKey(preset, variant, ovK);
         const da = at.zellen.get(key);

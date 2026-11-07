@@ -92,7 +92,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             // offset-FREIE Chunk-Formel (der alte +150-Offset war die
             // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
-                st.voxelChunks && st.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
+                st.voxelChunks?.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
             ),
         });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
@@ -207,7 +207,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         const newEntry = st.voxelChunks.get(someKey);
         out.rebuildOk = ok === true;
         // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
-        out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
+        out.meshIdentityChanged = !!(newEntry?.mesh && newEntry.mesh !== oldMesh);
         // Retry-Counter: stub _buildVoxelChunkData um null zu returnen.
         const origBuild = r._buildVoxelChunkData;
         r._buildVoxelChunkData = () => null;
@@ -215,7 +215,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._rebuildVoxelChunk(cx, cz);
         const attempts1 = st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey);
         out.retryCounter1 = attempts1 === 1;
-        out.dirtyAfterFail = !!(st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(someKey));
+        out.dirtyAfterFail = !!(st.dirtyVoxelChunks?.has(someKey));
         // 2. Versuch: fail → attempts=2
         r._rebuildVoxelChunk(cx, cz);
         out.retryCounter2 = (st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey)) === 2;
@@ -223,7 +223,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._rebuildVoxelChunk(cx, cz);
         const finalEntry = st.voxelChunks.get(someKey);
         out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
-        out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts && st.voxelRebuildAttempts.has(someKey));
+        out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts?.has(someKey));
         // Restore.
         r._buildVoxelChunkData = origBuild;
         st.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
@@ -684,8 +684,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         // die drei Zonen. Das Overlay ist hier offen (toggle(true) oben → _ichHandleOverlay rendert).
         const sp = r._selfProfile();
         out.selfProfileBundles = !!(
-            sp &&
-            sp.soul &&
+            sp?.soul &&
             sp.stats &&
             typeof sp.emotions === "object" &&
             typeof sp.mood === "object" &&
@@ -693,8 +692,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         );
         out.ichStageCanvas = !!document.getElementById("ich-stage-canvas");
         const ichSpec = document.getElementById("ich-stage-spec");
-        out.ichSpecSheet = !!(ichSpec && ichSpec.querySelector(".spec-sheet"));
-        out.ichSpecHeaderName = !!(ichSpec && ichSpec.querySelector(".spec-header .spec-name"));
+        out.ichSpecSheet = !!(ichSpec?.querySelector(".spec-sheet"));
+        out.ichSpecHeaderName = !!(ichSpec?.querySelector(".spec-header .spec-name"));
         out.ichSpecBody2Col = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-col").length === 2);
         out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
@@ -935,7 +934,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.foundHoldBlueprint = !!holdName;
         if (holdName) {
             const res = r.craftFromRecipe(holdName);
-            out.craftOk = !!(res && res.ok);
+            out.craftOk = !!(res?.ok);
             out.craftEquipsHeld = !!(st.player.equipped && st.player.equipped.held === holdName);
         }
         if (st.worldMeta) st.worldMeta.gameMode = prevMode;
@@ -1276,10 +1275,10 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         }
         for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
         const preDamEntry0 = st.voxelChunks && st.voxelChunks.get(preDamChunkKey);
-        const preDamCells = preDamEntry0 && preDamEntry0.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
+        const preDamCells = preDamEntry0?.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
         const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
         out.damSpawnSucceeded = !!damEntry;
-        if (damEntry && damEntry.blockerAABBs && damEntry.blockerAABBs[0]) {
+        if (damEntry?.blockerAABBs && damEntry.blockerAABBs[0]) {
             const aabb = damEntry.blockerAABBs[0];
             out.aabbHasBotY = Number.isFinite(aabb.botY);
             out.aabbBotY = aabb.botY;
@@ -1291,8 +1290,8 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         // 3) Im Chunk im Damm-Footprint: Cells im Damm-Stempel-Bereich sind SOLID
         const damChunkKey = `${testCx},${testCz}`;
         const damChunkEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
-        out.damChunkExists = !!(damChunkEntry && damChunkEntry.waterCells);
-        if (damChunkEntry && damChunkEntry.waterCells) {
+        out.damChunkExists = !!(damChunkEntry?.waterCells);
+        if (damChunkEntry?.waterCells) {
             const cells = damChunkEntry.waterCells;
             const aabb = damEntry.blockerAABBs[0];
             // waterCells immer LOD 0, daher cfgWater statt cfgFor
@@ -1385,8 +1384,8 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             // Default „trocken“: ohne Wasser-Cell-Feld (Chunk ungestreamt oder ohne Wasser-Körper) keine
             // Phantom-Pfütze. Nur eine WATER-Cell an der Carve-Stelle wäre Phantom-Füllung (→ false).
             out.carveStaysDry = true;
-            out.carveCellUnderWL = carveChunkEntry && carveChunkEntry.waterCells ? "measure" : "no-watercells";
-            if (carveChunkEntry && carveChunkEntry.waterCells) {
+            out.carveCellUnderWL = carveChunkEntry?.waterCells ? "measure" : "no-watercells";
+            if (carveChunkEntry?.waterCells) {
                 const cells = carveChunkEntry.waterCells;
                 // waterCells immer LOD 0
                 const cfg = cfgWater;
@@ -1470,7 +1469,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             } finally {
                 zM.zu();
             }
-            out.t2NoMorphError = zM.brueche.length === 0 && !!(mM && mM.positionNode); // der Geomorph baut (K22-Zeuge)
+            out.t2NoMorphError = zM.brueche.length === 0 && !!(mM?.positionNode); // der Geomorph baut (K22-Zeuge)
             if (mM && typeof mM.dispose === "function") mM.dispose();
         }
         out.t3DcConstants = Number.isFinite(AnazhRealm.DC_LAMBDA) && Number.isFinite(AnazhRealm.DC_SHARP_MOVE2);
@@ -1903,7 +1902,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             cappedTotal = 0;
         out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
+            if (entry.mesh?.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
                 out.t2HasMorphAttrs = true;
             if (entry.hasMorph) out.t2ChunksWithMorph++;
             if (!entry.lodStitchMesh) continue;
@@ -1926,7 +1925,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             const cx = Math.floor(pm.x / span) + 1,
                 cz = Math.floor(pm.z / span);
             const entry = st.voxelChunks.get(`${cx},${cz}`);
-            if (entry && entry.mesh) {
+            if (entry?.mesh) {
                 const Q = (v) => Math.round(v * 1000);
                 const snap = (geom) => {
                     const p = geom.attributes.position;
@@ -2029,7 +2028,7 @@ async function checkBandCarveWorker({ page, check }) {
         const orig = r._acquireVoxelChunkBuild.bind(r);
         const zurueck = leihe(r, {
             _acquireVoxelChunkBuild(a, b, c, opts) {
-                lastForceSync = !!(opts && opts.forceSync);
+                lastForceSync = !!(opts?.forceSync);
                 return orig(a, b, c, opts);
             },
         });

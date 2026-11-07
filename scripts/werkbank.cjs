@@ -390,7 +390,7 @@ function lauf(k) {
                     }
                 }
             }
-            if (fahrt && fahrt.e) {
+            if (fahrt?.e) {
                 const x = fahrt.x0 + 800 - Math.abs(((20 * (t - (fahrt.t0 ??= t))) / 1000) % 1600 - 800), fz = fahrt.e._fahr;
                 if (fz) [fz.x, fz.vlong, fz.vlat] = [x, 0, 0];
                 fahrt.e.position.x = st.playerMesh.position.x = x;
@@ -651,7 +651,7 @@ function lauf(k) {
             st.perfTargetMs = decke;
             if (bahn || kreis) st.playerMesh.position.copy(ort);
             if (kreis) st.yaw = kreis.gier;
-            if (fahrt && fahrt.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
+            if (fahrt?.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
         }
     })();
 }
@@ -700,7 +700,7 @@ function tierZahl() {
     const cam = st.camera;
     const csm = st.csmNode;
     const dl = st.directionalLight;
-    const kf = (csm && csm.lights && csm.lights.length ? csm.lights.map((l) => l && l.shadow && l.shadow.camera) : dl && dl.shadow ? [dl.shadow.camera] : []).map(frustum);
+    const kf = (csm?.lights && csm.lights.length ? csm.lights.map((l) => l && l.shadow && l.shadow.camera) : dl?.shadow ? [dl.shadow.camera] : []).map(frustum);
     const nahM = r.constructor.ANALOG_NAH_M || 64;
     const aus = { gesamt: 0, sicht: 0, sichtNah: 0, schatten: {}, arten: {}, artenSicht: {} };
     kf.forEach((_, i) => (aus.schatten["k" + i] = 0));
@@ -936,7 +936,7 @@ async function starte() {
         // die Nah-Deckung der Aufnahme fand keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = r.importWorldBeside(j, { reload: true });
-            return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
+            return x?.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
@@ -959,7 +959,7 @@ async function starte() {
     const geraetInfo = () =>
         page.evaluate(async () => {
             const a = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
-            const i = a && a.info ? a.info : null;
+            const i = a?.info ? a.info : null;
             return i ? [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") : null;
         });
     const umstellen = (x, z, o) =>
@@ -968,7 +968,7 @@ async function starte() {
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
                 // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
                 // die Messung über einen leeren Rand).
-                if (o && o.anker) {
+                if (o?.anker) {
                     const a = r[o.anker]();
                     if (!a || !Number.isFinite(a.x) || !Number.isFinite(a.z) || Math.hypot(a.x - x, a.z - z) > 1)
                         throw new Error(
@@ -1030,12 +1030,12 @@ async function starte() {
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
                 }
                 if (o) window.__anazhAutoSettlement = o.dorfZug; // der Zug des Orts (haushalt.json `dorfZug`)
-                if (o && o.kamera) r.setCameraMode(o.kamera);
+                if (o?.kamera) r.setCameraMode(o.kamera);
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const ziel = stell?.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
                 const decke = st.perfTargetMs;
                 st.perfTargetMs = 1000;
                 // DER TAKT DES ORTS geht im Schritt der Seite (der Takt der Werkbank und sein Bild, `__werkTakt`; bis 31.10. sein eigener
@@ -1061,7 +1061,7 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
-                    if (o && o.anlauf) {
+                    if (o?.anlauf) {
                         r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
                         takte += await __weltStehtNach(takt);
                         // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
@@ -1076,7 +1076,7 @@ async function starte() {
                 const q = r._autoSettlementQueue;
                 const dorfSchwebt =
                     o && o.dorfZug === false && (q || r._autoSettlementPendingKey)
-                        ? q && q.plan && q.plan.slots
+                        ? q?.plan && q.plan.slots
                             ? `Plan ${q.idx}/${q.plan.slots.length} (Zelle ${q.cellKey})`
                             : `Export ${r._autoSettlementPendingKey || "?"}`
                         : null;
@@ -1495,7 +1495,7 @@ async function starte() {
                         const v = new T.Vector3();
                         // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
                         // Bewohner mal dem Verhältnis seiner Palette zu der seiner Gestalt am Ton der Ecke (`_tonFaktor`, die Ton-Tafel)
-                        const tafel = r.state.tonTafel && r.state.tonTafel.image ? r.state.tonTafel.image : null;
+                        const tafel = r.state.tonTafel?.image ? r.state.tonTafel.image : null;
                         const albedo = (o, i) => {
                             const c = o.geometry.attributes.color;
                             if (!c) return null;
@@ -2249,7 +2249,7 @@ async function starte() {
                                 for (let dz = -2; dz <= 2; dz++) {
                                     const key = `${cx + dx},${cz + dz}`;
                                     const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
-                                    if (!(e && e.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
+                                    if (!(e?.empty) && !(satz?.bloecke.has(key))) fehlt.push(key);
                                 }
                             return { chunk: `${cx},${cz}`, fehlt };
                         };
@@ -2614,7 +2614,7 @@ async function starte() {
                 if (req.url === "/fluss") {
                     const o = await page.evaluate(() => {
                         const i = __flussLinse();
-                        return i && i.installiert ? i : __flussBericht();
+                        return i?.installiert ? i : __flussBericht();
                     });
                     return send(o);
                 }
@@ -2879,7 +2879,7 @@ async function starte() {
                             if (roh.bildAn) schreibe("00-an.png", roh.bildAn);
                             delete roh.bildAn;
                             roh.schalter.forEach((e, i) => {
-                                if (e.beleg && e.beleg.bild) {
+                                if (e.beleg?.bild) {
                                     schreibe(
                                         `${String(i + 1).padStart(2, "0")}-${e.id.replace(/[^a-z0-9_-]+/gi, "_")}-aus.png`,
                                         e.beleg.bild
@@ -3279,7 +3279,7 @@ hauptLauf(async () => {
             process.exit(0);
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
-        if (o && o.zeilen) {
+        if (o?.zeilen) {
             const w = o.messung && o.messung.welt;
             if (w)
                 console.log(
@@ -3309,7 +3309,7 @@ hauptLauf(async () => {
     } else if (cmd === "albedo") {
         // die Tafel (`--tafel` bleibt das Wort der Rufer); ein Fehler der Tafel ist nie grün
         o = await rufe("/albedo", { ordner: opt("--ordner"), datei: opt("--datei") });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
         endeMit(o);
     } else if (cmd === "licht" && hat("tag")) {
         // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
@@ -3575,15 +3575,15 @@ hauptLauf(async () => {
                     : (await evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
                 if (hat("karte") && !boden) await stufen(null);
                 const ordner = opt("--ordner");
-                if (w && w.karte && ordner)
+                if (w?.karte && ordner)
                     w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
-                if (w && w.karte) delete w.karte.png;
-                if (w && w.oben && w.oben.png) {
+                if (w?.karte) delete w.karte.png;
+                if (w?.oben && w.oben.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
                     delete w.oben.png;
                 }
-                if (w && w.gegen)
+                if (w?.gegen)
                     for (const k of ["gegen", "auf"]) {
                         if (ordner)
                             pngDatei(path.join(ordner, `laub-${art}-${k}.png`), w[k].png);
@@ -3624,7 +3624,7 @@ hauptLauf(async () => {
             grad: opt("--grad"),
             tiere: opt("--tiere", "halten"),
         });
-        if (o && o.urteil) endeMit(o, !o.urteil.length);
+        if (o?.urteil) endeMit(o, !o.urteil.length);
     } else if (cmd === "stand")
         o = await rufe("/stand", {
             n: a[0],
@@ -3660,7 +3660,7 @@ hauptLauf(async () => {
             proben: opt("--proben"),
             capMs: opt("--cap") ? Number(opt("--cap")) * 1000 : undefined,
         });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + (o.datei || ""), o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN"));
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + (o.datei || ""), o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN"));
     } else if (cmd === "ratsche") {
         // DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 eingeschwungene Band-Messungen aus Erst- UND Zweit-Boot an EINEM Ort ×
         // Gerät × Sicht und EINER Version; die Hülle zieht nur bei sauberer LINSE nach (setzt, senkt, hebt nie), `--neu`
@@ -3684,7 +3684,7 @@ hauptLauf(async () => {
             return w[0];
         };
         const ortId = eins("Ort", laeufe.map((u) => (u ? u.ort : null)));
-        const geraet = eins("Gerät", laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null)));
+        const geraet = eins("Gerät", laeufe.map((u) => (u?.geraet ? u.geraet.schluessel : null)));
         const sicht = eins("Sicht", laeufe.map((u) => (u ? u.sicht : null)));
         const version = eins("Version", laeufe.map((u) => (u ? u.version : null)));
         if (opt("--ort") && opt("--ort") !== ortId) fehler.push(`--ort ${opt("--ort")}, die Serie steht an ${ortId}`);
@@ -3836,7 +3836,7 @@ hauptLauf(async () => {
     }
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
+        if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
         endeMit(o);
     } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");
@@ -3849,7 +3849,7 @@ hauptLauf(async () => {
             selbsttest: SELBST,
             last: opt("--last"),
         });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + (o.ordner ? "\n" + o.ordner : ""), o.ok);
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + (o.ordner ? "\n" + o.ordner : ""), o.ok);
         if (!o || o.fehler) endeMit(o);
     } else if (cmd === "shader") {
         if (SELBST) {
@@ -3881,5 +3881,5 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit && o.zeit.rot.length))));
+    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit?.rot.length))));
 });

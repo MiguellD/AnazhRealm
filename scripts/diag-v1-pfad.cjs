@@ -196,7 +196,7 @@ function ortVerdict(m) {
         }
         if (e.kalt) out.push(`${op}: Buch kalt (Vorbedingung)`);
         else if (e.fehler) out.push(`${op}: wirft (${e.fehler.slice(0, 80)})`);
-        if (e.akte && e.akte.length)
+        if (e.akte?.length)
             out.push(
                 `${op}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
             );
@@ -330,7 +330,7 @@ function knotenEintragOk(e, soll, effekt) {
     return (
         !!e &&
         !e.fehler &&
-        !(e.akte && e.akte.length) &&
+        !(e.akte?.length) &&
         !e.ok &&
         new RegExp(soll, "i").test(e.grund || "") &&
         e.effekt === effekt
@@ -346,7 +346,7 @@ function knotenVerdict(m) {
             continue;
         }
         if (e.fehler) out.push(`${name}: wirft (${e.fehler.slice(0, 80)})`);
-        if (e.akte && e.akte.length)
+        if (e.akte?.length)
             out.push(
                 `${name}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
             );
@@ -536,7 +536,7 @@ function renderFluss(src) {
                     merke(rueck, glied, gebunden, `${weg}Rückgabe ${glied}() → `);
                 else if (f && fp && fp.type === "VariableDeclarator" && fp.id.type === "Identifier")
                     merke(rueck, `${glied}|${fp.id.name}`, gebunden, `${weg}Rückgabe ${fp.id.name}() → `);
-                else if (f && f.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
+                else if (f?.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
                 return;
             }
             return;
@@ -1126,7 +1126,7 @@ async function probe(arg) {
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++) await __takte(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt?.steht); i++) await __takte(1, 60);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -1186,7 +1186,7 @@ async function probe(arg) {
             llm.providerConfig.ollama.endpoint = alt.ep;
             llm.providerConfig.ollama.useProxy = alt.px;
         }
-        m.fehler = antwort && antwort.error ? r.constructor._tIn("de", ...[].concat(antwort.error)) : null; // eine Zeile der Tafel
+        m.fehler = antwort?.error ? r.constructor._tIn("de", ...[].concat(antwort.error)) : null; // eine Zeile der Tafel
         m.host = "127.0.0.1:" + kiPort;
         m.gestartet = true;
     } catch (e) {
@@ -1198,7 +1198,7 @@ async function probe(arg) {
         const archs = st.architectures;
         const pm = st.playerMesh.position;
         const ausgabe = document.getElementById("chat-output");
-        const letzteZeile = () => (ausgabe && ausgabe.lastElementChild ? ausgabe.lastElementChild.textContent : "");
+        const letzteZeile = () => (ausgabe?.lastElementChild ? ausgabe.lastElementChild.textContent : "");
         const nass = (x, z) => !r._landAt(x, z, 0.2);
         // Ein Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster).
         const trockenUm = (x, z) => {
@@ -1357,7 +1357,7 @@ async function probe(arg) {
             return {
                 ok: res.ok,
                 // der Grund ist eine Zeile der Tafel (spielgang.K5#2) — gelesen in der Quell-Sprache
-                grund: ohne && ohne.grund ? r.constructor._tIn("de", ...[].concat(ohne.grund)) : null,
+                grund: ohne?.grund ? r.constructor._tIn("de", ...[].concat(ohne.grund)) : null,
                 effekt: ohne ? ohne.effekt || null : null,
                 fehler: wurf ? `${wurf.event}: ${wurf.message}` : null,
                 kalt: res.log.some((e) => e.event === "skipped"),
@@ -1387,7 +1387,7 @@ async function probe(arg) {
                         r.dslEvalPos(node, r.dslCtx({ source: "test" }));
                         return null;
                     } catch (e) {
-                        return e && e.dslKeinOrt ? r.constructor._tIn("de", ...e.dslKeinOrt.grund) : String(e);
+                        return e?.dslKeinOrt ? r.constructor._tIn("de", ...e.dslKeinOrt.grund) : String(e);
                     }
                 };
                 const abstandVon = (node) => {
@@ -1424,7 +1424,7 @@ async function probe(arg) {
             auftraege++;
             return Promise.resolve(null);
         };
-        m.buchWarm = !!(r._foundry && r._foundry.ready && r._foundry.recipes);
+        m.buchWarm = !!(r._foundry?.ready && r._foundry.recipes);
         try {
             m.dorfOhneOrt = await r.spawnSettlement({ position: null, seed: 7, nH: 9 });
         } finally {
@@ -1603,8 +1603,7 @@ async function probe(arg) {
         await __gebautNach("die Werkstatt-Vorschau der Eiche", {
             fertig: () =>
                 !!(
-                    ws.preview &&
-                    ws.preview.currentMesh &&
+                    ws.preview?.currentMesh &&
                     !r._wsStudioPending &&
                     ws.preview.currentMesh.children.length
                 ),
@@ -1646,8 +1645,7 @@ async function probe(arg) {
                     aH = g.attributes.aH0,
                     aHL = g.attributes.aH0L;
                 const fol = !!(
-                    o.material &&
-                    o.material.userData &&
+                    o.material?.userData &&
                     /foliage|grass/.test(o.material.userData.foundryKind || "")
                 );
                 const schritt = Math.max(1, Math.floor(pos.count / 400));
@@ -1699,7 +1697,7 @@ async function probe(arg) {
             const variant = r._foundryVariantFor(r._werkSame(st.blueprints[bpName], bpName), preset);
             return { preset, variant, key: r._foundryKoerperKey(preset, variant, 0) };
         };
-        const imFlug = (k) => !!(f.requested && f.requested.has(k)) && !f.cache.has(k);
+        const imFlug = (k) => !!(f.requested?.has(k)) && !f.cache.has(k);
         // (a) die Vorschau hinter dem Zug der Welt
         zuTeilen();
         const a = schluessel("baum_eiche");
@@ -1929,7 +1927,7 @@ async function korpusAufbau(a) {
         const ruf = r[k];
         r[k] = async function (text, system, o) {
             const p = await ruf.call(this, text, system, o);
-            if (!(o && o.hintergrund)) K.antwort = p;
+            if (!(o?.hintergrund)) K.antwort = p;
             return p;
         };
     }
@@ -1997,7 +1995,7 @@ async function korpusAufbau(a) {
                 r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p];
         for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
-        for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
+        for (const [c, e] of v.gemuet) if (c.userData?.emotions) c.userData.emotions = e;
         pm.copy(v.leib[0]);
         [st.gravity, st.jumpPower] = v.leib.slice(1);
         r._applyPlayerSpeed(v.leib[3]);
@@ -3158,7 +3156,7 @@ hauptLauf(async () => {
     // DIE SCHNITTE DES V1-PFADS (Q14, Q15): je Probe ihr Urteil, die Zeile der Zahl, die Täter beim Namen
     const opZeile = (om) => (op) => {
         const e = (om.ops || {})[op] || {};
-        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
+        return `${op} ${e.fehler ? "wirft" : e.akte?.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
     };
     const zZeile = (zz) => (k) =>
         zz[k]
@@ -3210,7 +3208,7 @@ hauptLauf(async () => {
             out.ort,
             ortVerdict,
             (om) =>
-                `near_water ${om.radius} m · ${ORT_OPS.map(opZeile(om)).join(" · ")} · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}`,
+                `near_water ${om.radius} m · ${ORT_OPS.map(opZeile(om)).join(" · ")} · chain ${om.chain?.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}`,
         ],
         [
             "V-k5-Klasse (Rest)",

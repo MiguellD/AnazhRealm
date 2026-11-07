@@ -108,7 +108,7 @@ function albedoSicht(opts) {
         // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
         // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
-            for (let p = o; p && p !== sc; p = p.parent) if (p.userData && p.userData.isHydrosphere) return "wasser";
+            for (let p = o; p && p !== sc; p = p.parent) if (p.userData?.isHydrosphere) return "wasser";
             return r._taeterKlasse(o);
         };
         const pp = st.playerMesh.position;
@@ -174,12 +174,12 @@ function albedoSicht(opts) {
             } else if (ex.typ === "tier") {
                 const tierOf = (c) => {
                     let top = c;
-                    while (top && top.parent && top.parent !== sc) top = top.parent;
-                    return top && top.userData && top.userData._tierBaum ? top.userData.soul : null;
+                    while (top?.parent && top.parent !== sc) top = top.parent;
+                    return top?.userData && top.userData._tierBaum ? top.userData.soul : null;
                 };
                 let best = null;
                 for (const c of st.creatures || [])
-                    if (c && c.position && tierOf(c) === ex.name) {
+                    if (c?.position && tierOf(c) === ex.name) {
                         const d = Math.hypot(c.position.x - pp.x, c.position.z - pp.z);
                         if (d <= 30 && (!best || d < best.d)) best = { c, d };
                     }
@@ -252,7 +252,7 @@ function albedoSicht(opts) {
                 D = AnazhRealm.LOD_DISTANCES;
             const zeigt = () => {
                 for (const g of st.archInstanceGroups.values())
-                    if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
+                    if (g?.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
                         for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                 return false;
             };
@@ -344,7 +344,7 @@ function albedoSicht(opts) {
             // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
             // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
             const lu = st.lodUniforms;
-            const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+            const maskeAlt = lu?.uLodMaskOn ? lu.uLodMaskOn.value : null;
             const schuss = async (sicht) => {
                 const pass = async (e) => {
                     // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
@@ -439,7 +439,7 @@ function albedoSicht(opts) {
                     if (!g || g.satz !== s.art || !g.slotEntry) continue;
                     bau = true;
                     const b = s.bloecke.get(key);
-                    const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                    const n = b?.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
                     for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
                         if (g.slotEntry[i] !== eintrag) continue;
                         const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
@@ -691,7 +691,7 @@ function linsenZiel(W, H) {
         rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     let wahl;
     const zeichne = (cam) => {
-        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
         rend.clear();
@@ -1110,7 +1110,7 @@ function nahFernSicht(opts) {
         // DIE LUFT AUS: die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
         // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
         // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
-        if (sc.fogNode && !(st.luft && st.luft.U && st.luft.U.beta)) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
+        if (sc.fogNode && !(st.luft?.U && st.luft.U.beta)) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
         const luftZurueck = ohneLuft();
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
@@ -1128,15 +1128,21 @@ function nahFernSicht(opts) {
             const punkte = Float64Array.from({ length: 2048 }, (_, q) => Math.round((q & 1 ? z0 : x0) - halb + ((((q & 1 ? q >> 1 : q >> 6) & 31) + 0.5) * 2 * halb) / 32));
             const a = await r._fernAuftrag("teile", { punkte });
             for (let k = 0; k < 1024; k++) {
-                const t = a.law[k] < wl ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
-                for (let q = 0; q < 3; q++) c[q] += t[q] + (t[3 + q] * sm[q] - t[q]) * t[6];
+                const nass = a.law[k] < wl;
+                const t = nass ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
+                const j = nass ? AnazhRealm.FERN_JAHR_LEER : a.jahr.subarray(k * 8, k * 8 + 8);
+                // die Krone im Jahr (w21-laub-jahr-fern): dieselbe Formel wie der Ring-Stoff (phyto-core `kroneImJahr`)
+                for (let q = 0; q < 3; q++) {
+                    const J = __phytoCore.kroneImJahr(__phytoCore.WIND_ZAHLEN, r._fernPraesenz(), sm[q], t[3 + q], j[q], j[3], j[4 + q]);
+                    c[q] += t[q] + (J.farbe - t[q] * J.deckung) * t[6];
+                }
                 d += t[6];
             }
             const rgb = c.map((v) => v / 1024);
             return { rgb: rgb.map((v) => +v.toFixed(4)), Y: +luma709(rgb).toFixed(4), deckung: +(d / 1024).toFixed(2) };
         };
         const lu = st.lodUniforms;
-        const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        const maskeAlt = lu?.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
         // DER RING WEICHT DEM GEBAUTEN: unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
@@ -1146,7 +1152,7 @@ function nahFernSicht(opts) {
         const fr = st.fernRing;
         const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
         const freiAlt = freiIx ? freiIx.array.slice() : null;
-        const nahtMesh = fr && fr.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
+        const nahtMesh = fr?.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
         const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
         if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
             freiIx.array.set(fr.geos[0].index.array);
@@ -1315,7 +1321,7 @@ function nahFernUrteil(messung, band) {
         befunde.push(
             `NAH-FERN Upload: ${up.bilder} von 3 Bildern gezeichnet (die GPU-Leine hielt) — die Probe ist blind`
         );
-    if (up && !(up.texe && up.texe.length))
+    if (up && !(up.texe?.length))
         befunde.push("NAH-FERN Upload: kein Daten-Bild des Boden-Stoffs gefunden — die Probe ist blind");
     for (const u of (up && up.texe) || [])
         if (!(u.gpu >= u.soll))
@@ -1332,7 +1338,7 @@ function nahFernUrteil(messung, band) {
         if (n < band.jeKlasse)
             befunde.push(
                 `NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}` +
-                    (messung && messung.kandidaten
+                    (messung?.kandidaten
                         ? ` (${messung.kandidaten.n} Kandidaten im Quadrat, stärkste Deckung ${messung.kandidaten.deckungMax})`
                         : "")
             );
@@ -1639,7 +1645,7 @@ function laubGegenlicht(opts) {
                 // (Laub, Rinde, Karten jeder Art) — Schuss 1 in den Stufen der Gestalt, Schuss 2 (der Aufrufer stellt die Stufen auf
                 // die Karte) jede Krone als Karte. Gezählt jedes Pixel im Rechteck der Box, das beide zeichnen; Mittel linear, L*, C*ab.
                 const fr = opts.karte === 2 && opts.boden ? st.fernRing : null;
-                const frei = fr && fr.teilung && fr.teilung.frei ? fr.teilung.frei.index : null;
+                const frei = fr?.teilung && fr.teilung.frei ? fr.teilung.frei.index : null;
                 const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
                 if (frei && fr.geos[0].index.array.length === frei.array.length) (freiAlt = [frei, frei.array.slice()]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true);
                 for (const m of alle)
@@ -1990,13 +1996,13 @@ function laubLichtUrteil(messung, band) {
     const befunde = [];
     const zeilen = [];
     for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
-        if (w && w.karte) {
+        if (w?.karte) {
             // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
             // DIE FERNE JE STUNDE (F6, `paar` fern/nah: Haus L2/L0, Fern-Ring/Boden-Satz) antwortet der Uhr wie die Nähe — gegen ihre Zeile
             // zu Mittag (`<art>@0.5`; der Ton-Abstand skaliert mit der Buntheit der Nähe), der Mittag selbst reist als `mittag` (Lehre 19)
             const mittag = w.paar && /@/.test(art) && !/@0\.5$/.test(art) ? messung.welt[art.replace(/@.*$/, "@0.5")] : null;
-            const kC = mittag && mittag.karte && mittag.karte.gestalt && w.karte.gestalt ? w.karte.gestalt.C / mittag.karte.gestalt.C : 1;
-            const k = mittag && mittag.karte ? { verhaeltnis: +(w.karte.verhaeltnis / mittag.karte.verhaeltnis).toFixed(3), dL: +(w.karte.dL - mittag.karte.dL).toFixed(2), dC: +(w.karte.dC - mittag.karte.dC * kC).toFixed(2) } : w.karte;
+            const kC = mittag?.karte && mittag.karte.gestalt && w.karte.gestalt ? w.karte.gestalt.C / mittag.karte.gestalt.C : 1;
+            const k = mittag?.karte ? { verhaeltnis: +(w.karte.verhaeltnis / mittag.karte.verhaeltnis).toFixed(3), dL: +(w.karte.dL - mittag.karte.dL).toFixed(2), dC: +(w.karte.dC - mittag.karte.dC * kC).toFixed(2) } : w.karte;
             if (w.paar && !mittag && !/@0\.5$/.test(art)) befunde.push(`FERN ${art}: ohne die Zeile zu Mittag (\`--uhr 0.5,…\`) kein Urteil der Stunde`);
             if (w.paar && /@0\.5$/.test(art)) {
                 zeilen.push({ art, stufe: w.stufe, mittag: w.karte.verhaeltnis, dL: w.karte.dL, dC: w.karte.dC });

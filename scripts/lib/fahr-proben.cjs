@@ -70,7 +70,7 @@ async function probeLeben(expected) {
         const me = pl && pl.mountedArch != null ? r._mountedEntry : null;
         if (!me || !me.position) return !!st.isInAir;
         const fz = me._fahr;
-        if (st.isInAir && !(fz && fz.luft)) return true;
+        if (st.isInAir && !(fz?.luft)) return true;
         const sitz = Number.isFinite(me._sitzHeight) ? me._sitzHeight : 0;
         const hub = fz && Number.isFinite(fz.fHub) ? fz.fHub : Number.isFinite(me._rideHeave) ? me._rideHeave : 0;
         if (Math.abs(st.playerMesh.position.y - (me.position.y - 0.5 + sitz + hub)) > 0.05) return true;
@@ -336,7 +336,7 @@ async function probeLeben(expected) {
     const weltLabor = async () => {
         const g1 = await gtAmStart();
         let labor = null;
-        if (g1 && g1._fahr) {
+        if (g1?._fahr) {
             const z0 = { ...g1._fahr };
             z.ent = g1;
             z.spur = [];
@@ -413,7 +413,7 @@ async function probeLeben(expected) {
             bilder(K.bremsMax, () => e._fahr.vlong > bV);
             bahnWache = null;
             for (const q of z.spur) {
-                if (!(q.e && q.e.brake) || !(q.v > bV)) break;
+                if (!(q.e?.brake) || !(q.v > bV)) break;
                 s = q.x - x0;
             }
             [z.spur, z.ent, halt.zurueck] = [null, null, false];
@@ -895,7 +895,7 @@ async function probeLeben(expected) {
                         r._stepCharacterStructures({ x: e.position.x, z: e.position.z }, 0, 0, 0, hk);
                         hk.schubQuelle.forEach((q, j) => {
                             // der fahrende Wagen trägt sein Rechteck (oben, `schnitt`): seine Boxen ziehen erst nach (`boxFernM`)
-                            if (q && q._verkehrWagen && q._verkehrWagen.zustand === "faehrt") return;
+                            if (q?._verkehrWagen && q._verkehrWagen.zustand === "faehrt") return;
                             if (!(Math.hypot(hk.schub[2 * j], hk.schub[2 * j + 1]) > 0.05)) return;
                             m.bau++;
                             if (m.bauOrte.length < 6)
@@ -1455,7 +1455,7 @@ async function probeLeben(expected) {
                     sprung = Math.max(sprung, Math.abs(g2.position.y - yv));
                     yv = g2.position.y;
                     schritte++;
-                    if (g2._fahr && g2._fahr.luft) luft++;
+                    if (g2._fahr?.luft) luft++;
                 });
                 for (let i = 0; i < 420; i++) {
                     halteLinie(g2, kl);
@@ -1492,11 +1492,11 @@ async function probeLeben(expected) {
                     frame(i);
                     gefahren++;
                     hoehe = g4.position.y - 0.5 - hh(g4.position.x, g4.position.z);
-                    if (g4._fahr && g4._fahr.luft) {
+                    if (g4._fahr?.luft) {
                         luftN++;
                         hoeheMax = Math.max(hoeheMax, hoehe);
                     }
-                    if (g4._fahr && g4._fahr.luft && hoehe >= expected.flugM) break;
+                    if (g4._fahr?.luft && hoehe >= expected.flugM) break;
                 }
                 const weg4 =
                     (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
@@ -1507,7 +1507,7 @@ async function probeLeben(expected) {
                     `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
                     (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
-                const imFlug = !!(g4._fahr && g4._fahr.luft);
+                const imFlug = !!(g4._fahr?.luft);
                 r.dismountArchitecture();
                 let yv = g4.position.y;
                 let sprungAb = 0;
@@ -1747,7 +1747,7 @@ async function probeLeben(expected) {
             const gL = await setzen("fahrzeug_gt", L.start[0], L.start[1], L.gier);
             if (!gL) return null;
             for (const cr of (st.creatures || []).slice())
-                if (cr && cr.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
+                if (cr?.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
                     r.removeCreature(cr);
             const m = {
                 ziel: !!ziel,
@@ -1830,7 +1830,7 @@ async function probeLeben(expected) {
         await ankommen(D.x, D.z);
         let G = null;
         for (const e of st.architectures)
-            if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
+            if (e?.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
                 if (!G || flach(e.position, D) < flach(G.position, D)) G = e;
         const gierL1 = (92.3 * Math.PI) / 180;
         const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
@@ -1857,8 +1857,7 @@ async function probeLeben(expected) {
             const { ux, uz } = gasse;
             for (const cr of (st.creatures || []).slice())
                 if (
-                    cr &&
-                    cr.position &&
+                    cr?.position &&
                     Math.hypot(cr.position.x - (gasse.x + ux * 8), cr.position.z - (gasse.z + uz * 8)) < 30
                 )
                     r.removeCreature(cr);
@@ -2013,7 +2012,7 @@ async function probeLeben(expected) {
                     { x, y: hh(x, zz) + 0.5, z: zz },
                     { silent: true, precise: true }
                 );
-                return b && b.blockerAABBs && b.blockerAABBs.length ? b : null;
+                return b?.blockerAABBs && b.blockerAABBs.length ? b : null;
             },
             lage: (b) => ({ x: b.position.x, z: b.position.z }),
             weg: (b) => r.removeArchitecture(b),
@@ -2027,7 +2026,7 @@ async function probeLeben(expected) {
                 );
                 if (!e) return null;
                 await __gebautNach(e);
-                return e.blockerAABBs && e.blockerAABBs.length ? e : null;
+                return e.blockerAABBs?.length ? e : null;
             },
             lage: (e) => ({ x: e.position.x, z: e.position.z }),
             weg: (e) => r.removeArchitecture(e),
@@ -2129,7 +2128,7 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: rotY }
                 );
                 if (e) await __gebautNach(e);
-                return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
+                return e?.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
             // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse im Rahmen
             // der gedrehten Box (`obb` { cx, cz, c, s, hx, hz }, lokal = (Δx·c − Δz·s, Δx·s + Δz·c)), die Welt-AABB nur Vorfilter.
@@ -2293,7 +2292,7 @@ async function probeLeben(expected) {
                     // steht auf dem Bestand + dem Bären), kein Tod (der Bestand ruht, oben) — der Lockstep prüft den Stoß, nicht
                     // den Takt des Spawners
                     for (const cr of (st.creatures || []).slice())
-                        if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
+                        if (cr?.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
                     // DER GLEICHE START: beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
                     // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit.
@@ -2549,7 +2548,7 @@ async function probeLeben(expected) {
                 let unten = Infinity;
                 // die Hülle des Kerns im Rahmen des Wagens (vor dem Durchlauf: Rahmen und Stationen)
                 const fzgH = r._fahrzeugGesetzFor(e);
-                const hu = fzgH && fzgH.drive && fzgH.drive.huelle ? fzgH.drive.huelle : null;
+                const hu = fzgH?.drive && fzgH.drive.huelle ? fzgH.drive.huelle : null;
                 const scH = Number.isFinite(e.scale) ? e.scale : 1;
                 const thH = Number.isFinite(e.rotationY) ? e.rotationY : 0;
                 const basisH = e.position.y - 0.5;
@@ -2650,7 +2649,7 @@ async function probeLeben(expected) {
                 const sc = Number.isFinite(e.scale) ? e.scale : 1;
                 const fzg = r._fahrzeugGesetzFor(e);
                 const d = fzg && fzg.drive;
-                let sitz = d && d.sitz ? d.sitz : null;
+                let sitz = d?.sitz ? d.sitz : null;
                 if (!sitz) {
                     const bp = st.blueprints[e.type];
                     sitz = bp ? r._attachPointFor(bp, "sitz").point : null;
@@ -2669,7 +2668,7 @@ async function probeLeben(expected) {
                 reiter.push({
                     typ,
                     oben: +(oben - basis).toFixed(3),
-                    dach: d && d.huelle && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
+                    dach: d?.huelle && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
                     schenkel: +(unten - basis).toFixed(3),
                     sitz: sitz ? +(sitz.y * sc).toFixed(3) : null,
                     ankerL: sitz ? +(lx - sitz.x * sc).toFixed(3) : null,

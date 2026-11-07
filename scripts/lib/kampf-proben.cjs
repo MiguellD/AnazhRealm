@@ -61,7 +61,7 @@ async function WELLE_L(ort) {
             kraft: rohKraft,
             src: opts && opts.source,
             t: T,
-            ok: !!(res && res.ok),
+            ok: !!(res?.ok),
             stoss: st0 ? { p: st0.p, m: st0.m } : null,
         });
         return res;
@@ -207,12 +207,12 @@ async function WELLE_L(ort) {
         };
         const ausruesten = (name) => {
             const res = r.equipHeld(name);
-            if (name && !(res && res.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
+            if (name && !(res?.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
         };
         const traf = (sw, c) => sw.treff.find((t) => t.c === c && t.src === "player") || null;
         r.setCameraMode("first");
         r.closeAllDrawers();
-        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
+        if (s.buildMode?.active) r._clearBuildMode();
 
         // ═══ Q8 — TREFFER ═══
         // die Glieder jeder getroffenen Gattung im Vorrat (der Leerlauf) — eine kalte trägt kein Treffer-Volumen
@@ -1061,7 +1061,7 @@ async function WELLE_L(ort) {
         // „baue dorf hier" trägt den Blick des Sprechers (Gier, Programm-Stelle 3): seine Vorwärts-Richtung (`_blickVorn`)
         // blickt wie die Kamera.
         const dsl = r.parseChatToDsl("baue dorf hier");
-        const gier = dsl && dsl.program ? dsl.program[3] : null;
+        const gier = dsl?.program ? dsl.program[3] : null;
         const vg = Number.isFinite(gier) ? r._blickVorn(gier, 0) : null;
         w.z.dorfCos = vg
             ? (vg.x * dD.x + vg.z * dD.z) / (Math.hypot(dD.x, dD.z) * (Math.hypot(vg.x, vg.z) || 1))
@@ -1262,7 +1262,7 @@ async function WELLE_L(ort) {
                     g0 = gesagt.length;
                 r.tryMouseBreak();
                 const sw = p._swing;
-                const ziel = !!(sw && sw.ziel);
+                const ziel = !!(sw?.ziel);
                 if (sw) {
                     sw.lastT = T;
                     for (let k = 0; k < 1200 && p._swing; k++) {
@@ -1404,7 +1404,7 @@ async function WELLE_L(ort) {
                         };
                         const e = r.spawnArchitecture(nm, { x: P.x, y: P.y, z: P.z }, { precise: true, seed: 1 });
                         ernteSteine.push({ nm, e });
-                        return { e, M: e && e.mesh ? new THREE.Box3().setFromObject(e.mesh).getCenter(V3()) : null };
+                        return { e, M: e?.mesh ? new THREE.Box3().setFromObject(e.mesh).getCenter(V3()) : null };
                     };
                     // der Abstand des Ziels vom Anfang des Fadenkreuz-Strahls (die Arm-Länge misst dort)
                     const strahlAb = (P) => {
@@ -1547,7 +1547,7 @@ async function WELLE_L(ort) {
             if (s.blueprints.klinge_grossschwert) r._setBlueprintWear(s.blueprints.klinge_grossschwert, 1);
             // die Studio-Gestalt in der Hand abwarten (die Foundry baut sie; bis dahin trägt der Teile-Bau) — gemessen wird die
             // Klinge, die der Spieler sieht
-            for (let i = 0; i < 120 && !(pm.userData.heldMesh && pm.userData.heldMesh.userData.foundryHeld); i++)
+            for (let i = 0; i < 120 && !(pm.userData.heldMesh?.userData.foundryHeld); i++)
                 await sleep(125);
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
@@ -1976,7 +1976,7 @@ async function WELLE_L(ort) {
                 p._shotCooldownUntil = 0;
                 r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n0];
-                if (pf && pf.mesh) {
+                if (pf?.mesh) {
                     pf.mesh.updateMatrixWorld(true);
                     const inv = new THREE.Matrix4().copy(pf.mesh.matrixWorld).invert();
                     const box = new THREE.Box3().makeEmpty();
@@ -1985,7 +1985,7 @@ async function WELLE_L(ort) {
                     pf.mesh.traverse((o) => {
                         if (!o.isMesh) return;
                         pfeilAus.teile++;
-                        if (o.material && o.material.isMeshBasicMaterial) pfeilAus.unbeleuchtet++;
+                        if (o.material?.isMeshBasicMaterial) pfeilAus.unbeleuchtet++;
                         if (o.castShadow) pfeilAus.wirft++;
                         if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
                         box.union(
@@ -2076,9 +2076,9 @@ async function WELLE_L(ort) {
                     for (let f = 0; f < 30; f++) r._p2pTickRemoteCreatures(k * 0.05 + f / 60, 1 / 60);
                     kopie.proben++;
                     const id = hT.userData.netId;
-                    if (msg && msg.list.some((e) => e.id === id)) kopie.imStrom++;
+                    if (msg?.list.some((e) => e.id === id)) kopie.imStrom++;
                     const rc = s.p2p.remoteCreatures.get(peer + ":" + id);
-                    if (rc && rc.mesh) {
+                    if (rc?.mesh) {
                         rc.mesh.updateMatrixWorld(true);
                         const qk = rc.mesh.getWorldQuaternion(new THREE.Quaternion());
                         kopie.obenMax = Math.max(kopie.obenMax, V3().set(0, 1, 0).applyQuaternion(qk).y);
@@ -2467,7 +2467,7 @@ async function WELLE_L(ort) {
                                     if (k === 0) r._tickCreatureScentStrike(j2);
                                     tickT23();
                                     const VA = j2.userData._verhaltenAktion;
-                                    if (!(VA && VA.bissAkt && s.creatureAnimationTime < VA.bis)) continue;
+                                    if (!(VA?.bissAkt && s.creatureAnimationTime < VA.bis)) continue;
                                     if (VA !== letzte) {
                                         letzte = VA;
                                         reh.anspruenge++;
@@ -2637,7 +2637,7 @@ async function WELLE_L(ort) {
                                 for (let k = 0; k < reich.simsSek * 60; k++) {
                                     tickT23();
                                     const VA = wolfS.userData._verhaltenAktion;
-                                    if (VA && VA.bissAkt && VA !== letzte) {
+                                    if (VA?.bissAkt && VA !== letzte) {
                                         letzte = VA;
                                         n++;
                                     }
@@ -2748,7 +2748,7 @@ async function WELLE_L(ort) {
                 v0: sch.v0,
                 treffer,
                 steckt: st() - n0,
-                bild: !!(x && x.mesh && x.mesh.parent === s.scene),
+                bild: !!(x?.mesh && x.mesh.parent === s.scene),
             };
             if (wand) r.removeArchitecture(wand);
             delete s.blueprints._k4;
@@ -2997,7 +2997,7 @@ async function WELLE_L(ort) {
             const tafel = {
                 _geraetGraebt: (b) => {
                     const g = b && sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[r._schmiedeGestalt(b)]];
-                    return !b || !!(g && g.task && (g.task.art === "graben" || g.task.art === "pick"));
+                    return !b || !!(g?.task && (g.task.art === "graben" || g.task.art === "pick"));
                 }, // (S13) eine Art-Tafel: graben nach task.art, ein Abbau-Profil für alle
                 _implementProfile: () => ({ minePower: 1.6, cutPower: 1.6 }),
                 _ernteBand: (b) => (/sichel/.test(b && b.name) ? 0.6 : 0), // (S15) ein Namens-Sonderfall
@@ -3165,7 +3165,7 @@ async function WELLE_L(ort) {
         try {
             r.equipHeld(saved.held || null);
         } catch {}
-        if (s.buildMode && s.buildMode.active) r._clearBuildMode();
+        if (s.buildMode?.active) r._clearBuildMode();
         if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
         if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);
         r.setCameraMode(saved.cam);

@@ -758,7 +758,7 @@ async function checkBandV1772Library({ page, check }) {
         // (5) KONSUM — die vier Mach-Akte FEUERN rollen-gerecht (schöpfer = frei, kein Material/Station nötig).
         //     Snapshot des Player-States, danach restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
+        const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
         const savedSoul = (p && p.soul) || "mensch";
         r.setGameMode("schöpfer");
@@ -829,7 +829,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         if (!pm) return out;
 
         // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
-        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
+        const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
@@ -843,7 +843,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
 
         // sauberer Start
         r.equipHeld(null);
-        out.startNoMesh = !(pm.userData && pm.userData.heldMesh);
+        out.startNoMesh = !(pm.userData?.heldMesh);
 
         // (1) ein echtes Geräte-Bauplan (Werkzeug-Substanz) → Mesh erscheint, am Avatar geparentet
         const eq1 = r.equipHeld("_t_v1773");
@@ -875,13 +875,13 @@ async function checkBandV1773HeldMesh({ page, check }) {
 
         // (4) ablegen → kein Mesh
         r.equipHeld(null);
-        out.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
+        out.unequipNoMesh = !(pm.userData?.heldMesh);
 
         // (5) ein formloses builtIn-Crafting-Tool (schmiede-hammer, kein Bauplan) → equipHeld lehnt ab, kein Mesh
         //     (die Werkstatt-Schicht state.tools bleibt getrennt vom Welt-Gerät)
         const eqTool = r.equipHeld("schmiede-hammer");
         out.toolRejected = eqTool.ok === false;
-        out.toolNoMesh = !(pm.userData && pm.userData.heldMesh);
+        out.toolNoMesh = !(pm.userData?.heldMesh);
 
         // (6) KONSUM — KÖRPER-WECHSEL: Gerät halten, Seele wechseln → das Mesh re-attached am NEUEN
         //     Körper (Restore-/Seelen-sicher; deckt auch den loadState-Pfad).
@@ -895,7 +895,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         // restore — die Original-Seele + das Original-Equip wiederherstellen
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
-        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        r.equipHeld(savedEquip?.held ? savedEquip.held : null);
         delete st.blueprints._t_v1773; // Test-Blueprint aufräumen
         r.recomputePlayerStats();
         return out;
@@ -1166,7 +1166,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         if (dragonGroup && dragonGroup.children.length > 0) {
             // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
             for (const c of dragonGroup.children) {
-                if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
+                if (c?.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
                     dragonHasInnerFlip = true;
                     break;
                 }
@@ -1558,7 +1558,7 @@ async function checkBandWelle6DSoul({ page, check }) {
 
         // Save-Round-Trip
         const snap = r.buildStateSnapshot();
-        out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
+        out.snapHasConsumables = !!(snap.consumables?.trank_des_lichts);
 
         // Cleanup
         st.consumables = {};
@@ -1844,7 +1844,7 @@ async function checkBandWelle6DSoul({ page, check }) {
             },
         };
         const snap = r.buildStateSnapshot();
-        out.snapshotHasCustomSouls = !!(snap.customSouls && snap.customSouls.save_test);
+        out.snapshotHasCustomSouls = !!(snap.customSouls?.save_test);
 
         // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
         // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
@@ -1869,8 +1869,8 @@ async function checkBandWelle6DSoul({ page, check }) {
         // Die BRÜCKE: eine Built-in-Seele als role:soul-Bauplan in die Werkstatt holen (Avatare-in-Werkstatt)
         st.customSouls = {};
         const s2b = r.soulToBlueprint("human");
-        out.s2bOk = !!(s2b && s2b.ok);
-        const s2bBp = s2b && s2b.ok ? st.blueprints[s2b.name] : null;
+        out.s2bOk = !!(s2b?.ok);
+        const s2bBp = s2b?.ok ? st.blueprints[s2b.name] : null;
         // Der Mensch trägt POSITIONIERTE bodyParts: ALLE def-Teile reisen positioniert (nicht am Ursprung
         // gestapelt) — dynamisch gegen die def-Länge geprüft.
         const humanDefParts = r.playerSoulDefs.human.bodyParts.length;
@@ -1881,7 +1881,7 @@ async function checkBandWelle6DSoul({ page, check }) {
             s2bBp.parts.length === humanDefParts &&
             new Set(s2bBp.parts.map((p) => `${p.position.x},${p.position.y},${p.position.z}`)).size >= 5
         );
-        if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
+        if (s2b?.ok) r.deleteBlueprint(s2b.name);
 
         // Klonen aus aktiver Seele (die customSoul-Datenschicht bleibt)
         const savedSoul = st.player.soul;
@@ -2106,7 +2106,7 @@ async function checkBandPhasenBF({ page, check }) {
             [{ type: "weld", partA: 0, partB: 1 }]
         );
         const joint = roles && roles.find((x) => x && x.joint);
-        out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
+        out.c1Joint = !!(joint?.anchor && typeof joint.anchor.x === "number" && joint.axis);
         // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
         // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
         // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
@@ -2773,7 +2773,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
             r.setGameMode("schöpfer");
             r._setBlueprintWear(heldBp, 0.3); // beschädigt
             const forgeRes = r.forgeBlueprint(heldName);
-            out.forgeRefilled = !!(forgeRes && forgeRes.ok && r._blueprintWear(heldBp) > 0.99);
+            out.forgeRefilled = !!(forgeRes?.ok && r._blueprintWear(heldBp) > 0.99);
         }
 
         // W9 repariert das gehaltene Gerät (Zehren, Wand und Faktor misst der Werkzeug-Satz, gate:kampf-gefuehl Q11)
@@ -2785,7 +2785,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
             // schöpfer-Modus für free-Repair (Material-Tor umgangen).
             r.setGameMode("schöpfer");
             const repRes = r.repairHeldDevice();
-            out.repairOk = !!(repRes && repRes.ok && repRes.before === 0.3 && repRes.after === 1.0 && repRes.free);
+            out.repairOk = !!(repRes?.ok && repRes.before === 0.3 && repRes.after === 1.0 && repRes.free);
             out.repairWearReset = r._blueprintWear(heldBp) === 1;
         }
 

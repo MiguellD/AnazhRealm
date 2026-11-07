@@ -230,7 +230,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
         const chatAfter = chatOutput ? chatOutput.children.length : 0;
         const journalAfter = (st.worldJournal && st.worldJournal.entries.length) || 0;
-        const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
+        const lastLine = chatOutput?.lastChild ? chatOutput.lastChild.textContent : "";
         out.leerschlagReturnsNull = result === null;
         out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
         out.leerschlagWritesJournal = journalAfter > journalBefore;
@@ -247,7 +247,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const uniqueMaps = new Set();
         for (let i = 0; i < 10; i++) {
             r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
-            if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+            if (c3.userData.taskAura?.material.map) {
                 uniqueMaps.add(c3.userData.taskAura.material.map);
             }
             r.assignCreatureTask(c3, "wander", {}, { silent: true });
@@ -397,10 +397,10 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.listRendersRows = list && list.querySelectorAll(".creature-row").length === st.creatures.length;
         // Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
         // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
-        out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
-        out.hasFolgeInline = !!(list && list.querySelector('[data-task="follow_player"]'));
-        out.hasWarteInline = !!(list && list.querySelector('[data-task="wait"]'));
-        out.hasStreiftInline = !!(list && list.querySelector('[data-task="wander"]'));
+        out.hasTaskActions = !!(list?.querySelector(".creature-actions-inline"));
+        out.hasFolgeInline = !!(list?.querySelector('[data-task="follow_player"]'));
+        out.hasWarteInline = !!(list?.querySelector('[data-task="wait"]'));
+        out.hasStreiftInline = !!(list?.querySelector('[data-task="wander"]'));
         const firstRow = list && list.querySelector(".creature-row");
         out.rowHasNameSoulTask =
             firstRow &&
@@ -412,8 +412,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
-            prof &&
-            prof.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
+            prof?.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
             typeof prof.tags === "object" &&
             prof.stats &&
             Number.isFinite(prof.stats.hpMax) &&
@@ -429,7 +428,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
         // Hof-D — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
-        out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
+        out.rowHasMoodGlyph = !!(firstRow?.querySelector(".creature-mood"));
         // Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
         // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
@@ -440,9 +439,9 @@ async function checkBandWelle6HCreatures({ page, check }) {
             stageSpec.querySelectorAll(".spec-sheet").length === 1 &&
             stageSpec.querySelectorAll(".spec-body .spec-bar").length > 0;
         // Werkstatt-DNA: Header (Name) + zwei-Spalten-Body (Natur | Werte) + Footer (Verabschieden).
-        out.stageHasTitle = !!(stageSpec && stageSpec.querySelector(".spec-header .spec-name"));
+        out.stageHasTitle = !!(stageSpec?.querySelector(".spec-header .spec-name"));
         out.stageHasBody2Col = !!(stageSpec && stageSpec.querySelectorAll(".spec-body .spec-col").length === 2);
-        out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".spec-footer .spec-dismiss"));
+        out.stageHasDismiss = !!(stageSpec?.querySelector(".spec-footer .spec-dismiss"));
         // Fokus-Toggle: ein Klick auf ein Wesen fokussiert es (genau EINE Zeile .focused) → es tritt auf die Bühne.
         const firstProf = r._creatureProfile(st.creatures[0]);
         r._toggleHofFocus(firstProf.id);
@@ -498,7 +497,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         r.clearCreatures();
         r._renderCreatureListUI();
         // Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
-        out.emptyShowsOnboarding = !!(list && list.querySelector(".hof-empty"));
+        out.emptyShowsOnboarding = !!(list?.querySelector(".hof-empty"));
         // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
         // UI Run-Button): brauchen Kreaturen-Population.
         r.spawnCreatures(10);
@@ -762,7 +761,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.gatherSelectHasMaterials = orderSel
             ? [...orderSel.querySelectorAll("option")].filter((o) => o.value.startsWith("gather:")).length >= 10
             : false;
-        out.hasNearestGatherBtn = !!(list && list.querySelector(".creature-row [data-task]"));
+        out.hasNearestGatherBtn = !!(list?.querySelector(".creature-row [data-task]"));
         out.hasAllGatherBtn = orderSel
             ? [...orderSel.querySelectorAll("option")].some((o) => o.value.startsWith("build:"))
             : false;
@@ -937,7 +936,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             c.userData.carrying = null;
             r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
             r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-            out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+            out.creatureCarryingSet = !!(c.userData.carrying?.materials);
             out.inventoryStillEmptyAfterHarvest = st.player.inventory.every((sl) => !sl);
             out.carryingSpriteCreated = !!c.userData.carryingSprite;
 
@@ -1833,7 +1832,7 @@ async function checkBandKreaturKosten({ page, check }) {
         // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
         const g = r._buildHumanGroup();
         const mf = g && g.userData && g.userData._gelenk;
-        o.checks.cFernGebaut = !!(mf && mf.nah && mf.fern);
+        o.checks.cFernGebaut = !!(mf?.nah && mf.fern);
         // die Stufen eines Zustands: nah = die feine sichtbar, die Grobstufe nur in den Kaskaden; fern = umgekehrt
         // (K72: der Wurf ist die Ebene SHADOW_TWIN_LAYER — nah liegt kein Teil der Grobstufe auf Ebene 0, ihre werfenden
         // Teile liegen auf der Wurf-Ebene, und ist sie der Zwilling, wirft mindestens eins)
@@ -1844,7 +1843,7 @@ async function checkBandKreaturKosten({ page, check }) {
             (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(A.SHADOW_TWIN_LAYER)));
         const istFern = () =>
             mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
-        if (mf && mf.nah && mf.fern) {
+        if (mf?.nah && mf.fern) {
             const stat = (node) => {
                 let m = 0,
                     v = 0;
@@ -1924,7 +1923,7 @@ async function checkBandKreaturKosten({ page, check }) {
         o.rWolf = wolfT ? starrZensus(wolfT.root) : null;
         const gM = r._buildHumanGroup();
         const mfM = gM && gM.userData && gM.userData._gelenk;
-        o.rMensch = mfM && mfM.nah ? starrZensus(mfM.nah) : null;
+        o.rMensch = mfM?.nah ? starrZensus(mfM.nah) : null;
         o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
         o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
         o.checks.rKugel =
@@ -1939,12 +1938,12 @@ async function checkBandKreaturKosten({ page, check }) {
         // Knochen der L0 (Identität je Name) — EIN Skelett je Gestalt; im Gang bleibt auch er in seiner Kugel.
         const zw = { meshes: 0, geskinnt: 0, knochen: 0, fremd: 0, geprueft: 0 };
         const wp = spawnAt(6, 0);
-        if (wp && wp.userData && wp.userData._tierBaum) {
+        if (wp?.userData && wp.userData._tierBaum) {
             const v = new T3.Vector3();
             let l1Geo = null;
             wp.traverse((n) => {
                 for (const vl of n.__ofenVorlagen || [])
-                    if (vl && vl.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
+                    if (vl?.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
                         l1Geo = new Set();
                         vl.root.traverse((q) => {
                             if (q.isMesh && q.geometry) l1Geo.add(q.geometry);
@@ -1968,7 +1967,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 wp.updateMatrixWorld(true);
                 wp.traverse((n) => {
                     if (!n.isSkinnedMesh || !n.boundingSphere) return;
-                    if (l1Geo && l1Geo.has(n.geometry)) zw.geprueft++;
+                    if (l1Geo?.has(n.geometry)) zw.geprueft++;
                     const kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
                     const pos = n.geometry.attributes.position;
                     for (let i = 0; i < pos.count; i += 3) {
@@ -2046,7 +2045,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const je = {};
             gruppe.traverse((n) => {
                 for (const v of n.__ofenVorlagen || [])
-                    if (v && v.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
+                    if (v?.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
             });
             return je;
         };
@@ -2084,7 +2083,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const wurfTeil = (core, kind) => {
             const B = core && core.PORTAL_RENDER_CONFIG && core.PORTAL_RENDER_CONFIG.lod.budget[kind];
             const z1 = B && B[1];
-            const seh = z1 && z1.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
+            const seh = z1?.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
             const aus = budgetFang.get(kind + "|1");
             if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
             const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);

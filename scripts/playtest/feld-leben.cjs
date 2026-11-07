@@ -212,7 +212,7 @@ async function checkBandV1732SpatialEmotion({ page, check }) {
         out.tintColors = true;
         const THREE = window.THREE;
         const pm = st.playerMesh && st.playerMesh.position;
-        if (THREE && THREE.Color && pm) {
+        if (THREE?.Color && pm) {
             // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
             // (deterministisch), dann den Default (0) wiederherstellen.
@@ -606,9 +606,9 @@ async function checkBandWelle6APolish({ page, check }) {
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
-        if (entry && entry.mesh) {
+        if (entry?.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced) {
+        } else if (entry?.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -746,9 +746,9 @@ async function checkBandWelle6APolish({ page, check }) {
         let flatBlueprintNotSteep = false;
         // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
-        if (_entryA3 && _entryA3.mesh) {
+        if (_entryA3?.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced) {
+        } else if (_entryA3?.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -833,7 +833,7 @@ async function checkBandWelle6APolish({ page, check }) {
             { seed: 4711 }
         );
         let _archTopY = 0;
-        if (_archEntry && _archEntry.mesh) {
+        if (_archEntry?.mesh) {
             const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
             _archTopY = _box.max.y;
         }
@@ -954,7 +954,7 @@ async function checkBandWelle6APolish({ page, check }) {
         } catch {
             /* localStorage gesperrt — worldJournal trägt das Flag */
         }
-        if (st.worldJournal && st.worldJournal.seen) st.worldJournal.seen.intro = false;
+        if (st.worldJournal?.seen) st.worldJournal.seen.intro = false;
         const box = document.getElementById("dialogue-box");
         if (box) box.textContent = "";
         r._firstWorldWelcome({ immediate: true });
@@ -1027,10 +1027,10 @@ async function checkBandWelle6APolish({ page, check }) {
             // W-G (V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
             // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
             // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
-            if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
+            if (node.userData?.isConnectionLine && !node.userData.isJointAxis) {
                 if (node.isLine) connLineCount++;
                 if (node.isMesh) connMarkerCount++;
-                if (node.material && node.material.color) lineColor = node.material.color.getHex();
+                if (node.material?.color) lineColor = node.material.color.getHex();
             }
         });
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
@@ -1041,7 +1041,7 @@ async function checkBandWelle6APolish({ page, check }) {
         let worldLines = 0;
         const builtPlain = r._buildFromBlueprint(st.blueprints[testName]);
         builtPlain.traverse((node) => {
-            if (node.userData && node.userData.isConnectionLine) worldLines++;
+            if (node.userData?.isConnectionLine) worldLines++;
         });
         out.worldClean = worldLines === 0;
 
@@ -1076,24 +1076,24 @@ async function checkBandWelle6APolish({ page, check }) {
         out.weakIsBelowThreshold = weakStrength < 0.7;
 
         // Journal-Counter vor spawn
-        const beforeJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const beforeJournal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         const beforeSeenKeys =
-            st.worldJournal && st.worldJournal.seen
+            st.worldJournal?.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
         const bautenZurueck = __bautenSeit();
         r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
         const afterSeenKeys =
-            st.worldJournal && st.worldJournal.seen
+            st.worldJournal?.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const afterJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const afterJournal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
         out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
         // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
         r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-        const after2Journal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const after2Journal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         out.weakIsIdempotent = after2Journal === afterJournal;
 
         // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
@@ -1185,8 +1185,8 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         const __hkBp = __hkKey && bps[__hkKey];
         out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
-        out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
-        out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
+        out.eichenStammHolz = !!(__heBp?.parts.some((p) => p.material === "holz"));
+        out.eichenKroneLaub = !!(__heBp?.parts.some((p) => p.material === "laub"));
 
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
@@ -1276,7 +1276,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
         // Inseln aus der Surface-Nets-Pipeline: Vollkörper per Konstruktion (Iso-Fläche schließt oben +
         // unten). Gemessen wird die Y-Spanne (> 0.5 m), nicht die auflösungsabhängige Vertex-Zahl.
-        if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
+        if (newIsland?.geometry && newIsland.geometry.attributes.position) {
             const pa = newIsland.geometry.attributes.position.array;
             let minY = Infinity;
             let maxY = -Infinity;
@@ -1622,7 +1622,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.archAffinityTags[n] = slim;
             out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
             const aff = r.computeBlueprintAffordances(bp);
-            out.archBroadcasting[n] = !!(aff && aff.broadcasting);
+            out.archBroadcasting[n] = !!(aff?.broadcasting);
         }
         return out;
     });
@@ -1730,7 +1730,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
 
         // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
         // eine begehbare Lücke; ein Sturz spannt darüber.
-        if (fb && fb.parts) {
+        if (fb?.parts) {
             const boxes = fb.parts
                 .filter((p) => p.shape === "box")
                 .slice()
@@ -1747,7 +1747,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
 
         // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
-        if (ft && ft.parts) {
+        if (ft?.parts) {
             let minY = Infinity;
             let maxY = -Infinity;
             let minX = Infinity;
@@ -1802,7 +1802,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                     // die Probe (tint undefined ⇒ Material-Farbe pur).
                     const flat = r._archFlattenBlueprint("felsbogen");
                     const l0 = flat.leaves[0];
-                    if (l0 && l0.mat && l0.mat.color) {
+                    if (l0?.mat && l0.mat.color) {
                         const mc = l0.mat.color;
                         let fr = mc.r;
                         let fg = mc.g;
@@ -1844,7 +1844,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         for (let cx = 20; cx <= 31; cx++) {
             for (let cz = 20; cz <= 31; cz++) {
                 const key = `${cx},${cz}`;
-                if (st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(key)) continue;
+                if (st.voxelPopulatedChunks?.has(key)) continue;
                 fresh.add(key);
                 // der Test-Pfad braucht synchrone Spawns (er
                 // misst gleich danach state.architectures); im echten
@@ -1987,7 +1987,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             cam.updateMatrixWorld(true);
             r._pickArchitectureAtCrosshair = () => null;
             const realHit = r._raycastWorldHit(40);
-            out.realRaycastHit = !!(realHit && realHit.hit);
+            out.realRaycastHit = !!(realHit?.hit);
             const matSumBefore = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             r.tryMouseBreak();
             const matSumAfter = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
