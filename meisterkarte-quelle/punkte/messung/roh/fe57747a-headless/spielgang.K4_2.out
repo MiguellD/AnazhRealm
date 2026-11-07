@@ -1,0 +1,284 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function zugangLauf() {
+const fs = require("fs");
+const path = require("path");
+const cp = require("child_process");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, gruppen, sim, grenzenText, farbeText, komfortText] = process.argv.slice(1);
+const zugangGrenzen = eval("(" + grenzenText + ")");
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+const t0 = Date.now();
+const erg = { zeit: {} };
+const ruf = async (weg, o) => {
+const a = await werkbankRuf(W, weg, o || {});
+if (!a || a.fehler || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+return a;
+};
+const seite = async (code) => (await ruf("/eval", { code })).ergebnis;
+const zeit = (k) => console.log("ZUGANG-SCHRITT " + k + " " + (erg.zeit[k] = Math.round((Date.now() - t0) / 1000)) + " s");
+const tor = werkbankTor(W, ["--ort", "genesis"]);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+await ruf("/umstellen", { ort: "genesis", sicht: "ego" });
+zeit("umstellen");
+if (!(await seite("return !!r.state.zugang;"))) throw new Error("kein state.zugang (der Stand kennt den Zugang nicht)");
+await ruf("/fenster", { w: 640, h: 360 });
+const f = await seite("return await (" + farbeText + ")(r, T, " + gruppen + ");");
+const teil = Buffer.from(f.teil, "base64");
+const G = Object.fromEntries(f.gruppen.map((k) => [k, "^" + k + "$"]));
+const bild = (k) => new Uint8Array(Buffer.from(f[k], "base64"));
+erg.farbe = { gruppen: f.gruppen, objekte: f.objekte, schirm: [f.W, f.H] };
+for (const [art, k] of [["aus", "aus"], ["deuteranopie", "deutan"]])
+erg.farbe[art] = {
+auge: zugangGrenzen(bild(k), teil, f.gruppen, f.W, f.H, G, null),
+deutan: zugangGrenzen(bild(k), teil, f.gruppen, f.W, f.H, G, JSON.parse(sim)),
+};
+fs.writeFileSync(B + "-farbe.json", JSON.stringify(f));
+zeit("farbe");
+await seite("r.state.zugang.farbsicht = 'aus'; return 1;");
+erg.komfort = await seite("return await (" + komfortText + ")(r, T);");
+zeit("komfort");
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+} finally {
+tor.stop();
+}
+if (!erg.fehler) {
+const kj = B + "-klang.json";
+const k = cp.spawnSync(process.execPath, ["scripts/diag-klang-zensus.cjs", "--json", kj], {
+env: Object.assign({}, process.env, { KLANG_ZENSUS_PORT: String(port) }),
+encoding: "utf8",
+maxBuffer: 64 << 20,
+});
+const z = (String(k.stdout).match(/^── \(Ü\) UNTERTITEL: (\d+) von (\d+) /m) || []).slice(1).map(Number);
+let rot = [];
+try {
+rot = (JSON.parse(fs.readFileSync(kj, "utf8")).rot || []).filter((x) => /^Ü /.test(x));
+} catch (_e) {
+rot = ["keine JSON der Klang-Linse (Exit " + k.status + ")"];
+}
+erg.untertitel = z.length === 2 ? { n: z[0], von: z[1], rot, exit: k.status } : { fehler: "keine Zeile (Ü) UNTERTITEL (Exit " + k.status + ")", rot };
+zeit("untertitel");
+}
+console.log("ZUGANG " + JSON.stringify(erg));
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/fe57747a-headless/spielgang.K4_2.json 7704 {"gras":"^nahWiese:","boden":"^bodenSatz$","bau":"^(bauSatz|geometrie-arena|portal-membran|f:sitzbank:L\\d)$","fels":"^formationenSatz$","laub":"^(fscatter:|fimp:|f:(eiche|fichte|tanne|buche|birke|kiefer):L\\d)","wasser":"(wasser|hydro)"} [[0.367322,0.860646,-0.227968],[0.280085,0.672501,0.047413],[-0.01182,0.04294,0.968881]] function zugangGrenzen(u8, teil, namen, W, H, gruppen, sim) {
+const LIN = new Float64Array(256).map((_v, i) => (i <= 10.31475 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+const lab = ([r, g, b]) => {
+const [X, Y, Z] = [(0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047, 0.2126 * r + 0.7152 * g + 0.0722 * b, (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883];
+return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+};
+const gk = Object.keys(gruppen);
+const gi = namen.map((n) => 1 + gk.findIndex((k) => new RegExp(gruppen[k]).test(n)));
+const g = new Uint8Array(W * H);
+for (let p = 0; p < W * H; p++) g[p] = teil[p] ? gi[teil[p] - 1] : 0;
+const D = 3;
+const summe = new Map();
+const nimm = (a, b, p) => {
+const k = a + "|" + b;
+const s = summe.get(k) || summe.set(k, [0, 0, 0, 0]).get(k);
+(s[0] += LIN[u8[p * 4]]), (s[1] += LIN[u8[p * 4 + 1]]), (s[2] += LIN[u8[p * 4 + 2]]), s[3]++;
+};
+for (let y = D; y < H - D; y++)
+for (let x = D; x < W - D; x++) {
+const p = y * W + x;
+const a = g[p];
+if (!a) continue;
+for (const s of [1, W]) {
+const b = g[p + s];
+if (!b || b === a || g[p - (D - 1) * s] !== a || g[p + D * s] !== b) continue;
+nimm(a, b, p - (D - 1) * s), nimm(b, a, p + D * s);
+}
+}
+const mul = (M, c) => (M ? M.map((z) => z[0] * c[0] + z[1] * c[1] + z[2] * c[2]) : c);
+const aus = [];
+for (let a = 1; a <= gk.length; a++)
+for (let b = a + 1; b <= gk.length; b++) {
+const [sa, sb] = [summe.get(a + "|" + b), summe.get(b + "|" + a)];
+if (!sa || !sb) continue;
+const [la, lb] = [sa, sb].map((s) => lab(mul(sim, s.slice(0, 3).map((v) => v / s[3]))));
+aus.push({ grenze: gk[a - 1] + "|" + gk[b - 1], n: Math.min(sa[3], sb[3]), dE: +Math.hypot(la[0] - lb[0], la[1] - lb[1], la[2] - lb[2]).toFixed(2) });
+}
+return aus;
+} async function zugangFarbe(r, T, gruppen) {
+const st = r.state;
+const gk = Object.keys(gruppen);
+const je = gk.map(() => []);
+st.scene.traverse((o) => {
+if (!(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.visible) return;
+const [grob, fein] = r._kopfKlasse(o);
+const i = gk.findIndex((k) => new RegExp(gruppen[k]).test(grob) || new RegExp(gruppen[k]).test(fein));
+if (i >= 0) je[i].push(o);
+});
+const db = st.renderer.getDrawingBufferSize(new T.Vector2());
+const [W, H] = [Math.round(db.x), Math.round(db.y)];
+const ruhen = ["_tickNahWiese", "_tickNahStreu", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
+for (const [m] of ruhen) r[m] = () => 0;
+const b64 = (u8) => {
+let s = "";
+for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
+return btoa(s);
+};
+const schuss = async (aus) => {
+for (const o of aus) o.visible = false;
+window.__bundlesNeu();
+try {
+return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+} finally {
+for (const o of aus) o.visible = true;
+window.__bundlesNeu();
+}
+};
+try {
+st.zugang.farbsicht = "aus";
+const G = await schuss([]);
+const Os = [];
+for (const l of je) Os.push(await schuss(l));
+const { teil } = window.__klassenTeilung(G, Os, W, H, 18);
+st.zugang.farbsicht = "deuteranopie";
+const D = await schuss([]);
+return { gruppen: gk, objekte: je.map((l) => l.length), W, H, teil: b64(teil), aus: b64(G), deutan: b64(D) };
+} finally {
+st.zugang.farbsicht = "aus";
+for (const [m, eigen, alt] of ruhen)
+if (eigen) r[m] = alt;
+else delete r[m];
+}
+} async function zugangKomfort(r, T) {
+const st = r.state;
+const cam = st.camera;
+const aus = { menue: {}, stand: {}, fov: {}, wackeln: {}, unschaerfe: {} };
+if (!st.zugang) return { fehler: "kein state.zugang" };
+const el = (id) => document.getElementById(id);
+const feuer = (e, typ) => e.dispatchEvent(new Event(typ, { bubbles: true }));
+const grund = () => (st.zugang = { farbsicht: "aus", fov: null, wackeln: true, unschaerfe: true });
+const luma = (u8, n) => {
+const L = new Float32Array(n);
+for (let p = 0; p < n; p++) L[p] = 0.2126 * u8[p * 4] + 0.7152 * u8[p * 4 + 1] + 0.0722 * u8[p * 4 + 2];
+return L;
+};
+const [BW, BH] = [320, 180];
+const schuss = async () => luma((await window.__ausgabeAufnahme(BW, BH, 1, { satz: "messung" })).u8, BW * BH);
+const bytes = (A, B) => A.reduce((s, v, i) => s + (Math.abs(v - B[i]) > 0.5 ? 1 : 0), 0);
+try {
+const sel = el("farbsicht-wahl");
+aus.menue.arten = sel ? [...sel.options].map((o) => o.value) : [];
+if (sel) (sel.value = "tritanopie"), feuer(sel, "change"), (aus.menue.farbsicht = st.zugang.farbsicht);
+const sv = el("slider-sichtfeld");
+if (sv) (sv.value = "92"), feuer(sv, "input"), (aus.menue.fov = st.zugang.fov);
+for (const [id, k] of [["kopfwackeln-toggle", "wackeln"], ["unschaerfe-toggle", "unschaerfe"]]) {
+const c = el(id);
+if (c) c.click(), (aus.menue[k] = st.zugang[k]);
+}
+const snap = r.buildStateSnapshot().zugang || null;
+aus.stand.snapshot = snap && Object.assign({}, snap);
+grund();
+r._loadStateRestoreSoulAndAtmosphere({ zugang: Object.assign({}, snap, { fov: 140 }) });
+aus.stand.geladen = Object.assign({}, st.zugang);
+aus.stand.menue = { farbsicht: sel && sel.value, fov: sv && +sv.value, wackeln: el("kopfwackeln-toggle")?.checked, unschaerfe: el("unschaerfe-toggle")?.checked };
+grund();
+const t = () => performance.now() / 1000;
+r._kamFov(0, t());
+aus.fov.ruhe = cam.fov;
+const A = await schuss();
+st.zugang.fov = 92;
+r._kamFov(0, t());
+aus.fov.wahl = cam.fov;
+const Bf = await schuss();
+let best = null;
+for (let s = 0.6; s <= 1.0001; s += 0.01) {
+let e = 0,
+n = 0;
+for (let y = 0; y < BH; y += 2)
+for (let x = 0; x < BW; x += 2) {
+const [ax, ay] = [BW / 2 + (x - BW / 2) / s, BH / 2 + (y - BH / 2) / s];
+if (ax < 0 || ay < 0 || ax > BW - 1 || ay > BH - 1) continue;
+(e += Math.abs(Bf[y * BW + x] - A[Math.round(ay) * BW + Math.round(ax)])), n++;
+}
+if (n > 500 && (!best || e / n < best.e)) best = { s: +s.toFixed(2), e: +(e / n).toFixed(2) };
+}
+aus.fov.skala = best;
+aus.fov.soll = +(Math.tan((37.5 * Math.PI) / 180) / Math.tan((46 * Math.PI) / 180)).toFixed(3);
+grund();
+r._kamFov(0, t());
+const nicken = async (an) => {
+st.zugang.wackeln = an;
+st._landDip = 0;
+st._landImpactPending = 0;
+r._loopCamera(t());
+const y0 = cam.position.y;
+const vor = await schuss();
+st._landImpactPending = 8;
+r._loopCamera(t());
+const dip = +(cam.position.y - y0).toFixed(4);
+const nach = await schuss();
+r._kamFov(6, t());
+const atem = +(cam.fov - aus.fov.ruhe).toFixed(2);
+r._kamFov(0, t());
+st._landDip = 0;
+return { dip, atem, bildPx: bytes(vor, nach) };
+};
+aus.wackeln.an = await nicken(true);
+aus.wackeln.aus = await nicken(false);
+grund();
+r._loopCamera(t());
+st._traa = true;
+st.postProcessing = null;
+st.postProcessingFailed = false;
+st.traaNode = null;
+const rend = st.renderer;
+const db = rend.getDrawingBufferSize(new T.Vector2());
+const [W, H] = [Math.round(db.x), Math.round(db.y)];
+const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+const vorOut = rend.getOutputRenderTarget();
+const q0 = cam.quaternion.clone();
+const energie = (u8) => {
+const L = luma(u8, W * H);
+let s = 0;
+for (let y = 0; y < H; y++) for (let x = 0; x + 1 < W; x++) s += Math.abs(L[y * W + x + 1] - L[y * W + x]);
+return +(s / (W * H)).toFixed(3);
+};
+rend.setOutputRenderTarget(rt);
+try {
+const lauf = async (unsch, grad) => {
+st.zugang.unschaerfe = unsch;
+cam.quaternion.copy(q0);
+cam.updateMatrixWorld(true);
+if (st._traaR) st._traaR.neu = true;
+if (st.traaNode) st.traaNode._jitterIndex = 0;
+if (st.lodUniforms && st.lodUniforms.uDitherT) st.lodUniforms.uDitherT.value = 0;
+for (let k = 0; k < 8; k++) window.__loopBild();
+for (let k = 0; k < 12; k++) {
+cam.rotateY((grad * Math.PI) / 180);
+cam.updateMatrixWorld(true);
+window.__loopBild();
+}
+return energie(await window.__zielLesen(rt, W, H));
+};
+window.__loopBild(); // die Kette entsteht im ersten Bild (`_ensurePostProcessing`)
+aus.unschaerfe.kette = !!st.traaNode && !!st.traaNode._laufPx;
+await lauf(true, 0); // der Vorlauf: die Pipelines der zeitlichen Auflösung entstehen (swiftshader kompiliert sie im Bild)
+aus.unschaerfe.an = await lauf(true, 1.5);
+aus.unschaerfe.aus = await lauf(false, 1.5);
+aus.unschaerfe.ruheAn = await lauf(true, 0);
+aus.unschaerfe.ruheAus = await lauf(false, 0);
+aus.unschaerfe.laufPx = st.traaNode && st.traaNode._laufPx ? st.traaNode._laufPx.value : null;
+} finally {
+rend.setOutputRenderTarget(vorOut);
+rt.dispose();
+cam.quaternion.copy(q0);
+cam.updateMatrixWorld(true);
+}
+} finally {
+grund();
+}
+return aus;
+}
+[linse-gpu] google/swiftshader
+ZUGANG-SCHRITT umstellen 240 s
+ZUGANG-SCHRITT farbe 389 s
+ZUGANG-SCHRITT komfort 719 s
+ZUGANG-SCHRITT untertitel 853 s
+ZUGANG {"zeit":{"umstellen":240,"farbe":389,"komfort":719,"untertitel":853},"farbe":{"gruppen":["gras","boden","bau","fels","laub","wasser"],"objekte":[2,1,29,2,36,0],"schirm":[640,360],"aus":{"auge":[{"grenze":"gras|boden","n":973,"dE":34.32},{"grenze":"gras|bau","n":1011,"dE":21.41},{"grenze":"gras|fels","n":1,"dE":36.37},{"grenze":"gras|laub","n":81,"dE":37.47},{"grenze":"boden|bau","n":366,"dE":16.07},{"grenze":"boden|laub","n":41,"dE":24.19},{"grenze":"bau|laub","n":1518,"dE":30.02}],"deutan":[{"grenze":"gras|boden","n":973,"dE":30.88},{"grenze":"gras|bau","n":1011,"dE":18.15},{"grenze":"gras|fels","n":1,"dE":34.96},{"grenze":"gras|laub","n":81,"dE":37.77},{"grenze":"boden|bau","n":366,"dE":15.73},{"grenze":"boden|laub","n":41,"dE":19.48},{"grenze":"bau|laub","n":1518,"dE":26.34}]},"deuteranopie":{"auge":[{"grenze":"gras|boden","n":973,"dE":27.58},{"grenze":"gras|bau","n":1011,"dE":29.72},{"grenze":"gras|fels","n":1,"dE":10.2},{"grenze":"gras|laub","n":81,"dE":29.75},{"grenze":"boden|bau","n":366,"dE":29.38},{"grenze":"boden|laub","n":41,"dE":49.85},{"grenze":"bau|laub","n":1518,"dE":43.97}],"deutan":[{"grenze":"gras|boden","n":973,"dE":24.71},{"grenze":"gras|bau","n":1011,"dE":24.98},{"grenze":"gras|fels","n":1,"dE":5.44},{"grenze":"gras|laub","n":81,"dE":29.2},{"grenze":"boden|bau","n":366,"dE":23.52},{"grenze":"boden|laub","n":41,"dE":33.35},{"grenze":"bau|laub","n":1518,"dE":31.26}]}},"komfort":{"menue":{"arten":["aus","deuteranopie","protanopie","tritanopie"],"farbsicht":"tritanopie","wackeln":false,"unschaerfe":false},"stand":{"snapshot":{"farbsicht":"tritanopie","sichtfeld":92,"wackeln":false,"unschaerfe":false},"geladen":{"farbsicht":"tritanopie","fov":null,"wackeln":false,"unschaerfe":false,"sichtfeld":92},"menue":{"farbsicht":"tritanopie","fov":92,"wackeln":false,"unschaerfe":false}},"fov":{"ruhe":75,"wahl":75,"skala":{"s":1,"e":0},"soll":0.741},"wackeln":{"an":{"dip":-0.0791,"atem":6,"bildPx":42542},"aus":{"dip":0,"atem":0,"bildPx":0}},"unschaerfe":{"kette":true,"an":5.433,"aus":12.246,"ruheAn":7.714,"ruheAus":7.77}},"untertitel":{"n":39,"von":39,"rot":[],"exit":0}}
