@@ -856,7 +856,7 @@ const S0_STOFF = (() => {
 // Ausgabe. Auf swiftshader urteilt die Frist des Laufs (`S0_FRIST_S`), nie eine Zeit. Der Selbsttest auf echter GPU zeichnet den
 // K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel, `s0BodenMessung`) auf dem Vendor-Weg: (a) seine Zeit reißt gegen den Boden
 // derselben Sitzung, (b) sein Weg ist synchron.
-const S0_MS = Object.freeze({ maxMs: 250, relativ: 1.1, n: 5, main: Object.freeze({}) });
+const S0_MS = Object.freeze({ maxMs: 250, relativ: 1.1, n: 9, main: Object.freeze({}) });
 const s0Median = (a) => [...a].sort((x, y) => x - y)[a.length >> 1];
 function s0BodenUrteil(name, p, bezug) {
     const ms = p.ms.length ? s0Median(p.ms) : null;
@@ -881,8 +881,10 @@ function s0PipeRegister() {
         reg.set(p, { weg: "synchron", d });
         return p;
     };
+    window.__s0Flug = 0; // Pipelines im Bau: die Messung beginnt erst, wenn kein Bau der Welt mehr übersetzt
     P.createRenderPipelineAsync = function (d) {
-        return asyn.call(this, d).then((p) => (reg.set(p, { weg: "asynchron", d }), p));
+        window.__s0Flug++;
+        return asyn.call(this, d).then((p) => (reg.set(p, { weg: "asynchron", d }), p)).finally(() => window.__s0Flug--);
     };
 }
 // DIE ÜBERSETZUNG AUF DER SEITE: je Programm, das ein Schuss zeichnete (`__s0BodenRo`), der Weg aus dem Register und auf echter
@@ -973,6 +975,7 @@ async function s0BodenMessung({ hw, selbst, n }) {
             const fehler = (await dev.popErrorScope()) || wurf;
             if (fehler) throw new Error(`die kalte Übersetzung warf: ${fehler.message}`);
         };
+        while (window.__s0Flug > 0) await sleep(50);
         for (let i = 0; i < (hw ? n : 0); i++) for (const p of progs) await kalt(p);
         const aus = (p) => ({ weg: p.e.weg || "am Register vorbei (die Linse ist blind)", zeichen: p.fs.length, ms: p.ms });
         return { programme: progs.slice(0, ro0.length).map(aus), k17: progs[ro0.length] && aus(progs[ro0.length]) };
