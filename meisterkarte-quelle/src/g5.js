@@ -389,7 +389,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10) · 2 = beides und Bewegungs-Komfort (FOV, Kopfwackeln, Unschärfe aus)",
           messung: "Ruf-Ereignisse gegen Untertitel-Zeilen (100 %); Klassen-Masken unter Farbsehschwäche-Simulation des Ausgabe-Bilds.",
-          beleg: "untertitel|subtitle und colorblind|farbseh|deuteranop haben 0 Treffer im Stamm; der Bewegungs-Komfort ist ungemessen.",
+          beleg: "Untertitel aus dem Klang-Gesetz (spielgang.K4#1, die Wand (Ü) der Klang-Linse). Zweig w15-farbsicht (06.11., swiftshader, spielgang.K4#2): die Farbsicht (Deuteranopie, Protanopie, Tritanopie) als halbseitige Daltonisierung im EINEN Post-Pfad, gewählt im Menü, im Stand — am Genesis-Ort 4 Klassen-Grenzen unter Machado-Deuteranopie min ΔE 16,9 → 19,5; Sichtfeld 60–100° am EINEN Schreiber `_kamFov` (Bild-Skala 0,74 bei 92°, Soll 0,741), Kopfwackeln aus (Landung 0 m, Tempo 0°, Bild byte-gleich), Bewegungsunschärfe aus (die Geschichte der zeitlichen Auflösung weicht ab 4 px Bewegung, Kanten-Energie in Drehung 3,6 → 12,5). Am main ROT (kein state.zugang).",
           schlupfloch: "Untertitel nur für Dialog, nicht für Rufe und Klang-Hinweise: die Ereignis-Liste ist die des Klang-Gesetzes.",
           aenderung: "Neu (Fehlliste B: Zugänglichkeit)."
         },

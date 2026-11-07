@@ -1,0 +1,68 @@
+{
+ "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
+ "geraet": "headless",
+ "zeit": "2026-11-06T23:42:57.032Z",
+ "host": "farm:42313665783",
+ "je": {
+  "ki.K1#2": {
+   "gruen": true,
+   "zahl": "41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 100.0 % (Soll 95), Absicht 100.0 % (Soll 85), Brüche 0, Negativ 9/9 ohne Tat benannt, p95 6291 ms (genannt)",
+   "exit": 1,
+   "minuten": 7.58,
+   "zeit": "2026-11-06T23:06:54.102Z",
+   "abdruck": "a8876f20dede",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42309443498/1"
+  },
+  "ki.K5#1": {
+   "gruen": false,
+   "zahl": "p95 Satz → Welt 6.29 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "exit": 1,
+   "minuten": 7.58,
+   "grund": "ROT: p95 Satz → Welt 6.29 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "zeit": "2026-11-06T23:06:54.102Z",
+   "abdruck": "30202ff53615",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42309443498/1",
+   "zwilling": "ki.K1#2"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0",
+   "exit": 0,
+   "minuten": 0.25,
+   "zeit": "2026-11-06T23:42:57.032Z",
+   "abdruck": "e999cb2ec8d6",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42313665783/1"
+  },
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "sprint 5.175 m/s 60.001 s: 0 von 4873 Bildern mit Lücke · gt 63.82 m/s 60.007 s: 2435 von 2609 Bildern mit Lücke (karte 209323, streu 1187, baum 82267, boden 212, bau 695, wuchs 5; a:-7775,-7714:karte karte 243 m · a:-7690,-7756:karte karte 234 m · a:-7702,-7436:karte karte 258 m) · Weg 4117 m, Ring 4, Takt p95 25.4 ms · ROT gt 2435 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "exit": 0,
+   "minuten": 2.42,
+   "grund": "ROT: sprint 5.175 m/s 60.001 s: 0 von 4873 Bildern mit Lücke · gt 63.82 m/s 60.007 s: 2435 von 2609 Bildern mit Lücke (karte 209323, streu 1187, baum 82267, boden 212, bau 695, wuchs 5; a:-7775,-7714:karte karte 243 m · a:-7690,-7756:karte karte 234 m · a:-7702,-7436:karte karte 258 m) · Weg 4117 m, Ring 4, Takt p95 25.4 ms · ROT gt 2435 Lücken-Bilder (Soll 0 Lücken-Bilder)",
+   "zeit": "2026-11-06T23:40:19.186Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42313375491/1"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "fertig beim Eintritt: boden 405/1590 (25.5 %, spät -1/-1/-1 s) · baum 253/7039 (3.6 %, spät -1/-1/-1 s) · karte 2201/10088 (21.8 %, spät -1/-1/-1 s) · bau 819/856 (95.7 %, spät -1/-1/-1 s) · wuchs 651/653 (99.7 %, spät 0.089/0.053 s) · streu 4/47 (8.5 %, spät -1/-1/-1 s) · ROT boden 25.5 %, baum 3.6 %, karte 21.8 % (Soll je Klasse ≥ 95 %)",
+   "exit": 0,
+   "minuten": 2.42,
+   "grund": "ROT: fertig beim Eintritt: boden 405/1590 (25.5 %, spät -1/-1/-1 s) · baum 253/7039 (3.6 %, spät -1/-1/-1 s) · karte 2201/10088 (21.8 %, spät -1/-1/-1 s) · bau 819/856 (95.7 %, spät -1/-1/-1 s) · wuchs 651/653 (99.7 %, spät 0.089/0.053 s) · streu 4/47 (8.5 %, spät -1/-1/-1 s) · ROT boden 25.5 %, baum 3.6 %, karte 21.8 % (Soll je Klasse ≥ 95 %)",
+   "zeit": "2026-11-06T23:40:19.186Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42313375491/1",
+   "zwilling": "streaming.K1#1"
+  }
+ }
+}

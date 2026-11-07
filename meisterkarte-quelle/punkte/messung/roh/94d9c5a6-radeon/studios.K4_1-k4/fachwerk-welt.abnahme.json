@@ -1,0 +1,118 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.204",
+  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 107
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 29.54,
+  "gestalt": [
+   "haus_viktorianisch w-haus_viktorianisch-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   34.462,
+   103.065,
+   28.631
+  ],
+  "blick": [
+   -0.78344,
+   -0.31457,
+   -0.53598
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 77.6,
+  "sigma": 38.7,
+  "schwarz": 0.0025,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 29.54 m · Luma 77.6 σ 38.7 schwarz 0.3 % weiß 0.0 % · Stand 18.546.204 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:viktorianisch:L\\d$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:viktorianisch:L2=255/80/80"
+  ],
+  "klassen": {
+   "f:viktorianisch:L2": {
+    "objekte": 4,
+    "spiegelTreue": -0.1047,
+    "spiegelEbene": 94.961,
+    "sp": [
+     582,
+     0,
+     0,
+     164750.67,
+     164750.67,
+     -17252.01
+    ],
+    "zweiton": 0,
+    "weiss": 0.0054,
+    "wt": 1106,
+    "wtZiel": null,
+    "bunt": 22.64,
+    "pixel": 205878,
+    "luma": 41.14,
+    "kante": 0.5809,
+    "kr": 4132,
+    "strich": 0.8067,
+    "si": 159585,
+    "bloecke": 2992,
+    "glatt": 0.7584,
+    "nyquist": 0.1108,
+    "beta": 2.3633
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\94d9c5a6-radeon\\studios.K4_1-k4\\fachwerk-welt.maske.png"
+ }
+}

@@ -1,0 +1,121 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.204",
+  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 157
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 2.74,
+   "deckung": 0.026,
+   "taeter": {
+    "welt_portal": 0.026
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 5.48,
+  "gestalt": [
+   "fahrzeug_gt w-fahrzeug_gt-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   8.295,
+   92.11,
+   19.056
+  ],
+  "blick": [
+   -0.78345,
+   -0.31457,
+   -0.53597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 98.5,
+  "sigma": 47.2,
+  "schwarz": 0.0061,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 5.48 m · Luma 98.5 σ 47.2 schwarz 0.6 % weiß 0.0 % · Stand 18.546.204 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:gt:L\\d$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:gt:L0=255/80/80",
+   "f:gt:L1=80/255/80"
+  ],
+  "klassen": {
+   "f:gt:L0": {
+    "objekte": 12,
+    "spiegelTreue": null,
+    "spiegelEbene": 90.341,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0.0002,
+    "weiss": 0.0161,
+    "wt": 6550,
+    "wtZiel": null,
+    "bunt": 16.22,
+    "pixel": 406508,
+    "luma": 40.84,
+    "kante": 0.2607,
+    "kr": 26138,
+    "strich": 0.617,
+    "si": 298650,
+    "bloecke": 5256,
+    "glatt": 0.6448,
+    "nyquist": 0.1555,
+    "beta": 2.259
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\94d9c5a6-radeon\\studios.K4_1-k4\\garage-welt.maske.png"
+ }
+}

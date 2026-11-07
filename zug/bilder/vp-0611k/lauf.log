@@ -1,0 +1,35 @@
+23:30:18 START gate:fern-ring (Frist 5 min)
+23:31:29 ENDE gate:fern-ring exit 0 nach 71 s
+23:31:29 START gate:schatten-bias (Frist 5 min)
+23:31:33 ENDE gate:schatten-bias exit 0 nach 4 s
+23:31:34 START gate:ziel-zensus (Frist 5 min)
+23:32:03 ENDE gate:ziel-zensus exit 0 nach 29 s
+23:32:03 START gate:analog-nah (Frist 5 min)
+23:32:34 ENDE gate:analog-nah exit 0 nach 31 s
+23:32:34 START gate:foundry-impostor (Frist 5 min)
+23:33:02 ENDE gate:foundry-impostor exit 0 nach 28 s
+23:33:03 START gate:pruefbuehne-licht (Frist 5 min)
+23:33:20 ENDE gate:pruefbuehne-licht exit 0 nach 17 s
+23:33:20 START gate:wasser-leben:bild (Frist 5 min)
+23:33:47 ENDE gate:wasser-leben:bild exit 0 nach 27 s
+23:33:47 START gate:post-kette (Frist 5 min)
+23:34:04 ENDE gate:post-kette exit 0 nach 17 s
+23:34:05 START gate:portal-membran (Frist 5 min)
+23:35:26 ENDE gate:portal-membran exit 0 nach 82 s
+23:35:26 START gate:ego-schatten (Frist 5 min)
+23:35:56 ENDE gate:ego-schatten exit 0 nach 30 s
+23:35:56 START gate:kamera-leib:echt (Frist 5 min)
+23:36:54 ENDE gate:kamera-leib:echt exit 0 nach 58 s
+23:36:54 START gate:verdeckungs-abfrage (Frist 5 min)
+23:37:23 ENDE gate:verdeckungs-abfrage exit 0 nach 29 s
+23:37:23 START gate:weltbild-frost:echt (Frist 8 min)
+23:39:48 ENDE gate:weltbild-frost:echt exit 0 nach 145 s
+23:39:49 START gate:tag-achse:echt (Frist 5 min)
+23:41:05 ENDE gate:tag-achse:echt exit 0 nach 76 s
+23:41:06 START gate:licht-weg:echt (Frist 5 min)
+23:42:02 ENDE gate:licht-weg:echt exit 0 nach 56 s
+23:42:02 START gate:naesse:echt (Frist 7 min)
+23:43:40 ENDE gate:naesse:echt exit 0 nach 98 s
+23:43:40 START gate:gpu-fehler (Frist 5 min)
+23:44:02 ENDE gate:gpu-fehler exit 0 nach 22 s
+23:44:02 SERIE ENDE

@@ -404,6 +404,10 @@ function probenUrteil(stationen) {
             }
             if (!u || u.gruen !== p.gruen)
                 falsch.push(schluessel(st) + " " + p.name + ": " + (u && u.gruen ? "GRÜN" : "ROT") + " statt " + (p.gruen ? "GRÜN" : "ROT") + " (" + (u ? u.zahl : "kein Urteil") + ")");
+            // DIE ZAHL BEIM NAMEN (`zahl`, w17-siedlung-abnahme): eine Probe kann sagen, was ihre Zahl nennen muss — ein ROT, das den
+            // Grund verschweigt („ohne Abnahme (Exit 0)" über einem geurteilten Schuss, siedlung.K4#2), ist eine falsche Probe
+            else if (p.zahl && !p.zahl.test(String(u.zahl || "")))
+                falsch.push(schluessel(st) + " " + p.name + ": die Zahl nennt nicht " + p.zahl + " (" + String(u.zahl || "").slice(-160) + ")");
         }
     return falsch;
 }
@@ -3478,6 +3482,9 @@ async function selbsttest(o = {}) {
         const luegt = probenUrteil([{ kriterium: "a.K1", staffel: 1, urteil: (j, l) => ({ gruen: /GRÜN/.test(l.stdout), zahl: "z" }),
             proben: [{ name: "Roh", stdout: "GRÜN", gruen: true }, { name: "Mutante", stdout: "ROT", gruen: true }] }]);
         pruef("PROBEN eine Probe, deren Urteil nicht stimmt, beim Namen", luegt.join() === "a.K1#1 Mutante: ROT statt GRÜN (z)", luegt.join());
+        const stumm = probenUrteil([{ kriterium: "a.K1", staffel: 1, urteil: (j, l) => ({ gruen: false, zahl: /GRUND/.test(l.stdout) ? "ROT: GRUND" : "ohne Abnahme" }),
+            proben: [{ name: "nennt", stdout: "GRUND", gruen: false, zahl: /GRUND$/ }, { name: "schweigt", stdout: "-", gruen: false, zahl: /GRUND$/ }] }]);
+        pruef("PROBEN eine Zahl, die ihren Grund verschweigt, beim Namen", stumm.join() === "a.K1#1 schweigt: die Zahl nennt nicht /GRUND$/ (ohne Abnahme)", stumm.join());
     }
     // (1c) DER LEERE LAUF (w4-sitzung-urteil): jede echte Station urteilt über ihn ROT — die Voraussetzung von keinUrteil; die Mutanten
     // (ein Urteil, das ohne Ausgabe GRÜN spricht, eines, das an ihr wirft) beim Namen
