@@ -417,22 +417,24 @@ function karteBauen(wurzel = ROOT) {
         }
         for (const r of geliefert) if (!gefuehrt.has(r)) datei.add(r);
         // die gelesenen Texte: das Glied, dessen Text `toString` liefert, sonst die Stelle in einer geführten Datei
+        // — und jedes Glied IN dem Text (ein Pfeil an evaluateOnNewDocument trägt `window.__wasserOrt`: sein Text reist mit)
         const roh = new Map();
         for (const r of gefuehrt) {
             const g = gliederVon(r);
-            for (const x of g.G) roh.set(g.t.slice(x.ts, x.e), [r, x.k]);
+            for (const x of g.G) roh.set(g.t.slice(x.ts, x.e), [r, x.ts]);
         }
         for (const t of new Set(texte)) {
             let hit = roh.get(t);
             if (!hit && t.length >= 40)
                 for (const r of gefuehrt) {
                     const i = gl.get(r).t.indexOf(t);
-                    if (i >= 0) {
-                        hit = [r, gliedUm(gl.get(r), i, i + t.length)];
-                        break;
-                    }
+                    if (i >= 0 && (hit = [r, i])) break;
                 }
-            if (hit) merk(txt, ...hit);
+            if (hit) {
+                const [r, i] = hit;
+                merk(txt, r, gliedUm(gl.get(r), i, i + t.length));
+                for (const x of gl.get(r).G) if (x.s >= i && x.e <= i + t.length) merk(txt, r, x.k);
+            }
             zaehler[hit ? "text" : "textFrei"]++;
         }
         const fege = [...txt].filter(([r, ks]) => ks.size * 2 >= new Set(gl.get(r).G.map((x) => x.k)).size).map(([r]) => r);
