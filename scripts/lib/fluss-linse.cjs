@@ -27,7 +27,7 @@ function flussLinse() {
     const haken = (w, bahn) => {
         const pm = w.postMessage.bind(w);
         w.postMessage = function (msg, tr) {
-            if (msg && msg.reqId)
+            if (msg?.reqId)
                 L.send.set(msg.reqId, {
                     type: msg.type,
                     p: msg.presetId,
@@ -175,8 +175,8 @@ function flussBericht() {
 function flussAuto() {
     const t = setInterval(() => {
         const f = r && r._foundry;
-        if (f && f.worker && !window.__fluss) window.__flussLinse();
-        if (f && f._warmCritical && !window.__flussBibliothekS) {
+        if (f?.worker && !window.__fluss) window.__flussLinse();
+        if (f?._warmCritical && !window.__flussBibliothekS) {
             window.__flussBibliothekS = Math.round(performance.now() / 100) / 10;
             clearInterval(t);
         }

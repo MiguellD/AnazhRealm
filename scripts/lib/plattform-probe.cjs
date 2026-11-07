@@ -284,7 +284,7 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
         .map(([n, g]) => `${n} ${g}`)
         .join(" · ");
     // Ein Satz ohne Transzendente (die Daten-Kerne): der Nenner 0 IST der Befund — ruft er eine, reißt die Zeile.
-    if (zeile && zeile.transzendentenFrei) {
+    if (zeile?.transzendentenFrei) {
         check(
             `PLATTFORM-PROBE ${satz}: transzendenten-frei — 0 verschiebbare Aufrufe in ${PP.faelle} Fällen, plattformgleich ohne Raster`,
             !nenner && urteil.rot.length === 0 && PP.faelle > 0,

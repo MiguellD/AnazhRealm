@@ -625,7 +625,7 @@ hauptLauf(async () => {
             }
             for (const lod of stufen[kind]) {
                 const z = budget[kind][lod];
-                if (z && z.karte) continue;
+                if (z?.karte) continue;
                 if (kernVonArt[kind]) {
                     for (let s = 1; s <= gestalten[preset]; s++)
                         welt.push({ presetId: preset, seed: s, lod, season: "summer" });
@@ -681,7 +681,7 @@ hauptLauf(async () => {
                 const V = Number.isInteger(G[preset]) ? G[preset] : G["*"];
                 for (const lod of stufen[kind]) {
                     const z = budget[kind][lod];
-                    if (z && z.karte) continue;
+                    if (z?.karte) continue;
                     for (let v = 1; v <= V; v++) {
                         if (gemessenFall.has(preset + "|" + v + "|" + lod)) continue;
                         const c = { presetId: preset, seed: v, lod, season: "summer" };
@@ -781,7 +781,7 @@ hauptLauf(async () => {
         console.log(`Bild-Tafel geschrieben: ${Object.keys(faelle).length} Fälle → ${path.relative(process.cwd(), TAFEL_BILD)}`);
         process.exit(0);
     }
-    if (wand && wand.budget && Array.isArray(wand.band)) {
+    if (wand?.budget && Array.isArray(wand.band)) {
         const B = wand.budget;
         // Die Kosten je Zeile: Maximum über alle gebauten Fälle, der Täter-Kandidat steht daneben.
         const zeilen = [];

@@ -1939,12 +1939,12 @@ async function checkBandKreaturKosten({ page, check }) {
         // Knochen der L0 (Identität je Name) — EIN Skelett je Gestalt; im Gang bleibt auch er in seiner Kugel.
         const zw = { meshes: 0, geskinnt: 0, knochen: 0, fremd: 0, geprueft: 0 };
         const wp = spawnAt(6, 0);
-        if (wp && wp.userData && wp.userData._tierBaum) {
+        if (wp?.userData?._tierBaum) {
             const v = new T3.Vector3();
             let l1Geo = null;
             wp.traverse((n) => {
                 for (const vl of n.__ofenVorlagen || [])
-                    if (vl && vl.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
+                    if (vl?.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
                         l1Geo = new Set();
                         vl.root.traverse((q) => {
                             if (q.isMesh && q.geometry) l1Geo.add(q.geometry);

@@ -872,7 +872,7 @@ async function probe() {
         for (const e of ist.feuer) P.removeArchitecture.call(r, e);
         // jeder warme Eintrag des Bestands steht in der warmen Menge
         const N2 = r._blockerNetz();
-        if (N2 && N2.warm)
+        if (N2?.warm)
             for (const e of st.architectures) if (e && e.heatBuildup > 0 && !N2.warm.has(e)) T.warmFehlt++;
     }
     aus.tag = T;
@@ -881,7 +881,7 @@ async function probe() {
     const schluessel = () => {
         const k = new Set(["rauch", "focusing", "radiating", "broadcasting", "balancing", "lifting", "isPortal"]);
         for (const e of st.architectures)
-            if (e && e.affordances) for (const a in e.affordances) if (e.affordances[a]) k.add(a);
+            if (e?.affordances) for (const a in e.affordances) if (e.affordances[a]) k.add(a);
         return [...k];
     };
     const filter = (k) =>

@@ -27,7 +27,7 @@
 function passName(scene, camera) {
     if (camera === st.camera) return "haupt";
     const csm = st.csmNode;
-    if (csm && csm.lights)
+    if (csm?.lights)
         for (let i = 0; i < csm.lights.length; i++)
             if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
     const dl = st.directionalLight;
@@ -169,7 +169,7 @@ function drawZensus(opts) {
                             const id = ein ? ein.get(i) : undefined;
                             if (id != null) w.eintraege.add(id);
                         }
-                    } else if (g && g.boundingSphere) {
+                    } else if (g?.boundingSphere) {
                         const c = g.boundingSphere.center;
                         miss(c.x, c.y, c.z);
                     } else miss(0, 0, 0);
@@ -292,7 +292,7 @@ function drawZensus(opts) {
         // die Vertex-Programme ohne Ziffern: liegt `programme.vertex` weit darüber, kompiliert die Welt je Objekt.
         const P = rend._pipelines;
         let programme = null;
-        if (P && P.programs) {
+        if (P?.programs) {
             const v = [...P.programs.vertex.values()].map((x) => x.code || "");
             programme = {
                 vertex: v.length,
@@ -730,7 +730,7 @@ async function gangLauf(page, pufferStand, b) {
         page.evaluate(() => {
             const n = {};
             for (const { userData: u } of st.creatures)
-                if (u && u._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+                if (u?._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });

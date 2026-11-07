@@ -254,8 +254,8 @@ function einschwingOffen(r) {
     const st = r.state;
     const f = r._foundry;
     const o = {};
-    if (f && f.warte && f.warte.length) o.foundryWarte = f.warte.length;
-    if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
+    if (f?.warte?.length) o.foundryWarte = f.warte.length;
+    if (f?.pending?.size) o.foundryImFlug = f.pending.size;
     // eine Lieferung, die angekommen ist und auf die Freigabe des Ingest-Takts wartet (`_foundryIngestTakt`), baut noch
     if (r._foundryIngestQueue && r._foundryIngestQueue.length) o.foundryIngest = r._foundryIngestQueue.length;
     const kb = (r._impostorBakeQueue || []).length;
@@ -1161,7 +1161,7 @@ function bandTabelle(u) {
         // der Inhalt jedes Satzes der Klasse je Pass (wer im EINEN Befehl liegt)
         for (const t of r.taeter)
             for (const [p, ih] of Object.entries(t.inhalt || {}))
-                if (ih && ih.length) z.push(`    ${t.klasse} ${p}: ${inhaltText(ih, 4)}`);
+                if (ih?.length) z.push(`    ${t.klasse} ${p}: ${inhaltText(ih, 4)}`);
     }
     z.push(
         pad("SUMME", 15) +

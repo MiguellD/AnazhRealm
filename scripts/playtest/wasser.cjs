@@ -610,7 +610,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
                 continue;
             }
             chunksWithIso++;
-            if (m && m.geometry) {
+            if (m?.geometry) {
                 isoMeshCount++;
                 isoMeshGeomTotal += m.geometry.getAttribute("position").count;
                 if (m.visible) isoMeshVisibleCount++;
@@ -985,7 +985,7 @@ async function checkBandV17117FarWater({ page, check }) {
         } catch (e) {
             return { ...out, error: "worker mesh failed: " + e.message };
         }
-        if (wm && wm.waterCells) {
+        if (wm?.waterCells) {
             out.mainCellCount = ocCells.length;
             out.workerCellCount = wm.waterCells.length;
             let mism = 0;
@@ -1816,8 +1816,8 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
         // DAS NÄCHSTE WASSER: See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
         // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
         const kand = [];
-        if (O && O.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });
-        if (O && O.fluss) kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
+        if (O?.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });
+        if (O?.fluss) kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
         const spot = kand
             .filter((k) => Number.isFinite(k.L))
             .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz))[0];
@@ -1828,7 +1828,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
         // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (das EINE Warten, welt-boot `__gebautNach`), mindestens 280 Takte
         const steht = () => {
             let n = 0;
-            for (const e of s.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
+            for (const e of s.voxelChunks.values()) if (e?.waterCells?.length) n++;
             return s.voxelChunks.size > 8 && n > 0;
         };
         const pumpe = async (i) => {

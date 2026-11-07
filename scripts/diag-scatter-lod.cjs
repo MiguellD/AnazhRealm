@@ -325,7 +325,7 @@ hauptLauf(async () => {
                 try { bS = r._archRegionBundleFor("s:9001,9001"); } finally { AR.SCATTER_FERN_SUPERREGION = S0; }
                 const b1 = r._archRegionBundleFor("9001,9001"), rad = (b) => b && b.userData.cullSphere && b.userData.cullSphere.radius;
                 fern.kugel = Math.abs(rad(bS) - (M * 3 * Math.SQRT1_2 + 140)) < 1e-6 && Math.abs(rad(b1) - (M * Math.SQRT1_2 + 140)) < 1e-6;
-                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
+                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg?.parent) bg.parent.remove(bg); }
             }
             // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).

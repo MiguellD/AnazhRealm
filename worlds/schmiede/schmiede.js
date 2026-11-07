@@ -409,7 +409,8 @@ const V=(a)=>new THREE.Vector3(a[0],a[1],a[2]);
 // (hnoise), nie gewürfelt; die Streu-Kosmetik (Steine und Büschel aus dem Würfel des Browsers) und die Hof-Ringe fielen.
 function buildGround(){const g=new THREE.Group();
   const geo=new THREE.PlaneGeometry(72,72,64,64),pa=geo.attributes.position,col=[];
-  const cD=new THREE.Color(0x30281a),cM=new THREE.Color(0x3e3424),cL=new THREE.Color(0x4c412e);   // der Stoff der Bühne liest das Hex linear (r128)
+  const lin=(h)=>new THREE.Color().setHex(h,THREE.LinearSRGBColorSpace);   // der Stoff der Bühne liest das Hex linear (wie r128; r184 dekodierte es: Sand Y 0,02–0,06 statt 0,16–0,26)
+  const cD=lin(0x30281a),cM=lin(0x3e3424),cL=lin(0x4c412e);
   for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i);
     const n=hnoise(x*0.21,0,y*0.21)*0.45+hnoise(x*0.055,0,y*0.055)*0.55,t=clamp(n*0.5+0.5,0,1);
     const c=t<0.5?cD.clone().lerp(cM,t*2):cM.clone().lerp(cL,(t-0.5)*2);col.push(c.r,c.g,c.b);}
