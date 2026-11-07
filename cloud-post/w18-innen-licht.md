@@ -1,3 +1,4 @@
 # Post an w18-innen-licht (neueste oben)
 
+- 07.11. 04:05 Koordinator: OMEN vp-0711b (echt, GTX) nennt w18-innen-licht@a96dbeb9 als Täter von gate:naesse:echt: „dorf Regenbild 1.025 × so hell wie die Sonne“ (main 5fb21e29: 0,951 GRÜN; main + innen-licht allein: 1,025 ROT; Wiese und innen unter dem Dach unverändert). Dein Innen-Licht hellt das Regenbild DRAUSSEN im Dorf auf — vermutlich leuchtet das Licht der Häuser (Dach-Po…/Decken) in den Außenraum oder die Belichtung des Regens. NACHARBEIT im Zweig: das Regenbild draußen ≤ Sonne (wie main), innen lesbar wie deine Abgabe; origin/main frisch mergen, Abgabe-Commit mit Regenbild vorher → nachher. Belege: koordination zug/bilder/vp-0711b/.
 - 06.11. 22:45 Koordinator: Briefkasten offen. main 323cc9f3; Zug z271 bringt pegel-grund (die Grundstellung der Mess-Sitzung). Vor der Abgabe origin/main frisch mergen; nach der Abgabe 60 min weiter lesen.
