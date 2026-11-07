@@ -1,7 +1,7 @@
 {
  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
  "geraet": "gtx",
- "zeit": "2026-11-07T21:45:04.819Z",
+ "zeit": "2026-11-07T21:50:22.788Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K2#1": {
@@ -151,22 +151,37 @@
    "bahn": "sitzung",
    "zwilling": "material.K1#1",
    "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-07T21:50:22.788Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T21:44:29.078Z",
+  "start": "2026-11-07T21:49:46.551Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
+  "warten": 0.01,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 27.4,
-    "takte": 758,
+    "vor": "leib.K4#2",
+    "s": 27.5,
+    "takte": 722,
     "chunks": 81,
     "nach": null
    }
@@ -175,20 +190,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4399,
-   "frameP95": 33.4,
-   "taktP95": 32.34,
-   "vramMax": 138.9,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 121,
+   "zapfen": 115,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 124.1,
-  "minuten": 2.14
+  "fahrtS": 119.7,
+  "minuten": 2.05
  }
 }
