@@ -1,0 +1,5 @@
+w0 umstellen --ort wiese
+wiese bild -280.4 +1.7 -1045.6 -289.6 +1.2 -1049.5 --uhr 0.5 --w 1280 --h 720
+wiesehoch bild -280.4 +12 -1045.6 -330 +0 -1066 --uhr 0.5 --w 1280 --h 720
+s0 umstellen --ort stadt
+stadt bild 552.2 +1.7 416 609.1 +1.2 419 --uhr 0.5 --w 1280 --h 720

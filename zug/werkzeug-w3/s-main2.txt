@@ -1,0 +1,3 @@
+l0 umstellen --ort wiese --sicht third
+leibnah bild -280.4 +1.7 -1045.6 -289.6 +1.2 -1049.5 --spieler --gesicht 0.9 --uhr 0.5 --w 1280 --h 720
+leibfern bild -280.4 +1.7 -1045.6 -289.6 +1.2 -1049.5 --spieler --gesicht 3.0 --uhr 0.5 --w 1280 --h 720

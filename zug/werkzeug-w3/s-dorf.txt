@@ -1,0 +1,3 @@
+d0 umstellen --ort dorf
+regen bild -841 +1.7 -861 -834.1 +1.5 -853.8 --wetter rainy --uhr 0.5 --w 1280 --h 720
+regenabend bild -841 +1.7 -861 -834.1 +1.5 -853.8 --wetter rainy --uhr 0.8 --w 1280 --h 720

@@ -1,0 +1,2 @@
+s0 umstellen --ort stadt
+stadt bild 552.2 +1.7 416 609.1 +1.2 419 --uhr 0.5 --w 1280 --h 720
