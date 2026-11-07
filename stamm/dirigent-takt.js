@@ -677,19 +677,22 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
-    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
-    // Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine Aufgabe zu halten.
+    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`, seit
+    // wann), ist das Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine
+    // Aufgabe zu halten. DIE WARTEZEIT IST DAS GUTHABEN (`ladeGuthaben`): das fällige Bild baut so lange, wie die Schuld wartete
+    // (`_knotenRate`) — hielt die GPU-Leine die Bilder (swiftshader: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der
+    // Haupt-Faden 2,3 s belegt), wartete der Bau auf ein Bild, nie auf den Faden.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
         const E = this._erstZeichnung;
-        const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
+        const schuld = !!E && E.ladeSchuld != null && L.ladeVorher !== true;
         if (
             schuld ||
             jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
             this._weltbildLuecken().length === 0
         ) {
-            if (E) E.ladeSchuld = false;
+            if (E) [E.ladeGuthaben, E.ladeSchuld] = [E.ladeSchuld != null ? jetzt - E.ladeSchuld : 0, null];
             L.ladeBild = jetzt;
             L.ladeVorher = true;
             return true;
