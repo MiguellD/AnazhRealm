@@ -8,7 +8,7 @@ async function probeLeben(expected) {
     await __weltDa();
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
+    await __weltDa(() => f?.ready && f.recipes?.gt && st.blueprints?.fahrzeug_gt);
     const P = Object.getPrototypeOf(r);
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
@@ -591,20 +591,25 @@ async function probeLeben(expected) {
     // (`gleich`, von keiner Station gefahren): 8 300 gezeichnete Bilder für 2 440 m, headless 145 s Fahrt, 180 s samt Orten — der
     // Deckel der Station (45 s, versuchsweise 80 s) riss jede Fahrt der Radeon, ehe eine Zeile kam („Ort im Deckel 1618 m“ ist der
     // Ort 4,−7 + 30 m von der Mess-Wiese, an dem die Probe die Orte weckt). Jetzt 2 025 Bilder, dasselbe Urteil (89,3 %).
+    // DIE WAHRHEIT VOR DEM URTEIL: jeder Ort der Route und seine Nachbarschaft stehen nach dem Gesetz (`_wegenetzNachbarn`, offen,
+    // solange eine Stelle auf ihr Wasser wartet — die Frage bestellt es), ehe der erste erwacht. Bis w19-fahrt-ziel-2 fragte die
+    // Probe einmal vor den Orten (der offene Ort seit tiere.K1#2 undefined): an f69173b0 warf `ort.x` (Radeon, in der Sitzung nach
+    // 29,8 s), und das Wegenetz merkte jeden offenen Ort ohne Nachbarn. Am Gate (Radeon, frische Welt) sind alle sechs Orte offen,
+    // ihr Wasser steht nach 2,1 s.
     const wegenetz = async (o) => {
-        await __weltDa(() => A._siedlungGesetz());
+        await __weltDa(() => A._siedlungGesetz() && o.orte.every((k) => r._wegenetzNachbarn(k)));
         let i = 0;
         const bild = () => (i++, r._gameLoopTick((tMs += 1000 * A.TAKT_DECKEL_S)));
-        const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._zellOrt(k));
+        const orte = o.orte.map((k) => r._zellOrt(k));
         for (const ort of orte) {
             stelle(ort.x + 30, ort.z + 30, 2);
             await __gebautNach("der Ort " + ort.key, {
                 takt: bild,
-                fertig: () => (r._bewohnerSiedlungen || new Map()).has(ort.key),
+                fertig: () => r._bewohnerSiedlungen?.has(ort.key),
             });
         }
         await Promise.all([...r._wegenetzKanten.values()].map((k) => k.fertig));
-        const [W, Z] = [{ x: mo[0], z: mo[1] }, orte[orte.length - 1]];
+        const [W, Z] = [{ x: mo[0], z: mo[1] }, orte.at(-1)];
         const route = o.mutante ? [W, Z] : r._wegenetzRoute([W, Z]);
         if (!route) throw new Error("das Wegenetz trägt keine Route von der Wiese zum Ort " + Z.key);
         const [a, c] = route;
@@ -612,7 +617,7 @@ async function probeLeben(expected) {
         const F = r.fahrerSetzen(route);
         const b = { wiese: 0, wald: 0, dorf: 0, weg: 0, n: 0 };
         const p = st.playerMesh.position;
-        const nah = (x, m) => x && x.position && flach(x.position, p) < m;
+        const nah = (x, m) => x?.position && flach(x.position, p) < m;
         // DAS ENDE OHNE ZIEL beim Namen: steht der Wagen 5 · `festS` ohne Fortschritt (der Fahrer zählte ihn nach `festS` als
         // Steckenbleiber), endet die Probe mit der Zeile — `lage` ist, wo er steht; nach 6 000 Bildern (600 s Sim-Zeit) endet sie
         // ohne Ziel. Bis hier fuhr der stehende Wagen stumm bis zum 30 000. Bild, und der Deckel schnitt die Zeile ab
@@ -622,7 +627,7 @@ async function probeLeben(expected) {
             if (F.s < bis) continue;
             bis = F.s + 10; // je 10 m der Route: steht der Wagen auf Weg und Feldweg, welcher Boden trägt ihn
             const baeume = st.architectures.filter((x) => nah(x, 15) && r._istNatur(x) && /^baum_/.test(x.type)).length;
-            b[st.architectures.some((x) => x && x.tuer && nah(x, 25)) ? "dorf" : baeume >= 3 ? "wald" : "wiese"]++;
+            b[st.architectures.some((x) => x?.tuer && nah(x, 25)) ? "dorf" : baeume >= 3 ? "wald" : "wiese"]++;
             [b.weg, b.n] = [b.weg + r._aufWeg(p.x, p.z, 0), b.n + 1];
         }
         r.fahrerSetzen(null);
@@ -2885,7 +2890,7 @@ async function probeKoerper(opt) {
     await __weltDa();
     const A = Object.getPrototypeOf(r).constructor;
     const f = r._ensureAssetFoundry();
-    await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
+    await __weltDa(() => f?.ready && f.recipes?.gt && st.blueprints?.fahrzeug_gt);
     const res = { err: null };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     let tMs = performance.now();
