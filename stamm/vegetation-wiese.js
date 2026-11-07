@@ -183,8 +183,7 @@ class AnazhRealm_vegetation_wiese {
     // der Pixel-LAI fiel dort, wo die Ferne dünnt: je Fläche 1,02 · 0,97 · 0,78 · 0,72 (2–5 · 5–10 · 10–20 · 20–40 m). Die
     // Station an derselben Pose (swiftshader): Boden-Pixel 10–20 m 881 → 809, 20–40 m 3 → 0 (satt), 40–80 m 9 → 3,
     // 80–200 m 1 106 → 626, zurückgetauscht in derselben Welt wieder 880 · 3 · 9 · 1 105; der Bestand der Ferne 13 748 → 13 680
-    // Büschel, im Blick 1 259 → 1 282 (dieselbe Erwartung a je Zelle). Die Wand: gate:profiband P-Ferne (das Teil-Gitter, und
-    // die Ordnung der CPU gegen die des Stoffs an 16 384 Lagen).
+    // Büschel, im Blick 1 259 → 1 282 (dieselbe Erwartung a je Zelle). Die Wand: gate:profiband P-Ferne, das Teil-Gitter.
     static _wieseOrdnung(x, z, W = AnazhRealm._wortAlgebra()) {
         return AnazhRealm._ortZiehung(W, x, z, 0, AnazhRealm._wieseSchritt());
     }

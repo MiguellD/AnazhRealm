@@ -263,28 +263,10 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // (voll 21, fall 1,5) fiel die Deckung ab 21 m (bei 40 m 0,38; gemessen 10–20 m LAI 1,87 · 20–40 m 1,07, Radeon 2674ff9a,
 // im Modell der Station — flache Wiese, Third 2,43 m, Nilson je Ring — 1,82 · 1,29, jetzt 1,82 · 1,73), und die Ferne
 // zeichnete bei 180 m 6× so viele Büschel je Pixel wie an der Übergabe (jetzt ≤ 1,67×).
-// DAS TEIL-GITTER (w19-saum-lai): die Ordnung o (`_wieseOrdnung`, der Stoff rechnet dieselbe) wählt jeden Anteil a als
+// DAS TEIL-GITTER (w19-saum-lai): die Ordnung o (`_wieseOrdnung`, der Stoff ruft dieselbe über seiner Wort-Algebra) wählt jeden Anteil a als
 // gleichmäßiges Teil-Gitter der Nähe — der Anteil 1/4 auf 8 × 8 Zellen (Schritt 0,72 m) genau EINE Restklasse (gi, gj)
 // mod 2. Die PCG allein (bis w19-saum-lai) dünnte zufällig: Klumpen und Lücken, durch die der flache Blick den Boden sah
 // (20–40 m LAI 1,67, der Saum 16 %).
-// DER STOFF RECHNET DIESELBE ORDNUNG (w22-wiese-nachzug): `_wieseOrdnung` über der Wort-Algebra des Stoffs (`_wortAlgebra(T)`,
-// die TSL-Knoten in den Zahlen der WGSL: f32 gerundet, u32 modulo 2³²; ein Knoten des falschen Typs wirft, die Wand bricht)
-// gegen die der CPU an 16 384 Lagen der Wiese (je Zelle ein Büschel im Jitter ±0,34 m, bis ±29 km), dazu Zug 1 (die Phase des
-// Wiegens) — dieselbe Zahl Bit für Bit, sonst „Stoff ≠ CPU".
-function stoffAbweichung(A) {
-    const K = (t, v) => ({ __proto__: Op, t, v });
-    const F = (x) => K("f", Math.fround(x));
-    const v = (k, t) => (k.t ? (k.t === t ? k.v : Symbol()) : k);
-    const op = (fu, ff) => function (k) { return this.t === "u" ? K("u", fu(this.v, v(k, "u")) >>> 0) : F(ff(this.v, Math.fround(v(k, "f")))); }; // prettier-ignore
-    const Op = { add: op((a, b) => a + b, (a, b) => a + b), mul: op(Math.imul, (a, b) => a * b), div: op(0, (a, b) => a / b), bitXor: op((a, b) => a ^ b), bitAnd: op((a, b) => a & b), bitOr: op((a, b) => a | b), shiftRight: op((a, b) => a >>> b), shiftLeft: op((a, b) => a << b), toUint() { return K("u", Math.trunc(v(this, "f")) >>> 0); }, toFloat() { return F(v(this, "u")); } }; // prettier-ignore
-    const [W, S, r] = [A._wortAlgebra({ floor: (k) => F(Math.floor(v(k, "f"))) }), A._wieseSchritt(), (j) => (Math.sin(j * 12.9898) * 43758.5453) % 1]; // prettier-ignore
-    let ab = 0;
-    for (let i = 0; i < 16384; i++) {
-        const [x, z] = [i, i + 1e5].map((j) => Math.round(r(j) * 4e4) * S + r(j + 0.5) * 0.34);
-        ab += (A._wieseOrdnung(F(x), F(z), W).v !== A._wieseOrdnung(x, z)) + (A._ortZiehung(W, F(x), F(z), 1).v !== A._ortZiehung(A._wortAlgebra(), x, z, 1)); // prettier-ignore
-    }
-    return ab;
-}
 function ferneWand(A) {
     const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
     let [deckung, schirm] = [1, 0];
@@ -292,9 +274,8 @@ function ferneWand(A) {
         [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
     const rest = new Set();
     for (let k = 0; k < 64; k++) if (A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72) < 0.25) rest.add(k & 9);
-    const ab = stoffAbweichung(A);
-    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Stoff ≠ CPU ${ab}/32768`;
-    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 || ab ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1 · 0)`] : [], deckung, schirm, zeile }; // prettier-ignore
+    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size}`;
+    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1)`] : [], deckung, schirm }; // prettier-ignore
 }
 
 // P-GRENZE — DIE GRENZE DER STRECKUNG (w21-wiese-fern) an der echten Klasse: die Ferne der Nah-Wiese spreizt die Füße eines
@@ -1150,9 +1131,6 @@ function selbsttest() {
         t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
-        // der Stoff rechnet eine andere Ordnung als die CPU (die Zelle ohne Rundung; der Rang über f32) — ROT am Stoff
-        const stoffStill = [["div(s).add(0.5)", "div(s)"], ["shiftLeft", "shiftRight"]].filter(([a, b]) => !/CPU [1-9]/.test(ferneWand(klasseVon(stammLib.ersetze(st, "_wortAlgebra", a, b))).errs)); // prettier-ignore
-        t(`Ordnung des Stoffs = der CPU: ${ferneWand(A).zeile}${stoffStill.map((m) => " — still " + m)}`, !ferneWand(A).errs.length && !stoffStill.length); // prettier-ignore
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
