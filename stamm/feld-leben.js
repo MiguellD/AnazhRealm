@@ -2072,6 +2072,7 @@ class AnazhRealm_feld_leben {
     // des Bestands, negativ; Ökologie K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
     _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
         if (!amount || !Number.isFinite(amount)) return;
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
         if (!this.state.lifeField) this.state.lifeField = new Map();
         const lf = this.state.lifeField;
         const cfg = AnazhRealm.LIFE_FIELD;
@@ -2105,6 +2106,234 @@ class AnazhRealm_feld_leben {
                 AnazhRealm._lebenWecken(this, key, now);
             }
         }
+    }
+
+    // DIE TAT-UHR (feld.K2#2, Lockstep: Zufall und Takt nur aus Saat, Welt-Uhr und Eingaben). Das Feld schreiben das Gesetz des
+    // Bestands (Fraß und Tod im Takt der Welt-Uhr, `_feldTakt` — jede Seite rechnet es selbst) und die EINGABEN: was eine Seite
+    // schreibt, die ein Mitspieler nicht selbst rechnet — der Nexus und seine Gesetze, das Gemüt, die eigenen Wesen (die Gabe
+    // ihrer Geburt, ihr Träufeln, die Annahme eines Leibs in den Bestand, sein Fall außerhalb des Gesetzes), der Tod des Spielers
+    // — und der Akt des Spielers, dessen Programm reist (die Pflege im Gespräch). Jede Eingabe ist ein FELD-AKT mit dem Stempel der
+    // Welt-Uhr `w` in der EINEN Reihe der Akte (`feldAkte`, nach Stempel und Inhalt), und sie wirkt auf jeder Seite zur selben
+    // Welt-Zeit in derselben Folge mit den Takten des Bestands (`_feldTakt`); wo ihr Programm nicht reist (`reist`), reist sie
+    // selbst über den dsl-Kanal (`feld`). Mit Mitspielern wirkt sie `FELD_VORLAUF_S` nach ihrem Stempel — die Frist, in der jeder
+    // Akt jede Seite erreicht (der Vorlauf des Lockstep), allein sofort; ein Akt, der später kam, wirkt bei Ankunft. Bis feld.K2#2
+    // schrieb jede Seite sofort an ihrer Bild-Uhr, die Pflege des Mitspielers zur Ankunft, jede Seite nahm ihre eigenen Leiber in
+    // ihren Bestand, und das Leben zweier Seiten lief auseinander (gate:mp-sync (f): 15 von 1 172 Zellen gleich, nach dem Reload 0).
+    _feldAkt(akt, reist, sofort = true, fremd = false) {
+        const st = this.state;
+        const A = st.feldAkte || (st.feldAkte = []);
+        akt.k = akt.k || JSON.stringify([akt.art, akt.key, akt.id, akt.x, akt.z, akt.a]);
+        let i = A.length;
+        while (i > 0 && (A[i - 1].w > akt.w || (A[i - 1].w === akt.w && A[i - 1].k > akt.k))) i--;
+        const gewirkt = this._feldAktGewirkt || (this._feldAktGewirkt = new Map());
+        const id = akt.w + "|" + akt.k;
+        // ein Akt eines Mitspielers, doppelt empfangen (nachgeholt, über zwei Wege), ist einer; die eigenen zählt die Seite selbst
+        if (fremd && ((i > 0 && A[i - 1].w === akt.w && A[i - 1].k === akt.k) || gewirkt.has(id))) return false;
+        this._lebenGen = (this._lebenGen || 0) + 1;
+        if (reist) {
+            const feld = Object.assign({}, akt);
+            delete feld.k; // der Schlüssel der Reihe ist die Sache jeder Seite
+            this._aktSenden({ type: "dsl", w: akt.w, feld });
+        }
+        if (sofort && akt.w <= this._feldHorizont() && !A.some((x) => x.w <= akt.w)) {
+            const wirkt = this._feldAktWirkt(akt);
+            return akt.art === "brand" ? wirkt : true; // das Entfachen sagt, ob die Zelle fing
+        }
+        A.splice(i, 0, akt);
+        return true;
+    }
+
+    // DER FELD-AKT EINES MITSPIELERS (`_p2pMsgDsl`, `feld`): fremde Bytes — nur, was ein Akt sein kann, mit endlichen Zahlen; sein
+    // Stempel `w` ist der des Absenders.
+    _feldAktFremd(f, w, sofort = true) {
+        const zahl = (v) => Number.isFinite(v);
+        if (!f || typeof f !== "object" || !zahl(w)) return false;
+        if (f.art === "leben")
+            return zahl(f.x) && zahl(f.z) && zahl(f.a) && Math.abs(f.a) <= 1
+                ? this._feldAkt({ art: "leben", w, x: f.x, z: f.z, a: f.a }, false, sofort, true)
+                : false;
+        if (f.art === "brand")
+            return zahl(f.x) && zahl(f.z)
+                ? this._feldAkt({ art: "brand", w, x: f.x, z: f.z }, false, sofort, true)
+                : false;
+        const key = typeof f.key === "string" && /^-?\d+,-?\d+$/.test(f.key) ? f.key : null;
+        const id = typeof f.id === "string" && f.id.length <= 96 ? f.id : null;
+        if (!key || !id) return false;
+        if (f.art === "aus") return this._feldAkt({ art: "aus", w, key, id }, false, sofort, true);
+        const t = f.tier;
+        const L = AnazhRealm._lebensraumGesetz().L.gattung;
+        if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
+        if (![t.bs, t.alterS, t.x, t.z].every(zahl)) return false;
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, bs: t.bs, alterS: t.alterS, x: t.x, z: t.z };
+        tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
+        tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
+        return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort, true);
+    }
+
+    // DAS LEBEN DER WELT IM STAND (feld.K2#2): der Bestand der NAHEN Regionen (Takt, Zähler der Geburt, die Tiere ohne ihre
+    // Zeichnung), das Feld über ihnen samt dem Saum einer Zelle (je Zelle Betrag und Stempel, wie die Karte sie trägt — auch die
+    // Tote, die erst die nächste Schrift räumt, `_feldTod`) und die Akte, die noch wirken oder eben wirkten — ein Reload setzt
+    // denselben Zustand fort, den der Mitspieler weiterrechnet. Nur das Nahe reist: der Stand wächst nie mit dem Weg (speicher.K3);
+    // eine ferne Region holt ihre Stunde nach, wenn sie wieder nah wird (`_bestandRegion`). Eine Funktion seiner Marke (`_lebenGen`,
+    // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
+    // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers.
+    _lebenImStand(nahe = this._bestandNah()) {
+        const st = this.state;
+        const seed = (st.worldMeta && st.worldMeta.seed) || "";
+        const F = st.faunaBestand && st.faunaBestand.seed === seed ? st.faunaBestand.regionen : {};
+        const [S, cs] = [this._bestandSeite(), AnazhRealm.LIFE_FIELD.cell];
+        const bestand = {};
+        const kacheln = [];
+        for (const key of nahe) {
+            const [ix, iz] = key.split(",").map(Number);
+            kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
+            const R = F[key];
+            if (!R) continue;
+            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name }) => ({
+                id,
+                soul,
+                g,
+                bs,
+                alterS,
+                x,
+                z,
+                v,
+                name,
+            }));
+            bestand[key] = { t: R.t, seq: R.seq, tiere };
+        }
+        const nah = (k) => {
+            const [x, z] = k.split(",").map((n) => (Number(n) + 0.5) * cs);
+            return kacheln.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
+        };
+        const feld = [...(st.lifeField || [])].filter(([k]) => nah(k)).map(([k, e]) => [k, e.a, e.t]);
+        const akte = (st.feldAkte || []).map(({ k: _k, ...a }) =>
+            a.art === "annahme" ? { ...a, tier: { ...a.tier } } : a
+        );
+        // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
+        const G = [...(this._feldAktGewirkt || [])];
+        const bis = Math.max(-Infinity, ...G.map(([, w]) => w)) - 2 * AnazhRealm.AKT_NACHHOL_S;
+        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k) };
+    }
+    _lebenAusStand(v) {
+        const st = this.state;
+        const L = AnazhRealm.LIFE_FIELD;
+        const zahl = (x) => Number.isFinite(x);
+        const jetzt = st.spielZeit;
+        if (!v || typeof v !== "object") return; // ein Stand ohne Leben (vor feld.K2#2) lässt das Leben der Sitzung stehen
+        const lf = (st.lifeField = new Map());
+        [this._lebenStand, this._lebenWecker, this._annahmeOffen] = [null, null, null];
+        st.feldAkte = [];
+        st.faunaBestand = undefined;
+        this._lebenGen = (this._lebenGen || 0) + 1;
+        const gewirkt = (this._feldAktGewirkt = new Map());
+        for (const k of Array.isArray(v.gewirkt) ? v.gewirkt : [])
+            if (typeof k === "string" && k.length < 400) gewirkt.set(k, Number(k.split("|")[0]));
+        for (const z of Array.isArray(v.feld) ? v.feld : []) {
+            if (!Array.isArray(z) || typeof z[0] !== "string" || !zahl(z[1]) || !zahl(z[2]) || !(Math.abs(z[1]) <= 1))
+                continue;
+            const zelle = { a: z[1], t: z[2] };
+            lf.set(z[0], zelle);
+            // ihr Tod ins Rad, ohne zu räumen: die Karte trägt, was die des Mitspielers trägt, bis die nächste Schrift räumt
+            const tod = z[2] + Math.max(0, Math.log(Math.abs(z[1]) / L.epsilon)) / L.decayPerSec;
+            this._feldTod(lf, z[0], zelle, tod, -Infinity);
+            AnazhRealm._lebenWecken(this, z[0], jetzt);
+        }
+        const R = this._bestandRegionen().regionen;
+        const LG = AnazhRealm._lebensraumGesetz().L.gattung;
+        for (const [key, r] of Object.entries(v.bestand && typeof v.bestand === "object" ? v.bestand : {})) {
+            if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Number.isInteger(r.seq) || !Array.isArray(r.tiere))
+                continue;
+            const tiere = r.tiere.filter(
+                (t) =>
+                    t &&
+                    typeof t.id === "string" &&
+                    typeof t.soul === "string" &&
+                    t.g in LG &&
+                    [t.bs, t.alterS, t.x, t.z].every(zahl)
+            );
+            R[key] = { t: r.t, seq: r.seq, tiere: tiere.map((t) => ({ ...t, v: t.v == null ? null : String(t.v) })) };
+        }
+        // die offenen Akte treten in die Reihe (sie wirken in der Folge mit den Takten, nie beim Laden)
+        for (const a of Array.isArray(v.akte) ? v.akte : [])
+            if (a && typeof a === "object") this._feldAktFremd(a, a.w, false);
+    }
+
+    // DIE AKTE DER SEITE REISEN NACH (feld.K2#2): wer beitritt — ein neuer Mitspieler, eine Seite nach ihrem Reload —, trägt die
+    // Akte nicht, die zwischen seinem Stand und seinem Beitritt fielen. Jede Seite merkt sich ihre eigenen gesendeten Akte (Feld-Akte,
+    // Wünsche der Welt) der letzten AKT_NACHHOL_S und sendet sie dem Beitretenden erneut (`_p2pMsgPeerJoin`); der Empfänger trägt
+    // jeden Akt einmal (je Stempel und Inhalt, `_feldAkt`, `_wunschNimm`), auch über seinen Stand hinweg.
+    _aktSenden(msg) {
+        const L = this._eigeneAkte || (this._eigeneAkte = []);
+        const alt = this.state.spielZeit - AnazhRealm.AKT_NACHHOL_S;
+        while (L.length && !(L[0].w >= alt)) L.shift();
+        L.push(msg);
+        this.p2pSend(Object.assign({}, msg));
+    }
+    _akteNachholen() {
+        const alt = this.state.spielZeit - AnazhRealm.AKT_NACHHOL_S;
+        for (const m of this._eigeneAkte || []) if (m.w >= alt) this.p2pSend(Object.assign({}, m));
+    }
+
+    // DER HORIZONT DES FELDS (s, Lockstep): bis zu welcher Welt-Zeit die Folge der Takte und Akte (`_feldTakt`) gerechnet werden darf —
+    // allein bis zur Uhr; mit Mitspielern bis zur frühesten Welt-Uhr, die einer von ihnen zuletzt trug (`pos.w`, `weltUhr` am Eintrag:
+    // jeder seiner späteren Akte trägt einen Stempel danach), weniger dem Vorlauf (die Frist, in der ein Akt jede Seite erreicht,
+    // auch über zwei Wege). So überholt keine Seite einen Akt, der noch reist — auch nicht, wenn ihre Uhr springt: bis feld.K2#2
+    // rechnete A die 20 min eines Sprungs sofort nach, und die Akte, die B davor gestempelt hatte, kamen zu spät (der Bestand einer
+    // Region lief ab dem fünften Wurf auseinander).
+    _feldHorizont() {
+        const st = this.state;
+        const p2p = st.p2p;
+        let h = st.spielZeit;
+        if (!(p2p && p2p.enabled && p2p.peers && p2p.peers.size)) return h;
+        for (const e of p2p.peers.values()) if (Number.isFinite(e.weltUhr)) h = Math.min(h, e.weltUhr);
+        return h - AnazhRealm.FELD_VORLAUF_S;
+    }
+
+    // Ein Feld-Akt wirkt — zu SEINER Zeit (die Spiel-Uhr steht für ihn auf `w`, was er schreibt, trägt diesen Stempel): Leben an
+    // einem Ort (`leben`), ein Tier tritt in den Bestand seiner Region (`annahme`, der Leib der Seite, die es annahm, zeichnet es)
+    // oder verlässt ihn (`aus`: sein Leib fiel außerhalb des Gesetzes — eine Zeichnung des Tiers auf dieser Seite geht, sobald
+    // sie außer Blick steht).
+    _feldAktWirkt(akt) {
+        const st = this.state;
+        const jetzt = st.spielZeit;
+        const gewirkt = this._feldAktGewirkt || (this._feldAktGewirkt = new Map());
+        gewirkt.set(akt.w + "|" + akt.k, akt.w);
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand
+        st.faunaLifecycle.feldLetzt = akt.w; // das zuletzt gerechnete Ereignis der Folge des Felds (`_feldTakt`)
+        if (gewirkt.size > 512)
+            for (const [k, w] of gewirkt) if (w < jetzt - 2 * AnazhRealm.AKT_NACHHOL_S) gewirkt.delete(k);
+        st.spielZeit = akt.w;
+        try {
+            if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a);
+            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z);
+            const R = this._bestandRegion(akt.key, false);
+            if (akt.art === "annahme") {
+                const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
+                if (offen) this._annahmeOffen.delete(akt.id);
+                if (R.tiere.some((t) => t.id === akt.id)) return;
+                const t = offen || Object.assign({}, akt.tier, { id: akt.id });
+                delete t.zu;
+                R.tiere.push(t);
+                return;
+            }
+            const i = R.tiere.findIndex((t) => t.id === akt.id);
+            if (i < 0) return;
+            const [t] = R.tiere.splice(i, 1);
+            if (t.leib) [t.leib.userData._bestand, t.leib.userData._ohneTier, t.leib] = [null, true, null];
+        } finally {
+            st.spielZeit = jetzt;
+        }
+    }
+
+    // DIE GABE EINER EINGABE (jedes Leben, das nicht das Gesetz des Bestands schreibt): ein Feld-Akt zur Welt-Uhr seines Akts.
+    // Der empfangene Akt eines Mitspielers (`ctx.akt`) wirkt zu dessen Stempel; ein Programm des Spielers reist selbst
+    // (`dslRun`), ein Gesetz eines Spielers trägt jede Seite selbst — beide reisen nicht noch einmal; alles andere reist.
+    _lebenGabe(x, z, a, ctx) {
+        const gesetz = !!(ctx && ctx.regel && this._gesetzGeber(ctx.regel)); // ein Gesetz eines Spielers: zur Zeit seiner Scheibe
+        const reistSelbst = !!(ctx && ctx.akt) || (ctx && ctx.source === "human") || gesetz;
+        const w = ctx && (ctx.akt || gesetz) && ctx.uhr != null ? ctx.uhr : this.state.spielZeit;
+        return this._feldAkt({ art: "leben", w, x, z, a }, !reistSelbst, true, !!(ctx && ctx.akt));
     }
 
     // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
@@ -2191,7 +2420,7 @@ class AnazhRealm_feld_leben {
         const last = creature.userData.lastLifeTrickle ?? -Infinity;
         if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
-        this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+        this._lebenGabe(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle, null); // ein Akt der Seite (feld.K2#2)
     }
 
     // === DER BRAND (stoffe.K2 · feld.K3#2): das Feuer auf dem Feld — die Front läuft nach Rothermel, gerechnet, wo es brennt ===
@@ -2303,8 +2532,15 @@ class AnazhRealm_feld_leben {
         return { R: R0 * (1 + phi) * 0.00508, ecc, px: phi ? vx / phi : 1, pz: phi ? vz / phi : 0, tr: 23040 / sig };
     }
 
-    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
+    // DAS ENTFACHEN IST EIN AKT DER SEITE (feld.K2#2, `_feldAkt`): was eine Seite entzündet (das Brennglas, die Probe), fängt auf jeder
+    // Seite zur selben Welt-Zeit — allein sofort (→ die Zelle oder null), mit Mitspielern im Vorlauf (→ true). Bis feld.K2#2 brannte
+    // es nur auf der Seite, deren Brennglas zündete.
     _brandEntfachen(x, z) {
+        return this._feldAkt({ art: "brand", w: this.state.spielZeit, x, z }, true);
+    }
+
+    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
+    _brandFangen(x, z) {
         const st = this.state;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const cs = AnazhRealm.LIFE_FIELD.cell;
@@ -3420,6 +3656,13 @@ AnazhRealm.STUDIO_SATZ =
 // Substrat zurück (Homöostase). auraAt blendet min(frozen+overlay, 1) — nie überschreiben; leerer
 // Overlay → lebendig == frozen. Schließt den at_field_need-Loop: Leben in den Mangel → der Mangel
 // sinkt → der Nexus zieht weiter (kein rich-get-richer).
+// DER VORLAUF DER FELD-AKTE (feld.K2#2, `_feldAkt`): mit Mitspielern wirkt jede Eingabe ins Feld und jeder Takt des Bestands
+// FELD_VORLAUF_S nach seinem Stempel der Welt-Uhr — die Frist, in der ein Akt jede Seite eines Raums erreicht (der Vorlauf des
+// Lockstep; im Raum zweier Seiten unter Last ~0,1 s).
+AnazhRealm.FELD_VORLAUF_S = 2;
+// DAS NACHHOLEN DER AKTE (feld.K2#2, `_akteNachholen`): jede Seite sendet einem Beitretenden ihre eigenen Akte der letzten
+// AKT_NACHHOL_S erneut — länger als der Abstand zweier Stände (5 s) samt einem Reload unter Last (bis 79 s).
+AnazhRealm.AKT_NACHHOL_S = 120;
 AnazhRealm.LIFE_FIELD = Object.freeze({
     cell: 16, // m — das Hydrosphäre/Voxel-Raster (Region-Skala)
     decayPerSec: 0.008, // Halbwertszeit ~87 s (getendete Region lingert, verwaiste verblasst)

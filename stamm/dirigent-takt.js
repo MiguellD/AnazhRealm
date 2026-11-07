@@ -102,8 +102,10 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Welt-Regeln ###
                     // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
-                    // geplante Geste vor den Regeln läuft.
-                    this._tickWorldRules(currentTime);
+                    // geplante Geste vor den Regeln läuft. DIE GESETZE LAUFEN AN DER WELT-UHR (feld.K2#2): Takt, Leben und
+                    // Erneuerung jedes Gesetzes (Nexus, Gemüt, Spieler) zählen `spielZeit` — die Uhr, die jeder Mitspieler trägt
+                    // (`_weltUhrNimm`) und die der Wurf schon las (`_worldRuleSeed`); bis feld.K2#2 die Takt-Uhr der Seite.
+                    this._tickWorldRules(this.state.spielZeit);
 
                     // ### Player-Emotionen (Ring 3) ###
                     this.updatePlayerEmotions(currentTime);
@@ -1504,33 +1506,36 @@ class AnazhRealm_dirigent_takt {
         this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
-        // — er zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die Wesen
-        // schreiben nie selbst), sonst das Wort der Front am Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über
-        // Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus dem Wort, das die Front einen Zug vorher am Ort trug: Wetter
-        // und Übergang sind eine Funktion von Saat, Ort und Welt-Uhr — zwei Seiten einer Uhr und ein Reload mitten im Sturm
-        // stehen im selben Übergang, und der erste Takt einer Seite (Boot, Reload, Beitritt) zieht den laufenden Zug. Bis
-        // feld.K2#2 zählte jede Seite ihre Sitzung (`weatherEffectTime`) und ihre Wanduhr. Steht das Wort des Spielers
-        // (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug (danach steht das Wetter bis zum nächsten); er
-        // wartet auf die Bühne.
+        // (`_wetterZugZiehen`). Steht das Wort des Spielers (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug
+        // (danach steht das Wetter bis zum nächsten); er wartet auf die Bühne.
         const st = this.state;
         this._pegelUhr(); // der Pegel folgt der Welt-Uhr: der Regen fließt über die Lag-Zeit seines Laufs ab, die Dürre senkt ihn
-        const Z = AnazhRealm.WETTER_ZUG_SEK;
-        const zug = Math.floor(st.spielZeit / Z);
+        const zug = Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
-        if (this._messHalt()) return;
-        const wunsch = st.wetterWunsch;
+        if (!this._messHalt()) this._wetterZugZiehen(zug);
+    }
+
+    // DER ZUG `zug` ZIEHT: das Wort des Wunschs der Welt aus dem Fenster des Zugs davor (`_wunschDesZugs` — Nexus, seine Gesetze,
+    // das Gemüt, die Wesen schreiben nie selbst, ihr Wunsch ist ein Akt mit Stempel, `_wunschAkt`), sonst das Wort der Front am
+    // Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus
+    // dem Wort, das die Front einen Zug vorher am Ort trug. Wort, Übergang und Schreiber sind eine Funktion von Saat, Ort,
+    // Welt-Uhr und den Akten — nie davon, was vorher galt: zwei Seiten einer Uhr, ein Reload mitten im Sturm und ein Akt, der
+    // spät kam (`_wunschNimm` zieht neu), stehen im selben Übergang. Bis feld.K2#2 zählte jede Seite ihre Sitzung
+    // (`weatherEffectTime`) und ihre Wanduhr, danach zog sie den Wunsch ihres eigenen Nexus, und ein Zug ohne neues Wort ließ den
+    // Übergang des vorigen stehen.
+    _wetterZugZiehen(zug) {
+        const st = this.state;
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        const wunsch = this._wunschDesZugs(zug);
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
-        const next =
-            wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
+        const next = wunsch ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
         const von = this._wetterAmOrt(x, z, (zug - 1) * Z);
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
-        // der Zug zieht den Wunsch: `_setWeather` liest ihn als Schreiber (`wetterSchreiber`); danach ist er verbraucht
-        if (next !== st.weather || von !== next) this._setWeather(next, "auto-zug", { von, beginn: zug * Z });
-        if (st.wetterWunsch === wunsch) st.wetterWunsch = null;
+        this._setWeather(next, "auto-zug", { von, beginn: zug * Z, wunsch });
     }
 
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
@@ -1871,7 +1876,7 @@ class AnazhRealm_dirigent_takt {
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
-        this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
+        this._tickSeason(); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickCanopyStreaming();
@@ -2077,6 +2082,7 @@ class AnazhRealm_dirigent_takt {
         const ppu = this.state.postProcessingUniforms;
         if (ppu && ppu.nachSchaerfe)
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
+        this._zugangTakt(ppu); // die Farbsicht und die Unschärfe der Bewegung aus dem Stand (spielgang.K4)
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,

@@ -11,7 +11,6 @@ const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 async function checkBandV1738RulePersistence({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
 
         const savedRules = st.worldRules.slice();
         const savedWeather = st.weather;
@@ -46,7 +45,7 @@ async function checkBandV1738RulePersistence({ page, check }) {
             rr[0].source === "human" &&
             rr[0].fires === 0 &&
             typeof rr[0]._sig === "string" &&
-            now() - rr[0].born < 5 &&
+            st.spielZeit - rr[0].born < 5 &&
             rr[0].ttlSec == null && // Mensch-Regel: permanent
             rr[1].ttlSec === 60; // Nexus-Regel: ttl erhalten
 
@@ -56,7 +55,7 @@ async function checkBandV1738RulePersistence({ page, check }) {
         st.worldRules = [rr[0]];
         st.weather = "rainy";
         rr[0].lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         out.restoredFires = st.weather === "sunny";
 
         // --- (4) Dedup beim Restore (zweimal dieselbe Regel → ein Eintrag) ---

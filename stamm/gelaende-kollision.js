@@ -797,7 +797,9 @@ class AnazhRealm_gelaende_kollision {
             if (b.minZ < z0) z0 = b.minZ;
             if (b.maxZ > z1) z1 = b.maxZ;
         }
-        const fh = entry._fluegelHuelle; // der Kreis, den die Flügel beim Schwenk überstreichen (`_fluegelLeib`)
+        // die überstrichene Hülle: der Kreis, den die Flügel beim Schwenk überstreichen (`_fluegelLeib`), das Feld, in dem ein freier
+        // Körper bis zu seinem nächsten Stempel wandert (`_freiZeigen`)
+        const fh = entry._streichHuelle;
         if (fh) [x0, x1, z0, z1] = [Math.min(x0, fh[0]), Math.max(x1, fh[1]), Math.min(z0, fh[2]), Math.max(z1, fh[3])];
         entry._blockerHuelle =
             Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(z0) && Number.isFinite(z1)
@@ -901,7 +903,7 @@ class AnazhRealm_gelaende_kollision {
         if (out.length) entry._fluegelBoxen = out;
         if (!neu || !out.length) return;
         const h = entry._blockerHuelle;
-        entry._fluegelHuelle = fh;
+        entry._streichHuelle = fh;
         if (!(h && fh[0] >= h[0] && fh[1] <= h[1] && fh[2] >= h[2] && fh[3] <= h[3])) this._blockerNetzSetzen(entry);
     }
 
