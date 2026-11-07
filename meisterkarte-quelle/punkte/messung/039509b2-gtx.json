@@ -1,0 +1,241 @@
+{
+ "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T08:04:21.741Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer",
+   "exit": 0,
+   "minuten": 1.35,
+   "gpu": "nvidia/pascal",
+   "s": 81.1,
+   "zeit": "2026-11-07T07:56:15.186Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.1036 % Pop-Pixel je Sekunde (2149 px, Soll ≤ 0,05 %), je Schritt 21*/17*/36*/306*/33*/40*/695*/1001* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: Gehen 4 m/s: 0.1036 % Pop-Pixel je Sekunde (2149 px, Soll ≤ 0,05 %), je Schritt 21*/17*/36*/306*/33*/40*/695*/1001* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 17.9,
+   "zeit": "2026-11-07T07:58:50.046Z",
+   "abdruck": "6578ee2ff478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.76,
+   "gpu": "nvidia/pascal",
+   "s": 45.7,
+   "zeit": "2026-11-07T07:59:22.067Z",
+   "abdruck": "25872cfe0387",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.751 (wasserSatz 25443 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 96 σ 36.2 schwarz 0.1 % weiß 0.0 % · Stand 18.546.209 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.6,
+   "zeit": "2026-11-07T08:00:31.821Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14 m: 43.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (186 px) · 41.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (199 px) · 41 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (255 px)",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 7 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14 m: 43.2 m 5/5 fliehen, 5 sichtbar, 2 Fleck(en) (186 px) · 41.9 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (199 px) · 41 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (255 px)",
+   "gpu": "nvidia/pascal",
+   "s": 76.8,
+   "zeit": "2026-11-07T08:01:06.239Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 210.41 m · Luma 118 σ 48.6 schwarz 0.0 % weiß 0.0 % · ",
+   "exit": 0,
+   "minuten": 1.33,
+   "gpu": "nvidia/pascal",
+   "s": 80,
+   "zeit": "2026-11-07T08:04:21.741Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.3,
+   "zeit": "2026-11-07T07:57:36.375Z",
+   "abdruck": "be3337863a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 3/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2327 · warm null ms (2+0) · rezeptbuch kalt null · warm 613 ms (0+1) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · pfad · GT · Ego · we) · Täter: [bild] hotbar · schöpfer · Haus · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 3/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2327 · warm null ms (2+0) · rezeptbuch kalt null · warm 613 ms (0+1) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · pfad · GT · Ego · we) · Täter: [bild] hotbar · schöpfer · Haus · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 80.2,
+   "zeit": "2026-11-07T08:02:34.310Z",
+   "abdruck": "b62204fdd902",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T07:55:33.938Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 7.6,
+  "grundstellungS": [
+   5.8,
+   5.7,
+   0.1,
+   6.3
+  ],
+  "proben": 8,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 32.2,
+    "takte": 935,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 22.4,
+    "takte": 783,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 14.1,
+    "takte": 617,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 18.3,
+    "takte": 810,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 10.8,
+    "takte": 589,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 11.1,
+    "takte": 725,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 20.8,
+    "takte": 890,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "gelaende.K3#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 5.7
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 9,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 311,
+   "frameP95": 41.71,
+   "taktP95": 39.5,
+   "vramMax": 136.1,
+   "seiten": 4,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "tiere.K1#2",
+     "m": 314,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 540,
+   "luecken": 5,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 606.9,
+  "minuten": 10.2
+ }
+}
