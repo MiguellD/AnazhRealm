@@ -2349,58 +2349,6 @@ class AnazhRealm_gelaende_chunks {
         } else q.obb = null;
         const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
         if (!h) return null;
-        // DIE WAHRE KUGEL (physik.K2 Staffel 2): die aufgeblasene Box ist nur der Vorfilter — ihre Kanten und Ecken stehen um bis zu
-        // r(√3 − 1) zu weit (die Minkowski-Summe aus Box und Kugel ist rund). Eintritt und Austritt sind die Stellen, an denen der
-        // Abstand der Mitte zur Box r erreicht; er ist längs der Strecke konvex: sein Minimum per Goldenem Schnitt, die Ränder per
-        // Bisektion. Vorher hielt die Kanten-Luft den Arm der Third-Kamera beim Abstieg neben dem GT: das Ziel 0,27 m über der
-        // Oberkante, 0,3 m neben der Flanke — die Kugel 0,40 m von der Kante, der Wurf meldete t = 0,0016 und die Kamera
-        // sprang 10,7 m in einem Bild (gate:fahr-leben T4).
-        const ab = (t, n) => {
-            const [x, y, z] = [sx + dx * t, sy + dy * t, sz + dz * t];
-            const [lx, lz] = ob
-                ? [(x - ob.cx) * ob.c - (z - ob.cz) * ob.s, (x - ob.cx) * ob.s + (z - ob.cz) * ob.c]
-                : [x, z];
-            const [ax0, ax1, az0, az1] = ob ? [-ob.hx, ob.hx, -ob.hz, ob.hz] : [b.minX, b.maxX, b.minZ, b.maxZ];
-            const ex = lx < ax0 ? lx - ax0 : lx > ax1 ? lx - ax1 : 0;
-            const ey = y < b.botY ? y - b.botY : y > b.topY ? y - b.topY : 0;
-            const ez = lz < az0 ? lz - az0 : lz > az1 ? lz - az1 : 0;
-            const d = Math.hypot(ex, ey, ez);
-            if (n && d > 0)
-                [n.nx, n.ny, n.nz] = ob
-                    ? [(ex * ob.c + ez * ob.s) / d, ey / d, (-ex * ob.s + ez * ob.c) / d]
-                    : [ex / d, ey / d, ez / d];
-            return d;
-        };
-        const [t0, t1] = [h.t, Math.min(1, h.aus)];
-        let tm = t0;
-        if (!(ab(t0) <= r)) {
-            const g = (Math.sqrt(5) - 1) / 2;
-            let [lo, hi] = [t0, t1];
-            for (let i = 0; i < 30; i++) {
-                const [m1, m2] = [hi - g * (hi - lo), lo + g * (hi - lo)];
-                if (ab(m1) < ab(m2)) hi = m2;
-                else lo = m1;
-            }
-            tm = (lo + hi) / 2;
-            if (!(ab(tm) <= r)) return null; // die Strecke streift die Kante nur in der Luft der Aufblasung
-            let [a0, a1] = [t0, tm];
-            for (let i = 0; i < 30; i++) {
-                const m = (a0 + a1) / 2;
-                if (ab(m) <= r) a1 = m;
-                else a0 = m;
-            }
-            h.t = a1;
-            ab(a1, h); // die Normale: vom nächsten Box-Punkt zur Mitte
-        }
-        if (!(ab(t1) <= r)) {
-            let [a0, a1] = [Math.max(tm, h.t), t1];
-            for (let i = 0; i < 30; i++) {
-                const m = (a0 + a1) / 2;
-                if (ab(m) <= r) a0 = m;
-                else a1 = m;
-            }
-            h.aus = a0;
-        }
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
         h.roh = g ? g.t : Infinity;
         return h;
