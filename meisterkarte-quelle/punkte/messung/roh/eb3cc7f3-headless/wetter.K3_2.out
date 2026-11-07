@@ -1,0 +1,661 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (function k3Ganglinie() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    // DIE PROBE (im Leib von wasserSchmelze: r, st, K, P, R): zwei Bäche um P.fluss mit A-Verhältnis ≥ 4 (das Einzugsgebiet aus dem
+    // Netz des Gesetzes, `flussLaeufe`; je Glied die Mitte seiner Bahn, centerness > 0,9 am Kern-Spiegel), ein Spieltag Sonne (der
+    // Bach läuft ab), dann 10 s Niesel (`cloudy`) als Wort des Spielers und 12 Spielstunden in 2-s-Schritten der Welt-Uhr: der Hub
+    // (`_hydroRiverAt` über dem Spiegel ohne Pegel) als Abfluss nach der Pegel-Abfluss-Beziehung des Gesetzes (Manning auf der
+    // Spende `PEGEL.spende` im Bett der Hydrosphäre) gegen denselben Lauf ohne Niesel (der Grund fällt in beiden gleich). LAG der
+    // Schwerpunkt der Ganglinie hinter dem des Regens (Spielstunden) · BILANZ das Volumen durch den Pegel gegen den Abfluss des
+    // Regens über derselben Fläche (der Niesel × `PEGEL.regen`, Beiwert der Wiese) · DÜRRE der Spiegel an Bach, Fluss und See P.see
+    // (`_waterLevelAt`) 14 Spieltage Sonne später. Welt-Uhr und Stempel kehren danach zurück.
+    const probe = () => {
+        const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+        const uhr = () => [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
+        const zu = ([t, S]) => ((st.spielZeit = t), (st.regenStempel = S && S.slice()), r._pegelTakt());
+        const [L, tagS, u] = [r._gelaende(), r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60, uhr()];
+        const ruhe = Object.create(L, { pegel: { value: null } });
+        const gl = K.flussLaeufe(L, P.fluss[0] - 800, P.fluss[1] - 800, P.fluss[0] + 800, P.fluss[1] + 800, 8)
+            .flatMap((lf) => lf.glieder.map(({ A, bahn }) => ({ A, ...bahn[bahn.length >> 1] })))
+            .filter((g) => (r._hydroRiverAt(g.x, g.z) || {}).centerness > 0.9)
+            .sort((a, b) => a.A - b.A);
+        const orte = [gl[0], gl.find((g) => g.A >= 4 * gl[0].A)];
+        if (!orte[1]) return { fehler: "keine zwei Bäche mit A-Verhältnis ≥ 4 um P.fluss", glieder: gl.length };
+        const hub = () => [...orte.map((o) => r._hydroRiverAt(o.x, o.z).surfaceY - K.flussAm(ruhe, o.x, o.z).surfaceY), r._waterLevelAt(...P.see)];
+        const H = L.hydroGesetz;
+        const tf = (1 - H.spiegelFreibord) * H.kanalTiefe;
+        const Q = (h) => K.PEGEL.spende * (Math.pow(Math.max(0, 1 + h / tf), 1 / 0.6) - 1);
+        wort("sunny", 1e6);
+        zu([st.spielZeit + tagS, st.regenStempel]);
+        const eins = uhr();
+        const reihe = (puls) => {
+            zu(eins);
+            const y = [];
+            for (let k = 0; 2 * k <= tagS / 2; k++) {
+                st.spielZeit = eins[0] + 2 * k;
+                if (puls && (k === 5 || k === 10)) wort(k === 5 ? "cloudy" : "sunny", 0);
+                r._pegelTakt();
+                y.push(hub());
+            }
+            return y;
+        };
+        const [mit, ohne] = [reihe(true), reihe(false)];
+        const summe = (i, f) => mit.reduce((s, y, k) => s + (Q(y[i]) - Q(ohne[k][i])) * f(k), 0);
+        const V = [0, 1].map((i) => (summe(i, () => 1) * 2) / tagS);
+        const D = (K.PEGEL.regen * r.constructor.WEATHER_FIELD.cloudy.rain * 10) / tagS;
+        const lag = V.map((v, i) => (v > 0 ? (((summe(i, (k) => 2 * k) * 2) / tagS / v - 15) * 24) / tagS : 0));
+        zu(eins);
+        const vor = hub();
+        zu([eins[0] + 14 * tagS, eins[1]]);
+        const duerre = hub().map((y, i) => R(y - vor[i]));
+        zu(u);
+        return {
+            A: orte.map((o) => R(o.A / 1e6)),
+            lag: lag.map(R),
+            verhaeltnis: lag[0] > 0 ? R(lag[1] / lag[0]) : 0,
+            bilanz: V.map((v) => R(v / D)),
+            volumen: V.map((v, i) => [Math.round(D * orte[i].A * 10) / 10, Math.round(v * orte[i].A * 10) / 10]),
+            duerre,
+        };
+    };
+    const LI = "scripts/lib/wasser-linse.cjs";
+    const DI = "scripts/diag-wasser-leben.cjs";
+    const anker = ["        pg.regen = sturm();\n", "        pg.regen.fest = sturm().hub;\n"];
+    const req = 'require("./lib/wasser-linse.cjs")';
+    const [linse, diag] = [LI, DI].map((f) => fs.readFileSync(f, "utf8"));
+    if (anker.some((a) => linse.split(a).length !== 2) || diag.split(req).length !== 2) {
+        console.log("K3-LAUF: ein Anker fehlt oder steht doppelt (" + LI + " / " + DI + ")");
+        process.exit(3);
+    }
+    const [kl, kd] = ["scripts/lib/.k3-lauf-linse.cjs", "scripts/.k3-lauf.cjs"];
+    fs.writeFileSync(kl, linse.replace(anker[0], anker[0] + "        const __lauf = " + probe.toString() + ";\n        pg.lauf = __lauf();\n")
+        .replace(anker[1], anker[1] + "        pg.lauf.fest = __lauf().bilanz;\n"));
+    fs.writeFileSync(kd, diag.replace(req, 'require("./lib/.k3-lauf-linse.cjs")'));
+    const p = cp.spawnSync(process.execPath, [kd, "--nur", "koerper"], { encoding: "utf8", maxBuffer: 1 << 26 });
+    for (const f of [kl, kd]) fs.rmSync(f, { force: true });
+    process.stdout.write(p.stdout || "");
+    process.stderr.write(p.stderr || "");
+    process.exit(p.status === null ? 1 : p.status);
+})()
+  Orte aus der Welt: {"mess":[-280.4,-1045.6],"see":{"x":1816,"z":-6168,"tiefe":3.4,"level":0.9304924564577954,"ufer":[1866,-6168],"mitte":[1816,-6168],"fenster":[1826,-6208,1906,-6128]},"fluss":{"x":-258.4,"z":-1132.8,"breite":4.2},"bach":{"x":-269.2,"z":-1127.4},"kueste":[1537,10609],"meer":[1896,8776]}
+{
+ "hashSin": null,
+ "orte": {
+  "mess": [
+   -280.4,
+   -1045.6
+  ],
+  "see": {
+   "x": 1816,
+   "z": -6168,
+   "tiefe": 3.4,
+   "level": 0.9304924564577954,
+   "ufer": [
+    1866,
+    -6168
+   ],
+   "mitte": [
+    1816,
+    -6168
+   ],
+   "fenster": [
+    1826,
+    -6208,
+    1906,
+    -6128
+   ]
+  },
+  "fluss": {
+   "x": -258.4,
+   "z": -1132.8,
+   "breite": 4.2
+  },
+  "bach": {
+   "x": -269.2,
+   "z": -1127.4
+  },
+  "kueste": [
+   1537,
+   10609
+  ],
+  "meer": [
+   1896,
+   8776
+  ]
+ },
+ "koerper": {
+  "see": {
+   "mitte": [
+    1816,
+    -6168
+   ],
+   "spiegel": 0.93,
+   "tiefeMitte": 3.43
+  },
+  "brust": 1.224,
+  "hinein": {
+   "frames": 1500,
+   "tiefGeerdet": 0,
+   "augenUnterGeerdet": 0,
+   "maxTiefeGeerdetM": 0,
+   "schwimmFrames": 1003,
+   "seeFrames": 1152,
+   "luft": 1003,
+   "maxM": 1.227,
+   "erreichtMitte": false
+  },
+  "lage": {
+   "fussUnterSpiegelP50": 1.224,
+   "sollFussUnterSpiegel": 1.224,
+   "augenUnter": 0,
+   "geerdet": false,
+   "schwimmt": true
+  },
+  "kraulen": {
+   "mps": 0.977,
+   "soll": 0.977,
+   "anteil": 1
+  },
+  "eintauchen": {
+   "landung": {
+    "schritt": 66,
+    "material": "wasser",
+    "fussUeberSpiegel": -0.05
+   },
+   "eintauchVy": -10.63,
+   "tiefsterFussUnterSpiegel": 0.99
+  },
+  "medium": {
+   "see": {
+    "unter": true,
+    "art": "see",
+    "sichtM": 15.648,
+    "soll": 15.648
+   },
+   "oben": {
+    "unter": false,
+    "art": "see",
+    "sichtM": 20280.559,
+    "soll": 15.648
+   },
+   "bach": {
+    "unter": true,
+    "art": "bach",
+    "sichtM": 19.56,
+    "soll": 19.56
+   }
+  },
+  "tier": [
+   {
+    "seele": "wesen",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.872,
+    "wasserlinie": 0.872,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wolf",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.599,
+    "wasserlinie": 0.599,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "fuchs",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.371,
+    "wasserlinie": 0.371,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "baer",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.731,
+    "wasserlinie": 0.731,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wesen",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.872,
+    "wasserlinie": 0.872,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wolf",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.599,
+    "wasserlinie": 0.599,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "fuchs",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.371,
+    "wasserlinie": 0.371,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "baer",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.731,
+    "wasserlinie": 0.731,
+    "schwimmt": true,
+    "amGrund": false
+   }
+  ],
+  "baumlos": {
+   "sohleUnterSpiegel": 0.5,
+   "soll": 0.5
+  },
+  "peer": {
+   "lehne": 0.3,
+   "meshKind": "soul"
+  },
+  "eis": {
+   "winter": {
+    "frames": 1500,
+    "tiefGeerdet": 0,
+    "augenUnterGeerdet": 0,
+    "maxTiefeGeerdetM": 0,
+    "schwimmFrames": 0,
+    "seeFrames": 1151,
+    "luft": 0,
+    "maxM": 0,
+    "erreichtMitte": false,
+    "temperatur": -4.375
+   },
+   "tier": [
+    {
+     "seele": "wolf",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.599,
+     "schwimmt": false
+    },
+    {
+     "seele": "fuchs",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.371,
+     "schwimmt": false
+    },
+    {
+     "seele": "baer",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.731,
+     "schwimmt": false
+    }
+   ],
+   "uebergang": {
+    "erster": 19,
+    "traegt": 26,
+    "wechsel": 2,
+    "tagesgang": [
+     0,
+     0
+    ]
+   },
+   "meer": {
+    "tiefst": 1.338,
+    "gefrier": -1.89,
+    "traegt": 0,
+    "kalt": 45
+   },
+   "mutation": {
+    "frames": 1500,
+    "tiefGeerdet": 0,
+    "augenUnterGeerdet": 0,
+    "maxTiefeGeerdetM": 0,
+    "schwimmFrames": 1003,
+    "seeFrames": 1152,
+    "luft": 1003,
+    "maxM": 1.227,
+    "erreichtMitte": false,
+    "temperatur": 5.625
+   }
+  },
+  "schmelze": {
+   "pegel": 0.163,
+   "schmilzt": 3,
+   "gegen": 0,
+   "versatz": 178,
+   "weiss": 0.507,
+   "neuBau": 81,
+   "halt": 0
+  },
+  "pegel": {
+   "post": 286,
+   "neuBau": 3521,
+   "hub": 0.2,
+   "wochen": 3,
+   "gegen": 0,
+   "fluss": 0.2,
+   "flut": [
+    0.2,
+    185,
+    0.2
+   ],
+   "ruhe": [
+    0,
+    182,
+    0
+   ],
+   "regen": {
+    "hub": 0.2,
+    "post": 48,
+    "koerper": 0.2,
+    "fest": 0
+   },
+   "lauf": {
+    "A": [
+     0.16,
+     0.8
+    ],
+    "lag": [
+     1,
+     1.9
+    ],
+    "verhaeltnis": 1.645,
+    "bilanz": [
+     1.006,
+     0.98
+    ],
+    "volumen": [
+     [
+      3.8,
+      3.9
+     ],
+     [
+      19.2,
+      18.8
+     ]
+    ],
+    "duerre": [
+     -0.2,
+     -0.2,
+     -0.2
+    ],
+    "fest": [
+     0,
+     0
+    ]
+   },
+   "halt": 0
+  },
+  "erstarrung": [
+   {
+    "x": 1866,
+    "z": -6168,
+    "y": 1.6174013721144107,
+    "frei": 0.7761773171786086,
+    "reihe": [
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.92,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.87,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.83,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.8,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     }
+    ],
+    "ab": 2
+   },
+   {
+    "x": 1816,
+    "z": -6168,
+    "y": -2.5,
+    "frei": 0.8393577107750537,
+    "reihe": [
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": true,
+      "licht": true
+     },
+     {
+      "glut": 0.91,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": true
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     }
+    ],
+    "ab": 1
+   }
+  ],
+  "gluehen": {
+   "stoff": "stahl",
+   "feuer": {
+    "wechsel": 17,
+    "T": 1103.12,
+    "glut": 0.56,
+    "kelvin": 1376,
+    "luft": 21.07,
+    "esse": "esse"
+   },
+   "kalt": {
+    "wechsel": 123,
+    "T": 46.68,
+    "glut": 0,
+    "kelvin": null,
+    "luft": 21.07,
+    "esse": null
+   },
+   "feld": 9.8
+  }
+ }
+}
+
+WASSER-LEBEN GRÜN

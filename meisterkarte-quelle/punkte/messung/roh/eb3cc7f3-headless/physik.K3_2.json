@@ -1,0 +1,207 @@
+{
+ "proben": {
+  "einsturz": {
+   "same": 44449630,
+   "ruheS": 2.2,
+   "wanderM": 0,
+   "zehnMinSek": 44.517,
+   "mutationen": [
+    {
+     "m": 0,
+     "fehlt": [
+      1
+     ],
+     "fallend": [
+      "kopf1"
+     ],
+     "stehend": [
+      "dach",
+      "kopf0",
+      "kopf2",
+      "kopf3",
+      "pfosten0",
+      "pfosten2",
+      "pfosten3",
+      "sockel"
+     ],
+     "typ": "probe_k3_laube_0",
+     "ort": [
+      -270.4,
+      -1045.6
+     ],
+     "gier": 0.4,
+     "id": "w-probe_k3_laube_0-7",
+     "boden": 27.31638911763696,
+     "restTeile": [
+      "dach",
+      "kopf0",
+      "kopf2",
+      "kopf3",
+      "pfosten0",
+      "pfosten2",
+      "pfosten3",
+      "sockel"
+     ],
+     "restTyp": [
+      "probe_k3_laube_0_rest_8c2d9599"
+     ],
+     "restSteht": true,
+     "koerper": [
+      {
+       "mitteM": 0.325,
+       "untenM": 0,
+       "ueberSockel": true,
+       "schlaf": true
+      }
+     ]
+    },
+    {
+     "m": 1,
+     "fehlt": [
+      1
+     ],
+     "fallend": [
+      "kopf1"
+     ],
+     "stehend": [
+      "dach",
+      "kopf0",
+      "kopf2",
+      "kopf3",
+      "pfosten0",
+      "pfosten2",
+      "pfosten3",
+      "sockel"
+     ],
+     "typ": "probe_k3_laube_1",
+     "ort": [
+      -260.4,
+      -1045.6
+     ],
+     "gier": 0.9,
+     "id": "w-probe_k3_laube_1-8",
+     "boden": 27.070667164250303,
+     "restTeile": [
+      "dach",
+      "kopf0",
+      "kopf2",
+      "kopf3",
+      "pfosten0",
+      "pfosten2",
+      "pfosten3",
+      "sockel"
+     ],
+     "restTyp": [
+      "probe_k3_laube_1_rest_119ac778"
+     ],
+     "restSteht": true,
+     "koerper": [
+      {
+       "mitteM": 0.325,
+       "untenM": 0,
+       "ueberSockel": true,
+       "schlaf": true
+      }
+     ]
+    },
+    {
+     "m": 2,
+     "fehlt": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "fallend": [
+      "kopf0",
+      "kopf1",
+      "kopf2",
+      "kopf3",
+      "dach"
+     ],
+     "stehend": [
+      "sockel"
+     ],
+     "typ": "probe_k3_laube_2",
+     "ort": [
+      -250.39999999999998,
+      -1045.6
+     ],
+     "gier": 1.4,
+     "id": "w-probe_k3_laube_2-9",
+     "boden": 26.811163578295893,
+     "restTeile": [
+      "sockel"
+     ],
+     "restTyp": [
+      "probe_k3_laube_2_rest_a67af1e1"
+     ],
+     "restSteht": true,
+     "koerper": [
+      {
+       "mitteM": 0.325,
+       "untenM": 0,
+       "ueberSockel": true,
+       "schlaf": true
+      },
+      {
+       "mitteM": 0.325,
+       "untenM": 0,
+       "ueberSockel": true,
+       "schlaf": true
+      },
+      {
+       "mitteM": 0.324,
+       "untenM": -0.003,
+       "ueberSockel": true,
+       "schlaf": true
+      },
+      {
+       "mitteM": 0.324,
+       "untenM": -0.002,
+       "ueberSockel": true,
+       "schlaf": true
+      },
+      {
+       "mitteM": 0.545,
+       "untenM": 0.242,
+       "ueberSockel": true,
+       "schlaf": true
+      }
+     ]
+    }
+   ],
+   "kosten": {
+    "feld": {
+     "wachSchritte": 144,
+     "wachMedianMs": 0.5,
+     "wachP75Ms": 0.7,
+     "ruhendSchritte": 375,
+     "ruhendMedianMs": 0,
+     "schlafen": 100
+    },
+    "haufen": {
+     "wachSchritte": 82,
+     "wachMedianMs": 0.9,
+     "wachP75Ms": 0.9,
+     "ruhendSchritte": 346,
+     "ruhendMedianMs": 0,
+     "schlafen": 100
+    }
+   },
+   "sek": 59.9
+  },
+  "einsturz-reload": {
+   "truemmer": 7,
+   "da": 7,
+   "schlafen": 7,
+   "lageM": 0,
+   "drehGrad": 0,
+   "nach10sLageM": 0,
+   "nach10sDrehGrad": 0,
+   "ohneDrehungGrad": 24.097,
+   "sek": 15.4
+  }
+ },
+ "fehler": []
+}
