@@ -3495,6 +3495,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_stauHoert",
         "_fernMemoGen",
         "_takt",
+        "_imTakt", // der Takt läuft (`_psoVorbau`): der Abschied mitten im Takt löscht ihn nicht
         "_gpuLeine",
         "_ltObs",
         "_ltAcc",

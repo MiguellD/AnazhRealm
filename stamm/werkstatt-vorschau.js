@@ -14,6 +14,7 @@ class AnazhRealm_werkstatt_vorschau {
     // Render macht nur noch: die Bauplan-Liste, den Top-Leisten-Zustand, + den Tail (Stats/Palette/Preview/Hotbar).
     _renderWorkshopDOM() {
         if (typeof document === "undefined") return;
+        this._werkstattGemalt = true; // ihr erster Bau steht (`_workshopHandleDrawerChange`, `_uiVorbau`)
         const list = document.getElementById("workshop-list");
         if (!list) return;
         const ws = this._ensureWorkshopState();
@@ -475,6 +476,8 @@ class AnazhRealm_werkstatt_vorschau {
     _workshopHandleDrawerChange(activeName) {
         const ws = this._ensureWorkshopState();
         const liste = typeof document !== "undefined" && document.getElementById("workshop-list");
+        // ihr erster Bau (Liste, Steckbrief, Vorschau) kommt mit ihrer ersten Öffnung, stand ihn der Vorbau noch nicht
+        if (activeName === "werkstatt" && liste && !this._werkstattGemalt) this._renderWorkshopDOM();
         if (activeName === "werkstatt" && liste) {
             // DIE WAHL ZUERST (bauen.K1): die Werkstatt öffnet mit der aufgeklappten Bauplan-Liste, oben, in der Reihe des
             // Katalogs (`_katalogReihe`) — der erste Klick wählt. Befund 22.10. (echte Eingaben): die Liste brauchte einen
@@ -802,7 +805,8 @@ class AnazhRealm_werkstatt_vorschau {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
                 for (const lf of flat.leaves) {
-                    if (!lf.geom || !lf.mat) continue;
+                    // der Wurf der Karte (ihr Zwilling, `_impostorWurfLeaf`) zeichnet nur in den Kaskaden — die Vorschau nicht
+                    if (!lf.geom || !lf.mat || lf.shadowTwin) continue;
                     // Die Karte liest Schicht und Rahmen je Instanz: dieselbe Fassade + derselbe Stempel wie die Welt.
                     const inst = AnazhRealm._instanzMesh(this._lodInstanceFacade(lf.geom, 1), lf.mat, 1);
                     this._lodSlotStamp({ mesh: inst }, 0, 1, false, lf);

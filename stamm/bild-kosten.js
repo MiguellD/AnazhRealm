@@ -557,8 +557,19 @@ class AnazhRealm_bild_kosten {
                 const buehne = !!B && scene === B.szene;
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                // DER PSO-VORBAU (w16-lade-atem, ankunft.K5 — der Pipeline-Precache von Unreal/Fortnite): im Takt unter dem Ladeschirm
+                // entsteht auch die Pipeline eines solchen Renders asynchron (der Treiber übersetzt sie neben dem Bild, nie im
+                // GPU-Prozess vor dem nächsten); bis sie steht, zeichnet er nicht und zählt `einmalOffen` — ein Einmal-Render
+                // (Atmosphären-Tafel, Umgebung, Wolken- und Horizont-Karte, Welt-Licht, Rückstrahl) liest daran, dass er nicht
+                // ganz ist, und zeichnet im nächsten Takt neu (`_atmoZeichne` → false). Bis hier entstanden 16 Pipelines des
+                // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
+                // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    zeichne(this, ro, aufnahme, false);
+                    if (!welt._psoVorbau()) zeichne(this, ro, aufnahme, false);
+                    else if (!zeichne(this, ro, aufnahme, true)) {
+                        E.einmalOffen++;
+                        if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
+                    }
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -640,6 +651,7 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
+                einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
                 rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
                 rateMs: 0,
                 rateFrist: null,
@@ -817,6 +829,36 @@ class AnazhRealm_bild_kosten {
             return p;
         };
         dev.__anazhAbsage = true;
+    }
+
+    // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
+    // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
+    // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
+    // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    _einmalRender(schluessel, fn) {
+        const E = this._erstZeichnungStand();
+        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const w = W.get(schluessel);
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
+        if (!this._psoVorbau()) {
+            W.delete(schluessel);
+            fn();
+            return true;
+        }
+        if (w) {
+            for (const p of w) if (E.offen.has(p)) return false;
+            W.delete(schluessel);
+        }
+        const vorbau = E.einmalOffen;
+        const sammel = (E.einmalSammel = new Set());
+        try {
+            fn();
+        } finally {
+            E.einmalSammel = null;
+        }
+        if (E.einmalOffen === vorbau) return true;
+        if (sammel.size) W.set(schluessel, sammel);
+        return false;
     }
 
     // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
@@ -1642,30 +1684,35 @@ class AnazhRealm_bild_kosten {
                 "}\n" +
                 "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
         });
-        const pipe = dev.createRenderPipeline({
-            label: "ausgabe-sonde",
-            layout: "auto",
-            vertex: { module: modul, entryPoint: "vs" },
-            fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
-            primitive: { topology: "triangle-list" },
-        });
+        // ihre Pipeline entsteht asynchron (w16-lade-atem: der PSO-Vorbau — eine synchrone hält den GPU-Prozess vor dem Bild)
         const buf = dev.createBuffer({
             label: "ausgabe-sonde",
             size: 256,
             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
-        const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
-        const pass = enc.beginRenderPass({
-            label: "ausgabe-sonde",
-            colorAttachments: [{ view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
-        });
-        pass.setPipeline(pipe);
-        pass.draw(3);
-        pass.end();
-        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
-        dev.queue.submit([enc.finish()]);
-        return buf
-            .mapAsync(GPUMapMode.READ)
+        return dev
+            .createRenderPipelineAsync({
+                label: "ausgabe-sonde",
+                layout: "auto",
+                vertex: { module: modul, entryPoint: "vs" },
+                fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
+                primitive: { topology: "triangle-list" },
+            })
+            .then((pipe) => {
+                const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+                const pass = enc.beginRenderPass({
+                    label: "ausgabe-sonde",
+                    colorAttachments: [
+                        { view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" },
+                    ],
+                });
+                pass.setPipeline(pipe);
+                pass.draw(3);
+                pass.end();
+                enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+                dev.queue.submit([enc.finish()]);
+                return buf.mapAsync(GPUMapMode.READ);
+            })
             .then(() => {
                 const w = new Uint32Array(buf.getMappedRange())[0];
                 buf.unmap();
@@ -2957,8 +3004,9 @@ class AnazhRealm_bild_kosten {
     // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
     // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
-    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
-    // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) zeichnet im Hauptbild, ihr Zwilling (die Atlas-Gruppe "#S",
+    // w14-lod-sprung) in den Kaskaden. Eine Gruppe, die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines
+    // Frames — sie zeichnet weiter jede Instanz.
     // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
     // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
     // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
@@ -2968,7 +3016,7 @@ class AnazhRealm_bild_kosten {
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
         if (at.aGang) return "gpu";
-        if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
+        if (leaf.atlasGruppe) return !at.aKarte ? null : leaf.shadowTwin ? "schatten" : castShadow ? null : "haupt";
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
         return castShadow ? null : "haupt";
@@ -3305,7 +3353,7 @@ class AnazhRealm_bild_kosten {
         }
         if (K.gemalt !== K.stand || K.licht.dot(L) < Math.cos(H.lichtRad)) {
             K.U.licht.value.copy(L);
-            this._atmoZeichne(K.pass, K.rt);
+            if (!this._atmoZeichne(K.pass, K.rt)) return K; // die Pipeline im Vorbau: der nächste Takt malt
             K.licht.copy(L);
             K.gemalt = K.stand;
             K.malZahl++;
@@ -3538,9 +3586,16 @@ AnazhRealm.FARBSICHT = Object.freeze({
     staerke: 1,
 });
 // DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
-// KAM_FOV_GRAD) in `sichtfeld` — nie `fov`: `.fov =` schreibt allein `_kamFov` (gate:fahr-leben T5) —, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
+// KAM_FOV_GRAD) in `zugang.fov` im Bereich `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
 // swiftshader, 1,5° Drehung je Bild über 12 Bilder: Kanten-Energie an 3,6, aus 12,5, in Ruhe beide 7,8 — spielgang.K4#2).
-AnazhRealm.ZUGANG = Object.freeze({ sichtfeld: Object.freeze([60, 100]), laufPxAus: 4 });
+AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+// DAS SICHTFELD DES SPIELERS als reine Funktion: die Wahl (Menü, Stand) geklemmt auf ZUGANG.fov, null ohne Zahl — der EINE Weg Menü → Stand
+// → `_kamFov`; die Schreiber legen sie mit `Object.assign(zugang, { fov })` ab (`camera.fov` schreibt allein `_kamFov`, gate:fahr-leben T5)
+AnazhRealm._zugangFov = function (v) {
+    if (v == null || v === "" || !Number.isFinite(+v)) return null;
+    const [f0, f1] = AnazhRealm.ZUGANG.fov;
+    return Math.max(f0, Math.min(f1, +v));
+};
 // die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
 AnazhRealm._farbsichtMatrix = function (art, staerke) {
     const F = AnazhRealm.FARBSICHT;

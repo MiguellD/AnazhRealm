@@ -520,12 +520,10 @@ async function runPartB() {
         r._rebuildArchitectureMesh(entry); // Erst-Platzierung (Assets warm → sofort instanced)
         res.placed = entry.instanced === true;
         const savedArchs = st.architectures;
-        const savedCursor = r._archLODCursor;
         try {
             st.architectures = [entry]; // SICHERN+WIEDERHERSTELLEN (Gate-Hook-Lehre)
             for (const target of dnTargets) {
                 const raw = place(target);
-                r._archLODCursor = 0;
                 for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, pm.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
                 const dn = r._lodPerceptionDistance(raw, visH);
                 const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
@@ -602,7 +600,6 @@ async function runPartB() {
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     pm.position.set(e0.px - raw, e0.py, e0.pz);
-                    r._archLODCursor = 0;
                     for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                     const stufen = new Map();
                     for (const list of [e0.entry.instSlots, e0.entry.instSlotsBand])
@@ -717,7 +714,6 @@ async function runPartB() {
                     };
                     for (const raw of [1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1.5]) {
                         pm.position.set(E.px - raw, E.py, E.pz);
-                        r._archLODCursor = 0;
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                         r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
                         const neu = new Map(),
@@ -807,9 +803,9 @@ async function runPartB() {
                 // reicht für sie null): die L1 wich dem Nichts; (b) das Auge steht NEBEN dem Spieler (die Verfolger-
                 // Kamera, Arm 9,6 m): die Wahl maß vom Spieler, die Maske vom Auge. Selbsttest im selben Lauf: der Halt
                 // fällt stumm (`_lodHaltSetzen`) bzw. die Wahl misst vom Spieler — die Linse MUSS Geister zählen.
-                // DER SCHATTEN-ZWILLING (K36 N1) gehört zur Klasse: das Gesetz — die Karte wirft nicht, der Wurf folgt der
-                // GEZEICHNETEN 3D-Gestalt: wo sie voll steht (auch im Halt), wirft der Zwilling voll, wo sie zur Karte
-                // ausblendet, blendet sein Wurf mit (dieselbe f1o-Rampe), ohne 3D-Stufe wirft nichts. Ein SCHATTEN-GEIST =
+                // DER SCHATTEN-ZWILLING (K36 N1) gehört zur Klasse: das Gesetz — der Wurf folgt der GEZEICHNETEN Gestalt: wo die
+                // 3D-Stufe voll steht (auch im Halt), wirft der Zwilling voll, wo sie zur Karte ausblendet, blendet sein Wurf mit
+                // (dieselbe f1o-Rampe), und die Karte wirft sich selbst (w14-lod-sprung, B2c). Ein SCHATTEN-GEIST =
                 // die Deckung des Zwillings ≠ die Deckung der gezeichneten 3D-Stufen (der Halbschatten unter dem vollen Baum,
                 // der Wurf eines Baums, der nicht steht). Selbsttest: der Zwilling ohne Halt im Stempel — die Linse MUSS ihn zählen.
                 let zwBekannt = false;
@@ -836,6 +832,7 @@ async function runPartB() {
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
                                     karte: true,
+                                    zwilling,
                                     keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
@@ -874,7 +871,9 @@ async function runPartB() {
                     const zw = teile.filter((t) => t.zwilling);
                     const d3 = bild.filter((t) => !t.karte);
                     if (zw.length) zwBekannt = true;
-                    const S = { wurf: deckung(zw), gestalt: deckung(d3) };
+                    // die Karte wirft sich selbst (ihr Zwilling, w14-lod-sprung): wirft sie, steht ihre gezeichnete Deckung auf der
+                    // Seite der Gestalt (das Bild: 3D-Stufen und Karte), ihr Zwilling auf der des Wurfs
+                    const S = { wurf: deckung(zw), gestalt: deckung(zw.some((t) => t.karte) ? bild : d3) };
                     const werte = Object.values(D);
                     return {
                         D,
@@ -905,7 +904,6 @@ async function runPartB() {
                             const rawAuge = dnZiel / factor;
                             const auge = new window.THREE.Vector3(px - rawAuge, py + 1.6, pz);
                             pm.position.set(px - Math.max(0, rawAuge - art.armM), py, pz);
-                            r._archLODCursor = 0;
                             for (let i = 0; i < 4; i++)
                                 r._tickArchitectureLOD(99, art.wahlVomSpieler ? pm.position : auge);
                             const z = deckungAm(entry, auge);
@@ -1068,7 +1066,6 @@ async function runPartB() {
             } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask fehlt" };
         } finally {
             st.architectures = savedArchs;
-            r._archLODCursor = savedCursor;
         }
         // ════ TEIL Z — DER STUFEN-ZENSUS: bei Studio-äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der
         // Studio-Wald (dn = dr·min(HREF/bh, 1) ungedeckelt · Blatt-Kappe bh_L = min(bh, 24)), je Distanz-Band × Sichthöhe.

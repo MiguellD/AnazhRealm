@@ -77,8 +77,9 @@ class AnazhRealm_dirigent_ankunft {
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
-        // Ring 6.6 — Werkstatt-Editor initial mit Default-Bauplan rendern.
-        this._renderWorkshopDOM();
+        // Die Werkstatt (Liste, Steckbrief, Vorschau) baut, wer sie zeigt: der Vorbau der Bedienung (`_uiVorbau`) oder ihr
+        // Öffner (`_workshopHandleDrawerChange`) — nie der Init unter dem Ladeschirm (w16-lade-atem: headless kalt 124 ms, und der
+        // Steckbrief des Default-Bauplans ließ die Eiche wachsen).
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
@@ -1604,7 +1605,9 @@ class AnazhRealm_dirigent_ankunft {
                 const s = r.y < 0 ? Math.min(M.weitM, (p.y - ebene) / -r.y) : 0;
                 if (!(s > 0)) continue;
                 const [x, z] = [p.x + r.x * s, p.z + r.z * s];
-                summe += this._horizontSichtAm(x, this._terrainMacroSurfaceY(x, z, true), z, L);
+                const y = this._terrainMacroSurfaceY(x, z, true);
+                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung)
+                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L);
                 zahl++;
             }
         return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L);
