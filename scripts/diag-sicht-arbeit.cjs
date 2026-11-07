@@ -1352,10 +1352,10 @@ const server = statikServer();
                 const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
                 const Lg = r._passWahlLage({ frustum: new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem) }, cam, -1);
                 const trifft = (lage) => {
-                    const alt = r._passTrifft, eigen = Object.prototype.hasOwnProperty.call(r, "_passTrifft");
+                    const alt = r._passTrifft;
                     let n = 0;
-                    r._passTrifft = function (...a) { n++; return alt.apply(this, a); };
-                    try { r._nahWieseSicht(cam, lage); } finally { if (eigen) r._passTrifft = alt; else delete r._passTrifft; }
+                    const zurueck = leihe(r, { _passTrifft: function (...a) { n++; return alt.apply(this, a); } });
+                    try { r._nahWieseSicht(cam, lage); } finally { zurueck(); }
                     return n > 0;
                 };
                 r._nahWieseSicht(cam, Lg);

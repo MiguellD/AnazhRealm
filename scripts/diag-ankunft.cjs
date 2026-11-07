@@ -221,8 +221,8 @@ function ladeschirmVerdict(m) {
             if (!L.ohneFein) out.push("der Leib wartet vor dem Bild auf seine feine Stufe (mensch L0, `_leibBereit`), die Grobstufe steht");
             else if (L.baut[0] !== "vor 1") out.push(`vor dem Bild baut der Leib ohne die Grobstufe als Nah-Gestalt (nahStufe: ${L.baut.join(", ")})`);
             if (!b.includes("nach L0")) out.push(`nach dem ersten Bild bestellt der Leib seine feine Stufe nie (${b})`);
-            else if (!L.egoRoh) out.push("in Ego gießt oder tauscht der Haupt-Faden die feine Stufe (`_ofenRoh`)");
-            else if (!L.baut.includes("nach 0")) out.push("auf Third tauscht der Leib nie (`_leibWunsch`)");
+            else if (!L.egoRoh) out.push("in Ego oder auf Third gießt oder tauscht der Haupt-Faden die feine Stufe (`_ofenRoh`)");
+            else if (!L.baut.includes("nach 0")) out.push("im Leerlauf tauscht der Leib nie (`_leibFeinTausch`)");
         }
         if (K.dorf.ohne) out.push(`das Start-Dorf beim Buch: ${K.dorf.ohne} (Vorbedingung)`);
         else if (K.dorf.export && !K.dorf.kopfRang) out.push("der Export des Start-Dorfs geht ohne Kopf-Rang in die Schlange — hinter ihm wartet jeder Auftrag seiner Bahn (_foundryRang)");
@@ -513,12 +513,7 @@ async function probe(arg) {
             // ein Fall aus Tauschen: je [Objekt, Werte] die Werte setzen, danach jeden alten Wert zurück (ein fehlender fällt wieder)
             const fallMit = (name, ...paare) => {
                 let zurueck = [];
-                const tausch = ([o, w]) => {
-                    const alt = Object.keys(w).map((k) => [k, Object.prototype.hasOwnProperty.call(o, k), o[k]]);
-                    Object.assign(o, w);
-                    return () => alt.forEach(([k, da, v]) => (da ? (o[k] = v) : delete o[k]));
-                };
-                fall(name, () => (zurueck = paare.map(tausch)), () => zurueck.reverse().forEach((z) => z()));
+                fall(name, () => (zurueck = paare.map(([o, w]) => leihe(o, w))), () => zurueck.reverse().forEach((z) => z()));
             };
             const nichts = () => {};
             // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
@@ -801,7 +796,7 @@ async function probe(arg) {
             {
                 const k = (m.koepfe = { orte: [], leib: { bestellt: [], baut: [] }, dorf: {} });
                 const merk = { da: st._weltbildDa, soul: st._deferredAvatarSoul, mode: st.cameraMode, held: st.player.equipped && st.player.equipped.held };
-                const zurueck = () => ["_foundryZug", "_foundryCacheGet", "_standRuht", "_weltKapselHolen", "_weltBakeErlaubt", "_foundryRequest", "_foundryRequestSettlement", "applyPlayerSoul"].forEach((n) => delete r[n]);
+                const zurueck = () => ["_foundryZug", "_foundryCacheGet", "_standRuht", "_weltKapselHolen", "_weltBakeErlaubt", "_foundryRequest", "_foundryRequestSettlement", "applyPlayerSoul", "_weltSteht"].forEach((n) => delete r[n]);
                 const P = Object.getPrototypeOf(r);
                 const bis = async (fn, ms, takt) => { for (const weiter = window.__deckel(String(fn), ms / 50); !fn() && weiter(); ) await (takt ? __takte(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
                 try {
@@ -828,11 +823,15 @@ async function probe(arg) {
                     k.leib.ohneFein = r._leibBereit() && !memo.has(key(0));
                     await bis(() => k.leib.baut.length, 10000, true); // der deferierte Bau im Takt
                     r._weltbildSteht(); // das Bild steht: der EINE Schreiber weckt die feine Stufe
-                    // DIE FEINE WARTET AUF IHREN LESER (w14-ankunft-weg): in der Ego-Sicht liegt sie roh (`_ofenRoh`), ungegossen und
-                    // ungetauscht; die Sicht auf Third ist ihr Leser — dann gießt und tauscht der Leib
+                    // DIE FEINE WARTET ROH (w14-ankunft-weg): in der Ego-Sicht liegt sie roh (`_ofenRoh`), ungegossen und ungetauscht —
+                    // und DER SICHT-WECHSEL BAUT NICHTS (w20-leib-takt): Third schaltet den Leib, der da ist (derselbe Leib, die feine
+                    // roh). DER LEERLAUF TAUSCHT: ruht die Eingabe und steht die Welt (die Probe hält ihre Stand-Wachen wach, hier steht
+                    // sie), gießt und tauscht der erste Schritt des Vorbaus die feine (`_vorbauBedienung` → `_leibFeinTausch`)
                     await bis(() => AnazhRealm._ofenRohMemo?.has(key(0)), 90000, true);
-                    k.leib.egoRoh = !memo.has(key(0)) && !k.leib.baut.some((b) => b.startsWith("nach"));
+                    const leib = st.playerMesh;
                     r.setCameraMode("third");
+                    k.leib.egoRoh = st.playerMesh === leib && !memo.has(key(0)) && !k.leib.baut.some((b) => b.startsWith("nach"));
+                    r._weltSteht = () => true;
                     await bis(() => memo.has(key(0)) && k.leib.baut.some((b) => b.startsWith("nach")), 90000, true);
                     // das Dorf: fällig am Genesis-Ort, sein Wecker hing am echten Buch (`_startDorfAmBuch`) — ein frisches Buch weckt ihn
                     if (amOrt && kanal) {
@@ -1831,8 +1830,8 @@ hauptLauf(async () => {
                     ["der Bild-Rang ortlos", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: false }, { wer: "der Gesetz-Fit", art: "blume L0", blick: false }] }) }, "vor dem ersten Bild bestellt"],
                     ["die Probe des Bild-Rangs ohne Gesetz-Fit", { koepfe: mitFall(koepfe, { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }] }) }, "der Gesetz-Fit bestellt vor"],
                     ["der Leib wartet auf die feine Stufe", { koepfe: mitFall(koepfe, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt"],
-                    ["Ego tauscht", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, egoRoh: false } }) }, "in Ego gießt"],
-                    ["Third tauscht nie", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, baut: ["vor 1"] } }) }, "auf Third tauscht"],
+                    ["Ego tauscht", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, egoRoh: false } }) }, "in Ego oder auf Third gießt"],
+                    ["der Leerlauf tauscht nie", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, baut: ["vor 1"] } }) }, "im Leerlauf tauscht"],
                     ["der Dorf-Export wartet auf den Takt", { koepfe: mitFall(koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht"],
                     ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch"],

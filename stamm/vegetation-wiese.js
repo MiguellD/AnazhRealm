@@ -170,17 +170,51 @@ class AnazhRealm_vegetation_wiese {
         return out;
     }
 
-    // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes — der Stoff der Ferne rechnet dieselbe
-    // Zahl aus dem Ursprung seiner Instanz (`_halmFerne`): die Lage auf 1/256 m (in f32 exakt bis ±32 km, keine
-    // Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen, die oberen 24 Bit.
+    // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes, Zug 0 der Ziehung des Orts
+    // (`_ortZiehung`) — der Stoff der Ferne rechnet dieselbe Zahl aus dem Ursprung seiner Instanz (`_halmFerne`).
     static _wieseOrdnung(x, z) {
-        const q = (v) => (Math.floor(Math.fround(v) * 256 + 0.5) + 8388608) >>> 0;
+        return AnazhRealm._ortZiehung(AnazhRealm._wortAlgebra(), x, z, 0);
+    }
+    // DIE ZIEHUNG DES ORTS (rein, über einer Wort-Algebra W, `_wortAlgebra`): das Wort einer Lage — x und z auf 1/256 m (in f32
+    // exakt bis ±32 km, keine Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen —, je `zug` eine
+    // PCG-Runde weiter, die oberen 24 Bit als Zahl in [0, 1). Zug 0 ist die Ordnung der Ferne (`_wieseOrdnung`, `_halmFerne`), Zug 1
+    // das Rauschen des Halms: die Phase seines Wiegens (`_windSwayOffset` am Fuß des Büschels; die Nah-Streu trägt es je Pflanze im
+    // Satz, `_satzKernWiege`; die Strähne des Haars am Ort ihrer ersten Sicht, `_haarFederTakt`). EINE Rechnung für CPU und Stoff.
+    static _ortZiehung(W, x, z, zug = 0) {
         const pcg = (u) => {
-            const s = (Math.imul(u, 747796405) + 2891336453) >>> 0;
-            const w = Math.imul(((s >>> ((s >>> 28) + 4)) ^ s) >>> 0, 277803737) >>> 0;
-            return ((w >>> 22) ^ w) >>> 0;
+            const s = W.add(W.mul(u, 747796405), 2891336453);
+            const w = W.mul(W.xor(W.shr(s, W.add(W.shr(s, 28), 4)), s), 277803737);
+            return W.xor(W.shr(w, 22), w);
         };
-        return (pcg((q(x) ^ pcg(q(z))) >>> 0) >>> 8) / 16777216;
+        let h = pcg(W.xor(W.lage(x), pcg(W.lage(z))));
+        for (let i = 0; i < zug; i++) h = pcg(h);
+        return W.anteil(h);
+    }
+    // DIE WORT-ALGEBRA der Ziehung (u32, modulo 2³²): ohne T die Zahlen der CPU, mit T die TSL-Knoten (WGSL u32).
+    static _wortAlgebra(T) {
+        if (T)
+            return {
+                lage: (v) => T.floor(v.mul(256).add(0.5)).add(8388608).toUint(),
+                add: (a, b) => a.add(b),
+                mul: (a, b) => a.mul(b),
+                xor: (a, b) => a.bitXor(b),
+                shr: (a, b) => a.shiftRight(b),
+                anteil: (u) =>
+                    u
+                        .shiftRight(8)
+                        .toFloat()
+                        .mul(1 / 16777216),
+            };
+        if (!AnazhRealm._wortZahlen)
+            AnazhRealm._wortZahlen = Object.freeze({
+                lage: (v) => (Math.floor(Math.fround(v) * 256 + 0.5) + 8388608) >>> 0,
+                add: (a, b) => (a + b) >>> 0,
+                mul: (a, b) => Math.imul(a, b) >>> 0,
+                xor: (a, b) => (a ^ b) >>> 0,
+                shr: (a, b) => a >>> b,
+                anteil: (u) => (u >>> 8) / 16777216,
+            });
+        return AnazhRealm._wortZahlen;
     }
 
     // Eine Kachel baut neu (eine Tat, ihr Heilen, ein Weg): sie trägt nur Daten, der Sicht-Satz legt sich neu — und die
@@ -1108,7 +1142,7 @@ class AnazhRealm_vegetation_wiese {
     // Gestalt. Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine
     // LRU-Räumung zerstört sie nie (ein eintretender Block rechnet sich aus ihr). `wiegt`: die Art trägt weiches Gewebe —
     // jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer `_foundryTreeMaterial`; die Höhe über der
-    // Wurzel in Metern reist im Satz als `aWiege`, `_satzBlock`).
+    // Wurzel in Metern und das Rauschen der Pflanze reisen im Satz als `aWiege`, `_satzBlock`).
     _streuNahSenke(art, v, stufe, p, lf, wiegt) {
         const ns = this.state.nahStreu;
         const key = `${art.id}:${v}:L${stufe}:${p}`;
@@ -2830,12 +2864,13 @@ AnazhRealm.STREU_FEST_ATTR = Object.freeze([
     Object.freeze(["aH0L", 1]),
 ]);
 // Die Attribute eines wiegenden Streu-Satz-Bereichs (`_streuSatzArt`, W7): was der wiegende Stoff liest — Welt-Lage,
-// Normale, Farbe × Tint und die Höhe über der Wurzel (`aWiege`, m); er blendet nie, Dither-Stempel trägt er keine.
+// Normale, Farbe × Tint und das Wiegen der Ecke (`aWiege`: die Höhe über der Wurzel in m, das Rauschen der Pflanze aus ihrem
+// Fuß, `_satzKernWiege`); er blendet nie, Dither-Stempel trägt er keine.
 AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3]),
     Object.freeze(["color", 3]),
-    Object.freeze(["aWiege", 1]),
+    Object.freeze(["aWiege", 2]),
 ]);
 // Dazu das JAHR (vegetation.K5) jedes Stoffs mit Laub oder Blüte (`userData.jahr`): die Mitte jedes Blatts in Welt-Lage
 // (`_satzBlock` rechnet sie wie die Lage) und sein Typ — der Stoff zieht das Laub im Winter auf seine Mitte (`_jahrLage`).

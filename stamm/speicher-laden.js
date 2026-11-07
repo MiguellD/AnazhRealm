@@ -310,7 +310,6 @@ class AnazhRealm_speicher_laden {
             pz.s.every(Number.isFinite)
                 ? { t: pz.t, grund: pz.grund, s: pz.s.slice() }
                 : null;
-        this.state.regenStempel = [];
         this.state.wetterSchreiber =
             typeof state.wetterSchreiber === "string" ? state.wetterSchreiber.slice(0, 80) : null;
         // der Zug, der schon zog, und sein Übergang (feld.K2#2): im selben Zug zieht der erste Takt nicht neu
@@ -321,6 +320,10 @@ class AnazhRealm_speicher_laden {
             wt && ok(wt.from) && ok(wt.to) && Number.isFinite(wt.startedAt) && wt.duration > 0
                 ? { from: wt.from, to: wt.to, progress: 0, duration: wt.duration, startedAt: wt.startedAt }
                 : null;
+        // der Weg des Regens beginnt am Zustand mit dem Wetter des Stands, seinem Übergang oder Wort (`_regenStempel`), bevor ein
+        // Zug ihn weiterschreibt (`_regenWeg`)
+        this.state.regenStempel = [];
+        if (this.state.pegelZustand) this._regenStempel();
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -471,11 +474,17 @@ class AnazhRealm_speicher_laden {
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
         if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1) {
-            this.state.seasonPhase = state.seasonPhase;
-            // der Anker des Jahrs ist der Stand: seine Phase zu seiner Welt-Uhr (feld.K2#2, `_tickSeason`)
-            const t = Number.isFinite(state.spielZeit) ? state.spielZeit : this.state.spielZeit;
+            // der Anker des Jahrs ist der des Stands (`saisonAnker`: Phase und Welt-Uhr als EIN Paar, feld.K2#2, `_saisonAnkerGilt`);
+            // ein Stand ohne ihn (ein angehaltenes Jahr, ein Stand vor w18-pegel-peers) trägt seine Phase zu seiner Welt-Uhr. Die Phase
+            // steht, wie der Stand sie trägt, bis der Takt der Saison sie zur Uhr der Seite rechnet (`_saisonPhaseZu`).
+            const sa = state.saisonAnker;
+            const [anker, t] =
+                Array.isArray(sa) && sa.length === 2 && sa.every(Number.isFinite) && sa[0] >= 0 && sa[0] < 1
+                    ? sa
+                    : [state.seasonPhase, Number.isFinite(state.spielZeit) ? state.spielZeit : this.state.spielZeit];
             const jahr = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
-            this._saisonAnker = { anker: state.seasonPhase, t, jahr, phase: state.seasonPhase };
+            this.state.seasonPhase = state.seasonPhase;
+            this._saisonAnker = { anker, t, jahr, phase: state.seasonPhase };
         }
         // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
         // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das

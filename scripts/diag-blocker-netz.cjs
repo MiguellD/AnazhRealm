@@ -188,7 +188,7 @@ async function probe() {
                 if (!e || !e.blockerAABBs || !e.position) continue;
                 const rcCull = 80 + (e._blockerReach || 0);
                 if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
-                const boxes = e.blockerAABBs.concat(r._fluegelBoxenVon(e)); // die Flügel wie im Strahl danach
+                const boxes = e.blockerAABBs.concat(r._strahlBoxenVon(e)); // Geländer und Flügel wie im Strahl danach
                 for (let bi = 0; bi < boxes.length; bi++) {
                     if (durchPflanzen && boxes[bi].pflanze === true) continue;
                     const hitInfo = r._segmentAABB(sx, sy, sz, dx, dy, dz, boxes[bi]);
@@ -238,7 +238,7 @@ async function probe() {
             if (!e || !e.blockerAABBs || !e.position) continue;
             const rc = 80 + (e._blockerReach || 0);
             if (Math.abs(e.position.x - sx) > rc || Math.abs(e.position.z - sz) > rc) continue;
-            for (const b of e.blockerAABBs.concat(r._fluegelBoxenVon(e)))
+            for (const b of e.blockerAABBs.concat(r._strahlBoxenVon(e)))
                 if (!(
                     b.maxX < q[0] ||
                     b.minX > q[1] ||

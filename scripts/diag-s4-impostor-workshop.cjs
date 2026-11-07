@@ -60,18 +60,14 @@ hauptLauf(async () => {
                 // ===== TEIL B — KONSUM: die Vorschau routet L2 eines Baums durch den Karten-Flatten (nur Bäume, nur Stufe 2)
                 // und baut ihn im EINEN Instanz-Chokepoint der Welt (Spion je Versorger, own-treu zurück) =====
                 const ruft = (ziel, k, bp, lod) => {
-                    const eigen = Object.prototype.hasOwnProperty.call(ziel, k), fn = ziel[k], lod0 = bps[bp]._recipeLod;
+                    const fn = ziel[k], lod0 = bps[bp]._recipeLod;
                     let n = 0;
-                    ziel[k] = function (...a) {
-                        n++;
-                        return fn.apply(this, a);
-                    };
+                    const zurueck = leihe(ziel, { [k]: function (...a) { n++; return fn.apply(this, a); } }); // prettier-ignore
                     bps[bp]._recipeLod = lod;
                     try {
                         r._workshopFoundryPreviewGroup(bp);
                     } finally {
-                        if (eigen) ziel[k] = fn;
-                        else delete ziel[k];
+                        zurueck();
                         bps[bp]._recipeLod = lod0;
                     }
                     return n > 0;

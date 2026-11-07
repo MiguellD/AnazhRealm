@@ -406,9 +406,10 @@ class AnazhRealm_siedlung_satz {
 
     // DER EINE BLOCK-BAUER der Stoff-Sätze (Bau · Streu): `cnt` Instanzen einer Geometrie in Welt-Lage — Position ×
     // Instanz-Matrix, Normale × ihre Normalen-Matrix (normiert), Farbe × Instanz-Farbe (der InstanceNode multipliziert sie
-    // sonst in den Stoff), die Instanz-Attribute der Fassade (`LOD_INSTANZ_ATTRIBUTE`) je Vertex, `aWiege` = die Höhe über der
-    // Wurzel in Metern (Höhe der Vorlage × Welt-Skala der Instanz — die Länge ihrer ersten Matrix-Spalte: Studio-Skala des
-    // Teils × Skala der Pflanze), alle anderen Vertex-Attribute wie sie sind; je Instanz eine Zelle (ihr Lauf im Index).
+    // sonst in den Stoff), die Instanz-Attribute der Fassade (`LOD_INSTANZ_ATTRIBUTE`) je Vertex, `aWiege` = (die Höhe über der
+    // Wurzel in Metern: Höhe der Vorlage × Welt-Skala der Instanz — die Länge ihrer ersten Matrix-Spalte: Studio-Skala des
+    // Teils × Skala der Pflanze; das Rauschen der Pflanze, `_satzKernWiege`), alle anderen Vertex-Attribute wie sie sind; je
+    // Instanz eine Zelle (ihr Lauf im Index).
     // `im` = cnt × 16 Matrix-Werte, `ic` = cnt × 3 Farben oder null. Fail-closed: ein Satz-Attribut ohne Quelle, eine
     // Geometrie ohne Index ist ein lauter Bruch (`wer` nennt den Bereich).
     // `regler` (der Bau-Satz, `_satzRegler`): { regler: [Rauheit, Metall, Deckkraft], glut: [r, g, b] } — je Ecke dieselben
@@ -470,8 +471,11 @@ class AnazhRealm_siedlung_satz {
                 else if (name === "normal")
                     AnazhRealm._satzKernNormale(out, o0, src, n, NM.getNormalMatrix(M.fromArray(im, i * 16)).elements);
                 else if (wiegeAttr) {
+                    if (is !== 2)
+                        throw new Error(`_satzBlock(${wer}): aWiege trägt Höhe und Rauschen (2), nicht ${is}`);
                     const e = M.fromArray(im, i * 16).elements;
-                    AnazhRealm._satzKernWiege(out, o0, src, n, Math.hypot(e[0], e[1], e[2]));
+                    const nu = AnazhRealm._ortZiehung(AnazhRealm._wortAlgebra(), e[12], e[14], 1);
+                    AnazhRealm._satzKernWiege(out, o0, src, n, Math.hypot(e[0], e[1], e[2]), nu);
                 } else if (jeInstanz) AnazhRealm._satzKernJe(out, o0, src, n, is, i * is);
                 else if (name === "color" && ic)
                     AnazhRealm._satzKernFarbe(out, o0, src, n, ic[i * 3], ic[i * 3 + 1], ic[i * 3 + 2]);
@@ -581,9 +585,14 @@ class AnazhRealm_siedlung_satz {
             out[o0 + k + 2] = nz / l;
         }
     }
-    // `aWiege`: die Höhe der Vorlage (Position y) × die Welt-Skala der Instanz.
-    static _satzKernWiege(out, o0, src, n, skala) {
-        for (let v = 0; v < n; v++) out[o0 + v] = src[v * 3 + 1] * skala;
+    // `aWiege` je Ecke: die Höhe der Vorlage (Position y) × die Welt-Skala der Instanz und das Rauschen `nu` ihrer Pflanze (die
+    // Ziehung des Orts, Zug 1, an ihrem Fuß — dieselbe Zahl, die `_windSwayOffset` am Fuß einer Instanz zieht): jeder Teil
+    // einer Pflanze wiegt in derselben Phase.
+    static _satzKernWiege(out, o0, src, n, skala, nu) {
+        for (let v = 0; v < n; v++) {
+            out[o0 + v * 2] = src[v * 3 + 1] * skala;
+            out[o0 + v * 2 + 1] = nu;
+        }
     }
     // Ein Instanz-Attribut der Fassade (ab `q` in `src`, Breite `is`) je Ecke.
     static _satzKernJe(out, o0, src, n, is, q) {

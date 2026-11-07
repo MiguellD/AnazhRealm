@@ -34,8 +34,13 @@ function handTakt() {
 const aufsteigend = (globalThis.aufsteigend = (a, b) => a - b);
 const addiere = (globalThis.addiere = (a, b) => a + b);
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
-// eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling. In der
+// Seite endet er am Abbruch (`seitenAbbruch`, w18-mensch-deckel): zählte die Epoche `__abbruchEpoche` hoch, während er
+// schlief, wirft er beim Erwachen — die Arbeit eines toten Rufers endet an ihrem nächsten Schlaf (in Node zählt keine Epoche)
+const sleep = (ms) => {
+    const e = globalThis.__abbruchEpoche;
+    return new Promise((r, f) => setTimeout(() => (globalThis.__abbruchEpoche === e ? r() : f(new Error("ABGEBROCHEN: der Rufer ist fort"))), ms)); // prettier-ignore
+};
 // DIE EINE LEIHE (`const zurueck = leihe(o, { name: wert, … })`, in jeder Seite als `window.leihe`, `WARTEN_SEITE`): tauscht
 // Glieder eines Objekts (der Welt `r`, ihrer Klasse) und gibt beim Rückruf jedes zurück — ein eigenes, wie es war, ein geerbtes
 // fällt (die Welt ruft wieder ihren Prototyp). Je Probe ein eigenes `hasOwnProperty`-Merken samt `delete` oder Zuweisen im
@@ -1498,11 +1503,30 @@ const urteilEnde = (rot, roteZeile, grueneZeile) => {
     console.log(z(grueneZeile));
     process.exit(0);
 };
-// DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
+// DER ABBRUCH DER SEITE (`const abbrechen = await seitenAbbruch(page)`, w18-mensch-deckel; der Leser: die Werkbank, wenn ein Rufer
+// stirbt): eine eigene CDP-Sitzung, angelegt, solange die Seite ruht (an einem belegten Faden legt der Browser keine neue an) —
+// `Runtime.terminateExecution` stellt er am Haupt-Faden vorbei zu und beendet, was eben rechnet; dann zählt die Epoche des Abbruchs in
+// der Seite hoch (`__abbruchEpoche`): jeder Schlaf, der vor ihr begann, wirft beim Erwachen (`sleep`), die Arbeit, die eben wartete,
+// endet an ihrem nächsten Schritt. Antwortet die Seite nicht binnen 2 s (eine wartende Arbeit begann eben ihren nächsten synchronen
+// Schritt), bricht `abbrechen` noch einmal ab, höchstens 5-mal. Rückgabe die Zahl der Abbrüche bis zur Antwort (0: keine)
+async function seitenAbbruch(page) {
+    const cdp = await page.target().createCDPSession();
+    let e = 0;
+    return async () => {
+        e++;
+        for (let i = 1; i <= 5; i++) {
+            await cdp.send("Runtime.terminateExecution").catch(() => 0);
+            if (await Promise.race([page.evaluate((n) => (window.__abbruchEpoche = n), e).then(() => 1, () => 0), sleep(2000)])) return i;
+        }
+        return 0;
+    };
+}
+// DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`) — der Rufer trägt seine Arbeit (`x-rufer: traegt`):
+// stirbt er vor der Antwort, bricht die Werkbank sie in der Seite ab (`seitenAbbruch`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
         const req = http.request(
-            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } },
+            { host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json", "x-rufer": "traegt" } },
             (r) => {
                 let d = "";
                 r.on("data", (c) => (d += c));
@@ -1801,6 +1825,7 @@ module.exports = {
     weltTor,
     werkbankTor,
     werkbankRuf,
+    seitenAbbruch,
     teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
 };
@@ -1814,6 +1839,8 @@ async function selbsttest() {
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+7000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
+        "/abbruch.html":
+            "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
         "/wirft.html":
             "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
     };
@@ -1898,6 +1925,25 @@ async function selbsttest() {
         }
     );
     const haenger = await fall("/haenger.html", (p) => p.evaluate(() => window.__nie()).catch(() => {}));
+    // DER ABBRUCH (w18-mensch-deckel, `seitenAbbruch`): in der Seite ein synchroner Schritt (6 s Schleife, wie der Tag der Probe bewohner
+    // nach dem Deckel) und eine wartende Arbeit (Schlaf um Schlaf) — nach dem Abbruch antwortet die Seite binnen 2,5 s, und die wartende
+    // Arbeit steht still beim Wort ihres Schlafs. Die MUTANTE: die CDP-Sitzung schweigt (kein terminateExecution) und die Seite schläft
+    // mit dem Schlaf von vorher (ohne Epoche) — ROT beim Namen
+    const abbruchProbe = async (stumm) => {
+        const p = await browser.newPage();
+        await server.zeige(p, undefined, "abbruch.html", "load");
+        const ab = await seitenAbbruch(stumm ? { target: () => ({ createCDPSession: async () => ({ send: async () => 0 }) }), evaluate: p.evaluate.bind(p) } : p); // prettier-ignore
+        await p.evaluate((s) => (s && (sleep = (ms) => new Promise((r) => setTimeout(r, ms))), __los()), stumm);
+        await sleep(500);
+        const t0 = Date.now();
+        await ab();
+        const ms = Date.now() - t0;
+        await sleep(100);
+        const wort = await p.evaluate(() => window.__wort);
+        await p.close();
+        return ms < 2500 && /^ABGEBROCHEN/.test(wort) ? "" : `${ms} ms, ${wort}`;
+    };
+    const [abbruch, abbruchMutante] = [await abbruchProbe(), await abbruchProbe(true)];
     // DER EINE SAMMLER: der Wurf einer Seite (auch in einem eigenen Kontext) steht beim Namen in der Liste und macht das
     // Prozess-Ende ROT — ein eigener pageerror-Sammler einer Linse daneben ist ein Zwilling (werkbank.cjs startet sein Fenster selbst)
     const kontext = await browser.createBrowserContext();
@@ -2030,6 +2076,7 @@ async function selbsttest() {
         ],
         schlafWand,
         [seitenSchlaf === String(sleep), `die Seite schläft mit ${seitenSchlaf}`],
+        [!abbruch && !!abbruchMutante, `Abbruch: ${abbruch || "die Seite antwortet, die wartende Arbeit endet"} · die Mutante ${abbruchMutante || "BLIND"}`],
         tuerWand,
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
