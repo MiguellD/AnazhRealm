@@ -292,11 +292,7 @@ function glieder(t) {
             const ts = methode ? n.start + (n.static ? /^static\s*/.exec(t.slice(n.start))[0].length : 0) : (n.value || n.init || n.right || n).start; // prettier-ignore
             G.push((g = { k: p.join("/"), s: n.start, e: n.end, ts, eltern, klasse, sig: [] }));
         }
-        for (const k in n) {
-            const v = n[k];
-            if (k === "loc" || !v || typeof v !== "object") continue;
-            for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === "string") geh(c, p, g, klasse);
-        }
+        require("./stamm.cjs").kinder(n, (c) => geh(c, p, g, klasse));
     };
     geh(baum, [], null);
     // die Anweisungen der Wurzel und ihr Subjekt — eine IIFE (`(function () { … })()`, UMD) trägt ihre Anweisungen wie die Wurzel,
@@ -463,7 +459,7 @@ function karteBauen(wurzel = ROOT) {
     const nach = (m) => [...m].flatMap(([r, ks]) => [...ks].map((k) => idx.get(r + "\0" + k)));
     const kopf = spawnSync("git", ["rev-parse", "HEAD"], { cwd: wurzel, encoding: "utf8" }).stdout.trim();
     const out = {
-        quelle: "scripts/lib/zug-auswahl.cjs --karte: je Schritt der vollen Batterie, was er ausführt (fn, Bitfeld über glieder), als Text liest (txt), als Datei liest (datei), listet (verz), erfragt (probe) und zur Hälfte als Text fegt (fege)",
+        quelle: "scripts/lib/zug-auswahl.cjs --karte",
         kopf,
         erzeugt: new Date().toISOString().slice(0, 10),
         glieder: glieder_,
@@ -733,7 +729,7 @@ if (require.main === module) {
         if (alle.length) console.log(`# ALLE: ${alle.join(" · ")}`);
         for (const n of aus) console.log(`# aus: ${n} — seine Karte trägt keine der Wirkungen von ${a[0].slice(0, 12)}..${a[1].slice(0, 12)}`);
     } else {
-        console.error("node scripts/lib/zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--gruppe g] [--parallel n] | --karte [wurzel] | --geschichte");
+        console.error("zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--gruppe g] [--parallel n] | --karte [wurzel] | --geschichte");
         process.exit(2);
     }
 }

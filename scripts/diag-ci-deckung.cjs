@@ -1586,26 +1586,24 @@ function selbsttestAuswahl() {
     const ohneAlle = (n, k, W) => echt(n, k, W.filter((w) => !w.alle));
     const nurGemessen = (n, k, W) => echt(n.filter((m) => k.schritte[m]), k, W);
     const f = [];
-    const fall = (name, W, wahl, muss) => {
+    // [Fall, Wirkungen, Wahl, ROT beim Namen (leer: grün)]
+    for (const [name, W, wahl, muss] of [
+        ["die echte Wahl: ein Glied, ein Text, eine neue Datei, ein junges Glied, eine Stelle, eine Absenz", [...W1, ...W2, ...W5, ...W6, ...W7], echt], // prettier-ignore
+        ["die echte Wahl: eine neue Datei", W4, echt],
+        ["Mutante: die Karte ignoriert", W1, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/f/],
+        ["Mutante: der Text vergessen", W2, ohneText, /AUSGELASSEN: „zwei" trägt .*A\/g/],
+        ["Mutante: die Datei ignoriert", W3, ohneKarte, /AUSGELASSEN: „zwei" trägt .*spec\/x\.json/],
+        ["Mutante: die unbekannte Datei wählt nicht alles", W4, ohneAlle, /ALLE \(Datei ohne Karte: stamm\/gibt-es-nie\.js.*„eins" fehlt/],
+        ["Mutante: ein Schritt ohne Karte fällt aus", W1, nurGemessen, /OHNE KARTE: „vier" fehlt/],
+        ["Mutante: das junge Glied ignoriert", W5, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/neu/],
+        ["Mutante: die Suche ignoriert", W6, ohneKarte, /AUSGELASSEN: „zwei" trägt .*c\.js/],
+        ["Mutante: die Absenz ignoriert", W7, ohneKarte, /AUSGELASSEN: „eins" trägt .*stamm\/c\.js/],
+    ]) {
         const v = auswahlUrteil(namen, K, W, wahl);
         const gut = muss ? v.some((s) => muss.test(s)) : !v.length;
         console.log(`  ${gut ? "✅" : "❌"} Selbsttest (Z) „${name}" → ${v.join(" · ") || "grün"}`);
         if (!gut) f.push(`(Z) ${name}: ${v.join(" · ") || "grün"}`);
-    };
-    fall("die echte Wahl, ein Glied", W1, echt);
-    fall("die echte Wahl, ein Text", W2, echt);
-    fall("die echte Wahl, eine neue Datei", W4, echt);
-    fall("die echte Wahl, ein Glied jünger als die Karte", W5, echt);
-    fall("Mutante: die Karte ignoriert", W1, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/f/);
-    fall("Mutante: der Text vergessen", W2, ohneText, /AUSGELASSEN: „zwei" trägt .*A\/g/);
-    fall("Mutante: die Datei ignoriert", W3, ohneKarte, /AUSGELASSEN: „zwei" trägt .*spec\/x\.json/);
-    fall("Mutante: die unbekannte Datei wählt nicht alles", W4, ohneAlle, /ALLE \(Datei ohne Karte: stamm\/gibt-es-nie\.js.*„eins" fehlt/);
-    fall("Mutante: ein Schritt ohne Karte fällt aus", W1, nurGemessen, /OHNE KARTE: „vier" fehlt/);
-    fall("Mutante: das junge Glied ignoriert", W5, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/neu/);
-    fall("die echte Wahl, eine gesuchte Stelle", W6, echt);
-    fall("Mutante: die Suche ignoriert", W6, ohneKarte, /AUSGELASSEN: „zwei" trägt .*c\.js/);
-    fall("die echte Wahl, ein genanntes Glied der Absenz", W7, echt);
-    fall("Mutante: die Absenz ignoriert", W7, ohneKarte, /AUSGELASSEN: „eins" trägt .*stamm\/c\.js/);
+    }
     return f;
 }
 
