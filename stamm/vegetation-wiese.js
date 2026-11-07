@@ -523,13 +523,14 @@ class AnazhRealm_vegetation_wiese {
 
     // DAS GESETZ DER SCHALE (rein, über einer Algebra A wie `_wieseFern` — Zahlen im Sicht-Satz, TSL im Stoff der Schale): am
     // waagrechten Abstand d der Anteil der stehenden Karten — 1 bis `voll`, dahinter (voll/d)³ (die Karten je Pixel bleiben),
-    // vor `bis` über `saum` auf 0 — und die Breite einer Karte, 1/√Anteil (höchstens `breitMax`): die Deckung je Boden bleibt.
+    // vor `bis` über `saum` auf 0 — und die Breite einer Karte, 1/Anteil (höchstens `breitMax`): die Blattfläche je Boden
+    // bleibt (die Höhe der Karte bleibt, ihre Fläche wächst mit der Breite).
     static _wieseSchale(A, d) {
         const S = AnazhRealm.NAH_WIESE.fern.schale;
         const a0 = A.min(A.k(1), A.pow(A.max(A.mul(d, A.k(1 / S.voll)), A.k(1e-3)), A.k(-3)));
         const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(S.saum - S.bis)), A.k(1 / S.saum))));
         const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
-        return { anteil: A.mul(a0, saum), breit: A.min(A.k(S.breitMax), A.pow(A.max(a0, A.k(1e-3)), A.k(-0.5))) };
+        return { anteil: A.mul(a0, saum), breit: A.min(A.k(S.breitMax), A.pow(A.max(a0, A.k(1e-3)), A.k(-1))) };
     }
 
     // DER FUSSABDRUCK-ABSTAND (rein, über der Algebra A — dieselbe Rechnung in Takt, Sicht-Satz und Stoff): (dx, dy, dz) der
@@ -877,11 +878,11 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // DIE SENKE DER SCHALE (w22-wiese-nachzug): EINE Senke `nahWiese:Lf:schale` (ein Befehl, die Klasse der Ferne), ihre Karte
-    // ein Band und acht Spitzen von Halm-Breite (10 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der
+    // ein Band und elf Spitzen von Halm-Breite (13 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der
     // Pixel mehrere trägt), unten dunkel, oben licht; die Albedo die der Vorlage L2 (ihr Stoff, ihre Ecken-Farben). Der Stoff
     // liest die Ordnung der Karte (Element 7) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der
     // Halm der Ferne): sie steigt über `rampe` m hinter der Übergabe, steht unter dem Anteil (`_wieseSchale`, im Band `rand`
-    // sinkt sie wie das Büschel) und ist um 1/√Anteil breiter. null, solange die Vorlage fehlt.
+    // sinkt sie wie das Büschel) und ist um 1/Anteil breiter. null, solange die Vorlage fehlt.
     _wieseSchaleSenke(vl) {
         const nw = this.state.nahWiese;
         if (nw.schale || !vl || !vl.fern.length) return nw.schale || null;
@@ -889,13 +890,13 @@ class AnazhRealm_vegetation_wiese {
         const [F, S] = [NW.fern, NW.fern.schale];
         const [pos, hell] = [[], []];
         const ecke = (x, y, h) => (pos.push(x, y, 0), hell.push(h, h, h));
-        for (const [x, y, h] of [[-0.5, 0, 0.55], [0.5, 0, 0.55], [0.5, 0.35, 0.8], [-0.5, 0, 0.55], [0.5, 0.35, 0.8], [-0.5, 0.35, 0.8]]) ecke(x, y, h); // prettier-ignore
-        const spitze = [1, 0.8, 0.94, 0.72, 0.9, 0.78, 0.98, 0.84];
-        for (let i = 0; i < 8; i++) {
-            const xa = -0.5 + i / 8;
-            ecke(xa, 0.35, 0.8);
-            ecke(xa + 1 / 8, 0.35, 0.8);
-            ecke(xa + 1 / 16, spitze[i], 1.15);
+        for (const [x, y, h] of [[-0.5, 0, 0.55], [0.5, 0, 0.55], [0.5, 0.45, 0.8], [-0.5, 0, 0.55], [0.5, 0.45, 0.8], [-0.5, 0.45, 0.8]]) ecke(x, y, h); // prettier-ignore
+        const spitze = [1, 0.8, 0.94, 0.72, 0.9, 0.78, 0.98, 0.84, 0.92, 0.75, 0.96];
+        for (let i = 0; i < 11; i++) {
+            const xa = -0.5 + i / 11;
+            ecke(xa, 0.45, 0.8);
+            ecke(xa + 1 / 11, 0.45, 0.8);
+            ecke(xa + 1 / 22, spitze[i], 1.15);
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));

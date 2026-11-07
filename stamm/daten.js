@@ -526,9 +526,9 @@ class AnazhRealm_daten {
     // (504 → 1 069 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
     // DIE SCHALE DER FERNE (`schale`, w22-wiese-nachzug): seit das Blatt der Ferne nur den Pixel hält (w22-strauch-karte, keine
     // Keile) trägt die Blattfläche jenseits der Übergabe EINE billige Schicht über dem Boden-Gitter der Ferne (`_wieseFernGitter`):
-    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` (ein dunkles Band, gezackte Spitzen von Halm-Breite, 10
-    // Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
-    // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/√Anteil breiter
+    // je Punkt, der Wiese trägt, eine Karte `breite` × `hoehe` (ein dunkles Band, elf gezackte Spitzen von Halm-Breite,
+    // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
+    // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
     static get NAH_WIESE() {
         return this._einmal(
@@ -560,12 +560,12 @@ class AnazhRealm_daten {
                     boden: 0.5,
                     wiese: 0.5,
                     schale: Object.freeze({
-                        voll: 25,
+                        voll: 30,
                         bis: 80,
                         saum: 10,
                         rampe: 4,
-                        breite: 1.3,
-                        hoehe: 0.55,
+                        breite: 2,
+                        hoehe: 0.65,
                         breitMax: 3,
                     }),
                 }),
