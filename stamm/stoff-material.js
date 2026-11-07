@@ -1637,12 +1637,7 @@ class AnazhRealm_stoff_material {
             this._applySubstanceResponse(mat, responseProfile, werte);
             // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
             // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
-            if (werte)
-                this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","), [
-                    "colorNode",
-                    "roughnessNode",
-                    "outputNode",
-                ]);
+            if (werte) this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","));
         }
         // DIE LICHT-NORMALE DES BODENS IST SEINE WAHRE NORMALE (ferne.K4, w10-ferne): der Hang zur Sonne nimmt ihr Licht nach N·L,
         // der abgewandte nicht — nah (der Chunk: −∇d der Dichte, `_voxelGradientNormals`), fern (der Ring: die Normale seiner

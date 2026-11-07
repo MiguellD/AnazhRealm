@@ -15,15 +15,21 @@ class AnazhRealm_studio_stoff {
 
     // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel endet
     // in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff. Der erste Stoff einer Signatur legt
-    // die Knoten seiner `plaetze` ab, jeder weitere zeichnet mit DENSELBEN; was nur ihn unterscheidet, liest der Graph als
-    // Stoff-Wert (`_stoffWert`). Weichen die belegten Plätze ab, fehlt der Signatur eine Eingabe des Baus: das bricht laut beim
-    // Namen, nie still mit fremdem Graphen. Leser: der Studio-Stoff (`_foundryTreeMaterial`) und der Werk-Stoff
-    // (`_buildPbrNodeMaterial`, material.K5).
-    _graphTeilen(mat, sig, plaetze) {
+    // JEDEN belegten Knoten-Platz ab (jedes `…Node` des Stoffs, das der Bau bis hier schrieb), jeder weitere zeichnet mit
+    // DENSELBEN; was nur ihn unterscheidet, liest der Graph als Stoff-Wert (`_stoffWert`). Weichen die belegten Plätze ab, fehlt der
+    // Signatur eine Eingabe des Baus: das bricht laut beim Namen, nie still mit fremdem Graphen. Leser: der Studio-Stoff
+    // (`_foundryTreeMaterial`) und der Werk-Stoff (`_buildPbrNodeMaterial`, material.K5).
+    // DIE PLÄTZE LIEST DER STOFF, NIE EINE LISTE DES RUFERS (w22-ankunft-kalt): bis hier nannte jeder Rufer seine Plätze von Hand,
+    // und was ein Helfer außerhalb der Liste schrieb, blieb je Stoff frisch — der Empfangs-Ort der Krone (`_laubStoffNormale`:
+    // receivedShadowPositionNode), die Normale und Kavität von Stein, Halm und Facette (normalNode, aoNode). Jede Baum-Art baute
+    // so dasselbe Programm neu: swiftshader kalt bis zum Weltbild 47 Knoten-Bauten, davon 13 byte-gleiche Zwillinge (die Karte
+    // 10 × 69 129 Zeichen WGSL, das Laub der Welt 5 × 95 818), 46 % des gebauten WGSL.
+    _graphTeilen(mat, sig) {
         const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
+        const plaetze = Object.keys(mat).filter((p) => p.endsWith("Node") && mat[p] != null);
         const g = G.get(sig);
-        if (!g) return void G.set(sig, Object.fromEntries(plaetze.map((p) => [p, mat[p] || null])));
-        const ab = plaetze.filter((p) => !mat[p] !== !g[p]);
+        if (!g) return void G.set(sig, Object.fromEntries(plaetze.map((p) => [p, mat[p]])));
+        const ab = [...new Set([...plaetze, ...Object.keys(g)])].filter((p) => !mat[p] !== !g[p]);
         if (ab.length)
             throw this._stoffBruch(
                 `der geteilte Graph „${sig}"`,
@@ -559,18 +565,11 @@ class AnazhRealm_studio_stoff {
             // (Radeon main 25374f6f, material.K2#1 am Fels der Genesis 0,5/1/2 m: glatt 0,606/0,559/0,237 → 0/0,029/0), baute der
             // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
+            // DIE KRONE (K68-N1, `_laubStoffNormale`) schreibt Normale und Empfangs-Ort: ein Klingen-Laub mit Krone (Baum, Strauch)
+            // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
+            _krone ? "krone" : "",
         ].join("|");
-        this._graphTeilen(mat, _sig, [
-            "colorNode",
-            "emissiveNode",
-            "opacityNode",
-            "outputNode",
-            "positionNode",
-            "maskNode",
-            "maskShadowNode",
-            "roughnessNode",
-            "metalnessNode",
-        ]);
+        this._graphTeilen(mat, _sig);
         mat.userData.foundrySignatur = _sig;
         mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
