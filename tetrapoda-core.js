@@ -3410,13 +3410,17 @@
     // `nachbarn` (w10-figur): das Fragment fragt auch die Zellen ± k längs des Kamms — eine Locke, die über die Wand ihrer Zelle
     // reicht, zeichnet dort weiter (0: jede Locke endet an ihrer Zelle).
     // DIE LOCKE KLUMPT (w20-haar-arm, haar.K1): das Deckhaar fällt in Locken aus mehreren Strähnen — ihr Raster ist `locke`
-    // Strähnen-Zellen weit (Wurzel × Zellen / locke). Am Arm des Station-Wolfs (Größe 1,0: 1,95 Ausgabe-Pixel je Strähnen-Zelle,
-    // gemessen an der Projektion der Schale) war die Locke ein Unterpixel: Strich 4 quer 0,62 Szenen-Pixel (GTX arm 0,441,
-    // n = 7), Strich 14 (w10-figur) 0,33 (GTX ed7d3d23 0,4268) — die GPU zeichnet so dünne Locken als Rauschen, die Streckung
-    // half dort nie (9 → 0,4369, 14 → 0,4222/0,4268). Dieselbe Locke las die GTX am großen Wolf (Größe 1,8 / 2,05, 0,88 / 0,98
-    // Szenen-Pixel breit) mit 0,529 / 0,567 im Band. Jetzt Strich 4 ohne Nachbarn (die gemessene Form, ⅓ der Hash-Rufe) im
-    // Raster 1,4: 0,87 Szenen-Pixel breit am Arm, das Rechenmodell (`fellStrichProbe`) 0,190 → 0,340, an den drei GTX-Messungen
-    // geeicht 0,516 (aus der Breite 0,529; der große Wolf 0,596 / 0,655).
+    // Strähnen-Zellen weit (Wurzel × Zellen / locke), längs um `strich` gestreckt, über die Wand ihrer Zelle (`nachbarn`).
+    // DER QUERSCHNITT (`kern`): der Ton der Locke dünnt vom Kern zur Kante auf den Unterton aus (0: von der Mitte an), die
+    // Alpha-Kante trägt keine Stufe. Bis w20 sprang er dort um 12–37 % (Locke 0,825–1,008 gegen die Wolle 0,733): eine Probe
+    // je Pixel zeichnete Treppen, das Feindetail war Rauschen und senkte den Strich — GTX ed7d3d23 arm 0,4268 (Strich 14),
+    // am Kandidaten dbf081c5 (der Wolf am Ruf-Punkt im hohen Gras) arm 0,3645 / third 0,3194 (Strich 4 im Raster 1,4); an
+    // derselben Pose läse der Wolf ohne das Feindetail 0,53 (kienspan, eine Probe je Pixel wie die GPU: 0,3701 gegen 0,3645).
+    // Weich trägt das Fell am Arm ein Zwanzigstel der Energie (Rechenmodell 2,9 → 0,13) und zeichnet Grate längs des Kamms.
+    // DIE AUFLÖSUNG (`aufloesung`): unter einem halben Szenen-Pixel Breite trifft die Mitte des Pixels die Locke nur zufällig;
+    // die Breite der breitesten Locke (t = ½) aus den Ableitungen des Rasters blendet ihren Ton von ½ bis 1 Pixel ein, darunter
+    // trägt jede Schale den Mittelton des Stapels (`mittel`: Ton 0,735, t 0,336 — mit dem Querschnitt gewogen, 4 × 40 000
+    // Proben des Gesetzes; nah und fern gleich hell). Am Third (0,55 Pixel je Strähnen-Zelle) ist das Fell glatt.
     var FELL_SCHALE = Object.freeze({
         wurzel: 0.55,
         spitze: 1.1,
@@ -3430,22 +3434,37 @@
         endeSpanne: 0.45,
         wolle: 0.34,
         wolleAb: 0.05,
-        strich: 4,
-        nachbarn: 0,
-        locke: 1.4,
+        strich: 9,
+        nachbarn: 1,
+        locke: 2.4,
+        kern: 0,
+        aufloesung: Object.freeze([0.5, 1]),
+        mittel: Object.freeze({ ton: 0.735, t: 0.336 }),
     });
+    // DER ANTEIL DER LOCKE, DEN DAS BILD AUFLÖST (w20-haar-arm): smoothstep über `aufloesung` an ihrer Breite in Szenen-Pixeln —
+    // dieselbe Rechnung wie in den Stoffen (TSL `smoothstep`, GLSL `smoothstep`); 0 = der mittlere Ton, 1 = der Ton der Locke.
+    function fellSanft(a, b, x) {
+        var y = Math.min(1, Math.max(0, (x - a) / (b - a)));
+        return y * y * (3 - 2 * y);
+    }
+    function fellZeigt(FS, breite) {
+        return fellSanft(FS.aufloesung[0], FS.aufloesung[1], breite);
+    }
     // DIE LOCKE ALS FUNKTION (w10-figur): die Referenz der Schale, die beide Stoffe zeichnen (stamm/studio-stoff.js fellSchale,
     // TSL; worlds/tetrapoda GLSL) — w = Wurzel × Zellen (aWurzel · aSchale.z; die Locke sitzt im Raster w / locke), t = Schale (aSchale.x), dichte = aSchale.y,
-    // kamm = die Legerichtung (Einheit, tangential). true: das Fragment trägt Haar (Locke einer Zelle längs des Kamms oder Wolle).
-    // Leser: das Rechenmodell der Schale (`fellSchaleBild`, Selbsttest K5 der Soll-Tafel); die Stoffe tragen dieselbe Mathe. `gesetz` (frei): ein anderes Raster derselben Form — der Mutant der Linse (die Locke, die an ihrer Zelle endet).
+    // kamm = die Legerichtung (Einheit, tangential). Die Antwort: −1, wo das Fragment kein Haar trägt, sonst das Gewicht seines
+    // eigenen Tons — die Wolle 1, die Locke ihr Querschnitt 1 − smoothstep(kern, 1, d / r) (w20-haar-arm: zur Kante dünnt sie auf den
+    // Unterton aus, die Alpha-Kante trägt keine Stufe). Leser: das Rechenmodell der Schale (`fellSchaleBild`, Selbsttest K5 der
+    // Soll-Tafel); die Stoffe tragen dieselbe Mathe. `gesetz` (frei): ein anderes Raster derselben Form — die Mutanten der Linse.
     function fellLocke(w, t, dichte, kamm, gesetz) {
         var FS = gesetz || FELL_SCHALE;
-        if (t <= FS.wolle && dichte >= FS.wolleAb) return true;
+        if (t <= FS.wolle && dichte >= FS.wolleAb) return 1;
         var fr = function (x) {
             return x - Math.floor(x);
         };
         var r = Math.sqrt(dichte) * FS.radius * (1 - t * FS.zulauf);
         var p = [w[0] / FS.locke, w[1] / FS.locke, w[2] / FS.locke];
+        var gew = -1;
         for (var o = -FS.nachbarn; o <= FS.nachbarn; o++) {
             var zx = Math.floor(p[0] + kamm[0] * o),
                 zy = Math.floor(p[1] + kamm[1] * o),
@@ -3458,9 +3477,9 @@
                 qz = p[2] - zz - 0.5 - (h3 - 0.5) * FS.mitte;
             var ql = qx * kamm[0] + qy * kamm[1] + qz * kamm[2];
             var d = Math.sqrt((qx * qx + qy * qy + qz * qz - ql * ql) * FS.strich + (ql * ql) / FS.strich);
-            if (d <= r && t <= h1 * FS.endeSpanne + FS.ende) return true;
+            if (d <= r && t <= h1 * FS.endeSpanne + FS.ende) gew = Math.max(gew, 1 - fellSanft(FS.kern, 1, d / r));
         }
-        return false;
+        return gew;
     }
     // DIE SCHALE IM RECHENMODELL (w10-figur, haar.K1): das Bild des Fells aus dem Gesetz ohne GPU — eine Haut-Ebene, schief im
     // Raster der Wurzeln, Blick senkrecht; je Pixel der Szene (Skala 0,75) EINE Probe in seiner Mitte, die oberste Schale t = s/6
@@ -3488,6 +3507,8 @@
         var kamm = [0, 1, 2].map(function (i) {
             return Math.cos(kammWinkel) * e1[i] + Math.sin(kammWinkel) * e2[i];
         });
+        // die Auflösung der Locke wie in den Stoffen (FELL_SCHALE.aufloesung): ihre Breite in Szenen-Pixeln blendet den Ton ein
+        var zeigt = fellZeigt(FS, ((2 * Math.sqrt(1.21) * FS.radius * (1 - 0.5 * FS.zulauf)) / Math.sqrt(FS.strich)) * (FS.locke / zpr));
         for (var p = 0; p < nr * nr; p++) {
             var u = ((p % nr) + 0.5) * zpr,
                 v = (Math.floor(p / nr) + 0.5) * zpr,
@@ -3496,8 +3517,9 @@
                 var t = s / 6,
                     lk = 4 * t * t * 0.6,
                     w = [37.3 + u * e1[0] + v * e2[0] - kamm[0] * lk, 11.7 + u * e1[1] + v * e2[1] - kamm[1] * lk, 5.1 + u * e1[2] + v * e2[2] - kamm[2] * lk];
-                if (fellLocke(w, t, 1.21, kamm, gesetz)) {
-                    c = FS.wurzel + (FS.spitze - FS.wurzel) * t;
+                var gew = fellLocke(w, t, 1.21, kamm, gesetz);
+                if (gew >= 0) {
+                    c = FS.mittel.ton + (FS.wurzel + (FS.spitze - FS.wurzel) * t - FS.mittel.ton) * gew * zeigt;
                     break;
                 }
             }
@@ -3522,60 +3544,50 @@
         }
         return u8;
     }
-    // DIE PROBE DES STRICHS AM ARM DER STATION (w10-figur, w20-haar-arm; Leser: der Selbsttest K5 der Soll-Tafel, diag-kamera-laub):
-    // `mass(u8, maske, n)` → Strich (abnahme-urteil `klassenMasse`), das Mittel über vier Kamm-Richtungen bei `px` Ausgabe-Pixeln
-    // je Strähnen-Zelle — 1,95 am Station-Wolf haar.K1#1 (die Pose der GTX ed7d3d23: Box-Mitte 28,09 über dem Grund 27,625, Größe
-    // 1,0; gemessen an der Projektion der Schale t = ½; bis w20 rechnete die Probe mit 3). Je Gesetz dazu die Breite der Locke in
-    // Szenen-Pixeln: die innerste sichtbare Schale (t = ½, die breiteste Locke), 2 r / √strich × locke × px × 0,75.
-    // GEEICHT AN DER GPU: die Strich-4-Locke ohne Nachbarn und Raster las die GTX am Arm bei Größe 1,0 mit 0,441 (n = 7), 1,8 mit
-    // 0,529 (n = 3), 2,05 mit 0,567 (die Arm-Kamera steht 0,7 m + halbe Breite vor dem Wolf: px × 1 · 1,41 · 1,57). Zwei Leser
-    // derselben Anker, je eine Gerade (kleinste Quadrate): das Modell und die Breite — eine Locke unter dem Pixel zeichnet die GPU
-    // als Rauschen, das Modell nicht (Strich 14: Modell-Gerade 0,483, GTX 0,4268). `band` (die Zeile fell der Soll-Tafel): je
-    // Gesetz `imBand`, wenn beide Leser mit 0,02 Luft (2 σ der GTX-Reihe, n = 7) darin liegen — das Gesetz und seine Mutanten,
-    // die Locke ohne Raster (der Stand bis w20, GTX 0,441) und die Strich-14-Locke (w10-figur, GTX 0,4268); `gruen`: das Gesetz im
-    // Band, beide Mutanten draußen.
-    function fellStrichProbe(mass, band) {
+    // DIE PROBE DES FELLS AN DER STATION (w10-figur, w20-haar-arm; Leser: der Selbsttest K5 der Soll-Tafel, diag-kamera-laub):
+    // das Rechenmodell der Schale (eine Probe je Szenen-Pixel wie die GPU) über vier Kamm-Richtungen am Arm des Station-Wolfs —
+    // 1,95 Ausgabe-Pixel je Strähnen-Zelle (Größe 1,0; die Pose der GTX ed7d3d23 wie die von dbf081c5, beide an der Projektion
+    // der Schale t = ½ gemessen; bis w20 rechnete die Probe mit 3) — und am Third (0,55: 4,6 m statt 1,25 m). Je Gesetz `strich`
+    // (`mass(u8, maske, n)`, abnahme-urteil `klassenMasse`) und `energie`, das mittlere Quadrat der Luma-Gradienten des Fells.
+    // DIE ZWEI TÄTER BEIM NAMEN (die GPU zeichnet das Feindetail des Fells als Rauschen, es senkt den Strich: GTX dbf081c5 arm
+    // 0,3645 / third 0,3194, an derselben Pose kienspan ohne Feindetail 0,53): die HARTE KANTE der Locke — ihr Ton springt an der
+    // Alpha-Kante, eine Probe je Pixel zeichnet Treppen (Energie am Arm über ½) — und die LOCKE UNTER DEM PIXEL — am Third ist
+    // jede Locke Rauschen (Energie über 0). `gruen`: das Gesetz trägt am Arm weiche Striche (Energie 0,05 … ½), am Third ist es
+    // glatt; die Abgabe w20 (Strich 4 im Raster 1,4, hart, ohne Blende), die Locke ohne Raster (der Stand bis w20, GTX 0,441) und
+    // die Strich-14-Locke (w10-figur, GTX 0,4268) fallen an einem der beiden.
+    function fellStrichProbe(mass) {
         var m = new Uint8Array(160 * 160).fill(1);
         var je = function (g, px) {
-            var s = 0;
+            var s = 0,
+                e = 0;
             [0.2, 0.9, 1.6, 2.4].forEach(function (w) {
-                s += mass(fellSchaleBild(1 / px, w, g), m, 160);
+                var b = fellSchaleBild(1 / px, w, g),
+                    L = function (x, y) {
+                        var i = (y * 160 + x) * 4;
+                        return 0.2126 * b[i] + 0.7152 * b[i + 1] + 0.0722 * b[i + 2];
+                    };
+                s += mass(b, m, 160) || 0;
+                for (var y = 1; y < 159; y++)
+                    for (var x = 1; x < 159; x++) e += (Math.pow(L(x + 1, y) - L(x - 1, y), 2) + Math.pow(L(x, y + 1) - L(x, y - 1), 2)) / 4 / (158 * 158 * 4);
             });
-            var r = Math.sqrt(1.21) * g.radius * (1 - 0.5 * g.zulauf);
-            return { strich: Math.round((s / 4) * 1e4) / 1e4, breite: Math.round(((2 * r) / Math.sqrt(g.strich)) * g.locke * px * 0.75 * 1e3) / 1e3 };
+            return { strich: Math.round((s / 4) * 1e4) / 1e4, energie: Math.round(e * 1e3) / 1e3 };
         };
-        var mit = function (ov) {
-            return Object.assign({}, FELL_SCHALE, ov);
-        };
-        var anker = [[1, 0.441], [1.41, 0.529], [1.57, 0.567]].map(function (a) {
-            return Object.assign({ gpu: a[1] }, je(mit({ strich: 4, nachbarn: 0, locke: 1 }), 1.95 * a[0]));
-        });
-        var gerade = function (k) {
-            var mx = 0, my = 0, sxy = 0, sxx = 0;
-            anker.forEach(function (a) {
-                mx += a[k] / anker.length;
-                my += a.gpu / anker.length;
-            });
-            anker.forEach(function (a) {
-                sxy += (a[k] - mx) * (a.gpu - my);
-                sxx += (a[k] - mx) * (a[k] - mx);
-            });
-            return function (x) {
-                return Math.round((my + (sxy / sxx) * (x - mx)) * 1e3) / 1e3;
-            };
-        };
-        var viaModell = gerade("strich"),
-            viaBreite = gerade("breite");
-        var aus = { band: band };
-        [["gesetz", FELL_SCHALE], ["zelle", mit({ strich: 4, nachbarn: 0, locke: 1 })], ["w10", mit({ strich: 14, nachbarn: 1, locke: 1 })]].forEach(function (v) {
-            var e = je(v[1], 1.95);
-            e.gpu = [viaModell(e.strich), viaBreite(e.breite)];
-            e.imBand = !!band && e.gpu.every(function (x) {
-                return x >= band[0] + 0.02 && x <= band[1] - 0.02;
-            });
+        var hart = { kern: 0.9999, aufloesung: [0, 1e-6] };
+        var aus = {};
+        [
+            ["gesetz", FELL_SCHALE],
+            ["w20", Object.assign({}, FELL_SCHALE, hart, { strich: 4, nachbarn: 0, locke: 1.4 })],
+            ["zelle", Object.assign({}, FELL_SCHALE, hart, { strich: 4, nachbarn: 0, locke: 1 })],
+            ["w10", Object.assign({}, FELL_SCHALE, hart, { strich: 14, nachbarn: 1, locke: 1 })],
+        ].forEach(function (v) {
+            var e = { arm: je(v[1], 1.95), third: je(v[1], 0.55) };
+            e.weich = e.arm.energie >= 0.05 && e.arm.energie <= 0.5;
+            e.glatt = e.third.energie === 0;
             aus[v[0]] = e;
         });
-        aus.gruen = aus.gesetz.imBand && !aus.zelle.imBand && !aus.w10.imBand;
+        aus.gruen = aus.gesetz.weich && aus.gesetz.glatt && ["w20", "zelle", "w10"].every(function (k) {
+            return !(aus[k].weich && aus[k].glatt);
+        });
         return aus;
     }
 

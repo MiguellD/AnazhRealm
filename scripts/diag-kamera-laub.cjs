@@ -1166,12 +1166,13 @@ hauptLauf(async () => {
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
         check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
-        // K5 haar.K1 — DER STRICH DES FELLS AM ARM DER STATION (w10-figur, w20-haar-arm): das Rechenmodell der Schale (tetrapoda
-        // `fellStrichProbe`: eine Probe je Szenen-Pixel wie die GPU, 1,95 Pixel je Strähnen-Zelle am Station-Wolf, an drei
-        // GTX-Messungen geeicht — über das Modell und über die Breite der Locke) im Band der Zeile fell; die Locke ohne Raster (der
-        // Stand bis w20, GTX 0,441) und die Strich-14-Locke (w10-figur, GTX 0,4268) fallen beim Namen
-        const f1 = fadenScope(["tetrapoda-core.js"]).__tetrapodaCore.fellStrichProbe((u8, m, n) => AU.klassenMasse(u8, m, n, n).strich, sollU.zeilen.find((z) => z.id === "fell").band);
-        check("K5 haar.K1: Strich des Fells am Arm im Band, die Mutanten darunter", f1.gruen, JSON.stringify(f1));
+        // K5 haar.K1 — DAS FELL AN DER STATION OHNE RAUSCHEN (w10-figur, w20-haar-arm): das Rechenmodell der Schale (tetrapoda
+        // `fellStrichProbe`, eine Probe je Szenen-Pixel wie die GPU) am Arm des Station-Wolfs (1,95 Pixel je Strähnen-Zelle) und am
+        // Third (0,55): am Arm weiche Striche (Energie des Feindetails 0,05 … ½), am Third glatt; die harte Kante der Locke (Abgabe
+        // w20 im Raster 1,4: GTX dbf081c5 arm 0,3645 / third 0,3194), die Locke ohne Raster (GTX 0,441) und die Strich-14-Locke
+        // (w10-figur, GTX 0,4268) fallen beim Namen
+        const f1 = fadenScope(["tetrapoda-core.js"]).__tetrapodaCore.fellStrichProbe((u8, m, n) => AU.klassenMasse(u8, m, n, n).strich);
+        check("K5 haar.K1: Fell am Arm weich, am Third glatt, Mutanten darunter", f1.gruen, JSON.stringify(f1));
         // K5 mensch.K4 — DAS GESICHT UNTER SEINEM LICHT (w12-gesicht, koerper `gesichtSelbsttest`): das gemalte Gesicht liest seine
         // Albedo im Schatten der Kamera des Spiels wie in der Sonne, jede Mutante (Lippe im Ton der Wange, Sklera im Saum der Höhle,
         // Lider über der Iris, das Auge ohne Spur, die Wange ohne Albedo) fällt beim Namen
