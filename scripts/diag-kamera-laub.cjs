@@ -962,7 +962,9 @@ async function probe(arg) {
                 anker.push(s);
             };
             const nach = (a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z);
-            const alle = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 40);
+            // die Stämme der Nah-Zone des Orts bis 50 m (w20-wald-kosten, z289: an der Ankunft stand der nächste gezeichnete Stamm
+            // 43,8 m vor dem Spieler — bis hier zählte die Linse nur bis 40 m, main fand zwei Tannen in 38,9 m, keine Stellung)
+            const alle = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 50);
             for (const s of alle.filter((s2) => s2.e && hain.includes(s2.e))) nimm(s, arg.jeOrt);
             for (const s of alle.sort(nach)) nimm(s, arg.jeOrt);
             const grenzeStreu = anker.length + Math.max(arg.jeStreu, arg.jeOrt - anker.length);

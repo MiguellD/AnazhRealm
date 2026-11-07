@@ -2725,14 +2725,16 @@
 
     // reverse-J Größe + Selbstausdünnung + seltene Überhälter. RNG-REIHENFOLGE heilig
     // (Host-Determinismus): ue → Überhälter-Wurf → optional Überhälter-s → clamp.
-    // Byte-same Lab plantForest + Host planForestCell.
+    // Byte-same Lab plantForest + Host planForestCell. Der Span ist `FOREST_PACK.groesse` (die untere Klemme stand bei 0,5
+    // unter dem Boden der Kurve 0,55 — jede Größe gleich).
     function forestTreeSize(rng, sd) {
+        const G = FOREST_PACK.groesse;
         const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
         const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
         let ue = clamp01(rng() * (1 - 0.52 * sd));
-        let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
+        let s = G[0] + 1.45 * Math.pow(ue, 1.45);
         if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
-        s = clamp(s, 0.5, 1.95);
+        s = clamp(s, G[0], G[1]);
         return s;
     }
     // Mammut-Promotion. Species-Gate (Lab weide / Host baum_erle) bleibt Caller-lokal —
@@ -2796,7 +2798,14 @@
         // berühren sich die Kronen (`pack` 1): die Lücke der Schüchternheit reibt nur der Wind am offenen Dach (Putz et al. 1984).
         // Gemessen mit dem Bestand (`bestand` unten, flacher Grund, Stand ≥ 0,4): Dach 105 + Zwischen-/Unterstand 244 = 349
         // Stämme/ha (vorher 42) — REF spec/abnahme/real-mischwald.json 370–900; im Wirt 1 km² um das Dorf 90 % 501, max 716.
+        // DIE SKALA-GRENZE (w20-wald-kosten, Täter-Matrix z289): kein Baum einer Schicht ist kleiner als der kleinste des Walds
+        // (`groesse[0]`) — die Schicht trägt max(alter, groesse[0] / s) seiner Größe. Bis hierher stand der Unterstand in
+        // s · alter: 96 % seiner Bäume unter 0,55 (Median 0,30), die Invariante W-H GRÖSSEN-SPAN fiel. Gemessen (Stand 0,5,
+        // flach): Dach 106,5 + Schicht 246,9 = 353,4 → 106,5 + 35,6 = 142,1 Stämme/ha.
         schicht: { alter: [0.7, 0.4], pack: 1 },
+        // DER GRÖSSEN-SPAN DES WALDS (die Invariante W-H, scripts/playtest/siedlung.cjs liest ihn hier): die reverse-J-Größe des
+        // Darts (`forestTreeSize`, ihr Boden und ihre Klemme) und jede Schicht des Bestands (`forestSchicht`) stehen darin.
+        groesse: [0.55, 1.95],
         // DER BESTAND AUS DEM STANDORT (vegetation.K3 Nacharbeit, w16-wald-innen): der Stand `st` ∈ [−1, 1] ist das EINE Feld
         // „Wald ↔ Lichtung" des Wirts (`_placementStandAt(…, "forest")`, λ ~170 m, Saat `:forest` — dasselbe, das Streu,
         // Strauch-Teppich und Boden lesen; der Faden zieht es aus derselben Saat). LICHTUNG: unter `lichtung[0]` wird kein Baum
@@ -2999,7 +3008,8 @@
     // unter der Krone (|d − o| < o.T) eines Baums des Dachs der Zellen ±1 (Unterstand wächst im Schatten des Altholzes, nie auf der
     // Lichtung: die Mess-Wiese trug ohne den Schirm 117 statt 8 Bäume im Ring von 25 m) — das größte Alter der Schicht, in dem
     // seine Krone T·alter gegen jeden besseren geborenen Dart der Zellen ±2 (T·alter, Packung `schicht.pack`) frei steht, 0 ohne
-    // Platz. Rein, reihenfolge-frei wie das Urteil des Dachs; es liest die geborenen Darts ±FOREST_URTEIL_REICH (das Dach des
+    // Platz; das Alter je Dart nie unter der Skala-Grenze (max(alter, groesse[0] / s), FOREST_PACK.groesse). Rein,
+    // reihenfolge-frei wie das Urteil des Dachs; es liest die geborenen Darts ±FOREST_URTEIL_REICH (das Dach des
     // Schirms ±1 urteilt über seine ±2). Das Urteil des Dachs je Dart merkt `_dachMemo` (rein je Dart-Objekt).
     const _dachMemo = typeof WeakMap === "function" ? new WeakMap() : null;
     function forestImDach(o, gx, gz, geboren, pk) {
@@ -3026,15 +3036,23 @@
             }
         }
         if (!schirm) return 0;
+        const G = FOREST_PACK.groesse[0]; // die Skala-Grenze: kein Baum der Schicht kleiner als der kleinste des Walds
         for (let i = 0; i < S.alter.length; i++) {
-            const a = S.alter[i];
+            const sz = Math.max(d.s * S.alter[i], G); // die Größe in der Schicht
+            if (!(sz < d.s)) return 0; // schon der Boden des Spans ist seine ganze Größe: unter dem Dach kein Platz
+            const a = sz / d.s;
             let frei = true;
             for (let q = 0; q < R.length && frei; q += 2) {
                 const nb = geboren(gx + R[q], gz + R[q + 1]);
                 for (let k = 0; k < nb.length; k++) {
                     const o = nb[k];
                     const pa = S.pack * Math.min(d.schluss, o.schluss);
-                    if (o !== d && forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * a, pa) && forestPrioWins(o, d)) {
+                    const ao = Math.min(Math.max(o.s * S.alter[i], G) / o.s, 1);
+                    if (
+                        o !== d &&
+                        forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * ao, pa) &&
+                        forestPrioWins(o, d)
+                    ) {
                         frei = false;
                         break;
                     }
@@ -3045,7 +3063,8 @@
         return 0;
     }
     // DER BESTAND EINER ZELLE: ihre geborenen Darts, die stehen — in der Reihe ihrer Geburt. Das Dach (`forestSteht`) trägt
-    // den geborenen Dart selbst; Zwischen- und Unterstand (`forestSchicht` < 1) ein Abbild mit `alter` und der Krone T·alter.
+    // den geborenen Dart selbst; Zwischen- und Unterstand (`forestSchicht` < 1) ein Abbild mit `alter`, der Größe `s` seiner
+    // Schicht (nie unter FOREST_PACK.groesse[0] — der Wirt setzt sie, wie sie ist) und der Krone T·alter.
     // `nurDach`: nur die Kronen des Dachs (die Kamm-Krone der Ferne — kein Unterstand reicht über das Dach in den Himmel).
     function forestStehende(gx, gz, geboren, pk, nurDach) {
         const own = geboren(gx, gz);
@@ -3054,7 +3073,8 @@
             const d = own[k];
             const a = nurDach ? +forestSteht(d, gx, gz, geboren, pk) : forestSchicht(d, gx, gz, geboren, pk);
             if (a === 1) out.push(d);
-            else if (a > 0) out.push(Object.assign({}, d, { T: d.T * a, alter: a }));
+            else if (a > 0)
+                out.push(Object.assign({}, d, { s: Math.max(d.s * a, FOREST_PACK.groesse[0]), T: d.T * a, alter: a }));
         }
         return out;
     }
@@ -3242,19 +3262,22 @@
         for (let i = 0; i < F.dartsPerCell; i++) {
             const x = (cx + rng()) * CELL;
             const z = (cz + rng()) * CELL;
+            // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet. DER WASSER-LESER VOR JEDEM VERWERFEN
+            // (w20-wald-kosten, Täter-Matrix z289): jeder Dart fragt das EINE Wasser über seinem Boden, bevor ein Wurf ihn nimmt —
+            // bis hier verwarfen Geburt, Lichtung und Waldgrenze (w16) ihn davor, und am Fluss der Schau-2 rief kein Dart der
+            // Zellen um den Spieler das Wasser (gate:werk-im-wasser KONSUM). Die Würfe des Darts bleiben, wie sie waren.
+            const surfaceY = ctx.surfaceYAt(x, z);
+            const waterY = ctx.waterYAt(x, z);
             const sd = forestStandDensity(ctx.fbm, x, z);
             const st = ctx.stand(x, z); // der Stand des Standorts (FOREST_PACK.bestand): Lichtung und Schluss
             const wurf = rng();
             const geburt = forestGeburt(sd) * forestLichtung(st);
             if (wurf > geburt) continue;
-            // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet.
-            const surfaceY = ctx.surfaceYAt(x, z);
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
             // ohne Schnee bleibt jeder Wurf, wie er war
             const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY));
             if (wurf > grenze) continue;
-            const waterY = ctx.waterYAt(x, z);
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
             // SLOPE-Grundierung (die Voxelwelt hat Klippen, die die Vorlage nicht kennt).

@@ -1069,12 +1069,14 @@ class AnazhRealm_vegetation_baum {
     // Schirm des Dachs) ist keine Prägung: der beherrschte Baum trägt die Gestalt seiner Art in der Größe seiner Schicht (die
     // Krone T·alter des Plans IST die Krone der skalierten Gestalt) — eine Instanz im Satz seiner Art, nie ein eigener Satz.
     // Bis w16-wald-innen-pm prägte die Schicht `studioOv.alter`: je Art × Gestalt drei Sätze, am Dorf-Spawn 5 → 14 Sätze binnen
-    // 60 m, die Befehle 71 → 129 (OMEN vp-0611h). Die Krone streut Laub, sobald der
+    // 60 m, die Befehle 71 → 129 (OMEN vp-0611h). Die Größe der Schicht trägt der Plan (`d.s` des Abbilds, phyto-core
+    // `forestStehende`, nie unter der Skala-Grenze FOREST_PACK.groesse) — bis w20-wald-kosten rechnete der Wirt sie selbst,
+    // min(d.s, kappe) × alter: 96 % des Unterstands unter 0,55, ein Dart über 1 kleiner, als seine Krone im Plan stand. Die
+    // Krone streut Laub, sobald der
     // Baum als Eintrag steht (`spawnArchitecture`, Radius = die Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim
     // Wurf. Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die
     // reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
     _waldDartSetzen(d, alter) {
-        const g = Math.min(alter, d.alter || 1); // die Größe: das Alter des Orts und die Schicht des Bestands, das kleinere
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const regionSeed = `${worldSeed}|${d.sp}|${Math.floor(d.x / 256)},${Math.floor(d.z / 256)}`;
         const variantIndex =
@@ -1086,7 +1088,7 @@ class AnazhRealm_vegetation_baum {
                 {
                     seed: d.seed,
                     silent: true,
-                    scale: g < 1 ? Math.min(d.s, AnazhRealm.SUKZESSION.kappe) * g : d.s,
+                    scale: alter < 1 ? Math.min(d.s, AnazhRealm.SUKZESSION.kappe) * alter : d.s,
                     rotationY: d.rotY,
                     _lodSpecies: d.sp,
                     _lodVariantIndex: variantIndex,
