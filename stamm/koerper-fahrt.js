@@ -1196,6 +1196,7 @@ class AnazhRealm_koerper_fahrt {
             this.state._fieldVy = 0;
         }
         this.state.player.mountedArch = null;
+        if (entry && entry._fahrAchseX) this._wagenGrund(entry); // der Wagen hält: der Halm weicht ihm, wo er stand, wächst er
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
         if (this.state._mountVorKamera) {
             this.setCameraMode(this.state._mountVorKamera);
@@ -1383,6 +1384,19 @@ class AnazhRealm_koerper_fahrt {
         entry._terrainRollZiel = eb.wank;
         entry._rideTerrainPitch = Math.max(-kl, Math.min(kl, eb.nick));
         entry._rideRoll = Math.max(-kl, Math.min(kl, eb.wank));
+    }
+
+    // DER GRUND DES STEHENDEN WAGENS (w20-lack-spiegel, die Natur-Wand der Halme): wo ein Wagen hält, wachsen Nah-Wiese und
+    // Nah-Streu um seine Hülle neu (`_nahWieseNeuIn`) — der Halm weicht ihm (`_imWagen` im Bau der Kachel), wo er stand, wächst
+    // er wieder (`_grundBox`, der Platz des letzten Halts; `weg`: der Wagen verlässt den Bestand). Leser: das Setzen
+    // (`spawnArchitecture`), der Abstieg, das Parken des Verkehrs und der Abbau. Bis hier stand die Wiese durch die Haube des
+    // GT am See (material.K4#1, GTX d1ee37d2: die Halm-Spitzen zerschnitten jeden Block der Lack-Ebene, 0 Blöcke).
+    _wagenGrund(w, weg = false) {
+        const alt = w._grundBox;
+        const u = !weg && w._fahrAchseX && w.position ? this._fahrUmriss(w) : null;
+        const r = u ? Math.max(u.bug, -u.heck) + u.hw + 1 : 0;
+        w._grundBox = u ? [w.position.x - r, w.position.z - r, w.position.x + r, w.position.z + r] : null;
+        for (const b of [alt, w._grundBox]) if (b) this._nahWieseNeuIn(...b);
     }
 
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)

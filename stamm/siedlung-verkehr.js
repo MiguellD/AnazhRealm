@@ -780,6 +780,7 @@ class AnazhRealm_siedlung_verkehr {
         e._verkehrFaehrt = false;
         this._archFahrt(e, false);
         this._blockerBewegt(e, e.blockerAABBs ? 0 : undefined); // er steht: sein Platz ohne Rand, kein Beweger
+        if (e._fahrAchseX) this._wagenGrund(e); // der Halm weicht dem geparkten Wagen
         if (e.blockerAABBs) {
             this._populateBlockerAABBs(e);
             e._blockerStampAt = null;
