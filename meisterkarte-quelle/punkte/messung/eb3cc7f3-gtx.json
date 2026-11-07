@@ -1,7 +1,7 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T09:40:28.252Z",
+ "zeit": "2026-11-07T09:46:12.254Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -129,41 +129,58 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.2,
+   "zeit": "2026-11-07T09:46:12.254Z",
+   "abdruck": "be3337863a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T09:40:19.721Z",
+  "start": "2026-11-07T09:45:35.334Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.1,
+  "warten": 0.01,
+  "bootS": 7.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
-  "orte": [],
-  "wegeTueren": [],
-  "haenger": [
+  "orte": [
    {
-    "probe": "profiband.K4#1",
-    "zurueck": 10
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 28.3,
+    "takte": 682,
+    "chunks": 81,
+    "nach": null
    }
   ],
+  "wegeTueren": [],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 209,
-   "frameP95": 66.65,
-   "taktP95": 59.7,
-   "vramMax": 148,
+   "bilder": 386,
+   "frameP95": 33.41,
+   "taktP95": 32.79,
+   "vramMax": 128.8,
    "seiten": 1,
-   "marken": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 45,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 63,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 52.1,
-  "minuten": 0.95
+  "fahrtS": 81.2,
+  "minuten": 1.43
  }
 }
