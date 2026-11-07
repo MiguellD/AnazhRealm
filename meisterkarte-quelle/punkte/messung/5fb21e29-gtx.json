@@ -1,7 +1,7 @@
 {
  "sha": "5fb21e29f30a9a98e289fa18b3cbf98c1e85f007",
  "geraet": "gtx",
- "zeit": "2026-11-07T05:16:59.071Z",
+ "zeit": "2026-11-07T06:05:19.546Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K4#1": {
@@ -275,6 +275,87 @@
    "s": 22.9,
    "zeit": "2026-11-07T04:29:50.617Z",
    "abdruck": "f675fa5e3cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#1": {
+   "gruen": true,
+   "zahl": "Schwarm-Takt 0.1933 ms je Takt (Median, p95 0.3333) bei 100 Gliedern im Blick in jeder Reihe, 13153 Paare der Separation, Auge 51.7 m (Soll ≤ 0,3 ms, 100 im Bild)",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "zeit": "2026-11-07T06:01:53.918Z",
+   "abdruck": "fe1bca1545e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": true,
+   "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 600 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "zeit": "2026-11-07T06:01:53.918Z",
+   "abdruck": "c82dc02519ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "luftwasser.K5#1",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": true,
+   "zahl": "130 von 132 build-asset von der Platte (98.5 %), Bau-Ereignisse Werk 0 · Haupt-Faden 2, leer 0, verschluckt 0",
+   "exit": 0,
+   "minuten": 1.06,
+   "gpu": "nvidia/pascal",
+   "s": 63.7,
+   "zeit": "2026-11-07T06:01:57.788Z",
+   "abdruck": "3627ab2967d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": true,
+   "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 18/18 8 ms · Kern-Wechsel fachwerk: 5 Leser neu, fremd 0 , alt 0 ",
+   "exit": 0,
+   "minuten": 1.06,
+   "gpu": "nvidia/pascal",
+   "s": 63.7,
+   "zeit": "2026-11-07T06:01:57.788Z",
+   "abdruck": "bfdd2afc6b77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 11 s |     at ClientRequest.<anonymous> ([eval]:48:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at  (Exit 2)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "ROT: keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 11 s |     at ClientRequest.<anonymous> ([eval]:48:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at  (Exit 2)",
+   "gpu": "nvidia/pascal",
+   "s": 38.1,
+   "zeit": "2026-11-07T06:04:33.101Z",
+   "abdruck": "3f71569bd385",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": true,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-steht 25.18 · wiese-third-steht 25.13 · genesis-ego-steht 16.97 · genesis-third-steht 25.03 · Gang 82.6 s · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.38,
+   "gpu": "nvidia/pascal",
+   "s": 82.8,
+   "zeit": "2026-11-07T06:05:19.546Z",
+   "abdruck": "faadcb87e50f",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -710,68 +791,15 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "luftwasser.K5#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.204Z",
-   "abdruck": "fe1bca1545e6",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "luftwasser.K5#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.204Z",
-   "abdruck": "c82dc02519ca",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "luftwasser.K5#1",
-   "modus": "session"
-  },
-  "pipeline.K4#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.206Z",
-   "abdruck": "3627ab2967d0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "pipeline.K4#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.206Z",
-   "abdruck": "bfdd2afc6b77",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "pipeline.K4#1",
-   "modus": "session"
-  },
   "leib.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.209Z",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "zeit": "2026-11-07T06:03:23.054Z",
    "abdruck": "2cfecd5ac370",
    "port": 7804,
    "bahn": "sitzung",
@@ -779,42 +807,17 @@
   },
   "leib.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.209Z",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "zeit": "2026-11-07T06:03:23.054Z",
    "abdruck": "17f476d20ea6",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "leib.K2#1",
-   "modus": "session"
-  },
-  "leib.K3#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.212Z",
-   "abdruck": "3f71569bd385",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "pflicht.E#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"ms\":1,\"fehler\":\"Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.\",\"stapel\":[\"at CdpCDPSession.send (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OM)) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:30:14.215Z",
-   "abdruck": "faadcb87e50f",
-   "port": 7804,
-   "bahn": "sitzung",
    "modus": "session"
   },
   "streaming.K3#1": {
@@ -1025,45 +1028,135 @@
    "bahn": "sitzung",
    "zwilling": "speicher.K1#1",
    "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5fb21e29-gtx\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5fb21e29-gtx\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T06:00:02.284Z",
+   "abdruck": "f675fa5e3cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T05:14:05.260Z",
+  "start": "2026-11-07T05:59:31.152Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.4,
-  "grundstellungS": [],
-  "proben": 1,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [
+   4.8,
+   0.1,
+   2,
+   6.4,
+   0.4
+  ],
+  "proben": 6,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 23.5,
-    "takte": 766,
+    "vor": "ferne.K1#1",
+    "s": 23.6,
+    "takte": 753,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "luftwasser.K5#1",
+    "s": 16.3,
+    "takte": 807,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "pipeline.K4#1",
+    "s": 3.2,
+    "takte": 249,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K2#1",
+    "s": 19.2,
+    "takte": 935,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 18.3,
+    "takte": 866,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "pflicht.E#1",
+    "s": 7.8,
+    "takte": 525,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
-  "grund": "die Welt trägt nicht mehr vor mensch.K5#1: /eval ohne Antwort binnen 60 s",
-  "ciBlicke": 3,
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 844,
+   "frameP95": 508.3,
+   "taktP95": 154.87,
+   "vramMax": 141.7,
+   "seiten": 8,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 56,
-   "luecken": 6,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K3#2",
+     "m": 6430,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "pflicht.E#1",
+     "m": 1091,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "leib.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "luftwasser.K5#1",
+     "m": 536,
+     "ringVor": 4,
+     "ringMin": 4
+    }
+   ],
+   "zapfen": 360,
+   "luecken": 5,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 182.9,
-  "minuten": 3.79
+  "fahrtS": 430.3,
+  "minuten": 7.26
  }
 }
