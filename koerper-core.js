@@ -1007,10 +1007,14 @@
     // größte Knick zwischen zwei Dreiecken der Haut des sichtbaren Bauchs (Grad; vorn, zwischen den Flanken, nackt) ·
     // bauchSplitter = Anteil der Dreiecke dort mit einem Winkel unter 10°. Bis w21-leib-bau: zwei Häute ohne Ring (der Kopf schwebte,
     // die Fuge bis 9,5 cm, kein Hals-Gewicht am Kopf), Bund und Hemd-Saum 5,8–7,8 Umläufe, Knick im Bauch des Hemds 54°.
+    // hautMehrfach / hautUeberschlag (Nacharbeit w21-leib-bau, gate:kamera-leib:echt K6): an Kopf- und Leib-Haut des bekleideten Leibs
+    // die Kanten mit mehr als zwei Dreiecken und die Nachbarn, deren Normalen mehr als 100° auseinander liegen (ein Überschlag: seine
+    // Rückseite verwirft der Stoff, die Kamera sieht durch die Haut den Grund). Bis zur Nacharbeit trug die Dicke des Halses im Kopf
+    // 5 und 7 (bis 151°, hinter dem Ohr und unter dem Mund), main 0.
     // prettier-ignore
     var LEIB_SOLL = Object.freeze({
         nahtRing: [1, 1], nahtSpalt: [0, 1e-5], nahtPose: [0, 1e-5], nahtNormale: [0, 1], saumUmlauf: [0, 3], bauchKnick: [0, 25],
-        bauchSplitter: [0, 0.05],
+        bauchSplitter: [0, 0.05], hautMehrfach: [0, 0], hautUeberschlag: [0, 0],
     });
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
@@ -2155,7 +2159,7 @@
     // zwischen den Flanken (|x| < 0,35), Hüfte + 0,25 … 0,6 der Höhe bis zur Schulter — ihr größter Knick zwischen zwei Nachbarn
     // (Grad) und der Anteil der Splitter (ein Winkel unter 10°). Was der Guss nicht trägt, ist NaN (nicht messbar = ROT).
     function leibUrteil(g, nackt) {
-        var m = { nahtRing: NaN, nahtSpalt: NaN, nahtPose: NaN, nahtNormale: NaN, saumUmlauf: 0, bauchKnick: NaN, bauchSplitter: NaN };
+        var m = { nahtRing: NaN, nahtSpalt: NaN, nahtPose: NaN, nahtNormale: NaN, saumUmlauf: 0, bauchKnick: NaN, bauchSplitter: NaN, hautMehrfach: NaN, hautUeberschlag: NaN }; // prettier-ignore
         var ecke = function (P, i) {
             return [P[3 * i], P[3 * i + 1], P[3 * i + 2]];
         };
@@ -2221,6 +2225,34 @@
                 });
             });
         });
+        // (2b) DIE HAUT OHNE SPLITTER (bekleidet, Kopf und Leib): Kanten mit mehr als zwei Dreiecken, Nachbarn über 100° geknickt
+        var kopfH = haut(ruhe, true),
+            leibH = haut(ruhe, false);
+        if (kopfH && leibH) {
+            m.hautMehrfach = 0;
+            m.hautUeberschlag = 0;
+            [kopfH, leibH].forEach(function (x) {
+                var P = x.P,
+                    I = x.I,
+                    kanten = new Map(),
+                    nor = [];
+                for (var t = 0; t < I.length; t += 3) {
+                    var a = ecke(P, I[t]);
+                    nor.push(_norm(_cross(_sub(ecke(P, I[t + 1]), a), _sub(ecke(P, I[t + 2]), a))));
+                    for (var k = 0; k < 3; k++) {
+                        var u = I[t + k],
+                            v = I[t + ((k + 1) % 3)],
+                            key = u < v ? u + ":" + v : v + ":" + u;
+                        if (!kanten.has(key)) kanten.set(key, []);
+                        kanten.get(key).push(t / 3);
+                    }
+                }
+                kanten.forEach(function (ts) {
+                    if (ts.length > 2) m.hautMehrfach++;
+                    else if (ts.length === 2 && grad(nor[ts[0]], nor[ts[1]]) > 100) m.hautUeberschlag++;
+                });
+            });
+        }
         // (3) DER BAUCH (nackt)
         var leib = haut(ohne, false);
         if (!leib) return m;

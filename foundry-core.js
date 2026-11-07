@@ -6916,8 +6916,40 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
               return m;
           });
     B.character.updateMatrixWorld(true);
+    // DIE NAHT: eine Ebene, die der Linie Kinn — Hinterhaupt folgt (um `naht.neigung` nach hinten gehoben: vorn liegt der Hals
+    // zwischen Drosselgrube und Kinn frei, hinten zwischen dem 7. Halswirbel und dem Schädel), `unterKinn` unter dem tiefsten
+    // Punkt des Kopfs in ihrer Richtung (Kinn, Kiefer, Schädel-Basis — ohne die Kappe des Haars); je Körper gerechnet (das Alter
+    // senkt den Kopf, die Masse füllt den Nacken)
+    const nN = [0, Math.cos(LH.naht.neigung), Math.sin(LH.naht.neigung)];
+    const hoehe = (p) => nN[0] * p[0] + nN[1] * p[1] + nN[2] * p[2];
+    // die Halbachse eines Ellipsoids in Richtung n: r · |Mᵀ n| (dazu seine Haut-Dicke)
+    const halbN = (p) => {
+        const e = new THREE.Matrix4().fromArray(p.Mi).invert().elements;
+        return p.r * Math.hypot(e[0] * nN[0] + e[1] * nN[1] + e[2] * nN[2], e[4] * nN[0] + e[5] * nN[1] + e[6] * nN[2], e[8] * nN[0] + e[9] * nN[1] + e[10] * nN[2]) + p.auf; // prettier-ignore
+    };
+    const nahtVon = (P) => {
+        let h = Infinity;
+        for (const p of P) if (p.kopf && p.node.material.userData.__klasse !== "haarKappe") h = Math.min(h, hoehe(p.c) - halbN(p));
+        return h - LH.naht.unterKinn;
+    };
+    // DIE DICKE ENDET ÜBER DER NAHT (Nacharbeit w21-leib-bau, gate:kamera-leib:echt K6 und gate:mensch-anatomie LEIB hautSplitter):
+    // die Haut-Dicke liegt über den Muskeln des Leibs — bis hier trug sie jedes Primitiv des Halses auch im Kopf (die Röhre bis
+    // `hals.inKopf`, die Kopfnicker bis zum Warzenfortsatz, der Nacken): ihr um die Dicke geweitetes Ende (mehr als ihr eigener
+    // Radius, über den genäherten Abstand) stieß hinter dem Ohr und unter dem Mund durch die Haut des Kopfs — Überschläge, deren
+    // Rückseite der Stoff verwirft (die Kamera sah durch den Kopf den Grund: die Third-Kamera am Prüfplatz sieht ihn von hinten),
+    // und Kanten mit vier Dreiecken. Über der Naht schwindet die Dicke glatt im Band `naht.band` — demselben, in dem unter ihr das
+    // Gewicht des Kopfs wächst; an der Naht und darunter gilt sie ganz (beide Raster tragen dort dasselbe Feld). `dickeAb` ist die
+    // Naht des Gusses (je Stufe aus ihren Kopf-Primitiven), das Feld zählt die Dicke über ihr zurück (`p.dickeWeg`, `__tierFeld`).
+    let dickeAb = Infinity;
+    const dickeWeg = (x, y, z) => {
+        const t = (nN[0] * x + nN[1] * y + nN[2] * z - dickeAb) / LH.naht.band;
+        if (!(t > 0)) return 0;
+        if (t >= 1) return LH.dicke;
+        return LH.dicke * t * t * (3 - 2 * t);
+    };
     // die Primitive EINES Gesetzes je Raster (ihr Ausschluss winziger Teile hängt am Raster): der Leib trägt die Haut-Dicke über
-    // seinen Muskeln, das Gesicht keine; je Primitiv seine Verrundung (die Ordnung des Felds ist dieselbe in beiden Rastern)
+    // seinen Muskeln (bis über die Naht), das Gesicht keine; je Primitiv seine Verrundung (die Ordnung des Felds ist dieselbe in
+    // beiden Rastern)
     const primsFuer = (vox) => {
         const P = __tierPrims(B.character, B.character, nimm, vox, Math.max(LH.blend, blendK), gelenkVon, LEIB_KL.concat(KOPF_KL), true);
         for (const p of P) {
@@ -6926,6 +6958,7 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
             if (!p.kopf) {
                 p.auf += LH.dicke;
                 p.ext += LH.dicke;
+                p.dickeWeg = dickeWeg;
             }
         }
         return P;
@@ -6982,6 +7015,7 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
     // DIE GROBSTUFE: EIN Raster, der Kopf darin
     if (fein) {
         const P = primsFuer(voxL);
+        dickeAb = nahtVon(P);
         const F = __tierFeld(P, voxL, LH.blend, true);
         const g0 = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, voxL, 0, 0, null, null, 0, undefined, true);
         if (!g0) throw new Error("LEIB-HAUT: der Guss lieferte keine Fläche (fail-closed)");
@@ -6992,25 +7026,14 @@ function __leibHaut(kern, B, dials, gelenkVon, skinJoints, fein) {
         fertig();
         return { geo, feld: { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox: voxL, level: 0, sdf: true }, teile: teileVon(P), quellen, kopf: null };
     }
-    // DIE NAHT: eine Ebene, die der Linie Kinn — Hinterhaupt folgt (um `naht.neigung` nach hinten gehoben: vorn liegt der Hals
-    // zwischen Drosselgrube und Kinn frei, hinten zwischen dem 7. Halswirbel und dem Schädel), `unterKinn` unter dem tiefsten
-    // Punkt des Kopfs in ihrer Richtung (Kinn, Kiefer, Schädel-Basis — ohne die Kappe des Haars); je Körper gerechnet (das Alter
-    // senkt den Kopf, die Masse füllt den Nacken)
+    // die Naht der Nah-Stufe (aus den Primitiven des feinen Rasters)
     const P0 = primsFuer(voxK);
-    const nN = [0, Math.cos(LH.naht.neigung), Math.sin(LH.naht.neigung)];
-    // die Halbachse eines Ellipsoids in Richtung n: r · |Mᵀ n| (dazu seine Haut-Dicke)
-    const halbN = (p) => {
-        const e = new THREE.Matrix4().fromArray(p.Mi).invert().elements;
-        return p.r * Math.hypot(e[0] * nN[0] + e[1] * nN[1] + e[2] * nN[2], e[4] * nN[0] + e[5] * nN[1] + e[6] * nN[2], e[8] * nN[0] + e[9] * nN[1] + e[10] * nN[2]) + p.auf; // prettier-ignore
-    };
-    let hKopf = Infinity;
-    for (const p of P0) if (p.kopf && p.node.material.userData.__klasse !== "haarKappe") hKopf = Math.min(hKopf, nN[0] * p.c[0] + nN[1] * p.c[1] + nN[2] * p.c[2] - halbN(p)); // prettier-ignore
-    const dN = hKopf - LH.naht.unterKinn,
+    const dN = nahtVon(P0),
         dB = dN - voxL,
         dW = dN - LH.naht.band;
+    dickeAb = dN;
     const ebeneN = { n: nN, d: dN },
         ebeneB = { n: nN, d: dB };
-    const hoehe = (p) => nN[0] * p[0] + nN[1] * p[1] + nN[2] * p[2];
     // das Raster des Kopfs: der Kopf und was über die Naht reicht (der Hals unter dem Kinn) — nie ein Glied; sein Kasten ist der
     // Umriss des Kopfs (der Hals liegt in ihm), es beginnt unter dem tiefsten Punkt der Ebene darin. Eine Fläche des Rumpfs, die
     // über der Naht aus dem Kasten ragte, bräche als Rand auf (der Ring an der Naht wäre nicht der einzige: LAUT, unten)
@@ -7888,7 +7911,8 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
                     const x = lo[0] + i * vox,
                         ex = x - cx;
                     if (Math.sqrt(ex * ex + eyz) - R >= a + bl) continue;
-                    const b = __tierAbstand(p, x, y, z);
+                    // die Dicke, die hier nicht gilt (`p.dickeWeg`: die Haut des Leibs über der Naht, `__leibHaut`), kehrt zurück
+                    const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
                     // polynomiales smin (IQ): die Naht verrundet mit Radius ~blend
                     const dab = a > b ? a - b : b - a;
                     if (dab >= bl) {

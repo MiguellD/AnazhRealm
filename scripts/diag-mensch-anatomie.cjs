@@ -191,15 +191,18 @@ function messeKopf(sb, eingriff) {
     };
 }
 // DIE EINE HAUT IM GUSS (w21-leib-bau, koerper-core `leibUrteil` — die Bänder LEIB_SOLL): am Ofen L0 die Naht der Kopf-Haut an der
-// Haut des Leibs in Ruhe und unter dem Kopf in Pose, die Säume der Stoffe aus der Haut, nackt der Bauch. `guss(g)`: der Täter.
-const messeLeib = (so, guss = () => {}) =>
-    so.__koerperCore.leibUrteil(
+// Haut des Leibs in Ruhe und unter dem Kopf in Pose, die Säume der Stoffe aus der Haut, die Splitter der Haut, nackt der Bauch. Der
+// Täter: `guss(g)` am Guss, oder `{ kern }` (der Kern, mit dem der Ofen gießt).
+const messeLeib = (so, taeter = () => {}) => {
+    const K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore;
+    return so.__koerperCore.leibUrteil(
         ...[null, { dials: { top: "none", bottom: "none", shoes: "none" } }].map((ov) => {
-            const g = so.BAKERS_BY_KIND.koerper(so.__koerperCore, "mensch", 1, 0, ov);
-            guss(g);
+            const g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, ov);
+            if (typeof taeter === "function") taeter(g);
             return g;
         })
     );
+};
 
 // DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
 function urteile(sb, m, soll = "MENSCH_SOLL") {
@@ -375,6 +378,10 @@ if (SELBSTTEST) {
         ["L6 die Delle im Bauch", (m, k, j, pa) => { for (let i = 0; k === "haut" && j === "mensch" && i < pa.count; i++) if (Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08 && pa.getZ(i) > 0) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
     ])
         pruefe(name + " wird erkannt", amGuss(f), muster, "leib");
+    // (L7) der Guss vor der Nacharbeit: die Dicke des Halses schwindet über der Naht nie (ihr Band unendlich) — sie stößt hinter dem Ohr
+    // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
+    const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
+    pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
         auge(-0.12),
