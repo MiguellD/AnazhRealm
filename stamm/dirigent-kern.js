@@ -792,7 +792,7 @@ class AnazhRealm {
             untertitel: false, // spielgang.K4 — die Untertitel der Klang-Welt (Einstellungen › Ton & Sicht), gewählt vom Spieler
             // spielgang.K4 — DER ZUGANG (Einstellungen › Ton & Sicht, im Snapshot): die Farbsicht (FARBSICHT.arten), das Sichtfeld
             // (null = KAM_FOV_GRAD), das Kopfwackeln (Landung, Tempo-Sichtfeld) und die Unschärfe der Bewegung (`_zugangTakt`)
-            zugang: { farbsicht: "aus", sichtfeld: null, wackeln: true, unschaerfe: true },
+            zugang: { farbsicht: "aus", fov: null, wackeln: true, unschaerfe: true },
             // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),
             // liest perfSense (kein Parallel-Zähler); der PERF-SENSE-Debug-Dump bleibt hinter perfOverlay.
             // Toggle im Einstellungen-Drawer, persistiert via Snapshot.
