@@ -185,5 +185,6 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt
   `[gpu-probe: gate:<npm-skript>, bild:<messort>@<uhr>]` (höchstens drei, ohne `[skip ci]`), ein freier Läufer mit dem Label gpu-probe
   fährt sie unter dem GPU-Schloss; Urteil und Bild stehen in `origin/koordination:probe-post/<zweig>/<sha8>.md`, die Zeile oben in
-  `cloud-post/<zweig>.md` (gate:apparat Klinge 7 hält den Einlass: nur push, nur die zwei Formen).
+  `cloud-post/<zweig>.md`, 2–3 min ab dem Push (07.11.: Radeon 108 s, OMEN 195 s samt npm ci; gate:apparat Klinge 7 hält den Einlass:
+  nur push, nur die zwei Formen).
 - Commits klein, deutsch, emoji-frei, die Message ist der Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte.
