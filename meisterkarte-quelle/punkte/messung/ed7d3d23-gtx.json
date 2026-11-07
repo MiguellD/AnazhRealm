@@ -1,9 +1,24 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T01:20:13.151Z",
+ "zeit": "2026-11-07T01:21:11.857Z",
  "host": "LAPTOP-4BN3RL0L",
- "je": {},
+ "je": {
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "Urteil warf: Cannot read properties of null (reading 'toFixed')",
+   "exit": 0,
+   "minuten": 0.41,
+   "grund": "Urteil warf: Cannot read properties of null (reading 'toFixed')",
+   "gpu": "nvidia/pascal",
+   "s": 24.8,
+   "zeit": "2026-11-07T01:21:11.857Z",
+   "abdruck": "c3f462780222",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
  "ungemessen": {
   "ferne.K1#1": {
    "gruen": false,
@@ -351,13 +366,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T01:10:12.995Z",
+  "start": "2026-11-07T01:20:38.034Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 5.8,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 26.9,
+    "takte": 730,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 775,
+   "frameP95": 49.9,
+   "taktP95": 47.47,
+   "vramMax": 148.5,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 55,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 57.7,
+  "minuten": 1.02
  }
 }
