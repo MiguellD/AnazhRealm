@@ -1,0 +1,79 @@
+
+> anazhrealm@18.546.203 gate:wasser-leben:bild
+> node scripts/diag-wasser-leben.cjs --bild
+
+[linse-gpu] nvidia/pascal
+{
+ "hashSin": null,
+ "bild": {
+  "uhr60": {
+   "ruhig": {
+    "kantenDichte": 0.17,
+    "weissAnteil": 0,
+    "hellAnteil": 0,
+    "mittel": 6,
+    "pixel": 22164
+   },
+   "schnelle": {
+    "kantenDichte": 2.074,
+    "weissAnteil": 0.975,
+    "hellAnteil": 0.995,
+    "mittel": 104,
+    "pixel": 22820
+   }
+  },
+  "uhr3600": {
+   "ruhig": {
+    "kantenDichte": 0.165,
+    "weissAnteil": 0,
+    "hellAnteil": 0,
+    "mittel": 6.2,
+    "pixel": 22164
+   },
+   "schnelle": {
+    "kantenDichte": 2.392,
+    "weissAnteil": 0.97,
+    "hellAnteil": 0.9947,
+    "mittel": 105.5,
+    "pixel": 22820
+   }
+  },
+  "kantenVerhaeltnis": 1.153,
+  "sturmVerhaeltnis": 2.165,
+  "fragmente": 1,
+  "lecks": []
+ },
+ "regen": {
+  "litAnteil": 0.01701,
+  "schlieren": 287,
+  "neigung": 0.417
+ },
+ "licht": {
+  "nachtOben": 0.044,
+  "nachtUnten": 0.0237,
+  "mittagOben": 0.3149,
+  "mittagUnten": 0.17,
+  "himmelVor": [
+   0.04855,
+   0.05649,
+   0.04785
+  ],
+  "himmelGetaucht": [
+   0.04852,
+   0.05643,
+   0.04773
+  ]
+ },
+ "ferne": {
+  "krone": 27.79,
+  "saeulen": 21,
+  "ring": {
+   "punkte": 5,
+   "anders": 5,
+   "hubM": 3.26,
+   "faden": 5
+  }
+ }
+}
+
+WASSER-LEBEN GRÜN

@@ -1,0 +1,98 @@
+
+> anazhrealm@18.546.203 gate:weltbild-frost:echt
+> node scripts/diag-weltbild-frost.cjs --echt
+
+[linse-gpu] nvidia/pascal
+=== DIE FROST-WAND (echte GPU) — Boot +74 s {"bereit":true,"webgpu":true,"chunks":81,"weltbild":"14.8 s","warm":true} ===
+  Prüf-Raum: {"weg":"spielpfad"}
+
+[ankunft] +77 s · Bild 62.4 % der Blöcke bewegt · 147 Index-Puffer (10 Mensch) · Devices 1
+  ✅ ankunft: B das Bild folgt der Kamera — 62.41 % der Blöcke (Soll ≥ 5 %)
+  ✅ ankunft: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ ankunft: G kein WebGPU-Validierungsfehler
+  ✅ ankunft: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[dritte-person] +79 s · Bild 66.1 % der Blöcke bewegt · 150 Index-Puffer (10 Mensch) · Devices 1
+  ✅ dritte-person: B das Bild folgt der Kamera — 66.10 % der Blöcke (Soll ≥ 5 %)
+  ✅ dritte-person: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ dritte-person: G kein WebGPU-Validierungsfehler
+  ✅ dritte-person: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+  ✅ die Welt-GPU zeichnet einen Menschen (Mensch-Indizes auf der Welt-GPU) — 10 Mensch-Index-Puffer
+
+[werkstatt-eiche] +81 s · {"wahl":"baum_eiche","bühne":"werkstatt","gezeichnet":2,"meshes":29} · Bild 59.7 % der Blöcke bewegt · 150 Index-Puffer (10 Mensch) · Devices 1
+  ✅ werkstatt-eiche: B das Bild folgt der Kamera — 59.66 % der Blöcke (Soll ≥ 5 %)
+  ✅ werkstatt-eiche: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ werkstatt-eiche: G kein WebGPU-Validierungsfehler
+  ✅ werkstatt-eiche: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[tab-ich-buehne] +83 s · {"bühne":"ich","gezeichnet":40,"meshes":14} · Bild 62.2 % der Blöcke bewegt · 153 Index-Puffer (10 Mensch) · Devices 1
+  ✅ tab-ich-buehne: B das Bild folgt der Kamera — 62.22 % der Blöcke (Soll ≥ 5 %)
+  ✅ tab-ich-buehne: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ tab-ich-buehne: G kein WebGPU-Validierungsfehler
+  ✅ tab-ich-buehne: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[hof-buehne] +85 s · {"bühne":"hof","gezeichnet":2,"meshes":13} · Bild 64.4 % der Blöcke bewegt · 153 Index-Puffer (10 Mensch) · Devices 1
+  ✅ hof-buehne: B das Bild folgt der Kamera — 64.39 % der Blöcke (Soll ≥ 5 %)
+  ✅ hof-buehne: I jeder Index-Puffer der Welt-GPU trägt das gebundene Format
+  ✅ hof-buehne: G kein WebGPU-Validierungsfehler
+  ✅ hof-buehne: W die Wachen des Spiels stehen und schweigen — {"index":null,"gpu":null}
+
+[seelenwechsel] +89 s · {"alle":364,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"programmZwillinge":0,"zwillingSelbst":1,"leiber":{"wesen":{"ich":{"meshe":13,"fremd":0,"tri":58768},"peer":{"meshe":13,"fremd":0,"tri":58768}},"human":{"ich":{"meshe":14,"fremd":0,"tri":53991},"peer":{"meshe":14,"fremd":0,"tri":53991}},"wolf":{"ich":{"meshe":13,"fremd":0,"tri":61040},"peer":{"meshe":13,"fremd":0,"tri":61040}},"fuchs":{"ich":{"meshe":13,"fremd":0,"tri":63586},"peer":{"meshe":13,"fremd":0,"tri":63586}},"baer":{"ich":{"mesh
+  ✅ S1 Seelenwechsel (Ich, Welt-Leib und Mitspieler jede Art↔human, Hof 4 Seelen ×2, zwei Durchgänge): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 364 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S1 Ich-Bühne wesen: der Leib der Welt — {"meshe":13,"fremd":0,"tri":58768} (Soll fremd 0, tri ≥ 10000)
+  ✅ S4 Mitspieler wesen: der Leib der Welt — {"meshe":13,"fremd":0,"tri":58768} (Soll fremd 0, tri ≥ 10000)
+  ✅ S1 Ich-Bühne human: der Leib der Welt — {"meshe":14,"fremd":0,"tri":53991} (Soll fremd 0, tri ≥ 10000)
+  ✅ S4 Mitspieler human: der Leib der Welt — {"meshe":14,"fremd":0,"tri":53991} (Soll fremd 0, tri ≥ 10000)
+  ✅ S1 Ich-Bühne wolf: der Leib der Welt — {"meshe":13,"fremd":0,"tri":61040} (Soll fremd 0, tri ≥ 10000)
+  ✅ S4 Mitspieler wolf: der Leib der Welt — {"meshe":13,"fremd":0,"tri":61040} (Soll fremd 0, tri ≥ 10000)
+  ✅ S1 Ich-Bühne fuchs: der Leib der Welt — {"meshe":13,"fremd":0,"tri":63586} (Soll fremd 0, tri ≥ 10000)
+  ✅ S4 Mitspieler fuchs: der Leib der Welt — {"meshe":13,"fremd":0,"tri":63586} (Soll fremd 0, tri ≥ 10000)
+  ✅ S1 Ich-Bühne baer: der Leib der Welt — {"meshe":13,"fremd":0,"tri":66806} (Soll fremd 0, tri ≥ 10000)
+  ✅ S4 Mitspieler baer: der Leib der Welt — {"meshe":13,"fremd":0,"tri":66806} (Soll fremd 0, tri ≥ 10000)
+  ✅ S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT — {"leer":{"meshe":0,"fremd":0,"tri":0},"zwilling":{"meshe":39,"fremd":39,"tri":5388}}
+  ✅ S1 die Probe wechselt wirklich (Ich ×8 + Hof ×8 je Durchgang) — 30 Wechsel
+  ✅ S2 die GPU (Welt und Bühnen) kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt) — +0 Module / +0 Pipelines gegen die geschlossene Bühne (Soll ≤ 2)
+  ✅ S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> trennt) — Zwillinge 0 · Selbsttest 1 (Soll 1)
+
+[feed-vorschau] +90 s · {"alle":213,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"tausch":9,"vorgelegt":184,"karten":5}
+  ✅ S3 Feed-Vorschau (4 Wesen + Rezept, zwei Durchgänge): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 213 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S3 die Probe wechselt wirklich (Feed, mit Geometrie) — 9 Wechsel, 184 Geometrien vorgelegt
+
+[werkstatt-ofen] +112 s · {"alle":415,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"id":"wolf","dial":"size","vor":{"memo":10,"geometrien":26,"MB":5.18,"stoffe":8,"hoerer":8},"nach":{"memo":10,"geometrien":26,"MB":5.19,"stoffe":8,"hoerer":8},"heapVor":406.4,"heapNach":407.1,"ruhe":[]}
+  ✅ S5 Werkstatt-Ofen (Regler-Zug wolf.size, 20 Werte): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 415 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S5 das Ofen-Memo hält kein Regler-Einzelstück — Memo 10 → 10 über 18 Werte
+  ✅ S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt — Geometrien 26 → 26, Geometrie-Speicher 5.18 → 5.19 MB über 18 Werte (das Konto des Einzelstücks)
+  ✅ S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich) — 8 Stoffe, dispose-Hörer 8 → 8 über 18 Werte
+  ✅ S5 der JS-Speicher bleibt beschränkt (kein Welt-Satz verdichtet im Fenster) — 406.4 → 407.1 MB über 18 Werte (Soll ≤ +10 MB)
+
+[mitspieler-erscheinungen] +130 s · {"alle":126,"welt":0,"geometrien":0,"stoffe":0,"namen":[],"leiber":10,"spitze":30,"memo":12,"memoVor":10,"heapPeersVor":405.1,"heapPeersNach":408.7}
+  ✅ S6 Mitspieler-Erscheinungen (10 Peers human, Abschied): keine Welt-Geometrie, kein Welt-Stoff entsorgt — 0 von 126 Entsorgungen trafen die Welt (0 Geometrien + 0 Stoffe einzeln): 
+  ✅ S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen) — 10 Leiber, Memo-Spitze 30 (vor 10)
+  ✅ S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib — Memo 10 → Spitze 30 → 12 (Grenze +2)
+  ✅ S6 der JS-Speicher fällt mit dem Abschied zurück — 405.1 → 408.7 MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)
+  ✅ Nachlauf: kein verspätetes Wort einer Validierung
+  ✅ P2 kein writeBuffer schief: der Pfad und ein Index ungerader Länge der Ich-Bühne — 380994 writeBuffer, keiner schief
+
+=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] INDEX-WACHE (bereich, world-canvas): Scene/frost-taeter-bereich · Geometrie 30031 — Index 3 ≥ 3 Vertices im gezeichneten Bereich
+  ✅ T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen — ["Scene/frost-taeter-bereich: Index 3 ≥ 3 Vertices im gezeichneten Bereich"]
+  ✅ T3 die Puffer-Wache nennt den schiefen writeBuffer beim Namen, WebGPU wirft — frost-taeter-puffer · Uint16Array · Versatz 0 · 6 B · q.writeBuffer (stamm/dirigent-ankunft.js:250:36) < pptr:;page.%3Ccomputed%3E%20%5Bas%20evaluate%5D%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cp3%5Cmp-baum%5Cvp15-echt%5Cscripts%5Clib%5Cwelt-boot.cjs%3A869%3A22):6:23 · geworfen: Failed to execute 'writeBuffer' on 'GPUQueue': Number of bytes to write must be a multiple of 4
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] INDEX-WACHE (format, world-canvas): Group/BundleGroup/Group/mensch/torso/head/Mesh · Geometrie 4468 — 8970 × Uint32Array = 35880 B gebunden, der Puffer trägt 17940 B
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] GPU-VALIDIERUNG (world-canvas, #1): Index range (first: 0, count: 8970, format: IndexFormat::Uint32) does not fit in index buffer size (17940).
+ - While encoding [RenderBundleEncoder "renderBundleEncoder"].DrawIndexed(8970, 1, 
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] GPU-VALIDIERUNG (world-canvas, #2): [Invalid RenderBundle from RenderBundleEncoder "renderBundleEncoder"] is invalid due to a previous error.
+ - While encoding [RenderPassEncoder (unlabeled)].ExecuteBundles(5, ...).
+ - While fi
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] GPU-VALIDIERUNG (world-canvas, #3): [Invalid CommandBuffer from CommandEncoder "renderContext_5"] is invalid due to a previous error.
+ - While calling [Queue].Submit([[Invalid CommandBuffer from CommandEncoder "renderContext_5"
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] GPU-VALIDIERUNG: 10 Meldungen (zuletzt world-canvas: [Invalid RenderBundle from RenderBundleEncoder "renderBundleEncoder"] is invalid due to a previous error.)
+  [Spiel] [AnazhRealm V18.546.203] [ERROR] GPU-VALIDIERUNG: 100 Meldungen (zuletzt world-canvas: [Invalid RenderBundle from RenderBundleEncoder "renderBundleEncoder"] is invalid due to a previous error.)
+  T2 das Wort der Validierung nach 8 ms (offene Pipeline-Bauten 0, offene Fehler-Bereiche 0, verlorene Devices [])
+  ✅ T2 die Index-Wache nennt den geweiteten Index beim Pfad — Group/BundleGroup/Group/mensch/torso/head/Mesh: 8970 × Uint32Array = 35880 B gebunden, der Puffer trägt 17940 B
+  ✅ T2 die GPU-Wache des Spiels zählt die Validierung — {"n":325}
+  ✅ T2 der eigene Hörer hört die Validierung (Device oder r184-Fehler-Bereich) — 650 Meldungen: device 0: Index range (first: 0, count: 8970, format: IndexFormat::Uint32) does not fit in index buffer size (17940). | device 0: [Invalid RenderBundle from RenderBundleEncoder "renderBundleEncoder"] is invalid due to a previous error.
+  ✅ T2 die Bild-Probe erkennt das stehende Bild — 0.00 % der Blöcke bewegt
+
+  Dauer +136 s
+
+✅ GRÜN — DIE FROST-WAND steht — durch Werkstatt, Ich- und Hof-Bühne trägt jeder Index-Puffer der Welt-GPU sein Format, kein Device meldet, das Bild folgt der Kamera; die Täter (Index über der Vertex-Zahl, ein fremd geweiteter Mensch-Index) nennen die Wachen beim Namen, und das stehende Bild wird erkannt.
