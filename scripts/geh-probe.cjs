@@ -64,19 +64,24 @@ const KB_AN = `if (!window.__kb) {
             const m = ro.material || {};
             let kl = "?", pass = "?";
             try { kl = r._taeterKlasse(ro.object); } catch (_e) {}
+            const o = ro.object, g = o && o.isGeometrieArena && o.glieder && o.glieder[0];
+            try { if (g) kl = "arena " + r._taeterKlasse(g) + (G.alt.has(o) ? " alt" : " neu") + " n" + o.glieder.length; } catch (_e) {}
             try { pass = window.__passName ? window.__passName(ro.scene, ro.camera) : "?"; } catch (_e) {}
-            G.je.set(k, (e = { name: (m.name || m.type || "?") + "|" + kl + "|" + pass, ms: 0, n: 0, max: 0, fertig: 0, vor, weg }));
+            G.je.set(k, (e = { name: (m.name || m.type || "?") + "|" + kl + "|" + pass + "|t" + Math.round(performance.now() - G.t0), ms: 0, n: 0, max: 0, fertig: 0, vor, weg }));
         }
         e.ms += ms; e.n++; if (ms > e.max) e.max = ms; if (ok) e.fertig++;
         return ok;
     };
 }
-window.__kb.an = true; window.__kb.je.clear(); window.__kb.del = 0; return 1;`;
+const A = r.constructor.__arenen;
+window.__kb.alt = new Set(A ? A.values() : []);
+window.__kb.t0 = performance.now();
+window.__kb.an = true; window.__kb.je.clear(); window.__kb.del = 0; return window.__kb.alt.size;`;
 const KB_LESEN = `const G = window.__kb; G.an = false; const a = [...G.je.values()].sort((x, y) => y.ms - x.ms);
 const s = (f) => +a.reduce((t, e) => t + f(e), 0).toFixed(1);
 return { schluessel: a.length, ms: s((e) => e.ms), schritte: s((e) => e.n), fertig: s((e) => e.fertig), wieder: a.filter((e) => e.vor > 0).length,
     wiederMs: s((e) => (e.vor > 0 ? e.ms : 0)), geloeschtImGang: G.del,
-    top: a.slice(0, 7).map((e) => [e.name.slice(0, 70), +e.ms.toFixed(1), e.n, +e.max.toFixed(1), e.vor, e.weg]) };`;
+    arenen: (r.constructor.__arenen || new Map()).size, top: a.slice(0, 7).map((e) => [e.name.replace("MeshStandardNodeMaterial", "MSNM").slice(0, 80), +e.ms.toFixed(1), e.n, +e.max.toFixed(1), e.vor, e.weg]) };`;
 
 (async () => {
     const tor = werkbankTor(PORT);
@@ -101,8 +106,8 @@ return { schluessel: a.length, ms: s((e) => e.ms), schritte: s((e) => e.n), fert
             const k = ev(KB_LESEN);
             zeile(
                 `GEH ROT ${name} Knoten-Bau ${gang}: ${k.schluessel} Schlüssel · Σ ${k.ms} ms in ${k.schritte} Schritten · ${k.fertig} fertig · ` +
-                    `${k.wieder} davon standen vor dem Gang schon im Cache (Σ ${k.wiederMs} ms) · im Gang ${k.geloeschtImGang} Einträge gelöscht · ` +
-                    `[Stoff|Klasse|Pass ms Schritte max vorher gelöscht]: ${JSON.stringify(k.top || k)}`
+                    `${k.wieder} vorher im Cache (Σ ${k.wiederMs} ms) · ${k.geloeschtImGang} gelöscht · Arenen ${k.arenen} · ` +
+                    `[Stoff|Glied alt/neu n|Pass|t ms Schritte max]: ${JSON.stringify((k.top || []).map((x) => x.slice(0, 4)) || k)}`
             );
         };
         const lauf = (name) => {
