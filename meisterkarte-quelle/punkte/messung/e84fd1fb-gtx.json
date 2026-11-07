@@ -1,7 +1,7 @@
 {
  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
  "geraet": "gtx",
- "zeit": "2026-11-07T20:11:44.635Z",
+ "zeit": "2026-11-07T21:39:41.392Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K2#1": {
@@ -91,6 +91,19 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.76 m · Luma 108.6 σ 36.8 schwarz 0.0 % weiß 0.0 % ",
+   "exit": 0,
+   "minuten": 1.14,
+   "gpu": "nvidia/pascal",
+   "s": 68.7,
+   "zeit": "2026-11-07T21:39:41.392Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -127,85 +140,48 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T20:03:41.052Z",
+  "start": "2026-11-07T21:39:11.933Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.5,
-  "grundstellungS": [
-   4.1,
-   25.6
-  ],
-  "proben": 7,
+  "warten": 0.01,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 23.4,
-    "takte": 598,
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 21.3,
+    "takte": 634,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K2#1",
-    "s": 21.9,
-    "takte": 700,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "halten.K1#2",
-    "s": 17.7,
-    "takte": 767,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "halten.K1#2",
-    "wege": "wege +25 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
-    "s": 25.6
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 8,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1323,
-   "frameP95": 58.34,
-   "taktP95": 47.27,
-   "vramMax": 135.6,
-   "seiten": 3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "gelaende.K3#1",
-     "m": 5578,
+     "probe": "siedlung.K4#2",
+     "m": 639,
      "ringVor": 4,
      "ringMin": 0
-    },
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 5454,
-     "ringVor": 4,
-     "ringMin": -1
     }
    ],
-   "zapfen": 465,
+   "zapfen": 94,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 492.3,
-  "minuten": 8.28
+  "fahrtS": 97.4,
+  "minuten": 1.69
  }
 }
