@@ -14,16 +14,14 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
     const t0 = Date.now();
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 900000 });
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };

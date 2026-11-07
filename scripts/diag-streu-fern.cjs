@@ -41,17 +41,14 @@
 //   node scripts/diag-streu-fern.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await server.zeige(page, 60000);
+    const { browser, page } = await nullWelt(server, { frist: 600000, vor: WELT_ORTE_INSTALL }, 60000); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
 
     const out = await page.evaluate(async () => {
         const res = {};
