@@ -18,7 +18,7 @@
 //          Fels (STAND IM FELS), und der in die Wand laufende Wolf steht am Ende nie mit der Stirn höher über seinem Heck, als
 //          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND);
 //   (B) DER TURM (bauen.K4): je Klick der rechten Maus (`tryMousePlace`, der Blick senkrecht nach unten) ein Block unter dem
-//       Spieler: der Stand steigt je Block ≥ HUB_ANTEIL · r, die Sohlen liegen ≤ SOHLE_M neben dem Mesh (`_bodenSichtAt`), der
+//       Spieler: der Stand steigt je Block ≥ HUB_ANTEIL · r, die Sohlen liegen ≤ SOHLE_M neben dem Stand der Sicht (`_standSicht`), der
 //       Turm trägt ≥ TURM_M; vom Klick an zeichnet das Bild den Block unter dem Fuß — in JEDEM Takt, auch im Flug der Rettung
 //       (BLIND: unter einem Bein kein gezeichneter Boden oder einer mehr als BLIND_M unter der Krone des Blocks; die Sohle allein
 //       misst nur die Takte mit Stand und sah die fehlende Gestalt nur, wenn die Landung vor dem Neubau aus dem Faden kam — CI
@@ -504,10 +504,12 @@ async function probe(K) {
     };
     const f = r._ensureAssetFoundry();
     await __weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints.fahrzeug_gt);
-    // DIE SOHLE (B): je Bein der Knöchel nach der Fuß-IK minus `soleH` — der größere Abstand zum gebauten Mesh
+    // DIE SOHLE (B): je Bein der Knöchel nach der Fuß-IK minus `soleH` — der größere Abstand zum Stand-Leser der Sicht (`_standSicht`:
+    // das gebaute Mesh, in der Schnee-Decke um ihren Tritt tiefer, wetter.K4 — der Fuß steht IN der Decke). Bis feld.K2#2 las sie das
+    // Mesh allein: das Jahr der Welt-Uhr trug den Turm (148–166 m) in den Herbst, der Tritt 0,11–0,20 m hieß SOHLE (Brücke Third 0,25 m)
     const sohle = () => {
         const [u, v] = [st.playerMesh.userData, new window.THREE.Vector3()];
-        const d = (b) => (b.ankle.getWorldPosition(v), v.y - u._gaitIK.soleH - (r._bodenSichtAt(v.x, v.z) ?? -99));
+        const d = (b) => (b.ankle.getWorldPosition(v), v.y - u._gaitIK.soleH - r._standSicht(v.x, v.z, NaN, false));
         return Math.max(Math.abs(d(u.rig.legL)), Math.abs(d(u.rig.legR)));
     };
     if (K.nach) {
@@ -1005,10 +1007,12 @@ async function probe(K) {
             }
             t.ring = { ...ring, krone2, nach: ringY() };
         }
-    // B: zurück auf den Turm, der Save
+    // B: zurück auf den Turm, der Save — der Stand des Turms zur Welt-Uhr des Saves (der Reload trägt sie und mit ihr das Jahr: im Herbst
+    // steht der Spieler in der Schnee-Decke um ihren Tritt tiefer als am Tag des Baus, wetter.K4 — bis feld.K2#2 hieß das RELOAD)
     if (T0) {
         absteigen();
         await einschwingen(T0.x, T0.z);
+        turm.hoehe = st.playerMesh.position.y - turm.y0;
         r.saveState();
     }
     return { proben, zensus, schmuggel, turm, turm2 };

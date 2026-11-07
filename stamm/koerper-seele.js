@@ -343,9 +343,7 @@ class AnazhRealm_koerper_seele {
         }
         // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
         const pm = this.state.playerMesh;
-        if (pm && pm.position && typeof this._depositLife === "function") {
-            this._depositLife(pm.position.x, pm.position.z);
-        }
+        if (pm && pm.position) this._lebenGabe(pm.position.x, pm.position.z, AnazhRealm.LIFE_FIELD.pulseCenter, null);
         // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, Grund + 1,2 m — dieselbe Ankunft wie
         // beim ersten Spawn)
         const anker = this._genesisAnkunft();
