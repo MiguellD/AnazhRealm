@@ -1,7 +1,7 @@
 {
  "sha": "185e99bb0eaeabefa236bd7d520cb92c2bd559c7",
  "geraet": "gtx",
- "zeit": "2026-11-07T17:27:08.832Z",
+ "zeit": "2026-11-07T17:30:24.778Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K4#2": {
@@ -85,120 +85,42 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T17:19:12.168Z",
+  "start": "2026-11-07T17:29:48.891Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
-  "grundstellungS": [
-   6.2,
-   4.6,
-   4.8,
-   7
-  ],
-  "proben": 8,
+  "bootS": 7.5,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "vegetation.K5#2",
-    "s": 26.8,
-    "takte": 722,
+    "vor": "lod.K1#1",
+    "s": 26.7,
+    "takte": 708,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 13.6,
-    "takte": 638,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "gelaende.K3#1",
-    "s": 16.4,
-    "takte": 772,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "wetter.K2#1",
-    "s": 32,
-    "takte": 1403,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 19.1,
-    "takte": 631,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K2#1",
-    "s": 17.1,
-    "takte": 742,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "halten.K1#2",
-    "s": 16.6,
-    "takte": 729,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "siedlung.K1#2",
-    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-    "s": 4.6
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 9,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 133,
-   "frameP95": 133.29,
-   "taktP95": 83.81,
-   "vramMax": 126.8,
-   "seiten": 5,
+   "bilder": 333,
+   "frameP95": 41.78,
+   "taktP95": 43.71,
+   "vramMax": 128.5,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K3#1",
-     "m": 6469,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "siedlung.K2#1",
-     "m": 1350,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 449,
-   "luecken": 2,
+   "ortImDeckel": [],
+   "zapfen": 61,
+   "luecken": 1,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 486.8,
-  "minuten": 8.19
+  "fahrtS": 80.6,
+  "minuten": 1.41
  },
  "ungemessen": {
   "material.K1#1": {
@@ -257,6 +179,20 @@
    "s": 45.3,
    "zeit": "2026-11-07T17:25:57.903Z",
    "abdruck": "780be0a8826d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.2,
+   "zeit": "2026-11-07T17:30:24.778Z",
+   "abdruck": "be3337863a69",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
