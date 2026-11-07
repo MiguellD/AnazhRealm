@@ -2186,6 +2186,22 @@ class AnazhRealm_vegetation_baum {
         const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         this._grundrissFaellt(hx - r - weit, hz - r - weit, hx + r + weit, hz + r + weit);
         const weg = [];
+        // DER WURF MIT BOXEN WEICHT MIT SEINEM LEIB (w22-dorf-reload): ein Wurf des Felds, der nicht Natur ist (der Akt des Nexus —
+        // Wasserfall, Tempel, Fraktal —, die Feuerstelle), fällt, sobald seine Boxen den neuen Bau `ausser` treffen — dieselbe Wand,
+        // die sie dem Bau sonst stellten (`_bauFrei` gegen ihn allein); bis hier fiel er nur mit seiner Mitte im Grundriss
+        const fa = ausser && ausser.position && this._grundrissVon(ausser);
+        const trifft = (e) =>
+            !!fa &&
+            !this._istNatur(e) &&
+            !this._bauFrei(
+                ausser.position.x,
+                ausser.position.z,
+                fa.welt ? 0 : ausser.rotationY || 0,
+                fa,
+                fa.welt ? null : ausser.tuer,
+                ausser.position.y - 0.5,
+                e
+            );
         // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`, eine Obermenge des Quadrats), nie der ganze Bestand
         for (const e of this._blockerUmPlatz(hx, hz, r + weit, [])) {
             if (e === ausser || !e.position) continue;
@@ -2193,7 +2209,7 @@ class AnazhRealm_vegetation_baum {
             if (!this._weichtDemBau(e)) continue;
             const k = mitKrone ? this._naturKrone(e.type, e) : 0;
             // ein Wurf mit eigenem Grund (die Feuerstelle: ihr Grundriss, ihre Trittfläche) liegt nie in sich selbst
-            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e)) continue;
+            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e) && !trifft(e)) continue;
             weg.push(e);
         }
         // die Natur weicht still (speicher.K3): kein Verlust im Tagebuch, kein Abschied — bis hier füllten die Räumungen der Orte
