@@ -18,7 +18,7 @@ fs.mkdirSync(D, { recursive: true });
 const r1 = (x) => (Number.isFinite(x) ? +x.toFixed(1) : x);
 const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].map(r1).join("/") : "?");
 const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
-// der Rahmen-Baum der Takt-Spitze in Zeilen: ein Rahmen, der nur seinen Namensvetter trägt (renderer.x › x), fällt in ihn
+// der Rahmen-Baum der Takt-Spitze in Zeilen (Tiefe vorn, Spitze · Mitte in ms): ein Rahmen, der nur seinen Namensvetter trägt (renderer.x › x), fällt in ihn
 const kurz = (n) => n.split(" ")[0].replace(/^(renderer|rend|be|o|AnazhRealm)\./, "");
 function baumZeilen(zeilen, kopf, n) {
     const stapel = [],
