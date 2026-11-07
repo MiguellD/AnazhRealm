@@ -1751,7 +1751,7 @@ class AnazhRealm_werkstatt_hud {
         // spielgang.K4 — der Zugang
         const Z = st.zugang || {};
         setze("farbsicht-wahl", AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus");
-        const grad = Math.round(Number.isFinite(Z.sichtfeld) ? Z.sichtfeld : AnazhRealm.KAM_FOV_GRAD);
+        const grad = Math.round(Number.isFinite(Z.fov) ? Z.fov : AnazhRealm.KAM_FOV_GRAD);
         setze("slider-sichtfeld", grad, `${grad}°`);
         setze("kopfwackeln-toggle", Z.wackeln !== false);
         setze("unschaerfe-toggle", Z.unschaerfe !== false);
@@ -1937,8 +1937,7 @@ class AnazhRealm_werkstatt_hud {
         const svS = document.getElementById("slider-sichtfeld");
         if (svS)
             svS.addEventListener("input", () => {
-                const [f0, f1] = AnazhRealm.ZUGANG.sichtfeld;
-                zg().sichtfeld = Math.max(f0, Math.min(f1, parseInt(svS.value, 10) || AnazhRealm.KAM_FOV_GRAD));
+                Object.assign(zg(), { fov: AnazhRealm._zugangFov(parseInt(svS.value, 10) || AnazhRealm.KAM_FOV_GRAD) });
                 this._menueZeigtStand();
             });
         for (const [id, feld] of [
