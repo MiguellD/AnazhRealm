@@ -526,15 +526,21 @@ function nahDeckungInSeite(o) {
             // weiter dahinter liegt, zeigt das Bild nicht — vegetation.K5#2: Gras in 55,99 m, dahinter ein Ast der Mammut; das Ziel selbst
             // legt `legeDreiecke` nie) — sonst eine Fläche, die erst der Shader spannt: die kleinste Hülle, die W trägt (bis zum doppelten
             // Radius: der Shader verbreitert die Halme der Ferne, `_halmFerne`) oder deren LINIE W senkrecht über ihrem Fuß trägt
+            // HINTER DER BODEN-SCHICHT (siedlung.K4#2 Radeon 1b1fe4d4: das Bild zeigte am Ziel-Pixel die Halme in 126,46 m, dahinter stand die
+            // Mauer des Orts): auf derselben Linie das erste Dreieck der CPU hinter W bis `saum` vor dem Ziel, das nicht Boden-Schicht ist
             const u = W.clone().sub(E).divideScalar(d);
-            let kl = null;
-            let best = 0.5;
-            const um = (s) => s.center.distanceTo(W) <= s.radius + 0.5;
+            const bis = L - (Z.saum ?? 0.5);
+            let [kl, best, hinter, hinterT] = [null, 0.5, null, bis];
+            const um = (sp) => {
+                const c = sp.center.clone().sub(E);
+                return c.distanceTo(u.clone().multiplyScalar(Math.max(d - 0.5, Math.min(bis, c.dot(u))))) <= sp.radius + 0.5;
+            };
             const pruefe = (a, b, c, uvs, me) => {
-                const s = d - schnitt(u.x, u.y, u.z, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
+                const t = schnitt(u.x, u.y, u.z, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
                 const w0 = 1 - UV.u - UV.v;
-                if (s > -0.15 && Math.abs(s) < best && !(me.karte && uvs && atlasA(w0 * uvs[0] + UV.u * uvs[2] + UV.v * uvs[4], w0 * uvs[1] + UV.u * uvs[3] + UV.v * uvs[5]) < me.cut))
-                    (best = Math.abs(s)), (kl = me.k);
+                if (!(t > d - 0.5) || (me.karte && uvs && atlasA(w0 * uvs[0] + UV.u * uvs[2] + UV.v * uvs[4], w0 * uvs[1] + UV.u * uvs[3] + UV.v * uvs[5]) < me.cut)) return; // prettier-ignore
+                if (t < d + 0.15 && Math.abs(d - t) < best) (best = Math.abs(d - t)), (kl = me.k);
+                else if (t < hinterT && me.k.klasse !== "Streu" && me.k.klasse !== "Wasser") (hinterT = t), (hinter = me.k);
             };
             st.scene.traverseVisible((obj) => (zaehlt(obj) || (obj.userData.isHydrosphere && window.__kameraZeichnet(obj, cam))) && jeInstanz(obj, um, (ob, i) => legeDreiecke(ob, i, () => true, pruefe, um))); // prettier-ignore
             let ziel = false;
@@ -554,8 +560,9 @@ function nahDeckungInSeite(o) {
             // die Boden-Schicht der fernen Hälfte und das Wasser verdecken nie — es sei denn, das Gelände unter W ragt selbst über die
             // Linie Auge → Punkt (die Kuppe)
             const s = Math.hypot(W.x - E.x, W.z - E.z) / (Math.hypot(P.x - E.x, P.z - E.z) || 1);
-            const boden = (kl.klasse === "Streu" && d >= L / 2) || kl.klasse === "Wasser";
-            return { d, vor: ziel || (boden && !(r._voxelSurfaceY(W.x, W.z) > E.y + s * (P.y - E.y))) ? null : kl.name };
+            const boden = ((kl.klasse === "Streu" && d >= L / 2) || kl.klasse === "Wasser") && !(r._voxelSurfaceY(W.x, W.z) > E.y + s * (P.y - E.y));
+            if (ziel) return { d };
+            return boden ? { d, vor: hinter && hinter.name + " hinter " + kl.name, vorD: hinterT } : { d, vor: kl.name };
         };
         const blick = S ? punkte.map(sieht) : [];
         const i = blick.findIndex((b) => b.vor);
@@ -565,7 +572,7 @@ function nahDeckungInSeite(o) {
             ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
             frei: S ? i < 0 : null,
             vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
-            vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            vorAbstand: i < 0 ? null : +(blick[i].vorD ?? blick[i].d).toFixed(2),
             abstand: +Math.hypot(Z.x - ex, Z.y - ey, Z.z - ez).toFixed(2),
             // der Abstand der Fläche, die das Bild am Ziel-Pixel zeigt (null: der Himmel oder keine Tiefe)
             bildAbstand: S && blick[0].d != null ? +blick[0].d.toFixed(2) : null,
