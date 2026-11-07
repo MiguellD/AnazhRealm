@@ -32,7 +32,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 // (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang); NP-03 (die Kamera des Körper-Studios) misst das Instrument
 // des Labors durch die ganze Vorführung, der Kern urteilt (gate:tier-gang, w4-koerper-park) — die CI fährt sie in zwei Schritten
 // (gate:kamera-laub · gate:kamera-leib), je unter 3 min; gang2 fährt die Station leib.K4#2, die Wand trägt ihn, sobald die Welt
-// ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
+// ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG; seit w18-kamera-haus nur noch dort, headless p95 0,034–0,046 m, Nah-Pixel 0)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
 const TEILE = argOpt("--teile", "laub,leib,gang,gang2").split(",");
@@ -211,7 +211,7 @@ function urteilGang(G, stufe = 1) {
             if (!(g.heran.d0 - g.heran.d1 >= GANG.heranM)) out.push(`Gang ${art}: der Spieler kommt nicht heran (${g.heran.d0} → ${g.heran.d1} m)`);
             if (art.startsWith("innen") && !g.drinnen) out.push(`Gang ${art}: der Spieler kommt nicht ins Haus`);
             if (!(g.ruck.length >= 100 && quantil(g.ruck, 0.95) <= GANG.ruckM)) out.push(`Gang ${art}: Ruck p95 ${g.ruck.length ? quantil(g.ruck, 0.95).toFixed(3) : "—"} m (Soll ≤ ${GANG.ruckM})`);
-            const kugel = g.taeter.map((t) => Object.assign({}, t, { taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
+            const kugel = g.taeter.map((t) => ({ ...t, taeter: t.taeter.filter((n) => !n.startsWith("im Stamm")) })).filter((t) => t.taeter.length);
             if (kugel.length) out.push(`Gang ${art} (${g.typ}): die Kugel der Linse in ${kugel.length} von ${g.bilder} Bildern — ` + kugel.slice(0, 3).map((t) => `Bild ${t.bild} ${t.phase}: ${t.taeter} (Linse ${t.c}, Ziel ${t.ziel})`).join(" · "));
             const nah = g.nah.map((t) => [t, Object.keys(GANG.nahRadien).filter((k) => t.jeKlasse[k] > 0)]).filter(([, k]) => k.length);
             if (nah.length) out.push(`Gang ${art} (${g.typ}): Nah-Pixel in ${nah.length} Proben — ` + nah.slice(0, 3).map(([t, k]) => `Bild ${t.bild} ${t.phase}: ${k.map((x) => x + " " + pct(t.jeKlasse[x]))}`).join(" · "));
@@ -380,7 +380,7 @@ function leibInstall(cfg) {
     // DIE KUGEL DER LINSE an c: im Fels (das Gesetz in sieben Punkten), unter dem sichtbaren Boden (`kb`, die Boden-Karte) —
     // die Täter beim Namen, für den Leib (K2) und den Gang (K4)
     L.kugel = (c, kb) => [
-        [[0, 0, 0], [R, 0, 0], [-R, 0, 0], [0, R, 0], [0, -R, 0], [0, 0, R], [0, 0, -R]].some(([a, b, d]) => r._fieldSolid(c.x + a, c.y + b, c.z + d)) && "im Fels (Gelände-Gesetz)",
+        [[0, 0, 0], ...[0, 1, 2].flatMap((k) => [R, -R].map((s) => [0, 0, 0].with(k, s)))].some(([a, b, d]) => r._fieldSolid(c.x + a, c.y + b, c.z + d)) && "im Fels (Gelände-Gesetz)",
         kb !== null && c.y < kb + R && kb - c.y < 2.5 && `unter dem sichtbaren Boden (${Math.round((c.y - kb) * 100)} cm über ihm)`,
     ].filter(Boolean);
     // DIE MESSUNG der gesetzten Kamera: die Täter beim Namen
@@ -690,7 +690,8 @@ async function leibGang(G) {
         const MUSTER = __MUSTER;
         let tMs = performance.now();
         let nr = 0;
-        const gang = async (art, a, sprint, senk) => {
+        // `kurz`: der Gang endet mit der ersten Nah-Probe (der Schmuggel beweist nur, dass die Linse ihn nennt: 1091 → 438 Bilder)
+        const gang = async (art, a, sprint, senk, kurz) => {
             const g = { art, typ: a.typ, bilder: 0, taeter: [], nah: [], ruck: [] };
             const v = a.v || L.vor(a.b, art === "stamm" ? 0 : 1, G.startM);
             const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
@@ -726,7 +727,7 @@ async function leibGang(G) {
                 if (t.length) g.taeter.push({ bild: n, phase, taeter: [...new Set(t)], c: z3(c), ziel: st._kamZiel && z3(st._kamZiel) });
                 if (n % G.nahJe === 0) {
                     const d = window.__nahDeckung({ radien: G.nahRadien, gw: G.gw, gh: G.gh, ort: { id: `gang-${art}`, r: 4 }, neu: n === G.nahJe });
-                    if (d.deckung > 0) g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse });
+                    if (d.deckung > 0 && g.nah.push({ bild: n, phase, jeKlasse: d.jeKlasse }) && kurz) throw g;
                 }
                 if (n % 20 === 0) await sleep(0);
             };
@@ -754,12 +755,13 @@ async function leibGang(G) {
             return g;
         };
         for (const art of ["stamm", "fels", "haus"]) if (anker[art]) out.gaenge.push(await gang(art, anker[art]));
-        // DER ARM OHNE FLÜGEL-KOLLISION: der Wurf kennt den Tür-Flügel nicht — die Kugel geht durch das offene Blatt (Bau-Pixel)
-        r._fluegelBoxenVon = () => [];
+        // DER ARM OHNE FLÜGEL-KOLLISION: der Wurf kennt die Boxen des Strahls nicht (`_strahlBoxenVon`: Flügel und Geländer) — die
+        // Kugel geht durch das offene Blatt (Bau-Pixel)
+        r._strahlBoxenVon = () => [];
         try {
-            out.schmuggel = (await gang("schmuggel", anker.haus)).nah.filter((t) => t.jeKlasse.Bau > 0).length;
+            out.schmuggel = (await gang("schmuggel", anker.haus, 0, 0, 1).catch((x) => (x.nah ? x : Promise.reject(x)))).nah.filter((t) => t.jeKlasse.Bau > 0).length;
         } finally {
-            delete r._fluegelBoxenVon;
+            delete r._strahlBoxenVon;
         }
         if (anker.innen && G.zwei) out.gaenge.push(await gang("innen", anker.innen), await gang("innen-sprint", anker.innen, true));
         // DER STEILHANG: die Stelle aus dem Orts-Gesetz, das Weltbild dort steht, bevor der Gang beginnt
@@ -1002,7 +1004,7 @@ async function probe(arg) {
                                 // die Stellung mit den meisten Täter-Flächen in der Nah-Kugel (dort schmuggelt die Linse)
                                 if (d.taeterDreiecke > dicht) {
                                     dicht = d.taeterDreiecke;
-                                    m.dichteste = Object.assign({ dreiecke: d.taeterDreiecke }, stellung);
+                                    m.dichteste = { dreiecke: d.taeterDreiecke, ...stellung };
                                 }
                             }
                     }
@@ -1084,12 +1086,12 @@ hauptLauf(async () => {
             ["Kamera unter dem sichtbaren Boden (R-CAM unterBoden)", leibGesund(["unter dem sichtbaren Boden (-12 cm über ihm)"]), "Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden"],
             ["Verfolger im Haus (FZ-07)", leibGesund(null, ["in haus_basis"]), "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis"],
             ["Fels zwischen Ziel und Linse", leibGesund(["Gelände zwischen Ziel und Linse"]), "Leib fuss: 1 von 50"],
-            ["der Hang fehlt", Object.assign(leibGesund(), { hang: null }), "Leib hang: nicht gemessen"],
+            ["der Hang fehlt", { ...leibGesund(), hang: null }, "Leib hang: nicht gemessen"],
             ["der Streu-Pick ohne Durchsicht", (() => { const g = leibGesund(); g.wiese.w1Streu = false; return g; })(), "Leib W1: der Streu-Pick"],
-            ["kein Zähler der Feld-Proben", Object.assign(leibGesund(), { proben: null }), "Leib: 0 Bilder gezählt"],
-            ["die Eckstrahlen marschieren ohne Treffer", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
-            ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
-            ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
+            ["kein Zähler der Feld-Proben", { ...leibGesund(), proben: null }, "Leib: 0 Bilder gezählt"],
+            ["die Eckstrahlen marschieren ohne Treffer", { ...leibGesund(), proben: Array(LEIB_N + 241).fill(156) }, "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
+            ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", { ...leibGesund(), proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }, "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
+            ["mehr Sprünge als vorher", { ...leibGesund(), spruenge: SPRUENGE_MAX + 1 }, "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
         ]);
         // DER GANG (K4): gesund (die Kugel im Stamm urteilt nicht) und je Staffel ein Bruch beim Namen — der Arm ohne Flügel-Leib
         // und die Kamera, die am Hang in den Boden taucht, sind ROT; `je` ändert einen Gang (null: er fehlt)
@@ -1135,15 +1137,15 @@ hauptLauf(async () => {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
             schmuggel: { laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } }, fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } } },
         };
-        faelle("K1", (b) => urteil(Object.assign({}, gesund, b)), [
+        faelle("K1", (b) => urteil({ ...gesund, ...b }), [
             ["gesund", {}, null],
-            ["Eichenkrone vor der Linse (Befund A 44)", { orte: Object.assign({}, gesund.orte, { ufer: ort(0.437, { "Laub baum_eiche": 0.43 }) }) }, "ufer third: Deckung im Freiraum bis 43.7 %"],
-            ["Strauch vor dem Ich-Auge (Befund C 12)", { orte: Object.assign({}, gesund.orte, { hang: ort(0.99, { "Laub Streu": 0.99 }) }) }, "hang third: Deckung im Freiraum bis 99.0 %"],
-            ["kein GT", { orte: Object.assign({}, gesund.orte, { ankunft: { modi: { third: { n: 4, max: 0 }, first: { n: 4, max: 0 }, ritt: { n: 0, grund: "kein GT" } } } }) }, "ankunft ritt: keine Stellung"],
-            ["fremde Maske", { orte: Object.assign({}, gesund.orte, { hang: { modi: { third: { n: 4, max: 0, fremd: true }, first: { n: 4, max: 0 }, ritt: { n: 4, max: 0 } } } }) }, "hang third: ein Pflanzen-Stoff trägt eine fremde Maske"],
+            ["Eichenkrone vor der Linse (Befund A 44)", { orte: { ...gesund.orte, ufer: ort(0.437, { "Laub baum_eiche": 0.43 }) } }, "ufer third: Deckung im Freiraum bis 43.7 %"],
+            ["Strauch vor dem Ich-Auge (Befund C 12)", { orte: { ...gesund.orte, hang: ort(0.99, { "Laub Streu": 0.99 }) } }, "hang third: Deckung im Freiraum bis 99.0 %"],
+            ["kein GT", { orte: { ...gesund.orte, ankunft: { modi: { third: { n: 4, max: 0 }, first: { n: 4, max: 0 }, ritt: { n: 0, grund: "kein GT" } } } } }, "ankunft ritt: keine Stellung"],
+            ["fremde Maske", { orte: { ...gesund.orte, hang: { modi: { third: { n: 4, max: 0, fremd: true }, first: { n: 4, max: 0 }, ritt: { n: 4, max: 0 } } } } }, "hang third: ein Pflanzen-Stoff trägt eine fremde Maske"],
             ["Linse blind für Laub", { schmuggel: { laub: { max: 0, taeter: {} }, fels: gesund.schmuggel.fels } }, "Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt"],
             ["Linse blind für Fels", { schmuggel: { laub: gesund.schmuggel.laub, fels: { max: 0, taeter: {} } } }, "Schmuggel: ein Fels vor der Linse bleibt ungenannt"],
-            ["Krone ohne Durchsicht (die Kronen-Stellung, K20)", { schmuggel: Object.assign({}, gesund.schmuggel, { krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } } }) }, "Krone: die Durchsicht öffnet das Laub in der Krone nicht"],
+            ["Krone ohne Durchsicht (die Kronen-Stellung, K20)", { schmuggel: { ...gesund.schmuggel, krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } } } }, "Krone: die Durchsicht öffnet das Laub in der Krone nicht"],
             ["ein Ort fehlt", { orte: { ankunft: gesund.orte.ankunft, ufer: gesund.orte.ufer } }, "hang: nicht gemessen"],
         ]);
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
