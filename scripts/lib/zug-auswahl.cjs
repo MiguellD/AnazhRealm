@@ -20,9 +20,25 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const MESS = process.env.CI_WIRKUNG;
 const KARTE = "spec/ci/wirkung-karte.json";
 const ROH = path.join(require("os").tmpdir(), "anazh-wirkung");
-const relPfad = (p) => {
-    const r = path.relative(ROOT, path.resolve(ROOT, p)).replace(/\\/g, "/");
+// der Pfad im Baum (ab der Wurzel `w`), außerhalb, in node_modules und .git: null
+const relPfad = (p, w = ROOT) => {
+    const r = path.relative(w, path.resolve(w, p)).replace(/\\/g, "/");
     return r && !r.startsWith("..") && !/^(node_modules|\.git)\//.test(r) ? r : null;
+};
+const merk = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
+// der Text als Glieder, je Schlüssel einmal; was acorn nicht liest: "kaputt"
+const gliederMerk = (cache, k, text) => {
+    if (!cache.has(k)) {
+        let g = null;
+        try {
+            const s = text();
+            g = s == null ? null : glieder(s);
+        } catch {
+            g = "kaputt";
+        }
+        cache.set(k, g);
+    }
+    return cache.get(k);
 };
 
 // ─── I. DIE MESSUNG ─────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -352,24 +368,13 @@ const bits = {
     puffer: {},
 };
 function karteBauen(wurzel = ROOT) {
-    const lies = (r) => fs.readFileSync(path.join(wurzel, r), "utf8");
     const gl = new Map();
     const gliederVon = (r) => {
-        if (!gl.has(r)) {
-            try {
-                gl.set(r, glieder(lies(r)));
-            } catch {
-                gl.set(r, null);
-            }
-        }
-        return gl.get(r);
-    };
-    const relW = (u) => {
-        const x = path.relative(wurzel, path.resolve(wurzel, u)).replace(/\\/g, "/");
-        return x && !x.startsWith("..") && !/^(node_modules|\.git)\//.test(x) ? x : null;
+        const g = gliederMerk(gl, r, () => fs.readFileSync(path.join(wurzel, r), "utf8"));
+        return g === "kaputt" ? null : g;
     };
     const vonUrl = (u) =>
-        /^https?:/.test(u) ? relW(decodeURIComponent(new URL(u).pathname).slice(1)) : relW(u.startsWith("file:") ? new URL(u).pathname : u);
+        relPfad(/^https?:/.test(u) ? decodeURIComponent(new URL(u).pathname).slice(1) : u.startsWith("file:") ? new URL(u).pathname : u, wurzel); // prettier-ignore
     const schritte = {};
     const zaehler = { text: 0, textFrei: 0 };
     for (const nr of fs.readdirSync(ROH)) {
@@ -377,7 +382,6 @@ function karteBauen(wurzel = ROOT) {
         if (!fs.existsSync(path.join(d, "status.json"))) continue;
         const st = JSON.parse(fs.readFileSync(path.join(d, "status.json"), "utf8"));
         const [fn, txt, datei, verz, probe, gefuehrt, geliefert, suche] = [new Map(), new Map(), new Set(), new Set(), new Set(), new Set(), new Set(), new Set()]; // prettier-ignore
-        const merk = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
         const lauf = (r, s, e) => {
             const g = gliederVon(r);
             if (!g) return datei.add(r);
@@ -435,7 +439,7 @@ function karteBauen(wurzel = ROOT) {
     }
     // die EINE Tafel: je Datei die Schlüssel, die ein Schritt ausführt oder liest
     const tafel = new Map();
-    for (const x of Object.values(schritte)) for (const m of [x.fn, x.txt]) for (const [r, ks] of m) for (const k of ks) merkTafel(tafel, r, k);
+    for (const x of Object.values(schritte)) for (const m of [x.fn, x.txt]) for (const [r, ks] of m) for (const k of ks) merk(tafel, r, k);
     const dateien = [...tafel.keys()].sort();
     const idx = new Map();
     const glieder_ = {};
@@ -459,7 +463,6 @@ function karteBauen(wurzel = ROOT) {
     fs.writeFileSync(path.join(ROOT, KARTE), JSON.stringify(out, null, 1) + "\n");
     return { out, zaehler };
 }
-const merkTafel = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
 
 // ─── IV. DIE AUSWAHL ────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Der Diff wird zu WIRKUNGEN: `alle` (beim Namen) · `glied` [Datei, Schlüssel] mit fn (die Token änderten sich) / txt (der Text) /
@@ -490,20 +493,7 @@ const namenVon = (k) => k.replace(/^§/, "").split("/").pop().replace(/^(get |se
 function wirkungen(basis, kopf, karte, diff = null) {
     const W = [];
     const cache = new Map();
-    const gl = (rev, r) => {
-        const k = rev + ":" + r;
-        if (!cache.has(k)) {
-            const t = zeige(rev, r);
-            let g = null;
-            try {
-                g = t == null ? null : glieder(t);
-            } catch {
-                g = "kaputt";
-            }
-            cache.set(k, g);
-        }
-        return cache.get(k);
-    };
+    const gl = (rev, r) => gliederMerk(cache, rev + ":" + r, () => zeige(rev, r));
     const kennt = new Map(Object.entries(karte.glieder).map(([r, ks]) => [r, new Set(ks)]));
     // jünger als die Karte: kein Schritt kennt das Glied, und am Kopf der Karte gab es es nicht (dort hieße es: nie ausgeführt)
     const jung = (r, k) => !kennt.get(r)?.has(k) && !(gl(karte.kopf, r) || LEER).tafel?.has(k);
@@ -645,7 +635,7 @@ async function geschichte() {
         const voll = /^voll (\d+)/.exec(j.name);
         let schritte = 0;
         for (const s of j.steps) {
-            if (!voll || /^(Set up|Run actions|Cache|System-Libs|Dependencies|Urteil|Post |Complete)/.test(s.name)) continue;
+            if (!voll || s.conclusion === "skipped" || /^(Set up|Run actions|Cache|System-Libs|Dependencies|Urteil|Post |Complete)/.test(s.name)) continue; // prettier-ignore
             zeit.set(s.name, sek(s.started_at, s.completed_at));
             gruppeVon.set(s.name, +voll[1]);
             schritte += zeit.get(s.name);
