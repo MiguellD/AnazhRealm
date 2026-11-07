@@ -117,7 +117,7 @@ const sitzungBefehl = (lauf, seiten = []) => [
 
 // ─────────────────── klang.K2#1: Wind gesehen ↔ gehört ───────────────────
 // In der Seite am Messort der Wiese: Ego, der Blick der Wiese, Tiere gehalten, Sonne (die Böen frei). Der Klang in einem eigenen
-// Kontext (die Geste trägt /eval), der Analyser am Gain der Wind-Stimme (Bandpass unter 1,5 kHz, an ihrer Erzeugung gefunden);
+// Kontext (die Geste trägt /eval), der Analyser am Gain der Wind-Stimme (an ihrer Erzeugung gefunden, benannt vom Zensus des Graphs);
 // das Bild ist das präsentierte Fenster im Takt seines Bilds (der Zeichen-Puffer, 480 × 270, untere 45 % je 2 px), jedes dritte
 // GEZEICHNETE Bild (ein Takt ohne Bild — die GPU-Leine — liest nichts). Je `fen` ms ein Fenster: die mittlere |ΔLuma| je 50 ms und das RMS des Ohrs. Danach stehen Klang, Tiere, Wetter, Sicht
 // und Loop wie vorher. Bis 29.10. m15-wind: eigener Boot, CDP-Screencast, 60 s in 0,5-s-Fenstern (ea07267e Radeon 3,68 min).
@@ -179,9 +179,18 @@ async function windSeite(o) {
             }
             bilder.push({ t: performance.now(), lum: Float32Array.from(lum) });
         });
+        // DIE WIND-STIMME NENNT DER GRAPH (`umweltGraph`, sein Zensus): erst wenn er `wind` an meldet, ist sie gebaut — gewählt wird das
+        // Paar, das NACH dem Einschalten entstand (Filter-Art des Gesetzes klang:UMWELT.stimmen.wind, ihre Frequenz die des Zensus,
+        // ±5 %). Bis 07.11. nahm die Probe das jüngste Bandpass-Paar unter 1,5 kHz, sobald eines stand — seit w13-klang-fahrt baut
+        // das Einschalten eine stumme Fahrt-Stimme (ihr Abrollen: Bandpass 260 Hz), die Probe hörte sie statt des Winds (Radeon
+        // 323cc9f3 … 5fb21e29: hz 260, Zensus leer, CV Ohr null)
+        const nInit = paare.length, Sw = s.umwelt.kern.UMWELT.stimmen.wind;
         let wind = null;
         for (let i = 0; i < 200 && !wind; i++) {
-            wind = paare.filter((p) => p.filter.type === "bandpass" && p.filter.frequency.value < 1500 && p.filter.context === s.ctx).pop() || null;
+            const zw = s.umwelt.graph.zensus().find((v) => v.name === "wind" && v.an);
+            if (zw)
+                wind = paare.slice(nInit).filter((p) =>
+                    p.filter.type === Sw.filter && p.filter.context === s.ctx && Math.abs(p.filter.frequency.value - zw.hz) <= 0.05 * zw.hz).pop() || null;
             if (!wind) await warte(50);
         }
         const stand = { ctx: s.ctx.state, enabled: s.enabled, um: !!s.umwelt, paare: paare.length, steht: !!r._weltSteht() };
@@ -1009,6 +1018,39 @@ const HW = (t) => {
 // Kern-Wechsel danach laufen ohne Probe und ohne Spur. Bis p3 fuhren ankunft.K2#1 · K3#1 · pipeline.K4#1/#2 dieselbe Ankunft ohne
 // Spur — sie tragen jetzt diese Probe (EIN Lauf, sechs Zwillinge; der Deckel der Sitzung bleibt 10 s, die Eich-Fahrt nennt ihn neu).
 async function probeAnkunftKalt(H) {
+    // DIE LÄNGSTE AUFGABE BEIM NAMEN (w16-lade-atem-pm, Post 06.11. 17:50): die Seite zählt je Pipeline des Geräts ihre Art und ihr
+    // Label (`gpuHaken`, ab dem ersten Skript: eine synchrone übersetzt der GPU-Prozess vor dem nächsten Bild — ihre Zeit trägt
+    // die Seite als Aufgabe ohne JS-Probe), und die Zahl der Station nennt die längste LongTask vor der Kontrolle mit ihren Haltern
+    // (`ankunftsHalter`) und den Pipelines, die sie und die Sekunde davor synchron anlegten.
+    function gpuHaken() {
+        const A = (window.__kaltGpu = []);
+        const P = window.GPUDevice && GPUDevice.prototype;
+        if (!P) return;
+        for (const [m, art] of [["createRenderPipeline", "sync"], ["createRenderPipelineAsync", "async"], ["createComputePipeline", "sync"]]) {
+            const o = P[m];
+            P[m] = function (d) {
+                A.push([Math.round(performance.now()), art, String((d && d.label) || "?").replace(/^renderPipeline_/, "")]);
+                return o.call(this, d);
+            };
+        }
+    }
+    const laengsteVon = (vor, aufgaben, gpu) => {
+        const x = vor.reduce((m, y) => (y[1] > m[1] ? y : m), [0, 0]);
+        if (!x[1]) return null;
+        const auf = aufgaben.find((y) => y.t === Math.round(x[0]));
+        const sync = gpu.filter((g) => g[1] === "sync" && g[0] >= x[0] - 1000 && g[0] <= x[0] + x[1]).map((g) => g[2]);
+        return (x[1] + " ms bei " + (x[0] / 1000).toFixed(1) + " s: " + (auf ? auf.halter.slice(0, 3).map((h) => h.name + " " + h.ms).join(" · ") : "ohne Halter") +
+            " · " + sync.length + " Pipelines synchron" + (sync.length ? " (" + sync.slice(0, 5).join(", ") + (sync.length > 5 ? ", …" : "") + ")" : "")).slice(0, 300);
+    };
+    // WOHIN DIE BELEGUNG GEHT (Post 06.11. 18:15): je Klasse der Linse (`KALT_KLASSEN`: Bild, Jobs, Himmel, Knoten-Bau, Boden,
+    // Streu, Bauten …) die Stichproben-ms bis zur Sekunde der Kontrolle, dazu Collector und Programm — verschachtelte Klassen
+    // zählen je (der Knoten-Bau im Bild in beiden), die Familie Pflanzen nur außen
+    const klassenVon = (a, kontrolle) => {
+        const sek = Math.floor(kontrolle / 1000);
+        const z = Object.entries(a.kosten || {}).map(([k, je]) => [k, Object.entries(je).reduce((m, [t, ms]) => (+t <= sek ? m + ms : m), 0)]);
+        for (const k of ["(garbage collector)", "(program)"]) z.push([k.replace(/[()]/g, ""), (a.klasse || {})[k] || 0]);
+        return z.filter(([, ms]) => ms >= 50).sort((x, y) => y[1] - x[1]).map(([k, ms]) => k + " " + (ms / 1000).toFixed(2)).join(" · ");
+    };
     const K = H.linse("scripts/diag-boot-stage.cjs", ["KALT_PROBE", "KALT_KLASSEN", "KALT_PFLANZEN"]);
     const HL = require(H.path.resolve("scripts/lib/haenger-linse.cjs"));
     const spur = { stand: "kein Kalt-Boot" };
@@ -1020,7 +1062,7 @@ async function probeAnkunftKalt(H) {
         if (!L || L.kontrolle != null) return;
         try {
             L.kontrolle = await L.page.evaluate(() => performance.now());
-            L.seite = await L.page.evaluate(() => ({ lang: (window.__kalt || {}).lang || [], marken: (window.__kalt || {}).marken || [] }));
+            L.seite = await L.page.evaluate(() => ({ lang: (window.__kalt || {}).lang || [], marken: (window.__kalt || {}).marken || [], gpu: window.__kaltGpu || [] }));
             await L.cdp.send("Tracing.end");
             L.ende = true;
         } catch (e) {
@@ -1058,6 +1100,8 @@ async function probeAnkunftKalt(H) {
                 langeN: vor.length,
                 langeMs: vor.reduce((s, x) => s + Math.min(x[1], L.kontrolle - x[0]), 0),
                 halter: a.befunde.slice(0, 3).map((x) => String(x).slice(0, 160)),
+                laengste: laengsteVon(vor, a.aufgaben, L.seite.gpu),
+                klassen: klassenVon(a, L.kontrolle),
             });
         } catch (e) {
             spur.stand = "die Spur brach: " + String(e.message).slice(0, 160);
@@ -1073,7 +1117,7 @@ async function probeAnkunftKalt(H) {
         if (!o.kalt || spur.stand !== "kein Kalt-Boot") return lade(page, o);
         spur.stand = "läuft";
         // nur in der Welt (nie in about:blank, das die kalte Ladung zuerst betritt): ihre Marken tragen den Faden der Spur
-        const skript = await page.evaluateOnNewDocument('if (/^https?:/.test(location.protocol)) (' + String(K.KALT_PROBE) + ")();");
+        const skript = await page.evaluateOnNewDocument('if (/^https?:/.test(location.protocol)) { (' + String(K.KALT_PROBE) + ")(); (" + String(gpuHaken) + ")(); }");
         const cdp = await page.target().createCDPSession();
         const ev = [];
         cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
@@ -2446,7 +2490,267 @@ const fahrtGruen = (x) => {
 };
 const fahrtGruenMit = (f) => (x) => (f(fahrtGruen(x)), x);
 
+// ─────────── DER ERSTE BLICK AM SPAWN (ankunft.K4#1, w18-ankunft-blick-pm) ───────────
+// DIE POSEN: der Spieler an `_genesisMitte` (`werkbank umstellen --ort genesis`, die Ankunft: der Blick nach −x), je Sicht (Ego, Third
+// am Arm des Spiels, `_loopCamera`, Neigung 0) der erste Blick nach der Kontrolle (die Gier der Ankunft) und vier Azimute (+45° +135°
+// +225° +315° von ihr: der Kreis in 90°, keiner fällt auf den ersten) — 10 Posen, je Pose EIN Schuss aus dem Ausgabe-Pfad (`/bild`,
+// `messung`: der Block, den `--ist` in die Tafel schriebe) unter der Bühne der Tafel (Mittag 0,5, Sommer, klar). Die Teilung des
+// Schusses ist die Vereinigung der Ausdrücke JEDER Zeile der Tafel (`zeileAusdruck`: was das Maß der Zeile liest), der Bau-Satz nie
+// als EINE Klasse (`bauSatz` trägt Haus UND Tor — als eine Klasse verschluckte er die Tor-Zeilen). Das Licht misst `licht --uhr 0.5`
+// am Spawn EINMAL (seine Bilanz kennt keinen Blick).
+// DAS URTEIL je Klasse × Pose ist K5 (`sollTafelUrteil` des Baums am Kopf) über die Messung der Pose, gefiltert auf den Ausdruck
+// der Zeile (dieselbe Regel wie die Zellen zug/a-spawn.cjs: im Bild ab einem Tausendstel des Bilds, der Kopf ab einem Pixel; ein
+// Stufen-Maß liest den Schuss als die Stufe, die seine Tore zeigen; eine Albedo-Zeile fragt die Pose nur nach ihren Pixeln, ihr
+// Maß liest die Albedo-Tafel). Eine Klasse ist GRÜN am Spawn, wenn sie in mindestens einer Pose im Bild steht und JEDE ihrer Posen
+// im Bild GRÜN ist — ungemessen (in keiner Pose im Bild, ein Schuss fehlt) ist nie GRÜN. Das Soll jeder Zeile steht in der Tafel aus
+// externer Referenz (Lehre 18), nie aus dem Kern; die Station schreibt nichts in die Tafel.
+// AUSGABE: je Zeile „KLASSE <id> {…}" (urteil, Posen im Bild, die roten beim Grund, der Stand jeder Pose), am Ende „SPAWN {…}"
+// (kopf, adapter); das Urteil zählt GRÜN nur mit frischem Stand (jede Pose am Kopf des Laufs gemessen, nie „+geaendert").
+// GEMESSEN (07.11., headless swiftshader `?holz=kienspan`, main 323cc9f3 + w17-pegel-grund, der erste Blick Ego und Third, 3 Schüsse
+// in 4 609 s): 3 von 14 frisch GRÜN — himmel-licht, tor-fern, tor-ziel. ROT beim Namen: tor-bunt Ego 19,03 < 20 (Third 23,06; die
+// Ziel-Panoramen tragen C*ab ≤ 16, die Farbe der Öffnung ist der Film von porta-core) · laub-kante fimp:eiche/tanne:L2 0,24–0,29 >
+// 0,22 · laub zweiton 0,17–0,19 (das Dither unter swiftshader; GTX b895650c Mittag 0) · boden-nah und boden-nah-farbe: der Ring der
+// Nah-Wiese (10 m) liegt am Spawn ganz auf dem Kopfstein-Rondell (Ego 351 598 von 353 059 Grund-Pixeln, σh 0° je Kachel) ·
+// mensch-kopf Third von hinten gesicht 0 (Lippe ungemessen). Nicht im Bild: haus (die Vorschau steht in den Azimuten; ihre
+// Albedo-Zeile veraltet seit 1dcb844f), wasser, fels, fell, haar.
+function spawnBlick(AUS, PORT) {
+    const fs = require("fs");
+    const path = require("path");
+    const AU = require(path.resolve("scripts/lib/abnahme-urteil.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const W = Number(PORT) + 20000;
+    const rufe = (weg, o) => werkbankRuf(W, weg, o);
+    const ev = async (code) => {
+        const o = await rufe("/eval", { code });
+        if (o.fehler) throw new Error("eval: " + o.fehler);
+        return o.ergebnis;
+    };
+    const D = String(AUS).replace(/\.json$/, "") + "-blick";
+    fs.mkdirSync(D, { recursive: true });
+    const T = JSON.parse(fs.readFileSync("spec/abnahme/soll-tafel.json", "utf8"));
+    const L = AU.standLeser(process.cwd()),
+        Q = L.sollQuelle();
+    const kopf = L.gitStand();
+    // der Ausdruck einer Zeile: Apertur und Tor ihrer Rechnung, sonst der ihrer Messung, die Klasse ihrer Albedo-Zeile, das
+    // `--klasse` ihres Werkzeugs; null: die Zeile misst kein Bild (das Licht)
+    const zeileAusdruck = (k) => {
+        const ma = k.mass || {},
+            rc = ma.rechnung || {},
+            me = ma.messung && typeof ma.messung === "object" ? ma.messung : {};
+        if (rc.apertur && rc.tor) return rc.apertur + "|" + rc.tor;
+        const a = me.ausdruck || Object.values(me).map((x) => x && x.ausdruck).find(Boolean);
+        if (a) return a;
+        const ro = ma.rohdatei && Q.lesen(ma.rohdatei.datei),
+            z = ro && (JSON.parse(ro).zeilen || []).find((x) => x.id === ma.rohdatei.zeile);
+        if (z && z.welt && z.welt.klasse) return z.welt.klasse;
+        return (/--klasse '([^']+)'/.exec(ma.werkzeug || "") || [])[1] || null;
+    };
+    const AUSDRUCK = Object.fromEntries(T.klassen.map((k) => [k.id, zeileAusdruck(k)]));
+    // der Kopf des Spielers: sein Ausdruck ruft die Gesichts-Messung der Werkbank (die Haut am Gelenk head) — in Ego zeigt das Spiel
+    // den eigenen Kopf nie (`_applyEgoSicht`), die Vereinigung mit ihm scheiterte dort für JEDE Klasse („--gesicht: keine Kopf-Haut
+    // am Gelenk head", swiftshader 36 min); er fährt in Third je Blick als eigener Schuss, nie in der Vereinigung
+    const kopfA = (a) => /spieler:kopf\//.test(a || "");
+    const VER = "^(?!bauSatz$)(?:" + [...new Set(Object.values(AUSDRUCK).filter((a) => a && !kopfA(a)))].map((a) => "(?:" + a + ")").join("|") + ")";
+    const KOPF = [...new Set(Object.values(AUSDRUCK).filter(kopfA))].join("|");
+    const quellen = Object.fromEntries([...new Set(T.klassen.flatMap((k) => k.quellen || []))].map((d) => [d, L.pruefsumme(d)]));
+    const frisch = (me) => Object.assign(me, { stand: Object.assign({ version: L.stammVersion() }, me.stand), quellen });
+    const BLICKE = [0, 45, 135, 225, 315];
+    const posen = [];
+    let licht = null;
+    const t0 = Date.now();
+    return (async () => {
+        for (const sicht of ["ego", "third"]) {
+            const u = await rufe("/umstellen", { ort: "genesis", sicht });
+            if (u.fehler) throw new Error("umstellen " + sicht + ": " + u.fehler);
+            const f = await rufe("/fenster", { w: 1920, h: 1080 });
+            if (f.fehler) throw new Error("fenster: " + f.fehler);
+            const [g0, arm] = await ev("(window.__halten || window.__tiereHalten)(window.__halteQuellen); return [r.state.yaw, r.state.cameraThirdDistance]");
+            if (!licht) {
+                const l = await rufe("/licht", { messung: true, uhr: 0.5 });
+                licht = l.messung ? { messung: frisch(l.messung) } : { fehlt: String(l.fehler || "ohne Messung") };
+            }
+            for (const b of BLICKE) {
+                const t1 = Date.now();
+                const [px, py, pz, lx, ly, lz] = await ev(
+                    "const st = r.state; st.yaw = " + (g0 + (b * Math.PI) / 180) + "; st.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);" +
+                        " const c = st.camera.position, z = c.clone().addScaledVector(st.camera.getWorldDirection(new T.Vector3()), " + (sicht === "third" ? arm : 9) + ");" +
+                        " return [c.x, c.y, c.z, z.x, z.y, z.z];"
+                );
+                // je Pose der Schuss der Vereinigung, in Third dazu der des Kopfs (dieselbe Kamera)
+                for (const [teil, klasse, mehr] of [["", VER, { abstand: true }]].concat(sicht === "third" && KOPF ? [["-kopf", KOPF, {}]] : [])) {
+                    const bild = path.join(D, sicht + "-" + b + teil + ".png");
+                    const o = await rufe("/bild", Object.assign({ px, py, pz, lx, ly, lz, uhr: 0.5, klasse, wahl: 0, fuss: false, spieler: true, messung: true, datei: bild }, mehr));
+                    const p = { pose: sicht + "-" + b, kopf: !!teil, bild, ms: Date.now() - t1 };
+                    if (o.messung) p.messung = frisch(o.messung);
+                    else p.fehlt = String(o.fehler || JSON.stringify(o).slice(0, 300)).replace(/\s+/g, " ").slice(0, 300);
+                    posen.push(p);
+                    console.log("POSE " + p.pose + teil + " " + (p.fehlt ? "FEHLT " + p.fehlt : p.ms + " ms"));
+                }
+            }
+        }
+        // DAS URTEIL je Zeile × Pose (K5)
+        const zeilen = T.klassen.map((k) => {
+            const a = AUSDRUCK[k.id],
+                ma = k.mass || {},
+                rc = ma.rechnung || {},
+                albedo = /^albedo/.test(ma.name);
+            const re = new RegExp(a || "^$");
+            const eigen = (o) => Object.fromEntries(Object.entries(o || {}).filter(([n]) => re.test(n)));
+            const urteile = (me, wo, stand) => {
+                const u = AU.sollTafelUrteil({ klassen: [Object.assign({}, k, { wirkung: {}, mass: Object.assign({}, ma, { messung: me, zelle: true }) })] }, Q);
+                const x = u.zeilen[0];
+                const grund = x.urteil === "GRÜN" ? null : x.ist == null && u.fehler.length ? u.fehler.join(" · ") : x.grund;
+                return { pose: wo, urteil: x.urteil, ist: x.ist, grund: grund && String(grund).slice(0, 300), taeter: x.taeter, stand };
+            };
+            const im = [];
+            if (!a) im.push(licht.messung ? urteile(licht.messung, "licht", licht.messung.stand.sha) : { pose: "licht", urteil: "ROT", grund: licht.fehlt, stand: null });
+            else
+                for (const p of posen.filter((x) => x.kopf === kopfA(a))) {
+                    if (!p.messung) {
+                        im.push({ pose: p.pose, urteil: "ROT", grund: "der Schuss fehlt: " + p.fehlt, stand: null });
+                        continue;
+                    }
+                    const kl = eigen(p.messung.klassen),
+                        px = Object.values(kl).reduce((s, x) => s + (x.pixel || 0), 0);
+                    if (px < (/spieler:kopf\//.test(a) ? 1 : 1e-3 * p.messung.leinwand[0] * p.messung.leinwand[1])) continue;
+                    let me = Object.assign({}, p.messung, { klassen: kl }, p.messung.abstand ? { abstand: Object.assign({}, p.messung.abstand, { klassen: eigen(p.messung.abstand.klassen) }) } : {});
+                    if (rc.stufen) {
+                        const tor = new RegExp(rc.tor);
+                        const st = Object.entries(kl).map(([n, x]) => [tor.exec(n), x.pixel]).filter(([m]) => m).sort((x, y) => y[1] - x[1])[0];
+                        me = { ["L" + (st ? st[0][st[0].length - 1] : 3)]: me };
+                    }
+                    im.push(urteile(albedo ? undefined : me, p.pose, p.messung.stand.sha));
+                }
+            const urteil = im.length && im.every((x) => x.urteil === "GRÜN") ? "GRÜN" : "ROT";
+            const z = { id: k.id, mass: ma.name, urteil, imBild: im.length, gruen: im.filter((x) => x.urteil === "GRÜN").length, rot: im.filter((x) => x.urteil !== "GRÜN"), stand: [...new Set(im.map((x) => x.stand))] };
+            if (!im.length) z.grund = "in keiner der " + new Set(posen.map((p) => p.pose)).size + " Posen im Bild (/" + a + "/) — ungemessen";
+            console.log("KLASSE " + k.id + " " + JSON.stringify(z));
+            return z;
+        });
+        const log = process.env.PUNKTE_SITZUNG_LOG;
+        const ad = (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0];
+        const pm = posen.find((p) => p.messung);
+        const adapter = ad || "[linse-gpu] " + (pm ? pm.messung.geraet.adapter : "ungenannt");
+        const sp = { kopf, adapter, klassen: zeilen.length, gruen: zeilen.filter((z) => z.urteil === "GRÜN").map((z) => z.id), posen: new Set(posen.map((p) => p.pose)).size, schuesse: posen.length, s: Math.round((Date.now() - t0) / 1000) };
+        fs.writeFileSync(AUS, JSON.stringify({ spawn: sp, zeilen, posen: posen.map((p) => ({ pose: p.pose, kopf: p.kopf, bild: p.bild, ms: p.ms, fehlt: p.fehlt || null })) }, null, 1));
+        console.log(adapter);
+        console.log("SPAWN " + JSON.stringify(sp));
+    })().catch((e) => {
+        console.log("SPAWN-BRUCH " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | "));
+        process.exit(1);
+    });
+}
+// DAS URTEIL (rein, aus der Ausgabe): eine KLASSE-Zeile zählt nur GRÜN, wenn sie im Bild steht, jede ihrer Posen im Bild GRÜN ist und
+// jede am Kopf des Laufs gemessen (frisch: der Stand der Pose = „kopf" der SPAWN-Zeile, nie „+geaendert"); ≥ 6 an einer Karte, und
+// jede Zeile der Tafel trägt ihre KLASSE-Zeile (eine fehlende zählt nie still als nicht gemessen)
+const SPAWN_SOLL = 6;
+const spawnUrteil = (j, lauf) => {
+    const t = String(lauf.stdout || "");
+    const { ad, hw } = HW(t);
+    const sp = jsonZeile(t, /^SPAWN \{/);
+    const bruch = (/^SPAWN-BRUCH (.*)$/m.exec(t) || [])[1];
+    if (!sp) return { gruen: false, zahl: "keine SPAWN-Zeile" + (bruch ? " — " + bruch.slice(0, 300) : " (Exit " + lauf.exit + ")") + " · " + ad };
+    const zeilen = t
+        .split(/\r?\n/)
+        .filter((l) => /^KLASSE \S+ \{/.test(l))
+        .map((l) => JSON.parse(l.slice(l.indexOf("{"))));
+    const frisch = (z) => !!sp.kopf && !/\+geaendert$/.test(sp.kopf) && z.stand.length > 0 && z.stand.every((s) => s === sp.kopf);
+    const gut = zeilen.filter((z) => z.urteil === "GRÜN" && z.imBild > 0 && z.gruen === z.imBild && z.rot.length === 0 && frisch(z));
+    const warum = (z) =>
+        z.grund ||
+        (z.urteil === "GRÜN" && z.gruen === z.imBild && !frisch(z)
+            ? "nicht frisch: Stand " + z.stand.join("/")
+            : z.gruen + "/" + z.imBild + " Posen" + (z.rot[0] ? " — " + z.rot[0].pose + ": " + String(z.rot[0].grund).slice(0, 120) : ""));
+    return {
+        gruen: hw && zeilen.length === sp.klassen && gut.length >= SPAWN_SOLL,
+        zahl:
+            gut.length + " von " + sp.klassen + " Klassen frisch GRÜN am Spawn (Soll ≥ " + SPAWN_SOLL + "; " + sp.posen + " Posen, " + sp.s + " s): " + (gut.map((z) => z.id).join(", ") || "keine") +
+            " · ROT " +
+            zeilen
+                .filter((z) => !gut.includes(z))
+                .map((z) => z.id + " (" + warum(z) + ")")
+                .join(" · ") +
+            (zeilen.length === sp.klassen ? "" : " · " + zeilen.length + " KLASSE-Zeilen statt " + sp.klassen) +
+            " · " +
+            ad,
+    };
+};
+// die Roh-Ausgabe eines Laufs für die Mutanten: je Klasse [id, urteil, Posen im Bild, davon GRÜN, Stand]
+const SPAWN_KOPF = "e18a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a";
+const spawnRoh = (kl, o = {}) => {
+    const kopf = o.kopf || SPAWN_KOPF,
+        ad = o.ad || "[linse-gpu] amd/rdna-3";
+    const z = kl.map(([id, urteil, imBild, gruen, stand]) =>
+        "KLASSE " + id + " " +
+            JSON.stringify({
+                id,
+                mass: "m",
+                urteil,
+                imBild,
+                gruen,
+                rot: Array.from({ length: imBild - gruen }, () => ({ pose: "ego-0", urteil: "ROT", grund: "kante 0.26 > 0.22" })),
+                stand: imBild ? [stand || kopf] : [],
+                ...(imBild ? {} : { grund: "in keiner der 10 Posen im Bild — ungemessen" }),
+            })
+    );
+    return z.concat([ad, "SPAWN " + JSON.stringify({ kopf, adapter: ad, klassen: o.n || kl.length, gruen: [], posen: 10, s: 64 })]).join("\n");
+};
+// zwölf Zeilen, die ersten n GRÜN in vier Posen, der Rest ROT
+const spawnZwoelf = (n) =>
+    ["tor-fern", "tor-bunt", "tor-ziel", "himmel-licht", "laub", "boden-nah", "wasser", "laub-kante", "haus", "fels", "mensch-kopf", "boden-nah-farbe"].map((id, i) => (i < n ? [id, "GRÜN", 4, 4] : [id, "ROT", 2, 0]));
+const spawnSechste = (zeile) => spawnZwoelf(5).map((z, i) => (i === 5 ? zeile(z[0]) : z));
+
 module.exports = [
+    // ─────────────────────────────── Ankunft K4 (der erste Blick am Spawn) ───────────────────────────────
+    {
+        kriterium: "ankunft.K4",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: {
+            sek: 90,
+            ausnahme: "zehn Posen am Spawn (der erste Blick und vier Azimute, Ego und Third), je ein Schuss mit der Teilung aller Zeilen der Tafel, in Third dazu der Kopf, und die Licht-Bilanz — der Ring an Genesis kalt",
+            befehl: ["node", "-e", "(" + spawnBlick.toString() + ")(process.argv[1], process.argv[2])", "{AUS}", "{PORT}"],
+        },
+        gpu: true,
+        zeit: false,
+        minuten: 3,
+        urteil: spawnUrteil,
+        proben: [
+            { name: "6 von 12 frisch GRÜN", stdout: spawnRoh(spawnZwoelf(6)), gruen: true },
+            { name: "5 von 12", stdout: spawnRoh(spawnZwoelf(5)), gruen: false },
+            { name: "die sechste Klasse ohne Messung (in keiner Pose im Bild) zählt nicht", stdout: spawnRoh(spawnSechste((id) => [id, "GRÜN", 0, 0])), gruen: false },
+            { name: "die sechste Klasse GRÜN genannt, eine Pose ROT", stdout: spawnRoh(spawnSechste((id) => [id, "GRÜN", 4, 3])), gruen: false },
+            { name: "die sechste Klasse an einem alten Stand", stdout: spawnRoh(spawnSechste((id) => [id, "GRÜN", 4, 4, "0123456789abcdef0123456789abcdef01234567"])), gruen: false },
+            { name: "der Baum geändert (+geaendert)", stdout: spawnRoh(spawnZwoelf(6).map((z) => z.slice(0, 4).concat(SPAWN_KOPF + "+geaendert")), { kopf: SPAWN_KOPF + "+geaendert" }), gruen: false },
+            { name: "eine KLASSE-Zeile fehlt (11 statt 12)", stdout: spawnRoh(spawnZwoelf(6).slice(0, 11), { n: 12 }), gruen: false },
+            { name: "swiftshader", stdout: spawnRoh(spawnZwoelf(8), { ad: "[linse-gpu] google/swiftshader" }), gruen: false },
+            { name: "der Lauf bricht", stdout: "POSE ego-0 1200 ms\nSPAWN-BRUCH Error: umstellen third: Messort genesis", gruen: false },
+        ],
+        pfad: [
+            ...ANKUNFT_PFAD,
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/studio-*.js",
+            "stamm/netz-portal.js",
+            "foundry-core.js",
+            "porta-core.js",
+            "phyto-core.js",
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "koerper-core.js",
+            "spec/abnahme/soll-tafel.json",
+            "spec/farbe/albedo-tafel.json",
+            "spec/profiband/haushalt.json",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "save-server.js",
+        ],
+        quelle: "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät",
+    },
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
     {
         kriterium: "ankunft.K2",
@@ -2580,13 +2884,16 @@ module.exports = [
                 zahl:
                     "längste Aufgabe " + s.laengsteMs + " ms (Soll ≤ 250) · Haupt-Faden belegt " + (s.belegtMs / 1000).toFixed(2) + " s bis zur Kontrolle (Soll ≤ 4; " +
                     s.langeN + " LongTasks " + (s.langeMs / 1000).toFixed(2) + " s) · Kontrolle " + (s.kontrolleMs / 1000).toFixed(2) + " s Seiten-Uhr" +
-                    (s.halter && s.halter.length ? " · " + s.halter[0] : "") + " · " + ad,
+                    (s.laengste ? " · die längste: " + s.laengste : s.halter && s.halter.length ? " · " + s.halter[0] : "") +
+                    (s.klassen ? " · belegt je Klasse (s): " + s.klassen : "") + " · " + ad,
             };
         },
         proben: [
             { name: "längste 180 ms, belegt 3,1 s", stdout: kaltRoh({}), gruen: true },
             { name: "die Arbeit in 49-ms-Stücken: keine LongTask, belegt 4,6 s", stdout: kaltRoh({ j: { tK: 6200, spur: { kontrolleMs: 6100, laengsteMs: 0, langeN: 0, langeMs: 0, belegtMs: 4600 } } }), gruen: false },
             { name: "eine Aufgabe 653 ms", stdout: kaltRoh({ j: { spur: { laengsteMs: 653 } } }), gruen: false },
+            { name: "eine Aufgabe 1253 ms beim Namen (9 Pipelines synchron)", stdout: kaltRoh({ j: { spur: { laengsteMs: 1253, laengste: "1253 ms bei 2.9 s: (ohne Probe) 640 · 9 Pipelines synchron (atmo-durchlass_17, …)" } } }), gruen: false },
+            { name: "belegt 8,4 s je Klasse", stdout: kaltRoh({ j: { spur: { belegtMs: 8400, klassen: "Bild 2.10 · Jobs 1.80 · Knoten-Bau 1.20" } } }), gruen: false },
             { name: "die Spur ist blind", stdout: kaltRoh({ j: { spur: { stand: "blind: keine Stichproben auf den Marken der Kalt-Probe", belegtMs: null } } }), gruen: false },
         ],
         pfad: ANKUNFT_KALT_PFAD,
@@ -3187,11 +3494,13 @@ module.exports = [
             const an = !!(z.stand && z.stand.enabled && z.stand.ctx === "running");
             // die Mindest-Varianz beider Signale (Schlupfloch „Wind konstant“): Variationskoeffizient ≥ 0,1 je Reihe
             const gruen = an && z.fenster >= 100 && z.r0.r >= 0.6 && z.r0.cvX >= 0.1 && z.r0.cvY >= 0.1;
+            // eine Reihe ohne Varianz (CV null) trägt keine Korrelation: ROT beim Namen der leeren Reihe, nie ein Wurf des Urteils
+            const f2 = (x, leer) => (typeof x === "number" && isFinite(x) ? x.toFixed(2) : leer);
             return {
                 gruen,
                 zahl:
-                    "r " + z.r0.r.toFixed(2) + " bei Lag 0 (n " + z.r0.n + "), Spitze " + (z.best ? z.best.r.toFixed(2) + " bei " + z.best.lagS + " s" : "?") +
-                    ", CV Bild " + z.r0.cvX.toFixed(2) + " / Ohr " + z.r0.cvY.toFixed(2) + ", " + z.fpsVor + " fps, Klang " + (an ? "an" : "AUS"),
+                    "r " + f2(z.r0.r, "— (eine Reihe ohne Varianz)") + " bei Lag 0 (n " + z.r0.n + "), Spitze " + (z.best ? f2(z.best.r, "—") + " bei " + z.best.lagS + " s" : "?") +
+                    ", CV Bild " + f2(z.r0.cvX, "— (Bild still)") + " / Ohr " + f2(z.r0.cvY, "— (Ohr still)") + ", " + z.fpsVor + " fps, Klang " + (an ? "an" : "AUS"),
             };
         },
         pfad: [
@@ -3914,6 +4223,5 @@ module.exports.taktRot = taktRot;
 // eine neue Probe der Karte mit eigenem Lauf trägt sie nicht; was hier steht, braucht einen eigenen Lauf mit Sekunden, die die Fahrt
 // erst freigeben muss (die Eich-Fahrt des Koordinators), oder ein Werkzeug, das es nicht gibt.
 module.exports.fehlt = [
-    { kriterium: "ankunft.K4", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third, je Klasse ein Schuss aus dem Ausgabe-Pfad mit Maske (`werkbank bild --klasse … --ist`) und das Urteil der Soll-Tafel (`sollTafelUrteil`) — 10 Posen × die Klassen im Bild, je Schuss 3–8 s (haar.K1#1: zwei Schüsse 35 s): ein eigener Lauf von ≥ 60 s, die Fahrt hat 10 s frei. Die Tafel trägt am Spawn 3 von 12 Klassen mit Zeile (tor-fern, tor-bunt, tor-ziel), vier sichtbare Klassen haben keine — das externe Soll neuer Zeilen fehlt" },
     { kriterium: "ankunft.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Spur des Kalt-Boots (ankunft.K5#1) misst längste Aufgabe und belegte Zeit bis zur Kontrolle; die Staffel 2 verlangt dazu die Antwort auf eine Kamera-Drehung im Lade-Bild — die Probe der Ankunft hält nur W (die Kontrolle von außen), eine Maus-Drehung mit gemessener Antwort (Event-Timing, das Bild dreht) trägt sie nicht" },
 ];

@@ -1,0 +1,186 @@
+{
+ "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T08:10:46.470Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.013/l2 1.003 · birke@0.5 l1 0.991/karte 0.998 · fichte@0.5 l1 0.998/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.991/karte 0.998 · fichte@0.27 l1 0.998/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.44,
+   "gpu": "amd/rdna-3",
+   "s": 26.3,
+   "zeit": "2026-11-07T08:07:20.989Z",
+   "abdruck": "ad97a2867605",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4130 · Karte fimp:birke:L2 0.3260 (31037 px), fimp:eiche:L2 0.2314 (80642 px), fimp:fichte:L2 0.2044 (38285 px), fimp:strauch:L2 0.4130 (21797 px), fimp:tanne:L2 0.2227 (117874 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4130 · Karte fimp:birke:L2 0.3260 (31037 px), fimp:eiche:L2 0.2314 (80642 px), fimp:fichte:L2 0.2044 (38285 px), fimp:strauch:L2 0.4130 (21797 px), fimp:tanne:L2 0.2227 (117874 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.7,
+   "zeit": "2026-11-07T08:08:03.546Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.0357 % Pop-Pixel je Sekunde (741 px, Soll ≤ 0,05 %), je Schritt 50*/45*/341*/73*/91*/39/46*/56* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "amd/rdna-3",
+   "s": 18.1,
+   "zeit": "2026-11-07T08:08:46.319Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": true,
+   "zahl": "Luma-Sprung 1.04 % (Soll < 2 %) über 10040 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.77 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "gpu": "amd/rdna-3",
+   "s": 8.3,
+   "zeit": "2026-11-07T08:09:25.682Z",
+   "abdruck": "f502399017b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte ROT: Kohäsion 0.8 / 0.8, Φ null über 0 Takte, letzter Flüchter null s (0 aus zweiter Hand), Fluchtweg 0 m, ID 600 s hält (Flucht 489 / 283 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.7 m: 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (372 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (384 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (371 px)",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "ROT: (a)–(d) auf der Karte ROT: Kohäsion 0.8 / 0.8, Φ null über 0 Takte, letzter Flüchter null s (0 aus zweiter Hand), Fluchtweg 0 m, ID 600 s hält (Flucht 489 / 283 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.7 m: 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (372 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (384 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (371 px)",
+   "gpu": "amd/rdna-3",
+   "s": 49.4,
+   "zeit": "2026-11-07T08:09:41.458Z",
+   "abdruck": "4cbb53e14031",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "7/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2317 · warm 832 ms (2+1) · rezeptbuch kalt null · warm 553 ms (0+1) · hotbar kalt 1750 · warm 936 ms (1+2) · ROT: werkstatt p95 kalt 2317 · warm 832 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · hotbar p95 kalt 1750 · warm 936 ms",
+   "exit": 0,
+   "minuten": 0.52,
+   "grund": "ROT: 7/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 2317 · warm 832 ms (2+1) · rezeptbuch kalt null · warm 553 ms (0+1) · hotbar kalt 1750 · warm 936 ms (1+2) · ROT: werkstatt p95 kalt 2317 · warm 832 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · hotbar p95 kalt 1750 · warm 936 ms",
+   "gpu": "amd/rdna-3",
+   "s": 30.9,
+   "zeit": "2026-11-07T08:10:46.470Z",
+   "abdruck": "3fc576d4679f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T08:06:50.683Z",
+  "port": 7804,
+  "warten": 0.07,
+  "bootS": 5.8,
+  "grundstellungS": [
+   2.1,
+   3.8
+  ],
+  "proben": 6,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 17.6,
+    "takte": 672,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 14.1,
+    "takte": 700,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 21.2,
+    "takte": 1204,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 7.4,
+    "takte": 579,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 11.8,
+    "takte": 749,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "lod.K1#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.1
+   },
+   {
+    "vor": "bauen.K1#2",
+    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+    "s": 3.8
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 7,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2048,
+   "frameP95": 50.08,
+   "taktP95": 32.07,
+   "vramMax": 136.1,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "tiere.K1#2",
+     "m": 319,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 256,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 262.4,
+  "minuten": 4.5
+ }
+}

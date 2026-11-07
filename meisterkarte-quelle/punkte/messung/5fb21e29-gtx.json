@@ -265,20 +265,6 @@
    "zwilling": "speicher.K2#1",
    "modus": "session"
   },
-  "ferne.K1#1": {
-   "gruen": false,
-   "zahl": "keine LUFT-Zeile (Exit 1): ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT",
-   "exit": 0,
-   "minuten": 0.38,
-   "grund": "ROT: keine LUFT-Zeile (Exit 1): ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT",
-   "gpu": "nvidia/pascal",
-   "s": 22.9,
-   "zeit": "2026-11-07T04:29:50.617Z",
-   "abdruck": "f675fa5e3cce",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "luftwasser.K5#1": {
    "gruen": true,
    "zahl": "Schwarm-Takt 0.1933 ms je Takt (Median, p95 0.3333) bei 100 Gliedern im Blick in jeder Reihe, 13153 Paare der Separation, Auge 51.7 m (Soll ≤ 0,3 ms, 100 im Bild)",

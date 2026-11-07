@@ -54,7 +54,8 @@
 //   { gruen, zahl } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr } · pfad: Globs des gemessenen Pfads
 //   (R6) · quelle: der Staffel-Text wörtlich (Teil der Staffel in src/gN.js) · beide (optional, nur true an Staffel 1 auf
 //   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
-//   proben (optional): [{ name, stdout, gruen }] Roh-Ausgaben des Befehls mit dem Urteil, das die Station über sie spricht
+//   proben (optional): [{ name, stdout | j, gruen }] Roh-Ausgaben des Befehls (stdout) oder seine Rohdatei (j, das JSON an {AUS})
+//     mit dem Urteil, das die Station über sie spricht
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
 //   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe und höchstens PROBE_DECKEL_S, mit ausnahme
 //   höchstens PROBE_AUSNAHME_S) } —
@@ -237,8 +238,8 @@ function pruefeStationen(liste, karte) {
             f.push("beide nur als true an Staffel 1 auf radeon und gtx");
         if (st.staffel === 1 && st.beide !== true && /an beiden Geräten|beide Geräte|beider Geräte/.test(st.quelle || ""))
             f.push("die Staffel 1 nennt beide Geräte — beide: true (sonst bucht EIN Gerät die 1)");
-        if (st.proben !== undefined && !(Array.isArray(st.proben) && st.proben.every((p) => p && typeof p.name === "string" && typeof p.stdout === "string" && typeof p.gruen === "boolean")))
-            f.push("proben ist keine Liste von { name, stdout, gruen }");
+        if (st.proben !== undefined && !(Array.isArray(st.proben) && st.proben.every((p) => p && typeof p.name === "string" && (typeof p.stdout === "string" || (p.j && typeof p.j === "object")) && typeof p.gruen === "boolean")))
+            f.push("proben ist keine Liste von { name, stdout | j, gruen }");
         if (st.probe !== undefined) {
             const p = st.probe;
             if (st.befehl !== undefined) f.push("genau eines von befehl und probe");
@@ -396,7 +397,8 @@ function probenUrteil(stationen) {
         for (const p of st.proben || []) {
             let u;
             try {
-                u = st.urteil(null, { exit: 0, stdout: p.stdout, stderr: "" });
+                // eine Rohdatei-Probe (j): das Urteil liest das JSON an {AUS} wie im Lauf (bauen.K1#2: ein Werk, das nicht steht, ROT)
+                u = st.urteil(p.j || null, { exit: 0, stdout: p.stdout || "", stderr: "" });
             } catch (e) {
                 u = { gruen: null, zahl: "Urteil warf: " + e.message };
             }

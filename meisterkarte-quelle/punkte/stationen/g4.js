@@ -433,7 +433,8 @@ const k1Zahl = (k) =>
     (k.bricht.length ? " · BRICHT " + k.bricht.join(", ") : "") + " · Baum-Zeilen " + (k.baum ? "gemessen" : "keine in PARAMS_BY_KIND") +
     " · Exits " + k.exits.join("/");
 
-// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord): das Skript im Koordinations-Baum (bericht/2910-w3w-studios/skripte/k4-bild.cjs)
+// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord; seit w16-studio-welt-pm eine Datei der Stationen, stationen/k4-bild.cjs — die
+// Box der Bühne zählt jede Instanz wie die Welt; bis dahin bericht/2910-w3w-studios/skripte/k4-bild.cjs im Koordinations-Baum)
 // fährt in der warmen Welt der Sitzung (Werkbank {PORT}+20000) je Mesh-Studio dasselbe Werk in Bühne und Welt — die Bühne nennt es
 // über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
 // Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
@@ -443,7 +444,7 @@ const k1Zahl = (k) =>
 const K4_BEFEHL = [
     "bash",
     "-c",
-    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT} {SEK}`,
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" {PORT} {SEK}`,
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
@@ -451,9 +452,13 @@ const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koe
 // Abnahme-Bild der Welt (`/bild` 4,3–9,7 s, das erste kompiliert) — Radeon 8ef49bef: fünf Studios in 34,9 s (7,0 s je Studio), an der
 // Frist 39 s fielen koerperstudio und tetrapoda aus; sieben ≈ 52 s Radeon, ≈ 68 s GTX (Faktor 1,3). Der Deckel je Karte in deckel.json.
 const K4_AUSNAHME = "sieben Studio-Seiten mit eigenem Renderer und je ein Abnahme-Bild der Welt: Radeon 7,0 s je Studio, sieben ≈ 52 s";
+// GRÜN zählt nur über der GESTALT beider Seiten (w16-studio-welt: das Werk allein in Weiß, Bühne SCHUSS · Welt WELT_GESTALT) —
+// eine Differenz über der Teilung der Werkbank trug den Boden (die Schatten-Sprenkel unter dem Wagen, Radeon 93fe1619: 51 762 Pixel
+// nur auf der Welt-Seite) und urteilt nie
+const k4Gestalt = (z) => !!(z && z.welt && z.buehne && z.welt.maske === "gestalt" && z.buehne.maske === "gestalt");
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
-    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true);
+    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true && k4Gestalt(s[id]));
     return {
         gruen,
         zahl:
@@ -461,10 +466,22 @@ const k4Zahl = (j) => {
             K4_STUDIOS.map((id) => {
                 const z = s[id] || {};
                 return id + " " + (z.differenz && z.differenz.anteil != null ? (100 * z.differenz.anteil).toFixed(1) + " %" : "–") +
-                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
+                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen && !k4Gestalt(z) ? " [ohne Gestalt beider Seiten]" : "") +
+                    (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
             }).join(" · ") + ((j.fehler || []).length ? " · " + j.fehler.join(" | ").slice(0, 200) : ""),
     };
 };
+// DIE PROBEN (die Schlupflöcher als Mutanten): drei Studios unter 2,1 % über der Gestalt beider Seiten sind GRÜN; dieselben Zahlen
+// über der Teilung der Werkbank (sie trägt den Boden) sind ROT; zwei Studios sind ROT
+const k4Probe = (n, maske) => {
+    const z = (id, d) => ({ [id]: { gruen: d <= 0.021, differenz: { anteil: d }, albedo: { max: 0.04 }, welt: { maske, pixel: 340155 }, buehne: { maske: "gestalt", pixel: 341300 } } });
+    return "K4 " + JSON.stringify({ geraet: "probe", studios: Object.assign({}, ...K4_STUDIOS.map((id, i) => z(id, i < n ? 0.018 : 0.3))), fehler: [] });
+};
+const K4_PROBEN = [
+    { name: "drei Studios unter dem Soll über der Gestalt beider Seiten", stdout: k4Probe(3, "gestalt"), gruen: true },
+    { name: "dieselben Zahlen über der Teilung der Werkbank (der Boden zählt als Werk)", stdout: k4Probe(3, "teilung"), gruen: false },
+    { name: "zwei Studios unter dem Soll", stdout: k4Probe(2, "gestalt"), gruen: false },
+];
 const K4_PFAD = [
     "worlds/huelle/",
     "worlds/garage/",
@@ -560,7 +577,7 @@ const STUDIO_PROBE = {
     ...probeBefehl(probeStudios, 75),
     ausnahme: "acht Studios je zwei Seiten mit eigenem Renderer (Besuch und Neuladen), 5 Griffe je Seite: Radeon fünf in 39 s",
 };
-// DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
+// DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg als Bibliothek (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
 // echte Eingaben) in der warmen Welt der Sitzung — die Bühne (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm),
 // jeder Weg mit kalt und warm, Lage und Sicht im Wechsel. KALT räumt die Linse selbst (`wegHelfer`: der erste Lauf eines Werks nimmt
 // seine Körper aus der Foundry, `_foundryCacheEvict`) — bis w4-stationen-schnell lud die Probe dafür die Seite neu (ein Ganz-Welt-Boot
@@ -580,14 +597,26 @@ const BILD_FAELLE = [
 ];
 async function probeBildWeg(H) {
     const { path } = H;
-    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"], { argv: ["--echt"] });
+    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"]);
     const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
+    // DIE SCHLEIFE DES SPIELS läuft wie im Spiel (wie probeVerben): der Haken der Linse sitzt am Render des Takts (`_loopRender`,
+    // wegHelfer bild), die Werkbank der Sitzung hält die Schleife zwischen ihren Befehlen an (`__loop()`). Ohne sie zog nie ein Bild
+    // und die Schublade öffnete nie — seit die Probe die Seite nicht mehr neu lädt (w4-stationen-schnell) jeder Lauf 0/8 an der Frist
+    // (GTX 8efb6318 80,2 s, headless am main dieselben 80,2 s, „#workshop-search: nicht offen“)
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
     await H.ereignisStrom(page);
     const { frei } = await page.evaluate(L.probe, { nurOrt: true });
     await buehne(page);
     await H.binnen(page.evaluate(() => window.__weltStehtNach()), 15000);
+    // DAS WELTBILD STEHT, ehe die erste Taste fällt: unter dem Ladeschirm gehört keine Taste der Welt (`_ladeschirmSteht`,
+    // dirigent-ankunft) — die Werkbank bootet bis zum Backend und hält dann die Schleife an, der Schirm stand (headless am main 75 s
+    // Schleife bis zum Weltbild; davor „#workshop-search: nicht offen“: B fiel unter den Schirm). Steht er an der Frist, ist das der Täter.
+    await H.binnen(page.waitForFunction(() => !window.anazhRealm._ladeschirmSteht(), { timeout: 0, polling: 250 }), (H.rest() - 8) * 1000);
+    if (await page.evaluate(() => window.anazhRealm._ladeschirmSteht()))
+        throw new Error("der Ladeschirm steht nach " + H.sek() + " s laufender Schleife — kein Weltbild, keine Taste der Welt");
     await page.evaluate(L.wegHelfer, { frei, teile: { eigen_huette: L.TEILE.eigen_huette }, bild: true });
     let offen = true;
     H.beimAbbau(() => offen && L.bauWeg(page, "ende"));
@@ -615,6 +644,25 @@ async function probeBildWeg(H) {
     return j;
 }
 const BILD_PROBE = probeBefehl(probeBildWeg, 60, { FAELLE: JSON.stringify(BILD_FAELLE) });
+// DIE ROHDATEI des Bild-Wegs als Probe des Urteils (selbsttest PROBEN): gesund jedes Werk steht über 3 echte Eingaben, je Werk der
+// erste Lauf kalt, 400 ms bis zum abgearbeiteten Bild, Bau-Hash = L0; `fall` ändert EINEN Lauf (Index in BILD_FAELLE)
+const bildRoh = (fall = {}, i0 = 0) => {
+    const j = { gestartet: true, bild: true, echt: true, wege: {}, faelle: BILD_FAELLE };
+    const gesehen = new Set();
+    BILD_FAELLE.forEach(([weg, lage, werk, sicht], i) => {
+        const e = { steht: 1, eingaben: 3, unecht: 0, zeiten: [100, 150, 200, 300, 400], bau: "b", soll: "b", kalt: !gesehen.has(werk), ...(i === i0 ? fall : {}) };
+        gesehen.add(werk);
+        (((j.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
+    });
+    return j;
+};
+const BILD_PROBEN = [
+    { name: "gesund: 8/8 Werke stehen in ≤ 3 Eingaben im Bild, p95 0,4 s", j: bildRoh(), gruen: true },
+    { name: "Mutante: ein Werk steht nicht (das Bild trägt den L0-Bau)", j: bildRoh({ steht: 0 }, 2), gruen: false },
+    { name: "Mutante: 4 Eingaben", j: bildRoh({ eingaben: 4 }, 5), gruen: false },
+    { name: "Mutante: warm 1,2 s bis zum Bild", j: bildRoh({ zeiten: [100, 150, 200, 300, 1200] }, 6), gruen: false },
+    { name: "Mutante: das Bild zeigt die Stufe 1, nicht den L0-Bau", j: bildRoh({ soll: "c", stufe: 1 }, 1), gruen: false },
+];
 
 // DIE VERBEN (bauen.K5#2): die Linse diag-werkstatt-weg mit `--verben` (`wegHelfer`, `wegLauf`: gesetzt, dann das Verb über die echte
 // Taste — Haus W bis hinter die Schwelle, Wagen E · W · E, Tor E, Brücke W über das Deck, Leiter W bis aufs Podest, Bank E) in der Welt
@@ -1583,7 +1631,7 @@ const alle = [
         ],
         quelle: "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom",
     },
-    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg --echt, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
+    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg in der Sitzung, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
     // frischer Browser auf der Karte (leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne; je Lage mit Bau
     // (schöpfer · frieden mit Material · pfad) × Werk (Eiche · Haus · GT · Teil) × Sicht (Ego · Third) über echte Eingaben die Zeit
     // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
@@ -1616,9 +1664,10 @@ const alle = [
                             const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
                             n++;
                             const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null; // [eingabe, steht, l0, bild, gpu] ab der ersten Eingabe
-                            const ok = e && !e.fehler && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
+                            // das Werk STEHT (genau eines, wie Staffel 1), über echte Eingaben, ≤ 3, im Bild mit dem L0-Bau
+                            const ok = e && !e.fehler && e.steht === 1 && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
                             if (!ok) {
-                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht);
+                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht + (e && e.stufe ? " (Stufe " + e.stufe + ")" : ""));
                                 continue;
                             }
                             imBild++;
@@ -1658,6 +1707,7 @@ const alle = [
             "scripts/lib/ausgabe-aufnahme.cjs",
             "save-server.js",
         ],
+        proben: BILD_PROBEN,
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
     // ── bauen.K2 ── W9 SLOT (gate:haus-welt, Phase grund; w3t-grund): ein Haus in der Gestalt eines Dorf-Hauses (Rezept, Stempel,
@@ -2098,10 +2148,12 @@ const alle = [
         zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^K4 \{/);
             if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + "): " + String(lauf.stdout || "").split(/\r?\n/).filter((l) => /^K4 /.test(l)).slice(-2).join(" | ").slice(0, 300) };
             const k = k4Zahl(j);
             return { gruen: k.gruen.length >= 3, zahl: k.zahl };
         },
+        proben: K4_PROBEN,
         pfad: K4_PFAD,
         quelle: "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10",
     },
@@ -2114,6 +2166,7 @@ const alle = [
         zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^K4 \{/);
             if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + ")" };
             const k = k4Zahl(j);
             return { gruen: k.gruen.length === 7, zahl: k.zahl };
