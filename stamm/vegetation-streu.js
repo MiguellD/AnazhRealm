@@ -1466,20 +1466,16 @@ class AnazhRealm_vegetation_streu {
     // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
     // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
     // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
-    // `bahn` (der Streamer, w7-rang): die Region gilt auch, wenn sie am Ort der Bahn am Ende des Vorlaufs in Reichweite liegt
-    // (`_bedarfVoraus`, der EINE Rang) — sie streut, bevor die Bahn ankommt.
+    // `bahn` (der Streamer, w7-rang): die Region gilt, wenn sie entlang der Strecke, die der Spieler binnen des Vorlaufs fährt,
+    // in Reichweite liegt (`_bedarfKasten`, der EINE Rang; bis w14-strom-tempo an ihren Endpunkten) — sie streut, bevor die
+    // Bahn ankommt.
     _streuRegionInReichweite(rx, rz, p, bahn) {
         const SC = AnazhRealm.SCATTER;
         const st = this.state;
         const R = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
-        const nah = (q) => {
-            const nx = Math.max(rx * SC.regionM, Math.min(q.x, (rx + 1) * SC.regionM));
-            const nz = Math.max(rz * SC.regionM, Math.min(q.z, (rz + 1) * SC.regionM));
-            return Math.hypot(nx - q.x, nz - q.z) <= R;
-        };
-        if (nah(p)) return true;
-        const v = bahn ? this._bedarfVoraus(p) : null;
-        return !!v && v.weg > 0 && nah(v);
+        const [x0, x1, z0, z1] = [rx * SC.regionM, (rx + 1) * SC.regionM, rz * SC.regionM, (rz + 1) * SC.regionM];
+        if (Math.hypot(Math.max(x0 - p.x, 0, p.x - x1), Math.max(z0 - p.z, 0, p.z - z1)) <= R) return true;
+        return !!bahn && this._bedarfKasten(x0, x1, z0, z1, p, true) <= R;
     }
 
     // Steht die Streu? — die EINE Antwort (das erste Weltbild `_weltbildFehlt`, die Bühnen-Linse): wie viele Streu-Regionen
@@ -1559,19 +1555,34 @@ class AnazhRealm_vegetation_streu {
         // DIE REIHE DER REGIONEN (der EINE Rang, w7-rang): die fehlenden in Reichweite der Bahn nach der Zeit bis Bedarf
         // (`_bedarfWeg` ihrer Mitte) — bis w7-rang in Ring-Reihe (dz, dx); beim GT-Tempo trat jede neue Region wartend in den
         // Sichtkegel (streaming.K2, Null-Renderer an main 6eeeb856: Streu 0 von 15).
+        // DER RING DER BAHN (w14-strom-tempo): die Regionen um den Spieler UND um seinen Ort am Ende des Vorlaufs (`_bedarfVoraus`,
+        // wie der Ring des Bodens) — bis w14-strom-tempo nur um den Spieler: im GT lag die Region, die die Bahn binnen des
+        // Vorlaufs erreicht, zwei Regionen voraus und streute erst, als der Spieler die Grenze kreuzte, im Kegel.
+        const vb = this._bedarfVoraus(playerPos);
+        const [vRegX, vRegZ] = [Math.floor(vb.x / SC.regionM), Math.floor(vb.z / SC.regionM)];
         const neu = [];
-        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && !_sliceFull && !_buchKalt; dz++)
-            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
-                const [rx, rz] = [pRegX + dx, pRegZ + dz];
-                const [mx, mz] = [(rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM];
-                // vor dem ersten Weltbild nur die Region im Blick (`_blickDerAnkunft`), die übrigen streut der Nachlauf
-                if (
-                    !map.has(`${rx},${rz}`) &&
-                    this._streuRegionInReichweite(rx, rz, playerPos, true) &&
-                    this._blickDerAnkunft(mx, mz, SC.regionM * Math.SQRT1_2)
-                )
-                    neu.push([this._bedarfWeg(mx, mz), rx, rz]);
-            }
+        const gesehen = new Set();
+        for (const [ax, az] of vRegX !== pRegX || vRegZ !== pRegZ
+            ? [
+                  [pRegX, pRegZ],
+                  [vRegX, vRegZ],
+              ]
+            : [[pRegX, pRegZ]])
+            for (let dz = -SC.ringRegions; dz <= SC.ringRegions && !_sliceFull && !_buchKalt; dz++)
+                for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                    const [rx, rz] = [ax + dx, az + dz];
+                    const rk = `${rx},${rz}`;
+                    if (gesehen.has(rk)) continue;
+                    gesehen.add(rk);
+                    const [mx, mz] = [(rx + 0.5) * SC.regionM, (rz + 0.5) * SC.regionM];
+                    // vor dem ersten Weltbild nur die Region im Blick (`_blickDerAnkunft`), die übrigen streut der Nachlauf
+                    if (
+                        !map.has(rk) &&
+                        this._streuRegionInReichweite(rx, rz, playerPos, true) &&
+                        this._blickDerAnkunft(mx, mz, SC.regionM * Math.SQRT1_2)
+                    )
+                        neu.push([this._bedarfWeg(mx, mz), rx, rz]);
+                }
         neu.sort((a, b) => a[0] - b[0]);
         for (const [, rx, rz] of neu) {
             if (work >= SC.maxRegionsPerFrame) break;
@@ -1582,11 +1593,13 @@ class AnazhRealm_vegetation_streu {
                 break;
             }
         }
-        // (2) ferne Regionen disposen (außerhalb ringRegions+1)
+        // (2) ferne Regionen disposen (außerhalb ringRegions+1 um den Spieler und außerhalb des Rings der Bahn)
         const disposeR = SC.ringRegions + 1;
         for (const rk of Array.from(map.keys())) {
             const region = map.get(rk);
             if (!region) continue;
+            if (Math.abs(region.regX - vRegX) <= SC.ringRegions && Math.abs(region.regZ - vRegZ) <= SC.ringRegions)
+                continue;
             if (Math.abs(region.regX - pRegX) > disposeR || Math.abs(region.regZ - pRegZ) > disposeR) {
                 this._disposeScatterRegion(rk);
             }

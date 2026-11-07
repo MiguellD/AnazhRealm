@@ -707,6 +707,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
+        this._grundrissLoesen(entry); // sein Grundriss verlässt die Natur-Wand mit ihm (`_grundrissAmOrt`)
         this._blockerWacheMelden(entry._blockerHuelle, !!entry._verkehrFaehrt, entry);
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
