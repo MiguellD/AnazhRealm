@@ -39,7 +39,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullWelt, urteilEnde, pngDatei, path, fs, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
@@ -88,7 +88,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
 // dann gilt ihre Liefer-Marke
 const RUHE = (r = window.anazhRealm) =>
     window
-        .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !(r._impostorBakeQueue || []).length, max: 600 })
+        .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !r._impostorBakeQueue?.length, max: 600 })
         .then(() => r._foundry.lieferung);
 // DER GEPFLANZTE BRUCH (--selftest): die erste Körper-Antwort nach dem Erwachen verschluckt der Haupt-Faden, ihr Leser bekommt null
 function SCHLUCK() {
@@ -183,7 +183,7 @@ function KALT_PROBE() {
     setInterval(() => {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
-        if (r && r.state) {
+        if (r?.state) {
             if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
@@ -405,10 +405,7 @@ hauptLauf(async () => {
         const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
         return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    if (SELBSTTEST) await page.evaluateOnNewDocument(SCHLUCK);
-    await server.zeige(page, 120000, "index.html", "networkidle0");
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
     await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {

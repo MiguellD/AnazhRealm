@@ -230,7 +230,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
         const chatAfter = chatOutput ? chatOutput.children.length : 0;
         const journalAfter = (st.worldJournal && st.worldJournal.entries.length) || 0;
-        const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
+        const lastLine = chatOutput?.lastChild ? chatOutput.lastChild.textContent : "";
         out.leerschlagReturnsNull = result === null;
         out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
         out.leerschlagWritesJournal = journalAfter > journalBefore;
@@ -412,8 +412,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         const prof = r._creatureProfile(sprite);
         out.profileBundlesVectors = !!(
-            prof &&
-            prof.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
+            prof?.id && // stabile Identität (netId/name), nicht der Array-Index (§G.6)
             typeof prof.tags === "object" &&
             prof.stats &&
             Number.isFinite(prof.stats.hpMax) &&
@@ -937,7 +936,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             c.userData.carrying = null;
             r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
             r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-            out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+            out.creatureCarryingSet = !!(c.userData.carrying?.materials);
             out.inventoryStillEmptyAfterHarvest = st.player.inventory.every((sl) => !sl);
             out.carryingSpriteCreated = !!c.userData.carryingSprite;
 
@@ -1833,7 +1832,7 @@ async function checkBandKreaturKosten({ page, check }) {
         // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
         const g = r._buildHumanGroup();
         const mf = g && g.userData && g.userData._gelenk;
-        o.checks.cFernGebaut = !!(mf && mf.nah && mf.fern);
+        o.checks.cFernGebaut = !!(mf?.nah && mf.fern);
         // die Stufen eines Zustands: nah = die feine sichtbar, die Grobstufe nur in den Kaskaden; fern = umgekehrt
         // (K72: der Wurf ist die Ebene SHADOW_TWIN_LAYER — nah liegt kein Teil der Grobstufe auf Ebene 0, ihre werfenden
         // Teile liegen auf der Wurf-Ebene, und ist sie der Zwilling, wirft mindestens eins)
@@ -1844,7 +1843,7 @@ async function checkBandKreaturKosten({ page, check }) {
             (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(A.SHADOW_TWIN_LAYER)));
         const istFern = () =>
             mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
-        if (mf && mf.nah && mf.fern) {
+        if (mf?.nah && mf.fern) {
             const stat = (node) => {
                 let m = 0,
                     v = 0;
@@ -1924,7 +1923,7 @@ async function checkBandKreaturKosten({ page, check }) {
         o.rWolf = wolfT ? starrZensus(wolfT.root) : null;
         const gM = r._buildHumanGroup();
         const mfM = gM && gM.userData && gM.userData._gelenk;
-        o.rMensch = mfM && mfM.nah ? starrZensus(mfM.nah) : null;
+        o.rMensch = mfM?.nah ? starrZensus(mfM.nah) : null;
         o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
         o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
         o.checks.rKugel =
@@ -1939,12 +1938,12 @@ async function checkBandKreaturKosten({ page, check }) {
         // Knochen der L0 (Identität je Name) — EIN Skelett je Gestalt; im Gang bleibt auch er in seiner Kugel.
         const zw = { meshes: 0, geskinnt: 0, knochen: 0, fremd: 0, geprueft: 0 };
         const wp = spawnAt(6, 0);
-        if (wp && wp.userData && wp.userData._tierBaum) {
+        if (wp?.userData?._tierBaum) {
             const v = new T3.Vector3();
             let l1Geo = null;
             wp.traverse((n) => {
                 for (const vl of n.__ofenVorlagen || [])
-                    if (vl && vl.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
+                    if (vl?.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
                         l1Geo = new Set();
                         vl.root.traverse((q) => {
                             if (q.isMesh && q.geometry) l1Geo.add(q.geometry);
@@ -2046,7 +2045,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const je = {};
             gruppe.traverse((n) => {
                 for (const v of n.__ofenVorlagen || [])
-                    if (v && v.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
+                    if (v?.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
             });
             return je;
         };
@@ -2084,7 +2083,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const wurfTeil = (core, kind) => {
             const B = core && core.PORTAL_RENDER_CONFIG && core.PORTAL_RENDER_CONFIG.lod.budget[kind];
             const z1 = B && B[1];
-            const seh = z1 && z1.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
+            const seh = z1?.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
             const aus = budgetFang.get(kind + "|1");
             if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
             const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);
@@ -2878,7 +2877,7 @@ async function checkBandKreaturKosten({ page, check }) {
     check("Kreatur-Kosten (G) die Probe der ruhenden Leiber lief", !G.fehler, G.fehler || "");
     gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
     gruppe("SELBSTTESTS S1–S11 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires"]);
-    if (w[0] && w[0].s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
+    if (w[0]?.s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
     if (out.s7) gruppe("SELBSTTEST S7: der zur Mitte gezogene Zwilling verfehlt die Deckung", ["s7LensFires"]);
 }
 

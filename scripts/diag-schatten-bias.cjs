@@ -306,7 +306,7 @@ async function probe(cfg) {
     // DIE BIAS-STEUERUNG: „spiel" = das Gesetz des Stamms (`_schattenBias` je Kaskade; ohne Gesetz der feste Meter-Wert und der
     // Tiefen-Nudge `biasM`), „versuch" = n/d in Texeln der Kaskade. Sie hängt hinter jeder neuen Box (`_kaskadeFit`) und gilt
     // sofort auf der aktuellen.
-    const lichter = csm && csm.lights ? csm.lights : [];
+    const lichter = csm?.lights ? csm.lights : [];
     let modus = { art: "spiel" };
     const texelVon = (sh, f) => Math.max(f.W / sh.mapSize.width, f.H / sh.mapSize.height);
     const biasFuer = (i, f) => {
@@ -371,7 +371,7 @@ async function probe(cfg) {
     // DIE SCHATTEN-DREIECKE eines Körpers: jedes Mesh im Teilbaum (und jede Instanz eines Slots), das im Schatten-Pass zeichnet
     // (castShadow, sichtbar, eine Ebene der Kaskaden-Kamera), in Welt-Koordinaten
     const ebenen =
-        csm && csm.lights && csm.lights[0]
+        csm?.lights && csm.lights[0]
             ? csm.lights[0].shadow.camera.layers
             : st.directionalLight.shadow.camera.layers;
     const sichtbar = (o) => {
@@ -503,7 +503,7 @@ async function probe(cfg) {
             g.mesh.castShadow = an ? merk.get(g.mesh) : false;
             r._archMeshBundleTouch(g.mesh);
         }
-        if (e && e.mesh)
+        if (e?.mesh)
             e.mesh.traverse((o) => {
                 if (!o.isMesh) return;
                 if (!merk.has(o)) merk.set(o, o.castShadow);
@@ -630,7 +630,7 @@ async function probe(cfg) {
         for (const w of wurzeln) if (w) w.traverse((o) => o.isMesh && setz(o));
         for (const ref of slots || []) {
             const g = st.archInstanceGroups.get(ref.key);
-            if (g && g.mesh) setz(g.mesh);
+            if (g?.mesh) setz(g.mesh);
         }
     };
     // DIE FREMDEN DERSELBEN ART: eine Instanz-Gruppe trägt ihre Ebene als GANZE — unter der Isolation warfen fremde Büsche
@@ -1020,7 +1020,7 @@ async function probe(cfg) {
                 if (!(Math.atan(Math.hypot(gx, gz)) < (6 * Math.PI) / 180)) continue;
                 let frei = true;
                 for (const e of arch)
-                    if (e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 12) frei = false;
+                    if (e?.position && Math.hypot(e.position.x - x, e.position.z - z) < 12) frei = false;
                 if (frei) return { x, z, rad };
             }
         return { x: bx, z: bz, rad: null };

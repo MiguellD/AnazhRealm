@@ -27,7 +27,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
             );
         const strikeUntilGone = (a, cap) => {
             let s = 0;
-            while (st.architectures.indexOf(a) !== -1 && s < cap) {
+            while (st.architectures.includes(a) && s < cap) {
                 r._strikeArchitecture(a);
                 s++;
             }
@@ -75,7 +75,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         const steinTool = steinCount();
         out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
         out.brokeEventually =
-            st.architectures.indexOf(aHand) === -1 && st.architectures.indexOf(aTool) === -1;
+            !st.architectures.includes(aHand) && !st.architectures.includes(aTool);
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
@@ -93,10 +93,10 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         const stamBefore = p.stamina;
         r._strikeArchitecture(aS);
         out.staminaDrains = p.stamina < stamBefore;
-        if (st.architectures.indexOf(aS) !== -1) r.removeArchitecture(aS);
+        if (st.architectures.includes(aS)) r.removeArchitecture(aS);
 
         // cleanup
-        for (const a of [aHand, aTool]) if (a && st.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+        for (const a of [aHand, aTool]) if (a && st.architectures.includes(a)) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
         halt.break = false;
@@ -202,12 +202,12 @@ async function checkBandV1755W2Profile({ page, check }) {
         p.equipped.held = "__w2_maul";
         const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
         let rs = 0;
-        while (aRock && st.architectures.indexOf(aRock) !== -1 && rs < 300) {
+        while (aRock && st.architectures.includes(aRock) && rs < 300) {
             r._strikeArchitecture(aRock);
             rs++;
         }
-        out.maulBreaksRock = rs >= 1 && (!aRock || st.architectures.indexOf(aRock) === -1);
-        if (aRock && st.architectures.indexOf(aRock) !== -1) r.removeArchitecture(aRock);
+        out.maulBreaksRock = rs >= 1 && (!aRock || !st.architectures.includes(aRock));
+        if (aRock && st.architectures.includes(aRock)) r.removeArchitecture(aRock);
 
         // cleanup
         delete blu.__w2_blade;
@@ -300,7 +300,7 @@ async function checkBandV1759CapabilityReadout({ page, check }) {
         const chips = Array.prototype.slice
             .call(panel.querySelectorAll(".spec-cap-chip"))
             .map((c) => c.textContent || "");
-        out.domShowsCapability = chips.some((txt) => txt.indexOf("Brecher") !== -1);
+        out.domShowsCapability = chips.some((txt) => txt.includes("Brecher"));
 
         delete blu.__cap_blade;
         delete blu.__cap_maul;
@@ -338,7 +338,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
         const savedMode = r.getGameMode();
         const savedSoul = (p && p.soul) || "mensch";
         const savedInv = Array.isArray(p.inventory) ? jsonKlon(p.inventory) : [];
-        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
+        const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
         if (st.customSouls) delete st.customSouls["bp_koerper_human"];
         if (st.blueprints["koerper_human"]) delete st.blueprints["koerper_human"].forgedPrecision;
@@ -397,7 +397,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
             p.inventory = savedInv;
             p.equipped = savedEquip;
         }
-        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        r.equipHeld(savedEquip?.held ? savedEquip.held : null);
         r._refreshSoulSelect();
         r.renderInventoryUI();
         r.recomputePlayerStats();
@@ -524,7 +524,7 @@ async function checkBandV1786WorkshopCoherence({ page, check }) {
         // eingefroren in KIND_SUBSTANCE.geraet_schwert (Klinge, schneidet, gehaltenes Implement).
         const KS86 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const sw = KS86.geraet_schwert ? { parts: jsonKlon(KS86.geraet_schwert.parts) } : null;
-        out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
+        out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
         // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")

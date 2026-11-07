@@ -15,7 +15,7 @@
 // sonst rot („Selbst-Test vakuös").
 //   node scripts/diag-place-policy.cjs --selftest
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde, fehlerText, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const SELFTEST = SELBSTTEST;
 const server = statikServer();
 
@@ -23,9 +23,7 @@ const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 180000 });
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, e: {}, st: {} };
@@ -157,7 +155,7 @@ hauptLauf(async () => {
     check(
         "a2: die Live-Buch-Bäume mit place none stehen im Buch, nie in der Wald-Nische",
         Array.isArray(out.a.liveNone) && out.a.liveNone.length > 0 && out.a.liveNoneInExtras.length === 0,
-        `${(out.a.liveNone || []).join(" · ")}${out.a.liveNoneInExtras && out.a.liveNoneInExtras.length ? " — in der Nische: " + out.a.liveNoneInExtras.join(" · ") : ""}`
+        `${(out.a.liveNone || []).join(" · ")}${out.a.liveNoneInExtras?.length ? " — in der Nische: " + out.a.liveNoneInExtras.join(" · ") : ""}`
     );
     check("a: die testahorn-Nische entsteht wie heute", out.a.inExtras === true);
     check("a: der Wald-Generator streut testahorn (Dart geboren)", out.a.planted === true);

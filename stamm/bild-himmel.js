@@ -213,7 +213,8 @@ class AnazhRealm_bild_himmel {
     // DER TAKT DER KARTE (je Bild aus `_weltLichtTakt`, nach der Bild-Uhr): die Mitte ist der Punkt, an dem das Licht über dem
     // Spieler die Schicht quert, auf die Zelle gelegt (dasselbe Gitter der Welt — kein Schwimmen); neu gemalt, wenn die Bild-Uhr
     // `zugS` weiter ist (der Zug 11 m/s: 1,1 m bei 16 m Zelle), die Deckung oder die Mitte wechselt. Der Null-Renderer malt nichts;
-    // ohne Wurf des Lichts (`castShadow`) ruht der Wurf (1) wie der Horizont (`_horizontKarteTakt`).
+    // ohne Wurf des Lichts (`_lichtWirft`: castShadow und die Schatten-Karte des Renderers) ruht der Wurf (1) wie der Horizont
+    // (`_horizontKarteTakt`).
     _wolkenKarteTakt() {
         const st = this.state;
         const rend = st.renderer;
@@ -222,7 +223,7 @@ class AnazhRealm_bild_himmel {
         const pm = st.playerMesh || st.camera;
         if (!pm) return;
         const K = this._wolkenKarte();
-        if (!st.directionalLight || !st.directionalLight.castShadow) {
+        if (!this._lichtWirft()) {
             K.U.aktiv.value = 0;
             return;
         }
@@ -842,7 +843,7 @@ class AnazhRealm_bild_himmel {
             (px) => {
                 if (nr !== st._skyEnvLeseNr) return st._skyEnvLesung; // überholt: das Versprechen der neueren Lesung
                 const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
-                const schritt = Math.floor(px.length / H); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                const schritt = __weltLicht.zeilenSchritt(px, W, H); // die Zeilen liegen ausgerichtet (bytesPerRow)
                 const halb = px instanceof Uint16Array;
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W * 4; x++) {
@@ -1198,10 +1199,10 @@ class AnazhRealm_bild_himmel {
     // Dämmerungs-Anker des Himmels (`HIMMEL.grenzgroesse`: die Grenzgröße der Sterne je Sonnenhöhe). Die Kanäle:
     //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
-    //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem ersten Ersatz-Licht der Nacht (wo `nacht` beginnt,
-    //               ~14,5°), linear über die Höhe der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
-    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 ab ~14,5°, 1 am
-    //               Horizont und darunter;
+    //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem Horizont (wo `nacht` beginnt), linear über die Höhe
+    //               der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
+    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 über dem Horizont,
+    //               1 ab −6° (die bürgerliche Dämmerung) — über dem Horizont tragen Sonne und Himmel allein (ferne.K4);
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
     // Bis S7 rechnete jeder Anwender seine eigene Achse (die Tafel nach der Uhr, der Horizont-Fade der Körper, der Nacht-Anteil
     // aus dem Sinus des Winkels, die Dämmerung aus der Grenzgröße, die Himmels-Helligkeit) — die Dämmerung (Uhr 0,27, Sonne 7°)
@@ -1458,7 +1459,7 @@ class AnazhRealm_bild_himmel {
     }
 
     // Reine Godray-Stärke aus Sonnenhöhe × Wetter-Klarheit (`weatherSun`, auf [0..1] remappt): über dem Horizont blenden sie
-    // im Maß der EINEN Tag-Achse auf (1 − `nacht`, geglättet: 0 am Horizont, voll ab ~14,5°) — keine eigene Schwelle.
+    // im Maß der EINEN Tag-Achse auf (1 − `nacht`, geglättet: 0 bei −6°, voll am Horizont) — keine eigene Schwelle.
     // Der Screen-Sichtbarkeits-Gate (Sonne im Bild) sitzt separat in `_loopRender`.
     _godrayFrameGate(sunDirY, weatherSun) {
         const sm = (a, b, x) => {
@@ -1500,7 +1501,7 @@ class AnazhRealm_bild_himmel {
         return this._atmoRechnung().medium(this._atmoGesetz(), betaLuft, AnazhRealm.ATMO_BODEN);
     }
 
-    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne
+    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom beleuchteten Ort (`_atmoOrtKm`) zur Sonne
     // (`ATMO_RECHNUNG.sonne`, dieselbe Rechnung, die die Transmittance-Tafel je Texel trägt). `col` = sein Farbton (unter dem
     // Horizont zum Mond-Hue, Purkinje), `lum` = sein hellster Kanal — `col`·`lum` IST der Durchlass; das Richtlicht trägt
     // E0 · Durchlass (E0 = die Sonne über der Atmosphäre, `_atmoE0`), dieselbe E0, mit der die Tafeln den Himmel rechnen:
@@ -1508,7 +1509,32 @@ class AnazhRealm_bild_himmel {
     _atmoSonne(e) {
         const T = this._atmoT || (this._atmoT = [0, 0, 0]);
         const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
-        return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoAugeKm(), e, N, T);
+        return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoOrtKm(), e, N, T);
+    }
+
+    // DER WEG ZUR SONNE JE ART DER LUFT (die Sonne in der Höhe jeder Probe der Luft, `_luftEnsure` `tauSonne`): die optische Tiefe
+    // am Boden (1 m) für Rayleigh und Mie getrennt, als Leuchtdichte — dieselbe Rechnung wie die Transmittance-Tafel
+    // (`ATMO_RECHNUNG.durchlass`, das Medium jetzt), je Art ihr Medium allein (das Ozon trägt jede Höhe der Luft gleich, es
+    // kürzt sich im Verhältnis zum Auge). Unter dem Horizont 0 (die einfache Streuung der Sonne ruht dort). Neu, wenn Sonne
+    // oder Medium wechseln (Kosten an Änderung).
+    _luftSonneTakt(U) {
+        const A = this.state.atmoLut;
+        const e = A && A.U ? A.U.sonne.value.y : -1;
+        const M = this._atmoMediumJetzt();
+        const m = this._luftSonneMerk;
+        if (m && m.e === e && m.M === M) return;
+        this._luftSonneMerk = { e, M };
+        const R = this._atmoRechnung();
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const T = [0, 0, 0];
+        const leer = [0, 0, 0];
+        const tau = (Mk) => {
+            R.durchlass(Mk, 0.001, e, N, T);
+            const y = 0.2126 * T[0] + 0.7152 * T[1] + 0.0722 * T[2];
+            return y > 1e-12 ? -Math.log(y) : 28;
+        };
+        U.sonneR.value = e > 0 ? tau(Object.assign({}, M, { mieExt: leer, ozon: leer })) : 0;
+        U.sonneM.value = e > 0 ? tau(Object.assign({}, M, { betaR: leer, ozon: leer })) : 0;
     }
 
     // Das Medium des Wetters jetzt, in STUFEN der Extinktion um die klare Luft (`ATMO_LUT.mediumStufe`, logarithmisch; die
@@ -1524,6 +1550,19 @@ class AnazhRealm_bild_himmel {
         this._atmoMBeta = b;
         this._atmoMG = G; // das Gesetz der Welt gehört zum Schlüssel: ein Welt-Wechsel rechnet das Medium neu
         return (this._atmoM = this._atmoMedium(b));
+    }
+
+    // DIE HÖHE DES BELEUCHTETEN ORTS über dem Bezug der Luft (km, ≥ 1 m): der Spieler, auf dessen Boden die Welt um das Auge
+    // liegt — dort gilt der Durchlass des Richtlichts (Sonne und Mond), nie an der Kamera; ohne Spieler das Auge. Bis ferne.K4 trug
+    // das Richtlicht den Durchlass der Kamera: mit dem Auge 1 585 m über dem Dorf fiel die Sonne bei 5° auf den Hang 3,8× so
+    // stark wie mit dem Auge am Boden (je N·L 0,0354 gegen 0,0093), die Station maß je nach Reihenfolge des Rufs das eine oder
+    // das andere. Die Himmels-Sicht (die Kuppel, die Luft vor dem Auge) bleibt am Auge (`_atmoAugeKm`).
+    _atmoOrtKm() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return this._atmoAugeKm();
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        return Math.max(0.001, (pm.position.y - wl) / 1000);
     }
 
     // Die Höhe des Auges über dem Bezug der Luft (km, ≥ 1 m): die Kamera, ohne sie der Bezug.
@@ -1820,12 +1859,12 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER DURCHLASS ZUM MOND (S7): derselbe Durchlass der EINEN Atmosphäre wie zur Sonne (`ATMO_RECHNUNG.durchlass`, das Medium
-    // jetzt, die Höhe des Auges), in seiner Höhe y = sin(Höhe) relativ zum Zenit — die Eichung des Mondlichts (`MOONLIGHT`) gilt
+    // jetzt, die Höhe des beleuchteten Orts), in seiner Höhe y = sin(Höhe) relativ zum Zenit — die Eichung des Mondlichts (`MOONLIGHT`) gilt
     // dem hohen Mond, am Horizont geht er durch die ganze Luft (unter ihm 0). Bis S7 ein eigener Horizont-Fade (smoothstep bis 8°).
     _mondDurchlass(y) {
         const R = this._atmoRechnung();
         const M = this._atmoMediumJetzt();
-        const h = this._atmoAugeKm();
+        const h = this._atmoOrtKm();
         const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
         const T = this._mondT || (this._mondT = [0, 0, 0]);
         const lum = (t) => 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];
@@ -2148,8 +2187,8 @@ class AnazhRealm_bild_himmel {
         };
         // der Lichtmesser misst den Boden im Bild: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
         // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
-        const sicht = dy > 0 ? this._horizontSichtImBild(dir) : 1;
-        add(dl.color, dl.intensity * dy * sicht);
+        // … und auf dem Boden, wie das Bild ihn zeigt: je Fläche max(N·L, 0) ihrer Neigung (an der Stelle von sin h☉)
+        add(dl.color, dl.intensity * (dy > 0 ? this._horizontSichtImBild(dir) : 0));
         const he = this._himmelE || (this._himmelE = [0, 0, 0]);
         let himmel = this._himmelsBestrahlung(he);
         const A = st.atmoLut;
@@ -2271,6 +2310,9 @@ class AnazhRealm_bild_himmel {
             unterWasser: T.uniform(0),
             spiegelY: T.uniform(0),
             abfall: T.uniform(new THREE.Vector3(0, 0, 0)),
+            // die optische Tiefe des Wegs zur Sonne am Boden je Art (Rayleigh, Mie; Leuchtdichte) — `_luftSonneTakt`
+            sonneR: T.uniform(0),
+            sonneM: T.uniform(0),
         });
         const faktor = T.Fn(([auge, punkt]) => {
             const v = punkt.sub(auge);
@@ -2291,10 +2333,54 @@ class AnazhRealm_bild_himmel {
         // trägt sie die Mie-Keule des Aerosols aus der Phase (g des Gesetzes), am Horizont das Blau der Rayleigh-Streuung;
         // ein Blick unter den Horizont (auf das Gelände) liest den Horizont-Himmel (die In-Streuung längs eines langen
         // Wegs). Unter Wasser trägt `farbe` das Medium der Kamera.
+        // DER LUFTSCHATTEN (ferne.K4; Hillaire 2020 „shadowed in-scattering“, UE/Frostbite Sky Atmosphere): wo die Luft zwischen
+        // Auge und Punkt im Schatten des Grats liegt, streut die Sonne dort nicht hinein — nur Himmel und Mond (die Mehrfach-
+        // streuung). Der Strahl liest die EINE Horizont-Karte (`_horizontSicht`) an `luftProben` Punkten, je Punkt gewogen mit
+        // seinem Beitrag zur In-Streuung (Dichte der Luft × Durchlass bis zum Auge, dieselbe Extinktion wie `faktor`); die Farbe
+        // verliert davon den Anteil der einfachen Streuung der Sonne (`himmelEinfach`, Alpha der Himmels-Sicht). Wo die Karte
+        // ruht (ohne Gitter, unter dem Horizont), ist ihre Sicht 1; ohne Schatten-Karte des Renderers (kienspan) baut kein
+        // Programm den Luftschatten (`_wirftImStoff`).
+        // EINE Schleife (wie `falte` des Fels-Gesetzes, K17-3): der Zustand (τ, Summe, Licht) lebt in Variablen, je Durchlauf
+        // EINE Abtastung der Karte — ausgeschrieben stand der Strahl achtmal in jedem Stoff (Boden der Bühne S0: +8 060 Zeichen
+        // WGSL, das Programm 122 088 über der Decke 100 000).
+        // DIE SONNE IN DER HÖHE DER PROBE (Hillaire 2020 „Aerial Perspective“: je Probe des Strahls der Durchlass zur Sonne): die
+        // Himmels-Sicht trägt die einfache Streuung der Sonne in der Höhe ihrer Tafel (`hKm`, das Auge der letzten Anwendung des
+        // Tags) — die Luft in anderer Höhe bekommt am Abend eine andere Sonne (bei 5° am Boden Durchlass 0,068, in 1,5 km 0,96).
+        // Jede Probe trägt den Durchlass in ihrer Höhe gegen den der Tafel (Leuchtdichte): tiefer streut die Luft am Abend weniger
+        // Sonne, höher mehr (der Dunst um ferne Gipfel); mittags ist der Weg zur Sonne in jeder Höhe kurz. Der Weg trägt je Art der
+        // Luft ihre optische Tiefe am Boden (`sonneR`, `sonneM` — die Rechnung der Transmittance-Tafel, `_luftSonneTakt`), mit
+        // ihrer Dichte in der Höhe skaliert (die Skalenhöhen der EINEN Atmosphäre): keine Tafel im Stoff, der Ring-Stoff trägt 16
+        // von 16 Texturen (mit ihr band er 17, die Pipeline fiel).
+        const tauSonne = (hKm) =>
+            U.sonneR.mul(T.exp(hKm.div(A.U.HR).negate())).add(U.sonneM.mul(T.exp(hKm.div(A.U.HM).negate())));
+        const luftSicht = T.Fn(([auge, punkt]) => {
+            const n = AnazhRealm.HORIZONT_KARTE.luftProben;
+            const v = punkt.sub(auge).toVar();
+            const b = U.beta.mul(U.spektrum.y).mul(v.length().div(n)).toVar();
+            const inTafel = tauSonne(A.U.hKm).toVar();
+            const [tau, summe, licht] = [T.float(0).toVar(), T.float(0).toVar(), T.float(0).toVar()];
+            T.Loop(n, ({ i }) => {
+                const p = auge.add(v.mul(T.float(i).add(0.5).div(n))).toVar();
+                const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).toVar();
+                const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate())).toVar();
+                const sonne = T.exp(inTafel.sub(tauSonne(T.max(p.y.sub(U.bezugY).mul(0.001), 0.001))));
+                tau.addAssign(dtau);
+                summe.addAssign(w);
+                licht.addAssign(w.mul(this._horizontSicht(p)).mul(sonne));
+            });
+            return licht.div(T.max(summe, 1e-12));
+        });
+        // die Himmels-Sicht EINMAL je Blick (`himmelTexel`): Farbe und Anteil der Sonne lesen denselben Texel; den Luftschatten
+        // baut nur ein Programm, dessen Renderer Schatten zeichnet (`_wirftImStoff` — unter kienspan ruht die Karte)
         const farbe = T.Fn(([auge, punkt]) => {
             const dir = punkt.sub(auge).normalize();
-            const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
-            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
+            const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize().toVar();
+            const tx = A.himmelTexel(blick).toVar();
+            const schatten = this._wirftImStoff(
+                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(luftSicht(auge, punkt)))),
+                T.float(1)
+            );
+            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick, tx).mul(schatten));
         });
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
@@ -2366,6 +2452,7 @@ class AnazhRealm_bild_himmel {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+            this._luftSonneTakt(U);
             U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
                 // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), aus der EINEN Wasser-Wahrheit

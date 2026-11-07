@@ -14,16 +14,14 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
     const t0 = Date.now();
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 900000 });
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
@@ -53,7 +51,7 @@ hauptLauf(async () => {
             const meshes = await r._foundryRequest(preset, r._foundryVariantFor(1, preset), lod);
             if (!Array.isArray(meshes)) return { fehler: "keine Antwort" };
             const g = PC.budgetSippen(meshes);
-            const teile = meshes.filter((m) => m && m.position && m.position.array).length;
+            const teile = meshes.filter((m) => m?.position && m.position.array).length;
             // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Q13 F-D8) sind vier
             // Instanzen EINER Gruppe — ein Draw, vier Mal die Dreiecke. Jede andere Art trägt je Leaf ihren eigenen Schlüssel.
             const wd = new Set(eigen.map((lf) => lf.leafKey)).size;
@@ -106,7 +104,7 @@ hauptLauf(async () => {
             return { gd: g.draws, gt: g.tris, wd, wt };
         };
         const tc = window.__tetrapodaCore;
-        const gattungen = tc && tc.GATTUNGEN ? Object.keys(tc.GATTUNGEN).sort() : [];
+        const gattungen = tc?.GATTUNGEN ? Object.keys(tc.GATTUNGEN).sort() : [];
         for (const recId of gattungen)
             for (const lod of L.kindStages.kreatur || [0]) {
                 try {
@@ -151,7 +149,7 @@ hauptLauf(async () => {
                         ziel.lod
                     );
                     res.selbst.s1 =
-                        flat && flat.leaves
+                        flat?.leaves
                             ? new Set(flat.leaves.filter((lf) => !lf.shadowTwin).map((lf) => lf.leafKey)).size
                             : -1;
                     res.selbst.s1Gesetz = ziel.gd;

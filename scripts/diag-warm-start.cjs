@@ -123,7 +123,7 @@ async function jobKalt(_, V) {
     const probes = [];
     for (const [cx, cz] of cands) {
         const e = await pumpChunk(cx, cz, 60000);
-        if (e && e.mesh) probes.push([cx, cz]);
+        if (e?.mesh) probes.push([cx, cz]);
         if (probes.length >= 2) break;
     }
     const kaltMs = Math.round(performance.now() - t0);

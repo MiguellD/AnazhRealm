@@ -232,7 +232,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const beforeChat = st.architectures.length;
         r.processChatCommand("Baue Tempel hier");
         out.chatRoutesToDsl = Array.isArray(st.dsl.lastUserProgram) && st.dsl.lastUserProgram[0] === "spawn_temple";
-        const tempelWarm = !!(st.blueprints && st.blueprints.haus_griechisch);
+        const tempelWarm = !!(st.blueprints?.haus_griechisch);
         out.chatActuallySpawned = st.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
 
         // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
@@ -376,7 +376,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.entryHasCollision = !!entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0;
         // Kollisions-Box-Größe indirekt via Three-Bounding-Box verifizieren
         // (entry.mesh hat die echte Geometrie).
-        if (entry && entry.mesh) {
+        if (entry?.mesh) {
             const bbox = new THREE.Box3().setFromObject(entry.mesh);
             const size = new THREE.Vector3();
             bbox.getSize(size);
@@ -944,7 +944,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
         st.buildMode.phantomMesh.traverse((node) => {
-            if (node.material && node.material.transparent && node.material.opacity < 1) {
+            if (node.material?.transparent && node.material.opacity < 1) {
                 foundTransparent = true;
             }
         });
@@ -1443,7 +1443,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
             out.directSpawnHasBlockers = e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0;
             if (e) r.removeArchitecture(e);
         } catch (err) {
-            out.directSpawnError = err && err.message ? err.message : String(err);
+            out.directSpawnError = err?.message ? err.message : String(err);
         }
         out.archCountUnchanged = st.architectures.length === before;
 
@@ -1589,7 +1589,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
             for (const entry of cacheBeforeReset.values()) {
                 if (entry && Array.isArray(entry.leaves)) {
                     for (const leaf of entry.leaves) {
-                        if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+                        if (leaf?.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
                     }
                 }
             }

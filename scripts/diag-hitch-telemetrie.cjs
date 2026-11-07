@@ -100,7 +100,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const ESt = r._erstZeichnung || null;
     const res = { erst: null };
     res.erst = {
-        daStamm: rend.__anazhErstZeichnung === true && Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        daStamm: rend.__anazhErstZeichnung === true && Object.hasOwn(rend, "_renderObjectDirect"),
         boot: ESt
             ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
             : null,
@@ -239,7 +239,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const ruheMs = await ruhe();
         Z.sync = Z.async = 0;
         Z.bau.clear();
-        const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
+        const eigen = Object.hasOwn(rend, "_renderObjectDirect");
         const stamm = rend._renderObjectDirect;
         if (vendor && eigen) delete rend._renderObjectDirect;
         const meshes = [];
@@ -675,7 +675,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         fehlerScope,
         aufnahme,
         absage,
-        zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        zurueck: () => Object.hasOwn(rend, "_renderObjectDirect"),
         gpuStau,
     };
 }

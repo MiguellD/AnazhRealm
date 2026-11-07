@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, selbsttestEnde, wandEnde, jsonKlon, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE QUELL-WAND: der Aufrufbaum von `_raumTagsRechnen` (über `this.<methode>(`), seine Eingänge und seine Tabellen.
@@ -488,7 +488,7 @@ function urteil(S, Q) {
         rot.push(`(O) WELT: ${W.abweichungen} von ${W.bauplaene} Bauplänen urteilen anders — ${W.beispiel}`);
     if (S.hatGedaechtnis && W.gerechnetZweit)
         rot.push(`(O) WELT: die zweite Frage rechnete ${W.gerechnetZweit}× (soll 0×)`);
-    if (S.hatGedaechtnis && !(S.zaehne && S.zaehne.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
+    if (S.hatGedaechtnis && !(S.zaehne?.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
         rot.push(
             `(S) ZÄHNE: der Stoff wirkt nicht, ein Schlüssel ohne Stoffe fiel nicht auf, oder der echte Schlüssel urteilt danach anders (${JSON.stringify(S.zaehne)})`
         );
@@ -497,12 +497,7 @@ function urteil(S, Q) {
 
 hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state && r.state.player);
-    });
+    const { browser, page } = await nullWelt(server, { da: (r) => r.state && r.state.player, frist: 300000 }, 60000);
     const S = await page.evaluate(probe);
     await browser.close();
     server.close();

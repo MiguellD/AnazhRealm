@@ -41,17 +41,14 @@
 //   node scripts/diag-streu-fern.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await server.zeige(page, 60000);
+    const { browser, page } = await nullWelt(server, { frist: 600000, vor: WELT_ORTE_INSTALL }, 60000); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -342,7 +339,7 @@ hauptLauf(async () => {
             let satz = null;
             for (const weiter = __deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
-                if (satz && satz.length) break;
+                if (satz?.length) break;
                 await sleep(100);
             }
             fit.n = satz ? satz.length : 0;
@@ -375,7 +372,7 @@ hauptLauf(async () => {
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
             }
-            if (flat && flat.leaves) {
+            if (flat?.leaves) {
                 const vor = absenz().n;
                 const slots = r._scatterInstanceAdd(
                     "fscatter:geroell:3:0",
@@ -707,7 +704,7 @@ hauptLauf(async () => {
     check(
         "H NACH DEM BUCH: die Nah-Wiese legt ihre 4 Studio-Vorlagen (das Budget gelesen, gras wirft nicht), ohne Loop-Fehler",
         h.warm > 0 && h.vorlagen >= 4 && (h.fehlerWarm || []).length === 0,
-        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${(h.fehlerWarm || []).length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
+        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${h.fehlerWarm?.length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
     );
     const hs = h.selbst || [];
     check(

@@ -352,7 +352,7 @@ function farben(g) {
 }
 const lin = (hx) =>
     [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
+        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
         .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
@@ -546,7 +546,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             res.statusCode = 400;
             return res.end();
         }
-        if (seiten && Object.prototype.hasOwnProperty.call(seiten, p)) {
+        if (seiten && Object.hasOwn(seiten, p)) {
             const s = seiten[p];
             const typ = MIME[path.extname(p)] || "text/html";
             return Promise.resolve()
@@ -1234,6 +1234,17 @@ async function nullSeite(opts) {
     await nullRenderer(page);
     return { browser, page };
 }
+// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.vor` trägt die Seite
+// vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo `opts.da`
+// es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen.
+async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
+    await server.lausche(port);
+    const s = await nullSeite(opts);
+    if (vor) await s.page.evaluateOnNewDocument(vor);
+    await server.zeige(s.page, ...zeige);
+    if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
+    return s;
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
@@ -1793,6 +1804,7 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    nullWelt,
     halteBis,
     buehne,
     uferStellen,

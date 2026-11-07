@@ -42,7 +42,7 @@ const {
     statikServer,
     starteBrowser,
     hauptLauf,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     fehlerText,
@@ -451,9 +451,7 @@ async function blickStufe(check) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 300000 });
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -542,8 +540,7 @@ hauptLauf(async () => {
             r._tickPortalMembranes(3.7);
             res.m.atmet = [t0, rec.u.time.value, r._bildZeit];
             res.m.echt = !!(
-                rec.mesh.material &&
-                rec.mesh.material.userData &&
+                rec.mesh.material?.userData &&
                 rec.mesh.material.userData.portalMembran
             );
             res.m.marker = res.m.echt || !!rec.mesh.material.isMeshBasicMaterial;
@@ -579,7 +576,7 @@ hauptLauf(async () => {
         // DIE FLÜGEL-INSTANZ (1310-4): gleiche Gestalten teilen ihren Zug, und jeder Flügel steht, wo SEINE Gestalt um SEIN
         // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
         // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
-        if (recF && recF._fluegel && recF._fluegel.length) {
+        if (recF?._fluegel?.length) {
             const T = window.THREE;
             const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
             const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
@@ -774,7 +771,7 @@ hauptLauf(async () => {
         check("W: nach Verlassen der Zone feuert der naechste Durchgang wieder", out.w.rearmWand === true);
         check("W: seitlich am Pfosten vorbei feuert NICHT", out.w.seitlichStumm === true);
     } else check("W: Hindurchgeh-Block erreicht", false);
-    if (out.o && out.o.web && out.o.fremd) {
+    if (out.o?.web && out.o.fremd) {
         const { web, fremd } = out.o;
         check("O: ein Web-Portal hat keine Ziel-Welt und kein Fenster", web.welt === null && web.fenster === false, JSON.stringify(web));
         check("O: das Web-Portal LEBT (Eintrag in der Registry ohne Ziel)", web.lebt === true);

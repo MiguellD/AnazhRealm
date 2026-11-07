@@ -48,20 +48,39 @@ class AnazhRealm_bild_schatten {
     // neben besonnter Wiese zeigte dieselbe Luma wie vor einer schwarzen Platte (Radeon 5fba36ea: 0,1636 gegen 0,1636). Der
     // Boden strahlt zurück, was er empfängt — Sonne × cos × Albedo, Himmel × Albedo — und genau das hat der Szenen-Pass
     // gezeichnet: die STRAHLDICHTE DES GEZEICHNETEN BODENS um das Auge (`umkreisM`, unter dem Auge um `unterAugeM`, die
-    // Fläche waagrecht bis `normalY`, aus der Tiefe), gemittelt über ein Raster von `raster`² Pixeln des Bilds, ist die untere
-    // Hemisphäre der EINEN Umgebung (Frostbite/UE: das Himmels-Licht mit der Farbe der unteren Hemisphäre aus dem Boden).
-    // Ein Ziel 2 × 1: Texel 0 der gemessene Boden (Alpha 1, wo das Raster Boden traf), Texel 1 der Boden der Atmosphäre (die
-    // PMREM-Umgebung nach unten in der Stufe der Bestrahlung × das Licht jetzt). ZWEI ZAHLEN, KEINE KARTE: die Lesung kommt
+    // Fläche waagrecht bis `normalY`, aus der Tiefe), gemittelt über das Bild, ist die untere Hemisphäre der EINEN Umgebung
+    // (Frostbite/UE: das Himmels-Licht mit der Farbe der unteren Hemisphäre aus dem Boden).
+    // DAS MITTEL, NIE EINE STICHPROBE (w21-laub-unten, Befund des Schöpfers 07.11.: die Unterseite des Baumlaubs flackert beim
+    // Gehen, beim seitwärts Gehen wechseln die Grüntöne der Blatt-Unterseiten): bis hier las der Pass ein Raster von 12² Pixeln,
+    // fest am Schirm, neu bei jedem Schritt des Auges über `SPIEGEL.ruheM` (1 cm) — die Stichprobe wanderte über die ruhende
+    // Welt, und ihr Mittel sprang mit ihr. Jede abwärts gewandte Normale liest den Halbraum ganz ((1 − n.y)/2 = 1 an der
+    // Unterseite der Krone, deren Normale abwärts zeigt): sie trug jeden Sprung, die Oberseite keinen. Jetzt tastet der Pass das
+    // Bild in `kacheln` Kacheln zu je `dichte`² Proben ab (36 864 statt 144), jede Kachel schreibt das Mittel ihres Bodens und die
+    // Zahl seiner Proben, die Lesung wiegt die Kacheln nach dieser Zahl: das Mittel des gezeichneten Bodens, eine stetige Größe des
+    // Blicks. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 Schritte zu 1,5 cm seitwärts, je Schritt die Aufnahme samt
+    // Messung; die Linse diag-kamera-laub `--teile unten`, K7): der gelesene Boden +15,4 % → ±0,08 %, der Ton der Unterseite
+    // +1,03 % → ±0,05 % — ohne Sonnen-Flecken; im Wald unter der Sonne ist der Boden ein Teppich aus Licht und Schatten.
+    // DIE FLÄCHE, NIE DIE KANTE (w21-laub-unten, Nacharbeit; gate:tag-achse:echt, GTX, Zug e663a6ce: SPRUNG wiese 0,274 → 0,276
+    // 0,11 EV, die Kurve der Wiese dort 1,3 EV unter main): die Normale aus der Tiefe ist an einem Sprung der Tiefe Zufall — an der
+    // Wiese nannte das Gesetz die Kanten der Halme Boden, swiftshader kienspan mittags 15 874 Kanten- gegen 249 Flächen-Pixel (Luma
+    // 0,46 gegen 0,34): ihr Licht hängt an der Sonne über die Seite des Halms und am Blick, nie am Boden, und das Raster von 12² las
+    // davon zufällig wenige. Boden ist nur, wo der Schritt zum Nachbarn vorwärts und rückwärts derselbe ist (`ebenRel`). Gemessen
+    // (dieselbe Welt, kienspan): die Wiese misst 39 Proben statt ~2 700, ihr Boden steigt am Morgen je 0,002 Uhr stetig um 12–13 %
+    // mit dem Licht und liegt dort am Boden der Atmosphäre (Luma 0,023 gegen 0,024); die Ankunft, 8 × 1,5 cm seitwärts: Boden
+    // −0,16 … +0,04 %, Ton der Unterseite −0,05 … +0,03 %.
+    // Ein Ziel (Kacheln + 1) × Zeilen: die Kacheln, dazu je Zeile ein Texel mit dem Boden der Atmosphäre (die PMREM-Umgebung
+    // nach unten in der Stufe der Bestrahlung × das Licht jetzt). ZWEI ZAHLEN, KEINE KARTE: die Lesung kommt
     // zurück (`_rueckstrahlZeichne`) und trägt `boden` (gefolgt mit `folge` je Messung — ohne Boden im Bild hält er) und
     // `atmo` als geteilte Uniforms — bis 03.11. las jeder beleuchtete Stoff das Ziel als eigene Sampler-Einheit, und der
     // Fern-Ring trug 17 > 16 (gate:webgl-probe W6: der Rückfall linkt ihn nie). Der Stoff ersetzt den Boden der Atmosphäre
     // (`_rueckstrahlHalbraum`: + (Boden − Atmosphäre) · (1 − n.y)/2, die Bestrahlung einer geneigten Fläche aus dem Halbraum).
-    // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel): EIN Dreieck in 2 Pixel.
+    // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel): EIN Dreieck über das Ziel.
     _rueckstrahlLeser() {
         const st = this.state;
         if (st.rueckstrahlLeser) return st.rueckstrahlLeser;
         const T = THREE.TSL;
-        const rt = new THREE.RenderTarget(2, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+        const [kx, ky] = AnazhRealm.RUECKSTRAHL.kacheln;
+        const rt = new THREE.RenderTarget(kx + 1, ky, { type: THREE.HalfFloatType, depthBuffer: false });
         rt.name = rt.texture.name = "rueckstrahl:boden";
         rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
         rt.texture.generateMipmaps = false;
@@ -89,8 +108,9 @@ class AnazhRealm_bild_schatten {
         const st = this.state;
         if (st.rueckstrahlPass) return st.rueckstrahlPass;
         const T = THREE.TSL;
-        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, screenUV, select, abs, normalize, cross } = T;
+        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, select, abs, normalize, cross } = T;
         const R = AnazhRealm.RUECKSTRAHL;
+        const [KX, KY] = R.kacheln;
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
         const farbe = T.texture(st.scenePass.getTextureNode().value);
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
@@ -122,32 +142,55 @@ class AnazhRealm_bild_schatten {
                 );
                 return vec4(w4.xyz.div(w4.w), d);
             };
-            Loop(R.raster, R.raster, ({ i, j }) => {
-                const px = ivec2(vec2(float(i), float(j)).add(0.5).div(R.raster).mul(gr.sub(2)));
-                const p = welt(px).toVar();
-                If(p.w.lessThan(0.99999), () => {
-                    const ax = welt(px.add(ivec2(1, 0))).xyz.sub(p.xyz);
-                    const ay = welt(px.add(ivec2(0, 1))).xyz.sub(p.xyz);
-                    const nY = abs(normalize(cross(ax, ay)).y);
-                    const rel = p.xyz.sub(U.auge);
-                    // Boden ist nur, was unter dem offenen Himmel liegt (`_offenerHimmel`): der Boden eines Hauses ist kein
-                    // Boden, den Sonne und Himmel beleuchten — aus dem Haus misst der Pass, was durch die Tür liegt, sonst hält er
-                    If(
-                        rel.y
-                            .lessThan(-R.unterAugeM)
-                            .and(rel.xz.length().lessThan(R.umkreisM))
-                            .and(nY.greaterThan(R.normalY))
-                            .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
-                        () => {
-                            summe.addAssign(farbe.load(px).rgb);
-                            n.addAssign(1);
-                        }
+            // DIE KACHEL dieses Pixels des Ziels: ihre `dichte`² Proben liegen im Gitter von (KX · dichte) × (KY · dichte) über dem
+            // ganzen Bild; die Spalte KX trägt den Boden der Atmosphäre
+            const kachel = T.floor(T.screenCoordinate.xy).toVar();
+            const imBild = kachel.x.lessThan(KX);
+            If(imBild, () => {
+                Loop(R.dichte, R.dichte, ({ i, j }) => {
+                    // die Probe und ihre vier Nachbarn liegen im Bild (1 … Breite − 2)
+                    const px = ivec2(
+                        kachel
+                            .mul(R.dichte)
+                            .add(vec2(float(i), float(j)))
+                            .add(0.5)
+                            .div(vec2(KX * R.dichte, KY * R.dichte))
+                            .mul(gr.sub(3))
+                            .add(1)
                     );
+                    const p = welt(px).toVar();
+                    If(p.w.lessThan(0.99999), () => {
+                        const ax = welt(px.add(ivec2(1, 0))).xyz.sub(p.xyz);
+                        const ay = welt(px.add(ivec2(0, 1))).xyz.sub(p.xyz);
+                        const bx = p.xyz.sub(welt(px.sub(ivec2(1, 0))).xyz);
+                        const by = p.xyz.sub(welt(px.sub(ivec2(0, 1))).xyz);
+                        // DIE FLÄCHE, NIE DIE KANTE: der Schritt zum Nachbarn vorwärts und rückwärts ist derselbe (bis `ebenRel`),
+                        // sonst liegt die Probe an einem Sprung der Tiefe — dort ist die Normale aus der Tiefe Zufall
+                        const eben = (a, b) =>
+                            a.sub(b).length().lessThanEqual(T.min(a.length(), b.length()).mul(R.ebenRel));
+                        const nY = abs(normalize(cross(ax, ay)).y);
+                        const rel = p.xyz.sub(U.auge);
+                        // Boden ist nur, was unter dem offenen Himmel liegt (`_offenerHimmel`): der Boden eines Hauses ist kein
+                        // Boden, den Sonne und Himmel beleuchten — aus dem Haus misst der Pass, was durch die Tür liegt, sonst hält er
+                        If(
+                            rel.y
+                                .lessThan(-R.unterAugeM)
+                                .and(rel.xz.length().lessThan(R.umkreisM))
+                                .and(nY.greaterThan(R.normalY))
+                                .and(eben(ax, bx))
+                                .and(eben(ay, by))
+                                .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
+                            () => {
+                                summe.addAssign(farbe.load(px).rgb);
+                                n.addAssign(1);
+                            }
+                        );
+                    });
                 });
             });
-            // ohne Boden im Raster −1 (eine Strahldichte ist nie negativ): die Lesung hält dann den alten Boden
-            const boden = select(n.greaterThan(0), summe.div(n.max(1)), vec3(-1));
-            return vec4(select(screenUV.x.lessThan(0.5), boden, atmoBoden), 1);
+            // je Kachel das Mittel ihres Bodens und die Zahl seiner Proben (die Lesung wiegt die Kacheln nach ihr; eine Kachel
+            // ohne Boden trägt 0) — das Mittel, nie die Summe: 64 Proben einer hellen Sonne sprengten den Halb-Float
+            return select(imBild, vec4(summe.div(n.max(1)), n), vec4(atmoBoden, 1));
         })();
         const pp = st.postProcessing;
         const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
@@ -191,16 +234,27 @@ class AnazhRealm_bild_schatten {
             P.sprung = false;
             P.laeufe++;
             const licht = L.licht; // das Licht dieser Messung: springt der Himmel, bis sie zurück ist, verfällt sie
-            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2, 1).then(
+            const [KX, KY] = AnazhRealm.RUECKSTRAHL.kacheln;
+            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, KX + 1, KY).then(
                 (px) => {
                     L.lesung = null;
                     if (L.licht !== licht) return;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
-                    L.atmo.value.set(w(4), w(5), w(6));
-                    if (!(w(0) >= 0)) return;
+                    const zeile = __weltLicht.zeilenSchritt(px, KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                    L.atmo.value.set(w(4 * KX), w(4 * KX + 1), w(4 * KX + 2));
+                    // DAS MITTEL DES GEZEICHNETEN BODENS: jede Kachel trägt das Mittel ihres Bodens und die Zahl seiner Proben
+                    let [sr, sg, sb, sn] = [0, 0, 0, 0];
+                    for (let y = 0; y < KY; y++)
+                        for (let x = 0; x < KX; x++) {
+                            const o = y * zeile + 4 * x;
+                            const k = w(o + 3);
+                            if (!(k > 0)) continue;
+                            [sr, sg, sb, sn] = [sr + w(o) * k, sg + w(o + 1) * k, sb + w(o + 2) * k, sn + k];
+                        }
+                    if (!(sn > 0)) return; // ohne Boden im Bild hält die Lesung den alten Boden
                     const f = L.gelesen ? folge : 1;
                     const b = L.boden.value;
-                    b.set(b.x + (w(0) - b.x) * f, b.y + (w(1) - b.y) * f, b.z + (w(2) - b.z) * f);
+                    b.set(b.x + (sr / sn - b.x) * f, b.y + (sg / sn - b.y) * f, b.z + (sb / sn - b.z) * f);
                     L.gelesen = true;
                 },
                 (err) => {
@@ -294,6 +348,38 @@ class AnazhRealm_bild_schatten {
         return wach;
     }
 
+    // WIRFT DAS LICHT? Das Richtlicht trägt seinen Wurf (`castShadow`) UND der Renderer zeichnet Schatten (`shadowMap.enabled`:
+    // Holz kienspan schaltet sie GANZ aus, dann baut r184 keine Kaskade — `setupShadow` — und mit ihr fällt die Sonnen-Sicht,
+    // die `csm.setup` jedem Empfänger des Netzes trägt). Die EINE Frage jedes Lesers eines Sonnen-Schattens: die Takte der
+    // Horizont- und der Wolken-Karte (sonst ruht ihre Sicht), die Grat-Sicht und der Karten-Wurf des Lichtmessers. Bis
+    // w20-fern-hang fragten sie nur `castShadow`: unter kienspan lagen Luft, Feld und Himmelsband im Schatten des Grats, der
+    // Boden nie, und der Messer nahm dem Boden der Mess-Wiese einen Wurf, den das Bild nie zeichnete (32 von 32 Strahlen).
+    _lichtWirft() {
+        const dl = this.state.directionalLight;
+        const rend = this.state.renderer;
+        return !!(dl && dl.castShadow && rend && rend.shadowMap && rend.shadowMap.enabled === true);
+    }
+
+    // DIESELBE FRAGE BEIM BAU EINES PROGRAMMS: `an`, wenn der Renderer des Programms Schatten zeichnet (`shadowMap.enabled`, das
+    // Holz legt es beim Start fest — `_configureRenderer`), sonst `aus`; der andere Knoten entsteht nie. Unter kienspan baut r184
+    // keine Kaskade, und kein Leser eines Sonnen-Schattens trägt dort Rechnung ins Pixel: der Wurf des Feuers (`WurfFaktor`), der
+    // Luftschatten der Luft (`_luftEnsure`) und der Himmel, den der Grat nimmt (`_spiegelUmgebung`) — die Horizont-Karte ruht dort
+    // (`_horizontKarteTakt`), ihre Sicht wäre 1 in jedem Pixel. Bis hier standen beide ausgeschrieben im Boden der Bühne S0:
+    // 122 088 Zeichen WGSL über der Decke 100 000 (main 99 436).
+    _wirftImStoff(an, aus) {
+        const N = Object.getPrototypeOf(THREE.InstanceNode);
+        const wirft = (b) => !!(b.renderer && b.renderer.shadowMap && b.renderer.shadowMap.enabled === true);
+        class WurfWahl extends N {
+            getNodeType(builder) {
+                return (wirft(builder) ? an : aus).getNodeType(builder);
+            }
+            setup(builder) {
+                return wirft(builder) ? an : aus;
+            }
+        }
+        return THREE.TSL.nodeObject(new WurfWahl());
+    }
+
     // ═══ DER WURF DES FEUERS (schatten.K5) ═══
     // Das Leuchtquellen-Gesetz wirkt als Pool im Stoff (`_lichtPoolTerm`, K11): je Platz ein Zweig, kein Szenen-Licht, kein
     // Schatten — ein Pfosten 2 m vom Feuer warf nichts (Radeon 5fba36ea: Kontrast 0,768:1, ohne Pfosten 0,768). Wie RDR2 und
@@ -349,23 +435,12 @@ class AnazhRealm_bild_schatten {
         }
         const roh = new WurfSchatten(licht);
         const knoten = THREE.TSL.nodeObject(roh);
-        // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
-        const N = Object.getPrototypeOf(THREE.InstanceNode);
-        class WurfFaktor extends N {
-            constructor() {
-                super("float");
-            }
-            setup(builder) {
-                return builder.renderer && builder.renderer.shadowMap && builder.renderer.shadowMap.enabled === true
-                    ? knoten
-                    : THREE.TSL.float(1);
-            }
-        }
         this._lichtWurfK = {
             licht,
             roh,
             knoten,
-            faktor: THREE.TSL.nodeObject(new WurfFaktor()),
+            // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
+            faktor: this._wirftImStoff(knoten, THREE.TSL.float(1)),
             platz: this._uniformHeimatTeilen({ p: THREE.TSL.uniform(-1) }).p,
             id: null,
             stand: "",
@@ -929,6 +1004,13 @@ class AnazhRealm_bild_schatten {
     // lagen tiefer am Werfer, der Abstand fiel bis 0,8 m zu kurz — der Zuwachs 0,484 statt 0,9 cm je m (GTX, takt24c). Ohne Suche
     // (k0 ab 15 m, k1: `sucheM` 0; WebGL2: GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius,
     // der r184-PCF. Box + Tiefe: `_kaskadeFit`.
+    // DIE DREHUNG DER SCHEIBE ist das EINE Rauschen der Blende (`_ditherIGN`, Versatz 2: unkorreliert mit Blende und Ring) — sie dreht
+    // mit der Phase der zeitlichen Auflösung (`uDitherT`), die Geschichte mittelt die Scheibe zum Halbschatten selbst (w21-laub-unten).
+    // Bis hier drehte das Rauschen des r184-PCF am Pixel ohne Zeit (`interleavedGradientNoise(screenCoordinate)`, der einzige Zwilling
+    // neben Blende, Laub-Versatz, Kontakt und Ausgabe-Dither, die alle mit der Phase drehen): das Korn des Halbschattens stand am
+    // Schirm, und die ruhende Welt glitt beim Gehen darunter durch — jeder Schritt gab dem Pixel der Krone eine andere Drehung. Die
+    // Unterseite trägt es ganz: ihr direktes Licht ist der Durchlass × Schatten (`_laubLichtModell`), im Halbschatten der Blätter
+    // über ihr. Ohne zeitliche Auflösung steht die Phase (Holz kienspan wirft ohnehin keinen Schatten).
     _schattenFilter(i) {
         const T = THREE.TSL;
         const K = AnazhRealm.SCHATTEN_KASKADE;
@@ -937,7 +1019,7 @@ class AnazhRealm_bild_schatten {
         return T.Fn(({ depthTexture, shadowCoord, shadow }, builder) => {
             const ref = (n, t) => T.reference(n, t, shadow).setGroup(T.renderGroup);
             const [box, karte] = [ref("anazhBoxM", "vec2"), ref("mapSize", "vec2")];
-            const phi = T.interleavedGradientNoise(T.screenCoordinate.xy).mul(6.28318530718);
+            const phi = this._ditherIGN(T, 2).mul(6.28318530718);
             const z = shadowCoord.z;
             const vogel = (k, r) => shadowCoord.xy.add(T.vogelDiskSample(k, 5, phi).mul(r));
             let r = T.vec2(je(K.filterTexel)).div(karte);
@@ -1554,9 +1636,19 @@ AnazhRealm.KONTAKT = Object.freeze({
     potenz: 2.5,
     tiefeRand: 0.04,
 });
-// DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): ein Raster `raster`² über das Bild; Boden ist, was `unterAugeM`
-// unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`.
-AnazhRealm.RUECKSTRAHL = Object.freeze({ raster: 12, unterAugeM: 0.5, umkreisM: 16, normalY: 0.7, folge: 0.5 });
+// DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): das Bild in `kacheln` [x, y] Kacheln zu je `dichte`² Proben (das
+// Mittel des gezeichneten Bodens, nie eine Stichprobe: w21-laub-unten — 12² Pixel waren der Stand davor, [1, 1] × 12); Boden ist,
+// was `unterAugeM` unter dem Auge und im `umkreisM` liegt, waagrecht ist (|n.y| > `normalY`) und eine Fläche (die Schritte zu den
+// Nachbarn vorwärts und rückwärts weichen um höchstens `ebenRel` des kürzeren ab, sonst eine Kante); der Messwert folgt je Bild mit `folge`.
+AnazhRealm.RUECKSTRAHL = Object.freeze({
+    kacheln: Object.freeze([32, 18]),
+    dichte: 8,
+    unterAugeM: 0.5,
+    umkreisM: 16,
+    normalY: 0.7,
+    ebenRel: 0.5,
+    folge: 0.5,
+});
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je
 // Seite `kartePx` (256: 2,3 cm je Texel in 3 m), die nahe Ebene mindestens `nahM`, sonst `kernAnteil` × der Kern der Quelle (der
 // Leib der Flamme wirft nicht); den Bias schreibt das Gesetz der Kaskade (`_schattenBias`, die Texel-Kante an der Reichweite);

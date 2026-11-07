@@ -26,7 +26,7 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -47,9 +47,7 @@ hauptLauf(async () => {
         stammLib.fehlt.wo
     );
 
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 300000 });
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -327,7 +325,7 @@ hauptLauf(async () => {
                 try { bS = r._archRegionBundleFor("s:9001,9001"); } finally { AR.SCATTER_FERN_SUPERREGION = S0; }
                 const b1 = r._archRegionBundleFor("9001,9001"), rad = (b) => b && b.userData.cullSphere && b.userData.cullSphere.radius;
                 fern.kugel = Math.abs(rad(bS) - (M * 3 * Math.SQRT1_2 + 140)) < 1e-6 && Math.abs(rad(b1) - (M * Math.SQRT1_2 + 140)) < 1e-6;
-                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
+                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg?.parent) bg.parent.remove(bg); }
             }
             // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
@@ -338,12 +336,12 @@ hauptLauf(async () => {
                     fertig: () => {
                         flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
                         karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
-                        return !!(flat && flat.instanceable && karte && karte.instanceable);
+                        return !!(flat?.instanceable && karte && karte.instanceable);
                     },
                     takt: () => sleep(100),
                     max: 300,
                 });
-            fern.flat = !!(flat && flat.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
+            fern.flat = !!(flat?.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
             if (fern.flat) {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.
                 const G = AR.IMPOSTOR_ATLAS_GRUPPE;

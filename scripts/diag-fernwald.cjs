@@ -32,20 +32,17 @@
 //   node scripts/diag-fernwald.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
-    // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
-    // Renderer baut kein Programm: „voll" kostet hier nichts.
-    await server.zeige(page, 60000, "index.html?holz=voll");
+    // der Messort aus spec/profiband/haushalt.json (`__messWiese`); das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl
+    // auf dem WebGL2-Rückfall den GL-Renderer fragt, wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100
+    // Bäume, A wäre vakuös. Der Null-Renderer baut kein Programm: „voll" kostet hier nichts.
+    const { browser, page } = await nullWelt(server, { frist: 900000, vor: WELT_ORTE_INSTALL }, 60000, "index.html?holz=voll");
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -54,7 +51,7 @@ hauptLauf(async () => {
         const st = r.state;
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
-        res.buch = !!(f && f.ready);
+        res.buch = !!(f?.ready);
         if (!res.buch) return res;
         // E DER STAND DES WALD-GESETZES: die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
         // Wald wächst aus der Wasser-Wahrheit seines Orts (Erosion, Flüsse, Seen der Hydro-Kachel). Ein Raster gesetzter Eichen
@@ -274,7 +271,7 @@ hauptLauf(async () => {
         const dist = (e) => Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
         // Die Linse liest die Karten-Art über die Prototyp-Methode — der Selbsttest ersetzt nur die der Welt.
         const kartenPreset = (e) => AR.prototype._archKartenPreset.call(r, e);
-        const karten = () => st.architectures.filter((e) => e && e.position && kartenPreset(e));
+        const karten = () => st.architectures.filter((e) => e?.position && kartenPreset(e));
         // Der Stempel einer Karten-Instanz: das Vorzeichen von aKarte.w im Slot (negativ = voll).
         const stempel = (e) => {
             for (const s of e.instSlots || []) {

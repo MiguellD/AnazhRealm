@@ -108,8 +108,8 @@ function urteil(b) {
         const q = b.quelle;
         // F5 KACHELN: die Probe misst genau ihre Kacheln (`QUELL_KACHELN`) — eine fehlende ist ein Schrumpfen, nie grün
         const gemessen = Array.isArray(q.kacheln) ? q.kacheln : [];
-        const fehlen = QUELL_KACHELN.filter((k) => gemessen.indexOf(k) < 0);
-        const fremd = gemessen.filter((k) => QUELL_KACHELN.indexOf(k) < 0);
+        const fehlen = QUELL_KACHELN.filter((k) => !gemessen.includes(k));
+        const fremd = gemessen.filter((k) => !QUELL_KACHELN.includes(k));
         if (q.fehler) v.push(`F5: ${q.fehler}`);
         else if (fehlen.length || fremd.length || gemessen.length !== QUELL_KACHELN.length) rot("F5 KACHELN", { fehlen, fremd });
         else if (!(q.quellen >= 30)) rot("F5 LEER", q.quellen);

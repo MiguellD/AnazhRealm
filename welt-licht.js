@@ -11,7 +11,9 @@ var __weltLicht = (function () {
     "use strict";
     const KERN = globalThis.__terrainCore;
     if (!KERN || !KERN.ATMO_GESETZ || !KERN.ATMO_RECHNUNG)
-        throw new Error("welt-licht.js: die Atmosphäre fehlt — foundry-core.js (__terrainCore.ATMO_GESETZ) lädt vor dem Licht");
+        throw new Error(
+            "welt-licht.js: die Atmosphäre fehlt — foundry-core.js (__terrainCore.ATMO_GESETZ) lädt vor dem Licht"
+        );
 
     // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `atmoTafeln`): Größen (Texel) und Marsch-Schritte. Transmittance
     // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
@@ -390,8 +392,10 @@ var __weltLicht = (function () {
         };
         // DER MARSCH längs v: die Quellen (Richtung, Gewicht in Einheiten von E0 — die Sonne 1, der Mond `mondE`) und das
         // Sternen-Licht (`nacht`, in E0). Die Himmels-Sicht ruft ihn mit Sonne, Mond und Sternen, die Bestrahlungs-Tafel mit
-        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln.
-        const marsch = (v, quellen, nacht) => {
+        // EINER Quelle je Sonnenhöhe — derselbe Marsch, dieselbe Streuung, dieselben Tafeln. `einfach` (ein vec3-Var, wenn der
+        // Rufer ihn reicht) sammelt die EINFACHE Streuung der ersten Quelle (die Sonne) — den Teil, den ein Schatten aus der Luft
+        // nimmt (der Luftschatten der Welt, `_luftEnsure`); die Mehrfachstreuung Ψ_ms bleibt im Schatten.
+        const marsch = (v, quellen, nacht, einfach = null) => {
             const r0 = U.hKm.add(RG).toVar();
             const mu = v.y;
             const boden = amBoden(r0, mu).toVar();
@@ -403,6 +407,7 @@ var __weltLicht = (function () {
             const thr = vec3(1).toVar();
             const L = vec3(0).toVar();
             const tAlt = float(0).toVar();
+            let erste = null;
             const N = Z.schritte.himmel;
             Loop({ start: 0, end: N, type: "float", name: "s" }, ({ s }) => {
                 const tE = tMax.mul(s.add(1).div(N).pow(2)).toVar();
@@ -418,9 +423,11 @@ var __weltLicht = (function () {
                 const S = quellen
                     .map((q, i) => {
                         const muQ = dot(p, q.dir).div(ri).toVar();
-                        const s = durchlass(ri, muQ)
+                        const ein = durchlass(ri, muQ)
                             .mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)))
-                            .add(mehrfach(hi, muQ).mul(sca));
+                            .toVar();
+                        if (i === 0) erste = ein;
+                        const s = ein.add(mehrfach(hi, muQ).mul(sca));
                         return q.gewicht ? q.gewicht.mul(s) : s;
                     })
                     .reduce((a, b) => a.add(b))
@@ -428,6 +435,7 @@ var __weltLicht = (function () {
                 const e = max(ext(hi), vec3(1e-7)).toVar();
                 const tr = exp(e.negate().mul(dt)).toVar();
                 L.addAssign(thr.mul(S).mul(tr.oneMinus().div(e)));
+                if (einfach) einfach.addAssign(thr.mul(erste).mul(tr.oneMinus().div(e)));
                 thr.mulAssign(tr);
             });
             // DAS STERNEN-LICHT (D3-2, `ATMO_GESETZ.nacht`): über dem Horizont leuchtet der Nachthimmel selbst — schräg durch die
@@ -471,12 +479,22 @@ var __weltLicht = (function () {
             ).toVar();
             const ce = el.cos().toVar();
             const v = vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar();
-            return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
+            // Alpha: der Anteil der einfachen Streuung der Sonne an der Leuchtdichte (der Luftschatten, `himmelEinfach`)
+            const einfach = vec3(0).toVar();
+            const L = marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE, einfach).toVar();
+            const Y = vec3(0.2126, 0.7152, 0.0722);
+            return vec4(L, clamp(dot(einfach, Y).div(max(dot(L, Y), 1e-12)), 0, 1));
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
         // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
-        const himmelJeLicht = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb;
-        const himmelFarbe = (dir) => himmelJeLicht(dir).mul(U.licht).mul(U.toenung);
+        // Der Texel der Himmels-Sicht in Richtung `dir` (rgb je Einheit E0, Alpha der Anteil der Sonne): ein Leser beider Kanäle
+        // reicht ihn `himmelFarbe` und `himmelEinfach` (EINE Abtastung, die Luft der Welt).
+        const himmelTexel = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0));
+        const himmelJeLicht = (dir) => himmelTexel(dir).rgb;
+        const himmelFarbe = (dir, tx = null) => (tx ? tx.rgb : himmelJeLicht(dir)).mul(U.licht).mul(U.toenung);
+        // DER ANTEIL DER SONNE (0 … 1) an der Himmels-Sicht in Richtung `dir`: ihre einfache Streuung (Alpha der Tafel) — was ein
+        // Grat der Luft hinter ihm nimmt (der Luftschatten der Welt); die Mehrfachstreuung und der Mond bleiben.
+        const himmelEinfach = (dir, tx = null) => (tx || himmelTexel(dir)).a;
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht, JE
         // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
         const passUmgebung = Fn(() => vec4(himmelJeLicht(umgebungRichtung(uv()).toVar()), 1));
@@ -537,6 +555,8 @@ var __weltLicht = (function () {
             anker: null,
             belichtung: null,
             himmelFarbe,
+            himmelEinfach,
+            himmelTexel,
             durchlass,
             RG,
             mediumBeta: null,
@@ -544,7 +564,6 @@ var __weltLicht = (function () {
             himmelVersion: 0,
             tafelnFrisch: false,
         };
-
     }
 
     // DIE STUFEN DER KAMERA (rein): die Blenden-Stufen der 18-%-Karte gegen den Anker bei der Sonnenhöhe h (Grad) und dem Licht q
@@ -607,7 +626,7 @@ var __weltLicht = (function () {
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
     // grenze (die Grenzgröße der Sterne), daemmerung (1 im hellen Tag … 0 in astronomischer Nacht), tag (das Nacht-Auge der
-    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 ab ~14,5°, 1 am Horizont) und hell (die Leuchtdichte des Tageshimmels
+    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die Leuchtdichte des Tageshimmels
     // relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
     function tagAchse(e) {
         const A = GRENZGROESSE;
@@ -625,15 +644,21 @@ var __weltLicht = (function () {
         const mTag = A[0][1],
             mNacht = A[A.length - 1][1];
         const q = Math.max(0, Math.min(1, (s + 0.18) / 0.6));
-        const nachtE = 0.25; // die Sonnenhöhe (sin), unter der die Ersatz-Lichter der Nacht beginnen
-        const hN = (Math.asin(nachtE) * 180) / Math.PI;
+        // DIE ERSATZ-LICHTER DER NACHT leben in der Dämmerung (bürgerlich: die Sonne 0° … −6°, wie das physikalische Himmelsmodell
+        // ohne Ersatz-Licht sie liefert): über dem Horizont tragen Sonne und Himmel allein. Bis ferne.K4 begannen sie bei 14,5°
+        // (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten, ein Viertel des Himmels (Dorf, 18-%-Karte zur Sonne).
+        // Die Belichtung folgt dem Licht ohne Kante: über 0,25–0,30 und 0,70–0,75 je 0,002 der Uhr steigt sie glatt um 0,14–0,20 EV
+        // (vorher 0,11–0,16 EV: das Ersatz-Licht füllte die sinkende Sonne auf).
+        const nachtE = Math.sin((-6 * Math.PI) / 180);
+        const hN = 0;
         const nG = BELICHTUNG.nachtGrad;
         return {
             e,
             grenze,
             daemmerung: (mNacht - grenze) / (mNacht - mTag),
             tag: Math.max(0, Math.min(1, (h - nG) / (hN - nG))),
-            nacht: 1 - Math.max(0, Math.min(1, s / nachtE)),
+            // stetig in der Sonnenhöhe (C¹ an beiden Enden der Dämmerung): der Einsatz ist keine Stufe der Belichtung
+            nacht: ((x) => x * x * (3 - 2 * x))(Math.max(0, Math.min(1, s / nachtE))),
             hell: 0.045 + 0.955 * q * q * (3 - 2 * q),
         };
     }
@@ -646,6 +671,16 @@ var __weltLicht = (function () {
         if (e === 0) return s * Math.pow(2, -14) * (f / 1024);
         if (e === 31) return f ? NaN : s * Infinity;
         return s * Math.pow(2, e - 15) * (1 + f / 1024);
+    }
+
+    // DER ZEILEN-SCHRITT EINER LESUNG (`readRenderTargetPixelsAsync` eines rgba-Ziels w × h, Elemente je Zeile): r184 kopiert auf
+    // WebGPU jede Zeile auf 256 Byte ausgerichtet (bytesPerRow) und lässt der LETZTEN das Polster weg — (h − 1) · Schritt + w · Texel
+    // (gelesen am Vendor, `copyTextureToBuffer`), WebGL liest dicht. `Länge / h` traf nur, wo die Zeile schon ausgerichtet lag (die
+    // Umgebung: 128 Texel × 8 Byte): die Kacheln des Rückstrahls (33 Texel × 8 Byte) lasen ihre Zeilen 249 statt 256 Elemente lang
+    // und mischten Mittel, Zahl und Atmosphäre zu einem blauen Boden (w21-laub-unten). Leser: jede Lesung eines Ziels der Welt.
+    function zeilenSchritt(px, w, h) {
+        const dicht = w * 4;
+        return px.length > dicht * h ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT) : dicht;
     }
 
     // DIE BESTRAHLUNGS-TAFEL AUS IHRER LESUNG (`readRenderTargetPixelsAsync` der Zeile W × 1, Halb- oder Voll-Float rgba): je
@@ -722,7 +757,9 @@ var __weltLicht = (function () {
         const R = o && o.renderer;
         const szene = o && o.szene;
         if (!T || !R || R.isWebGPURenderer !== true || !szene)
-            throw new Error("DIE BÜHNE DER WELT: sie zeichnet auf der Engine der Welt (three r184 WebGPURenderer) in eine Szene");
+            throw new Error(
+                "DIE BÜHNE DER WELT: sie zeichnet auf der Engine der Welt (three r184 WebGPURenderer) in eine Szene"
+            );
         const uhr = o.uhr == null ? 0.5 : o.uhr;
         const G = KERN.ATMO_GESETZ;
         const AR = KERN.ATMO_RECHNUNG;
@@ -878,6 +915,7 @@ var __weltLicht = (function () {
         sonnenRichtung,
         tagAchse,
         halbZuFloat,
+        zeilenSchritt,
         tafelAusPixeln,
         tafelAnker,
         bestrahlung,

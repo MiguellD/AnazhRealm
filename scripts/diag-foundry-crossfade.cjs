@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -296,9 +296,7 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 240000 });
 
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
@@ -558,7 +556,7 @@ async function runPartB() {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
                 if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
-                if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                if (a?.aKarte?.isInstancedBufferAttribute) {
                     const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
                     return { h, hL: h, modus: "fin" };
                 }
@@ -1194,7 +1192,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+        if (!(fl0 && fl0.leaves && fl1?.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),
@@ -1452,7 +1450,7 @@ async function main() {
             "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
             B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false
         );
-        if ((out.samples || []).length) {
+        if (out.samples?.length) {
             console.log(
                 "   Sweep: " +
                     out.samples.map((s) => `${s.dn}m→[${s.stages}]${s.inB01 ? "B01" : s.inB12 ? "B12" : ""}`).join(" ")
@@ -1590,7 +1588,7 @@ async function main() {
                     zk(op.gegenSatz)
                 );
         }
-        if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
+        if (!out.kette?.length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     // (10) DER GEISTER-BAUM: je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;

@@ -9,7 +9,7 @@ const {
     waitFor,
     ROOT: root,
     hauptLauf,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     selbsttestEnde,
@@ -465,7 +465,7 @@ function ortVerdikt(m) {
         );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
         fehl.push(
-            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl && m.vorplatzFehl.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
+            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl?.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
         );
     // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
     if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
@@ -1292,7 +1292,7 @@ hauptLauf(async () => {
                     p1.slots.every(
                         (s) =>
                             typeof s.kultur === "string" &&
-                            !!FC.KULTUR[s.kultur] &&
+                            FC.KULTUR[s.kultur] &&
                             isFinite(s.x) &&
                             isFinite(s.z) &&
                             isFinite(s.phi) &&
@@ -1652,9 +1652,7 @@ hauptLauf(async () => {
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
     const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
     const server = statikServer();
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 240000 });
     // DIE PROBEN JE LAUFZEIT-MARKE: `fn` läuft in der Seite, jede Probe setzt ihre Marke (`__marke(name)`); gewartet wird Marke um
     // Marke über das EINE Warten (`waitFor`, sein Name im Puls der Stall-Akte), höchstens eine Runde je Marke — so trägt jede Probe
     // die Frist des Browsers allein, nie die Summe (bis 26.10. EIN Ruf über Teil B und C: am belasteten Laptop riss er nach 240 s
@@ -1761,7 +1759,7 @@ hauptLauf(async () => {
         const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
         const alle1 = st.architectures.slice(mid2, after);
         const e1 = alle1.filter(istHaus);
-        const wandPlan = (plan.laternen || []).filter((l) => l && l.wand).length;
+        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length;
         res.wand1 = alle1.length - e1.length;
         res.wandPlan = wandPlan;
         res.entriesMatch =
@@ -2872,8 +2870,7 @@ hauptLauf(async () => {
                                 ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
                                 .filter(
                                     (q) =>
-                                        q.id &&
-                                        q.id.position &&
+                                        q.id?.position &&
                                         (r._lichtDatumDerGestalt(q.id) || r._glutFlaeche(q.id) > 0) &&
                                         Math.hypot(q.x - anker.x, q.z - anker.z) < 250
                                 )
@@ -3251,7 +3248,7 @@ hauptLauf(async () => {
     check(
         // Fähigkeit ability:, Wirken capability:, Verzehr consume: (0710-8)
         "C7: das Dorf eines Werkzeugs schaut auf sich",
-        werkzeug.every((k) => !!bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
+        werkzeug.every((k) => bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
         werkzeug.map((k) => `${k}: ${blZ(bl[k])}`).join(" · ")
     );
     check(
@@ -3364,7 +3361,7 @@ hauptLauf(async () => {
     const Lw = GN.lageGrund(K5b.welt, require(path.join(root, "vendor/simplex-noise.js")));
     // der Selbsttest der Trasse (`fremd`): dieselben Gassen am Grund 24 m daneben — eine Trasse, die einem anderen Boden folgt
     const trassen = [...K5b.trasse, OA.outO.trasse, O.outO.trasse];
-    for (const t of [...trassen, ...H.trasse, ...HS.trasse].filter((q) => q && q.v2)) {
+    for (const t of [...trassen, ...H.trasse, ...HS.trasse].filter((q) => q?.v2)) {
         const grund = (dx) => (x, z) => GN.hoehe(Lw, x + dx, z, true);
         [t.p95, t.fremd, t.erdbauM3, t.v2] = [
             gassenGefaelle(t.v2, grund(0)),

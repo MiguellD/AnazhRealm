@@ -4,16 +4,11 @@
 // darf über Budget gebacken werden. Misst die Konvergenz mit einer Zahl.
 //   node scripts/diag-foundry-deadlock.cjs
 
-const { statikServer, hauptLauf, nullSeite, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 }); // die Foundry baut auch ohne Bild (die echte Pipeline)
-    await server.zeige(page, 30000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state && r.state.blueprints);
-    });
+    const { browser, page } = await nullWelt(server, { da: (r) => r.state && r.state.blueprints, frist: 180000 });
 
     const S = await page.evaluate(async () => {
         const out = { ready: false, coldBefore: 0, foundryBefore: 0, foundryAfter: 0, ticks: 0, err: null };
@@ -23,7 +18,7 @@ hauptLauf(async () => {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();
             await __weltDa(() => !(f && !f.ready));
-            out.ready = !!(f && f.ready);
+            out.ready = !!(f?.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
                 return out;

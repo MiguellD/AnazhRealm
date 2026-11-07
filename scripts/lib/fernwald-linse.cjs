@@ -37,7 +37,7 @@ function fernwaldLinse(opts) {
         const W = opts.w || 1280,
             H = opts.h || 720;
         const blicke =
-            opts.blicke && opts.blicke.length ? opts.alle.filter((b) => opts.blicke.includes(b[0])) : opts.alle;
+            opts.blicke?.length ? opts.alle.filter((b) => opts.blicke.includes(b[0])) : opts.alle;
         const pm = st.playerMesh.position;
         const R = st.architectureCullingRadius;
         // Das Karten-Ding: die EINE Frage des Wirts (B2c fernform "karte": Baum, Strauch).
@@ -59,7 +59,7 @@ function fernwaldLinse(opts) {
             if (e && e.instanced && e.instSlots) for (const s of e.instSlots) gesetzt.add(s.key + "#" + s.slot);
         const atlas = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const streuSlots = [];
-        if (atlas && atlas.mesh)
+        if (atlas?.mesh)
             for (let i = 0; i < atlas.mesh.count; i++)
                 if (!gesetzt.has(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#" + i))
                     streuSlots.push({ key: AnazhRealm.IMPOSTOR_ATLAS_GRUPPE, slot: i });

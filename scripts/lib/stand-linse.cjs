@@ -494,7 +494,7 @@ function standUrteil(b) {
         }
     };
     if (b.ruheOnly) {
-        if (b.phasen && b.phasen.A) treue(b.phasen.A[0], "nach der Ruhe");
+        if (b.phasen?.A) treue(b.phasen.A[0], "nach der Ruhe");
         if (b.simRuhe) v.push(...simRuheZeilen(b.simRuhe, "(echter Loop)"));
         return v;
     }
@@ -519,7 +519,7 @@ function standUrteil(b) {
             // der Ort muss während der Phase stehen: wechselt er (eine Eingabe — die Anker-Generation des Saums nach einem
             // Neu-Bestellen des Rings, die Zelle des Stroms), ging die Runde über zwei Welten, und was die Probe verstellte,
             // überschrieb die neue, statt dass die Treue es fand
-            if (t && t.ortWechsel) v.push(`TREUE-EINGABE: ${n} (${TAKTE[n]}) wechselte ${wo} seinen Ort (${t.ortWechsel})`);
+            if (t?.ortWechsel) v.push(`TREUE-EINGABE: ${n} (${TAKTE[n]}) wechselte ${wo} seinen Ort (${t.ortWechsel})`);
         }
     };
     const S = b.bruch;
@@ -706,7 +706,7 @@ function standUrteil(b) {
         if (!SH || !SH.gesetzt || !(SH.bloecke > 0) || !(SH.ecken >= 1000))
             v.push(
                 `LEER: die Ort-Phase brachte kein Haus in den Bau-Satz (` +
-                    (SH && SH.gesetzt
+                    (SH?.gesetzt
                         ? `${SH.kultur}, ${SH.gruppen || 0} Gruppen, ${SH.ecken || 0} Ecken nach ${SH.takte} Takten`
                         : "keins gesetzt") +
                     `) — der Satz-Block ist ungeprüft`

@@ -288,7 +288,7 @@ async function probe(K) {
     const bildCache = new Map();
     // — auf der Karte gibt erst der Loop-Takt das Ergebnis frei (`_foundryIngestTakt`, headless sofort): die Zählung taktet, bis es da ist
     const bild = async (pr, g, k = pr + "|" + g) => {
-        const p = bildCache.get(k) || r._foundryRequest(pr, g, 0, null, 0).then((L) => (L || []).flatMap(({ position: p }) => Array.from((p && p.length ? p : p && p.array) || [])));
+        const p = bildCache.get(k) || r._foundryRequest(pr, g, 0, null, 0).then((L) => (L || []).flatMap(({ position: p }) => Array.from((p?.length ? p : p && p.array) || [])));
         for (let da = bildCache.set(k, p) && 0; !da; ) da = (await Promise.race([p.then(() => 1), sleep(20)])) || (takt(), 0);
         return p;
     };
@@ -386,7 +386,7 @@ async function probe(K) {
         r._blockerStampReach(e);
         return { wer, genannt: funde.some((t) => t.art === art && t.wer === wer) };
     };
-    const turm = st.architectures.find((e) => e && e.type === "felsturm" && (e.blockerAABBs || []).length);
+    const turm = st.architectures.find((e) => e && e.type === "felsturm" && e.blockerAABBs?.length);
     if (turm) aus.schmuggel = await schmuggel(turm, st.blueprints.felsturm.parts.filter((p) => r._isPartSolid(p)).map((p) => r._blockerComputePartAABB(turm, p)), "blocker");
     const exemplar = (t) => (gesetzt.find(([typ]) => typ === t) || [])[1];
     const tor = exemplar("welt_fachwerk");
@@ -792,7 +792,7 @@ async function tempo(K) {
         );
     }
     // das Beweisbild des Stoßes (`--bild`; KOLLISION_BILD_PNG: die Datei, in die es geht)
-    if (S && S.png && process.env.KOLLISION_BILD_PNG)
+    if (S?.png && process.env.KOLLISION_BILD_PNG)
         pngDatei(process.env.KOLLISION_BILD_PNG, S.png);
     if (S) console.log(`  Stoß im Ausgabe-Bild: ${S.fehler || `Wagen ${S.px.wagen} px · Bär ${S.px.gestossen} px in 640×360 · ${S.zeile}`}`);
     const v = urteil(befund).filter((x) => !x.startsWith("OFFEN") || console.log("  " + x));

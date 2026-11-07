@@ -26,7 +26,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
@@ -148,7 +148,7 @@ async function probe() {
     // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand — der Gelände-Teil ist
     // derselbe Weg wie im Spiel (`_fieldSolid` · `_fieldGradient`), die Boxen gehen alle durch `_segmentAABB`.
     const orakel = (sx, sy, sz, ex, ey, ez, o) => {
-        const durchPflanzen = !!(o && o.durchPflanzen);
+        const durchPflanzen = !!(o?.durchPflanzen);
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -182,7 +182,7 @@ async function probe() {
         let structHitT = Infinity,
             sFace = null;
         const arches = st.architectures;
-        if (arches && arches.length) {
+        if (arches?.length) {
             for (let a = 0; a < arches.length; a++) {
                 const e = arches[a];
                 if (!e || !e.blockerAABBs || !e.position) continue;
@@ -283,7 +283,7 @@ async function probe() {
     const ortsBoxen = () => {
         const out = [];
         for (const e of st.architectures)
-            if (e && e.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 120)
+            if (e?.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 120)
                 for (const b of e.blockerAABBs) out.push(b);
         return out;
     };
@@ -436,7 +436,7 @@ async function probe() {
     };
     const loeserRunde = (name, n) => {
         boxEintrag.clear();
-        for (const e of st.architectures) if (e && e.blockerAABBs) for (const b of e.blockerAABBs) boxEintrag.set(b, e);
+        for (const e of st.architectures) if (e?.blockerAABBs) for (const b of e.blockerAABBs) boxEintrag.set(b, e);
         const boxen = ortsBoxen();
         const R = { name, koerper: 0, geschoben: 0, getragen: 0, abweichung: [], rufeAlt: 0, rufeNeu: 0, fern: 0 };
         for (let i = 0; i < n; i++) {
@@ -514,7 +514,7 @@ async function probe() {
 
     // DIE NÄHE DES TIER-LEIBS: die Liste, die `_kreaturHuellenKontakt` baut, gegen das Orakel (die Schleife über den Bestand,
     // V18.535); ein Beweger (Position nach dem Eintritt verschoben, gemeldet wie vom Reiter-Schritt) gehört dazu
-    const tier = (st.creatures || []).find((c) => c && c.userData && c.position);
+    const tier = (st.creatures || []).find((c) => c?.userData && c.position);
     let beweger = null;
     const tierRunde = (name, n) => {
         const R = { name, proben: 0, abweichung: [], liste: 0, kandidaten: 0, bestand: 0, bewegerDrin: 0 };
@@ -595,7 +595,7 @@ async function probe() {
                     for (const kk of pk)
                         if (!(N.plaetze.get(kk) || []).includes(e)) f.push(`${e.type}#${e.id}: fehlt auf Platz ${kk}`);
             }
-            if (e.blockerAABBs && e.blockerAABBs.length) {
+            if (e.blockerAABBs?.length) {
                 const keys = e._blockerZellen;
                 if (!keys || !keys.length) f.push(`${e.type}#${e.id}: trägt Boxen, steht in keiner Zelle`);
                 else
@@ -630,7 +630,7 @@ async function probe() {
     const haeuser = st.architectures.filter((e) => e && typeof e.type === "string" && e.type.startsWith("haus_"));
     for (const h of haeuser.slice(0, 3)) r.removeArchitecture(h);
     // (2) die Kappe nimmt einen Bau
-    const bau = st.architectures.find((e) => e && e.blockerAABBs && !e.type.startsWith("haus_"));
+    const bau = st.architectures.find((e) => e?.blockerAABBs && !e.type.startsWith("haus_"));
     if (bau) r._evictArchitecture(bau);
     aus.runden.push(runde("Abriss", N));
     aus.loeser.push(loeserRunde("Abriss", 800));
@@ -653,8 +653,7 @@ async function probe() {
     const marken = st.architectures
         .filter(
             (e) =>
-                e &&
-                e.blockerAABBs &&
+                e?.blockerAABBs &&
                 e.blockerAABBs.length &&
                 e.position &&
                 Number.isFinite(e._blockerFrage) &&
@@ -711,7 +710,7 @@ async function probe() {
     aus.konsistenz.push(["Neue Bäume", konsistenz()]);
     // (6) ein Beweger: ein Bau am Ort wandert 25 m (wie das gerittene Werk mit seinem Reiter) und meldet es wie der Reiter-Schritt
     beweger = st.architectures.find(
-        (e) => e && e.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 60
+        (e) => e?.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 60
     );
     if (beweger) {
         // der Reiter-Schritt des Spiels trägt ihn 25 m weiter: der Schreiber der Lage meldet ihn selbst als Beweger
@@ -836,12 +835,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state && r.state.player);
-    });
+    const { browser, page } = await nullWelt(server, { da: (r) => r.state && r.state.player, frist: 300000 }, 60000);
     const S = await page.evaluate(probe);
     await browser.close();
     server.close();

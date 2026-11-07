@@ -45,15 +45,12 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 const server = statikServer();
 hauptLauf(async () => {
     const selftest = SELBSTTEST;
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await page.evaluateOnNewDocument(installWieseSicht);
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 240000, vor: installWieseSicht });
     const out = await page.evaluate(async (doSelftest) => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
@@ -240,7 +237,7 @@ hauptLauf(async () => {
                 };
                 // 1) Gruppen-Schlüssel (Scatter + platzierte Architektur-Instanzen + Batches):
                 const keys = meshKeys.get(node);
-                if (keys && keys.length) {
+                if (keys?.length) {
                     // Ein Batch-Mesh trägt mehrere Keys — die SCHLECHTESTE Klasse gewinnt
                     // (fail-closed: eine Verletzung im geteilten Batch macht den Batch rot).
                     let worst = null;
@@ -298,7 +295,7 @@ hauptLauf(async () => {
         // Waldboden unter der Kronen-Karte) trägt Stufen ohne Büschel im Blick: dort ist leer richtig.
         const wieseImZensus = (z) =>
             Object.entries(z.detail.studio)
-                .filter(([k]) => k.indexOf("[nahWiese#") >= 0)
+                .filter(([k]) => k.includes("[nahWiese#"))
                 .reduce((s, [, n]) => s + n, 0);
         const wieseUrteil = (w, z) => {
             const f = [];
@@ -549,7 +546,7 @@ hauptLauf(async () => {
     if (z.buckets.verletzung > 0) fails.push(`${z.buckets.verletzung} Fremd-Silhouetten (VERLETZUNG)`);
     if (!(inv.requested > 0)) fails.push("f.requested leer (Inventur misst nichts)");
     if (inv.pending > 0) fails.push(`${inv.pending} Anfragen hängen nach dem Settle (pending klemmt)`);
-    if (inv.lost.length > 0) fails.push(`${inv.lost.length} verlorene Foundry-Keys (angefragt, nie resident)`);
+    if (inv.lost.length) fails.push(`${inv.lost.length} verlorene Foundry-Keys (angefragt, nie resident)`);
     if (selftest) {
         console.log(
             `  Selbst-Test Zensus: Regeln ${JSON.stringify(out.selftestRules)} · Injektion vorher=${out.selftest.before} nachher=${out.selftest.after} → ${out.selftest.fired ? "feuert ✅" : "feuert NICHT ❌"}`

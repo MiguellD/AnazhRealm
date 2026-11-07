@@ -12,7 +12,7 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -51,9 +51,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws(manifestSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 180000 });
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {} };
@@ -488,7 +486,7 @@ hauptLauf(async () => {
     );
     check(
         "K2: die Frequenz ist die Studio-Zahl (2. Akkord-Ton = 110·2^(5/12) ≈ 146.83 Hz)",
-        Math.abs(out.k.freq1Studio - 110 * Math.pow(2, 5 / 12)) < 0.01,
+        Math.abs(out.k.freq1Studio - 110 * 2 ** (5 / 12)) < 0.01,
         String(out.k.freq1Studio)
     );
     check(
