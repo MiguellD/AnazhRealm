@@ -44,3 +44,9 @@
   Nächster Zug: abnahme-sicht-3, innen-regen, laub-unten OHNE leib-bau; leib-bau bekommt die K6-Wand als Nacharbeit.
 - Die OMEN schreibt ihre eigene Übergabe nach `zug/omen-uebergabe-0711.md` (erbeten 17:00).
 - Das GPU-Schloss am Laptop trägt noch „punkte-radeon-sitzung“ (der Halter ist tot, also verwaist). Die Werkzeuge erkennen das selbst.
+
+## Ordnung der Geräte (Stand 17:10)
+- Prozesse: nichts von mir läuft, die Radeon ist frei, die OMEN ruht ohne Schloss. Offen ist nur der Messplatz-Blick (Tab, kein Budget).
+- Platte NICHT aufgeräumt: 328 Worktrees, davon 251 in %TEMP%. Etwa 10 tragen alte, nie gepushte Änderungen (u. a. w4-b-himmel-2, w12-g2-proben, ankunft-heim3, stadt-takt6). Der Haupt-Checkout steht auf 18.10. mit einer losen Zeile in scripts/werkbank.cjs.
+  Vorschlag für den Nachfolger: Worktrees, deren Kopf auf GitHub liegt und die keine Inhalts-Änderung tragen, entfernen, dann `git worktree prune`. Die ~10 mit Änderungen dem Schöpfer zur Entscheidung vorlegen.
+- Cloud: ~290 Sitzungen im alten Konto, fast alle still. Ihre Arbeit liegt auf den Zweigen, der Schöpfer kann sie archivieren.
