@@ -1,0 +1,91 @@
+{
+ "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T15:42:53.762Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.27 [-14, -4] · lippeA 13.86 [4, 14] · hoehleL -9.56 [-12, 0] · hoehleA 10.79 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.34,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.27 [-14, -4] · lippeA 13.86 [4, 14] · hoehleL -9.56 [-12, 0] · hoehleA 10.79 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 20.5,
+   "zeit": "2026-11-07T15:40:57.832Z",
+   "abdruck": "0f25f0326aa7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 2.23 · 10–20 1.96 · 20–40 1.62 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.29,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 2.23 · 10–20 1.96 · 20–40 1.62 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 17.2,
+   "zeit": "2026-11-07T15:41:18.382Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4018 · Karte fimp:birke:L2 0.3220 (30733 px), fimp:eiche:L2 0.2227 (79624 px), fimp:fichte:L2 0.2078 (38870 px), fimp:strauch:L2 0.4018 (21800 px), fimp:tanne:L2 0.2213 (118124 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4018 · Karte fimp:birke:L2 0.3220 (30733 px), fimp:eiche:L2 0.2227 (79624 px), fimp:fichte:L2 0.2078 (38870 px), fimp:strauch:L2 0.4018 (21800 px), fimp:tanne:L2 0.2213 (118124 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 36.2,
+   "zeit": "2026-11-07T15:41:35.575Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 66 · third/gehen 53.7 · ego/wechsel 30.3 · third/wechsel 19.6 · Bild 24.93 ms",
+   "exit": 0,
+   "minuten": 0.51,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 66 · third/gehen 53.7 · ego/wechsel 30.3 · third/wechsel 19.6 · Bild 24.93 ms",
+   "gpu": "amd/rdna-3",
+   "s": 30.7,
+   "zeit": "2026-11-07T15:42:11.860Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.784 (n 25920) · Glanz 16 · Regenbild 0.894 · Regen 149 | third porös 0.777 (n 25861) · Glanz 16 · Regenbild 0.892 · Regen 96",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "amd/rdna-3",
+   "s": 10.3,
+   "zeit": "2026-11-07T15:42:42.554Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 52.9 · third/gehen 56.1 · ego/springen 49.3 · third/springen 30.9 · ego/einsteigen 48.5 · third/einsteigen 22.9 · ego/hieb 48.9 · third/hieb 42.3 · Bild 18.82 ms",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 52.9 · third/gehen 56.1 · ego/springen 49.3 · third/springen 30.9 · ego/einsteigen 48.5 · third/einsteigen 22.9 · ego/hieb 48.9 · third/hieb 42.3 · Bild 18.82 ms",
+   "gpu": "amd/rdna-3",
+   "s": 87.5,
+   "zeit": "2026-11-07T15:42:53.762Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}

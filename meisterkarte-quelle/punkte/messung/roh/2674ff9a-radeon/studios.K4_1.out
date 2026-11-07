@@ -1,0 +1,6 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm'); A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2674ff9a-radeon\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804 33
+K4 garage: Differenz 0.8891 ·  (17 s: buehne 1.5 · welt 1.9 · bild 12.8 · schuss 0.8)
+@@PUNKTE@@ FRIST 27 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

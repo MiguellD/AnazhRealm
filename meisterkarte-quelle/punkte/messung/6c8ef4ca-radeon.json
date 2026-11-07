@@ -1,0 +1,74 @@
+{
+ "sha": "6c8ef4ca1f01e8d538d63cffc26b2dfe49ee0688",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:10:32.005Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.5014 Soll [0.3554,0.533] — strich 0.5014 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4187 Soll [0.3554,0.533] — strich 0.4187 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.43,
+   "grund": "ROT: arm ROT strich 0.5014 Soll [0.3554,0.533] — strich 0.5014 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4187 Soll [0.3554,0.533] — strich 0.4187 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 25.7,
+   "zeit": "2026-11-07T17:10:06.225Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.4114 Soll [0.4358,0.6538] — strich 0.4114 < 0.4358 · third GRÜN strich 0.5599 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: arm ROT strich 0.4114 Soll [0.4358,0.6538] — strich 0.4114 < 0.4358 · third GRÜN strich 0.5599 Soll [0.4358,0.6538]",
+   "gpu": "amd/rdna-3",
+   "s": 25.4,
+   "zeit": "2026-11-07T17:10:32.005Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:08:39.922Z",
+  "port": 7804,
+  "warten": 1.04,
+  "bootS": 5.2,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 17.1,
+    "takte": 652,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 73,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 75.3,
+  "minuten": 2.37
+ }
+}

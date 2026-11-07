@@ -1,0 +1,275 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.185",
+  "sha": "8ef49bef479165fec47c92ff3cd4ef9c32e60931"
+ },
+ "buehne": {
+  "saison": "spring",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 163
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 58.46,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.4,
+   29.495,
+   -1045.6
+  ],
+  "blick": [
+   -0.92069,
+   0,
+   -0.39028
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 78.7,
+  "sigma": 41.9,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 58.46 m · Luma 78.7 σ 41.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 70801,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "nahWiese:L1=80/255/80",
+   "nahWiese:L2=80/120/255",
+   "nahWiese:Lf=255/220/60",
+   "streuSatz=255/80/255"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 28411
+   },
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 482175
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 329108
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 181660
+   },
+   "streuSatz": {
+    "objekte": 5,
+    "pixel": 5219
+   }
+  },
+  "abstand": {
+   "baender": [
+    0,
+    2,
+    5,
+    10,
+    14,
+    20,
+    40,
+    80,
+    200
+   ],
+   "ring": 14,
+   "augeUeberBoden": 1.9,
+   "cos": [
+    null,
+    0.4546,
+    0.2692,
+    0.1552,
+    0.1048,
+    0.0555,
+    0.0377,
+    0.0176
+   ],
+   "klassen": {
+    "nahWiese:Lf": [
+     0,
+     0,
+     0,
+     0,
+     31051,
+     86849,
+     19614,
+     2654
+    ],
+    "bodenSatz": [
+     0,
+     17984,
+     2698,
+     105,
+     15,
+     3,
+     19,
+     2090
+    ],
+    "streuSatz": [
+     0,
+     5,
+     1574,
+     2179,
+     477,
+     980,
+     0,
+     0
+    ],
+    "nahWiese:L1": [
+     0,
+     365969,
+     114597,
+     37,
+     0,
+     0,
+     0,
+     21
+    ],
+    "nahWiese:L2": [
+     0,
+     416,
+     193596,
+     91551,
+     42826,
+     719,
+     0,
+     0
+    ]
+   },
+   "farbton": {
+    "kachel": 2,
+    "band": [
+     2,
+     5
+    ],
+    "belichtung": 0.5114,
+    "kacheln": [
+     [
+      "-143,-524",
+      6773,
+      -1787.275,
+      6387.406,
+      6773
+     ],
+     [
+      "-143,-525",
+      1073,
+      -274.796,
+      1009.002,
+      1073
+     ],
+     [
+      "-143,-523",
+      13235,
+      -5710.164,
+      11530.5,
+      13219
+     ],
+     [
+      "-142,-525",
+      19545,
+      -7799.998,
+      17220.574,
+      19481
+     ],
+     [
+      "-142,-524",
+      25120,
+      -6127.376,
+      23777.776,
+      25112
+     ],
+     [
+      "-143,-522",
+      6648,
+      -2449.917,
+      6024.41,
+      6647
+     ],
+     [
+      "-142,-526",
+      776,
+      -398.819,
+      650.141,
+      776
+     ],
+     [
+      "-142,-523",
+      16304,
+      -6293.301,
+      14380.417,
+      16201
+     ],
+     [
+      "-141,-526",
+      1762,
+      -662.181,
+      1605.045,
+      1762
+     ],
+     [
+      "-141,-525",
+      6648,
+      -3048.088,
+      5745.695,
+      6648
+     ],
+     [
+      "-142,-522",
+      1515,
+      -617.716,
+      1354.127,
+      1515
+     ]
+    ]
+   }
+  },
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\8ef49bef-radeon\\vegetation.K5_2-wiese-ego-0.5-fruehling-wiese.maske.png"
+ }
+}

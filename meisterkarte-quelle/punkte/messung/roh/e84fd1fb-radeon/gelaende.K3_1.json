@@ -1,0 +1,120 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.212",
+  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0278,
+   "taeter": {
+    "Laub grown_busch_hazel_v1": 0.0226,
+    "Streu-Stein": 0.0052
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 100,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   1866.6,
+   3.928,
+   -6193.9
+  ],
+  "blick": [
+   -0.96593,
+   0,
+   0.25882
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 94.6,
+  "sigma": 37.1,
+  "schwarz": 0.0007,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.6 σ 37.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "farWater=255/80/80",
+   "wasserSatz=80/255/80"
+  ],
+  "klassen": {
+   "wasserSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.7126,
+    "spiegelEbene": 0.877,
+    "sp": [
+     129,
+     0,
+     0,
+     46916.5,
+     46916.5,
+     33434.48
+    ],
+    "zweiton": 0.0017,
+    "weiss": 0.0007,
+    "wt": 19,
+    "wtZiel": null,
+    "bunt": 20.14,
+    "pixel": 25517,
+    "luma": 74.92,
+    "kante": 0.2682,
+    "kr": 6119,
+    "strich": 0.3003,
+    "si": 4460,
+    "bloecke": 151,
+    "glatt": 0.1523,
+    "nyquist": 0.1932,
+    "beta": 2.6263
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e84fd1fb-radeon\\gelaende.K3_1-werk\\wasser.maske.png"
+ }
+}

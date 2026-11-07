@@ -1,0 +1,74 @@
+{
+ "sha": "8df3365a5a146067803e4b79c11a88071d81d66d",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T08:09:06.375Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K2#1": {
+   "gruen": true,
+   "zahl": "0.03 % Lücke nach 1.3 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 15.19 s von außen (Eigenmeldung 14.24 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.83,
+   "gpu": "amd/rdna-3",
+   "s": 49.7,
+   "zeit": "2026-11-05T08:09:06.375Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 15.19 s von außen (Eigenmeldung 14.24 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: t(Kontrolle) kalt 15.19 s von außen (Eigenmeldung 14.24 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 49.7,
+   "zeit": "2026-11-05T08:09:06.375Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T08:08:10.768Z",
+  "port": 7804,
+  "warten": 0.25,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 18.5,
+    "takte": 802,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 95,
+   "frameP95": 1322.4,
+   "taktP95": 377.4,
+   "vramMax": 136.2,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 85,
+   "luecken": 4,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 91,
+  "minuten": 2.32
+ }
+}

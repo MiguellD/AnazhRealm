@@ -1,0 +1,53 @@
+{
+ "seite": {
+  "isoliert": false,
+  "tiere": 0
+ },
+ "phasen": {
+  "gehen": {
+   "bilder": 608,
+   "weg": 6,
+   "p95": 0.4,
+   "max": 1.1,
+   "traeger": [
+    "_umweltLage 0.03",
+    "_fahrtKlangTick 0.03",
+    "_playSchrittOneShot 0.01"
+   ]
+  },
+  "fahrt": {
+   "bilder": 601,
+   "weg": 22,
+   "p95": 0.4,
+   "max": 1,
+   "traeger": [
+    "_fahrtKlangTick 0.08",
+    "_umweltLage 0.02",
+    "_lofiPlayGroove 0.01"
+   ],
+   "sattel": true
+  },
+  "nacht": {
+   "bilder": 610,
+   "weg": 6,
+   "p95": 0.3,
+   "max": 1,
+   "traeger": [
+    "_fahrtKlangTick 0.02",
+    "_umweltLage 0.02",
+    "_playSchrittOneShot 0.01"
+   ]
+  }
+ },
+ "aussetzer": {
+  "n": 0,
+  "still": 0,
+  "s": 21
+ },
+ "rot": [
+  "T gehen: 608 Bilder, 6 m — keine Bewegung gemessen",
+  "T fahrt: Klang-ms je Bild p95 0.4 > 0.2 (max 1; trägt _fahrtKlangTick 0.08 · _umweltLage 0.02 · _lofiPlayGroove 0.01)",
+  "T nacht: 610 Bilder, 6 m — keine Bewegung gemessen"
+ ],
+ "sek": 24.8
+}

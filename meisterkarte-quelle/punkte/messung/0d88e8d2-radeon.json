@@ -1,0 +1,76 @@
+{
+ "sha": "0d88e8d28667f1ce1a9bcc5e95110dfad9b4b923",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T16:12:05.247Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": false,
+   "zahl": "ohne Zeit-Messung: ABNAHME ROT [Sicht verdeckt 14.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde vorbau:baum_eiche 14.4 %] · beweis · Sicht 14.4 % (Rinde vorbau:baum_eiche 14.4 %) · Ziel Blickziel im Bild frei 10.1 m · Luma 58.3 σ 29.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.180 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+   "exit": 0,
+   "minuten": 0.08,
+   "grund": "ROT: ohne Zeit-Messung: ABNAHME ROT [Sicht verdeckt 14.4 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde vorbau:baum_eiche 14.4 %] · beweis · Sicht 14.4 % (Rinde vorbau:baum_eiche 14.4 %) · Ziel Blickziel im Bild frei 10.1 m · Luma 58.3 σ 29.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.180 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+   "gpu": "amd/rdna-3",
+   "s": 4.7,
+   "zeit": "2026-11-04T16:12:00.478Z",
+   "abdruck": "974be0729f1c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 26 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "exit": 1,
+   "minuten": 0.44,
+   "grund": "Deckel 26 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "s": 26.6,
+   "zeit": "2026-11-04T16:12:05.247Z",
+   "abdruck": "71652cc491fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T16:10:57.378Z",
+  "port": 7804,
+  "warten": 0.14,
+  "bootS": 9.2,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 41.4,
+    "takte": 714,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 75,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 111.3,
+  "minuten": 2.11
+ }
+}

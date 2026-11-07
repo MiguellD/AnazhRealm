@@ -1,0 +1,159 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.033,
+   "taeter": {
+    "Rinde baum_kiefer": 0.033
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 39.16,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -534.579,
+   33.529,
+   -935.432
+  ],
+  "blick": [
+   -0.17238,
+   0.12284,
+   0.97734
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 55.3,
+  "sigma": 34.1,
+  "schwarz": 0.0005,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 39.16 m · Luma 55.3 σ 34.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 3,
+  "kamera": [
+   -534.579,
+   33.529,
+   -935.432
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -554.62,
+     34.89,
+     -933.68
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 4 Laub baum_tanne in 38.61 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -544.715,
+     34.053,
+     -935.875
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Laub baum_tanne in 35.87 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -563.619,
+     36.542,
+     -928.996
+    ],
+    "rot": [
+     "Sicht verdeckt 19.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub grown_busch_hazel_v1 19.2 %",
+     "Vordergrund 32.1 % näher als 8 m (der halbe Ziel-Abstand): Laub grown_busch_hazel_v1 18.9 %, Laub baum_birke 12.2 %, Gelände 1.0 %"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -534.579,
+     33.529,
+     -935.432
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 3
+  },
+  "misch": 6,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:fisch=80/120/255",
+   "tier:wesen=255/220/60"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 26
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 55
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 1034
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\95ba6fd6-radeon\\tiere.K1_2-herde-3.maske.png"
+ }
+}

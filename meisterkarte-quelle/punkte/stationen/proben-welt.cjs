@@ -299,8 +299,8 @@ async function tierKreis(tor) {
     const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
         ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
         ["await r._rueckstrahlJetzt(() => (neubeginn(), frame()));", ""],
-        ["const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
-        ["if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };", "if (BW === W && BH === H) return { u8: voll, info, ms };"],
+        ["const nWarm = Math.max(warm ?? 1, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
+        ["if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };", "if (BW === W && BH === H) return { u8: voll, info, ms, tiefe };"],
     ]);
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
@@ -757,6 +757,14 @@ async function fahrRueck(tor) {
 // Die Seiten-Probe des Gates (`probeLeben` mit `wegenetz`): die Orte erwachen am Spieler (der Dorf-Zug an, wie das Gate vor dem
 // Boot), der GT fährt die feste Route mit dem Fahrer am Steuer in den Bildern der Probe; `wegenetzVerdict` der Linse. Kennt der
 // Stand die Fahrt nicht, endet die Probe sofort ROT beim Namen (nie die volle Leben-Probe als Ersatz).
+// DIE TEILE (w19-fahrt-ziel-2-pm, `probe.teile` der Station, punkte.cjs fahreGruppe): Orte und Fahrt tragen ~127 s Wanduhr auf der
+// GTX (Radeon 43,1 s Orte + 110,9 s Fahrt) — über dem Gesetz einer Probe (45 s). Der Lauf der Linse bleibt EINER und Byte für Byte
+// der des Gates (`probeLeben` aus dem Spiel-Baum am SHA): der erste Teil startet ihn in der Seite, jeder Teil gibt ihm die Frist seines
+// Prozesses (PUNKTE_TEIL_FRIST_S). Die Naht ist das Warten der Linse zwischen zwei Takten (`window.sleep`: `__gebautNach` nach jedem
+// Takt der Orte, die Fahrt nach jedem zweiten Bild) — nach der Frist hält der Lauf dort an; die Welt steht (der Loop der Sitzung ist
+// aus, die Uhr der Linse `tMs` ist ihre eigene, Orte, Route, Fahrer und Zählung leben im Lauf), der Teil sagt `@@PUNKTE@@ TEIL
+// WEITER`, und der nächste lässt ihn weiterlaufen. Der letzte Teil hält nie: reißt seine Frist, wirft die Naht, die Linse räumt auf,
+// und die Probe nennt die Frist (`@@PUNKTE@@ FRIST`, UNGEMESSEN beim Namen). Die Zeile ist die des Laufs in einem Stück.
 async function fahrWegenetz(tor) {
     const fs = require("fs");
     const path = require("path");
@@ -767,18 +775,58 @@ async function fahrWegenetz(tor) {
         process.exitCode = 1;
         return;
     }
+    const [nr, n] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
+    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
     const d = new Function(tor.dekl(L, ["WEGENETZ", "wegenetzVerdict", "taktHz"]) + "\nreturn { WEGENETZ, wegenetzVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     const page = await tor.seite();
     tor.karte();
-    await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
-    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
-    await page.evaluate(() => (window.__anazhAutoSettlement = true));
+    if (nr === 1) {
+        await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
+        await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+        await page.evaluate(() => (window.__anazhAutoSettlement = true));
+    }
     const t0 = Date.now();
-    const o = await page.evaluate(F.probeLeben, { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } });
+    // DER TEIL IN DER SEITE: `neu` startet den Lauf hinter der Naht, sonst läuft der gehaltene weiter; Rückgabe der Stand am Halt
+    // ({ teil }) oder das Ergebnis der Linse — am Ende fällt die Naht (window.sleep wie vorher)
+    const teilSeite = async (a) => {
+        let T = window.__wegenetzTeil;
+        if (a.neu) {
+            if (T) window.sleep = T.schlaf; // ein Lauf einer gefallenen Probe: seine Naht fällt
+            T = window.__wegenetzTeil = { schlaf: window.sleep };
+            T.naht = async () => {
+                if (performance.now() < T.frist) return;
+                if (T.letzter) throw new Error("DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht");
+                await new Promise((w) => ((T.weiter = w), T.halt()));
+            };
+            window.sleep = (...x) => T.naht().then(() => T.schlaf(...x));
+        } else if (!T || !T.weiter) return { err: "DIE TEILE DER FAHRT: kein gehaltener Lauf vor diesem Teil" };
+        [T.frist, T.letzter] = [performance.now() + a.ms, a.letzter];
+        const halt = new Promise((h) => (T.halt = h));
+        if (a.neu)
+            T.lauf = new Function("return " + a.code)()(a.arg).finally(() => {
+                window.sleep = T.schlaf;
+                if (window.__wegenetzTeil === T) delete window.__wegenetzTeil;
+            });
+        else T.weiter();
+        const x = await Promise.race([T.lauf.then((o) => ({ o })), halt.then(() => null)]);
+        const p = st.playerMesh.position;
+        return x ? x.o : { teil: { lage: [Math.round(p.x), Math.round(p.z)], orte: r._bewohnerSiedlungen ? r._bewohnerSiedlungen.size : 0 } };
+    };
+    // die Frist der Seite: der Rest der Teil-Frist seit dem Start des Prozesses, 1 s für Zeile und Abbau (ohne Teile: keine)
+    const ms = n > 1 ? Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1000) : 1e12;
+    const arg = { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } };
+    const o = await page.evaluate(teilSeite, { code: String(F.probeLeben), arg, ms, letzter: nr >= n, neu: nr === 1 });
+    const s = ((Date.now() - t0) / 1000).toFixed(1);
+    if (o.teil) {
+        console.log(`  WN Teil ${nr}/${n}: der Lauf hält nach ${s} s an der Naht (Spieler bei ${o.teil.lage.join(", ")}, ${o.teil.orte} Orte wach) — weiter`);
+        console.log("@@PUNKTE@@ TEIL WEITER");
+        return;
+    }
+    if (/DIE TEILE DER FAHRT reichten nicht/.test(String(o.err))) console.log(`@@PUNKTE@@ FRIST ${fristS} s der Probe gerissen: ${String(o.err).split("\n")[0]} (Teil ${nr}/${n})`);
     const v = o.wegenetz ? d.wegenetzVerdict(o.wegenetz) : [String(o.err || "keine Fahrt").split("\n")[0]];
-    console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung`);
+    console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${s} s in der Welt der Sitzung (Teil ${nr}/${n})`);
     console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
     if (v.length) process.exitCode = 1;
 }

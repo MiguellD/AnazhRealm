@@ -1,0 +1,178 @@
+{
+ "sha": "2f70c0006bfb0412aaf81e2b6362ca5c76d3c2f0",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:51:59.769Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.16,
+   "gpu": "amd/rdna-3",
+   "s": 69.8,
+   "zeit": "2026-11-07T17:48:58.397Z",
+   "abdruck": "c5aaa24bd536",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.16,
+   "gpu": "amd/rdna-3",
+   "s": 69.8,
+   "zeit": "2026-11-07T17:48:58.397Z",
+   "abdruck": "0e4c8d71f895",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 104 ms (50) · Menü 144 ms (20)",
+   "exit": 0,
+   "minuten": 0.26,
+   "gpu": "amd/rdna-3",
+   "s": 15.4,
+   "zeit": "2026-11-07T17:50:32.097Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7136 (wasserSatz 25516 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.6 σ 37.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 0.47,
+   "gpu": "amd/rdna-3",
+   "s": 28,
+   "zeit": "2026-11-07T17:50:47.591Z",
+   "abdruck": "e18e9c50847e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · glas spiegelTreue 0.0805 (6694 px in der Ebene, 17 Blöcke, Einfall 72°, Normale [-0.001,1,0.03]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000366 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.1,
+   "grund": "ROT: lack spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · glas spiegelTreue 0.0805 (6694 px in der Ebene, 17 Blöcke, Einfall 72°, Normale [-0.001,1,0.03]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000366 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 6.2,
+   "zeit": "2026-11-07T17:51:15.653Z",
+   "abdruck": "ec2fd04b86d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 74.5 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 0.998/Bild 0.996 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.3 J · p 6.78 · v 21.3 · Schaden 17.1 · edgeQ 0.999/Bild 0.999 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 79.5 J · p 5.90 · v 23.1 · Schaden 17.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.36,
+   "gpu": "amd/rdna-3",
+   "s": 21.4,
+   "zeit": "2026-11-07T17:51:21.931Z",
+   "abdruck": "62e261bf735c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "0.02 % Lücke nach 0.3 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 12.86 s von außen (Eigenmeldung 11.59 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.84,
+   "grund": "ROT: 0.02 % Lücke nach 0.3 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 12.86 s von außen (Eigenmeldung 11.59 s) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 50.3,
+   "zeit": "2026-11-07T17:51:59.769Z",
+   "abdruck": "00e38dd9d4d2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:48:20.514Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 6.2,
+  "grundstellungS": [
+   2.6,
+   0.1
+  ],
+  "proben": 6,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 22.7,
+    "takte": 572,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 21.2,
+    "takte": 688,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 16.3,
+    "takte": 645,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "spielgang.K3#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.6
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 7,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 924,
+   "frameP95": 326.38,
+   "taktP95": 145.39,
+   "vramMax": 142.2,
+   "seiten": 6,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 250,
+   "luecken": 3,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 263.3,
+  "minuten": 4.56
+ }
+}

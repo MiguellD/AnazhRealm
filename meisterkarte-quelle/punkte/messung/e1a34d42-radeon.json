@@ -1,0 +1,72 @@
+{
+ "sha": "e1a34d42116c76a52fd04e641365a4b0552ba495",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T11:21:47.936Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 191411 px · winter 20527 px → Winter 0.107 × Sommer",
+   "exit": 0,
+   "minuten": 0.29,
+   "gpu": "amd/rdna-3",
+   "s": 17.5,
+   "zeit": "2026-11-05T11:21:30.334Z",
+   "abdruck": "d7b5679f761c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 191409 px · winter 20522 px · fruehling 148940 px → Winter 0.107 × Sommer, Wiese LAI 2–10 m sommer 2.46 · winter 1.05 · fruehling 1.89 → Winter 0.426 × Sommer",
+   "exit": 0,
+   "minuten": 1.07,
+   "gpu": "amd/rdna-3",
+   "s": 64.5,
+   "zeit": "2026-11-05T11:21:47.936Z",
+   "abdruck": "3d56669bb478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T11:20:51.988Z",
+  "port": 7804,
+  "warten": 0.12,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#1",
+    "s": 21.3,
+    "takte": 616,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 103,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 113,
+  "minuten": 2.08
+ }
+}

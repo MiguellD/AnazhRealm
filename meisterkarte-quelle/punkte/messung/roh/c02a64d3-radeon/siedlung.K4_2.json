@@ -1,0 +1,164 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.205",
+  "sha": "c02a64d3c84d2e23a1d8d7b9b98306f8ab9fc747"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1600,
+   900
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1528,
+   "taeter": {
+    "Laub baum_erle": 0.0972,
+    "Laub grown_busch_hazel_v0": 0.0399,
+    "Laub baum_kiefer": 0.0156
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 210.41,
+  "gestalt": [
+   "wandlaterne_dorf 1158"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   288.878,
+   38.473,
+   488.845
+  ],
+  "blick": [
+   0.55554,
+   0.00887,
+   0.83144
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1600,
+  "h": 900,
+  "mittel": 37.7,
+  "sigma": 30.9,
+  "schwarz": 0.0079,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 210.41 m · Luma 37.7 σ 30.9 schwarz 0.8 % weiß 0.0 % · Stand 18.546.205 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 7 Posen",
+ "wahl": {
+  "versucht": 7,
+  "gewaehlt": 6,
+  "kamera": [
+   288.878,
+   38.473,
+   488.845
+  ],
+  "takte": 130,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     446.82,
+     49.75,
+     457.43
+    ],
+    "rot": [
+     "Vordergrund 29.3 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_birke 28.6 %, Rinde baum_birke 0.7 %",
+     "Ziel Blickziel verdeckt von siedlung-mauer in 139.26 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     498.831,
+     47.198,
+     475.086
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 138.82 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     392.011,
+     42.963,
+     453.837
+    ],
+    "rot": [
+     "Vordergrund 29.0 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 28.8 %, Gelände 0.2 %"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     544.5,
+     42.613,
+     505.602
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 135.89 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     338.14,
+     38.924,
+     464.552
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von bauSatz in 92.81 m"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     580.715,
+     41.742,
+     546.898
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 132.46 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     288.878,
+     38.473,
+     488.845
+    ],
+    "rot": []
+   }
+  ]
+ }
+}

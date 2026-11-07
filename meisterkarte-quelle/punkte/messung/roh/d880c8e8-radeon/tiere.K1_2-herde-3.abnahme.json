@@ -1,0 +1,121 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.172",
+  "sha": "d880c8e86310a0d180b67d2099be0c6247e9bf9f"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.191,
+   "taeter": {
+    "Laub baum_kiefer": 0.1233,
+    "Rinde baum_kiefer": 0.0365,
+    "Gelände": 0.0313
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 46.84,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -107.4,
+   83.09,
+   122.75
+  ],
+  "blick": [
+   0.99234,
+   -0.06533,
+   0.10483
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 46,
+  "sigma": 30.6,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.84 m · Luma 46 σ 30.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.172 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "kamera": [
+   -107.4,
+   83.09,
+   122.75
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -107.4,
+     83.09,
+     122.75
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 9
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "pixel": 429
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\d880c8e8-radeon\\tiere.K1_2-herde-3.maske.png"
+ }
+}

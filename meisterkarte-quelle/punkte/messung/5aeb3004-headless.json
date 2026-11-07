@@ -1,0 +1,19 @@
+{
+ "sha": "5aeb30044064961b6ba493103a299f16a50a5b1f",
+ "geraet": "headless",
+ "zeit": "2026-11-06T05:30:12.516Z",
+ "host": "lokal-fels-korn",
+ "je": {
+  "stoffe.K4#1": {
+   "gruen": true,
+   "zahl": "Tag 30, 16 Häuser und 13 Klassen im Umkreis 60 m des Dorfs (Ort -704.217/-885.52) · größte Δ der Albedo nach 30 Tagen: bauSatz nord 0.009/sued 0.009/oben 0.04 · bodenSatz nord 0/sued 0/oben 0.001 · formationenSatz nord 0/sued 0/oben 0 · 1 altern (≥ 0,02), 1 nach Lage (Soll ≥ 1)",
+   "exit": 0,
+   "minuten": 0.81,
+   "zeit": "2026-11-06T05:30:12.516Z",
+   "abdruck": "eefa0067b63c",
+   "port": 7774,
+   "bahn": "1/1",
+   "host": "lokal-fels-korn"
+  }
+ }
+}

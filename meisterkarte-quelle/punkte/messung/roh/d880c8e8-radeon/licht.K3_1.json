@@ -1,0 +1,103 @@
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.38763,
+     "L": 68.58,
+     "C": 40.14,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.38756,
+     "L": 68.57,
+     "C": 40.13,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1,
+    "dL": -0.01,
+    "dC": -0.01
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.05036,
+     "L": 26.84,
+     "C": 17.33,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.05024,
+     "L": 26.8,
+     "C": 17.28,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.998,
+    "dL": -0.04,
+    "dC": -0.05
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03382,
+     "L": 21.51,
+     "C": 14.71,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.03383,
+     "L": 21.51,
+     "C": 14.7,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1,
+    "dL": 0,
+    "dC": -0.01
+   }
+  },
+  "fichte@0.5": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "fichte@0.27": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "fichte@0.05": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.5": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.27": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  },
+  "tanne@0.05": {
+   "fehler": "Karte und Gestalt teilen kein Pixel"
+  }
+ }
+}

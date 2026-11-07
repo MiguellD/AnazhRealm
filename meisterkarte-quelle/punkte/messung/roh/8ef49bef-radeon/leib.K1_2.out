@@ -1,0 +1,46 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\8ef49bef-radeon\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN1 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\8ef49bef-radeon\leib.K1_2.json.lauf1.json"
+teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\8ef49bef-radeon\leib.K1_2.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\8ef49bef-radeon\leib.K1_2.json.lauf1.json"
+@@PUNKTE@@ HAKEN1
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":37.6,"p95":64,"max":64,"eingabe":3.1,"hoerer":0.1,"kette":14.8,"kurve":16.3,"takte":4}
+ego/springen {"n":15,"fehlt":0,"p50":26.4,"p95":41.2,"max":41.2,"eingabe":1.5,"hoerer":0.3,"kette":21.3,"kurve":0,"takte":3}
+ego/einsteigen {"n":15,"fehlt":0,"p50":24.1,"p95":50.9,"max":50.9,"eingabe":2.9,"hoerer":0.6,"kette":22.4,"kurve":0,"takte":2}
+ego/hieb {"n":15,"fehlt":0,"p50":24.8,"p95":63.9,"max":63.9,"eingabe":7.3,"hoerer":2.1,"kette":12.1,"kurve":0,"takte":3,"halt":9}
+third/gehen {"n":15,"fehlt":0,"p50":42.4,"p95":56.9,"max":56.9,"eingabe":2.7,"hoerer":0.1,"kette":13.8,"kurve":23.5,"takte":4}
+third/springen {"n":15,"fehlt":0,"p50":21.7,"p95":32.7,"max":32.7,"eingabe":8.9,"hoerer":0.3,"kette":11.7,"kurve":0,"takte":2}
+third/einsteigen {"n":15,"fehlt":0,"p50":27.6,"p95":71.5,"max":71.5,"eingabe":10.5,"hoerer":0.4,"kette":17.9,"kurve":0,"takte":2}
+third/hieb {"n":15,"fehlt":0,"p50":60.1,"p95":74,"max":74,"eingabe":14,"hoerer":30,"kette":46.7,"kurve":0,"takte":3,"halt":9}
+LATENZ ROT (Bild 19.8 ms) ego/gehen p95 64 ms > 50 (fehlt 0) — Täter kurve 16.3 ms, 4 Takte · ego/einsteigen p95 50.9 ms > 50 (fehlt 0) — Täter kette 22.4 ms, 2 Takte · ego/hieb p95 63.9 ms > 50 (fehlt 0) — Täter kette 12.1 ms, 3 Takte · third/gehen p95 56.9 ms > 50 (fehlt 0) — Täter kurve 23.5 ms, 4 Takte · third/einsteigen p95 71.5 ms > 50 (fehlt 0) — Täter kette 17.9 ms, 2 Takte · third/hieb Verben hieb,hieb,abbau,abbau,abbau,abbau,abbau,abbau,hieb,hieb,hieb,hieb,hieb,hieb,hieb, Hit-Stop 9 Bilder · third/hieb p95 74 ms > 50 (fehlt 0) — Täter kette 46.7 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesetzt": 24,
+  "dauerMs": [
+   122,
+   183
+  ],
+  "haltTakte": 398,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

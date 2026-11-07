@@ -1,0 +1,224 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.186",
+  "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 74
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 47.64,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -556.9,
+   60.653,
+   -830.54
+  ],
+  "blick": [
+   0.8065,
+   -0.36385,
+   -0.46601
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 60.1,
+  "sigma": 35.9,
+  "schwarz": 0.0029,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 47.64 m · Luma 60.1 σ 35.9 schwarz 0.3 % weiß 0.0 % · Stand 18.546.186 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 10 Posen",
+ "wahl": {
+  "versucht": 10,
+  "gewaehlt": 9,
+  "kamera": [
+   -556.9,
+   60.653,
+   -830.54
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -496.28,
+     46.77,
+     -814.32
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 25.07 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -506.98,
+     50.062,
+     -809.883
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 25.88 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -487.093,
+     43.619,
+     -821.375
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_birke in 35.39 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -518.464,
+     53.28,
+     -808.367
+    ],
+    "rot": [
+     "Sicht verdeckt 19.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 19.2 %",
+     "Ziel Herde verdeckt von Gelände in 21.93 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -480.044,
+     40.743,
+     -830.567
+    ],
+    "rot": [
+     "Sicht verdeckt 6.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_birke 6.2 %",
+     "Vordergrund 27.8 % näher als 8 m (der halbe Ziel-Abstand): Gelände 13.4 %, Laub baum_kiefer 7.5 %, Rinde baum_birke 6.9 %"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -529.949,
+     56.119,
+     -809.875
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_tanne in 2.42 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -475.615,
+     37.885,
+     -841.271
+    ],
+    "rot": [
+     "Vordergrund 46.2 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 15.8 %, Gelände 13.0 %, Laub baum_birke 9.2 %"
+    ]
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -540.653,
+     58.513,
+     -814.304
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 36.65 m"
+    ]
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -474.107,
+     35.214,
+     -852.756
+    ],
+    "rot": [
+     "Vordergrund 28.5 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 18.6 %, Gelände 9.0 %, Rinde baum_birke 0.9 %",
+     "Ziel Herde verdeckt von an Punkt 3 Rinde baum_tanne in 25.49 m"
+    ]
+   },
+   {
+    "k": 9,
+    "kamera": [
+     -556.9,
+     60.653,
+     -830.54
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 54
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 40
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 218
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b62542c9-radeon\\tiere.K1_2-herde-2.maske.png"
+ }
+}

@@ -1,0 +1,235 @@
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.37294,
+     "L": 67.5,
+     "C": 39.72,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.36827,
+     "L": 67.15,
+     "C": 39.6,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.987,
+    "dL": -0.35,
+    "dC": -0.12
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.06112,
+     "L": 29.69,
+     "C": 20.02,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.06202,
+     "L": 29.92,
+     "C": 20.24,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1.015,
+    "dL": 0.23,
+    "dC": 0.22
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03298,
+     "L": 21.2,
+     "C": 14.61,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.03282,
+     "L": 21.14,
+     "C": 14.58,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.06,
+    "dC": -0.03
+   }
+  },
+  "fichte@0.5": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 29400,
+   "karte": {
+    "gestalt": {
+     "Y": 0.16523,
+     "L": 47.65,
+     "C": 21.85
+    },
+    "karte": {
+     "Y": 0.17495,
+     "L": 48.88,
+     "C": 21.86
+    },
+    "verhaeltnis": 1.059,
+    "dL": 1.23,
+    "dC": 0.01
+   }
+  },
+  "fichte@0.27": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 29351,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03795,
+     "L": 22.98,
+     "C": 16.8
+    },
+    "karte": {
+     "Y": 0.04619,
+     "L": 25.62,
+     "C": 19.95
+    },
+    "verhaeltnis": 1.217,
+    "dL": 2.64,
+    "dC": 3.15
+   }
+  },
+  "fichte@0.05": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 29312,
+   "karte": {
+    "gestalt": {
+     "Y": 0.022,
+     "L": 16.5,
+     "C": 10.65
+    },
+    "karte": {
+     "Y": 0.03506,
+     "L": 21.97,
+     "C": 17.97
+    },
+    "verhaeltnis": 1.594,
+    "dL": 5.47,
+    "dC": 7.32
+   }
+  },
+  "tanne@0.5": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 36192,
+   "karte": {
+    "gestalt": {
+     "Y": 0.14028,
+     "L": 44.27,
+     "C": 23.67
+    },
+    "karte": {
+     "Y": 0.13797,
+     "L": 43.94,
+     "C": 22.55
+    },
+    "verhaeltnis": 0.984,
+    "dL": -0.33,
+    "dC": -1.12
+   }
+  },
+  "tanne@0.27": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 36206,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03908,
+     "L": 23.36,
+     "C": 18.42
+    },
+    "karte": {
+     "Y": 0.0448,
+     "L": 25.2,
+     "C": 20.03
+    },
+    "verhaeltnis": 1.146,
+    "dL": 1.84,
+    "dC": 1.61
+   }
+  },
+  "tanne@0.05": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 36051,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02747,
+     "L": 19,
+     "C": 12.14
+    },
+    "karte": {
+     "Y": 0.03213,
+     "L": 20.88,
+     "C": 13.77
+    },
+    "verhaeltnis": 1.17,
+    "dL": 1.88,
+    "dC": 1.63
+   }
+  }
+ }
+}

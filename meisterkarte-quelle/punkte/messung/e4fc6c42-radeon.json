@@ -1,0 +1,108 @@
+{
+ "sha": "e4fc6c42bdf8651fe392c57dee165c63da4cacc3",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:16:43.527Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.97,
+   "gpu": "amd/rdna-3",
+   "s": 58.2,
+   "zeit": "2026-11-07T17:15:31.610Z",
+   "abdruck": "c5aaa24bd536",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.97,
+   "gpu": "amd/rdna-3",
+   "s": 58.2,
+   "zeit": "2026-11-07T17:15:31.610Z",
+   "abdruck": "0e4c8d71f895",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 75.1 J · p 5.98 · v 23.4 · Schaden 15.9 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 81.6 J · p 6.88 · v 21.6 · Schaden 17.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 79.8 J · p 5.91 · v 23.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.28,
+   "gpu": "amd/rdna-3",
+   "s": 16.6,
+   "zeit": "2026-11-07T17:16:43.527Z",
+   "abdruck": "62e261bf735c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:15:00.900Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 6.3,
+  "grundstellungS": [
+   2.4
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 16.7,
+    "takte": 597,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 11.2,
+    "takte": 663,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "halten.K1#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.4
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 438,
+   "frameP95": 66.99,
+   "taktP95": 50.84,
+   "vramMax": 128.2,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 104,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 113.3,
+  "minuten": 2.07
+ }
+}

@@ -1,0 +1,252 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.168",
+  "sha": "5fba36ea44a6e80bb9bd645900a9584c1fcce0b9"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 5.16,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "gang",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 10.31,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   67.72,
+   90.36,
+   13.73
+  ],
+  "blick": [
+   0,
+   -0.24436,
+   0.96969
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 65.7,
+  "sigma": 33.7,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.31 m · Luma 65.7 σ 33.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "kamera": [
+   67.72,
+   90.36,
+   13.73
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     67.72,
+     90.36,
+     13.73
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.000001,
+   "pixel": 2,
+   "max": 22
+  },
+  "misch": 0,
+  "toene": [
+   "tier:baer=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:fuchs=80/120/255",
+   "tier:wesen=255/220/60",
+   "tier:wolf=255/80/255"
+  ],
+  "klassen": {
+   "tier:baer": {
+    "objekte": 13,
+    "spiegelTreue": -0.4959,
+    "spiegelEbene": 88.326,
+    "sp": [
+     44,
+     0,
+     0,
+     5951.95,
+     5951.95,
+     -2951.5
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 18.85,
+    "pixel": 5801,
+    "luma": 34.39,
+    "kante": 0.5833,
+    "kr": 472,
+    "strich": 0.5518,
+    "si": 1849,
+    "bloecke": 59,
+    "glatt": 0.5424,
+    "nyquist": 0.1272,
+    "beta": 2.578
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.237,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 31.16,
+    "pixel": 13,
+    "luma": 72.17,
+    "kante": 0.0029,
+    "kr": 13,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:fuchs": {
+    "objekte": 13,
+    "spiegelTreue": null,
+    "spiegelEbene": 87.517,
+    "sp": [
+     2,
+     0,
+     0,
+     3.54,
+     3.54,
+     3.54
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 27.68,
+    "pixel": 1086,
+    "luma": 46.88,
+    "kante": 0.4738,
+    "kr": 273,
+    "strich": null,
+    "si": 0,
+    "bloecke": 2,
+    "glatt": 0.5,
+    "nyquist": 0.1273,
+    "beta": 2.4019
+   },
+   "tier:wesen": {
+    "objekte": 13,
+    "spiegelTreue": -0.5598,
+    "spiegelEbene": 88.929,
+    "sp": [
+     26,
+     0,
+     0,
+     96.15,
+     96.15,
+     -53.82
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 25.93,
+    "pixel": 4151,
+    "luma": 45.68,
+    "kante": 0.573,
+    "kr": 587,
+    "strich": 0.7866,
+    "si": 538,
+    "bloecke": 29,
+    "glatt": 0.3448,
+    "nyquist": 0.491,
+    "beta": 2.553
+   },
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": -0.6701,
+    "spiegelEbene": 87.603,
+    "sp": [
+     9,
+     0,
+     0,
+     46.32,
+     46.32,
+     -31.04
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 18.41,
+    "pixel": 2509,
+    "luma": 43.39,
+    "kante": 0.5535,
+    "kr": 642,
+    "strich": null,
+    "si": 0,
+    "bloecke": 10,
+    "glatt": 0.2,
+    "nyquist": 0.091,
+    "beta": 2.8406
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5fba36ea-radeon\\tiere.K3_2-gang.maske.png"
+ }
+}

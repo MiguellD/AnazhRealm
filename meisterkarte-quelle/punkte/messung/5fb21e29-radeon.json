@@ -1,0 +1,118 @@
+{
+ "sha": "5fb21e29f30a9a98e289fa18b3cbf98c1e85f007",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T06:42:41.183Z",
+ "host": "MiguellD",
+ "je": {
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 65.3 · third/gehen 70.1 · ego/wechsel 140.9 · third/wechsel 27.9 · Bild 25.19 ms",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 65.3 · third/gehen 70.1 · ego/wechsel 140.9 · third/wechsel 27.9 · Bild 25.19 ms",
+   "gpu": "amd/rdna-3",
+   "s": 31.8,
+   "zeit": "2026-11-07T02:19:01.445Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.61 bei Lag 0 (n 103), Spitze 0.66 bei -1.2 s, CV Bild 0.31 / Ohr 0.56, 60.5 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "amd/rdna-3",
+   "s": 23.5,
+   "zeit": "2026-11-07T03:16:56.097Z",
+   "abdruck": "19e318d5a383",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T06:39:56.703Z",
+  "port": 7804,
+  "warten": 0.09,
+  "bootS": 4.7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 13.9,
+    "takte": 682,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr vor mensch.K5#1: /eval ohne Antwort binnen 60 s",
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 36,
+   "luecken": 7,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 169.1,
+  "minuten": 3.63
+ },
+ "ungemessen": {
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.3,
+   "zeit": "2026-11-07T06:40:22.000Z",
+   "abdruck": "ddec6c1f7035",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.3,
+   "zeit": "2026-11-07T06:40:22.000Z",
+   "abdruck": "613f5384ed14",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T06:42:41.183Z",
+   "abdruck": "e5aba4cb1a86",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}

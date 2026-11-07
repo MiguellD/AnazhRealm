@@ -1,0 +1,125 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43,
+   "spieler": 43,
+   "glieder": 1,
+   "fliehen": 1,
+   "takte": 1971,
+   "kamera": [
+    -62.13,
+    84.21,
+    158.31,
+    -65.4,
+    82.45,
+    115.43
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.04 m · Luma 52.6 σ 34.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier:wesen": 83
+   },
+   "pulk": {
+    "glieder": 1,
+    "sichtbar": 1,
+    "je": [
+     83
+    ],
+    "flecken": 1,
+    "kruemel": 0,
+    "pixel": 83,
+    "leibPx": 37.5
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\8ef49bef-radeon\\tiere.K1_2-herde-1.png"
+  },
+  {
+   "schuss": 2,
+   "abstand": 38.9,
+   "spieler": 43.6,
+   "glieder": 1,
+   "fliehen": 1,
+   "takte": 2001,
+   "kamera": [
+    -62.13,
+    84.21,
+    158.31,
+    -64.73,
+    81.02,
+    119.58
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 38.95 m · Luma 52.2 σ 32.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier:bestaeuber": 6,
+    "tier:wesen": 73
+   },
+   "pulk": {
+    "glieder": 1,
+    "sichtbar": 1,
+    "je": [
+     73
+    ],
+    "flecken": 1,
+    "kruemel": 2,
+    "pixel": 79,
+    "leibPx": 41.4
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\8ef49bef-radeon\\tiere.K1_2-herde-2.png"
+  },
+  {
+   "schuss": 3,
+   "abstand": 44.6,
+   "spieler": 44.6,
+   "glieder": 1,
+   "fliehen": 1,
+   "takte": 2031,
+   "kamera": [
+    -108.28,
+    83.62,
+    118.7,
+    -64.06,
+    80.2,
+    123.73
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Vordergrund 34.0 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_tanne 17.4 %, Gelände 14.6 %, Rinde baum_kiefer 2.1 %] · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 34.66 m · Luma 44.7 σ 34.8 schwarz 0.9 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\8ef49bef-radeon\\tiere.K1_2-herde-3.png"
+  }
+ ],
+ "szene": {
+  "kamera": [
+   -108.28,
+   83.62,
+   118.7,
+   -65.4,
+   82.45,
+   115.43
+  ],
+  "abstand": 43,
+  "punkte": [
+   [
+    -65.4,
+    82.64,
+    115.43
+   ]
+  ],
+  "glieder": 1,
+  "fliehen": 1,
+  "takte": 1971,
+  "hang": {
+   "x": -66.7,
+   "z": 115.4,
+   "neigung": 17.7
+  },
+  "wurf": 1,
+  "fluchtBei": 14.7
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}

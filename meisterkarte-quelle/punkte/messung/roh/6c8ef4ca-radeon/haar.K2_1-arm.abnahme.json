@@ -1,0 +1,116 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "6c8ef4ca1f01e8d538d63cffc26b2dfe49ee0688"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 95
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.34999999999999487,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.35,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 0.7,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -281.046,
+   29.261,
+   -1045.867
+  ],
+  "blick": [
+   0.92064,
+   0,
+   0.39041
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 43.7,
+  "sigma": 33.2,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.7 m · Luma 43.7 σ 33.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^spieler:kopf/hair$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "spieler:kopf/hair=255/80/80"
+  ],
+  "klassen": {
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.344,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0205,
+    "wt": 171,
+    "wtZiel": null,
+    "bunt": 6.02,
+    "pixel": 8323,
+    "luma": 70.78,
+    "kante": 0.6911,
+    "kr": 615,
+    "strich": 0.5014,
+    "si": 3200,
+    "bloecke": 90,
+    "glatt": 0,
+    "nyquist": 0.127,
+    "beta": 1.9682
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\6c8ef4ca-radeon\\haar.K2_1-arm.maske.png"
+ }
+}

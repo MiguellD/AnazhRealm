@@ -1,0 +1,136 @@
+{
+ "plan": "lod.K2#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 865,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.108,
+      "baeume": 8,
+      "kranz": 0.204,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 52,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 865,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.108,\n   \"baeume\": 8,\n   \"kranz\": 0.204,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 52,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "pop": {
+   "exit": 0,
+   "json": {
+    "ms": 26885,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "weg": 4,
+     "schritte": [
+      {
+       "pop": 39795,
+       "stufen": true
+      },
+      {
+       "pop": 55445,
+       "stufen": true
+      },
+      {
+       "pop": 53943,
+       "stufen": true
+      },
+      {
+       "pop": 58673,
+       "stufen": true
+      },
+      {
+       "pop": 66165,
+       "stufen": true
+      },
+      {
+       "pop": 52083,
+       "stufen": true
+      },
+      {
+       "pop": 69848,
+       "stufen": true
+      },
+      {
+       "pop": 62168,
+       "stufen": false
+      }
+     ],
+     "perfTargetMs": 17,
+     "laub": [
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216
+     ],
+     "bau": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150
+     ],
+     "treue": {
+      "schritt": 0,
+      "bytes": 0
+     },
+     "popPixel": 458120,
+     "anteilJeSekunde": 22.093
+    }
+   },
+   "rest": "{\n \"ms\": 26885,\n \"ergebnis\": {\n  \"schirm\": [\n   1920,\n   1080\n  ],\n  \"weg\": 4,\n  \"schritte\": [\n   {\n    \"pop\": 39795,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 55445,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 53943,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 58673,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 66165,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 52083,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 69848,\n    \"stufen\": true\n   },\n   {\n    \"pop\": 62168,\n    \"stufen\": false\n   }\n  ],\n  \"perfTargetMs\": 17,\n  \"laub\": [\n   216,\n   216,\n   216,\n   216,\n   216,\n   216,\n   216,\n   216\n  ],\n  \"bau\": [\n   150,\n   150,\n   150,\n   150,\n   150,\n   150,\n   150,\n   150\n  ],\n  \"treue\": {\n   \"schritt\": 0,\n   \"bytes\": 0\n  },\n  \"popPixel\": 458120,\n  \"anteilJeSekunde\": 22.093\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}

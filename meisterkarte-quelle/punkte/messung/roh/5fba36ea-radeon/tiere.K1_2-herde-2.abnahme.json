@@ -1,0 +1,120 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.168",
+  "sha": "5fba36ea44a6e80bb9bd645900a9584c1fcce0b9"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0087,
+   "taeter": {
+    "Gelände": 0.0087
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 40.52,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -91.48,
+   86.84,
+   111.43
+  ],
+  "blick": [
+   0.91948,
+   -0.14041,
+   0.3672
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 85.9,
+  "sigma": 43.6,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 40.52 m · Luma 85.9 σ 43.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.168 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "kamera": [
+   -91.48,
+   86.84,
+   111.43
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -91.48,
+     86.84,
+     111.43
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 1,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 130
+   },
+   "tier:wesen": {
+    "objekte": 65,
+    "pixel": 1214
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5fba36ea-radeon\\tiere.K1_2-herde-2.maske.png"
+ }
+}

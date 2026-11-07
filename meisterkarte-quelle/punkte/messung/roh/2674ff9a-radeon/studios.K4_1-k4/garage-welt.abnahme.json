@@ -1,0 +1,147 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.179",
+  "sha": "2674ff9a403d0de252b7610c15b971dc54c5281a"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 280
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3.43,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 6.86,
+  "gestalt": [
+   "fahrzeug_gt w-fahrzeug_gt-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   72.915,
+   90.927,
+   20.393
+  ],
+  "blick": [
+   -0.78344,
+   -0.31457,
+   -0.53597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 70.8,
+  "sigma": 36.8,
+  "schwarz": 0.0011,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6.86 m · Luma 70.8 σ 36.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.179 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:gt:L\\d$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 2,
+  "toene": [
+   "f:gt:L0=255/80/80",
+   "f:gt:L1=80/255/80"
+  ],
+  "klassen": {
+   "f:gt:L0": {
+    "objekte": 12,
+    "spiegelTreue": -0.1282,
+    "spiegelEbene": 88.958,
+    "sp": [
+     34,
+     0,
+     0,
+     272.08,
+     272.08,
+     -34.89
+    ],
+    "zweiton": 0,
+    "weiss": 0.0011,
+    "wt": 221,
+    "wtZiel": null,
+    "bunt": 19.74,
+    "pixel": 203996,
+    "luma": 45.25,
+    "kante": 0.6099,
+    "kr": 3940,
+    "strich": 0.5711,
+    "si": 157422,
+    "bloecke": 2862,
+    "glatt": 0.5458,
+    "nyquist": 0.1134,
+    "beta": 2.6627
+   },
+   "f:gt:L1": {
+    "objekte": 20,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.949,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 35.51,
+    "pixel": 1,
+    "luma": 76.31,
+    "kante": 0,
+    "kr": 1,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\2674ff9a-radeon\\studios.K4_1-k4\\garage-welt.maske.png"
+ }
+}

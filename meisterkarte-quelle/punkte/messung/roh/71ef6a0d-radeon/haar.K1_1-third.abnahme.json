@@ -1,0 +1,116 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.178",
+  "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 67
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 2.28,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 4.56,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -279.28,
+   29,
+   -1040.62
+  ],
+  "blick": [
+   0,
+   -0.21926,
+   -0.97567
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 53.1,
+  "sigma": 29.1,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 4.56 m · Luma 53.1 σ 29.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^tier:wolf$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:wolf=255/80/80"
+  ],
+  "klassen": {
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": 0.5616,
+    "spiegelEbene": 28.188,
+    "sp": [
+     33,
+     0,
+     0,
+     32390.23,
+     32390.23,
+     18189.08
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 17.59,
+    "pixel": 7647,
+    "luma": 40.73,
+    "kante": 0.359,
+    "kr": 1608,
+    "strich": 0.526,
+    "si": 142,
+    "bloecke": 35,
+    "glatt": 0.4,
+    "nyquist": 0.2203,
+    "beta": 2.1668
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\haar.K1_1-third.maske.png"
+ }
+}

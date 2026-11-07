@@ -1,0 +1,74 @@
+{
+ "sha": "323cc9f3b443cd4d9f7be967deb02582c4991cc1",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T02:26:01.124Z",
+ "host": "MiguellD",
+ "je": {
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 62.4 · third/gehen 61.8 · ego/wechsel 139.9 · third/wechsel 51 · Bild 24.68 ms",
+   "exit": 0,
+   "minuten": 0.52,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 62.4 · third/gehen 61.8 · ego/wechsel 139.9 · third/wechsel 51 · Bild 24.68 ms",
+   "gpu": "amd/rdna-3",
+   "s": 31.2,
+   "zeit": "2026-11-07T02:25:29.855Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "r — (eine Reihe ohne Varianz) bei Lag 0 (n 104), Spitze — bei -3 s, CV Bild 0.23 / Ohr — (Ohr still), 69.7 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "ROT: r — (eine Reihe ohne Varianz) bei Lag 0 (n 104), Spitze — bei -3 s, CV Bild 0.23 / Ohr — (Ohr still), 69.7 fps, Klang an",
+   "gpu": "amd/rdna-3",
+   "s": 22.5,
+   "zeit": "2026-11-07T02:26:01.124Z",
+   "abdruck": "821fa3ae8ae2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T02:21:41.709Z",
+  "port": 7804,
+  "warten": 3.36,
+  "bootS": 5.2,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 19.5,
+    "takte": 669,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1977,
+   "frameP95": 41.9,
+   "taktP95": 40.84,
+   "vramMax": 148,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 81,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 80.6,
+  "minuten": 4.74
+ }
+}

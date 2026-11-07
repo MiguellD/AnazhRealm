@@ -1,0 +1,60 @@
+{
+ "sha": "ab1b1ee61d6a531d85ee2d9f8c5acda62320aa8d",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T01:54:24.894Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.44,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL — · lippeA — · hoehleL — · hoehleA — · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 26.6,
+   "zeit": "2026-11-05T01:54:24.894Z",
+   "abdruck": "0f25f0326aa7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T01:53:49.080Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 19.4,
+    "takte": 608,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 47,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 56.2,
+  "minuten": 1.11
+ }
+}

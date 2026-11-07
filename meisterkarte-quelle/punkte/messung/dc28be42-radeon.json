@@ -1,0 +1,141 @@
+{
+ "sha": "dc28be4294c0ae8ce777098c38433e94a14721e4",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T17:40:46.621Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 229.4 über Rausch-Boden 0.018 (×229.4), Tal 43.9 — Kamm/Tal 5.22 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.2 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.26,
+   "gpu": "amd/rdna-3",
+   "s": 15.7,
+   "zeit": "2026-11-04T17:39:11.411Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.5364 Soll [0.3554,0.533] — strich 0.5364 > 0.533 · albedo: veraltet seit baf9d828: koerper-core.js geändert (c:1346c56d163ceac6 → c:b70902b2e416b42b) · albedo — [0.01; 0.3] · third ROT strich 0.3898 Soll [0.3554,0.533] — strich 0.3898 — albedo: veraltet seit baf9d828: koerper-core.js geändert (c:1346c56d163ceac6 → c:b70902b2e416b42b) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: arm ROT strich 0.5364 Soll [0.3554,0.533] — strich 0.5364 > 0.533 · albedo: veraltet seit baf9d828: koerper-core.js geändert (c:1346c56d163ceac6 → c:b70902b2e416b42b) · albedo — [0.01; 0.3] · third ROT strich 0.3898 Soll [0.3554,0.533] — strich 0.3898 — albedo: veraltet seit baf9d828: koerper-core.js geändert (c:1346c56d163ceac6 → c:b70902b2e416b42b) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 23.6,
+   "zeit": "2026-11-04T17:30:08.530Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.42 · 5–10 2.24 · 10–20 1.87 · 20–40 1.08 (Saum springt > 15 %), Farbton 2–5 m 13.34°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.42 · 5–10 2.24 · 10–20 1.87 · 20–40 1.08 (Saum springt > 15 %), Farbton 2–5 m 13.34°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 21,
+   "zeit": "2026-11-04T17:40:25.559Z",
+   "abdruck": "e4046cdfc32b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.3979 Soll [0.4358,0.6538] — strich 0.3979 < 0.4358 · third ROT strich 0.3792 Soll [0.4358,0.6538] — strich 0.3792 < 0.4358",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: arm ROT strich 0.3979 Soll [0.4358,0.6538] — strich 0.3979 < 0.4358 · third ROT strich 0.3792 Soll [0.4358,0.6538] — strich 0.3792 < 0.4358",
+   "gpu": "amd/rdna-3",
+   "s": 23.3,
+   "zeit": "2026-11-04T17:30:51.026Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T17:36:36.256Z",
+  "port": 7804,
+  "warten": 1.59,
+  "bootS": 6.3,
+  "grundstellungS": [
+   2.9
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 17,
+    "takte": 632,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 13.5,
+    "takte": 655,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 193,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 201.2,
+  "minuten": 5.34
+ },
+ "ungemessen": {
+  "haar.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "exit": 1,
+   "minuten": 0.7,
+   "grund": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "s": 41.9,
+   "zeit": "2026-11-04T17:39:27.127Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "exit": 1,
+   "minuten": 0.77,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "s": 46.2,
+   "zeit": "2026-11-04T17:40:46.621Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}

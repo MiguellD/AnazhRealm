@@ -1,0 +1,10 @@
+{
+ "ms": 2522,
+ "fehler": "ABNAHME ROT [Sicht verdeckt 46.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): vorbau:haus_alemannisch 46.2 % · Vordergrund 99.7 % näher als 2.32 m (der halbe Ziel-Abstand): vorbau:haus_alemannisch 99.7 % · Ziel Blickziel verdeckt von vorbau:haus_alemannisch in 0.9 m] · beweis · Sicht 46.2 % (vorbau:haus_alemannisch 46.2 %) · Ziel Blickziel im Bild VERDECKT 4.64 m · Luma 51.4 σ 30.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.179 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Cwerkbank.cjs%3A854%3A24):1338:32)",
+  "at abnahme (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:854:24), <anonymous>:1337:31)",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:854:24), <anonymous>:1418:76)",
+  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ]
+}

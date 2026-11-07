@@ -1,0 +1,172 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43,
+   "spieler": 45.2,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2004,
+   "kamera": [
+    -95.23,
+    81.43,
+    125.79,
+    -52.67,
+    82.24,
+    131.96
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.01 m · Luma 56.6 σ 35 schwarz 0.0 % weiß 0.0 % · Stand 18.546.180 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 6 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 83,
+    "tier:wesen": 576
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     190,
+     203,
+     391,
+     100,
+     111
+    ],
+    "flecken": 1,
+    "kruemel": 0,
+    "pixel": 659,
+    "leibPx": 36.5
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\23d19f6f-radeon\\tiere.K1_2-herde-1.png"
+  },
+  {
+   "schuss": 2,
+   "abstand": 40.2,
+   "spieler": 44.8,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2034,
+   "kamera": [
+    -95.23,
+    81.43,
+    125.79,
+    -55.16,
+    80.99,
+    128.97
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 40.2 m · Luma 58.2 σ 34.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.180 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 102,
+    "tier:wesen": 643
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     254,
+     319,
+     449,
+     231,
+     182
+    ],
+    "flecken": 1,
+    "kruemel": 0,
+    "pixel": 745,
+    "leibPx": 39.1
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\23d19f6f-radeon\\tiere.K1_2-herde-2.png"
+  },
+  {
+   "schuss": 3,
+   "abstand": 37.5,
+   "spieler": 45.1,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 2064,
+   "kamera": [
+    -95.23,
+    81.43,
+    125.79,
+    -57.69,
+    80.6,
+    125.85
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 37.55 m · Luma 59.2 σ 34.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.180 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 102,
+    "tier:bestaeuber": 5,
+    "tier:wesen": 705
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     291,
+     379,
+     529,
+     295,
+     237
+    ],
+    "flecken": 1,
+    "kruemel": 1,
+    "pixel": 812,
+    "leibPx": 41.9
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\23d19f6f-radeon\\tiere.K1_2-herde-3.png"
+  }
+ ],
+ "szene": {
+  "kamera": [
+   -87.13,
+   68.3,
+   157.69,
+   -52.67,
+   82.24,
+   131.96
+  ],
+  "abstand": 45.2,
+  "punkte": [
+   [
+    -51.62,
+    82.68,
+    133.04
+   ],
+   [
+    -50.25,
+    82.8,
+    131.22
+   ],
+   [
+    -54.93,
+    82.1,
+    131.75
+   ],
+   [
+    -52.72,
+    82.1,
+    129.94
+   ],
+   [
+    -53.83,
+    82.4,
+    133.86
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 2004,
+  "hang": {
+   "x": -50.9,
+   "z": 133.5,
+   "neigung": 16.1
+  },
+  "wurf": 5,
+  "fluchtBei": 14
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}

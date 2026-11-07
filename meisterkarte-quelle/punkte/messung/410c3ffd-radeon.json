@@ -1,0 +1,94 @@
+{
+ "sha": "410c3ffd1c563108f5ea101c27f5066d791a5331",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T14:22:34.090Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) ? ms, Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) ? ms, Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.7,
+   "zeit": "2026-11-05T14:22:34.090Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) —, Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) —, Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.7,
+   "zeit": "2026-11-05T14:22:34.090Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Spur des Kalt-Boots (Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Spur des Kalt-Boots (Exit 2) · [linse-gpu] amd/rdna-3) · Täter: @@ PROBE-FEHLER Error: kein Browser der Sitzung an :27804 (/status nennt kein Profil der Werkbank) |     at H.verbinde ([eval]:102:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async Object.probeAnkunft [as ankunft] ([eval]:202:22) |     at async p",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.7,
+   "zeit": "2026-11-05T14:22:34.090Z",
+   "abdruck": "2bfe3805ab4b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T14:20:43.091Z",
+  "port": 7804,
+  "warten": 1.3,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 21.2,
+    "takte": 701,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 32,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 33.8,
+  "minuten": 1.96
+ }
+}

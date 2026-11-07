@@ -1,0 +1,8 @@
+{
+ "ms": 3903,
+ "fehler": "--ist fell: die Linse liest die Messung nicht — Klasse fell: die Klasse zeigt keine inneren Pixel · Klasse fell: die Messung ergibt kein Ist (vorher 0.4762) — die Tafel bleibt, wie sie war",
+ "stapel": [
+  "at sollIstSchreiben (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:142:15)",
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:2076:33)"
+ ]
+}

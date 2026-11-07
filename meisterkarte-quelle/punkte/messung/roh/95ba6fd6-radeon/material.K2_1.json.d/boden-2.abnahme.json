@@ -1,0 +1,121 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 45
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 1.0000000000000222,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 2,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -281.137,
+   28.975,
+   -1045.918
+  ],
+  "blick": [
+   -0.67714,
+   -0.67538,
+   -0.29214
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 55.4,
+  "sigma": 29,
+  "schwarz": 0.0006,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 55.4 σ 29 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^bodenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.3999,
+    "spiegelEbene": 27.618,
+    "sp": [
+     495,
+     0,
+     0,
+     140541.21,
+     140541.21,
+     56198.31
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 22.13,
+    "pixel": 299553,
+    "luma": 35.96,
+    "kante": 0.5814,
+    "kr": 62128,
+    "strich": 0.2924,
+    "si": 40463,
+    "bloecke": 1740,
+    "glatt": 0.0161,
+    "nyquist": 0.1784,
+    "beta": 1.1866
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 2,
+   "ist": 1.996
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\95ba6fd6-radeon\\material.K2_1.json.d\\boden-2.maske.png",
+  "urteil": []
+ }
+}

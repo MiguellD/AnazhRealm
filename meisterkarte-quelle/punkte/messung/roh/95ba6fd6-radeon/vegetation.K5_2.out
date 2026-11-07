@@ -1,0 +1,81 @@
+$ C:\Program Files\nodejs\node.exe -e (async function vegetationLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, plan, zaehlen] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+const erg = { schuesse: [] };
+const ruf = async (weg, o) => {
+const t0 = Date.now();
+const a = await werkbankRuf(W, weg, o);
+console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+return a;
+};
+const SPIEL =
+"const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); const p = c.position; " +
+"const unter = (t) => { const x = p.x + d.x * t, z = p.z + d.z * t, b = r._bodenSichtAt(x, z), y = b == null ? r._voxelSurfaceY(x, z) : b; return y != null && p.y + d.y * t <= y; }; " +
+"let a = 0, t = 0.5; while (t < 2000 && !unter(t)) { a = t; t += Math.max(0.25, t * 0.01); } " +
+"if (t < 2000) { for (let k = 0; k < 24; k++) { const m = (a + t) / 2; if (unter(m)) t = m; else a = m; } } else t = 100; " +
+"return [p.x, p.y, p.z, p.x + d.x * t, p.y + d.y * t, p.z + d.z * t].map((v) => +v.toFixed(3));";
+const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
+for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+try {
+await ruf("/fenster", { w: 1920, h: 1080 });
+let stand = null,
+spiel = null;
+for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
+const n = [ort, sicht, uhr, saison, was].join("-");
+if (stand !== ort + "|" + sicht) {
+await ruf("/umstellen", { ort, sicht });
+spiel = null;
+}
+stand = ort + "|" + sicht;
+const k = was === "wiese" && spiel ? spiel : (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+if (was === "wiese") spiel = k;
+const [px, py, pz, lx, ly, lz] = k;
+const wiese = was === "wiese";
+const datei = B + "-" + n + ".png";
+const b = await ruf("/bild", {
+px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, nurPixel: true,
+klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
+});
+const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
+const kl = b.klasse || {};
+const sch = { n, was, kamera: k, pose: ab.pose, leinwand: [ab.bild.w, ab.bild.h], ok: ab.ok, zeile: String(ab.zeile || "").slice(0, 300), pixel: Object.values(kl.klassen || {}).reduce((q, v) => q + (v.pixel || 0), 0) };
+if (wiese) {
+const a = kl.abstand;
+Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
+if (zaehlen !== "ohne-budget") {
+const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+}
+}
+erg.schuesse.push(sch);
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+console.log("VEGETATION " + JSON.stringify(erg));
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\95ba6fd6-radeon\vegetation.K5_2.json 7804 [["wiese","ego",0.5,"sommer","krone"],["wiese","ego",0.5,"winter","krone"],["wiese","ego",0.5,"fruehling","krone"],["wiese","ego",0.5,"sommer","wiese"],["wiese","ego",0.5,"winter","wiese"],["wiese","ego",0.5,"fruehling","wiese"]] ohne-budget
+[linse-gpu] amd/rdna-3
+SCHRITT /fenster 0.0 s
+SCHRITT /umstellen 2.8 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 5.9 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 6.4 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 8.6 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 18.6 s
+SCHRITT /bild 9.2 s
+SCHRITT /bild 10.0 s
+VEGETATION {"schuesse":[{"n":"wiese-ego-0.5-sommer-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 66 σ 38.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":183487},{"n":"wiese-ego-0.5-winter-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 95.2 σ 42 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":20406},{"n":"wiese-ego-0.5-fruehling-krone","was":"krone","kamera":[-278.624,28.97,-1054.505,-275.885,33.348,-1068.234],"pose":{"kamera":[-278.624,28.97,-1054.505],"blick":[0.18673,0.29847,-0.93597]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 82.4 σ 40.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":143156},{"n":"wiese-ego-0.5-sommer-wiese","was":"wiese","kamera":[-280.4,29.704,-1045.6,-336.985,29.704,-1069.587],"pose":{"kamera":[-280.4,29.704,-1045.6],"blick":[-0.92069,0,-0.39029]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.46 m · Luma 58.5 σ 33.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":1039122,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.4734,0.2965,0.1475,0.0624,0.0378,0.018],"klassen":{"nahWiese:Lf":[0,0,26,121659,93488,18481,2276],"streuSatz":[0,0,2413,3107,1747,2,0],"bodenSatz":[0,22531,4771,426,0,14,2437],"nahWiese:L2":[0,624,222411,53956,7,10,151],"nahWiese:L1":[0,280372,106677,1,0,0,1]},"farbton":[["-143,-524",7469,-2948.959,6629.664,7464],["-143,-525",1194,-390.03,1096.779,1194],["-143,-523",14596,-7857.737,11855.292,14573],["-142,-525",19399,-9046.471,16539.393,19386],["-142,-524",19114,-6273.771,17614.333,19102],["-143,-522",6263,-2967.539,5347.454,6263],["-142,-526",854,-481.794,690.814,854],["-142,-523",8925,-4182.003,7601.871,8897],["-141,-526",1606,-745.125,1396.119,1606],["-141,-525",1976,-991.845,1673.743,1976],["-142,-522",4,-2.06,3.429,4]]},{"n":"wiese-ego-0.5-winter-wiese","was":"wiese","kamera":[-280.4,29.704,-1045.6,-336.985,29.704,-1069.587],"pose":{"kamera":[-280.4,29.704,-1045.6],"blick":[-0.92069,0,-0.39029]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.46 m · Luma 108.5 σ 53.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":1477967,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.4725,0.2967,0.1482,0.0599,0.04,0.0185],"klassen":{"bodenSatz":[0,104702,61407,9295,2334,5937,9854],"nahWiese:L2":[0,10814,272190,10819,481,1184,1404],"nahWiese:Lf":[0,0,747,165873,101878,18949,2877],"streuSatz":[0,16,1591,3975,1962,0,0],"nahWiese:L1":[0,212596,21027,0,0,0,0]},"farbton":[["-143,-524",7535,168.565,5121.985,5643],["-143,-525",1196,87.091,805.24,906],["-143,-523",14792,275.4,9412.415,10390],["-142,-525",19557,-313.514,12934.861,14328],["-142,-524",19155,2230.863,11907.001,13183],["-143,-522",6341,31.264,5236.108,5666],["-142,-526",861,-109.55,741.325,820],["-142,-523",8978,621.298,5187.929,5770],["-141,-526",1637,-119.169,1500.448,1588],["-141,-525",1999,-166.542,1654.531,1807],["-142,-522",4,1.197,3.81,4]]},{"n":"wiese-ego-0.5-fruehling-wiese","was":"wiese","kamera":[-280.4,29.704,-1045.6,-336.985,29.704,-1069.587],"pose":{"kamera":[-280.4,29.704,-1045.6],"blick":[-0.92069,0,-0.39029]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.46 m · Luma 77.2 σ 41.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":1008123,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.473,0.2964,0.1478,0.0622,0.0369,0.018],"klassen":{"nahWiese:Lf":[0,0,68,145764,93948,17299,1935],"streuSatz":[0,21,2894,4248,2278,1,0],"bodenSatz":[0,39880,15118,1581,12,97,2881],"nahWiese:L2":[0,2541,263316,34024,0,0,6],"nahWiese:L1":[0,272702,64600,0,0,0,0]},"farbton":[["-143,-524",7530,-2416.119,6970.353,7530],["-143,-525",1196,-377.622,1099.942,1196],["-143,-523",14748,-6991.247,12561.366,14745],["-142,-525",19505,-8979.014,16725.332,19491],["-142,-524",19140,-5221.635,17976.313,19137],["-143,-522",6321,-2339.429,5683.527,6321],["-142,-526",857,-374.395,754.631,857],["-142,-523",8963,-3536.072,7993.522,8956],["-141,-526",1634,-570.392,1504.563,1634],["-141,-525",1991,-945.276,1710.631,1991],["-142,-522",4,-1.143,3.737,4]]}]}
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

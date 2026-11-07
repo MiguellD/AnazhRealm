@@ -1,0 +1,51 @@
+{
+ "lage": {
+  "vor": {
+   "kamera": [
+    -261.035,
+    31.564,
+    -1112.249
+   ],
+   "blick": [
+    -2.6809,
+    -0.5
+   ],
+   "uhr": 0.5,
+   "wetter": "sunny",
+   "bauten": 2666,
+   "edits": 1
+  },
+  "nach": {
+   "kamera": [
+    -261.035,
+    31.564,
+    -1112.249
+   ],
+   "blick": [
+    -2.6809,
+    -0.5
+   ],
+   "uhr": 0.5,
+   "wetter": "sunny",
+   "bauten": 2086,
+   "edits": 1
+  }
+ },
+ "diff": 0.9878472222222345,
+ "rauschen": 0.17708333333333295,
+ "vor": {
+  "bau": true,
+  "grube": true,
+  "wasser": 2
+ },
+ "nach": {
+  "bau": false,
+  "grube": true,
+  "wasser": 2
+ },
+ "reloadMs": 3047,
+ "adapter": {
+  "renderer": "[linse-gpu] amd/rdna-3"
+ },
+ "sek": 32.3
+}

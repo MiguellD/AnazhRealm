@@ -1,0 +1,90 @@
+{
+ "sha": "6e7b9ad7a4e7bad9a291ef24c3d85ae402ce91dc",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T15:01:36.663Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "0.01 % Lücke nach 0.3 s bis zur Ruhe der Foundry · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.54 s von außen (Eigenmeldung 11.23 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "ROT: 0.01 % Lücke nach 0.3 s bis zur Ruhe der Foundry · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.54 s von außen (Eigenmeldung 11.23 s) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 48.5,
+   "zeit": "2026-11-05T15:01:36.663Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 12.54 s von außen (Eigenmeldung 11.23 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "ROT: t(Kontrolle) kalt 12.54 s von außen (Eigenmeldung 11.23 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 48.5,
+   "zeit": "2026-11-05T15:01:36.663Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 643 ms (Soll ≤ 250) · Haupt-Faden belegt 8.61 s bis zur Kontrolle (Soll ≤ 4; 26 LongTasks 6.34 s) · Kontrolle 12.68 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 84 ms (bei 2.2 s; 15× ≥ 50 ms, Σ 937 ms) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "ROT: längste Aufgabe 643 ms (Soll ≤ 250) · Haupt-Faden belegt 8.61 s bis zur Kontrolle (Soll ≤ 4; 26 LongTasks 6.34 s) · Kontrolle 12.68 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 84 ms (bei 2.2 s; 15× ≥ 50 ms, Σ 937 ms) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 48.5,
+   "zeit": "2026-11-05T15:01:36.663Z",
+   "abdruck": "2bfe3805ab4b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T15:00:02.848Z",
+  "port": 7804,
+  "warten": 1.09,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 20,
+    "takte": 692,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 148,
+   "frameP95": 527.3,
+   "taktP95": 334.8,
+   "vramMax": 136.6,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 67,
+   "luecken": 4,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 77.3,
+  "minuten": 2.45
+ }
+}

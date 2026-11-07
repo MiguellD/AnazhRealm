@@ -1,0 +1,133 @@
+{
+ "art": "dauer",
+ "sekunden": 18.1,
+ "schritte": [
+  [
+   "ende",
+   18
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 728,
+  "bilder": 2719,
+  "seiten": 11,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 0.0002208611111111105,
+   "mittag": 0.5001860555555556
+  },
+  "minuten": 11.6,
+  "seiten": 5,
+  "proben": 10,
+  "last": {
+   "n": 2705,
+   "frame": 67,
+   "p99": 100.4,
+   "max": 996,
+   "ueber33": 1303,
+   "ueber100": 31,
+   "takt": 63.7,
+   "vram": 133.9,
+   "gpu": 8.41,
+   "gpuN": 364,
+   "befehle": 76,
+   "dreiecke": 374129,
+   "voll": 0.054,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 66,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 1286,
+  "gegangen": 166,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 67,
+    "frame": 50.3,
+    "p99": 58.5,
+    "max": 58.5,
+    "ueber33": 28,
+    "ueber100": 0,
+    "takt": 29.9,
+    "vram": 125.9,
+    "gpu": 12.46,
+    "gpuN": 9,
+    "befehle": 77,
+    "dreiecke": 303360,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 66,
+    "frame": 50.2,
+    "p99": 58.6,
+    "max": 58.6,
+    "ueber33": 29,
+    "ueber100": 0,
+    "takt": 40.2,
+    "vram": 135,
+    "gpu": 6.04,
+    "gpuN": 8,
+    "befehle": 67,
+    "dreiecke": 380796,
+    "voll": 1,
+    "halt": false,
+    "last": 0.63,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +8.4 MB/min > 5 — Halter: r.state.renderer.info.memoryMap[k].array +5.8 MB · r._foundry.cache[].children[].geometry.attributes +4.0 MB · r.state.archInstanceGroups[].geom.attributes.normal.array +1.9 MB",
+   "vram: +9.7 MB zurück am Start — buf:? +7.1 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB"
+  ],
+  "heap": [
+   249.3,
+   346.9
+  ],
+  "vramGC": [
+   123.8,
+   133.5
+  ]
+ }
+}

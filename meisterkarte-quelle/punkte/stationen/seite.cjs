@@ -6,7 +6,7 @@
 // selbst — gelesen aus der Datei des Spiel-Baums am SHA (`H.quelle`, acorn: die benannten Deklarationen der obersten Ebene), nie
 // abgeschrieben: die Linse bleibt die EINE Quelle der Messung und ihres Urteils, die Probe wählt nur, was das Kriterium braucht.
 // Die Hilfen der Probe (H):
-//   ruf(weg, o)   ein Befehl an die Werkbank der Sitzung (POST; `fehler` wirft beim Namen)
+//   ruf(weg, o)   ein Befehl an die Werkbank der Sitzung (POST; `fehler` als Zeichenkette wirft beim Namen, die Liste ist das Buch)
 //   seite(code)   ein Funktionsrumpf in der Seite (r = Welt, T = THREE; die Werkzeuge der Werkbank und welt-boot stehen dort)
 //   quelle(datei, namen, mit, extra)   die benannten Deklarationen, in node ausgewertet (eine Funktion trägt ihren Text: die Seite
 //                 bekommt String(fn)); `mit` die freien Namen (halteBis …), `extra` weitere Rückgaben (ein Getter auf ein `let`)
@@ -37,7 +37,10 @@ async function seiteLauf() {
     const H = { aus, port: Number(port), W, sek: Number(process.env.PUNKTE_PROBE_DECKEL_S) || Number(sek), WB, ende: [] };
     H.ruf = async (weg, o) => {
         const a = await WB.werkbankRuf(W, weg, o || {});
-        if (!a || a.fehler || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 400));
+        // `fehler` als Zeichenkette ist das Versagen des Befehls, als Liste das Konsolen-Buch der Sitzung (werkbank.cjs endeMit,
+        // wie g6 pbProbe und proben-welt tor.ruf): `/status` trägt das Buch immer, und `[]` ist wahr — seit `cdp` über /status
+        // anschließt (1cf8cb0e), warf jede Probe mit Rahmen oder Bild „BILD ohne Seite“ (halten.K1#2: Labor ? kg β ?°, eb3cc7f3/95ba6fd6)
+        if (!a || typeof a.fehler === "string" || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 400));
         return a;
     };
     H.seite = async (code) => (await H.ruf("/eval", { code })).ergebnis;

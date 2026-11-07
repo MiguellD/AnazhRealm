@@ -1,0 +1,4 @@
+{
+ "fehler": "async function windSeite(o) { const r = wind … — window.__tiereHalten is not a function @ at evaluate (evaluate at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:2086:42), <anonymous>:1:89) ← at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56) ← at async ExecutionContext.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16) ← at async IsolatedWorld.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)",
+ "sek": 0.8
+}

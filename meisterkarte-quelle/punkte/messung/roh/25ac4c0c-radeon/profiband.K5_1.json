@@ -1,0 +1,133 @@
+{
+ "art": "dauer",
+ "sekunden": 11.6,
+ "schritte": [
+  [
+   "ende",
+   11.5
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 714,
+  "bilder": 3562,
+  "seiten": 12,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 0.00017675000000000156,
+   "mittag": 0.5001697500000001
+  },
+  "minuten": 11.4,
+  "seiten": 6,
+  "proben": 9,
+  "last": {
+   "n": 3547,
+   "frame": 91.8,
+   "p99": 150.6,
+   "max": 1397.9,
+   "ueber33": 943,
+   "ueber100": 122,
+   "takt": 83.2,
+   "vram": 136.4,
+   "gpu": 6.98,
+   "gpuN": 444,
+   "befehle": 85,
+   "dreiecke": 402983,
+   "voll": 0.043,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 66,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 2608,
+  "gegangen": 584,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 67,
+    "frame": 67,
+    "p99": 92,
+    "max": 92,
+    "ueber33": 29,
+    "ueber100": 0,
+    "takt": 57.7,
+    "vram": 134.6,
+    "gpu": 8.98,
+    "gpuN": 9,
+    "befehle": 106,
+    "dreiecke": 368815,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 77,
+    "frame": 66.9,
+    "p99": 83.8,
+    "max": 83.8,
+    "ueber33": 17,
+    "ueber100": 0,
+    "takt": 51,
+    "vram": 140,
+    "gpu": 4.99,
+    "gpuN": 8,
+    "befehle": 117,
+    "dreiecke": 430970,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +30.2 MB/min > 5 — Halter: r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +13.0 MB · r._foundry.cache[].children[].geometry.attributes +7.4 MB · r.state.renderer.info.memoryMap[k].array +4.8 MB",
+   "vram: +5.7 MB zurück am Start — buf:? +5.1 MB"
+  ],
+  "heap": [
+   222.4,
+   566.9
+  ],
+  "vramGC": [
+   132.3,
+   138
+  ]
+ }
+}

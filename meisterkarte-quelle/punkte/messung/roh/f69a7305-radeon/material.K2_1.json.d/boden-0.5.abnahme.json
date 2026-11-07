@@ -1,0 +1,123 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.175",
+  "sha": "f69a73052f55019a5cf75f1265ea0401d4c8bbdf"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 61
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.2500000000000213,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.25,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 0.5,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -282.124,
+   27.965,
+   -1046.323
+  ],
+  "blick": [
+   -0.67421,
+   -0.68237,
+   -0.28252
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 38.8,
+  "sigma": 14.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 38.8 σ 14.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.175 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^bodenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.4313,
+    "spiegelEbene": 27.624,
+    "sp": [
+     1332,
+     0,
+     0,
+     143083.56,
+     143083.56,
+     61709.61
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 30.51,
+    "pixel": 341847,
+    "luma": 47.6,
+    "kante": 0.8361,
+    "kr": 13743,
+    "strich": 0.2458,
+    "si": 221763,
+    "bloecke": 4417,
+    "glatt": 0.1245,
+    "nyquist": 0.1611,
+    "beta": 0.9063
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 0.5,
+   "ist": 0.498
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f69a7305-radeon\\material.K2_1.json.d\\boden-0.5.maske.png",
+  "urteil": [
+   "MIKRO bodenSatz: nyquist 0.1611 glatt 0.1245"
+  ]
+ }
+}

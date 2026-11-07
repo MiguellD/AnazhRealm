@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 16.6,
+ "schritte": [
+  [
+   "ende",
+   16.6
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 987,
+  "bilder": 4242,
+  "seiten": 10,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 0.00015802777777777953,
+   "mittag": 0.5001139166666667
+  },
+  "minuten": 16.36,
+  "seiten": 5,
+  "proben": 10,
+  "last": {
+   "n": 4227,
+   "frame": 117,
+   "p99": 167.2,
+   "max": 1840.8,
+   "ueber33": 2072,
+   "ueber100": 436,
+   "takt": 109.7,
+   "vram": 129,
+   "gpu": 9.02,
+   "gpuN": 651,
+   "befehle": 70,
+   "dreiecke": 351902,
+   "voll": 0.044,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 66,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 3857,
+  "gegangen": 725,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 93,
+    "frame": 33.7,
+    "p99": 67,
+    "max": 67,
+    "ueber33": 13,
+    "ueber100": 0,
+    "takt": 24.7,
+    "vram": 125.2,
+    "gpu": 5.85,
+    "gpuN": 8,
+    "befehle": 67,
+    "dreiecke": 292222,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 76,
+    "frame": 41.7,
+    "p99": 50.6,
+    "max": 50.6,
+    "ueber33": 18,
+    "ueber100": 0,
+    "takt": 28.8,
+    "vram": 125,
+    "gpu": 4.82,
+    "gpuN": 8,
+    "befehle": 68,
+    "dreiecke": 380229,
+    "voll": 1,
+    "halt": false,
+    "last": 0.88,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +22.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +7.4 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +2.9 MB · r.state.archInstanceGroups[].geom.attributes.normal.array +1.9 MB"
+  ],
+  "heap": [
+   255.9,
+   620.3
+  ],
+  "vramGC": [
+   123.9,
+   124
+  ]
+ }
+}

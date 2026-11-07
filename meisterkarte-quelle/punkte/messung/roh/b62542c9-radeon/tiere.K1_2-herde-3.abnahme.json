@@ -1,0 +1,159 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.186",
+  "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 67
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1337,
+   "taeter": {
+    "Laub baum_tanne": 0.0903,
+    "Rinde baum_tanne": 0.0365,
+    "Formation": 0.0069
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 44.04,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -505.959,
+   48.866,
+   -815.703
+  ],
+  "blick": [
+   -0.13559,
+   -0.1861,
+   -0.97313
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 47.9,
+  "sigma": 29.1,
+  "schwarz": 0.0014,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 44.04 m · Luma 47.9 σ 29.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.186 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 3,
+  "kamera": [
+   -505.959,
+   48.866,
+   -815.703
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -485.33,
+     42.75,
+     -824.43
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 2 tier-satz in 43.27 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -495.07,
+     45.828,
+     -818.708
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Laub grown_busch_hazel_v1 in 26.5 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -477.403,
+     39.926,
+     -832.478
+    ],
+    "rot": [
+     "Vordergrund 42.9 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 17.2 %, Gelände 13.2 %, Laub grown_busch_hazel_v1 11.8 %"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -505.959,
+     48.866,
+     -815.703
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 11
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 3
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 23
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 41
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b62542c9-radeon\\tiere.K1_2-herde-3.maske.png"
+ }
+}

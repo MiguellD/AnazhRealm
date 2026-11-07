@@ -1,0 +1,96 @@
+{
+ "sha": "f89555fbdd253249561222cac90e98893d144c41",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T00:02:45.254Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 4.99 px · Haus 5.98 px · Tor 7.60 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.41,
+   "grund": "ROT: Baum 4.99 px · Haus 5.98 px · Tor 7.60 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 24.4,
+   "zeit": "2026-11-05T00:01:36.841Z",
+   "abdruck": "eacab06a01be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 17.6397 % Pop-Pixel je Sekunde (365777 px, Soll ≤ 0,05 %), je Schritt 45984*/34671*/48463*/56125/36860*/42709*/46356*/54609* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.36,
+   "grund": "ROT: Gehen 4 m/s: 17.6397 % Pop-Pixel je Sekunde (365777 px, Soll ≤ 0,05 %), je Schritt 45984*/34671*/48463*/56125/36860*/42709*/46356*/54609* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 21.5,
+   "zeit": "2026-11-05T00:02:01.268Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 2.27 % (Soll < 2 %) über 18958 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.75 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: Luma-Sprung 2.27 % (Soll < 2 %) über 18958 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.75 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.1,
+   "zeit": "2026-11-05T00:02:45.254Z",
+   "abdruck": "37bfc892baa6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T00:00:11.262Z",
+  "port": 7804,
+  "warten": 0.94,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 18.9,
+    "takte": 621,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 22.4,
+    "takte": 1316,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 109,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 105.7,
+  "minuten": 2.8
+ }
+}

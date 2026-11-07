@@ -1,0 +1,110 @@
+{
+ "sha": "079843cfab1ebeb897ad9c5508d3bebffd7122de",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T23:55:38.462Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4352 · Karte fimp:birke:L2 0.3461 (32553 px), fimp:eiche:L2 0.2628 (86335 px), fimp:fichte:L2 0.2084 (39639 px), fimp:strauch:L2 0.4352 (22065 px), fimp:tanne:L2 0.2281 (121842 px) · zweiton ≠ 0: f:fichte:L1 | Spielgang:  Luma 48.7 σ 31.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.181 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4352 · Karte fimp:birke:L2 0.3461 (32553 px), fimp:eiche:L2 0.2628 (86335 px), fimp:fichte:L2 0.2084 (39639 px), fimp:strauch:L2 0.4352 (22065 px), fimp:tanne:L2 0.2281 (121842 px) · zweiton ≠ 0: f:fichte:L1 | Spielgang:  Luma 48.7 σ 31.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.181 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.4,
+   "zeit": "2026-11-04T23:53:45.168Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 2.49 px · Haus 6.08 px · Tor 0.71 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.47,
+   "grund": "ROT: Baum 2.49 px · Haus 6.08 px · Tor 0.71 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 28.4,
+   "zeit": "2026-11-04T23:54:27.642Z",
+   "abdruck": "eacab06a01be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 19.3714 % Pop-Pixel je Sekunde (401685 px, Soll ≤ 0,05 %), je Schritt 51421*/42105*/56752/57077/37373*/47610*/40484*/68863* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "ROT: Gehen 4 m/s: 19.3714 % Pop-Pixel je Sekunde (401685 px, Soll ≤ 0,05 %), je Schritt 51421*/42105*/56752/57077/37373*/47610*/40484*/68863* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 21.1,
+   "zeit": "2026-11-04T23:54:56.119Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 6.11 % (Soll < 2 %) über 9896 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.68 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.12,
+   "grund": "ROT: Luma-Sprung 6.11 % (Soll < 2 %) über 9896 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.68 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 7.4,
+   "zeit": "2026-11-04T23:55:38.462Z",
+   "abdruck": "37bfc892baa6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T23:52:01.566Z",
+  "port": 7804,
+  "warten": 1.26,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 19.3,
+    "takte": 617,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 21.1,
+    "takte": 1308,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 309,
+   "frameP95": 50.2,
+   "taktP95": 26.9,
+   "vramMax": 124.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 147,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 148.7,
+  "minuten": 3.82
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "sha": "155a934f20100533cdd71394e3ea360f292be0bb",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T13:38:06.036Z",
+ "host": "MiguellD",
+ "je": {
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.51 % (1920×1080, im Spiel) · INP HUD 64 ms (50) · Menü 160 ms (20)",
+   "exit": 0,
+   "minuten": 0.24,
+   "gpu": "amd/rdna-3",
+   "s": 14.3,
+   "zeit": "2026-11-05T13:38:06.036Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T13:29:48.660Z",
+  "port": 7804,
+  "warten": 7.76,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 17.4,
+    "takte": 630,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 171,
+   "frameP95": 67,
+   "taktP95": 22.6,
+   "vramMax": 140,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 44,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 46.2,
+  "minuten": 8.64
+ }
+}

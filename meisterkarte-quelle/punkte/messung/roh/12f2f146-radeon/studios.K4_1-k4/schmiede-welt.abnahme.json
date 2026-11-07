@@ -1,0 +1,118 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.201",
+  "sha": "12f2f1469425ae5f65881cff3f1d39ee818f105d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 104
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.5722478499450008,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.57,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 1.14,
+  "gestalt": [
+   "klinge_langschwert w-klinge_langschwert-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   17.495,
+   90.665,
+   16.613
+  ],
+  "blick": [
+   -0.78347,
+   -0.31458,
+   -0.53592
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 68.5,
+  "sigma": 17.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.14 m · Luma 68.5 σ 17.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.201 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:langschwert:L\\d$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:langschwert:L0=255/80/80"
+  ],
+  "klassen": {
+   "f:langschwert:L0": {
+    "objekte": 4,
+    "spiegelTreue": null,
+    "spiegelEbene": 90.304,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0352,
+    "wt": 1068,
+    "wtZiel": null,
+    "bunt": 16.19,
+    "pixel": 30371,
+    "luma": 46.14,
+    "kante": 0.8975,
+    "kr": 2658,
+    "strich": 0.7691,
+    "si": 3479,
+    "bloecke": 283,
+    "glatt": 0.2155,
+    "nyquist": 0.1222,
+    "beta": 2.9436
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\12f2f146-radeon\\studios.K4_1-k4\\schmiede-welt.maske.png"
+ }
+}
