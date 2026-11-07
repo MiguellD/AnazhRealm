@@ -2578,10 +2578,11 @@ class AnazhRealm_studio_bruecke {
         return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fernform");
     }
     // DIE EINE HÜLLEN-FORM (docs/studio-vertrag.md N5, S3): `{ stufe, teile: [{ art: "box" | "keil" | "kapsel", c, h | a, b,
-    // r, first ("+x" · "-x" · "+z" · "-z", der Keil), walm (0..1), farbe (linear), rolle: "fest" | "sicht" | "wurf" | "beide" }] }`,
-    // asset-lokal. Der EINE Leser: die Teile EINER Rolle — "fest" die Kollision, "sicht" das Fernbild, "beide" zählt für
-    // beide; "wurf" liest hier niemand (das Teil wirft nur: die NUR-WURF-Stufe ist die ganze Liste, das Tor 1110-9) —, fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine
-    // Hülle.
+    // r, first ("+x" · "-x" · "+z" · "-z", der Keil), walm (0..1), farbe (linear), rolle: "fest" | "sicht" | "wurf" | "beide" |
+    // "strahl" }] }`, asset-lokal. Der EINE Leser: die Teile EINER Rolle — "fest" die Kollision, "sicht" das Fernbild, "beide" zählt
+    // für beide; "strahl" der Leib, an dem nur der Strahl hält (das Geländer der Treppe: die Kamera-Kugel, der Hieb — die Kapsel des
+    // Gangs liest "fest"); "wurf" liest hier niemand (das Teil wirft nur: die NUR-WURF-Stufe ist die ganze Liste, das Tor 1110-9) —,
+    // fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine Hülle.
     static _huelleVon(h, rolle, quelle) {
         if (!h) return null;
         const bruch = (was) => AnazhRealm._kernPflichtBruch((quelle || "huelle") + " (Hüllen-Form: " + was + ")");
@@ -2594,7 +2595,16 @@ class AnazhRealm_studio_bruecke {
             Number.isFinite(v[2]);
         const out = [];
         for (const t of h.teile) {
-            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "wurf" || t.rolle === "beide"))
+            if (
+                !t ||
+                !(
+                    t.rolle === "fest" ||
+                    t.rolle === "sicht" ||
+                    t.rolle === "wurf" ||
+                    t.rolle === "beide" ||
+                    t.rolle === "strahl"
+                )
+            )
                 return bruch("rolle");
             if (t.art === "box" || t.art === "keil") {
                 if (!v3(t.c) || !v3(t.h)) return bruch(t.art + " c/h");
