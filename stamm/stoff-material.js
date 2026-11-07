@@ -65,7 +65,7 @@ class AnazhRealm_stoff_material {
             const NW = AnazhRealm.NAH_WIESE;
             const F = NW.fern;
             // das Auge der Wiese (`_wieseAuge`): xyz die Lage, w die Höhe über dem eigenen Boden
-            this._halmFerneAuge = T.uniform(new THREE.Vector4());
+            this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()); // die Schale der Ferne teilt es
             const naht = this._weltNaht(T);
             const ank = naht.anker;
             const auge = this._halmFerneAuge;

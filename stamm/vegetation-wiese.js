@@ -521,6 +521,17 @@ class AnazhRealm_vegetation_wiese {
         };
     }
 
+    // DAS GESETZ DER SCHALE (rein, über einer Algebra A wie `_wieseFern` — Zahlen im Sicht-Satz, TSL im Stoff der Schale): am
+    // waagrechten Abstand d der Anteil der stehenden Karten — 1 bis `voll`, dahinter (voll/d)³ (die Karten je Pixel bleiben),
+    // vor `bis` über `saum` auf 0 — und die Breite einer Karte, 1/√Anteil (höchstens `breitMax`): die Deckung je Boden bleibt.
+    static _wieseSchale(A, d) {
+        const S = AnazhRealm.NAH_WIESE.fern.schale;
+        const a0 = A.min(A.k(1), A.pow(A.max(A.mul(d, A.k(1 / S.voll)), A.k(1e-3)), A.k(-3)));
+        const t = A.min(A.k(1), A.max(A.k(0), A.mul(A.add(d, A.k(S.saum - S.bis)), A.k(1 / S.saum))));
+        const saum = A.add(A.k(1), A.mul(A.k(-1), A.mul(A.mul(t, t), A.add(A.k(3), A.mul(t, A.k(-2))))));
+        return { anteil: A.mul(a0, saum), breit: A.min(A.k(S.breitMax), A.pow(A.max(a0, A.k(1e-3)), A.k(-0.5))) };
+    }
+
     // DER FUSSABDRUCK-ABSTAND (rein, über der Algebra A — dieselbe Rechnung in Takt, Sicht-Satz und Stoff): (dx, dy, dz) der
     // Fuß des Büschels vom Auge aus, (nx, ny, nz) die Normale der Ebene seines Hangs (ungenormt: (−gx, 1, −gz)), h die Höhe
     // des Auges über dem eigenen Boden. Die Bodenfläche je Pixel am Fuß ist dist²/sin φ = dist³/S (S = |n̂ · (Auge − Fuß)|,
@@ -663,8 +674,9 @@ class AnazhRealm_vegetation_wiese {
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
         const grenzeMax = G.grenze.reduce((a, b) => Math.max(a, b), 1); // die Kugel der Kachel im Sicht-Satz
+        const schale = this._wieseSchaleDaten(fx, fz, bueschel);
         return Object.assign(
-            { anteil, reich, chunkKarten, wasser, nie: G.nie, grenze: G.grenze, grenzeMax, bloecke: [] },
+            { anteil, reich, chunkKarten, wasser, nie: G.nie, grenze: G.grenze, grenzeMax, schale, bloecke: [] },
             this._nahWieseKachelDaten(fx, fz, bueschel, K)
         );
     }
@@ -815,6 +827,103 @@ class AnazhRealm_vegetation_wiese {
             grenze[q] = g;
         }
         return { grenze, chunkKarten, nie };
+    }
+
+    // DIE SCHALE EINER KACHEL DER FERNE (w22-wiese-nachzug): auf dem Gitter ihres Bodens (`_wieseFernGitter`, die Mitten der
+    // Zellen) je Punkt, der Wiese trägt — nie an einer Kante, über die der Boden steiler fällt, als die Wiese steht, nie im Grund
+    // eines Hauses — EINE Karte: ihre Matrix (die Lage, gedreht nach Zug 1 ihrer Ziehung, Breite `breite`, Höhe `hoehe` ×
+    // 0,8–1,2; die vierte Zeile trägt in Element 7 ihre Ordnung, Zug 0 der über dem Gitter geschichteten Ziehung — das
+    // Teil-Gitter wie die Büschel), ihr Tint (der des nächsten Büschels der Kachel). Nach der Ordnung sortiert.
+    _wieseSchaleDaten(fx, fz, bueschel) {
+        const F = AnazhRealm.NAH_WIESE.fern,
+            S = F.schale;
+        const G = this.state.nahWiese.fern.gitter.get(fx + "," + fz);
+        const n = Math.round(F.kachel / F.gitter);
+        const kante = AnazhRealm.GRASS_SLOPE.hi * F.gitter;
+        const [Gb, E, W] = [globalThis.__gelaendeCore, this._erdbauLage(), AnazhRealm._wortAlgebra()];
+        const p = [];
+        for (let j = 0; G && !G.nie && j < n; j++)
+            for (let i = 0; i < n; i++) {
+                const q = j * n + i,
+                    y = G.h[q];
+                if (!G.traegt[q] || !Number.isFinite(y)) continue;
+                const steil = (r) => Math.abs(G.h[r] - y) > kante;
+                if ((i + 1 < n && steil(q + 1)) || (i && steil(q - 1)) || (j + 1 < n && steil(q + n)) || (j && steil(q - n))) continue; // prettier-ignore
+                const [x, z] = [(fx * n + i + 0.5) * F.gitter, (fz * n + j + 0.5) * F.gitter];
+                if (Gb.erdbauGrund(E, x, z, S.breite * 0.5)) continue;
+                p.push([AnazhRealm._ortZiehung(W, x, z, 0, F.gitter), AnazhRealm._ortZiehung(W, x, z, 1), x, y, z]);
+            }
+        p.sort((a, b) => a[0] - b[0]);
+        const K = { n: p.length, o: new Float64Array(p.length), x: new Float64Array(p.length), z: new Float64Array(p.length) }; // prettier-ignore
+        Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3).fill(1), y0: Infinity, y1: -Infinity }); // prettier-ignore
+        p.forEach(([o, w, x, y, z], m) => {
+            const [c, s, h] = [
+                Math.cos(2 * Math.PI * w),
+                Math.sin(2 * Math.PI * w),
+                S.hoehe * (0.8 + 0.4 * ((w * 977) % 1)),
+            ];
+            K.matrizen.set([c * S.breite, 0, -s * S.breite, 0, 0, h, 0, o, s, 0, c, 0, x, y - 0.05, z, 1], m * 16);
+            [K.o[m], K.x[m], K.z[m], K.y0, K.y1] = [o, x, z, Math.min(K.y0, y), Math.max(K.y1, y)];
+            let [best, d2] = [null, Infinity];
+            for (const b of bueschel) if ((b.x - x) ** 2 + (b.z - z) ** 2 < d2) [best, d2] = [b, (b.x - x) ** 2 + (b.z - z) ** 2]; // prettier-ignore
+            if (best) K.farben.set(best.f, m * 3);
+        });
+        return K;
+    }
+
+    // DIE SENKE DER SCHALE (w22-wiese-nachzug): EINE Senke `nahWiese:Lf:schale` (ein Befehl, die Klasse der Ferne), ihre Karte
+    // ein Band und acht Spitzen von Halm-Breite (10 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der
+    // Pixel mehrere trägt), unten dunkel, oben licht; die Albedo die der Vorlage L2 (ihr Stoff, ihre Ecken-Farben). Der Stoff
+    // liest die Ordnung der Karte (Element 7) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der
+    // Halm der Ferne): sie steigt über `rampe` m hinter der Übergabe, steht unter dem Anteil (`_wieseSchale`, im Band `rand`
+    // sinkt sie wie das Büschel) und ist um 1/√Anteil breiter. null, solange die Vorlage fehlt.
+    _wieseSchaleSenke(vl) {
+        const nw = this.state.nahWiese;
+        if (nw.schale || !vl || !vl.fern.length) return nw.schale || null;
+        const [T, NW] = [THREE.TSL, AnazhRealm.NAH_WIESE];
+        const [F, S] = [NW.fern, NW.fern.schale];
+        const [pos, hell] = [[], []];
+        const ecke = (x, y, h) => (pos.push(x, y, 0), hell.push(h, h, h));
+        for (const [x, y, h] of [[-0.5, 0, 0.55], [0.5, 0, 0.55], [0.5, 0.35, 0.8], [-0.5, 0, 0.55], [0.5, 0.35, 0.8], [-0.5, 0.35, 0.8]]) ecke(x, y, h); // prettier-ignore
+        const spitze = [1, 0.8, 0.94, 0.72, 0.9, 0.78, 0.98, 0.84];
+        for (let i = 0; i < 8; i++) {
+            const xa = -0.5 + i / 8;
+            ecke(xa, 0.35, 0.8);
+            ecke(xa + 1 / 8, 0.35, 0.8);
+            ecke(xa + 1 / 16, spitze[i], 1.15);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute(
+            "normal",
+            new THREE.Float32BufferAttribute(
+                pos.map((_, i) => +(i % 3 === 1)),
+                3
+            )
+        );
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(hell, 3));
+        const q = vl.fern[0];
+        const c = q.geo.attributes.color;
+        const albedo = new THREE.Color(1, 1, 1);
+        if (c) {
+            const sum = [0, 0, 0];
+            for (let i = 0; i < c.count; i++) [sum[0], sum[1], sum[2]] = [sum[0] + c.getX(i), sum[1] + c.getY(i), sum[2] + c.getZ(i)]; // prettier-ignore
+            albedo.setRGB(sum[0] / c.count, sum[1] / c.count, sum[2] / c.count);
+        }
+        if (q.mat.color) albedo.multiply(q.mat.color);
+        const mat = new THREE.MeshStandardNodeMaterial({ vertexColors: true, roughness: 1, metalness: 0, side: THREE.DoubleSide }); // prettier-ignore
+        mat.color.copy(albedo);
+        const naht = this._weltNaht(T);
+        const auge = (this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()));
+        const d = naht.anker.xz.sub(auge.xz).length();
+        const g = AnazhRealm._wieseSchale(AnazhRealm._windTsl(T), d);
+        const o = this._instanzMatrixNode(T).element(1).w;
+        const v = g.anteil.mul(1 + F.rand).sub(o).div(g.anteil.mul(F.rand).max(1e-6)).clamp(0, 1).mul(T.smoothstep(NW.radius, NW.radius + S.rampe, d)); // prettier-ignore
+        mat.positionNode = T.vec3(T.positionLocal.x.mul(g.breit), T.positionLocal.y.mul(v), T.positionLocal.z);
+        const a = { key: "schale", name: "nahWiese:Lf:schale", geo, mat, lokal: new THREE.Matrix4(), leafKey: null, quelle: null, mesh: null, kap: 0, anzahl: 0, anders: false, wachse: 0 }; // prettier-ignore
+        this._senkeMesh(a, 1024, this.state.scene);
+        nw.senken.set(a.key, a);
+        return (nw.schale = a);
     }
 
     // DER BLOCK einer Kachel der Ferne je Vorlage v: ihre Büschel dieser Vorlage (Lage, Ordnung, Skala, Hang, die Grenze ihrer
@@ -1122,6 +1231,7 @@ class AnazhRealm_vegetation_wiese {
         // Kachel, der Satz kopiert nur; wie weit es sich streckt und wie hoch es steht, rechnet der Stoff am Auge dieses Passes
         // (`_halmFerneAuge`: die Lage und die Höhe über dem eigenen Boden, `_wieseAuge`) mit derselben Rechnung; die Breite
         // seiner Halme liest den Pixel der Szene (`_halmFernePixel`: der EINE Schirm `_schirm` × die Szenen-Skala)
+        const schale = this._wieseSchaleSenke(ziel[2][0]);
         const auge = this._wieseAuge({ x: ax, y: we[13], z: az });
         if (this._halmFerneAuge) this._halmFerneAuge.value.set(ax, we[13], az, auge.h);
         if (this._halmFernePixel) {
@@ -1195,6 +1305,33 @@ class AnazhRealm_vegetation_wiese {
                         a.anzahl++;
                     }
                 }
+            }
+        }
+        // DIE SCHALE (w22-wiese-nachzug): je Kachel der Ferne, die der Pass trifft, ihre Karten jenseits der Übergabe, deren
+        // Ordnung unter dem Anteil der Schale an ihrem Abstand liegt (`_wieseSchale`, samt dem Band, in dem sie sinkt; o steht
+        // aufsteigend — über dem Anteil der Übergabe steht keine mehr) — der Satz kopiert ihre Matrizen und ihren Tint
+        for (const k of schale && nw.fern ? nw.fern.kacheln.values() : []) {
+            const K = k.schale;
+            if (!K || !K.n || !this._passTrifft(L, k.mx, (K.y0 + K.y1) / 2, k.mz, HF, (K.y1 - K.y0) / 2 + 1, HF, 2 * F.schale.breitMax)) continue; // prettier-ignore
+            for (let i = 0; i < K.n && K.o[i] < 1 + F.rand; i++) {
+                const d = Math.hypot(K.x[i] - ax, K.z[i] - az);
+                if (d < NW.radius) continue;
+                const g = AnazhRealm._wieseSchale(ZAHLEN, d);
+                if (K.o[i] >= g.anteil * (1 + F.rand) * 1.001) continue;
+                // die Karte als Kugel (ihre halbe Breite × Breiten-Faktor, ihre Höhe) im Pass
+                const r = 0.5 * F.schale.breite * g.breit + F.schale.hoehe;
+                if (!this._passTrifft(L, K.x[i], K.matrizen[i * 16 + 13] + F.schale.hoehe / 2, K.z[i], 0, 0, 0, r)) continue; // prettier-ignore
+                if (schale.anzahl >= schale.kap) {
+                    this._senkeMesh(schale, Math.ceil(schale.kap * 1.5), this.state.scene);
+                    schale.anders = true;
+                }
+                const [arr, o] = [schale.mesh.instanceMatrix.array, schale.anzahl * 16];
+                for (let q = 0; q < 16; q++)
+                    if (arr[o + q] !== K.matrizen[i * 16 + q])
+                        ((arr[o + q] = K.matrizen[i * 16 + q]), (schale.anders = true));
+                for (let q = 0; q < 3; q++)
+                    schale.mesh.instanceColor.array[schale.anzahl * 3 + q] = K.farben[i * 3 + q];
+                schale.anzahl++;
             }
         }
         // Der Vergleich liest das CPU-Array als Spiegel der GPU: ein offener Bereich (geschrieben, noch nicht hochgeladen —
