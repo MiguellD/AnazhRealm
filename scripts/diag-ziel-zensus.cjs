@@ -339,9 +339,10 @@ function rundungProbe() {
     await browser.close();
     server.close();
     const v = urteil(out);
+    // ROT trägt seine Verletzungen beim Namen (ABBRUCH zuerst); der grüne Satz liest die Karte und die Rundung nur, wenn es sie gibt
     wandEnde(
         v,
-        `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
+        v.length ? "" : `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
             `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); ` +
             `${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort; die Ausgabe ` +
             `${out.rundung.format} rundet ${out.rundung.rundung || "-"}, die Ditherung (Versatz ${out.rundung.versatz}) ändert ` +
