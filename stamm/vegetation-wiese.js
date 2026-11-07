@@ -165,17 +165,6 @@ class AnazhRealm_vegetation_wiese {
         return out;
     }
 
-    // DER GRUND DER WIESE an (x, z) über dem gezeichneten Boden y mit seinem Grün `gruen` (`_bodenSichtAt` … `gruen`: die
-    // Wiesen-Wache der Boden-Karte, das Pflaster deckt): das Gewicht ∈ [0, 1], mit dem die Nähe dort Wiese trägt — der Pfad
-    // dünnt (`_pfadFeldAt` × `pfadDuennt`: getretene Erde, Gasse, Weg und Pflaster der Wege-Karte, der Ufer-Pfad), die Asche
-    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), im Wasser steht nie einer (`_nassAt`, das EINE
-    // Urteil wie die Nah-Streu). Der Wurf der Nähe liest es (× das Gesetz der Bodenschicht), das Gitter der Ferne liest
-    // DASSELBE Gewicht (`_wieseFernGitter`) — dieselben Masken.
-    _wieseGrund(x, z, y, gruen) {
-        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y)) return 0;
-        return gruen * (1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt) * (1 - this._ascheAt(x, z));
-    }
-
     // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes — der Stoff der Ferne rechnet dieselbe
     // Zahl aus dem Ursprung seiner Instanz (`_halmFerne`): die Lage auf 1/256 m (in f32 exakt bis ±32 km, keine
     // Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen, die oberen 24 Bit.
@@ -620,6 +609,17 @@ class AnazhRealm_vegetation_wiese {
             if (dazu.stand) ziel.stand.set(ck, dazu.stand.get(ck));
         }
         return ziel;
+    }
+
+    // DER GRUND DER WIESE an (x, z) über dem gezeichneten Boden y mit seinem Grün `gruen` (`_bodenSichtAt` … `gruen`: die
+    // Wiesen-Wache der Boden-Karte, das Pflaster deckt): das Gewicht ∈ [0, 1], mit dem die Nähe dort Wiese trägt — der Pfad
+    // dünnt (`_pfadFeldAt` × `pfadDuennt`: getretene Erde, Gasse, Weg und Pflaster der Wege-Karte, der Ufer-Pfad), die Asche
+    // eines Brands trägt keinen Halm, bis sie nachgrünt (`_ascheAt`, stoffe.K2#2), im Wasser steht nie einer (`_nassAt`, das EINE
+    // Urteil wie die Nah-Streu). Der Wurf der Nähe liest es (× das Gesetz der Bodenschicht), das Gitter der Ferne liest
+    // DASSELBE Gewicht (`_wieseFernGitter`) — dieselben Masken.
+    _wieseGrund(x, z, y, gruen) {
+        if (!(gruen > 0) || this._nassAt(x, z, 0.1, y)) return 0;
+        return gruen * (1 - this._pfadFeldAt(x, z, y) * AnazhRealm.NAH_WIESE.pfadDuennt) * (1 - this._ascheAt(x, z));
     }
 
     // DAS GITTER DER FERNE (w21-wiese-fern): je Kachel der Ferne (fx, fz) die Wiese der Nähe und ihr Boden auf einem Gitter der
