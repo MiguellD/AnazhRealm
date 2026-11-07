@@ -793,13 +793,12 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
         if (taeter === "jagd-schritt") schrittJagd();
         if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
-        // der Jäger, dessen Tier im Gesetz verhungert, fällt sofort — mitten in seinem Riss (28.10.: 9 von 10 Opfern ohne Maul)
+        // der Jäger fällt mitten in seinem Riss (28.10.: sein Tier verhungerte im Gesetz, und er fiel sofort, statt erst nach dem
+        // Biss — `_faelltNach`; 9 von 10 Opfern ohne Maul). Den Bruch stellt der Täter SICHER her: der Jäger fällt, sobald der
+        // Riss ihn nennt (fern fällt er mit) — vorher wartete er auf einen Hungertod mitten im Riss, den nur manche Saat
+        // brachte (z282: blind)
         if (taeter === "jaeger-faellt")
-            decke("_bestandTode", (alt) => (tode) => {
-                alt.call(r, tode);
-                for (const c of s.creatures.slice())
-                    if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
-            });
+            decke("_kreaturRiss", (alt) => (c, j) => (alt.call(r, c, j), r._creatureNaturalDeath(j, "hunger", false)));
         const nah = (c) => ab(c.position, pm) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
@@ -808,15 +807,19 @@ async function kreaturProben(r, T, opts) {
             if (nah(c) && !c.userData._rissVon) (R.risse++, genannt.add(c));
             return alt.call(r, c, j);
         });
+        // jeder Tod durch Jagd im Nah-Kreis hat ein Maul am Leib — und der Jäger, den sein Riss nannte, lebt (VERWAIST, sein Jäger
+        // fiel mitten im Riss, zählt als ohne Jäger)
         decke("_creatureCombatDeath", (tod) => (c, quelle) => {
             if (quelle === "jagd" && nah(c)) {
                 R.nah++;
-                R.mitJaeger += s.creatures.some(
-                    (j) =>
-                        r._creatureTemperament(j) === "wild" &&
-                        r._kreaturIstBeute(j, c) &&
-                        r._kreaturBissSpalt(j, c) <= r._kreaturBissReich(j)
-                );
+                R.mitJaeger +=
+                    s.creatures.includes(c.userData._rissVon || c) &&
+                    s.creatures.some(
+                        (j) =>
+                            r._creatureTemperament(j) === "wild" &&
+                            r._kreaturIstBeute(j, c) &&
+                            r._kreaturBissSpalt(j, c) <= r._kreaturBissReich(j)
+                    );
             }
             return tod.call(r, c, quelle);
         });
