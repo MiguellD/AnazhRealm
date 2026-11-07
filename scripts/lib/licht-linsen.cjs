@@ -179,7 +179,7 @@ function albedoSicht(opts) {
                 };
                 let best = null;
                 for (const c of st.creatures || [])
-                    if (c && c.position && tierOf(c) === ex.name) {
+                    if (c?.position && tierOf(c) === ex.name) {
                         const d = Math.hypot(c.position.x - pp.x, c.position.z - pp.z);
                         if (d <= 30 && (!best || d < best.d)) best = { c, d };
                     }
@@ -1990,7 +1990,7 @@ function laubLichtUrteil(messung, band) {
     const befunde = [];
     const zeilen = [];
     for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
-        if (w && w.karte) {
+        if (w?.karte) {
             // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
             // DIE FERNE JE STUNDE (F6, `paar` fern/nah: Haus L2/L0, Fern-Ring/Boden-Satz) antwortet der Uhr wie die Nähe — gegen ihre Zeile
             // zu Mittag (`<art>@0.5`; der Ton-Abstand skaliert mit der Buntheit der Nähe), der Mittag selbst reist als `mittag` (Lehre 19)

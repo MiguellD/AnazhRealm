@@ -342,7 +342,7 @@ hauptLauf(async () => {
             let satz = null;
             for (const weiter = __deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
-                if (satz && satz.length) break;
+                if (satz?.length) break;
                 await sleep(100);
             }
             fit.n = satz ? satz.length : 0;
@@ -375,7 +375,7 @@ hauptLauf(async () => {
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
             }
-            if (flat && flat.leaves) {
+            if (flat?.leaves) {
                 const vor = absenz().n;
                 const slots = r._scatterInstanceAdd(
                     "fscatter:geroell:3:0",

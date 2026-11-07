@@ -1247,7 +1247,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
             st.creatureEmotions = [];
             t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
             const gl5 = t5 && t5.userData._gelenk;
-            if (gl5 && gl5.fern) {
+            if (gl5?.fern) {
                 out.fernExists = true;
                 out.fernMeshN = gl5.meshes.length;
                 r.isInFrustum = () => true;

@@ -216,7 +216,7 @@ hauptLauf(async () => {
                         kernSitz !== null &&
                         Math.abs(entry._sitzHeight - kernSitz) < 1e-9 &&
                         (donorSitz === null || Math.abs(entry._sitzHeight - donorSitz) > 0.01);
-                    if (entry.blockerAABBs && entry.blockerAABBs.length && drv && drv.huelle) {
+                    if (entry.blockerAABBs && entry.blockerAABBs.length && drv?.huelle) {
                         let mnX = Infinity;
                         let mxX = -Infinity;
                         let mnZ = Infinity;

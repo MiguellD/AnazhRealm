@@ -714,9 +714,9 @@ function laborKarte(o) {
             const groesse = R.getSize(new T.Vector2());
             cam.aspect = groesse.x / groesse.y;
             cam.updateProjectionMatrix();
-            if (comp && comp.passes) {
+            if (comp?.passes) {
                 for (const p of comp.passes)
-                    if (p && p.camera) {
+                    if (p?.camera) {
                         kams.push([p, p.camera]);
                         p.camera = cam;
                     }

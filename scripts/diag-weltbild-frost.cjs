@@ -515,7 +515,7 @@ hauptLauf(async () => {
             await window.__frostWand.buehne("die Bühne", holen, (n) => n >= 2);
             const s = holen();
             let meshes = 0;
-            if (s && s.scene) s.scene.traverse((o) => o.isMesh && meshes++);
+            if (s?.scene) s.scene.traverse((o) => o.isMesh && meshes++);
             return { bühne: wer, gezeichnet: window.__frostWand.gezeichnet(s), meshes };
         }, wer);
 

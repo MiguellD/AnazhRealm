@@ -59,7 +59,7 @@ function fernwaldLinse(opts) {
             if (e && e.instanced && e.instSlots) for (const s of e.instSlots) gesetzt.add(s.key + "#" + s.slot);
         const atlas = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const streuSlots = [];
-        if (atlas && atlas.mesh)
+        if (atlas?.mesh)
             for (let i = 0; i < atlas.mesh.count; i++)
                 if (!gesetzt.has(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#" + i))
                     streuSlots.push({ key: AnazhRealm.IMPOSTOR_ATLAS_GRUPPE, slot: i });

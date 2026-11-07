@@ -1312,7 +1312,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         if (r.cloneBlueprint("stein_block", toolBp)) {
             const meta = r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive");
             const reg = meta && meta.ok ? r.registerBlueprintAsTool(toolBp) : null;
-            if (reg && reg.ok) {
+            if (reg?.ok) {
                 // toolName === toolBp (Bauplan-Name)
                 r.equipCreatureTool(c2, toolBp);
                 const equipStats = r.computeCreatureStats(c2).stats;

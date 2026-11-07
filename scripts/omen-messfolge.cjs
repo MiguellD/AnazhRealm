@@ -709,7 +709,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         if (abbruchVon(e.ergebnis)) e.befunde.push(`SCHRITT ${name}: ${abbruchVon(e.ergebnis)}`);
         aus.befunde.push(...e.befunde);
         for (const b of e.befunde) console.log(`  ROT ${b}`);
-        if (nach && nach.version) aus.stand.version = nach.version;
+        if (nach?.version) aus.stand.version = nach.version;
         vor = nach;
         schreibe();
         return e.ergebnis;
@@ -917,7 +917,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     console.log(`\nMESS-FOLGE ${aus.urteil}${abbruch ? ": " + abbruch : ""} — ${aus.befunde.length} Befunde\n${datei}`);
     for (const k of ["laufVoll", "laufFrei"]) {
         const l = aus.kurz[k];
-        if (l && l.frameMs)
+        if (l?.frameMs)
             console.log(
                 `  ${k}: ${l.fps} fps · Frame p50/p95/max ${l.frameMs.p50}/${l.frameMs.p95}/${l.frameMs.max} ms · CPU p50/p95 ` +
                     `${l.cpuTaktMs.p50}/${l.cpuTaktMs.p95} · render-Wanduhr (EWMA, mit CPU-Zustand) ${l.renderEwmaMs} · ${tierZeile(l.tiere)}`

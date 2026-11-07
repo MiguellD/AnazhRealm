@@ -579,7 +579,7 @@ hauptLauf(async () => {
         // DIE FLÜGEL-INSTANZ (1310-4): gleiche Gestalten teilen ihren Zug, und jeder Flügel steht, wo SEINE Gestalt um SEIN
         // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
         // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
-        if (recF && recF._fluegel && recF._fluegel.length) {
+        if (recF?._fluegel?.length) {
             const T = window.THREE;
             const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
             const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
