@@ -1,0 +1,290 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.212",
+  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 5.63,
+   "deckung": 0.1389,
+   "taeter": {
+    "Laub baum_kiefer": 0.1389
+   }
+  }
+ },
+ "ziel": {
+  "name": "Riss",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 11.26,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   53.739,
+   99.115,
+   -3.271
+  ],
+  "blick": [
+   0.32506,
+   -0.89097,
+   0.31704
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 53.6,
+  "sigma": 31.7,
+  "schwarz": 0.0043,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 9,
+  "gewaehlt": 40,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     65.39,
+     91.6,
+     0.2
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_kiefer in 0.43 m"
+    ],
+    "ms": 166
+   },
+   {
+    "k": 34,
+    "kamera": [
+     60.971,
+     99.455,
+     -3.361
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_kiefer in 2.24 m"
+    ],
+    "ms": 127
+   },
+   {
+    "k": 32,
+    "kamera": [
+     61.797,
+     99.439,
+     -2.312
+    ],
+    "rot": [
+     "Sicht verdeckt 72.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 57.1 %, Laub fscatter:birke:L0 15.0 %",
+     "Vordergrund 95.8 % näher als 5.78 m (der halbe Ziel-Abstand): Laub baum_kiefer 77.4 %, Laub fscatter:birke:L0 18.4 %"
+    ],
+    "ms": 302
+   },
+   {
+    "k": 36,
+    "kamera": [
+     59.901,
+     99.431,
+     -4.161
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_kiefer in 0.74 m"
+    ],
+    "ms": 100
+   },
+   {
+    "k": 30,
+    "kamera": [
+     62.323,
+     99.381,
+     -1.085
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_eiche in 5.64 m"
+    ],
+    "ms": 99
+   },
+   {
+    "k": 28,
+    "kamera": [
+     62.514,
+     99.281,
+     0.236
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_eiche in 0.14 m"
+    ],
+    "ms": 92
+   },
+   {
+    "k": 38,
+    "kamera": [
+     57.336,
+     99.274,
+     -4.814
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Laub baum_kiefer in 3.82 m"
+    ],
+    "ms": 86
+   },
+   {
+    "k": 29,
+    "kamera": [
+     62.356,
+     99.142,
+     1.562
+    ],
+    "rot": [
+     "Ziel Riss verdeckt von Boden-Schicht in 5.25 m"
+    ],
+    "ms": 85
+   },
+   {
+    "k": 40,
+    "kamera": [
+     53.739,
+     99.115,
+     -3.271
+    ],
+    "rot": [],
+    "ms": 1425
+   }
+  ],
+  "ms": 2482
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 11.26 m · Luma 53.6 σ 31.7 schwarz 0.4 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 9 Posen",
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 2,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.48,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 28.9,
+    "pixel": 10,
+    "luma": 80.73,
+    "kante": 0.0007,
+    "kr": 10,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.868,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 33.43,
+    "pixel": 793,
+    "luma": 75.83,
+    "kante": 0.2524,
+    "kr": 310,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": -0.7309,
+    "spiegelEbene": 89.37,
+    "sp": [
+     8,
+     0,
+     0,
+     81.21,
+     81.21,
+     -59.36
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 16,
+    "pixel": 6368,
+    "luma": 57.68,
+    "kante": 0.4794,
+    "kr": 1253,
+    "strich": 0.7761,
+    "si": 21,
+    "bloecke": 31,
+    "glatt": 0.1935,
+    "nyquist": 0.0774,
+    "beta": 3.1454
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e84fd1fb-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ }
+}

@@ -1,0 +1,164 @@
+{
+ "sha": "cbe910edfdaa7583cb745c3135072be3b1593599",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T22:28:19.947Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.1233 % Pop-Pixel je Sekunde (2556 px, Soll ≤ 0,05 %), je Schritt 18*/14*/299*/27/32*/42*/1529*/595* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.45,
+   "grund": "ROT: Gehen 4 m/s: 0.1233 % Pop-Pixel je Sekunde (2556 px, Soll ≤ 0,05 %), je Schritt 18*/14*/299*/27/32*/42*/1529*/595* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 26.7,
+   "zeit": "2026-11-07T22:24:38.154Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 79.4 · third/gehen 71.2 · ego/wechsel 59.4 · third/wechsel 36.3 · Bild 34.02 ms",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 79.4 · third/gehen 71.2 · ego/wechsel 59.4 · third/wechsel 36.3 · Bild 34.02 ms",
+   "gpu": "amd/rdna-3",
+   "s": 42.7,
+   "zeit": "2026-11-07T22:25:04.954Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 64 ms (50) · Menü 144 ms (20)",
+   "exit": 0,
+   "minuten": 0.18,
+   "gpu": "amd/rdna-3",
+   "s": 10.6,
+   "zeit": "2026-11-07T22:25:47.682Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.6408 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.37 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Schatten-/Lichthang 0.6408 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.37 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.8,
+   "zeit": "2026-11-07T22:26:22.782Z",
+   "abdruck": "bdb818bb2689",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": true,
+   "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 10.56 s von außen (Eigenmeldung 9.31 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.68,
+   "gpu": "amd/rdna-3",
+   "s": 41,
+   "zeit": "2026-11-07T22:28:19.947Z",
+   "abdruck": "00e38dd9d4d2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0121 höchstens 0.680 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.94 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0121 höchstens 0.680 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.94 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T22:26:38.970Z",
+   "abdruck": "7746589109f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T22:24:01.244Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 6.3,
+  "grundstellungS": [
+   4.3
+  ],
+  "proben": 6,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 21.7,
+    "takte": 649,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "ferne.K4#1",
+    "s": 24.4,
+    "takte": 1438,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 7.3,
+    "takte": 584,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 12.4,
+    "takte": 721,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 7,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1176,
+   "frameP95": 133.82,
+   "taktP95": 78.79,
+   "vramMax": 145,
+   "seiten": 6,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K4#2",
+     "m": 252,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 297,
+   "luecken": 2,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 293.6,
+  "minuten": 5.07
+ }
+}
