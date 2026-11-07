@@ -1,7 +1,7 @@
 {
  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d",
  "geraet": "gtx",
- "zeit": "2026-11-07T14:33:36.886Z",
+ "zeit": "2026-11-07T14:40:27.862Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K1#1": {
@@ -88,67 +88,58 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.2,
+   "zeit": "2026-11-07T14:40:27.862Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T14:29:41.531Z",
+  "start": "2026-11-07T14:39:56.539Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
-  "grundstellungS": [
-   7.2
-  ],
-  "proben": 5,
+  "bootS": 7,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K1#1",
-    "s": 27.7,
-    "takte": 758,
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 23,
+    "takte": 582,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 21.7,
-    "takte": 788,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 6,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 6260,
-   "frameP95": 41.64,
-   "taktP95": 41.39,
-   "vramMax": 143.9,
-   "seiten": 2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "leib.K1#2",
-     "m": 5581,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K3#1",
-     "m": 5578,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 316,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [],
+   "zapfen": 93,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 318.8,
-  "minuten": 5.38
+  "fahrtS": 120.7,
+  "minuten": 2.08
  }
 }
