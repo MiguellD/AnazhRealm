@@ -1767,9 +1767,10 @@ class AnazhRealm_koerper_leib {
     // Moden, gerechnet je Takt auf der WELT-Uhr (`spielZeit`, Lehre 13: der Löser geht im Takt der Welt, nie an der Bild-Uhr;
     // die Bühne hält diese, das Portal friert jene). DER WIND: der Luft-Widerstand führt die leichte Strähne ihrem Ziel nach
     // (erste Ordnung, HAAR_WIND.zug), dem EINEN Wind am Ort der Mitte des Haars (`_windAt`) — das Wiegen des Grases
-    // (`_windWiegen`, dieselbe Phase und Böe wie `_windSwayOffset`) mit der Höhe Länge × HAAR_WIND.hebel, darüber das Flattern
-    // der Strähne (HAAR_WIND.flattern: Teil-Frequenzen, je Achse um quer verstimmt, die Phase am Ort; die Weite staerke × die
-    // Wirkung des Winds); ohne Wind ist das Ziel 0 und die Strähne steht im nächsten Takt. DER LEIB: die Mitte des Haars (Lage
+    // (`_windWiegen`, dasselbe Gesetz wie `_windSwayOffset`: die Weite der Böe, die Phase aus dem Rauschen der Strähne) mit der
+    // Höhe Länge × HAAR_WIND.hebel, darüber das Flattern der Strähne (HAAR_WIND.flattern: Teil-Frequenzen, je Achse um quer
+    // verstimmt, die Phase aus ihrem Rauschen; die Weite staerke × die Wirkung des Winds); ohne Wind ist das Ziel 0 und die
+    // Strähne steht im nächsten Takt. DER LEIB: die Mitte des Haars (Lage
     // des Objekts × Mitte seiner Gestalt) trägt Lauf, Sprung und Drehung, ihre Beschleunigung (das Tempo geglättet über glatt s)
     // treibt die Feder (HAAR_WIND.feder, zweite Ordnung) mit der Schein-Kraft −a: die Spitze bleibt zurück und schwingt nach
     // (Trägheit, Rückfedern). Beide zusammen höchstens feder.max. Gerechnet nur für gemeldetes, sichtbares Haar bis
@@ -1825,17 +1826,20 @@ class AnazhRealm_koerper_leib {
             a.copy(f.u).sub(u0).divideScalar(dt);
             f.p.copy(p);
             f.t = t;
-            // der Wind am Ort zur Uhr des Takts (Stärke, Richtung, Böe); die Phase läuft je Teil-Schritt
+            // der Wind am Ort zur Uhr des Takts (Stärke, Richtung, Böe); die Phase läuft je Teil-Schritt. Das Rauschen der
+            // Strähne (die Ziehung des Orts, Zug 1, wo sie zuerst wehte) bleibt ihr, wohin der Leib sie trägt — wie das Rauschen
+            // eines Halms an seinem Fuß (`_windSwayOffset`)
             const wa = this._windAt(p.x, p.z, t);
+            if (f.nu == null) f.nu = AnazhRealm._ortZiehung(AnazhRealm._wortAlgebra(), p.x, p.z, 1);
             const hoehe = H.bezug * H.hebel;
             const eff = wa.staerke * AnazhRealm.WEATHER_WIND_AMP * wa.boe * hoehe * FL.staerke;
-            const ort = (p.x * wa.x + p.z * wa.z) * AnazhRealm.WIND_WIEGEN.raum;
+            const ort = 2 * Math.PI * f.nu;
             const n = Math.ceil(dt * 240);
             const h = dt / n;
             const zug = 1 - Math.exp(-h / H.zug);
             for (let i = 0; i < n; i++) {
                 const ti = t - dt + (i + 1) * h;
-                const [wx, wz] = this._windWiegen(wa, p.x, p.z, ti, hoehe);
+                const [wx, wz] = this._windWiegen(wa, f.nu, ti, hoehe);
                 let [fx, fz] = [0, 0];
                 FL.hz.forEach((hz, j) => {
                     fx += Math.sin(2 * Math.PI * hz * ti + ort + 2.1 * j);

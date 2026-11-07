@@ -648,6 +648,16 @@ var __weltLicht = (function () {
         return s * Math.pow(2, e - 15) * (1 + f / 1024);
     }
 
+    // DER ZEILEN-SCHRITT EINER LESUNG (`readRenderTargetPixelsAsync` eines rgba-Ziels w × h, Elemente je Zeile): r184 kopiert auf
+    // WebGPU jede Zeile auf 256 Byte ausgerichtet (bytesPerRow) und lässt der LETZTEN das Polster weg — (h − 1) · Schritt + w · Texel
+    // (gelesen am Vendor, `copyTextureToBuffer`), WebGL liest dicht. `Länge / h` traf nur, wo die Zeile schon ausgerichtet lag (die
+    // Umgebung: 128 Texel × 8 Byte): die Kacheln des Rückstrahls (33 Texel × 8 Byte) lasen ihre Zeilen 249 statt 256 Elemente lang
+    // und mischten Mittel, Zahl und Atmosphäre zu einem blauen Boden (w21-laub-unten). Leser: jede Lesung eines Ziels der Welt.
+    function zeilenSchritt(px, w, h) {
+        const dicht = w * 4;
+        return px.length > dicht * h ? Math.ceil((dicht * px.BYTES_PER_ELEMENT) / 256) * (256 / px.BYTES_PER_ELEMENT) : dicht;
+    }
+
     // DIE BESTRAHLUNGS-TAFEL AUS IHRER LESUNG (`readRenderTargetPixelsAsync` der Zeile W × 1, Halb- oder Voll-Float rgba): je
     // Sonnenhöhe die Bestrahlung einer waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht
     // je Einheit `nachtE` → Float32Array W × 3. Ihr ANKER (`tafelAnker`): die Luma des Himmels unter der Zenit-Sonne (Texel W − 2).
@@ -878,6 +888,7 @@ var __weltLicht = (function () {
         sonnenRichtung,
         tagAchse,
         halbZuFloat,
+        zeilenSchritt,
         tafelAusPixeln,
         tafelAnker,
         bestrahlung,
