@@ -1,0 +1,250 @@
+{
+ "zeit": {
+  "umstellen": 87,
+  "farbe": 156,
+  "komfort": 308,
+  "untertitel": 417
+ },
+ "farbe": {
+  "gruppen": [
+   "gras",
+   "boden",
+   "bau",
+   "fels",
+   "laub",
+   "wasser"
+  ],
+  "objekte": [
+   2,
+   1,
+   40,
+   2,
+   37,
+   0
+  ],
+  "schirm": [
+   640,
+   360
+  ],
+  "aus": {
+   "auge": [
+    {
+     "grenze": "gras|boden",
+     "n": 954,
+     "dE": 35.39
+    },
+    {
+     "grenze": "gras|bau",
+     "n": 1043,
+     "dE": 21.55
+    },
+    {
+     "grenze": "gras|fels",
+     "n": 1,
+     "dE": 36.28
+    },
+    {
+     "grenze": "gras|laub",
+     "n": 95,
+     "dE": 40.4
+    },
+    {
+     "grenze": "boden|bau",
+     "n": 334,
+     "dE": 16.04
+    },
+    {
+     "grenze": "boden|laub",
+     "n": 37,
+     "dE": 24.62
+    },
+    {
+     "grenze": "bau|laub",
+     "n": 1520,
+     "dE": 30.31
+    }
+   ],
+   "deutan": [
+    {
+     "grenze": "gras|boden",
+     "n": 954,
+     "dE": 32.61
+    },
+    {
+     "grenze": "gras|bau",
+     "n": 1043,
+     "dE": 18.13
+    },
+    {
+     "grenze": "gras|fels",
+     "n": 1,
+     "dE": 34.88
+    },
+    {
+     "grenze": "gras|laub",
+     "n": 95,
+     "dE": 40.73
+    },
+    {
+     "grenze": "boden|bau",
+     "n": 334,
+     "dE": 15.93
+    },
+    {
+     "grenze": "boden|laub",
+     "n": 37,
+     "dE": 20.17
+    },
+    {
+     "grenze": "bau|laub",
+     "n": 1520,
+     "dE": 26.61
+    }
+   ]
+  },
+  "deuteranopie": {
+   "auge": [
+    {
+     "grenze": "gras|boden",
+     "n": 954,
+     "dE": 21.95
+    },
+    {
+     "grenze": "gras|bau",
+     "n": 1043,
+     "dE": 30.39
+    },
+    {
+     "grenze": "gras|fels",
+     "n": 1,
+     "dE": 10.23
+    },
+    {
+     "grenze": "gras|laub",
+     "n": 95,
+     "dE": 32.4
+    },
+    {
+     "grenze": "boden|bau",
+     "n": 334,
+     "dE": 27.6
+    },
+    {
+     "grenze": "boden|laub",
+     "n": 37,
+     "dE": 50.42
+    },
+    {
+     "grenze": "bau|laub",
+     "n": 1520,
+     "dE": 44.33
+    }
+   ],
+   "deutan": [
+    {
+     "grenze": "gras|boden",
+     "n": 954,
+     "dE": 20.48
+    },
+    {
+     "grenze": "gras|bau",
+     "n": 1043,
+     "dE": 25.77
+    },
+    {
+     "grenze": "gras|fels",
+     "n": 1,
+     "dE": 5.88
+    },
+    {
+     "grenze": "gras|laub",
+     "n": 95,
+     "dE": 32.13
+    },
+    {
+     "grenze": "boden|bau",
+     "n": 334,
+     "dE": 22.39
+    },
+    {
+     "grenze": "boden|laub",
+     "n": 37,
+     "dE": 33.65
+    },
+    {
+     "grenze": "bau|laub",
+     "n": 1520,
+     "dE": 31.55
+    }
+   ]
+  }
+ },
+ "komfort": {
+  "menue": {
+   "arten": [
+    "aus",
+    "deuteranopie",
+    "protanopie",
+    "tritanopie"
+   ],
+   "farbsicht": "tritanopie",
+   "fov": 92,
+   "wackeln": false,
+   "unschaerfe": false
+  },
+  "stand": {
+   "snapshot": {
+    "farbsicht": "tritanopie",
+    "fov": 92,
+    "wackeln": false,
+    "unschaerfe": false
+   },
+   "geladen": {
+    "farbsicht": "tritanopie",
+    "fov": 100,
+    "wackeln": false,
+    "unschaerfe": false
+   },
+   "menue": {
+    "farbsicht": "tritanopie",
+    "fov": 100,
+    "wackeln": false,
+    "unschaerfe": false
+   }
+  },
+  "fov": {
+   "ruhe": 75,
+   "wahl": 92,
+   "skala": {
+    "s": 0.74,
+    "e": 8.13
+   },
+   "soll": 0.741
+  },
+  "wackeln": {
+   "an": {
+    "dip": -0.0791,
+    "atem": 6,
+    "bildPx": 42777
+   },
+   "aus": {
+    "dip": 0,
+    "atem": 0,
+    "bildPx": 0
+   }
+  },
+  "unschaerfe": {
+   "kette": true,
+   "an": 5.57,
+   "aus": 12.506,
+   "ruheAn": 7.811,
+   "ruheAus": 7.868
+  }
+ },
+ "untertitel": {
+  "n": 39,
+  "von": 39,
+  "rot": [],
+  "exit": 0
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.738
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 35
+  },
+  "regenbild": 0.946
+ }
+}

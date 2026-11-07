@@ -1,0 +1,137 @@
+{
+ "sha": "dbf081c511c5f9d27bd3bcd4c0d2e24ef28e6ff2",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T11:37:57.152Z",
+ "host": "MiguellD",
+ "je": {
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.84 bei Lag 0 (n 102), Spitze 0.85 bei 0.4 s, CV Bild 0.34 / Ohr 0.66, 39.5 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.41,
+   "gpu": "amd/rdna-3",
+   "s": 24.7,
+   "zeit": "2026-11-07T11:35:39.452Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue 0.4649 (74464 px in der Ebene, 34 Blöcke, Einfall 54.1°, Normale [0.076,0.989,0.127]) · glas spiegelTreue 0.1547 (5271 px in der Ebene, 14 Blöcke, Einfall 70.6°, Normale [0.038,0.999,0.019]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000298 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: lack spiegelTreue 0.4649 (74464 px in der Ebene, 34 Blöcke, Einfall 54.1°, Normale [0.076,0.989,0.127]) · glas spiegelTreue 0.1547 (5271 px in der Ebene, 14 Blöcke, Einfall 70.6°, Normale [0.038,0.999,0.019]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000298 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "zeit": "2026-11-07T11:36:04.301Z",
+   "abdruck": "ec2fd04b86d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "haar.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "exit": 1,
+   "minuten": 0.7,
+   "grund": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "s": 41.9,
+   "zeit": "2026-11-07T11:34:25.321Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "exit": 1,
+   "minuten": 0.8,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD arm 1)",
+   "s": 47.7,
+   "zeit": "2026-11-07T11:36:14.922Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle 18.80 s Seiten-Uhr · die längste: 591 ms bei 2.6 s: _buildPbrNodeMaterial 95 · _runFrameScheduler (verteilt) 94) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.36,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle 18.80 s Seiten-Uhr · die längste: 591 ms bei 2.6 s: _buildPbrNodeMaterial 95 · _runFrameScheduler (verteilt) 94) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 81.3,
+   "zeit": "2026-11-07T11:37:57.152Z",
+   "abdruck": "8d570e46999f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T11:33:23.486Z",
+  "port": 7804,
+  "warten": 0.18,
+  "bootS": 9.4,
+  "grundstellungS": [
+   5.6,
+   6.8
+  ],
+  "proben": 5,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 36.1,
+    "takte": 678,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 26.1,
+    "takte": 640,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K5#1",
+    "s": 47.2,
+    "takte": 2188,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 863,
+   "frameP95": 259.47,
+   "taktP95": 159.5,
+   "vramMax": 147.7,
+   "seiten": 7,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 316,
+   "luecken": 5,
+   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
+  },
+  "fahrtS": 344.6,
+  "minuten": 6.02
+ }
+}

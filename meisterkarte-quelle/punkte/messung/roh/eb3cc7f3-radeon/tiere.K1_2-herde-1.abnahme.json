@@ -1,0 +1,159 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0521,
+   "taeter": {
+    "Rinde baum_tanne": 0.0503,
+    "Gelände": 0.0017
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.48,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -554.613,
+   34.884,
+   -933.691
+  ],
+  "blick": [
+   0.1268,
+   0.1471,
+   0.98096
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 63.3,
+  "sigma": 42.2,
+  "schwarz": 0.0003,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.48 m · Luma 63.3 σ 42.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 3,
+  "kamera": [
+   -554.613,
+   34.884,
+   -933.691
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -575.2,
+     39.37,
+     -925.22
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Rinde baum_tanne in 29.25 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -565.464,
+     36.381,
+     -930.811
+    ],
+    "rot": [
+     "Sicht verdeckt 10.0 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 10.0 %",
+     "Vordergrund 26.0 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_tanne 13.7 %, Gelände 6.1 %, Laub grown_busch_hazel_v1 5.6 %"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -583.157,
+     43.313,
+     -917.3
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Natur baum_tanne in 27.79 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -554.613,
+     34.884,
+     -933.691
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 24
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 12
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 874
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

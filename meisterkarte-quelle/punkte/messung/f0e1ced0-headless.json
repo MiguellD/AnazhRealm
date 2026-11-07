@@ -1,0 +1,19 @@
+{
+ "sha": "f0e1ced000cf79510f8b7e33a5badf672e52532f",
+ "geraet": "headless",
+ "zeit": "2026-11-07T10:33:57.048Z",
+ "host": "farm:42364433795",
+ "je": {
+  "feld.K2#2": {
+   "gruen": true,
+   "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OK   (f) Peers: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1029/1029 Zellen, Brand 0 Zellen | OK   (f) Reload mitten im Sturm: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1204/1204 Zellen, Brand 0 Zellen",
+   "exit": 0,
+   "minuten": 4.94,
+   "zeit": "2026-11-07T10:33:57.048Z",
+   "abdruck": "9a22b16dc0c5",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42364433795/1"
+  }
+ }
+}

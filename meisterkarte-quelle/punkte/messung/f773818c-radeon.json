@@ -1,0 +1,95 @@
+{
+ "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T12:59:26.135Z",
+ "host": "MiguellD",
+ "je": {
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.6708 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.39 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Schatten-/Lichthang 0.6708 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.39 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9,
+   "zeit": "2026-11-07T12:58:43.295Z",
+   "abdruck": "bdb818bb2689",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.72 bei Lag 0 (n 104), Spitze 0.83 bei -1.4 s, CV Bild 0.32 / Ohr 0.48, 54.8 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "amd/rdna-3",
+   "s": 22.8,
+   "zeit": "2026-11-07T12:59:03.235Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue null UNGÜLTIG (13030 px in der Ebene, 0 Blöcke, Einfall 59.8°, Normale [0.036,0.997,0.07]) · glas spiegelTreue null UNGÜLTIG (3050 px in der Ebene, 0 Blöcke, Einfall 80.9°, Normale [-0.068,0.991,-0.117]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000167 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.11,
+   "grund": "ROT: lack spiegelTreue null UNGÜLTIG (13030 px in der Ebene, 0 Blöcke, Einfall 59.8°, Normale [0.036,0.997,0.07]) · glas spiegelTreue null UNGÜLTIG (3050 px in der Ebene, 0 Blöcke, Einfall 80.9°, Normale [-0.068,0.991,-0.117]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000167 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 6.7,
+   "zeit": "2026-11-07T12:59:26.135Z",
+   "abdruck": "ec2fd04b86d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T12:58:03.585Z",
+  "port": 7804,
+  "warten": 0.08,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "ferne.K4#1",
+    "s": 25.3,
+    "takte": 866,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 10.9,
+    "takte": 589,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 597,
+   "frameP95": 75.46,
+   "taktP95": 76.35,
+   "vramMax": 145.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 86,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 84.6,
+  "minuten": 1.54
+ }
+}

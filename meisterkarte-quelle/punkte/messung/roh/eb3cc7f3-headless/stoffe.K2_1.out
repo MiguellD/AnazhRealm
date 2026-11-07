@@ -1,0 +1,33 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-stand-takt.cjs
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+  ring: 81
+  architekturen: 2286
+  wach: "DIE WELT STEHT NICHT nach 106 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet, streuLod 1600/1615, deckWache 1280/6528 (DER BAU STEHT NICHT: die Welt nach 106 Takten — die Welt hat nichts"
+  bisRuhe: 172
+  ruhe: "30 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"
+  sonde: {"vor":"Gelände"}
+  fixWach: false
+  fix: [{"takte":1062,"wirkte":260,"nach":"150 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"},{"takte":50,"wirkte":5,"nach":"150 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0"}]
+  bruch: "51 Frames · Σ 68835 · strom 82 51/1 · archLod 226 1326/26 · archCull 285 51/1 · streuLod 479.71 8160/1615 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528"
+  taeter: {"je":{"archLod":{"stelle":25,"runde":26,"gefundenBei":26},"streuLod":{"stelle":1576,"runde":1615,"gefundenBei":1600},"deckWache":{"stelle":6527,"runde":6528,"gefundenBei":6528}},"phase":"51 Frames · Σ 68836 · strom 82 51/1 · archLod 226 1326/26 wirkt 1 · archCull 285 51/1 · streuLod 479.73 8160/1615 wirkt 1 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528 wirkt 1"}
+  wecken: {"eintrag":true,"phase":"30 Frames · Σ 35865 · strom 0 · archLod 868.97 wirkt 1 · archCull 9.63 · streuLod 175.8 · nahStreu 138.43 wirkt 12 · nahWiese 2.67 wirkt 9 · deckWache 0","versorgt":true,"stufe":2,"bisRuhe":52,"nachher":"20 Frames · Σ 0 · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0","treue":"51 Frames · Σ 68835 · strom 82 51/1 · archLod 226 1326/26 · archCull 285 51/1 · streuLod 479.71 8160/1615 · nahStreu 141 51/1 · nahWiese 8 51/1 · deckWache 128 6528/6528","regler":"10 Frames · Σ 25162 · strom 0 · archLod 1963.4 · archCull 58.2 wirkt 1 · streuLod 479.7 · nahStreu 14.1 · nahWiese 0.8 · deckWache 0","wahrnehmung":"4 Frames · Σ 11893 · strom 0 · archLod 2384.75 · archCull 71.25 · streuLod 480 · nahStreu 35.25 · nahWiese 2 · deckWache 0"}
+  gehen: "120 Frames · Σ 76372 · strom 0 · archLod 183.65 wirkt 9 · archCull 28.47 · streuLod 347.77 · nahStreu 75.61 wirkt 56 · nahWiese 0.93 wirkt 6 · deckWache 0"
+  stufe: {"wechsel":2,"takte":{"strom":0,"archLod":0,"archCull":0,"streuLod":0,"nahStreu":282,"nahWiese":144,"deckWache":0},"rufe":{"_lodTreeVisHeight":0,"_forestStehtFrei":0,"_forestCellDarts":0},"wuchs":0}
+  ort: {"ort":[-197,-1071],"fern":240,"takte":60,"standVor":1,"stand":{"key":"-11,-25","vor":"1|0","nach":"1|0","gleich":true},"gelegt":true,"standNach":1,"darts":{"fern":1251,"gehalten":1251},"chunks":{"basis":{"fern":0,"gehalten":0},"dichte":{"fern":0,"gehalten":0},"mesh":{"fern":0,"gehalten":0}},"plan":0,"maxTaktMs":19.4,"raeumung":{"abbau":5,"saves":0,"saveMs":0},"kamin":{"kultur":"alemannisch","gesetzt":true,"bau":0,"ms":0},"wald":{"gesetzt":true,"ort":[-197,-651],"synchron":0,"ms":0,"takte":11,"gestalt":2,"imTakt":0,"maxTaktZellen":0,"maxTaktMs":0},"satzHaus":{"kultur":"alemannisch","gesetzt":true,"takte":33,"gruppen":5,"ecken":6116,"bloecke":5,"frischKB":0},"amSpieler":{"ort":[-293,-1071],"gelegt":true,"dirty":4,"takte":20,"heil":true,"sync":[]}}
+  strom: {"x":319.6,"z":-1045.6,"takte":36,"spielerChunk":true,"wald":{"imJob":2302,"aussen":0,"ms":0,"taeter":null,"maxTakt":0}}
+  nachschub: {"takte":0,"schlange":0,"foundry":0,"warten":[]}
+  schuld: {"abgewiesen":3295,"grund":"Felder offen 1015","takte":605,"rest":0}
+  dorf: {"placed":16,"steht":4180}
+  fuehrung: {"x":604,"z":-578,"abstand":1044,"takte":54,"steht":true}
+  taktFehler: []
+  pageErrors: []
+  Sim-Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 4121
+  Sim-Wecken saison: wach wasser 0 · regen 0 · saison 1297 (_gelaende 631, _temperaturFeld 616, _pegelMarkeVon 24, _voxelChunkConfig 12) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken regen: wach wasser 0 · regen 100 (_weatherFieldFor 20, _gelaende 10, _naesseTakt 5, _ensureAtmoUniforms 5) · saison 1147 (_gelaende 556, _temperaturFeld 541, _pegelMarkeVon 24, _voxelChunkConfig 12) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 18 (_bedarfTempo 5, _bedarfAbstand 4, _voxelChunkConfig 3, ·pendingFoliageChunks 2) · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 803
+  Sim-Wecken nachwuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 5 (_tatIndex 1, ·worldMeta.taten 1, _weltRegt 1, _nahStreuTat 1) · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 18 (_bedarfTempo 5, _bedarfAbstand 4, _voxelChunkConfig 3, ·pendingFoliageChunks 2) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 — wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 2160
+  Sim-Wecken brand: {"zellen":58,"einheiten":19.5,"start":true,"mit":0.853,"koepfe":18,"gegen":0.026,"alle":1.05,"ohneWind":0.041,"lebVor":0.877,"glut":0.68,"licht":true,"regenS":20,"brennt":0,"lebNach":0.539,"asche":42} — nachher wasser 0 · regen 12 (_weatherFieldFor 3, _naesseTakt 1, _ensureAtmoUniforms 1, _dachTakt 1) · saison 0 · nachwuchs 1221 (_tatIndex 191, _brandZelle 89, _forestGesetzWahr 63, _forestDartStand 63) · wuchs 108 (_bedarfTempo 30, _bedarfAbstand 24, _voxelChunkConfig 18, ·pendingFoliageChunks 12) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wasser: {"ort":[-396,-878],"takte":[1,1],"gehalten":[0,0],"bewegt":[0,0],"chunks":9}
+
+✅ GRÜN — STAND-TAKT — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten.

@@ -1,0 +1,150 @@
+{
+ "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T13:13:15.317Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7732 (wasserSatz 25394 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.9 σ 36 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "zeit": "2026-11-07T13:11:27.887Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.2377 (84002 px in der Ebene, 54 Blöcke, Einfall 53.6°, Normale [0.132,0.987,0.086]) · glas spiegelTreue 0.8346 (6285 px in der Ebene, 25 Blöcke, Einfall 71.1°, Normale [0.015,0.999,0.036]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000271 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.15,
+   "gpu": "nvidia/pascal",
+   "s": 9,
+   "zeit": "2026-11-07T13:11:51.739Z",
+   "abdruck": "f348340da034",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "vegetation.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 12.1 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 12.1 s)",
+   "s": 90.2,
+   "zeit": "2026-11-07T13:09:31.927Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.5,
+   "grund": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 30.2,
+   "zeit": "2026-11-07T13:12:13.452Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.2,
+   "zeit": "2026-11-07T13:13:15.317Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T13:08:51.209Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.5,
+  "grundstellungS": [
+   7.4,
+   6.9
+  ],
+  "proben": 5,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 31.7,
+    "takte": 650,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 18.3,
+    "takte": 763,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "wetter.K2#2",
+    "s": 12.7,
+    "takte": 573,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 24.5,
+    "takte": 788,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 6,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3483,
+   "frameP95": 41.71,
+   "taktP95": 38.68,
+   "vramMax": 148,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 318,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 355.5,
+  "minuten": 5.99
+ }
+}

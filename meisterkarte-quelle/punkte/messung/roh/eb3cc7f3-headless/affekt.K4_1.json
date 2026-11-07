@@ -1,0 +1,104 @@
+{
+ "laeufe": [
+  {
+   "mutante": null,
+   "minuten": 30,
+   "zeilen": 57,
+   "falschN": 6,
+   "falsch": [
+    {
+     "t": 678.1,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 14 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 13 weitere Tat"
+     ]
+    },
+    {
+     "t": 888.1,
+     "text": "Der Nexus wünscht sich das Wetter „Regen“ — überall, aus eigenem Antrieb. (Programm evo_44; dazu 15 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "Ein Gesetz des Nexus",
+      "Ein Gesetz des Nexus ",
+      " — 56 m südwestlich von dir, ",
+      "lebendig am Ort hoch ist (>0.73)",
+      "weil ",
+      "(Gesetz Nr. 17 des Nexus",
+      "dazu 13 weitere Tat"
+     ]
+    },
+    {
+     "t": 918.1,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 12 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 7 weitere Tat"
+     ]
+    },
+    {
+     "t": 1068.4,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südöstlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 5 weitere Tat"
+     ]
+    },
+    {
+     "t": 1369.4,
+     "text": "Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_65; dazu 7 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 6 weitere Tat"
+     ]
+    },
+    {
+     "t": 1489.8,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 14 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 8 weitere Tat"
+     ]
+    }
+   ],
+   "abstand": 30,
+   "offen": -20.7,
+   "ohneTat": [],
+   "begleiter": 1,
+   "klassen": {
+    "nexus": 46,
+    "rule:nexus": 493,
+    "llm": 3,
+    "rule:llm": 11,
+    "wunsch": 0,
+    "human": 2,
+    "fern": 194
+   },
+   "beispiele": [
+    "[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)",
+    "[468.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "[828.1 s] Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad“ — überall, weil Zufall ≤ 0.37. (Gesetz Nr. 19 des Nexus; dazu 26 weitere Taten seit der letzten Zeile)",
+    "[1188.8 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "[1550 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 7 weitere Taten seit der letzten Zeile)"
+   ],
+   "verworfen": {
+    "weather rule": 33,
+    "weather@kappe rule": 23,
+    "weather nexus": 3,
+    "spawn_village@kappe nexus Unbekannter Ort „spawn_creature“": 1,
+    "deposit_life rule Unbekannter Ort „creatures_color“": 6,
+    "deposit_life@kappe rule Unbekannter Ort „creatures_color“": 18,
+    "weather@kappe nexus": 26,
+    "spawn_creature@kappe nexus": 5,
+    "spawn_creature@kappe nexus Unbekannter Ort „spawn_waterfall“": 1,
+    "spawn_creature nexus Unbekannter Ort „spawn_creature“": 1,
+    "deposit_life@kappe rule Unbekannter Ort „weather“": 23,
+    "deposit_life@kappe rule Unbekannter Ort „spawn_creature“": 23
+   },
+   "rot": [
+    "keine wirkende Tat von wunsch",
+    "6 Zeilen falsch",
+    "falsch [678.1 s] dazu 13 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 14 weitere Taten seit der letzten Zeile)",
+    "falsch [888.1 s] Ein Gesetz des Nexus | Ein Gesetz des Nexus  |  — 56 m südwestlich von dir,  | lebendig am Ort hoch ist (>0.73) | weil  | (Gesetz Nr. 17 des Nexus | dazu 13 weitere Tat: Der Nexus wünscht sich das Wetter „Regen“ — überall, aus eigenem Antrieb. (Programm evo_44; dazu 15 weitere Taten seit der letzten Zeile)",
+    "falsch [918.1 s] dazu 7 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 12 weitere Taten seit der letzten Zeile)",
+    "falsch [1068.4 s] dazu 5 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südöstlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)",
+    "falsch [1369.4 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_65; dazu 7 weitere Taten seit der letzten Zeile)",
+    "falsch [1489.8 s] dazu 8 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 14 weitere Taten seit der letzten Zeile)"
+   ]
+  }
+ ]
+}

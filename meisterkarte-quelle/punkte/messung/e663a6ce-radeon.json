@@ -1,0 +1,260 @@
+{
+ "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T11:15:14.661Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 400.7 über Rausch-Boden 0.000 (×400.7), Tal 66.7 — Kamm/Tal 6.01 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.9 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "amd/rdna-3",
+   "s": 18.1,
+   "zeit": "2026-11-07T11:08:12.300Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":4138,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.03 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 85.1 σ 40.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "exit": 0,
+   "minuten": 0.49,
+   "grund": "ROT: ohne alle Schüsse: /bild: {\"ms\":4138,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.03 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 85.1 σ 40.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "gpu": "amd/rdna-3",
+   "s": 29.7,
+   "zeit": "2026-11-07T11:08:30.480Z",
+   "abdruck": "3d56669bb478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 65 · third/gehen 63.5 · ego/wechsel 31.9 · third/wechsel 29.5 · Bild 25.84 ms",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 65 · third/gehen 63.5 · ego/wechsel 31.9 · third/wechsel 29.5 · Bild 25.84 ms",
+   "gpu": "amd/rdna-3",
+   "s": 32.2,
+   "zeit": "2026-11-07T11:09:00.237Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.73 bei Lag 0 (n 104), Spitze 0.73 bei 0 s, CV Bild 0.28 / Ohr 0.54, 66 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "amd/rdna-3",
+   "s": 23,
+   "zeit": "2026-11-07T11:09:32.523Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K3#1": {
+   "gruen": false,
+   "zahl": "Stämme/ha 541 (REF 370–900; Unterstand 39), je Bildbreite 22 (REF 14–34), Deckung 0–2 m 0.3248 (REF 0.25–0.78; 490 Pflanzen) am Wald-Ort [-871,-809] · Licht-Flecken CV 1.2903 gegen offen 0.3577 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.9736 (Soll ≤ 0.8) · Ort [-871,-809] · 1.2 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "grund": "ROT: Stämme/ha 541 (REF 370–900; Unterstand 39), je Bildbreite 22 (REF 14–34), Deckung 0–2 m 0.3248 (REF 0.25–0.78; 490 Pflanzen) am Wald-Ort [-871,-809] · Licht-Flecken CV 1.2903 gegen offen 0.3577 (Soll ≥ 0.3, ≥ 2 × offen), Wandern Uhr [0.5,0.56] r 0.9736 (Soll ≤ 0.8) · Ort [-871,-809] · 1.2 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 8.6,
+   "zeit": "2026-11-07T11:10:16.846Z",
+   "abdruck": "62ae45ae619c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.8157 (wasserSatz 14316 px, spiegelEbene 0.889) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 90.2 σ 35.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 0.64,
+   "gpu": "amd/rdna-3",
+   "s": 38.4,
+   "zeit": "2026-11-07T11:10:25.539Z",
+   "abdruck": "e18e9c50847e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue null UNGÜLTIG (28154 px in der Ebene, 0 Blöcke, Einfall 54.5°, Normale [0.157,0.987,-0.047]) · glas spiegelTreue null UNGÜLTIG (1675 px in der Ebene, 0 Blöcke, Einfall 49.9°, Normale [0.473,0.877,-0.076]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000178 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.07,
+   "grund": "ROT: lack spiegelTreue null UNGÜLTIG (28154 px in der Ebene, 0 Blöcke, Einfall 54.5°, Normale [0.157,0.987,-0.047]) · glas spiegelTreue null UNGÜLTIG (1675 px in der Ebene, 0 Blöcke, Einfall 49.9°, Normale [0.473,0.877,-0.076]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000178 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 4.3,
+   "zeit": "2026-11-07T11:11:20.879Z",
+   "abdruck": "ec2fd04b86d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.67 m · Luma 113.2 σ 48.4 schwarz 0.0 % weiß 0.0 % ",
+   "exit": 0,
+   "minuten": 1.1,
+   "gpu": "amd/rdna-3",
+   "s": 66,
+   "zeit": "2026-11-07T11:15:14.661Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.4,
+   "zeit": "2026-11-07T11:11:39.177Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0112 höchstens 0.838 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.98 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0112 höchstens 0.838 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.98 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T11:13:33.686Z",
+   "abdruck": "cd7d62f4d9ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T11:07:39.444Z",
+  "port": 7804,
+  "warten": 0.08,
+  "bootS": 5.9,
+  "grundstellungS": [
+   5.3,
+   4.5,
+   4.7
+  ],
+  "proben": 10,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 19.3,
+    "takte": 595,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "vegetation.K3#1",
+    "s": 21.3,
+    "takte": 1269,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "material.K4#1",
+    "s": 11.5,
+    "takte": 675,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 14,
+    "takte": 675,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 17.5,
+    "takte": 753,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 12,
+    "takte": 685,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "material.K4#1",
+    "wege": "wege +9 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95] …",
+    "s": 5.3
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "gelaende.K3#1",
+    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
+   }
+  ],
+  "ciBlicke": 11,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 5781,
+   "frameP95": 41.88,
+   "taktP95": 37.77,
+   "vramMax": 136.2,
+   "seiten": 4,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5981,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "leib.K4#2",
+     "m": 321,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 523,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 516.2,
+  "minuten": 8.77
+ }
+}

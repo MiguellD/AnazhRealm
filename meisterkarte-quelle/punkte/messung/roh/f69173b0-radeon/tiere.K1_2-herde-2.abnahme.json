@@ -1,0 +1,129 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "f69173b022098343b8966dd1f38f642bc14225b5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0451,
+   "taeter": {
+    "Rinde baum_tanne": 0.0434,
+    "Gelände": 0.0017
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.5,
+  "gestalt": [
+   "baum_tanne 5766"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -555.28,
+   35.03,
+   -932.91
+  ],
+  "blick": [
+   0.12666,
+   0.1508,
+   0.98042
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 69.9,
+  "sigma": 40.8,
+  "schwarz": 0.0004,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.5 m · Luma 69.9 σ 40.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "kamera": [
+   -555.28,
+   35.03,
+   -932.91
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -555.28,
+     35.03,
+     -932.91
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:?=80/255/80",
+   "tier:bestaeuber=80/120/255",
+   "tier:fisch=255/220/60",
+   "tier:wesen=255/80/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 21
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 6
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 281
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f69173b0-radeon\\tiere.K1_2-herde-2.maske.png"
+ }
+}
