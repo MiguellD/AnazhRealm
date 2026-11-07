@@ -371,7 +371,7 @@ function karteBauen(wurzel = ROOT) {
     const vonUrl = (u) =>
         /^https?:/.test(u) ? relW(decodeURIComponent(new URL(u).pathname).slice(1)) : relW(u.startsWith("file:") ? new URL(u).pathname : u);
     const schritte = {};
-    const zaehler = { ende: 0, um: 0, text: 0, textFrei: 0 };
+    const zaehler = { text: 0, textFrei: 0 };
     for (const nr of fs.readdirSync(ROH)) {
         const d = path.join(ROH, nr);
         if (!fs.existsSync(path.join(d, "status.json"))) continue;
@@ -537,7 +537,7 @@ function wirkungen(basis, kopf, karte, diff = null) {
             else if (k === "§") W.push({ laden: r, warum: "die Datei ändert eine Anweisung ohne Subjekt" });
             else if (k.startsWith("§")) subjekt(k, r);
             else {
-                W.push({ glied: [r, k], fn, txt, jung: jung(r, k) });
+                W.push({ glied: [r, k], fn, txt, jung: !!a0 && jung(r, k) }); // ein neues Glied wirkt über seine Rufer und seinen Namen
                 if (!(a0 || a1).lokal && (!a0 || !a1)) for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r); // ein lokales Glied nennt nur sein Eltern-Glied
                 if (txt || !a0 || !a1) W.push({ fege: r });
             }
@@ -680,8 +680,9 @@ async function geschichte() {
         treffer += !!ok;
         console.log(`${ok ? "TREFFER" : "LÜCKE  "} z${z} ${zweig} → ${schritt}${ok ? ` — ${ok}` : m ? "" : " (kein Merge)"}`);
     }
+    // je Zweig seine letzte Fassung im Zeitraum (ein Zweig, der in mehreren Zügen fuhr, zählt einmal)
     const anteile = [];
-    for (const m of [...new Map(merges.map((x) => [x.m, x])).values()]) {
+    for (const m of [...new Map(merges.map((x) => [x.zweig, x])).values()]) {
         const a = waehleM(m.m);
         const q = kosten(new Set(a.namen.filter((n) => a.gewaehlt.has(n)))) / voll;
         anteile.push(q);
@@ -689,7 +690,7 @@ async function geschichte() {
     }
     anteile.sort((a, b) => a - b);
     const q = (p) => (100 * anteile[Math.min(anteile.length - 1, Math.floor(p * anteile.length))]).toFixed(1);
-    console.log(`TREFFER ${treffer}/${G.taeter.length} · voll ${Math.round(voll / 60)} min Rechenzeit · je Zweig (${anteile.length} Merges): Median ${q(0.5)} % · p25 ${q(0.25)} % · p75 ${q(0.75)} % · min ${q(0)} % · max ${q(1)} % · ALLE ${anteile.filter((x) => x > 0.999).length}`); // prettier-ignore
+    console.log(`TREFFER ${treffer}/${G.taeter.length} · voll ${Math.round(voll / 60)} min Rechenzeit · je Zweig (${anteile.length} Zweige): Median ${q(0.5)} % · p25 ${q(0.25)} % · p75 ${q(0.75)} % · min ${q(0)} % · max ${q(1)} % · ALLE ${anteile.filter((x) => x > 0.999).length}`); // prettier-ignore
     return { treffer, anteile };
 }
 

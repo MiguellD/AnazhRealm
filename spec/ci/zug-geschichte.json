@@ -1,5 +1,5 @@
 {
- "quelle": "der Richter der Zug-Auswahl (scripts/lib/zug-auswahl.cjs --geschichte): je deterministisch roter Schritt der Züge z280–z297 sein Täter-Zweig [Zug, Zweig, Schritt-Anfang]; Belege und Wackler im Commit der Abgabe w22-zug-auswahl",
+ "quelle": "der Richter der Zug-Auswahl (scripts/lib/zug-auswahl.cjs --geschichte): je deterministisch roter Schritt der Züge z280–z299 sein Täter-Zweig [Zug, Zweig, Schritt-Anfang]; Belege und Wackler im Commit der Abgabe w22-zug-auswahl",
  "zeiten_lauf": 42393703986,
  "basis": "5fb21e29",
  "zuege": [
@@ -20,7 +20,9 @@
   [294,"95ba6fd6"],
   [295,"ef5863a3"],
   [296,"185e99bb"],
-  [297,"2f70c000"]
+  [297,"2f70c000"],
+  [298,"4dbc18cc"],
+  [299,"e84fd1fb"]
  ],
  "taeter": [
   [287,"w19-ankunft-takt","Erst-Zeichnungs-Wand Teil 1"],
@@ -47,7 +49,6 @@
   [292,"w19-gang-hitch","Die Kamera-Leib-Linse"],
   [293,"w19-gang-hitch","Die Albedo nah gegen fern"],
   [295,"w21-leib-bau","Tier-Gang ohne Gleiten"],
-  [295,"w21-leib-bau","echt: Kamera-Leib"],
-  [297,"w20-lack-spiegel","Ego-Schatten"]
+  [295,"w21-leib-bau","echt: Kamera-Leib"]
  ]
 }
