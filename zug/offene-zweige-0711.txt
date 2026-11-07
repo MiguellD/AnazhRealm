@@ -1,0 +1,48 @@
+# Offene Zweige 07.11. 16:25 (nicht in origin/main; Stand der Cloud- und Champion-Arbeit liegt auf GitHub)
+# Spalten: letzter Push · Zweig · Kopf · Status · letzter Commit
+06.11 01:36	w13-ankunft-faden	402c6210	offen	Abgabe w13-ankunft-faden: w12-ankunft-faden auf main, die Kontrolle zuerst ohne Stand-Zwang — belegt bis zur
+06.11 02:48	w13-gtx-proben-pm	90dced1d	pm: in punkte-maschine	Abgabe w13-gtx-proben-pm: die Albedo-Tafel misst je Kriterium ihre Probe — K1 Welt und Labor, K3 die Welt al
+06.11 10:47	w14-strom-tempo	18685749	offen	Abgabe w14-strom-tempo: die Bahn misst ihr Tempo am Fahr-Gesetz, der Boden strömt in Sekunden bis Bedarf
+06.11 13:50	w15-pfuetze-pm	4cf52e69	pm: in punkte-maschine	Abgabe w15-pfuetze: das Pfützen-Gesetz aus Regen × Mulde, die Trocken-Kurve, Fall 9 m/s — wetter.K2 Staffe
+06.11 14:13	w14-unterwasser-pm	3daccb45	pm: in punkte-maschine	Abgabe w14-unterwasser: leib.K3#2 urteilt zuerst, ob die Aufnahme der Kamera folgt — ein stehendes Bild hei�
+06.11 14:29	w15-einsturz-pm	49fc8817	pm: in punkte-maschine	Abgabe w15-einsturz: die Station physik.K3 Staffel 2 headless (Einsturz, Reload, Kosten)
+06.11 15:09	w15-farbsicht-pm	8dfc41c2	pm: in punkte-maschine	Abgabe w15-farbsicht: Station spielgang.K4 Staffel 2 (Farbsicht im Ausgabe-Bild, Komfort an seinen Quellen, Un
+06.11 16:36	w15-lod-umriss	8412c007	offen	Abgabe w15-lod-umriss: die Haus-L2 traegt den Umriss ihrer L0, lod.K5 Haus 4,45 -> 2,30 px (Radeon)
+06.11 16:59	w16-fahrt-weg-pm	11b6bb4d	pm: in punkte-maschine	Abgabe w16-fahrt-weg-pm: fahrzeug.K2#1 misst die Fahrt am Bezug des Wegs — min(vmax, Entwurfs-Tempo der Wege
+06.11 17:15	w16-lade-atem-pm	f7133acb	pm: offen	ankunft.K5#1 nennt die Belegung bis zur Kontrolle je Klasse
+06.11 17:39	w16-haenger	20031fed	offen	Abgabe w16-haenger: EINE Frist der Bau-Arbeit je Takt — Fern-Ring in Punkten, Karte in Schritten, Knoten-Bau
+06.11 17:41	w15-strom-takt	9adf0d26	offen	Abgabe w15-strom-takt: die Karten zu spät beim Namen — der gesättigte Voxel-Faden; das trockene Wasser-Bla
+06.11 17:41	w16-tier-blick	d8166bb8	offen	Abgabe w16-tier-blick: tiere.K5#1 ohne Schnitt — die Zeichnung des Bestands trägt die Begegnung nicht, der 
+06.11 17:45	w16-tor-durchgang-pm	8a006201	pm: offen	Abgabe w16-tor-durchgang-pm: tore.K1 misst die Luma des Bilds, das der Ladeschirm hält
+06.11 19:36	w17-siedlung-abnahme-pm	90d40dc1	pm: in punkte-maschine	Abgabe w17-siedlung-abnahme-pm: siedlung.K4#2 nennt die Abnahme beim Namen, die Proben prüfen die Zahl
+06.11 19:55	w16-studio-welt	7c70c478	offen	Abgabe w16-studio-welt: die Station misst die Gestalt des Werks beidseits gleich, die Bühne steht im Licht vo
+06.11 20:45	w16-studio-welt-pm	b3c2ce8f	pm: offen	Abgabe w16-studio-welt: die K4-Station nennt die Stufe, die die Welt an der Pose zeichnet — das Fachwerk ste
+06.11 20:45	w16-tier-blick-pm	1cf981d3	pm: in punkte-maschine	Abgabe w16-tier-blick-pm: tiere.K5#1 zählt jede Begegnung je Spiel-Sekunde aus der Klassen-Maske tier, mit vo
+06.11 21:23	w13-verkehr-heil	94b73b24	offen	Abgabe w13-verkehr-heil: der Wagen sieht den Fahrer zu Fuß, die Kette nimmt keinen Schlüssel einer gefahrene
+06.11 22:10	w16-wald-innen-pm	6a307b3d	pm: offen	vegetation.K3: der Unterstand am Eintrag (entry._schicht) statt an der Prägung
+06.11 22:57	w16-wald-innen	846320dc	offen	Abgabe w16-wald-innen: Schicht als Instanz im Satz der Art, Waldgrenze im Sommer-Schnee
+06.11 23:03	w16-tor-durchgang	d4aef5b5	offen	Abgabe w16-tor-durchgang: der Ankunfts-Frame ist beim Namen gemessen, der Versuch ohne Gewinn fällt zurück
+06.11 23:14	w17-gesicht	a156d871	offen	Abgabe w17-gesicht: der Mund trägt seine Anatomie — Lippenspalt, geneigte Lippen, Kinnfalte auf feiner Haut
+06.11 23:34	w15-fern-hang	13e3c06a	offen	Abgabe w15-fern-hang: die Dämmerung setzt stetig ein, der Grat nimmt dem Hang den Himmel, der Lichtmesser sie
+07.11 00:09	w18-kamera-haus-pm	9d256be3	pm: offen	Abgabe w18-kamera-haus-pm: leib.K4 trägt den Takt-Boden seiner vollen Abdeckung als Ausnahme, Deckel 90 s je 
+07.11 00:25	w18-innen-licht	a96dbeb9	offen	Abgabe w18-innen-licht: das Gesetzbuch nennt seine Decken, der Dach-Pool liest sie (siedlung.K1#2)
+07.11 00:33	w18-ankunft-blick-pm	63a85263	pm: offen	Abgabe w18-ankunft-blick-pm: ankunft.K4#1 urteilt den ersten Blick am Spawn plus vier Azimute, Ego und Third
+07.11 00:48	w18-bild-weg-pm	da061adb	pm: offen	Abgabe w18-bild-weg-pm: bauen.K1#2 treibt die Schleife des Spiels, wartet aufs Weltbild und verlangt das stehe
+07.11 01:53	w18-grund-post	c874c1ea	offen	w18-grund-post: die Werkbank lädt die Seite erst mit gebauter Post-Kette — Grundstellung durch die Tür 0/5
+07.11 02:03	w17-bild-kollision	bd1cd994	offen	Abgabe w17-bild-kollision: Bild und Kollision aus EINER Gestalt und EINEM Takt
+07.11 02:25	w19-fahrt-ziel	27f1c9e3	offen	Abgabe w19-fahrt-ziel: die Fahrt auf dem Wegenetz endet im Deckel mit ihrer Zeile (fahrzeug.K2#1)
+07.11 02:46	w19-tier-kreis-pm	596c23f4	pm: in punkte-maschine	Abgabe w19-tier-kreis-pm: tiere.K5#1 rechnet 1 200 statt 3 000 Takte je Sicht, ein Bild je Raffer-Bild, die Ma
+07.11 02:53	w19-gang-hitch	544d9ee7	offen	Abgabe w19-gang-hitch: EINE Frist der Bau-Arbeit je Takt (_bauFrist) für alle Bauer — Planer-Takte > 33 ms 
+07.11 03:18	w19-saum-lai	b3af68cd	offen	Abgabe w19-saum-lai: die Ferne der Wiese dünnt als Teil-Gitter der Nähe
+07.11 10:01	w20-innen-regen	46272912	in z295 (ef5863a3)	Abgabe w20-innen-regen: die Nässe-Linse urteilt je Punkt unter dem Dach-Pool, das Regenbild unter offenem Him
+07.11 10:30	w20-haar-arm	bcfd1754	offen	Merge origin/main (039509b2, V18.546.209) in w20-haar-arm
+07.11 10:32	w21-laub-jahr-fern	12433e5d	offen	Abgabe w21-laub-jahr-fern: der Winter nah steht — die grünen Kronen des Bilds sind Nadel, die Jahres-Wand n
+07.11 10:39	w21-leib-bau	ecc2e3c9	in z295 (ef5863a3)	Abgabe w21-leib-bau: Kopf, Hals und Rumpf sind EINE Haut, der Ring schließt in Ruhe und Pose, der Leib steht 
+07.11 11:00	w20-fern-hang	1fc1affc	offen	Abgabe w20-fern-hang: auf main 039509b2 gehoben — der Lichtmesser trägt Grat × Kartenwurf × Neigung, jede
+07.11 11:12	w20-wald-kosten-2	92a8d388	offen	Abgabe w20-wald-kosten-2: Waldgrenze am Siedlungsrand, der Ort trägt seine Dichte (Quetschung von w20-wald-ko
+07.11 11:27	w21-wiese-fern	7efc4fdb	offen	Abgabe w21-wiese-fern: die Ferne der Wiese spreizt nur, was Nähe und Boden tragen, und dünnt als Teil-Gitter
+07.11 11:36	w19-ankunft-takt	4a59b38f	offen	Abgabe w19-ankunft-takt: der Bau in Raten zählt am EINEN Knoten-Bau-Zähler, unter dem Ladeschirm baut nur da
+07.11 13:54	w21-laub-unten	f9a116b0	in z295 (ef5863a3)	Abgabe w21-laub-unten: der Boden des Rückstrahls ist die Fläche, nie die Kante des Halms (Nacharbeit Tag-Ach
+07.11 14:35	w20-leib-takt	f2360c8b	offen	Abgabe w20-leib-takt: die Instanz-Wahl folgt dem Weg statt jede Instanz je Schritt neu zu urteilen
+07.11 14:38	w20-wald-kosten	8e4c2c79	offen	Abgabe w20-wald-kosten: Nacharbeit z289 — die Schicht in der Skala-Grenze, der Wasser-Leser vor jedem Wurf, 
+07.11 14:53	w20-lack-spiegel	e68cfcc7	offen	Abgabe w20-lack-spiegel: der Halm weicht dem Wagen — die Lack-Ebene von material.K4#1 trägt am See wieder B
