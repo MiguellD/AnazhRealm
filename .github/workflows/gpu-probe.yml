@@ -320,7 +320,7 @@ jobs:
                   mkdir -p "$P"
                   if [ -n "$ABGEWIESEN" ]; then
                       URTEIL=ABGEWIESEN
-                      LAEUFER="keinem Läufer"
+                      LAEUFER="—"
                       KOPF="$ABGEWIESEN"
                       KOERPER="ABGEWIESEN (keine GPU geweckt): $ABGEWIESEN"
                   elif [ -f probe/urteil.txt ]; then
@@ -344,7 +344,7 @@ jobs:
                       echo
                       echo "$KOERPER"
                   } > "$P/$SHA8.md"
-                  ZEILE="## $(TZ=Europe/Berlin date '+%d.%m. %H:%M') — GPU-PROBE $SHA8 auf $LAEUFER: $URTEIL in $W ($KOPF) → probe-post/$ZWEIG/$SHA8.md"
+                  ZEILE="## $(TZ=Europe/Berlin date '+%d.%m. %H:%M') — GPU-PROBE $SHA8 auf ${LAEUFER/—/keinem Läufer}: $URTEIL in $W ($KOPF) → probe-post/$ZWEIG/$SHA8.md"
                   echo "$ZEILE"
                   cd koord
                   git config user.name "gpu-probe"
