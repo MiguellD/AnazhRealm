@@ -299,12 +299,20 @@ function glieder(t) {
         }
     };
     geh(baum, [], null);
-    // die Anweisungen der Wurzel und ihr Subjekt
-    const satz = baum.body.map((n) => {
+    // die Anweisungen der Wurzel und ihr Subjekt — eine IIFE (`(function () { … })()`, UMD) trägt ihre Anweisungen wie die Wurzel,
+    // ihre Subjekte gelten nur in der Datei (`lokal`)
+    const iife = (n) => {
+        let e = n.type === "ExpressionStatement" ? n.expression : null;
+        while (e && /^(UnaryExpression|SequenceExpression)$/.test(e.type)) e = e.argument || e.expressions.at(-1);
+        return e?.type === "CallExpression" ? [e.callee, ...e.arguments].filter((f) => IST_FN(f) && f.body.type === "BlockStatement") : [];
+    };
+    const flach = (body, lokal) => body.flatMap((n) => (iife(n).length ? iife(n).flatMap((f) => flach(f.body.body, true)) : [{ n, lokal }]));
+    const satz = flach(baum.body, false).map(({ n, lokal }) => {
         const e = n.type === "ExpressionStatement" ? n.expression : n;
         const x = e.type === "VariableDeclaration" ? [e.declarations.map((d) => t.slice(d.id.start, d.id.end)).join(",")] : nameVon(t, e);
-        return { s: n.start, e: n.end, k: "§" + (e.type === "ClassDeclaration" ? "class " : "") + ((x && x[0]) || ""), sig: [] };
+        return { s: n.start, e: n.end, k: "§" + (e.type === "ClassDeclaration" ? "class " : "") + ((x && x[0]) || ""), lokal, sig: [] };
     });
+    satz.push({ s: Infinity, e: Infinity, k: "§", sig: [] }); // was zwischen den Anweisungen steht (die Hülle einer IIFE)
     // die Token ohne Kommentare in ihr innerstes Glied (ein inneres Glied hinterlässt ⟨Name⟩), sonst in ihre Anweisung
     const stapel = [];
     let [gi, si] = [0, 0];
@@ -321,12 +329,12 @@ function glieder(t) {
         if (stapel.length) stapel.at(-1).sig.push(text);
         else {
             while (si < satz.length - 1 && satz[si].e <= p) si++;
-            satz[si].sig.push(text);
+            (satz[si].s <= p ? satz[si] : satz.at(-1)).sig.push(text);
         }
     }
     const tafel = new Map();
     for (const g of [...G, ...satz]) {
-        const a = tafel.get(g.k) || { sig: "", roh: "", lokal: !!g.eltern, klasse: !!g.klasse };
+        const a = tafel.get(g.k) || { sig: "", roh: "", lokal: !!(g.eltern || g.lokal), klasse: !!g.klasse };
         a.sig += g.sig.join(" ") + "\n";
         if (g.ts != null) a.roh += t.slice(g.ts, g.e) + "\n";
         tafel.set(g.k, a);
@@ -350,6 +358,8 @@ function satzUm(gl, i) {
     const k = gliedUm(gl, i, i + 1);
     return k !== "§" ? k : (gl.satz.find((x) => x.s <= i && i < x.e) || { k: "§" }).k;
 }
+// der Name eines Glieds: zu kurz für die Suche (`U`), wirkt er auf jeden, der die Datei lädt
+const KURZ = (n) => !/^[\w$]{3,}$/.test(n);
 
 // ─── III. DIE KARTE ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Je Schritt aus seiner Roh-Spur: `fn` die ausgeführten Glieder (Bitfeld über die EINE Tafel `glieder`), `txt` die als Text
@@ -492,7 +502,7 @@ const zeige = (rev, r) => {
 };
 const LEER = { tafel: new Map() };
 // die Namen eines Glieds oder Subjekts: das letzte Glied des Pfads, einer Kette (`AnazhRealm.TOD_LAGE` → TOD_LAGE), jedes einer Liste
-const namenVon = (k) => k.replace(/^§/, "").split("/").pop().replace(/^(get |set )?(static )?/, "").split(",").map((n) => n.split(".").pop()).filter((n) => /^[\w$]{3,}$/.test(n)); // prettier-ignore
+const namenVon = (k) => k.replace(/^§(class )?/, "").split("/").pop().replace(/^(get |set )?(static )?/, "").split(",").map((n) => n.trim().split(".").pop()).filter(Boolean); // prettier-ignore
 function wirkungen(basis, kopf, karte, diff = null) {
     const W = [];
     const cache = new Map();
@@ -502,9 +512,10 @@ function wirkungen(basis, kopf, karte, diff = null) {
     const jung = (r, k) => !kennt.get(r)?.has(k) && !(gl(karte.kopf, r) || LEER).tafel?.has(k);
     // ein Subjekt der Wurzel: `module.exports` wirkt auf jeden, der die Datei lädt, sonst über seine Namen (Herkunft: seine Datei)
     const namen = new Map();
-    const subjekt = (k, r) => {
-        if (/^§((module\.)?exports\b|class )/.test(k)) W.push({ laden: r, warum: `die Datei ändert ${k}` });
-        else for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r);
+    const nenne = (n, r, modul) => !namen.has(n) && namen.set(n, { r, modul: modul || /\.cjs$/.test(r) });
+    const subjekt = (k, r, lokal) => {
+        if (/^§((module\.)?exports\b|class )/.test(k) || namenVon(k).some(KURZ) || !namenVon(k).length) W.push({ laden: r, warum: `die Datei ändert ${k}` });
+        else for (const n of namenVon(k)) nenne(n, r, lokal);
     };
     const z = diff || git(["diff", "--name-status", "--no-renames", "-z", basis, kopf]).split("\0").filter(Boolean);
     for (let i = 0; i < z.length; i += 2) {
@@ -521,19 +532,20 @@ function wirkungen(basis, kopf, karte, diff = null) {
             W.push({ alle: `nicht lesbar: ${r}` });
             continue;
         }
-        const namen = [...new Set([...g0.tafel.keys(), ...g1.tafel.keys()])].filter((k) => g0.tafel.get(k)?.roh !== g1.tafel.get(k)?.roh).flatMap(namenVon); // prettier-ignore
-        W.push({ suche: r, t: [g0.t || "", g1.t || ""], namen }); // wer eine Stelle sucht (`dateiMit`, `fehlt`), hängt an jeder Datei, die sie trägt
+        const geaendert = [...new Set([...g0.tafel.keys(), ...g1.tafel.keys()])].filter((k) => g0.tafel.get(k)?.roh !== g1.tafel.get(k)?.roh).flatMap(namenVon); // prettier-ignore
+        W.push({ suche: r, t: [g0.t || "", g1.t || ""], namen: geaendert }); // wer eine Stelle sucht (`dateiMit`, `fehlt`), hängt an jeder Datei, die sie trägt
         for (const k of new Set([...g0.tafel.keys(), ...g1.tafel.keys()])) {
             const [a0, a1] = [g0.tafel.get(k), g1.tafel.get(k)];
             const [fn, txt] = [!a0 || !a1 || a0.sig !== a1.sig, !a0 || !a1 || a0.roh !== a1.roh];
             if (!fn && !txt) continue;
             if (KERN_GLIED.test(k)) W.push({ alle: `Kern-Boot: ${r} ${k}` });
             else if (k === "§") W.push({ laden: r, warum: "die Datei ändert eine Anweisung ohne Subjekt" });
-            else if (k.startsWith("§")) subjekt(k, r);
+            else if (k.startsWith("§")) subjekt(k, r, (a0 || a1).lokal);
             else {
                 W.push({ glied: [r, k], fn, txt, jung: !!a0 && jung(r, k) }); // ein neues Glied wirkt über seine Rufer und seinen Namen
                 // ein lokales Glied nennt nur sein Eltern-Glied; ein Modul (.cjs) teilt nur Klassen-Glieder über den Namen
-                if (!(a0 || a1).lokal && (!a0 || !a1) && ((a0 || a1).klasse || !/\.cjs$/.test(r))) for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r); // prettier-ignore
+                if (!(a0 || a1).lokal && (!a0 || !a1) && ((a0 || a1).klasse || !/\.cjs$/.test(r)))
+                    for (const n of namenVon(k)) KURZ(n) ? W.push({ laden: r, warum: `${k} trägt einen kurzen Namen` }) : nenne(n, r);
                 if (txt || !a0 || !a1) W.push({ fege: r });
             }
         }
@@ -543,7 +555,7 @@ function wirkungen(basis, kopf, karte, diff = null) {
     const bindet = (g, n) => g.tafel.has(n) || [...g.tafel.keys()].some((k) => k[0] === "§" && k.slice(1).split(",").includes(n));
     const fertig = new Set();
     const imKommentar = (g, i) => g.kommentar.some(([s, e]) => s <= i && i < e);
-    const modul = (n) => /\.cjs$/.test(namen.get(n)); // ein Name aus einem Modul gilt nur in ihm
+    const modul = (n) => namen.get(n).modul; // ein Name aus einem Modul oder einer IIFE gilt nur in ihrer Datei
     for (let runde = 0; runde < 4; runde++) {
         const neu = [...namen.keys()].filter((n) => !fertig.has(n));
         if (!neu.length) break;
@@ -563,12 +575,12 @@ function wirkungen(basis, kopf, karte, diff = null) {
                 const ab = g.zeilen || (g.zeilen = [0, ...[...g.t.matchAll(/\n/g)].map((m) => m.index + 1)]);
                 for (const n of neu.filter((x) => new RegExp(`(^|[^\\w$])${x.replace(/\$/g, "\\$")}([^\\w$]|$)`).test(text))) {
                     const i = ab[zeile - 1] + Math.max(0, text.indexOf(n));
-                    if (r !== namen.get(n) && (modul(n) || bindet(g, n))) continue;
+                    if (r !== namen.get(n).r && (modul(n) || bindet(g, n))) continue;
                     if (imKommentar(g, i)) continue;
                     const k = satzUm(g, i);
                     if (k === "§") W.push({ laden: r, warum: `eine Anweisung trägt ${n}` });
-                    else if (k[0] === "§") subjekt(k, r);
-                    else W.push({ glied: [r, k], fn: true, txt: false, jung: jung(r, k), nennt: n });
+                    else if (k[0] === "§") subjekt(k, r, g.tafel.get(k)?.lokal);
+                    else if (!(rev === kopf && !gl(basis, r)?.tafel?.has(k))) W.push({ glied: [r, k], fn: true, txt: false, jung: jung(r, k), nennt: n }); // ein neues Glied ruft nur Neues
                 }
             }
         }
