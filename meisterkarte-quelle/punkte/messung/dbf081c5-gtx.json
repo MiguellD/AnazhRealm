@@ -1,7 +1,7 @@
 {
  "sha": "dbf081c511c5f9d27bd3bcd4c0d2e24ef28e6ff2",
  "geraet": "gtx",
- "zeit": "2026-11-07T12:05:32.156Z",
+ "zeit": "2026-11-07T12:15:33.046Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -150,108 +150,78 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.1,
+   "zeit": "2026-11-07T12:11:07.589Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T11:55:22.061Z",
+  "start": "2026-11-07T12:10:37.972Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.1,
+  "warten": 0.02,
+  "bootS": 6.8,
   "grundstellungS": [
-   10,
-   5.1,
-   0.1,
-   7.7
+   3.9
   ],
-  "proben": 6,
+  "proben": 3,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "gelaende.K5#2",
-    "s": 30.3,
-    "takte": 833,
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 21.5,
+    "takte": 748,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 23.2,
-    "takte": 718,
+    "ort": "genesis",
+    "vor": "vegetation.K4#1",
+    "s": 6.7,
+    "takte": 247,
     "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 21.1,
-    "takte": 703,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "wetter.K2#1",
-    "s": 32.1,
-    "takte": 1551,
-    "chunks": 92,
-    "nach": "der Grundstellung"
+    "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 20.4,
+    "vor": "mensch.K2#2",
+    "s": 21.1,
     "takte": 643,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "mensch.K1#1",
-    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-    "s": 7.7
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor wetter.K3#2: /eval ohne Antwort binnen 60 s",
-  "ciBlicke": 8,
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr vor affekt.K1#2: /eval ohne Antwort binnen 60 s",
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 942,
-   "frameP95": 116.61,
-   "taktP95": 109.34,
-   "vramMax": 140.2,
-   "seiten": 4,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 317,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K5#2",
-     "m": 312,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 385,
-   "luecken": 13,
+   "ortImDeckel": [],
+   "zapfen": 131,
+   "luecken": 11,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 619.3,
-  "minuten": 11.06
+  "fahrtS": 304.1,
+  "minuten": 5.78
  },
  "ungemessen": {
   "gelaende.K2#1": {
@@ -335,6 +305,115 @@
    "abdruck": "80efd4461b53",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T12:11:14.511Z",
+   "abdruck": "f2acc4d695a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T12:11:14.511Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.3,
+   "zeit": "2026-11-07T12:12:24.712Z",
+   "abdruck": "bf81faa399c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T12:15:33.043Z",
+   "abdruck": "9410239eb591",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T12:15:33.044Z",
+   "abdruck": "7c55434a1b8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T12:15:33.045Z",
+   "abdruck": "f27a185f07bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T12:15:33.046Z",
+   "abdruck": "fe1bca1545e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-07T12:15:33.046Z",
+   "abdruck": "c82dc02519ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "luftwasser.K5#1",
    "modus": "session"
   }
  }
