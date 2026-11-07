@@ -1509,17 +1509,17 @@ async function probe(arg) {
         // (b) Spalten-Scans und Proben je Such-Pfad, Scan und Urteil sind Beobachtungs-Punkte.
         let scans = 0,
             proben = 0;
-        const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
         const nassAlt = r._nassAt;
-        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_nassAt") };
-        r._voxelSurfaceY = function (...a) {
-            scans++;
-            return scan.apply(this, a);
-        };
-        r._nassAt = function (...a) {
-            proben++;
-            return nassAlt.apply(this, a);
-        };
+        const zurueck = leihe(r, {
+            _voxelSurfaceY(...a) {
+                scans++;
+                return scan.apply(this, a);
+            },
+            _nassAt(...a) {
+                proben++;
+                return nassAlt.apply(this, a);
+            },
+        });
         try {
             for (const [pfad, R] of [
                 ["trinken", r.constructor.CREATURE_DRINK_SEARCH_RADIUS],
@@ -1564,10 +1564,7 @@ async function probe(arg) {
                 gefunden: false,
             };
         } finally {
-            if (hatte.scan) r._voxelSurfaceY = scan;
-            else delete r._voxelSurfaceY;
-            if (hatte.urteil) r._nassAt = nassAlt;
-            else delete r._nassAt;
+            zurueck();
         }
         m.gestartet = true;
     } catch (e) {

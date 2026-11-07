@@ -790,18 +790,13 @@ async function k1Ende(browser, K) {
             // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
             // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
             const ruft = (window.__ruft = (lauf, k) => {
-                const eigen = Object.prototype.hasOwnProperty.call(r, k),
-                    f0 = r[k];
+                const f0 = r[k];
                 let n = 0;
-                r[k] = function (...a) {
-                    n++;
-                    return f0.apply(this, a);
-                };
+                const zurueck = leihe(r, { [k]: function (...a) { n++; return f0.apply(this, a); } }); // prettier-ignore
                 try {
                     lauf();
                 } finally {
-                    if (eigen) r[k] = f0;
-                    else delete r[k];
+                    zurueck();
                 }
                 return n > 0;
             });

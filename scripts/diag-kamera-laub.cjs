@@ -324,11 +324,10 @@ function leibInstall(cfg) {
     };
     // der Ruf beim Namen (D3c, statt des Rumpf-TEXTS): fn ruft ziel[k] (mit `wenn`: nur Rufe, deren Argumente es erfüllen)
     L.ruft = (fn, ziel, k, wenn) => {
-        const alt = ziel[k],
-            eigen = Object.prototype.hasOwnProperty.call(ziel, k);
+        const alt = ziel[k];
         let n = 0;
-        ziel[k] = function (...a) { if (!wenn || wenn(...a)) n++; return alt.apply(this, a); };
-        try { fn(); } finally { if (eigen) ziel[k] = alt; else delete ziel[k]; }
+        const zurueck = leihe(ziel, { [k]: function (...a) { if (!wenn || wenn(...a)) n++; return alt.apply(this, a); } });
+        try { fn(); } finally { zurueck(); }
         return n > 0;
     };
     L.ruhig = (n) => {

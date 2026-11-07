@@ -513,12 +513,7 @@ async function probe(arg) {
             // ein Fall aus Tauschen: je [Objekt, Werte] die Werte setzen, danach jeden alten Wert zurück (ein fehlender fällt wieder)
             const fallMit = (name, ...paare) => {
                 let zurueck = [];
-                const tausch = ([o, w]) => {
-                    const alt = Object.keys(w).map((k) => [k, Object.prototype.hasOwnProperty.call(o, k), o[k]]);
-                    Object.assign(o, w);
-                    return () => alt.forEach(([k, da, v]) => (da ? (o[k] = v) : delete o[k]));
-                };
-                fall(name, () => (zurueck = paare.map(tausch)), () => zurueck.reverse().forEach((z) => z()));
+                fall(name, () => (zurueck = paare.map(([o, w]) => leihe(o, w))), () => zurueck.reverse().forEach((z) => z()));
             };
             const nichts = () => {};
             // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
