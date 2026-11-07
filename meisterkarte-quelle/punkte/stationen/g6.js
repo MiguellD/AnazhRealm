@@ -2471,6 +2471,13 @@ const fahrtGruenMit = (f) => (x) => (f(fahrtGruen(x)), x);
 // externer Referenz (Lehre 18), nie aus dem Kern; die Station schreibt nichts in die Tafel.
 // AUSGABE: je Zeile „KLASSE <id> {…}" (urteil, Posen im Bild, die roten beim Grund, der Stand jeder Pose), am Ende „SPAWN {…}"
 // (kopf, adapter); das Urteil zählt GRÜN nur mit frischem Stand (jede Pose am Kopf des Laufs gemessen, nie „+geaendert").
+// GEMESSEN (07.11., headless swiftshader `?holz=kienspan`, main 323cc9f3 + w17-pegel-grund, der erste Blick Ego und Third, 3 Schüsse
+// in 4 609 s): 3 von 14 frisch GRÜN — himmel-licht, tor-fern, tor-ziel. ROT beim Namen: tor-bunt Ego 19,03 < 20 (Third 23,06; die
+// Ziel-Panoramen tragen C*ab ≤ 16, die Farbe der Öffnung ist der Film von porta-core) · laub-kante fimp:eiche/tanne:L2 0,24–0,29 >
+// 0,22 · laub zweiton 0,17–0,19 (das Dither unter swiftshader; GTX b895650c Mittag 0) · boden-nah und boden-nah-farbe: der Ring der
+// Nah-Wiese (10 m) liegt am Spawn ganz auf dem Kopfstein-Rondell (Ego 351 598 von 353 059 Grund-Pixeln, σh 0° je Kachel) ·
+// mensch-kopf Third von hinten gesicht 0 (Lippe ungemessen). Nicht im Bild: haus (die Vorschau steht in den Azimuten; ihre
+// Albedo-Zeile veraltet seit 1dcb844f), wasser, fels, fell, haar.
 function spawnBlick(AUS, PORT) {
     const fs = require("fs");
     const path = require("path");
