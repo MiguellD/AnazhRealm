@@ -805,7 +805,8 @@ class AnazhRealm_werkstatt_vorschau {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
                 for (const lf of flat.leaves) {
-                    if (!lf.geom || !lf.mat) continue;
+                    // der Wurf der Karte (ihr Zwilling, `_impostorWurfLeaf`) zeichnet nur in den Kaskaden — die Vorschau nicht
+                    if (!lf.geom || !lf.mat || lf.shadowTwin) continue;
                     // Die Karte liest Schicht und Rahmen je Instanz: dieselbe Fassade + derselbe Stempel wie die Welt.
                     const inst = AnazhRealm._instanzMesh(this._lodInstanceFacade(lf.geom, 1), lf.mat, 1);
                     this._lodSlotStamp({ mesh: inst }, 0, 1, false, lf);

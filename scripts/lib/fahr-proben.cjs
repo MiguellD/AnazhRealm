@@ -589,7 +589,7 @@ async function probeLeben(expected) {
         await __weltDa(() => A._siedlungGesetz());
         let i = 0;
         const bild = () => (o.gleich ? r._gameLoopTick((tMs += 1000 / 60)) : frame(i++));
-        const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k));
+        const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._zellOrt(k));
         for (const ort of orte) {
             stelle(ort.x + 30, ort.z + 30, 2);
             await __gebautNach("der Ort " + ort.key, {
