@@ -254,3 +254,4 @@ omen-gtx-abab-wiese-B2-1-korrektur-3fd9a25a ROT 0 GRÜN / 1 ROT / 3 UNGEMESSEN �
 omen-gtx-pflicht-e8-1-e84fd1fb GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN siedlung.K4#2 (punkte-maschine c3f57c41 messung/e84fd1fb-gtx.json)
 omen-gtx-pflicht-e8-2-e84fd1fb ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT leib.K1#2 (punkte-maschine 69cd318f messung/e84fd1fb-gtx.json)
 omen-gtx-pflicht-e8-3-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K4#2 (punkte-maschine f3a221cc messung/e84fd1fb-gtx.json)
+omen-gtx-pflicht-e8-4-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN mensch.K1#1 (punkte-maschine c15d74d3 messung/e84fd1fb-gtx.json)
