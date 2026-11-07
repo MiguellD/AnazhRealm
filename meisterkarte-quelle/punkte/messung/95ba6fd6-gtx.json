@@ -1,9 +1,50 @@
 {
  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d",
  "geraet": "gtx",
- "zeit": "2026-11-07T14:24:56.134Z",
+ "zeit": "2026-11-07T14:33:36.886Z",
  "host": "LAPTOP-4BN3RL0L",
- "je": {},
+ "je": {
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 51.4 · third/gehen 58 · ego/wechsel 99.8 · third/wechsel 28.3 · Bild 22.41 ms",
+   "exit": 0,
+   "minuten": 0.51,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 51.4 · third/gehen 58 · ego/wechsel 99.8 · third/wechsel 28.3 · Bild 22.41 ms",
+   "gpu": "nvidia/pascal",
+   "s": 30.5,
+   "zeit": "2026-11-07T14:30:17.679Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.4,
+   "zeit": "2026-11-07T14:30:48.211Z",
+   "abdruck": "99184fa7cfdf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.6673 (wasserSatz 25433 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.2 σ 36.2 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "nvidia/pascal",
+   "s": 23.9,
+   "zeit": "2026-11-07T14:31:11.660Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
  "ungemessen": {
   "siedlung.K4#2": {
    "gruen": false,
@@ -18,51 +59,96 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.3,
+   "zeit": "2026-11-07T14:31:35.569Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-07T14:33:36.886Z",
+   "abdruck": "45f50cdc4a89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T14:24:26.604Z",
+  "start": "2026-11-07T14:29:41.531Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
-  "grundstellungS": [],
-  "proben": 1,
+  "bootS": 6.9,
+  "grundstellungS": [
+   7.2
+  ],
+  "proben": 5,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 20.9,
-    "takte": 634,
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 27.7,
+    "takte": 758,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 21.7,
+    "takte": 788,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 2,
+  "ciBlicke": 6,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 6260,
+   "frameP95": 41.64,
+   "taktP95": 41.39,
+   "vramMax": 143.9,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "leib.K1#2",
+     "m": 5581,
      "ringVor": 4,
      "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": -1
     }
    ],
-   "zapfen": 116,
+   "zapfen": 316,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 120.9,
-  "minuten": 2.11
+  "fahrtS": 318.8,
+  "minuten": 5.38
  }
 }
