@@ -336,7 +336,7 @@ async function probeLeben(expected) {
     const weltLabor = async () => {
         const g1 = await gtAmStart();
         let labor = null;
-        if (g1 && g1._fahr) {
+        if (g1?._fahr) {
             const z0 = { ...g1._fahr };
             z.ent = g1;
             z.spur = [];
@@ -1747,7 +1747,7 @@ async function probeLeben(expected) {
             const gL = await setzen("fahrzeug_gt", L.start[0], L.start[1], L.gier);
             if (!gL) return null;
             for (const cr of (st.creatures || []).slice())
-                if (cr && cr.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
+                if (cr?.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
                     r.removeCreature(cr);
             const m = {
                 ziel: !!ziel,
@@ -1830,7 +1830,7 @@ async function probeLeben(expected) {
         await ankommen(D.x, D.z);
         let G = null;
         for (const e of st.architectures)
-            if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
+            if (e?.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
                 if (!G || flach(e.position, D) < flach(G.position, D)) G = e;
         const gierL1 = (92.3 * Math.PI) / 180;
         const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
@@ -2293,7 +2293,7 @@ async function probeLeben(expected) {
                     // steht auf dem Bestand + dem Bären), kein Tod (der Bestand ruht, oben) — der Lockstep prüft den Stoß, nicht
                     // den Takt des Spawners
                     for (const cr of (st.creatures || []).slice())
-                        if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
+                        if (cr?.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
                     // DER GLEICHE START: beide Läufe beginnen am RUHENDEN Wagen — gewartet wird auf das Ereignis (der
                     // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit.

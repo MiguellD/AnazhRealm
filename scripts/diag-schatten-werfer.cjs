@@ -1243,7 +1243,7 @@ function probe(selbsttest) {
             });
         }
         aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben };
-        if (tot && tot.parent) r.removeCreature(tot);
+        if (tot?.parent) r.removeCreature(tot);
     }
 
     // ── W10 DIE WURF-EBENE: die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden

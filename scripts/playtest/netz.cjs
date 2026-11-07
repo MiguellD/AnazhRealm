@@ -2179,8 +2179,8 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         out.outputHashStable = outputHash === outputHash2;
         // Aufräumen (Mesh-Heap nicht aufblasen).
         try {
-            if (result && result.mesh && result.mesh.geometry) result.mesh.geometry.dispose();
-            if (result2 && result2.mesh && result2.mesh.geometry) result2.mesh.geometry.dispose();
+            if (result?.mesh?.geometry) result.mesh.geometry.dispose();
+            if (result2?.mesh?.geometry) result2.mesh.geometry.dispose();
         } catch {
             /* defensive */
         }

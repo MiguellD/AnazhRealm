@@ -768,6 +768,9 @@ class AnazhRealm_bild_sicht {
             hMax: uniform(0),
             // ein Texel des Pass-Ziels in uv (1/Breite, 1/Höhe)
             texel: uniform(new THREE.Vector2(1, 1)),
+            // DAS FELD STEHT (1) oder bäckt nach einem Sprung des Auges (0, `_spiegelFeldSteht`): ohne Feld spiegelt der Pass das
+            // Bild allein — kein Wasser-Punkt (seine Zellen sind leer), kein Strahl jenseits des Schirms (dort der Himmel des Rests)
+            feld: uniform(0),
         };
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
@@ -815,7 +818,7 @@ class AnazhRealm_bild_sicht {
                     const rel = pt.xz.sub(U.mitte).div(kante);
                     return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
                 };
-                const wasser = aufWasser(P).and(imFeld(P)).toVar();
+                const wasser = aufWasser(P).and(imFeld(P)).and(U.feld.greaterThan(0.5)).toVar();
                 const tiefeGr0 = vec2(tiefe.size());
                 const glaenzt = glanzBild
                     .load(ivec2(screenUV.mul(vec2(glanzBild.size()))))
@@ -984,7 +987,7 @@ class AnazhRealm_bild_sicht {
                     const t = max(float(1.25), select(verdeckt, tVon(sDeck), tVon(sMax))).toVar();
                     const tVor = t.toVar();
                     const gVor = float(0.01).toVar();
-                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)), () => {
+                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)).and(U.feld.greaterThan(0.5)), () => {
                         Loop(K.schritte, () => {
                             const p = P.add(R.mul(t));
                             const rel = p.xz.sub(U.mitte).div(kante);

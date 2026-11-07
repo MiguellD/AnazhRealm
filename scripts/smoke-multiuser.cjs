@@ -19,7 +19,7 @@ async function run() {
         ws.addEventListener("message", (e) => {
             const m = JSON.parse(e.data);
             const q = schranken.get(ws);
-            if (m.type === "stats" && q && q.length) return q.shift()();
+            if (m.type === "stats" && q?.length) return q.shift()();
             liste().push(m);
         });
     const ping = (ws) =>

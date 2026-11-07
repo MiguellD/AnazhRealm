@@ -2633,7 +2633,7 @@ async function checkBandWaves9And10a({ page, check }) {
             const minP = r.computeBlueprintPrecisionCap(st.blueprints.test_9d_machine);
             const reg = r.registerBlueprintAsTool("test_9d_machine");
             out.regOk = reg && reg.ok === true;
-            if (reg && reg.ok) {
+            if (reg?.ok) {
                 const tool = st.tools["test_9d_machine"];
                 const expected = Math.min(1.0, minP + 0.05);
                 out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;

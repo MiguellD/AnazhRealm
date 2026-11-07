@@ -212,7 +212,7 @@ async function checkBandV1732SpatialEmotion({ page, check }) {
         out.tintColors = true;
         const THREE = window.THREE;
         const pm = st.playerMesh && st.playerMesh.position;
-        if (THREE && THREE.Color && pm) {
+        if (THREE?.Color && pm) {
             // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
             // (deterministisch), dann den Default (0) wiederherstellen.
@@ -606,9 +606,9 @@ async function checkBandWelle6APolish({ page, check }) {
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
-        if (entry && entry.mesh) {
+        if (entry?.mesh) {
             topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced) {
+        } else if (entry?.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -746,9 +746,9 @@ async function checkBandWelle6APolish({ page, check }) {
         let flatBlueprintNotSteep = false;
         // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
-        if (_entryA3 && _entryA3.mesh) {
+        if (_entryA3?.mesh) {
             topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced) {
+        } else if (_entryA3?.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -833,7 +833,7 @@ async function checkBandWelle6APolish({ page, check }) {
             { seed: 4711 }
         );
         let _archTopY = 0;
-        if (_archEntry && _archEntry.mesh) {
+        if (_archEntry?.mesh) {
             const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
             _archTopY = _box.max.y;
         }
@@ -1730,7 +1730,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
 
         // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
         // eine begehbare Lücke; ein Sturz spannt darüber.
-        if (fb && fb.parts) {
+        if (fb?.parts) {
             const boxes = fb.parts
                 .filter((p) => p.shape === "box")
                 .slice()
@@ -1747,7 +1747,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         }
 
         // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
-        if (ft && ft.parts) {
+        if (ft?.parts) {
             let minY = Infinity;
             let maxY = -Infinity;
             let minX = Infinity;
@@ -1802,7 +1802,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                     // die Probe (tint undefined ⇒ Material-Farbe pur).
                     const flat = r._archFlattenBlueprint("felsbogen");
                     const l0 = flat.leaves[0];
-                    if (l0 && l0.mat && l0.mat.color) {
+                    if (l0?.mat?.color) {
                         const mc = l0.mat.color;
                         let fr = mc.r;
                         let fg = mc.g;

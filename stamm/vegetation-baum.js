@@ -2166,13 +2166,10 @@ class AnazhRealm_vegetation_baum {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
-        return this._naturRaeumen(
-            haus.position.x,
-            haus.position.z,
-            fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
-            false,
-            haus
-        );
+        const [x, z, r] = [haus.position.x, haus.position.z, fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3];
+        // der Halm fragt den Bau mit Boxen wie die Streu (w20-lack-spiegel): seine Kacheln wachsen mit — das Haus trägt sein Erdbau
+        if (fp.welt) this._nahWieseNeuIn(x - r, z - r, x + r, z + r);
+        return this._naturRaeumen(x, z, r, false, haus);
     }
 
     // DIE RÄUMUNG EINER FLÄCHE (K52): jede Natur im Quadrat ±r um (hx, hz), die die Natur-Wand dort nicht mehr setzte

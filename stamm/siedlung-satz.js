@@ -1525,6 +1525,8 @@ class AnazhRealm_siedlung_satz {
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
+        if (entry._fahrAchseX) this._wagenGrund(entry); // der Halm weicht dem stehenden Wagen
+
         this._cullWecken(entry, "ein");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
