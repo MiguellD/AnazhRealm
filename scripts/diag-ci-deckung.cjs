@@ -1506,11 +1506,15 @@ async function selbsttestZeiten() {
 // die Datei, der Ordner, das Fegen, das Laden) — trägt eine Karte eine Wirkung, steht ihr Schritt in der Wahl; `alle` wählt
 // alle; ein Schritt ohne Karte (nie gemessen, Messung rot) ist gewählt. Am Kopf urteilt es die echte Auswahl über den echten Diff
 // (Merge-Basis mit origin/main, sonst HEAD~1) und je Schritt sein erstes Glied als Wirkung.
+const flachMerk = new WeakMap(); // je Karte ihr eigener Index (Datei, Glied) → Bit, unabhängig von zug-auswahl
 function traegt(x, w, karte) {
-    const flach = Object.keys(karte.glieder)
-        .sort()
-        .flatMap((r) => karte.glieder[r].map((k) => r + "\0" + k));
-    const i = (r, k) => flach.indexOf(r + "\0" + k);
+    if (!flachMerk.has(karte)) {
+        const f = Object.keys(karte.glieder)
+            .sort()
+            .flatMap((r) => karte.glieder[r].map((k) => r + "\0" + k));
+        flachMerk.set(karte, new Map(f.map((s, j) => [s, j])));
+    }
+    const i = (r, k) => flachMerk.get(karte).get(r + "\0" + k) ?? -1;
     const bit = (j) => j >= 0 && (Buffer.from(x.fn, "base64")[j >> 3] >> (j & 7)) & 1;
     const g = w.glied || [];
     return !!(
@@ -1537,12 +1541,12 @@ function auswahlUrteil(namen, karte, W, wahl = zug.waehle) {
 }
 function zugUrteil(namen, karte) {
     const v = [];
-    const idx = zug.karteIndex(karte);
+    const alle = [...zug.karteIndex(karte)].flatMap(([r, m]) => [...m].map(([k, i]) => [r, k, i]));
     // je Schritt sein erstes ausgeführtes Glied als Wirkung — die Wahl muss ihn tragen
     for (const n of namen) {
         const x = karte.schritte[n];
         if (!x || !x.gruen) continue;
-        const ein = [...idx].flatMap(([r, m]) => [...m].map(([k, i]) => [r, k, i])).find(([, , i]) => zug.bits.hat(x.fn, i));
+        const ein = alle.find(([, , i]) => zug.bits.hat(x.fn, i));
         if (ein) v.push(...auswahlUrteil(namen, karte, [{ glied: ein.slice(0, 2), fn: true, txt: false, jung: false }]));
     }
     const git = (a) => require("child_process").spawnSync("git", a, { cwd: root, encoding: "utf8" });
