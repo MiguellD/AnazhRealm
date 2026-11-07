@@ -87,14 +87,9 @@ class AnazhRealm_wasser_hydro {
         const mittel = this._regenMittel();
         const Z = st.pegelZustand || null;
         const c = this._pegelStand;
+        const gen = this._regenGen | 0;
         const gleich =
-            c &&
-            c.t === t &&
-            c.S === S &&
-            c.n === S.length &&
-            c.letzt === S[S.length - 1] &&
-            c.mittel === mittel &&
-            c.Z === Z;
+            c && c.t === t && c.S === S && c.gen === gen && c.n === S.length && c.mittel === mittel && c.Z === Z;
         const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, AnazhRealm.PEGEL_TAG_S, mittel, Z);
         const q = lauf ? lauf.q.join() : "";
         const schmelze =
@@ -109,8 +104,8 @@ class AnazhRealm_wasser_hydro {
             schmelze,
             t,
             S,
+            gen,
             n: S.length,
-            letzt: S[S.length - 1],
             mittel,
             Z,
             lauf,
@@ -124,35 +119,63 @@ class AnazhRealm_wasser_hydro {
         return this._pegelTafelGilt;
     }
 
-    // DIE STEMPEL DES REGENS (wetter.K3, `state.regenStempel`, leben in der Sitzung): die Knoten [t0, r0, t1, r1, …] des Wetter-Felds
-    // der Welt (`_weatherFieldFor().rain` über den Übergang des Worts — wer es schrieb, der Zug, das Wort des Spielers, der
-    // Wunsch der Welt, schrieb, was hier fällt) auf der Welt-Uhr (`spielZeit`, nie die Wanduhr), gesetzt im Takt des Pegels: wo
-    // der Regen sich gegen den letzten Knoten ändert, stand er bis zur letzten Probe (`_regenSah`) — dann eine Stufe oder, über
-    // die Proben eines Übergangs, die Rampe (drei Knoten auf einer Geraden werden zwei). Nach dem Fenster des Grunds
-    // (`LAUF.fenster` Spieltage) fällt der älteste Knoten; die Uhr geht nie zurück, ein Stempel hinter ihr schreibt nichts.
+    // DIE STEMPEL DES REGENS (wetter.K3, `state.regenStempel`, leben in der Sitzung): die Knoten [t0, r0, t1, r1, …] des Regens auf der
+    // Welt-Uhr (`spielZeit`, nie die Wanduhr) — der WEG des Wetters, wie sein EINER Schreiber ihn legt (`requestWeatherTransition` →
+    // `_regenWeg`), nie eine Probe des Takts. Ohne Knoten beginnt der Weg am Zustand (`pegelZustand.t`, sonst jetzt) mit dem Wetter,
+    // das die Welt trägt (sein Übergang, sonst sein Wort). Nach dem Fenster des Grunds (`LAUF.fenster` Spieltage) fällt der älteste
+    // Knoten.
     _regenStempel() {
         const st = this.state;
         const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
-        const r = this._weatherFieldFor().rain;
         if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
         const S = st.regenStempel;
-        if (!S.length) S.push(t, r);
-        else if (t >= S[S.length - 2] && r !== S[S.length - 1]) {
-            const tl = S[S.length - 2];
-            const sah = this._regenSah >= tl && this._regenSah <= t ? this._regenSah : t;
-            if (sah > tl) S.push(sah, S[S.length - 1]);
-            S.push(t, r);
-            const n = S.length;
-            if (n >= 6) {
-                const [t1, r1, t2, r2, t3, r3] = S.slice(n - 6);
-                if (t1 < t2 && t2 < t3 && Math.abs((r2 - r1) * (t3 - t2) - (r3 - r2) * (t2 - t1)) <= 1e-9 * (t3 - t1))
-                    S.splice(n - 4, 2);
-            }
+        if (!S.length) {
+            const Z = st.pegelZustand;
+            const ab = Z && Number.isFinite(Z.t) ? Z.t : t;
+            const wt = st.weatherTransition;
+            if (wt && wt.from && wt.to && Number.isFinite(wt.startedAt) && wt.duration > 0)
+                this._regenWeg(wt.from, wt.to, wt.startedAt, wt.duration, ab);
+            else this._regenWeg(st.weather, st.weather, ab, 0, ab);
         }
-        this._regenSah = t;
         const ab = t - globalThis.__gelaendeCore.LAUF.fenster * AnazhRealm.PEGEL_TAG_S;
         while (S.length > 4 && S[2] <= ab) S.splice(0, 2);
         return S;
+    }
+
+    // DER WEG DES REGENS (wetter.K3, feld.K2#2): ab `beginn` (s der Welt-Uhr) der Regen des Worts `von`, über `dauerMs` linear zum Regen
+    // von `nach` — dasselbe Feld, das `_weatherFieldFor` über den Übergang zeigt (`rein`: das Feld eines Worts). Was der alte Weg ab
+    // `beginn` trug, fällt (ein Zug, der neu zieht, `_wunschNimm`, ersetzt ihn); an `beginn` steht der alte auf seinem Wert, die
+    // Stufe zum neuen. Kein Knoten liegt vor `ab` (dem Zustand `pegelZustand.t`, der faltet, was davor fiel). Zwei Seiten einer Uhr
+    // legen aus denselben Akten dieselben Knoten, bit-gleich, gleich wann ihr Takt sie sieht. Bis w18-pegel-peers stempelte der Takt
+    // des Pegels, was er je Bild vom Feld sah (`_regenSah`): A und B setzten dieselbe Rampe an anderen Proben (A 1921,07 · 1929,66 ·
+    // 2041,03 s, B 1921,12 · 1927,51 · 1929,76 · 2041,63 s), die Klasse 15 des Laufs stand auf zwei Stufen, der Pegel der Peers
+    // lief auseinander (gate:mp-sync (f) „pegel VERSCHIEDEN“).
+    _regenWeg(von, nach, beginn, dauerMs, ab) {
+        const st = this.state;
+        if (!Number.isFinite(beginn)) return;
+        if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
+        const S = st.regenStempel;
+        if (ab === undefined)
+            ab = st.pegelZustand && Number.isFinite(st.pegelZustand.t) ? st.pegelZustand.t : -Infinity;
+        const r0 = this._weatherFieldFor(von, true).rain;
+        const r1 = this._weatherFieldFor(nach, true).rain;
+        const t1 = beginn + Math.max(0, dauerMs) / 1000;
+        let [a, ra] = [beginn, r0];
+        if (a < ab) [a, ra] = [ab, t1 > ab ? r0 + ((r1 - r0) * (ab - beginn)) / (t1 - beginn) : r1];
+        // der alte Weg an `a` (von links): zwischen zwei Knoten linear, nach dem letzten gehalten
+        let i = 0;
+        while (i < S.length && S[i] < a) i += 2;
+        const alt =
+            i === 0
+                ? null
+                : i < S.length
+                  ? S[i - 1] + ((S[i + 1] - S[i - 1]) * (a - S[i - 2])) / (S[i] - S[i - 2])
+                  : S[i - 1];
+        S.length = i;
+        if (alt !== null && alt !== ra) S.push(a, alt);
+        S.push(a, ra);
+        if (t1 > a && r1 !== ra) S.push(t1, r1);
+        this._regenGen = (this._regenGen | 0) + 1;
     }
 
     // DER ZUSTAND DES PEGELS ZUR WELT-UHR (speicher.K3, gelaende-core `pegelZustand`, reist im Stand als `pegelZustand`): die Stempel

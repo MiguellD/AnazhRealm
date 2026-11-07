@@ -1308,6 +1308,8 @@ class AnazhRealm_speicher_welten {
             // Boden der Gruben am Fluss anders als vor dem Speichern (Grube am Bach der Mess-Wiese: der Boden-Chunk 777 → 774
             // Ecken, bild-diff 4,2 %).
             ["seasonPhase", () => (typeof st().seasonPhase === "number" ? st().seasonPhase : null)],
+            // der Anker des Jahrs als EIN Paar (Phase, Welt-Uhr; `_saisonAnkerStand`, feld.K2#2) — nie Phase und Uhr aus zwei Bildern
+            ["saisonAnker", () => this._saisonAnkerStand()],
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt), die Wünsche der Welt mit ihren Stempeln
             // ebenso (feld.K2#2: ein Reload mitten im Zug zieht denselben Wunsch wie der Mitspieler)
