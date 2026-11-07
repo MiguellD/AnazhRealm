@@ -772,10 +772,11 @@ async function blickWahl(opt) {
         const urteil = (tiefe) =>
             window.__abnahmeUrteil((m = window.__abnahmeMessen({ ...opt, tiefe }))).rot.filter((q) => !q.feld.startsWith("bild.") && (tiefe || q.feld !== "ziel.frei"));
         let rest = urteil();
-        if (!rest.length) rest = urteil(await window.__bildTiefe());
-        if (!rest.length && window.__buehneUhr) {
-            await window.__weltStehtWarten();
-            window.__nahFolgt();
+        // im Augenblick: EIN Bild des Loops an der Pose (ohne die Ruhe der Erst-Zeichnung) — was dort schon verdeckt ist, fällt ohne
+        // Warten; was frei ist, urteilt das ganze Bild der Tiefe, unter der Bühne in der Welt der Pose
+        if (!rest.length) rest = urteil((window.__nahFolgt(), window.__loopBild(), await window.__spiegelDaten()));
+        if (!rest.length) {
+            if (window.__buehneUhr) await window.__weltStehtWarten();
             rest = urteil(await window.__bildTiefe());
         }
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });

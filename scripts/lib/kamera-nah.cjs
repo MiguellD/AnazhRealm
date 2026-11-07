@@ -90,6 +90,8 @@ function nahDeckungInSeite(o) {
     const klasseVon = (obj, mat, e) => {
         const nm = obj.name || "";
         if (nm === "bodenSatz") return { klasse: "Gelände", name: "Gelände" };
+        // das Wasser (die Hydrosphäre, die Klassen des Wassers im Bild: wasserSatz · farWater · chunk-water-*)
+        if (obj.userData.isHydrosphere || /^(wasserSatz|farWater|chunk-water-)/.test(nm || r._taeterKlasse(obj))) return { klasse: "Wasser", name: nm || r._taeterKlasse(obj) };
         if (nm === "bauSatz") return { klasse: "Bau", name: "bauSatz" };
         if (nm === "formationenSatz") return { klasse: "Fels", name: "Formation" };
         // die Halm-Senken der Nah-Wiese (`nahWiese:L<stufe>:…`, `_nahWieseSenken`) sind die Boden-Schicht wie die
@@ -518,24 +520,42 @@ function nahDeckungInSeite(o) {
             const t = S.tiefe[iy * S.tw + ix];
             if (!(t < 0.99999)) return { d: null };
             const W = new T.Vector3((2 * ix + 1) / S.tw - 1, 1 - (2 * iy + 1) / S.th, t).applyMatrix4(new T.Matrix4().fromArray(S.ivp));
-            const [d, L] = [W, P].map((q) => q.distanceTo(new T.Vector3().fromArray(S.auge)));
+            const [d, L] = [W, P].map((q) => q.distanceTo(E));
             if (d >= L - (Z.saum ?? 0.5) || W.distanceTo(P) <= (Z.r ?? 1.5)) return { d };
-            let best = null;
-            const traegt = (s) => Math.hypot(s.center.x - W.x, s.center.z - W.z) <= s.radius + 0.25 && W.y >= s.center.y - s.radius - 0.25;
-            const nimm = (s, obj, e, linie) => (linie || s.center.distanceTo(W) <= s.radius + 0.25) && !(best && best.rad <= s.radius) && (best = { rad: s.radius, obj, e }); // prettier-ignore
-            st.scene.traverseVisible((obj) => {
-                if (!zeigt(obj)) return;
-                const satz = satzVon.get(obj);
-                const g = obj.geometry;
-                const linie = (g.boundingBox || (g.computeBoundingBox(), g.boundingBox)).getSize(new T.Vector3()).toArray().filter((q) => q < 1e-6).length > 1;
-                if (!satz) return jeInstanz(obj, traegt, (ob, i) => nimm(bs, ob, eintragVon(ob, i), linie));
-                for (const b of satz.bloecke.values())
-                    b.zellen.forEach((zl, j) => traegt(zl.huelle.getBoundingSphere(zs)) && nimm(zs, obj, st.archInstanceGroups.get(b.key)?.slotEntry?.[j]));
-            });
-            if (best && best.e && OHNE.has(best.e.id)) return { d };
-            const mat = best && (Array.isArray(best.obj.material) ? best.obj.material[0] : best.obj.material);
-            const kl = !best ? { name: "unbenannte Fläche" } : (!best.obj.isSkinnedMesh && klasseVon(best.obj, mat, best.e)) || { name: r._taeterKlasse(best.obj) };
-            return { d, vor: kl.klasse === "Streu" && d >= L / 2 ? null : kl.name };
+            // WER STEHT AN W: das Dreieck der CPU auf dem Strahl Auge → W, höchstens 0,5 m vor und 0,15 m hinter W (Klasse, Name; was
+            // weiter dahinter liegt, zeigt das Bild nicht — vegetation.K5#2: Gras in 55,99 m, dahinter ein Ast der Mammut; das Ziel selbst
+            // legt `legeDreiecke` nie) — sonst eine Fläche, die erst der Shader spannt: die kleinste Hülle, die W trägt (bis zum doppelten
+            // Radius: der Shader verbreitert die Halme der Ferne, `_halmFerne`) oder deren LINIE W senkrecht über ihrem Fuß trägt
+            const u = W.clone().sub(E).divideScalar(d);
+            let kl = null;
+            let best = 0.5;
+            const um = (s) => s.center.distanceTo(W) <= s.radius + 0.5;
+            const pruefe = (a, b, c, uvs, me) => {
+                const s = d - schnitt(u.x, u.y, u.z, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
+                const w0 = 1 - UV.u - UV.v;
+                if (s > -0.15 && Math.abs(s) < best && !(me.karte && uvs && atlasA(w0 * uvs[0] + UV.u * uvs[2] + UV.v * uvs[4], w0 * uvs[1] + UV.u * uvs[3] + UV.v * uvs[5]) < me.cut))
+                    (best = Math.abs(s)), (kl = me.k);
+            };
+            st.scene.traverseVisible((obj) => (zaehlt(obj) || (obj.userData.isHydrosphere && window.__kameraZeichnet(obj, cam))) && jeInstanz(obj, um, (ob, i) => legeDreiecke(ob, i, () => true, pruefe, um))); // prettier-ignore
+            let ziel = false;
+            if (!kl) {
+                let h = null;
+                const traegt = (s) => Math.hypot(s.center.x - W.x, s.center.z - W.z) <= s.radius + 0.25 && W.y >= s.center.y - s.radius - 0.25;
+                st.scene.traverseVisible((obj) => {
+                    const g = obj.geometry;
+                    const linie = zeigt(obj) && !satzVon.has(obj) && (g.boundingBox || (g.computeBoundingBox(), g.boundingBox)).getSize(new T.Vector3()).toArray().filter((q) => q < 1e-6).length > 1; // prettier-ignore
+                    if (zeigt(obj) && !satzVon.has(obj))
+                        jeInstanz(obj, traegt, (ob, i) => (linie || bs.center.distanceTo(W) <= 2 * bs.radius + 0.25) && !(h && h.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, i) })); // prettier-ignore
+                });
+                const mat = h && (Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material);
+                kl = !h ? { name: "unbenannte Fläche" } : (!h.obj.isSkinnedMesh && klasseVon(h.obj, mat, h.e)) || { name: r._taeterKlasse(h.obj) };
+                ziel = !!(h && h.e && OHNE.has(h.e.id));
+            }
+            // die Boden-Schicht der fernen Hälfte und das Wasser verdecken nie — es sei denn, das Gelände unter W ragt selbst über die
+            // Linie Auge → Punkt (die Kuppe)
+            const s = Math.hypot(W.x - E.x, W.z - E.z) / (Math.hypot(P.x - E.x, P.z - E.z) || 1);
+            const boden = (kl.klasse === "Streu" && d >= L / 2) || kl.klasse === "Wasser";
+            return { d, vor: ziel || (boden && !(r._voxelSurfaceY(W.x, W.z) > E.y + s * (P.y - E.y))) ? null : kl.name };
         };
         const blick = S ? punkte.map(sieht) : [];
         const i = blick.findIndex((b) => b.vor);
