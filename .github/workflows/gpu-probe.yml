@@ -144,6 +144,8 @@ jobs:
                   WER=$(schloss_erster)
                   echo "Schloss $GPU_SCHLOSS hält „${WER:-niemand}“" | tee -a "$OUT/ergebnis.md"
                   [ "$WER" = "$ICH" ] || rot_ende "das GPU-Schloss hält „${WER:-niemand}“, nicht dieser Job (der Start-Hook des Läufers nahm es nicht)"
+                  # die Zeilen des Hooks zu diesem Job (hook.log): wie lange er auf das Schloss wartete
+                  grep -a "ci-runner $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT " "$GPU_HOOK_LOG" 2> /dev/null | tr -d '\r' | sed 's/^/- Hook /' | tee -a "$OUT/ergebnis.md"
                   echo >> "$OUT/ergebnis.md"
                   # DIE VORFAHRT: ein CI-Job, der auf das Schloss dieses Rechners wartet (hook.log), oder ein echt-Job aus check.yml in
                   # der Schlange — dann startet keine Probe, und eine laufende fällt samt Prozessbaum. Ein Blick, der scheitert, gibt
