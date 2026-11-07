@@ -1,7 +1,7 @@
 {
  "sha": "5fb21e29f30a9a98e289fa18b3cbf98c1e85f007",
  "geraet": "gtx",
- "zeit": "2026-11-07T04:06:44.422Z",
+ "zeit": "2026-11-07T04:11:34.107Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K4#1": {
@@ -1011,228 +1011,60 @@
    "bahn": "sitzung",
    "zwilling": "speicher.K1#1",
    "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine LUFT-Zeile (Exit undefined, keine Messung in {AUS}): ) · Täter: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\5",
+   "exit": 1,
+   "minuten": 0.29,
+   "grund": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 17.6,
+   "zeit": "2026-11-07T04:11:34.107Z",
+   "abdruck": "f675fa5e3cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T03:50:36.019Z",
+  "start": "2026-11-07T04:11:01.054Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
-  "grundstellungS": [
-   10.4,
-   3.6,
-   3.8,
-   0.1,
-   0.1,
-   0.1,
-   0.1,
-   5.2,
-   3.5,
-   6.8,
-   2.6,
-   4.5,
-   0.1,
-   2.4,
-   5.9
-  ],
-  "proben": 16,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "streaming.K3#1",
-    "s": 26.9,
-    "takte": 860,
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 24.8,
+    "takte": 795,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 21.3,
-    "takte": 692,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 18.8,
-    "takte": 739,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "speicher.K4#2",
-    "s": 19.5,
-    "takte": 743,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "wetter.K3#2",
-    "s": 11.1,
-    "takte": 683,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 8.9,
-    "takte": 639,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K2#2",
-    "s": 1.4,
-    "takte": 90,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 3.3,
-    "takte": 216,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 19.3,
-    "takte": 868,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K2#1",
-    "s": 17.2,
-    "takte": 817,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K5#1",
-    "s": 17.3,
-    "takte": 814,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 17.4,
-    "takte": 804,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tore.K3#1",
-    "s": 17.8,
-    "takte": 871,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "streaming.K4#2",
-    "s": 0.7,
-    "takte": 50,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K1#1",
-    "s": 18.6,
-    "takte": 847,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K2#1",
-    "s": 16.8,
-    "takte": 735,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "siedlung.K4#2",
-    "wege": "wege +4 [-1010.2,-1538.8,-664,-1198.8/20] [-119.1,-274.9,279.2,201/272] [-1195.9,-1543,-671.9,-971.7/900] …",
-    "s": 2.6
-   },
-   {
-    "vor": "tore.K3#1",
-    "wege": "wege +7 [-119.1,-274.9,279.2,201/272] [152.6,505.5,647.4,926.8/347] [234.5,504.5,580.5,843.3/335] …",
-    "s": 4.5
-   }
-  ],
-  "ciBlicke": 17,
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr nach ferne.K1#1: die Werkbank :27804 nimmt keine Verbindung mehr an",
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2165,
-   "frameP95": 116.64,
-   "taktP95": 85.99,
-   "vramMax": 139.8,
-   "seiten": 17,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "streaming.K3#1",
-     "m": 2000,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "siedlung.K5#1",
-     "m": 1798,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "siedlung.K2#1",
-     "m": 1350,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "wetter.K3#2",
-     "m": 1162,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "streaming.K4#2",
-     "m": 1158,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 639,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 942,
-   "luecken": 8,
-   "letzteLuecke": "kein Renderer"
+   "ortImDeckel": [],
+   "zapfen": 37,
+   "luecken": 3,
+   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
   },
-  "fahrtS": 1004.3,
-  "minuten": 16.82
+  "fahrtS": 49.9,
+  "minuten": 1.36
  }
 }
