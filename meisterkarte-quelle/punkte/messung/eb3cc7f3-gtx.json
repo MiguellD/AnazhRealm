@@ -1,0 +1,68 @@
+{
+ "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T09:25:09.775Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "siedlung.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ BILD)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ BILD)",
+   "s": 90.2,
+   "zeit": "2026-11-07T09:25:09.775Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T09:24:39.134Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 22,
+    "takte": 664,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 118,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 122.1,
+  "minuten": 2.1
+ }
+}
