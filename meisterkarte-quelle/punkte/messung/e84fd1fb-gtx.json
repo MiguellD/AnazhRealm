@@ -1,7 +1,7 @@
 {
  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
  "geraet": "gtx",
- "zeit": "2026-11-07T21:50:22.788Z",
+ "zeit": "2026-11-07T22:14:01.586Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "lod.K2#1": {
@@ -166,22 +166,36 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.2,
+   "zeit": "2026-11-07T22:14:01.586Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T21:49:46.551Z",
+  "start": "2026-11-07T22:13:29.029Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.5,
+  "warten": 0.02,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 27.5,
-    "takte": 722,
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 24.2,
+    "takte": 683,
     "chunks": 81,
     "nach": null
    }
@@ -199,11 +213,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 115,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 96,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 119.7,
-  "minuten": 2.05
+  "fahrtS": 122,
+  "minuten": 2.12
  }
 }
