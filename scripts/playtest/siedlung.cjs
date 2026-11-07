@@ -232,7 +232,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const beforeChat = st.architectures.length;
         r.processChatCommand("Baue Tempel hier");
         out.chatRoutesToDsl = Array.isArray(st.dsl.lastUserProgram) && st.dsl.lastUserProgram[0] === "spawn_temple";
-        const tempelWarm = !!(st.blueprints && st.blueprints.haus_griechisch);
+        const tempelWarm = !!(st.blueprints?.haus_griechisch);
         out.chatActuallySpawned = st.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
 
         // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
@@ -944,7 +944,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
         st.buildMode.phantomMesh.traverse((node) => {
-            if (node.material && node.material.transparent && node.material.opacity < 1) {
+            if (node.material?.transparent && node.material.opacity < 1) {
                 foundTransparent = true;
             }
         });
@@ -1443,7 +1443,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
             out.directSpawnHasBlockers = e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0;
             if (e) r.removeArchitecture(e);
         } catch (err) {
-            out.directSpawnError = err && err.message ? err.message : String(err);
+            out.directSpawnError = err?.message ? err.message : String(err);
         }
         out.archCountUnchanged = st.architectures.length === before;
 
