@@ -1411,13 +1411,17 @@ class AnazhRealm_siedlung_satz {
         // (schöpfer-Modus ohne Material) erntet 0 (sonst Modus-Wäsche schöpfer→pfad = Material aus dem
         // Nichts). Worldgen/Nexus-Spawns tragen die Marke NICHT.
         if (opts.freeBorn === true) entry.freeBorn = true;
-        // DIE MARKE DES WURFS (K10-6): eine Art des Felds (`FELD_WURF`), die das Feld warf (`_enqueueVegetationSpawn`), weicht
-        // dem Bau (`_weichtDemBau`); dieselbe Art aus dem Satz, dem Bau-Modus oder der KI ist Bau. Sie reist durch den Save.
-        if (opts.feldWurf === true && AnazhRealm.FELD_WURF.includes(type)) entry.feldWurf = true;
         // DIE HERKUNFT DES WERKS (die Wiederkehr): was ein Wort setzte — der Bau-Modus und sein Mitspieler (Text-id), der Satz,
         // die KI, eine Regel des Spielers (`opts.werk`, die Spawn-Ops der DSL ohne das Feld) —, ist Werk und weicht keinem
         // Räumer (`_weichtDemBau`), gleich aus welchem Stoff. Sie reist durch den Save.
         if (opts.werk === true || (typeof opts.id === "string" && opts.id)) entry.werk = true;
+        // DIE MARKE DES WURFS (K10-6): was das FELD setzt und kein Wort, weicht dem Bau (`_weichtDemBau`) — es entscheidet die
+        // Herkunft, nie die Art: der Wurf des Felds (`_enqueueVegetationSpawn`, der Stand, der ihn trägt) und jeder AKT des Felds
+        // (`autonomous` ohne das Gesetz eines Orts: der Nexus und seine Regeln, `_feldHandelt` — Tempel, Wasserfall, Bauplan,
+        // Fraktal; `autonomous` reist nie durch den Save, die Marke schon). Bis w22-dorf-reload stand der Akt des Felds als Bau:
+        // der Wasserfall des Nexus fiel mitten im Erwachen des Start-Dorfs 6,7 m neben einen offenen Slot, die Bau-Wand
+        // (`_bauFrei`) schloss den Slot für immer (gate:haus-welt W9 Zug 16 von 17, CI-Läufer mit 4 Kernen 4 von 5 Läufen).
+        else if (opts.feldWurf === true || (opts.autonomous === true && opts.ausGesetz !== true)) entry.feldWurf = true;
         // DIE GEBURT DES WERKS (stoffe.K4, `_werkAlterOv`): der Welt-Tag seines Akts — der Stand bringt seine mit, ein neues Werk
         // nimmt den Tag der Welt; ohne Zeile (Feld, Gesetz, Tag 0) der erste Tag. Sie reist durch den Save.
         const geburt = "geburt" in opts ? opts.geburt : entry.werk ? (this.state.worldMeta || {}).tag : null;
