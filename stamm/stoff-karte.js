@@ -361,6 +361,8 @@ class AnazhRealm_stoff_karte {
     // und Sichthöhe (`sicht`: die Höhe der Höhen-Stufe, × Instanz-Skala gestempelt — dieselbe Zahl wie der aH0-Stempel
     // der L1) reisen als Instanz-Werte über `_lodSlotStamp`, die Gruppe ist die EINE Atlas-Gruppe. Ohne Sichthöhe keine
     // Karte: ihre Maske hätte kein wahres Stufen-Urteil.
+    // DER WURF DER KARTE (w14-lod-sprung) reist als ihr ZWILLING (`_impostorWurfLeaf`), nie im Leaf des Bilds: die EINE
+    // Atlas-Gruppe bleibt eine Gruppe der Instanz-Wahl des Hauptbilds (W7), der Zwilling wählt je Kaskade.
     _impostorLeaf(z, localMatrix, sicht) {
         const at = this._impostorAtlas();
         if (!at || !z || !z.frame || !(sicht > 0)) return null;
@@ -377,6 +379,148 @@ class AnazhRealm_stoff_karte {
             sicht,
             castShadow: false,
         };
+    }
+
+    // DER ZWILLING DER KARTE (w14-lod-sprung): sie wirft, wie ihre Zeile im Studio-Budget es sagt (B2c `schatten` der Stufe 2:
+    // die Karte wirft sich selbst), als Zwilling wie der Wurf jeder Stufe — dasselbe Quad, derselbe Stoff (im Schattenpass
+    // steht er zum Licht, seine Maske misst vom Auge der Stufen), nur auf der Wurf-Ebene, in seiner EIGENEN Atlas-Gruppe
+    // (`IMPOSTOR_ATLAS_GRUPPE` + "#S") mit der Wahl je Kaskade. Bis hier warf die Karte nie: am Wechsel L1 → Karte fiel der
+    // Schatten jedes Baums vom Boden (lod.K4, Radeon am Dorf −44 462 Luma über 7 474 px, ohne Kaskaden-Schatten −5 209).
+    // null = die Art wirft ihre Karte nicht; eine Art ohne Karten-Zeile im Studio-Budget (der Wagen: kindStages [0, 1], seine
+    // Karte ist die des Wirts) wirft sie nie.
+    _impostorWurfLeaf(leaf, preset) {
+        if (!leaf) return null;
+        const rec = this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = rec && L && L.budget ? L.budget[rec.kind] : null;
+        if (!art || !art[2] || this._foundryBudgetZeile(preset, 2).schatten !== 2) return null;
+        return Object.assign({}, leaf, {
+            leafKey: leaf.leafKey + "#S",
+            atlasGruppe: leaf.atlasGruppe + "#S",
+            castShadow: true,
+            shadowTwin: true,
+        });
+    }
+
+    // DER WURF DER KARTEN IM LICHTMESSER (w14-lod-sprung): die Kamera misst die Sonne auf dem Boden im Bild (`_horizontSichtImBild`)
+    // — dort, wo die Kaskaden den Wurf der Karten legen, misst sie ihn mit: am Punkt (x, y, z) zum Licht `L` 0, wenn der Strahl
+    // zur Sonne die Krone einer werfenden Karte trifft, sonst 1. Werfer sind DIESELBEN Instanzen, die der Schattenpass zeichnet:
+    // die Zwillings-Gruppe der Karte (`_impostorWurfLeaf`) mit dem Fenster ihrer Maske vom Auge der Stufen (`_instanzFenster`,
+    // dieselben Kanten `_blendeK`); ihre Krone ist die Ellipse in ihrem Rahmen (aKarte: Halbbreite y, Höhe z × Instanz-Skala) auf
+    // der Ebene durch den Anker quer zum Licht, wie der Wurf sie zeichnet (binär, alphaTest). Jenseits der Kaskaden (`maxFar`)
+    // fällt kein Wurf. Bis hier maß die Kamera am Abend der Mess-Wiese die Sonne, die der Wald auf dem Grat dem Boden schon
+    // nahm: das Bild stand im Wurf, die Belichtung für die Sonne, und als der Grat selbst sie nahm, sprang sie um 0,38 EV
+    // (3,30 → 4,29, Uhr 0,728 → 0,73) — die Tag-Achse (gate:tag-achse:echt) maß SPRUNG wiese 0,36 EV, an Genesis morgens
+    // fünf Schritte über 0,1 EV.
+    _kartenWurfSicht(x, y, z, L) {
+        const W = this._kartenWurfWerfer(L);
+        if (!W || (x - W.ex) ** 2 + (z - W.ez) ** 2 > W.weit2) return 1;
+        const { liste, kopf, folge, nx, nz, binM } = W;
+        const ln = L.x * nx + L.z * nz;
+        const quer = (x - W.ex) * -nz + (z - W.ez) * nx;
+        const [b0, b1] = [Math.floor((quer - W.quer) / binM) - W.bin0, Math.floor((quer + W.quer) / binM) - W.bin0];
+        for (let b = Math.max(0, b0); b <= b1 && b < kopf.length; b++)
+            for (let k = kopf[b]; k >= 0; k = folge[k]) {
+                const o = k * 5;
+                const t = ((liste[o] - x) * nx + (liste[o + 2] - z) * nz) / ln;
+                if (!(t > 0)) continue;
+                const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
+                const w = y + L.y * t - liste[o + 1] - liste[o + 4];
+                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) <= 1) return 0;
+            }
+        return 1;
+    }
+
+    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite und halbe Höhe — neu, wenn die Gruppe sich
+    // ändert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
+    // das Licht sich um `HORIZONT_KARTE.lichtRad` dreht (das Maß, nach dem die Horizont-Karte neu malt) oder das Auge geht: ein Strahl
+    // prüft nur die Karten seines Fachs (der Rand trägt Krone und Drehung). Der Messer läuft in jedem Bild (`tickDayNight`): an der
+    // Mess-Wiese (Radeon, 2 213 Werfer, 82 Fächer) kostet eine Messung 0,106 statt 0,055 ms, mit neuem Licht je Bild 0,166 statt
+    // 0,118 ms. null, solange keine Karte wirft (kein Zwilling, keine Schatten, die Sonne unter dem Horizont).
+    _kartenWurfWerfer(L) {
+        const st = this.state;
+        const g = st.archInstanceGroups ? st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#S") : null;
+        const dl = st.directionalLight;
+        const cam = st.camera;
+        const csm = st.csmNode;
+        if (!g || !(g.liveCount > 0) || !dl || !dl.castShadow || !cam || !csm || !(L.y > 0)) return null;
+        const m = g.mesh;
+        const lu = st.lodUniforms;
+        const maske = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && this._blendeK);
+        const auge = maske ? lu.uLodAuge.value : cam.position;
+        const n = g.liveCount;
+        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}`;
+        let W = this._kartenWurfMerk;
+        if (!W || W.stand !== stand) {
+            const a = m.instanceMatrix.array;
+            const ak = m.geometry.attributes.aKarte.array;
+            const Lm = maske
+                ? {
+                      ex: Math.round(auge.x),
+                      ez: Math.round(auge.z),
+                      perf: lu.uLodPerf.value,
+                      ref: lu.uLodRef.value,
+                      kanten: this._blendeK,
+                      halt: 0,
+                  }
+                : null;
+            const liste = W && W.liste.length >= n * 5 ? W.liste : new Float32Array(n * 5);
+            let k = 0,
+                hwMax = 0;
+            for (let i = 0; i < n; i++) {
+                if (Lm && !this._instanzFenster(g, i, Lm)) continue;
+                const o = i * 16;
+                const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
+                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5], k * 5);
+                hwMax = Math.max(hwMax, ak[i * 4 + 1] * s);
+                k++;
+            }
+            W = this._kartenWurfMerk = {
+                stand,
+                liste,
+                n: k,
+                hwMax,
+                lx: NaN,
+                lz: NaN,
+                folge: W && W.folge.length >= n ? W.folge : new Int32Array(n),
+            };
+        }
+        const e = cam.position;
+        const lr = AnazhRealm.HORIZONT_KARTE.lichtRad;
+        const fl = Math.max(Math.hypot(L.x, L.z), 1e-4);
+        if (!(Math.abs(L.x / fl - W.lx) < lr && Math.abs(L.z / fl - W.lz) < lr) || W.ex !== e.x || W.ez !== e.z) {
+            // die Fächer quer zum Licht um das Auge: der Rand trägt die Drehung bis lichtRad über die Weite der Kaskaden (maxFar)
+            const [nx, nz] = [L.x / fl, L.z / fl];
+            const weit = Math.min(cam.far, csm.maxFar);
+            const binM = 8;
+            const rand = weit * lr * 2;
+            const quer = (o) => (W.liste[o] - e.x) * -nz + (W.liste[o + 2] - e.z) * nx;
+            const bin0 = Math.floor(-weit / binM) - 2;
+            const kopf =
+                W.kopf && W.kopf.length === Math.ceil((2 * weit) / binM) + 5
+                    ? W.kopf.fill(-1)
+                    : new Int32Array(Math.ceil((2 * weit) / binM) + 5).fill(-1);
+            for (let k = 0; k < W.n; k++) {
+                const b = Math.floor(quer(k * 5) / binM) - bin0;
+                if (b < 0 || b >= kopf.length) continue;
+                W.folge[k] = kopf[b];
+                kopf[b] = k;
+            }
+            Object.assign(W, {
+                lx: nx,
+                lz: nz,
+                nx,
+                nz,
+                ex: e.x,
+                ez: e.z,
+                weit2: weit * weit,
+                binM,
+                bin0,
+                kopf,
+                quer: W.hwMax + rand,
+            });
+        }
+        return W;
     }
 
     // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · Atlas-Bytes · Haupt-Faden-ms je Bake. Reist im
@@ -1000,7 +1144,6 @@ class AnazhRealm_stoff_karte {
         const rend = this.state.renderer;
         if (!rend || rend._isHeadlessNull || !this.state.rendererReady)
             return Promise.reject(this._stoffBruch("die Karte: der Abzug braucht den Welt-Renderer"));
-        const at = this._impostorAtlas();
         const z = this._foundryEnsureImpostorRecord(preset, gestalt, null);
         if (!z) return Promise.reject(this._stoffBruch(`die Karte ${preset}|${gestalt}: keine Zelle`));
         if (z.gescheitert) return Promise.reject(this._stoffBruch(`die Karte ${z.key}: gescheitert`));

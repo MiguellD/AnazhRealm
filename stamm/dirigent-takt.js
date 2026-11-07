@@ -61,6 +61,8 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
+                // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
+                this._ladeBildTakt = bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
                 // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
                 // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
@@ -401,6 +403,7 @@ class AnazhRealm_dirigent_takt {
                 return loop(time);
             } finally {
                 this._imTakt = vor;
+                this._ladeBildTakt = false; // der Bild-Takt endet mit dem Takt (`_ladeFrist`)
             }
         };
         this._gameLoopTick = takt;
@@ -674,13 +677,24 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
+    // Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine Aufgabe zu halten.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        const E = this._erstZeichnung;
+        const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
+        if (
+            schuld ||
+            jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
+            this._weltbildLuecken().length === 0
+        ) {
+            if (E) E.ladeSchuld = false;
             L.ladeBild = jetzt;
+            L.ladeVorher = true;
             return true;
         }
+        L.ladeVorher = false;
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
@@ -1636,7 +1650,7 @@ class AnazhRealm_dirigent_takt {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
-        if (this._ladeTakt()) return AnazhRealm.LADE_TAKT_MS;
+        if (this._ladeTakt()) return this._ladeBildTakt ? AnazhRealm.LADE_TAKT_MS / 2 : AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1679,14 +1693,17 @@ class AnazhRealm_dirigent_takt {
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
     // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
     // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
-    // Außerhalb des Lade-Takts −∞.
-    _ladeFrist() {
+    // Außerhalb des Lade-Takts −∞. DER BILD-TAKT (`_ladeBildTakt`, w19-ankunft-takt): zeichnet die Aufgabe ihr Lade-Bild, gehört
+    // die zweite Hälfte der Frist der Zeichnung (`zeichnung`: der Knoten-Bau der Erst-Zeichnung) — die Leser des Takts arbeiten bis
+    // zu ihrer Mitte. Bis hier trug der Bild-Takt LADE_TAKT_MS Arbeit UND je Render-Aufruf LADE_TAKT_MS Knoten-Bau (headless kalt
+    // 5fb21e29: Aufgaben von 347–737 ms).
+    _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
         if (this._ladeFristBis == null) {
             this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
             Promise.resolve().then(() => (this._ladeFristBis = null));
         }
-        return this._ladeFristBis;
+        return this._ladeBildTakt && !zeichnung ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
     }
 
     // DIE KAPPE JE TAKT (K60-2, die EINE Stelle der Klasse): ein Leser des ersten Weltbilds mit eigener Kappe je Takt (`n`

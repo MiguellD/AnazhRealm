@@ -1250,5 +1250,22 @@
                 "organ": "_kontaktVerdeckung (indirectDiffuse · indirectSpecular)"
             }
         ]
+    },
+    {
+        "warum": "Abschied ohne Bau",
+        "anker": [
+            {
+                "sub": "this.bindings.deleteForRender(h)",
+                "organ": "_gestaltSchluessel"
+            },
+            {
+                "sub": "deleteForRender(e){const t=e.getBindings()",
+                "organ": "_gestaltSchluessel"
+            },
+            {
+                "sub": "getBindings(){return this._bindings||",
+                "organ": "_gestaltSchluessel"
+            }
+        ]
     }
 ]

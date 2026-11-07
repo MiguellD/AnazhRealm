@@ -596,11 +596,18 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
-                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
-                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild UND unter dem Ladeschirm baut kein Bild einen
+                // Knoten-Graphen am Stück — wer seinen noch nicht hat, wartet wie ein verschobener; der ruhende Loop baut wie bisher.
+                // UNTER DEM LADESCHIRM (w19-ankunft-takt, ankunft.K5): bis hier baute dort JEDER Render-Aufruf eines Lade-Bilds am Stück
+                // bis zu seinen eigenen LADE_TAKT_MS (Hauptpass, jede Kaskade, jedes Bündel, jeder Bake-Versuch der Karte) — eine
+                // Aufgabe hielt 250–480 ms Knoten-Bau (headless kalt 5fb21e29: `build` 18× ≥ 50 ms, die längste Aufgabe 737 ms;
+                // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
+                // Schritt bis zur EINEN Frist der Aufgabe (`_ladeFrist`, im Bild-Takt die Hälfte der Zeichnung); was wartet, macht
+                // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
+                if (ungebaut && (welt._ladeTakt() || (welt.state._weltbildDa && !welt._loopRuht()))) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
+                        if (welt._ladeTakt()) E.ladeSchuld = true;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -609,9 +616,6 @@ class AnazhRealm_bild_kosten {
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
-                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
-                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
-                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
@@ -647,13 +651,15 @@ class AnazhRealm_bild_kosten {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
-                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm die Frist der Aufgabe, `_ladeFrist`)
+                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
                 rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte und ihre Zeit
                 rateMs: 0,
+                rateFrist: null, // die Frist der laufenden Aufgabe des Baus in Raten (`_knotenRate`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -704,9 +710,17 @@ class AnazhRealm_bild_kosten {
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
-        const frist = this._bauFrist();
+        // DIE EINE FRIST (`_bauFrist`, w19-gang-hitch) — unter dem Ladeschirm die des Zeichen-Frames (`_ladeFrist(true)`, w19-ankunft-takt);
+        // der erste Schritt jeder Aufgabe geht immer (nie verhungert, `E.rateFrist` merkt die Aufgabe bis zu ihrem Ende)
+        const frist = this._ladeTakt() ? this._ladeFrist(true) : this._bauFrist();
+        let erster = false;
+        if (E.rateFrist === null) {
+            E.rateFrist = frist;
+            erster = true;
+            Promise.resolve().then(() => (E.rateFrist = null));
+        }
         const t0 = performance.now();
-        if (t0 >= frist) return false;
+        if (t0 >= frist && !erster) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -805,6 +819,22 @@ class AnazhRealm_bild_kosten {
             return k;
         };
         N.__anazhBauSchluessel = true;
+        // DER ABSCHIED OHNE BAU (w19-ankunft-takt, ankunft.K5): r184 löst ein Render-Objekt, dessen Schlüssel wechselte (ein Licht
+        // kam, der Stoff wechselte die Variante — `_objects.get` → `dispose`), über `bindings.deleteForRender` → `getBindings` →
+        // `getNodeBuilderState`: ein Objekt, das nie band (es wartete auf seinen Bau in Raten, `_knotenRate`), baute seinen ganzen
+        // Knoten-Graphen SYNCHRON, nur um ihn zu löschen (headless kalt, Bau in Raten unter dem Ladeschirm: eine Aufgabe 640 ms,
+        // davon 361 ms `dispose › deleteForRender › build`). Ohne Bindungen (`_bindings` null) gibt es nichts zu lösen — kein Bau;
+        // `nodes.delete` zählt nur einen Bau, der stand (gate:vendor-anker pinnt die drei Stellen).
+        const BI = renderer._bindings;
+        if (!BI || typeof BI.deleteForRender !== "function")
+            return this.log("ABSCHIED OHNE BAU: r184-Bindings.deleteForRender nicht gefunden (Vendor-Drift)", "ERROR");
+        if (BI.__anazhAbschiedOhneBau) return;
+        const loese = BI.deleteForRender;
+        BI.deleteForRender = function (ro) {
+            if (ro._bindings === null) return;
+            return loese.call(this, ro);
+        };
+        BI.__anazhAbschiedOhneBau = true;
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
@@ -3008,8 +3038,9 @@ class AnazhRealm_bild_kosten {
     // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
     // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
-    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
-    // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) zeichnet im Hauptbild, ihr Zwilling (die Atlas-Gruppe "#S",
+    // w14-lod-sprung) in den Kaskaden. Eine Gruppe, die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines
+    // Frames — sie zeichnet weiter jede Instanz.
     // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
     // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
     // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
@@ -3019,7 +3050,7 @@ class AnazhRealm_bild_kosten {
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
         if (at.aGang) return "gpu";
-        if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
+        if (leaf.atlasGruppe) return !at.aKarte ? null : leaf.shadowTwin ? "schatten" : castShadow ? null : "haupt";
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
         return castShadow ? null : "haupt";
@@ -3590,9 +3621,16 @@ AnazhRealm.FARBSICHT = Object.freeze({
     staerke: 1,
 });
 // DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
-// KAM_FOV_GRAD) in `sichtfeld` — nie `fov`: `.fov =` schreibt allein `_kamFov` (gate:fahr-leben T5) —, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
+// KAM_FOV_GRAD) in `zugang.fov` im Bereich `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
 // swiftshader, 1,5° Drehung je Bild über 12 Bilder: Kanten-Energie an 3,6, aus 12,5, in Ruhe beide 7,8 — spielgang.K4#2).
-AnazhRealm.ZUGANG = Object.freeze({ sichtfeld: Object.freeze([60, 100]), laufPxAus: 4 });
+AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+// DAS SICHTFELD DES SPIELERS als reine Funktion: die Wahl (Menü, Stand) geklemmt auf ZUGANG.fov, null ohne Zahl — der EINE Weg Menü → Stand
+// → `_kamFov`; die Schreiber legen sie mit `Object.assign(zugang, { fov })` ab (`camera.fov` schreibt allein `_kamFov`, gate:fahr-leben T5)
+AnazhRealm._zugangFov = function (v) {
+    if (v == null || v === "" || !Number.isFinite(+v)) return null;
+    const [f0, f1] = AnazhRealm.ZUGANG.fov;
+    return Math.max(f0, Math.min(f1, +v));
+};
 // die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
 AnazhRealm._farbsichtMatrix = function (art, staerke) {
     const F = AnazhRealm.FARBSICHT;

@@ -1199,7 +1199,7 @@ class AnazhRealm_studio_gestalt {
             // bleibt TEMPLATE-LOKAL (der Studio-Bäcker framet ungescalt, ein Scale sprengte den Atlas).
             const I = this._foundryWorldScaleMatrix(preset);
             // Schatten: die Stufe wirft ihre eigene Gestalt genau dann, wenn das Budget sie nennt (B2c: Baum L0 → L1-
-            // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
+            // Zwilling, L1 selbst, die Karte selbst — `_impostorLeaf`; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
             const castsShadow = (wurf === lod && !zwillingsQuelle) || (wurfKosten !== null && wurfKosten.von === lod);

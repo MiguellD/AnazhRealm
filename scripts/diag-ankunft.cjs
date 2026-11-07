@@ -513,12 +513,7 @@ async function probe(arg) {
             // ein Fall aus Tauschen: je [Objekt, Werte] die Werte setzen, danach jeden alten Wert zurück (ein fehlender fällt wieder)
             const fallMit = (name, ...paare) => {
                 let zurueck = [];
-                const tausch = ([o, w]) => {
-                    const alt = Object.keys(w).map((k) => [k, Object.prototype.hasOwnProperty.call(o, k), o[k]]);
-                    Object.assign(o, w);
-                    return () => alt.forEach(([k, da, v]) => (da ? (o[k] = v) : delete o[k]));
-                };
-                fall(name, () => (zurueck = paare.map(tausch)), () => zurueck.reverse().forEach((z) => z()));
+                fall(name, () => (zurueck = paare.map(([o, w]) => leihe(o, w))), () => zurueck.reverse().forEach((z) => z()));
             };
             const nichts = () => {};
             // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
@@ -878,7 +873,7 @@ async function probe(arg) {
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
                 // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
                 // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
-                for (const weiter = (neu(), __deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
+                for (const weiter = (neu(), __deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await __takte(1, 30); // prettier-ignore
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];

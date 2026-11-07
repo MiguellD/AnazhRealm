@@ -125,7 +125,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
   es: kein Zwillings-Kreis).
 - **Monoton:** `tris` fällt je Stufe streng, `draws` steigt nie.
-- `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Karte des EINEN Bäckers (`_karteWeltBacken`; das Labor zeigt ihre Bytes, pipeline.K2),
+- `karte: true` (nur die letzte Stufe, sie wirft sich selbst — `schatten` ist ihre Stufe; ohne Wurf fiel der Schatten des
+  Baums am Wechsel L1 → Karte vom Boden, w14-lod-sprung): die Stufe IST die Karte des EINEN Bäckers (`_karteWeltBacken`; das Labor zeigt ihre Bytes, pipeline.K2),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
 - DARF-Regler einer Stufe (Form geprüft): `blattKarte` (Kartenkante in Blatt-Größen, endlich > 0) · `dichte` (je
@@ -364,14 +365,16 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
 - `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle` trennt die Leser der EINEN Liste: `"fest"`
   (die Kollision), `"sicht"` (das Fernbild des Welt-March — höchstens 24 Teile je Liste, die Kosten-Grenze: je Pixel
   läuft der March über alle Teile seines Eintrags), `"wurf"` (nur die NUR-WURF-Stufe: ihr Gitter ist die GANZE Liste, der
-  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer) oder `"beide"` (fest und sicht).
+  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer), `"beide"` (fest und sicht) oder
+  `"strahl"` (der Leib, an dem nur der Strahl hält: das Geländer der Treppe — die Kamera-Kugel und der Hieb stoßen an ihn,
+  die Kapsel des Gangs liest `fest`; ohne Farbe, leib.K4 Staffel 2).
 - **EINE Quelle je Gesetzbuch:** die reine Kern-Funktion `huelle(rezeptId, seed, ov)` (fachwerk: der grundriss-treue
   Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform, das Tor aus `buildGate`, das sie im selben Lauf wie
   seine Meshes sammelt); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
   `__fern`, und ihr Gitter IST diese Liste. Die Kollision (`__huelle`, Welle L) trägt dieselbe Form (rolle `fest`).
 - **EIN Transport:** die Beipack-Karte der Foundry-Antwort (`FOUNDRY_BEIPACK`: `__huelle` → `huelle`, `__fern` → `fern`
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
-  (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
+  (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`; rolle `strahl` liest der Strahl, `_strahlBoxenVon`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
 - **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
   (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —

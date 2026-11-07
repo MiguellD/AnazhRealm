@@ -457,7 +457,6 @@
         hoerschwelleDb: -64,   // darunter schweigt eine Stimme (Pegel am Welt-Bus)
         hystereseDb: 4,        // eine laufende Stimme schweigt erst unter Schwelle − Hysterese
         stimmenMax: 7,         // Stimmen-Deckel je Moment (die lautesten gewinnen)
-        rampeSek: 0.35,        // Zeitkonstante der Pegel-/Filter-Rampen je Takt
         abklangSek: 0.12,      // Zeitkonstante des Verstummens
         masterBasis: 0.35,     // der Welt-Master (Wirt UND Lab: EIN Mischpult)
         // DIE SPITZEN-WAND hinter dem Master (umweltSpitze): das Knistern der Glut auf Armlaenge (Scheitelfaktor
@@ -467,7 +466,10 @@
         spitze: { linearBisDb: -6, deckeDb: -1, kopfraumDb: 12, punkte: 8193, ueberabtastung: "4x" },
         // DAS OHR des Wirts — Kosten je Frame, nie die Weltgroesse: der Hoer-Ring (Mitte + radien × richtungen,
         // Meter) wird mit probenJeFrame Punkten je Frame abgetastet (die Glut liest der Wirt aus seinem Verzeichnis); die
-        // Mischung laeuft im Takt mischSek (Sekunden).
+        // Mischung laeuft im Takt mischSek (Sekunden). Er ist auch die Zeitkonstante der Pegel-/Filter-Rampen des Graphs: die
+        // Rampe gleitet zum Wert ihres Takts, keine eigene Glaettung darueber. Bis w18-wind-ohr trug sie eine eigene (rampeSek
+        // 0,35 s): das Ohr hinkte der Boee 0,6 s nach (Rampe 0,4 · Takt 0,2; Radeon 5fb21e29, klang.K2#1 r 0,99 bei +0,6 s gegen
+        // das Gesetz am Ohr), dem Bild 1,2 s.
         ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1 },
         // DER RAUM AM OHR (klang.K3 Staffel 2, w5-s2-g1, rein additiv): der Nachhall folgt aus dem, was um das Ohr STEHT —
         // RT60 = basis + krone·Deckung + bau·Bau-Anteil + fels·Fels-Anteil + hoehle·(Fels ueber dem Ohr), geklemmt auf maxSek
@@ -1070,7 +1072,7 @@
                 st.quellen.push(src);
                 st.panner.push(pan);
             }
-            ziel(st.gain.gain, m.gain * st.ausgleich, t, U.rampeSek);
+            ziel(st.gain.gain, m.gain * st.ausgleich, t, U.ohr.mischSek);
             return (stimmen[name] = st);
         }
         function stoppe(st, t) {
@@ -1113,11 +1115,11 @@
                         if (bereit(name)) starte(name, mm, zeit);
                         continue;
                     }
-                    ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.rampeSek);
-                    ziel(st.filter.frequency, mm.hz, zeit, U.rampeSek);
-                    if (W[name].gerichtet) ziel(st.panner[0].pan, mm.pan, zeit, U.rampeSek);
+                    ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.ohr.mischSek);
+                    ziel(st.filter.frequency, mm.hz, zeit, U.ohr.mischSek);
+                    if (W[name].gerichtet) ziel(st.panner[0].pan, mm.pan, zeit, U.ohr.mischSek);
                     for (var q = 0; q < st.quellen.length; q++)
-                        if (st.quellen[q].playbackRate) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.rampeSek);
+                        if (st.quellen[q].playbackRate) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.ohr.mischSek);
                 }
             },
             zensus: function () {

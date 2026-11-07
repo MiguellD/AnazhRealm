@@ -32,8 +32,10 @@
 const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
-// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
-// zum Punkt 2 m unter dem Boden 60 m hinter dem gezeichneten Blick das Gelände, das der Satz-Abschnitt des Passes nicht trägt
+// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass blickt die Kamera ohne Pass zum Punkt 2 m unter dem Boden 60 m
+// hinter dem gezeichneten Blick, und der Strahl der Nah-Deckung (scripts/lib/kamera-nah.cjs, die Blick-Wahl fragt so vor jedem Bild)
+// nennt das Gelände, das der Satz-Abschnitt des Passes nicht trägt. Bis w18-abnahme-sicht fragte die Linie zum Ziel — das Ziel
+// urteilt seitdem die Tiefe des Bilds
 const urteil = (b) =>
     STAND.standUrteil(b).concat(
         b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`
@@ -539,7 +541,7 @@ function selbsttest() {
 // den Blöcken der Nah-Streu, auraAt − frozen an den Stämmen) nach einer Spielstunde, nach Save → Reload → einer Stunde und nach
 // 36 Stunden mehr. Urteil: nach der Stunde ≤ 30 % der Bäume, keine Pflanze, je Baum ein Stumpf, das Feld ≥ 0,05 unter frozen.
 function tatUrteil(T) {
-    const h = T && T.stunde;
+    const h = T?.stunde;
     if (!h) return ["LEER: keine Messung nach der Stunde"];
     return [
         T.gefaellt >= 8 && T.gepflueckt >= 25 ? "" : `LEER: ${T.gefaellt} Bäume, ${T.gepflueckt} Pflanzen`,
@@ -603,7 +605,7 @@ async function tatSeite(MESS, vorher) {
         await stehen(U);
         return { jahr: r._weltStunde() - h0, da: zeichnet((a, k) => ps.some((p) => p.key + "#" + p.id === k)), p: ps.map((p) => p.w) };
     };
-    if (vorher && vorher.ufer) {
+    if (vorher?.ufer) {
         r._setWeather("sunny", "human"), r.setSeason("sommer");
         for (let d = 20, n = 0; d <= 900 && n < 8; d += 10)
             for (let k = 0; k < 36; k++) {
@@ -1051,7 +1053,7 @@ async function brandSeite(MESS) {
         const dart = (p, W = C.FOREST.cell) => r._forestCellDarts(Math.floor(p.x / W), Math.floor(p.z / W), r._forestSeedInt()).some((q) => ab(q, p) < 0.05);
         const baeume = () => st.architectures.filter((e) => e && e.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
         const am = (p) => baeume().find((e) => ab(e.position, p) < 0.05);
-        const alter = (p) => ((e) => (e ? (e.studioOv && e.studioOv.alter) || 1 : 0))(am(p));
+        const alter = (p) => ((e) => (e ? e.studioOv?.alter || 1 : 0))(am(p));
         const naechster = () => baeume().sort((u, v) => d(u.position) - d(v.position))[0];
         const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
             [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(ov))));
@@ -1319,7 +1321,10 @@ const BRANDLAUF = process.argv.includes("--brand");
                 const h = st.camera.getWorldDirection(K.clone()).multiplyScalar(-60).add(K);
                 r._passSicht(st.camera, false);
                 r._passSicht(st.camera, true);
-                aus.sonde = window.__nahDeckung({ gw: 1, gh: 1, ziel: h.setY(r._voxelSurfaceY(h.x, h.z) - 2) }).ziel;
+                const q = st.camera.quaternion.clone();
+                st.camera.lookAt(h.setY(r._voxelSurfaceY(h.x, h.z) - 2));
+                aus.sonde = { vor: Object.keys(window.__nahDeckung({ radien: { Gelände: 60 }, gw: 1, gh: 1, neu: true }).taeter)[0] };
+                st.camera.quaternion.copy(q);
                 K.x += 40;
                 aus.fixWach = aus.fixWach || (stand && r._weltSteht() && "Sprung");
                 K.x -= 40;
