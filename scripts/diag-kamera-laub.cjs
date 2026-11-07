@@ -16,7 +16,8 @@
 // geht der Spieler in Third seitwärts, links und rechts, im Takt des Spiels; je Probe das Bild des Spiels (Ausgabe-Pfad mit seiner
 // Geschichte) gegen dieselbe Pose stehend und ohne Leib — gezählt wird jedes Bild mit durchsichtigem oder unsichtbarem Leib
 // (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
-// Stand vor w12-leib-sicht) muss Bilder nennen.
+// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild des Gangs der gelesene Boden
+// des Rückstrahls — die Unterseite jeder Krone liest ihn ganz; der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
 //
 //   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
@@ -151,7 +152,14 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // 05.11.): mit dem getragenen Leib Kopf 0,7–2,6 %, Leib 0,9–3,0 %; ohne ihn (der Schmuggel = der Stand vor w12-leib-sicht) Kopf
 // 12,4–41,6 %, Leib 4,6–7,4 % (die Werkbank am Platz: Kopf 0–2,2 % gegen 9,7–43 %). Der Kopf trennt, der Leib-Deckel hält das Rauschen
 // der Kanten (Tuch und Gelenk-Mischung folgen ihrem Knochen nur auf Zentimeter).
-const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500 });
+// DER BODEN DES RÜCKSTRAHLS IM GANG (w21-laub-unten, Befund des Schöpfers 07.11.: die Unterseite des Baumlaubs flackert beim Gehen, beim
+// seitwärts Gehen wechseln die Grüntöne der Blatt-Unterseiten): die Unterseite der Krone (die Normale abwärts) liest die untere Hemisphäre
+// ganz, den gemessenen Boden des Rückstrahls (`_rueckstrahlHalbraum`). Der Pass las ihn an 12² Pixeln fest am Schirm, neu bei jedem Schritt
+// über 1 cm: die Stichprobe wanderte über die ruhende Welt, ihr Mittel sprang. Je Bild des Gangs liest die Linse den Boden (Luma); sein
+// größter Sprung von Bild zu Bild steht im Stand unter `bodenMax`, im Schmuggel (`aus`: dazu das Raster von vor w21-laub-unten, Kacheln
+// [1, 1] × 12², ohne die Ebenheit `ebenRel`) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
+// der Boden +15,4 % → ±0,08 %, der Ton der Unterseite +1,03 % → ±0,05 %.
+const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
@@ -250,6 +258,8 @@ function urteilStrafe(S) {
     return [
         ...(an.length ? [`Strafe: ${an.length} von ${S.an.length} Bildern durchsichtig — ${an.map(strafeZeile).join(" · ")}`] : []),
         ...(S.aus.some(strafeDurch) ? [] : [`Schmuggel ungenannt — ${S.aus.map(strafeZeile).join(" · ")}`]),
+        // der Rückstrahl: im Stand ruhig, im Schmuggel (das Raster) springend — sonst EIN Befund mit beiden Zahlen
+        ...(S.boden.an > STRAFE.bodenMax || !(S.boden.aus > STRAFE.bodenMax) ? [`Strafe: der Rückstrahl springt ${pct(S.boden.an)} je Bild, das Raster ${pct(S.boden.aus)}`] : []),
     ];
 }
 
@@ -274,14 +284,21 @@ async function leibStrafe(k) {
     __buehne();
     const [W, H] = rend.getDrawingBufferSize(new THREE.Vector2()).toArray();
     const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-    const out = { traa: true, an: [], aus: [] };
+    const [out, RS] = [{ traa: true, an: [], aus: [], boden: { an: 0, aus: 0 } }, AnazhRealm.RUECKSTRAHL];
     for (const stand of ["an", "aus"])
         for (const seite of ["KeyA", "KeyD"]) {
-            if (stand === "aus") r._traegerTeile = (o) => ((o.length = 0), o);
+            // der Schmuggel trägt dazu das Raster von vor w21-laub-unten, ohne die Ebenheit: der Pass baut neu mit dem Gesetz, das gilt
+            // (sein Ziel bleibt, die Lesung nimmt die erste Kachel und den Texel daneben)
+            if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
             for (let j = 0; j < k.je; j++) {
-                for (let i = 0; i < (j ? k.zwischen : k.warm); i++) await bild(k.dt);
+                // der Sprung zählt nach dem Anlauf (j ≥ 1): der Anlauf trägt den Wechsel des Passes und den Schritt aus dem Stand
+                for (let i = 0, b0 = 0, b; i < (j ? k.zwischen : k.warm); i++, b0 = b) {
+                    await bild(k.dt);
+                    b = luma709(st.rueckstrahlLeser.boden.value.toArray());
+                    out.boden[stand] = Math.max(out.boden[stand], j && b0 && Math.abs(b / b0 - 1));
+                }
                 const rt = new THREE.RenderTarget(W, H);
                 rend.setOutputRenderTarget(rt);
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
@@ -298,6 +315,7 @@ async function leibStrafe(k) {
             taste("keyup");
             delete r._traegerTeile;
         }
+    [AnazhRealm.RUECKSTRAHL, st.rueckstrahlPass] = [RS, null];
     return out;
 }
 
@@ -1123,7 +1141,7 @@ hauptLauf(async () => {
         const ms = (kopf) => strafeMass(malen(kopf), malen(0), malen(-1), 40, 60, STRAFE);
         check("K6 Selbst-Test: das Maß", ms(0).leib + ms(0).kopf === 0 && ms(0.6).kopf === 1 && ms(-1).leib === 1, JSON.stringify([ms(0), ms(0.6), ms(-1)]));
         const reihe = (k = {}) => Array.from({ length: 2 * STRAFE.je }, (_, j) => ({ seite: "A", probe: j, leibPx: 3000, leib: 0.01, kopf: 0.01, ...(j ? {} : k) }));
-        const fall = (an, aus = reihe().map((b) => ({ ...b, kopf: 0.3 }))) => ({ traa: true, an, aus });
+        const fall = (an, aus = reihe().map((b) => ({ ...b, kopf: 0.3 })), boden = { an: 0.002, aus: 0.04 }) => ({ traa: true, an, aus, boden });
         faelle("K6", urteilStrafe, [
             ["gesund", fall(reihe()), null],
             ["Kopf", fall(reihe({ kopf: 0.3 })), "Strafe: 1 von 8"],
@@ -1131,7 +1149,13 @@ hauptLauf(async () => {
             ["unsichtbar", fall(reihe({ leibPx: 0 })), "Strafe: 1 von 8"],
             ["blind", fall(reihe(), reihe()), "Schmuggel"],
             ["kein TRAA", { traa: false }, "Strafe: ohne"],
+            ["Rückstrahl", fall(reihe(), undefined, { an: 0.04, aus: 0.04 }), "Strafe: der Rückstrahl"],
+            ["Raster", fall(reihe(), undefined, { an: 0, aus: 0 }), "Strafe: der Rückstrahl"],
         ]);
+        // DIE EINE LESUNG JEDES ZIELS DER WELT (`__weltLicht.zeilenSchritt`) am Maß des Vendors (WebGPU: (h − 1) · Zeile + w · Texel, die
+        // Zeile auf 256 Byte): die 33 × 18 Kacheln des Rückstrahls in Halb-Float lesen 256 Elemente je Zeile (`Länge / Höhe` las 249, der
+        // Boden kam blau), die Umgebung 128 × 64 und das dichte WebGL lesen dicht
+        check("K6 Selbst-Test: der Zeilen-Schritt", fadenScope(["foundry-core.js", "welt-licht.js"]).__weltLicht.zeilenSchritt(new Uint16Array(4484), 33, 18) === 256);
         const gesund = {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
             schmuggel: { laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } }, fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } } },

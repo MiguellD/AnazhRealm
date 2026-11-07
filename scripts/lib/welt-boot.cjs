@@ -1234,6 +1234,17 @@ async function nullSeite(opts) {
     await nullRenderer(page);
     return { browser, page };
 }
+// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.vor` trägt die Seite
+// vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo `opts.da`
+// es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen.
+async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
+    await server.lausche(port);
+    const s = await nullSeite(opts);
+    if (vor) await s.page.evaluateOnNewDocument(vor);
+    await server.zeige(s.page, ...zeige);
+    if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
+    return s;
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
@@ -1793,6 +1804,7 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    nullWelt,
     halteBis,
     buehne,
     uferStellen,

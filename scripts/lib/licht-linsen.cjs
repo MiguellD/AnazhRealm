@@ -1944,7 +1944,7 @@ function lichtWeg(opts) {
                     const lauf = () => (st.postProcessing.render(), r._spiegelPassRechne(L));
                     await window.__erstRuhe(lauf, {}, "der Spiegel");
                     for (let k = 0; k < 3; k++) lauf(), await sleep(200);
-                    const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = px.length / Hr;
+                    const [Wr, Hr] = [L.rt.width, L.rt.height], px = await rend.readRenderTargetPixelsAsync(L.rt, 0, 0, Wr, Hr), sch = __weltLicht.zeilenSchritt(px, Wr, Hr);
                     weg = [0, 1, 2].map((c) => { let a = 0; for (let y = (Hr >> 1) - 4; y < (Hr >> 1) + 4; y++) for (let x = (Wr >> 1) - 4; x < (Wr >> 1) + 4; x++) a += T.DataUtils.fromHalfFloat(px[y * sch + x * 4 + c]); return a / 64; });
                 } finally {
                     [S.daten, S.stoff, S.hoechste].forEach((d, k) => d.set(alt[k]));
