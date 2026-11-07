@@ -1373,8 +1373,9 @@ class AnazhRealm_dirigent_ankunft {
     //     (x, z, false)) auf `gitter`² Punkten im Abstand `zelleM` um den Anker des Rings, gerechnet im Feld-Faden
     //     (`_fernAuftrag("gitter")`, `_horizontGitterTakt`), über dem Bezug (Meeresspiegel) als r16f;
     //   DIE KARTE — je Texel die SCHATTEN-HÖHE zur Sonne: H = max_s (h(x + â·s) − s · tan h☉) über den Marsch s = 60 … 3 000 m
-    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats (rg16f) — ein Schirm-Pass über das
-    //     Gitter (`pass`), neu gemalt, wenn das Licht sich um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
+    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats und der Boden des Gitters (rgba16f,
+    //     `karte`² Texel über dem Quadrat des Gitters) — ein Schirm-Pass über das Gitter (`pass`), neu gemalt, wenn das Licht sich
+    //     um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
     // Ein Empfänger in der Höhe y liegt im Licht, wenn y über H steht — der Halbschatten so breit, wie die Sonne (`sonneTan`) ihn
     // über s* zieht (`_horizontSicht`). Die Höhe des Empfängers ist seine eigene (Boden, Dach, Krone), nie die des Gitters.
     // Bis ferne.K4 sah das Licht die drei Schalen des Rings orthografisch (Licht-Tiefe, Max-Blende, Bias 105–210 m am Abend):
@@ -1400,9 +1401,10 @@ class AnazhRealm_dirigent_ankunft {
         hoehen.magFilter = THREE.LinearFilter;
         hoehen.generateMipmaps = false;
         hoehen.needsUpdate = true;
-        const rt = new THREE.RenderTarget(n, n, {
+        // die Karte in ihrer eigenen Auflösung (`karte`² Texel über demselben Quadrat wie das Gitter: `zuUv` ist normiert)
+        const rt = new THREE.RenderTarget(H.karte, H.karte, {
             type: THREE.HalfFloatType,
-            format: THREE.RGFormat,
+            format: THREE.RGBAFormat,
             depthBuffer: false,
             generateMipmaps: false,
             minFilter: THREE.LinearFilter,
@@ -1437,7 +1439,9 @@ class AnazhRealm_dirigent_ankunft {
                         weg.assign(T.select(z.greaterThan(best), T.float(s), weg));
                         best.assign(T.max(best, z));
                     }
-                    return T.vec4(best, weg, 0, 1);
+                    // der Boden des Gitters am Texel (`_horizontBoden`: der Empfänger, der das Gesetz nur nähert, liest ihn
+                    // aus DERSELBEN Abtastung wie die Schatten-Höhe — ein eigener Sampler sprengte den Ring-Stoff, 17 > 16)
+                    return T.vec4(best, weg, T.texture(hoehen, zuUv(xz)).level(0).r, 1);
                 })(),
             "horizont-karte"
         );
@@ -1475,27 +1479,82 @@ class AnazhRealm_dirigent_ankunft {
         return T.mix(T.float(1), licht, AnazhRealm._imEinheitsQuadrat(q).mul(K.U.aktiv));
     }
 
+    // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): `p` mit der Höhe des Gitters der
+    // Karte (ihr Kanal b, je Texel der Boden aus `hoehen`, bilinear wie die Schatten-Höhe daneben), wo die Masche des Empfängers
+    // (`masche`, m) gröber steht als das Gitter —
+    // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,9 … 1,9 km vom Anker, hinter jeder Kaskade); näher und
+    // ohne Karte (`aktiv` 0) seine eigene Höhe. Der Leser setzt ihn als `receivedShadowPositionNode`: die Kaskaden und die
+    // Sonnen-Sicht (`_sonnenSicht`, `shadowPositionWorld`) lesen DIESELBE Position. Bis ferne.K4 prüfte der Ring die Schatten-
+    // Höhe des Gesetzes gegen seine Masche, die zwischen den Ecken bei 4–7 km ±50 m neben dem Gesetz steht: von 42 Hängen der
+    // Station (Sonne 5°, Dorf, swiftshader) lagen 11 im Schatten hell und 5 im Licht dunkel.
+    // DIE HIMMELS-SICHT DES GRATS (ferne.K4; Horizon-Based Ambient Occlusion aus der EINEN Karte): der Grat, der dem Empfänger in `p`
+    // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
+    // Himmel des Abends. α aus der Karte: tan α = (H − y) / s* + tan h☉ (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe
+    // des Empfängers), ohne Grat 0. Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
+    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω, gemittelt
+    // über die Breite der Abtastung (`strahlung`: die Umgebung der Stoffe in der Rauheit `gratRauheit` — eine Richtung allein
+    // träfe die Aureole 2° neben der Sonne und wöge ihren Gipfel über das ganze Band) × max(n·ω, 0) × Δω/π — der Abzug von der
+    // mittleren Strahlung der Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der
+    // Hang hinter dem Grat den ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684).
+    // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
+    // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
+    _horizontHimmel(p, n, strahlung) {
+        const T = THREE.TSL;
+        const K = this._horizontKarte();
+        const H = AnazhRealm.HORIZONT_KARTE;
+        return T.Fn(() => {
+            const q = K.zuUv(p.xz).toVar();
+            const t = T.texture(K.rt.texture, q).level(0).toVar();
+            const L = K.U.licht;
+            const flach = T.max(T.length(L.xz), 1e-4).toVar();
+            const tanA = T.max(t.r.sub(p.y.sub(K.U.bezug)).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)), 0).toVar();
+            const el = T.atan(tanA).mul(0.5).toVar();
+            const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
+            const a = L.xz.div(flach).toVar();
+            const summe = T.vec3(0).toVar();
+            T.Loop(3, ({ i }) => {
+                const d = T.float(i)
+                    .sub(1)
+                    .mul((2 / 3) * H.gratRad)
+                    .toVar();
+                const [c, s] = [T.cos(d), T.sin(d)];
+                const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce)).toVar();
+                summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+            });
+            return summe.mul(
+                tanA
+                    .div(T.sqrt(tanA.mul(tanA).add(1)))
+                    .mul((2 * H.gratRad) / (3 * Math.PI))
+                    .mul(AnazhRealm._imEinheitsQuadrat(q))
+                    .mul(K.U.aktiv)
+            );
+        })();
+    }
+
+    _horizontBoden(p, masche) {
+        const T = THREE.TSL;
+        const K = this._horizontKarte();
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const q = K.zuUv(p.xz);
+        const boden = T.texture(K.rt.texture, q).level(0).b.add(K.U.bezug);
+        const w = T.smoothstep(H.zelleM, 2 * H.zelleM, masche)
+            .mul(AnazhRealm._imEinheitsQuadrat(q))
+            .mul(K.U.aktiv);
+        return T.vec3(p.x, T.mix(p.y, boden, w), p.z);
+    }
+
     // DIE SICHT DES GELÄNDES AUF DER CPU am Punkt (x, y, z) zum Licht `L` (normiert): der Lichtmesser des Orts
     // (`_waagrechtIrradianz`, die Kamera) liest DIESELBE Karte wie jeder Empfänger — das Gitter des Passes (r16f, `hoehen`), derselbe
     // Marsch je Texel-Mitte (`schritte` × `schrittM`, außerhalb `leerM`), bilinear zwischen den vier Mitten wie die Abtastung von
-    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts, unter
-    // dem Horizont, am Null-Renderer). Bis dahin maß die Kamera am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
+    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts —
+    // `_lichtWirft`, auch ohne Schatten-Karte des Renderers —, unter dem Horizont, am Null-Renderer). Bis dahin maß die Kamera
+    // am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
     // Mess-Wiese fiel in 0,002 der Uhr um 0,29 EV (Tag-Achse, Radeon; der Grat 660 m vor ihr, die Sonne 7,35° → 6,68°).
     _horizontSichtAm(x, y, z, L) {
         const st = this.state;
         const K = st.horizontKarte;
         const rend = st.renderer;
-        const dl = st.directionalLight;
-        if (
-            !K ||
-            !K.bereit ||
-            !rend ||
-            rend._isHeadlessNull ||
-            !st.rendererReady ||
-            !dl ||
-            !dl.castShadow ||
-            !(L.y > 0)
-        )
+        if (!K || !K.bereit || !rend || rend._isHeadlessNull || !st.rendererReady || !this._lichtWirft() || !(L.y > 0))
             return 1;
         const H = AnazhRealm.HORIZONT_KARTE;
         const [n, d] = [H.gitter, H.zelleM];
@@ -1508,11 +1567,11 @@ class AnazhRealm_dirigent_ankunft {
             };
         const g = this._horizontHoehen.g;
         const drin = (u, v) => u >= -0.5 && u <= n - 0.5 && v >= -0.5 && v <= n - 0.5;
-        // bilinear über die Texel-Mitten (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
-        const bilinear = (u, v, f) => {
+        // bilinear über die Texel-Mitten eines Gitters von `m`² Texeln (Rand geklemmt), wie die Abtastung des Passes und des Empfängers
+        const bilinear = (u, v, f, m = n) => {
             const [i, j] = [Math.floor(u), Math.floor(v)];
             const [fu, fv] = [u - i, v - j];
-            const c = (a, b) => f(Math.min(n - 1, Math.max(0, a)), Math.min(n - 1, Math.max(0, b)));
+            const c = (a, b) => f(Math.min(m - 1, Math.max(0, a)), Math.min(m - 1, Math.max(0, b)));
             const [a, b, e, h] = [c(i, j), c(i + 1, j), c(i, j + 1), c(i + 1, j + 1)];
             return a.map((w, k) => (w * (1 - fu) + b[k] * fu) * (1 - fv) + (e[k] * (1 - fu) + h[k] * fu) * fv);
         };
@@ -1526,43 +1585,50 @@ class AnazhRealm_dirigent_ankunft {
         const merk = `${K.stand}|${L.x}|${L.y}|${L.z}`;
         if (!this._horizontMerk || this._horizontMerk.merk !== merk) this._horizontMerk = { merk, texel: new Map() };
         const memo = this._horizontMerk.texel;
+        // die Texel der Karte (`karte`² über dem Quadrat des Gitters): ihre Mitten in Gitter-Einheiten (i + ½) · n / karte − ½
+        const nk = H.karte;
+        const zuK = (g) => ((g + 0.5) * nk) / n - 0.5;
         const texel = (i, j) => {
-            const alt = memo.get(j * n + i);
+            const alt = memo.get(j * nk + i);
             if (alt) return alt;
-            const [cx, cz] = [ox + i * d, oz + j * d];
+            const [cx, cz] = [ox + (((i + 0.5) * n) / nk - 0.5) * d, oz + (((j + 0.5) * n) / nk - 0.5) * d];
             let [best, weg] = [-H.leerM, 0];
             for (let k = 1; k <= H.schritte; k++) {
                 const s = k * H.schrittM;
                 const h = hoehe(cx + ax * s, cz + az * s) - tanH * s;
                 if (h > best) [best, weg] = [h, s];
             }
-            memo.set(j * n + i, [best, weg]);
+            memo.set(j * nk + i, [best, weg]);
             return [best, weg];
         };
         const [u, v] = [(x - ox) / d, (z - oz) / d];
         if (!drin(u, v)) return 1;
-        const [schatten, weg] = bilinear(u, v, texel);
+        const [schatten, weg] = bilinear(zuK(u), zuK(v), texel, nk);
         const band = Math.max(H.bandM, weg * AnazhRealm.SCHATTEN_KASKADE.sonneTan * 0.5);
         const t = Math.max(0, Math.min(1, (y - K.U.bezug.value - (schatten - band)) / (2 * band)));
         return t * t * (3 - 2 * t);
     }
 
-    // DER LICHTMESSER IM BILD (`_waagrechtIrradianz`, die Kamera): die Sicht des Geländes gemittelt über den Boden, den das Bild
+    // DER LICHTMESSER IM BILD (`_waagrechtIrradianz`, die Kamera): die Sonne, die der Boden des Bilds empfängt (je Fläche die Sicht
+    // des Geländes × max(N·L, 0) ihrer Neigung; ohne Karte der flache Boden, L.y), gemittelt über den Boden, den das Bild
     // zeigt — die Strahlen der unteren Bildhälfte (`messer`: spalten × zeilen, gleich im Schirm verteilt wie die Pixel, die die
     // Belichtung trägt), je Strahl der Boden des Gesetzes, wo er die Ebene unter dem Auge trifft (höchstens `weitM`). Bis dahin
     // mass er am Punkt des Spielers: der Grat nahm ihm die Sonne in einem Schritt der Uhr ganz, dem Bild nur den nahen Boden
     // (die fernen besonnten Flecken blieben) — die Belichtung überholte das Bild um 0,10 EV (Wiese 0,728 → 0,73, Radeon und GTX).
-    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge 1.
+    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge oder Karte
+    // den flachen Boden (L.y), unter dem Horizont 0.
     // DIE MESSUNG KOSTET DIE ÄNDERUNG (Gebot 7): sie ist eine Funktion ihrer Eingänge — die Kamera (Lage und Projektion), das Licht,
     // die Karte (Gitter, Anker, Bezug), die Lage des Gelände-Gesetzes (`hoehe` liest Saat, Grundhöhe, Wasserstand, Erbgut und
-    // Erdbau) und der Stand des Richtlichts; gleichen sie alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
+    // Erdbau), der Stand des Richtlichts, sein Wurf (`_lichtWirft`) und die werfenden Karten (`_kartenWurfWerfer`); gleichen sie
+    // alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
     // Bis hier fragte jedes Bild 33-mal die Höhe (Werkbank swiftshader, Genesis: 0,28 ms je Ruf, davon 0,21 ms Höhe), auch
     // wo Kamera und Sonne standen.
     _horizontSichtImBild(L) {
         const st = this.state;
         const cam = st.camera;
         const K = st.horizontKarte;
-        if (!cam || !K || !K.bereit || !(L.y > 0)) return 1;
+        if (!(L.y > 0)) return 0;
+        if (!cam || !K || !K.bereit) return L.y;
         const G = this._gelaende();
         const dl = st.directionalLight;
         const S = this._messerGedaechtnis || (this._messerGedaechtnis = { v: [], wert: 1 });
@@ -1579,7 +1645,9 @@ class AnazhRealm_dirigent_ankunft {
         for (const x of [K, K.stand, K.U.ursprung.value.x, K.U.ursprung.value.y, K.U.bezug.value]) merk(x);
         for (const x of [L.x, L.y, L.z, G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
         const tan = AnazhRealm.SCHATTEN_KASKADE.sonneTan;
-        for (const x of [st.renderer, st.rendererReady, dl, !!dl && dl.castShadow, tan]) merk(x);
+        for (const x of [st.renderer, st.rendererReady, dl, this._lichtWirft(), tan]) merk(x);
+        // die werfenden Karten, wie `_kartenWurfSicht` sie je Strahl liest: ein neuer Bestand ist ein neues Objekt
+        merk(this._kartenWurfWerfer(L));
         // die Kamera, wie die Messung sie liest: der Ursprung der Strahlen (`position`) und `unproject` (Projektion⁻¹, Welt-Matrix)
         for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
         for (const x of cam.matrixWorld.elements) merk(x);
@@ -1595,7 +1663,7 @@ class AnazhRealm_dirigent_ankunft {
         const p = cam.position;
         const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
         const r = this._messerStrahl || (this._messerStrahl = new THREE.Vector3());
-        let [summe, zahl] = [0, 0];
+        const P = [];
         for (let i = 0; i < M.spalten; i++)
             for (let j = 0; j < M.zeilen; j++) {
                 r.set(((i + 0.5) / M.spalten) * 2 - 1, -(j + 0.5) / M.zeilen, 0.5)
@@ -1605,19 +1673,44 @@ class AnazhRealm_dirigent_ankunft {
                 const s = r.y < 0 ? Math.min(M.weitM, (p.y - ebene) / -r.y) : 0;
                 if (!(s > 0)) continue;
                 const [x, z] = [p.x + r.x * s, p.z + r.z * s];
-                const y = this._terrainMacroSurfaceY(x, z, true);
-                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung)
-                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L);
+                P[i * M.zeilen + j] = [x, this._terrainMacroSurfaceY(x, z, true), z];
+            }
+        // DER BODEN IM BILD IST GENEIGT: je Strahl empfängt er die Sonne mit max(N·L, 0) seiner Normale — aufgespannt von den
+        // Nachbar-Strahlen (der Boden in der Teilung, in der der Messer ihn sieht; ohne Nachbarn waagrecht). Bis ferne.K4 wog der
+        // Messer die Sonne mit sin h☉ (flacher Boden): beim Aufgang stieg die Sonne auf den geneigten Flächen des Bilds schneller,
+        // als die Kamera sie ausglich — die Wiese sprang 0,10–0,11 EV je 0,002 der Uhr (Radeon, 0,254–0,258).
+        const pt = (i, j) => (i >= 0 && i < M.spalten && j >= 0 && j < M.zeilen ? P[i * M.zeilen + j] : undefined);
+        const d = (a, b) => (a && b ? [b[0] - a[0], b[1] - a[1], b[2] - a[2]] : null);
+        let [summe, zahl] = [0, 0];
+        for (let i = 0; i < M.spalten; i++)
+            for (let j = 0; j < M.zeilen; j++) {
+                const q = pt(i, j);
+                if (!q) continue;
+                const u = d(q, pt(i + 1, j)) || d(pt(i - 1, j), q);
+                const w = d(q, pt(i, j + 1)) || d(pt(i, j - 1), q);
+                let nl = L.y;
+                if (u && w) {
+                    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+                    const l = Math.hypot(n[0], n[1], n[2]) * Math.sign(n[1] || 1);
+                    if (l) nl = Math.max(0, (n[0] * L.x + n[1] * L.y + n[2] * L.z) / l);
+                }
+                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung), auf
+                // der Neigung, mit der er sie empfängt
+                const [x, y, z] = q;
+                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L) * nl;
                 zahl++;
             }
-        return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L);
+        return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L) * L.y;
     }
 
-    // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe `positionWorld`): was das direkte Licht von Sonne oder Mond jenseits der Kaskaden
-    // trifft — der Horizont des Gelände-Gesetzes (`_horizontSicht`, ferne.K4) × der Wurf der Wolke (`_wolkenSchatten`, licht.K4).
-    // Leser: der EINE Knoten der Kaskaden (jeder Empfänger der Welt) und der Licht-Baustein von Feld und Panorama (`_weltLicht`).
+    // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe: die Schatten-Position des Empfängers, `shadowPositionWorld` — dieselbe, die
+    // die Kaskaden lesen: `receivedShadowPositionNode` des Stoffs, sonst `positionWorld`): was das direkte Licht von Sonne oder
+    // Mond jenseits der Kaskaden trifft — der Horizont des Gelände-Gesetzes (`_horizontSicht`, ferne.K4) × der Wurf der Wolke
+    // (`_wolkenSchatten`, licht.K4). Leser: der EINE Knoten der Kaskaden (jeder Empfänger der Welt; er stellt die Schatten-
+    // Position, bevor er sie liest) und der Licht-Baustein von Feld und Panorama (`_weltLicht`). Bis ferne.K4 las die Sonnen-Sicht
+    // `positionWorld`, die Kaskade die Position des Stoffs: die Karte des Baums (ihre Tiefe) und der Ring (sein Boden) sahen zwei.
     _sonnenSicht(p) {
-        const w = p || THREE.TSL.positionWorld;
+        const w = p || THREE.TSL.shadowPositionWorld;
         return this._horizontSicht(w).mul(this._wolkenSchatten(w));
     }
 }
@@ -1686,12 +1779,22 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
-// Speicher: Gitter r16f 128 KB + Karte rg16f 256 KB (vorher die Licht-Tiefe 512² r16f, 512 KB). `messer` der Lichtmesser der Kamera
+// `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest; `gratRad` die halbe Breite
+// des Grats um das Azimut der Sonne, dessen Himmel er dem Empfänger nimmt (`_horizontHimmel`), `gratRauheit` die Rauheit der
+// Umgebung, in der er ihn abtastet (ihre Keule ~ der Abstand der Abtastungen). Die Leser der Karte: jeder
+// Empfänger der Sonne (`_sonnenSicht`) und des Himmels (`_horizontHimmel`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die
+// Luft (`luftSicht`) und der Lichtmesser
+// (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
+// Speicher: Gitter r16f 128 KB + Karte rgba16f `karte`² 378 KB (H, s*, Boden), zusammen 0,494 MB unter der Ratsche 0,5
+// (spec/profiband/ratsche-*-gtx-*.json; vorher die Licht-Tiefe 512² r16f, 512 KB). Die Karte in der Auflösung des Gitters (256²,
+// 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an
+// 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
 // (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
 // je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
     messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
     gitter: 256,
+    karte: 220,
     zelleM: 96,
     schrittM: 60,
     schritte: 50,
@@ -1700,6 +1803,9 @@ AnazhRealm.HORIZONT_KARTE = Object.freeze({
     lichtRad: (0.05 * Math.PI) / 180,
     bandM: 1.5,
     leerM: 10000,
+    luftProben: 8,
+    gratRad: (30 * Math.PI) / 180,
+    gratRauheit: 0.5,
 });
 
 // 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.
