@@ -1,0 +1,124 @@
+{
+ "sha": "fe57747abe37e821bf62bb5902e1e7786ac63242",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T00:12:41.328Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.013/l2 1.003 · birke@0.5 l1 0.985/karte 0.991 · fichte@0.5 l1 0.997/karte 0.996 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.985/karte 0.991 · fichte@0.27 l1 0.997/karte 0.996 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.45,
+   "gpu": "amd/rdna-3",
+   "s": 27.2,
+   "zeit": "2026-11-07T00:11:32.179Z",
+   "abdruck": "ad97a2867605",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.875 · Regen 147 | third porös 0.779 (n 25880) · Glanz 16 · Regenbild 0.897 · Regen 103",
+   "exit": 0,
+   "minuten": 0.22,
+   "gpu": "amd/rdna-3",
+   "s": 13,
+   "zeit": "2026-11-07T00:12:17.859Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum_tanne in 13.35 m] — die Aufnahme speichert nichts",
+   "exit": 0,
+   "minuten": 0.96,
+   "grund": "ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME ROT [Ziel Blickziel verdeckt von Rinde baum_tanne in 13.35 m] — die Aufnahme speichert nichts",
+   "gpu": "amd/rdna-3",
+   "s": 57.5,
+   "zeit": "2026-11-07T00:12:41.328Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T00:10:59.959Z",
+  "port": 7804,
+  "warten": 0.07,
+  "bootS": 6.3,
+  "grundstellungS": [
+   2.4,
+   0
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 20.2,
+    "takte": 714,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "wetter.K2#2",
+    "s": 15.9,
+    "takte": 659,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 10.4,
+    "takte": 659,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "wetter.K2#2",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.4
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 158,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 154.5,
+  "minuten": 2.72
+ }
+}
