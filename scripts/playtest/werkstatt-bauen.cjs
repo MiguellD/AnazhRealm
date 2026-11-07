@@ -1292,7 +1292,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         st.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
         out.chatBuildDorfParses = !!(dslOut && dslOut.program);
-        if (dslOut && dslOut.program) {
+        if (dslOut?.program) {
             // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
                 dslOut.program[0] === "spawn_village" &&

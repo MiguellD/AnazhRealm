@@ -1976,7 +1976,7 @@ async function WELLE_L(ort) {
                 p._shotCooldownUntil = 0;
                 r._beginPlayerShot(1);
                 const pf = (s._pfeile || [])[n0];
-                if (pf && pf.mesh) {
+                if (pf?.mesh) {
                     pf.mesh.updateMatrixWorld(true);
                     const inv = new THREE.Matrix4().copy(pf.mesh.matrixWorld).invert();
                     const box = new THREE.Box3().makeEmpty();
@@ -2078,7 +2078,7 @@ async function WELLE_L(ort) {
                     const id = hT.userData.netId;
                     if (msg && msg.list.some((e) => e.id === id)) kopie.imStrom++;
                     const rc = s.p2p.remoteCreatures.get(peer + ":" + id);
-                    if (rc && rc.mesh) {
+                    if (rc?.mesh) {
                         rc.mesh.updateMatrixWorld(true);
                         const qk = rc.mesh.getWorldQuaternion(new THREE.Quaternion());
                         kopie.obenMax = Math.max(kopie.obenMax, V3().set(0, 1, 0).applyQuaternion(qk).y);
@@ -2637,7 +2637,7 @@ async function WELLE_L(ort) {
                                 for (let k = 0; k < reich.simsSek * 60; k++) {
                                     tickT23();
                                     const VA = wolfS.userData._verhaltenAktion;
-                                    if (VA && VA.bissAkt && VA !== letzte) {
+                                    if (VA?.bissAkt && VA !== letzte) {
                                         letzte = VA;
                                         n++;
                                     }

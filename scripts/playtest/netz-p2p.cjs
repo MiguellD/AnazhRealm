@@ -163,7 +163,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         if (st.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
         r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
         const lsB = st.p2p.peers.get("peerB").lockstep;
-        if (lsB && lsB.anchor) nullAlsNull.push("lockstep-anker");
+        if (lsB?.anchor) nullAlsNull.push("lockstep-anker");
         const statsVorher = st.p2p.brokerStats;
         st.p2p.brokerStats = null;
         r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), st.p2p);

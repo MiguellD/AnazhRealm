@@ -1166,7 +1166,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         if (dragonGroup && dragonGroup.children.length > 0) {
             // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
             for (const c of dragonGroup.children) {
-                if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
+                if (c?.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
                     dragonHasInnerFlip = true;
                     break;
                 }
@@ -1881,7 +1881,7 @@ async function checkBandWelle6DSoul({ page, check }) {
             s2bBp.parts.length === humanDefParts &&
             new Set(s2bBp.parts.map((p) => `${p.position.x},${p.position.y},${p.position.z}`)).size >= 5
         );
-        if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
+        if (s2b?.ok) r.deleteBlueprint(s2b.name);
 
         // Klonen aus aktiver Seele (die customSoul-Datenschicht bleibt)
         const savedSoul = st.player.soul;

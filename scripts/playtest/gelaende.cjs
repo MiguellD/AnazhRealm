@@ -1292,7 +1292,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         const damChunkKey = `${testCx},${testCz}`;
         const damChunkEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
         out.damChunkExists = !!(damChunkEntry && damChunkEntry.waterCells);
-        if (damChunkEntry && damChunkEntry.waterCells) {
+        if (damChunkEntry?.waterCells) {
             const cells = damChunkEntry.waterCells;
             const aabb = damEntry.blockerAABBs[0];
             // waterCells immer LOD 0, daher cfgWater statt cfgFor
@@ -1386,7 +1386,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             // Phantom-Pfütze. Nur eine WATER-Cell an der Carve-Stelle wäre Phantom-Füllung (→ false).
             out.carveStaysDry = true;
             out.carveCellUnderWL = carveChunkEntry && carveChunkEntry.waterCells ? "measure" : "no-watercells";
-            if (carveChunkEntry && carveChunkEntry.waterCells) {
+            if (carveChunkEntry?.waterCells) {
                 const cells = carveChunkEntry.waterCells;
                 // waterCells immer LOD 0
                 const cfg = cfgWater;
@@ -1926,7 +1926,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             const cx = Math.floor(pm.x / span) + 1,
                 cz = Math.floor(pm.z / span);
             const entry = st.voxelChunks.get(`${cx},${cz}`);
-            if (entry && entry.mesh) {
+            if (entry?.mesh) {
                 const Q = (v) => Math.round(v * 1000);
                 const snap = (geom) => {
                     const p = geom.attributes.position;

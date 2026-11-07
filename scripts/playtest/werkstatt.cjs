@@ -208,7 +208,7 @@ async function checkBandCadWorkshop({ page, check }) {
             // --- Phase 2: Gizmo-Aufbau ---
             r._workshopEnsurePreview();
             const pre = st.workshop.preview;
-            if (pre && pre.gizmo) {
+            if (pre?.gizmo) {
                 out.gizmoBuilt = true;
                 out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
                 // Pro Modus ein paar Mesh-Einträge in gizmoMeshes

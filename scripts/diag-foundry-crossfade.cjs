@@ -556,7 +556,7 @@ async function runPartB() {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
                 if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
-                if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                if (a?.aKarte?.isInstancedBufferAttribute) {
                     const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
                     return { h, hL: h, modus: "fin" };
                 }
@@ -1192,7 +1192,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+        if (!(fl0 && fl0.leaves && fl1?.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),

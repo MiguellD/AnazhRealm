@@ -503,7 +503,7 @@ async function probe(cfg) {
             g.mesh.castShadow = an ? merk.get(g.mesh) : false;
             r._archMeshBundleTouch(g.mesh);
         }
-        if (e && e.mesh)
+        if (e?.mesh)
             e.mesh.traverse((o) => {
                 if (!o.isMesh) return;
                 if (!merk.has(o)) merk.set(o, o.castShadow);
@@ -630,7 +630,7 @@ async function probe(cfg) {
         for (const w of wurzeln) if (w) w.traverse((o) => o.isMesh && setz(o));
         for (const ref of slots || []) {
             const g = st.archInstanceGroups.get(ref.key);
-            if (g && g.mesh) setz(g.mesh);
+            if (g?.mesh) setz(g.mesh);
         }
     };
     // DIE FREMDEN DERSELBEN ART: eine Instanz-Gruppe trägt ihre Ebene als GANZE — unter der Isolation warfen fremde Büsche
@@ -1020,7 +1020,7 @@ async function probe(cfg) {
                 if (!(Math.atan(Math.hypot(gx, gz)) < (6 * Math.PI) / 180)) continue;
                 let frei = true;
                 for (const e of arch)
-                    if (e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 12) frei = false;
+                    if (e?.position && Math.hypot(e.position.x - x, e.position.z - z) < 12) frei = false;
                 if (frei) return { x, z, rad };
             }
         return { x: bx, z: bz, rad: null };
