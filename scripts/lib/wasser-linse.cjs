@@ -399,7 +399,7 @@ async function wasserKoerper(o = {}) {
     } finally {
         delete r._temperaturFeld;
         [st.seasonPhase, st.autoSeason] = jahr;
-        r._tickSeason(0); // Schneegrenze und Pegel tragen wieder die Saison der Welt
+        r._tickSeason(); // Schneegrenze und Pegel tragen wieder die Saison der Welt
         leib.zurueck();
     }
     return aus;
@@ -434,14 +434,18 @@ function wasserSchmelze(r, x, z, P) {
         st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
     };
     const lauf = () => {
-        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, (r._lastSeasonTime = 0)];
+        // das Jahr folgt der Welt-Uhr (feld.K2#2, `_tickSeason`): je Schritt 0,2 s Welt-Zeit, der Anker neu am Beginn (eine andere
+        // Phase oder Länge des Jahrs setzt ihn)
+        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit];
         Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
+        r._tickSeason(); // der Anker des Jahrs zur Uhr jetzt
         const w = [];
         let neuBau = 0;
         try {
             for (let k = 1; k <= 52; k++) {
                 const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
-                r._tickSeason(k * 200);
+                st.spielZeit += 0.2;
+                r._tickSeason();
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
                 const F = r._temperaturFeld(y, 0);
@@ -451,8 +455,8 @@ function wasserSchmelze(r, x, z, P) {
                 Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
-            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, r._lastSeasonTime] = alt;
-            r._tickSeason(0);
+            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit] = alt;
+            r._tickSeason();
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
         return [
@@ -469,7 +473,7 @@ function wasserSchmelze(r, x, z, P) {
     };
     const koerper = (p) => {
         Object.assign(st, { seasonPhase: p, autoSeason: false });
-        r._tickSeason(0);
+        r._tickSeason();
         r._drainDirtyVoxelChunks();
         let nass = 0;
         for (let u = P.see[0]; u <= P.ufer + 5; u += 0.25) nass += r._koerperWasser(u, P.see[1], r._voxelSurfaceY(u, P.see[1])) > r._voxelSurfaceY(u, P.see[1]) + 0.02;
@@ -506,7 +510,7 @@ function wasserSchmelze(r, x, z, P) {
     } finally {
         ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt", "_weatherFieldFor"].forEach((k) => delete r[k]);
         [st.seasonPhase, st.autoSeason] = jahr;
-        r._tickSeason(0);
+        r._tickSeason();
     }
 }
 
@@ -1382,7 +1386,8 @@ async function wasserBild(o = {}) {
 
 // ── Q7-Regen ──
 // Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
-// Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
+// Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein Lauf ≥ 4 lit Pixel in Fall-Richtung (je Schritt eine
+// Zeile tiefer, gerade oder schräg: im Sturm fällt der Regen unter 38°, w15-pfuetze — senkrecht gezählt trug er 2–3 Pixel je Spalte); die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
 async function wasserRegen(o = {}) {
     const T = window.THREE;
@@ -1439,16 +1444,12 @@ async function wasserRegen(o = {}) {
     let schlieren = 0,
         rechts = 0,
         links = 0;
-    for (let x = 0; x < W; x++) {
-        let lauf = 0;
-        for (let y = 0; y <= H; y++) {
-            const an = y < H && lit[x + y * W];
-            if (an) lauf++;
-            else {
-                if (lauf >= 4) schlieren++;
-                lauf = 0;
-            }
-        }
+    const unter = (q) => (lit[q + W] ? q + W : lit[q + W + 1] ? q + W + 1 : lit[q + W - 1] ? q + W - 1 : -1);
+    for (let p = W; p < W * H; p++) {
+        if (!lit[p] || lit[p - W] || lit[p - W - 1] || lit[p - W + 1]) continue;
+        let lauf = 1;
+        for (let q = unter(p); q >= 0; q = unter(q)) lauf++;
+        if (lauf >= 4) schlieren++;
     }
     for (let y = 0; y + 1 < H; y++)
         for (let x = 1; x + 1 < W; x++) {
@@ -3137,14 +3138,14 @@ module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
-        wasserRund.toString() +
-        wasserFlaechen.toString() +
-        wasserBoot.toString() +
-        wasserTier.toString() +
-        wasserPflanzen.toString() +
-        wasserSchmelze.toString() +
-        wasserErstarrung.toString() +
-        wasserGluehen.toString() +
+        wasserRund +
+        wasserFlaechen +
+        wasserBoot +
+        wasserTier +
+        wasserPflanzen +
+        wasserSchmelze +
+        wasserErstarrung +
+        wasserGluehen +
         // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
         Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserDamm, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
             .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)

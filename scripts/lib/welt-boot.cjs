@@ -404,16 +404,11 @@ function bautenSeit() {
     const vor = new Set(st.architectures);
     return () => st.architectures.filter((x) => !vor.has(x)).forEach((e) => r.removeArchitecture(e));
 }
-// DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
-// w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
+// DIE BAUTEN LEER (`window.__bautenLeer()`): der Bestand fällt ganz durch die EINE Tafel des Spiels (`_bautenLeeren`: Bild,
+// Krone, jeder Takt, Instanz-Gruppen) — bis w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung, bis z264 räumte er
+// selbst (Mesh fort, Liste leer) und ließ jeden Takt seine Waisen weiter rechnen
 function bautenLeer() {
-    for (const a of st.architectures) {
-        if (a.mesh) {
-            st.scene.remove(a.mesh);
-            r._disposeSoulGroup(a.mesh);
-        }
-    }
-    st.architectures = [];
+    r._bautenLeeren();
 }
 // DER SPION AM RUF (`window.__rufe(wer, methode, lieferer, name, args)`): `lieferer[name]` zählt (und delegiert) über die EINE
 // Leihe, solange `wer[methode](...args)` läuft — die Zahl der Rufe; ein Wurf nach dem Ruf entwertet den Konsum nicht. Bis

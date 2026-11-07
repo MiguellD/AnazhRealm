@@ -115,7 +115,8 @@ function wetterSpion() {
             S.quelle = S.buehne ? "buehne" : quelle || "?";
             S.stapel = wer();
             try {
-                const ok = Object.getPrototypeOf(this)._setWeather.call(this, name, quelle);
+                // der Zug (sein Übergang, sein Wunsch) und der Akt reisen durch die Hülle (`arguments`) — bis feld.K2#2 fielen sie hier weg
+                const ok = Object.getPrototypeOf(this)._setWeather.apply(this, arguments);
                 // ein Wunsch der Welt an den Wetter-Zug (das Gesetz der Schreiber): gebucht, nicht geschrieben
                 if (ok === "wunsch")
                     buche({ art: "gewuenscht", von: vor, zu: name, quelle: S.quelle, stapel: S.stapel });
@@ -386,7 +387,7 @@ function buehne(o) {
     r._applyDayNightToScene();
     // … und die Saison im Takt des Jahrs (`_tickSeason`): Tönung und Schneegrenze (stoffe.K3-2) — bis dahin zeigte `--saison
     // winter` den Boden des Sommers, bis der Loop sie zufällig tickte
-    r._tickSeason(0);
+    r._tickSeason();
     // DIE TIERE DER BÜHNE (`o.tiere` n, `werkbank lauf --tiere 50`, Profiband K1 „Sturm"): n Tiere frei im Ring 15–60 m um den
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
@@ -707,13 +708,14 @@ function abnahmeMessen(opt) {
             leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
         },
         sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
-        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
+        // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss im Bild stehen (`_archImBild`: Mesh, Instanz oder jenseits des
+        // Cull-Radius seine Fernform im Welt-March) — sonst ist das Ziel nicht im Bild
         ziel: nd.ziel
             ? Object.assign(nd.ziel, {
                   gestalt: ohne.map((id, _i, _a, e = werk(id)) =>
-                      e ? `${e.type} ${id}${r._archIsRendered(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
+                      e ? `${e.type} ${id}${r._archImBild(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
                   ),
-                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archIsRendered(e)),
+                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archImBild(e)),
               })
             : null,
         pose: {
@@ -1407,25 +1409,25 @@ module.exports = {
     AUSGABE_INSTALL:
         KAMERA_NAH_INSTALL +
         ABNAHME_INSTALL +
-        `window.__abnahmeMessen = ${abnahmeMessen.toString()};` +
-        `window.__blickWahl = ${blickWahl.toString()};` +
-        `(${seitenfehlerZaehlen.toString()})();` +
-        `window.__erstRuhe = ${erstRuhe.toString()};` +
-        `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
-        `window.__spielStapel = ${spielStapel.toString()};` +
-        `window.__weltaktSpion = ${weltaktSpion.toString()};` +
-        `window.__weltaktBuch = ${weltaktBuch.toString()};` +
-        `window.__wetterSpion = ${wetterSpion.toString()};` +
-        `window.__wetterBuch = ${wetterBuch.toString()};` +
-        `window.__wetterSetzen = ${wetterSetzen.toString()};` +
-        `window.__wetterHalten = ${wetterHalten.toString()};` +
-        `window.__uhrSpion = ${uhrSpion.toString()};` +
-        `window.__bildUhren = ${bildUhren.toString()};` +
-        `window.__uhrHalten = ${uhrHalten.toString()};` +
+        `window.__abnahmeMessen = ${abnahmeMessen};` +
+        `window.__blickWahl = ${blickWahl};` +
+        `(${seitenfehlerZaehlen})();` +
+        `window.__erstRuhe = ${erstRuhe};` +
+        `window.__ausgabeAufnahme = ${ausgabeAufnahme};` +
+        `window.__spielStapel = ${spielStapel};` +
+        `window.__weltaktSpion = ${weltaktSpion};` +
+        `window.__weltaktBuch = ${weltaktBuch};` +
+        `window.__wetterSpion = ${wetterSpion};` +
+        `window.__wetterBuch = ${wetterBuch};` +
+        `window.__wetterSetzen = ${wetterSetzen};` +
+        `window.__wetterHalten = ${wetterHalten};` +
+        `window.__uhrSpion = ${uhrSpion};` +
+        `window.__bildUhren = ${bildUhren};` +
+        `window.__uhrHalten = ${uhrHalten};` +
         require("./welt-boot.cjs").WARTEN_SEITE +
-        `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
-        `window.__buehne = ${buehne.toString()};` +
+        `window.__weltStehtWarten = ${weltStehtWarten};` +
+        `window.__buehne = ${buehne};` +
         `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib".split(" ");` +
-        `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
-        `(${saisonFest.toString()})();`,
+        `window.__membranOhneFilm = ${membranOhneFilm};` +
+        `(${saisonFest})();`,
 };

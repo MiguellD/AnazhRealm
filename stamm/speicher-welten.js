@@ -1300,8 +1300,7 @@ class AnazhRealm_speicher_welten {
             // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
             // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
             // alte Stand trug den 8-min-Tag und hielte ihn fest).
-            // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`);
-            // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
+            // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`).
             ["spielZeit", () => st().spielZeit, { augenblick: true }],
             ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5), { augenblick: true }],
             // DAS JAHR DER WELT (speicher.K4): die Phase der Saison reist — ohne sie begann jede Wiederkehr am Sommer-Anfang
@@ -1310,8 +1309,32 @@ class AnazhRealm_speicher_welten {
             // Ecken, bild-diff 4,2 %).
             ["seasonPhase", () => (typeof st().seasonPhase === "number" ? st().seasonPhase : null)],
             ["dayLengthMinutes", () => st().dayLengthMinutes],
-            // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
+            // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt), die Wünsche der Welt mit ihren Stempeln
+            // ebenso (feld.K2#2: ein Reload mitten im Zug zieht denselben Wunsch wie der Mitspieler)
             ["wetterWort", () => st().wetterWort || null],
+            ["wetterWuensche", () => st().wetterWuensche || []],
+            // der Zug, der schon zog, und der Übergang, der gilt (feld.K2#2): nach dem Zug schreiben das Wort des Spielers und sein
+            // Gesetz das Wetter — ein Reload im selben Zug zieht ihn nicht neu (bis feld.K2#2 tat er es, und das Gesetz, das den Zug
+            // überschrieb, schrieb nach dem Reload ein zweites Mal mit einem anderen Übergang)
+            [
+                "wetterZug",
+                () => {
+                    const wt = st().weatherTransition; // ohne `progress`: der Takt rechnet ihn aus der Welt-Uhr
+                    const zug = Number.isInteger(this._wetterZug) ? this._wetterZug : null;
+                    return [
+                        zug,
+                        wt ? { from: wt.from, to: wt.to, duration: wt.duration, startedAt: wt.startedAt } : null,
+                    ];
+                },
+                { augenblick: true, marke: () => [this._wetterZug, st().weatherTransition, st().weather] },
+            ],
+            // DAS LEBEN DER WELT reist (feld.K2#2, `_lebenImStand`): Feld, Bestand und offene Akte — im Augenblick des Stands,
+            // gefragt nur, wenn eine Schrift es änderte (die Marke)
+            [
+                "leben",
+                () => this._lebenImStand(),
+                { augenblick: true, marke: () => [this._lebenGen, this._bestandNah().join()] },
+            ],
             // DER ZUSTAND DES PEGELS reist, nie die Stempel des Regens (wetter.K3, speicher.K3, `_pegelZustand`): der Regen der
             // Sitzung gefaltet in die Speicher des Gesetzes zur Uhr des Stands — 50 Zahlen, wie lange es auch regnete (Gebot 7).
             // Nach dem Reload fällt der Bach weiter, wie er fiel, und die Dürre hält. Ein Augenblick wie die Uhr: er ist ihre
@@ -1340,6 +1363,7 @@ class AnazhRealm_speicher_welten {
             // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
             ["perfPanel", () => st().perfPanel !== false],
             ["untertitel", () => st().untertitel === true],
+            ["zugang", () => Object.assign({}, st().zugang)],
             // V8.28 6.G4.b — Atmosphäre-Slider (Cel-Stufen seit V18.236 und der Fog-Regler seit V18.530 gestrichen).
             // V13.9 — waterCull (uMinDepth); V18.14/.15 — die Makro-Kontext-Regler; J4 — Kavitäts-AO und Kanten-Schärfe;
             // V17.111 R1 — die Schatten-Hebel; §7.5/V18.164 — die M7-Regler (lebten nur in der Session, V8.59-Klasse);
@@ -1443,6 +1467,9 @@ class AnazhRealm_speicher_welten {
                             a.chimney,
                             a.portalMeta,
                             m.boden,
+                            // der freie Körper (physik.K3): seine Drehung und sein Schlaf (`_freiKoerperSetzen` liest beide)
+                            ...(a._frei ? a._frei.q : AnazhRealm.FREI_OHNE_DREHUNG),
+                            a._frei ? a._frei.schlaf : null,
                         ];
                     },
                     glied: (a) => ({
@@ -1460,6 +1487,15 @@ class AnazhRealm_speicher_welten {
                         // Reload (sonst rasten geladene Bäume auf Identity zurück → der
                         // Klon-Look kehrt wieder). Nur wenn gesetzt (Bauwerke = 0).
                         ...(Number.isFinite(a.rotationY) && a.rotationY !== 0 ? { rotationY: a.rotationY } : {}),
+                        // DER FREIE KÖRPER (physik.K3, die Trümmer eines Einsturzes, Kiste und Fass): seine volle Drehung (die Quaternion
+                        // [w, x, y, z], 6 Stellen) und ob er schläft — bis w15-einsturz trug der Stand nur Lage und Gier, und eine
+                        // gekippte Kiste stand nach dem Reload aufrecht
+                        ...(a._frei
+                            ? {
+                                  drehung: Array.from(a._frei.q, (x) => Math.round(x * 1e6) / 1e6),
+                                  ...(a._frei.schlaf ? { ruht: true } : {}),
+                              }
+                            : {}),
                         // tintH/S/V sind seed-deterministisch, reisen aber explizit mit: ein durchs Tor gewanderter Bauplan
                         // behält seine Färbung auch in einer Welt mit anderer Seed-Berechnung.
                         ...(Number.isFinite(a.tintH) ? { tintH: a.tintH } : {}),

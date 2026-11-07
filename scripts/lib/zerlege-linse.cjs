@@ -1583,7 +1583,6 @@ function zerlegeAuswerten(roh, schalter) {
 
 function zerlegeTabelle(a, inv, sch) {
     const f = (x, d = 2) => (x == null ? "–" : x.toFixed(d).replace(".", ","));
-    const pad = (s, n) => String(s).padEnd(n);
     const lpad = (s, n) => String(s).padStart(n);
     const z = [];
     z.push(
@@ -1606,7 +1605,7 @@ function zerlegeTabelle(a, inv, sch) {
         );
     z.push("");
     z.push(
-        pad("Schalter", 18) +
+        "Schalter".padEnd(18) +
             " Σ " +
             lpad("Δ ms", 7) +
             lpad("±σ", 6) +
@@ -1617,7 +1616,7 @@ function zerlegeTabelle(a, inv, sch) {
     );
     for (const r of a.zeilen)
         z.push(
-            pad(r.id, 18) +
+            String(r.id).padEnd(18) +
                 (r.sigma ? " • " : "   ") +
                 lpad(f(r.deltaMs), 7) +
                 lpad(f(r.streuungMs), 6) +
@@ -1710,7 +1709,6 @@ module.exports = {
     zerlegeSchalter,
     zerlegeAuswerten,
     zerlegeTabelle,
-    zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
     belegungAuswerten,
