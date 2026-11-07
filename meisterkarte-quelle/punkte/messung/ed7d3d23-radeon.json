@@ -1,0 +1,60 @@
+{
+ "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T00:44:21.321Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 832 ms (Soll ≤ 250) · Haupt-Faden belegt 9.73 s bis zur Kontrolle (Soll ≤ 4; 37 LongTasks 6.83 s) · Kontrolle 10.90 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 71 ms (bei 1.9 s; 23× ≥ 50 ms, Σ 1343 ms) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: längste Aufgabe 832 ms (Soll ≤ 250) · Haupt-Faden belegt 9.73 s bis zur Kontrolle (Soll ≤ 4; 37 LongTasks 6.83 s) · Kontrolle 10.90 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 71 ms (bei 1.9 s; 23× ≥ 50 ms, Σ 1343 ms) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 39.5,
+   "zeit": "2026-11-07T00:44:21.321Z",
+   "abdruck": "2bfe3805ab4b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T00:43:50.877Z",
+  "port": 7804,
+  "warten": 0.07,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K5#1",
+    "s": 17.8,
+    "takte": 702,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 130,
+   "frameP95": 544.13,
+   "taktP95": 283.8,
+   "vramMax": 142.2,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 61,
+   "luecken": 3,
+   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
+  },
+  "fahrtS": 65.8,
+  "minuten": 1.25
+ }
+}
