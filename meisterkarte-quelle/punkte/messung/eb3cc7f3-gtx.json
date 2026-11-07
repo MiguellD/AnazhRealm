@@ -1,7 +1,7 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T10:02:32.595Z",
+ "zeit": "2026-11-07T10:13:22.534Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -122,6 +122,73 @@
    "abdruck": "073499ead14e",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.2,
+   "zeit": "2026-11-07T10:08:16.632Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": true,
+   "zahl": "Tag first GRÜN: fällen -0.12 -4.69 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
+   "exit": 0,
+   "minuten": 0.13,
+   "gpu": "nvidia/pascal",
+   "s": 7.6,
+   "zeit": "2026-11-07T10:11:31.262Z",
+   "abdruck": "9410239eb591",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 111.98 s nach dem Riss bei 36 s, am Aas fuchs 20 s, baer 16.5 s · Wolfsrevier wald, Riss 14.8 s, 3 fressen: tier:wolf 9836 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.26 m · Luma 58.6 σ 39.3 schwarz 0.9 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.45,
+   "gpu": "nvidia/pascal",
+   "s": 27.1,
+   "zeit": "2026-11-07T10:12:51.813Z",
+   "abdruck": "f27a185f07bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#1": {
+   "gruen": true,
+   "zahl": "Schwarm-Takt 0.1787 ms je Takt (Median, p95 0.2837) bei 100 Gliedern im Blick in jeder Reihe, 13153 Paare der Separation, Auge 44.7 m (Soll ≤ 0,3 ms, 100 im Bild)",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "zeit": "2026-11-07T10:13:22.534Z",
+   "abdruck": "fe1bca1545e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": true,
+   "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 570 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "zeit": "2026-11-07T10:13:22.534Z",
+   "abdruck": "c82dc02519ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "luftwasser.K5#1",
    "modus": "session"
   }
  },
@@ -267,130 +334,162 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:08:24.242Z",
+   "abdruck": "f2acc4d695a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:08:24.242Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.2,
+   "zeit": "2026-11-07T10:09:33.160Z",
+   "abdruck": "bf81faa399c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:11:44.760Z",
+   "abdruck": "7c55434a1b8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T09:52:28.246Z",
+  "start": "2026-11-07T10:07:45.704Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.9,
+  "bootS": 7.1,
   "grundstellungS": [
-   8.1,
-   5.4,
-   6,
+   4.6,
    5,
-   5,
+   0.1,
+   4.8,
    0.1
   ],
-  "proben": 8,
+  "proben": 7,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "gelaende.K5#2",
-    "s": 30.9,
-    "takte": 837,
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 22.4,
+    "takte": 703,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 22.3,
-    "takte": 745,
+    "ort": "genesis",
+    "vor": "vegetation.K4#1",
+    "s": 7.4,
+    "takte": 252,
     "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 21.5,
-    "takte": 743,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "wetter.K2#1",
-    "s": 35.6,
-    "takte": 1030,
-    "chunks": 81,
-    "nach": "der Tür"
+    "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 20.1,
-    "takte": 657,
+    "vor": "mensch.K2#2",
+    "s": 19,
+    "takte": 696,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
+    "ort": "wiese",
+    "vor": "affekt.K1#2",
+    "s": 22.8,
+    "takte": 800,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "oekologie.K4#2",
+    "s": 5.6,
+    "takte": 330,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
     "ort": null,
-    "vor": "wetter.K3#2",
+    "vor": "tiere.K2#2",
     "s": 16.9,
-    "takte": 837,
+    "takte": 830,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 10.1,
-    "takte": 659,
-    "chunks": 81,
+    "vor": "luftwasser.K5#1",
+    "s": 3.5,
+    "takte": 217,
+    "chunks": 90,
     "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "mensch.K1#1",
-    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-    "s": 5
-   }
-  ],
-  "ciBlicke": 9,
+  "wegeTueren": [],
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 931,
-   "frameP95": 108.36,
-   "taktP95": 107.94,
-   "vramMax": 137.6,
-   "seiten": 6,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 4,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
+     "probe": "luftwasser.K5#1",
+     "m": 398,
      "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "wetter.K3#2",
-     "m": 1162,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K5#2",
-     "m": 312,
-     "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 4
     }
    ],
-   "zapfen": 532,
-   "luecken": 5,
+   "zapfen": 260,
+   "luecken": 6,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 648.7,
-  "minuten": 10.89
+  "fahrtS": 336.4,
+  "minuten": 5.67
  }
 }
