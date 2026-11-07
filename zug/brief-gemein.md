@@ -1,0 +1,24 @@
+Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Arbeite nach `.claude/agents/champion.md`; lade den Skill `anazh-lehren` vor Stamm-, Kern- oder Linsen-Chirurgie.
+
+DER RICHTER ist die Station der Punkte-Maschine: `git fetch origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"`, dann `git show origin/punkte-maschine:meisterkarte-quelle/punkte/stationen/<gN>.js` (Eintrag mit kriterium + staffel deines Auftrags: befehl, env, urteil, pfad, quelle). Beweis = der befehl der Station headless im Baum DEINES Zweigs (LINSE_GPU=software, {PORT} 7700, {AUS} eine json-Datei, {BAUM} dein Baum) und ihr urteil(j, lauf) per `node -e` (require der Station aus einem Checkout von punkte-maschine) → GRÜN, mit Zahl vorher (main) → nachher. NIE die Linse weich machen. Misst die Station nicht das Gesetz ihres Staffel-Texts, schärfe sie in einem eigenen Zweig `<dein-zweig>-pm` von origin/punkte-maschine (Mutante in `proben`, `node meisterkarte-quelle/punkte/punkte.cjs selbsttest --ohne 3c` grün); eine pm-Station nennt nur Pfade, die am main existieren.
+
+TAKT: Push ab dem ersten Schritt je Schritt „WIP <zweig>: … [skip ci]“ — die Sitzung kann jederzeit enden, was nicht gepusht ist, ist verloren. Die Abgabe ist EIN Commit „Abgabe <zweig>: …“ OHNE [skip ci], mit drei Sätzen: geschnitten (Datei:Zeile) · gemessen (Zahl der Station vorher → nachher) · ehrlich offen. Vor der Abgabe `git merge origin/main` frisch (Konflikte selbst lösen) und am Kopf GRÜN: `npm run check`, `npm run playtest:fast` und jede voll-Linse, deren Familie deine Dateien liest (Befehle in `.github/workflows/check.yml`). Berührst du den Render-Pfad (stamm/stoff-*, bild-*, koerper-*, dirigent-*), fahre die Post-Kette- und die Ego-Schatten-Linse auf swiftshader und suche „[ERROR] STOFF“. Auf Zweigen läuft nur der Puls der CI; warte nie auf die volle Batterie.
+
+POST: Der Koordinator schreibt dir per git. Lies alle ~30 min und vor jedem Push: `git fetch -q origin koordination && git show origin/koordination:cloud-post/<zweig>.md` (neueste Nachricht oben) und handle danach.
+
+WÄNDE (jeder Zug fiel schon daran):
+- Die DECKE: `scripts/` hat eine Atom-Decke (in `npm run check`). Wer dort wächst, bezahlt im SELBEN Zweig (toten Code, Zwillinge, doppelte Helfer löschen).
+- Kein `bericht/`-Ordner im Spiel-Zweig (die Zitat-Wand). Kein Eintrag in docs/PFLICHT-OFFEN.md oder im Stand von CLAUDE.md (nur der Schöpfer setzt sie).
+- Keine neue GPU-Probe (die Fahrt-Wand steht bei 1798/1800 s je Karte).
+- Cloud hat keine GPU: swiftshader baut jede Pipeline synchron (42–292 s). Liefere Code + headless Beweis (Zähler, Byte-Diff, Faden-ms, Selbsttest der Linse) — KEINE Welt-Bilder zum Beweis; die Bilder macht der Koordinator auf der Radeon.
+
+REGELN: Commit-Autor `git -c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com commit`. Verbotene Wörter in Commit-Nachrichten: fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU. Nie `git stash`. Gebot 4: EINE kanonische Quelle je Domäne — kein Zwilling, kein Flag, kein Sonder-Modul, kein stiller Fallback; schneide an der Wurzel. Nach der Fehler-Klasse eine Linse, die den Täter beim Namen nennt (Mutante ROT), in einer bestehenden Familie. PFADFINDER: was du auf dem Weg findest, heilst du in deinen Dateien und deiner Klasse mit (eigener Commit, Zahl); Größeres als „FUND: Datei:Zeile · Wurzel · Kriterium · Größe S/M/L“ in der Abgabe-Nachricht. Die Besten als Maßstab: nenne in der Abgabe, welche bekannte Lösung (Studio/Paper/Engine) dein Schnitt umsetzt. Kein „fertig“ — der Koordinator landet per Zug und misst auf der Farm.
+
+ECHTE GPU (seit z303, 07.11. 22:40 auf main — vorher `git merge origin/main`): VOR der Abgabe prüfst du jedes sichtbare Ergebnis selbst auf echter GPU (OMEN GTX 1060 oder Radeon 890M), nicht auf swiftshader:
+1. In der Kopf-Commit-Message (ohne [skip ci]): [gpu-probe: gate:ego-schatten, bild:wiese@0.3]
+2. Erlaubt: gate:<npm-skript aus package.json> und bild:<wiese|genesis|dorf|buehne|stadt|stadt-voll|hochhaus-dach|gipfel-blick>[@uhr 0..1], höchstens drei.
+3. Nach 2–4 min: git fetch -q origin koordination && git show origin/koordination:cloud-post/<zweig>.md | head -5
+4. Urteil und letzte Zeilen: git show origin/koordination:probe-post/<zweig>/<sha8>.md
+5. Bild: git show origin/koordination:probe-post/<zweig>/<sha8>-<ort>.png > bild.png, dann mit Read ansehen — vergleiche mit demselben Ort an main.
+Der Zug-echt-Job hat Vorrang; eine Probe dauert höchstens 8 min.
+WEITERE WÄNDE (07.11.): Boden-WGSL ≤ 100 000 Zeichen (S0-Linse; main steht knapp darunter — jede Shader-Zeile bezahlen); Siegel-Wörter werden auch als Wortteil getroffen („Kronenschluss“); `npm run gate:welt-boot` am Kopf grün (ein Aufruf einer umbenannten Funktion bricht den Zug-Bau).
