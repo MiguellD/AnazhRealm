@@ -382,6 +382,17 @@ if (SELBSTTEST) {
     // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
     const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
     pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
+    // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
+    // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
+    const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {
+        const B = K.bauMensch(F), r = B.parts.neckMain;
+        const oben = new r.position.constructor(0, r.geometry.parameters.height / (2 * K.MENSCH_GESTALT.hals.laenge), 0).applyQuaternion(r.quaternion).add(r.position); // prettier-ignore
+        const d = F.zylinder(0.1, 0.11, 0.05, "skin");
+        d.position.set(0, oben.y - 0.025, 0);
+        r.parent.add(d);
+        return B;
+    } }); // prettier-ignore
+    pruefe("S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt", { kern: mitDeckel }, /^mundFalte /, true);
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
         auge(-0.12),

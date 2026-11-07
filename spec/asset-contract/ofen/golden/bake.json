@@ -1558,15 +1558,15 @@
   },
   "mensch-L0|haut|hand-1": {
    "meshes": 1,
-   "verts": 2815,
-   "tris": 5634,
-   "sha256": "038231e419977b092830fe584d70e88e8224cd50913fafad8344c21c80e83cb2"
+   "verts": 2816,
+   "tris": 5636,
+   "sha256": "e591a3d735b7e6b22c416a8022712286f9bfad35939cb14f200ccfa8a7640960"
   },
   "mensch-L0|haut|hand1": {
    "meshes": 1,
-   "verts": 2782,
-   "tris": 5564,
-   "sha256": "9ebf80738f5b2db3ca43fe8246f1a8a67e507a21aa0cdd334d22e564acbe8086"
+   "verts": 2783,
+   "tris": 5566,
+   "sha256": "2a00e264f46974f70513efe994fcaf373857484db786d61997e4094d50065308"
   },
   "mensch-L0|eye|eyeL": {
    "meshes": 1,
@@ -1636,27 +1636,27 @@
   },
   "mensch-L0|haut|head": {
    "meshes": 1,
-   "verts": 3910,
-   "tris": 7666,
-   "sha256": "5356023598f6784be82bc3ca40ffcaab2488e26523735f1b286f8161b21991cf"
+   "verts": 3914,
+   "tris": 7665,
+   "sha256": "6ba49cca5d43186fa0859516ddd65c0a03f6d4c3f7398b0fefcc7bd1638ca029"
   },
   "mensch-L0|haut|mensch": {
    "meshes": 1,
-   "verts": 1328,
-   "tris": 2331,
-   "sha256": "d43aadec7e7c67f2d97e5f2099452d9b5188394d1ff186b225d7679a8ac9bbc4"
+   "verts": 1337,
+   "tris": 2340,
+   "sha256": "1626870f9e39f5bb58b9668a34dfe7a77519ccecfd21583c9ac790fca9f0125b"
   },
   "mensch-L0|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 3484,
-   "tris": 6510,
-   "sha256": "1ebcb2c08be12acfd0542c43b59115cc74098375f21871b385ba59b00005a3fc"
+   "verts": 3486,
+   "tris": 6514,
+   "sha256": "c09fe80316ded17ba562c65a2a24c036e3505821d7fee1571e64114b0dce21c1"
   },
   "mensch-L0|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 3056,
-   "tris": 5910,
-   "sha256": "f9ac3c4ed9a89c510187fd495bbefd1374cf19db8607f8b68acb1223d9ddd5bd"
+   "verts": 3057,
+   "tris": 5912,
+   "sha256": "e5fcf89cfa892d2adda1cd77ca81f780b6188dd5f841afcfd065e4576b7339da"
   },
   "mensch-L0|stoff_e8e6e0|mensch": {
    "meshes": 1,
@@ -1882,9 +1882,9 @@
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
-   "verts": 951,
+   "verts": 952,
    "tris": 1700,
-   "sha256": "329a46f759d5005be7efc869bd75ddd3a03e0f98b918c5654aeb4ca5bb662e23"
+   "sha256": "67277887263b7e7fab81ceb5adc0dec91ff10471833d4109b95a4a0b065975e0"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"

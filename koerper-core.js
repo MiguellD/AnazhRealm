@@ -990,13 +990,17 @@
     //   als VOLUMEN trägt (Stil mittel; die Strähnen sind sein Rand, nie der Fleck auf der Glatze) · kopfDreiecke =
     //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar).
     //   mensch.K4 (das Gesicht auf 6 m): brauKontrast = |ΔL*| des Brauen-Tons gegen die Haut (die Braue ist Fläche, nie fünf
-    //   Striche unter einem Bildpunkt). Am Guss urteilt `kopfGussUrteil` augenVorstand, augeFrei, haarDeckung und kopfDreiecke.
+    //   Striche unter einem Bildpunkt). Am Guss urteilt `kopfGussUrteil` augenVorstand, augeFrei, haarDeckung, kopfDreiecke und
+    //   mundFalte = der Anteil der Ecken der Kopf-Haut neben dem Mund (seitlich über drei Viertel der Lippen-Breite von ihrer Mitte,
+    //   von der Oberlippe bis anderthalb Lippen-Höhen unter die Unterlippe, vorn), deren Ton (Farbe × Verdeckung) unter 40 % des
+    //   hellen Haut-Tons fällt — die harte Falte von den Mundwinkeln zum Kiefer, die Unterlippe wie ein abgesetzter Puppen-Kiefer
+    //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
-        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
+        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
         brauKontrast: [8, 80],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
@@ -1709,7 +1713,7 @@
         const absBase=reg('abs',s(0.5,matSkin,[0.8,1.6,0.4]));absBase.position.set(0,(nippleY+trochanterY)/2-trochanterY,0.3);torsoG.add(absBase);
         for(let i=0;i<4;i++){const y=(nippleY-0.1)-(i*0.2*headSeg)-trochanterY;const aL=s(0.11,matSkin,[1,1,0.8]);aL.position.set(-0.12,y-0.02,0.37);torsoG.add(aL);const aR=s(0.11,matSkin,[1,1,0.8]);aR.position.set(0.12,y-0.02,0.37);torsoG.add(aR);const tV=s(0.035,matDark,[0.22,0.6,0.5]);tV.position.set(0,y-0.04,0.4);torsoG.add(tV);const tH=s(0.03,matDark,[1.8,0.1,0.5]);tH.position.set(0,y+0.05,0.4);torsoG.add(tH);}
         [-1,1].forEach(sd=>{const t=reg('trap'+(sd===1?'1':'-1'),s(0.3,matSkin,[1.3,0.6,0.6]));t.position.set(sd*0.3,acromionY-MENSCH_GESTALT.rumpf.trapTiefer-trochanterY,-0.1);t.rotation.z=sd*0.2;torsoG.add(t);});   // w21-leib-bau: der trapez faellt vom hals zur schulterhoehe (sein scheitel lag 0.15 E darueber)
-        const KL=_kopfLage(),HA=MENSCH_GESTALT.hals,SB=MENSCH_GESTALT.schluesselbein;const nSY=acromionY+0.02,nEY=KL.kinnY+HA.inKopf,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const hl=_zylinderZwischen([0,nSY-HA.unten,HA.z[0]],[0,nEY,HA.z[1]]);const nm0=c(HA.r,HA.r,hl.L*HA.laenge,matSkin);nm0.scale.set(1,1,HA.tief);const neckMain=reg('neckMain',nm0);neckMain.position.set(hl.mitte[0],hl.mitte[1]-trochanterY,hl.mitte[2]);neckMain.rotation.set(hl.rot[0],hl.rot[1],hl.rot[2]);torsoG.add(neckMain);const neckTop=c(0.10,0.11,0.05,matSkin);neckTop.position.set(0,nEY-0.025-trochanterY,0);torsoG.add(neckTop);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);   // w21-leib-bau: der hals ist eine geneigte roehre von der hals-wurzel bis unter den schaedel (die kugel neckMain endete unter dem kinn)
+        const KL=_kopfLage(),HA=MENSCH_GESTALT.hals,SB=MENSCH_GESTALT.schluesselbein;const nSY=acromionY+0.02,nEY=KL.kinnY+HA.inKopf,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const hl=_zylinderZwischen([0,nSY-HA.unten,HA.z[0]],[0,nEY,HA.z[1]]);const nm0=c(HA.r,HA.r,hl.L*HA.laenge,matSkin);nm0.scale.set(1,1,HA.tief);const neckMain=reg('neckMain',nm0);neckMain.position.set(hl.mitte[0],hl.mitte[1]-trochanterY,hl.mitte[2]);neckMain.rotation.set(hl.rot[0],hl.rot[1],hl.rot[2]);torsoG.add(neckMain);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);   // w21-leib-bau: der hals ist eine geneigte roehre von der hals-wurzel bis unter den schaedel (die kugel neckMain endete unter dem kinn); ihr deckel neckTop fiel (er lag im kopf auf hoehe der lippen, sein rand lief um die haut-dicke geweitet als falte von den mundwinkeln zum kiefer)
         [-1,1].forEach(sd=>{const z=_zylinderZwischen([sd*HA.scm[0][0],nSY+HA.scm[0][1],HA.scm[0][2]],[sd*HA.scm[1][0],KL.kinnY+HA.scm[1][1],HA.scm[1][2]]);const scm=reg('scm'+(sd===1?'1':'-1'),c(HA.scm[2],HA.scm[2],z.L,matSkin));scm.position.set(z.mitte[0],z.mitte[1]-trochanterY,z.mitte[2]);scm.rotation.set(z.rot[0],z.rot[1],z.rot[2]);torsoG.add(scm);});   // sternocleidomastoideus: der schraegzug brustbein -> warzenfortsatz (w21-leib-bau: vorher zwei senkrechte staebe vorn am hals)
         [-1,1].forEach(sd=>{const tn=reg('tneck'+(sd===1?'1':'-1'),s(0.115,matSkin,[0.85,1.4,0.70]));tn.position.set(sd*0.17,nSY+0.06-0.5*MENSCH_GESTALT.rumpf.trapTiefer-trochanterY,-0.10);tn.rotation.z=sd*0.55;torsoG.add(tn);});   // nacken-trapez-bruecke: schliesst die harte hals->schulter-kante (w21-leib-bau: mit dem trapez gesenkt)
         const nf1=reg('napeFill1',s(0.10,matSkin,[0.9,1.3,1.0]));nf1.position.set(0,5.10-trochanterY,-0.14);torsoG.add(nf1);   // HINTERHAUPT-NACKEN-FUELLER: harness-befund -- schaedelbasis hing 0.39-0.43 HINTER dem hals,
@@ -1759,9 +1763,9 @@
             base,
             kugeln,
             augen: { eyeL, eyeR, irisL, irisR, lidTL, lidTR, lidBL, lidBR, browL, browR, upperLipRef, lowerLipRef },
-            // Drei un-registrierte Teile, die die Shell nach dem Bau weiter anfasst
-            // (Hals-Deckel + Kehlkopf + Nacken — Anim/Outfit lesen sie direkt):
-            extra: { neckTop: neckTop, adamsApple: adamsApple, nape: nape },
+            // Zwei un-registrierte Teile, die die Shell nach dem Bau weiter anfasst
+            // (Kehlkopf + Nacken — Anim/Outfit lesen sie direkt; der Hals-Deckel fiel mit w21-leib-bau):
+            extra: { adamsApple: adamsApple, nape: nape },
         };
     }
 
@@ -2333,7 +2337,7 @@
         L.forEach(function (x) {
             if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(x.j)) tris += x.I ? x.I.length / 3 : x.P.length / 9;
         });
-        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris };
+        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris, mundFalte: NaN };
         var hp = ecken(haut),
             hy = spanne(hp, 1),
             I = haut.I,
@@ -2392,7 +2396,41 @@
             kal++;
             if (ton && ton.getX(i) === menschTon("haarKappe")) bedeckt++;
         });
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris };
+        // DIE FALTE UNTER DEM MUND (KOPF_SOLL mundFalte): neben den Lippen (`aTon` lips), vorn — der Anteil der dunklen Ecken
+        var farbe = haut.o.geometry.attributes.color,
+            lippen = hp.filter(function (p, i) {
+                return ton && ton.getX(i) === menschTon("lips");
+            }),
+            luma = function (i) {
+                return 0.2126 * farbe.getX(i) + 0.7152 * farbe.getY(i) + 0.0722 * farbe.getZ(i);
+            },
+            // nur der Ton der Haut zählt (die Kappe des Haars, die Braue und die Lippe tragen ihren eigenen)
+            istHaut = function (i) {
+                return ton.getX(i) === menschTon("skin");
+            },
+            falte = NaN;
+        if (farbe && lippen.length) {
+            var lx = spanne(lippen, 0),
+                ly = spanne(lippen, 1),
+                lz = spanne(lippen, 2),
+                toene = [],
+                zone = 0,
+                dunkel = 0;
+            hp.forEach(function (p, i) {
+                if (istHaut(i)) toene.push(luma(i));
+            });
+            toene.sort(function (a, b) {
+                return a - b;
+            });
+            var hell = toene[Math.floor(0.9 * (toene.length - 1))];
+            hp.forEach(function (p, i) {
+                if (!istHaut(i) || !(Math.abs(p[0] - lx.m) > 0.75 * lx.l && p[1] > ly.a - 1.5 * ly.l && p[1] < ly.b && p[2] > lz.a - lx.l)) return;
+                zone++;
+                if (luma(i) < 0.4 * hell) dunkel++;
+            });
+            falte = zone ? dunkel / zone : NaN;
+        }
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
