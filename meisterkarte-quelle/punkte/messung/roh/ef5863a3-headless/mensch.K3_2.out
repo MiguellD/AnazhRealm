@@ -1,0 +1,45 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] Seite #2: der Puls kehrt zurück nach 21.8 s — complete · renderer bereit · weltbild da · frames 10867 · welt 10867 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(r, window.THREE, o); }) seit 287.2 s
+[stall-akte] Puls 263×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 10867 · welt 10867 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2719 102 % · GPU 2615 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 07:06 gpu 0/r 221 · 07:08 gpu 0/r 221 · 07:10 gpu 1/r 191 · 07:12 gpu 1 [VizCompositorTh 2 %]/r 193 · 07:14 gpu 0/r 194 · 07:16 gpu 0/r 183 · 07:18 gpu 1/r 170 · 07:20 gpu 0/r 164 · 07:22 gpu 0/r 176 · 07:24 gpu 0/r 177 · 07:26 gpu 0/r 175 · 07:28 gpu 0/r 171 · 07:30 gpu 0/r 182 · 07:32 gpu 0/r 201 · 07:34 gpu 2 [VizCompositorTh 1 %]/r 207 · 07:36 gpu 0 [VizCompositorTh 1 %]/r 183 · 07:38 gpu 0/r 179 · 07:40 gpu 1/r 177 · 07:42 gpu 1 [VizCompositorTh 1 %]/r 185 · 07:44 gpu 0/r 144 · 07:46 gpu 0/r 103 · 07:48 gpu 1 [Chrome_ChildIOT 1 %]/r 106 · 07:50 gpu 0 [VizCompositorTh 1 %]/r 101 · 07:52 gpu 0 [VizCompositorTh 1 %]/r 102 · 07:54 gpu 1 [Chrome_ChildIOT 1 %]/r 100 · 07:56 gpu 1/r 103 · 07:58 gpu 1 [Chrome_ChildIOT 1 %]/r 105 · 08:00 gpu 1 [VizCompositorTh 1 %]/r 101 · 08:02 gpu 1 [VizCompositorTh 1 %]/r 102 · 08:04 gpu 1 [Chrome_ChildIOT 1 %]/r 198
+[stall-akte] Stapel _tickBewohner siedlung-bewohner.js:1057
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -25.8/-161.6 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -27.0/-162.0 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -27.6/-162.2 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -28.1/-162.4 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -28.7/-162.7 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -29.2/-163.0 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -5.0/-187.7 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -15.7/-191.3 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -15.1/-191.3 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -14.5/-191.2 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -13.9/-191.1 erreicht keinen Weg frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.211] [ERROR] BEWOHNER: der Ort -13.3/-191.0 erreicht keinen Weg frei
+[stall-akte] Stderr [2582:2597:1107/150320.990019:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2582:2597:1107/150320.998968:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2582:2597:1107/150321.010843:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2582:2597:1107/150346.328393:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2582:2597:1107/150436.056774:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr [2582:2597:1107/150614.082275:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _tickBewohner siedlung-bewohner.js:1057
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":17,"third":20},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.03,"wegLeib":1803.6},"blick":{"n":159,"quote":0.925,"sektorMax":0.12},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":266,"tuer":266,"falsch":[],"aufWeg":0.9,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":202,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.37,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.967,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":165,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (322 s) — Sekunden je Probe: bewohner: 309
+
+✅ GRÜN — bewohner

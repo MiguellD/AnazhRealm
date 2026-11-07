@@ -1,0 +1,30 @@
+{
+ "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+ "geraet": "headless",
+ "zeit": "2026-11-07T15:03:06.207Z",
+ "host": "farm:42384291407",
+ "je": {
+  "mensch.K3#2": {
+   "gruen": true,
+   "zahl": "Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.967, Strecke min 165 m, Berührung 0, Durchdringung 0, Tür 390/390",
+   "exit": 0,
+   "minuten": 5.36,
+   "zeit": "2026-11-07T15:03:06.207Z",
+   "abdruck": "0f30d5794146",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42384291407/1"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0",
+   "exit": 0,
+   "minuten": 0.24,
+   "zeit": "2026-11-07T15:02:30.679Z",
+   "abdruck": "e999cb2ec8d6",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42384291407/2"
+  }
+ }
+}
