@@ -8,7 +8,7 @@
 //     was ein HTTP-Server ausliefert oder der Modul-Lader lädt, zählt die Abdeckung).
 // Eingeschaltet NUR über `CI_WIRKUNG=<ordner>` (welt-boot ruft `haken()`, NODE_OPTIONS lädt diese Datei vor) — sonst null Kosten.
 //   node scripts/lib/zug-auswahl.cjs <basis> <kopf>       die Auswahl: Zeile 1 die JSON-Liste, je ausgelassenem Schritt eine Zeile
-//   node scripts/lib/zug-auswahl.cjs --messen [n …]       misst die Schritte der vollen Batterie (Nummern, sonst alle) unter CI_WIRKUNG
+//   node scripts/lib/zug-auswahl.cjs --messen [n …] [--gruppe g] [--parallel n]   misst Schritte der vollen Batterie unter CI_WIRKUNG
 //   node scripts/lib/zug-auswahl.cjs --karte              die Roh-Spuren → spec/ci/wirkung-karte.json
 //   node scripts/lib/zug-auswahl.cjs --geschichte         der Richter: Treffer und Ersparnis an den Zügen (spec/ci/zug-geschichte.json)
 "use strict";
@@ -118,6 +118,7 @@ function nodeSpur() {
         verz: new Set(),
         probe: new Set(),
         text: new Set(),
+        suche: new Set(),
     });
     // was Node als Text reicht (`page.evaluate(fn)`, `${fn}` in einer Seiten-Vorlage): ausgeführt wird es in der Seite, gemessen hier
     const roh = Function.prototype.toString;
@@ -132,14 +133,15 @@ function nodeSpur() {
         const st = new Error().stack;
         Error.stackTraceLimit = alt;
         if (/_http_server/.test(st)) return "geliefert";
-        if (/internal\/modules\/|\bfadenScope\b/.test(st)) return "lade";
+        if (/\bdateiMit\b/.test(st)) return "suche"; // stamm.cjs nennt die Stelle selbst
+        if (/internal\/modules\/|\b(fadenScope|ladeKlasse)\b/.test(st)) return "lade";
         return "gelesen";
     };
     const merke = (wie, p) => {
         const r = typeof p === "string" || p instanceof URL ? relPfad(p instanceof URL ? p.pathname : p) : null;
         if (!r) return;
         const a = wie || art();
-        if (a === "lade" && !/\.json$/.test(r)) return; // der Modul-Lader: die Abdeckung zählt, eine geladene .json wirkt als Text
+        if (a === "suche" || (a === "lade" && !/\.json$/.test(r))) return; // der Modul-Lader: die Abdeckung zählt, eine .json wirkt als Text
         spur[a === "lade" ? "gelesen" : a].add(r);
     };
     const um = (o, name, wie) => {
@@ -214,14 +216,15 @@ function messeSchritt(x, fristS) {
         })
     );
 }
-async function messen(nummern, bahnen = 1, fristS = 2700) {
+async function messen(nummern, bahnen = 1, gruppe = 0, fristS = 2700) {
     const alle = vollSchritte();
-    const liste = nummern.length ? nummern.map((n) => alle[n]) : alle;
-    let i = 0;
+    const liste = gruppe ? alle.filter((x) => x.gruppe === gruppe) : nummern.length ? nummern.map((n) => alle[n]) : alle;
+    let [i, rot] = [0, 0];
     const bahn = async () => {
-        while (i < liste.length) await messeSchritt(liste[i++], fristS);
+        while (i < liste.length) rot += (await messeSchritt(liste[i++], fristS)) !== 0;
     };
     await Promise.all(Array.from({ length: bahnen }, bahn));
+    process.exitCode = rot ? 1 : 0;
 }
 
 // ─── II. DIE GLIEDER ────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -373,7 +376,7 @@ function karteBauen(wurzel = ROOT) {
         const d = path.join(ROH, nr);
         if (!fs.existsSync(path.join(d, "status.json"))) continue;
         const st = JSON.parse(fs.readFileSync(path.join(d, "status.json"), "utf8"));
-        const [fn, txt, datei, verz, probe, gefuehrt, geliefert] = [new Map(), new Map(), new Set(), new Set(), new Set(), new Set(), new Set()];
+        const [fn, txt, datei, verz, probe, gefuehrt, geliefert, suche] = [new Map(), new Map(), new Set(), new Set(), new Set(), new Set(), new Set(), new Set()]; // prettier-ignore
         const merk = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
         const lauf = (r, s, e) => {
             const g = gliederVon(r);
@@ -398,6 +401,7 @@ function karteBauen(wurzel = ROOT) {
                 for (const r of n.verz) verz.add(r);
                 for (const r of n.probe) probe.add(r);
                 texte.push(...(n.text || []));
+                for (const s of n.suche || []) suche.add(s);
             }
         }
         for (const f of fs.readdirSync(path.join(d, "node"))) {
@@ -427,7 +431,7 @@ function karteBauen(wurzel = ROOT) {
             zaehler[hit ? "text" : "textFrei"]++;
         }
         const fege = [...txt].filter(([r, ks]) => ks.size * 2 >= new Set(gl.get(r).G.map((x) => x.k)).size).map(([r]) => r);
-        schritte[st.name] = { gruen: st.code === 0, s: st.s, fn, txt, datei: [...datei].sort(), verz: [...verz].sort(), probe: [...probe].sort(), fege }; // prettier-ignore
+        schritte[st.name] = { gruen: st.code === 0, s: st.s, fn, txt, datei: [...datei].sort(), verz: [...verz].sort(), probe: [...probe].sort(), fege, suche: [...suche] }; // prettier-ignore
     }
     // die EINE Tafel: je Datei die Schlüssel, die ein Schritt ausführt oder liest
     const tafel = new Map();
@@ -449,7 +453,7 @@ function karteBauen(wurzel = ROOT) {
         schritte: Object.fromEntries(
             Object.entries(schritte)
                 .sort()
-                .map(([n, x]) => [n, { gruen: x.gruen, s: x.s, fn: bits.aus(nach(x.fn), idx.size), txt: nach(x.txt).sort((a, b) => a - b), datei: x.datei, verz: x.verz, probe: x.probe, fege: x.fege }]) // prettier-ignore
+                .map(([n, x]) => [n, { gruen: x.gruen, s: x.s, fn: bits.aus(nach(x.fn), idx.size), txt: nach(x.txt).sort((a, b) => a - b), datei: x.datei, verz: x.verz, probe: x.probe, fege: x.fege, suche: x.suche }]) // prettier-ignore
         ),
     };
     fs.writeFileSync(path.join(ROOT, KARTE), JSON.stringify(out, null, 1) + "\n");
@@ -524,6 +528,7 @@ function wirkungen(basis, kopf, karte, diff = null) {
             W.push({ alle: `nicht lesbar: ${r}` });
             continue;
         }
+        W.push({ suche: r, t: [g0.t || "", g1.t || ""] }); // wer eine Stelle sucht (`dateiMit`), hängt an jeder Datei, die sie trägt
         for (const k of new Set([...g0.tafel.keys(), ...g1.tafel.keys()])) {
             const [a0, a1] = [g0.tafel.get(k), g1.tafel.get(k)];
             const [fn, txt] = [!a0 || !a1 || a0.sig !== a1.sig, !a0 || !a1 || a0.roh !== a1.roh];
@@ -594,6 +599,8 @@ function grundIm(x, w, idx) {
     if (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) return `liest ${w.datei}`;
     if (w.fege && x.fege.includes(w.fege)) return `fegt ${w.fege} als Text`;
     if (w.verz && x.verz.includes(w.verz)) return `listet ${w.verz}/`;
+    const s = w.suche && (x.suche || []).find((y) => w.t.some((t) => t.includes(y)));
+    if (s) return `sucht „${s.slice(0, 40)}" in ${w.suche}`;
     return null;
 }
 function waehle(namen, karte, W) {
@@ -654,24 +661,24 @@ async function geschichte() {
     const gelandet = (h) => spawnSync("git", ["merge-base", "--is-ancestor", h, "origin/main"], { cwd: ROOT }).status === 0;
     const [merges, wahl] = [[], new Map()];
     let L = G.basis;
-    for (const z of G.zuege) {
-        for (const l of git(["log", "--first-parent", "--format=%H %s", "-n", "80", z.kopf]).split("\n").filter(Boolean)) {
+    for (const [zn, kopf] of G.zuege) {
+        for (const l of git(["log", "--first-parent", "--format=%H %s", "-n", "80", kopf]).split("\n").filter(Boolean)) {
             const [h, s] = [l.slice(0, 40), l.slice(41)];
             if (spawnSync("git", ["merge-base", "--is-ancestor", h, L], { cwd: ROOT }).status === 0) break;
             const m = /^Merge (\S+) in integ-probe/.exec(s);
-            if (m) merges.push({ z: z.z, zweig: m[1], m: h });
+            if (m) merges.push({ z: zn, zweig: m[1], m: h });
         }
-        if (gelandet(z.kopf)) L = z.kopf;
+        if (gelandet(kopf)) L = kopf;
     }
     const waehleM = (m) => wahl.get(m) || wahl.set(m, auswahl(m + "^1", m, karte)).get(m);
     let treffer = 0;
-    for (const t of G.taeter) {
-        const m = merges.find((x) => x.z === t.z && x.zweig === t.zweig);
+    for (const [z, zweig, schritt] of G.taeter) {
+        const m = merges.find((x) => x.z === z && x.zweig === zweig);
         const a = m && waehleM(m.m);
-        const n = a && a.namen.find((x) => x.startsWith(t.schritt));
-        const ok = t.schritt.startsWith("echt: ") ? "Kern (echt)" : n && a.gewaehlt.get(n);
+        const n = a && a.namen.find((x) => x.startsWith(schritt));
+        const ok = schritt.startsWith("echt: ") ? "Kern (echt)" : n && a.gewaehlt.get(n);
         treffer += !!ok;
-        console.log(`${ok ? "TREFFER" : "LÜCKE  "} z${t.z} ${t.zweig} → ${t.schritt}${ok ? ` — ${ok}` : m ? "" : " (kein Merge)"}`);
+        console.log(`${ok ? "TREFFER" : "LÜCKE  "} z${z} ${zweig} → ${schritt}${ok ? ` — ${ok}` : m ? "" : " (kein Merge)"}`);
     }
     const anteile = [];
     for (const m of [...new Map(merges.map((x) => [x.m, x])).values()]) {
@@ -691,18 +698,22 @@ module.exports = { KARTE, haken, vollSchritte, glieder, gliedUm, satzUm, wirkung
 if (require.main === module) {
     const a = process.argv.slice(2);
     const zahl = (n) => +(a[a.indexOf(n) + 1] || 0);
-    if (a[0] === "--messen") messen(a.slice(1).filter((x, i) => /^\d+$/.test(x) && a[i] !== "--parallel").map(Number), zahl("--parallel") || 1); // prettier-ignore
+    if (a[0] === "--messen") messen(a.slice(1).filter((x, i) => /^\d+$/.test(x) && !/^--(parallel|gruppe)$/.test(a[i])).map(Number), zahl("--parallel") || 1, zahl("--gruppe")); // prettier-ignore
     else if (a[0] === "--karte") {
         const { out, zaehler } = karteBauen(a[1] || ROOT);
         console.log(`[karte] ${Object.keys(out.schritte).length} Schritte, ${Object.values(out.glieder).reduce((s, x) => s + x.length, 0)} Glieder in ${Object.keys(out.glieder).length} Dateien · Texte ${zaehler.text} zugeordnet, ${zaehler.textFrei} frei`); // prettier-ignore
     } else if (a[0] === "--geschichte") geschichte().catch((e) => (console.error(e), process.exit(1)));
     else if (a.length === 2) {
         const { alle, gewaehlt, aus, namen } = auswahl(a[0], a[1]);
-        console.log(JSON.stringify(namen.filter((n) => gewaehlt.has(n))));
+        const liste = namen.filter((n) => gewaehlt.has(n));
+        console.log(JSON.stringify(liste));
+        // für check.yml: die Liste, die Gruppen mit einem gewählten Schritt (die Matrix), ob alle fahren
+        const gruppen = [...new Set(vollSchritte().filter((s) => gewaehlt.has(s.name)).map((s) => s.gruppe))].sort((x, y) => x - y);
+        if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `liste=${JSON.stringify(liste)}\ngruppen=${JSON.stringify(gruppen)}\nalle=${alle.length ? "ja" : "nein"}\n`); // prettier-ignore
         if (alle.length) console.log(`# ALLE: ${alle.join(" · ")}`);
         for (const n of aus) console.log(`# aus: ${n} — seine Karte trägt keine der Wirkungen von ${a[0].slice(0, 12)}..${a[1].slice(0, 12)}`);
     } else {
-        console.error("node scripts/lib/zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--parallel n] | --karte [wurzel] | --geschichte");
+        console.error("node scripts/lib/zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--gruppe g] [--parallel n] | --karte [wurzel] | --geschichte");
         process.exit(2);
     }
 }

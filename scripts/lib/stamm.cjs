@@ -605,6 +605,7 @@ function ersetze(t, glied, x, neu) {
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
 // Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
 function dateiMit(root, stelle) {
+    globalThis.__wirkungNode?.suche.add(String(stelle)); // die Wirkungs-Messung: der Schritt hängt an der Stelle, nie am ganzen Stamm
     const mit = teileVon(root)
         .filter((t) => t.text.includes(stelle))
         .map((t) => t.pfad);

@@ -1518,7 +1518,8 @@ function traegt(x, w, karte) {
         (w.laden && bit(i(w.laden, "§"))) ||
         (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) ||
         (w.fege && x.fege.includes(w.fege)) ||
-        (w.verz && x.verz.includes(w.verz))
+        (w.verz && x.verz.includes(w.verz)) ||
+        (w.suche && (x.suche || []).some((s) => w.t.some((t) => t.includes(s))))
     );
 }
 function auswahlUrteil(namen, karte, W, wahl = zug.waehle) {
@@ -1556,7 +1557,7 @@ function selbsttestAuswahl() {
     const fn = (...i) => zug.bits.aus(i, 5);
     K.schritte = {
         eins: { gruen: true, fn: fn(0, 1), txt: [], datei: [], verz: [], probe: [], fege: [] },
-        zwei: { gruen: true, fn: fn(3), txt: [2], datei: ["spec/x.json"], verz: [], probe: [], fege: [] },
+        zwei: { gruen: true, fn: fn(3), txt: [2], datei: ["spec/x.json"], verz: [], probe: [], fege: [], suche: ["_stelle()"] },
         drei: { gruen: false, fn: fn(), txt: [], datei: [], verz: [], probe: [], fege: [] },
     };
     const namen = ["eins", "zwei", "drei", "vier"];
@@ -1565,6 +1566,7 @@ function selbsttestAuswahl() {
     const W3 = [{ datei: "spec/x.json" }];
     const W4 = zug.wirkungen("HEAD", "HEAD", K, ["A", "stamm/gibt-es-nie.js"]);
     const W5 = [{ glied: ["a.js", "A/neu"], fn: true, txt: true, jung: true }];
+    const W6 = [{ suche: "c.js", t: ["x()", "this._stelle();"] }];
     const echt = zug.waehle;
     const ohneKarte = (n, k, W) => echt(n, k, W.filter((w) => w.alle)); // die Karte ignoriert
     const ohneText = (n, k, W) => echt(n, k, W.map((w) => ({ ...w, txt: false })));
@@ -1587,6 +1589,8 @@ function selbsttestAuswahl() {
     fall("Mutante: die unbekannte Datei wählt nicht alles", W4, ohneAlle, /ALLE \(Datei ohne Karte: stamm\/gibt-es-nie\.js.*„eins" fehlt/);
     fall("Mutante: ein Schritt ohne Karte fällt aus", W1, nurGemessen, /OHNE KARTE: „vier" fehlt/);
     fall("Mutante: das junge Glied ignoriert", W5, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/neu/);
+    fall("die echte Wahl, eine gesuchte Stelle", W6, echt);
+    fall("Mutante: die Suche ignoriert", W6, ohneKarte, /AUSGELASSEN: „zwei" trägt .*c\.js/);
     return f;
 }
 
