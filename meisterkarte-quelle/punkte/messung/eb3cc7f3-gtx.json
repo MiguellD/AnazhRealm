@@ -1,7 +1,7 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T10:24:41.615Z",
+ "zeit": "2026-11-07T10:36:04.436Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -270,6 +270,72 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": true,
+   "zahl": "größter Sprung 0.050 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.78 EV · 125 s, Wörter standen · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.53,
+   "gpu": "nvidia/pascal",
+   "s": 31.7,
+   "zeit": "2026-11-07T10:30:57.480Z",
+   "abdruck": "07bb22d71b63",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 0.999 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2547 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.75,
+   "gpu": "nvidia/pascal",
+   "s": 44.8,
+   "zeit": "2026-11-07T10:31:29.232Z",
+   "abdruck": "d8998c97284b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.008/l2 0.999 · birke@0.5 l1 0.993/karte 1.004 · fichte@0.5 l1 0.993/karte 0.994 · haus@0.27 l1 1.008/l2 0.999 · birke@0.27 l1 0.993/karte 1.004 · fichte@0.27 l1 0.993/karte 0.994 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.75,
+   "gpu": "nvidia/pascal",
+   "s": 44.8,
+   "zeit": "2026-11-07T10:31:29.232Z",
+   "abdruck": "25872cfe0387",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#1",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0.0665 nyquist 0.1624 (Arm 0.498), 1 m glatt 0.0336 nyquist 0.1712 (Arm 0.998), 2 m glatt 0.0273 nyquist 0.1734 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0696 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.1641 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.13,
+   "gpu": "nvidia/pascal",
+   "s": 67.8,
+   "zeit": "2026-11-07T10:34:32.114Z",
+   "abdruck": "ef028f1cb201",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K5#1": {
+   "gruen": true,
+   "zahl": "Sicht im Sturm 1556 m (Azimute 1486/1492/1556/1561, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.44,
+   "gpu": "nvidia/pascal",
+   "s": 26.6,
+   "zeit": "2026-11-07T10:36:04.436Z",
+   "abdruck": "fe37562afe77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -513,79 +579,182 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T10:29:02.609Z",
+   "abdruck": "59ada7ab8467",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T10:29:02.609Z",
+   "abdruck": "c7d8c4d16aa2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K2#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T10:29:02.609Z",
+   "abdruck": "124d3127dfbb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K2#1",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.4,
+   "zeit": "2026-11-07T10:32:39.049Z",
+   "abdruck": "98240f6809a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T10:18:06.327Z",
+  "start": "2026-11-07T10:28:28.553Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.5,
+  "bootS": 7.1,
   "grundstellungS": [
-   6.2,
-   5.5,
-   6
+   5.4,
+   4.2,
+   4.3,
+   7
   ],
-  "proben": 9,
+  "proben": 6,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "vegetation.K2#1",
-    "s": 29.4,
-    "takte": 881,
+    "ort": "genesis",
+    "vor": "ferne.K2#1",
+    "s": 25.5,
+    "takte": 673,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 20.6,
-    "takte": 676,
+    "vor": "licht.K5#1",
+    "s": 19.2,
+    "takte": 669,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
-    "vor": "mensch.K5#1",
-    "s": 21.4,
-    "takte": 710,
+    "vor": "material.K1#1",
+    "s": 20.7,
+    "takte": 617,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "haar.K1#1",
-    "s": 22.1,
-    "takte": 738,
+    "vor": "material.K2#1",
+    "s": 24.3,
+    "takte": 765,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ferne.K5#1",
+    "s": 17.4,
+    "takte": 810,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 10,
+  "wegeTueren": [
+   {
+    "vor": "material.K1#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 4.2
+   },
+   {
+    "vor": "ferne.K5#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 7
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K2#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   },
+   {
+    "probe": "ferne.K5#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   }
+  ],
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 4,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#1",
+     "probe": "ferne.K2#1",
      "m": 3592,
      "ringVor": 4,
      "ringMin": -1
+    },
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
     }
    ],
-   "zapfen": 352,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 399,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 420.7,
-  "minuten": 7.07
+  "fahrtS": 481.6,
+  "minuten": 8.08
  }
 }
