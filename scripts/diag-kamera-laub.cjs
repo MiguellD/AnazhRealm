@@ -372,16 +372,9 @@ function leibInstall(cfg) {
         const k = r._bodenSichtAt(x, z);
         return Number.isFinite(k) ? k : null;
     };
-    L.inBox = (p, b, m) => {
-        if (p.y < b.botY - m || p.y > b.topY + m) return false;
-        const ob = b.obb;
-        if (ob) {
-            const qx = p.x - ob.cx;
-            const qz = p.z - ob.cz;
-            return Math.abs(qx * ob.c - qz * ob.s) < ob.hx + m && Math.abs(qx * ob.s + qz * ob.c) < ob.hz + m;
-        }
-        return p.x > b.minX - m && p.x < b.maxX + m && p.z > b.minZ - m && p.z < b.maxZ + m;
-    };
+    // p näher als m an der Box: der wahre Abstand der Welt (`_boxAbstand`, die Haut ist rund) — die um m aufgeblasene Box stand an
+    // Kante und Ecke bis m(√3 − 1) über ihr und nannte die Linse 0,300 m vor Felsturm und Haus „in" ihnen (R 0,25; w22-t4-heil)
+    L.inBox = (p, b, m) => r._boxAbstand(p.x, p.y, p.z, b) < m;
     L.boxen = (x, z, rad) => {
         const out = [];
         for (const a of st.architectures || []) {
