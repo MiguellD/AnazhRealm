@@ -2904,7 +2904,7 @@ class AnazhRealm_bild_kosten {
                 let ja;
                 if (!this._instanzBehalten(g, i, weit, fenster)) ja = false;
                 else if (this._instanzBehalten(g, i, eng, fenster)) ja = true;
-                else (ja = this._instanzBehalten(g, i, L, fenster)), wack.push(g.slotRef[i]);
+                else ((ja = this._instanzBehalten(g, i, L, fenster)), wack.push(g.slotRef[i]));
                 if (!ja) continue;
                 if (i !== kk) {
                     this._archGroupTausch(g, i, kk);
@@ -2960,7 +2960,7 @@ class AnazhRealm_bild_kosten {
         let tausch = 0;
         if (w.ordnung !== (g._ordnung | 0))
             for (let j = 0; j < w.refs.length; j++)
-                if (w.refs[j].slot !== j) this._archGroupTausch(g, w.refs[j].slot, j), tausch++;
+                if (w.refs[j].slot !== j) (this._archGroupTausch(g, w.refs[j].slot, j), tausch++);
         let kk = w.refs.length,
             kipp = 0;
         for (let q = 0; q < w.wack.length; q++) {
@@ -2969,7 +2969,7 @@ class AnazhRealm_bild_kosten {
             if (ja === i < kk) continue;
             kipp++;
             const z = ja ? kk++ : --kk;
-            if (i !== z) this._archGroupTausch(g, i, z), tausch++;
+            if (i !== z) (this._archGroupTausch(g, i, z), tausch++);
         }
         this._instanzWahlLegt(g, L, kk, tausch, g.wahl);
         return kipp;
@@ -2994,7 +2994,12 @@ class AnazhRealm_bild_kosten {
     // Ränder, Blende. In `S.abdruck`.
     _wahlAbdruck(L, S) {
         const a = S.abdruck || (S.abdruck = new Float64Array(80));
-        const eb = (P, o) => ((a[o] = P.normal.x), (a[o + 1] = P.normal.y), (a[o + 2] = P.normal.z), (a[o + 3] = P.constant));
+        const eb = (P, o) => (
+            (a[o] = P.normal.x),
+            (a[o + 1] = P.normal.y),
+            (a[o + 2] = P.normal.z),
+            (a[o + 3] = P.constant)
+        );
         for (let p = 0; p < 6; p++) eb(L.fr.planes[p], 4 * p);
         const f = L.fit;
         a[24] = f ? 1 : 0;
