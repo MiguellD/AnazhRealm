@@ -1,0 +1,19 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\5fb21e29-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804 90
+K4 garage: Differenz 0.7907 ·  (14.7 s: buehne 1.8 · welt 0.8 · bild 11.5 · schuss 0.6)
+K4 portale: Differenz 0.9442 ·  (13.8 s: buehne 1.4 · welt 0.5 · bild 11.4 · schuss 0.5)
+K4 schmiede: Differenz 0.8782 ·  (9.1 s: buehne 0.6 · welt 0.7 · bild 7.3 · schuss 0.5)
+K4 fachwerk: Differenz 0.9959 ·  (11.7 s: buehne 3.1 · welt 1.2 · bild 6.7 · schuss 0.7)
+K4 terrain: Differenz 0.9912 ·  (12.8 s: buehne 3.9 · welt 0.5 · bild 7.7 · schuss 0.6)
+K4 koerperstudio: Differenz — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (16.5 s: buehne 10.7)
+@@PUNKTE@@ FRIST 84 s der Probe gerissen — Studio tetrapoda und die folgenden ausgelassen
+K4 garage: ROT · Differenz 0.7907 · Albedo null · Differenz 0.7907 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (14.7 s)
+K4 portale: ROT · Differenz 0.9442 · Albedo null · Differenz 0.9442 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (13.8 s)
+K4 schmiede: ROT · Differenz 0.8782 · Albedo null · Differenz 0.8782 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (9.1 s)
+K4 fachwerk: ROT · Differenz 0.9959 · Albedo null · Differenz 0.9959 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (11.7 s)
+K4 terrain: ROT · Differenz 0.9912 · Albedo null · Differenz 0.9912 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll) (12.8 s)
+K4 koerperstudio: ROT · Differenz — · Albedo — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (16.5 s)
+K4 Gerät der Bühne: WebGPU pascal
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (78.7 s)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

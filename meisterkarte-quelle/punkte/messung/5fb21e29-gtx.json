@@ -1,7 +1,7 @@
 {
  "sha": "5fb21e29f30a9a98e289fa18b3cbf98c1e85f007",
  "geraet": "gtx",
- "zeit": "2026-11-07T03:33:01.697Z",
+ "zeit": "2026-11-07T04:06:44.422Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K4#1": {
@@ -129,6 +129,140 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": true,
+   "zahl": "bild-diff 0.24 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "nvidia/pascal",
+   "s": 44.3,
+   "zeit": "2026-11-07T03:54:32.246Z",
+   "abdruck": "072891de491c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 160136 → 689380 px (×4.30) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.49,
+   "gpu": "nvidia/pascal",
+   "s": 29.5,
+   "zeit": "2026-11-07T03:55:27.704Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 3021/1268/6703/3808 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 69.6 σ 35.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.207 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "nvidia/pascal",
+   "s": 44.3,
+   "zeit": "2026-11-07T03:56:06.217Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 104.9 s nach dem Riss bei 36.4 s, am Aas fuchs 20.1 s, baer 16.6 s · Wolfsrevier wald, Riss 12.7 s, 3 fressen: tier:wolf 7018 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 47.6 σ 37.4 schwarz 1.7 % weiß 0.0 % · Stand 18.546.207 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.6,
+   "gpu": "nvidia/pascal",
+   "s": 35.8,
+   "zeit": "2026-11-07T03:56:52.026Z",
+   "abdruck": "f27a185f07bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 311.9 ms (haus_tudor, huelle in 215.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2247 ms (haus_tudor, mesh in 44.2 m, Bau-Hash 84121d20)",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: nH 12 erstes Haus nach 311.9 ms (haus_tudor, huelle in 215.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2247 ms (haus_tudor, mesh in 44.2 m, Bau-Hash 84121d20)",
+   "gpu": "nvidia/pascal",
+   "s": 25.1,
+   "zeit": "2026-11-07T04:02:12.668Z",
+   "abdruck": "f39d6304c069",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 311.9 ms (haus_tudor, huelle in 215.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2247 ms (haus_tudor, mesh in 44.2 m, Bau-Hash 84121d20)",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: nH 12 erstes Haus nach 311.9 ms (haus_tudor, huelle in 215.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2247 ms (haus_tudor, mesh in 44.2 m, Bau-Hash 84121d20)",
+   "gpu": "nvidia/pascal",
+   "s": 25.1,
+   "zeit": "2026-11-07T04:02:12.668Z",
+   "abdruck": "5e49c2119176",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 210.41 m · Luma 93.6 σ 49.3 schwarz 0.0 % weiß 0.0 % ·",
+   "exit": 0,
+   "minuten": 1.25,
+   "gpu": "nvidia/pascal",
+   "s": 75.1,
+   "zeit": "2026-11-07T04:02:57.896Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": true,
+   "zahl": "Bauten 0 außerhalb der Sync-Stellen · 25 an ihnen {\"naht\":25} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 3.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.64,
+   "gpu": "nvidia/pascal",
+   "s": 38.4,
+   "zeit": "2026-11-07T04:04:36.719Z",
+   "abdruck": "f46a4286e156",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild in der frischen Welt p50 0.01 / p95 0.045 / max 1.095 ms (Soll p95 ≤ 0,3; 20 Stände, 2560 Speicher-Bilder)",
+   "exit": 0,
+   "minuten": 0.61,
+   "gpu": "nvidia/pascal",
+   "s": 36.8,
+   "zeit": "2026-11-07T04:06:44.422Z",
+   "abdruck": "920fe5b46b7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": true,
+   "zahl": "Speicher-Bild frisch p50 0.01 / p95 0.045 / max 1.095 ms (2560 Bilder), 0 von 69 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.01 / p95 0.03 / max 0.51 ms (3207 Bilder), 0 von 67 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "exit": 0,
+   "minuten": 0.61,
+   "gpu": "nvidia/pascal",
+   "s": 36.8,
+   "zeit": "2026-11-07T04:06:44.422Z",
+   "abdruck": "9fd03137c637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K2#1",
    "modus": "session"
   }
  },
@@ -668,123 +802,437 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":20.8,\"bau\":0,\"frames\":872,\"frameMs\":{\"p50\":24.99,\"p95\":41.73,\"p99\":75.01,\"max\":158.35},\"taktMs\":{\"p50\":14.73,\"p95\":37.75,\"p99)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":20.8,\"bau\":0,\"frames\":872,\"frameMs\":{\"p50\":24.99,\"p95\":41.73,\"p99\":75.01,\"max\":158.35},\"taktMs\":{\"p50\":14.73,\"p95\":37.75,\"p99)",
+   "s": 45.3,
+   "zeit": "2026-11-07T03:51:09.902Z",
+   "abdruck": "77bdbe67e9ec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T03:52:27.115Z",
+   "abdruck": "f2acc4d695a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "zeit": "2026-11-07T03:52:27.115Z",
+   "abdruck": "d402de2ba56d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 11 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 11 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 34.1,
+   "zeit": "2026-11-07T03:53:34.795Z",
+   "abdruck": "07e9e78c8434",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 19 ms portale, Neubau höchstens 932 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 19 ms portale, Neubau höchstens 932 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.7,
+   "zeit": "2026-11-07T03:57:31.141Z",
+   "abdruck": "b170768bb8c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0451 ms↔Bank 8.8737 (+1), schmiede L0 GPU 0.0287 ms↔Bank 1.1196, portale L0 Bank 2.47 m) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0451 ms↔Bank 8.8737 (+1), schmiede L0 GPU 0.0287 ms↔Bank 1.1196, portale L0 Bank 2.47 m) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.7,
+   "zeit": "2026-11-07T03:57:31.141Z",
+   "abdruck": "3f9bc64ecac8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 79.1 %/– [Differenz 0.7907 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [Differenz 0.9442 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (78.7 s)",
+   "exit": 0,
+   "minuten": 1.33,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 79.1 %/– [Differenz 0.7907 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [Differenz 0.9442 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (78.7 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 79.7,
+   "zeit": "2026-11-07T03:59:20.446Z",
+   "abdruck": "82b38a5811d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 79.1 %/– [Differenz 0.7907 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [Differenz 0.9442 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (78.7 s)",
+   "exit": 0,
+   "minuten": 1.33,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 79.1 %/– [Differenz 0.7907 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.4 %/– [Differenz 0.9442 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (78.7 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 79.7,
+   "zeit": "2026-11-07T03:59:20.446Z",
+   "abdruck": "968f1ccf5262",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "s": 45.4,
+   "zeit": "2026-11-07T04:01:01.117Z",
+   "abdruck": "780be0a8826d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "s": 45.4,
+   "zeit": "2026-11-07T04:01:01.117Z",
+   "abdruck": "6be425f258c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K2#1",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER Error: /status: {\"ms\":3,\"spieler\":[0,90.8,0],\"chunks\":81,\"wetter\":\"sunny\",\"saison\":\"summer\",\"boot\":{\"art\":\"zweit\",\"serie\":null,\"profil\":\"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-6220-profil-juLXa8\",\"serieNeu\":true,\"ladungen\":11},\"zerstoert\":44,\"stempel\":{\"warnung\":2,\"ueberlauf",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER Error: /status: {\"ms\":3,\"spieler\":[0,90.8,0],\"chunks\":81,\"wetter\":\"sunny\",\"saison\":\"summer\",\"boot\":{\"art\":\"zweit\",\"serie\":null,\"profil\":\"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-6220-profil-juLXa8\",\"serieNeu\":true,\"ladungen\":11},\"zerstoert\":44,\"stempel\":{\"warnung\":2,\"ueberlauf",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.6,
+   "zeit": "2026-11-07T04:04:35.283Z",
+   "abdruck": "1e337ffd3b41",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER Error: /status: {\"ms\":3,\"spieler\":[0,90.8,0],\"chunks\":81,\"wetter\":\"sunny\",\"saison\":\"summer\",\"boot\":{\"art\":\"zweit\",\"serie\":null,\"profil\":\"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-6220-profil-juLXa8\",\"serieNeu\":true,\"ladungen\":11},\"zerstoert\":44,\"stempel\":{\"warnung\":2,\"ueberlauf",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER Error: /status: {\"ms\":3,\"spieler\":[0,90.8,0],\"chunks\":81,\"wetter\":\"sunny\",\"saison\":\"summer\",\"boot\":{\"art\":\"zweit\",\"serie\":null,\"profil\":\"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\anazh-6220-profil-juLXa8\",\"serieNeu\":true,\"ladungen\":11},\"zerstoert\":44,\"stempel\":{\"warnung\":2,\"ueberlauf",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.6,
+   "zeit": "2026-11-07T04:04:35.283Z",
+   "abdruck": "9de78dafc180",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"b26dd863-45b2-4481-a825-9868fbcc5e63\"} alter=4.54 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353,)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"b26dd863-45b2-4481-a825-9868fbcc5e63\"} alter=4.54 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353,)",
+   "s": 45.3,
+   "zeit": "2026-11-07T04:05:36.189Z",
+   "abdruck": "7bedeb37abad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"b26dd863-45b2-4481-a825-9868fbcc5e63\"} alter=4.54 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353,)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"b26dd863-45b2-4481-a825-9868fbcc5e63\"} alter=4.54 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353,)",
+   "s": 45.3,
+   "zeit": "2026-11-07T04:05:36.189Z",
+   "abdruck": "8100b54f9d70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K1#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T03:24:41.773Z",
+  "start": "2026-11-07T03:50:36.019Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 5.8,
   "grundstellungS": [
-   4.6,
-   5.7,
+   10.4,
    3.6,
-   5.3,
-   3.7,
-   4.6
+   3.8,
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   5.2,
+   3.5,
+   6.8,
+   2.6,
+   4.5,
+   0.1,
+   2.4,
+   5.9
   ],
-  "proben": 7,
+  "proben": 16,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 26.3,
-    "takte": 854,
+    "vor": "streaming.K3#1",
+    "s": 26.9,
+    "takte": 860,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 21.5,
-    "takte": 792,
+    "ort": "genesis",
+    "vor": "vegetation.K4#1",
+    "s": 21.3,
+    "takte": 692,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 20.5,
-    "takte": 768,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 20.4,
-    "takte": 747,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 33.1,
-    "takte": 959,
+    "vor": "siedlung.K1#2",
+    "s": 18.8,
+    "takte": 739,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 19.1,
-    "takte": 751,
+    "vor": "speicher.K4#2",
+    "s": 19.5,
+    "takte": 743,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": "wiese",
-    "vor": "oekologie.K4#2",
-    "s": 13.3,
-    "fehler": "read ECONNRESET",
+    "ort": null,
+    "vor": "wetter.K3#2",
+    "s": 11.1,
+    "takte": 683,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 8.9,
+    "takte": 639,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K2#2",
+    "s": 1.4,
+    "takte": 90,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 3.3,
+    "takte": 216,
+    "chunks": 90,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 19.3,
+    "takte": 868,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K2#1",
+    "s": 17.2,
+    "takte": 817,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K5#1",
+    "s": 17.3,
+    "takte": 814,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 17.4,
+    "takte": 804,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "tore.K3#1",
+    "s": 17.8,
+    "takte": 871,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "streaming.K4#2",
+    "s": 0.7,
+    "takte": 50,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K1#1",
+    "s": 18.6,
+    "takte": 847,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K2#1",
+    "s": 16.8,
+    "takte": 735,
+    "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "unerklaert": [
+  "wegeTueren": [
    {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
+    "vor": "siedlung.K4#2",
+    "wege": "wege +4 [-1010.2,-1538.8,-664,-1198.8/20] [-119.1,-274.9,279.2,201/272] [-1195.9,-1543,-671.9,-971.7/900] …",
+    "s": 2.6
    },
    {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+    "vor": "tore.K3#1",
+    "wege": "wege +7 [-119.1,-274.9,279.2,201/272] [152.6,505.5,647.4,926.8/347] [234.5,504.5,580.5,843.3/335] …",
+    "s": 4.5
    }
   ],
-  "zeichnerBlind": [
-   {
-    "probe": "oekologie.K4#2",
-    "wann": "vor",
-    "fehler": "connect ECONNREFUSED 127.0.0.1:27804"
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr nach oekologie.K4#2: die Werkbank :27804 nimmt keine Verbindung mehr an",
-  "ciBlicke": 8,
+  "ciBlicke": 17,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 360,
-   "frameP95": 49.9,
-   "taktP95": 42.13,
-   "vramMax": 126,
-   "seiten": 7,
+   "bilder": 2165,
+   "frameP95": 116.64,
+   "taktP95": 85.99,
+   "vramMax": 139.8,
+   "seiten": 17,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "licht.K1#1",
-     "m": 1083,
+     "probe": "streaming.K3#1",
+     "m": 2000,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K5#1",
+     "m": 1798,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "siedlung.K2#1",
+     "m": 1350,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "wetter.K3#2",
+     "m": 1162,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "streaming.K4#2",
+     "m": 1158,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 437,
-   "luecken": 6,
-   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
+   "zapfen": 942,
+   "luecken": 8,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 499.1,
-  "minuten": 8.84
+  "fahrtS": 1004.3,
+  "minuten": 16.82
  }
 }
