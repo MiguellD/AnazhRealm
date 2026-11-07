@@ -759,7 +759,13 @@ class AnazhRealm_bild_kosten {
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
-            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+            // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
+            // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
+            // kommt das Bild nur bei freier GPU-Leine (swiftshader, 2 Kerne, CPU ×6: 6 Knoten-Bauten bis zur Messung, je Aufgabe ein
+            // Schritt je Objekt, bis zu 13 Bauten zugleich im Flug). Der erste Schritt geht immer (nie verhungert); jeder weitere,
+            // solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt darüber endet wie bisher.
+            const ueber = () => performance.now() >= E.rateFrist;
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
                 const stufe = STUFE[(R.i / 3) | 0];
                 const shader = SHADER[R.i % 3];
                 b.setBuildStage(stufe);
@@ -769,7 +775,7 @@ class AnazhRealm_bild_kosten {
                 for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
                 arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
             }
-            if (arbeit) return ((R.ms += performance.now() - t0), false);
+            if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
             if (R) {
                 b.setBuildStage(null);
                 b.setShaderStage(null);
