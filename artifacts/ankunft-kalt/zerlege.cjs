@@ -8,7 +8,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const N = Number(process.env.KALT_BOOTS || 5);
+const N = Number(process.env.KALT_BOOTS || 5); // je Läufer derselbe Plan (GTX und Radeon nehmen je einen Push)
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ankunft-kalt-"));
 const med = (a) => {
     const s = a.filter((x) => Number.isFinite(x)).sort((x, y) => x - y);
