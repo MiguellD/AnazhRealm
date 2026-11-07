@@ -3361,12 +3361,13 @@ hauptLauf(async () => {
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && hat("naesse")) {
-        // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus, nasser Marktstand, helles Regenbild ROT
-        const m = (aussen, innen, regenbild, ri = 0, dach = 2) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
+        // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus und nasse Punkte unter dem Dach bei Median 1 (die
+        // Gefache von main 5fb21e29: 5 716 von 13 141), nasser Marktstand, helles Regenbild ROT
+        const m = (aussen, innen, regenbild, ri = 0, dach = 2, nass = 0) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen, nass }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
         const f = [
             [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
             [LL.naesseUrteil({ dorf: m(0.62, 0.64, 0.7) }).befunde.join(), /dorf innen unter dem Dach 0\.64 außerhalb/],
-            [LL.naesseUrteil({ dorf: m(0.62, 1, 0.7, 7, 0) }).befunde.join(), /7 Regen-Punkte innen.*trocken 0\/2/],
+            [LL.naesseUrteil({ dorf: m(0.62, 1, 0.7, 7, 0, 0.435) }).befunde.join(), /Dach 0\.435 außerhalb.*7 Regen-Punkte innen.*trocken 0\/2/],
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
