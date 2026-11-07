@@ -307,8 +307,14 @@ jobs:
                   sparse-checkout: /cloud-post/
 
             - name: Post nach koordination (probe-post/<zweig>/<sha8>.md, die Bilder, eine Zeile oben in cloud-post/<zweig>.md)
+              env:
+                  GH_TOKEN: ${{ github.token }}
               run: |
                   SHA8=${GITHUB_SHA:0:8}
+                  # DIE WANDUHR ab dem Push (der Lauf entsteht mit ihm): Schlange, Schloss, Proben und Post — was die Cloud-Sitzung wartet
+                  T0=$(curl -s -H "Authorization: Bearer $GH_TOKEN" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" | jq -r .created_at)
+                  W="?"
+                  t0=$(date -d "$T0" +%s 2> /dev/null) && W="$(($(date +%s) - t0)) s"
                   LAUF="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
                   P="$RUNNER_TEMP/post"
                   mkdir -p "$P"
@@ -332,13 +338,13 @@ jobs:
                   {
                       echo "# GPU-PROBE $SHA8 — $URTEIL"
                       echo
-                      echo "Zweig \`$ZWEIG\` · Kopf $GITHUB_SHA · Läufer $LAEUFER · $(TZ=Europe/Berlin date '+%d.%m. %H:%M') · Lauf $LAUF"
+                      echo "Zweig \`$ZWEIG\` · Kopf $GITHUB_SHA · Läufer $LAEUFER · $(TZ=Europe/Berlin date '+%d.%m. %H:%M') · Wanduhr ab Push $W · Lauf $LAUF"
                       echo
                       echo "Ruf: \`${PLAN:-—}\`"
                       echo
                       echo "$KOERPER"
                   } > "$P/$SHA8.md"
-                  ZEILE="## $(TZ=Europe/Berlin date '+%d.%m. %H:%M') — GPU-PROBE $SHA8 auf $LAEUFER: $URTEIL ($KOPF) → probe-post/$ZWEIG/$SHA8.md"
+                  ZEILE="## $(TZ=Europe/Berlin date '+%d.%m. %H:%M') — GPU-PROBE $SHA8 auf $LAEUFER: $URTEIL in $W ($KOPF) → probe-post/$ZWEIG/$SHA8.md"
                   echo "$ZEILE"
                   cd koord
                   git config user.name "gpu-probe"
