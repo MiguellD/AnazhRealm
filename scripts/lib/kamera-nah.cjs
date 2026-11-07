@@ -267,6 +267,65 @@ function nahDeckungInSeite(o) {
     // die Quellen eines Felds (je Satz-Zelle und je ruhender Instanz ihr Schlüssel und ihre Hülle in x/z) und ihre Schlüssel in einem Feld
     const quellen = (region, a = []) => (durchs(region, (ob, i) => (satzVon.has(ob) ? satzVon.get(ob).bloecke.forEach((b, k) => b.zellen.forEach((z, j) => region(z.huelle.getBoundingSphere(zs)) && a.push(Object.assign(zs.clone(), { k: k + j + "|" + z.idx.length })))) : a.push(Object.assign(bs.clone(), { k: ob.id + "|" + i + "|" + m4.elements })))), a); // prettier-ignore
     const bei = (qs, region) => qs.filter(region).map((q) => q.k).join();
+    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, r, punkte, tiefe }): liegt es im Bild
+    // (Projektion der Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und zeigt das BILD es? Die EINE Quelle ist die Tiefe der
+    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`) und ihr Zwilling-Bild OHNE die Boden-Schicht (`tiefe.boden`, `__zielMessen`: Halme der
+    // Nah-Wiese, Streu, Wasser verborgen). Je Punkt die Fläche W am Pixel: liegt sie höchstens `saum` (0,5 m) vor ihm, näher als `r`
+    // (1,5 m) an ihm oder ist es Himmel, ist der Punkt frei. Sonst fragt das Bild ohne Boden-Schicht: zeigt es den Punkt, stand nur die
+    // Boden-Schicht davor — sie verdeckt nur näher als der halbe Ziel-Abstand (wie der Vordergrund der Abnahme); in der fernen Hälfte
+    // ist sie der Boden, auf dem das Ziel steht (vegetation.K1#1: der Blick-Punkt im Gras in 14,76 m, das Bild zeigt Halme in 12,62
+    // m). Zeigt auch es eine Fläche davor, verdeckt sie — es sei denn, sie gehört dem Ziel (`o.ohne`). Das Urteil fällt allein in den
+    // zwei Bildern; die Hülle nennt nur den Namen: die kleinste gezeichnete Hülle, über deren Fuß die Fläche senkrecht steht (eine
+    // Fläche, die erst der Shader spannt, hält auf der CPU nur ihren Fuß: die Karte der Fern-Stufe eine Einheits-Linie, 0,9 m Hülle
+    // für 3 m Bild; der breite Halm der Ferne, `_halmFerne`). Ohne Tiefe ist `frei` ungemessen. Ein Ziel aus mehreren
+    // Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte`: jeder liegt im Bild und frei, sonst ist das Ziel verdeckt.
+    // BIS w18-abnahme-sicht urteilte ein Strahl Auge → Ziel über die Dreiecke der CPU, ohne die Streu, blind für jede Shader-Fläche:
+    // siedlung.K4#2 Radeon f3911ab9 „frei 210,41 m“, am Ziel-Pixel stand die Karte einer Erle in 33,31 m — Wald.
+    let zielOut = null;
+    if (o.ziel) {
+        const Z = o.ziel;
+        const S = Z.tiefe;
+        const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
+        const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
+        const imBild = punkte.every(([x, y, z]) => {
+            const v = new T.Vector3(x, y, z);
+            const vorn = v.clone().applyMatrix4(cam.matrixWorldInverse).z < -cam.near;
+            v.project(cam);
+            return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
+        });
+        const sieht = ([x, y, z]) => {
+            const P = new T.Vector3(x, y, z);
+            const L = P.distanceTo(E);
+            const v = P.clone().project(cam);
+            // außerhalb des Bilds liest der Index ein fremdes Pixel — dann ist `imBild` schon ROT
+            const i = Math.floor(((1 - v.y) / 2) * S.th) * S.tw + Math.floor(((v.x + 1) / 2) * S.tw);
+            const vor = (W) => W?.distanceTo(E) < L - (Z.saum ?? 0.5) && W.distanceTo(P) > (Z.r ?? 1.5);
+            const [W, W0] = [S.punkt(i), S.boden?.punkt(i)];
+            const d = W?.distanceTo(E);
+            if (!vor(W)) return { d };
+            if (!S.boden) return { d, offen: true };
+            if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
+            let h = null;
+            const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
+            if (h?.e && OHNE.has(h.e.id)) return { d };
+            return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
+        };
+        const blick = S ? punkte.map(sieht) : [];
+        const i = blick.findIndex((b) => b.vor);
+        zielOut = {
+            name: Z.name || "Ziel",
+            imBild,
+            ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
+            frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
+            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
+            vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            abstand: +Math.hypot(Z.x - E.x, Z.y - E.y, Z.z - E.z).toFixed(2),
+        };
+    }
+    // DAS ZIEL ALLEIN (`o.nurZiel`, die Blick-Wahl je Pose, w18-abnahme-sicht-3): ohne den Speicher und ohne die Strahlen der Nah-Deckung
+    if (o.nurZiel) return { ziel: zielOut };
+
     // gefragt wird nur, was die Zellen dieser Frage tragen: die Kugel und eine Zelle um sie
     const um = feld(E.x, E.z, D + ZELLE);
     if (o.neu || !C || !o.ort || C.id !== o.ort.id || !C.quellen || !C.innen({ center: E, radius: D }) || bei(C.quellen, um) !== bei(quellen(um), um)) {
@@ -484,63 +543,6 @@ function nahDeckungInSeite(o) {
                 if (m >= 1) break;
             }
         }
-    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, r, punkte, tiefe }): liegt es im Bild
-    // (Projektion der Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und zeigt das BILD es? Die EINE Quelle ist die Tiefe der
-    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`) und ihr Zwilling-Bild OHNE die Boden-Schicht (`tiefe.boden`, `__zielMessen`: Halme der
-    // Nah-Wiese, Streu, Wasser verborgen). Je Punkt die Fläche W am Pixel: liegt sie höchstens `saum` (0,5 m) vor ihm, näher als `r`
-    // (1,5 m) an ihm oder ist es Himmel, ist der Punkt frei. Sonst fragt das Bild ohne Boden-Schicht: zeigt es den Punkt, stand nur die
-    // Boden-Schicht davor — sie verdeckt nur näher als der halbe Ziel-Abstand (wie der Vordergrund der Abnahme); in der fernen Hälfte
-    // ist sie der Boden, auf dem das Ziel steht (vegetation.K1#1: der Blick-Punkt im Gras in 14,76 m, das Bild zeigt Halme in 12,62
-    // m). Zeigt auch es eine Fläche davor, verdeckt sie — es sei denn, sie gehört dem Ziel (`o.ohne`). Das Urteil fällt allein in den
-    // zwei Bildern; die Hülle nennt nur den Namen: die kleinste gezeichnete Hülle, über deren Fuß die Fläche senkrecht steht (eine
-    // Fläche, die erst der Shader spannt, hält auf der CPU nur ihren Fuß: die Karte der Fern-Stufe eine Einheits-Linie, 0,9 m Hülle
-    // für 3 m Bild; der breite Halm der Ferne, `_halmFerne`). Ohne Tiefe ist `frei` ungemessen. Ein Ziel aus mehreren
-    // Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte`: jeder liegt im Bild und frei, sonst ist das Ziel verdeckt.
-    // BIS w18-abnahme-sicht urteilte ein Strahl Auge → Ziel über die Dreiecke der CPU, ohne die Streu, blind für jede Shader-Fläche:
-    // siedlung.K4#2 Radeon f3911ab9 „frei 210,41 m“, am Ziel-Pixel stand die Karte einer Erle in 33,31 m — Wald.
-    let zielOut = null;
-    if (o.ziel) {
-        const Z = o.ziel;
-        const S = Z.tiefe;
-        const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
-        const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
-        const imBild = punkte.every(([x, y, z]) => {
-            const v = new T.Vector3(x, y, z);
-            const vorn = v.clone().applyMatrix4(cam.matrixWorldInverse).z < -near;
-            v.project(cam);
-            return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
-        });
-        const sieht = ([x, y, z]) => {
-            const P = new T.Vector3(x, y, z);
-            const L = P.distanceTo(E);
-            const v = P.clone().project(cam);
-            // außerhalb des Bilds liest der Index ein fremdes Pixel — dann ist `imBild` schon ROT
-            const i = Math.floor(((1 - v.y) / 2) * S.th) * S.tw + Math.floor(((v.x + 1) / 2) * S.tw);
-            const vor = (W) => W && W.distanceTo(E) < L - (Z.saum ?? 0.5) && W.distanceTo(P) > (Z.r ?? 1.5);
-            const [W, W0] = [S.punkt(i), S.boden?.punkt(i)];
-            const d = W?.distanceTo(E);
-            if (!vor(W)) return { d };
-            if (!S.boden) return { d, offen: true };
-            if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
-            let h = null;
-            const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
-            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
-            if (h?.e && OHNE.has(h.e.id)) return { d };
-            return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
-        };
-        const blick = S ? punkte.map(sieht) : [];
-        const i = blick.findIndex((b) => b.vor);
-        zielOut = {
-            name: Z.name || "Ziel",
-            imBild,
-            ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
-            frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
-            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
-            vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
-            abstand: +Math.hypot(Z.x - ex, Z.y - ey, Z.z - ez).toFixed(2),
-        };
-    }
-
     const N = gw * gh;
     const rund = (x) => +(x / N).toFixed(4);
     const kl = {};

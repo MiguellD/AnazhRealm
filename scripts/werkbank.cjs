@@ -700,7 +700,7 @@ function tierZahl() {
     const cam = st.camera;
     const csm = st.csmNode;
     const dl = st.directionalLight;
-    const kf = (csm && csm.lights && csm.lights.length ? csm.lights.map((l) => l && l.shadow && l.shadow.camera) : dl && dl.shadow ? [dl.shadow.camera] : []).map(frustum);
+    const kf = (csm?.lights?.length ? csm.lights.map((l) => l?.shadow?.camera) : dl?.shadow ? [dl.shadow.camera] : []).map(frustum);
     const nahM = r.constructor.ANALOG_NAH_M || 64;
     const aus = { gesamt: 0, sicht: 0, sichtNah: 0, schatten: {}, arten: {}, artenSicht: {} };
     kf.forEach((_, i) => (aus.schatten["k" + i] = 0));
@@ -717,7 +717,7 @@ function tierZahl() {
         let wirft = false;
         c.traverseVisible((n) => (wirft = wirft || (n.isMesh && n.castShadow)));
         kugel.set(c.position, u._ruheKugelR).center.y += u._ruheKugelH;
-        if (wirft) kf.forEach((f, i) => f && f.intersectsSphere(kugel) && aus.schatten["k" + i]++);
+        if (wirft) kf.forEach((f, i) => f?.intersectsSphere(kugel) && aus.schatten["k" + i]++);
     }
     return aus;
 }
@@ -936,7 +936,7 @@ async function starte() {
         // die Nah-Deckung der Aufnahme fand keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = r.importWorldBeside(j, { reload: true });
-            return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
+            return x?.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
@@ -1075,8 +1075,8 @@ async function starte() {
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
                 const q = r._autoSettlementQueue;
                 const dorfSchwebt =
-                    o && o.dorfZug === false && (q || r._autoSettlementPendingKey)
-                        ? q && q.plan && q.plan.slots
+                    o?.dorfZug === false && (q || r._autoSettlementPendingKey)
+                        ? q?.plan?.slots
                             ? `Plan ${q.idx}/${q.plan.slots.length} (Zelle ${q.cellKey})`
                             : `Export ${r._autoSettlementPendingKey || "?"}`
                         : null;
@@ -1182,22 +1182,16 @@ async function starte() {
             // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
             const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
-            let auf = null;
-            let gewaehlt = null;
-            // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten. Ohne Wahl
-            // (`--wahl 0`) ist der erste Schuss schon das Bild: er wartet, bis die Welt an der Pose steht (`__weltStehtWarten`),
-            // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
-            for (const w of wahl > 0 ? [wahl, 0] : [0]) {
-                try {
-                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-                } catch {}
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
-                if (w) gewaehlt = auf.abnahme.wahl || null;
-            }
-            if (gewaehlt) {
-                auf.abnahme.wahl = gewaehlt;
-                auf.abnahme.zeile = __abnahmeUrteil(auf.abnahme).zeile;
-            }
+            // DIE WAHL VOR DEM EINEN SCHUSS (w18-abnahme-sicht-3): die Blick-Wahl stellt die Kamera (sie urteilt ihre Pose in deren Welt), der
+            // Schuss steht dort und trägt ihr Ergebnis. Bis dahin lief die Wahl in einem ersten ganzen Schuss, dessen Bild der zweite
+            // verwarf (zweimal Erst-Zeichnung, Rückstrahl, 33 Bilder und Abnahme). Ohne Wahl (`--wahl 0`) wartet der Schuss, bis die Welt
+            // an der Pose steht (`__weltStehtWarten`), und jeder Schuss beginnt seine Geschichte neu
+            if (wahl > 0 && window.__buehneUhr) await __weltStehtWarten();
+            const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+            try {
+                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+            } catch {}
+            const auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt });
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
@@ -1791,7 +1785,7 @@ async function starte() {
                     B = r.constructor.WIND_BOE;
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
-                    nah[p] = P && P.distanceTo(cam.position) <= k.nahM ? 1 : 0;
+                    nah[p] = P?.distanceTo(cam.position) <= k.nahM ? 1 : 0;
                 }
                 const q = cam.getWorldDirection(new THREE.Vector3()).setY(0).setLength(k.nahM / 2).add(cam.position),
                     boe = Array.from({ length: 1200 }, (_, i) => [T0 + i / 20, r._windAt(q.x, q.z, T0 + i / 20).boe]).sort((a, b) => a[1] - b[1]),
@@ -2245,7 +2239,7 @@ async function starte() {
                                 for (let dz = -2; dz <= 2; dz++) {
                                     const key = `${cx + dx},${cz + dz}`;
                                     const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
-                                    if (!(e && e.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
+                                    if (!e?.empty && !satz?.bloecke.has(key)) fehlt.push(key);
                                 }
                             return { chunk: `${cx},${cz}`, fehlt };
                         };
@@ -2610,7 +2604,7 @@ async function starte() {
                 if (req.url === "/fluss") {
                     const o = await page.evaluate(() => {
                         const i = __flussLinse();
-                        return i && i.installiert ? i : __flussBericht();
+                        return i?.installiert ? i : __flussBericht();
                     });
                     return send(o);
                 }
@@ -3120,7 +3114,7 @@ hauptLauf(async () => {
             ly: a[4],
             lz: a[5],
             datei: opt("--datei"),
-            uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
+            uhr: opt("--uhr") && Number(opt("--uhr")),
             wetter: opt("--wetter"),
             saison: opt("--saison"),
             w: Number(opt("--w", 640)),
@@ -3572,10 +3566,10 @@ hauptLauf(async () => {
                     : (await evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
                 if (hat("karte") && !boden) await stufen(null);
                 const ordner = opt("--ordner");
-                if (w && w.karte && ordner)
+                if (w?.karte && ordner)
                     w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
                 if (w?.karte) delete w.karte.png;
-                if (w && w.oben && w.oben.png) {
+                if (w?.oben?.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
                     delete w.oben.png;
@@ -3601,7 +3595,7 @@ hauptLauf(async () => {
         dateiAb({ welt });
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
-    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")) });
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") && Number(opt("--uhr")) });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {
@@ -3681,7 +3675,7 @@ hauptLauf(async () => {
             return w[0];
         };
         const ortId = eins("Ort", laeufe.map((u) => (u ? u.ort : null)));
-        const geraet = eins("Gerät", laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null)));
+        const geraet = eins("Gerät", laeufe.map((u) => (u?.geraet ? u.geraet.schluessel : null)));
         const sicht = eins("Sicht", laeufe.map((u) => (u ? u.sicht : null)));
         const version = eins("Version", laeufe.map((u) => (u ? u.version : null)));
         if (opt("--ort") && opt("--ort") !== ortId) fehler.push(`--ort ${opt("--ort")}, die Serie steht an ${ortId}`);
@@ -3768,8 +3762,8 @@ hauptLauf(async () => {
         if (o.kreis) console.log("KREIS " + JSON.stringify(o.kreis));
         // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
         const rot = [
-            o.wetterHalt && o.wetterHalt.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
-            o.belegung && o.belegung.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
+            o.wetterHalt?.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
+            o.belegung?.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
             o.buehnenTiere < Number(opt("--tiere")) && `BÜHNE ROT: ${o.buehnenTiere} von ${opt("--tiere")} Tieren stehen am Ende`,
         ].filter(Boolean);
         if (rot.length) endeMit(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
@@ -3878,5 +3872,5 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit && o.zeit.rot.length))));
+    endeMit(o, !(o && (typeof o.fehler === "string" || o.zeit?.rot.length)));
 });
