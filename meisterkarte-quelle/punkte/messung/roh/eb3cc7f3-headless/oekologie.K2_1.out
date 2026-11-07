@@ -1,0 +1,9 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben kaskade
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ kaskade   {"saaten":[{"deer":[6.84,5.83],"fox":[1.06,0.88],"wolf":[3.3,2.91],"bear":[0.72,1.23]},{"deer":[7.21,4.55],"fox":[0.74,0.84],"wolf":[1.79,1.17],"bear":[1.71,0.95]},{"deer":[3.42,5.9],"fox":[0.64,1.71],"wolf":[2.02,2.13],"bear":[0.86,0.92]},{"deer":[6.96,5.06],"fox":[0.33,1.2],"wolf":[2.92,1.98],"bear":[1.35,1.13]},{"deer":[4.83,5.8],"fox":[0.95,0.61],"wolf":[1.73,1.88],"bear":[0.94,1.52]},{"deer":[5.57,7.01],"fox":[0.09,1.23],"wolf":[2.61,2.94],"bear":[0.58,1.68]},{"deer":[6.73,5.28],"fox":[0.99,1.6],"wolf":[3.13,1.89],"bear":[1.35,1.27]},{"deer":[5.55,6.54],"fox":[0.31,1.28],"wolf":[2.36,2.84],"bear":[1.58,1.16]}],"kappe":0,"richtungen":{"hirsche":{"grund":5.3,"effekt":0.498,"ki":[0.413,0.655],"soll":0.3,"haelt":true},"jungwuchs":{"grund":11.89,"effekt":-0.295,"ki":[-0.386,-0.249],"soll":-0.2,"haelt":true},"woelfe":{"grund":2.31,"effekt":-0.532,"ki":[-0.756,-0.376],"soll":0,"haelt":true},"nahrung":{"grund":9.61,"effekt":-0.368,"ki":[-0.545,-0.278],"soll":-0.3,"haelt":true},"mutante":{"grund":11.89,"effekt":0.595,"ki":[0.505,0.681],"soll":-0.2,"haelt":false}},"hungertod":{"n":17515,"aeltester":17515,"trauer":17515,"journal":17515},"bestand":{"nah":4,"anders":0,"takte":17280,"leiber":[20,10],"zahl":35.9,"fremd":0,"nahrung":[{"grund":7.1,"effekt":-0.369,"ki":[-0.417,-0.321]},{"grund":9.53,"effekt":-0.411,"ki":[-0.473,-0.348]},{"grund":9.51,"effekt":-0.42,"ki":[-0.478,-0.362]},{"grund":9.75,"effekt":-0.374,"ki":[-0.451,-0.297]},{"grund":10.4,"effekt":-0.352,"ki":[-0.415,-0.289]},{"grund":7.95,"effekt":-0.386,"ki":[-0.443,-0.329]},{"grund":8.62,"effekt":-0.333,"ki":[-0.478,-0.187]},{"grund":9.75,"effekt":-0.375,"ki":[-0.452,-0.299]}],"ms":4.8}}
+
+  (341 s) — Sekunden je Probe: kaskade: 327
+
+✅ GRÜN — kaskade
