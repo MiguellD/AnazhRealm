@@ -161,33 +161,221 @@ class AnazhRealm_siedlung_bauten {
         }
         // DIE BEWEGTEN (das EINE Stufen-Gesetz: Bewegte prüfen) urteilen vor der Wache — ihre Kosten tragen sie selbst
         const bewegt = this._archBewegteUrteilen(pm, occlOn);
-        // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
-        // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
-        // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei.
-        const n = Array.isArray(archs) ? archs.length : 0;
-        if (this._standRuht("archLod", n, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
-        // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei
-        // grossen Welten (10k+ Architekturen) bleibt der Tick bounded. Den
-        // Cursor speichern wir an state — er reist nicht im Snapshot.
-        if (!Number.isFinite(this._archLODCursor)) this._archLODCursor = 0;
+        // DIE WACHE DER STUFEN (w15-strom-takt, Gebot 7): der Gang geht die WACHEN Einträge (`_stufenWache`), nie den Bestand.
+        // Ein Eintrag, dessen Stufe am Abstand steht (nichts lädt, kein Band wechselt, keine Verdeckung urteilt über ihn),
+        // schläft, bis der Weg des Auges seinen SPIELRAUM aufbraucht — den Abstand zur nächsten Grenze, die seine Wahl liest
+        // (`_archStufeSpiel`: die Grenzen samt Hysterese, die Ränder des Bands, der Rand der Verdeckung): jeder Abstand darin
+        // wählt dieselbe Stufe. Was sein Urteil sonst liest (Stufe gezeichnet, Lage, Eintritt, Abbau), weckt ihn mit dem Cull
+        // (`_cullWecken`); eine neue Epoche (Liste, Buch, Grenzen des Schirms, Regler, Ankunft) weckt alle. Bis w15-strom-takt
+        // ging ein rollender Cursor je Bild 256 Einträge des Bestands, der mit dem gefahrenen Weg wächst (GT 64 m/s, 60 s:
+        // 12 000 Einträge, die Runde 47 Bilder — der Baum am Rand der Bahn wartete eine Runde auf seine Stufe).
+        const W = this._stufenWache(pm);
+        // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle wachen Einträge, ohne zu wechseln und ohne dass
+        // einer wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
+        // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei. DIE RUNDE IST EIN
+        // RUNDGANG: die wachen Einträge bei seinem Beginn, bis so viele gegangen sind — wer einschläft, verkürzt erst den
+        // nächsten (gate:stand-takt TREUE: die Runde steht, solange sie gegangen wird).
+        if (!(W.rest > 0)) W.runde = W.rest = W.wach.size;
+        if (this._standRuht("archLod", W.runde, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
         if (occlOn) this._maybeRebuildOcclusionGrid();
         const z = this._archStufeZaehler();
-        const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
-        // Der Cursor rückt um die BESUCHTEN Einträge vor: endete die Scheibe am Wechsel-Budget, ging der Rest der Scheibe
-        // bis 05.10. eine ganze Runde leer aus (gate:fernwald D: nach 18 m Weg stand der Baum am Radius 40 Takte ohne
-        // seinen Zonen-Stempel).
-        let besucht = 0;
-        for (let i = 0; i < sliceLen && bewegt + z.switches < maxSwitchesPerFrame; i++) {
-            besucht = i + 1;
-            const entry = archs[(this._archLODCursor + i) % archs.length];
-            if (entry) this._archStufeUrteil(entry, pm, occlOn, z);
+        // je Bild höchstens STUFEN_GANG wache Einträge in der Reihe der Wache (wer wach bleibt, stellt sich hinten an); endet der
+        // Gang am Wechsel-Budget, bleibt der Rest vorn
+        const gang = W.gang;
+        gang.length = 0;
+        for (const e of W.wach) {
+            if (gang.length >= AnazhRealm.STUFEN_GANG) break;
+            gang.push(e);
         }
-        this._archLODCursor = (this._archLODCursor + besucht) % archs.length;
+        let besucht = 0;
+        const Z = W.zusagen;
+        for (const entry of gang) {
+            if (bewegt + z.switches >= maxSwitchesPerFrame) break;
+            besucht++;
+            W.wach.delete(entry);
+            W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
+            let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
+            if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
+            // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
+            // oder sein Partner, holt ihn die Zusage zurück — oder der Weg einer Hysterese-Breite der Bäume (LOD_DISTANCES
+            // .hysteresis), der seine Wunsch-Stufe verschieben kann. Bis hier fragte er in jedem Gang neu.
+            if (rest < 0 && Z.size) {
+                const wer = entry._stufeWer || (entry._stufeWer = {});
+                this._schlafen(wer, Z, null, () => this._stufeWecken(entry));
+                W.zusage.add(entry); // er wartet: die Stufen-Wahl bleibt offen, bis seine Zusage kam
+                rest = AnazhRealm.LOD_DISTANCES.hysteresis;
+            }
+            if (rest === Infinity) {
+                entry._stufeEimer = undefined; // keine Wahl: erst ein Weckruf holt ihn
+                W.schlaf.add(entry);
+            } else if (rest >= AnazhRealm.CULL_EIMER_M) {
+                const b = Math.floor((W.odo + rest) / AnazhRealm.CULL_EIMER_M);
+                entry._stufeEimer = b;
+                const l = W.eimer.get(b);
+                if (l) l.push(entry);
+                else W.eimer.set(b, [entry]);
+                if (!W.zusage.has(entry)) W.schlaf.add(entry); // wer auf seine Zusage schläft, weckt seine Zusage
+            } else W.wach.add(entry);
+        }
+        gang.length = 0;
+        W.rest -= besucht;
         // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
         // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
         const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
-        this._standMeldet("archLod", besucht, z.switches + z.regung > 0, z.offen > 0 || gitterAlt);
+        // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie
+        // kam; ebenso die Nachlese, bis sie jeden Schläfer des Bestands einmal geweckt hat (`_stufenWache`)
+        this._standMeldet(
+            "archLod",
+            besucht,
+            z.switches + z.regung > 0,
+            z.offen > 0 || gitterAlt || W.zusage.size > 0 || W.nach > 0
+        );
         return bewegt + z.switches;
+    }
+
+    // DIE WACHE DER STUFEN (`_tickArchitectureLOD`): je Epoche — der Bestand (`state.architectures`), die Grenzen der Bäume
+    // (`_stufenSchirm`), der Schirm der Bau-Grenzen und der Stand des Wunschs (Buch, Wahrnehmung, Regler, die Ankunft aus der
+    // Ferne: solange sie misst, schläft keiner) — die wachen Einträge (`wach`) und die schlafenden in Eimern
+    // des Wegs (`eimer`: Eimer b weckt, sobald der Weg `odo` b · CULL_EIMER_M erreicht; `_stufeEimer` am Eintrag nennt seinen
+    // Eimer, −1 den Abbau; wer auf eine Zusage wartet, schläft auf ihr und in seinem Eimer). Der Weg zählt den weiteren der Wege beider Enden der Strecke, die das Auge binnen des Vorlaufs
+    // fährt (`_bedarfAbstand` misst zu ihr: kein Punkt der Strecke ging weiter). Eine neue Epoche weckt alle.
+    // DER STEMPEL WECKT AUCH DIE SCHLÄFER (w15-strom-takt-2, das Gesetz der Stand-Wache `_standRuht`: was die Urteile eines
+    // Fege-Takts liest, weckt ihn — hier jeden Eintrag, den er schlafen legte). Der Stand des WUNSCHS (`_standStempelWunsch`:
+    // Buch, Wahrnehmung, LOD-Distanzen, Regler, Ankunft — ohne die Lieferungen) ist Teil der Epoche und weckt alle sofort;
+    // jede andere Regung des Stempels (`_weltRegt`, eine Lieferung, der Plan des Walds) startet die NACHLESE: sie holt die
+    // Schläfer ohne Zusage (`schlaf`) in der Reihe ihres Einschlafens zurück in die Wache (`nach` noch — so lange bleibt die
+    // Stufen-Wahl offen; wo keiner schläft, kostet sie nichts). Bis hier hielt die Epoche eine eigene Teil-Liste des Stempels, und ein Schläfer hörte nur den Weg und seinen
+    // Weckruf: ein Tausch, den die Welt mit `_weltRegt` meldet, erreichte ihn nie (gate:fernwald SELBSTTEST 3: der Riese
+    // schlief 123–146 Takte ohne Band, „die Welt hat nichts mehr offen").
+    _stufenWache(auge) {
+        this._stufenSchirm();
+        const st = this.state;
+        const liste = st.architectures || [];
+        const epoche = [liste, this._baumGrenzen, this._schirm().hoehe, this._standStempelWunsch()];
+        const stempel = this._standWache.stempel; // `_standStempelWunsch` las ihn eben
+        let W = this._stufenWacheStand;
+        if (!W || W.epoche.some((x, i) => x !== epoche[i])) {
+            for (const e of liste) if (e) e._stufeEimer = undefined;
+            W = this._stufenWacheStand = {
+                epoche,
+                wach: new Set(liste),
+                eimer: new Map(),
+                gang: [],
+                zusagen: new Map(), // der Sammler der Zusagen eines Urteils (`_zusagenVon`)
+                zusage: new Set(), // wer auf seine Zusage schläft (`_schlafen`)
+                runde: 0, // der Rundgang der Stand-Wache: so viele Einträge, `rest` davon noch zu gehen
+                rest: 0,
+                odo: 0,
+                ab: 0,
+                px: null,
+                stempel, // der Stempel, unter dem die Schläfer einschliefen
+                schlaf: new Set(), // die Schläfer ohne Zusage (im Eimer oder ohne Wahl), in der Reihe ihres Einschlafens
+                nach: 0, // die Nachlese: so viele der ältesten Schläfer weckt sie noch
+            };
+            W.wach.delete(undefined);
+            W.wach.delete(null);
+        }
+        if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, W.schlaf.size];
+        const vb = this._bedarfVoraus(auge) || auge;
+        const ging = W.px !== null && (auge.x !== W.px || auge.z !== W.pz); // das Auge ging in diesem Bild (die Nachlese)
+        let geweckt = 0;
+        if (W.px !== null)
+            W.odo += Math.max(Math.hypot(auge.x - W.px, auge.z - W.pz), Math.hypot(vb.x - W.vx, vb.z - W.vz));
+        [W.px, W.pz, W.vx, W.vz] = [auge.x, auge.z, vb.x, vb.z];
+        const jetzt = Math.floor(W.odo / AnazhRealm.CULL_EIMER_M);
+        const wecke = (b) => {
+            for (const e of W.eimer.get(b))
+                if (e._stufeEimer === b) {
+                    e._stufeEimer = undefined;
+                    W.schlaf.delete(e);
+                    W.wach.add(e);
+                    geweckt++;
+                }
+            W.eimer.delete(b);
+        };
+        if (jetzt - W.ab > W.eimer.size) for (const b of [...W.eimer.keys()]) b <= jetzt && wecke(b);
+        else for (let b = W.ab; b <= jetzt; b++) if (W.eimer.has(b)) wecke(b);
+        W.ab = jetzt + 1;
+        // DIE NACHLESE FOLGT DEM WEG DES AUGES (Gebot 7: Kosten an Schirm und Änderung, nie an die Wanduhr): ging das Auge in
+        // diesem Bild (dort weckt der Weg die Eimer ohnehin), weckt sie STUFEN_NACHLESE Schläfer hinter den Wachen, steht es, bis
+        // STUFEN_GANG — ein Stand holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage. Bis
+        // w18-stand-treue fragte sie das Tempo der Bahn, das nur BEDARF.frischMs Wanduhr lang gilt: ein langsamer Läufer stand.
+        W.nach = Math.min(W.nach, W.schlaf.size);
+        for (let k = ging ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG; W.nach > 0 && k > 0; k--, W.nach--) {
+            const e = W.schlaf.values().next().value;
+            W.schlaf.delete(e);
+            e._stufeEimer = undefined;
+            W.wach.add(e);
+            geweckt++;
+        }
+        if (geweckt) this._stufeRundeNeu(W);
+        return W;
+    }
+
+    // EIN GEWECKTER BEGINNT DIE RUNDE NEU (w18-stand-treue): wer in die Wache tritt (Eimer, Nachlese, Weckruf), gehört in die
+    // Runde, die die Stand-Wache zählt — der nächste Gang misst sie an den Wachen von jetzt (`rest` 0) und weckt den Takt
+    // (`_standWecken`). Bis hier zählte die Runde nur die Wachen ihres Beginns: kamen 185 dazu (die Nachlese nach einem Bau),
+    // ging der Takt die alten 26 ohne Wirkung und ruhte — die Neuen blieben ungeurteilt, bis die gebrochene Wache sie fand
+    // (gate:stand-takt TREUE-LÜCKE „211 → 26 Einheiten“, CI unter Last).
+    _stufeRundeNeu(W) {
+        W.rest = 0;
+        this._standWecken("archLod");
+    }
+
+    // Der Weckruf der Stufen-Wahl (aus `_cullWecken`: seine gezeichnete Stufe, sein Typ, seine Lage wechselt, er tritt ein oder
+    // geht): er urteilt im nächsten Gang. `art` "weg": er verlässt den Bestand.
+    _stufeWecken(entry, art) {
+        const W = this._stufenWacheStand;
+        if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
+        W.zusage.delete(entry);
+        W.schlaf.delete(entry);
+        if (art === "weg") {
+            entry._stufeEimer = -1;
+            W.wach.delete(entry);
+            return;
+        }
+        if (entry._stufeEimer === -1 && art !== "ein") return;
+        entry._stufeEimer = undefined;
+        if (entry._stufeWer) entry._stufeWer._schlaf = null; // der Schlaf auf seiner Zusage endet (`_schlafen`)
+        if (W.wach.has(entry)) return;
+        W.wach.add(entry);
+        this._stufeRundeNeu(W); // ein Geweckter weckt den Takt, der ihn urteilt, in einer neuen Runde
+    }
+
+    // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann
+    // — der Abstand zur nächsten Grenze, die sie liest: die Grenzen der Art samt Hysterese (hinein und zurück), beim Baum die
+    // Ränder des Bands der Maske (`_lodBandPartnerFor`, die Blatt-Kappe an der L0) in Wahrnehmungs-Metern, und der Rand der
+    // Verdeckung (`OCCLUSION.occDist`). −1: der Eintrag bleibt wach (die Ferne misst, sein Abstand ist nicht bestätigt, er ist
+    // Brücke oder im Vorlauf, die Verdeckung urteilt über ihn).
+    _archStufeSpiel(entry, dist, visH, grenzen, wahl, occlOn) {
+        if (entry._lodAmAbstand !== true || entry._bruecke || this._imStufenVorlauf(entry)) return -1;
+        if (this._ankunftsFerne() > 1) return -1;
+        const O = AnazhRealm.OCCLUSION;
+        if (occlOn && wahl < 2 && dist > O.occDist) return -1;
+        let spiel = occlOn ? Math.abs(dist - O.occDist) : Infinity;
+        if (grenzen) {
+            const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+            for (const g of grenzen.grenzen) {
+                const ab = g.ab * s;
+                const h = g.h > 0 ? g.h : grenzen.h;
+                spiel = Math.min(spiel, Math.abs(dist - ab * (1 - h)), Math.abs(dist - ab * (1 + h)));
+            }
+            return spiel;
+        }
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        const k = visH > 0 ? this._lodPerceptionDistance(1, visH) : 1;
+        if (!(k > 0)) return -1;
+        const dn = dist * k;
+        for (const g of this._baumGrenzen.grenzen) {
+            const h = g.h > 0 ? g.h : this._baumGrenzen.h;
+            spiel = Math.min(spiel, Math.abs(dn - g.ab * (1 - h)) / k, Math.abs(dn - g.ab * (1 + h)) / k);
+        }
+        const [M, D0, D1] = [cfg.hysteresis, cfg.thresh01, cfg.thresh12];
+        for (const t of [D0 + M, D1 - cfg.fade - M, D1 + M]) spiel = Math.min(spiel, Math.abs(dn - t) / k);
+        const sS = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS) : 1;
+        if (kL > 0) spiel = Math.min(spiel, Math.abs(dist * kL - (D0 - cfg.fade0 - M)) / kL);
+        return spiel;
     }
 
     // Wählt der Takt die Stufe dieses Eintrags (`_archStufeUrteil`)? Instanziert und ein Baum (Art und Variante) oder platzierte
@@ -200,29 +388,34 @@ class AnazhRealm_siedlung_bauten {
         return (!!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex)) || entry.instFoundry === true;
     }
 
-    // Der Zähler eines Gangs der Stufen-Wahl (Wechsel · Regung · Offene), je Gang genullt — EIN Objekt, keine Last je Bild.
+    // Der Zähler eines Gangs der Stufen-Wahl (Wechsel · Regung · Offene) samt dem Stand der Bahn, je Gang genullt — EIN Objekt,
+    // keine Last je Bild.
     _archStufeZaehler() {
-        const z = this._archStufeZ || (this._archStufeZ = { switches: 0, regung: 0, offen: 0 });
+        const z = this._archStufeZ || (this._archStufeZ = { switches: 0, regung: 0, offen: 0, bahn: null });
         z.switches = z.regung = z.offen = 0;
+        z.bahn = this._bedarfBahn(); // der Stand der Bahn EINMAL je Gang (`_bedarfAbstand`)
         return z;
     }
 
-    // DAS URTEIL DER STUFE EINES EINTRAGS am Auge `pm` (die EINE Wahl, die der rollende Gang und die Bewegten fragen): Distanz,
+    // DAS URTEIL DER STUFE EINES EINTRAGS am Auge `pm` (die EINE Wahl, die der Gang der Wache und die Bewegten fragen): Distanz,
     // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Verdeckung, Vorlauf, Band-Pflege, Wechsel. `z` zählt
-    // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt).
+    // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt). Rückgabe: sein Spielraum in Metern
+    // (`_archStufeSpiel`, die Wache legt ihn schlafen), −1 (er bleibt wach: er wechselte, wartet oder regte sich), Infinity
+    // (der Takt wählt seine Stufe nicht — erst ein Weckruf ändert das).
     _archStufeUrteil(entry, pm, occlOn, z) {
-        if (!this._archStufeWaehlt(entry)) return;
+        if (!this._archStufeWaehlt(entry)) return Infinity;
         const st = this.state;
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
         // der Abstand der Bahn (der EINE Rang, w7-rang): die Stufe, die die Bahn binnen des Vorlaufs verlangt, steht vor ihr
-        const dist = this._bedarfAbstand(entry.position.x, entry.position.z, pm);
+        const dist = this._bedarfAbstand(entry.position.x, entry.position.z, pm, z.bahn);
         // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
         // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
         const visH = this._lodTreeVisHeight(entry);
         if (visH === null) {
             z.offen++;
-            return; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
+            return -1; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
         }
+        const z0 = z.switches + z.regung + z.offen;
         // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
         // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
@@ -246,6 +439,7 @@ class AnazhRealm_siedlung_bauten {
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
             : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
+        const wahl = newLOD; // die Wahl am Abstand, vor der Verdeckung
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
         if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -289,7 +483,9 @@ class AnazhRealm_siedlung_bauten {
             // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
             if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.switches++;
             if (entry._lodHaltWartet === true) z.offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
-            return;
+            return z.switches + z.regung + z.offen === z0
+                ? this._archStufeSpiel(entry, dist, visH, grenzen, wahl, occlOn)
+                : -1;
         }
         // LOD-Switch — re-allocate
         const vorher = entry._lodLevel;
@@ -303,6 +499,7 @@ class AnazhRealm_siedlung_bauten {
             z.offen++;
             if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.regung++;
         }
+        return -1; // gewechselt oder wartend: der nächste Gang urteilt ihn wieder
     }
 
     // DIE BEWEGTEN (das EINE Stufen-Gesetz für jede Familie: Komposit erbt, Bewegte prüfen). Die Bau-Takte (Stufen-Wahl, Cull)
@@ -1502,6 +1699,20 @@ class AnazhRealm_siedlung_bauten {
 
     _archIsRendered(entry) {
         return !!(entry && (entry.mesh || entry.instanced));
+    }
+
+    // STEHT DER BAU IM BILD — in der Stufe, die seine Kette für seinen Abstand wählt: diesseits des Cull-Radius sein Mesh
+    // oder seine Instanz (`_archIsRendered`), dahinter seine Fernform im Welt-March (der Satz am Eintrag, `_archZiegelFern`:
+    // die Hülle des Gesetzbuchs oder der Box-Satz), solange der March gezeichnet wird und sein Feld zeichnet
+    // (`_weltFeldZeichnet`). Leser: die Abnahme des Blicks (scripts/lib/ausgabe-aufnahme.cjs, die Gestalt des Ziels). Bis
+    // w17-siedlung-abnahme fragte sie nur Mesh und Instanz — jedes Werk am Ziel jenseits von 150 m hieß UNGEZEICHNET, obwohl
+    // seine Hülle im Bild stand (siedlung.K4#2, GTX a4dc2a45: „wandlaterne_dorf 609 UNGEZEICHNET" in 210 m, in allen 42 Posen
+    // der Blick-Wahl).
+    _archImBild(entry) {
+        return (
+            this._archIsRendered(entry) ||
+            !!(entry && entry._ziegelSlot && this._weltMarchGezeichnet() && this._weltFeldZeichnet(entry._ziegelSlot))
+        );
     }
 
     // DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz): trägt der Eintrag seine Passagiere (`_passagiere`, die Leiber, die er trägt —
@@ -2998,12 +3209,13 @@ AnazhRealm.VORBAU_FRAGE_MS = 500;
 AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
 // DIE ATTRIBUTE DES BODEN-SATZES (K44, K51-2): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`), der Chunk
 // behält seine Float32-Arrays für jeden CPU-Leser; der Geomorph der Stufe bringt Normale und Stoff-Farbe des Ziels
-// (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (Morph-Code in der
-// Farbe, Himmels-Sicht im Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
+// (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (die Mulde des
+// Gesetzes in der Normale, gelaende-core `muldeEcken` — wetter.K2, die Pfütze; Morph-Code in der Farbe, Himmels-Sicht im
+// Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
 // voxel-worker, der jede Vorlage in DIESEN Formen packt (`_bodenSatzFormen`, gelaende-core `satzVorlage`, w4-b-boden2).
 AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["position", 3],
-    ["normal", 3, "snorm8"],
+    ["normal", 3, "snorm8", "aMulde"],
     ["color", 3, "half", "aMorphWeight"],
     ["aMorphTarget", 3],
     ["aNormalZiel", 3, "snorm8", "aHimmel"],
@@ -3013,6 +3225,12 @@ AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
 // DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je
 // Anker-Wechsel EINE Neuaufnahme jedes Bündels, nie je Frame).
 AnazhRealm.BUENDEL_ANKER_M = 16;
+// Der Gang der Stufen-Wahl (`_tickArchitectureLOD`, w15-strom-takt): so viele WACHE Einträge urteilt er je Bild höchstens — die
+// schlafenden (`_stufenWache`) kosten nichts, bis der Weg des Auges ihren Spielraum aufbraucht.
+AnazhRealm.STUFEN_GANG = 256;
+// Die Nachlese der Stufen-Wache (`_stufenWache`, w15-strom-takt-2): so viele Schläfer weckt sie je Bild, solange die Bahn fährt
+// (im Stand STUFEN_GANG) — die Kosten einer Regung folgen dem Takt, nie dem Bestand.
+AnazhRealm.STUFEN_NACHLESE = 16;
 
 // Varianten PRO SPEZIES im gefrorenen Welt-Pool: jede Variante ist eine eigene Geometrie → eigene
 // InstancedMesh-Gruppe → eigene Draw-Calls (× Leaf-Gruppen × LODs). Die Vielfalt trägt die

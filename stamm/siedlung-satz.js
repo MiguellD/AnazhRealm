@@ -603,10 +603,12 @@ class AnazhRealm_siedlung_satz {
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
-    // erscheinen nirgends — je Gattung EIN Studio-Eintrag.
+    // erscheinen nirgends — je Gattung EIN Studio-Eintrag. Ebenso kein Plan des Gesetzes (`vomGesetz`: Trümmer und Rest eines
+    // Einsturzes, `_werkBricht`) — Befund w15-einsturz (gate:werkstatt-weg L-Werkstatt): als Nicht-Built-in stand jeder vor den
+    // eigenen Werken (`_katalogRang` −1), das Haus rückte im Rezeptbuch eine Raste tiefer (4 Eingaben statt 3).
     _katalogSichtbar(name, bp) {
         const b = bp || (this.state.blueprints && this.state.blueprints[name]);
-        if (!b || b.donorOnly) return false;
+        if (!b || b.donorOnly || b.vomGesetz === true) return false;
         const n = typeof name === "string" && name ? name : b.name || "";
         return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
     }
@@ -1252,6 +1254,35 @@ class AnazhRealm_siedlung_satz {
         }
     }
 
+    // DIE SUBSTANZ EINES BAUPLANS (Tags, Affordanzen, ihre Stärke): rein aus Bauplan und Stoffen. Ein EINGEBAUTER Bauplan (`builtIn`:
+    // die Werkstatt weist jede Änderung ab, ein eingebauter Stoff lässt sich nicht überschreiben — der Wald, die gewachsenen Bäume)
+    // trägt sie EINMAL (`_bauplanSubstanzMerk`), solange jeder Stoff seiner Teile dasselbe Objekt der Tafel ist (ein Laden, ein
+    // neuer Stoff unter dem Namen legt sie neu); je Exemplar nur seine Lage (w15-strom-takt: GT 64 m/s, 235 Bäume und Karten je
+    // Sekunde, die Substanz 1,1 s Haupt-Faden in der Minute). Ein Gang der Pflanz-Schlange (`_bauplanJe`) rechnet die übrigen
+    // einmal; sonst je Ruf.
+    _bauplanSubstanz(bp) {
+        const W = this._bauplanSubstanzMerk || (this._bauplanSubstanzMerk = new WeakMap());
+        const mats = this.state.materials;
+        const fest = bp.builtIn === true && Array.isArray(bp.parts);
+        if (fest) {
+            const m = W.get(bp);
+            if (m && m.mats === mats && m.stoffe.every((n, i) => (mats ? mats[n] : undefined) === m.objekte[i]))
+                return m.sub;
+        }
+        const M = this._bauplanJe;
+        const alt = M ? M.get(bp) : null;
+        if (alt) return alt;
+        const tags = this.computeCompoundTags(bp);
+        const aff = this.computeBlueprintAffordances(bp, tags);
+        const sub = { tags, aff, staerke: this.computeAffordanceStrength(bp, aff, tags) };
+        if (M) M.set(bp, sub);
+        if (fest) {
+            const stoffe = [...new Set(bp.parts.map((t) => (t && t.material) || "stein"))];
+            W.set(bp, { mats, stoffe, objekte: stoffe.map((n) => (mats ? mats[n] : undefined)), sub });
+        }
+        return sub;
+    }
+
     spawnArchitecture(type, position, opts = {}) {
         // JEDE ABSAGE DER WURZEL TRÄGT IHREN GRUND (Schau-2, Gegenprüfung Runde 3): `opts.absage(grund)` — der Setz-Op zählt sie,
         // der Satz des Ergebnisses (`_ergebnisSatz`, `SETZ_GRUND`) sagt sie; vorher fiel ein Wurf hier still.
@@ -1284,8 +1315,9 @@ class AnazhRealm_siedlung_satz {
                 return nein("unbekannt");
             }
         }
-        const builders = this._architectureBuilders();
-        if (!builders[type]) {
+        // der Bauer eines Typs ist sein Bauplan (`_architectureBuilders`: je Bauplan einer) — die Frage liest den Bauplan, nie die
+        // Karte aller Bauer (w15-strom-takt: je Wurf eine Schließung je Bauplan, 0,31 s Haupt-Faden in der Minute GT)
+        if (!Object.prototype.hasOwnProperty.call(this.state.blueprints || {}, type)) {
             if (this._foundryEnabled() && this._foundryNeedsBookForType(type)) {
                 const f = this._foundry;
                 this.log(
@@ -1442,13 +1474,20 @@ class AnazhRealm_siedlung_satz {
         // Bauplan-Edits wirken nur auf NEUE Spawns (Snapshot wie precisionCap).
         const bp = this.state.blueprints && this.state.blueprints[type];
         if (bp) {
-            const tags = this.computeCompoundTags(bp); // EINMAL je Spawn: Urteil und Stärke lesen dieselben Tags
-            entry.affordances = this.computeBlueprintAffordances(bp, tags);
-            // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
-            // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
-            entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
+            // EINMAL je Spawn: Urteil und Stärke lesen dieselben Tags; in einem Gang der Pflanz-Schlange EINMAL je Bauplan
+            // (`_bauplanSubstanz`). W10 ext. Politur — die Affordance-Stärke wird wie das Profil EINMAL beim Spawn eingefroren
+            // (Substanz-Schnappschuss); der Eintrag trägt eigene Objekte.
+            const sub = this._bauplanSubstanz(bp);
+            entry.affordances = Object.assign({}, sub.aff);
+            entry.affordanceStrength = Object.assign({}, sub.staerke);
             this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
-            this._freiKoerperSetzen(entry, bp); // ein freier Bauplan (Kiste, Fass) ist ein Starrkörper des Lösers (physik.K3)
+            // ein freier Bauplan (Kiste, Fass, ein Trümmer des Einsturzes) ist ein Starrkörper des Lösers (physik.K3); er liegt,
+            // wie der Stand oder der Bruch ihn legt: die Drehung (Quaternion [w, x, y, z]) und der Schlaf
+            if (bp.frei === true) {
+                if (Array.isArray(opts.drehung) && opts.drehung.length === 4) entry.drehung = opts.drehung.map(Number);
+                if (opts.ruht === true) entry.ruht = true;
+            }
+            this._freiKoerperSetzen(entry, bp);
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die

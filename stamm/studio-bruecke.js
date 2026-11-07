@@ -304,10 +304,12 @@ class AnazhRealm_studio_bruecke {
         const bps = this.state.blueprints || {};
         const arten = new Set();
         const gurt = [];
+        // der billige Filter zuerst (Lehre 25): die Art liest das Rezept, die Platzierbarkeit die Rolle des Bauplans (seine
+        // Analyse) — nur ein Name, dessen Art noch frei ist, fragt sie (w16-lade-atem: headless kalt 61 ms im Buch-Ingest)
         for (const name of Object.keys(bps)) {
-            if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
             const art = this._gurtArt(name);
             if (!art || arten.has(art)) continue;
+            if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
             arten.add(art);
             gurt.push(name);
         }
@@ -1293,10 +1295,11 @@ class AnazhRealm_studio_bruecke {
         if (darf) while (i < q.length && !darf(q[i])) i++;
         if (i >= q.length) return -1;
         if (performance.now() - q[i].t > AnazhRealm.FOUNDRY_ALTER_MS && (halter.warteZug = !halter.warteZug)) return i;
-        let best = this._foundryAuftragD2(q[i].rang.wo);
+        const bahn = this._bedarfBahn(); // der Stand der Bahn EINMAL je Wahl
+        let best = this._foundryAuftragD2(q[i].rang.wo, bahn);
         for (let k = i + 1; k < q.length; k++) {
             if (darf && !darf(q[k])) continue;
-            const d2 = this._foundryAuftragD2(q[k].rang.wo);
+            const d2 = this._foundryAuftragD2(q[k].rang.wo, bahn);
             if (d2 < best) {
                 best = d2;
                 i = k;
@@ -1458,14 +1461,14 @@ class AnazhRealm_studio_bruecke {
             this._foundryPumpe(f);
         });
     }
-    _foundryAuftragD2(wo) {
+    _foundryAuftragD2(wo, bahn) {
         // eine Zahl trägt den Blick-Schlüssel ihres Lesers (`_blickRang`, die Karte) — wie beim Ort gilt er nur vor dem Bild
         if (typeof wo === "number") {
             const A = AnazhRealm.ERSTER_BLICK.ausserD2;
             return !Number.isFinite(wo) ? Infinity : this.state._weltbildDa && wo >= A ? wo - A : wo;
         }
         if (!wo || !Number.isFinite(wo.x) || !Number.isFinite(wo.z)) return Infinity;
-        const D = this._bedarfWeg(wo.x, wo.z);
+        const D = this._bedarfWeg(wo.x, wo.z, bahn);
         if (!Number.isFinite(D)) return Infinity;
         // DER BLICK ZUERST (B3d): bis das erste Weltbild steht, ist der Rang (im Blick, Bedarf²) — `_blickRang`
         return D * D + this._blickRang(wo.x, wo.z);
@@ -1481,14 +1484,15 @@ class AnazhRealm_studio_bruecke {
     // die Streu in Ring-Reihe — beim GT-Tempo (16 m/s) trat die Welt unfertig in den Sichtkegel
     // (streaming.K2, Null-Renderer an main 6eeeb856: fertig beim Eintritt Boden 42,6 %, Bäume 11,1 %, Karten 7,7 %, Bauten
     // 78,6 %, Streu 0 von 15; mit dem Rang 100 · 98,7 · 100 · 100 %, und 0 statt 1 627 Lücken-Bilder in Sprint und GT, streaming.K1).
-    _bedarfWeg(x, z) {
-        const e = this.state.playerMesh && this.state.playerMesh.position;
+    // `bahn` (optional, `_bedarfBahn`): der Stand der Bahn EINMAL je Gang (w15-strom-takt: je Wartendem gefragt 3,2 s/min GT).
+    _bedarfWeg(x, z, bahn) {
+        const B = bahn || this._bedarfBahn();
+        const e = B.e;
         if (!e) return Infinity;
         const qx = x - e.x,
             qz = z - e.z;
         const d = Math.hypot(qx, qz);
-        const [vx, vz] = this._bedarfTempo();
-        const v0 = this._bedarfFuss();
+        const [vx, vz, v0] = [B.vx, B.vz, B.v0];
         const s = Math.hypot(vx, vz);
         if (!(s > v0 * AnazhRealm.BEDARF.fahrtAb)) return d;
         const a = (qx * vx + qz * vz) / s;
@@ -1497,6 +1501,14 @@ class AnazhRealm_studio_bruecke {
         if (a < (b * v0) / w) return d;
         return ((a + (b * w) / v0) / s) * v0;
     }
+    // DER STAND DER BAHN für einen Gang: Spieler, Tempo (`_bedarfTempo`) und Gier zu Fuß — EIN Objekt je Welt, je Ruf neu gefüllt.
+    _bedarfBahn() {
+        const B = this._bedarfBahnStand || (this._bedarfBahnStand = { e: null, vx: 0, vz: 0, v0: 1 });
+        B.e = this.state.playerMesh ? this.state.playerMesh.position : null;
+        [B.vx, B.vz] = this._bedarfTempo();
+        B.v0 = this._bedarfFuss();
+        return B;
+    }
     // Die Gier zu Fuß (v0 des Rangs): das Gehen des Leibs (`state.speed`, aus dem Körper-Gesetz geeicht), vor der Eichung 1 m/s.
     _bedarfFuss() {
         const v = this.state.speed;
@@ -1504,9 +1516,8 @@ class AnazhRealm_studio_bruecke {
     }
     // DER TEMPO-VEKTOR DER BAHN (EIN Ruf je Bild, der Takt `_runFrameScheduler`): der Weg des Spielers je Sekunde der Spiel-Uhr
     // (`state.spielZeit`, der gedeckelte Takt jeder Bewegung — nie die Wanduhr: eine Linse, die Takte dicht fährt, sähe sonst ein
-    // Tempo, das der Spieler nie hat), geglättet mit der Zeit-Konstante BEDARF.tauS. Ein Schritt schneller als BEDARF.tempoMax
-    // (Teleport, Tor, ein Sprung des Stands) oder eine Lücke über 1 s setzt ihn auf 0 — die Bahn beginnt neu, nie ein Tempo aus
-    // dem Sprung.
+    // Tempo, das der Spieler nie hat), geglättet mit BEDARF.tauS. Ein Sprung (`_bedarfSprung`: Teleport, Tor) oder eine Lücke
+    // über 1 s setzt ihn auf 0 — die Bahn beginnt neu, nie ein Tempo aus dem Sprung.
     _bedarfTakt() {
         const e = this.state.playerMesh && this.state.playerMesh.position;
         if (!e) return;
@@ -1519,7 +1530,7 @@ class AnazhRealm_studio_bruecke {
             if (dx || dz) [B.x, B.z, B.vx, B.vz] = [e.x, e.z, 0, 0]; // gestellt ohne Takt: ein Sprung
             return;
         }
-        if (dt > 1 || Math.hypot(dx, dz) > AnazhRealm.BEDARF.tempoMax * dt) {
+        if (dt > 1 || Math.hypot(dx, dz) > this._bedarfSprung() * dt) {
             B.vx = B.vz = 0;
         } else {
             const k = 1 - Math.exp(-dt / AnazhRealm.BEDARF.tauS);
@@ -1528,12 +1539,31 @@ class AnazhRealm_studio_bruecke {
         }
         [B.x, B.z, B.t, B.wand] = [e.x, e.z, t, performance.now()];
     }
+    // DAS TEMPO EINES SPRUNGS (m/s, w14-strom-tempo): die `vmax` jeder Art des Fahrzeug-Kerns (vehicle-core `exportDrive`) mal
+    // BEDARF.sprungUeber, gemerkt je Kern; ohne Kern bricht es laut. Bis w14-strom-tempo stand hier eine Kopie (`tempoMax` 60 m/s):
+    // der GT fährt 63,8 m/s, jeder Schritt galt als Sprung, die Bahn blieb 0 (streaming.K2 an a4dc2a45: Boden 11,3 %, Bäume
+    // 5,2 %). Der Fix-Schritt der Physik quantelt den Weg je Bild bis zum Doppelten des Tempos — mit 1,5 sprang die Bahn im GT
+    // zwischen 0 und 42 m/s (Fahrt-Probe, Cloud 06.11.).
+    _bedarfSprung() {
+        const VC = globalThis.__vehicleCore;
+        if (this._bedarfSprungVon === VC) return this._bedarfSprungMs;
+        if (!VC || !VC.PRESETS || typeof VC.exportDrive !== "function" || typeof VC.presetPatch !== "function")
+            return AnazhRealm._kernPflichtBruch("vehicle:exportDrive");
+        let v = 0;
+        for (const id of Object.keys(VC.PRESETS))
+            if (VC.PRESETS[id] && VC.PRESETS[id].kind === "vehicle")
+                v = Math.max(v, VC.exportDrive(VC.presetPatch(id)).vmax);
+        if (!(v > 0)) return AnazhRealm._kernPflichtBruch("vehicle:vmax");
+        this._bedarfSprungVon = VC;
+        this._bedarfSprungMs = v * AnazhRealm.BEDARF.sprungUeber;
+        return this._bedarfSprungMs;
+    }
     // DAS TEMPO DER BAHN [vx, vz] — nur, solange ein Takt es erneuert (`_bedarfTakt`, je Bild): ruht der Loop länger als
     // BEDARF.frischMs (eine Linse fährt den Strom von Hand, das Spiel steht), gilt es nicht mehr — ein stehengebliebenes Tempo
     // schöbe die Vorausschau über eine Welt, die niemand fährt (gate:chunk-satz: die Stufen erreichten ihr Soll nie).
     _bedarfTempo() {
         const B = this._bedarf;
-        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : [0, 0];
+        return B && performance.now() - B.wand <= AnazhRealm.BEDARF.frischMs ? [B.vx, B.vz] : AnazhRealm.BEDARF_STEHT;
     }
     // DER ORT DER BAHN IN BEDARF.vorlaufS SEKUNDEN (die Vorausschau): wo `p` (der Ort eines Lesers — der Spieler, das Auge der Stufen;
     // ohne Angabe der Spieler) mit dem Tempo-Vektor der Bahn sein wird. Jeder Leser, der Dinge NACH ABSTAND zulässt (der Ring des
@@ -1546,14 +1576,51 @@ class AnazhRealm_studio_bruecke {
         const [vx, vz] = this._bedarfTempo();
         return { x: e.x + vx * T, z: e.z + vz * T, weg: Math.hypot(vx, vz) * T }; // je Ruf ein eigener Ort: ein Leser hält ihn
     }
-    // DER ABSTAND DER BAHN zu (x, z) von einem Auge `auge` (der Stufen, `_lodAuge`): der nähere des Auges jetzt und des Auges am
-    // Ende des Vorlaufs — die Stufen-Wahl der Einträge liest ihn (`_archStufeUrteil`, `_foundryLodForEntry`): die feine Stufe steht,
-    // bevor die Bahn ankommt.
-    _bedarfAbstand(x, z, auge) {
-        const d = Math.hypot(x - auge.x, z - auge.z);
-        const [vx, vz] = this._bedarfTempo();
+    // DER ABSTAND DER BAHN zu (x, z) vom Auge `auge` (`_lodAuge`; sonst der Spieler): der kleinste zur STRECKE, die es binnen des
+    // Vorlaufs fährt — Stufen-Wahl, Mesh-Zone, Laub-Rand und Streu lesen ihn: die feine Stufe steht, bevor die Bahn ankommt, und
+    // bleibt, bis sie vorbei ist. Bis w14-strom-tempo galt der nähere Endpunkt: im GT fiel die L1 eines Baums der Streckenmitte
+    // (95 m von beiden) zurück auf die Karte. `bahn` (optional, `_bedarfBahn`): sein Tempo, EINMAL je Gang gelesen.
+    _bedarfAbstand(x, z, auge, bahn) {
+        const e = auge || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const [qx, qz] = [x - e.x, z - e.z];
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
+        if (!(vx || vz)) return Math.hypot(qx, qz);
         const T = AnazhRealm.BEDARF.vorlaufS;
-        return vx || vz ? Math.min(d, Math.hypot(x - auge.x - vx * T, z - auge.z - vz * T)) : d;
+        const [sx, sz] = [vx * T, vz * T];
+        const u = Math.max(0, Math.min(1, (qx * sx + qz * sz) / (sx * sx + sz * sz)));
+        return Math.hypot(qx - sx * u, qz - sz * u);
+    }
+    // DER KASTEN-ABSTAND DER BAHN zu [x0, x1] × [z0, z1] von `p` (sonst der Spieler) längs derselben Strecke: Chebyshev (die Stufe
+    // eines Chunks, `_voxelChunkLodFor`) oder `euklid` (`_streuRegionInReichweite`), konvex: `_konvexMin` findet ihn.
+    _bedarfKasten(x0, x1, z0, z1, p, euklid = false) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const k = (x, z) => {
+            const [dx, dz] = [Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)];
+            return euklid ? Math.hypot(dx, dz) : Math.max(dx, dz);
+        };
+        const [vx, vz] = this._bedarfTempo();
+        if (!(vx || vz)) return k(e.x, e.z);
+        const T = AnazhRealm.BEDARF.vorlaufS;
+        const f = (u) => k(e.x + vx * T * u, e.z + vz * T * u);
+        return Math.min(f(0), f(1), f(AnazhRealm._konvexMin(f, 0, 1)));
+    }
+    // DIE ZEIT BIS ZUM KASTEN (s, w14-strom-tempo): bis die Bahn (`p`, sonst der Spieler) dem Kasten auf den Chebyshev-Abstand
+    // `B` nahe kommt — 0 schon dort, Infinity nicht binnen zweier Vorläufe; das Minimum (`_konvexMin`), davor die Halbierung.
+    // Leser: die Reihe des Boden-Strom (`_tickVoxelChunkStreaming`).
+    _bedarfKastenZeit(x0, x1, z0, z1, B, p) {
+        const e = p || (this.state.playerMesh && this.state.playerMesh.position);
+        if (!e) return Infinity;
+        const k = (x, z) => Math.max(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1));
+        if (k(e.x, e.z) <= B) return 0;
+        const [vx, vz] = this._bedarfTempo();
+        if (!(vx || vz)) return Infinity;
+        const f = (t) => k(e.x + vx * t, e.z + vz * t);
+        let hi = AnazhRealm._konvexMin(f, 0, 2 * AnazhRealm.BEDARF.vorlaufS);
+        if (f(hi) > B) return Infinity;
+        for (let i = 0, lo = 0, m; i < 24; i++) [lo, hi] = f((m = (lo + hi) / 2)) <= B ? [lo, m] : [m, hi];
+        return hi;
     }
     // DIE ZEIT BIS ZUR SICHT eines Rings (w13-dorf-strom): die Sekunden, bis die Bahn (der Spieler mit dem Tempo-Vektor
     // `_bedarfTempo`) den Kreis `r` um (x, z) betritt — 0, wenn er darin steht, Infinity, wenn die Bahn ihn nicht trifft (im
@@ -1561,14 +1628,15 @@ class AnazhRealm_studio_bruecke {
     // dem Spieler wächst um Tempo × T, im Stand bleibt er der Ring. Leser: der Vorlauf der Orte (`_autoSettlementZelle`,
     // `_tickAutoSettlement`); bis w13-dorf-strom bereitete sich ein Ort in einer festen Strecke vor seinem Erwachen vor
     // (`AUTO_SETTLEMENT.vorlaufM` 160 m): im GT (16 m/s) lag sein Grund erst 269–301 m vor dem Anker, der Wald im Kegel fiel.
-    _bedarfZeit(x, z, r) {
-        const e = this.state.playerMesh && this.state.playerMesh.position;
+    // `bahn` (optional, `_bedarfBahn`): Spieler und Tempo, EINMAL je Gang gelesen.
+    _bedarfZeit(x, z, r, bahn) {
+        const e = bahn ? bahn.e : this.state.playerMesh && this.state.playerMesh.position;
         if (!e) return Infinity;
         const qx = x - e.x,
             qz = z - e.z;
         const d2 = qx * qx + qz * qz;
         if (d2 <= r * r) return 0;
-        const [vx, vz] = this._bedarfTempo();
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
         const s = Math.hypot(vx, vz);
         if (!(s > 0)) return Infinity;
         const a = (qx * vx + qz * vz) / s;
@@ -1956,8 +2024,9 @@ class AnazhRealm_studio_bruecke {
     // Art-Gesetz (`KIND_POLICY`) und die Studios (`WORLD_REGISTRY`) —, nie über eine Hand-Liste (die Brücke STUDIO_WORT
     // kannte neun Wörter, „bau mir ein fachwerkhaus" war unbekannt). Gefragt werden das Wort, seine Stämme (-en/-n/-e/-s/-er,
     // der Plural-Umlaut: Häuser → Haus) und als Kompositum der Anfang eines Werk-Namens („fels" → Felsformation, ≥ 4
-    // Buchstaben, das erste in Katalog-Reihenfolge). null = unbekannt (kein Raten).
-    _studioBlueprintForWord(word) {
+    // Buchstaben, das erste in Katalog-Reihenfolge). null = unbekannt (kein Raten). `genau`: ohne den Kompositum-Anfang — der
+    // Abruf der Welt-KI (`_kiAbruf`) liest jedes Wort eines Satzes, dort hieße „große" sonst Großschwert, „langen" Langschwert.
+    _studioBlueprintForWord(word, genau = false) {
         if (typeof word !== "string" || !word.trim()) return null;
         const K = this._studioWortKatalog();
         const w = AnazhRealm._wortFalten(word);
@@ -1969,7 +2038,7 @@ class AnazhRealm_studio_bruecke {
             if (ohne !== k) kandidaten.push(ohne);
         }
         for (const stufe of K.stufen) for (const t of kandidaten) if (stufe.has(t)) return stufe.get(t);
-        for (const t of kandidaten) {
+        for (const t of genau ? [] : kandidaten) {
             if (t.length < 4) continue;
             for (const s of [1, 3])
                 for (const [name, ziel] of K.stufen[s]) if (name.length > t.length && name.startsWith(t)) return ziel;
@@ -2003,11 +2072,13 @@ class AnazhRealm_studio_bruecke {
         const namen = Object.keys(bps).sort();
         const KP = AnazhRealm.KIND_POLICY;
         const falte = AnazhRealm._wortFalten;
+        // die Wörter eines Etiketts sind seine Nomen und Namen (groß geschrieben): „Dojo mit Pergola" gab der Welt das Wort
+        // „mit" (ki.K5: jeder Satz mit „mit" nannte die Arena)
         const kopf = (label) =>
             String(label || "")
                 .split(/\s[·—(]|\s-\s/)[0]
                 .split(/[^A-Za-zÄÖÜäöüß]+/)
-                .filter((x) => x.length >= 3)
+                .filter((x) => x.length >= 3 && x[0] !== x[0].toLowerCase())
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
         // die Wörter der DSL sprechen die Quell-Sprache des Gesetzes (de), nie die Sprache des Spielers
@@ -2093,27 +2164,140 @@ class AnazhRealm_studio_bruecke {
     }
 
     // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
-    // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
-    // die Wörter des Programms („fachwerkhaus", „eiche") samt den Reglern der Art aus dem Vertrag (PARAMS_BY_KIND, wie das
-    // Buch sie bringt: id Name min–max — dieselben Zeilen klemmt der Stempel, KI K2).
+    // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst die
+    // Wörter des Programms („fachwerkhaus", „eiche"). DIE KOMPAKTE FORM (ki.K5, 06.11.): der Vertrag trägt je Gruppe
+    // `KI_WOERTER_JE_GRUPPE` Wörter und keinen Regler — die übrigen Wörter und die Regler, die ein Satz nennt, ruft `_kiAbruf` je
+    // Satz ab. Bis ki.K5 trug diese Zeile jede Regler-
+    // Zeile jeder Art (2 812 von 5 532 Token des Vertrags, `"id" min–max Name` Ziffer um Ziffer): qwen3:4b an 4 CPU-Kernen
+    // rechnete je Token der Antwort 305 statt ~200 ms und kopierte die Zeilen als Rauschen in jedes Werk.
     _studioWordsForPrompt(nennen = false) {
-        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
-        const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
-        const gruppen = {};
-        for (const [art, ps] of Object.entries(paare))
-            gruppen[art] = [...new Set(ps.map(([w, nennung]) => (nennen ? nennung : w)))];
-        const kappe = nennen ? 5 : 8;
-        const regler = (a) =>
-            !nennen && Array.isArray(PBK[a]) && PBK[a].length
-                ? ` (Regler: ${PBK[a].map((d) => `"${d.id}" ${d.min}–${d.max} ${d.lab}`).join(", ")})`
-                : "";
-        return Object.keys(GRUPPE)
-            .filter((a) => gruppen[a] && gruppen[a].length)
-            .map(
-                (a) =>
-                    `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}${regler(a)}`
-            )
+        const { GRUPPE, listen } = this._studioWortListen(nennen);
+        return Object.entries(listen)
+            .map(([a, ws]) => `${GRUPPE[a]}: ${ws.join(", ")}${ws.ganz > ws.length ? " …" : ""}`)
             .join(" · ");
+    }
+
+    // Die gezeigten Wörter je Art (`nennen` 5, sonst `KI_WOERTER_JE_GRUPPE`): { GRUPPE, listen: {art: [wort …] (.ganz: alle)} }
+    // — gelesen vom Vertrag (`_studioWordsForPrompt`) und vom Abruf (`_kiAbruf`: er nennt nur, was hier fehlt)
+    _studioWortListen(nennen = false) {
+        const { GRUPPE, gruppen: paare } = this._studioWortGruppen();
+        const kappe = nennen ? 5 : AnazhRealm.KI_WOERTER_JE_GRUPPE;
+        const listen = {};
+        for (const a of Object.keys(GRUPPE)) {
+            const alle = [...new Set((paare[a] || []).map(([w, nennung]) => (nennen ? nennung : w)))];
+            if (alle.length) listen[a] = Object.assign(alle.slice(0, kappe), { ganz: alle.length });
+        }
+        return { GRUPPE, listen };
+    }
+
+    // EINE Regler-Zeile der Welt-KI: `id Name` und der Bereich, wenn er nicht 0–1 ist (der Vertrag nennt 0–1 als Regel).
+    // Leser: der Abruf je Satz (`_kiAbruf`) und seine Linse (diag-praegung-welt K2 „prompt").
+    _kiReglerZeile(d) {
+        return `${d.id} ${d.lab}${d.min === 0 && d.max === 1 ? "" : ` ${d.min}–${d.max}`}`;
+    }
+
+    // DER ABRUF JE SATZ (ki.K5, 06.11.; Tool-Retrieval über die EINE Regler-Tafel PARAMS_BY_KIND): die Regler, die der Satz beim
+    // NAMEN nennt — sein Name (`lab`, gefaltet wie jedes Wort der Welt: `_wortFalten`, Stämme -en/-e/-s/-er/-es/-em, Umlaut; ein
+    // Teil genügt: „dach" → Dachneigung, „blüten" → Blüten-Zahl) oder genau seine id („turm"). Gesucht wird in den Arten, die der
+    // Satz nennt (ein Wort des Katalogs, genau — `_studioBlueprintForWord(w, true)` —, oder der Kopf einer Gruppe: „musik");
+    // nennt er keine, in den Arten ohne Ort (KIND_POLICY `werk` "praegung"), dann mit Stamm ≥ 5 („mach mich größer" → die
+    // Gestalt des Spielers; in allen Arten hätte „höher springen" die Federrate des Wagens gerufen). Leser: der Kontext der Welt-KI
+    // (`zeile`, hinter dem Prompt-Cache: nur die genannten Zeilen kosten Prefill) und ihre Antwort-Form (`regler`: ein
+    // Regler-Objekt trägt GENAU diese Schlüssel, ohne Treffer gibt es keines — „bau mir ein haus" kann keinen Regler mehr
+    // schreiben). { regler: {art: [Zeile …]}, zeile } — `zeile` nennt dazu die Werk-Wörter des Satzes in der Form des Programms.
+    _kiAbruf(satz) {
+        const PBK = (this._foundry && this._foundry.paramsByKind) || {};
+        const K = this._studioWortKatalog();
+        const { GRUPPE } = this._studioWortGruppen();
+        const ohneUmlaut = (w) => w.replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
+        const woerter = (t) =>
+            AnazhRealm._wortFalten(t)
+                .split(/[^a-z]+/)
+                .filter((w) => w.length >= 3);
+        const stamm = (w) => [
+            w,
+            ...["en", "es", "em", "er", "e", "n", "s"].filter((s) => w.endsWith(s)).map((s) => w.slice(0, -s.length)),
+        ];
+        const artVon = (w) => {
+            const z = this._studioBlueprintForWord(w, true);
+            return z ? K.artVon[z] : null;
+        };
+        const kopf = {};
+        for (const [art, lab] of Object.entries(GRUPPE)) kopf[ohneUmlaut(woerter(lab)[0] || "")] = art;
+        // erst der Kopf einer Gruppe („tiere" sind die Tiere, nie das Tier-Tor, dessen Werk-Name „tier" ist), dann das Wort
+        const genannt = new Set();
+        const werkWort = new Set();
+        const werkName = new Set();
+        for (const w of woerter(satz)) {
+            const gruppe = stamm(ohneUmlaut(w))
+                .map((s) => kopf[s])
+                .find(Boolean);
+            const art = gruppe || artVon(w);
+            if (!art || !GRUPPE[art]) continue;
+            genannt.add(art);
+            werkWort.add(w);
+            if (!gruppe) werkName.add(w);
+        }
+        const ohneArt = !genannt.size;
+        const eigen = woerter(satz)
+            .filter((w) => !werkWort.has(w))
+            .flatMap((w) => stamm(w).map(ohneUmlaut))
+            .filter((s) => s.length >= (ohneArt ? 5 : 4));
+        const genau = new Set(woerter(satz));
+        // ein Teil des Namens („dach" in Dachneigung) oder ein gemeinsamer Anfang ≥ 6 (das Partizip: „verwitterte" ↔ Verwitterung)
+        const anfang = (a, b) => {
+            let i = 0;
+            while (i < a.length && a[i] === b[i]) i++;
+            return i;
+        };
+        const regler = {};
+        const KP = AnazhRealm.KIND_POLICY;
+        const arten = ohneArt ? Object.keys(GRUPPE).filter((a) => KP[a] && KP[a].werk === "praegung") : genannt;
+        for (const art of arten)
+            for (const d of Array.isArray(PBK[art]) ? PBK[art] : []) {
+                const namen = String(d.lab)
+                    .split(/[^A-Za-zÄÖÜäöüß]+/)
+                    .filter(Boolean)
+                    .map((n) => AnazhRealm._wortFalten(n));
+                const trifft =
+                    genau.has(AnazhRealm._wortFalten(d.id)) ||
+                    namen.some(
+                        (n) =>
+                            genau.has(n) ||
+                            (n.length >= 4 &&
+                                eigen.some((s) => ohneUmlaut(n).includes(s) || anfang(s, ohneUmlaut(n)) >= 6))
+                    );
+                if (trifft) (regler[art] = regler[art] || []).push(d);
+            }
+        // die Werk-Namen des Satzes (Bauplan und Werk, nie ein Art-Wort: „tiere" meint die Wesen) in der Form des Programms
+        // („holzhütte" → holzhuette), die der Vertrag nicht zeigt (er nennt
+        // je Gruppe `KI_WOERTER_JE_GRUPPE`): ohne sie schrieb qwen3:4b für „eine kleine holzhütte" das erste Haus; ein gezeigtes
+        // Wort zu wiederholen kostete den Satz ~0,5 s Prefill
+        const sagbar = new Set(Object.values(this._studioWortGruppen().ziele).flat());
+        const gezeigt = new Set(Object.values(this._studioWortListen().listen).flat());
+        const werk = [
+            ...new Set(
+                [...werkName]
+                    .map((w) =>
+                        stamm(AnazhRealm._wortFalten(w))
+                            .flatMap((x) => [x, x.replace(/aeu/g, "au").replace(/ae/g, "a")])
+                            .find((x) => sagbar.has(x) && (K.stufen[0].has(x) || K.stufen[1].has(x)))
+                    )
+                    .filter((w) => w && !gezeigt.has(w))
+            ),
+        ];
+        const zeile = Object.entries(regler)
+            .map(([art, ds]) => `${GRUPPE[art]}: ${ds.map((d) => this._kiReglerZeile(d)).join("; ")}`)
+            .join(" · ");
+        return {
+            regler,
+            zeile: [
+                werk.length && `Wörter des Satzes: ${werk.join(", ")}.`,
+                zeile && `Regler, die der Satz nennt: ${zeile}.`,
+            ]
+                .filter(Boolean)
+                .join("\n"),
+        };
     }
 
     // Die lebenden Wörter je benannter Art aus dem EINEN Wort-Katalog: { GRUPPE: {art: Name}, gruppen: {art: [[wort, nennung], …]} }
@@ -3782,13 +3966,20 @@ AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
 // die Bahn braucht (`_bedarfVoraus`). Die Kette eines Walds am Rand des Rings — der Chunk im Faden (0,15–0,4 s), seine Saat,
 // der Plan seiner Zellen im Wald-Faden, die Pflanzung, die Karte — braucht beim GT-Tempo mehr als 1,5 s (Null-Renderer: Karten
 // 81,7 % fertig beim Eintritt bei 1,5 s, 100 % bei 3 s); die Bahn legt in 3 s 48 m zurück, ihr Ring hält die Pflege
-// (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante, mit der das Tempo dem Weg folgt; `tempoMax` (m/s) — ein Schritt
-// schneller ist ein Sprung (Teleport, Tor, ein gestellter Stand), kein Tempo — über jedem Fahr-Gesetz der Welt (der GT 16 m/s),
-// so reicht der Vorlauf höchstens 180 m; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
+// (`_pruneDistantVoxelChunks`). `tauS` — die Zeit-Konstante des Tempos; `sprungUeber` — × `vmax` (`_bedarfSprung`): ein
+// Schritt darüber ist ein Sprung; `fahrtAb` — unter diesem Vielfachen des Gehens ist der Rang der Abstand (Stand, Gang).
 // `frischMs` — so lange gilt das Tempo nach seinem letzten Takt (TAKT_DECKEL_S 0,1 s ist der längste Schritt des Spiels, ein Bild unter Last 0,2–0,3 s).
 // `vorbauS` (w13-dorf-strom): so viele Sekunden, bevor die Bahn ein Ding in seine Zone holt, bestellt sie seine Studio-Stufe
 // (`_archVorbau`, der Vorrat eines Orts `_dorfVorbacken`) — ein Bau wartete im GT bis 6,4 s auf die Foundry (Fahrt-Probe dorf)
-AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, vorbauS: 8, tauS: 0.3, tempoMax: 60, fahrtAb: 1.05, frischMs: 500 });
+AnazhRealm.BEDARF = Object.freeze({ vorlaufS: 3, vorbauS: 8, tauS: 0.3, sprungUeber: 3, fahrtAb: 1.05, frischMs: 500 });
+// Das Minimum einer konvexen Funktion `f` auf [a, b] (die Dreiteilung, 24 Schritte) — die Stelle; Leser: die Kästen der Bahn.
+AnazhRealm._konvexMin = function (f, a, b) {
+    for (let i = 0; i < 24; i++)
+        [a, b] = f(a + (b - a) / 3) <= f(b - (b - a) / 3) ? [a, b - (b - a) / 3] : [a + (b - a) / 3, b];
+    return (a + b) / 2;
+};
+// Das Tempo der stehenden Bahn (`_bedarfTempo` ohne frischen Takt) — EIN Wert, kein Array je Ruf.
+AnazhRealm.BEDARF_STEHT = Object.freeze([0, 0]);
 AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // DIE EINE WORKER-SCHLANGE (`_foundryAuftrag`): Aufträge gleichzeitig im Worker und das Alter, ab dem der Älteste jede
 // zweite Wahl bekommt. Jeder Nachschub braucht einen Haupt-Thread-Rundlauf; kleine Aufträge (Platte, Fels, Klinge) sind

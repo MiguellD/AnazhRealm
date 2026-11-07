@@ -896,6 +896,7 @@ class AnazhRealm_gelaende_boden {
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
         const genKarte = this._chunkGenKarte || (this._chunkGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        this._freiWeckenIn(x0 - R, x1 + R, z0 - R, z1 + R); // was über dem Edit ruht, wacht auf und fragt seinen Grund neu
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
@@ -910,11 +911,15 @@ class AnazhRealm_gelaende_boden {
                 if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
-        this._forestDartsFallen(x0, z0, x1, z1);
+        const waldFall = this._forestDartsFallen(x0, z0, x1, z1);
         // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`) — als
         // Änderung (`delta`, voxel-worker `applyStateDelta`), nie als Klon der Welt je Haus (Gebot 7; stadt-erwachen: im Zug
-        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt)
-        this._voxelZustandPost({ type: "state-update", delta: delta || { erdbau: this._erdbauRoh() } });
+        // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt); mit ihm der Kasten der Wald-Zellen,
+        // deren geborene Darts er fällt (`waldFall`, w14-strom-tempo) — im selben Zustand, nie davor
+        this._voxelZustandPost({
+            type: "state-update",
+            delta: Object.assign({ waldFall }, delta || { erdbau: this._erdbauRoh() }),
+        });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
@@ -2290,6 +2295,23 @@ class AnazhRealm_gelaende_boden {
         col.needsUpdate = true;
     }
 
+    // DIE MULDE DES BODENS (wetter.K2, das Pfützen-Gesetz): gelaende-core `muldeEcken` — je Vertex die Senke des Gesetzes, in der
+    // der Regen als Pfütze steht (0 … 1 in Einheiten von `MULDE.tiefeM`), nur in den nahen Stufen. Sie entsteht, wo das Netz
+    // entsteht: der Faden rechnet sie beim Chunk-Bau (`buildChunkMesh`), der Haupt-Thread nur im Sync-Bau; das Gedächtnis des
+    // Gitters (`_muldeMemo`) leert der Kern je Lage. Leser: der Boden-Stoff (`_pfuetzeKnoten`, die vierte Komponente der Normale).
+    _muldeStoff(geom, lod) {
+        const pos = geom.attributes.position;
+        const M = globalThis.__gelaendeCore.muldeEcken(
+            this._gelaende(),
+            pos.array,
+            pos.count,
+            lod,
+            this._muldeMemo || (this._muldeMemo = new Map())
+        );
+        geom.setAttribute("aMulde", new THREE.Float32BufferAttribute(M, 1));
+        return M;
+    }
+
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
     // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
     // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
@@ -2305,7 +2327,6 @@ class AnazhRealm_gelaende_boden {
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
         const sandNoise = this._gelaende().noise;
-        const base = this.state.terrainBaseHeight || 0;
         const P = AnazhRealm.BODEN_FARBE;
         const stone = P.rock;
         const earth = P.mead;
@@ -2507,14 +2528,18 @@ class AnazhRealm_gelaende_boden {
     // (Streaming-Takt) hält die Hysterese einen feineren Chunk, bis der Abstand `bis + vorlauf + halt` erreicht. Der
     // Wechsel geschieht so nur, wo jeder Vertex des Chunks ganz auf der gröberen Fläche liegt (Gewicht 1, `_stufeGewicht`):
     // der Ring der Stufe-0-Zone (r ≤ 1) war für die CDLOD-Bedingung zu grob — ein Chunk-Ring trägt 2 Spannen Abstand.
-    // `voraus` (optional, {x, z}): der Spieler am Ende des Vorlaufs (`_bedarfVoraus`, der EINE Rang) — die Stufe gilt für den
-    // näheren der beiden Orte: was die Bahn binnen des Vorlaufs fein braucht, baut fein, bevor sie ankommt.
-    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, voraus = null) {
+    // `bahn` (optional): die Stufe gilt am Kasten-Abstand der Bahn (`_bedarfKasten`, der EINE Rang) — der kleinste entlang der
+    // Strecke, die der Spieler binnen des Vorlaufs fährt: was die Bahn fein braucht, baut fein, bevor sie ankommt, und bleibt
+    // fein, bis sie vorbei ist. Weit voraus steht so erst die Grobstufe, die feinere folgt mit der Ankunft (Grob zuerst). Bis
+    // w14-strom-tempo galt der nähere der Endpunkte (Spieler, Ende des Vorlaufs): im GT fiel ein Chunk der Bahnmitte zurück
+    // auf die gröbere Stufe und baute neu, sobald das Ende des Vorlaufs an ihm vorbei war.
+    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null, bahn = false) {
         const B = AnazhRealm.BODEN_STUFEN;
         const S = this._voxelChunkConfig(0).span;
-        const kasten = (x, z) =>
-            Math.max(Math.max(cx * S - x, 0, x - (cx + 1) * S), Math.max(cz * S - z, 0, z - (cz + 1) * S));
-        const d = voraus ? Math.min(kasten(px, pz), kasten(voraus.x, voraus.z)) : kasten(px, pz);
+        const [x0, x1, z0, z1] = [cx * S, (cx + 1) * S, cz * S, (cz + 1) * S];
+        const d = bahn
+            ? this._bedarfKasten(x0, x1, z0, z1, { x: px, z: pz })
+            : Math.max(Math.max(x0 - px, 0, px - x1), Math.max(z0 - pz, 0, pz - z1));
         const st = B.stufen;
         let lod = st[st.length - 1].lod;
         for (let i = 0; i < st.length; i++)
@@ -2782,6 +2807,7 @@ class AnazhRealm_gelaende_boden {
         if (wmU && wmU.erdbau) {
             delete wmU.erdbau;
             this._erdbauStand = (this._erdbauStand || 0) + 1;
+            this._erdbauGanz = (this._erdbauGanz || 0) + 1; // ein Erdbau ohne Kasten: der Stand des Walds wechselt (`_waldStandSchluessel`)
         }
         // DIE GRUBEN ZIEHEN MIT, vor den Bauten (die auf dem gegrabenen Grund stehen): der Hieb traf den alten Boden, die oberste
         // Grube (die unterste Schüttung) einer Säule lag an ihm. Jeder Edit steht danach in seiner Lage zu ihr auf dem Gesetz

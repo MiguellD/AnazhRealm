@@ -889,13 +889,9 @@ class AnazhRealm_wasser_zellen {
     _mainWaterSheetCtx(cx, cz, entry) {
         const voxelChunks = this.state.voxelChunks;
         // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie"): die
-        // Glätt-Pässe (browser-justierbar 0..6). PAD = Pässe + 1 (naht-symmetrisch).
-        const smoothRaw =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
-                ? Math.round(this.state.atmosphere.waterSheetSmooth)
-                : 4;
+        // Glätt-Pässe (browser-justierbar 0..6, `_wasserBlattPaesse`). PAD = Pässe + 1 (naht-symmetrisch).
         return {
-            smoothPasses: Math.max(0, Math.min(6, smoothRaw)),
+            smoothPasses: this._wasserBlattPaesse(),
             getCells: (ncx, ncz) => {
                 if (ncx === cx && ncz === cz) return entry.waterCells;
                 const nb = voxelChunks.get(`${ncx},${ncz}`);

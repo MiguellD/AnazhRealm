@@ -893,9 +893,11 @@ class AnazhRealm_feld_sprache {
             const wz = this._wohlCellKey(pm.x, pm.z);
             const vor = p.wohlZelle;
             const wb = this.state.wohlBaseline;
+            // die Baseline ist eine Karte des Felds: ihre Uhr ist die Welt-Uhr wie die der Gesetze, die sie werten (`_feldTod`
+            // räumt in Spiel-Zeit; bis feld.K2#2 sah der Spieler an der Takt-Uhr hin, die Gesetze an derselben, der Tod in Spiel-Zeit)
             if (!vor || vor.key !== wz || !(wb && wb.has(wz))) {
-                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z, currentTime);
-                this._observeFieldWohl(pm.x, pm.z, currentTime);
+                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z, this.state.spielZeit);
+                this._observeFieldWohl(pm.x, pm.z, this.state.spielZeit);
                 p.wohlZelle = { key: wz, x: pm.x, z: pm.z };
             }
         }

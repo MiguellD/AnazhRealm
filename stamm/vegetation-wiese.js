@@ -2125,7 +2125,8 @@ class AnazhRealm_vegetation_wiese {
     // Höhe. Achsen: (1) STAND-Klump `_placementStandAt` (mittelwert-neutral) · (2) SLOPE `_slopeAt`
     // (flach favorisiert, auf |∇h| kalibriert) · (3) FEUCHTE `_feuchteAt` (nass → dichter) · (4) HÖHE
     // über Terrain-Basis (hoch → licht). Perf: × `_foliageDensityScale` (headless 1 = voll).
-    _placementDensityFactor(x, z, surfaceY, purpose) {
+    // `probe` (optional, `AnazhRealm._saatProbe`): Stand, Steilheit und Feuchte dieses Orts aus dem Feld der Saat (im Faden gerechnet).
+    _placementDensityFactor(x, z, surfaceY, purpose, probe) {
         const P = AnazhRealm.PLACEMENT_DENSITY;
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
@@ -2133,13 +2134,17 @@ class AnazhRealm_vegetation_wiese {
             return t * t * (3 - 2 * t);
         };
         // (1) STAND-Klumpung — Wald ↔ Lichtung / Dickicht ↔ magere Stelle.
-        const stand = this._placementStandAt(x, z, purpose); // [-1,1]
+        const stand = probe
+            ? purpose === "meadow"
+                ? probe.standWiese
+                : probe.standWald
+            : this._placementStandAt(x, z, purpose); // [-1,1]
         const clump = Math.max(P.clumpLo, Math.min(P.clumpHi, 1 + P.clumpAmp * stand));
         // (2) SLOPE-Gate — flach dicht, Steilwand kahl (die Vorlagen-Flach-Präferenz).
-        const slope = typeof this._slopeAt === "function" ? this._slopeAt(x, z) : 0;
+        const slope = probe ? probe.steil1 : typeof this._slopeAt === "function" ? this._slopeAt(x, z) : 0;
         const slopeF = 1 - ss(P.slopeLo, P.slopeHi, slope);
         // (3) FEUCHTE-Antrieb — nass → dichter, trocken → licht.
-        let wet = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, surfaceY) : 0;
+        let wet = probe ? probe.fe : typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, surfaceY) : 0;
         wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
         const wetF = P.wetBase + P.wetGain * wet;
         // (4) HÖHE über Terrain-Basis — die Höhe lichtet (Vorlagen-`dry`).
@@ -2332,13 +2337,17 @@ class AnazhRealm_vegetation_wiese {
     // die geborenen Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m)
     // oder samt der größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt — und mit ihnen der Bestand
     // jeder Zelle, die sie als Urteils-Nachbarn liest (±`WALD_PLAN.urteil`). Nur diese fallen aus dem Dart-Gedächtnis des Stands
-    // (der Stand bleibt; der Fall legt die geborenen Darts neu an, `_forestGeborenKarte`, und der Faden rechnet am neuen
-    // Stand-Schlüssel), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
+    // (der Stand bleibt), mit ihnen die Freistand-Antwort jedes Orts, der diesen Bestand liest (±4 Zellen darum,
     // `_forestStehtFrei`), und die Gestalt des Orts dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt
-    // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    // (`_forestDartMemo = null`, ein neuer Stand) — und mit ihm jede Gestalt jedes Orts.
     // DER FALL IST EIN KASTEN AUCH FÜR DIE LIEFERUNG IM FLUG (w13-dorf-strom): der Kasten der Zellen samt Urteils-Nachbarn steht
     // mit dem Stand des Erdbaus, der ihn warf, im Gedächtnis der Fälle (`_erdbauFaelle`) — eine Lieferung des Wald-Fadens, die vor
     // ihm geschickt wurde, verwirft nur ihre Zellen darin (`_erdbauFielSeit`, `_waldDartsAn`).
+    // DER FALL IST EIN KASTEN AUCH FÜR DIE GEBORENEN (w14-strom-tempo): das Gedächtnis der geborenen Darts (`_forestGeborenKarte`,
+    // im Faden `waldGeboren` und `kammGeboren`) verliert nur die Zellen des Kastens — der Faden mit dem Erdbau im selben Zustand
+    // (`waldFall`, voxel-worker `applyStateDelta`). Bis w14-strom-tempo trug der Stand-Schlüssel den Stand des Erdbaus und des
+    // Falls: jeder Ort im Vorlauf warf beide Gedächtnisse ganz, und der Faden plante jede Zelle mit ihren Urteils-Nachbarn neu
+    // (25 Zellen je Bestand). → der Kasten der geborenen Zellen [ga, gb, ha, hb].
     _forestDartsFallen(x0, z0, x1, z1) {
         const C = AnazhRealm.FOREST.cell;
         const U = AnazhRealm.WALD_PLAN.urteil;
@@ -2350,8 +2359,12 @@ class AnazhRealm_vegetation_wiese {
         const F = this._erdbauFaelle || (this._erdbauFaelle = []);
         F.push([this._erdbauStand | 0, ga - U, gb + U, ha - U, hb + U]);
         if (F.length > AnazhRealm.WALD_PLAN.faelle) F.shift();
+        const K = this._forestGeboren;
+        if (K && K.karte.size)
+            for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) K.karte.delete(gx + "," + gz);
+        const kasten = [ga, gb, ha, hb];
         const memo = this._forestDartMemo;
-        if (!memo || !memo.size) return 0;
+        if (!memo || !memo.size) return kasten;
         let n = 0;
         for (let gx = ga - U; gx <= gb + U; gx++)
             for (let gz = ha - U; gz <= hb + U; gz++) if (memo.delete(gx + "," + gz)) n++;
@@ -2365,7 +2378,7 @@ class AnazhRealm_vegetation_wiese {
                 if (gx >= ga - 6 && gx <= gb + 6 && gz >= ha - 6 && gz <= hb + 6) fm.delete(k);
             }
         this._ortSameFaellt((ga - 6) * C, (ha - 6) * C, (gb + 7) * C, (hb + 7) * C);
-        return n;
+        return kasten;
     }
 
     // DER BESTAND EINER ZELLE (w4-b-pflanzen): ihre STEHENDEN Darts — die geborenen (`_forestGeborene`), die das Urteil der
@@ -2429,14 +2442,16 @@ class AnazhRealm_vegetation_wiese {
         return weg;
     }
 
-    // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo`, `_forestDartFall`, `_erdbauStand`
-    // — derselbe Schlüssel wie der des Fadens, `_waldStandSchluessel`): die Urteils-Nachbarn eines Bestands sind die Zellen des
-    // nächsten. Ein neuer Stand, ein Fall (die Schranke) oder ein Erdbau legt es neu an.
+    // Das Gedächtnis der GEBORENEN Darts am Stand des Dart-Gedächtnisses (`_forestDartMemo` und der Boden ohne Kasten — derselbe
+    // Schlüssel wie der des Fadens, `_waldStandSchluessel`): die Urteils-Nachbarn eines Bestands sind die Zellen des nächsten. Ein
+    // neuer Stand legt es neu an, ein Erdbau nimmt die Zellen seines Kastens (`_forestDartsFallen`), voll fallen die ältesten
+    // (`WALD_PLAN.geboren`, ein Viertel: die Fahrt ließ sie hinter sich — bis w14-strom-tempo fiel das ganze).
     _forestGeborenKarte() {
         const stand = this._waldStandSchluessel();
         let K = this._forestGeboren;
-        if (!K || K.memo !== this._forestDartMemo || K.stand !== stand || K.karte.size > 16384)
+        if (!K || K.memo !== this._forestDartMemo || K.stand !== stand)
             K = this._forestGeboren = { memo: this._forestDartMemo, stand, karte: new Map() };
+        AnazhRealm._waldGeborenRaum(K.karte, AnazhRealm.WALD_PLAN.geboren);
         return K.karte;
     }
 
@@ -2684,8 +2699,10 @@ class AnazhRealm_vegetation_wiese {
     // Der Stand, an dem der Wald-Faden seine geborenen Darts merkt (die Urteils-Nachbarn des Bestands, voxel-worker
     // `waldDarts`): das Dart-Gedächtnis des Main (Same, Buch, Hydrosphäre — `_forestDartGen`), sein Fall (Erdbau, Schranke)
     // und der Erdbau — wechselt einer, rechnet der Faden jede Zelle neu, wie der Main sie neu fragt.
+    // Ein Erdbau mit Kasten fällt nur seine Zellen (`_forestDartsFallen`, im Faden `waldFall`); den Schlüssel wechselt nur ein
+    // Erdbau ohne Kasten (`_erdbauGanz`: der Boden-Umzug legt jeden Ort neu).
     _waldStandSchluessel() {
-        return (this._forestDartGen | 0) + "|" + (this._forestDartFall | 0) + "|" + (this._erdbauStand | 0);
+        return (this._forestDartGen | 0) + "|" + (this._erdbauGanz | 0);
     }
 
     // DER STOFF DES WALDS IM FADEN (K60-3, B-Wald): JEDE offene Zelle der Schlange reist, sobald sie bestellt ist — nah zuerst,
@@ -2973,4 +2990,21 @@ AnazhRealm.WALD_PLAN = Object.freeze({
     zellen: 8192,
     // so viele Fälle des Erdbaus (`_erdbauFaelle`) kennt das Gedächtnis der Lieferungen im Flug (`_erdbauFielSeit`)
     faelle: 64,
+    // so viele Zellen trägt das Gedächtnis der geborenen Darts (`_forestGeborenKarte`, im Faden `waldGeboren`), darüber fallen
+    // die ältesten (`_waldGeborenRaum`)
+    geboren: 16384,
 });
+// DIE SCHRANKE DER GEBORENEN (w14-strom-tempo): trägt `karte` mehr als `cap` Zellen, fallen die ältesten (die Reihe der Map ist
+// die Reihe der Geburt — die Fahrt ließ sie hinter sich) bis auf drei Viertel; der Plan um den Spieler bleibt. Der Wald-Faden
+// trägt dieselbe Schranke (voxel-worker `geborenRaum`). Bis w14-strom-tempo fiel das ganze Gedächtnis. → die Zahl der gefallenen.
+AnazhRealm._waldGeborenRaum = function (karte, cap) {
+    if (karte.size <= cap) return 0;
+    const weg = karte.size - ((cap * 3) >> 2);
+    let n = 0;
+    for (const k of karte.keys()) {
+        if (n >= weg) break;
+        karte.delete(k);
+        n++;
+    }
+    return n;
+};

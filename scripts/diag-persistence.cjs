@@ -421,8 +421,9 @@ const server = statikServer();
 // Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6, 0-0 ohne (D)), `--weg` nur (D).
 // DER KONSUM: jeder Stand des Fadens ist die volle Serialisierung (`buildStateSnapshot`) — die Marken der Stand-Tafel verlieren
 // nichts; die Zahl nennt je Stand die abweichenden Schlüssel. SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je
-// Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
-const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
+// Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen. Das Leben der Welt (`leben`, feld.K2#2: der Bestand der NAHEN
+// Regionen und ihr Feld, `_lebenImStand`) ist gedeckelt von seinem Gesetz — höchstens vier Regionen, das Feld zerfällt.
+const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures", "leben"];
 async function wegSeite(km, min, edits) {
     await __weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
     const [st, spur, S] = [r.state, [], []];
