@@ -373,7 +373,7 @@ class AnazhRealm_siedlung_bauten {
         }
         const [M, D0, D1] = [cfg.hysteresis, cfg.thresh01, cfg.thresh12];
         const dnA = distAuge * k;
-        for (const t of [D0 + M, D1 - cfg.fade - M, D1 + M, D1 - cfg.fade / 2])
+        for (const t of [D0 + M, D1 - cfg.fade - M, D1 + M, D1 - cfg.fade])
             spiel = Math.min(spiel, Math.abs(dnA - t) / k);
         const sS = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS) : 1;
@@ -449,6 +449,19 @@ class AnazhRealm_siedlung_bauten {
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
             : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
+        // DIE STUFE DECKT DAS AUGE (w22-pop-heil): die Bahn wählt die L0 eines Baums voraus, ihr Paar (L0, L1) deckt die Maske aber
+        // nur, solange die Karte am Auge nicht blendet (diesseits D1 − FADE) — jenseits hätte die Karte keinen Platz im Paar und
+        // spränge, wenn die L0 kommt. Dort steht die L1 voraus (ihr Paar ist die Karte, `_lodBandPartnerFor`), die L0 folgt am Rand.
+        if (
+            newLOD === 0 &&
+            !grenzen &&
+            st.foundryCrossfade === true &&
+            entry.instFoundry === true &&
+            this._lodPerceptionDistance(distAuge, visH) >
+                AnazhRealm.LOD_DISTANCES.thresh12 - AnazhRealm.LOD_DISTANCES.fade &&
+            this._foundryPresetIsTree(this._foundryPresetForEntry(entry))
+        )
+            newLOD = 1;
         const wahl = newLOD; // die Wahl am Abstand, vor der Verdeckung
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
@@ -671,10 +684,10 @@ class AnazhRealm_siedlung_bauten {
         const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH) : dist;
         cur = Math.max(0, Math.min(2, cur | 0));
         if (cur === 0) {
-            // DAS PAAR TRÄGT NUR EIN BAND (w22-pop-heil): steht die L0 (die Bahn wählt sie voraus) an einem Auge, an dem die L1
-            // selbst zur Karte ausblendet (jenseits D1 − FADE/2, f1o > 0), deckt das Paar L0 + L1 die Maske nicht — die L0 ist dort
-            // ausgeblendet, die L1 halb, die Karte fehlt: ein Loch. Ohne Partner HÄLT die L0 voll (K36), bis das Auge im Band steht.
-            if (dn > D1 - FADE / 2) return null;
+            // DAS PAAR TRÄGT NUR EIN BAND (w22-pop-heil): steht die L0 an einem Auge, an dem die Karte blendet (jenseits D1 − FADE —
+            // die Wahl hält sie dort, solange ihre L1 lädt), deckt das Paar L0 + L1 die Maske nicht: die L0 ist ausgeblendet, die
+            // Karte fehlt, jenseits D1 − FADE/2 auch die halbe L1 — ein Loch. Ohne Partner HÄLT die L0 voll (K36).
+            if (dn > D1 - FADE) return null;
             const capL = cfg.leafVisCap;
             const sS = Number.isFinite(s) && s > 0 ? s : 1;
             const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH / sS, capL) * sS) : dist;
