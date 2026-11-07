@@ -1,0 +1,142 @@
+{
+ "sha": "2f70c0006bfb0412aaf81e2b6362ca5c76d3c2f0",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T18:04:36.899Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7923 (wasserSatz 25410 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.2 σ 37 schwarz 0.1 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.7,
+   "zeit": "2026-11-07T18:04:05.783Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.1589 (111375 px in der Ebene, 59 Blöcke, Einfall 57.8°, Normale [0.077,0.996,0.048]) · glas spiegelTreue 0.7483 (6276 px in der Ebene, 28 Blöcke, Einfall 72.6°, Normale [-0.002,1,0.015]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000386 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.12,
+   "gpu": "nvidia/pascal",
+   "s": 7.3,
+   "zeit": "2026-11-07T18:04:29.522Z",
+   "abdruck": "f348340da034",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-07T18:02:20.252Z",
+   "abdruck": "98240f6809a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Emulation.setTouchEmulationEnabled): Session closed. Most likely the page has been closed.",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-07T18:02:20.252Z",
+   "abdruck": "a434d5e796c8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 22 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT vor 16.3 s)",
+   "exit": 1,
+   "minuten": 0.37,
+   "grund": "Deckel 22 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT vor 16.3 s)",
+   "s": 22.3,
+   "zeit": "2026-11-07T18:04:36.899Z",
+   "abdruck": "e5a8f60ac4b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T18:01:43.306Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7.9,
+  "grundstellungS": [
+   4.6
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 27.8,
+    "takte": 676,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 16.6,
+    "takte": 773,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 72,
+   "frameP95": 141.67,
+   "taktP95": 71.82,
+   "vramMax": 119.1,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 185,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 195.2,
+  "minuten": 3.32
+ }
+}
