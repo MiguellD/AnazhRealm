@@ -37,3 +37,10 @@
 
 ## Alle Kandidaten-Stände
 `zug/offene-zweige-0711.txt`: 46 Zweige nicht in main (27 offen, 4 in z295, 16 -pm-Zweige der Punkte-Maschine, davon 7 offen), je mit letztem Push, Kopf und Status. Die Arbeit der Cloud-Sitzungen liegt vollständig auf diesen Zweigen (GitHub); nur nie gepushte Reste in den Cloud-Containern fehlen.
+## Auslauf-Ergebnis (16:48)
+- Radeon-Ernte am 95ba6fd6: 44 GRÜN · 31 ROT · 95 OFFEN. Die Buchung wurde ABGEWIESEN: 8 Rückfälle, die Summe fiele 218 → 215. Gebucht bleiben 218, Artifact v9.
+  ERSTER Arbeitsschritt: die 8 benennen (`node punkte.cjs buchen --trocken --kopf 95ba6fd6…` im Worktree der Punkte-Maschine), dann je Station triagieren: Wackler oder echter Rückfall (Täter seit dem letzten GRÜN).
+- z295 (ef5863a3) ROT ohne Wackler: echt „Kamera-Leib auf der Karte (K6 — am Prüfplatz wird der Leib beim Seitwärtsgehen nie durchsichtig)“. Verdächtig ist w21-leib-bau: die EINE Haut gegen das Ausblenden des Leibs vor der Kamera. Dazu voll 15/18 Erst-Zeichnungs-Wand Teil 2 (Wackler).
+  Nächster Zug: abnahme-sicht-3, innen-regen, laub-unten OHNE leib-bau; leib-bau bekommt die K6-Wand als Nacharbeit.
+- Die OMEN schreibt ihre eigene Übergabe nach `zug/omen-uebergabe-0711.md` (erbeten 17:00).
+- Das GPU-Schloss am Laptop trägt noch „punkte-radeon-sitzung“ (der Halter ist tot, also verwaist). Die Werkzeuge erkennen das selbst.

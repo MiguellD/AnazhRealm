@@ -1,0 +1,11 @@
+07.11 16:03:29 Auslauf beginnt
+07.11 16:42:05 Radeon-Ernte 95ba6fd6: 44 GRÜN · 31 ROT · 95 OFFEN
+16:44:22 [buche] buchen: Kopf 95ba6fd6 · Maschine 162 Kriterien · Σ 215 · Ratsche gegen 95ba6fd6: gehalten 228, Rückfall 8 → stand.json
+16:44:26 [buche] ROT: die Summe fällt 218 → 215 — nicht gebucht (ungemessen ist kein Verlust; BUCHE_FALL=1 bucht einen echten Fall)
+07.11 16:45:11 16:45: laufende Radeon-Messungen beendet (Schöpfer braucht die Radeon)
+Treffer: 0
+GPU-SCHLOSS gehalten: punkte-radeon-sitzung
+07.11 16:48:00 z295: 16:47:45 [z295w] FAHRT ROT (kein Wackler): echt (GPU-Wände auf der Karte): Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig);voll 15/18 gpu: Erst-Zeichnungs-Wand Teil 2 (echter Renderer — Bundle ohne Anmeldun
+Treffer: 0
+GPU-SCHLOSS gehalten: punkte-radeon-sitzung
+07.11 16:48:02 AUSLAUF ENDE — Artifact meisterkarte.html veröffentlicht die nächste Sitzung
