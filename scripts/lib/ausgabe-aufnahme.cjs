@@ -315,10 +315,10 @@ function uhrHalten() {
     r._tickPortalMembranes(performance.now() / 1000);
 }
 
-// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
-// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
-// nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
-async function weltStehtWarten(max) {
+// DIE WELT STEHT AN DER KAMERA (der Schuss und jede Pose der Blick-Wahl): Takt um Takt über das EINE Einschwingen, nach jedem
+// Takt Kamera und Stunde zurück (der Takt stellt sie an den Spieler); steht sie schon, ohne Takt (ein Takt rendert und tickt, was
+// die Linse für den Schuss gesetzt hat). Gibt die Zahl der Takte.
+async function weltStehtAn(max) {
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
     const takt = async () => {
@@ -328,9 +328,16 @@ async function weltStehtWarten(max) {
         if (cam.fov !== fov) (cam.fov = fov), cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
     };
-    // steht sie schon, schießt die Bühne ohne Takt (ein Takt rendert und tickt, was die Linse für den Schuss gesetzt hat)
     const n = r._weltSteht() ? 0 : await __weltStehtNach(takt, max);
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
+    return n;
+}
+
+// DIE WELT STEHT (A9, `_weltSteht`): vor jedem Schuss wartet die Bühne auf sie über das EINE Einschwingen (welt-boot
+// `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
+// nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
+async function weltStehtWarten(max) {
+    const n = await window.__weltStehtAn(max);
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
@@ -730,8 +737,11 @@ function abnahmeMessen(opt) {
 // um den Ort — der Abstand zum Ziel und die Augenhöhe über dem Boden bleiben, der Azimut dreht 0, ±15° … ±90°, ±135°, 180°,
 // je Runde von 14 Posen ein Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
-// Abnahme nach dem Schuss wirft beim Namen.
-function blickWahl(opt) {
+// Abnahme nach dem Schuss wirft beim Namen. JEDE POSE IN IHRER WELT (w18-abnahme-sicht): unter der Bühne urteilt die Wahl eine Pose
+// erst, wenn die Welt an ihr steht (`__weltStehtAn`) und die Nah-Sätze ihr folgen — dieselbe Welt, die der Schuss danach zeichnet. Bis
+// dahin urteilte sie in der Welt der vorigen Pose: siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, und der
+// zweite Schuss dort fand die Tanne, die die Welt erst dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
+async function blickWahl(opt) {
     const cam = st.camera;
     const z = opt.ziel;
     const n = Math.max(1, Math.floor(opt.wahl));
@@ -744,6 +754,7 @@ function blickWahl(opt) {
     const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
     const posen = [];
     let beste = null;
+    let takte = 0;
     for (let k = 0; k < n; k++) {
         const ring = Math.floor(k / winkel.length);
         const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
@@ -755,17 +766,19 @@ function blickWahl(opt) {
         cam.position.set(x, g + h0 + ring, zz);
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
+        if (window.__buehneUhr) takte += await window.__weltStehtAn();
+        for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
         const m = window.__abnahmeMessen(opt);
         const u = window.__abnahmeUrteil(m);
         const rest = u.rot.filter((q) => !q.feld.startsWith("bild."));
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
-        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
+        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, takte, posen };
         if (!beste || rest.length < beste.n) beste = { n: rest.length, k };
     }
     cam.position.copy(P0);
     cam.quaternion.copy(Q0);
     cam.updateMatrixWorld(true);
-    return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, posen };
+    return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, takte, posen };
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
@@ -790,7 +803,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const weltTakte =
             window.__buehneUhr && !(opt && opt.satz === "messung") ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
-        const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
+        const wahl = opt && opt.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
@@ -1425,7 +1438,7 @@ module.exports = {
         `window.__bildUhren = ${bildUhren};` +
         `window.__uhrHalten = ${uhrHalten};` +
         require("./welt-boot.cjs").WARTEN_SEITE +
-        `window.__weltStehtWarten = ${weltStehtWarten};` +
+        `window.__weltStehtAn = ${weltStehtAn}; window.__weltStehtWarten = ${weltStehtWarten};` +
         `window.__buehne = ${buehne};` +
         `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib".split(" ");` +
         `window.__membranOhneFilm = ${membranOhneFilm};` +
