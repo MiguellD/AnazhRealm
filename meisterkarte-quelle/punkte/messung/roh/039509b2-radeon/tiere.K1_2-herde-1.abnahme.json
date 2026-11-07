@@ -1,0 +1,162 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.209",
+  "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 58
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0451,
+   "taeter": {
+    "Rinde baum_tanne": 0.0434,
+    "Gelände": 0.0017
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.5,
+  "gestalt": [
+   "baum_tanne 3718"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -555.283,
+   35.035,
+   -932.911
+  ],
+  "blick": [
+   0.12673,
+   0.15068,
+   0.98043
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 70.6,
+  "sigma": 41.4,
+  "schwarz": 0.0004,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.5 m · Luma 70.6 σ 41.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.209 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 3,
+  "kamera": [
+   -555.283,
+   35.035,
+   -932.911
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -575.87,
+     39.71,
+     -924.44
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_tanne in 7.62 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -566.134,
+     36.65,
+     -930.031
+    ],
+    "rot": [
+     "Sicht verdeckt 16.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_tanne 16.2 %",
+     "Vordergrund 40.1 % näher als 8 m (der halbe Ziel-Abstand): Rinde baum_tanne 15.8 %, Gelände 13.2 %, Laub grown_busch_hazel_v1 9.2 %",
+     "Ziel Herde verdeckt von an Punkt 3 Rinde baum_birke in 21.68 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -583.827,
+     43.412,
+     -916.52
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 30 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -555.283,
+     35.035,
+     -932.911
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 56
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 15
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 301
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\039509b2-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}
