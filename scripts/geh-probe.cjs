@@ -29,8 +29,10 @@ function baumZeilen(zeilen, kopf, n) {
         const k = kurz(e.name),
             gleich = vater && vater.k === k;
         const t = gleich ? vater.t : vater ? vater.t + 1 : 0;
-        stapel[e.tiefe] = { k, t };
-        if (gleich || !(e.mitteMs >= 0.3 || e.spitzeMs >= 1.5)) continue;
+        // ein Ast fällt ganz, wenn er die Mitte nicht trägt und die Spitze nur tief (der Knoten-Bau rekursiert 60 Rahmen tief)
+        const zeigt = !(vater && vater.weg) && (e.mitteMs >= 0.3 || (e.spitzeMs >= 4 && t <= 6));
+        stapel[e.tiefe] = { k, t, weg: !!(vater && vater.weg) || (!gleich && !zeigt) };
+        if (gleich || !zeigt) continue;
         teile.push(`${t}${k} ${r1(e.spitzeMs)}·${r1(e.mitteMs)}`);
     }
     const aus = [];
@@ -112,7 +114,7 @@ function baumZeilen(zeilen, kopf, n) {
                         .map((e) => `${e.n} ${e.summeMs} ${e.maxMs} ${e.ursache}`)
                         .join(" | ")
             );
-            for (const z of baumZeilen(s.zeilen, `GEH ${U} ${name}`, 6)) zeile(z);
+            for (const z of baumZeilen(s.zeilen, `GEH ${U} ${name}`, 7)) zeile(z);
         } else ((gruen = false), zeile(`GEH ROT ${name}: die Hänger-Linse lieferte nichts`));
         lauf(name);
         wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
