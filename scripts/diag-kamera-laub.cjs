@@ -32,7 +32,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 // (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang); NP-03 (die Kamera des Körper-Studios) misst das Instrument
 // des Labors durch die ganze Vorführung, der Kern urteilt (gate:tier-gang, w4-koerper-park) — die CI fährt sie in zwei Schritten
 // (gate:kamera-laub · gate:kamera-leib), je unter 3 min; gang2 fährt die Station leib.K4#2, die Wand trägt ihn, sobald die Welt
-// ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
+// ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG; seit w18-kamera-haus nur noch dort, headless p95 0,034–0,046 m, Nah-Pixel 0)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
 const TEILE = argOpt("--teile", "laub,leib,gang,gang2").split(",");
