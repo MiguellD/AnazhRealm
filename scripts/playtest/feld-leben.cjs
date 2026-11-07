@@ -1802,7 +1802,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                     // die Probe (tint undefined ⇒ Material-Farbe pur).
                     const flat = r._archFlattenBlueprint("felsbogen");
                     const l0 = flat.leaves[0];
-                    if (l0?.mat && l0.mat.color) {
+                    if (l0?.mat?.color) {
                         const mc = l0.mat.color;
                         let fr = mc.r;
                         let fg = mc.g;

@@ -1981,8 +1981,8 @@ class AnazhRealm_siedlung_ort {
     // an der sie siedelt (`_autoSettlementFindSite`: der Anker, sonst die Probe-Ringe; das Start-Dorf `_autoSettlementStartInfo`)
     // — {key, x, z, nH} oder null (kein Ort: Hash, verdrängt, keine Stelle trägt ihn). Eine reine Funktion der Welt-Saat, gemerkt
     // je Saat; vor dem Plan des Genesis-Orts (die Spawn-Klar-Wand misst an ihm) und bei kaltem Buch steht keiner, und nichts wird
-    // gemerkt. Leser: das Wegenetz (`_wegenetzNachbarn`) und die Geburt (`_imReichEinesOrts`) — bis tiere.K1#2 lebte die Frage
-    // im Wegenetz allein.
+    // gemerkt. Leser: das Wegenetz (`_wegenetzNachbarn`, offen mit ihm) und die Geburt (`_imReichEinesOrts`, offen: der Anker)
+    // — bis tiere.K1#2 lebte die Frage im Wegenetz allein.
     _zellOrt(k) {
         const ws = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         if (!this._zellOrtMemo || this._zellOrtMemo.ws !== ws) this._zellOrtMemo = { ws, M: new Map() };
@@ -3544,7 +3544,11 @@ class AnazhRealm_siedlung_ort {
     // (`_autoSettlementCellInfo` samt der Stelle, an der die Zelle siedelt, `_autoSettlementFindSite`; das Start-Dorf
     // `_autoSettlementStartInfo`) — benachbart sind zwei, die näher als `WEGENETZ.maxM` liegen und zwischen denen kein dritter
     // näher an beiden liegt (der Graph der relativen Nachbarschaft: jeder Ort hängt am Netz, kein Weg läuft an einem Ort
-    // vorbei zum übernächsten). Eine reine Funktion der Welt-Saat, gemerkt je Saat.
+    // vorbei zum übernächsten). Eine reine Funktion der Welt-Saat, gemerkt je Saat — offen (undefined, nichts gemerkt), solange
+    // ein Ort der Frage offen ist (`_zellOrt`: seine Stelle wartet auf ihr Wasser, die Frage bestellt es). Bis w19-fahrt-ziel-2
+    // merkte sie den offenen wie keinen Ort, die halbe Nachbarschaft für immer: am Gate (frische Welt) sind die sechs Orte der
+    // Route bei der ersten Frage offen, f69173b0 merkte jeden ohne Nachbarn; ihr Wasser steht nach 2,1 s, mit ihm trägt jeder
+    // 3–4 Nachbarn und die Route 8 Feldwege.
     _wegenetzNachbarn(key) {
         const SG = AnazhRealm._siedlungGesetz();
         if (!SG) return [];
@@ -3554,6 +3558,7 @@ class AnazhRealm_siedlung_ort {
         if (M.nachbarn.has(key)) return M.nachbarn.get(key);
         const ort = (k) => this._zellOrt(k);
         const a = ort(key);
+        if (a === undefined) return undefined;
         const aus = [];
         if (a) {
             const W = AnazhRealm.WEGENETZ;
@@ -3562,6 +3567,7 @@ class AnazhRealm_siedlung_ort {
             const cz = Math.floor(a.z / SG.cellM);
             const orte = [ort("start")];
             for (let dz = -R; dz <= R; dz++) for (let dx = -R; dx <= R; dx++) orte.push(ort(cx + dx + "," + (cz + dz)));
+            if (orte.includes(undefined)) return undefined;
             const d = (p, q) => Math.hypot(p.x - q.x, p.z - q.z);
             for (const b of orte) {
                 if (!b || b.key === key || d(a, b) > W.maxM) continue;
@@ -3584,7 +3590,17 @@ class AnazhRealm_siedlung_ort {
         const lok = (i) => ({ x: G.knoten[i].x - S.ox, z: G.knoten[i].z - S.oz });
         const feldwege = G.naehte.map(([i, j]) => ({ pts: [lok(i), lok(j)], w: AnazhRealm.WEGENETZ.breiteM }));
         if (feldwege.length) this._stlWegeBuild({ feldwege }, { x: S.ox, z: S.oz }, "netz:" + key); // die Nähte seines Netzes
-        for (const n of this._wegenetzNachbarn(key)) if (B.has(n)) this._wegenetzLegen(key, n);
+        // ist die Nachbarschaft offen, wartet der Anschluss auf das bestellte Wasser und fragt neu (wie `_ortWahlImFaden`)
+        const legen = (runde) => {
+            if (this._bewohnerSiedlungen !== B || B.get(key) !== S) return; // der Ort ging, ehe sein Wasser kam
+            const nb = this._wegenetzNachbarn(key);
+            if (nb) {
+                for (const n of nb) if (B.has(n)) this._wegenetzLegen(key, n);
+            } else if (runde < 8) {
+                Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage)).then(() => legen(runde + 1));
+            } else this._bruchMelden(`WEGENETZ: die Nachbarschaft von ${key} bleibt offen — ihr Wasser kam nicht`);
+        };
+        legen(0);
     }
 
     // DER FELDWEG ZWISCHEN ZWEI ORTEN: er setzt an ihren Feldwegen an (die Flucht der Straße: an einem Punkt mitten in der

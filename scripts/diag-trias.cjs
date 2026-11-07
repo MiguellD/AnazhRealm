@@ -188,7 +188,7 @@ hauptLauf(async () => {
                 s.lods[lod] = (s.lods[lod] || 0) + 1;
                 for (const { key } of e.instSlots) {
                     const g = r.state.archInstanceGroups.get(key);
-                    if (g && g.geom)
+                    if (g?.geom)
                         s.tris += g.geom.index ? g.geom.index.count / 3 : g.geom.attributes.position.count / 3;
                 }
             }
@@ -204,7 +204,7 @@ hauptLauf(async () => {
                     o.ghost += Math.max(0, (g.mesh ? g.mesh.count : 0) - (g.liveCount || 0)) * tris;
                     if (key.indexOf("haus_") === 0) o.hausGroups++;
                 }
-            for (const e of r.state.architectures) if (e && e.instSlotsBand) o.band++;
+            for (const e of r.state.architectures) if (e?.instSlotsBand) o.band++;
             o.ghost = Math.round(o.ghost);
             return o;
         }

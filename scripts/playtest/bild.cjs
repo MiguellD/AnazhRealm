@@ -849,6 +849,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             out.nahWieseStabil =
                 Array.isArray(b1) && b1.length > 0 && JSON.stringify(b1) === JSON.stringify(b2) && b1.every(fuss);
             out.nahWieseZahl = Array.isArray(b1) ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet";
+            // DER HALM WEICHT DEM WAGEN (w20-lack-spiegel; GTX d1ee37d2: die Wiese stand durch die Haube des GT am See, die Lack-Ebene
+            // von material.K4#1 trug 0 Blöcke): ein GT mitten in der Kachel — von ihren Büscheln standen welche in seiner Hülle
+            // (`_imWagen`, vorher/nachher), gebaut danach keins. SELBSTTEST: ohne die Frage im Kachelbau (`_nahWieseKachelBueschel`) fällt der Band
+            const gt = b1?.length && r.spawnArchitecture("fahrzeug_gt", { ...b1[0] }, { silent: true, precise: true });
+            out.halmWagen = gt && [b1, r._nahWieseKachelBueschel(tx, tz)].map((b) => b.filter((q) => r._imWagen(q.x, q.z, 0)).length);
+            if (gt) r.removeArchitecture(gt, { still: true });
         }
 
         // --- Der Genesis-Ort (Pflicht F) ---
@@ -898,6 +904,8 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
             v829Results.nahWieseStabil
         );
+        const hw = v829Results.halmWagen;
+        check(`Halm weicht dem Wagen ${hw}`, hw?.[0] > 0 && !hw[1]);
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
         check("Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)", v829Results.genesisIdempotent);

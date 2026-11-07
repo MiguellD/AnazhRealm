@@ -46,7 +46,7 @@ const SICHT_FN = async (a) => {
     if (a.klasse === "kreatur") {
         const w = window.__beweisWolf;
         const u = w && w.userData;
-        if (w && u && u._kzNah) setze = (an) => (w.visible = an);
+        if (w && u?._kzNah) setze = (an) => (w.visible = an);
         else if (u?._kzGlieder) setze = (an) => u._kzGlieder.forEach((gl) => r._weltFeldAktiv(gl.handle, an));
     } else {
         const e = a.klasse === "baum" ? window.__beweisBaum : window.__beweisHaus;

@@ -92,7 +92,7 @@ hauptLauf(async () => {
                 for (const [k, g] of r.state.archInstanceGroups)
                     if (k.includes(regTag)) {
                         w++;
-                        if (g && g.mesh && g.mesh.material) fam.add(g.mesh.material);
+                        if (g?.mesh?.material) fam.add(g.mesh.material);
                     }
             return { w, b: fam.size };
         };

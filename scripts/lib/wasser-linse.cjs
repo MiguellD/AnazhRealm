@@ -1738,7 +1738,7 @@ function wasserSichtNetz() {
     const boeden = new Map();
     const faecherVon = (m) => {
         let n = null;
-        if (m?.geometry && m.geometry.attributes && m.geometry.attributes.position) {
+        if (m?.geometry?.attributes?.position) {
             const pos = m.geometry.attributes.position.array;
             const ix = m.geometry.index ? m.geometry.index.array : null;
             const triN = ix ? ix.length / 3 : pos.length / 9;

@@ -2,7 +2,7 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung | --wegenetz [--mutante | --gleich]]
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung | --wegenetz [--mutante]]
 //   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const {
@@ -2505,7 +2505,7 @@ hauptLauf(async () => {
         [
             schalter("--wegenetz"),
             probeLeben,
-            { wegenetz: { ...WEGENETZ, mutante: schalter("--mutante"), gleich: schalter("--gleich") } },
+            { wegenetz: { ...WEGENETZ, mutante: schalter("--mutante") } },
             (o) => {
                 const v = o.wegenetz ? wegenetzVerdict(o.wegenetz) : [o.err];
                 check(

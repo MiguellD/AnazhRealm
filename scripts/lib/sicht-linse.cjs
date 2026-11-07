@@ -188,7 +188,7 @@ function sichtLinse(cfg) {
                     const ab = a[1],
                         liste = a[2] || [];
                     let p = 0;
-                    if (a[5] && ab && ab.dicht) {
+                    if (a[5] && ab?.dicht) {
                         const alt = ab.liste || [];
                         while (p < alt.length && p < liste.length && alt[p] === liste[p]) p++;
                     }

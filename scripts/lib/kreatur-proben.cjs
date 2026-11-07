@@ -1029,8 +1029,10 @@ async function kreaturProben(r, T, opts) {
         // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
         // `_zellOrt`, fern des Spielers, nicht erwacht) — auf dem Kreis von 25 m um ihn (im Kern jedes Reichs, fachwerk
         // `siedlungsReich` 30 m + 22 m·√nH) trägt keiner von acht Orten eine Geburt (`_kreaturGrundFrei`). Täter: die Geburt ohne das Reich (die alte Form); er macht alle
-        // acht frei, das ist der Beweis, dass der Kreis ohne den Ort trüge
+        // acht frei, das ist der Beweis, dass der Kreis ohne den Ort trüge. Die Nachbarschaft steht nach dem Gesetz, ehe die Probe
+        // fragt (`_wegenetzNachbarn`: offen, solange eine Stelle auf ihr Wasser wartet — bis w19-fahrt-ziel-2 die halbe, gemerkt)
         if (taeter === "herde-dorf") decke("_imReichEinesOrts", () => () => false);
+        await __weltDa(() => r._wegenetzNachbarn("start"));
         const o = r._zellOrt(r._wegenetzNachbarn("start")[0]);
         const dorf = [o.key, [...Array(8).keys()].filter((q) => r._kreaturGrundFrei(o.x + 25 * Math.cos(q), o.z + 25 * Math.sin(q))).length];
         const L = F.lauf.filter(Boolean);

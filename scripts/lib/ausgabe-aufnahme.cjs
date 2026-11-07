@@ -889,6 +889,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             const neubeginn = () => {
                 // die Tiefe allein (`opt.tiefe`) trägt keinen Schatten
                 if (!opt?.tiefe) r._schattenAlleNeu();
+                // DER SPIEGEL DIESER SZENE (w20-lack-spiegel): der gehaltene Pass (`__halten` spiegel) rechnet im ersten Bild danach
+                // neu (`an` 0 → `_spiegelPassZeichne`). Bis hier tat das nur der Sprung der zeitlichen Auflösung (`_traaR.neu`): ohne
+                // sie (Holz kienspan, swiftshader) hielt der Schuss den Pass von VOR dem Wagen — sein Lack las ein leeres Pass-Ziel
+                // (Grund der Sitzung, GT am Spawn: an 1, Deckung 0 an jedem Lack-Pixel)
+                if (st.spiegelLeser) st.spiegelLeser.an.value = 0;
                 if (window.__offen?.has("zitter")) return;
                 const tn = st.traaNode;
                 if (tn) {

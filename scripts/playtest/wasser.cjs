@@ -1828,7 +1828,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
         // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (das EINE Warten, welt-boot `__gebautNach`), mindestens 280 Takte
         const steht = () => {
             let n = 0;
-            for (const e of s.voxelChunks.values()) if (e?.waterCells && e.waterCells.length) n++;
+            for (const e of s.voxelChunks.values()) if (e?.waterCells?.length) n++;
             return s.voxelChunks.size > 8 && n > 0;
         };
         const pumpe = async (i) => {

@@ -239,7 +239,12 @@
     function linKanal(v) {
         return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
     }
+    // Unter r184 mit ColorManagement (das Labor der Schmiede auf der Engine der Welt seit w13-buehne-lack-heim, die Seite der Welt)
+    // rechnet die Engine dieselbe Kurve schon beim Bau des Stoffs: die Komponente IST linear, ein zweiter Zug verdunkelte jedes
+    // Metall (die Klinge im Labor 0,19 statt 0,35 der Welt, material.K1) — wie vehicle-core `stoffFarbe`. Der Faden der Welt und
+    // jede Linse in Node bauen ohne ColorManagement (studio-bruecke, welt-boot ENGINE_THREE) und rechnen hier, byte-gleich.
     function stoffFarbe(m) {
+        if (THREE.ColorManagement && THREE.ColorManagement.enabled) return;
         var cs = [m.color, m.emissive];
         for (var i = 0; i < cs.length; i++)
             if (cs[i]) cs[i].setRGB(linKanal(cs[i].r), linKanal(cs[i].g), linKanal(cs[i].b));
