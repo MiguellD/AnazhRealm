@@ -900,7 +900,7 @@ async function starte() {
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
         for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
-        await page.evaluate(() => __weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
+        await page.evaluate(() => __weltDa((r) => !!(r.state.renderer?.backend)));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
@@ -919,7 +919,7 @@ async function starte() {
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
         const json = jsonLesen(path.join("spec", ort.welt));
-        const slug = json.worldMeta && json.worldMeta.slug;
+        const slug = json.worldMeta?.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
         const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
@@ -941,7 +941,7 @@ async function starte() {
         await lade(
             page.evaluate(() => {
                 delete window.__anazhAutoSettlement;
-                return __weltDa(() => st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht);
+                return __weltDa(() => st.worldMeta.genesisOrt?.steht);
             })
         );
         await loopAus();
@@ -1008,7 +1008,7 @@ async function starte() {
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
-                const g = o && o.gruendung;
+                const g = o?.gruendung;
                 window.__ortBahn = o?.bahn || null;
                 if (g) {
                     const same = g.wort.split(" ")[1];
@@ -1121,13 +1121,14 @@ async function starte() {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
+                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
-                    S = await __bodenTiefe(true);
+                    S = await tiefe();
                 r.state.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
                 aus.forEach((o) => (o.visible = false));
                 bundlesNeu();
-                const O = await __bodenTiefe(true);
+                const O = await tiefe();
                 aus.forEach((o) => (o.visible = true));
                 bundlesNeu();
                 const ab = (j) => ((j % S.tw) - S.tw / 2) ** 2 + (Math.floor(j / S.tw) - S.th / 2) ** 2;
@@ -1461,7 +1462,7 @@ async function starte() {
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
-                            if (!si || !o.skeleton) return o.parent && o.parent.name === "head" ? "head" : null;
+                            if (!si || !o.skeleton) return o.parent?.name === "head" ? "head" : null;
                             let best = null,
                                 bw = 0;
                             for (let c = 0; c < 4; c++) {
@@ -1488,7 +1489,7 @@ async function starte() {
                             const c = o.geometry.attributes.color;
                             if (!c) return null;
                             const a = [c.getX(i), c.getY(i), c.getZ(i)];
-                            const z = o.userData && o.userData.__ton;
+                            const z = o.userData?.__ton;
                             const ta = o.geometry.attributes.aTon;
                             if (z && tafel && ta && (z[0] || z[1])) {
                                 const t = Math.round(ta.getX(i));
@@ -2227,7 +2228,7 @@ async function starte() {
                         const st = r.state;
                         const t0 = performance.now();
                         const quadrat = () => {
-                            const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const satz = st.chunkSaetze?.get("boden");
                             const span = r._voxelChunkConfig().span;
                             const pp = st.playerMesh.position;
                             const cx = Math.floor(pp.x / span),
@@ -2247,7 +2248,7 @@ async function starte() {
                         // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
                         // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
                         const karteHier = (k) => {
-                            const a = k && k.anker;
+                            const a = k?.anker;
                             const span = r._voxelChunkConfig().span;
                             const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                             const p = st.playerMesh.position;
@@ -2278,7 +2279,7 @@ async function starte() {
                             if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
                             if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
                             const k = st.fernKroneNah;
-                            const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
+                            const baut = st.voxelMeshPending?.size > 0;
                             q = quadrat();
                             return q.fehlt.length === 0 && !baut && (!k || karteHier(k));
                         };
@@ -2334,8 +2335,8 @@ async function starte() {
                         // ruht (nach der Linse lud das Neu-Aufnehmen der Bündel jede Textur ohnehin: blind). Ruht er in fünf
                         // Versuchen nie, urteilt die Probe laut.
                         const satzV = () => {
-                            const s = st.chunkSaetze && st.chunkSaetze.get("boden");
-                            const g = s && s.geom;
+                            const s = st.chunkSaetze?.get("boden");
+                            const g = s?.geom;
                             if (!g) return "leer";
                             let v = g.id + ":" + (g.index ? g.index.version : -1);
                             for (const k in g.attributes) v += ":" + g.attributes[k].version;
@@ -3269,7 +3270,7 @@ hauptLauf(async () => {
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
         if (o?.zeilen) {
-            const w = o.messung && o.messung.welt;
+            const w = o.messung?.welt;
             if (w)
                 console.log(
                     `  Welt ${w.gestanden ? "steht" : "STAND NICHT"} nach ${w.ms} ms (${w.takte} Takte): Chunk ${w.chunk}, ` +
@@ -3280,7 +3281,7 @@ hauptLauf(async () => {
                     `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
                         `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern}) · Runden ${z.runden}`
                 );
-            const up = o.messung && o.messung.upload;
+            const up = o.messung?.upload;
             if (up)
                 console.log(
                     `  Upload im Hauptbild (${up.ruhig ? "ruhig" : "UNRUHIG"}, Versuch ${up.versuche}, ${up.bilder} Bilder): ` +

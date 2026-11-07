@@ -541,7 +541,7 @@ function selbsttest() {
 // den Blöcken der Nah-Streu, auraAt − frozen an den Stämmen) nach einer Spielstunde, nach Save → Reload → einer Stunde und nach
 // 36 Stunden mehr. Urteil: nach der Stunde ≤ 30 % der Bäume, keine Pflanze, je Baum ein Stumpf, das Feld ≥ 0,05 unter frozen.
 function tatUrteil(T) {
-    const h = T && T.stunde;
+    const h = T?.stunde;
     if (!h) return ["LEER: keine Messung nach der Stunde"];
     return [
         T.gefaellt >= 8 && T.gepflueckt >= 25 ? "" : `LEER: ${T.gefaellt} Bäume, ${T.gepflueckt} Pflanzen`,

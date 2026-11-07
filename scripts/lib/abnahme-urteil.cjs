@@ -685,7 +685,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
     // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
     const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null,
-        pa = sa && sa.partner;
+        pa = sa?.partner;
     const sp = [0, 0, 0, 0, 0, 0];
     for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
         const z = [0, 0, 0, 0, 0, 0]; // die Block-Mittel der Zeile: n, Σa, Σb, Σa², Σb², Σab
@@ -866,7 +866,7 @@ function sollRechnung(r, e, q) {
     // Durchlass bei `e.sonne` und sein Himmel: 1 + τ_b / τ_d. Am Mittag selbst ist es der Kehrwert des Diffus-Anteils [1/b, 1/a] (bis
     // w4-himmel-uhr die eigene Rechnung einsDurch, der Mittag allein).
     if (r.art === "klarerTag") {
-        const h = e && e.sonne;
+        const h = e?.sonne;
         if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && r.mittag >= 3)) return { fehler: "klarerTag ohne diffus, mittag, Sonne ab 3°" };
         return band(
             r.diffus.map((kd) => {
@@ -893,7 +893,7 @@ function sollRechnung(r, e, q) {
     // kelvinTon { kelvin, datei, symbol } (w4-himmel-uhr): das Band B/R (linear) zwischen zwei Farbtemperaturen über die EINE
     // Lichtfarbe der Kette (fachwerk-core `lichtFarbe`, der Planck-Ort nach Kim et al. 2002), GELESEN im Kern, nie abgeschrieben
     if (r.art === "kelvinTon") {
-        const lf = q && q.kern && q.kern(r.datei, r.symbol);
+        const lf = q?.kern && q.kern(r.datei, r.symbol);
         if (!(typeof lf === "function" && paar(r.kelvin))) return { fehler: `kelvinTon ohne kelvin oder ${r.symbol}` };
         return band(r.kelvin.map((k) => lf(k)[2] / lf(k)[0]));
     }
@@ -1162,7 +1162,7 @@ const MASS_RECHNER = {
             rc = ma.rechnung || {};
         const f = bildMessungFehler(me);
         if (f) return { fehler: f };
-        const ft = me.abstand && me.abstand.farbton;
+        const ft = me.abstand?.farbton;
         if (!ft || !Array.isArray(ft.kacheln)) return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
         if (JSON.stringify([ft.kachel, ft.band, me.leinwand]) !== JSON.stringify([rc.kachel, rc.band, rc.leinwand]))
             return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}` };
@@ -1259,7 +1259,7 @@ const MASS_RECHNER = {
         if (f) return { fehler: f };
         const g = me.gesicht;
         if (!g || typeof g !== "object") return { fehler: "die Messung ohne Gesicht (werkbank bild --gesicht)" };
-        const felder = sb && sb.felder;
+        const felder = sb?.felder;
         if (!felder) return { fehler: "gesicht ohne die Bänder der Züge (verweis felder)" };
         let drin = 0,
             n = 0,
@@ -1352,8 +1352,8 @@ function albedoZeile(ma, q) {
 function messStand(bloecke, quellen, q) {
     for (const b of bloecke) {
         const st = b?.stand || {};
-        if (!(st.version || (b && b.version))) return "Stand ungeprüft: die Messung trägt keine Version";
-        const sha = st.sha || (b && b.sha);
+        if (!(st.version || b?.version)) return "Stand ungeprüft: die Messung trägt keine Version";
+        const sha = st.sha || b?.sha;
         if (!sha) return "Stand ungeprüft: die Messung trägt keinen Commit (stand.sha)";
         for (const d of quellen) {
             const h = b.quellen && b.quellen[d];
@@ -1560,8 +1560,8 @@ function schussVon(kl, m, bruch) {
 // DIE SONNE EINER MESSUNG (Grad, nachts negativ): ihre Richtung `sonnenRichtung` — vor w4-himmel-uhr trug die Bilanz dort das
 // Richtlicht, am Mittag die Sonne. Die Messung steht unter der Sonne ihres Solls, wenn beide höchstens 0,5° trennen: die Stufe der
 // Sonne (`SONNEN_STUFE_SCHATTIERUNG` 1/255 rad = 0,22°) und drei Stellen der Richtung (≤ 0,06°) liegen darunter.
-const messUhr = (me) => (me && me.uhr != null ? me.uhr : me && me.werkzeug === "licht" ? 0.5 : null);
-function messSonne(me, s = me && me.sonnenRichtung) {
+const messUhr = (me) => (me?.uhr != null ? me.uhr : me?.werkzeug === "licht" ? 0.5 : null);
+function messSonne(me, s = me?.sonnenRichtung) {
     return Array.isArray(s) ? (Math.asin(s[1] / Math.hypot(...s)) * 180) / Math.PI : null;
 }
 
@@ -1959,9 +1959,9 @@ function sollTafelSelbsttest(tafel, q) {
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
     const klon = () => jsonKlon(tafel);
     const finde = (t, f) => (t.klassen || []).find(f);
-    const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
-    const mitVerweis = (t) => finde(t, (k) => (k.soll?.eigenschaften || []).some((e) => e.verweis && e.verweis.symbol));
-    const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
+    const mitMessung = (t) => finde(t, (k) => k.mass?.messung?.werkzeug === "bild");
+    const mitVerweis = (t) => finde(t, (k) => (k.soll?.eigenschaften || []).some((e) => e.verweis?.symbol));
+    const mitAlbedo = (t) => finde(t, (k) => k.mass?.rohdatei);
     // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
     const frisch = (k, me) => {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
@@ -2042,7 +2042,7 @@ function sollTafelSelbsttest(tafel, q) {
         const l1 = linie(1),
             l24 = linie(2.4),
             l3 = linie(3);
-        const lb = (tafel && tafel.klassen ? tafel.klassen : []).find((k) => k.id === "laub-kante");
+        const lb = (tafel?.klassen || []).find((k) => k.id === "laub-kante");
         const grenze = lb ? ((lb.soll.eigenschaften || []).find((e) => e.groesse === "kante") || {}).band : null;
         if (!(l1 < l24 && l24 < l3 && l3 < kq.kante)) v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
         if (grenze && !(l24 <= grenze[1])) v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);
@@ -2277,13 +2277,13 @@ function sollTafelSelbsttest(tafel, q) {
         const z = sollTafelUrteil(t, q).zeilen.find((x) => x.id === t.klassen[0].id);
         if (!z || z.urteil !== "ROT") v.push("ein ungemessenes Ist ist GRÜN");
         const t3 = klon();
-        const k3 = finde(t3, (k) => k.mass && k.mass.name === "laiWirk" && k.mass.messung);
+        const k3 = finde(t3, (k) => k.mass?.name === "laiWirk" && k.mass.messung);
         if (k3) frisch(k3, k3.mass.messung);
-        if (k3 && k3.mass.name === "laiWirk") {
+        if (k3?.mass.name === "laiWirk") {
             const ab = k3.mass.messung.abstand.klassen;
             for (const n of Object.keys(ab)) if (new RegExp(k3.mass.rechnung.grund).test(n)) ab[n] = ab[n].map(() => 0);
             const z3 = sollTafelUrteil(t3, q).zeilen.find((x) => x.id === k3.id);
-            if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3 && z3.ist})`);
+            if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3?.ist})`);
         }
     }
     // DER STRICH IN DER TAFEL (haar.K1/K2): fell frisch gemessen im Band der REF GRÜN, darunter ROT; haar trägt daneben die
@@ -2327,14 +2327,14 @@ function sollTafelSelbsttest(tafel, q) {
         delete k4.mass.messung.stand.sha;
         const ohneSha = zeile(q);
         if (!gruen || gruen.urteil !== "GRÜN")
-            v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen && gruen.grund})`);
+            v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen?.grund})`);
         if (!text0) v.push(`Stand: die Quelle ${d0} der Klasse ${k4.id} ist nicht zu lesen`);
         else {
             if (!kommentar || kommentar.urteil !== "GRÜN")
-                v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar && kommentar.grund})`);
+                v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar?.grund})`);
             const sha8 = String(k4.mass.messung.stand.sha || gruen.stand || "").slice(0, 8);
             if (!code || code.urteil !== "ROT" || !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") || !code.grund.includes(d0))
-                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code && code.grund}; ${sha8})`);
+                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code?.grund}; ${sha8})`);
         }
         if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version && version.grund})`);
         if (d0 && (!altForm || altForm.urteil !== "ROT" || !/alter Form/.test(altForm.grund || "")))
@@ -2344,7 +2344,7 @@ function sollTafelSelbsttest(tafel, q) {
     }
     // eine Stufe des Kerns ohne Schuss: das Maß bleibt offen — ROT mit der Stufe beim Namen, auch wenn sein Ist im Band läge
     const t5 = klon();
-    const k5 = finde(t5, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    const k5 = finde(t5, (k) => k.mass?.name === "milchweiss" && k.mass.messung);
     if (k5) {
         // die letzte Stufe fällt, solange eine bleibt (trägt die Tafel nur eine, fehlt die nächste des Kerns schon)
         const st5 = Object.keys(k5.mass.messung).filter((s) => /^L\d$/.test(s));
@@ -2357,7 +2357,7 @@ function sollTafelSelbsttest(tafel, q) {
         delete k5.wirkung.geheilt;
         const z5 = sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
-            v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
+            v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5?.urteil} ${z5?.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
     // DAS LICHT JE UHR (D3, w4-himmel-uhr): die Zelle urteilt mit dem Soll ihrer Uhr (Mittag 0,5 · tiefe Sonne 0,3 · Nacht 0) — je
     // Uhr ein Himmel im Band GRÜN, eine Mutante mit zu hellem Himmel (das Verhältnis unter dem Band) und eine mit zu dunklem ROT am
@@ -2367,7 +2367,7 @@ function sollTafelSelbsttest(tafel, q) {
     // weg, die CPU-gemalte vor D3) ROT beim Namen umgebungAzimut, auch im Band des Verhältnisses. klarerTag ist am Mittag
     // der Kehrwert des Diffus-Anteils [5; 12,5] und trägt bei der tiefen Sonne das Modell des klaren Himmels IES RP-21 (J. IES 1984).
     const t8 = klon(),
-        k8 = finde(t8, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung),
+        k8 = finde(t8, (k) => k.mass?.name === "lichtVerhaeltnis" && k.mass.messung),
         sonne = Object.fromEntries((k8?.soll.eigenschaften || []).map((e) => [e.uhr, e.sonne])),
         lf = q.kern && q.kern("fachwerk-core.js", "lichtFarbe");
     if (k8 && [0.5, 0.3, 0].every((u) => sonne[u] != null) && lf) {
@@ -2403,7 +2403,7 @@ function sollTafelSelbsttest(tafel, q) {
     } else v.push("himmel-licht ohne Soll je Uhr 0,5 · 0,3 · 0 oder ohne lichtFarbe");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
-    const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    const k6 = finde(t6, (k) => k.mass?.name === "milchweiss" && k.mass.messung);
     const s6 = k6 && Object.keys(k6.mass.messung).find((s) => /^L\d$/.test(s) && !/^L3$/.test(s));
     if (k6 && s6) {
         const torRe = new RegExp(k6.mass.rechnung.tor);

@@ -734,7 +734,7 @@ function nahFolgt() {
 
 // DIE BLICK-WAHL (K32; Lehre 17 „die Blick-Wahl sucht freie Sicht"): vor dem Schuss sucht die Aufnahme bis zu `opt.wahl` Posen
 // um den Ort — der Abstand zum Ziel und die Augenhöhe über dem Boden bleiben, der Azimut dreht 0, ±15° … ±90°, ±135°, 180°,
-// je Runde von 14 Posen ein Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
+// je Runde von 14 Posen vier Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
 // Abnahme nach dem Schuss wirft beim Namen. JEDE POSE IN IHRER WELT (w18-abnahme-sicht): eine Pose, die im Augenblick frei ist, steht
 // erst, wenn sie es auch in IHRER Welt bleibt — unter der Bühne wartet die Wahl, bis die Welt an ihr steht (`__weltStehtWarten`), die
@@ -742,7 +742,7 @@ function nahFolgt() {
 // Einschwingen zahlt); was schon im Augenblick verdeckt ist, fällt ohne Warten. Bis dahin urteilte sie in der Welt der vorigen Pose:
 // siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, der Welt dort fehlten noch 130 Takte bis zum Stehen, und
 // der zweite Schuss fand die Tanne, die sie dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
-// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__bodenTiefe`), geurteilt wie der
+// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__zielMessen`), geurteilt wie der
 // Schuss (kamera-nah `o.ziel.tiefe`) — erst im Augenblick, dann in ihrer Welt. Bis dahin urteilte ein Strahl über die Dreiecke der
 // CPU: siedlung.K4#2 Radeon f3911ab9 Pose 6 im Wald, „frei 210,41 m“, am Ziel-Pixel zeigte das Bild die Karte einer Erle in 33,31 m.
 async function blickWahl(opt) {
@@ -765,19 +765,22 @@ async function blickWahl(opt) {
             zz = z.z + Math.sin(a) * d;
         const g = boden(x, zz);
         if (!Number.isFinite(g)) continue;
-        cam.position.set(x, g + h0 + ring, zz);
+        // vier Meter je Runde (w18-abnahme-sicht): seit das Bild urteilt, steht die Mauer des Orts vor seiner Mitte, wo der Strahl durch die
+        // Halme vor ihr sah (siedlung.K4#2 Radeon 233a7360: 42 Posen, ein Meter je Runde, keine frei)
+        cam.position.set(x, g + h0 + 4 * ring, zz);
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
-        let m;
-        const urteil = (tiefe) =>
-            window.__abnahmeUrteil((m = window.__abnahmeMessen({ ...opt, tiefe }))).rot.filter((q) => !q.feld.startsWith("bild.") && (tiefe || q.feld !== "ziel.frei"));
-        let rest = urteil();
+        let m = window.__abnahmeMessen(opt);
+        const urteil = () => window.__abnahmeUrteil(m).rot.filter((q) => !q.feld.startsWith("bild."));
+        let rest = urteil().filter((q) => q.feld !== "ziel.frei");
         // im Augenblick: EIN Bild des Loops an der Pose (ohne die Ruhe der Erst-Zeichnung) — was dort schon verdeckt ist, fällt ohne
         // Warten; was frei ist, urteilt das ganze Bild der Tiefe, unter der Bühne in der Welt der Pose
-        if (!rest.length) rest = urteil((window.__nahFolgt(), window.__loopBild(), await window.__bodenTiefe()));
+        if (!rest.length) (m = await window.__zielMessen(opt, (window.__nahFolgt(), window.__loopBild(), await window.__spiegelDaten()))), (rest = urteil()); // prettier-ignore
         if (!rest.length) {
             if (window.__buehneUhr) await window.__weltStehtWarten();
-            rest = urteil(await window.__bodenTiefe(true));
+            await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
+            m = await window.__zielMessen(opt, await window.__spiegelDaten());
+            rest = urteil();
         }
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
         if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
@@ -788,13 +791,13 @@ async function blickWahl(opt) {
     return { versucht: posen.length, gewaehlt: null, posen };
 }
 
-// DIE TIEFE DES BILDS UND OHNE DIE BODEN-SCHICHT (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): die Tiefe S des letzten Bilds (`voll`:
-// erst EIN Bild an der Kamera nach dem Neubeginn, `opt.tiefe` der Aufnahme — die Blick-Wahl und der Arm) und dazu `S.boden`, dasselbe
-// Bild mit verborgenen Halmen der Nah-Wiese, Streu und Wasser (EIN Bild des Loops; ihre Stoffe stehen schon): was dort am Ziel-Pixel
-// steht, ist keine Boden-Schicht; `aus` nennt die Verborgenen
-async function bodenTiefe(voll) {
-    if (voll) await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
-    const S = await window.__spiegelDaten();
+// DIE ABNAHME AM BILD (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): gemessen mit der Tiefe S des Bilds; zeigt S an einem Ziel-Punkt eine
+// Fläche davor (`ziel.frei` ungemessen), misst sie noch einmal mit `S.boden`, demselben Bild mit verborgenen Halmen der Nah-Wiese, Streu
+// und Wasser (EIN Bild des Loops; ihre Stoffe stehen schon): was dort am Ziel-Pixel steht, ist keine Boden-Schicht; `aus` nennt die
+// Verborgenen. Nur wo das Bild etwas vor dem Ziel zeigt, kostet es das zweite Bild.
+async function zielMessen(opt, S) {
+    const m = window.__abnahmeMessen({ ...opt, tiefe: S });
+    if (m.ziel?.frei !== null) return m;
     const aus = new Set();
     st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
     for (const o of aus) o.visible = false;
@@ -806,7 +809,7 @@ async function bodenTiefe(voll) {
         for (const o of aus) o.visible = true;
         window.__bundlesNeu();
     }
-    return S;
+    return window.__abnahmeMessen({ ...opt, tiefe: S });
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
@@ -835,8 +838,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
-        const abnahme = (u8, W2, H2, tiefe) => {
-            const m = window.__abnahmeMessen({ ...opt, tiefe });
+        const abnahme = (u8, W2, H2, m) => {
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
@@ -897,7 +899,8 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // DER RÜCKSTRAHL DIESER SZENE (schatten.K4, `_rueckstrahlJetzt`): seine Lesung kommt ein Bild nach der Messung zurück —
             // der Schuss wartet auf sie, sonst trüge er den Boden des vorigen Schusses; sein Schalter steht danach für die Bilder des
             // Schusses (w10-treue: der erste Schuss nach dem Lesen zeichnete ohne den eben gemessenen Boden)
-            await r._rueckstrahlJetzt(() => (neubeginn(), frame()));
+            // (die Tiefe allein, `opt.tiefe`, trägt keinen Boden-Rückstrahl)
+            if (!opt?.tiefe) await r._rueckstrahlJetzt(() => (neubeginn(), frame()));
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
@@ -935,11 +938,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // die EINE Ziel-Lesung (welt-boot): das Polster der 256-Byte-Zeilen fällt dort
             const voll = await window.__zielLesen(rt, BW, BH);
             const ms = performance.now() - t0;
-            // DAS BILD AM ZIEL (w18-abnahme-sicht): die Tiefe DIESES Schusses (der Szenen-Pass des gezählten Bilds) und danach das Bild
-            // ohne die Boden-Schicht (`__bodenTiefe`) — die Abnahme fragt an jedem Ziel-Punkt, welche Fläche das Bild dort zeigt (kamera-nah
-            // `o.ziel.tiefe`); der Aufrufer liest die Tiefe des Schusses als `tiefe`, nie neu (das Bild ohne Boden-Schicht stand danach)
-            const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__bodenTiefe() : null;
-            if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, tiefe) };
+            // DAS BILD AM ZIEL (w18-abnahme-sicht): die Abnahme misst an der Tiefe DIESES Schusses (der Szenen-Pass des gezählten Bilds,
+            // `__zielMessen`); der Aufrufer liest sie als `tiefe`, nie neu (das Bild ohne Boden-Schicht kann danach stehen)
+            const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__spiegelDaten() : null;
+            const m = tiefe ? await window.__zielMessen(opt, tiefe) : window.__abnahmeMessen(opt);
+            if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
             for (let y = 0; y < H; y++) {
@@ -956,7 +959,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                     }
                 }
             }
-            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, tiefe) };
+            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, m) };
         } finally {
             window.__imSchuss = 0;
             rend.setOutputRenderTarget(prevOut);
@@ -1457,7 +1460,7 @@ module.exports = {
         `window.__abnahmeMessen = ${abnahmeMessen};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
-        `window.__bodenTiefe = ${bodenTiefe};` +
+        `window.__zielMessen = ${zielMessen};` +
         `(${seitenfehlerZaehlen})();` +
         `window.__erstRuhe = ${erstRuhe};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme};` +

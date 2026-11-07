@@ -486,7 +486,7 @@ function nahDeckungInSeite(o) {
         }
     // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, r, punkte, tiefe }): liegt es im Bild
     // (Projektion der Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und zeigt das BILD es? Die EINE Quelle ist die Tiefe der
-    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`) und ihr Zwilling-Bild OHNE die Boden-Schicht (`tiefe.boden`, `__bodenTiefe`: Halme der
+    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`) und ihr Zwilling-Bild OHNE die Boden-Schicht (`tiefe.boden`, `__zielMessen`: Halme der
     // Nah-Wiese, Streu, Wasser verborgen). Je Punkt die Fläche W am Pixel: liegt sie höchstens `saum` (0,5 m) vor ihm, näher als `r`
     // (1,5 m) an ihm oder ist es Himmel, ist der Punkt frei. Sonst fragt das Bild ohne Boden-Schicht: zeigt es den Punkt, stand nur die
     // Boden-Schicht davor — sie verdeckt nur näher als der halbe Ziel-Abstand (wie der Vordergrund der Abnahme); in der fernen Hälfte
@@ -517,9 +517,10 @@ function nahDeckungInSeite(o) {
             // außerhalb des Bilds liest der Index ein fremdes Pixel — dann ist `imBild` schon ROT
             const i = Math.floor(((1 - v.y) / 2) * S.th) * S.tw + Math.floor(((v.x + 1) / 2) * S.tw);
             const vor = (W) => W && W.distanceTo(E) < L - (Z.saum ?? 0.5) && W.distanceTo(P) > (Z.r ?? 1.5);
-            const [W, W0] = [S.punkt(i), S.boden.punkt(i)];
+            const [W, W0] = [S.punkt(i), S.boden?.punkt(i)];
             const d = W?.distanceTo(E);
             if (!vor(W)) return { d };
+            if (!S.boden) return { d, offen: true };
             if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
             let h = null;
             const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
@@ -533,7 +534,7 @@ function nahDeckungInSeite(o) {
             name: Z.name || "Ziel",
             imBild,
             ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
-            frei: S ? i < 0 : null,
+            frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
             vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
             vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
             abstand: +Math.hypot(Z.x - ex, Z.y - ey, Z.z - ez).toFixed(2),
