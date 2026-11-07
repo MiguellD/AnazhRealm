@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T01:41:07.152Z",
+ "zeit": "2026-11-07T02:05:59.891Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K2#1": {
@@ -380,12 +380,13 @@
   },
   "leib.K1#2": {
    "gruen": false,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "exit": null,
-   "minuten": 0,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "ungemessen": true,
-   "zeit": "2026-11-07T01:41:07.152Z",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.2,
+   "zeit": "2026-11-07T02:05:59.891Z",
    "abdruck": "69bb8ec1c19c",
    "port": 7804,
    "bahn": "sitzung",
@@ -393,13 +394,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T01:31:06.888Z",
+  "start": "2026-11-07T02:05:15.930Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 35.9,
+    "takte": 937,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 4142,
+   "frameP95": 41.68,
+   "taktP95": 37.76,
+   "vramMax": 137.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 132,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 135.4,
+  "minuten": 2.32
  }
 }
