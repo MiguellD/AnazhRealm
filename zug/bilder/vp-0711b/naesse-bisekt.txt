@@ -1,0 +1,8 @@
+03:27:28 0-main 5fb21e29 exit 0 · dorf regenbild 0.951 aussen 0.751 · NÄSSE GRUEN
+03:48:06 7-bild-weg 6bdbc7f2 exit 0 · dorf regenbild 0.88 aussen 0.784 · NÄSSE ROT: dorf: Attempted to use detached Frame '425125D49DE8FD51B057BD569C3CD2A5'.
+NÄSSE GRUEN
+03:50:05 8-innen-licht 5c2302b5 exit 1 · dorf regenbild 1.025 aussen 0.751 · NÄSSE ROT: dorf Regenbild 1.025 × so hell wie die Sonne
+03:51:51 9-kamera-haus dda4e498 exit 1 · dorf regenbild 1.025 aussen 0.751 · NÄSSE ROT: dorf Regenbild 1.025 × so hell wie die Sonne
+03:53:51 10-laub-kante b78996bc exit 1 · dorf regenbild 1.025 aussen 0.751 · NÄSSE ROT: dorf Regenbild 1.025 × so hell wie die Sonne
+03:53:51 ENDE
+03:56:43 11-main+innen-licht ce9686c02a7b17e741bd519e34470225796fd2c8 exit 1 · dorf regenbild 1.025 aussen 0.751 · NÄSSE ROT: dorf Regenbild 1.025 × so hell wie die Sonne
