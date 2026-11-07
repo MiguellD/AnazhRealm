@@ -26,7 +26,7 @@ teil BILD $W bild $K --uhr 0.5 --datei "$L/ring.png" --w 1600 --h 900
 cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 @@PUNKTE@@ ORT
 {
- "ms": 16,
+ "ms": 13,
  "ergebnis": {
   "S": {
    "x": 400.0000000000001,
@@ -43,7 +43,7 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 
 @@PUNKTE@@ VOR
 {
- "ms": 167,
+ "ms": 180,
  "ergebnis": {
   "k": "d:7@400,693",
   "groesse": "dorf",
@@ -64,12 +64,12 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 
 @@PUNKTE@@ UHR
 {
- "ms": 3,
+ "ms": 2,
  "ergebnis": {
   "kern": true,
   "jahr": 1412,
   "haeuser": 12,
-  "uhr": 1547.911020000019
+  "uhr": 1547.1872299999595
  }
 }
 
