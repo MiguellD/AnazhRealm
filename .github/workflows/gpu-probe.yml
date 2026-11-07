@@ -124,7 +124,7 @@ jobs:
                   DECKEL=480
                   echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
                   GPU=$(powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name -join ', '" 2> /dev/null | tr -d '\r')
-                  echo "Läufer **$RUNNER_NAME** · GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
+                  echo "GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
                   rot_ende() {
                       echo ROT > "$OUT/urteil.txt"
                       echo "$1" > "$OUT/kopf.txt"
@@ -233,7 +233,7 @@ jobs:
                           esac
                       fi
                       d=$((SECONDS - t))
-                      ADAPTER=$(grep -ho "\[linse-gpu\].*" "$LOG" | sort -u | tr '\n' ' ')
+                      ADAPTER=$(grep -ho "\[linse-gpu\].*" "$LOG" | sort -u | paste -sd ' ')
                       # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst ihr Exit
                       case "$GRUND" in
                           NACHGEGEBEN*) U=NACHGEGEBEN ;;
