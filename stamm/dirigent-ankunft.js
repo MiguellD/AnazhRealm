@@ -77,8 +77,9 @@ class AnazhRealm_dirigent_ankunft {
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
-        // Ring 6.6 — Werkstatt-Editor initial mit Default-Bauplan rendern.
-        this._renderWorkshopDOM();
+        // Die Werkstatt (Liste, Steckbrief, Vorschau) baut, wer sie zeigt: der Vorbau der Bedienung (`_uiVorbau`) oder ihr
+        // Öffner (`_workshopHandleDrawerChange`) — nie der Init unter dem Ladeschirm (w16-lade-atem: headless kalt 124 ms, und der
+        // Steckbrief des Default-Bauplans ließ die Eiche wachsen).
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();

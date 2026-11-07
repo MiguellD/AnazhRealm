@@ -520,12 +520,10 @@ async function runPartB() {
         r._rebuildArchitectureMesh(entry); // Erst-Platzierung (Assets warm → sofort instanced)
         res.placed = entry.instanced === true;
         const savedArchs = st.architectures;
-        const savedCursor = r._archLODCursor;
         try {
             st.architectures = [entry]; // SICHERN+WIEDERHERSTELLEN (Gate-Hook-Lehre)
             for (const target of dnTargets) {
                 const raw = place(target);
-                r._archLODCursor = 0;
                 for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, pm.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
                 const dn = r._lodPerceptionDistance(raw, visH);
                 const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
@@ -602,7 +600,6 @@ async function runPartB() {
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     pm.position.set(e0.px - raw, e0.py, e0.pz);
-                    r._archLODCursor = 0;
                     for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                     const stufen = new Map();
                     for (const list of [e0.entry.instSlots, e0.entry.instSlotsBand])
@@ -717,7 +714,6 @@ async function runPartB() {
                     };
                     for (const raw of [1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1.5]) {
                         pm.position.set(E.px - raw, E.py, E.pz);
-                        r._archLODCursor = 0;
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                         r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
                         const neu = new Map(),
@@ -905,7 +901,6 @@ async function runPartB() {
                             const rawAuge = dnZiel / factor;
                             const auge = new window.THREE.Vector3(px - rawAuge, py + 1.6, pz);
                             pm.position.set(px - Math.max(0, rawAuge - art.armM), py, pz);
-                            r._archLODCursor = 0;
                             for (let i = 0; i < 4; i++)
                                 r._tickArchitectureLOD(99, art.wahlVomSpieler ? pm.position : auge);
                             const z = deckungAm(entry, auge);
@@ -1068,7 +1063,6 @@ async function runPartB() {
             } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask fehlt" };
         } finally {
             st.architectures = savedArchs;
-            r._archLODCursor = savedCursor;
         }
         // ════ TEIL Z — DER STUFEN-ZENSUS: bei Studio-äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der
         // Studio-Wald (dn = dr·min(HREF/bh, 1) ungedeckelt · Blatt-Kappe bh_L = min(bh, 24)), je Distanz-Band × Sichthöhe.
