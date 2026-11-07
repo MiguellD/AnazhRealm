@@ -1,0 +1,510 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1600,
+   900
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 134.67,
+  "gestalt": [
+   "wandlaterne_dorf 457"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   273.7,
+   41.966,
+   637.518
+  ],
+  "blick": [
+   0.98071,
+   -0.01207,
+   0.19509
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1600,
+  "h": 900,
+  "mittel": 112.3,
+  "sigma": 49.3,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.67 m · Luma 112.3 σ 49.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 39 Posen",
+ "wahl": {
+  "versucht": 39,
+  "gewaehlt": 38,
+  "kamera": [
+   273.7,
+   41.966,
+   637.518
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     446.82,
+     49.75,
+     457.43
+    ],
+    "rot": [
+     "Vordergrund 28.3 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_birke 27.3 %, Rinde baum_birke 1.0 %"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     498.831,
+     47.198,
+     475.086
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Natur baum_birke in 90.89 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     392.011,
+     42.963,
+     453.837
+    ],
+    "rot": [
+     "Vordergrund 29.0 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 28.8 %, Gelände 0.2 %"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     544.5,
+     42.613,
+     505.602
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fimp:atlas:L2 in 11.84 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     338.14,
+     38.924,
+     464.552
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 168.49 m"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     580.715,
+     41.742,
+     546.898
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 132.48 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     288.878,
+     38.473,
+     488.845
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Natur baum_erle in 33.29 m"
+    ]
+   },
+   {
+    "k": 7,
+    "kamera": [
+     605.008,
+     40.783,
+     596.16
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 127.33 m"
+    ]
+   },
+   {
+    "k": 8,
+    "kamera": [
+     247.582,
+     35.914,
+     525.06
+    ],
+    "rot": [
+     "Vordergrund 30.0 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 30.0 %"
+    ]
+   },
+   {
+    "k": 9,
+    "kamera": [
+     612.13,
+     36.566,
+     704.84
+    ],
+    "rot": [
+     "Vordergrund 30.4 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 30.4 %"
+    ]
+   },
+   {
+    "k": 10,
+    "kamera": [
+     199.41,
+     34.193,
+     622.74
+    ],
+    "rot": [
+     "Vordergrund 28.8 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 28.8 %"
+    ]
+   },
+   {
+    "k": 11,
+    "kamera": [
+     522.662,
+     35.431,
+     838.735
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 89.67 m"
+    ]
+   },
+   {
+    "k": 12,
+    "kamera": [
+     230.825,
+     31.102,
+     780.682
+    ],
+    "rot": [
+     "Vordergrund 30.9 % näher als 8 m (der halbe Ziel-Abstand): fern-ring 30.9 %"
+    ]
+   },
+   {
+    "k": 13,
+    "kamera": [
+     364.72,
+     38.867,
+     870.15
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 80.17 m"
+    ]
+   },
+   {
+    "k": 14,
+    "kamera": [
+     438.61,
+     49.885,
+     498.702
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Laub baum_tanne in 8.86 m"
+    ]
+   },
+   {
+    "k": 15,
+    "kamera": [
+     480.219,
+     48.033,
+     512.827
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Laub baum_kiefer in 33.68 m"
+    ]
+   },
+   {
+    "k": 16,
+    "kamera": [
+     394.763,
+     46.784,
+     495.828
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fimp:atlas:L2 in 17.83 m"
+    ]
+   },
+   {
+    "k": 17,
+    "kamera": [
+     516.754,
+     46.123,
+     537.24
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 93.86 m"
+    ]
+   },
+   {
+    "k": 18,
+    "kamera": [
+     351.666,
+     42.636,
+     504.4
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fimp:atlas:L2 in 8.15 m"
+    ]
+   },
+   {
+    "k": 19,
+    "kamera": [
+     545.726,
+     45.42,
+     570.277
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 90.23 m"
+    ]
+   },
+   {
+    "k": 20,
+    "kamera": [
+     312.257,
+     40.357,
+     523.834
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 141.79 m"
+    ]
+   },
+   {
+    "k": 21,
+    "kamera": [
+     565.16,
+     44.036,
+     609.686
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 85.05 m"
+    ]
+   },
+   {
+    "k": 22,
+    "kamera": [
+     279.22,
+     40.202,
+     552.806
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 85.9 m"
+    ]
+   },
+   {
+    "k": 23,
+    "kamera": [
+     570.858,
+     40.5,
+     696.63
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 71.15 m"
+    ]
+   },
+   {
+    "k": 24,
+    "kamera": [
+     240.682,
+     37.448,
+     630.95
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 72.38 m"
+    ]
+   },
+   {
+    "k": 25,
+    "kamera": [
+     499.283,
+     39.744,
+     803.746
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 47.32 m"
+    ]
+   },
+   {
+    "k": 26,
+    "kamera": [
+     265.814,
+     35.371,
+     757.303
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 48.1 m"
+    ]
+   },
+   {
+    "k": 27,
+    "kamera": [
+     372.93,
+     42.074,
+     828.878
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von siedlung-mauer in 37.89 m"
+    ]
+   },
+   {
+    "k": 28,
+    "kamera": [
+     432.042,
+     51.25,
+     531.72
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 101.81 m"
+    ]
+   },
+   {
+    "k": 29,
+    "kamera": [
+     465.329,
+     50.026,
+     543.019
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Laub baum_kiefer in 1.08 m"
+    ]
+   },
+   {
+    "k": 30,
+    "kamera": [
+     396.964,
+     49.827,
+     529.42
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 107.75 m"
+    ]
+   },
+   {
+    "k": 31,
+    "kamera": [
+     494.557,
+     49.878,
+     562.55
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 105.07 m"
+    ]
+   },
+   {
+    "k": 32,
+    "kamera": [
+     362.487,
+     46.991,
+     536.278
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 16.09 m"
+    ]
+   },
+   {
+    "k": 33,
+    "kamera": [
+     517.735,
+     48.623,
+     588.979
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 97.93 m"
+    ]
+   },
+   {
+    "k": 34,
+    "kamera": [
+     330.959,
+     44.969,
+     551.825
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 108.23 m"
+    ]
+   },
+   {
+    "k": 35,
+    "kamera": [
+     533.282,
+     47.06,
+     620.507
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 84.67 m"
+    ]
+   },
+   {
+    "k": 36,
+    "kamera": [
+     304.53,
+     43.825,
+     575.003
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von fern-ring in 110.41 m"
+    ]
+   },
+   {
+    "k": 37,
+    "kamera": [
+     537.84,
+     44.562,
+     690.062
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Natur baum_eiche in 93.67 m"
+    ]
+   },
+   {
+    "k": 38,
+    "kamera": [
+     273.7,
+     41.966,
+     637.518
+    ],
+    "rot": []
+   }
+  ]
+ }
+}

@@ -1,0 +1,209 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.210",
+  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.0116,
+  "taeter": {
+   "Rinde baum_kiefer": 0.0116
+  },
+  "vordergrund": {
+   "radius": 4.17,
+   "deckung": 0.0139,
+   "taeter": {
+    "Rinde baum_kiefer": 0.0139
+   }
+  }
+ },
+ "ziel": {
+  "name": "Riss",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 8.33,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   65.349,
+   91.438,
+   1.938
+  ],
+  "blick": [
+   -0.92588,
+   -0.27716,
+   -0.25678
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 50.9,
+  "sigma": 35.4,
+  "schwarz": 0.0056,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 1.2 % (Rinde baum_kiefer 1.2 %) · Ziel Riss im Bild frei 8.33 m · Luma 50.9 σ 35.4 schwarz 0.6 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 1,
+  "kamera": [
+   65.349,
+   91.438,
+   1.938
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     65.64,
+     91.66,
+     -0.13
+    ],
+    "rot": [
+     "Sicht verdeckt 10.9 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Rinde baum_kiefer 10.9 %"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     65.349,
+     91.438,
+     1.938
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 7,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.765,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 35.04,
+    "pixel": 13,
+    "luma": 87.51,
+    "kante": 0.0016,
+    "kr": 13,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.907,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 25.48,
+    "pixel": 468,
+    "luma": 48.04,
+    "kante": 0.2059,
+    "kr": 276,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": -0.2125,
+    "spiegelEbene": 89.32,
+    "sp": [
+     24,
+     0,
+     0,
+     71250.97,
+     71250.97,
+     -15138.5
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 19.06,
+    "pixel": 7470,
+    "luma": 54.88,
+    "kante": 0.4793,
+    "kr": 1309,
+    "strich": 0.3315,
+    "si": 521,
+    "bloecke": 47,
+    "glatt": 0.1064,
+    "nyquist": 0.1004,
+    "beta": 2.6802
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\95ba6fd6-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ }
+}

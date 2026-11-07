@@ -26,7 +26,7 @@ teil BILD $W bild $K --uhr 0.5 --datei "$L/ring.png" --w 1600 --h 900
 cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 @@PUNKTE@@ ORT
 {
- "ms": 14,
+ "ms": 8,
  "ergebnis": {
   "S": {
    "x": 400.0000000000001,
@@ -43,7 +43,7 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 
 @@PUNKTE@@ VOR
 {
- "ms": 39,
+ "ms": 40,
  "ergebnis": {
   "k": "d:7@400,693",
   "groesse": "dorf",
@@ -69,13 +69,13 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
   "kern": true,
   "jahr": 1412,
   "haeuser": 12,
-  "uhr": 1533.1441950000226
+  "uhr": 1524.8501999999846
  }
 }
 
 @@PUNKTE@@ STAND
 {
- "ms": 2,
+ "ms": 3,
  "ergebnis": {
   "jahr": [
    1412,
@@ -115,7 +115,7 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 
 @@PUNKTE@@ BILD
 {
- "ms": 129,
+ "ms": 190,
  "kamera": [
   273.7,
   41.97,
@@ -124,13 +124,22 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
  "hell": 93.7,
  "kontrast": 7.31,
  "dc": 32,
- "dreiecke": 384691,
+ "dreiecke": 380291,
  "klasse": null,
  "zeit": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.67 m · Luma 112.3 σ 49.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 39 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\ring.png",
- "gesamtMs": 17641
+ "gesamtMs": 14192
 }
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ W
+=== TEIL W: DAS WACHSTUM (siedlung.K4 Staffel 2) ===
+WACHSTUM {"je":["1/- 12→37 37/37 1993","2/- 12→36 36/36 2011","3/- 12→37 37/37 1981","5/24 24→73 73/73 2019","7/24 25→72 72/72 2007","11/96 97→293 293/293 1984"],"stueck":0,"halten":[[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]],"ganz":true,"min":0.918,"halt":true}
+  ✅ W1 WACHSTUM in 10800 s: 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5/24 24→73 73/73 2019 · 7/24 25→72 72/72 2007 · 11/96 97→293 293/293 1984; Ringe 0.918 (≥ 0,8), Takte ≠ Stück 0
+  ✅ W2 AUS BEWOHNERN (wohl 0, ohne Leute halten; Gewalt bremst): 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1
+
+✅ GRÜN — DER ORT WÄCHST AUS SEINEN BEWOHNERN (Teil W).
+@@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

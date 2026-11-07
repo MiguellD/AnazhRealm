@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 13.3,
+ "schritte": [
+  [
+   "ende",
+   13.3
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 960,
+  "bilder": 2254,
+  "seiten": 7,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 1.576083333333334e-14,
+   "mittag": 0.5000000000000111
+  },
+  "minuten": 17.22,
+  "seiten": 4,
+  "proben": 7,
+  "last": {
+   "n": 2237,
+   "frame": 58.52,
+   "p99": 91.97,
+   "max": 217.38,
+   "ueber33": 917,
+   "ueber100": 17,
+   "takt": 46.76,
+   "vram": 136.1,
+   "gpu": 11.82,
+   "gpuN": 276,
+   "befehle": 80,
+   "dreiecke": 473259,
+   "voll": 0.076,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 1168,
+  "gegangen": 124,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 101,
+    "frame": 33.48,
+    "p99": 41.85,
+    "max": 50.41,
+    "ueber33": 7,
+    "ueber100": 0,
+    "takt": 25.34,
+    "vram": 136.1,
+    "gpu": 10.2,
+    "gpuN": 9,
+    "befehle": 82,
+    "dreiecke": 378296,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 56,
+    "frame": 58.45,
+    "p99": 58.81,
+    "max": 58.81,
+    "ueber33": 45,
+    "ueber100": 0,
+    "takt": 51.06,
+    "vram": 132.8,
+    "gpu": 9.62,
+    "gpuN": 8,
+    "befehle": 78,
+    "dreiecke": 434789,
+    "voll": 1,
+    "halt": false,
+    "last": 0.52,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +26.9 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +13.0 MB · r._bewohnerSiedlungen[].aktivListe[].leib.userData._gelenk +11.3 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +5.1 MB"
+  ],
+  "heap": [
+   313.5,
+   775.9
+  ],
+  "vramGC": [
+   130.2,
+   132.1
+  ]
+ }
+}
