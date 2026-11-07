@@ -708,7 +708,7 @@ async function checkBandWFFluss({ page, check }) {
         out.runExists = typeof r._atlasWaterLevelAt === "function";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
-        if (hW && hW.ready && hW.water && hW.water.waterKind) {
+        if (hW?.ready && hW.water && hW.water.waterKind) {
             const dimW = hW.dim,
                 wKW = hW.water.waterKind;
             for (let j = 1; j < dimW - 1 && !dryW; j += 7)
@@ -1109,7 +1109,7 @@ async function checkBandV18206SpeedTrade({ page, check }) {
                 null;
             const speedFloorS =
                 (2 / 7) *
-                (bewGesetzS && bewGesetzS.speed && Number.isFinite(bewGesetzS.speed.base) ? bewGesetzS.speed.base : 7);
+                (bewGesetzS?.speed && Number.isFinite(bewGesetzS.speed.base) ? bewGesetzS.speed.base : 7);
             out.speedFloor = speedFloorS;
             out.speedFloorRespected = large.stats.speed >= speedFloorS - 1e-9;
             out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
@@ -1154,7 +1154,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
             const g = r._buildCreatureGroup(art);
             const a = { baum: false, meshN: 0, geoSet: new Set() };
             if (g) {
-                a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
+                a.baum = !!(g.userData?._tierBaum && g.userData._tierBaum.teile);
                 g.traverse((n) => {
                     if (n.isMesh) {
                         a.meshN++;

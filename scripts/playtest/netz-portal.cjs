@@ -2211,7 +2211,7 @@ async function checkBandW18Dwell({ page, check }) {
         const pid = "peer-dwell-zensus";
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, st.p2p);
         const pe = st.p2p.peers.get(pid);
-        const schild = () => (pe && pe.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
+        const schild = () => (pe?.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
         const ohne = schild();
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo", dwell: "Feld" }, st.p2p);
         out.soulReads = !!pe && pe.dwellingIn === "Feld";

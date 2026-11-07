@@ -338,7 +338,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
         const savedMode = r.getGameMode();
         const savedSoul = (p && p.soul) || "mensch";
         const savedInv = Array.isArray(p.inventory) ? jsonKlon(p.inventory) : [];
-        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
+        const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
         if (st.customSouls) delete st.customSouls["bp_koerper_human"];
         if (st.blueprints["koerper_human"]) delete st.blueprints["koerper_human"].forgedPrecision;
@@ -397,7 +397,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
             p.inventory = savedInv;
             p.equipped = savedEquip;
         }
-        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        r.equipHeld(savedEquip?.held ? savedEquip.held : null);
         r._refreshSoulSelect();
         r.renderInventoryUI();
         r.recomputePlayerStats();
