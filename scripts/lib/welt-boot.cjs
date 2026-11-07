@@ -20,6 +20,7 @@ const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
+if (process.env.CI_WIRKUNG) require("./zug-auswahl.cjs").haken(); // die Wirkungs-Messung jedes Browsers (scripts/lib/zug-auswahl.cjs)
 
 // DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
 // `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
