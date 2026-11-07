@@ -487,11 +487,14 @@ var __weltLicht = (function () {
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
         // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
-        const himmelJeLicht = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb;
-        const himmelFarbe = (dir) => himmelJeLicht(dir).mul(U.licht).mul(U.toenung);
+        // Der Texel der Himmels-Sicht in Richtung `dir` (rgb je Einheit E0, Alpha der Anteil der Sonne): ein Leser beider Kanäle
+        // reicht ihn `himmelFarbe` und `himmelEinfach` (EINE Abtastung, die Luft der Welt).
+        const himmelTexel = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0));
+        const himmelJeLicht = (dir) => himmelTexel(dir).rgb;
+        const himmelFarbe = (dir, tx = null) => (tx ? tx.rgb : himmelJeLicht(dir)).mul(U.licht).mul(U.toenung);
         // DER ANTEIL DER SONNE (0 … 1) an der Himmels-Sicht in Richtung `dir`: ihre einfache Streuung (Alpha der Tafel) — was ein
         // Grat der Luft hinter ihm nimmt (der Luftschatten der Welt); die Mehrfachstreuung und der Mond bleiben.
-        const himmelEinfach = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).a;
+        const himmelEinfach = (dir, tx = null) => (tx || himmelTexel(dir)).a;
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht, JE
         // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
         const passUmgebung = Fn(() => vec4(himmelJeLicht(umgebungRichtung(uv()).toVar()), 1));
@@ -553,6 +556,7 @@ var __weltLicht = (function () {
             belichtung: null,
             himmelFarbe,
             himmelEinfach,
+            himmelTexel,
             durchlass,
             RG,
             mediumBeta: null,

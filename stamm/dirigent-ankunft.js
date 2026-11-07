@@ -1496,30 +1496,39 @@ class AnazhRealm_dirigent_ankunft {
     // träfe die Aureole 2° neben der Sonne und wöge ihren Gipfel über das ganze Band) × max(n·ω, 0) × Δω/π — der Abzug von der
     // mittleren Strahlung der Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der
     // Hang hinter dem Grat den ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684).
+    // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
+    // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
     _horizontHimmel(p, n, strahlung) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
-        const q = K.zuUv(p.xz);
-        const t = T.texture(K.rt.texture, q).level(0);
-        const L = K.U.licht;
-        const flach = T.max(T.length(L.xz), 1e-4);
-        const tanA = T.max(t.r.sub(p.y.sub(K.U.bezug)).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)), 0);
-        const el = T.atan(tanA).mul(0.5);
-        const [ce, se] = [T.cos(el), T.sin(el)];
-        const w = tanA
-            .div(T.sqrt(tanA.mul(tanA).add(1)))
-            .mul((2 * H.gratRad) / (3 * Math.PI))
-            .mul(AnazhRealm._imEinheitsQuadrat(q))
-            .mul(K.U.aktiv);
-        const a = L.xz.div(flach);
-        let summe = T.vec3(0);
-        for (const d of [-2 / 3, 0, 2 / 3]) {
-            const [c, s] = [Math.cos(d * H.gratRad), Math.sin(d * H.gratRad)];
-            const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce));
-            summe = summe.add(strahlung(dir).mul(T.max(n.dot(dir), 0)));
-        }
-        return summe.mul(w);
+        return T.Fn(() => {
+            const q = K.zuUv(p.xz).toVar();
+            const t = T.texture(K.rt.texture, q).level(0).toVar();
+            const L = K.U.licht;
+            const flach = T.max(T.length(L.xz), 1e-4).toVar();
+            const tanA = T.max(t.r.sub(p.y.sub(K.U.bezug)).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)), 0).toVar();
+            const el = T.atan(tanA).mul(0.5).toVar();
+            const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
+            const a = L.xz.div(flach).toVar();
+            const summe = T.vec3(0).toVar();
+            T.Loop(3, ({ i }) => {
+                const d = T.float(i)
+                    .sub(1)
+                    .mul((2 / 3) * H.gratRad)
+                    .toVar();
+                const [c, s] = [T.cos(d), T.sin(d)];
+                const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce)).toVar();
+                summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+            });
+            return summe.mul(
+                tanA
+                    .div(T.sqrt(tanA.mul(tanA).add(1)))
+                    .mul((2 * H.gratRad) / (3 * Math.PI))
+                    .mul(AnazhRealm._imEinheitsQuadrat(q))
+                    .mul(K.U.aktiv)
+            );
+        })();
     }
 
     _horizontBoden(p, masche) {

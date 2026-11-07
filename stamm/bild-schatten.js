@@ -360,6 +360,26 @@ class AnazhRealm_bild_schatten {
         return !!(dl && dl.castShadow && rend && rend.shadowMap && rend.shadowMap.enabled === true);
     }
 
+    // DIESELBE FRAGE BEIM BAU EINES PROGRAMMS: `an`, wenn der Renderer des Programms Schatten zeichnet (`shadowMap.enabled`, das
+    // Holz legt es beim Start fest — `_configureRenderer`), sonst `aus`; der andere Knoten entsteht nie. Unter kienspan baut r184
+    // keine Kaskade, und kein Leser eines Sonnen-Schattens trägt dort Rechnung ins Pixel: der Wurf des Feuers (`WurfFaktor`), der
+    // Luftschatten der Luft (`_luftEnsure`) und der Himmel, den der Grat nimmt (`_spiegelUmgebung`) — die Horizont-Karte ruht dort
+    // (`_horizontKarteTakt`), ihre Sicht wäre 1 in jedem Pixel. Bis hier standen beide ausgeschrieben im Boden der Bühne S0:
+    // 122 088 Zeichen WGSL über der Decke 100 000 (main 99 436).
+    _wirftImStoff(an, aus) {
+        const N = Object.getPrototypeOf(THREE.InstanceNode);
+        const wirft = (b) => !!(b.renderer && b.renderer.shadowMap && b.renderer.shadowMap.enabled === true);
+        class WurfWahl extends N {
+            getNodeType(builder) {
+                return (wirft(builder) ? an : aus).getNodeType(builder);
+            }
+            setup(builder) {
+                return wirft(builder) ? an : aus;
+            }
+        }
+        return THREE.TSL.nodeObject(new WurfWahl());
+    }
+
     // ═══ DER WURF DES FEUERS (schatten.K5) ═══
     // Das Leuchtquellen-Gesetz wirkt als Pool im Stoff (`_lichtPoolTerm`, K11): je Platz ein Zweig, kein Szenen-Licht, kein
     // Schatten — ein Pfosten 2 m vom Feuer warf nichts (Radeon 5fba36ea: Kontrast 0,768:1, ohne Pfosten 0,768). Wie RDR2 und
@@ -415,23 +435,12 @@ class AnazhRealm_bild_schatten {
         }
         const roh = new WurfSchatten(licht);
         const knoten = THREE.TSL.nodeObject(roh);
-        // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
-        const N = Object.getPrototypeOf(THREE.InstanceNode);
-        class WurfFaktor extends N {
-            constructor() {
-                super("float");
-            }
-            setup(builder) {
-                return builder.renderer && builder.renderer.shadowMap && builder.renderer.shadowMap.enabled === true
-                    ? knoten
-                    : THREE.TSL.float(1);
-            }
-        }
         this._lichtWurfK = {
             licht,
             roh,
             knoten,
-            faktor: THREE.TSL.nodeObject(new WurfFaktor()),
+            // der Faktor im Stoff: ohne Schatten-Karte des Renderers (Holz kienspan) wirft nichts — wie jede Kaskade dort
+            faktor: this._wirftImStoff(knoten, THREE.TSL.float(1)),
             platz: this._uniformHeimatTeilen({ p: THREE.TSL.uniform(-1) }).p,
             id: null,
             stand: "",

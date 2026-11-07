@@ -2310,28 +2310,49 @@ class AnazhRealm_bild_himmel {
         // streuung). Der Strahl liest die EINE Horizont-Karte (`_horizontSicht`) an `luftProben` Punkten, je Punkt gewogen mit
         // seinem Beitrag zur In-Streuung (Dichte der Luft × Durchlass bis zum Auge, dieselbe Extinktion wie `faktor`); die Farbe
         // verliert davon den Anteil der einfachen Streuung der Sonne (`himmelEinfach`, Alpha der Himmels-Sicht). Wo die Karte
-        // ruht (ohne Gitter, ohne Wurf des Lichts, unter dem Horizont), ist die Sicht 1 — dasselbe Bild wie zuvor.
+        // ruht (ohne Gitter, unter dem Horizont), ist ihre Sicht 1; ohne Schatten-Karte des Renderers (kienspan) baut kein
+        // Programm den Luftschatten (`_wirftImStoff`).
+        // EINE Schleife (wie `falte` des Fels-Gesetzes, K17-3): der Zustand (τ, Summe, Licht) lebt in Variablen, je Durchlauf
+        // EINE Abtastung der Karte — ausgeschrieben stand der Strahl achtmal in jedem Stoff (Boden der Bühne S0: +8 060 Zeichen
+        // WGSL, das Programm 122 088 über der Decke 100 000).
+        // DIE SONNE IN DER HÖHE DER PROBE (ferne.K4; Hillaire 2020 „Aerial Perspective“: je Probe des Strahls der Durchlass zur Sonne
+        // aus der Transmittance-Tafel): die Himmels-Sicht trägt die In-Streuung in der Höhe des AUGES — aus 1 585 m über dem Dorf
+        // bei Sonne 5° lag dort ein Durchlass zur Sonne, den die dichte Luft über dem Hang 5 km weiter nie bekommt (sie liegt unter
+        // dem langen Weg durch die Luft). Jede Probe trägt den Durchlass in ihrer Höhe gegen den am Auge (Leuchtdichte, ≤ 1): die
+        // Luft über dem tiefen Hang streut am Abend weniger Sonne als die Luft vor dem Auge. Der Mittag ändert sich nicht (der Weg
+        // zur Sonne ist kurz in jeder Höhe).
+        const Y709 = T.vec3(0.2126, 0.7152, 0.0722);
+        const sonneIn = (hKm) => T.dot(A.durchlass(T.float(A.RG).add(hKm), A.U.sonne.y), Y709);
         const luftSicht = T.Fn(([auge, punkt]) => {
             const n = AnazhRealm.HORIZONT_KARTE.luftProben;
-            const v = punkt.sub(auge);
-            const ds = v.length().div(n);
-            const b = U.beta.mul(U.spektrum.y);
-            let [tau, summe, licht] = [T.float(0), T.float(0), T.float(0)];
-            for (let i = 0; i < n; i++) {
-                const p = auge.add(v.mul((i + 0.5) / n));
-                const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).mul(ds);
-                const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate()));
-                tau = tau.add(dtau);
-                summe = summe.add(w);
-                licht = licht.add(w.mul(this._horizontSicht(p)));
-            }
+            const v = punkt.sub(auge).toVar();
+            const b = U.beta.mul(U.spektrum.y).mul(v.length().div(n)).toVar();
+            const amAuge = T.max(sonneIn(A.U.hKm), 1e-6).toVar();
+            const [tau, summe, licht] = [T.float(0).toVar(), T.float(0).toVar(), T.float(0).toVar()];
+            T.Loop(n, ({ i }) => {
+                const p = auge.add(v.mul(T.float(i).add(0.5).div(n))).toVar();
+                const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).toVar();
+                const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate())).toVar();
+                const sonne = sonneIn(T.max(p.y.sub(U.bezugY).mul(0.001), 0.001))
+                    .div(amAuge)
+                    .clamp(0, 1);
+                tau.addAssign(dtau);
+                summe.addAssign(w);
+                licht.addAssign(w.mul(this._horizontSicht(p)).mul(sonne));
+            });
             return licht.div(T.max(summe, 1e-12));
         });
+        // die Himmels-Sicht EINMAL je Blick (`himmelTexel`): Farbe und Anteil der Sonne lesen denselben Texel; den Luftschatten
+        // baut nur ein Programm, dessen Renderer Schatten zeichnet (`_wirftImStoff` — unter kienspan ruht die Karte)
         const farbe = T.Fn(([auge, punkt]) => {
             const dir = punkt.sub(auge).normalize();
-            const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize();
-            const schatten = T.float(1).sub(A.himmelEinfach(blick).mul(T.float(1).sub(luftSicht(auge, punkt))));
-            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick).mul(schatten));
+            const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize().toVar();
+            const tx = A.himmelTexel(blick).toVar();
+            const schatten = this._wirftImStoff(
+                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(luftSicht(auge, punkt)))),
+                T.float(1)
+            );
+            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick, tx).mul(schatten));
         });
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;

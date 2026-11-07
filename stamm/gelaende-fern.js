@@ -248,6 +248,18 @@ class AnazhRealm_gelaende_fern {
         // die Dreiecke der Schale 0, die das Gebaute oder seine Bänder berühren (`_fernRingTeilung`). Eine Tiefe aus dem
         // Fragment kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die Tiefen-Kompression: auf dem EINEN Stoff
         // aller drei Schalen lag sie auf jedem Fragment des Rings (Radeon 890M gpu-bank ABAB +1,28 ms je Frame).
+        // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
+        const uAnker = TSL.uniform(
+            new THREE.Vector2(
+                Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
+                Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant
+            )
+        );
+        // DIE MASCHE AM ORT (m): der Durchmesser einer Masche an ihrem Radius (`_fernRingMascheJeM` + Snap) — die Normale des
+        // Gesetzes (`fernNeigung`), die Weiche und der Boden des Schattens lesen sie
+        const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
+            .mul(AnazhRealm._fernRingMascheJeM())
+            .add(schalen[0].snap * Math.SQRT2);
         const stoff = () =>
             this._buildToonNodeMaterial({
                 vertexColors: true,
@@ -255,6 +267,7 @@ class AnazhRealm_gelaende_fern {
                 wegeKarte: true,
                 kroneVertex: TSL.attribute("aKrone", "vec4"),
                 wasserVertex: TSL.attribute("aNass", "float"),
+                fernNeigung: masche,
             });
         const material = stoff();
         const stoffNaht = stoff();
@@ -286,25 +299,13 @@ class AnazhRealm_gelaende_fern {
             throw new Error(`Fern-Ring: die Maske (${maskeN}²) passt nicht in die Fern-Karte (${fernKarte.N}²)`);
         const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
-        // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
-        const uAnker = TSL.uniform(
-            new THREE.Vector2(
-                Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
-                Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant
-            )
-        );
         // DIE HEIMAT DER RING-WERTE (Pflicht-Paar der Diät, E1): Masken-Zelle und Anker gelten jeder Masche des Rings gleich und
         // wechseln mit Maske und Re-Anker — geteilt lädt sie EIN Render statt jeder Masche.
         this._uniformHeimatTeilen({ uMaskeZelle0, uAnker });
         // DER SCHATTEN LIEST DEN BODEN DES GESETZES (ferne.K4): der Ring IST das Gesetz, seine Masche nähert es nur — jenseits
         // der Gitter-Zelle der Horizont-Karte (`_horizontBoden`, die Masche aus dem Radius wie die Weiche unten) prüft er die
         // Schatten-Höhe am Boden des Gitters, aus dem die Karte sie rechnet, nie an seiner Sehne (bei 4–7 km ±50 m daneben).
-        const schattenBoden = this._horizontBoden(
-            TSL.positionWorld,
-            TSL.length(TSL.positionWorld.xz.sub(uAnker))
-                .mul(AnazhRealm._fernRingMascheJeM())
-                .add(schalen[0].snap * Math.SQRT2)
-        );
+        const schattenBoden = this._horizontBoden(TSL.positionWorld, masche);
         material.receivedShadowPositionNode = schattenBoden;
         stoffNaht.receivedShadowPositionNode = schattenBoden;
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
@@ -371,9 +372,6 @@ class AnazhRealm_gelaende_fern {
             const lang = pv.length();
             const nW = TSL.normalWorldGeometry;
             const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
-            const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
-                .mul(AnazhRealm._fernRingMascheJeM())
-                .add(schalen[0].snap * Math.SQRT2);
             const hNy = TSL.max(TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)), TSL.length(nW.xz).mul(masche));
             const dt = TSL.min(hNy.div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)), TSL.float(F.nahtWeicheMax));
             const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
@@ -920,6 +918,117 @@ class AnazhRealm_gelaende_fern {
     static _fernRingMascheJeM() {
         const F = AnazhRealm.FERN_RING;
         return Math.hypot((F.seite * 2 * Math.PI) / F.winkel, (2 * Math.PI) / F.winkel);
+    }
+
+    // ═══ DIE NEIGUNG DES GESETZES FÜR DEN RING (ferne.K4) ═══
+    // Die Normalen-Karte unabhängig von der Masche (Geometry Clipmaps, Losasso & Hoppe 2004; jede Landschaft mit LOD-Ketten): jede
+    // Stufe der Ferne schattiert mit der Normale des GESETZES an ihrem Ort, nie mit der ihrer Masche. Die Masche des Rings steht bei
+    // 5 km 164 × 490 m weit (192 Winkel, Reihen-Faktor 1,098) — ihre Normale kannte die Hänge des Gesetzes nicht: über 400 Orte mit
+    // N·L > 0,2 (Sonne 5°, Dorf, Median 0,283) trug sie N·L 0,13, Korrelation −0,046 (swiftshader, Holz voll); der Lichthang empfing
+    // je N·L des Gesetzes kaum Sonne (+0,0018 Luma am Hang mit N·L 0,71), Schatten- gegen Lichthang 0,6708 (Radeon f773818c).
+    // DIE KARTE: die Schicht der Kronen-Karte hinter ihren Stufen (`wegeKarte.neigung`, `N`² Texel à `texelM` um den Anker des
+    // Rings, ±8 km), je Texel die Normale aus dem Gitter des Gesetzes (zentrale Differenz über 2 · `texelM`, die Höhe ohne Detail
+    // wie das Gitter der Horizont-Karte — `gitter` im Feld-Faden, à `zeilenJeAuftrag` Zeilen), R/G = x/z · ½ + ½. Neu, wenn der
+    // Anker `nachM` gewandert ist; die alte Karte trägt, bis die neue ganz steht. Erst nach dem ersten Weltbild (die Ankunft
+    // trägt sie nie); ein Bruch des Fadens meldet sich EINMAL laut und hält die Karte an.
+    _fernNeigungEnsure() {
+        const st = this.state;
+        if (st.fernNeigung) return st.fernNeigung;
+        const karte = this._wegeKarteEnsure().neigung;
+        const U = this._uniformHeimatTeilen({
+            ursprung: THREE.TSL.uniform(new THREE.Vector2(0, 0)),
+            bereit: THREE.TSL.uniform(0),
+        });
+        st.fernNeigung = { karte, U, mitte: null, flug: false, gen: 0, gebrochen: false, stand: 0 };
+        return st.fernNeigung;
+    }
+
+    _fernNeigungTakt(fr) {
+        const st = this.state;
+        const K = this._fernNeigungEnsure();
+        if (K.flug || K.gebrochen || !st._weltbildDa || !fr) return;
+        const F = AnazhRealm.FERN_NEIGUNG;
+        const [ax, az] = [fr.anchorX, fr.anchorZ];
+        if (!Number.isFinite(ax) || !Number.isFinite(az)) return;
+        if (K.mitte && Math.hypot(ax - K.mitte[0], az - K.mitte[1]) <= F.nachM) return;
+        const [N, d] = [K.karte.N, F.texelM];
+        const [cx, cz] = [Math.round(ax / d) * d, Math.round(az / d) * d];
+        // die Ecke des Texels (0, 0); das Gitter der Höhen trägt die Mitten der Texel samt einem Rand-Ring (N + 2)²
+        const [ux, uz] = [cx - (N / 2) * d, cz - (N / 2) * d];
+        const M = N + 2;
+        const [gx, gz] = [ux - d / 2, uz - d / 2];
+        const h = new Float32Array(M * M);
+        const gen = K.gen;
+        K.flug = true;
+        const zeilen = (j0) => {
+            if (K.gen !== gen) return;
+            if (j0 >= M) {
+                const D = K.karte.daten;
+                const zu8 = (v) => Math.max(0, Math.min(255, Math.round((v * 0.5 + 0.5) * 255)));
+                for (let j = 0; j < N; j++)
+                    for (let i = 0; i < N; i++) {
+                        const k = (j + 1) * M + i + 1;
+                        const [nx, ny, nz] = [h[k - 1] - h[k + 1], 2 * d, h[k - M] - h[k + M]];
+                        const l = Math.hypot(nx, ny, nz);
+                        D[(j * N + i) * 2] = zu8(nx / l);
+                        D[(j * N + i) * 2 + 1] = zu8(nz / l);
+                    }
+                this._wegeSchichtHoch(K.karte.tex, K.karte.schicht);
+                K.U.ursprung.value.set(ux, uz);
+                K.U.bereit.value = 1;
+                K.mitte = [cx, cz];
+                K.stand++;
+                K.flug = false;
+                return;
+            }
+            const nz = Math.min(F.zeilenJeAuftrag, M - j0);
+            this._fernAuftrag("gitter", { x0: gx, z0: gz + j0 * d, d, nx: M, nz })
+                .then((a) => {
+                    if (K.gen !== gen) return;
+                    const z = a && a.hoehen;
+                    if (!z || z.length !== M * nz)
+                        throw new Error(`die Antwort trägt ${z ? z.length : 0} statt ${M * nz} Höhen`);
+                    for (let k = 0; k < z.length; k++) {
+                        if (!Number.isFinite(z[k])) throw new Error(`die Höhe ${z[k]} am Gitter-Punkt ${j0 * M + k}`);
+                        h[j0 * M + k] = z[k];
+                    }
+                    zeilen(j0 + nz);
+                })
+                .catch((e) => {
+                    if (K.gen === gen) [K.flug, K.gebrochen] = [false, true];
+                    this._stoffBruch("die Neigung des Rings (das Gitter im Feld-Faden)", e);
+                });
+        };
+        zeilen(0);
+    }
+
+    // Eine Welt geht (`_fernRingDispose`): ihre Neigung gilt nicht mehr, ein Auftrag im Flug fällt, der Ring liest seine Masche.
+    _fernNeigungLeeren() {
+        const K = this.state.fernNeigung;
+        if (!K) return;
+        K.gen++;
+        K.flug = false;
+        K.gebrochen = false;
+        K.mitte = null;
+        K.U.bereit.value = 0;
+    }
+
+    // DIE NORMALE DES RINGS (TSL, Leser `_buildToonNodeMaterial` mit `fernNeigung`): die Normale der Karte, wo die Masche des
+    // Empfängers (`masche`, m) gröber steht als ein Texel — über ein Texel weich (`texelM` … 2 · `texelM`, am Ring ab ~0,5 km), in
+    // der Karte und wenn sie steht; sonst die Normale der Masche (`nMasche`). Das Licht, die Zuwendung des Schattens und die
+    // Bestrahlung des Himmels lesen sie (die wahre Normale des Stoffs).
+    _fernNeigungNormale(nMasche, masche) {
+        const T = THREE.TSL;
+        const K = this._fernNeigungEnsure();
+        const F = AnazhRealm.FERN_NEIGUNG;
+        const q = T.positionWorld.xz.sub(K.U.ursprung).div(K.karte.N * F.texelM);
+        const t = T.texture(K.karte.tex, q).depth(T.int(K.karte.schicht)).level(T.float(0));
+        const [x, z] = [t.r.mul(2).sub(1), t.g.mul(2).sub(1)];
+        const n = T.vec3(x, T.sqrt(T.max(T.float(1).sub(x.mul(x)).sub(z.mul(z)), 0)), z);
+        const w = T.smoothstep(F.texelM, 2 * F.texelM, masche)
+            .mul(AnazhRealm._imEinheitsQuadrat(q))
+            .mul(K.U.bereit);
+        return T.normalize(T.mix(nMasche, n, w));
     }
 
     // DIE REGEL DES maskNode, ihr CPU-Spiegel (K16, die Naht; die Herleitung steht am Stoff in `_fernRingEnsure`): 2 = der Ring
@@ -1823,6 +1932,11 @@ AnazhRealm.FERN_RING = Object.freeze({
     scheibe: 512,
     scheibenImFlug: 3,
 });
+// DIE NEIGUNG DES RINGS (`_fernNeigungTakt`): `texelM` die Kante eines Texels der Karte (die Schicht der Kronen-Karte, ihr Raster
+// 512² → ±8 km, die Schale 2 ganz; die Station ferne.K4 misst die Neigung des Gesetzes über 50 m, die Karte über 62,5 m), neu nach
+// `nachM` Wanderung des Ankers, das Gitter in Aufträgen à `zeilenJeAuftrag` Zeilen (514² Rufe des Gesetzes, 2,25 µs je Ruf:
+// 0,6 s im Feld-Faden); 0,5 MB auf der GPU (rg8).
+AnazhRealm.FERN_NEIGUNG = Object.freeze({ texelM: 31.25, nachM: 1000, zeilenJeAuftrag: 32 });
 // DIE KAMM-KRONE (ferne.K3, `_kammKroneTakt`): die Augen über dem Grund des Ankers, für die der Umriss gilt (m: der Spieler,
 // die Schulter der dritten Person, der Blick vom Hügel und vom Turm — ein Baum trägt, wenn er einem von ihnen den Himmel nimmt);
 // das Band bis `dBis` m (ab dem Karten-Horizont `SCATTER.outerM`, davor zeichnet der Wald selbst); `azN` Azimute im Marsch des

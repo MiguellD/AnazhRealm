@@ -697,9 +697,13 @@ class AnazhRealm_bild_sicht {
                     const strahlung = (dir) =>
                         __weltLicht.himmelDerStoffe(quelle, U, dir, T.float(AnazhRealm.HORIZONT_KARTE.gratRauheit));
                     // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
-                    // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen
+                    // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen. Der Grat nimmt nur, wo
+                    // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
                     const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
-                    const frei = T.max(himmel.sub(wirt._horizontHimmel(ort, n, strahlung)), T.vec3(0));
+                    const frei = wirt._wirftImStoff(
+                        T.max(himmel.sub(wirt._horizontHimmel(ort, n, strahlung)), T.vec3(0)),
+                        himmel
+                    );
                     return wirt._rueckstrahlHalbraum(frei, n);
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
@@ -2745,6 +2749,7 @@ class AnazhRealm_bild_sicht {
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
             this._fernRingNeuBestellen(fr); // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
         }
+        this._fernNeigungTakt(fr); // die Normale des Gesetzes für das Licht des Rings (ferne.K4)
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
         // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).
         for (const m of fr.meshes) {
@@ -2796,6 +2801,7 @@ class AnazhRealm_bild_sicht {
         const fr = this.state.fernRing;
         if (!fr) return;
         this._horizontKarteLeeren(); // das Gitter der Horizont-Karte gehört der Welt, die den Ring trug
+        this._fernNeigungLeeren(); // die Neigung ebenso
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {
