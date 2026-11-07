@@ -579,16 +579,22 @@ async function probeLeben(expected) {
         }
         return out;
     };
-    // ── DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2, `expected.wegenetz` {orte, mutante, gleich}): die Orte (Zellen, je zwei Nachbarn
+    // ── DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2, `expected.wegenetz` {orte, mutante}): die Orte (Zellen, je zwei Nachbarn
     // im Wegenetz) erwachen am Spieler wie im Spiel (der Dorf-Zug, `__anazhAutoSettlement`), ihre Feldwege legt das Gesetz; die
     // Route ist die kürzeste über das Netz (`_wegenetzRoute`) von der Mess-Wiese zum letzten Ort, der GT fährt sie mit dem
-    // Fahrer am Steuer (`fahrerSetzen` → Verb-Tafel → der EINE Fahr-Schritt) in den Bildern der Probe (`gleich`: 60 fps); die
-    // Zählung des Sim-Takts trägt der Fahrer (`F.takte`, `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein
+    // Fahrer am Steuer (`fahrerSetzen` → Verb-Tafel → der EINE Fahr-Schritt) in den Bildern der Probe; die Zählung des Sim-Takts
+    // trägt der Fahrer (`F.takte`, `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein
     // Haus in 25 m), wald (≥ 3 Bäume der Natur in 15 m), sonst wiese. `mutante` (die Weg-Erkennung aus): die Luftlinie.
+    // DIE BILDER DER PROBE am Takt-Deckel des Spiels (`TAKT_DECKEL_S`, 0,1 s: so viel Wanduhr trägt ein Bild höchstens in den
+    // Akkumulator, 6 Sim-Schritte): Orte, Fahrer, Kern und Zählung schreiten im festen Sim-Takt wie bei jeder Bildrate, die Welt
+    // kommt je Bild. Bis w19-fahrt-ziel im Muster der Bilder (8,3–33,3 ms, ~1,5 Schritte je Bild) und als Zweitmessung bei 60 fps
+    // (`gleich`, von keiner Station gefahren): 8 300 gezeichnete Bilder für 2 440 m, headless 145 s Fahrt, 180 s samt Orten — der
+    // Deckel der Station (45 s, versuchsweise 80 s) riss jede Fahrt der Radeon, ehe eine Zeile kam („Ort im Deckel 1618 m“ ist der
+    // Ort 4,−7 + 30 m von der Mess-Wiese, an dem die Probe die Orte weckt). Jetzt 2 025 Bilder, dasselbe Urteil (89,3 %).
     const wegenetz = async (o) => {
         await __weltDa(() => A._siedlungGesetz());
         let i = 0;
-        const bild = () => (o.gleich ? r._gameLoopTick((tMs += 1000 / 60)) : frame(i++));
+        const bild = () => (i++, r._gameLoopTick((tMs += 1000 * A.TAKT_DECKEL_S)));
         const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k));
         for (const ort of orte) {
             stelle(ort.x + 30, ort.z + 30, 2);
@@ -607,9 +613,12 @@ async function probeLeben(expected) {
         const b = { wiese: 0, wald: 0, dorf: 0, weg: 0, n: 0 };
         const p = st.playerMesh.position;
         const nah = (x, m) => x && x.position && flach(x.position, p) < m;
-        for (let bis = 0; i < 30000 && !F.ende;) {
+        // DAS ENDE OHNE ZIEL beim Namen: steht der Wagen 5 · `festS` ohne Fortschritt (der Fahrer zählte ihn nach `festS` als
+        // Steckenbleiber), endet die Probe mit der Zeile — `lage` ist, wo er steht; nach 6 000 Bildern (600 s Sim-Zeit) endet sie
+        // ohne Ziel. Bis hier fuhr der stehende Wagen stumm bis zum 30 000. Bild, und der Deckel schnitt die Zeile ab
+        for (let bis = 0; i < 6000 && !F.ende && F.steht * A.FIXED_DT < 5 * A.FAHRER.festS; ) {
             bild();
-            if (i % 4 === 3) await window.sleep();
+            if (i % 2) await window.sleep();
             if (F.s < bis) continue;
             bis = F.s + 10; // je 10 m der Route: steht der Wagen auf Weg und Feldweg, welcher Boden trägt ihn
             const baeume = st.architectures.filter((x) => nah(x, 15) && r._istNatur(x) && /^baum_/.test(x.type)).length;
