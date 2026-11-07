@@ -18,13 +18,22 @@
 // (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
 // Stand vor w12-leib-sicht) muss Bilder nennen.
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
+// K7 DIE UNTERSEITE DES LAUBS IM SEITWÄRTSGANG (`--teile unten --bild`, an der Karte; w21-laub-unten): die Welt steht, nur die
+// Kamera rückt — im Gürtel-Wald des Genesis-Orts je Schritt wenige Zentimeter seitwärts; je Schritt die Aufnahme des Ausgabe-Pfads
+// (samt ihrer Messung des Rückstrahls). Gemessen der TON der Unterseite (die Flächen über dem Auge) und ihr KORN (die Varianz je
+// Pixel an der Fläche: jenseits der vier Pixel, auf die dieselbe Fläche im ersten Schritt fiel), der Täter beim Namen: der gelesene
+// Boden des Rückstrahls je Schritt. Der Schmuggel in derselben Welt: das dünne Raster des Rückstrahls am Schirm (12², der Stand vor
+// w21-laub-unten) und die stehende Phase der Blende (jedes Rauschen am Schirm ohne Zeit — die Drehung des Schatten-Filters vor
+// w21-laub-unten) fallen beim Namen.
+//
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe,unten]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
+const { luma709 } = require("./lib/abnahme-urteil.cjs");
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
@@ -253,6 +262,99 @@ function urteilStrafe(S) {
     ];
 }
 
+// K7 DIE UNTERSEITE DES LAUBS IM SEITWÄRTSGANG (w21-laub-unten, Befund des Schöpfers 07.11.: die Unterseite des Baumlaubs flackert
+// beim Gehen, beim seitwärts Gehen wechseln die Grüntöne der Blatt-Unterseiten). Die Welt steht, nur die Kamera rückt: das Auge
+// `augeM` über dem Boden in der Mitte des Gürtel-Walds des Genesis-Orts (fachwerk GENESIS_ORT.guertel), der Blick auswärts, `nick`
+// gehoben — aus `peilungen` Richtungen die mit den meisten Pixeln über dem Auge (die Kronen von unten), die mindestens `minBoden`
+// Pixel Boden des Rückstrahls zeigt; dann `schritte` Aufnahmen (der Ausgabe-Pfad samt Geschichte, jede misst den Rückstrahl ihres
+// Blicks: `_rueckstrahlJetzt`), je Schritt `schrittM` seitwärts — über der Ruhe des Rückstrahls (`SPIEGEL.ruheM` 1 cm), unter einem
+// Pixel der Kronen. Die UNTERSEITE sind die Pixel, deren Fläche mehr als `obenM` über dem Auge liegt (die Tiefe JEDES Schritts,
+// `__spiegelDaten` — mit der Maske des ersten trug der Ton die Kanten, die der Schritt an ihr vorbeischob: +1,3 % bei stehendem
+// Boden). Gemessen je Reihe (`untenMass`):
+//   TON   — das Mittel der Luma der Unterseite je Schritt gegen den ersten: in ruhender Welt ändert ihn nur ein Täter
+//   KORN  — je Pixel der Unterseite die Abweichung seines Werts vom Bereich der vier Pixel, auf die SEINE Fläche im ersten
+//           Schritt fiel (die Welt-Lage aus der Tiefe, projiziert mit der ersten Kamera; verdeckt zählt nicht): das Auge folgt der
+//           Welt, nicht dem Schirm — ein Korn, das am Schirm steht, während die Welt darunter gleitet, ist am Schirm unsichtbar und
+//           an der Fläche ein Flackern; gegen den ersten Schritt ist die Fläche über mehrere Pixel gewandert (gegen den Schritt
+//           davor läge ihr altes Pixel unter den vier Ecken, das stehende Korn bliebe im Bereich). Das Mittel des Quadrats über die
+//           Schritte ist die Varianz je Pixel, KORN die Wurzel ihres Mittels über die Unterseite (Luma 0–255). Es urteilt, wo der
+//           Schatten fällt und die zeitliche Auflösung das Bild glättet (an der Karte); ohne beide trägt das Bild die Treppe der
+//           Kanten, nie die Drehung der Scheibe
+//   BODEN — die Luma des gelesenen Bodens des Rückstrahls je Schritt (`rueckstrahlLeser.boden`): der Täter beim Namen
+// Der Schmuggel in derselben Welt: `raster` — der Rückstrahl liest das dünne Raster am Schirm (Kacheln [1, 1] × 12², der Stand vor
+// w21-laub-unten), der TON MUSS springen und den Rückstrahl nennen; `phase` (nur mit zeitlicher Auflösung) — die Phase der Blende
+// steht (`uDitherT`: jedes Rauschen am Schirm ohne Zeit, so drehte der Schatten-Filter vor w21-laub-unten), das KORN MUSS steigen.
+// Gemessen (swiftshader kienspan, Ankunft, 8 × 1,5 cm, main 8b1254bf → w21-laub-unten): BODEN +15,4 % → ±0,08 %, TON +1,03 % → ±0,05 %;
+// das KORN urteilt an der Karte (kienspan zeichnet weder Schatten noch zeitliche Auflösung), sein Deckel steht am Selbsttest (die
+// gemalte Welt: gesund 0,29, ein Korn am Schirm von ±12 Luma 2,7) — der erste Lauf an der Karte eicht ihn.
+const UNTEN = Object.freeze({ W: 640, H: 360, augeM: 1.7, nick: 0.2, peilungen: 8, schritte: 8, schrittM: 0.015, obenM: 1, minPx: 4000, minBoden: 2000, tonMax: 0.005, bodenMax: 0.01, kornMax: 2 });
+// DIE LAGE DER UNTERSEITE (rein: die Seite ruft sie über ihren Text, der Selbsttest direkt) aus der Tiefe `D` eines Schritts
+// (`__spiegelDaten`: Szenen-Tiefe tw × th, vp, ivp, auge) im Bild W × H: je Pixel die Welt-Lage seiner Fläche (NaN: Himmel), die
+// Maske der Pixel, deren Fläche mehr als `k.obenM` über dem Auge liegt (`oben` ihre Zahl), und die Zahl der Pixel, die der
+// Rückstrahl als Boden liest (mehr als `k.untenM` unter dem Auge, im `k.umkreisM`); Kamera (`vp`) und Auge reisen mit.
+function untenLage(D, W, H, k) {
+    const [lage, m, e, A] = [new Float32Array(W * H * 3).fill(NaN), new Uint8Array(W * H), D.ivp, D.auge];
+    let [oben, boden] = [0, 0];
+    for (let p = 0; p < W * H; p++) {
+        const [tx, ty] = [Math.floor((((p % W) + 0.5) * D.tw) / W), Math.floor(((Math.floor(p / W) + 0.5) * D.th) / H)];
+        const [nx, ny, z] = [((tx + 0.5) / D.tw) * 2 - 1, 1 - ((ty + 0.5) / D.th) * 2, D.tiefe[ty * D.tw + tx]];
+        if (!(z < 0.99999)) continue;
+        const q = [0, 1, 2, 3].map((i) => e[i] * nx + e[4 + i] * ny + e[8 + i] * z + e[12 + i]);
+        lage.set([q[0] / q[3], q[1] / q[3], q[2] / q[3]], 3 * p);
+        if (lage[3 * p + 1] > A[1] + k.obenM) (m[p] = 1), oben++;
+        else boden += lage[3 * p + 1] < A[1] - k.untenM && Math.hypot(lage[3 * p] - A[0], lage[3 * p + 2] - A[2]) < k.umkreisM;
+    }
+    return { lage, m, oben, boden, vp: D.vp, auge: A };
+}
+// TON · KORN einer Reihe von Bildern (u8, W × H) mit der Lage je Schritt (`lagen[k]` aus `untenLage`, rein): TON je Schritt das Mittel
+// der Luma (`luma709`, wie `bildMasse`) auf seiner Maske relativ zum ersten; KORN die Wurzel des Mittels der Varianz je Pixel — die
+// Abweichung vom Bereich der vier Pixel um die Stelle, auf die seine Fläche im ersten Schritt fiel (dieselbe Fläche: dort binnen 2 %
+// des Abstands + 5 cm, sonst verdeckt); `px` die Pixel der Unterseite im ersten Schritt.
+function untenMass(bilder, lagen, W, H) {
+    const [Y, B, e] = [(k, p) => luma709(bilder[k], 4 * p), lagen[0], lagen[0].vp];
+    const mittel = lagen.map((L, k) => L.m.reduce((s, an, p) => s + (an && Y(k, p)), 0) / L.oben);
+    let [n, v] = [0, 0];
+    for (let k = 1; k < bilder.length; k++)
+        lagen[k].m.forEach((an, p) => {
+            const X = lagen[k].lage.subarray(3 * p, 3 * p + 3);
+            const c = [0, 1, 3].map((i) => e[i] * X[0] + e[4 + i] * X[1] + e[8 + i] * X[2] + e[12 + i]);
+            const [u, w] = [((c[0] / c[2] + 1) * W) / 2 - 0.5, ((1 - c[1] / c[2]) * H) / 2 - 0.5];
+            const [i, j, q] = [Math.floor(u), Math.floor(w), 3 * (Math.round(w) * W + Math.round(u))];
+            const fern = 0.02 * Math.hypot(X[0] - B.auge[0], X[1] - B.auge[1], X[2] - B.auge[2]) + 0.05;
+            if (!an || !(i >= 0 && j >= 0 && i + 1 < W && j + 1 < H) || !(Math.hypot(B.lage[q] - X[0], B.lage[q + 1] - X[1], B.lage[q + 2] - X[2]) < fern)) return;
+            const [ecken, l] = [[0, 1, W, W + 1].map((o) => Y(0, j * W + i + o)), Y(k, p)];
+            [v, n] = [v + Math.max(0, Math.min(...ecken) - l, l - Math.max(...ecken)) ** 2, n + 1];
+        });
+    return { px: B.oben, ton: mittel.map((s) => +(s / mittel[0] - 1).toFixed(4)), korn: +Math.sqrt(v / Math.max(1, n)).toFixed(3) };
+}
+// die größte Abweichung einer Reihe relativer Werte vom ersten, in Prozent; die Zeile einer Reihe
+const untenPct = (xs) => `${(100 * Math.max(0, ...(xs || []).map(Math.abs))).toFixed(2)} %`;
+const untenZeile = (S) => (S && !S.err ? `Ton ±${untenPct(S.ton)} · Boden ±${untenPct(S.boden)} · Korn ${S.korn} (${S.px} px)` : "—");
+// DAS URTEIL (rein): je Reihe der Sprung des Tons (mit dem Rückstrahl beim Namen, wenn sein Boden mitspringt) und das Korn (nur mit
+// Schatten und zeitlicher Auflösung — ohne beide trägt das Bild die Treppe der Kanten); die Welt ohne Befund, jeder Schmuggel beim
+// Namen (`raster` am Ton mit dem Rückstrahl, `phase` am Korn)
+function urteilUnten(U) {
+    const korn = !!(U && U.traa && U.schatten);
+    const sp = (xs) => Math.max(0, ...xs.map(Math.abs));
+    const befunde = (name, S) =>
+        !S || S.err
+            ? [`${name}: ${S ? String(S.err).split("\n")[0] : "nicht gemessen"}`]
+            : !(S.px >= UNTEN.minPx)
+              ? [`${name}: ${S.px} Pixel der Unterseite (Vorbedingung ≥ ${UNTEN.minPx})`]
+              : [
+                    ...(sp(S.ton) > UNTEN.tonMax
+                        ? [`${name}: der Ton der Unterseite springt ${untenPct(S.ton)} über ${S.ton.length} Schritte — ${sp(S.boden) > UNTEN.bodenMax ? `Täter: der Rückstrahl des Bodens (gelesen ${untenPct(S.boden)})` : "ohne Namen (der Boden des Rückstrahls steht)"}`]
+                        : []),
+                    ...(korn && S.korn > UNTEN.kornMax ? [`${name}: Korn ${S.korn} der Unterseite (die Varianz je Pixel an der Fläche, Deckel ${UNTEN.kornMax})`] : []),
+                ];
+    if (!U || U.err) return befunde("Unterseite", U);
+    return [
+        ...befunde("Unterseite", U.an),
+        ...(befunde("raster", U.raster).some((b) => b.includes("Täter: der Rückstrahl")) ? [] : [`Schmuggel ungenannt: das dünne Raster des Rückstrahls (${untenZeile(U.raster)})`]),
+        ...(!korn || befunde("phase", U.phase).some((b) => b.includes(": Korn ")) ? [] : [`Schmuggel ungenannt: die stehende Phase der Blende (${untenZeile(U.phase)})`]),
+    ];
+}
+
 // ── K6 DER LEIB IM SEITWÄRTSGANG IN DER SEITE ── der Spieler am Prüfplatz, Third, der Blick des Messorts; der Platz steht über den
 // Ort-Takt (`_genesisOrt`: der Dorf-Zug ruht in der Linse, dasselbe Glied wie Spiel-Takt und Werkbank), der Leib in seiner feinen
 // Stufe (das Buch der Foundry trägt seinen Guss). Je Stand (`an`: das Spiel, `aus`: der Schmuggel ohne getragenen Leib) und Seite
@@ -298,6 +400,76 @@ async function leibStrafe(k) {
             taste("keyup");
             delete r._traegerTeile;
         }
+    return out;
+}
+
+// ── K7 DIE UNTERSEITE IN DER SEITE ── das Auge im Gürtel-Wald des Genesis-Orts (die Mitte `_genesisMitte`, der Gürtel aus dem
+// Ort-Gesetz), je Peilung EIN Tiefen-Bild (die Kamera allein, der Spieler steht), gewählt die Peilung mit den meisten Pixeln der
+// Unterseite unter den Peilungen mit Boden; der Spieler tritt an die Stelle, die Welt schwingt ein, dann rücken nur noch Aufnahmen
+// (`_loopRender` ohne Takt: die Welt steht zwischen den Schritten). Die Reihen: die Welt, wie sie ist (`an`), und der Schmuggel
+// `raster` (das dünne Raster des Rückstrahls am Schirm) und `phase` (die Phase der Blende steht; nur mit zeitlicher Auflösung) —
+// jeder Schmuggel fällt danach zurück. Zurück kommen nur Zahlen (die Bilder bleiben in der Seite).
+async function laubUnten(k) {
+    if (st.renderer._isHeadlessNull) throw new Error("der Null-Renderer zeichnet kein Bild (die Unterseite braucht --bild)");
+    const [lageVon, mass, RS, cam, g] = [(0, eval)(`(${k.lage})`), (0, eval)(`(${k.mass})`), AnazhRealm.RUECKSTRAHL, st.camera, r._genesisMitte()];
+    if (!g) throw new Error("der Genesis-Ort steht nicht (_genesisMitte)");
+    const [G, mk] = [AnazhRealm.Gesetz("fachwerk:GENESIS_ORT.guertel"), { obenM: k.obenM, untenM: RS.unterAugeM, umkreisM: RS.umkreisM }];
+    // die Pose der Peilung `az` (Bogenmaß, +x Ost, +z Nord): das Auge über der Mitte des Gürtels, der Blick auswärts und gehoben,
+    // dann `s` Schritte längs der Rechten der Kamera
+    const bild = async (az, s, tiefe) => {
+        const [x, z] = [g.x + Math.cos(az) * (G.r0 + G.r1) * 0.5, g.z + Math.sin(az) * (G.r0 + G.r1) * 0.5];
+        cam.position.set(x, (r._bodenSichtAt(x, z) ?? r.getTerrainHeightAt(x, z)) + k.augeM, z);
+        cam.lookAt(x + Math.cos(az), cam.position.y + Math.tan(k.nick), z + Math.sin(az));
+        cam.translateX(s * k.schrittM);
+        cam.updateMatrixWorld(true);
+        const u8 = (await __ausgabeAufnahme(k.W, k.H, 1, { satz: "messung", tiefe }))?.u8;
+        return [u8, lageVon(await __spiegelDaten(), k.W, k.H, mk)];
+    };
+    // die Welt der Ankunft steht, bevor die Peilung sie ansieht (direkt nach dem Boot zeigte jede Richtung nur Himmel); je Peilung
+    // EIN Tiefen-Bild (`tiefe`: ohne Geschichte)
+    await __weltStehtNach();
+    __buehne();
+    const out = { traa: !!st.traaNode, schatten: !!st.renderer.shadowMap.enabled, holz: st._holzProfil, peilung: [] };
+    for (let i = 0; i < k.peilungen; i++) {
+        const [az, [, z]] = [(2 * Math.PI * i) / k.peilungen, await bild((2 * Math.PI * i) / k.peilungen, 0, true)];
+        out.peilung.push({ az, oben: z.oben, boden: z.boden });
+    }
+    out.wahl = out.peilung.filter((p) => p.boden >= k.minBoden).sort((a, b) => b.oben - a.oben)[0];
+    if (!out.wahl) return { ...out, err: `keine Peilung mit Boden (≥ ${k.minBoden} px)` };
+    await bild(out.wahl.az, 0, true);
+    st.playerMesh.position.copy(cam.position).y -= k.augeM - 1;
+    await __weltStehtNach();
+    __buehne();
+    const reihe = async () => {
+        const R = [];
+        for (let s = 0; s < k.schritte; s++) R.push([...(await bild(out.wahl.az, s)), luma709(st.rueckstrahlLeser.boden.value.toArray())]);
+        return { ...mass(R.map((x) => x[0]), R.map((x) => x[1]), k.W, k.H), boden: R.map((x) => +(x[2] / R[0][2] - 1).toFixed(4)), grund: R[0][1].boden };
+    };
+    out.an = await reihe();
+    // DER SCHMUGGEL `raster`: der Stand vor w21-laub-unten — EIN Raster von 12² Pixeln am Schirm (Kacheln [1, 1], Ziel 2 × 1)
+    const neu = (R) => {
+        AnazhRealm.RUECKSTRAHL = R;
+        st.rueckstrahlLeser.rt.setSize(R.kacheln[0] + 1, R.kacheln[1]);
+        st.rueckstrahlPass?.mat.dispose();
+        st.rueckstrahlPass = null;
+    };
+    neu({ ...RS, kacheln: [1, 1], dichte: 12 });
+    try {
+        out.raster = await reihe();
+    } finally {
+        neu(RS);
+    }
+    // DER SCHMUGGEL `phase`: die Phase der Blende steht (jedes Rauschen am Schirm ohne Zeit) — nur mit zeitlicher Auflösung
+    if (out.traa) {
+        const u = r._ensureLodUniforms().uDitherT;
+        Object.defineProperty(u, "value", { get: () => 0, set() {}, configurable: true });
+        try {
+            out.phase = await reihe();
+        } finally {
+            delete u.value;
+            u.value = 0;
+        }
+    }
     return out;
 }
 
@@ -1131,6 +1303,62 @@ hauptLauf(async () => {
             ["blind", fall(reihe(), reihe()), "Schmuggel"],
             ["kein TRAA", { traa: false }, "Strafe: ohne"],
         ]);
+        // K7 DIE UNTERSEITE IM SEITWÄRTSGANG — eine gemalte Welt: eine Decke 3 m über dem Auge mit einem Muster an der Welt, darunter
+        // der Boden (Luma 120), die Kamera (60°, 160 × 80) blickt gehoben und rückt je Schritt 4 cm seitwärts; Tiefe und Bild je Schritt
+        // aus dem Strahl jedes Pixels. Die Decke ist Unterseite, der nahe Boden Boden; die gesunde Reihe steht (Ton und Korn); ein
+        // Sprung des Tons um 3 % ab Schritt 4 springt; ein Korn, das am SCHIRM steht (je Pixel fest, die Welt gleitet darunter — die
+        // Drehung der Scheibe vor w21-laub-unten), und ein Korn, das je Schritt neu fällt, steigen im Korn. Am Schirm gemessen (der
+        // 3×3-Bereich desselben Pixels im Schritt davor, der erste Entwurf dieser Linse) sähe die Linse das stehende Korn nie.
+        const T3 = require("./lib/welt-boot.cjs").ENGINE_THREE();
+        const gemalt = (s, f = 1, korn) => {
+            const [W, H, kam] = [160, 80, new T3.PerspectiveCamera(60, 2, 0.1, 500)];
+            kam.position.set(0.04 * s, 1.7, 0);
+            kam.lookAt(0.04 * s, 3.2, -6);
+            kam.updateMatrixWorld(true);
+            const vp = new T3.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
+            const [tiefe, u8] = [new Float32Array(W * H), new Uint8Array(W * H * 4)];
+            for (let p = 0; p < W * H; p++) {
+                const nd = new T3.Vector3((((p % W) + 0.5) / W) * 2 - 1, 1 - ((Math.floor(p / W) + 0.5) / H) * 2, 0.5).unproject(kam).sub(kam.position).normalize();
+                const t = nd.y > 0.02 ? 3 / nd.y : nd.y < -0.02 ? -1.7 / nd.y : 1e9;
+                const P = kam.position.clone().addScaledVector(nd, t);
+                tiefe[p] = t < 400 ? P.clone().applyMatrix4(vp).z : 1;
+                const L = t >= 400 ? 200 : nd.y < 0 ? 120 : (70 + 25 * Math.sin(P.x * 1.7) * Math.cos(P.z * 1.3)) * f + (korn ? korn(p, s) : 0);
+                u8.fill(Math.round(Math.max(0, Math.min(255, L))), 4 * p, 4 * p + 3);
+            }
+            return [u8, untenLage({ tiefe, tw: W, th: H, vp: vp.elements, ivp: vp.clone().invert().elements, auge: kam.position.toArray() }, W, H, { obenM: 1, untenM: 0.5, umkreisM: 16 })];
+        };
+        const ureihe = (je) => {
+            const R = Array.from({ length: UNTEN.schritte }, (_, s) => gemalt(s, ...je(s)));
+            return untenMass(R.map((x) => x[0]), R.map((x) => x[1]), 160, 80);
+        };
+        const fest = (p) => 24 * ((((Math.sin(p * 12.9898) * 43758.5453) % 1) + 1) % 1) - 12;
+        const [ug, us, uf, uj, z0] = [ureihe(() => []), ureihe((s) => [s >= 4 ? 1.03 : 1]), ureihe(() => [1, fest]), ureihe(() => [1, (p, s) => fest(p + 7919 * s)]), gemalt(0)[1]];
+        check(
+            "K7 Selbst-Test: die gemalte Welt — die Decke ist Unterseite, der nahe Boden Boden; die gesunde Reihe steht, der Sprung des Tons springt, das Korn am Schirm und das Korn je Schritt steigen",
+            z0.oben > 3000 && z0.boden > 800 && Math.max(...ug.ton.map(Math.abs)) < UNTEN.tonMax && ug.korn < 0.5 && us.ton[7] > 0.02 && uf.korn > UNTEN.kornMax && uj.korn > UNTEN.kornMax,
+            JSON.stringify({ oben: z0.oben, boden: z0.boden, gesund: ug, sprung: us.ton, kornSchirm: uf.korn, kornSchritt: uj.korn })
+        );
+        // DIE EINE LESUNG JEDES ZIELS DER WELT (`__weltLicht.zeilenSchritt`) am Maß des Vendors (WebGPU: (h − 1) · Zeile + w · Texel,
+        // die Zeile auf 256 Byte): die 33 × 18 Kacheln des Rückstrahls in Halb-Float lesen 256 Elemente je Zeile — `Länge / Höhe` las
+        // 249 (der Stand vor w21-laub-unten, der Boden kam blau); die Umgebung (128 × 64) und das dichte WebGL lesen dicht
+        const zs = fadenScope(["phyto-core.js", "foundry-core.js", "welt-licht.js"]).__weltLicht.zeilenSchritt;
+        const lesung = (w, h, B) => new { 2: Uint16Array, 4: Float32Array }[B](((h - 1) * 256 * Math.ceil((w * 4 * B) / 256) + w * 4 * B) / B);
+        const zIst = [zs(lesung(33, 18, 2), 33, 18), zs(lesung(128, 64, 2), 128, 64), zs(lesung(33, 18, 4), 33, 18), zs(new Uint16Array(2376), 33, 18)];
+        check("K7 Selbst-Test: der Zeilen-Schritt jeder Lesung am Maß des Vendors (256 · 512 · 192 · 132 Elemente)", `${zIst}` === "256,512,192,132", `${zIst}`);
+        const uS = (k) => ({ px: 6000, ton: [0, 0.0005, -0.0004], boden: [0, 0.001, 0.002], korn: 0.8, ...k });
+        const uG = (k) => ({ traa: true, schatten: true, an: uS(), raster: uS({ ton: [0, 0.009], boden: [0, 0.154] }), phase: uS({ korn: 4.2 }), ...k });
+        faelle("K7", urteilUnten, [
+            ["gesund", uG(), null],
+            ["der Ton springt mit dem Boden (der Stand vor w21-laub-unten)", uG({ an: uS({ ton: [0, 0.0103], boden: [0, 0.154] }) }), "Unterseite: der Ton der Unterseite springt 1.03 % über 2 Schritte — Täter: der Rückstrahl des Bodens (gelesen 15.40 %)"],
+            ["der Ton springt bei stehendem Boden", uG({ an: uS({ ton: [0, 0.009] }) }), "Unterseite: der Ton der Unterseite springt 0.90 % über 2 Schritte — ohne Namen"],
+            ["Korn", uG({ an: uS({ korn: 3.5 }) }), "Unterseite: Korn 3.5"],
+            ["zu wenig Unterseite", uG({ an: uS({ px: 100 }) }), "Unterseite: 100 Pixel"],
+            ["Ausnahme in der Seite", { err: "Error: der Genesis-Ort steht nicht" }, "Unterseite: Error: der Genesis-Ort"],
+            ["blind für das Raster", uG({ raster: uS() }), "Schmuggel ungenannt: das dünne Raster"],
+            ["blind für die Phase", uG({ phase: uS() }), "Schmuggel ungenannt: die stehende Phase"],
+            ["ohne Schatten und Auflösung urteilt das Korn nicht (Holz kienspan)", uG({ traa: false, schatten: false, an: uS({ korn: 3.5 }) }), null],
+            ["nicht gemessen", null, "Unterseite: nicht gemessen"],
+        ]);
         const gesund = {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
             schmuggel: { laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } }, fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } } },
@@ -1186,7 +1414,9 @@ hauptLauf(async () => {
 
     const t0 = Date.now();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
+    // die Frist EINES Seiten-Rufs: K7 (8 Peilungen, 24 Aufnahmen samt Tiefe) braucht an der Karte Minuten, auf dem CPU-Raster
+    // über 15 (swiftshader kienspan: 902 s, der Ruf riss)
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 3600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     if (!BILD) await nullRenderer(page);
@@ -1214,6 +1444,10 @@ hauptLauf(async () => {
         (await page
             .evaluate(leibStrafe, { ...STRAFE, ...require("./lib/welt-orte.cjs").messort("genesis"), mass: `${strafeMass}` })
             .catch((e) => ({ err: fehlerStapel(e) })));
+    // K7 an der Ankunft (der Gürtel-Wald des Genesis-Orts), vor den Teilen, die umziehen — nur mit Bild (`--bild`)
+    const unten =
+        TEILE.includes("unten") &&
+        (BILD ? await page.evaluate(laubUnten, { ...UNTEN, lage: `${untenLage}`, mass: `${untenMass}` }).catch((e) => ({ err: fehlerStapel(e) })) : { err: "ohne Bild (--bild)" });
     if (TEILE.includes("laub")) {
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
@@ -1241,7 +1475,7 @@ hauptLauf(async () => {
     // DIE MESSUNG ALS AKTE (statt dreier Druck-Tafeln, w12-leib-sicht): jede Zahl je Ort, Sicht, Pose und Gang steht roh in
     // kamera-laub.json im Temp-Ordner — das Urteil je Teil nennt seine Täter beim Namen in seiner Zeile
     const akte = path.join(require("os").tmpdir(), "kamera-laub.json");
-    jsonSchreiben(akte, { laub: m, leib, gang, strafe });
+    jsonSchreiben(akte, { laub: m, leib, gang, strafe, unten });
     console.log(`  die Akte: ${akte}`);
     if (m) {
         const v = urteil(m);
@@ -1263,6 +1497,11 @@ hauptLauf(async () => {
     if (strafe) {
         const v = urteilStrafe(strafe);
         check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)}`, !v.length, v.join(" · "));
+    }
+    if (unten) {
+        const v = urteilUnten(unten);
+        const ohne = unten.traa && unten.schatten ? "" : " — das Korn urteilt an der Karte (ohne Schatten und zeitliche Auflösung)";
+        check(`K7 die Unterseite im Seitwärtsgang (Holz ${unten.holz}, Peilung ${JSON.stringify(unten.wahl)}): Welt ${untenZeile(unten.an)} · Raster ${untenZeile(unten.raster)} · Phase ${untenZeile(unten.phase)}${ohne}`, !v.length, v.join(" · "));
     }
     console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");

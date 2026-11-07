@@ -842,7 +842,7 @@ class AnazhRealm_bild_himmel {
             (px) => {
                 if (nr !== st._skyEnvLeseNr) return st._skyEnvLesung; // überholt: das Versprechen der neueren Lesung
                 const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
-                const schritt = Math.floor(px.length / H); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                const schritt = __weltLicht.zeilenSchritt(px, W, H); // die Zeilen liegen ausgerichtet (bytesPerRow)
                 const halb = px instanceof Uint16Array;
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W * 4; x++) {
