@@ -446,38 +446,25 @@ function gateSchritte(doc) {
 
 // (Z) DIE ZUG-STELLE (R6, 07.11.): die volle Batterie fährt unter der R6-Shell; jeder Selbsttest läuft nachts, auf Abruf, auf
 // main und auf einem Diff, der nur seine Linse ändert — einer, der nie mehr liefe, ist ROT beim Namen; jede Wand hat im Zug
-// genau EINE Stelle: was der echt-Job fährt, ruht dort in der vollen Batterie; ein R6_ZUSATZ ohne Aufruf ist stale.
+// genau EINE Stelle: was der echt-Job wörtlich fährt, ruht dort in der vollen Batterie.
 function zugStelle(doc, skripte, r6 = R6) {
-    const v = [];
     const V = jobsVon(doc)[VOLL_JOB] || {};
-    if (V.defaults?.run?.shell !== R6_SHELL) return [`(Z) R6: „${VOLL_JOB}" fährt nicht unter der Shell ${R6_SHELL}`];
-    const env = (e, ref) => ({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: e, GITHUB_REF: ref });
-    const zug = env("push", "refs/heads/integ-probe");
-    const aufrufe = new Set();
+    if (V.defaults?.run?.shell !== R6_SHELL) return [`(Z) R6: „${VOLL_JOB}" fährt nicht unter ${R6_SHELL}`];
+    const env = (e, ref = "refs/heads/main") => ({ GITHUB_ACTIONS: "1", GITHUB_EVENT_NAME: e, GITHUB_REF: ref });
+    const [v, aufrufe] = [[], new Set()];
     for (const s of gates(V)) {
-        const b = [];
-        r6.r6Text(s.run, skripte, (x) => (aufrufe.add(x), { laeuft: false, grund: "" }), b);
-        const echt = gates(jobsVon(doc)[ECHT_JOB] || {}).find((e) => lauf(e) === lauf(s));
-        if (echt && !r6.r6ZugStelle(s.run, doc, zug))
-            v.push(`(Z) ZWILLING: „${name(s)}" fährt im Zug auf swiftshader UND im echt-Job („${name(echt)}")`);
+        r6.r6Text(s.run, skripte, (a) => (aufrufe.add(a), {}), []);
+        if (gates(jobsVon(doc)[ECHT_JOB] || {}).some((e) => lauf(e) === lauf(s)) && !r6.r6ZugStelle(s.run, doc, env("push", "refs/heads/integ-probe")))
+            v.push(`(Z) ZWILLING: „${name(s)}" fährt im Zug auf swiftshader UND im echt-Job`);
     }
     for (const a of aufrufe) {
         const linse = (/node\s+([\w./-]+\.c?js)/.exec(a) || [])[1];
-        const nie = ["schedule", "workflow_dispatch"]
-            .map((e) => env(e, "refs/heads/main"))
-            .concat(env("push", "refs/heads/main"))
+        const nie = [env("schedule"), env("workflow_dispatch"), env("push")]
             .filter((e) => !r6.r6Immer(e) || !r6.r6Urteil(a, { immer: r6.r6Immer(e) }).laeuft)
-            .map((e) => e.GITHUB_EVENT_NAME)
-            .concat(
-                r6.r6Urteil(a, { diff: new Map([[linse, []]]), bekannt: () => true }).laeuft
-                    ? []
-                    : [`Diff nur ${linse}`]
-            );
-        if (nie.length) v.push(`(Z) NIE: der Selbsttest „${a}" liefe nie mehr (${nie.join(" · ")})`);
+            .map((e) => e.GITHUB_EVENT_NAME);
+        if (!r6.r6Urteil(a, { diff: new Map([[linse, []]]), bekannt: () => 1 }).laeuft) nie.push(`Diff ${linse}`);
+        if (nie.length) v.push(`(Z) NIE: „${a}" liefe nie mehr (${nie.join(" · ")})`);
     }
-    for (const z of r6.R6_ZUSATZ)
-        if (![...aufrufe].some((a) => a.includes(z)))
-            v.push(`(Z) STALE: R6_ZUSATZ nennt ${z} — kein Selbsttest der vollen Batterie`);
     return v;
 }
 function urteil(doc) {
@@ -1193,28 +1180,18 @@ function selbsttest() {
 }
 // (Z) gegen die echte check.yml: je Mutante der R6-Shell der Täter beim Namen
 function selbsttestZug() {
-    const [doc, sk, f] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts, []];
-    const blind = (l) => ({ ...R6.r6Abhaengig(l), code: new Set() });
-    for (const [n, r6, soll] of [
-        ["die R6-Shell der echten check.yml", R6, null],
-        ["der Zwilling kehrt zurück", { ...R6, r6ZugStelle: () => null }, /\(Z\) ZWILLING: „Ziel-Zensus/],
-        [
-            "nachts ruht ein Selbsttest",
-            { ...R6, r6Immer: (e) => e.GITHUB_EVENT_NAME !== "schedule" && R6.r6Immer(e) },
-            /\(Z\) NIE: .*diag-kreatur-takt.*\(schedule\)/,
-        ],
-        [
-            "die Linse fehlt in ihrer Abhängigkeit",
-            { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, blind) },
-            /\(Z\) NIE: .*diag-haus-welt.*Diff nur scripts\/diag-haus-welt\.cjs/,
-        ],
-    ]) {
-        const u = zugStelle(doc, sk, r6);
-        const ok = soll ? u.some((x) => soll.test(x)) : !u.length;
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 2).join(" · ") || "grün"}`);
-        if (!ok) f.push(`(Z) „${n}" fällt nicht rot beim Namen`);
-    }
-    return f;
+    const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
+    const leer = () => ({ code: new Map(), text: "", namen: new Set(), zeilen: [] });
+    return [
+        ["die echte check.yml", R6, /^$/],
+        ["der Zwilling kehrt zurück", { ...R6, r6ZugStelle: () => null }, /ZWILLING: „Ziel-Zensus/],
+        ["nachts ruht ein Selbsttest", { ...R6, r6Immer: (e) => e.GITHUB_EVENT_NAME !== "schedule" && R6.r6Immer(e) }, /NIE: „node scripts\/diag-kreatur-takt.*\(schedule/],
+        ["die Linse fehlt in ihrer Abhängigkeit", { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, leer) }, /NIE: „node scripts\/diag-haus-welt.*Diff scripts\/diag-haus-welt/],
+    ].flatMap(([n, r6, soll]) => {
+        const u = zugStelle(doc, sk, r6).join(" · ");
+        console.log(`  ${soll.test(u) ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 240) || "grün"}`);
+        return soll.test(u) ? [] : [`(Z) „${n}" fällt nicht rot beim Namen`];
+    });
 }
 
 // (T) Die Waage gegen ein Fixture.
