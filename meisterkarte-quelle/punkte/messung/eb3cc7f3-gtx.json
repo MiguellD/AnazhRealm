@@ -1,7 +1,7 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T10:13:22.534Z",
+ "zeit": "2026-11-07T10:24:41.615Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -189,6 +189,86 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "luftwasser.K5#1",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 233.9 über Rausch-Boden 0.000 (×233.9), Tal 44.2 — Kamm/Tal 5.29 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.26,
+   "gpu": "nvidia/pascal",
+   "s": 15.5,
+   "zeit": "2026-11-07T10:18:44.688Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.08 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -19.06 [-14, -4] · lippeA 14.6 [4, 14] · hoehleL -15.18 [-12, 0] · hoehleA 8.94 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.08 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -19.06 [-14, -4] · lippeA 14.6 [4, 14] · hoehleL -15.18 [-12, 0] · hoehleA 8.94 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 29.9,
+   "zeit": "2026-11-07T10:19:00.255Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.469 Soll [0.3554,0.533] — strich 0.469 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4226 Soll [0.3554,0.533] — strich 0.4226 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "ROT: arm ROT strich 0.469 Soll [0.3554,0.533] — strich 0.469 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4226 Soll [0.3554,0.533] — strich 0.4226 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 20.7,
+   "zeit": "2026-11-07T10:19:30.255Z",
+   "abdruck": "c0eb0fef1e79",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 183485 px · winter 20968 px → Winter 0.114 × Sommer",
+   "exit": 0,
+   "minuten": 0.28,
+   "gpu": "nvidia/pascal",
+   "s": 16.7,
+   "zeit": "2026-11-07T10:19:51.006Z",
+   "abdruck": "94c6e9a3bdbe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.434 (5–12,5), Schatten-Anteil 0.184 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.18,
+   "gpu": "nvidia/pascal",
+   "s": 11.1,
+   "zeit": "2026-11-07T10:20:07.785Z",
+   "abdruck": "f585bf83c265",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.4364 Soll [0.4358,0.6538] · third GRÜN strich 0.5219 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.44,
+   "gpu": "nvidia/pascal",
+   "s": 26.3,
+   "zeit": "2026-11-07T10:24:41.615Z",
+   "abdruck": "4737c3538058",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
@@ -391,82 +471,98 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:20:18.921Z",
+   "abdruck": "77511569c24f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.3,
+   "zeit": "2026-11-07T10:21:30.999Z",
+   "abdruck": "f675fa5e3cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:23:28.201Z",
+   "abdruck": "eb8679013e74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T10:07:45.704Z",
+  "start": "2026-11-07T10:18:06.327Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.1,
+  "bootS": 7.5,
   "grundstellungS": [
-   4.6,
-   5,
-   0.1,
-   4.8,
-   0.1
+   6.2,
+   5.5,
+   6
   ],
-  "proben": 7,
+  "proben": 9,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 22.4,
-    "takte": 703,
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 29.4,
+    "takte": 881,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 7.4,
-    "takte": 252,
+    "vor": "ferne.K1#1",
+    "s": 20.6,
+    "takte": 676,
     "chunks": 81,
-    "nach": null
+    "nach": "der Tür"
    },
    {
     "ort": "genesis",
-    "vor": "mensch.K2#2",
-    "s": 19,
-    "takte": 696,
+    "vor": "mensch.K5#1",
+    "s": 21.4,
+    "takte": 710,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "affekt.K1#2",
-    "s": 22.8,
-    "takte": 800,
+    "vor": "haar.K1#1",
+    "s": 22.1,
+    "takte": 738,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "oekologie.K4#2",
-    "s": 5.6,
-    "takte": 330,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K2#2",
-    "s": 16.9,
-    "takte": 830,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "luftwasser.K5#1",
-    "s": 3.5,
-    "takte": 217,
-    "chunks": 90,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 8,
+  "ciBlicke": 10,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
@@ -479,17 +575,17 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "luftwasser.K5#1",
-     "m": 398,
+     "probe": "ferne.K1#1",
+     "m": 3592,
      "ringVor": 4,
-     "ringMin": 4
+     "ringMin": -1
     }
    ],
-   "zapfen": 260,
-   "luecken": 6,
+   "zapfen": 352,
+   "luecken": 1,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 336.4,
-  "minuten": 5.67
+  "fahrtS": 420.7,
+  "minuten": 7.07
  }
 }
