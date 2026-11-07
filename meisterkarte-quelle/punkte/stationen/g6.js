@@ -3187,11 +3187,13 @@ module.exports = [
             const an = !!(z.stand && z.stand.enabled && z.stand.ctx === "running");
             // die Mindest-Varianz beider Signale (Schlupfloch „Wind konstant“): Variationskoeffizient ≥ 0,1 je Reihe
             const gruen = an && z.fenster >= 100 && z.r0.r >= 0.6 && z.r0.cvX >= 0.1 && z.r0.cvY >= 0.1;
+            // eine Reihe ohne Varianz (CV null) trägt keine Korrelation: ROT beim Namen der leeren Reihe, nie ein Wurf des Urteils
+            const f2 = (x, leer) => (typeof x === "number" && isFinite(x) ? x.toFixed(2) : leer);
             return {
                 gruen,
                 zahl:
-                    "r " + z.r0.r.toFixed(2) + " bei Lag 0 (n " + z.r0.n + "), Spitze " + (z.best ? z.best.r.toFixed(2) + " bei " + z.best.lagS + " s" : "?") +
-                    ", CV Bild " + z.r0.cvX.toFixed(2) + " / Ohr " + z.r0.cvY.toFixed(2) + ", " + z.fpsVor + " fps, Klang " + (an ? "an" : "AUS"),
+                    "r " + f2(z.r0.r, "— (eine Reihe ohne Varianz)") + " bei Lag 0 (n " + z.r0.n + "), Spitze " + (z.best ? f2(z.best.r, "—") + " bei " + z.best.lagS + " s" : "?") +
+                    ", CV Bild " + f2(z.r0.cvX, "— (Bild still)") + " / Ohr " + f2(z.r0.cvY, "— (Ohr still)") + ", " + z.fpsVor + " fps, Klang " + (an ? "an" : "AUS"),
             };
         },
         pfad: [
