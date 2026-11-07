@@ -146,10 +146,24 @@ const daten = (n) => (Q[n] || {}).d;
 const versuch = async (n, fn) => { try { setze(n, await fn()); } catch (e) { fehlt(n, e); } };
 
 // ── lokal (alle 10 s) ────────────────────────────────────────────────────────────────────────────────────────────────
-// die Git-Bash-Prozesse (ps -ef trägt die volle Befehlszeile): Zug-Schlange, Sammler, fahre, zug-weiter, mess-kandidat, bildpaar, gpu-lauf
+// die Git-Bash-Prozesse (ps -ef trägt die volle Befehlszeile): Zug-Schlange, Sammler, fahre, zug-weiter, mess-kandidat, bildpaar, gpu-lauf.
+// PLATTFORMFEST (07.11. 20:30: aus PowerShell gestartet fand der Blick kein `ps` — „spawn ps ENOENT“, der Zug hieß „steht“, während z300
+// fuhr): das ps.exe der Git-Installation (git --exec-path → <Git>/mingw64/libexec/git-core → <Git>/usr/bin/ps.exe), sonst `ps` im PATH;
+// fällt beides, die bash.exe-Befehlszeilen der CIM-Wache (Anführungszeichen und Pfad der bash.exe gestrichen)
+const PS_EXE = (() => {
+    try {
+        const kern = execFileSync("git", ["--exec-path"], { encoding: "utf8", windowsHide: true, env: GIT_ENV }).trim();
+        const p = path.resolve(kern, "..", "..", "..", "usr", "bin", "ps.exe");
+        if (fs.existsSync(p)) return p;
+    } catch (_e) { /* ohne git: ps im PATH */ }
+    return "ps";
+})();
 async function psListe() {
-    const { e, out } = await lauf("ps", ["-ef"], 8000);
-    if (e && !out) throw new Error("ps -ef: " + e.message);
+    const { e, out } = await lauf(PS_EXE, ["-ef"], 8000);
+    if (e && !out) {
+        if (bashListe) return bashListe.map((p) => ({ pid: p.pid, ppid: 0, start: new Date(p.t), cmd: String(p.c).replace(/^"[^"]*bash\.exe"\s*/i, "bash ").replace(/"/g, "") }));
+        throw new Error(`${path.basename(PS_EXE)} -ef: ${e.message}`);
+    }
     const j = new Date();
     return out.split(/\r?\n/).slice(1).map((l) => /^\s*(\S+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(\d\d:\d\d:\d\d|[A-Z][a-z]{2}\s+\d{1,2})\s+(.*)$/.exec(l)).filter(Boolean).map((m) => {
         let start;
@@ -160,10 +174,10 @@ async function psListe() {
 }
 // node.exe mit Befehlszeile: EINE PowerShell für die Lebenszeit des Blicks (eine CIM-Abfrage je 10 s statt eines PowerShell-Starts je
 // Takt); sie prüft je Runde, ob der Blick noch lebt, und endet mit ihm
-let psKind = null, nodeListe = null, nodeT = 0;
+let psKind = null, nodeListe = null, bashListe = null, nodeT = 0;
 function nodeWaechter() {
     const ps = `$p=${process.pid}; while ($true) { if (-not (Get-Process -Id $p -ErrorAction SilentlyContinue)) { exit }; ` +
-        `$l = @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" | ForEach-Object { [pscustomobject]@{ pid = $_.ProcessId; t = $_.CreationDate.ToString('o'); c = [string]$_.CommandLine } }); ` +
+        `$l = @(Get-CimInstance Win32_Process -Filter "Name='node.exe' OR Name='bash.exe'" | ForEach-Object { [pscustomobject]@{ pid = $_.ProcessId; n = $_.Name; t = $_.CreationDate.ToString('o'); c = [string]$_.CommandLine } }); ` +
         `'@@' + (ConvertTo-Json -Compress -Depth 2 -InputObject $l); Start-Sleep -Seconds ${LOKAL_S} }`;
     psKind = spawn("powershell", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] });
     let rest = "";
@@ -172,7 +186,12 @@ function nodeWaechter() {
         for (let i; (i = rest.indexOf("\n")) >= 0; rest = rest.slice(i + 1)) {
             const z = rest.slice(0, i).trim();
             if (!z.startsWith("@@")) continue;
-            try { const x = JSON.parse(z.slice(2) || "[]"); nodeListe = (Array.isArray(x) ? x : [x]).filter((p) => p && p.c && !/messplatz-blick/.test(p.c)); nodeT = Date.now(); } catch (_e) { /* halbe Zeile */ }
+            try {
+                const x = (Array.isArray(JSON.parse(z.slice(2) || "[]")) ? JSON.parse(z.slice(2) || "[]") : [JSON.parse(z.slice(2))]).filter((p) => p && p.c && !/messplatz-blick/.test(p.c));
+                nodeListe = x.filter((p) => /^node/i.test(p.n));
+                bashListe = x.filter((p) => /^bash/i.test(p.n));
+                nodeT = Date.now();
+            } catch (_e) { /* halbe Zeile */ }
         }
     });
     psKind.on("exit", () => { psKind = null; });
@@ -384,9 +403,63 @@ function laeuferZeile(l) {
 }
 const jobText = (h) => `${h.job.name} · ${h.run.head_branch} ${s8(h.run.head_sha)}${h.run.run_attempt > 1 ? " V" + h.run.run_attempt : ""} · seit ${hhmm(h.job.started_at)} (${dauer(Date.now() - new Date(h.job.started_at))})`;
 
+// der Zug eines Kandidaten: das jüngste fahre-z*.log, das „Kandidat <sha40>“ nennt, mit seinen Zweigen („drin <zweig>@<sha>“)
+const zugJeSha = new Map();
+function zugVonKandidat(sha, tc = TEMP_CLAUDE) {
+    if (!sha) return null;
+    if (zugJeSha.has(sha)) return zugJeSha.get(sha);
+    try {
+        const logs = fs.readdirSync(tc).filter((n) => /^fahre-z\d+\w*\.log$/.test(n) && !/w\.log$/.test(n)).map((n) => ({ n, t: fs.statSync(path.join(tc, n)).mtimeMs })).sort((a, b) => b.t - a.t).slice(0, 12);
+        for (const { n } of logs) {
+            const r = lies(path.join(tc, n));
+            if (!r || !r.text.includes("Kandidat " + sha)) continue;
+            const z = { id: n.replace(/^fahre-|\.log$/g, ""), zweige: [...new Set([...r.text.matchAll(/^\s*drin (\S+?)@\w+/gm)].map((m) => m[1]))] };
+            zugJeSha.set(sha, z); // nur Treffer merken: ein Fehlschlag kann zum Treffer werden, sobald fahre den Kandidaten schreibt
+            return z;
+        }
+    } catch (_e) { /* ohne Logs kein Zug */ }
+    return null;
+}
+// DAS ABAB DER OMEN (Koordinator 07.11. 20:30: „die Zahl hinter ‖ braucht der Vergleich A↔B“): die jüngste ABAB-Zeile in zug/erledigt.txt
+// („abab-<ort>-A1-1-<sha> … ‖ profiband.K1#1: Bild-p95 ≤ 33: wiese-ego-geht 50.12 · … ‖ profiband.K3#1: Band …: wiese-ego 108 · 499k · …“)
+// und ihr Gegenstück der anderen Seite derselben Reihe; je Kriterium EINE Zeile „Messort A → B“, ungemessene „?“ fallen
+const ABAB_ID = /^(.*)-([AB])(\d+)-(\d+)-(\w+)$/;
+function ababBlock(text) {
+    const alle = zeilen(text).map((l) => { const [id, wort, ...r] = l.split(" "); return { id: id.replace(/^omen-gtx-/, ""), wort, rest: r.join(" ") }; });
+    const ababs = alle.filter((x) => x.rest.includes("‖") && ABAB_ID.test(x.id) && /abab/.test(x.id));
+    const L = ababs[ababs.length - 1];
+    if (!L || alle.indexOf(L) < alle.length - 3) return null; // nur, solange das ABAB unter den letzten drei OMEN-Zeilen steht
+    const m = ABAB_ID.exec(L.id);
+    const partner = [...ababs].reverse().find((x) => { const k = ABAB_ID.exec(x.id); return k[1] === m[1] && k[2] !== m[2]; }) || null;
+    const [A, B] = m[2] === "B" ? [partner, L] : [L, partner];
+    const werte = (x) => {
+        const je = new Map();
+        for (const seg of x ? x.rest.replace(/\s*\(punkte-maschine[^)]*\)\s*$/, "").split(" ‖ ").slice(1) : []) {
+            const s = /^(profiband\.\S+): (.*)$/.exec(seg);
+            if (!s) continue;
+            const i = s[2].indexOf(": "), body = s[2].slice(i + 2), e = new Map();
+            // ein Messort trägt mehrere Werte („Befehle · Dreiecke · VRAM“ im Titel), dann trennt „|“ die Orte, sonst „·“
+            for (const t of body.split(body.includes(" | ") || /(.*·.*)/.test(s[2].slice(0, i)) ? " | " : " · ")) {
+                const w = /^(\S+)\s+(.*\d.*)$/.exec(t.trim());
+                if (w && !/\?\s*$/.test(w[2])) e.set(w[1], w[2].replace(/ · /g, "·").replace(/ (MB|ms)\b/g, "$1"));
+            }
+            je.set(s[1], { label: s[2].slice(0, i).replace(/ · /g, "·"), e });
+        }
+        return je;
+    };
+    const wa = werte(A), wb = werte(B);
+    const out = [];
+    for (const k of new Set([...wa.keys(), ...wb.keys()])) {
+        const a = wa.get(k), b = wb.get(k);
+        const namen = [...new Set([...(a ? a.e.keys() : []), ...(b ? b.e.keys() : [])])];
+        out.push(`${k.replace(/^profiband\./, "")} ${(a || b).label}: ` + namen.map((n) => `${n} ${a && a.e.has(n) ? a.e.get(n) : "—"}${B ? " → " + (b && b.e.has(n) ? b.e.get(n) : "—") : ""}`).join(" · "));
+    }
+    return { reihe: m[1], A, B, zeilen: out };
+}
 function seite() {
     const o = [];
-    const L = daten("lokal") || {}, ps = daten("ps") || [], Z = daten("zug") || { laeuft: [], wartet: [] };
+    const L = daten("lokal") || {}, ps = daten("ps") || [];
+    let Z = daten("zug") || { laeuft: [], wartet: [] };
     const R = daten("refs") || {}, lae = daten("laeufer") || [], M = daten("main") || {};
     const lO = lae.find((l) => l.name === LAEUFER.omen), lR = lae.find((l) => l.name === LAEUFER.radeon);
     const jO = lO && lO.busy ? jobAuf(LAEUFER.omen) : null, jR = lR && lR.busy ? jobAuf(LAEUFER.radeon) : null;
@@ -447,7 +520,13 @@ function seite() {
         : [runs.some((r) => ((jobsJe.get(r.id) || {}).jobs || []).some((j) => j.conclusion === "failure")) ? "rot" : runs.length ? "gelb" : "gruen",
             [laeufe(runs.length), zr ? `Zug ${s8(zr.head_sha)} ${fortschritt(zr)}` : "", runs.filter((r) => r !== zr).map((r) => `${r.head_branch}${r.name !== "Code-Check" ? "/" + wfName(r) : ""} ${fortschritt(r)}`).slice(0, 3).join(", ")].filter(Boolean).join(" · ")];
 
-    // ZUG: Reihenfolge
+    // ZUG: Reihenfolge — aus den Prozessen, und unabhängig davon aus GitHub: läuft ein Lauf am Kopf von integ-probe, fährt der Zug, dessen
+    // fahre-Log diesen Kandidaten nennt (die Prozess-Liste kann fehlen; der Lauf nie, solange der Zug fährt)
+    const zk = zr && zr.status !== "completed" ? zugVonKandidat(zr.head_sha) : null;
+    const ZL = Z.laeuft.filter((e) => !zk || e.id !== zk.id || e.phase), ZW = Z.wartet.filter((e) => !zk || e.id !== zk.id);
+    if (zk && !ZL.some((e) => e.id === zk.id)) ZL.unshift({ id: zk.id, zweige: zk.zweige, phase: `CI am Kandidaten ${s8(zr.head_sha)} (aus dem Lauf auf integ-probe)`, seit: new Date(zr.run_started_at || zr.created_at), pt: Date.now() });
+    for (const e of ZL) if (zk && e.id === zk.id) e.ci = fortschritt(zr);
+    Z = { ...Z, laeuft: ZL, wartet: ZW };
     const zweigeKurz = (z) => (z.length ? `[${z.join(" ")}]` : "");
     const reihe = [...Z.laeuft.map((e) => `läuft ${fett(e.id)} ${zweigeKurz(e.zweige)}`), ...Z.wartet.map((e) => `wartet ${e.id} [${e.zweige.length} Zweig${e.zweige.length === 1 ? "" : "e"}]`)];
     const zugZ = reihe.length ? ["gelb", reihe.join(" → ")] : ["gruen", `steht${Z.zuletzt ? " · zuletzt " + urteil(Z.zuletzt.text.slice(0, 60)) : ""}`];
@@ -464,8 +543,14 @@ function seite() {
     const kopfzeile = (titel, t, takt) => grau("── ") + fett(titel) + "  " + (Q[t] && Q[t].fehler ? rot("Fehler: " + Q[t].fehler) + " " : "") + alter((Q[t] || {}).t, takt);
     o.push("", kopfzeile(`OMEN · GTX 1060 · ${laeuferZeile(lO)}`, "laeufer", TAKT_API));
     o.push(`  ${spalte("jetzt", 8)} ${omenZ[1]}`);
-    if (erlZ[0]) o.push(mitAlter(`  ${spalte("zuletzt", 8)} ${hhmm(erlZ[0].t)} ${erlZ[0].id} ${urteil(erlZ[0].wort)} ${grau(erlZ[0].rest.replace(/\s*\(punkte-maschine.*$/, "").slice(0, 100))}`, erlZ[0].t, 2 * 3600e3));
+    if (erlZ[0]) o.push(mitAlter(`  ${spalte("zuletzt", 8)} ${hhmm(erlZ[0].t)} ${erlZ[0].id} ${urteil(erlZ[0].wort)} ${grau(erlZ[0].rest.split(" ‖ ")[0].replace(/\s*\(punkte-maschine.*$/, "").slice(0, 100))}`, erlZ[0].t, 2 * 3600e3));
     if (erlZ.length > 1) o.push(`  ${spalte("davor", 8)} ${erlZ.slice(1).map((x) => `${hhmm(x.t)} ${x.id} ${urteil(x.wort)}`).join(" · ")}`);
+    const ab = ababBlock(erl.text);
+    if (ab) {
+        const seite = (x, s) => (x ? `${s} ${(ABAB_ID.exec(x.id) || [])[5] || "?"} ${urteil(x.wort)}` : grau(`${s} steht aus`));
+        o.push(`  ${spalte("ABAB", 8)} ${ab.reihe.replace(/^abab-/, "")} · ${seite(ab.A, "A")} · ${seite(ab.B, "B")}`);
+        for (const z of ab.zeilen) o.push(`  ${spalte("", 8)} ${z}`);
+    }
 
     o.push("", kopfzeile(`RADEON · 890M · ${laeuferZeile(lR)}`, "lokal", TAKT_LOKAL));
     o.push(`  ${spalte("jetzt", 8)} ${radeonTeile.length ? radeonTeile.join(" · ") : `frei · Schloss frei · keine Sperre · kein punkte/werkbank/bildpaar${nodeListe ? "" : grau(" (node-Liste kommt)")}`}`);
@@ -478,7 +563,7 @@ function seite() {
     if (mc.headless[0] && o.length) o.push(mitAlter(`  ${spalte("Farm", 8)} ${hhmm(mc.headless[0].t)} ${urteil(mc.headless[0].titel.replace(/^Farm headless\s*/, "").replace(/ · längster.*$/, ""))}`, mc.headless[0].t, 6 * 3600e3));
 
     o.push("", kopfzeile("ZUG · Schlange des Koordinators", "zug", TAKT_LOKAL));
-    for (const e of Z.laeuft.slice(0, 2)) o.push(mitAlter(`  ${spalte("läuft", 8)} ${fett(e.id)} ${zweigeKurz(e.zweige)} · seit ${hhmm(e.seit)} · ${urteil(e.phase).slice(0, 160)}`, e.pt, 45 * 60e3));
+    for (const e of Z.laeuft.slice(0, 2)) o.push(mitAlter(`  ${spalte("läuft", 8)} ${fett(e.id)} ${zweigeKurz(e.zweige)} · seit ${hhmm(e.seit)}${e.ci ? " · CI " + e.ci : ""} · ${urteil(e.phase).slice(0, 160)}`, e.pt, 45 * 60e3));
     for (const e of Z.wartet.slice(0, 1)) o.push(`  ${spalte("wartet", 8)} ${e.id} ${zweigeKurz(e.zweige)} ${grau("nach " + e.nach)}`);
     if (!Z.laeuft.length && !Z.wartet.length) o.push(`  ${grau("kein Zug in Fahrt, keine Schlange")}`);
     if (Z.zuletzt) o.push(mitAlter(`  ${spalte("zuletzt", 8)} ${hhmm(Z.zuletzt.t)} ${urteil(Z.zuletzt.text)}`, Z.zuletzt.t, 2 * 3600e3));
@@ -531,6 +616,19 @@ function selbsttest() {
     if (!b.zuletzt || !/^z299 FAHRT ROT/.test(b.zuletzt.text)) fehler.push("zuletzt: " + JSON.stringify(b.zuletzt || null));
     const c = zug(ps.filter((x) => !/fahre\.sh|zug-sammler|zug-weiter/.test(x.cmd)), D);
     if (c.laeuft.length || c.wartet.map((e) => e.id).join() !== "z300") fehler.push("nach dem Urteil: " + JSON.stringify(c));
+    // der Zug aus dem GitHub-Lauf: der Kandidat im fahre-Log nennt den Zug samt Zweigen, ein fremder Kandidat keinen
+    fs.writeFileSync(path.join(D.tc, "fahre-z300.log"), "20:12:01 [z300] bau gegen main 185e99bb\n  drin w22-schmiede-heil@c194cb3f\n  drin w20-lack-spiegel@aa11bb22\n" +
+        "20:13:40 [z300] Kandidat e84fd1fb99ee167658e625c473ea4f3c8d1f746d (Werkzeug=0)\n");
+    const k = zugVonKandidat("e84fd1fb99ee167658e625c473ea4f3c8d1f746d", D.tc);
+    if (!k || k.id !== "z300" || k.zweige.join() !== "w22-schmiede-heil,w20-lack-spiegel") fehler.push("Kandidat → Zug: " + JSON.stringify(k));
+    if (zugVonKandidat("0123456789abcdef0123456789abcdef01234567", D.tc)) fehler.push("fremder Kandidat nennt einen Zug");
+    // das ABAB: A und B derselben Reihe paaren je Messort, „?“ fällt, ohne B steht „—“ nicht
+    const erl = "omen-gtx-z298-liste-1-2f70c000 UNGEMESSEN 2 GRÜN\n" +
+        "omen-gtx-abab-wiese-A1-1-185e99bb ROT 0 GRÜN / 4 ROT · ROT profiband.K1#1 ‖ profiband.K1#1: Bild-p95 ≤ 33: wiese-ego-geht 50.12 · wiese-fahrt ? ‖ profiband.K3#1: Band im Stand (Befehle · Dreiecke): wiese-ego 108 · 499k · 131.4 MB | dorf-t ‖ vegetation.K1#1: LAI 2.41 (punkte-maschine 2eb11744 messung/185e99bb-gtx.json)\n" +
+        "omen-gtx-abab-wiese-B1-1-e84fd1fb GRÜN 4 GRÜN · ‖ profiband.K1#1: Bild-p95 ≤ 33: wiese-ego-geht 31.20 · wiese-fahrt 28.00 ‖ profiband.K3#1: Band im Stand (Befehle · Dreiecke): wiese-ego 101 · 480k · 120.0 MB\n";
+    const ab = ababBlock(erl);
+    const soll = ["K1#1 Bild-p95 ≤ 33: wiese-ego-geht 50.12 → 31.20 · wiese-fahrt — → 28.00", "K3#1 Band im Stand (Befehle·Dreiecke): wiese-ego 108·499k·131.4MB → 101·480k·120.0MB"];
+    if (!ab || ab.zeilen.join("\n") !== soll.join("\n") || ab.reihe !== "abab-wiese") fehler.push("ABAB: " + JSON.stringify(ab && ab.zeilen));
     fs.rmSync(wurzel, { recursive: true, force: true });
     console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : "messplatz-blick Selbsttest grün: läuft z299 → wartet z300, Neulauf, Urteil");
     process.exit(fehler.length ? 1 : 0);
