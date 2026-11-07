@@ -2155,9 +2155,10 @@ class AnazhRealm_gelaende_chunks {
                     const rcCull = 80 + (e._blockerReach || 0);
                     if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
                     // DER STRAHL KENNT JEDE GEZEICHNETE GESTALT (leib.K4): nach den Boxen des Eintrags seine Flügel, wie das Bild
-                    // sie zeigt (`_fluegelBoxenVon`: der Tür- und Tor-Flügel als Instanz) — in der Ordnung danach
+                    // sie zeigt (`_strahlBoxenVon`: das Geländer der Treppe aus der Hülle, der Tür- und Tor-Flügel als Instanz) — in der
+                    // Ordnung danach
                     const boxes = e.blockerAABBs;
-                    const fl = this._fluegelBoxenVon(e);
+                    const fl = this._strahlBoxenVon(e);
                     const nB = boxes.length;
                     const seq = e._blockerSeq;
                     for (let bi = 0, n = nB + fl.length; bi < n; bi++) {

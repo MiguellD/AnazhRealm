@@ -320,8 +320,9 @@ function nahDeckungInSeite(o) {
     const uvt = [];
     const meta = [];
     // je Achse der Punkt der Dreiecks-Hülle, der dem Auge am nächsten liegt (geklemmt), sein Abstand gegen die Kugel
-    const inKugel = (a, b, c) =>
-        ["x", "y", "z"].reduce((s, k) => s + (Math.max(Math.min(a[k], b[k], c[k]), Math.min(E[k], Math.max(a[k], b[k], c[k]))) - E[k]) ** 2, 0) <= D2;
+    // (dieselbe Klemme und Summe über die Vektor-Rechnung: die Schleife über Schlüssel-Texte trug 2,4 ms je Frage, leib.K4)
+    const [lo, hi, nb] = [1, 2, 3].map(() => new T.Vector3());
+    const inKugel = (a, b, c) => nb.copy(E).clamp(lo.copy(a).min(b).min(c), hi.copy(a).max(b).max(c)).distanceToSquared(E) <= D2;
     C.lauf++;
     {
         const ft = C.tris;

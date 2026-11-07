@@ -49,6 +49,7 @@
                 "stamm/stoff-karte.js": "c:0000000000000000",
                 "stamm/stoff-gang.js": "c:0000000000000000",
                 "stamm/studio-bruecke.js": "c:0000000000000000",
+                "stamm/studio-glieder.js": "c:0000000000000000",
                 "stamm/studio-gestalt.js": "c:0000000000000000",
                 "stamm/studio-stoff.js": "c:0000000000000000",
                 "stamm/bau-vorlagen.js": "c:0000000000000000",
@@ -133,6 +134,7 @@
                 "stamm/stoff-karte.js": "c:0000000000000000",
                 "stamm/stoff-gang.js": "c:0000000000000000",
                 "stamm/studio-bruecke.js": "c:0000000000000000",
+                "stamm/studio-glieder.js": "c:0000000000000000",
                 "stamm/studio-gestalt.js": "c:0000000000000000",
                 "stamm/studio-stoff.js": "c:0000000000000000",
                 "stamm/bau-vorlagen.js": "c:0000000000000000",
@@ -223,6 +225,7 @@
                 "stamm/dienst.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/werkstatt-bauen.js"
@@ -290,6 +293,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-gestalt.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
@@ -363,6 +367,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/vegetation-baum.js",
                 "stamm/vegetation-streu.js"
@@ -417,6 +422,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/vegetation-baum.js",
                 "stamm/vegetation-streu.js"
@@ -469,6 +475,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-gestalt.js",
                 "stamm/studio-stoff.js",
                 "stamm/bau-vorlagen.js",
@@ -564,6 +571,7 @@
                 "stamm/stoff-material.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
@@ -647,6 +655,7 @@
                 "stamm/dienst.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
@@ -743,6 +752,7 @@
                 "stamm/dienst.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/werkstatt-bauen.js"
@@ -797,6 +807,7 @@
                 "stamm/dienst.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
@@ -920,6 +931,7 @@
                 "stamm/gelaende-boden.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/koerper-leib.js",
@@ -968,6 +980,7 @@
                 "foundry-core.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/koerper-leib.js"
             ],
@@ -998,6 +1011,7 @@
                         "foundry-core.js": "c:5e63dfdb22536599",
                         "stamm/stoff-material.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-glieder.js": "c:0000000000000000",
                         "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/koerper-leib.js": "c:0000000000000000"
                     }
@@ -1018,6 +1032,7 @@
                         "foundry-core.js": "c:5e63dfdb22536599",
                         "stamm/stoff-material.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
+                        "stamm/studio-glieder.js": "c:0000000000000000",
                         "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/koerper-leib.js": "c:0000000000000000"
                     }
@@ -1055,6 +1070,7 @@
                 "stamm/dienst.js",
                 "stamm/stoff-material.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-glieder.js",
                 "stamm/studio-stoff.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/werkstatt-bauen.js"
