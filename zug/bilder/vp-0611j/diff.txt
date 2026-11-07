@@ -1,0 +1,72 @@
+1-third-aus main↔Zweig                       {"lumaA":52.72,"lumaB":52.79,"mAbs":0.087,"ueber8":0.039,"ueber24":0.016,"max":97.2,"maxPixel":[85,368],"zellen":["Spalte 1/8 Zeile 3/6 0.43","Spalte 5/8 Zeile 3/6 0.14","Spalte 6/8 Zeile 3/6 0.14"]}
+1-third-aus main↔main2 (Rausch-Boden)        {"lumaA":52.72,"lumaB":52.8,"mAbs":0.088,"ueber8":0.043,"ueber24":0.016,"max":97.2,"maxPixel":[85,368],"zellen":["Spalte 1/8 Zeile 3/6 0.43","Spalte 4/8 Zeile 4/6 0.14","Spalte 5/8 Zeile 3/6 0.14"]}
+1-third-aus main2↔Zweig                      {"lumaA":52.8,"lumaB":52.79,"mAbs":0.003,"ueber8":0.011,"ueber24":0.001,"max":47.4,"maxPixel":[727,556],"zellen":["Spalte 4/8 Zeile 4/6 0.08","Spalte 2/8 Zeile 5/6 0.01","Spalte 2/8 Zeile 4/6 0.01"]}
+1-ego-aus main↔Zweig                         {"lumaA":58.49,"lumaB":58.57,"mAbs":0.088,"ueber8":0.025,"ueber24":0.01,"max":87.8,"maxPixel":[40,480],"zellen":["Spalte 1/8 Zeile 3/6 0.33","Spalte 6/8 Zeile 4/6 0.14","Spalte 7/8 Zeile 4/6 0.13"]}
+1-ego-aus main↔main2 (Rausch-Boden)          {"lumaA":58.49,"lumaB":58.57,"mAbs":0.088,"ueber8":0.024,"ueber24":0.009,"max":87.8,"maxPixel":[40,480],"zellen":["Spalte 1/8 Zeile 3/6 0.33","Spalte 6/8 Zeile 4/6 0.13","Spalte 7/8 Zeile 4/6 0.13"]}
+1-ego-aus main2↔Zweig                        {"lumaA":58.57,"lumaB":58.57,"mAbs":0.001,"ueber8":0.003,"ueber24":0.001,"max":80,"maxPixel":[1148,662],"zellen":["Spalte 5/8 Zeile 4/6 0.02","Spalte 6/8 Zeile 5/6 0.01","Spalte 6/8 Zeile 4/6 0.01"]}
+2-ego-zurueck-aus ↔ 1-ego-aus (Zweig)        {"lumaA":58.57,"lumaB":58.57,"mAbs":0.001,"ueber8":0.003,"ueber24":0.001,"max":62,"maxPixel":[1266,810],"zellen":["Spalte 6/8 Zeile 5/6 0.01","Spalte 5/8 Zeile 4/6 0.01","Spalte 6/8 Zeile 4/6 0.01"]}
+2-third-deuteranopie gegen aus               {"rgbAus":[44,59.2,15.7],"rgbFarb":[42.2,55.1,20],"geaendertProzent":11.8,"himmelPixel":48321,"himmelMaxKanalDelta":0.01,"schwarzProzent":[0.006,0.016],"weissProzent":[0,0]}
+2-ego-deuteranopie gegen aus                 {"rgbAus":[49,65.3,20.4],"rgbFarb":[47.4,61.9,24],"geaendertProzent":9.6,"himmelPixel":50201,"himmelMaxKanalDelta":0.04,"schwarzProzent":[0.002,0.002],"weissProzent":[0,0]}
+2-third-protanopie gegen aus                 {"rgbAus":[44,59.2,15.7],"rgbFarb":[41.9,54.1,20.9],"geaendertProzent":12.5,"himmelPixel":48321,"himmelMaxKanalDelta":0,"schwarzProzent":[0.006,0.044],"weissProzent":[0,0]}
+2-ego-protanopie gegen aus                   {"rgbAus":[49,65.3,20.4],"rgbFarb":[47.2,61,24.8],"geaendertProzent":10.1,"himmelPixel":50201,"himmelMaxKanalDelta":0,"schwarzProzent":[0.002,0.002],"weissProzent":[0,0]}
+2-third-tritanopie gegen aus                 {"rgbAus":[44,59.2,15.7],"rgbFarb":[44,59.1,15.7],"geaendertProzent":0.3,"himmelPixel":48321,"himmelMaxKanalDelta":1.77,"schwarzProzent":[0.006,0.006],"weissProzent":[0,0]}
+2-ego-tritanopie gegen aus                   {"rgbAus":[49,65.3,20.4],"rgbFarb":[49,65.2,20.4],"geaendertProzent":0.2,"himmelPixel":50201,"himmelMaxKanalDelta":1.49,"schwarzProzent":[0.002,0.002],"weissProzent":[0,0]}
+3-ego-fov60 gegen fov75                      {"soll":0.7524,"gemessen":0.75,"fehlerAmBesten":12.1,"fehlerBeiS1":29.01}
+3-ego-fov100 gegen fov75                     {"soll":1.5531,"gemessen":1.555,"fehlerAmBesten":7.82,"fehlerBeiS1":28.71}
+3-ego-fov75 ↔ 1-ego-aus (Default 75)         {"lumaA":58.57,"lumaB":58.57,"mAbs":0.013,"ueber8":0.015,"ueber24":0.002,"max":77.3,"maxPixel":[1855,631],"zellen":["Spalte 1/8 Zeile 4/6 0.13","Spalte 2/8 Zeile 4/6 0.08","Spalte 3/8 Zeile 4/6 0.06"]}
+
+1-ego-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.066 % / 18.783 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,425,701,1635,96,21,0,0 · Himmel-Pixel mit Δ≥1 17534/50746
+1-ego-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.067 % / 18.782 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,416,683,1625,113,31,0,0 · Himmel-Pixel mit Δ≥1 17530/50746
+1-ego-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.976 % / 0.009 % / 0.003 % / 0.004 % / 0.004 % / 0.004 % · Δ≥2 je Neuntel-Band (oben→unten) 0,0,31,78,52,118,34,0,0 · Himmel-Pixel mit Δ≥1 21/50747
+1-third-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.682 % / 17.120 % / 0.062 % / 0.052 % / 0.036 % / 0.048 % · Δ≥2 je Neuntel-Band (oben→unten) 309,425,591,2439,158,71,61,45,0 · Himmel-Pixel mit Δ≥1 14712/48710
+1-third-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.635 % / 17.136 % / 0.070 % / 0.060 % / 0.043 % / 0.056 % · Δ≥2 je Neuntel-Band (oben→unten) 319,401,580,2452,103,772,64,43,0 · Himmel-Pixel mit Δ≥1 14707/48710
+1-third-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.902 % / 0.044 % / 0.014 % / 0.013 % / 0.011 % / 0.015 % · Δ≥2 je Neuntel-Band (oben→unten) 9,27,21,62,135,759,31,67,0 · Himmel-Pixel mit Δ≥1 23/48743
+
+1-ego-aus main→kand: +1 je R/G/B 148168/172516/102924 · −1 je R/G/B 2267/1738/1812 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-ego-aus main→main2: +1 je R/G/B 148159/172520/102914 · −1 je R/G/B 2269/1736/1808 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-third-aus main→kand: +1 je R/G/B 134892/158827/87218 · −1 je R/G/B 2872/2034/2442 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 8.9% 13.5% 21.2% 30.2% 36.0% 39.7% 46.4% 42.4%
+1-third-aus main→main2: +1 je R/G/B 135105/159025/87427 · −1 je R/G/B 2964/2165/2476 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 9.0% 13.5% 21.2% 30.2% 36.0% 39.8% 46.4% 42.4%
+
+1-ego-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.066 % / 18.783 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,425,701,1635,96,21,0,0 · Himmel-Pixel mit Δ≥1 17534/50746
+1-ego-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.067 % / 18.782 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,416,683,1625,113,31,0,0 · Himmel-Pixel mit Δ≥1 17530/50746
+1-ego-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.976 % / 0.009 % / 0.003 % / 0.004 % / 0.004 % / 0.004 % · Δ≥2 je Neuntel-Band (oben→unten) 0,0,31,78,52,118,34,0,0 · Himmel-Pixel mit Δ≥1 21/50747
+1-third-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.682 % / 17.120 % / 0.062 % / 0.052 % / 0.036 % / 0.048 % · Δ≥2 je Neuntel-Band (oben→unten) 309,425,591,2439,158,71,61,45,0 · Himmel-Pixel mit Δ≥1 14712/48710
+1-third-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.635 % / 17.136 % / 0.070 % / 0.060 % / 0.043 % / 0.056 % · Δ≥2 je Neuntel-Band (oben→unten) 319,401,580,2452,103,772,64,43,0 · Himmel-Pixel mit Δ≥1 14707/48710
+1-third-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.902 % / 0.044 % / 0.014 % / 0.013 % / 0.011 % / 0.015 % · Δ≥2 je Neuntel-Band (oben→unten) 9,27,21,62,135,759,31,67,0 · Himmel-Pixel mit Δ≥1 23/48743
+
+1-ego-aus main→kand: +1 je R/G/B 148168/172516/102924 · −1 je R/G/B 2267/1738/1812 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-ego-aus main→main2: +1 je R/G/B 148159/172520/102914 · −1 je R/G/B 2269/1736/1808 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-third-aus main→kand: +1 je R/G/B 134892/158827/87218 · −1 je R/G/B 2872/2034/2442 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 8.9% 13.5% 21.2% 30.2% 36.0% 39.7% 46.4% 42.4%
+1-third-aus main→main2: +1 je R/G/B 135105/159025/87427 · −1 je R/G/B 2964/2165/2476 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 9.0% 13.5% 21.2% 30.2% 36.0% 39.8% 46.4% 42.4%
+
+## Histogramm max-Kanal-Δ (main = erste Welt, main2 = zweite Welt, kand = Zweig)
+1-ego-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.066 % / 18.783 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,425,701,1635,96,21,0,0 · Himmel-Pixel mit Δ≥1 17534/50746
+1-ego-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 81.067 % / 18.782 % / 0.053 % / 0.040 % / 0.026 % / 0.032 % · Δ≥2 je Neuntel-Band (oben→unten) 77,188,416,683,1625,113,31,0,0 · Himmel-Pixel mit Δ≥1 17530/50746
+1-ego-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.976 % / 0.009 % / 0.003 % / 0.004 % / 0.004 % / 0.004 % · Δ≥2 je Neuntel-Band (oben→unten) 0,0,31,78,52,118,34,0,0 · Himmel-Pixel mit Δ≥1 21/50747
+1-third-aus main↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.682 % / 17.120 % / 0.062 % / 0.052 % / 0.036 % / 0.048 % · Δ≥2 je Neuntel-Band (oben→unten) 309,425,591,2439,158,71,61,45,0 · Himmel-Pixel mit Δ≥1 14712/48710
+1-third-aus main↔main2: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 82.635 % / 17.136 % / 0.070 % / 0.060 % / 0.043 % / 0.056 % · Δ≥2 je Neuntel-Band (oben→unten) 319,401,580,2452,103,772,64,43,0 · Himmel-Pixel mit Δ≥1 14707/48710
+1-third-aus main2↔kand: Pixel mit max-Kanal-Δ 0 / 1 / 2 / 3–4 / 5–8 / >8 = 99.902 % / 0.044 % / 0.014 % / 0.013 % / 0.011 % / 0.015 % · Δ≥2 je Neuntel-Band (oben→unten) 9,27,21,62,135,759,31,67,0 · Himmel-Pixel mit Δ≥1 23/48743
+
+## 1-LSB-Pixel
+1-ego-aus main→kand: +1 je R/G/B 148168/172516/102924 · −1 je R/G/B 2267/1738/1812 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-ego-aus main→main2: +1 je R/G/B 148159/172520/102914 · −1 je R/G/B 2269/1736/1808 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 7.8% 13.6% 22.1% 30.9% 36.5% 42.1% 51.3% 41.5%
+1-third-aus main→kand: +1 je R/G/B 134892/158827/87218 · −1 je R/G/B 2872/2034/2442 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 8.9% 13.5% 21.2% 30.2% 36.0% 39.7% 46.4% 42.4%
+1-third-aus main→main2: +1 je R/G/B 135105/159025/87427 · −1 je R/G/B 2964/2165/2476 · Anteil 1-LSB-Pixel je Helligkeit (max-Kanal 0–31 … 224–255) 9.0% 13.5% 21.2% 30.2% 36.0% 39.8% 46.4% 42.4%
+
+## Himmel und rötliche Pixel je Farbsicht (Zweig, gegen aus)
+ego deuteranopie Himmel RGB aus 73.1/94.4/106.1 → 73.1/94.4/106.1 (50201 px, max Kanal-Δ 118) · rötlich RGB 121.8/103.6/34.2 → 101.7/55.3/88.7 (5.5 % px)
+ego protanopie Himmel RGB aus 73.1/94.4/106.1 → 73.1/94.4/106.1 (50201 px, max Kanal-Δ 32) · rötlich RGB 121.8/103.6/34.2 → 98.1/42.5/99.6 (5.5 % px)
+ego tritanopie Himmel RGB aus 73.1/94.4/106.1 → 71.6/93.5/106.3 (50201 px, max Kanal-Δ 32) · rötlich RGB 121.8/103.6/34.2 → 121.8/103.5/34.3 (5.5 % px)
+third deuteranopie Himmel RGB aus 55.0/79.0/88.1 → 55.0/79.0/88.1 (48321 px, max Kanal-Δ 66) · rötlich RGB 109.3/91.8/29.1 → 90.8/45.4/81.2 (6.7 % px)
+third protanopie Himmel RGB aus 55.0/79.0/88.1 → 55.0/79.0/88.1 (48321 px, max Kanal-Δ 28) · rötlich RGB 109.3/91.8/29.1 → 88.0/34.2/91.8 (6.7 % px)
+third tritanopie Himmel RGB aus 55.0/79.0/88.1 → 53.3/78.0/88.5 (48321 px, max Kanal-Δ 48) · rötlich RGB 109.3/91.8/29.1 → 109.3/91.6/29.1 (6.7 % px)
+
+## offener Himmel (blau, Y>70, alle 8 Nachbarn im Abstand 3 px ebenso) gegen den Himmel am Laub-Rand
+ego deuteranopie offen 13835 px RGB 80.83/104.33/120.45 → 80.75/104.22/120.34 Δ≥1 0.43 % · Laub-Rand Δ≥1 0.1 %
+ego protanopie offen RGB → 80.83/104.33/120.45 Δ≥1 0.04 % · Laub-Rand 0.1 %
+ego tritanopie offen RGB → 80.75/104.26/120.45 Δ≥1 1.04 % (144 px, max 26) · Laub-Rand 20.7 %
+third deuteranopie/protanopie offen 11699 px RGB 80.82/106.17/119.49 unverändert, Δ≥1 0.00 %
+third tritanopie offen RGB → 80.49/105.95/119.49 Δ≥1 2.53 % (296 px, max 28; x 593–1567, y 3–244, Kronen-Lücken: R −15…−21 wie vor der Abgabe) · Laub-Rand 21.5 %
+
+## gpu-bank Ego aus: main 19.32 · main2 19.82 · Zweig 20.08 (deuteranopie 20.22) ms
+## Konsole: kein [ERROR] STOFF (0 Zeilen auf beiden Seiten); werkbank /eval der alten Uniform-Probe fällt am Zweig (Cannot read properties of undefined (reading 'value')) — der Graph trägt keine Zugangs-Uniform mehr

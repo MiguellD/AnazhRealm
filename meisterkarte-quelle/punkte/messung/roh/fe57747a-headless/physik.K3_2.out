@@ -1,0 +1,138 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function weltProbeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite, warteAufWelt } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { messort, WELT_ORTE_INSTALL } = require(path.resolve("scripts/lib/welt-orte.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const [aus, port, grund, probenText] = process.argv.slice(1);
+    const orte = Object.fromEntries(["wiese", "dorf"].map((id) => [id, messort(id)]));
+    const erg = { proben: {}, fehler: [] };
+    const server = statikServer();
+    let browser = null;
+    try {
+        await server.lausche(Number(port));
+        const ns = await nullSeite({ frist: 1800000 });
+        browser = ns.browser;
+        const seite = ns.page;
+        seite.setDefaultTimeout(1200000);
+        seite.on("pageerror", (e) => erg.fehler.length < 8 && erg.fehler.push(String(e.message || e).split("\n")[0].slice(0, 200)));
+        const erwacht = async () => {
+            await warteAufWelt(seite, 300000);
+            await seite.evaluate(async () => {
+                while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                await window.anazhRealm.erwacht;
+                window.anazhRealm.state.renderer.setAnimationLoop(null);
+            });
+            await seite.evaluate(WELT_ORTE_INSTALL + ";" + AUSGABE_INSTALL); // das Orts-Gesetz und der EINE Wetter-Weg (`__wetterSetzen`)
+        };
+        await server.zeige(seite, 240000, "index.html", "networkidle0");
+        await erwacht();
+        for (const [name, fn, o] of JSON.parse(probenText)) {
+            const t0 = Date.now();
+            let e;
+            try {
+                if (o && o.neuladen) {
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 240000 });
+                    await erwacht();
+                }
+                // DER ORT STELLT SEINEN DORF-ZUG (w12-dorf-probe): je Probe der Zustand ihres Messorts (`o.ort`, sonst die Wiese) aus dem
+                // Haushalt (`dorfZug`, derselbe Haken wie `werkbank umstellen`), vor ihrem ersten Takt — am Dorf läuft der Zug, an der
+                // Wiese ruht er. Bis dahin stellte die Probe ihn nie: headless ruhte er überall (der Null-Renderer hielt ihn an), am Dorf
+                // urteilte jede Probe eine leere Welt (0 Häuser nach 9000 Takten), mit Renderer wüchse an der Wiese ein Dorf (−1,−5).
+                await seite.evaluate((z) => (window.__anazhAutoSettlement = z), orte[(o && o.ort) || "wiese"].dorfZug);
+                e = await seite.evaluate("(" + fn + ")(window.anazhRealm, THREE, " + JSON.stringify(Object.assign({ orte }, o)) + ", (" + grund + ")(window.anazhRealm, THREE))");
+            } catch (x) {
+                e = { fehler: String((x && x.message) || x).split("\n")[0].slice(0, 300) };
+            }
+            e = Object.assign({}, e || { fehler: "die Probe gab nichts zurück" }, { sek: Math.round((Date.now() - t0) / 100) / 10 });
+            erg.proben[name] = e;
+            console.log("WELTPROBE " + name + " " + JSON.stringify(e));
+        }
+    } catch (x) {
+        erg.fehler.push(String((x && x.message) || x).split("\n")[0].slice(0, 300));
+    } finally {
+        if (browser) await browser.close().catch(() => {});
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("WELTPROBE-ENDE " + JSON.stringify({ proben: Object.keys(erg.proben), fehler: erg.fehler }));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/fe57747a-headless/physik.K3_2.json 7704 function weltGrund(r, T) {
+    const s = r.state;
+    const A = r.constructor;
+    let t = performance.now();
+    s.perfRegulator = false;
+    const takt = (n = 1) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+    };
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    const stehen = async (x, z) => {
+        s.playerMesh.position.set(x, y(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        s.playerVel.setValue(0, 0, 0);
+        await window.__weltStehtNach(() => takt());
+        takt(30);
+    };
+    const tage = (n) => {
+        for (let k = 0; k < n * 4; k++) {
+            r.setTimeOfDay((s.timeOfDay + 0.25) % 1, "regler");
+            takt(3);
+        }
+    };
+    // DAS WETTER EINER PROBE über den EINEN Weg (`__wetterSetzen`, scripts/lib/ausgabe-aufnahme.cjs; der Lauf baut ihn in jede
+    // Welt): er taut den Mess-Halt für DIESES Wort und hält danach wieder — ein Wort, das nicht gilt, wirft beim Namen. Bis 03.11.
+    // setzte `trocken` selbst und fror den Halt dahinter (−1e9): jedes spätere Wort fiel still (der Regen der Alter-Spur)
+    const wetter = (wort, zug) => {
+        if (window.__wetterSetzen(wort, zug) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + s.weather + ")");
+    };
+    const trocken = () => {
+        wetter("sunny");
+        r._naesseTakt(1e6);
+        r.setTimeOfDay(0.5, "regler");
+        takt(2);
+    };
+    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+    // DIE GEZEICHNETE NAH-STREU (feld.K5, luftwasser.K4): je Senke ihre gezeichneten Glieder (`bloecke[].ids` über den Kacheln
+    // `kacheln.items` — dieselbe Zählung wie feld.K4, diag-stand-takt) am Ort `drin(x, z)`; Blumen = Senken der Art `blume*` (die
+    // Streu wählt sie auf lebendigem Boden, stamm/vegetation-streu.js)
+    const streu = (drin) => {
+        const ns = s.nahStreu;
+        const n = { alle: 0, blumen: 0 };
+        if (!ns) return n;
+        for (const a of ns.senken.values())
+            for (const [key, b] of a.bloecke) {
+                const k = ns.kacheln.get(key);
+                if (!k) continue;
+                const ids = new Set(b.ids);
+                for (const it of k.items)
+                    if (ids.has(it.id) && drin(it.x, it.z)) {
+                        n.alle++;
+                        if (/^blume/.test(a.preset || "")) n.blumen++;
+                    }
+            }
+        return n;
+    };
+    return { s, A, takt, y, stehen, tage, wetter, trocken, r3, streu };
+} [["einsturz","async (r, T, o, G) => {\n\nreturn await (async function einsturzProbe(r, T, o, G) {\n    const { s, takt, stehen, r3, y } = G;\n    let same = (o.same >>> 0) || ((Date.now() % 1e9) >>> 0);\n    const same0 = same;\n    const zufall = () => ((same = (Math.imul(same, 1664525) + 1013904223) >>> 0) / 4294967296);\n    // der Platz: Land, flach (± 0,3 m über 5 × 5 m), längs x von der Wiese, je 10 m\n    const flach = (x, z) => r._landAt(x, z, 4) && [[-2.5, -2.5], [2.5, -2.5], [-2.5, 2.5], [2.5, 2.5]].every(([a, b]) => Math.abs(y(x + a, z + b) - y(x, z)) <= 0.3);\n    const plaetze = [];\n    for (let k = 0, x = o.orte.wiese.x + 10; k < 60 && plaetze.length < 4; k++, x += 10) if (flach(x, o.orte.wiese.z)) plaetze.push([x, o.orte.wiese.z]);\n    if (plaetze.length < 4) return { fehler: \"kein flacher Platz an der Wiese (\" + plaetze.length + \" von 4)\", same: same0 };\n    await stehen(plaetze[0][0] - 14, plaetze[0][1]);\n    G.trocken();\n    const teil = (shape, material, sx, sy, sz, px, py, pz) => ({ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: px, y: py, z: pz } });\n    const ecken = [[-1.5, -1], [-1.5, 1], [1.5, -1], [1.5, 1]];\n    const mutationen = [];\n    for (let m = 0; m < 3; m++) {\n        // die Mutation: 1–4 Pfosten fehlen\n        const fehlt = new Set(m ? [] : [Math.floor(zufall() * 2)]); // die erste trennt sicher (Pfosten 0 oder 1: sein Kopf fällt)\n        const k = 1 + Math.floor(zufall() * 4);\n        while (fehlt.size < k) fehlt.add(Math.floor(zufall() * 4));\n        const glieder = [[\"sockel\", teil(\"box\", \"stein\", 4, 0.2, 3, 0, 0.1, 0)]];\n        ecken.forEach(([x, z], i) => fehlt.has(i) || glieder.push([\"pfosten\" + i, teil(\"box\", \"holz\", 0.3, 2.4, 0.3, x, 1.4, z)]));\n        ecken.forEach(([x, z], i) => glieder.push([\"kopf\" + i, teil(\"box\", \"holz\", 0.5, 0.25, 0.5, x, 2.725, z)]));\n        glieder.push([\"dach\", teil(\"box\", \"stein\", 0.6, 0.2, 2.6, 1.5, 2.95, 0)]);\n        // die Erwartung aus dem Bau: Sockel → Pfosten i → Kopf i; Kopf 2 ↔ Dach ↔ Kopf 3\n        const kanten = [[\"kopf2\", \"dach\"], [\"kopf3\", \"dach\"], ...[0, 1, 2, 3].flatMap((i) => [[\"sockel\", \"pfosten\" + i], [\"pfosten\" + i, \"kopf\" + i]])];\n        const da = new Set(glieder.map((g) => g[0]));\n        const getragen = new Set([\"sockel\"]);\n        for (let wuchs = true; wuchs; ) {\n            wuchs = false;\n            for (const [a, b] of kanten)\n                if (da.has(a) && da.has(b) && getragen.has(a) !== getragen.has(b)) (getragen.add(a), getragen.add(b), (wuchs = true));\n        }\n        const fallend = glieder.filter((g) => !getragen.has(g[0])).map((g) => g[0]);\n        const typ = \"probe_k3_laube_\" + m;\n        s.blueprints[typ] = { name: typ, label: typ, builtIn: false, parts: glieder.map((g) => g[1]), connections: [] };\n        const [px, pz] = plaetze[m];\n        const vorher = new Set(s.architectures);\n        const gier = 0.4 + 0.5 * m; // das Werk steht gedreht: jeder Trümmer trägt die Gier in seiner Drehung\n        const e = r.spawnArchitecture(typ, { x: px, y: y(px, pz) + 0.5, z: pz }, { werk: true, precise: true, seed: 7 + m, rotationY: gier });\n        mutationen.push({ m, fehlt: [...fehlt].sort(), fallend, stehend: [...getragen].sort(), typ, ort: [px, pz], gier, id: e && e.id, vorher, boden: y(px, pz) });\n    }\n    // der Einsturz: bis jeder Trümmer schläft (höchstens 20 s)\n    const neu = (M) => s.architectures.filter((a) => !M.vorher.has(a));\n    let ruheS = null;\n    for (let i = 1; i <= 1200 && ruheS === null; i++) {\n        takt();\n        if (i >= 2 && mutationen.every((M) => neu(M).filter((a) => a._frei).every((a) => a._frei.schlaf))) ruheS = i / 60;\n    }\n    const truemmer = [];\n    for (const M of mutationen) {\n        const alle = neu(M).filter((a) => Math.hypot(a.position.x - M.ort[0], a.position.z - M.ort[1]) < 8);\n        const rest = alle.filter((a) => !a._frei);\n        const frei = alle.filter((a) => a._frei);\n        const bp = rest.length === 1 ? s.blueprints[rest[0].type] : null;\n        const ecke = (p) => ecken.findIndex(([a, b]) => a === p.position.x && b === p.position.z);\n        const name = (p) => (p.size.x === 4 ? \"sockel\" : p.size.y === 2.4 ? \"pfosten\" + ecke(p) : p.size.z === 2.6 ? \"dach\" : \"kopf\" + ecke(p));\n        M.restTeile = (bp ? bp.parts : []).map(name).sort();\n        M.restTyp = rest.map((a) => a.type);\n        M.restSteht = rest.length === 1 && !(rest[0]._gesetz && (rest[0]._gesetz.sturz || rest[0]._gesetz.bruch)) && Math.hypot(rest[0].position.x - M.ort[0], rest[0].position.z - M.ort[1]) < 1e-6 && Math.abs(rest[0].rotationY - M.gier) < 1e-9;\n        // je Trümmer: seine Mitte über dem Boden (er fiel: ≤ 1,2 m, er saß ≥ 2,7 m hoch), sein tiefster Punkt über dem Boden und —\n        // liegt er über dem Sockel — über dessen Oberseite (nie durch ihn), sein Schlaf\n        M.koerper = frei.map((a) => {\n            const K = a._frei;\n            r._freiLage(K);\n            let unten = Infinity;\n            for (let i = 1; i < K.pw.length; i += 3) unten = Math.min(unten, K.pw[i]);\n            const [dx, dz] = [K.p[0] - M.ort[0], K.p[2] - M.ort[1]];\n            const [lx, lz] = [dx * Math.cos(M.gier) - dz * Math.sin(M.gier), dx * Math.sin(M.gier) + dz * Math.cos(M.gier)];\n            const ueberSockel = Math.abs(lx) < 2 && Math.abs(lz) < 1.5;\n            return { mitteM: r3(K.p[1] - M.boden), untenM: r3(unten - M.boden - (ueberSockel ? 0.2 : 0)), ueberSockel, schlaf: K.schlaf };\n        });\n        for (const a of frei) truemmer.push({ id: a.id, typ: a.type, p: [a._frei.p[0], a._frei.p[1], a._frei.p[2]], q: Array.from(a._frei.q) });\n        delete M.vorher;\n    }\n    // ZEHN MINUTEN weiter (36 000 Takte): die Trümmer bleiben, wo sie ruhen\n    const t10 = performance.now();\n    takt(36000);\n    const zehnMinSek = (performance.now() - t10) / 1000;\n    let wander = 0;\n    for (const t of truemmer) {\n        const a = s.architectures.find((e) => e.id === t.id);\n        wander = Math.max(wander, a && a._frei ? Math.hypot(a._frei.p[0] - t.p[0], a._frei.p[1] - t.p[1], a._frei.p[2] - t.p[2]) : Infinity);\n    }\n    // DIE KOSTEN: 100 Kisten, je Sim-Schritt die Zeit des Lösers (`_freiSchritt`, um ihn gemessen), solange alle 100 wach sind,\n    // und wenn alle schlafen — das TRÜMMERFELD (gerichtet: 10 × 10 Kisten aus 1,5–3,5 m, gedreht, fallen, stoßen, ruhen, wie die\n    // Trümmer eines Einsturzes) und der HAUFEN (gemeldet: 25 Säulen zu 4, 10 cm Spalt — jede Kiste trägt oder liegt, die dichteste\n    // Berührung). Je Art ein Lauf zum Warmwerden, dann zwei gemessen; die Kisten fallen nach jedem Lauf.\n    const [kx, kz] = plaetze[3];\n    const lauf = (feld) => {\n        const kisten = [];\n        for (let i = 0; i < 100; i++) {\n            let x, z, h, opt;\n            if (feld) {\n                const a = Math.sin(i * 12.9898) * 43758.5453;\n                const f = a - Math.floor(a);\n                [x, z, h] = [kx - 5 + (i % 10) + 0.3 * f, kz - 5 + ((i / 10) | 0), 2 + 2 * f];\n                opt = { drehung: [Math.cos(i), Math.sin(i) * 0.6, Math.sin(i * 1.7) * 0.6, Math.sin(i * 2.3) * 0.5] };\n            } else {\n                const c = i % 25;\n                [x, z, h] = [kx - 1.6 + (c % 5) * 0.8 + 0.05 * Math.sin(i), kz - 1.6 + ((c / 5) | 0) * 0.8, 0.6 + 0.75 * ((i / 25) | 0)];\n                opt = { rotationY: i * 0.7 };\n            }\n            kisten.push(r.spawnArchitecture(\"kiste\", { x, y: y(x, z) + h, z }, Object.assign({ silent: true, precise: true }, opt)));\n        }\n        const schritt0 = r._freiSchritt;\n        const z = { wach: [], ruhend: [] };\n        r._freiSchritt = function (dt) {\n            const wach = kisten.filter((k) => !k._frei.schlaf).length;\n            const t0 = performance.now();\n            schritt0.call(this, dt);\n            if (wach === 100 || wach === 0) z[wach ? \"wach\" : \"ruhend\"].push(performance.now() - t0);\n        };\n        try {\n            takt(feld ? 360 : 240);\n        } finally {\n            r._freiSchritt = schritt0;\n        }\n        const schlafen = kisten.filter((k) => k._frei.schlaf).length;\n        for (const k of kisten) r.removeArchitecture(k, { still: true });\n        takt(5);\n        return Object.assign(z, { schlafen });\n    };\n    const q = (L, p) => (L.length ? L.slice().sort((a, b) => a - b)[Math.min(L.length - 1, Math.floor(p * L.length))] : null);\n    const kosten = {};\n    for (const [art, feld] of [[\"feld\", true], [\"haufen\", false]]) {\n        lauf(feld);\n        const [a, b] = [lauf(feld), lauf(feld)];\n        const wach = a.wach.concat(b.wach);\n        const ruhend = a.ruhend.concat(b.ruhend);\n        kosten[art] = { wachSchritte: wach.length, wachMedianMs: r3(q(wach, 0.5)), wachP75Ms: r3(q(wach, 0.75)), ruhendSchritte: ruhend.length, ruhendMedianMs: r3(q(ruhend, 0.5)), schlafen: Math.min(a.schlafen, b.schlafen) };\n    }\n    // DER STAND: gesichert, der Speicher still; das Notizbuch reist im localStorage\n    r.saveState();\n    await r._speicherStill();\n    localStorage.setItem(\"__einsturz\", JSON.stringify(truemmer));\n    return { same: same0, ruheS: ruheS === null ? null : r3(ruheS), wanderM: r3(wander), zehnMinSek: r3(zehnMinSek), mutationen, kosten };\n})(r, T, o, G);\n}",{}],["einsturz-reload","async (r, T, o, G) => {\n\nreturn await (async function einsturzReload(r, T, o, G) {\n    const { s, takt, stehen, r3 } = G;\n    let alt = null;\n    try {\n        alt = JSON.parse(localStorage.getItem(\"__einsturz\"));\n    } catch (_e) {}\n    if (!Array.isArray(alt) || !alt.length) return { fehler: \"kein Notizbuch der Probe einsturz (sie lief nicht bis zum Stand)\" };\n    await stehen(alt[0].p[0] - 14, alt[0].p[2]);\n    const lese = () =>\n        alt.map((t) => {\n            const a = s.architectures.find((e) => String(e.id) === String(t.id));\n            if (!a || !a._frei) return { da: false };\n            const K = a._frei;\n            const dot = Math.abs(K.q[0] * t.q[0] + K.q[1] * t.q[1] + K.q[2] * t.q[2] + K.q[3] * t.q[3]);\n            return { da: true, lageM: Math.hypot(K.p[0] - t.p[0], K.p[1] - t.p[1], K.p[2] - t.p[2]), drehGrad: (2 * Math.acos(Math.min(1, dot)) * 180) / Math.PI, schlaf: K.schlaf };\n        });\n    const gleich = lese();\n    takt(600);\n    const danach = lese();\n    const max = (L, k) => r3(Math.max(...L.map((x) => (x.da ? x[k] : Infinity))));\n    // die Gegenprobe der Drehung: so weit (der kleinste Winkel) stünde jeder Trümmer falsch, trüge der Stand seine Drehung nicht\n    // (bis w15-einsturz: Lage und Gier, die Gier des freien Körpers 0 — er stand nach dem Reload in der Grundstellung)\n    const ohneDrehung = r3(Math.min(...alt.map((t) => (2 * Math.acos(Math.min(1, Math.abs(t.q[0]))) * 180) / Math.PI)));\n    return {\n        truemmer: alt.length,\n        da: gleich.filter((x) => x.da).length,\n        schlafen: gleich.filter((x) => x.schlaf).length,\n        lageM: max(gleich, \"lageM\"),\n        drehGrad: max(gleich, \"drehGrad\"),\n        nach10sLageM: max(danach, \"lageM\"),\n        nach10sDrehGrad: max(danach, \"drehGrad\"),\n        ohneDrehungGrad: ohneDrehung,\n    };\n})(r, T, o, G);\n}",{"neuladen":true}]]
+[stall-akte] ═══ physik.K3_2.json · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((async (r, T, o, G) => { return await (async function einsturzProbe(r, T, o, G) { const { ) seit 41.6 s
+[stall-akte] Puls 17×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 805 · welt 805 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 768/2286, streuLod 480/1615 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2510 107 % · GPU 2409 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 58:03 gpu 5 [VizCompositorTh 4 %]/r 171 · 58:05 gpu 1 [VizCompositorTh 2 %]/r 257 · 58:07 gpu 0/r 315 · 58:09 gpu 2 [VizCompositorTh 2 %]/r 300 · 58:11 gpu 0/r 263 · 58:13 gpu 2 [VizCompositorTh 1 %]/r 114 · 58:15 gpu 0/r 139 · 58:17 gpu 0 [Chrome_ChildIOT 1 %]/r 138 · 58:19 gpu 0 [VizCompositorTh 1 %]/r 115 · 58:21 gpu 1 [VizCompositorTh 1 %]/r 116 · 58:23 gpu 1 [VizCompositorTh 1 %]/r 109 · 58:25 gpu 1 [VizCompositorTh 1 %]/r 107 · 58:27 gpu 1 [VizCompositorTh 1 %]/r 114 · 58:29 gpu 1 [VizCompositorTh 1 %]/r 112 · 58:31 gpu 1 [VizCompositorTh 1 %]/r 107 · 58:33 gpu 1 [VizCompositorTh 1 %]/r 105 · 58:35 gpu 1 [Chrome_ChildIOT 1 %]/r 105 · 58:37 gpu 1 [VizCompositorTh 1 %]/r 107 · 58:39 gpu 1 [Chrome_ChildIOT 1 %]/r 107 · 58:41 gpu 1 [VizCompositorTh 1 %]/r 116 · 58:43 gpu 1 [Chrome_ChildIOT 1 %]/r 107 · 58:45 gpu 1 [VizCompositorTh 1 %]/r 106
+[stall-akte] Stapel kein Stapel in 8 s — der Haupt-Thread steht NATIV
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] Nervensystem: 129 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] Das Wetter zieht zu rainy
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] A3: Hydro-Kachel 0,-1 aus dem Faden (31 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [WARN] Der Rundblick steht nach 120 Takten ohne: der Boden wächst (11 Stücke im Bild) · 77 Bäume und Bauten wachsen · 342 Bäume werden gepflanzt · 8 Wald-Stücke warten auf ihr
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] WERK IM WASSER: glutbrunnen bei -266/-1125 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] probe_k3_laube_0: 2× schwebendes Teil — der Lastpfad zum Boden ist gebrochen — es stürzt ein.
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] probe_k3_laube_1: 2× schwebendes Teil — der Lastpfad zum Boden ist gebrochen — es stürzt ein.
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] probe_k3_laube_2: 5× schwebendes Teil — der Lastpfad zum Boden ist gebrochen — es stürzt ein.
+[stall-akte] Konsole log: [AnazhRealm V18.546.205] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] URTEIL NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (107 %, kein JS-Stapel); zuletzt kein Stempel
+WELTPROBE einsturz {"same":9484043,"ruheS":2.2,"wanderM":0,"zehnMinSek":54.59,"mutationen":[{"m":0,"fehlt":[0,1,2],"fallend":["kopf0","kopf1"],"stehend":["dach","kopf2","kopf3","pfosten3","sockel"],"typ":"probe_k3_laube_0","ort":[-270.4,-1045.6],"gier":0.4,"id":"w-probe_k3_laube_0-7","boden":27.31638911763696,"restTeile":["dach","kopf2","kopf3","pfosten3","sockel"],"restTyp":["probe_k3_laube_0_rest_313d76b6"],"restSteht":true,"koerper":[{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true},{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true}]},{"m":1,"fehlt":[0,1,2],"fallend":["kopf0","kopf1"],"stehend":["dach","kopf2","kopf3","pfosten3","sockel"],"typ":"probe_k3_laube_1","ort":[-260.4,-1045.6],"gier":0.9,"id":"w-probe_k3_laube_1-8","boden":27.070667164250303,"restTeile":["dach","kopf2","kopf3","pfosten3","sockel"],"restTyp":["probe_k3_laube_1_rest_24048d6f"],"restSteht":true,"koerper":[{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true},{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true}]},{"m":2,"fehlt":[0,1,2,3],"fallend":["kopf0","kopf1","kopf2","kopf3","dach"],"stehend":["sockel"],"typ":"probe_k3_laube_2","ort":[-250.39999999999998,-1045.6],"gier":1.4,"id":"w-probe_k3_laube_2-9","boden":26.811163578295893,"restTeile":["sockel"],"restTyp":["probe_k3_laube_2_rest_a67af1e1"],"restSteht":true,"koerper":[{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true},{"mitteM":0.325,"untenM":0,"ueberSockel":true,"schlaf":true},{"mitteM":0.324,"untenM":-0.003,"ueberSockel":true,"schlaf":true},{"mitteM":0.324,"untenM":-0.002,"ueberSockel":true,"schlaf":true},{"mitteM":0.545,"untenM":0.242,"ueberSockel":true,"schlaf":true}]}],"kosten":{"feld":{"wachSchritte":144,"wachMedianMs":0.6,"wachP75Ms":0.8,"ruhendSchritte":375,"ruhendMedianMs":0,"schlafen":100},"haufen":{"wachSchritte":82,"wachMedianMs":0.9,"wachP75Ms":1,"ruhendSchritte":346,"ruhendMedianMs":0,"schlafen":100}},"sek":73.1}
+[stall-akte] Seite #2: der Puls kehrt zurück nach 60.5 s — complete · renderer bereit · weltbild da · frames 38901 · welt 38901 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 1280/2296, streuLod 800/1615 · programme 0 · gl-sync 0
+WELTPROBE einsturz-reload {"truemmer":9,"da":9,"schlafen":9,"lageM":0,"drehGrad":0,"nach10sLageM":0,"nach10sDrehGrad":0,"ohneDrehungGrad":24.097,"sek":17}
+WELTPROBE-ENDE {"proben":["einsturz","einsturz-reload"],"fehler":[]}

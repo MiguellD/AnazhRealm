@@ -1,0 +1,54 @@
+{
+ "sha": "fe57747abe37e821bf62bb5902e1e7786ac63242",
+ "geraet": "headless",
+ "zeit": "2026-11-06T23:57:58.899Z",
+ "host": "farm:42314668710",
+ "je": {
+  "spielgang.K4#2": {
+   "gruen": false,
+   "zahl": "ROT: M: das Menü schreibt den Stand nicht {\"arten\":[\"aus\",\"deuteranopie\",\"protanopie\",\"tritanopie\"],\"farbsicht\":\"tritanopie\",\"wackeln\":false,\"unschaerfe\":false} · S: der Snapshot trägt {\"farbsicht\":\"tritanopie\",\"sichtfeld\":92,\"wackeln\":false,\"unschaerfe\":false} · S: geladen {\"farbsicht\":\"tritanopie\",\"fov\":null,\"wackeln\":false,\"unschaerfe\":false,\"sichtfeld\":92} · S: das Menü zeigt nach dem Laden {\"farbsicht\":\"tritanopie\",\"fov\":92,\"wackeln\":false,\"unschaerfe\":false} — Farbsicht: 4 Grenzen, ΔE min 23.52 (vorher 15.73) unter Machado-Deuteranopie [gras|boden 24.71, gras|bau 24.98, boden|bau 23.52, bau|laub 31.26] · Sichtfeld 75→75°, Skala 1 (Soll 0.741) · Wackeln an {\"dip\":-0.0791,\"atem\":6,\"bildPx\":42542} aus {\"dip\":0,\"atem\":0,\"bildPx\":0} · Unschärfe an 5.433 aus 12.246 · Untertitel 39 von 39",
+   "exit": 0,
+   "minuten": 14.22,
+   "grund": "ROT: ROT: M: das Menü schreibt den Stand nicht {\"arten\":[\"aus\",\"deuteranopie\",\"protanopie\",\"tritanopie\"],\"farbsicht\":\"tritanopie\",\"wackeln\":false,\"unschaerfe\":false} · S: der Snapshot trägt {\"farbsicht\":\"tritanopie\",\"sichtfeld\":92,\"wackeln\":false,\"unschaerfe\":false} · S: geladen {\"farbsicht\":\"tritanopie\",\"fov\":null,\"wackeln\":false,\"unschaerfe\":false,\"sichtfeld\":92} · S: das Menü zeigt nach dem Laden {\"farbsicht\":\"tritanopie\",\"fov\":92,\"wackeln\":false,\"unschaerfe\":false} — Farbsicht: 4 Grenzen, ΔE min 23.52 (vorher 15.73) unter Machado-Deuteranopie [gras|boden 24.71, gras|bau 24.98, boden|bau 23.52, bau|laub 31.26] · Sichtfeld 75→75°, Skala 1 (Soll 0.741) · Wackeln an {\"dip\":-0.0791,\"atem\":6,\"bildPx\":42542} aus {\"dip\":0,\"atem\":0,\"bildPx\":0} · Unschärfe an 5.433 aus 12.246 · Untertitel 39 von 39",
+   "zeit": "2026-11-06T23:52:47.985Z",
+   "abdruck": "60673ac27553",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42314668710/1"
+  },
+  "physik.K3#2": {
+   "gruen": true,
+   "zahl": "Same 9484043: ohne 0+1+2 → 2/2 Trümmer, ohne 0+1+2 → 2/2 Trümmer, ohne 0+1+2+3 → 5/5 Trümmer, Ruhe 2,2 s, 10 min 0 m · Reload 9/9, Lage 0 m, Drehung 0° (ohne sie ≥ 24,097°) · 100 Körper wach: Trümmerfeld 0,6 ms (p75 0,8), Haufen 4 hoch 0,9 ms (p75 1), schlafend 0 ms",
+   "exit": 0,
+   "minuten": 1.59,
+   "zeit": "2026-11-06T23:57:58.899Z",
+   "abdruck": "9186a866f2ff",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42314668710/2"
+  },
+  "feld.K2#2": {
+   "gruen": false,
+   "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 1) · ROT  (f) Peers: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel VERSCHIEDEN · brand gleich — Leben 1044/1044 Zellen, Brand 0 Zellen | OK   (f) Reload mitten im Sturm: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1186/1186 Zellen, Brand 0 Zellen",
+   "exit": 1,
+   "minuten": 4.44,
+   "grund": "ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 1) · ROT  (f) Peers: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel VERSCHIEDEN · brand gleich — Leben 1044/1044 Zellen, Brand 0 Zellen | OK   (f) Reload mitten im Sturm: Teil-Simulationen gleich — wetter gleich · leben gleich · pegel gleich · brand gleich — Leben 1186/1186 Zellen, Brand 0 Zellen",
+   "zeit": "2026-11-06T23:52:42.926Z",
+   "abdruck": "9a22b16dc0c5",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42314668710/3"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "ego r 0.785 (116/223 Ecken Pfütze) · third r 0.736 (111/237 Ecken Pfütze) · Mutante r 0.006 erkannt · benetzt 0.909 → trocken nach 570 s · Fall 9 m/s · Exit 0",
+   "exit": 0,
+   "minuten": 0.24,
+   "zeit": "2026-11-06T23:57:33.698Z",
+   "abdruck": "e999cb2ec8d6",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42314668710/4"
+  }
+ }
+}
