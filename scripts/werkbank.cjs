@@ -390,7 +390,7 @@ function lauf(k) {
                     }
                 }
             }
-            if (fahrt && fahrt.e) {
+            if (fahrt?.e) {
                 const x = fahrt.x0 + 800 - Math.abs(((20 * (t - (fahrt.t0 ??= t))) / 1000) % 1600 - 800), fz = fahrt.e._fahr;
                 if (fz) [fz.x, fz.vlong, fz.vlat] = [x, 0, 0];
                 fahrt.e.position.x = st.playerMesh.position.x = x;
@@ -651,7 +651,7 @@ function lauf(k) {
             st.perfTargetMs = decke;
             if (bahn || kreis) st.playerMesh.position.copy(ort);
             if (kreis) st.yaw = kreis.gier;
-            if (fahrt && fahrt.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
+            if (fahrt?.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
         }
     })();
 }
@@ -952,7 +952,7 @@ async function starte() {
     const geraetInfo = () =>
         page.evaluate(async () => {
             const a = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
-            const i = a && a.info ? a.info : null;
+            const i = a?.info ? a.info : null;
             return i ? [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") : null;
         });
     const umstellen = (x, z, o) =>
@@ -961,7 +961,7 @@ async function starte() {
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
                 // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
                 // die Messung über einen leeren Rand).
-                if (o && o.anker) {
+                if (o?.anker) {
                     const a = r[o.anker]();
                     if (!a || !Number.isFinite(a.x) || !Number.isFinite(a.z) || Math.hypot(a.x - x, a.z - z) > 1)
                         throw new Error(
@@ -969,7 +969,7 @@ async function starte() {
                                 "der Ort wandert mit der Welt (spec/profiband/haushalt.json)"
                         );
                 }
-                window.__ortTakt = (o && o.takt) || [];
+                window.__ortTakt = o?.takt || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
                 // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
                 // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
@@ -980,7 +980,7 @@ async function starte() {
                     perfTargetMs: ["perfTargetMs"],
                     ring: ["chunkRingRadius", "_activeRingRadius"],
                 };
-                const stell = (o && o.stell) || null;
+                const stell = o?.stell || null;
                 for (const k of Object.keys(stell || {}))
                     if (!FELD[k])
                         throw new Error(
@@ -1003,13 +1003,13 @@ async function starte() {
                 }
                 // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
-                const a = (o && o.anlauf) || [x, z];
+                const a = o?.anlauf || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o && o.gruendung;
-                window.__ortBahn = (o && o.bahn) || null;
+                window.__ortBahn = o?.bahn || null;
                 if (g) {
                     const same = g.wort.split(" ")[1];
                     const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
@@ -1023,12 +1023,12 @@ async function starte() {
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
                 }
                 if (o) window.__anazhAutoSettlement = o.dorfZug; // der Zug des Orts (haushalt.json `dorfZug`)
-                if (o && o.kamera) r.setCameraMode(o.kamera);
+                if (o?.kamera) r.setCameraMode(o.kamera);
                 // eingeschwungen, wenn der Ring an seinem Ziel gebaut ist, dann DIE WELT STEHT (A9, `__weltStehtNach` hält den Regler) —
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const ziel = stell?.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
                 const decke = st.perfTargetMs;
                 st.perfTargetMs = 1000;
                 // DER TAKT DES ORTS geht im Schritt der Seite (der Takt der Werkbank und sein Bild, `__werkTakt`; bis 31.10. sein eigener
@@ -1054,7 +1054,7 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
-                    if (o && o.anlauf) {
+                    if (o?.anlauf) {
                         r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
                         takte += await __weltStehtNach(takt);
                         // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
@@ -1116,22 +1116,18 @@ async function starte() {
             // nächste zur Bildmitte, die Kamera steht <m> vor dem Treffer auf ihm; zeigt der Blick keines, ist die Pose ROT beim
             // Namen. Bis mk2-mikro traf der Arm die Bildmitte (durch die Pflanzen, `_fieldRaycast`): die Kuppe des Fels im Gras lag
             // daneben, die Station maß 0 Fels-Pixel. `mitte(S, i)`: der Welt-Punkt des Tiefe-Pixels i (ohne i die Bildmitte).
-            const mitte = ({ tiefe, tw, th, ivp }, i = (th >> 1) * tw + (tw >> 1)) => {
-                const T = THREE;
-                const P = new T.Vector3((2 * (i % tw) + 1) / tw - 1, 1 - (2 * Math.floor(i / tw) + 1) / th, tiefe[i]);
-                return tiefe[i] < 0.99999 ? P.applyMatrix4(new T.Matrix4().fromArray(ivp)) : null;
-            };
+            const mitte = (S, i = (S.th >> 1) * S.tw + (S.tw >> 1)) => S.punkt(i);
             if (k.arm != null) {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
                 const re = new RegExp(k.klasse),
                     aus = [],
-                    S = await __bildTiefe();
+                    S = await __bodenTiefe(true);
                 r.state.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
                 aus.forEach((o) => (o.visible = false));
                 bundlesNeu();
-                const O = await __bildTiefe();
+                const O = await __bodenTiefe(true);
                 aus.forEach((o) => (o.visible = true));
                 bundlesNeu();
                 const ab = (j) => ((j % S.tw) - S.tw / 2) ** 2 + (Math.floor(j / S.tw) - S.th / 2) ** 2;
@@ -1176,7 +1172,7 @@ async function starte() {
             // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
             // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
             // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss };
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
@@ -1197,7 +1193,7 @@ async function starte() {
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
-            const spiegel = (window.__letzteSpiegel = k.klasse ? await __spiegelDaten() : null);
+            const spiegel = (window.__letzteSpiegel = k.klasse ? auf.tiefe : null);
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -1487,7 +1483,7 @@ async function starte() {
                         const v = new T.Vector3();
                         // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
                         // Bewohner mal dem Verhältnis seiner Palette zu der seiner Gestalt am Ton der Ecke (`_tonFaktor`, die Ton-Tafel)
-                        const tafel = r.state.tonTafel && r.state.tonTafel.image ? r.state.tonTafel.image : null;
+                        const tafel = r.state.tonTafel?.image ? r.state.tonTafel.image : null;
                         const albedo = (o, i) => {
                             const c = o.geometry.attributes.color;
                             if (!c) return null;
@@ -1782,7 +1778,7 @@ async function starte() {
             if (k.zeit != null) {
                 const U = window.__buehneUhr,
                     T0 = U.T,
-                    S = await __spiegelDaten(),
+                    S = auf.tiefe,
                     nah = new Uint8Array(W * H),
                     B = r.constructor.WIND_BOE;
                 for (let p = 0; p < W * H; p++) {
@@ -2738,7 +2734,7 @@ async function starte() {
                     // Der Foundry-Kanal dieser Ladung über alle Antwort-Arten (asset · impostor · book …): Platte gegen
                     // Neubau — im Zweit-Boot der Serie die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
                     let fl = null;
-                    for (const k of Object.values((roh.fluss && roh.fluss.kanal) || {})) {
+                    for (const k of Object.values(roh.fluss?.kanal || {})) {
                         fl = fl || { n: 0, platte: 0, mb: 0, platteMb: 0, neuMb: 0 };
                         for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
                     }
@@ -2816,7 +2812,7 @@ async function starte() {
                 // gate:ziel-zensus — bis 31.10. stand hier sein Zwilling mit 5 der 6 Täter, den kein Befehl rief.
                 if (req.url === "/ziele") {
                     const { z, lesen, u } = await ZZ.zensusDer(page, Number(b.n) || 12);
-                    if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
+                    if (!z || z.fehler) return send({ fehler: z?.fehler || "keine Antwort", rot: u.rot });
                     const datei = zeitAblage(b.json, "ziele", "json");
                     jsonAb(datei, { zensus: z, lesen, urteil: u });
                     return send({ ok: u.rot.length === 0, tabelle: ZZ.zielTabelle(u, z), rot: u.rot, datei });
@@ -2871,7 +2867,7 @@ async function starte() {
                             if (roh.bildAn) schreibe("00-an.png", roh.bildAn);
                             delete roh.bildAn;
                             roh.schalter.forEach((e, i) => {
-                                if (e.beleg && e.beleg.bild) {
+                                if (e.beleg?.bild) {
                                     schreibe(
                                         `${String(i + 1).padStart(2, "0")}-${e.id.replace(/[^a-z0-9_-]+/gi, "_")}-aus.png`,
                                         e.beleg.bild
@@ -3084,7 +3080,7 @@ async function starte() {
                 // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
                 send({
                     fehler: fehlerText(e).split("\n")[0],
-                    stapel: String((e && e.stack) || "")
+                    stapel: String(e?.stack || "")
                         .split("\n")
                         .slice(1, 5)
                         .map((s) => s.trim()),
@@ -3130,6 +3126,7 @@ hauptLauf(async () => {
             arm: opt("--arm"),
             ist: opt("--ist"),
             fov: opt("--fov"),
+            fuss: opt("--fuss"),
             zeit: opt("--zeit") && Number(opt("--zeit")),
         });
     else if (cmd === "methode")
@@ -3271,7 +3268,7 @@ hauptLauf(async () => {
             process.exit(0);
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
-        if (o && o.zeilen) {
+        if (o?.zeilen) {
             const w = o.messung && o.messung.welt;
             if (w)
                 console.log(
@@ -3301,7 +3298,7 @@ hauptLauf(async () => {
     } else if (cmd === "albedo") {
         // die Tafel (`--tafel` bleibt das Wort der Rufer); ein Fehler der Tafel ist nie grün
         o = await rufe("/albedo", { ordner: opt("--ordner"), datei: opt("--datei") });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
         endeMit(o);
     } else if (cmd === "licht" && hat("tag")) {
         // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
@@ -3345,7 +3342,7 @@ hauptLauf(async () => {
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             const o = { uhr, png: !!opt("--bilder"), platte: P.id };
             const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)));
-            for (const [pose, p] of Object.entries((m && m.posen) || {}))
+            for (const [pose, p] of Object.entries(m?.posen || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
         const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
@@ -3569,13 +3566,13 @@ hauptLauf(async () => {
                 const ordner = opt("--ordner");
                 if (w && w.karte && ordner)
                     w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
-                if (w && w.karte) delete w.karte.png;
+                if (w?.karte) delete w.karte.png;
                 if (w && w.oben && w.oben.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
                     delete w.oben.png;
                 }
-                if (w && w.gegen)
+                if (w?.gegen)
                     for (const k of ["gegen", "auf"]) {
                         if (ordner)
                             pngDatei(path.join(ordner, `laub-${art}-${k}.png`), w[k].png);
@@ -3616,7 +3613,7 @@ hauptLauf(async () => {
             grad: opt("--grad"),
             tiere: opt("--tiere", "halten"),
         });
-        if (o && o.urteil) endeMit(o, !o.urteil.length);
+        if (o?.urteil) endeMit(o, !o.urteil.length);
     } else if (cmd === "stand")
         o = await rufe("/stand", {
             n: a[0],
@@ -3652,7 +3649,7 @@ hauptLauf(async () => {
             proben: opt("--proben"),
             capMs: opt("--cap") ? Number(opt("--cap")) * 1000 : undefined,
         });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + (o.datei || ""), o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN"));
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + (o.datei || ""), o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN"));
     } else if (cmd === "ratsche") {
         // DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 eingeschwungene Band-Messungen aus Erst- UND Zweit-Boot an EINEM Ort ×
         // Gerät × Sicht und EINER Version; die Hülle zieht nur bei sauberer LINSE nach (setzt, senkt, hebt nie), `--neu`
@@ -3664,7 +3661,7 @@ hauptLauf(async () => {
         const laeufe = dateien.map((f) => {
             const j = jsonLesen(f);
             const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
-            return e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+            return e ? e.ergebnis?.messung || null : j;
         });
         const neu = hat("neu");
         const nurVram = opt("--nur") === "vram";
@@ -3828,7 +3825,7 @@ hauptLauf(async () => {
     }
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
+        if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
         endeMit(o);
     } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");
@@ -3841,7 +3838,7 @@ hauptLauf(async () => {
             selbsttest: SELBST,
             last: opt("--last"),
         });
-        if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + (o.ordner ? "\n" + o.ordner : ""), o.ok);
+        if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + (o.ordner ? "\n" + o.ordner : ""), o.ok);
         if (!o || o.fehler) endeMit(o);
     } else if (cmd === "shader") {
         if (SELBST) {

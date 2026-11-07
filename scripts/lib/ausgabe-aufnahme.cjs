@@ -261,13 +261,13 @@ function weltaktSpion(ersatz) {
         if (gehuellt.has(op) || typeof fn !== "function") continue;
         gehuellt.add(op);
         tafel[op] = function (args, ctx) {
-            if (halt()) buche({ art: "durch", op, quelle: (ctx && ctx.source) || "?", stapel: window.__spielStapel() });
+            if (halt()) buche({ art: "durch", op, quelle: ctx?.source || "?", stapel: window.__spielStapel() });
             return fn.call(this, args, ctx);
         };
     }
     if (!S.blind && !Object.hasOwn(r, "_weltaktGehalten"))
         r._weltaktGehalten = function (op, ctx) {
-            buche({ art: "verweigert", op, quelle: (ctx && ctx.source) || "?" });
+            buche({ art: "verweigert", op, quelle: ctx?.source || "?" });
             return Object.getPrototypeOf(this)._weltaktGehalten.call(this, op, ctx);
         };
     return S;
@@ -288,16 +288,16 @@ function weltaktBuch(seit) {
 // DIE LESER DER BILD-UHR `_bildZeit` (A9), [Name, Halter, Schlüssel] — die Uhr-Wache prüft, dass jeder mit ihr steht.
 function bildUhren() {
     const wu = st.windUniforms || {};
-    const v2 = wu.uWindDir && wu.uWindDir.value;
+    const v2 = wu.uWindDir?.value;
     const u = [
-        ["himmel", st.skyboxUniforms && st.skyboxUniforms.time, "value"],
-        ["wasser", st.hydroSurfaceUniforms && st.hydroSurfaceUniforms.time, "value"],
+        ["himmel", st.skyboxUniforms?.time, "value"],
+        ["wasser", st.hydroSurfaceUniforms?.time, "value"],
         ["wind", wu.uWindTime, "value"],
         ["wind-x", v2, "x"],
         ["wind-z", v2, "y"],
         ["böe", r, "_weatherWob"],
         ["fell", st.renderer?._nodes?.nodeFrame, "time"],
-        ["regen", r._rainSystem && r._rainSystem.uZeit, "value"],
+        ["regen", r._rainSystem?.uZeit, "value"],
     ];
     for (const [n, m] of r._portalMembranes || [])
         if (m.u) u.push([`tor ${n}`, m.u.time, "value"], [`puls ${n}`, m.u.pulse, "value"], [`glut ${n}`, m, "puls"]);
@@ -333,7 +333,7 @@ async function weltStehtWarten(max) {
     if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
-    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
+    for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
     r._applyDayNightToScene();
     await r._himmelFrisch();
     r._applyDayNightToScene();
@@ -379,7 +379,7 @@ function buehne(o) {
     r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
-    for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
+    for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
     // Drift-Schwelle; ohne Drift malt der Sprung nichts (das Einschwingen von `werkbank band` ruft die Bühne je Takt).
@@ -470,11 +470,11 @@ function membranOhneFilm(an) {
     let n = 0,
         ohneZiel = 0;
     for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
-        const mat = rec.mesh && rec.mesh.material;
+        const mat = rec.mesh?.material;
         if (!mat) continue;
         n++;
         const G =
-            rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+            rec.tor?.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
         if (G?.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
@@ -581,8 +581,8 @@ function erstRuhe(frame, opt, wer) {
         };
         // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
         const name = (p) =>
-            (E.namen && E.namen.get(p)) ||
-            `${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
+            E.namen?.get(p) ||
+            `${p.vertexProgram?.name || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
         for (;;) {
             const b0 = E.bauN,
                 v0 = E.verschoben,
@@ -609,7 +609,7 @@ function erstRuhe(frame, opt, wer) {
                 for (const p of E.offen.keys()) namen.push(name(p));
                 const wartet =
                     E.wartetN !== w0 && E.wartetAuf
-                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
+                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt?.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
                         : "";
                 throw new Error(
                     `ERST-ZEICHNUNG OFFEN — ${wer || "die Aufnahme"} bricht ab: offen ${E.offen.size} nach ${Math.round(
@@ -684,11 +684,11 @@ function abnahmeMessen(opt) {
         vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
     }
     const rend = st.renderer;
-    const be = rend && rend.backend;
+    const be = rend?.backend;
     const db =
         rend && typeof rend.getDrawingBufferSize === "function" ? rend.getDrawingBufferSize(new T.Vector2()) : null;
     const dir = cam.getWorldDirection(new T.Vector3());
-    const werk = (id) => (st.architectures || []).find((q) => q && q.id === id);
+    const werk = (id) => (st.architectures || []).find((q) => q?.id === id);
     return {
         satz: o.satz || "beweis",
         stand: { version: AnazhRealm.VERSION || null, sha: o.sha || null },
@@ -742,7 +742,7 @@ function nahFolgt() {
 // Einschwingen zahlt); was schon im Augenblick verdeckt ist, fällt ohne Warten. Bis dahin urteilte sie in der Welt der vorigen Pose:
 // siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, der Welt dort fehlten noch 130 Takte bis zum Stehen, und
 // der zweite Schuss fand die Tanne, die sie dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
-// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__bildTiefe`), geurteilt wie der
+// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__bodenTiefe`), geurteilt wie der
 // Schuss (kamera-nah `o.ziel.tiefe`) — erst im Augenblick, dann in ihrer Welt. Bis dahin urteilte ein Strahl über die Dreiecke der
 // CPU: siedlung.K4#2 Radeon f3911ab9 Pose 6 im Wald, „frei 210,41 m“, am Ziel-Pixel zeigte das Bild die Karte einer Erle in 33,31 m.
 async function blickWahl(opt) {
@@ -774,10 +774,10 @@ async function blickWahl(opt) {
         let rest = urteil();
         // im Augenblick: EIN Bild des Loops an der Pose (ohne die Ruhe der Erst-Zeichnung) — was dort schon verdeckt ist, fällt ohne
         // Warten; was frei ist, urteilt das ganze Bild der Tiefe, unter der Bühne in der Welt der Pose
-        if (!rest.length) rest = urteil((window.__nahFolgt(), window.__loopBild(), await window.__spiegelDaten()));
+        if (!rest.length) rest = urteil((window.__nahFolgt(), window.__loopBild(), await window.__bodenTiefe()));
         if (!rest.length) {
             if (window.__buehneUhr) await window.__weltStehtWarten();
-            rest = urteil(await window.__bildTiefe());
+            rest = urteil(await window.__bodenTiefe(true));
         }
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
         if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
@@ -786,6 +786,27 @@ async function blickWahl(opt) {
     cam.quaternion.copy(Q0);
     cam.updateMatrixWorld(true);
     return { versucht: posen.length, gewaehlt: null, posen };
+}
+
+// DIE TIEFE DES BILDS UND OHNE DIE BODEN-SCHICHT (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): die Tiefe S des letzten Bilds (`voll`:
+// erst EIN Bild an der Kamera nach dem Neubeginn, `opt.tiefe` der Aufnahme — die Blick-Wahl und der Arm) und dazu `S.boden`, dasselbe
+// Bild mit verborgenen Halmen der Nah-Wiese, Streu und Wasser (EIN Bild des Loops; ihre Stoffe stehen schon): was dort am Ziel-Pixel
+// steht, ist keine Boden-Schicht; `aus` nennt die Verborgenen
+async function bodenTiefe(voll) {
+    if (voll) await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
+    const S = await window.__spiegelDaten();
+    const aus = new Set();
+    st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
+    for (const o of aus) o.visible = false;
+    window.__bundlesNeu();
+    try {
+        window.__loopBild();
+        S.boden = Object.assign(await window.__spiegelDaten(), { aus });
+    } finally {
+        for (const o of aus) o.visible = true;
+        window.__bundlesNeu();
+    }
+    return S;
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
@@ -814,10 +835,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
-        // DAS BILD AM ZIEL (w18-abnahme-sicht): die Abnahme liest die Tiefe DIESES Schusses (`__spiegelDaten`, der Szenen-Pass des
-        // gezählten Bilds) und fragt an jedem Ziel-Punkt, welche Fläche das Bild dort zeigt (kamera-nah `o.ziel.tiefe`)
-        const abnahme = async (u8, W2, H2) => {
-            const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__spiegelDaten() : null;
+        const abnahme = (u8, W2, H2, tiefe) => {
             const m = window.__abnahmeMessen({ ...opt, tiefe });
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
@@ -864,7 +882,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 }
                 if (st._traaR) st._traaR.neu = true;
                 const lu = st.lodUniforms;
-                if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+                if (lu?.uDitherT) lu.uDitherT.value = 0;
             };
             // DIE ERST-ZEICHNUNG (`_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
@@ -917,7 +935,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // die EINE Ziel-Lesung (welt-boot): das Polster der 256-Byte-Zeilen fällt dort
             const voll = await window.__zielLesen(rt, BW, BH);
             const ms = performance.now() - t0;
-            if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: await abnahme(voll, W, H) };
+            // DAS BILD AM ZIEL (w18-abnahme-sicht): die Tiefe DIESES Schusses (der Szenen-Pass des gezählten Bilds) und danach das Bild
+            // ohne die Boden-Schicht (`__bodenTiefe`) — die Abnahme fragt an jedem Ziel-Punkt, welche Fläche das Bild dort zeigt (kamera-nah
+            // `o.ziel.tiefe`); der Aufrufer liest die Tiefe des Schusses als `tiefe`, nie neu (das Bild ohne Boden-Schicht stand danach)
+            const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__bodenTiefe() : null;
+            if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, tiefe) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
             for (let y = 0; y < H; y++) {
@@ -934,7 +956,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                     }
                 }
             }
-            return { u8, info, ms, abnahme: await abnahme(u8, W, H) };
+            return { u8, info, ms, tiefe, abnahme: abnahme(u8, W, H, tiefe) };
         } finally {
             window.__imSchuss = 0;
             rend.setOutputRenderTarget(prevOut);
@@ -1139,7 +1161,7 @@ function himmelUrteil(g) {
         const buch = t.wo === "uhr" ? U.buch || [] : W.buch || [];
         const da = buch.some(
             (e) =>
-                (t.quelle && e.quelle && e.quelle.startsWith(t.quelle)) ||
+                (t.quelle && e.quelle?.startsWith(t.quelle)) ||
                 (t.stapel && String(e.stapel).includes(t.stapel))
         );
         if (!da) taeter.push(`${t.name}: nicht im Buch (${t.wo}) — er schrieb nicht oder der Spion ist blind`);
@@ -1435,7 +1457,7 @@ module.exports = {
         `window.__abnahmeMessen = ${abnahmeMessen};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
-        `window.__bildTiefe = async () => (await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), window.__spiegelDaten());` +
+        `window.__bodenTiefe = ${bodenTiefe};` +
         `(${seitenfehlerZaehlen})();` +
         `window.__erstRuhe = ${erstRuhe};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme};` +

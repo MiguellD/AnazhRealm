@@ -605,7 +605,7 @@ async function tatSeite(MESS, vorher) {
         await stehen(U);
         return { jahr: r._weltStunde() - h0, da: zeichnet((a, k) => ps.some((p) => p.key + "#" + p.id === k)), p: ps.map((p) => p.w) };
     };
-    if (vorher && vorher.ufer) {
+    if (vorher?.ufer) {
         r._setWeather("sunny", "human"), r.setSeason("sommer");
         for (let d = 20, n = 0; d <= 900 && n < 8; d += 10)
             for (let k = 0; k < 36; k++) {
@@ -1053,7 +1053,7 @@ async function brandSeite(MESS) {
         const dart = (p, W = C.FOREST.cell) => r._forestCellDarts(Math.floor(p.x / W), Math.floor(p.z / W), r._forestSeedInt()).some((q) => ab(q, p) < 0.05);
         const baeume = () => st.architectures.filter((e) => e && e.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
         const am = (p) => baeume().find((e) => ab(e.position, p) < 0.05);
-        const alter = (p) => ((e) => (e ? (e.studioOv && e.studioOv.alter) || 1 : 0))(am(p));
+        const alter = (p) => ((e) => (e ? e.studioOv?.alter || 1 : 0))(am(p));
         const naechster = () => baeume().sort((u, v) => d(u.position) - d(v.position))[0];
         const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
             [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(ov))));

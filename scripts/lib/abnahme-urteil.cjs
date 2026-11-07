@@ -48,7 +48,7 @@ const SCHWELLEN = Object.freeze({
 
 // DAS URTEIL (rein; in der Seite als `__abnahmeUrteil` mit den Schwellen gebunden): { ok, rot: [{ feld, grund }], zeile }.
 function abnahmeUrteil(m, S) {
-    const satz = (m && m.satz) || "beweis";
+    const satz = m?.satz || "beweis";
     const regeln = (S && S[satz]) || null;
     const rot = [];
     const lies = (feld) => {
@@ -100,26 +100,26 @@ function abnahmeUrteil(m, S) {
             rot.push({ feld: s.feld, grund });
         }
     const t = [];
-    if (m && m.sicht)
+    if (m?.sicht)
         t.push(
             `Sicht ${pct(m.sicht.deckung)}${m.sicht.taeter && Object.keys(m.sicht.taeter).length ? ` (${namen(m.sicht.taeter)})` : ""}`
         );
-    if (m && m.ziel)
+    if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m`
         );
     else if (m && satz === "beweis") t.push("Ziel ungenannt");
-    if (m && m.bild)
+    if (m?.bild)
         t.push(`Luma ${m.bild.mittel} σ ${m.bild.sigma} schwarz ${pct(m.bild.schwarz)} weiß ${pct(m.bild.weiss)}`);
-    if (m && m.stand)
+    if (m?.stand)
         t.push(`Stand ${m.stand.version || "?"}${m.stand.sha ? " " + String(m.stand.sha).slice(0, 8) : ""}`);
-    if (m && m.buehne)
+    if (m?.buehne)
         t.push(
             `Bühne ${m.buehne.saison || "?"} ${m.buehne.wetter || "?"} ${m.buehne.uhr != null ? (+m.buehne.uhr).toFixed(2) : "?"}${m.buehne.tiereGehalten ? " Tiere gehalten" : ""}`
         );
-    if (m && m.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
-    if (m && m.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
-    if (m && m.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
+    if (m?.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
+    if (m?.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
+    if (m?.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
     const kopf = rot.length ? `ABNAHME ROT [${rot.map((r) => r.grund).join(" · ")}]` : "ABNAHME GRÜN";
     return { ok: rot.length === 0, rot, zeile: `${kopf} · ${satz} · ${t.join(" · ")}` };
 }
@@ -460,7 +460,8 @@ function spiegelPartner(m, W, H, s) {
 }
 
 // DIE TIEFE DER AUFNAHME (A13, `__spiegelDaten` gleich nach dem Schuss): die Szenen-Tiefe samt Wasser (depth24plus kopiert WebGPU
-// nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses.
+// nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses; `punkt(i)` ist der
+// Welt-Punkt des Tiefe-Pixels i (null: der Himmel) — die EINE Rückrechnung für den Arm, die Böe und das Ziel der Abnahme.
 function spiegelDaten() {
     return (async () => {
         const S = window.THREE.TSL,
@@ -473,9 +474,11 @@ function spiegelDaten() {
         const tiefe = new Float32Array(await r.state.renderer.getArrayBufferAsync(a.value));
         r._gpuAbschied(a.value);
         cam.updateMatrixWorld(true);
-        const vp = new window.THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const auge = new window.THREE.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray();
-        return { tiefe, tw, th, vp: vp.elements, ivp: vp.clone().invert().elements, auge };
+        const T = window.THREE,
+            vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+            ivp = vp.clone().invert();
+        const punkt = (j) => (tiefe[j] < 0.99999 ? new T.Vector3((2 * (j % tw) + 1) / tw - 1, 1 - (2 * Math.floor(j / tw) + 1) / th, tiefe[j]).applyMatrix4(ivp) : null); // prettier-ignore
+        return { tiefe, tw, th, vp: vp.elements, ivp: ivp.elements, auge: new T.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray(), punkt };
     })();
 }
 
@@ -940,7 +943,7 @@ function aperturSchuesse(ma, q) {
     const apRe = new RegExp(rc.apertur),
         tor = new RegExp(rc.tor);
     const sv = rc.stufen;
-    const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+    const K0 = q?.kern ? q.kern(sv.datei, sv.symbol) : undefined;
     const pfad = (p) => {
         let v = K0;
         for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
@@ -1348,7 +1351,7 @@ function albedoZeile(ma, q) {
 // beides ROT, nie GRÜN. Dieselbe Regel liest die Albedo-Wand je Zeile (albedo-tafel `tafelStand`).
 function messStand(bloecke, quellen, q) {
     for (const b of bloecke) {
-        const st = (b && b.stand) || {};
+        const st = b?.stand || {};
         if (!(st.version || (b && b.version))) return "Stand ungeprüft: die Messung trägt keine Version";
         const sha = st.sha || (b && b.sha);
         if (!sha) return "Stand ungeprüft: die Messung trägt keinen Commit (stand.sha)";
@@ -1572,11 +1575,11 @@ function messSonne(me, s = me && me.sonnenRichtung) {
 function sollTafelUrteil(tafel, q) {
     const fehler = [];
     const zeilen = [];
-    const haushalt = (q && q.haushalt) || null;
+    const haushalt = q?.haushalt || null;
     q = Object.assign({ lesen: () => null }, q);
-    const kl = (tafel && tafel.klassen) || [];
+    const kl = tafel?.klassen || [];
     if (!kl.length) fehler.push("die Tafel trägt keine Klasse (vakuös)");
-    const welt = haushalt ? haushalt.band.vramMB - ((haushalt.renderZiele && haushalt.renderZiele.mb) || 0) : null;
+    const welt = haushalt ? haushalt.band.vramMB - (haushalt.renderZiele?.mb || 0) : null;
     const summeTris = haushalt ? haushalt.klassen.reduce((a, k) => a + (k.dreiecke || 0), 0) : 0;
     const zahl = Number.isFinite;
     const ids = new Set();
@@ -1592,7 +1595,7 @@ function sollTafelUrteil(tafel, q) {
             const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
             if (w === undefined)
                 fehler.push(
-                    `${wo}: Vorlage ${(vl && vl.karte) || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
+                    `${wo}: Vorlage ${vl?.karte || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
                 );
         }
         if (!Array.isArray(k.quellen))
@@ -1957,7 +1960,7 @@ function sollTafelSelbsttest(tafel, q) {
     const klon = () => jsonKlon(tafel);
     const finde = (t, f) => (t.klassen || []).find(f);
     const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
-    const mitVerweis = (t) => finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
+    const mitVerweis = (t) => finde(t, (k) => (k.soll?.eigenschaften || []).some((e) => e.verweis && e.verweis.symbol));
     const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
     // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
     const frisch = (k, me) => {
@@ -2365,7 +2368,7 @@ function sollTafelSelbsttest(tafel, q) {
     // der Kehrwert des Diffus-Anteils [5; 12,5] und trägt bei der tiefen Sonne das Modell des klaren Himmels IES RP-21 (J. IES 1984).
     const t8 = klon(),
         k8 = finde(t8, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung),
-        sonne = Object.fromEntries(((k8 && k8.soll.eigenschaften) || []).map((e) => [e.uhr, e.sonne])),
+        sonne = Object.fromEntries((k8?.soll.eigenschaften || []).map((e) => [e.uhr, e.sonne])),
         lf = q.kern && q.kern("fachwerk-core.js", "lichtFarbe");
     if (k8 && [0.5, 0.3, 0].every((u) => sonne[u] != null) && lf) {
         const [m, s3, n] = [sonne[0.5], sonne[0.3], sonne[0]],
