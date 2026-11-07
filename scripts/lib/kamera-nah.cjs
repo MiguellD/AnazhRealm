@@ -113,9 +113,13 @@ function nahDeckungInSeite(o) {
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
         return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
     };
+    // EIN LEIB IST NIE FLÄCHE DER LINSE — als Leib (skinned) wie im Satz seiner Gestalt (`_gangSatz`: Tier und Bewohner, die
+    // Senke trägt `userData.gang`): bis tiere.K1#2 hieß ein Hirsch im Satz „Bau“ und verdeckte das Glied seiner eigenen Herde
+    // (Herde am Hang, swiftshader: „Ziel Herde verdeckt von an Punkt 1 tier-satz in 41.96 m“), sein Nachbar als Leib nie
     const zaehlt = (obj) =>
         window.__kameraZeichnet(obj, st.camera) &&
         !obj.isSkinnedMesh &&
+        !obj.userData.gang &&
         obj.name !== "himmel" &&
         !obj.userData.isHydrosphere &&
         !unter(obj, player);
