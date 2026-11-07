@@ -11,7 +11,7 @@
 const {
     statikServer,
     hauptLauf,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     selbsttestEnde,
@@ -130,10 +130,7 @@ hauptLauf(async () => {
     const gtExp = expectedFor("gt");
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 180000, vor: WELT_ORTE_INSTALL }); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
 
     const out = await page.evaluate(async () => {
         const res = { book: {} };

@@ -4875,6 +4875,26 @@
             z: (c.min[2] + c.max[2]) / 2,
         };
     }
+    // DIE DECKEN DES BAUS (w18-innen-licht, additiv, must-ignore — die EINE Formel): je Körper mit Raum (der Körper-Satz von
+    // `grundVon`, die Arten von `GRUND_BODEN`) sein Grundriss und die Unterkante seines Dachs (`DECKE_HOEHE`: die Traufe;
+    // der Pultdach-Anbau seine tiefe Seite, Turm und Rundbau die Mauerkrone) — je Decke [x0, x1, z0, z1, y], haus-lokal auf
+    // dem Raster. Leser: die Hülle jeder Stufe (`buildInstance`: `__huelle.decken`) und mit ihr der Dach-Pool des Wirts
+    // (`_dachTakt`): darunter steht der Raum unter seiner Decke — kein Regen, kein Boden des offenen Himmels im Licht
+    // (schatten.K4). Bis hier riet der Wirt die Decke aus den Solids (die höchste Box mit der halben Fläche der größten): das
+    // Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und der Anbau trägt keine Solid-Box — 11 von 18 Häusern des
+    // Start-Dorfs standen innen unter offenem Himmel, ihre Anbauten alle.
+    var DECKE_HOEHE = { haupt: "eY", anbau: "yLow", fluegel: "eY", hofarm: "eY", turm: "y1", rund: "y1" };
+    function deckenZeile(masse) {
+        var d = [];
+        for (var i = 0; i < (masse || []).length; i++) {
+            var m = masse[i],
+                k = DECKE_HOEHE[m.art],
+                y = k ? m[k] : NaN;
+            if (!isFinite(y) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
+            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y)]);
+        }
+        return d;
+    }
     // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
     // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
     function chimneyTipFromParams(p) {
@@ -4992,6 +5012,7 @@
             geoms.__strahl = solidZeile(st, "strahl"); // der Leib des Strahls (das Geländer), dieselbe Form
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
+            geoms.__decken = deckenZeile(masseVon(st)); // die Decken der Körper (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -5012,6 +5033,7 @@
             geoms.__strahl = hs.strahl;
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
             geoms.__tuer = tuerZeile(B.dims);
+            geoms.__decken = deckenZeile(B.masse);
         }
         return geoms;
     }
@@ -5115,6 +5137,9 @@
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
             g.userData.__huelle.tuer = gm.__tuer;
+            // DIE DECKEN REISEN MIT DER HÜLLE (w18-innen-licht, additiv, must-ignore): je Körper mit Raum [x0, x1, z0, z1, y]
+            // (`deckenZeile`) — der Dach-Pool des Wirts liest sie (`_dachTakt`)
+            g.userData.__huelle.decken = gm.__decken || [];
         }
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)

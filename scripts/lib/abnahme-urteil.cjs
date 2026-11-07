@@ -740,7 +740,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
-        spiegelEbene: sa && sa.yw != null ? +sa.yw.toFixed(3) : null,
+        spiegelEbene: sa?.yw != null ? +sa.yw.toFixed(3) : null,
         sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
         weiss: n ? r4(wt / n) : null,
@@ -1592,16 +1592,16 @@ function sollTafelUrteil(tafel, q) {
         // DIE VORLAGE: ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
         // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
         for (const vl of k.vorlage || []) {
-            const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
+            const w = vl?.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
             if (w === undefined)
                 fehler.push(
-                    `${wo}: Vorlage ${vl?.karte || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
+                    `${wo}: Vorlage ${vl?.karte || "?"} ${vl?.datei} ${vl?.symbol} — das Symbol ist dort nicht definiert`
                 );
         }
         if (!Array.isArray(k.quellen))
             fehler.push(`${wo}: ohne quellen (die Dateien, deren Bytes das Ist trägt) — sein Stand ist unprüfbar`);
         const bruch = (f) => void fehler.push(`${wo}: ${f}`);
-        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, (k.mass || {}).messung, bruch) });
+        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, k.mass?.messung, bruch) });
         // DAS SOLL JE UHR (w4-himmel-uhr): eine Eigenschaft mit `uhr` gilt der Messung dieser Uhr (`messUhr`), eine ohne jeder;
         // `sonne` (Grad) nennt die Höhe der Sonne, für die sie gilt (`messSonne`). Jede Zeile jeder Uhr steht unter derselben Wand
         // (Quelle, Band, Rechnung); dieselbe Größe zweimal zur selben Uhr ist ein Bruch.
@@ -1706,9 +1706,9 @@ function sollTafelUrteil(tafel, q) {
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
         // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
-        const mg = (k.wirkung || {}).mangel;
+        const mg = k.wirkung?.mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
-        const gh = (k.wirkung || {}).geheilt;
+        const gh = k.wirkung?.geheilt;
         if (gh != null && !(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
             fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
         else if (gh != null)
@@ -1730,7 +1730,7 @@ function sollTafelUrteil(tafel, q) {
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
-        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, (k.wirkung || {}).messung, bruch) });
+        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, k.wirkung?.messung, bruch) });
         if (anteil == null && wi.messung) {
             const fw = bildMessungFehler(wi.messung);
             if (fw) fehler.push(`${wo}: das Bild der Wirkung: ${fw}`);
@@ -1759,7 +1759,7 @@ function sollTafelUrteil(tafel, q) {
             veraltet: !!stand,
             stand:
                 r.stand ||
-                (me && me.datum
+                (me?.datum
                     ? `${String(me.datum).slice(0, 10)} ${String(me.stand.sha || "").slice(0, 8)} ${me.geraet.adapter || ""}`.trim()
                     : null),
             stufen,
@@ -1967,8 +1967,8 @@ function sollTafelSelbsttest(tafel, q) {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
-    const mitMangel = (t, k = finde(t, (x) => x.wirkung && (x.wirkung.mangel || x.wirkung.geheilt) && x.mass && x.mass.name === "zweiton" && x.mass.messung)) =>
-        k && k.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
+    const mitMangel = (t, k = finde(t, (x) => (x.wirkung?.mangel || x.wirkung?.geheilt) && x.mass?.name === "zweiton" && x.mass.messung)) =>
+        k?.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
     // die Zeile des Mangels (Zweiton mit Messung; ein geheilter öffnet für den Fall wieder, A3) als geheilt erklären — das Maß bleibt
     const heile = (t, bildPaar) => {
         const k = mitMangel(t);
@@ -2268,7 +2268,7 @@ function sollTafelSelbsttest(tafel, q) {
         });
         const z0 = echt.zeilen.find((z) => z.id === ka.id);
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
-        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
+        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1?.ist})`);
     }
     if (tafel && (tafel.klassen || []).length) {
         const t = klon();
@@ -2336,7 +2336,7 @@ function sollTafelSelbsttest(tafel, q) {
             if (!code || code.urteil !== "ROT" || !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") || !code.grund.includes(d0))
                 v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code?.grund}; ${sha8})`);
         }
-        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version && version.grund})`);
+        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version?.grund})`);
         if (d0 && (!altForm || altForm.urteil !== "ROT" || !/alter Form/.test(altForm.grund || "")))
             v.push(`Stand: eine Prüfsumme alter Form für ${d0} bleibt GRÜN`);
         if (!ohneSha || ohneSha.urteil !== "ROT" || !/keinen Commit/.test(ohneSha.grund || ""))

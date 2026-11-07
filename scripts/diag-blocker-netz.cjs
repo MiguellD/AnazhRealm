@@ -26,7 +26,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
@@ -836,12 +836,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state && r.state.player);
-    });
+    const { browser, page } = await nullWelt(server, { da: (r) => r.state && r.state.player, frist: 300000 }, 60000);
     const S = await page.evaluate(probe);
     await browser.close();
     server.close();

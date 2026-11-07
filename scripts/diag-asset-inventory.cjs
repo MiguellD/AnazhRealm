@@ -45,15 +45,12 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 const server = statikServer();
 hauptLauf(async () => {
     const selftest = SELBSTTEST;
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await page.evaluateOnNewDocument(installWieseSicht);
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 240000, vor: installWieseSicht });
     const out = await page.evaluate(async (doSelftest) => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
