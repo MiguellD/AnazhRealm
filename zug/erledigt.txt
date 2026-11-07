@@ -256,3 +256,4 @@ omen-gtx-pflicht-e8-2-e84fd1fb ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT leib.K1
 omen-gtx-pflicht-e8-3-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K4#2 (punkte-maschine f3a221cc messung/e84fd1fb-gtx.json)
 omen-gtx-pflicht-e8-4-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN mensch.K1#1 (punkte-maschine c15d74d3 messung/e84fd1fb-gtx.json)
 omen-gtx-pflicht-e8-5-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN mensch.K2#2 (punkte-maschine 53b031c5 messung/e84fd1fb-gtx.json)
+omen-gtx-pflicht-e8-6-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN mensch.K5#1 (punkte-maschine 40cce5ed messung/e84fd1fb-gtx.json)
