@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T02:35:50.385Z",
+ "zeit": "2026-11-07T02:54:35.204Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K2#1": {
@@ -28,6 +28,20 @@
    "s": 29.7,
    "zeit": "2026-11-07T01:26:24.831Z",
    "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue -0.4773 (55076 px in der Ebene, 46 Blöcke, Einfall 51.9°, Normale [0.188,0.978,-0.088]) · glas spiegelTreue null UNGÜLTIG (4139 px in der Ebene, 2 Blöcke, Einfall 49.5°, Normale [0.405,0.892,-0.201]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000242 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.1,
+   "grund": "ROT: lack spiegelTreue -0.4773 (55076 px in der Ebene, 46 Blöcke, Einfall 51.9°, Normale [0.188,0.978,-0.088]) · glas spiegelTreue null UNGÜLTIG (4139 px in der Ebene, 2 Blöcke, Einfall 49.5°, Normale [0.405,0.892,-0.201]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000242 sunny · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 6.3,
+   "zeit": "2026-11-07T02:54:35.204Z",
+   "abdruck": "f348340da034",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -407,13 +421,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T02:25:50.189Z",
+  "start": "2026-11-07T02:53:57.487Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": null,
+    "vor": "material.K4#1",
+    "s": 29.6,
+    "takte": 847,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 25,
+   "frameP95": 50.02,
+   "taktP95": 45.06,
+   "vramMax": 120.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 38,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 43.2,
+  "minuten": 0.79
  }
 }
