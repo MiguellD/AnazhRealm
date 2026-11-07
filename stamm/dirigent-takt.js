@@ -618,7 +618,7 @@ class AnazhRealm_dirigent_takt {
     // Bauers der Frist (`_bauFrist`: jetzt / längster). Leser: jede Wand, die auf das Wort wartet und es nicht bekommt (welt-boot
     // `__weltStehtNach`, der Deckel) — bis hier nannte sie „Wald offen 116" (CI z289 · z292 · z293, an keinem Rechner sonst).
     _weltOffenAkte() {
-        const [st, at] = [this.state, this._impostorAtlas()];
+        const [st, at] = [this.state, this._kartenAtlas];
         const S = this._saatOffen ? [...this._saatOffen.values()] : [];
         const P = st.pendingVegSpawns || [];
         const zelle = (k, z = at && at.zellen.get(k)) =>
