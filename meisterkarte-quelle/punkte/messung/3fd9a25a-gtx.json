@@ -1,0 +1,110 @@
+{
+ "sha": "3fd9a25af94cb325e20d6bce49d8db97bb12f0f0",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T21:00:12.816Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.22 · 10–20 1.97 · 20–40 1.94, Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.65,
+   "gpu": "nvidia/pascal",
+   "s": 39,
+   "zeit": "2026-11-07T20:59:33.773Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 49.96 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 49.96 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 49.96 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 49.96 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 85.2,
+   "zeit": "2026-11-07T21:00:12.816Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 16.6 · genesis-third-steht 11.66 · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht: brach: /umstellen: DIE WELT STEHT NICHT nach 2071 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2071 Takten — die Welt hat nichts mehr offe | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 16.6 > 5.8 | genesis-third-steht Belegung p95 11.66 > 5.8",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 16.6 · genesis-third-steht 11.66 · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht: brach: /umstellen: DIE WELT STEHT NICHT nach 2071 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2071 Takten — die Welt hat nichts mehr offe | wiese-third-steht: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 16.6 > 5.8 | genesis-third-steht Belegung p95 11.66 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 85.2,
+   "zeit": "2026-11-07T21:00:12.816Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third ? | genesis-ego 85 · 433k · 123.3 MB · 13.13 ms | genesis-third 104 · 476k · 126 MB · 12.98 ms | dorf-ego ? | dorf-third ? · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: brach: /umstellen: DIE WELT STEHT NICHT nach 2071 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2071 Takten — die Welt hat nichts mehr offe | Band wiese-third: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band genesis-ego: Band ROT f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i, gpu-bank 13.13 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i, gpu-bank 12.98 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third ? | genesis-ego 85 · 433k · 123.3 MB · 13.13 ms | genesis-third 104 · 476k · 126 MB · 12.98 ms | dorf-ego ? | dorf-third ? · Gang 85 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: brach: /umstellen: DIE WELT STEHT NICHT nach 2071 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2071 Takten — die Welt hat nichts mehr offe | Band wiese-third: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band genesis-ego: Band ROT f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i, gpu-bank 13.13 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json) · kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel i, gpu-bank 12.98 ms > 12 | Band dorf-ego: ungemessen (die Uhr 84 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 85.2,
+   "zeit": "2026-11-07T21:00:12.816Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T20:58:29.701Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 7,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 55.7,
+    "takte": 2069,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 391,
+   "frameP95": 33.49,
+   "taktP95": 37.43,
+   "vramMax": 129.1,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "profiband.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 160,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 187.5,
+  "minuten": 3.2
+ }
+}
