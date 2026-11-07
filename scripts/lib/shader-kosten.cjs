@@ -54,10 +54,9 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
-// WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
-// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel 96 050 Zeichen; mit dem Gesetz im Pixel, jede
-// Ziehung `zufall` 78-mal ausgeschrieben, 149 521 — die Prüfbühne S0 riss ihre Frist (171 s). Die Decke 100 000.
+// Die Zeichen eines Programms (`zeichen`) sind Ausgabe, nie Urteil: was das Programm vor dem ersten Bild kostet, misst die
+// Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
+// 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 const STOFFE = Object.freeze({
     boden: Object.freeze({
@@ -67,7 +66,6 @@ const STOFFE = Object.freeze({
             ladungenMax: 90,
             probenMax: 12,
             opsMax: 2400,
-            zeichenMax: 100000,
             bindungInFunktionMax: 0,
         }),
     }),
@@ -353,12 +351,6 @@ const GRENZEN = {
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
     probenMax: [(k) => k.proben, "≤", "Proben je Fragment", ""],
-    zeichenMax: [
-        (k) => k.zeichen,
-        "≤",
-        "Zeichen WGSL im Programm",
-        " — swiftshader übersetzt jede Zeile vor dem ersten Bild (Lehre 14: schwere Arbeit nie ausgeschrieben in jedem Pixel)",
-    ],
     bindungInFunktionMax: [
         (k) => k.bindungInFunktion.length,
         "≤",
@@ -537,11 +529,6 @@ fn main( @builtin( position ) p : vec4<f32> ) -> Out {
     // Eine Stufe, die aus ihrem Zweig wandert, wird unbedingt (der Fall, den gate:post-kette bewacht).
     const ohneZweig = wgslKosten(modul.replace("if ( render.staerke != 0.0 ) {", "{"));
     pruef("Stufe ohne Zweig", ohneZweig.abtastungen.unbedingt, 6);
-    // Die Programm-Größe: ein Programm über der Decke nennt seine Zeichen, eines darunter hält.
-    pruef("Größe hält", kostenUrteil(k, { zeichenMax: modul.length }, "s"), []);
-    const gross = kostenUrteil(k, { zeichenMax: modul.length - 1 }, "s");
-    if (!(gross.length === 1 && gross[0].includes(`${modul.length} Zeichen WGSL im Programm`)))
-        fehler.push(`Urteil nennt die Programm-Größe nicht (${JSON.stringify(gross)})`);
     // Die Bindung in einer Hilfs-Funktion: `hilf` liest die Texturen des Moduls (tex, tex2) — rot beim Namen; derselbe Zugriff
     // im Einstieg hält, eine reine Hilfs-Funktion hält, und ein r184-Bindungs-Name, den das Modul nicht deklariert (der Fall
     // der Prüfbühne: `nodeUniform0` war dort ein Feld im Uniform-Block), fällt ebenso.
