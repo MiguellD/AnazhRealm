@@ -1834,7 +1834,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
         const pumpe = async (i) => {
             try {
                 r._tickVoxelChunkStreaming();
-                r._gameLoopTick(performance.now());
+                r._gameLoopTick();
                 r._drainPendingWaterIso();
             } catch {
                 /* */

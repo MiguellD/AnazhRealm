@@ -248,7 +248,7 @@ hauptLauf(async () => {
         const tick = async (n) => {
             for (let i = 0; i < n; i++) {
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch (e) {
                     if (!taktFehler) taktFehler = fehlerText(e).split("\n")[0];
                 }

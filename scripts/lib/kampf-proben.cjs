@@ -3039,7 +3039,7 @@ async function WELLE_L(ort) {
             try {
                 stelle(c, 9, 4);
                 for (let k = 0; k < 60; k++) {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                     await sleep(16);
                 }
                 stelle(c, 1.6);

@@ -337,7 +337,7 @@ async function tatProbe(m) {
     [r._loopNexusUpdate, st.worldRules] = [() => {}, []];
     pm.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z); // der Leib fällt einmal, je Takt hält die Probe x und z
     const stelle = (n) => {
-        for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
+        for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(), pm.setX(m.x).setZ(m.z);
     };
     await __weltStehtNach(() => stelle(1));
     window.__buehne();

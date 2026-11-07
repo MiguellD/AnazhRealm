@@ -279,7 +279,7 @@ async function leibStrafe(k) {
     const steht = (g = st.playerMesh.userData._gelenk) => st.worldMeta.genesisOrt?.steht && g && !g.istFern && g.nahStufe !== 1;
     for (let i = 0; i < 1800 && !steht(); i++) await bild();
     if (!steht()) throw new Error("Prüfplatz/Leib steht nicht");
-    await __weltStehtNach(() => r._gameLoopTick(performance.now()));
+    await __weltStehtNach(() => r._gameLoopTick());
     if (!st.traaNode) return { traa: false };
     __buehne();
     const [W, H] = rend.getDrawingBufferSize(new THREE.Vector2()).toArray();

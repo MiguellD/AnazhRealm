@@ -196,7 +196,7 @@ function probe(o) {
     }
     aus.wuerfe = wuerfe;
     // (U) die Leser der Bild-Uhr unter der Bühne, der Loop läuft drei Frames weiter (je Frame die Knoten-Uhr, dann der Takt)
-    r._gameLoopTick(performance.now());
+    r._gameLoopTick();
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
     let wort = +!!(r._rainSystem && r._rainSystem.mesh.visible);

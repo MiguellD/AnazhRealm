@@ -147,7 +147,7 @@ async function proben(phasen) {
     const pumpe = async (n) => {
         for (let k = 0; k < n; k++) {
             try {
-                r._gameLoopTick(performance.now());
+                r._gameLoopTick();
             } catch {}
             if (k % 8 === 0) await sleep(10);
         }
@@ -679,7 +679,7 @@ async function proben(phasen) {
             // Takt um Takt wie der Hauptlauf — `pumpe(1)` schlief je Takt 10 ms dazu (das Einschwingen schläft selbst je 5 Takte)
             await window.__weltStehtNach(() => {
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch {
                     // ein Wurf des Takts bricht das Einschwingen nie (wie `pumpe`)
                 }
@@ -2248,7 +2248,7 @@ hauptLauf(async () => {
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
                     try {
-                        r._gameLoopTick(performance.now());
+                        r._gameLoopTick();
                     } catch {}
                 })
             );

@@ -112,7 +112,7 @@ function werkzeug() {
     W.takt = () => {
         try {
             __buehne(W.szene);
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
         } catch {}
     };
     W.umstellen = async (x, z) => {

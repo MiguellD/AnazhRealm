@@ -299,7 +299,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;

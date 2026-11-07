@@ -212,7 +212,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     const [SX, SZ] = see.mitte;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
     const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
-    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
+    await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick()));
     window.__buehne();
     st.autoSeason = false;
     // ein Werk `n` aus Quadern [Stoff, Breite, Höhe, Tiefe, Versatz x, Mitte y] bei (x, z, y); mit `fn` gemessen, dann abgerissen

@@ -163,7 +163,7 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
             r.updateFps = () => {
                 throw new Error("V18278-test-throw");
             };
-            r._gameLoopTick(performance.now()); // darf NICHT werfen
+            r._gameLoopTick(); // darf NICHT werfen
         } catch {
             threw = true;
         } finally {

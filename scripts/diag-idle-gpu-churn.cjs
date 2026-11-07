@@ -317,7 +317,7 @@ hauptLauf(async () => {
                 window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                 s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
-            try { r._gameLoopTick(performance.now()); } catch {} finally { zurueck(); }
+            try { r._gameLoopTick(); } catch {} finally { zurueck(); }
             return { cc: cnt() - c0 };
         };
         // je Bild auch der Stand der Erst-Zeichnung (Bauten · verschoben · wartende Draws · offene Pipelines): die Ruhe vor dem

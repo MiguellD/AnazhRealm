@@ -1476,7 +1476,7 @@ async function gebaut(page) {
                     fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
                     takt: async () => {
                     try {
-                        r._gameLoopTick(performance.now());
+                        r._gameLoopTick();
                     } catch {
                         /* der Boot reift */
                     }

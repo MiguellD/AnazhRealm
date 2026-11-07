@@ -519,7 +519,7 @@ if (require.main === module) hauptLauf(async () => {
             let lastGrowthAt = start;
             for (;;) {
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch {
                     // Ein einzelner Tick-Fehler darf den Warmup nicht
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
@@ -550,7 +550,7 @@ if (require.main === module) hauptLauf(async () => {
                         fertig: () => _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false,
                         takt: async () => {
                             try {
-                                r._gameLoopTick(performance.now());
+                                r._gameLoopTick();
                             } catch {
                                 // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
                             }

@@ -854,7 +854,7 @@ async function wasserGraben(o = {}) {
         const px = a.x + nx * sg * (krone + abstand),
             pz = a.z + nz * sg * (krone + abstand);
         await window.__wasserStrom([px + nx * sg * 6, pz + nz * sg * 6], 0.6); // der Spieler 6 m landeinwärts
-        await __weltStehtNach(() => r._gameLoopTick(performance.now()), 600); // die Welt steht, die Wiese mit
+        await __weltStehtNach(() => r._gameLoopTick(), 600); // die Welt steht, die Wiese mit
         const aussen = (key) => {
             const [tx, tz] = key.split(",").map(Number);
             return Math.hypot(Math.max(tx * K - px, 0, px - (tx + 1) * K), Math.max(tz * K - pz, 0, pz - (tz + 1) * K)) > AUSSEN;
@@ -875,7 +875,7 @@ async function wasserGraben(o = {}) {
         try {
             r.dslRun(["voxel_carve", px, r._voxelSurfaceY(px, pz), pz, HIEB], { source: "human" });
             for (let t = 0; t < (o.takte || 900) && g.ruhe < 0; t++) {
-                r._gameLoopTick(performance.now());
+                r._gameLoopTick();
                 const m = messen(px, pz);
                 for (const k of ["doppelt", "ueber", "ueberM"]) g[k] = Math.max(g[k], m[k]);
                 let n = 0;
@@ -937,7 +937,7 @@ async function wasserDamm(o = {}) {
     const saeulen = [];
     for (let s = -30; s <= 30; s += 3) if (r._voxelSurfaceY(a.x + nx * s, a.z + nz * s) < krone) saeulen.push([a.x + nx * s, a.z + nz * s]);
     const aus = { krone: f2(krone), saeulen: saeulen.length };
-    const takt = () => r._gameLoopTick(performance.now());
+    const takt = () => r._gameLoopTick();
     const ring = new Map();
     const fr = () => st.fernRing;
     const unter = (n) => ((q) => saeulen.some(([x, z]) => Math.hypot(q.x - x, q.z - z) < 3) && q)(r._fernRingPunkt(fr(), n)); // die ebene Krone

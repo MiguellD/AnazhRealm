@@ -889,7 +889,7 @@ async function starte() {
                 try {
                     __buehne();
                     if (window.__ortSchritt) __ortSchritt();
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch {}
                 return new Promise(requestAnimationFrame);
             };
@@ -2335,7 +2335,7 @@ async function starte() {
                             for (const weiter = __deckel("die Bilder der Linse", 120, false); gezeichnet < ziel && weiter(); ) {
                                 try {
                                     if (window.__buehne) __buehne();
-                                    r._gameLoopTick(performance.now());
+                                    r._gameLoopTick();
                                 } catch {}
                                 await rend.backend.device.queue.onSubmittedWorkDone();
                             }

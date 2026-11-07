@@ -373,7 +373,7 @@ async function betreten(page, welt) {
     // eine porta-Gestalt (`weg` = die Gestalt, die der Wirt aus dem Gesetzbuch liest, `_torGesetzFor`), der Weg führt durch
     // ihre Apertur — der E-Weg der Teile-Tore fiel mit ihnen (w4-tore-teile); ein Tor ohne Gesetz ist rot beim Namen (oben)
     await halteBis(page, {
-        druck: () => page.evaluate("halt.vor = true; window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)"),
+        druck: () => page.evaluate("halt.vor = true; window.__takt = setInterval(() => anazhRealm._gameLoopTick(), 20)"),
         los: () => page.evaluate("clearInterval(__takt); halt.vor = false"),
         ziel: () => !!r._portalOverlay,
     });

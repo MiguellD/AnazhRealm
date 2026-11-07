@@ -134,7 +134,7 @@ hauptLauf(async () => {
             const tick = async () => {
                 try {
                     if (st.world) st.world.timeOfDay = 0.5;
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch (e) {
                     taktFehlerN++;
                     if (!taktFehler1) taktFehler1 = String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ");

@@ -469,7 +469,7 @@ async function checkBandRing6Workshop({ page, check }) {
         st.verbTafel.gehalten = { vor: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
         }
         const playerZ = st.playerMesh.position.z;
         const playerY = st.playerMesh.position.y;

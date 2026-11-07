@@ -1202,7 +1202,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.waldErsterBlick = st.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
             await sleep(0);
         }
         out.waldLueckeRest = wald();
@@ -1977,7 +1977,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         if (st.camera && st.playerMesh) {
             // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
             // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
-            for (let k = 0; k < 12; k++) r._gameLoopTick(performance.now());
+            for (let k = 0; k < 12; k++) r._gameLoopTick();
             const cam = st.camera;
             const pm = st.playerMesh;
             const savedPos = cam.position.clone();

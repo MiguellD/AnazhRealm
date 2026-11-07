@@ -112,7 +112,7 @@ async function checkRing2Dsl({ page, check }) {
     });
 
     const phase2Results = await safeEvaluate(page, () => {
-        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
+        for (let k = 0; k < 5; k++) r._gameLoopTick();
         return {
             historyLen: st.dsl.history.length,
             queueLen: st.nexusEvolutionQueue.length,

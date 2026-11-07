@@ -753,7 +753,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                 code:
                     `r.state.yaw = ${g}; r.state.pitch = 0;` +
                     "for (let i = 0; i < 20; i++) { window.__wetterHalten(); if (window.__ortSchritt) window.__ortSchritt(); " +
-                    "r._gameLoopTick(performance.now()); await sleep(16); } " +
+                    "r._gameLoopTick(); await sleep(16); } " +
                     "r.state.renderer.setAnimationLoop(null); " +
                     "return { gier: r.state.yaw, tiere: typeof window.__tierZahl === 'function' ? window.__tierZahl() : null };",
             });

@@ -229,7 +229,7 @@ async function streuTakte(n, ms) {
     for (let i = 0; i < n; i++) {
         st._frameOverBudget = false;
         try {
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
             const pp = st.playerMesh && st.playerMesh.position;
             if (pp) r._tickScatterStreaming(pp);
         } catch {}
@@ -1606,7 +1606,7 @@ function booteWelt(page, name = "der Boot der Welt") {
         for (const weiter = window.__deckel(name, 7500); weiter();) {
             if (r && typeof r._gameLoopTick === "function") {
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                 } catch {
                     /* der Boot reift */
                 }

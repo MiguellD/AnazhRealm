@@ -283,7 +283,7 @@ hauptLauf(async () => {
         for (const weiter = __deckel("die Mess-Wiese", 4000); weiter(); ) {
             try {
                 if (st.world) st.world.timeOfDay = 0.5;
-                r._gameLoopTick(performance.now());
+                r._gameLoopTick();
             } catch {}
             takte++;
             const sz = st.voxelChunks ? st.voxelChunks.size : 0;
@@ -545,7 +545,7 @@ hauptLauf(async () => {
                 for (const weiter = __deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
                     try {
                         if (st.world) st.world.timeOfDay = 0.5;
-                        r._gameLoopTick(performance.now());
+                        r._gameLoopTick();
                     } catch {}
                     takte++;
                     const sz = st.voxelChunks ? st.voxelChunks.size : 0;

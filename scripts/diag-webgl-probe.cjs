@@ -92,7 +92,7 @@ hauptLauf(async () => {
             o.tickOk = 0;
             for (let i = 0; i < 12; i++) {
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._gameLoopTick();
                     o.tickOk++;
                 } catch (_e) {
                     o.tickErr = fehlerText(_e);

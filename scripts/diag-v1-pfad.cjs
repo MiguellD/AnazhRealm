@@ -2057,7 +2057,7 @@ async function korpusSatz(a) {
     for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang += e.antwortMs > 0) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
         if (e.praedikat) break;
-        await new Promise((ok) => (gang && r._gameLoopTick(performance.now()), setTimeout(ok, 100)));
+        await new Promise((ok) => (gang && r._gameLoopTick(), setTimeout(ok, 100)));
     }
     e.weltMs = e.praedikat ? Math.round(performance.now() - t0) : null;
     await antwort;

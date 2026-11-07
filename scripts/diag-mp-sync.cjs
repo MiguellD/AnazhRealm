@@ -116,7 +116,7 @@ function seitenPumpe() {
     setInterval(() => {
         if (!r || !r._gameLoopTick || window.__pumpeSteht) return; // die Pumpe steht (g) — kein Name der Seiten-Werkzeuge
         try {
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
         } catch {
             /* der Loop trägt seine eigene Fehlerwand */
         }

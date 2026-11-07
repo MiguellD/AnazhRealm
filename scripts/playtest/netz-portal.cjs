@@ -1303,7 +1303,7 @@ async function checkBandW12WorldPortal({ page, check }) {
 
         // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
         const framesBefore = st._fpsFrames;
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
         const framesInPortal = st._fpsFrames;
         out.loopFreezesInPortal = framesInPortal === framesBefore;
 
@@ -1314,7 +1314,7 @@ async function checkBandW12WorldPortal({ page, check }) {
         out.exitClearsKeys = !halt.vor;
 
         // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
         out.loopResumesAfterPortal = st._fpsFrames !== framesInPortal;
 
         // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.

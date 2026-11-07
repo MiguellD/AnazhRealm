@@ -1043,7 +1043,7 @@ function wegHelfer(arg) {
         let vor;
         const takt = setInterval(() => {
             try {
-                if (r._weltStand.takte === vor) r._gameLoopTick(performance.now());
+                if (r._weltStand.takte === vor) r._gameLoopTick();
             } catch {}
             vor = r._weltStand.takte;
         }, 40);

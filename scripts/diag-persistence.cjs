@@ -289,7 +289,7 @@ function ttTreiber(e0) {
         const ort = { x: x - 40, y: r._terrainMacroSurfaceY(x - 40, z), z };
         if (t % 50 === 0 && r.spawnArchitecture("stein_block", ort, { silent: true })) n[1]++;
         window.__ttReihe.push([Date.now(), ...n]);
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
     }, 16);
 }
 function ttToeten(b) {

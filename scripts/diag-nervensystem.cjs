@@ -212,7 +212,7 @@ hauptLauf(async () => {
         r.setCameraMode("first");
         pm.position.set(st.frei.x, st.frei.y + 1.2, st.frei.z);
         [st.yaw, st.pitch] = [0, -0.45];
-        window.__takt = setInterval(() => r._gameLoopTick(performance.now()), 40); // der Loop läuft unter den Eingaben
+        window.__takt = setInterval(() => r._gameLoopTick(), 40); // der Loop läuft unter den Eingaben
         const e = {
             regler: (f.paramsByKind.stele || []).length,
             bauplaene: ["meilenstein", "grenzstein", "obelisk"].filter(bp).length,
@@ -309,7 +309,7 @@ hauptLauf(async () => {
         );
         // P2P: das Werk reiste beim Setzen (`confirmBuild` → `_werkProgramm`), der Mitspieler baut es und zeigt es nah
         e.p2p = await peer.evaluate(async (id) => {
-            const takt = async () => r._gameLoopTick(performance.now());
+            const takt = async () => r._gameLoopTick();
             const w = () => st.architectures.find((a) => a.id === id);
             await window.__gebautNach("das Werk beim Mitspieler", { fertig: w, takt });
             st.playerMesh.position.copy(w().position).x += 4;

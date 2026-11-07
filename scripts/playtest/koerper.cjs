@@ -448,7 +448,7 @@ async function checkBandRing5Soul({ page, check }) {
     // Loop synchron treiben (_gameLoopTick = genau ein Frame): Headless-Chromium drosselt rAF auf ~1 Hz,
     // ein Warte-Fenster enthielte oft 0 Ticks.
     const cameraEffect = await safeEvaluate(page, () => {
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
         return { playerYaw: st.yaw, playerRotationY: st.playerMesh.rotation.y };
     });
 
@@ -468,7 +468,7 @@ async function checkBandRing5Soul({ page, check }) {
                 st.playerVel.setValue(0, 0, 0);
                 st._fieldVy = 0;
             }
-            r._gameLoopTick(performance.now());
+            r._gameLoopTick();
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
                 boden: st._cameraDesiredY - st._kamBodenY,
@@ -530,7 +530,7 @@ async function checkBandRing5Soul({ page, check }) {
     // Zustand, 40 à 0,1 s (der Zeitraffer) ruhen ihn. Täter: die Uhr je Ruf — sie löste ihn in der Phase (Genesis Third 6-mal in 20 s).
     const tuch = await page.evaluate(() => {
         r.setCameraMode("third");
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
         const g = st.playerMesh;
         let t = g.userData._tuchUhr.t;
         const lauf = (dt, k) => {
@@ -911,7 +911,7 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
             // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
             for (let i = 0; i < 60; i++) {
                 try {
-                    r._gameLoopTick && r._gameLoopTick(performance.now());
+                    r._gameLoopTick && r._gameLoopTick();
                 } catch {}
             }
             const after = st.player.mana;
