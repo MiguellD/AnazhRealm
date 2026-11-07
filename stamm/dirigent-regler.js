@@ -483,6 +483,11 @@ class AnazhRealm_dirigent_regler {
         } catch (_e) {
             /* Privacy-Modus */
         }
+        // DER NULL-RENDERER ZEICHNET NICHT: kein Gerät wird gefragt, seine Welt ist die volle (wie sein Regler-Seed,
+        // `_geraeteReglerSeed`) — bis w22-zeitraffer fragte die Wahl dort ein WebGL2, das nie zeichnet: wo der Browser eine
+        // Software-GL anbot (swiftshader), fuhr jede Null-Linse „kienspan" mit Ring 2, die CI ohne GL Ring 4 (gate:koerper-stand
+        // lokal ROT: K7 478 von 1 000 Büscheln, die Selbsttests „wiese“ und „ring“ blind; CI 2 109 Büschel, Ring 2 von 4)
+        if (this._nullRendererGewaehlt()) return "voll";
         // Gefragt wird das Gerät, das WIRKLICH zeichnet (K67): der WebGPU-Adapter, wenn die Welt ihn bekommt — sonst der
         // WebGL2-Rückfall (r184 fällt ohne Adapter und unter dem forceWebGL-Hook auf GL), dessen Renderer-String. Vorher
         // fragte die Wahl nur den Adapter: auf dem Rückfall antwortete keiner, und eine Software-GL (swiftshader) fuhr
