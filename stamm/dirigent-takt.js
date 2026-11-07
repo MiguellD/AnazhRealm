@@ -3,11 +3,23 @@ class AnazhRealm_dirigent_takt {
     startEternalLoop() {
         // ### Spiel-Loop ###
         let lastTime = performance.now();
+        // DER ZEITRAFFER DER NULL-WELT (w22-zeitraffer, „Fix Your Timestep“ nach Fiedler, deterministische Lockstep-Simulation):
+        // ohne Bild ruft niemand den Loop (`setAnimationLoop` ist im Null-Renderer leer) — der Takt kommt von der Linse. Ein Ruf
+        // OHNE Zeit (`_gameLoopTick()`, `__handTakt`) war die Wanduhr: die Welt ging so schnell wie die Wanduhr der Linse, ihre
+        // Spiel-Zeit je Takt war die Dauer ihres Rechnens und Schlafens (Kreatur-Linse Teil 1: 12 436 Takte an der Wanduhr, 221 s
+        // Warten), und jede Messung hing an der Maschine. Im Zeitraffer (`__anazhZeitraffer` = n Sim-Schritte je Bild, gesetzt NUR
+        // von der Null-Seite der Linsen, scripts/lib/welt-boot.cjs `nullRenderer`; mit Bild nie — die Wahl des Renderers) ist ein
+        // Ruf ohne Zeit EIN Bild von n festen Schritten (`FIXED_DT`) nach dem vorigen: dieselbe Folge von Takten ist dieselbe Welt,
+        // so schnell die CPU rechnet. Ein Ruf MIT Zeit (die Linse führt ihre eigene Uhr, ihr Bild-Muster) bleibt, wie er ist.
+        const zeitrafferMs =
+            this._nullRendererGewaehlt() && window.__anazhZeitraffer > 0
+                ? window.__anazhZeitraffer * 1000 * AnazhRealm.FIXED_DT
+                : 0;
         const loop = (time) => {
             // NaN-WAND am Loop-Eingang: ein argloser Aufruf (`_gameLoopTick()`, jeder Test-Warmup) liefert time
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
-            const t = Number.isFinite(time) ? time : performance.now();
+            const t = Number.isFinite(time) ? time : zeitrafferMs ? lastTime + zeitrafferMs : performance.now();
             // DIE WANDUHR UND DER SPIEL-TAKT (K21, Lehre 13): EINE Obergrenze des Takts, HIER an der Wurzel. Eine Pause
             // (versteckter Tab, Debugger, Lade-Stau) ist eine Pause — die Welt läuft danach mit höchstens EINEM Schritt
             // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis

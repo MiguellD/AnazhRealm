@@ -2348,14 +2348,9 @@ async function kreaturProben(r, T, opts) {
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
     const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`; // der Bewohner beim Namen
     const angekommen = (S) => () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft); // jeder trägt seinen Leib, kam an
-    // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
-    const tick = () => {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {
-            /* der Takt meldet selbst */
-        }
-    };
+    // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr): der stille Hand-Takt (welt-boot), im Zeitraffer der
+    // Null-Seite ein festes Bild, nie die Wanduhr der Probe
+    const tick = __handTakt;
     // DAS WERK DER LEUTE OHNE ZEIT (`_tickBewohner(0)`, wie die Ankunft in `uhrAuf`): mit Bild rechnet ein Takt der Bewohner
     // `BEWOHNER.listeMs` an der Liste, zwei Geburten, acht Ankünfte — das Budget eines Bilds (Lehre 14). Wer auf die Leute wartet,
     // ruft ihn, bis ihr Werk (`_weltOffen().leute`) fünf Takte nicht fällt: dann wartet es auf den Faden (die Vorlagen der

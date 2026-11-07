@@ -410,6 +410,10 @@ const ttZeile = (t) =>
     `${t.n} Tode: Alter max ${t.maxAlter} s, ${t.alt} über 10 s · ${t.korrupt} korrupt · ${t.halb} halbe Welten · ${t.verfehlt} Haken verfehlt · Linie ${t.linie} Löcher`;
 const ttOk = (t) => t.n > 0 && !t.alt && !t.korrupt && !t.halb && !t.verfehlt && t.linie > 256;
 const [TT_VON, TT_BIS] = (process.env.PERSISTENCE_TABTOD || "0-7").split("-").map(Number);
+// DER KOPF-TEIL (w22-zeitraffer): Korpus (V)(U)(W)(K) und save-server (S)(C) urteilen über Stände und Dateien, nie über den Tab-Tod —
+// sie laufen EINMAL, im Teil, dessen Tab-Tod bei Zyklus 0 beginnt (Teil 1; Teil 2 fährt PERSISTENCE_TABTOD=8-19). Bis hier fuhr
+// Teil 2 dieselben 148 Korpus-Boots und dieselben Server-Tode ein zweites Mal: lokal 382 von 520 s.
+const KOPF_TEIL = TT_VON === 0;
 const server = statikServer();
 
 // (D) DIE DATEI WÄCHST MIT DEN ÄNDERUNGEN, NIE MIT DEM WEG (speicher.K3): eine frische Welt (der Takt der Orte lebt wie im
@@ -696,8 +700,20 @@ function korpusUrteil(z, selbst) {
     if (NUR_WEG) urteile(wegChecks);
     const tLauf = await tabTodProbe({ von: TT_VON, bis: TT_BIS });
     const tSelbst = SELBSTTEST ? await tabTodProbe({ von: 0, bis: 0, selbst: true }) : null;
-    const korpus = korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null);
+    const korpus = KOPF_TEIL ? korpusUrteil(await korpusLauf(false), SELBSTTEST ? await korpusLauf(true) : null) : [];
     server.close();
+    const tChecks = [
+        {
+            name: `(T) Tab-Tod ohne save-server, Zyklen ${TT_VON}-${TT_BIS}: ${ttZeile(tLauf)}${ttOk(tLauf) ? "" : " — Täter: der Speicher-Faden (speicher-faden.js) oder saveState (stamm/dienst.js)"}`,
+            pass: ttOk(tLauf),
+        },
+    ];
+    if (SELBSTTEST)
+        tChecks.push({
+            name: `(T) SELBSTTEST: der halbe Stand im Faden (Tod nach seiner Transaktion) wird ROT (${ttZeile(tSelbst)})`,
+            pass: tSelbst.korrupt > 0,
+        });
+    if (!KOPF_TEIL) return urteile([...tChecks, ...wegChecks]);
 
     // (S) Der save-server schreibt ganz, (C) sein Cache-Kopf — im Selbsttest je die alte Art in der Kopie, die rot werden MUSS:
     // das direkte Schreiben aufs Ziel, der Kopf ohne Validator. Fehlt der Anker einer Verfälschung, greift sie nicht (ROT).
@@ -743,10 +759,6 @@ function korpusUrteil(z, selbst) {
             pass: s.killsOk,
         },
         {
-            name: `(T) Tab-Tod ohne save-server, Zyklen ${TT_VON}-${TT_BIS}: ${ttZeile(tLauf)}${ttOk(tLauf) ? "" : " — Täter: der Speicher-Faden (speicher-faden.js) oder saveState (stamm/dienst.js)"}`,
-            pass: ttOk(tLauf),
-        },
-        {
             name: `(C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (${cZeile(cache)})${cache.ok ? "" : " — Täter: save-server.js sendStaticFile (statischerKopf)"}`,
             pass: cache.ok,
         },
@@ -760,13 +772,9 @@ function korpusUrteil(z, selbst) {
             {
                 name: `(C) SELBSTTEST: der Kopf ohne Validator wird ROT (${cZeile(cacheSelbst)})`,
                 pass: !cacheSelbst.ok,
-            },
-            {
-                name: `(T) SELBSTTEST: der halbe Stand im Faden (Tod nach seiner Transaktion) wird ROT (${ttZeile(tSelbst)})`,
-                pass: tSelbst.korrupt > 0,
             }
         );
-    urteile([...checks, ...wegChecks]);
+    urteile([...checks, ...tChecks, ...wegChecks]);
 })();
 function urteile(checks) {
     console.log("\n=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===");

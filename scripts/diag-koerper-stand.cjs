@@ -1232,7 +1232,8 @@ hauptLauf(async () => {
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
-            await nullRenderer(page);
+            // DER ZEITRAFFER (welt-boot `nullRenderer`): das Einschwingen über den Hand-Takt geht in festen Bildern, nie an der Wanduhr
+            await nullRenderer(page, { zeitraffer: 1 });
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — die Ankunft trägt ihn (`server.zeige` → `ortZug`, genesis wie Wiese: er ruht; bis w12-dorf-probe hielt
             // ihn headless der Null-Renderer an, auf der Karte lief er, und der 25°-Hang stand unter den Terrassen des Dorfs, Radeon:

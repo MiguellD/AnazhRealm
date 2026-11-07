@@ -23,10 +23,11 @@ const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
 // DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
 // `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
-// DIESEM Chokepoint und fällt hier mit einem Schnitt.
+// DIESEM Chokepoint und fällt hier mit einem Schnitt. Der Ruf trägt keine Zeit: die Uhr wählt der Takt (ohne Zeitraffer die
+// Wanduhr, im Zeitraffer der Null-Welt ein festes Bild nach dem vorigen — `nullRenderer`, stamm/dirigent-takt.js).
 function handTakt() {
     try {
-        r._gameLoopTick(performance.now());
+        r._gameLoopTick();
     } catch {}
 }
 // DER EINE VERGLEICH und DIE EINE ADDITION (`xs.sort(aufsteigend)`, `xs.reduce(addiere, 0)`): in Node global, sobald welt-boot
@@ -106,8 +107,8 @@ async function zielLesen(ziel, W, H, renderer = st.renderer) {
 }
 async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
-    await new Promise((ok) => requestAnimationFrame(ok));
-    if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
+    await (window.__anazhZeitraffer ? sleep() : new Promise((ok) => requestAnimationFrame(ok)));
+    if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick();
 }
 // DIE BEDIENUNG DER STAFFEL 2 (spielgang.K3#2, `await __bedienung2()` · Reload · `await __bedienung2(vor)`): EINE Probe, zwei
 // Wirte — `werkbank bedienung --staffel 2` am Gerät (der echte Reload) und der Playtest (der Reload ist die Platte, die der
@@ -1221,17 +1222,22 @@ async function starteBrowser(opts = {}) {
 // Der Null-Renderer (die Seite zeichnet nichts: `__anazhHeadlessNullRenderer`, der Schalter des Stamms; die Foundry baut auch
 // ohne Bild, `_foundryEnabled`) — EINMAL hier, jede Linse ohne Bild ruft ihn vor dem Laden;
 // `warteAufWelt` wartet, bis die Welt ihren Takt trägt — die EINE Warte jeder Linse.
-async function nullRenderer(page) {
-    await page.evaluateOnNewDocument(() => {
+// `zeitraffer` (n ≥ 1): der Takt ohne Zeit ist ein Bild von n festen Sim-Schritten (stamm/dirigent-takt.js `startEternalLoop`), der
+// Takt der Seite wartet auf kein Bild (rAF), nur auf einen Schlaf — die Linse urteilt in Takten, nie an der Wanduhr. Der Schlaf
+// selbst bleibt (mindestens die Klemme der Zeitgeber): wo die Linse auf einen Faden wartet, dreht ein schnellerer Gang nur die
+// Hänger-Wache des Deckels (3 600 Gänge ohne Bau-Ereignis) in einen falschen Hänger (Wiederkehr: 30 Foundry-Aufträge im Flug).
+async function nullRenderer(page, { zeitraffer = 0 } = {}) {
+    await page.evaluateOnNewDocument((n) => {
         window.__anazhHeadlessNullRenderer = true;
-    });
+        if (n > 0) window.__anazhZeitraffer = n;
+    }, zeitraffer);
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
 // (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
 async function nullSeite(opts) {
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
-    await nullRenderer(page);
+    await nullRenderer(page, opts);
     return { browser, page };
 }
 // DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.vor` trägt die Seite

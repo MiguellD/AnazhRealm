@@ -71,9 +71,11 @@ const gewaehlt = (() => {
 async function headless(laeufe) {
     const server = statikServer();
     await server.lausche(PORT);
+    // DER ZEITRAFFER (welt-boot `nullRenderer`): jeder Takt ohne Zeit ist ein festes Bild — die Welt wartet nie auf die Wanduhr
     const { browser, page } = await nullSeite({
         frist: 900000,
         viewport: ORT ? { width: 1920, height: 1080 } : undefined,
+        zeitraffer: 1,
     });
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];
@@ -84,14 +86,7 @@ async function headless(laeufe) {
         return z;
     };
     // das EINE Einschwingen (welt-boot `__weltStehtNach`)
-    const einschwingen = () =>
-        page.evaluate(() =>
-            window.__weltStehtNach(() => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
-            })
-        );
+    const einschwingen = () => page.evaluate(() => window.__weltStehtNach(__handTakt));
     const lauf = (o) =>
         page.evaluate(
             (src, o) => {
