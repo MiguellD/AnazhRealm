@@ -92,7 +92,7 @@ function schneide(t) {
     const auf = KLASSE_AUF + "\n";
     const k = t.startsWith(auf) ? 0 : t.indexOf("\n" + auf) + 1;
     if (k <= 0 && !t.startsWith(auf)) throw new Error(`S: \`${KLASSE_AUF}\` fehlt`);
-    if (t.indexOf("\n" + auf, k) >= 0) throw new Error(`S: \`${KLASSE_AUF}\` steht mehr als einmal`);
+    if (t.includes("\n" + auf, k)) throw new Error(`S: \`${KLASSE_AUF}\` steht mehr als einmal`);
     const mk = marker(t);
     const innen = mk.filter((m) => m.eingerueckt);
     const aussen = mk.filter((m) => !m.eingerueckt);
@@ -214,7 +214,7 @@ function ordne(T, karte) {
     if (!cls) throw new Error("ordne: `class AnazhRealm` fehlt");
     const reihe = karte.ordnung.map((o) => o[0]);
     const zonen = new Map(reihe.map((s) => [s, { innen: [], aussen: [] }]));
-    const ende = (i) => (T.indexOf("\n", i) < 0 ? T.length : T.indexOf("\n", i) + 1);
+    const ende = (i) => (!T.includes("\n", i) ? T.length : T.indexOf("\n", i) + 1);
     const anfang = (i) => T.lastIndexOf("\n", i - 1) + 1;
     const r = { neu: [], fremd: [], namen: new Set() };
     let ist = null;

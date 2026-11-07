@@ -258,12 +258,12 @@ async function checkBandWahrerAnblickSaeule1({ page, check }) {
             if (m) m.dispose();
         }
         const chunkMat = r._getVoxelChunkMaterial();
-        if (chunkMat && chunkMat.colorNode && chunkMat.vertexColors === true) out.farbeQuadrat.push("chunk-boden");
+        if (chunkMat?.colorNode && chunkMat.vertexColors === true) out.farbeQuadrat.push("chunk-boden");
         out.szeneQuadrat = [];
         st.scene.traverse((o) => {
             const m = o.isMesh && o.material;
             if (!m || Array.isArray(m) || !m.colorNode || m.vertexColors !== true) return;
-            if (o.geometry && o.geometry.getAttribute && o.geometry.getAttribute("color"))
+            if (o.geometry?.getAttribute && o.geometry.getAttribute("color"))
                 out.szeneQuadrat.push(r._taeterKlasse(o));
         });
 

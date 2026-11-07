@@ -704,7 +704,7 @@ hauptLauf(async () => {
     check(
         "H NACH DEM BUCH: die Nah-Wiese legt ihre 4 Studio-Vorlagen (das Budget gelesen, gras wirft nicht), ohne Loop-Fehler",
         h.warm > 0 && h.vorlagen >= 4 && (h.fehlerWarm || []).length === 0,
-        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${(h.fehlerWarm || []).length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
+        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${h.fehlerWarm?.length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
     );
     const hs = h.selbst || [];
     check(

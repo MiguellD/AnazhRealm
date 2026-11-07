@@ -61,7 +61,7 @@ function urteil(z) {
         v.push(
             `BODEN: ${z.boden.objekte} Objekte tragen das Boden-Material (Soll 1, der Satz) — ${z.boden.namen.join(", ")}`
         );
-    if (z.voxelChunkNamen.length > 0)
+    if (z.voxelChunkNamen.length)
         v.push(
             `BODEN: ${z.voxelChunkNamen.length} \`voxelChunk:\`-Objekte im Szenen-Baum — ${z.voxelChunkNamen.slice(0, 4).join(", ")}`
         );
@@ -87,19 +87,19 @@ function urteil(z) {
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
     const fernSumme = Object.values(z.fern).reduce(addiere, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
-    if (z.pGruppen.length > 0)
+    if (z.pGruppen.length)
         v.push(
             `BAU: ${z.pGruppen.length} Instanz-Gruppen mit \`@p:\` im Schlüssel — ${z.pGruppen.slice(0, 4).join(", ")}`
         );
-    if (z.pBundles.length > 0)
+    if (z.pBundles.length)
         v.push(`BAU: ${z.pBundles.length} \`p:\`-Region-Bundles — ${z.pBundles.slice(0, 4).join(", ")}`);
     const bs = z.bauSatz || { selbst: [], ohneBereich: [] };
-    if (bs.selbst.length > 0)
+    if (bs.selbst.length)
         v.push(
             `BAU-SATZ: ${bs.selbst.length} Gruppen einer Satz-Art zeichnen selbst (Soll 0, der Satz ihres Stoffs) — ` +
                 bs.selbst.slice(0, 4).join(", ")
         );
-    if (bs.ohneBereich.length > 0)
+    if (bs.ohneBereich.length)
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
@@ -126,7 +126,7 @@ function urteil(z) {
     for (const f of z.vertexForm || [])
         if (SOLL[f.attr] && f.form !== SOLL[f.attr])
             v.push(`VERTEX-FORM: ${f.satz} ${f.attr} ${f.form} (Soll ${SOLL[f.attr]}) — ${f.mb} MB`);
-    if (z.vertexForm && z.vertexForm.length) {
+    if (z.vertexForm?.length) {
         const proVertex = z.vertexForm.reduce((a, f) => a + f.bytes, 0);
         if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
     }
@@ -227,7 +227,7 @@ function selbsttest() {
         },
     };
     const fehler = [];
-    if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
+    if (urteil(gruen).length) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         {
             name: "voxelChunk:0,0:lod0 direkt in der Szene",

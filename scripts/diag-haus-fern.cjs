@@ -37,7 +37,7 @@ const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
 const LOD = FC.PORTAL_RENDER_CONFIG.lod;
 const ARG = process.argv;
-const NUR = ARG.indexOf("--nur") >= 0 ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
+const NUR = ARG.includes("--nur") ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
 const ZEILEN = ARG.includes("--zeilen");
 
 // das Raster der Hülle (N5): jede Zahl der Liste liegt auf 2^-12 — der Abstand innen trägt ein Raster-Korn Spiel

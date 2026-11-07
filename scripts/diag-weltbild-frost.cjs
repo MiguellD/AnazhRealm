@@ -298,8 +298,7 @@ hauptLauf(async () => {
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
                 if (
-                    st &&
-                    st.rendererReady &&
+                    st?.rendererReady &&
                     st.playerMesh &&
                     !st._deferredAvatarSoul &&
                     st.voxelChunks &&
@@ -312,7 +311,7 @@ hauptLauf(async () => {
             const rend = r && st && st.renderer;
             return {
                 bereit: !!(r && st.rendererReady),
-                webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
+                webgpu: !!(rend?.backend && rend.backend.isWebGPUBackend === true),
                 chunks: r && st.voxelChunks ? st.voxelChunks.size : -1,
                 weltbild: r && st._weltbildDa ? `${(st._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
                 warm: !!(r && st._leibWarm),
@@ -529,7 +528,7 @@ hauptLauf(async () => {
     await schritt("werkstatt-eiche", async () => {
         const wahl = await page.evaluate(() => {
             r.toggleDrawer("werkstatt");
-            if (st.blueprints && st.blueprints.baum_eiche)
+            if (st.blueprints?.baum_eiche)
                 return r.selectBlueprintForEdit("baum_eiche") ? "baum_eiche" : null;
             return null;
         });

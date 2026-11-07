@@ -167,7 +167,7 @@ function ofenMessen(page, opts) {
                     (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
                 return P.log.apply(this, arguments);
             };
-            const hatte = Object.prototype.hasOwnProperty.call(ws.studioOv, preset);
+            const hatte = Object.hasOwn(ws.studioOv, preset);
             const alt = ws.studioOv[preset];
             if (ov) ws.studioOv[preset] = ov;
             else delete ws.studioOv[preset];
@@ -266,7 +266,7 @@ function ofenMessen(page, opts) {
                 aus.zeilen.push(...zeilen);
             }
         } finally {
-            if (Object.prototype.hasOwnProperty.call(r, "_studioPraegung")) delete r._studioPraegung;
+            if (Object.hasOwn(r, "_studioPraegung")) delete r._studioPraegung;
             B.koerper = altBaecker;
         }
         return aus;
@@ -928,7 +928,7 @@ hauptLauf(async () => {
     const budget = Object.assign(
         {},
         m.stufen.bruch,
-        ...m.zeilen.filter((z) => z.budget && z.budget.length).map((z) => ({ [name(z)]: z.budget }))
+        ...m.zeilen.filter((z) => z.budget?.length).map((z) => ({ [name(z)]: z.budget }))
     );
     console.log(
         `STUFEN (B2c, pipeline.K3): ${m.stufen.builds} Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget ${Object.keys(budget).length} · Reduktion je Art ${Object.entries(

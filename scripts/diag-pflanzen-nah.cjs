@@ -84,7 +84,7 @@ const u32 = (b64) => {
 };
 function teile(meshes) {
     return (meshes || [])
-        .filter((m) => m.attrs && m.attrs.position)
+        .filter((m) => m.attrs?.position)
         .map((m) => ({
             kind: m.kind,
             pos: f32(m.attrs.position.b64),
@@ -226,7 +226,7 @@ const KLINGE = 15;
 function bluetenUrteil(fall, T) {
     const t = T.find((x) => x.kind === "foliage");
     const r = [];
-    if (t && t.col && t.uv) {
+    if (t?.col && t.uv) {
         const uv = t.uv,
             n = uv.length / 2;
         for (let k = 0; k + 2 * KLINGE <= n; k++) {
@@ -685,7 +685,7 @@ function kornReihe(mips, zBasis) {
     };
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
     return (lambda) => {
-        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
         const l = Math.max(0, lambda - versatz),
             l0 = Math.min(mips.length - 1, Math.floor(l)),
             l1 = Math.min(mips.length - 1, l0 + 1),
@@ -762,7 +762,7 @@ function farbKornReihe(mips, zBasis) {
         return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
     };
     return (lambda, oktave) => {
-        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
         const pixel = (px, py) => {
             let s = 0;
             for (const [hx, hy] of KORN_HALTON) {

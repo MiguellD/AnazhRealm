@@ -313,7 +313,7 @@ function himmelProbe(o) {
     const pm = st.playerMesh.position;
     const wesen =
         r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "wesen") ||
-        (st.creatures || []).find((c) => c && c.userData);
+        (st.creatures || []).find((c) => c?.userData);
     if (wesen && !wesen.userData.name) wesen.userData.name = "Wache-Wesen";
     aus.wesen = wesen ? wesen.userData.name : null;
     let wesenWort = null;

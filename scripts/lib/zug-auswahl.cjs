@@ -583,7 +583,7 @@ function wirkungen(basis, kopf, karte, diff = null) {
     }
     return W;
 }
-// Die Wahl ist rein (Karte · Wirkungen → Schritte), die Linse (gate:ci-deckung, Z) prüft sie gegen ihr eigenes Orakel
+// Die Wahl ist rein (Karte · Wirkungen → Schritte), die Linse (gate:ci-deckung, L) prüft sie gegen ihr eigenes Orakel
 function karteIndex(karte) {
     if (karte.__idx) return karte.__idx;
     const idx = new Map();

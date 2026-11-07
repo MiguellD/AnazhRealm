@@ -403,7 +403,7 @@ function tafelTabelle(u) {
                 lpad(zahl(k.ratsche) ? k.ratsche.toFixed(3) : "–", 9) +
                 "  " +
                 pad(k.imSoll ? "ja" : "nein", 5) +
-                ` ${k.ist && k.ist.ausgabe ? k.ist.ausgabe.join("/") : "–"}`
+                ` ${k.ist?.ausgabe ? k.ist.ausgabe.join("/") : "–"}`
         );
     z.push("");
     for (const r of u.rot) z.push(`  [${r.art}] ${r.text}`);
@@ -460,7 +460,7 @@ function laborAlbedo(o) {
                 .map(([n, a]) => [g(n), a])
                 .filter(([m]) => m)
         );
-        const artOf = (m) => ARTEN.get(m) || (m && m.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
+        const artOf = (m) => ARTEN.get(m) || (m?.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
         const stoffOf = (m) => ({
             kind: artOf(m),
             r: m.roughness,

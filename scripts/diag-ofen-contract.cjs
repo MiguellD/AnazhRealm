@@ -150,8 +150,7 @@ function taeterStoff(sb, c, g) {
     if (c.art !== "wolf" || c.lod !== 0) return;
     g.traverse((o) => {
         if (
-            o.material &&
-            o.material.userData &&
+            o.material?.userData &&
             o.material.userData.__klasse === "zahn" &&
             o.userData.__assetJoint === "headGroup"
         ) {
@@ -177,7 +176,7 @@ function ofenStart(eingriff) {
     sb.OffscreenCanvas = function (w, h) {
         this.width = w;
         this.height = h;
-        this.getContext = (_art, o) => (gpu.push(!(o && o.willReadFrequently)), {
+        this.getContext = (_art, o) => (gpu.push(!(o?.willReadFrequently)), {
             createImageData: (iw, ih) => ({ data: new Uint8ClampedArray(iw * ih * 4) }),
             putImageData: (img) => (bild = img.data),
         });
@@ -245,8 +244,7 @@ function taeterRinde(sb) {
     check(
         "Ofen geladen (BAKERS_BY_KIND.kreatur + .koerper, __tetrapodaCore + __koerperCore)",
         !!(
-            sb.BAKERS_BY_KIND &&
-            sb.BAKERS_BY_KIND.kreatur &&
+            sb.BAKERS_BY_KIND?.kreatur &&
             sb.BAKERS_BY_KIND.koerper &&
             sb.__tetrapodaCore &&
             sb.__koerperCore

@@ -99,7 +99,7 @@ hauptLauf(async () => {
         // ===== D (dazu): Idempotenz + Probe-Preset =====
         try {
             // Injektion == der Schoepfer legt ein Preset im Kern an
-            if (f && f.recipes) {
+            if (f?.recipes) {
                 f.recipes.probemobil = { kind: "vehicle", lab: "Probemobil", s: {}, fx: {} };
                 const n1 = r._foundryAutoRegisterSpecies(f.recipes);
                 const n2 = r._foundryAutoRegisterSpecies(f.recipes);
