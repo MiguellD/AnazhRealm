@@ -1,5 +1,5 @@
 {
- "quelle": "der Richter der Zug-Auswahl (scripts/lib/zug-auswahl.cjs --geschichte): je deterministisch roter Schritt der Züge z280–z299 sein Täter-Zweig [Zug, Zweig, Schritt-Anfang]; Belege und Wackler im Commit der Abgabe w22-zug-auswahl",
+ "quelle": "der Richter der Zug-Auswahl (scripts/lib/zug-auswahl.cjs --geschichte): je deterministisch roter Schritt der Züge z280–z299 sein Täter-Zweig [Zug, Zweig, Schritt-Anfang]; Belege: die Job-Logs der Läufe auf integ-probe und die Notizen im Zweig koordination (cloud-post, FUND-REGISTER)",
  "zeiten_lauf": 42393703986,
  "basis": "5fb21e29",
  "zuege": [
