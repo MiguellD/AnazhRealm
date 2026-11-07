@@ -568,7 +568,7 @@ function erstRuhe(frame, opt, wer) {
             stand = "";
         // der Grund einer Absage: die letzten Meldungen des Übersetzers und der Pipeline in der GPU-Wache (`_gpuWacheMeldung`)
         const grund = () => {
-            const m = ((r._gpuWache || {}).meldungen || []).filter(
+            const m = (r._gpuWache?.meldungen || []).filter(
                 (x) => x.quelle === "three" || x.quelle === "pipeline"
             );
             return m.length
@@ -653,11 +653,13 @@ function abnahmeMessen(opt) {
         const y = Number.isFinite(q.fussY) ? q.fussY : Number.isFinite(g) && q.y - g > 0.6 && q.y - g <= 40 ? g + 0.3 : NaN;
         return (q.fuss === false || !Number.isFinite(y) ? [] : [[q.x, y, q.z]]).concat(q.punkte || []);
     };
-    // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft.
+    // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft. Die
+    // Blick-Wahl fragt je Pose zuerst das Ziel allein (`o.nurZiel`): ohne die Strahlen der Nah-Deckung, `sicht` bleibt ungemessen.
     const nd =
         o.satz === "messung"
             ? { deckung: null, taeter: null, ziel: null }
             : window.__nahDeckung({
+                  nurZiel: o.nurZiel,
                   radien: { Laub: RADIUS, Rinde: RADIUS, Fels: RADIUS, Gelände: RADIUS, Bau: RADIUS / 2 },
                   ueber: { Gelände: E.y - 1 },
                   gw: 48,
@@ -670,7 +672,7 @@ function abnahmeMessen(opt) {
     // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
     // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
     let vorn = null;
-    if (z && nd.ziel) {
+    if (z && nd.ziel && !o.nurZiel) {
         const V = Math.max(RADIUS, Math.min(8, nd.ziel.abstand / 2));
         const v = window.__nahDeckung({
             radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V },
@@ -686,7 +688,7 @@ function abnahmeMessen(opt) {
     const rend = st.renderer;
     const be = rend?.backend;
     const db =
-        rend && typeof rend.getDrawingBufferSize === "function" ? rend.getDrawingBufferSize(new T.Vector2()) : null;
+        rend?.getDrawingBufferSize?.(new T.Vector2());
     const dir = cam.getWorldDirection(new T.Vector3());
     const werk = (id) => (st.architectures || []).find((q) => q?.id === id);
     return {
@@ -736,15 +738,20 @@ function nahFolgt() {
 // um den Ort — der Abstand zum Ziel und die Augenhöhe über dem Boden bleiben, der Azimut dreht 0, ±15° … ±90°, ±135°, 180°,
 // je Runde von 14 Posen vier Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
-// Abnahme nach dem Schuss wirft beim Namen. JEDE POSE IN IHRER WELT (w18-abnahme-sicht): eine Pose, die im Augenblick frei ist, steht
-// erst, wenn sie es auch in IHRER Welt bleibt — unter der Bühne wartet die Wahl, bis die Welt an ihr steht (`__weltStehtWarten`), die
-// Nah-Sätze folgen ihr, und das Urteil fällt dort neu: dieselbe Welt, die der Schuss danach zeichnet (die Wartezeit, die sonst sein
-// Einschwingen zahlt); was schon im Augenblick verdeckt ist, fällt ohne Warten. Bis dahin urteilte sie in der Welt der vorigen Pose:
-// siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, der Welt dort fehlten noch 130 Takte bis zum Stehen, und
-// der zweite Schuss fand die Tanne, die sie dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
-// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__zielMessen`), geurteilt wie der
-// Schuss (kamera-nah `o.ziel.tiefe`) — erst im Augenblick, dann in ihrer Welt. Bis dahin urteilte ein Strahl über die Dreiecke der
-// CPU: siedlung.K4#2 Radeon f3911ab9 Pose 6 im Wald, „frei 210,41 m“, am Ziel-Pixel zeigte das Bild die Karte einer Erle in 33,31 m.
+// Abnahme nach dem Schuss wirft beim Namen.
+// DIE REIHE (w18-abnahme-sicht-3): die genannte Pose zuerst, dann die übrigen nach ihrem Blick von oben — der Höhe des Auges über dem
+// Ziel je Meter Abstand (gehoben, vom Hügel): wer über Mauer und Wald schaut, kommt vor dem, der zwischen ihnen steht. Bis dahin lief
+// sie Runde um Runde, siedlung.K4#2 fand die freie Pose als 39. (Radeon f83813df, 16,5 s im Schritt BILD; die GTX riss dort 90 s); mit den
+// billigen Stufen unten Runde um Runde als 39. in 4,2 s (Radeon aa5aa11b), nach dem Blick von oben als 11. in 2,3 s (de48171f).
+// DIE STUFEN JE POSE, die billige zuerst: (1) das Ziel im Bild und gezeichnet (`nurZiel`, ohne Bild); (2) das Ziel frei im Augenblick, an
+// EINEM Bild des Loops (`__zielMessen` mit `nurZiel`: ohne die Strahlen der Nah-Deckung, das Bild ohne Boden-Schicht nur, wo etwas vor
+// dem Ziel steht); (3) die Nah-Deckung der CPU (Sicht, Vordergrund); (4) IN IHRER WELT: unter der Bühne wartet die Wahl, bis die Welt an
+// der Pose steht (`__weltStehtWarten`), und urteilt am Bild der Tiefe nach der Ruhe der Erst-Zeichnung (`opt.tiefe`) die ganze Abnahme
+// — dieselbe Welt, die der Schuss danach zeichnet. Was eine Stufe verwirft, kostet die nächste nicht. Bis dahin rechnete jede Pose
+// die Nah-Deckung bis zu dreimal und zwei Bilder samt Nah-Sätzen (`__nahFolgt`), auch wo das Ziel schon verdeckt war.
+// Bis w18-abnahme-sicht urteilte ein Strahl über die Dreiecke der CPU: siedlung.K4#2 Radeon f3911ab9 Pose 6 im Wald, „frei 210,41
+// m“, am Ziel-Pixel zeigte das Bild die Karte einer Erle in 33,31 m; Radeon fe57747a wählte Pose 6 in der Welt der vorigen Pose, der
+// Schuss fand dort die Tanne, die sie dann warf („Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
 async function blickWahl(opt) {
     const cam = st.camera;
     const z = opt.ziel;
@@ -756,39 +763,45 @@ async function blickWahl(opt) {
     const d0 = Math.max(0.5, Math.hypot(P0.x - z.x, P0.z - z.z));
     const a0 = Math.atan2(P0.z - z.z, P0.x - z.x);
     const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
-    const posen = [];
+    const reihe = [];
     for (let k = 0; k < n; k++) {
         const ring = Math.floor(k / winkel.length);
         const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
         const d = d0 * Math.pow(0.8, ring);
-        const x = z.x + Math.cos(a) * d,
-            zz = z.z + Math.sin(a) * d;
-        const g = boden(x, zz);
-        if (!Number.isFinite(g)) continue;
-        // vier Meter je Runde (w18-abnahme-sicht): seit das Bild urteilt, steht die Mauer des Orts vor seiner Mitte, wo der Strahl durch die
-        // Halme vor ihr sah (siedlung.K4#2 Radeon 233a7360: 42 Posen, ein Meter je Runde, keine frei)
-        cam.position.set(x, g + h0 + 4 * ring, zz);
+        const p = [z.x + Math.cos(a) * d, 0, z.z + Math.sin(a) * d];
+        p[1] = boden(p[0], p[2]) + h0 + 4 * ring;
+        if (Number.isFinite(p[1])) reihe.push({ k, p, oben: k ? (p[1] - z.y) / d : Infinity });
+    }
+    reihe.sort((a, b) => b.oben - a.oben);
+    const posen = [];
+    const ms = (t) => Math.round(performance.now() - t);
+    const t0 = performance.now();
+    let gewaehlt = null;
+    for (const { k, p } of reihe) {
+        const tk = performance.now();
+        cam.position.set(...p);
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
-        let m = window.__abnahmeMessen(opt);
-        const urteil = () => window.__abnahmeUrteil(m).rot.filter((q) => !q.feld.startsWith("bild."));
-        let rest = urteil().filter((q) => q.feld !== "ziel.frei");
-        // im Augenblick: EIN Bild des Loops an der Pose (ohne die Ruhe der Erst-Zeichnung) — was dort schon verdeckt ist, fällt ohne
-        // Warten; was frei ist, urteilt das ganze Bild der Tiefe, unter der Bühne in der Welt der Pose
-        if (!rest.length) (m = await window.__zielMessen(opt, (window.__nahFolgt(), window.__loopBild(), await window.__spiegelDaten()))), (rest = urteil()); // prettier-ignore
+        const nur = { ...opt, nurZiel: true };
+        let m = window.__abnahmeMessen(nur);
+        const urteil = (ohne) => window.__abnahmeUrteil(m).rot.filter((q) => !ohne.test(q.feld));
+        let rest = urteil(/^(bild|sicht)\.|^ziel\.frei/);
+        if (!rest.length) (m = await window.__zielMessen(nur, (window.__loopBild(), await window.__spiegelDaten()))), (rest = urteil(/^(bild|sicht)\./)); // prettier-ignore
+        if (!rest.length) (m = window.__abnahmeMessen(opt)), (rest = urteil(/^bild\.|^ziel\.frei/));
         if (!rest.length) {
             if (window.__buehneUhr) await window.__weltStehtWarten();
             await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true });
             m = await window.__zielMessen(opt, await window.__spiegelDaten());
-            rest = urteil();
+            rest = urteil(/^bild\./);
         }
-        posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
-        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
+        posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund), ms: ms(tk) });
+        if (!rest.length) {
+            gewaehlt = k;
+            break;
+        }
     }
-    cam.position.copy(P0);
-    cam.quaternion.copy(Q0);
-    cam.updateMatrixWorld(true);
-    return { versucht: posen.length, gewaehlt: null, posen };
+    if (gewaehlt == null) cam.position.copy(P0), cam.quaternion.copy(Q0), cam.updateMatrixWorld(true);
+    return { versucht: posen.length, gewaehlt, posen, ms: ms(t0) };
 }
 
 // DIE ABNAHME AM BILD (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): gemessen mit der Tiefe S des Bilds; zeigt S an einem Ziel-Punkt eine
@@ -834,7 +847,8 @@ function ausgabeAufnahme(W, H, warm, opt) {
         const weltTakte =
             window.__buehneUhr && opt?.satz !== "messung" ? await window.__weltStehtWarten() : null;
         // DIE BLICK-WAHL vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
-        const wahl = opt?.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
+        // (`opt.wahl` eine Zahl: die Wahl hier; ihr Ergebnis `{ posen, … }`: die Wahl lief schon, `werkbank bild` vor dem EINEN Schuss)
+        const wahl = opt?.wahl?.posen ? opt.wahl : opt?.ziel && opt.wahl > 0 ? await window.__blickWahl(opt) : null;
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
@@ -873,7 +887,8 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Aufnahme lag unter fremden Schatten (Radeon, Wiese: 0,069 statt 0,095), Stamm und Laub trugen ihn — zwei Aufnahmen
             // derselben Szene wichen in 1 786 078 Bytes ab, die zweite gleich der dritten
             const neubeginn = () => {
-                r._schattenAlleNeu();
+                // die Tiefe allein (`opt.tiefe`) trägt keinen Schatten
+                if (!opt?.tiefe) r._schattenAlleNeu();
                 if (window.__offen?.has("zitter")) return;
                 const tn = st.traaNode;
                 if (tn) {
