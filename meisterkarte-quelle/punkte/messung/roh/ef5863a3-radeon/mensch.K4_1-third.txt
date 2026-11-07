@@ -1,0 +1,116 @@
+{
+ "ms": 406,
+ "kamera": [
+  -286.16,
+  30.11,
+  -1047.39
+ ],
+ "hell": 58.3,
+ "kontrast": 6.36,
+ "dc": 39,
+ "dreiecke": 368685,
+ "klasse": {
+  "ausdruck": "^spieler:kopf/",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 92,
+  "toene": [
+   "spieler:kopf/auge=255/80/80",
+   "spieler:kopf/hair=80/255/80",
+   "spieler:kopf/haut=80/120/255",
+   "spieler:kopf/skin=255/220/60"
+  ],
+  "klassen": {
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.287,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 6.28,
+    "pixel": 138,
+    "luma": 75.25,
+    "kante": 0.2007,
+    "kr": 33,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/haut": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.163,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 9.83,
+    "pixel": 361,
+    "luma": 23.53,
+    "kante": 0.1779,
+    "kr": 76,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 1,
+    "nyquist": 0.1493,
+    "beta": 0.3407
+   }
+  },
+  "abstand": null,
+  "gesicht": {
+   "augeFrei": 1,
+   "lippeL": -15.27,
+   "lippeA": 13.86,
+   "hoehleL": -9.56,
+   "hoehleA": 10.79,
+   "haarDeckung": 1,
+   "weiss": 0.1297,
+   "proben": {
+    "iris": 116,
+    "irisSicht": 116,
+    "lippe": 25,
+    "hoehle": 7,
+    "wange": 81,
+    "kalotte": 311,
+    "haarPixel": 138
+   },
+   "zeilen": {
+    "auge": 529.9,
+    "mund": 538.7
+   },
+   "irisDecke": {}
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ef5863a3-radeon\\mensch.K4_1-third.maske.png"
+ },
+ "zeit": null,
+ "ist": "mensch-kopf → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 50.1 σ 32.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.211 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\ef5863a3-radeon\\mensch.K4_1-third.png",
+ "gesamtMs": 11873
+}
