@@ -22,7 +22,7 @@ async function checkBandHydrosphere({ page, check }) {
     });
     check(
         "K16: die Kachel-Erosion ist gefallen (kein _computeErosion, kein state.erosion, kein erosionDelta/erosionFuer)",
-        !!(erosionTot && erosionTot.tot)
+        !!(erosionTot?.tot)
     );
 
     // ### Der Hydrosphären-Atlas ###
@@ -102,7 +102,7 @@ async function checkBandHydrosphere({ page, check }) {
             !!h1.stats && oceanCells === h1.stats.seaCells && lakeFieldCells === h1.stats.lakeCells;
         // Determinismus — das Feld ist so deterministisch wie das Netz.
         out.waterFieldDeterministic =
-            !!(h2.water && h2.water.waterKind) &&
+            !!(h2.water?.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
         // das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel (der Leser löst die Kachel selbst
@@ -143,7 +143,7 @@ async function checkBandHydrosphere({ page, check }) {
     // Ziel-See-Level), und der Spieler schwimmt im See wie im Meer — Quelle ist `_waterLevelAt`.
     const voxelV943c2 = await safeEvaluate(page, async () => {
         const out = {};
-        out.hydroReady = !!(st.hydrosphere && st.hydrosphere.ready);
+        out.hydroReady = !!(st.hydrosphere?.ready);
         if (!out.hydroReady) return out;
         // _waterLevelAt: über einer GERENDERTEN See-Zelle → der See-Level, gemessen an der Kachel des See-Orts
         // (`__wasserOrt`); absorbierte Seen (level ≤ waterLevel+2) zählen nicht — die Meeres-Plane vertritt sie.
@@ -202,7 +202,7 @@ async function checkBandHydrosphere({ page, check }) {
     const voxelV943d = await safeEvaluate(page, async () => {
         const out = {};
         const hydro = st.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
+        out.hydroReady = !!(hydro?.ready);
         if (!out.hydroReady) return out;
         if (st.worldMeta) st.worldMeta.voxelEdits = [];
         // (2) den Carve-Index liest der Kern (gate:worker-dichte `--kern`)
@@ -351,7 +351,7 @@ async function checkBandHydrosphere({ page, check }) {
         const s = st.symphony;
         out.symphonyOn = !!s.enabled && !!s.umwelt;
         const hydro = st.hydrosphere;
-        out.hasHydro = !!(hydro && hydro.ready);
+        out.hasHydro = !!(hydro?.ready);
         if (out.symphonyOn && out.hasHydro && st.playerMesh) {
             const um = s.umwelt;
             const K = um.kern;
@@ -435,7 +435,7 @@ async function checkBandWelleC1WaterCells({ page, check }) {
         let testKey = null;
         let testEntry = null;
         for (const [key, entry] of st.voxelChunks.entries()) {
-            if (entry && entry.mesh && entry.waterCells) {
+            if (entry?.mesh && entry.waterCells) {
                 testKey = key;
                 testEntry = entry;
                 break;
@@ -510,7 +510,7 @@ async function checkBandWelleC1WaterCells({ page, check }) {
         // den aktuellen (Stempel-Drift).
         r._drainDirtyVoxelChunks();
         const refreshed = st.voxelChunks.get(testKey);
-        const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
+        const reference = refreshed?.waterCells ? refreshed.waterCells : testEntry.waterCells;
         const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, 0);
         out.secondLen = second.length;
         let driftCount = 0;
@@ -632,7 +632,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
         let bergseeCellsFound = false;
         let bergseeCheckable = false;
         const hydro = st.hydrosphere;
-        if (hydro && hydro.ready && hydro.water && hydro.water.waterKind) {
+        if (hydro?.ready && hydro.water && hydro.water.waterKind) {
             // Suche eine Lake-Cell mit waterY > wlGlobal + 1 (klarer Bergsee)
             const wK = hydro.water.waterKind;
             const wY = hydro.water.waterY;
@@ -1167,7 +1167,7 @@ async function checkBandWelleV11D2WaterBias({ page, check }) {
         const origX = creature.position.x;
         const origY = creature.position.y;
         const origZ = creature.position.z;
-        const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
+        const origTask = creature.userData?.task ? { ...creature.userData.task } : null;
 
         // Teleportiere die Kreatur in die Wasser-Spalte, auf Höhe des See-
         // Bodens (was die Welt heute machen würde, ohne D.2). Direkt am
@@ -1407,7 +1407,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
 // geleerte Spalte · F7 das Netz trägt seine Bytes; der Selbsttest an der Naht der Welt (F4 · F5 · F7), nie am Quelltext.
 async function checkBandWasserWahrheit({ page, check }) {
     await safeEvaluate(page, async () => {
-        await __weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
+        await __weltDa((r) => !!(r.state.hydrosphere?.ready));
     });
     const out = (await safeEvaluate(page, async () => {
         const AR = AnazhRealm;
@@ -1507,7 +1507,7 @@ async function checkBandWasserWahrheit({ page, check }) {
             const h = r._hydroFor(rx * kachel, rz * kachel);
             if (!h || gesehen.has(h)) continue;
             gesehen.add(h);
-            if (h && h.ready && h.water && h.water.waterKind) {
+            if (h?.ready && h.water && h.water.waterKind) {
                 const wK = h.water.waterKind;
                 // der Spiegel der Zelle, der Leser des Kerns (`koerperY`): der See trägt den Pegel seines Laufs (wetter.K3)
                 const wY = Array.from(wK, (_, i) => window.__gelaendeCore.koerperY(r._gelaende(), h, i));
@@ -1550,7 +1550,7 @@ async function checkBandWasserWahrheit({ page, check }) {
         let core = null;
         {
             const h = r._hydroFor(0, 0);
-            if (h && h.ready && h.water && h.water.waterKind) {
+            if (h?.ready && h.water && h.water.waterKind) {
                 const wK = h.water.waterKind;
                 const hd = h.dim;
                 const bodyNear = (x, z) => {

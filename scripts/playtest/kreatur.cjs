@@ -1311,7 +1311,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         const toolBp = "test_tool_bp_p2f2";
         if (r.cloneBlueprint("stein_block", toolBp)) {
             const meta = r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive");
-            const reg = meta && meta.ok ? r.registerBlueprintAsTool(toolBp) : null;
+            const reg = meta?.ok ? r.registerBlueprintAsTool(toolBp) : null;
             if (reg?.ok) {
                 // toolName === toolBp (Bauplan-Name)
                 r.equipCreatureTool(c2, toolBp);
@@ -1493,7 +1493,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         const tonicName = "test_tonic_p2f3";
         if (r.cloneBlueprint("stein_block", tonicName)) {
             const meta = r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2);
-            out.consumableMarkOk = !!(meta && meta.ok);
+            out.consumableMarkOk = !!(meta?.ok);
             // Trank-Compound-Tags lesen (kontrolle)
             const tonicTags = r.computeCompoundTags(st.blueprints[tonicName]);
             out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
@@ -1738,7 +1738,7 @@ async function checkBandV18208CreatureSizeSymmetry({ page, check }) {
                 globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
             null;
         const speedBaseC =
-            bewGesetzC && bewGesetzC.speed && Number.isFinite(bewGesetzC.speed.base) ? bewGesetzC.speed.base : 7;
+            bewGesetzC?.speed && Number.isFinite(bewGesetzC.speed.base) ? bewGesetzC.speed.base : 7;
         const speedFloorC = (2 / 7) * speedBaseC;
         out.speedFloor = speedFloorC;
         out.allSpeedAtFloor = Object.values(stats).every((s) => s.speed >= speedFloorC - 1e-9);
