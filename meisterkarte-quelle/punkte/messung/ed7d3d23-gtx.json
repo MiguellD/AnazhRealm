@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T02:54:35.204Z",
+ "zeit": "2026-11-07T02:59:43.488Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K2#1": {
@@ -42,6 +42,19 @@
    "s": 6.3,
    "zeit": "2026-11-07T02:54:35.204Z",
    "abdruck": "f348340da034",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.986/karte 0.997 · fichte@0.5 l1 0.997/karte 0.996 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.986/karte 0.997 · fichte@0.27 l1 0.997/karte 0.996 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.69,
+   "gpu": "nvidia/pascal",
+   "s": 41.3,
+   "zeit": "2026-11-07T02:59:43.488Z",
+   "abdruck": "25872cfe0387",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -379,19 +392,6 @@
    "zwilling": "ankunft.K2#1",
    "modus": "session"
   },
-  "material.K3#2": {
-   "gruen": false,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "exit": null,
-   "minuten": 0,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "ungemessen": true,
-   "zeit": "2026-11-07T01:20:13.151Z",
-   "abdruck": "25872cfe0387",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "leib.K1#2": {
    "gruen": false,
    "ungemessen": true,
@@ -421,41 +421,47 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T02:53:57.487Z",
+  "start": "2026-11-07T02:59:10.402Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "material.K4#1",
-    "s": 29.6,
-    "takte": 847,
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 25.6,
+    "takte": 761,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 25,
-   "frameP95": 50.02,
-   "taktP95": 45.06,
-   "vramMax": 120.7,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 38,
+   "zapfen": 68,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 43.2,
-  "minuten": 0.79
+  "fahrtS": 73.6,
+  "minuten": 1.28
  }
 }
