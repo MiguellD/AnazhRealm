@@ -337,8 +337,9 @@ async function github() {
     for (const l of (daten("laeufer") || []).filter((l) => l.busy)) {
         const h = jobAuf(l.name);
         if (h) { if (h.run !== zr && istFaellig("jobs:" + h.run.id, 2 * API_S)) await jobsHolen(h.run); continue; }
-        const r = alleRuns().filter((r) => !jobsJe.has(r.id) || Date.now() - jobsJe.get(r.id).t > 5 * 60e3)[0];
-        if (r && istFaellig("such:" + l.name, API_S)) await jobsHolen(r);
+        // zuerst die Läufe eigener Workflows (GPU-Probe, Punkte-Farm …): sie tragen die eigenen Läufer, Code-Check-Zweige nur die echt-Jobs
+        const kand = alleRuns().filter((r) => !jobsJe.has(r.id) || Date.now() - jobsJe.get(r.id).t > 5 * 60e3).sort((a, b) => (a.path === b.path ? 0 : /check.yml$/.test(a.path) ? 1 : -1));
+        if (istFaellig("such:" + l.name, API_S)) for (const r of kand.slice(0, EINMAL ? 3 : 1)) { await jobsHolen(r); if (jobAuf(l.name)) break; }
     }
     for (const id of [...jobsJe.keys()]) if (!alleRuns().some((r) => r.id === id)) jobsJe.delete(id);
     // 5 punkte-maschine, koordination, main: nur wenn der Kopf sich bewegte (Commit-Liste je SHA einmal, Dateien roh)
@@ -374,6 +375,7 @@ function messCommits() {
         headless: c.filter((x) => /^Farm headless/.test(x.titel)),
     };
 }
+const wfName = (r) => String(r.name || "").split(" ")[0]; // der Workflow ohne seinen Lauf-Titel (GPU-Probe <zweig> <sha40>)
 const laeufe = (n) => `${n} ${n === 1 ? "Lauf" : "Läufe"}`;
 function laeuferZeile(l) {
     if (!l) return TOKEN ? grau("Läufer unbekannt") : grau("Läufer ohne Token nicht lesbar");
@@ -412,6 +414,7 @@ function seite() {
     const messLauf = (L.mess || []).find((m) => !m.ende && Date.now() - m.t < 30 * 60e3);
     const radeonTeile = [];
     if (jR) radeonTeile.push(`Job ${jobText(jR)}`);
+    else if (lR && lR.busy) radeonTeile.push("Läufer belegt (Job noch nicht gefunden)");
     if (messLauf) radeonTeile.push(`misst ${messLauf.zug} ${s8(messLauf.sha)} ${messLauf.gruen.length + messLauf.rot.length + messLauf.offen.length}/${messLauf.plan || "?"} seit ${hhmm(messLauf.start)}`);
     else if (punkteR.length || sperre) radeonTeile.push(`punkte.cjs${punkteR[0] ? " " + s8((/--sha\s+(\w+)/.exec(punkteR[0].c) || [])[1]) : ""}${sperre ? " (Sperre pid " + sperre.pid + " seit " + hhmm(sperre.seit) + ")" : ""}`);
     if (L.schloss) radeonTeile.push(`Schloss ${L.schloss.wer} seit ${hhmm(L.schloss.seit)}`);
@@ -438,11 +441,11 @@ function seite() {
         const warten = js.filter((j) => j.status === "queued" && j.labels.includes("self-hosted")).map((j) => gelb(`${j.name.replace(/\s*\(.*\)$/, "")} wartet auf [${j.labels.filter((x) => x !== "self-hosted").join(",")}]`));
         const gh = js.filter((j) => j.status === "in_progress" && !j.labels.includes("self-hosted")).length;
         return [`${spalte(r.head_branch, 18)} ${grau(s8(r.head_sha))} ${fortschritt(r)}`, ...eigen, ...warten, gh ? `${gh} auf GitHub` : "",
-            `seit ${hhmm(r.run_started_at || r.created_at)}${r.run_attempt > 1 ? " V" + r.run_attempt : ""}${r.name !== "Code-Check" ? " " + grau(r.name) : ""}`].filter(Boolean).join(" · ");
+            `seit ${hhmm(r.run_started_at || r.created_at)}${r.run_attempt > 1 ? " V" + r.run_attempt : ""}${r.name !== "Code-Check" ? " " + grau(wfName(r)) : ""}`].filter(Boolean).join(" · ");
     };
     const ghZ = !TOKEN ? ["grau", grau("ohne Token: Läufer und Jobs ausgelassen")] : !Q.runs ? ["grau", grau("nicht gelesen")]
         : [runs.some((r) => ((jobsJe.get(r.id) || {}).jobs || []).some((j) => j.conclusion === "failure")) ? "rot" : runs.length ? "gelb" : "gruen",
-            [laeufe(runs.length), zr ? `Zug ${s8(zr.head_sha)} ${fortschritt(zr)}` : "", runs.filter((r) => r !== zr).map((r) => `${r.head_branch}${r.name !== "Code-Check" ? "/" + r.name : ""} ${fortschritt(r)}`).slice(0, 3).join(", ")].filter(Boolean).join(" · ")];
+            [laeufe(runs.length), zr ? `Zug ${s8(zr.head_sha)} ${fortschritt(zr)}` : "", runs.filter((r) => r !== zr).map((r) => `${r.head_branch}${r.name !== "Code-Check" ? "/" + wfName(r) : ""} ${fortschritt(r)}`).slice(0, 3).join(", ")].filter(Boolean).join(" · ")];
 
     // ZUG: Reihenfolge
     const zweigeKurz = (z) => (z.length ? `[${z.join(" ")}]` : "");
