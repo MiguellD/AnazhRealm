@@ -244,3 +244,4 @@ omen-gtx-notbremse-95ba6fd6 RUHT 07.11. 16:05: letzte Mess-Datei punkte-maschine
 omen-gtx-z296-allein-1-185e99bb GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN siedlung.K4#2 (punkte-maschine 8a4b6b7e messung/185e99bb-gtx.json)
 omen-gtx-z296-liste-1-185e99bb ROT 4 GRÜN / 1 ROT / 4 UNGEMESSEN · ROT lod.K2#1 · UNGEMESSEN siedlung.K2#1 siedlung.K1#2 material.K1#1 material.K1#2 · GRÜN vegetation.K5#2 gelaende.K3#1 halten.K1#2 wetter.K2#1 (punkte-maschine 49d2bce6 messung/185e99bb-gtx.json)
 omen-gtx-z296-l-1-185e99bb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN lod.K1#1 (punkte-maschine 21d0d138 messung/185e99bb-gtx.json)
+omen-gtx-z298-liste-1-2f70c000 UNGEMESSEN 2 GRÜN / 0 ROT / 3 UNGEMESSEN · UNGEMESSEN material.K1#1 material.K1#2 halten.K1#2 · GRÜN material.K4#1 gelaende.K3#1 (punkte-maschine 1ee3189b messung/2f70c000-gtx.json)
