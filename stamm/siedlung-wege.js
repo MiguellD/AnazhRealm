@@ -33,12 +33,12 @@ class AnazhRealm_siedlung_wege {
         // `nul`: das Byte der leeren Karte — die Wege-Karte trägt je Kanal zwei Belage mit Vorzeichen um `WEGE_KARTE.null`
         // (`WEGE_KARTE.belag`, nie snorm wie im Rausch-Atlas: r184 legt jede Daten-Textur auch als Render-Ziel an, rg8snorm ist
         // das nur mit texture-formats-tier1 — swiftshader fehlt es, die Textur wäre ungültig und der Boden-Stoff bände nichts)
-        const karte = (n, kanaele, format, name, nul = 0) => {
+        const karte = (n, kanaele, format, name, nul = 0, schichten = W.stufen.length) => {
             const tex = new THREE.DataArrayTexture(
-                new Uint8Array(n * n * kanaele * W.stufen.length).fill(nul),
+                new Uint8Array(n * n * kanaele * schichten).fill(nul),
                 n,
                 n,
-                W.stufen.length
+                schichten
             );
             tex.format = format;
             tex.type = THREE.UnsignedByteType;
@@ -55,8 +55,10 @@ class AnazhRealm_siedlung_wege {
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
         const wege = karte(N, 2, THREE.RGFormat, "wege-karte", W.null);
         // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
-        // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff.
-        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu");
+        // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff. Hinter den Stufen trägt sie
+        // eine Schicht im selben Raster: DIE NEIGUNG DES GESETZES für den Fern-Ring (`_fernNeigungTakt`, R/G die Normale x/z) —
+        // der Ring-Stoff trägt 16 von 16 Texturen, eine eigene Karte bände er nie (WebGPU 16 je Stufe, WebGL2 16 Einheiten).
+        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu", 0, W.stufen.length + 1);
         const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
         const stufen = W.stufen.map((S, si) => {
             const daten = wege.schicht(si);
@@ -90,6 +92,8 @@ class AnazhRealm_siedlung_wege {
         // `raeumen`: die neuen Flächen, deren schon gewachsene Natur der Takt räumt (`_wegeRaeumen`, K52).
         st.wegeKarte = {
             stufen,
+            // die Schicht der Neigung (`_fernNeigungTakt` schreibt sie, `_fernNeigungNormale` liest sie)
+            neigung: { N: kN, tex: streu.tex, schicht: W.stufen.length, daten: streu.schicht(W.stufen.length) },
             siedlungen: [],
             raeumen: [],
             kronen: new Map(),

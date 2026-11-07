@@ -499,14 +499,14 @@ hauptLauf(async () => {
     }
     if (kipp.length) { console.error("⛔ BÜHNE GEKIPPT: die Welt der Messung driftete — " + kipp.join(" · ")); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
-    if (regen.spur && regen.spur.length) {
+    if (regen.spur?.length) {
         console.log("  Compiles im Env-Fenster (Aufrufer):");
         for (const z of regen.spur) console.log("    · " + z.replace(/https?:\/\/127\.0\.0\.1:\d+\//g, "").slice(0, 400));
     }
     console.log(`  Backend: ${setup.backend}  ·  Schlüssel-Warmup: ${setup.scheiben} Aufrufe  ·  längster Aufruf ${Math.round(setup.maxRuf.ms / 1000)} s (Frist 300 s): ${setup.maxRuf.name}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}`);
     console.log(`  Schwerste Erst-Compiles (Schlüssel · Zeit/Programme): ${(setup.schwer || []).join(" · ") || "—"}\n`);
     // ein Schlüssel, dessen Objekte im Warmup nie zeichneten (die Erst-Zeichnung verschob oder wartete weiter): beim Namen
-    if (setup.nieWarm && setup.nieWarm.length) { console.error("⛔ ERST-ZEICHNUNG IM WARMUP NIE GEZEICHNET: " + setup.nieWarm.join(" · ")); process.exit(1); }
+    if (setup.nieWarm?.length) { console.error("⛔ ERST-ZEICHNUNG IM WARMUP NIE GEZEICHNET: " + setup.nieWarm.join(" · ")); process.exit(1); }
     // ohne Ruhe misst der Leerlauf den Warmup, nicht den Leerlauf: rot, mit dem, was nicht zur Ruhe kam
     if (!setup.ruhe) { console.error("⛔ RUHE NIE ERREICHT (8 Bilder ohne Compile und ohne Arbeit der Erst-Zeichnung): " + (setup.ruheBefund || "kein unruhiges Bild gelesen")); process.exit(1); }
     const idleOk = idle.wdh <= IDLE_THRESHOLD && idle.gesamt <= KASKADE;

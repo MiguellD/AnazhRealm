@@ -393,7 +393,7 @@ function playtestUrteil(docs, skripte) {
     const v = [];
     const ziel = aufloesen(`npm run ${PLAYTEST}`, skripte).map((t) => t.t);
     const traeger = ciSchritte(docs, skripte).filter(
-        (s) => s.erreicht.has(PLAYTEST) || (ziel.length > 0 && ziel.every((t) => s.teile.some((x) => x.t === t)))
+        (s) => s.erreicht.has(PLAYTEST) || (ziel.length && ziel.every((t) => s.teile.some((x) => x.t === t)))
     );
     const wo = (s) =>
         `„${s.name}" (${s.datei}/${s.job}${gruppeVon(s.schritt) ? " Gruppe " + gruppeVon(s.schritt) : ""})`;
@@ -1572,12 +1572,12 @@ function hauptlauf() {
                 : "") +
             ` · ohne Workflow ${g.zahl.offen}`
     );
-    if (w.alt && w.alt.length)
+    if (w.alt?.length)
         console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
     console.log(
         `  Waage (Plan = Gewicht samt Vorbereitung — Puls Median, voll p90 —, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`
     );
-    if (w.gross && w.gross.length)
+    if (w.gross?.length)
         console.log(
             `  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`
         );

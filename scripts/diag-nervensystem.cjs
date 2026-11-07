@@ -403,7 +403,7 @@ hauptLauf(async () => {
     console.log("\n=== S: DER STAMMBAUM DER TEILE ===");
     for (const [id, lab, q, ziel, konsum] of baum) {
         const z = q && q.datei && zeileIn(q.datei, q.anker, lab);
-        if (q && q.datei && !z) ohne.push(`${q.datei} ${q.anker}`);
+        if (q?.datei && !z) ohne.push(`${q.datei} ${q.anker}`);
         console.log(
             `  ${id} „${lab}" ${z ? `[${q.datei}:${z}]` : ""} ${ziel ? `→ ${ziel} · ${konsum}` : konsum || ""}`
         );

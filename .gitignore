@@ -1,7 +1,15 @@
 node_modules/
 .DS_Store
 *.log
-artifacts/
+# artifacts/ ist Ausgabe (Bilder, Messungen, Werkzeug-Reste) — verfolgt wird darin NUR der Messplatz-Blick des Koordinators (EINE Quelle,
+# landet per Zug, überlebt jeden Kontowechsel); git steigt nur in einen nicht ausgeschlossenen Ordner, darum Stufe für Stufe
+artifacts/*
+!artifacts/profiband/
+artifacts/profiband/*
+!artifacts/profiband/werkzeug/
+artifacts/profiband/werkzeug/*
+!artifacts/profiband/werkzeug/messplatz-blick.cjs
+!artifacts/profiband/werkzeug/messplatz-blick.sh
 
 # Runtime-Save-Artefakt vom save-server. Wird bei jedem saveState neu
 # geschrieben (write-only via fs.writeFile in save-server.js), die App

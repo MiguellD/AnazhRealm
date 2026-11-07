@@ -115,7 +115,7 @@ const LAUF = (k) => {
         const v = k.vh * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1));
         const satz = k.satz && r._tierSatzFuer(cr);
         if (satz && !satz.fertig) r._tierSatzBacken(satz, 1e6);
-        if (k.satz && !(satz && satz.fertig)) return { fehler: "kein Satz für " + k.seele };
+        if (k.satz && !(satz?.fertig)) return { fehler: "kein Satz für " + k.seele };
         const S = satz && satz.satz;
         // je Pfote ihr Platz im Knochen-Puffer und ihre Vorlage; die Ecke in der Zeile z (drei Texel je Knochen: die Zeilen
         // der affinen Matrix)

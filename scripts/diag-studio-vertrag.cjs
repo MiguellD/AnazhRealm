@@ -358,7 +358,7 @@ function validateManifest(m, kern) {
             }
             for (const st in B[k]) {
                 if (st === "fernform" || st === "hyst") continue; // Felder der Art (unten), keine Stufe
-                if (ks[k].indexOf(Number(st)) < 0) v.push(`B2c: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
+                if (!ks[k].includes(Number(st))) v.push(`B2c: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
             }
             // S3 (DARF, Art-Ebene): die Hysterese der Stufen-Grenze `ab` — 0 < hyst < 0,5 (fern erst jenseits (1+h)·ab,
             // zurück erst innerhalb (1−h)·ab; ab 0,5 läge die Rück-Kante bei der Hälfte der Grenze).
@@ -402,7 +402,7 @@ function validateManifest(m, kern) {
                 }
                 if (!(Number.isInteger(z.tris) && z.tris > 0)) zv(`.tris muss eine ganze Zahl > 0 sein`);
                 if (!(Number.isInteger(z.draws) && z.draws >= 1)) zv(`.draws muss eine ganze Zahl ≥ 1 sein`);
-                if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.indexOf(z.schatten) >= 0)))
+                if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.includes(z.schatten))))
                     zv(`.schatten muss eine deklarierte Stufe oder false sein`);
                 // Der Zwilling wirft selbst (der Host zieht ihn als Schatten-Gestalt; ein Kreis 0→1→0 liefe endlos).
                 else if (
@@ -519,7 +519,7 @@ function validateManifest(m, kern) {
                         if (
                             !Array.isArray(s) ||
                             !s.length ||
-                            s.some((x) => SEH_KLASSEN.indexOf(x) < 0) ||
+                            s.some((x) => !SEH_KLASSEN.includes(x)) ||
                             new Set(s).size !== s.length
                         )
                             zv(`.wurf.seh muss eine Teilmenge der Seh-Klassen sein`);

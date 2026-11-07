@@ -488,7 +488,7 @@ function urteil(S, Q) {
         rot.push(`(O) WELT: ${W.abweichungen} von ${W.bauplaene} Bauplänen urteilen anders — ${W.beispiel}`);
     if (S.hatGedaechtnis && W.gerechnetZweit)
         rot.push(`(O) WELT: die zweite Frage rechnete ${W.gerechnetZweit}× (soll 0×)`);
-    if (S.hatGedaechtnis && !(S.zaehne && S.zaehne.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
+    if (S.hatGedaechtnis && !(S.zaehne?.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
         rot.push(
             `(S) ZÄHNE: der Stoff wirkt nicht, ein Schlüssel ohne Stoffe fiel nicht auf, oder der echte Schlüssel urteilt danach anders (${JSON.stringify(S.zaehne)})`
         );

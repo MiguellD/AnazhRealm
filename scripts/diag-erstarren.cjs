@@ -182,21 +182,21 @@ const { errs, check } = pruefer();
                 p.x = heim.x + 250;
                 r._tickPortalMembranes(9004.0);
                 const recFern = reg ? reg.get(entry.id) : null;
-                const schlaeft = !!(recFern && recFern.mesh && recFern.mesh.visible === false);
+                const schlaeft = !!(recFern?.mesh && recFern.mesh.visible === false);
                 // 0910-4: der Schlaf verlässt den Graphen (der Kehraus nimmt die Puffer), das Erwachen kehrt zurück
-                const ausGraph = !!(recFern && recFern.mesh && recFern.mesh.parent === null);
+                const ausGraph = !!(recFern?.mesh && recFern.mesh.parent === null);
                 // zurück → Scan + Frame-Pass
                 p.x = heim.x;
                 r._tickPortalMembranes(9006.0);
                 const recZurueck = reg ? reg.get(entry.id) : null;
                 res.membran = {
-                    gebaut: !!(rec0 && rec0.mesh),
+                    gebaut: !!(rec0?.mesh),
                     bautenBeimBau: vorher,
                     eintragUeberlebtFerne: !!recFern,
                     fernSchlaf: schlaeft,
-                    wachZurueck: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.visible === true),
+                    wachZurueck: !!(recZurueck?.mesh && recZurueck.mesh.visible === true),
                     ausGraph,
-                    imGraph: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.parent === s.scene),
+                    imGraph: !!(recZurueck?.mesh && recZurueck.mesh.parent === s.scene),
                     bautenNachZyklus: membranBauten,
                     keinRecompile: membranBauten === vorher,
                 };

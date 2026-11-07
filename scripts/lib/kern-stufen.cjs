@@ -106,7 +106,7 @@ async function epsilonSeite(w) {
             e.hasMatColor = meshes.some((m) => m?.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
             const g = r._foundryBuildGroup(meshes);
             e.groupChildren = g?.children ? g.children.length : 0;
-            e.allHaveColor = !!g && g.children.every((ch) => !!ch.geometry?.attributes?.color);
+            e.allHaveColor = !!g && g.children.every((ch) => (ch.geometry?.attributes?.color));
             if (g) g.traverse((o) => o.isMesh && o.geometry && o.geometry.dispose()); // kein Leck in der Probe
         }
     } catch (x) {
