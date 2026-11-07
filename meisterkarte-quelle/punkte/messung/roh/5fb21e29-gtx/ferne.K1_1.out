@@ -70,6 +70,10 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
 })({"name":"ferne","schritte":[{"name":"genesis","args":["umstellen","--ort","genesis","--sicht","ego"],"muss":true},{"name":"band","args":["band","--ort","genesis","--datei","@DIR@/band.json"],"datei":"@DIR@/band.json"},{"name":"luft","args":["licht","--luft","--datei","@DIR@/luft.json"],"datei":"@DIR@/luft.json"}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\5fb21e29-gtx\ferne.K1_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm
   genesis · Exit 0
   band · Exit 1 · C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\5fb21e29-gtx\ferne.K1_1.json.d\band.json
+  luft · Exit 1 · ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+[linse-gpu] nvidia/pascal
+FOLGE ferne: 3 Schritte
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal
