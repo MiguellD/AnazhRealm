@@ -881,11 +881,13 @@ class AnazhRealm_vegetation_wiese {
     // Ecken-Farben). Jede Ecke trägt `aZahn` (ihre Spitze k, ihre Rolle: 0 Band, 1 Fuß links, 2 Fuß rechts, 3 Spitze). Der Stoff
     // streut je Spitze aus der Saat ihrer Karte (Element 3 und 11, `_wieseSchaleDaten`): die Höhe über dem Band 0,75–1,45 der
     // Vorlage (die Karte 0,7 m × 0,8–1,2: die Spitzen 0,5–0,9 m, die Halme der Nah-Wiese 0,48–1,0 m), die Neigung ±0,8
-    // Spitzen-Breiten und die Breite ihres Fußes 1,6–2,2 Spitzen-Breiten — die Spitzen überlappen, ihre Kerben liegen, wo zwei
-    // Nachbarn sich schneiden, in wechselnder Höhe über dem Band: keine Ober-Kante bleibt eine Linie. Er liest die Ordnung der Karte
+    // Spitzen-Breiten und die Breite ihres Fußes 1,05–1,35 Spitzen-Breiten — die Spitzen überlappen knapp, ihre Kerben liegen,
+    // wo zwei Nachbarn sich schneiden, in wechselnder Höhe über dem Band: keine Ober-Kante bleibt eine Linie. Die Streckung
+    // (`_wieseSchale`) rückt die Spitzen auseinander und verbreitert jede nur um ihre Wurzel (bis e7faf176 mit ihr: in 30–40 m
+    // breite Flocken statt Halme). Er liest die Ordnung der Karte
     // (Element 7) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der Halm der Ferne): sie steigt
     // über `rampe` m hinter der Übergabe, steht unter dem Anteil (`_wieseSchale`, im Band `rand` sinkt sie wie das Büschel) und
-    // ist um 1/Anteil breiter. null, solange die Vorlage fehlt.
+    // ist um 1/Anteil breiter (das Band ganz, die Spitzen in ihrem Abstand). null, solange die Vorlage fehlt.
     _wieseSchaleSenke(vl) {
         const nw = this.state.nahWiese;
         if (nw.schale || !vl || !vl.fern.length) return nw.schale || null;
@@ -935,16 +937,14 @@ class AnazhRealm_vegetation_wiese {
         const [hh, hl, hw] = [zahl(1, M.element(0).w), zahl(1, M.element(2).w), zahl(41, M.element(2).w)];
         const [links, rechts, spitz] = [T.step(0.5, z.y).sub(T.step(1.5, z.y)), T.step(1.5, z.y).sub(T.step(2.5, z.y)), T.step(2.5, z.y)]; // prettier-ignore
         const pl = T.positionLocal;
-        const x = pl.x.add(spitz.mul(hl.sub(0.5).mul(1.6 / 11))).add(
-            rechts.sub(links).mul(
-                hw
-                    .mul(0.6)
-                    .add(0.6)
-                    .mul(1 / 22)
-            )
-        );
+        // die Spitze k um ihre Mitte: die Streckung rückt die Mitten auseinander (× breit), die Spitze selbst wird nur um √breit
+        // breiter — sie bleibt von Halm-Breite; das Band trägt die volle Streckung
+        const mitte = z.x.add(0.5).div(11).sub(0.5);
+        const um = pl.x.sub(mitte).add(spitz.mul(hl.sub(0.5).mul(1.6 / 11))).add(rechts.sub(links).mul(hw.mul(0.3).add(0.05).mul(1 / 22))); // prettier-ignore
+        const zahnX = mitte.mul(g.breit).add(um.mul(g.breit.sqrt()));
+        const x = T.mix(pl.x.mul(g.breit), zahnX, T.step(0.5, z.y));
         const y = pl.y.add(spitz.mul(pl.y.sub(0.45).mul(hh.mul(0.7).sub(0.25))));
-        mat.positionNode = T.vec3(x.mul(g.breit), y.mul(v), pl.z);
+        mat.positionNode = T.vec3(x, y.mul(v), pl.z);
         const a = { key: "schale", name: "nahWiese:Lf:schale", geo, mat, lokal: new THREE.Matrix4(), leafKey: null, quelle: null, mesh: null, kap: 0, anzahl: 0, anders: false, wachse: 0 }; // prettier-ignore
         this._senkeMesh(a, 1024, this.state.scene);
         nw.senken.set(a.key, a);
