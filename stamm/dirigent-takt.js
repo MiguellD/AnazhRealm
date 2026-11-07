@@ -390,9 +390,22 @@ class AnazhRealm_dirigent_takt {
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
-        this._gameLoopTick = loop;
-        this._takt = loop; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
-        this.state.renderer.setAnimationLoop(loop);
+        // DER TAKT IST DER ORT DES PSO-VORBAUS (`_psoVorbau`): nur was ein Takt zeichnet, darf unter dem Ladeschirm auf seine
+        // Pipeline warten — der nächste Takt zeichnet es neu. Ein Leser außerhalb des Takts (eine Probe, `_himmelFrisch`, eine
+        // Aufnahme) zeichnet einmal und liest; ihm verschluckte der Vorbau den Draw still (w16-lade-atem an d3708675: das
+        // Wasser-Bild 0 Pixel, S0 ohne Lesung der Umgebung, die Frost-Wand 0,00 % der Blöcke).
+        const takt = (time) => {
+            const vor = this._imTakt;
+            this._imTakt = true;
+            try {
+                return loop(time);
+            } finally {
+                this._imTakt = vor;
+            }
+        };
+        this._gameLoopTick = takt;
+        this._takt = takt; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
+        this.state.renderer.setAnimationLoop(takt);
     }
 
     // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
@@ -1648,6 +1661,13 @@ class AnazhRealm_dirigent_takt {
     _ladeTakt() {
         const r = this.state.renderer;
         return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
+    }
+
+    // DER PSO-VORBAU GILT JETZT (w16-lade-atem, ankunft.K5): unter dem Ladeschirm UND im Takt des Loops (`_imTakt`) — ein Render
+    // außerhalb der Welt-Szene wartet dann auf seine Pipeline, statt sie synchron zu bauen; der nächste Takt zeichnet ihn neu.
+    // Wer außerhalb des Takts zeichnet, liest danach (Probe, `_himmelFrisch`, Aufnahme): er zeichnet ganz, wie vor dem Vorbau.
+    _psoVorbau() {
+        return this._imTakt === true && this._ladeTakt();
     }
 
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im

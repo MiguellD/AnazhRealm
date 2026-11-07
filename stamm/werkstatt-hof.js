@@ -1795,8 +1795,10 @@ class AnazhRealm_werkstatt_hof {
             },
             true
         );
-        // Initiales Render (leeres Inventar = leere Slots).
-        this.renderInventoryUI();
+        // KEIN BAU IM INIT (w16-lade-atem, ankunft.K5): die Habe und das Rezeptbuch baut, wer sie zeigt — der Vorbau der
+        // Bedienung nach dem Bild bei ruhender Eingabe (`_uiVorbau`) oder die erste Scheibe des Ich (`_ichScheiben`). Bis hier
+        // baute der Init sie verborgen unter dem Ladeschirm (headless kalt 201 ms im Init-Task, das Rezeptbuch mit seinen
+        // Bauplan-Analysen), und beide Zeiger bauten sie danach noch einmal.
     }
 
     // === Drag&Drop Inventar ↔ Hotbar ===
