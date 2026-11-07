@@ -2077,11 +2077,16 @@ class AnazhRealm_stoff_material {
         });
     }
 
-    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der `NAESSE.dachPlaetze` Bauten, die dem Auge am nächsten
-    // stehen (im `dachUmkreisM`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der Grundrisse oder einer
-    // neuen Decke (`_dachKastenSetzen`). Die Decke eines Hauses: die höchste Box seiner festen Hülle, deren Fläche mindestens
-    // die Hälfte der größten trägt (die Decke über dem Erdgeschoss, über dem Obergeschoss, nie der Kamin) — gemerkt je Hülle;
-    // die eines Baus ohne Haus-Hülle sein Kasten (`_dachKasten`). Ein leerer Platz hat die Kanten 0.
+    // DER DACH-POOL (EIN Schreiber, aus `_naesseTakt`): die Decken der Bauten, die dem Auge am nächsten stehen (im
+    // `dachUmkreisM`, die nächsten `NAESSE.dachPlaetze`), neu gewählt nach `dachSchrittM` Weg des Auges, einem neuen Stand der
+    // Grundrisse oder einer neuen Decke (`_dachKastenSetzen`). Die Decken eines Hauses trägt seine Hülle (`__huelle.decken`,
+    // fachwerk `deckenZeile`: je Körper mit Raum sein Grundriss bis zur Traufe, haus-lokal über `position.y − 0,5` wie die
+    // Kollision) — jede ein Platz; die eines Baus ohne Haus-Hülle sein Kasten (`_dachKasten`). Ein leerer Platz hat die Kanten 0.
+    // DAS GESETZBUCH NENNT SEINE DECKEN (w18-innen-licht, siedlung.K1#2): bis hier riet der Pool sie aus den Solids (die höchste
+    // Box mit der halben Fläche der größten, 0,5 m über der Hülle) — das Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und
+    // der Anbau trägt keine Solid-Box: 11 der 18 Häuser des Start-Dorfs hatten die Diele des Erdgeschosses als Decke, jeder
+    // Anbau keine; ihr Inneres stand unter offenem Himmel, der Regen fiel hinein, und der Rückstrahl (schatten.K4) legte den
+    // gemessenen Dielenboden unter jede Fläche des Raums (haus_schwarzwald 16036, swiftshader, Innen-Blick 0,0062 → 0,0137).
     _dachTakt() {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
@@ -2095,32 +2100,38 @@ class AnazhRealm_stoff_material {
             const hu = e._hausHuelle;
             if (!(hu || e._dachKasten) || !e.position) continue;
             if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;
-            if (hu && (!e._dachDecke || e._dachDecke.hu !== hu)) {
-                const b = (AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || []).filter((t) => t.art === "box");
-                const fl = (t) => t.h[0] * t.h[2];
-                const gross = Math.max(0, ...b.map(fl));
-                e._dachDecke = {
-                    hu,
-                    t: b.filter((t) => fl(t) >= gross / 2).sort((a, c) => c.c[1] + c.h[1] - a.c[1] - a.h[1])[0],
-                };
-            }
-            const t = hu ? e._dachDecke.t : e._dachKasten;
-            if (!t) continue;
-            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : t.k;
+            const k = hu ? (Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1) : e._dachKasten.k;
             const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
             const [co, si] = [Math.cos(ry), Math.sin(ry)];
-            const x = e.position.x + (t.c[0] * co + t.c[2] * si) * k;
-            const z = e.position.z + (t.c[2] * co - t.c[0] * si) * k;
-            decken.push({
-                d: Math.hypot(x - auge.x, z - auge.z),
-                x,
-                z,
-                co,
-                si,
-                ex: t.h[0] * k,
-                ez: t.h[2] * k,
-                y: e.position.y + (hu ? 0 : t.dy) + (t.c[1] + t.h[1]) * k,
-            });
+            // je Decke [x0, x1, z0, z1, y] haus-lokal; der Kasten als dieselbe Zeile (seine Mitte, halbe Kanten, Oberkante)
+            const kasten = !hu && e._dachKasten;
+            const zeilen = hu
+                ? hu.decken || []
+                : [
+                      [
+                          kasten.c[0] - kasten.h[0],
+                          kasten.c[0] + kasten.h[0],
+                          kasten.c[2] - kasten.h[2],
+                          kasten.c[2] + kasten.h[2],
+                          kasten.c[1] + kasten.h[1],
+                      ],
+                  ];
+            const fuss = e.position.y + (hu ? -0.5 : kasten.dy);
+            for (const [x0, x1, z0, z1, y] of zeilen) {
+                const [cx, cz] = [(x0 + x1) / 2, (z0 + z1) / 2];
+                const x = e.position.x + (cx * co + cz * si) * k;
+                const z = e.position.z + (cz * co - cx * si) * k;
+                decken.push({
+                    d: Math.hypot(x - auge.x, z - auge.z),
+                    x,
+                    z,
+                    co,
+                    si,
+                    ex: ((x1 - x0) / 2) * k,
+                    ez: ((z1 - z0) / 2) * k,
+                    y: fuss + y * k,
+                });
+            }
         }
         decken.sort((a, b) => a.d - b.d);
         const U = this._ensureAtmoUniforms();
