@@ -568,6 +568,12 @@ class AnazhRealm_studio_stoff {
             // DIE KRONE (K68-N1, `_laubStoffNormale`) schreibt Normale und Empfangs-Ort: ein Klingen-Laub mit Krone (Baum, Strauch)
             // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
             _krone ? "krone" : "",
+            // NACH DEM TEILEN VERZWEIGT DAS LEUCHTEN (`_leuchtStoff` unten): die Glut ist Quelle (ohne Pool und Nässe), das
+            // Durchsichtige trägt keine Nässe, ein Licht-Datum glüht nach seinem Zeitplan — bis w22-ankunft-kalt teilten sie die
+            // Signatur des Bau-Stoffs, und die Linse 1310-18 nannte sie getrennt (Glut, Glas, Laterne neben `v:stoff`)
+            mp && mp.seh === "glut" ? "glut" : "",
+            R.op < 1 ? "durch" : "",
+            mp && mp.licht ? "licht:" + mp.licht : "",
         ].join("|");
         this._graphTeilen(mat, _sig);
         mat.userData.foundrySignatur = _sig;
