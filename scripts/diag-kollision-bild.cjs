@@ -210,7 +210,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST, rahmen } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST, rahmen, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
@@ -219,7 +219,6 @@ if (SELBSTTEST) {
 }
 
 const { messort } = require("./lib/welt-orte.cjs");
-const { fehlerText } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `--bild`: die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot (`linsenWebGpuArgs`, die Adapter-Zeile
@@ -769,12 +768,7 @@ async function tempo(K) {
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + befund.fehler);
-        process.exit(1);
-    }
+    await seiteZu(browser, server, befund, null, "fehler");
     const m = befund.zensus.max.map((x) => x.toFixed(2));
     console.log(`  ${befund.zensus.werke} Studio-Werke · Box ohne Bild seitlich/oben ${m[0]}/${m[1]} m · Bild ohne Box ${m[2]} m`);
     // OFFEN (nie grün gezählt): Haus und Ausstattung — Bild im Körper-Band ohne Box, Zahl und Ort im Werk-Rahmen (x/y/z)

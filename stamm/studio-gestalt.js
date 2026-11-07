@@ -35,13 +35,20 @@ class AnazhRealm_studio_gestalt {
             // DIE HÜLLE WARTET AUF IHREN LEIB (w14-ankunft-weg, FUND 06.11. `studio-gestalt.js:55`): auch nach dem Bild berührt
             // keiner einen Baum, bis ein Leib in seine Nähe tritt (`_huellenBedarf`) — wer nach dem Bild in die Ankunft tritt,
             // wartet mit den Wartenden, bis eine Kreatur lebt; danach wächst jede Hülle wie immer am Spawn.
+            // DIE UHR DER SKELETTE (w19-gang-hitch, die Idee von w16-haenger auf main): im laufenden Spiel wächst je Takt höchstens
+            // EIN neues Skelett (`_taktZeit`); wer im selben Takt danach kommt, wartet in derselben Schlange (`_huellenNach`, nah
+            // zuerst — `_tickHuellenNach` geht sie unter der EINEN Frist der Bau-Arbeit weiter). Bis hier wuchs jeder Rufer am Stück,
+            // sobald eine Kreatur lebte (`_huellenBedarf` "alle"): die Pflanz-Schlange setzte je Takt bis zu 8 Würfe, jeder mit
+            // eigener Gestalt ein Skelett (w16-haenger headless: zwei Skelette 95 + 62 ms in EINEM Takt). Ruhender Loop wächst sofort.
             if (
                 !this.state._weltbildDa ||
-                (this._huellenNach && this._huellenNach.size && this._huellenBedarf() !== "alle")
+                (this._huellenNach && this._huellenNach.size && this._huellenBedarf() !== "alle") ||
+                (this._skelettTakt === this._taktZeit && !this._loopRuht())
             ) {
                 (this._huellenNach || (this._huellenNach = new Set())).add(entry);
                 return null;
             }
+            this._skelettTakt = this._taktZeit;
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
@@ -55,8 +62,9 @@ class AnazhRealm_studio_gestalt {
         return teile;
     }
     // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2): nach dem ersten Bild fühlt jeder Baum, dessen Hülle vor ihm wartete
-    // (`_baumGestaltTeile`), seine Hülle — nah zuerst, je Takt höchstens EIN neues Skelett und HUELLE_NACH_MS (die übrigen lesen
-    // das Gedächtnis ihrer Gestalt); was den Bestand verließ, braucht keine. DER BEDARF IST DER LEIB (w14-ankunft-weg): eine
+    // (`_baumGestaltTeile`), seine Hülle — nah zuerst, je Takt höchstens EIN neues Skelett und bis zur EINEN Frist der Bau-Arbeit
+    // (`_bauFrist`, w19-gang-hitch; bis hier eine eigene Uhr HUELLE_NACH_MS), die übrigen lesen
+    // das Gedächtnis ihrer Gestalt; was den Bestand verließ, braucht keine. DER BEDARF IST DER LEIB (w14-ankunft-weg): eine
     // Hülle wächst, wenn ein Leib sie berühren kann — der Spieler, sobald er geht, an jedem Baum in `HUELLE_BEDARF_M` um ihn
     // (`_huellenBedarf`); lebt eine Kreatur, jeder Baum (sie streifen überall). Bis dahin stößt keiner an einen Baum, und wer
     // in die Ankunft tritt, wartet mit. Bis hier wuchsen alle mit dem Bild, im Fenster Weltbild→Kontrolle (Radeon
@@ -67,14 +75,16 @@ class AnazhRealm_studio_gestalt {
         const bedarf = this._huellenBedarf();
         if (!bedarf) return 0;
         const neu0 = this._baumGestaltMerk ? this._baumGestaltMerk.size : 0;
-        const t0 = performance.now();
+        const frist = this._bauFrist();
         let n = 0;
         for (let e; (e = this._huellenNaechste(S, bedarf));) {
             S.delete(e);
             if (e._blockerGen) this._populateBlockerAABBs(e);
+            // die Uhr der Skelette ging in diesem Takt schon (`_baumGestaltTeile` stellte ihn zurück): er bleibt vorn in der Reihe
+            if (S.has(e)) break;
             n++;
             const neu = (this._baumGestaltMerk ? this._baumGestaltMerk.size : 0) > neu0;
-            if (neu || performance.now() - t0 > AnazhRealm.HUELLE_NACH_MS) break;
+            if (neu || performance.now() >= frist) break;
         }
         if (!S.size) this.log("Die Hüllen der Ankunft stehen: jeder Baum und Strauch fühlt seine Gestalt.", "INFO");
         return n;
@@ -1449,9 +1459,6 @@ AnazhRealm._solitaerVon = function (preset, V) {
     if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
     return PC.solitaerGestalt(rec.kind, V);
 };
-// DIE HÜLLEN DER ANKUNFT (`_tickHuellenNach`): so viele ms fühlen die Bäume je Takt ihre Hülle aus dem Gedächtnis ihrer Gestalt —
-// ein neues Skelett beendet den Takt sofort.
-AnazhRealm.HUELLE_NACH_MS = 2;
 // DER BEDARF DER HÜLLEN (`_huellenBedarf`): der waagrechte Weg des Spielers (m), ab dem er Bäume berühren kann (weniger als ein
 // Schritt), und der Kreis um ihn (m), in dem eine wartende Hülle wächst — die Reichweite einer Baum-Hülle (bis ~10 m vom Stamm)
 // plus ~3 s Spurt bei je Takt einer neuen Gestalt

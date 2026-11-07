@@ -2304,10 +2304,17 @@ class AnazhRealm_vegetation_baum {
         }
         return spawned;
     }
-    // Der Gang der Pflanz-Schlange: nah zuerst im Rang der Ankunft, höchstens `maxPerFrame` Würfe.
+    // Der Gang der Pflanz-Schlange: nah zuerst im Rang der Ankunft, höchstens `maxPerFrame` Würfe und nie über die EINE Frist der
+    // Bau-Arbeit (`_bauFrist`, w19-gang-hitch; der erste Wurf immer) — bis hier setzte ein Takt seine Würfe am Stück (headless
+    // GT-Fahrt Genesis: `_pflanzGang` 35 ms in EINEM Takt, 8 Würfe der Kappe).
     _pflanzGang(queue, rang, maxPerFrame) {
         let spawned = 0;
-        for (let i = 0; this._kappeOffen(i, maxPerFrame) && queue.length > 0; i++) {
+        const frist = this._bauFrist();
+        for (
+            let i = 0;
+            this._kappeOffen(i, maxPerFrame) && queue.length > 0 && (i === 0 || performance.now() < frist);
+            i++
+        ) {
             // ein Wurf, der während des Takts dazukam, trägt seinen Rang ab hier (der Stand der Bahn EINMAL je Runde)
             const bahn = rang.length < queue.length ? this._bedarfBahn() : null;
             for (let j = rang.length; j < queue.length; j++)

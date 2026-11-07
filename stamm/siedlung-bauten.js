@@ -189,8 +189,12 @@ class AnazhRealm_siedlung_bauten {
         }
         let besucht = 0;
         const Z = W.zusagen;
+        // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): ein Urteil baut die Stufe, die es wählt (die Platte der Karte,
+        // die Instanz) — nach dem ersten Urteil geht der Gang nur, solange die Frist offen ist; der Rest bleibt vorn. Bis hier
+        // trugen fünf Wechsel einen Takt am Stück (headless GT-Fahrt Genesis: `_tickArchitectureLOD` 37,6 ms, ein Urteil 35,8).
+        const frist = this._bauFrist();
         for (const entry of gang) {
-            if (bewegt + z.switches >= maxSwitchesPerFrame) break;
+            if (bewegt + z.switches >= maxSwitchesPerFrame || (besucht > 0 && performance.now() >= frist)) break;
             besucht++;
             W.wach.delete(entry);
             W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet

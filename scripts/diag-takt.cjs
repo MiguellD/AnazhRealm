@@ -28,9 +28,14 @@
 //       so wenig wie seine Ankunft (`_stauWorkClusters` ist am Stand der stauenden Bauten gemerkt, nie an der Länge der
 //       Bau-Liste — bis w4-b-pflanzen warf jeder neue Eintrag die Werke, jeder gepflanzte Baum: am Damm bis 29 ms je Ruf).
 //       Messort stadt (Null-Renderer, je Takt im Stand): Decke 0,42 ms und Stau 0,42 ms, bis die Wand stand.
+//   T12 DIE EINE FRIST DER BAU-ARBEIT (w19-gang-hitch, profiband.K4): im Takt des Spielers fragt jeder Bauer die EINE Frist
+//       (`_bauFrist`) — abgelaufen geht der Strom EIN Stück, die Pflanz-Schlange EINEN Wurf, das Abräumen EINEN Chunk, die Hüllen
+//       EINE, und der Planer gibt seinem Job 0 ms. Bis hier trug jeder seine eigene Uhr (headless GT-Fahrt Genesis:
+//       `_runFrameScheduler` 71,5 ms in EINEM Takt).
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
-// allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser).
+// allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
+// Frist ohne Ende T12 (je Bauer).
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -232,13 +237,14 @@ hauptLauf(async () => {
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
             // fährt die Kappe allein (`_ladeFrist` −∞).
             const t9 = await (async () => {
-                const aus9 = { stromBau: 0 };
+                const aus9 = { stromBau: 0, abschied: 0 };
                 let zurueck = () => {};
                 try {
                     // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser eine Aufgabe (`await`)
                     const stub = { _archIsRendered: (e) => !!e.t9, _rebuildArchitectureMesh: (e) => (e.t9 = !e.laedt), _populateVoxelChunkVegetation: () => aus9.laub++, _foundryPresetForEntry: (e) => e.dock || null }; // prettier-ignore
                     Object.assign(stub, { _voxelChunkConfig: () => ({ span: 16, ringRadius: 12 }), _voxelChunkLodFor: () => 0, _stufenZelle: () => 0, _ensureVoxelChunkAt: () => aus9.stromBau++, _fernRingEinhaengen: () => 0, _fernRingPunkt: () => ({ x: 0, z: 0, fuss: { ht: 0, hr: 0 }, rad: 0, s: 1 }), _fernAuftrag: () => new Promise(() => {}) }); // prettier-ignore
-                    for (const k of "_setLastPlayerVoxelChunk _stufeAugeTakt _rebuildVoxelChunk _pruneDistantVoxelChunks".split(" ")) stub[k] = () => {}; // prettier-ignore
+                    for (const k of "_setLastPlayerVoxelChunk _stufeAugeTakt _rebuildVoxelChunk _pruneDistantVoxelChunks _bedarfVoraus".split(" ")) stub[k] = () => {}; // prettier-ignore
+                    Object.assign(stub, { _bauFrist: () => Infinity, _disposeVoxelChunk: () => aus9.abschied++, _huellenBedarf: () => "alle", _huellenNach: null }); // prettier-ignore
                     for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit _nebenFaden".split(" ")) stub[k] = () => true; // prettier-ignore
                     for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
                     if (selbst) stub._ladeFrist = () => -Infinity; // der Selbsttest: die Kappe allein
@@ -285,6 +291,14 @@ hauptLauf(async () => {
                         st.architectures = [...Array(57).keys()].map((i) => ({ position: { x: i + 1, z: 0 }, _ziegelGebacken: true, _nahWartet: i < 30 && !selbst ? { a: 0, t: Infinity } : null, laedt: i !== 30 && i < 56, dock: i === 56 && !selbst })); // prettier-ignore
                         r.tickArchitectureCulling();
                         aus9.gang = [!!st.architectures[30].t9, !!st.architectures[56].t9];
+                        // T12 — DIE EINE FRIST DER BAU-ARBEIT im Spiel-Takt (`_bauFrist` abgelaufen; der Selbsttest: ohne Ende): Planer, Strom,
+                        // Pflanz-Schlange, Abräumen und Hüllen gehen je ihr erstes Stück
+                        await null;
+                        [r._bauFrist, r._huellenNach, st.voxelChunks] = [() => (selbst ? 1e9 : 0), new Set(zwoelf), new Map(zwoelf.map((i) => [i + ",0"]))]; // prettier-ignore
+                        r._dispatchFrameJobs([{ prio: 1, run: (ms) => (aus9.planer = ms) }], { remainingMs: () => 50 });
+                        AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
+                        r._tickHuellenNach();
+                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size];
                     } finally {
                         delete performance.now;
                         Object.keys(S).forEach((k, i) => (st[k] = stAlt[i]));
@@ -391,6 +405,9 @@ hauptLauf(async () => {
     const frist = { _tickPendingVegSpawns: t9.pflanz === 12, "_kappeOffen (Frist)": t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _ringWaechst: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
     const gang = t9.gang.every(Boolean);
     const T9 = !Object.values(frist).includes(false) && gang;
+    // T12 je Bauer beim Namen: abgelaufen sein erstes Stück (der Planer gibt seinem Job 0 ms)
+    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach".split(" "); // prettier-ignore
+    const n12 = N12.filter((k, i) => (t9.bau12[i] === +!!i) === SELBST);
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
     // T11 je Leser beim Namen: die Leiter (vakuös ist ein ferner Wagen, der nie schreitet), der Beweger, der Stau — in der Wand
@@ -400,17 +417,18 @@ hauptLauf(async () => {
     const n11 = Object.keys(T11je).filter((k) => T11je[k] === SELBST);
     const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}`;
     if (SELBST) {
+        const [v, vak] = [(x) => (x ? "grün (vakuös!)" : "rot"), (n) => (n.length ? "vakuös: " + n : "rot")];
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10 && !n11.length; // prettier-ignore
+        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10 && !n11.concat(n12).length; // prettier-ignore
         console.log(
-            `${ok ? "✅" : "❌"} SELBST-TEST: der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${T4 ? "grün (vakuös!)" : "rot"}; ` +
-                `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.frei[0]} zuerst, der eingefrorene Rang gibt den Anhänger als ${aus.t5a.erster === 10 ? "ersten (vakuös!)" : `Nr. ${aus.t5a.erster}`} → T5 ${T5 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Nur-der-Nächste-Wahl sendet ${t6.folge.join("·")}, gibt ${t6.frei.join("·")} frei → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
-                `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}/${t9.stromMs} ms, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
-                `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}; ` +
-                `die alten Klassen des Verkehrs (${z11}) → T11 ${n11.length ? "vakuös: " + n11 : "rot"}`
+            `${ok ? "✅" : "❌"} SELBST-TEST: der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${v(T3)}; ` +
+                `die Schwelle über das ganze Fenster verweigert dem Fernen das übrige Budget (${t3.fern3}) → T4 ${v(T4)}; ` +
+                `die FIFO-Pumpe sendet ${t5.folge.join("·")}, die FIFO-Freigabe gibt ${aus.t5i.frei[0]} zuerst, der eingefrorene Rang gibt den Anhänger als ${aus.t5a.erster === 10 ? "ersten (vakuös!)" : `Nr. ${aus.t5a.erster}`} → T5 ${v(T5)}; ` +
+                `die Nur-der-Nächste-Wahl sendet ${t6.folge.join("·")}, gibt ${t6.frei.join("·")} frei → T6 ${v(T6)}; ` +
+                `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${v(T8)}; ` +
+                `die Kappe allein (Pflanz ${t9.pflanz}, Ort ${t9.ort}, Dorf ${t9.dorf}, Bau ${t9.bau}, Laub ${t9.laub}, Strom ${t9.strom}/${t9.stromMs} ms, Ring-Boden ${t9.ring}, Fern-Ring ${t9.fern}, Nah-Gang ${t9.gang.join("/")}) → T9 ${v(T9)}${vakuoes.length ? ` — vakuös, an _kappeOffen vorbei: ${vakuoes.join(" · ")}` : ""}; ` +
+                `der alte Weg gebiert das Werk ohne Frage (Name ${t10.name}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${v(T10)}; ` +
+                `die alten Klassen des Verkehrs (${z11}) → T11 ${vak(n11)}; die Frist ohne Ende (${t9.bau12}) → T12 ${vak(n12)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -418,32 +436,32 @@ hauptLauf(async () => {
     console.log("=== DIE TAKT-WAND — Takte rechnen nur die Betroffenen ===");
     zeile(T3, `T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`);
     zeile(T4, `T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern ${t3.fern3}`);
-    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.frei[0]} von ${aus.t5i.n} zuerst frei (Soll e10, am Ort des Spielers) · der Anhänger am Wächter (ein naher Leser am fernen Zug, ${aus.t5a.n} Ergebnisse am Wächter, Soll 11) geht als ${aus.t5a.erster === 10 ? "erster" : `Nr. ${aus.t5a.erster} statt erster — Täter: der eingefrorene Rang (_foundryNaeher hebt nur die Wartenden)`} frei`);
+    // T5 gesendet: der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m; frei zuerst Soll e10 (am Ort des Spielers); der
+    // Anhänger am Wächter ist ein naher Leser am fernen Zug (Soll 11 Ergebnisse) — der Täter: der eingefrorene Rang (_foundryNaeher
+    // hebt nur die Wartenden)
+    zeile(T5, `T5 Worker-Schlange nah zuerst: nach ${t5.K} im Worker + 10 Vorrat gesendet ${t5.folge.join(" · ")} · Nummer beim Senden ${t5.nummernSteigen} · im Flug ${t5.imFlug} · die Freigabe gibt ${aus.t5i.frei[0]} von ${aus.t5i.n} zuerst frei · der Anhänger am Wächter (${aus.t5a.n} Ergebnisse) geht als ${aus.t5a.erster === 10 ? "erster" : `Nr. ${aus.t5a.erster} — Täter _foundryNaeher`} frei`); // prettier-ignore
     zeile(T6, `T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → ${t6.folge.join(" · ")} · die Freigabe → ${t6.frei.join(" · ")}`);
     zeile(T8, `T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
             `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +
             `${t8.helferErster} · zweiter ${t8.helferZweiter} · Geist ${t8.helferGeist}` +
-            (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen"
-                ? ""
-                : " — Täter _foundryUhren: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden")
+            // der Täter: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden
+            (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen" ? "" : " — Täter _foundryUhren")
     );
     zeile(T9, `T9 die Kappen des Lade-Takts: ` +
             `Pflanz ${t9.pflanz}/12 · Frist ${t9.ort} Schritte · Dorf ${t9.dorf}/12 · Cull-Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · im selben Frame ${t9.gleicherFrame}/4 · in eigener Aufgabe ${t9.ortAufgabe} · Boden-Strom ${t9.strom} (Kappe 3), danach im selben Frame ${t9.stromGleich}/3 · an der ms-Kappe ${t9.stromMs} (4 ms), danach ${t9.stromMsGleich} (≤ 4) · Ring-Boden ${t9.ring}/${t9.ringSoll} · Fern-Ring ${t9.fern} im Flug (Kappe ${t9.fernKappe}) · ` +
             `Nah-Gang (Bau hinter 30 Wartenden, Stufe hinter der Kappe) ${t9.gang.join(" · ")}` +
-            (T9
-                ? ""
-                : !gang
-                    ? " — Täter tickArchitectureCulling: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab"
-                    : ` — Täter ${Object.keys(frist).filter((k) => !frist[k]).join(" · ")}: die Kappe je Takt gilt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (_kappeOffen)`)
+            // der Täter: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab (tickArchitectureCulling) — sonst gilt
+            // bei ihm die Kappe je Takt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (`_kappeOffen`)
+            (T9 ? "" : ` — Täter ${gang ? Object.keys(frist).filter((k) => !frist[k]) : "tickArchitectureCulling"}`)
     );
     zeile(T10, `T10 der Faden wartet nie auf den Haupt-Faden: das Werk heißt ${t10.name}, als Nachricht fragt ${t10.post.join(" · ") || "nichts"}, ` +
             `Helfer ${t10.helfer}/${t10.helferSoll} geboren` +
-            (T10
-                ? ""
-                : " — Täter _ensureAssetFoundry: die Buch-Frage reist nicht in der Geburt (Name „buch\"), sie wartet auf den Haupt-Faden")
+            // der Täter: die Buch-Frage reist nicht in der Geburt (Name „buch"), sie wartet auf den Haupt-Faden
+            (T10 ? "" : " — Täter _ensureAssetFoundry")
     );
     zeile(!n11.length, `T11 Verkehr 300 m fern: ${z11}` + (n11.length ? ` — Täter ${n11}` : ""));
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10) || n11.length) {
+    zeile(!n12.length, `T12 die EINE Frist der Bau-Arbeit, abgelaufen: ${N12} je ${t9.bau12}` + (n12.length ? ` — Täter ${n12}` : ""));
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10) || n11.concat(n12).length) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

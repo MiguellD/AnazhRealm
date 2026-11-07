@@ -3,7 +3,7 @@
 // L2-Geometrie). Zwei Teile, beide Null-Renderer (hardware-unabhängig; den LOOK des Atlas misst
 // gate:foundry-impostor C auf swiftshader-WebGPU, die Welt die Werkbank auf echter GPU):
 //   (A — der eager Bake über das Bäcker-Bahn-Muster — fiel mit S2: die Karte backt im Welt-Renderer, budgetiert
-//       je Takt `KARTE_WELT_MS`; der Null-Renderer bäckt nie.)
+//       je Takt unter der EINEN Frist der Bau-Arbeit `_bauFrist`; der Null-Renderer bäckt nie.)
 //   B — WERKSTATT-L2 = BILLBOARD: `_workshopFoundryPreviewGroup` routet einen BAUM bei `_recipeLod===2`
 //       durch `_foundryBuildImpostorFlat` (den 8-Winkel-Impostor) + baut ihn als 1-Instanz-
 //       InstancedMesh (die Karte dekodiert Rotation/Skala aus der Instanz-Matrix). Fels/Kristall

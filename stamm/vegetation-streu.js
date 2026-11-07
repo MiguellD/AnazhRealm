@@ -1136,7 +1136,15 @@ class AnazhRealm_vegetation_streu {
         let scanned = 0;
         let realloc = 0;
         let hops = 0;
-        while (scanned < maxScan && realloc < maxRealloc && hops <= keys.length) {
+        // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): nach dem ersten Zug zieht die Wahl nur, solange sie offen ist —
+        // bis hier zogen vier Zellen am Stück (headless GT-Fahrt Genesis: `_tickScatterLod` 44,5 ms in EINEM Takt)
+        const frist = this._bauFrist();
+        while (
+            scanned < maxScan &&
+            realloc < maxRealloc &&
+            hops <= keys.length &&
+            (realloc === 0 || performance.now() < frist)
+        ) {
             if (cur.k >= keys.length) cur.k = 0;
             const key = keys[cur.k];
             const region = map.get(key);

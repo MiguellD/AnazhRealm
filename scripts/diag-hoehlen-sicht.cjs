@@ -614,7 +614,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
@@ -1627,12 +1627,7 @@ const server = statikServer();
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
+    await seiteZu(browser, server, befund, null, "fehler");
     console.log(`  Ring ${befund.ringChunks} Chunks, ${befund.bereiche} Boden-Bereiche`);
     for (const sp of befund.spiegel)
         console.log(

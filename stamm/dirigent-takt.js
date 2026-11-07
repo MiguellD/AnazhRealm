@@ -1617,6 +1617,10 @@ class AnazhRealm_dirigent_takt {
                 else if (lade || this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
                 else continue;
             }
+            // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): kein Job baut über sie hinaus — ihr Rest ist sein Budget,
+            // jeder geht mindestens ein Stück (Wasser, Saat, Streu und Wiese prüfen erst nach dem ersten). Bis hier trug jeder sein
+            // eigenes Fenster neben dem Strom (Wasser bis 22 ms, Saat 4, Streu 6 je Takt).
+            if (!sacred) ms = Math.min(ms, Math.max(0, this._bauFrist() - performance.now()));
             try {
                 job.run(sacred ? Infinity : ms);
                 ran.push(job.name);
@@ -1694,6 +1698,27 @@ class AnazhRealm_dirigent_takt {
     // Stück außer dem Bild der Ankunft (B-Blick, der Ring) — es bekommt nur die Kappe, die Frist gehört dem Bild.
     _kappeOffen(n, kappe, frist = true) {
         return n < kappe || (frist && performance.now() < this._ladeFrist());
+    }
+
+    // DIE EINE FRIST DER BAU-ARBEIT (w19-gang-hitch, profiband.K4 — die Idee von w16-haenger auf main): jede Bau-Arbeit des Takts,
+    // die in Raten geht, arbeitet je Aufgabe des Event-Loops (der Takt ist eine) bis zu EINER Frist — der Strom der Chunks
+    // (`_tickVoxelChunkStreaming`), jeder Job des Planers (`_dispatchFrameJobs`: Wasser, Saat und Wald, Streu und Wiese), die
+    // Pflanz-Schlange (`_pflanzGang`), die Hüllen (`_tickHuellenNach`), der Karten-Bake (`_tickKarteWelt`, in Ansichten), das
+    // Einhängen des Fern-Rings (`_fernRingEinhaengen`, in Punkten) und der Knoten-Bau (`_knotenRate`, auch zwischen zwei
+    // Fluss-Knoten); jeder Leser geht mindestens ein Stück (nie verhungert). Gestellt beim ersten Leser (BAU_FRIST_MS), gelöscht
+    // am Ende der Aufgabe (Mikro-Task), im Lade-Takt die Frist des Lade-Frames (K60: unter dem Ladeschirm greift keine Drossel),
+    // am Null-Renderer und im ruhenden Loop ohne Ende (wie `_deferrableBudgetMs`; eine Sonde, ein Befehl der Werkbank, das Portal
+    // bauen am Stück — die Frist gilt dem Takt, den der Spieler fühlt). Bis hier trug jeder Bauer seine eigene Uhr (Strom 5 ms,
+    // Wasser bis 22, Saat 4, Streu 6, Karte 4, Knoten 4, Stufen-Wechsel und das Einhängen keine): headless Genesis, Gehen und
+    // GT-Fahrt, `_runFrameScheduler` bis 46,6 · 71,5 ms in EINEM Takt, in 44 · 72 Takten über 15 ms.
+    _bauFrist() {
+        const r = this.state.renderer;
+        if ((r && r._isHeadlessNull) || this._loopRuht()) return Infinity;
+        if (this._bauFristBis == null) {
+            this._bauFristBis = performance.now() + AnazhRealm.BAU_FRIST_MS;
+            Promise.resolve().then(() => (this._bauFristBis = null));
+        }
+        return Math.max(this._bauFristBis, this._ladeFrist());
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
@@ -2237,6 +2262,8 @@ AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
+// DIE EINE FRIST DER BAU-ARBEIT je Takt (ms, `_bauFrist`): so lange bauen alle Bauer des Takts zusammen, jeder mindestens ein Stück.
+AnazhRealm.BAU_FRIST_MS = 6;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
