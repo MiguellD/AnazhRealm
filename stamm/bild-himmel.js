@@ -1002,7 +1002,6 @@ class AnazhRealm_bild_himmel {
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
         this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
     }
-    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // DER ANKER DES JAHRS (`_saisonAnker`, feld.K2#2): Phase und Welt-Uhr, gesetzt vom Wort des Spielers (`setSeason`, zur Tat-Uhr
     // seines Akts), vom Laden eines Stands (sein Anker `saisonAnker`, das Paar reist im Stand), vom Weiterlaufen eines angehaltenen
     // Jahrs (null) und von jedem anderen Schreiber der Phase. Ohne Anker steht die Welt an dem ihrer GEBURT — ihre Phase zur Welt-Uhr
@@ -1039,6 +1038,7 @@ class AnazhRealm_bild_himmel {
         const A = this._saisonAnkerGilt();
         return (((A.anker + (t - A.t) / A.jahr) % 1) + 1) % 1;
     }
+    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name, uhr) {
         const key = AnazhRealm.JAHRESZEITEN[String(name || "").toLowerCase()];
