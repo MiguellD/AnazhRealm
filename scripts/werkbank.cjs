@@ -75,7 +75,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
@@ -831,6 +831,9 @@ async function starte() {
     const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
+    // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
+    // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
+    const abbrechen = await seitenAbbruch(page);
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
@@ -1867,6 +1870,13 @@ async function starte() {
                 b = d ? JSON.parse(d) : {};
             } catch {}
             const t0 = Date.now();
+            // DER RUFER TRÄGT SEINE ARBEIT (w18-mensch-deckel): wer über `werkbankRuf` ruft (Kopf `x-rufer: traegt`), dessen Arbeit lebt in
+            // der Seite, solange er lebt — stirbt er vor der Antwort (der Deckel der Punkte-Maschine beendet den Prozess der Probe), bricht
+            // die Werkbank sie ab (welt-boot `seitenAbbruch`). Ein Ruf mit eigener Frist (der Zapfen der Sitzung, die Grundstellung) trägt den Kopf
+            // nie: seine Frist ist kein Abbruch. Bis hier rechnete die Seite nach dem Deckel weiter (Radeon 5fb21e29: mensch.K1#1 am
+            // Deckel 45 s, die Grundstellung vor mensch.K5#1 „/eval ohne Antwort binnen 60 s“, die Sitzung tot)
+            if (req.headers["x-rufer"] === "traegt")
+                res.on("close", async () => res.writableEnded || console.log(`[abbruch] ${req.url}: der Rufer ist fort, ${await abbrechen()} Abbruch`));
             // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
             const stempel = () =>
                 page
