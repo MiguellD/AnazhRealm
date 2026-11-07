@@ -3,7 +3,7 @@
 // (Wiese Ego, Genesis Third) die Hänger-Linse über 33 ms auf der Bahn (4 m/s, Regler voll, Tiere frei) und derselbe Lauf als
 // Takt-Spitze, danach ein Lauf mit den GPU-Stempeln. Je Zelle vier Zeilen „GEH …“ (≤ 600 Zeichen: der GPU-Probe-Dienst postet
 // die letzten zehn Zeilen mit Urteil). Exit 0 nur, wenn jede Zelle Bild-p95 ≤ 33 ms hält.
-//   node scripts/geh-probe.cjs [--port 4793] [--sek 10]          (npm run gate:geh-zerlegung)
+//   node scripts/geh-probe.cjs [--port 4793] [--sek 10]          (npm run gate:geh-zerlegung; je Push nimmt der freie Läufer sie)
 "use strict";
 const fs = require("fs");
 const path = require("path");
