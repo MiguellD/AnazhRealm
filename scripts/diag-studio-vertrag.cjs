@@ -253,7 +253,7 @@ function validateFunktionsKern(m, entry, erklaert) {
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
-    if (!(entry && entry.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
+    if (!(entry?.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
     if (m.presets) v.push("§9: ein Gesetz-Kern trägt keine Rezepte (PRESETS)");
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
     if (m.meshfrei) v.push("§9: MESHFREI gilt Rezept-Kernen ohne Gestalt, nie einem Gesetz-Kern");
@@ -287,7 +287,7 @@ function validateManifest(m, kern) {
             const r = m.presets[id];
             if (!REZEPT_ID.test(id)) v.push(`B1: rezeptId "${id}" verletzt den Namensraum [a-z0-9_-]+`);
             if (!r || typeof r.kind !== "string" || !r.kind) v.push(`B1: Rezept "${id}" trägt kein kind`);
-            if (r && r.s && typeof r.s === "object")
+            if (r?.s && typeof r.s === "object")
                 for (const dk in r.s)
                     if (typeof r.s[dk] !== "number" || !isFinite(r.s[dk]))
                         v.push(`B1: Rezept "${id}" Dial s.${dk} ist keine endliche Zahl`);
@@ -304,7 +304,7 @@ function validateManifest(m, kern) {
     // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..3 — die Stufe 3 ist NUR-WURF (S3 haus: nie Anzeige, sie
     // wirft für die Art und trägt die Fernform; ihre Budget-Zeile trägt `nurWurf: true`, unten).
     const lodC = m.cfg && m.cfg.lod;
-    if (lodC && lodC.kindStages) {
+    if (lodC?.kindStages) {
         for (const k in lodC.kindStages) {
             const s = lodC.kindStages[k];
             if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 3)) {
@@ -324,7 +324,7 @@ function validateManifest(m, kern) {
     // trägt ihre Kosten-Regler als PFLICHT — lagen · geruest · blattKarte · wedel je Stufe 0/1, quote und der Wurf-Teil
     // (wurf.teil "schatten") an der Stufe 1 —, die Nadel-Karte (nadelKarte) und der Blatt-Stride (dichte.laub/nadel) sind
     // gefallen, der Fels bleibt einstufig.
-    if (lodC && lodC.budget) {
+    if (lodC?.budget) {
         const ks = lodC.kindStages || {};
         const B = lodC.budget;
         for (const k in B) {
@@ -712,7 +712,7 @@ function validateManifest(m, kern) {
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
-        m.presets && m.presets.mensch && m.presets.mensch.fx && m.presets.mensch.fx.bewegung
+        m.presets?.mensch && m.presets.mensch.fx && m.presets.mensch.fx.bewegung
             ? m.presets.mensch.fx.bewegung
             : null;
     if (fxB) {
@@ -953,9 +953,9 @@ function validateManifest(m, kern) {
             ? validateFunktionsKern(m, entry, gesetzKernErklaert(doc))
             : validateManifest(m, entry.id);
         const lodM = m.cfg && m.cfg.lod;
-        if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
-        else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
-        if (entry.ns && lodM && lodM.kindStages && !(lodM.budget && lodM.budget.gestalten))
+        if (lodM?.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
+        else if (lodM?.kindStages) ohneBudget.push(entry.file);
+        if (entry.ns && lodM && lodM.kindStages && !(lodM.budget?.gestalten))
             ohneGestalten.push(entry.file);
         check(`${entry.file}: 0 Vertrags-Verletzungen`, viol.length === 0, viol[0] || "");
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
@@ -1044,20 +1044,18 @@ function validateManifest(m, kern) {
     const pflicht = {
         "koerper-core.js": (m) =>
             !!(
-                m.presets &&
-                m.presets.mensch &&
+                m.presets?.mensch &&
                 m.presets.mensch.fx &&
                 m.presets.mensch.fx.bewegung &&
                 m.presets.mensch.fx.bewegung.schwimmen &&
                 m.presets.mensch.fx.bewegung.parkour &&
                 m.presets.mensch.fx.bewegung.parkour.slidePose
             ),
-        "schmiede-core.js": (m) => !!(m.arena && m.arena.schwung && m.arena.gefuehl && m.arena.bogen),
-        "vehicle-core.js": (m) => !!(m.fahr && m.fahr.lenkung && typeof m.exportDrive === "function"),
+        "schmiede-core.js": (m) => !!(m.arena?.schwung && m.arena.gefuehl && m.arena.bogen),
+        "vehicle-core.js": (m) => !!(m.fahr?.lenkung && typeof m.exportDrive === "function"),
         "tetrapoda-core.js": (m) =>
             !!(
-                m.verhalten &&
-                m.verhalten.aktionen &&
+                m.verhalten?.aktionen &&
                 m.verhalten.stimmung &&
                 m.verhalten.jagd &&
                 m.verhalten.furcht &&

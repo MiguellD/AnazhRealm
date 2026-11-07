@@ -388,7 +388,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const feedRight = feedLayout && feedLayout.querySelector(".feed-right");
         out.feedThreeCol = !!feedLayout && !!feedLeft && !!feedCenter && !!feedRight;
         out.feedCenterHoldsStream = !!feedCenter && !!feedCenter.querySelector("#library-list");
-        out.searchInHead = !!(feedCenter?.querySelector(".library-head #library-search"));
+        out.searchInHead = !!(feedCenter && feedCenter.querySelector(".library-head #library-search"));
         // die Schöpf-Werkzeuge leben jetzt RECHTS (Schöpfen & Andocken), mit Empfangen vereint;
         // die Welt-Katalog-Quelle im Hauptthread als Tab (X-Muster); das Tagebuch eingeklappt (Chronik im Hof).
         const schoepfen = feedRight && feedRight.querySelector(".feed-schoepfen");
@@ -1812,7 +1812,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
         out.pinOk = !!(pinRes?.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
         out.pinInMap = st.p2p.pinnedWorlds.has(pinRes.worldId);
         const lsManifest = localStorage.getItem("anazh.pinnedManifest");
-        out.pinPersisted = !!(lsManifest?.includes(pinRes.worldId));
+        out.pinPersisted = !!(lsManifest && lsManifest.includes(pinRes.worldId));
         const lsSnapshot = localStorage.getItem(`anazh.pinnedSnapshot.${pinRes.worldId}`);
         out.pinSnapshotPersisted = !!(lsSnapshot && lsSnapshot.length > 100);
 

@@ -27,11 +27,11 @@
 function passName(scene, camera) {
     if (camera === st.camera) return "haupt";
     const csm = st.csmNode;
-    if (csm && csm.lights)
+    if (csm?.lights)
         for (let i = 0; i < csm.lights.length; i++)
             if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
     const dl = st.directionalLight;
-    if (dl && dl.shadow && dl.shadow.camera === camera) return "k0";
+    if (dl?.shadow && dl.shadow.camera === camera) return "k0";
     if (scene && scene.name === "Render Pipeline") return "post";
     return (scene && scene.name) || (camera && (camera.name || camera.type)) || "?";
 }
@@ -98,7 +98,7 @@ function drawZensus(opts) {
         const satzOf = new Map();
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
-                if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
+                if (s?.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -169,7 +169,7 @@ function drawZensus(opts) {
                             const id = ein ? ein.get(i) : undefined;
                             if (id != null) w.eintraege.add(id);
                         }
-                    } else if (g && g.boundingSphere) {
+                    } else if (g?.boundingSphere) {
                         const c = g.boundingSphere.center;
                         miss(c.x, c.y, c.z);
                     } else miss(0, 0, 0);
@@ -190,7 +190,7 @@ function drawZensus(opts) {
                         kette: kette.join(" < "),
                         material: (material && (material.name || material.type)) || null,
                         geometrie: g ? g.name || g.type : null,
-                        vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
+                        vertices: g?.attributes && g.attributes.position ? g.attributes.position.count : 0,
                         instanzen: senke.isInstancedMesh ? senke.count : null,
                         userData: Object.keys(object.userData || {}).slice(0, 8),
                     });
@@ -198,7 +198,7 @@ function drawZensus(opts) {
             }
             return roh.call(this, object, material, scene, camera, ...rest);
         };
-        const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
+        const q = rend.backend?.device ? rend.backend.device.queue : null;
         let frameMs = null;
         try {
             __bundlesNeu();
@@ -220,11 +220,11 @@ function drawZensus(opts) {
             nahe(Array.from((await lies(a.__instanzQuelle.liste)).subarray(li, li + ind[arg]), (x) => x - erst));
         }
         // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
-        const rezepte = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
+        const rezepte = r._foundry?.recipes ? r._foundry.recipes : {};
         const artOf = (kl) => {
             const m = /^(f|fimp|fscatter):([^:]+):/.exec(kl);
             const rz = m ? rezepte[m[2]] : null;
-            return rz && rz.kind ? rz.kind : null;
+            return rz?.kind ? rz.kind : null;
         };
         const passe = {};
         const klassen = {};
@@ -283,7 +283,7 @@ function drawZensus(opts) {
                     inst: w ? w.inst : 0,
                     exemplare: w ? w.eintraege.size || w.orte.size : 0,
                     dMin: w && Number.isFinite(w.dMin) ? Math.round(w.dMin) : null,
-                    dMax: w && w.inst ? Math.round(w.dMax) : null,
+                    dMax: w?.inst ? Math.round(w.dMax) : null,
                     ...(v.inhalt ? { inhalt: v.inhalt } : {}),
                 };
             });
@@ -292,7 +292,7 @@ function drawZensus(opts) {
         // die Vertex-Programme ohne Ziffern: liegt `programme.vertex` weit darüber, kompiliert die Welt je Objekt.
         const P = rend._pipelines;
         let programme = null;
-        if (P && P.programs) {
+        if (P?.programs) {
             const v = [...P.programs.vertex.values()].map((x) => x.code || "");
             programme = {
                 vertex: v.length,
@@ -730,7 +730,7 @@ async function gangLauf(page, pufferStand, b) {
         page.evaluate(() => {
             const n = {};
             for (const { userData: u } of st.creatures)
-                if (u && u._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
+                if (u?._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });

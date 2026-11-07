@@ -92,7 +92,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             // offset-FREIE Chunk-Formel (der alte +150-Offset war die
             // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
-                st.voxelChunks?.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
+                st.voxelChunks && st.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
             ),
         });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
@@ -215,7 +215,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._rebuildVoxelChunk(cx, cz);
         const attempts1 = st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey);
         out.retryCounter1 = attempts1 === 1;
-        out.dirtyAfterFail = !!(st.dirtyVoxelChunks?.has(someKey));
+        out.dirtyAfterFail = !!(st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(someKey));
         // 2. Versuch: fail → attempts=2
         r._rebuildVoxelChunk(cx, cz);
         out.retryCounter2 = (st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey)) === 2;
@@ -223,7 +223,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._rebuildVoxelChunk(cx, cz);
         const finalEntry = st.voxelChunks.get(someKey);
         out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
-        out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts?.has(someKey));
+        out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts && st.voxelRebuildAttempts.has(someKey));
         // Restore.
         r._buildVoxelChunkData = origBuild;
         st.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
@@ -692,8 +692,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         );
         out.ichStageCanvas = !!document.getElementById("ich-stage-canvas");
         const ichSpec = document.getElementById("ich-stage-spec");
-        out.ichSpecSheet = !!(ichSpec?.querySelector(".spec-sheet"));
-        out.ichSpecHeaderName = !!(ichSpec?.querySelector(".spec-header .spec-name"));
+        out.ichSpecSheet = !!(ichSpec && ichSpec.querySelector(".spec-sheet"));
+        out.ichSpecHeaderName = !!(ichSpec && ichSpec.querySelector(".spec-header .spec-name"));
         out.ichSpecBody2Col = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-col").length === 2);
         out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
@@ -1902,7 +1902,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             cappedTotal = 0;
         out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (entry.mesh?.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
+            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
                 out.t2HasMorphAttrs = true;
             if (entry.hasMorph) out.t2ChunksWithMorph++;
             if (!entry.lodStitchMesh) continue;

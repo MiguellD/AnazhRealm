@@ -1297,7 +1297,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         out.synergyRowRendered = [...panel.querySelectorAll(".spec-col-head")].some(
             (l) => l.textContent === "Rollen-Resonanz"
         );
-        out.growthRowRendered = !!(panel?.querySelector(".spec-growth"));
+        out.growthRowRendered = !!(panel && panel.querySelector(".spec-growth"));
         // Bei 0 opChain steht der Emergenz-Hinweis im growth-text
         const growthText = panel && panel.querySelector(".spec-growth-text");
         out.growthShowsEmptyHint = !!growthText && /emergiert|Werkzeug/.test(growthText.textContent);

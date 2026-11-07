@@ -339,7 +339,7 @@ async function runPartB() {
                         for (const l of stufen)
                             if (!w[l]) {
                                 const fl = r._foundryFlattenFor(e, preset, l);
-                                w[l] = !!(fl && fl.instanceable);
+                                w[l] = !!(fl?.instanceable);
                             }
                         return stufen.every((l) => w[l]);
                     },
@@ -398,7 +398,7 @@ async function runPartB() {
                             const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
                             for (const l of [1, 2]) {
                                 const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                                kalt = kalt || !(fl && fl.instanceable);
+                                kalt = kalt || !(fl?.instanceable);
                             }
                         }
                     }
@@ -558,7 +558,7 @@ async function runPartB() {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
                 if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
-                if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                if (a?.aKarte && a.aKarte.isInstancedBufferAttribute) {
                     const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
                     return { h, hL: h, modus: "fin" };
                 }
@@ -646,7 +646,7 @@ async function runPartB() {
                 const satzStempel = (g, ref, o) => {
                     const S = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
                     const b = S ? S.bloecke.get(g.key) : null;
-                    const z = b && b.zellen ? b.zellen[ref.slot] : null;
+                    const z = b?.zellen ? b.zellen[ref.slot] : null;
                     let anDerInstanz = false;
                     if (z && !z.huelle.isEmpty()) {
                         const T3 = window.THREE;
@@ -664,7 +664,7 @@ async function runPartB() {
                                 key: String(g.key).slice(0, 48),
                                 slot: ref.slot,
                                 bereich: !!b,
-                                zellen: b && b.zellen ? b.zellen.length : 0,
+                                zellen: b?.zellen ? b.zellen.length : 0,
                             };
                         return null;
                     }
@@ -811,7 +811,7 @@ async function runPartB() {
                 let zwBekannt = false;
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
-                    const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
+                    const ref = lu?.uLodRef ? lu.uLodRef.value : lodRefLive;
                     const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
@@ -827,7 +827,7 @@ async function runPartB() {
                             const d = Math.hypot(auge.x - (m[i * 16 + 12] + w[12]), auge.z - (m[i * 16 + 14] + w[14]));
                             const ud = g.mat && g.mat.userData;
                             const laub = !!ud && ["foliage", "foliageTex", "grass"].includes(ud.foundryKind);
-                            if (a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                            if (a.aKarte?.isInstancedBufferAttribute) {
                                 const sicht = a.aKarte.array[i * 4 + 3];
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
@@ -1124,7 +1124,7 @@ async function runPartB() {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
-                if (!(m && m.userData && m.userData.foundryCrossfade === true)) continue;
+                if (!(m?.userData && m.userData.foundryCrossfade === true)) continue;
                 geprueft++;
                 const a = o.geometry.attributes || {};
                 if (!a.aLodLevel || !a.aH0 || !a.aH0L) verstoesse++;
@@ -1141,7 +1141,7 @@ async function runPartB() {
         let bpName = null;
         for (const n in st.blueprints) {
             const fl = r._archFlattenBlueprint(n);
-            if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+            if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                 bpName = n;
                 break;
             }
@@ -1194,7 +1194,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+        if (!(fl0?.leaves && fl1 && fl1.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),
@@ -1238,7 +1238,7 @@ async function runPartB() {
         try {
             const m = r._foundryTreeMaterial("bark", null);
             res.still = !!m;
-            res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
+            res.maske = !!(m?.userData && m.userData.foundryCrossfade === true);
         } catch (e) {
             res.bruch = fehlerText(e);
             res.blende = !!(e && e.blende === true);
@@ -1421,7 +1421,7 @@ async function main() {
         check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
-            !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
+            !!(out.warm?.l0 && out.warm.l1 && out.warm.l2),
             out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);

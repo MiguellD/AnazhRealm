@@ -1185,8 +1185,8 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         const __hkBp = __hkKey && bps[__hkKey];
         out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
         out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
-        out.eichenStammHolz = !!(__heBp?.parts.some((p) => p.material === "holz"));
-        out.eichenKroneLaub = !!(__heBp?.parts.some((p) => p.material === "laub"));
+        out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
+        out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
 
         // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
         // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
@@ -1844,7 +1844,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         for (let cx = 20; cx <= 31; cx++) {
             for (let cz = 20; cz <= 31; cz++) {
                 const key = `${cx},${cz}`;
-                if (st.voxelPopulatedChunks?.has(key)) continue;
+                if (st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(key)) continue;
                 fresh.add(key);
                 // der Test-Pfad braucht synchrone Spawns (er
                 // misst gleich danach state.architectures); im echten

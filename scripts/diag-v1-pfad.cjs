@@ -1697,7 +1697,7 @@ async function probe(arg) {
             const variant = r._foundryVariantFor(r._werkSame(st.blueprints[bpName], bpName), preset);
             return { preset, variant, key: r._foundryKoerperKey(preset, variant, 0) };
         };
-        const imFlug = (k) => !!(f.requested?.has(k)) && !f.cache.has(k);
+        const imFlug = (k) => !!(f.requested && f.requested.has(k)) && !f.cache.has(k);
         // (a) die Vorschau hinter dem Zug der Welt
         zuTeilen();
         const a = schluessel("baum_eiche");

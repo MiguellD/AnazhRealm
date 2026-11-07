@@ -1547,7 +1547,7 @@ async function WELLE_L(ort) {
             if (s.blueprints.klinge_grossschwert) r._setBlueprintWear(s.blueprints.klinge_grossschwert, 1);
             // die Studio-Gestalt in der Hand abwarten (die Foundry baut sie; bis dahin trägt der Teile-Bau) — gemessen wird die
             // Klinge, die der Spieler sieht
-            for (let i = 0; i < 120 && !(pm.userData.heldMesh?.userData.foundryHeld); i++)
+            for (let i = 0; i < 120 && !(pm.userData.heldMesh && pm.userData.heldMesh.userData.foundryHeld); i++)
                 await sleep(125);
             // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
             // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
@@ -2076,7 +2076,7 @@ async function WELLE_L(ort) {
                     for (let f = 0; f < 30; f++) r._p2pTickRemoteCreatures(k * 0.05 + f / 60, 1 / 60);
                     kopie.proben++;
                     const id = hT.userData.netId;
-                    if (msg?.list.some((e) => e.id === id)) kopie.imStrom++;
+                    if (msg && msg.list.some((e) => e.id === id)) kopie.imStrom++;
                     const rc = s.p2p.remoteCreatures.get(peer + ":" + id);
                     if (rc?.mesh) {
                         rc.mesh.updateMatrixWorld(true);

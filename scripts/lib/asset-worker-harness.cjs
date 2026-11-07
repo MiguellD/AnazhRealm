@@ -24,7 +24,9 @@ const WORKER_SCRIPTS = ["scripts", "bruecke"].flatMap((f) => CORES_MANIFEST.flat
 // Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin): DERSELBE Start wie
 // die Welt (`_foundryStart` der echten Klasse — Manifest per fetch, die Engine der Import-Karte, Halten bis die Kerne
 // stehen), ohne Transport-Schale (das Harness liest den Bau roh). Die Brücke startet sich selbst (ready).
-const WORKER_BOOT = `"(function " + ${JSON.stringify(String(stammLib.ladeKlasse(ROOT).AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {});"`;
+// Die geladene Klasse reist mit (`KLASSE`): ihr Kern-Kontext trägt die Gesetze, die eine Wand gegen den Bau liest (das SAISON_GESETZ).
+const KLASSE = stammLib.ladeKlasse(ROOT);
+const WORKER_BOOT = `"(function " + ${JSON.stringify(String(KLASSE.AnazhRealm._foundryStart))} + ")(" + JSON.stringify({ v: "", base: location.origin + "/", module: { three: location.origin + ${JSON.stringify(ENGINE_MODUL())} } }) + ", function () {});"`;
 
 // DER BAU-FINGERABDRUCK — die EINE Quelle für jeden Bau über die echte Brücke (die Seite per toString, Node direkt): die
 // Plattform-Probe (`__probeLauf`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (`__bauHashListe`, bewegt ein Regler den Bau?).
@@ -513,6 +515,7 @@ function ersteAbweichung(ist, soll, pfad = "") {
 }
 
 module.exports = {
+    KLASSE,
     runWithWorker,
     fingerprintMeshes,
     DATEN_KANAELE,

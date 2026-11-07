@@ -49,7 +49,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
                 ok: !!po,
                 invited,
                 coPresence: po ? po.coPresence === true : false,
-                hint: po && po.hintEl ? po.hintEl.textContent : "",
+                hint: po?.hintEl ? po.hintEl.textContent : "",
             };
         });
         check("A betrat das Begegnungs-Portal", enteredA.ok === true, JSON.stringify(enteredA));
@@ -60,7 +60,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // B bekommt die Einladung (mit Tier-Wahrheit im Banner) + folgt.
         await waitFor(
             pageB,
-            () => !!(st.p2p && st.p2p.pendingInvite),
+            () => !!(st.p2p?.pendingInvite),
             "B sieht die Portal-Einladung"
         );
         const bannerB = await pageB.evaluate(() => {
@@ -85,7 +85,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             (idA) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && po.peers.has(idA));
+                return !!(po?.peers && po.peers.has(idA));
             },
             "B sieht A's Pose in seiner Sub-Welt (po.peers)",
             peerIdA
@@ -95,7 +95,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             (idB) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && po.peers.has(idB));
+                return !!(po?.peers && po.peers.has(idB));
             },
             "A sieht B's Pose in seiner Sub-Welt (po.peers)",
             peerIdB
@@ -108,7 +108,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             () => {
                 const j = st.worldJournal;
-                return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
+                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "B's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
@@ -122,7 +122,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             () => {
                 const j = st.worldJournal;
-                return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
+                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "A's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
@@ -141,9 +141,9 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         const bridgeA = await pageA.evaluate(() => {
             const po = r._portalOverlay;
             return {
-                actions: po && po.inputActions ? po.inputActions.slice() : null,
-                hint: po && po.hintEl ? po.hintEl.textContent : "",
-                poseZ: po && po.localPose ? po.localPose.z : null,
+                actions: po?.inputActions ? po.inputActions.slice() : null,
+                hint: po?.hintEl ? po.hintEl.textContent : "",
+                poseZ: po?.localPose ? po.localPose.z : null,
             };
         });
         check(
@@ -163,7 +163,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             taste: "KeyW",
             ziel: (beforeZ) => {
                 const po = r._portalOverlay;
-                return !!(po && po.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
+                return !!(po?.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
             },
             args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
             frist: 30000,
@@ -199,7 +199,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             (idA) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && !po.peers.has(idA));
+                return !!(po?.peers && !po.peers.has(idA));
             },
             "B: A verstummt → peer-leave (Abwesenheits-Sweep)",
             peerIdA
@@ -217,7 +217,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             () => {
                 const po = r._portalOverlay;
-                return !!(po && po.localPose && po.localPose.z < -50);
+                return !!(po?.localPose && po.localPose.z < -50);
             },
             "A: die Welt erwachte an der gemerkten Position (restoreState)"
         );
@@ -237,7 +237,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             return {
                 ok: res.ok === true,
                 worldId: marker ? marker.worldId : null,
-                hint: po && po.hintEl ? po.hintEl.textContent : "",
+                hint: po?.hintEl ? po.hintEl.textContent : "",
             };
         });
         check(
@@ -271,7 +271,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         );
         const rebornB = await pageB.evaluate(() => {
             const po = r._portalOverlay;
-            return { hint: po && po.hintEl ? po.hintEl.textContent : "" };
+            return { hint: po?.hintEl ? po.hintEl.textContent : "" };
         });
         check("B: du wachst auf, wo du wohnst (Boot-Rückkehr durchs Tor)", true);
         check("B: der Hinweis kennt das Zuhause nach dem Reload", /wohnst hier/.test(rebornB.hint), rebornB.hint);

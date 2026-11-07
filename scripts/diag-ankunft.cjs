@@ -581,8 +581,8 @@ async function probe(arg) {
             // Radius wuchs, sein Wald war noch nicht in der Schlange)
             const sp = r._voxelChunkConfig().span;
             const saatKey = `${Math.floor(pm.x / sp)},${Math.floor(pm.z / sp)}`;
-            const hatteSaat = !!(st.pendingFoliageChunks?.has(saatKey));
-            if (st.voxelChunks?.has(saatKey) && !hatteSaat)
+            const hatteSaat = !!(st.pendingFoliageChunks && st.pendingFoliageChunks.has(saatKey));
+            if (st.voxelChunks && st.voxelChunks.has(saatKey) && !hatteSaat)
                 fall(
                     "saat",
                     () => (st.pendingFoliageChunks = st.pendingFoliageChunks || new Set()).add(saatKey),
@@ -839,7 +839,7 @@ async function probe(arg) {
                         const mD = [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue];
                         Object.assign(window, { __anazhAutoSettlement: true }) && Object.assign(wmD, { settlementCells: ohneStart });
                         Object.assign(r, { _autoSettlementStartHopeless: false, _autoSettlementPendingKey: null, _autoSettlementQueue: null, _foundryRequestSettlement: (dp, kopf) => ((k.dorf.export = !!dp), (k.dorf.kopfRang = kopf === true), Promise.resolve(null)) }); // prettier-ignore
-                        const [f, hoer] = [r._foundry, r._foundryHoerer && r._foundry && r._foundryHoerer.get(r._foundry.buchDa)]; if ((k.dorf.kopf = !!(hoer?.has("start-dorf")))) { const da = f.buchDa; f.buchDa = Promise.resolve(); r._startDorfAmBuch(); f.buchDa = da; } // prettier-ignore
+                        const [f, hoer] = [r._foundry, r._foundryHoerer && r._foundry && r._foundryHoerer.get(r._foundry.buchDa)]; if ((k.dorf.kopf = !!(hoer && hoer.has("start-dorf")))) { const da = f.buchDa; f.buchDa = Promise.resolve(); r._startDorfAmBuch(); f.buchDa = da; } // prettier-ignore
                         await sleep(0);
                         [window.__anazhAutoSettlement, wmD.settlementCells, r._autoSettlementStartHopeless, r._autoSettlementPendingKey, r._autoSettlementQueue] = mD; // prettier-ignore
                     } else k.dorf.ohne = m.ohneFall.dorfFaellig;

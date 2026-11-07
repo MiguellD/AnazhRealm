@@ -216,7 +216,7 @@ hauptLauf(async () => {
         {
             const wm = st.weltMarch;
             res.d = {
-                voll: r._weltKapselnVollWarn === true || !!(wm && wm.kapselVoll),
+                voll: r._weltKapselnVollWarn === true || !!(wm?.kapselVoll),
                 cursor: wm ? wm.kapselCursor : -1,
                 kapazitaet: AR.WELT_MARCH.kapseln,
                 plaetze: wm ? wm.gesetzPlaetze : -1,
@@ -342,7 +342,7 @@ hauptLauf(async () => {
             let satz = null;
             for (const weiter = __deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
-                if (satz && satz.length) break;
+                if (satz?.length) break;
                 await sleep(100);
             }
             fit.n = satz ? satz.length : 0;
@@ -359,8 +359,8 @@ hauptLauf(async () => {
             // die Quelle: unverschmolzen trägt der Haufen mehr Teile, als der Satz übernimmt
             const bf = r._foundryFlattenFor({ seed: 7 }, "geroell", 1);
             fit.teile =
-                bf && bf.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
-            fit.leaves = bf && bf.leaves ? bf.leaves.length : 0;
+                bf?.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
+            fit.leaves = bf?.leaves ? bf.leaves.length : 0;
         } catch (e) {
             fit.err = fehlerText(e);
         }
@@ -372,10 +372,10 @@ hauptLauf(async () => {
             let flat = null;
             for (const weiter = __deckel("das Flat des Gerölls", 600, false); weiter(); ) {
                 flat = r._foundryFlattenFor({ seed: 7 }, "geroell", 0);
-                if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
+                if (flat?.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
             }
-            if (flat && flat.leaves) {
+            if (flat?.leaves) {
                 const vor = absenz().n;
                 const slots = r._scatterInstanceAdd(
                     "fscatter:geroell:3:0",
@@ -544,7 +544,7 @@ hauptLauf(async () => {
             c.nahFern === 0 &&
             (c.falsch || []).length === 0 &&
             c.gesetz > 0,
-        `gesetz ${c.gesetz} (wartet ${c.wartet}) · boden ${c.boden} · diesseits Mesh auf Fern-Wunsch ${c.nahMesh} · diesseits Fernform ${c.nahFern} · ohne Form ${c.ohneForm} · litter ${c.litter}${c.falsch && c.falsch.length ? " · " + c.falsch.join(" · ") : ""}`
+        `gesetz ${c.gesetz} (wartet ${c.wartet}) · boden ${c.boden} · diesseits Mesh auf Fern-Wunsch ${c.nahMesh} · diesseits Fernform ${c.nahFern} · ohne Form ${c.ohneForm} · litter ${c.litter}${c.falsch?.length ? " · " + c.falsch.join(" · ") : ""}`
     );
     const gg = out.g || {};
     const gh = gg.hin || {},
@@ -558,7 +558,7 @@ hauptLauf(async () => {
             gz.mesh === 0 &&
             gz.gesetz > 0 &&
             gg.bNachZurueck === 0,
-        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}${gg.bTreffer && gg.bTreffer.length ? " (" + gg.bTreffer.join(", ") + ")" : ""}`
+        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}${gg.bTreffer?.length ? " (" + gg.bTreffer.join(", ") + ")" : ""}`
     );
     const d = out.d || {};
     check(
@@ -617,7 +617,7 @@ hauptLauf(async () => {
         const iv = setInterval(() => {
             if (!r) return;
             clearInterval(iv);
-            if (r._foundry && r._foundry.recipes) {
+            if (r._foundry?.recipes) {
                 H.zuSpaet = true;
                 return;
             }
@@ -655,7 +655,7 @@ hauptLauf(async () => {
         let kalt = 0,
             warm = 0;
         r._tickNahWiese = function (dl) {
-            if (r._foundry && r._foundry.recipes) warm++;
+            if (r._foundry?.recipes) warm++;
             else kalt++;
             return Object.getPrototypeOf(r)._tickNahWiese.call(this, dl);
         };
@@ -666,7 +666,7 @@ hauptLauf(async () => {
         };
         for (const weiter = __deckel("der kalte Takt ohne Buch", 12000); kalt < KALT && weiter(); ) await takt();
         res.kalt = kalt;
-        res.buchKalt = !(r._foundry && r._foundry.recipes);
+        res.buchKalt = !(r._foundry?.recipes);
         res.fehlerKalt = fehler.splice(0);
         // SELBSTTEST 4: die alte Lese-Reihenfolge — ein Deko-Leser fragt das Budget vor dem Buch; H muss ihn nennen.
         r._tickNahStreu = function (dl) {

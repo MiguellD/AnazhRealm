@@ -100,26 +100,26 @@ function abnahmeUrteil(m, S) {
             rot.push({ feld: s.feld, grund });
         }
     const t = [];
-    if (m && m.sicht)
+    if (m?.sicht)
         t.push(
             `Sicht ${pct(m.sicht.deckung)}${m.sicht.taeter && Object.keys(m.sicht.taeter).length ? ` (${namen(m.sicht.taeter)})` : ""}`
         );
-    if (m && m.ziel)
+    if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m`
         );
     else if (m && satz === "beweis") t.push("Ziel ungenannt");
-    if (m && m.bild)
+    if (m?.bild)
         t.push(`Luma ${m.bild.mittel} σ ${m.bild.sigma} schwarz ${pct(m.bild.schwarz)} weiß ${pct(m.bild.weiss)}`);
-    if (m && m.stand)
+    if (m?.stand)
         t.push(`Stand ${m.stand.version || "?"}${m.stand.sha ? " " + String(m.stand.sha).slice(0, 8) : ""}`);
-    if (m && m.buehne)
+    if (m?.buehne)
         t.push(
             `Bühne ${m.buehne.saison || "?"} ${m.buehne.wetter || "?"} ${m.buehne.uhr != null ? (+m.buehne.uhr).toFixed(2) : "?"}${m.buehne.tiereGehalten ? " Tiere gehalten" : ""}`
         );
-    if (m && m.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
-    if (m && m.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
-    if (m && m.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
+    if (m?.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
+    if (m?.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
+    if (m?.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
     const kopf = rot.length ? `ABNAHME ROT [${rot.map((r) => r.grund).join(" · ")}]` : "ABNAHME GRÜN";
     return { ok: rot.length === 0, rot, zeile: `${kopf} · ${satz} · ${t.join(" · ")}` };
 }
@@ -938,7 +938,7 @@ function aperturSchuesse(ma, q) {
     const apRe = new RegExp(rc.apertur),
         tor = new RegExp(rc.tor);
     const sv = rc.stufen;
-    const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+    const K0 = q?.kern ? q.kern(sv.datei, sv.symbol) : undefined;
     const pfad = (p) => {
         let v = K0;
         for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
@@ -1347,7 +1347,7 @@ function albedoZeile(ma, q) {
 function messStand(bloecke, quellen, q) {
     for (const b of bloecke) {
         const st = (b && b.stand) || {};
-        if (!(st.version || (b && b.version))) return "Stand ungeprüft: die Messung trägt keine Version";
+        if (!(st.version || (b?.version))) return "Stand ungeprüft: die Messung trägt keine Version";
         const sha = st.sha || (b && b.sha);
         if (!sha) return "Stand ungeprüft: die Messung trägt keinen Commit (stand.sha)";
         for (const d of quellen) {
@@ -1587,7 +1587,7 @@ function sollTafelUrteil(tafel, q) {
         // DIE VORLAGE: ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
         // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
         for (const vl of k.vorlage || []) {
-            const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
+            const w = vl?.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
             if (w === undefined)
                 fehler.push(
                     `${wo}: Vorlage ${(vl && vl.karte) || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
@@ -1754,7 +1754,7 @@ function sollTafelUrteil(tafel, q) {
             veraltet: !!stand,
             stand:
                 r.stand ||
-                (me && me.datum
+                (me?.datum
                     ? `${String(me.datum).slice(0, 10)} ${String(me.stand.sha || "").slice(0, 8)} ${me.geraet.adapter || ""}`.trim()
                     : null),
             stufen,
@@ -2037,7 +2037,7 @@ function sollTafelSelbsttest(tafel, q) {
         const l1 = linie(1),
             l24 = linie(2.4),
             l3 = linie(3);
-        const lb = (tafel && tafel.klassen ? tafel.klassen : []).find((k) => k.id === "laub-kante");
+        const lb = (tafel?.klassen ? tafel.klassen : []).find((k) => k.id === "laub-kante");
         const grenze = lb ? ((lb.soll.eigenschaften || []).find((e) => e.groesse === "kante") || {}).band : null;
         if (!(l1 < l24 && l24 < l3 && l3 < kq.kante)) v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
         if (grenze && !(l24 <= grenze[1])) v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);

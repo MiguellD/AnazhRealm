@@ -247,7 +247,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const uniqueMaps = new Set();
         for (let i = 0; i < 10; i++) {
             r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
-            if (c3.userData.taskAura?.material.map) {
+            if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
                 uniqueMaps.add(c3.userData.taskAura.material.map);
             }
             r.assignCreatureTask(c3, "wander", {}, { silent: true });
@@ -397,10 +397,10 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.listRendersRows = list && list.querySelectorAll(".creature-row").length === st.creatures.length;
         // Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
         // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
-        out.hasTaskActions = !!(list?.querySelector(".creature-actions-inline"));
-        out.hasFolgeInline = !!(list?.querySelector('[data-task="follow_player"]'));
-        out.hasWarteInline = !!(list?.querySelector('[data-task="wait"]'));
-        out.hasStreiftInline = !!(list?.querySelector('[data-task="wander"]'));
+        out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
+        out.hasFolgeInline = !!(list && list.querySelector('[data-task="follow_player"]'));
+        out.hasWarteInline = !!(list && list.querySelector('[data-task="wait"]'));
+        out.hasStreiftInline = !!(list && list.querySelector('[data-task="wander"]'));
         const firstRow = list && list.querySelector(".creature-row");
         out.rowHasNameSoulTask =
             firstRow &&
@@ -428,7 +428,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
         // Hof-D — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
-        out.rowHasMoodGlyph = !!(firstRow?.querySelector(".creature-mood"));
+        out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
         // Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
         // die Spec-Card lebt als GETEILTES Werkstatt-Spec-Sheet (.spec-sheet) unter/neben der Bühne.
@@ -439,9 +439,9 @@ async function checkBandWelle6HCreatures({ page, check }) {
             stageSpec.querySelectorAll(".spec-sheet").length === 1 &&
             stageSpec.querySelectorAll(".spec-body .spec-bar").length > 0;
         // Werkstatt-DNA: Header (Name) + zwei-Spalten-Body (Natur | Werte) + Footer (Verabschieden).
-        out.stageHasTitle = !!(stageSpec?.querySelector(".spec-header .spec-name"));
+        out.stageHasTitle = !!(stageSpec && stageSpec.querySelector(".spec-header .spec-name"));
         out.stageHasBody2Col = !!(stageSpec && stageSpec.querySelectorAll(".spec-body .spec-col").length === 2);
-        out.stageHasDismiss = !!(stageSpec?.querySelector(".spec-footer .spec-dismiss"));
+        out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".spec-footer .spec-dismiss"));
         // Fokus-Toggle: ein Klick auf ein Wesen fokussiert es (genau EINE Zeile .focused) → es tritt auf die Bühne.
         const firstProf = r._creatureProfile(st.creatures[0]);
         r._toggleHofFocus(firstProf.id);
@@ -497,7 +497,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         r.clearCreatures();
         r._renderCreatureListUI();
         // Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
-        out.emptyShowsOnboarding = !!(list?.querySelector(".hof-empty"));
+        out.emptyShowsOnboarding = !!(list && list.querySelector(".hof-empty"));
         // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
         // UI Run-Button): brauchen Kreaturen-Population.
         r.spawnCreatures(10);
@@ -761,7 +761,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.gatherSelectHasMaterials = orderSel
             ? [...orderSel.querySelectorAll("option")].filter((o) => o.value.startsWith("gather:")).length >= 10
             : false;
-        out.hasNearestGatherBtn = !!(list?.querySelector(".creature-row [data-task]"));
+        out.hasNearestGatherBtn = !!(list && list.querySelector(".creature-row [data-task]"));
         out.hasAllGatherBtn = orderSel
             ? [...orderSel.querySelectorAll("option")].some((o) => o.value.startsWith("build:"))
             : false;
@@ -1967,7 +1967,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 wp.updateMatrixWorld(true);
                 wp.traverse((n) => {
                     if (!n.isSkinnedMesh || !n.boundingSphere) return;
-                    if (l1Geo?.has(n.geometry)) zw.geprueft++;
+                    if (l1Geo && l1Geo.has(n.geometry)) zw.geprueft++;
                     const kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
                     const pos = n.geometry.attributes.position;
                     for (let i = 0; i < pos.count; i += 3) {

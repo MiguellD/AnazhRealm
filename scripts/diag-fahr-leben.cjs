@@ -525,7 +525,7 @@ function stationVerdict(s) {
     }
     // L10 DER GESTOSSENE SCHWIMMER
     const sch = s.schwimmer;
-    if (!sch || sch.fehler) out.push(`schwimmer keine Probe${sch && sch.fehler ? " (" + sch.fehler + ")" : ""}`);
+    if (!sch || sch.fehler) out.push(`schwimmer keine Probe${sch?.fehler ? " (" + sch.fehler + ")" : ""}`);
     else if (!(sch.gleitet >= 3)) out.push("schwimmer: der Stoß trägt ihn nicht (vakuös)");
     else if (!(sch.tiefste >= -STATION.schwimmTiefM))
         out.push(
@@ -865,7 +865,7 @@ function bahnKernVerdict(rows) {
     return out;
 }
 function bahnPlatzVerdict(m) {
-    if (!m || !m.da) return [m && m.grund ? m.grund : "kein Wagen"];
+    if (!m || !m.da) return [m?.grund ? m.grund : "kein Wagen"];
     const out = [];
     if (!(m.neigung <= BAHN.neigungGrad))
         out.push(`Neigung ${m.neigung.toFixed(0)}° (steig ${m.steig.toFixed(0)}°, wank ${m.wank.toFixed(0)}°)`);
@@ -880,7 +880,7 @@ function bahnPlatzVerdict(m) {
     return out;
 }
 function bahnStossVerdict(m) {
-    if (!m || !m.da) return [m && m.grund ? m.grund : "keine Station"];
+    if (!m || !m.da) return [m?.grund ? m.grund : "keine Station"];
     const out = [];
     if (!m.stoss) out.push(`kein Stoß am ${m.ziel}${m.ohneStoss ? " " + JSON.stringify(m.ohneStoss) : ""}`);
     if (!m.versuche || m.versuche.length === 0) out.push(`keine Befreiung am ${m.ziel}`);
@@ -1000,7 +1000,7 @@ function bahnTastenVerdict(m) {
     return out;
 }
 function bahnWandVerdict(m) {
-    if (!m || !m.da) return [m && m.grund ? m.grund : "keine Probe"];
+    if (!m || !m.da) return [m?.grund ? m.grund : "keine Probe"];
     const out = [];
     if (m.urteil !== "wagen")
         out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
@@ -1086,7 +1086,7 @@ async function probeBahn(B) {
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
     await __weltDa(() => f && f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { err: "Buch ohne fahrzeug_gt" };
+    if (!(st.blueprints?.fahrzeug_gt)) return { err: "Buch ohne fahrzeug_gt" };
     // DER TAKT: echte Frames (`_gameLoopTick`), feste Schritte — die Zahl der Frames ist die Uhr.
     let tMs = performance.now();
     const frame = () => {
@@ -2571,7 +2571,7 @@ hauptLauf(async () => {
     console.log("=== T — DER RITT-TAKT (Q1 · F-D1 F-D2 F-D10), echter Frame (_gameLoopTick) ===");
     if (out.err) check("Probe ohne Ausnahme", false, out.err.split("\n")[0]);
     const zeile = (m) =>
-        m && m.gestartet
+        m?.gestartet
             ? `teleport ${m.teleport}/${m.frames} · sim ${m.simWeg.toFixed(2)} m · fahrt ${m.fahrWeg.toFixed(2)} m · luft ${m.luft}/${m.schritte} · gier ohne Schritt ${m.gierGrad.toFixed(1)}° (gesamt ${m.gierGesamt.toFixed(1)}°) · v ${m.v.toFixed(1)} m/s`
             : "nicht gestartet";
     const vGt = taktVerdict(out.gt);
@@ -2758,8 +2758,8 @@ hauptLauf(async () => {
     const reiterZeile = (q) =>
         q.fehler || q.sitz === null
             ? `${q.typ} ${q.fehler || "ohne Sitz"}`
-            : `${q.typ.replace("fahrzeug_", "")}: Kopf ${q.dach === null ? "offen" : (q.oben - q.dach).toFixed(2)} · Schenkel ${(q.schenkel - q.sitz).toFixed(2)} · Anker ${Math.hypot(q.ankerL, q.ankerQ).toFixed(2)} · Blick ${q.blickGrad.toFixed(0)}° · Lehne ${q.lehneGrad}°${q.glas && q.glas.n ? ` · durch die Tür ${((100 * q.glas.aussen) / q.glas.n).toFixed(1)} %` : ""}${
-                  q.aussen && q.aussen.n
+            : `${q.typ.replace("fahrzeug_", "")}: Kopf ${q.dach === null ? "offen" : (q.oben - q.dach).toFixed(2)} · Schenkel ${(q.schenkel - q.sitz).toFixed(2)} · Anker ${Math.hypot(q.ankerL, q.ankerQ).toFixed(2)} · Blick ${q.blickGrad.toFixed(0)}° · Lehne ${q.lehneGrad}°${q.glas?.n ? ` · durch die Tür ${((100 * q.glas.aussen) / q.glas.n).toFixed(1)} %` : ""}${
+                  q.aussen?.n
                       ? ` · außen ${
                             ["unten", "seite", "oben", "laengs"]
                                 .filter((k) => q.aussen[k])
@@ -2829,7 +2829,7 @@ hauptLauf(async () => {
         check(
             "F3 die Natur-Wand kennt den Wagen: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT fällt („wagen“), der Wagen ist kein Grundriss",
             wv.length === 0,
-            bahn.wand && bahn.wand.da
+            bahn.wand?.da
                 ? `Urteil ${bahn.wand.urteil} · Grundriss ${bahn.wand.grundriss}${wv.length ? " — " + wv.join(" · ") : ""}`
                 : wv.join(" · ")
         );
@@ -2841,7 +2841,7 @@ hauptLauf(async () => {
             `ohne Platz-Gesetz: ${bz(bahn.schmuggelPlatz)} — ${sp.join(" · ") || "GRÜN (vakuös)"} · ohne Wagen: ${sw.join(" · ") || "GRÜN (vakuös)"}`
         );
         const sz = (m) =>
-            m && m.da
+            m?.da
                 ? `Stoß ${m.stoss ? "ja" : "nein"} · ${m.versuche.map((v) => `${v.seite} frei nach ${v.freiFrame >= 0 ? (v.freiFrame / 60).toFixed(2) + " s" : "—"} (${v.weg.toFixed(2)} m in 2 s)`).join(" · ")}`
                 : (m && m.grund) || "—";
         for (const [name, m] of [

@@ -61,14 +61,14 @@ hauptLauf(async () => {
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
-        const lofi = f && f.recipes ? f.recipes.lofi : null;
+        const lofi = f?.recipes ? f.recipes.lofi : null;
         res.b.lofiKind = lofi && lofi.kind;
-        res.b.lofiBpm = lofi && lofi.fx && lofi.fx.klang ? lofi.fx.klang.bpm : null;
-        res.b.lofiScale = lofi && lofi.fx && lofi.fx.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
+        res.b.lofiBpm = lofi?.fx && lofi.fx.klang ? lofi.fx.klang.bpm : null;
+        res.b.lofiScale = lofi?.fx && lofi.fx.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
         res.b.klangCount =
-            f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
+            f?.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
         res.b.params =
-            f && f.paramsByKind
+            f?.paramsByKind
                 ? {
                       klang: Array.isArray(f.paramsByKind.klang) ? f.paramsByKind.klang.length : -1,
                       koerper: Array.isArray(f.paramsByKind.koerper) ? f.paramsByKind.koerper.length : -1,
@@ -99,7 +99,7 @@ hauptLauf(async () => {
             const _kc = globalThis.__klangCore;
             const _extSoll = () => {
                 const sp = r._klangStudioPreset();
-                return _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(sp && sp.dna ? sp.dna.color : 0) : 1;
+                return _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(sp?.dna ? sp.dna.color : 0) : 1;
             };
             const _c0 = r._lofiChordFromDegree(0);
             res.k.chord0Studio = _c0.length === 3 + _extSoll() ? JSON.stringify(_c0.slice(0, 4)) : "len" + _c0.length;
@@ -211,7 +211,7 @@ hauptLauf(async () => {
             const lowY = (ps) =>
                 Math.min.apply(
                     null,
-                    ps.map((p) => (p && p.position ? p.position.y : 1e9))
+                    ps.map((p) => (p?.position ? p.position.y : 1e9))
                 );
             const prevLeg = f.recipes.deer.s.leg;
             f.recipes.deer.s.leg = 0.35;
@@ -252,7 +252,7 @@ hauptLauf(async () => {
             const hiY = (ps) =>
                 Math.max.apply(
                     null,
-                    ps.map((q) => (q && q.position ? q.position.y : -1e9))
+                    ps.map((q) => (q?.position ? q.position.y : -1e9))
                 );
             const prevNeck = f.recipes.wolf.s.neck;
             f.recipes.wolf.s.neck = 0.15;
@@ -263,7 +263,7 @@ hauptLauf(async () => {
             // body-shaped + Rolle soul; das Landmark-GESETZ wohnt im koerper-core
             // (der Stamm-Delegat und der Kern liefern DENSELBEN Guss — eine Quelle).
             const wb = st.blueprints.koerper_human;
-            res.x.waechterParts = wb && wb.parts ? wb.parts.length : 0;
+            res.x.waechterParts = wb?.parts ? wb.parts.length : 0;
             res.x.waechterBody = !!wb && r._isBodyShaped(wb) === true;
             res.x.waechterRole = wb ? r.computeBlueprintRole(wb) : null;
             res.x.waechterTags = wb ? JSON.stringify(r.computeCompoundTags({ parts: wb.parts })) : "";
@@ -297,7 +297,7 @@ hauptLauf(async () => {
                         .map((k) => [k, t[k]])
                 );
             };
-            res.x.holzrossParts = hb && hb.parts ? hb.parts.length : 0;
+            res.x.holzrossParts = hb?.parts ? hb.parts.length : 0;
             res.x.holzrossMoveable = !!hb && r._isMoveable(hb) === true;
             res.x.holzrossRole = hb ? r.computeBlueprintRole(hb) : null;
             res.x.holzrossSitz = !!hb && JSON.stringify(hb.connections) === '[{"type":"sitz","partA":0,"partB":-1}]';
@@ -411,10 +411,10 @@ hauptLauf(async () => {
         try {
             res.o = {};
             const gM = r._workshopStudioPreviewFrom("mensch", 1, 0, null);
-            res.o.mensch = !!(gM && gM.isObject3D && gM.userData && gM.userData.rig);
+            res.o.mensch = !!(gM?.isObject3D && gM.userData && gM.userData.rig);
             res.o.menschMemo = r._workshopStudioPreviewFrom("mensch", 1, 0, null) === gM;
             const gW = r._workshopStudioPreviewFrom("wolf", 1, 0, null);
-            res.o.wolf = !!(gW && gW.isObject3D && gW.children.length > 0);
+            res.o.wolf = !!(gW?.isObject3D && gW.children.length > 0);
             const pDef = r._tetrapodaSoulParts("wolf");
             const pOv = r._tetrapodaSoulParts("wolf", { leg: 0.5 });
             res.o.ovFormt = !!(
@@ -639,7 +639,7 @@ hauptLauf(async () => {
     check(
         "O: klang-Rezept ist ehrlich 3D-frei (false, keine pending-Schleife) + die WELT-KLANG-WAHL wirkt (Tempo-Zahl)",
         !!out.o && out.o.klangFalse === true && out.o.klangWahl && out.o.klangWahl.wirkt === true,
-        out.o && out.o.klangWahl ? `lofi=${out.o.klangWahl.before}ms blues=${out.o.klangWahl.after}ms` : ""
+        out.o?.klangWahl ? `lofi=${out.o.klangWahl.before}ms blues=${out.o.klangWahl.after}ms` : ""
     );
     check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
 

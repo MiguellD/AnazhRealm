@@ -431,7 +431,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         // Aufruf für denselben Chunk spawnt nichts mehr.
         r._populateVoxelChunkVegetation(777, 777);
         out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
-        out.voxelVegMarksChunk = !!(st.voxelPopulatedChunks?.has("777,777"));
+        out.voxelVegMarksChunk = !!(st.voxelPopulatedChunks && st.voxelPopulatedChunks.has("777,777"));
 
         // Die Höhen-Konsumenten sind voxel-aware: getTerrainHeightAt + findSurfaceAbove liefern die
         // Voxel-Oberfläche.
@@ -2516,7 +2516,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
     check(
         `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springt JEDER Wolf (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
         !!p && p.movedXZ <= 1.0 && !!da && da.n >= 3 && da.ueber === da.n && !da.halt.length,
-        da?.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
+        da && da.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
     );
 }
 

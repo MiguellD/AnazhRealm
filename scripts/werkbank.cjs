@@ -2249,7 +2249,7 @@ async function starte() {
                                 for (let dz = -2; dz <= 2; dz++) {
                                     const key = `${cx + dx},${cz + dz}`;
                                     const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
-                                    if (!(e?.empty) && !(satz?.bloecke.has(key))) fehlt.push(key);
+                                    if (!(e?.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
                                 }
                             return { chunk: `${cx},${cz}`, fehlt };
                         };
@@ -3881,5 +3881,5 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit?.rot.length))));
+    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit && o.zeit.rot.length))));
 });

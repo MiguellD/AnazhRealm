@@ -35,7 +35,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
         // nicht existent → durch den EINEN Abbau (der Boden-Satz verliert den Bereich mit), kein Re-Populate
-        if (st.voxelChunks?.has(tk)) r._disposeVoxelChunk(tk);
+        if (st.voxelChunks && st.voxelChunks.has(tk)) r._disposeVoxelChunk(tk);
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
@@ -44,7 +44,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         // läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
-        for (const k of [tk2, tk3]) if (st.voxelChunks?.has(k)) r._disposeVoxelChunk(k);
+        for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
         st.foliageRadius = 9999;
         st.pendingFoliageChunks = new Set([tk3, tk2]); // der fernere zuerst eingereiht: die Wahl folgt der Nähe
         st._frameOverBudget = true;
@@ -73,7 +73,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 const frx = Math.floor(ppD.x / SCcfg.regionM),
                     frz = Math.floor(ppD.z / SCcfg.regionM);
                 const fk = `${frx},${frz}`;
-                const existed = !!(st.scatterRegions?.has(fk));
+                const existed = !!(st.scatterRegions && st.scatterRegions.has(fk));
                 const _prevDensHook = window.__anazhGateNoFoundry;
                 window.__anazhGateNoFoundry = true;
                 let dFull = 0,
@@ -274,7 +274,7 @@ async function checkBandNahStreu({ page, check }) {
                     const tx = Math.floor(pp.x / NS.kachel) + dx;
                     const tz = Math.floor(pp.z / NS.kachel) + dz;
                     const satz = r._nahStreuKachel(tx, tz, arten);
-                    if (satz?.items.length) kachel = { tx, tz, satz };
+                    if (satz && satz.items.length) kachel = { tx, tz, satz };
                 }
             }
         }
@@ -334,7 +334,7 @@ async function checkBandNahStreu({ page, check }) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
                 const satz = st.chunkSaetze ? st.chunkSaetze.get(a.satz) : null;
-                const wiege = !!(satz?.geom.attributes.aWiege);
+                const wiege = !!(satz && satz.geom.attributes.aWiege);
                 const knoten = e.weich
                     ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
                     : still(a.mat);
@@ -913,7 +913,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
         const sk = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
-        const baseR = sk?.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
         // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
         // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
         const sockelParts = parts.filter(
@@ -1591,7 +1591,7 @@ async function checkBandV18219bisVollendung({ page, check }) {
             if (mesh) {
                 out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
                 out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
-                out.canopyMeshInMap = !!(st.canopyChunks?.has("2,3"));
+                out.canopyMeshInMap = !!(st.canopyChunks && st.canopyChunks.has("2,3"));
             }
             const disposed = r._canopyDisposeChunkByKey("2,3");
             out.canopyDisposed = disposed === true;
@@ -1835,9 +1835,9 @@ async function checkBandWahrerAnblickFels({ page, check }) {
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
         out.rockGeomBuilt = !!(geom?.attributes && geom.attributes.position);
-        out.rockGeomDetailed = !!(geom?.attributes.position && geom.attributes.position.count >= 12);
+        out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
         // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
-        if (geom?.attributes.position) {
+        if (geom && geom.attributes.position) {
             const p = geom.attributes.position;
             let rmin = Infinity,
                 rmax = 0;
@@ -1909,7 +1909,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
                 // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
                 // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
                 // Vielfaches von 4.
-                if (card?.attributes.position && card.attributes.position.count >= 4) {
+                if (card && card.attributes.position && card.attributes.position.count >= 4) {
                     const cnt = card.attributes.position.count;
                     taperProven = !!card.attributes.uv && cnt % 4 === 0;
                 }
@@ -1970,7 +1970,7 @@ async function checkBandScatterScheibe({ page, check }) {
             return JSON.stringify(b);
         };
         const clean = () => {
-            if (st.scatterRegions?.has(key)) r._disposeScatterRegion(key);
+            if (st.scatterRegions && st.scatterRegions.has(key)) r._disposeScatterRegion(key);
         };
         // die Region kommt zur Ruhe (kein Wurf wartet mehr auf Wald-Plan, Zug oder Karte): ein wartender Wurf hält seinen Platz
         // (`_scatterPass`) — was zwischen zwei Bauten ankäme, verschöbe ihre Plätze, die Vergleiche unten messen dieselbe Welt
