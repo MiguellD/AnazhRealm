@@ -1664,14 +1664,13 @@ class AnazhRealm_stoff_material {
                     // Boden-Normale zeigt in die Luft (der Chunk −∇d, der Ring die Kreuze seiner Maschen nach +Y, die Insel −∇d),
                     // die Windung des Netzes kennt die Seite der Luft nicht — die Boden-Dreiecke zeigen oben ihre Rückseite
                     // (DoubleSide), × faceDirection zeigte die Normale dort nach unten.
-                    // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe;
-                    // der Fern-Ring (`fernNeigung`: die Masche des Empfängers, m) liest die Normale des Gesetzes aus der Karte
-                    // (`_fernNeigungNormale`, ferne.K4), wo seine Masche gröber steht als ein Texel
-                    let _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;
-                    if (opts.fernNeigung) _nWG = this._fernNeigungNormale(_nWG, opts.fernNeigung);
+                    // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe
+                    const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;
                     // die wahre Normale (die Licht-Normale, die Steile des Reliefs, die Zuwendung des Schattens) — in der Höhle
-                    // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben)
-                    const _nWahr = _nWG;
+                    // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben); der Fern-Ring (`fernNeigung`: die
+                    // Masche des Empfängers, m) trägt die Normale des Gesetzes aus der Karte (`_fernNeigungNormale`, ferne.K4), wo
+                    // seine Masche gröber steht als ein Texel
+                    const _nWahr = opts.fernNeigung ? this._fernNeigungNormale(_nWG, opts.fernNeigung) : _nWG;
                     let _baseN = _nWahr;
                     // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
                     // die geflattete Normale entgegen dem Gradienten, LOD-gegated.
