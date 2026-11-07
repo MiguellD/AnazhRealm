@@ -1703,7 +1703,9 @@ class AnazhRealm_dirigent_takt {
     // Außerhalb des Lade-Takts −∞. DER BILD-TAKT (`_ladeBildTakt`, w19-ankunft-takt): zeichnet die Aufgabe ihr Lade-Bild, gehört
     // die zweite Hälfte der Frist der Zeichnung (`zeichnung`: der Knoten-Bau der Erst-Zeichnung) — die Leser des Takts arbeiten bis
     // zu ihrer Mitte. Bis hier trug der Bild-Takt LADE_TAKT_MS Arbeit UND je Render-Aufruf LADE_TAKT_MS Knoten-Bau (headless kalt
-    // 5fb21e29: Aufgaben von 347–737 ms).
+    // 5fb21e29: Aufgaben von 347–737 ms). Hielt die GPU-Leine das Bild einer offenen Bau-Schuld, trägt die Zeichnung ab ihrem
+    // ersten Schritt die gehaltene Zeit, höchstens LADE_TAKT_MS (`ladeGuthaben`, `_knotenRate`) — auch wenn die Leser die Frist
+    // schon verbrauchten: der Bau wartete auf die GPU, nie auf den Faden.
     _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
         if (this._ladeFristBis == null) {
