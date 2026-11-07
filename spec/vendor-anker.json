@@ -1252,11 +1252,11 @@
         ]
     },
     {
-        "warum": "DER ZEILEN-SCHRITT EINER LESUNG (w21-laub-unten): r184 kopiert auf WebGPU jede Zeile auf 256 Byte ausgerichtet und lässt der letzten das Polster weg — die Lesung jedes Ziels der Welt liest nach genau diesem Maß; Länge / Höhe traf nur Zeilen, die schon ausgerichtet lagen (der Rückstrahl las seine Kacheln verschoben)",
+        "warum": "DER ZEILEN-SCHRITT EINER LESUNG: die letzte Zeile trägt kein Polster (w21-laub-unten)",
         "anker": [
             {
                 "sub": "let c=s*d;c=256*Math.ceil(c/256);const h=a.createBuffer({size:(i-1)*c+s*d,",
-                "organ": "__weltLicht.zeilenSchritt (Lesung der Umgebung, des Rückstrahls, des Spiegels)"
+                "organ": "__weltLicht.zeilenSchritt"
             }
         ]
     }

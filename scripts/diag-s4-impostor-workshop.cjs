@@ -13,17 +13,12 @@
 //       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 
-const { statikServer, hauptLauf, nullSeite, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
     const errs = [];
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
-    await page.evaluate(async () => {
-        await __weltDa((r) => r.state);
-    });
+    const { browser, page } = await nullWelt(server, { da: (r) => r.state, frist: 180000 });
 
     const out = await page.evaluate(async () => {
         const res = { probes: {}, behavior: {} };

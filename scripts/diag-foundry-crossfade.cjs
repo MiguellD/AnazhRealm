@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -296,9 +296,7 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 240000 });
 
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };

@@ -11,7 +11,7 @@
 "use strict";
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, argOpt, jsonKlon, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullWelt, ROOT, argOpt, jsonKlon, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 
@@ -284,9 +284,7 @@ async function weltPruefen() {
     const { statikServer } = require("./lib/welt-boot.cjs");
     const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
     const server = statikServer();
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000 });
     const out = await page.evaluate(async () => {
         const res = {};
         await __weltDa();
