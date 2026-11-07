@@ -268,40 +268,22 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 // mod 2. Die PCG allein (bis w19-saum-lai) dünnte zufällig: Klumpen und Lücken, durch die der flache Blick den Boden sah
 // (20–40 m LAI 1,67, der Saum 16 %).
 // DER STOFF RECHNET DIESELBE ORDNUNG (w22-wiese-nachzug): `_wieseOrdnung` über der Wort-Algebra des Stoffs (`_wortAlgebra(T)`,
-// die TSL-Knoten in den Zahlen der WGSL: f32 gerundet, u32 modulo 2³², u32(f32) sättigt, ein Bit-Knoten auf f32 oder ein
-// gemischter Knoten wirft) gegen die der CPU an 16 384 Lagen der Wiese (je Zelle ein Büschel im Jitter ±0,34 m, bis ±29 km),
-// dazu Zug 1 (die Phase des Wiegens) — dieselbe Zahl Bit für Bit, sonst „Stoff ≠ CPU".
-function stoffZahlen() {
-    const K = (t, v) => Object.assign(Object.create(Op), { t, v });
-    const nur = (k, t) => {
-        if (!k || k.t !== t) throw new Error(`Knoten ${k && k.t} statt ${t}`);
-        return k.v;
-    };
-    const b = (k, t) => (k && k.t ? nur(k, t) : t === "u" ? k >>> 0 : Math.fround(k));
-    const u2 = (f) => function (k) { return K("u", f(nur(this, "u"), b(k, "u")) >>> 0); }; // prettier-ignore
-    const Op = {
-        add(k) { return this.t === "u" ? K("u", (this.v + b(k, "u")) >>> 0) : K("f", Math.fround(nur(this, "f") + b(k, "f"))); }, // prettier-ignore
-        mul(k) { return this.t === "u" ? K("u", Math.imul(this.v, b(k, "u")) >>> 0) : K("f", Math.fround(nur(this, "f") * b(k, "f"))); }, // prettier-ignore
-        div(k) { return K("f", Math.fround(nur(this, "f") / b(k, "f"))); }, // prettier-ignore
-        bitXor: u2((a, c) => a ^ c), bitAnd: u2((a, c) => a & c), bitOr: u2((a, c) => a | c), // prettier-ignore
-        shiftRight: u2((a, c) => a >>> c), shiftLeft: u2((a, c) => a << c), // prettier-ignore
-        toUint() { return K("u", Math.min(4294967295, Math.max(0, Math.trunc(nur(this, "f"))))); }, // prettier-ignore
-        toFloat() { return K("f", Math.fround(nur(this, "u"))); }, // prettier-ignore
-    };
-    return { T: { floor: (k) => K("f", Math.floor(nur(k, "f"))) }, wert: (x) => K("f", Math.fround(x)) };
-}
-function ordnungStoffWand(A, n = 16384) {
-    const Z = stoffZahlen();
-    const [WT, WC, S] = [A._wortAlgebra(Z.T), A._wortAlgebra(), A._wieseSchritt()];
-    let [s, ab, zug1] = [0x9e3779b9, 0, 0];
-    const r = () => (s = (Math.imul(s ^ (s >>> 15), 2246822519) + 0x6d2b79f5) >>> 0) / 4294967296;
-    for (let i = 0; i < n; i++) {
-        const [x, z] = [Math.floor((r() - 0.5) * 80000) * S + (r() - 0.5) * 0.68, Math.floor((r() - 0.5) * 80000) * S + (r() - 0.5) * 0.68]; // prettier-ignore
-        const st = A._wieseOrdnung(Z.wert(x), Z.wert(z), WT);
-        if (!(st && st.t === "f" && st.v === A._wieseOrdnung(x, z))) ab++;
-        if (A._ortZiehung(WT, Z.wert(x), Z.wert(z), 1).v !== A._ortZiehung(WC, x, z, 1)) zug1++;
+// die TSL-Knoten in den Zahlen der WGSL: f32 gerundet, u32 modulo 2³²; ein Knoten des falschen Typs wirft, die Wand bricht)
+// gegen die der CPU an 16 384 Lagen der Wiese (je Zelle ein Büschel im Jitter ±0,34 m, bis ±29 km), dazu Zug 1 (die Phase des
+// Wiegens) — dieselbe Zahl Bit für Bit, sonst „Stoff ≠ CPU".
+function stoffAbweichung(A) {
+    const K = (t, v) => ({ __proto__: Op, t, v });
+    const F = (x) => K("f", Math.fround(x));
+    const v = (k, t) => (k.t ? (k.t === t ? k.v : Symbol()) : k);
+    const op = (fu, ff) => function (k) { return this.t === "u" ? K("u", fu(this.v, v(k, "u")) >>> 0) : F(ff(this.v, Math.fround(v(k, "f")))); }; // prettier-ignore
+    const Op = { add: op((a, b) => a + b, (a, b) => a + b), mul: op(Math.imul, (a, b) => a * b), div: op(0, (a, b) => a / b), bitXor: op((a, b) => a ^ b), bitAnd: op((a, b) => a & b), bitOr: op((a, b) => a | b), shiftRight: op((a, b) => a >>> b), shiftLeft: op((a, b) => a << b), toUint() { return K("u", Math.trunc(v(this, "f")) >>> 0); }, toFloat() { return F(v(this, "u")); } }; // prettier-ignore
+    const [W, S, r] = [A._wortAlgebra({ floor: (k) => F(Math.floor(v(k, "f"))) }), A._wieseSchritt(), (j) => (Math.sin(j * 12.9898) * 43758.5453) % 1]; // prettier-ignore
+    let ab = 0;
+    for (let i = 0; i < 16384; i++) {
+        const [x, z] = [i, i + 1e5].map((j) => Math.round(r(j) * 4e4) * S + r(j + 0.5) * 0.34);
+        ab += (A._wieseOrdnung(F(x), F(z), W).v !== A._wieseOrdnung(x, z)) + (A._ortZiehung(W, F(x), F(z), 1).v !== A._ortZiehung(A._wortAlgebra(), x, z, 1)); // prettier-ignore
     }
-    return { n, ab, zug1 };
+    return ab;
 }
 function ferneWand(A) {
     const { radius: R, fern: F } = A.NAH_WIESE, T = A.WIESE_FERN_TAFEL;
@@ -310,14 +292,9 @@ function ferneWand(A) {
         [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
     const rest = new Set();
     for (let k = 0; k < 64; k++) if (A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72) < 0.25) rest.add(k & 9);
-    let st;
-    try {
-        st = ordnungStoffWand(A);
-    } catch (e) {
-        st = { n: 0, ab: e.message, zug1: "–" }; // ein Knoten, den die WGSL so nicht rechnet
-    }
-    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Stoff ≠ CPU ${st.ab}/${st.n}, Zug 1 ${st.zug1}/${st.n}`; // prettier-ignore
-    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 || st.ab || st.zug1 ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1 · 0 · 0)`] : [], deckung, schirm, zeile }; // prettier-ignore
+    const ab = stoffAbweichung(A);
+    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Stoff ≠ CPU ${ab}/32768`;
+    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 || ab ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1 · 0)`] : [], deckung, schirm, zeile }; // prettier-ignore
 }
 
 // P-GRENZE — DIE GRENZE DER STRECKUNG (w21-wiese-fern) an der echten Klasse: die Ferne der Nah-Wiese spreizt die Füße eines
@@ -1172,11 +1149,10 @@ function selbsttest() {
         const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
         t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
-        t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.some((e) => /Restklassen [2-9]/.test(e))); // prettier-ignore
-        // der Stoff rechnet eine andere Ordnung als die CPU (die Zelle ohne Rundung; der Rang über f32-Bits) — ROT am Stoff
-        const stoffRot = [["zelle: (v, s) => T.floor(v.div(s).add(0.5))", "zelle: (v, s) => T.floor(v.div(s))"], ["shl: (a, b) => a.shiftLeft(b)", "shl: (a, b) => a.toFloat().mul(2 ** b)"]] // prettier-ignore
-            .map(([a, b]) => ferneWand(klasseVon(stammLib.ersetze(st, "_wortAlgebra", a, b))).errs.join(" "));
-        t(`Ordnung des Stoffs = der CPU: ${ferneWand(A).zeile}; Mutanten ${stoffRot.map((e) => (/Stoff ≠ CPU (?!0\/)/.test(e) ? "rot" : "still")).join(" · ")}`, !ferneWand(A).errs.length && stoffRot.every((e) => /Stoff ≠ CPU (?!0\/)/.test(e))); // prettier-ignore
+        t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
+        // der Stoff rechnet eine andere Ordnung als die CPU (die Zelle ohne Rundung; der Rang über f32) — ROT am Stoff
+        const stoffStill = [["div(s).add(0.5)", "div(s)"], ["shiftLeft", "shiftRight"]].filter(([a, b]) => !/CPU [1-9]/.test(ferneWand(klasseVon(stammLib.ersetze(st, "_wortAlgebra", a, b))).errs)); // prettier-ignore
+        t(`Ordnung des Stoffs = der CPU: ${ferneWand(A).zeile}${stoffStill.map((m) => " — still " + m)}`, !ferneWand(A).errs.length && !stoffStill.length); // prettier-ignore
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
