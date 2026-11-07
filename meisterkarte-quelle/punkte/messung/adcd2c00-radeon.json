@@ -1,0 +1,192 @@
+{
+ "sha": "adcd2c00e9dafff42d57533e09c3773664c1549c",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T13:30:58.483Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": true,
+   "zahl": "Gehen 98 Bilder · max 50.29 ms · 19.39 % > 33 ms · Fahrt 66 Bilder · max 83.73 ms · 77.27 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 19.39 % > 33 ms | Fahrt: 77.27 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.52,
+   "gpu": "amd/rdna-3",
+   "s": 31.3,
+   "zeit": "2026-11-07T13:25:31.465Z",
+   "abdruck": "41e0d58bce8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 64.6 · third/gehen 60.6 · ego/wechsel 38.9 · third/wechsel 21.1 · Bild 25.22 ms",
+   "exit": 0,
+   "minuten": 0.55,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 64.6 · third/gehen 60.6 · ego/wechsel 38.9 · third/wechsel 21.1 · Bild 25.22 ms",
+   "gpu": "amd/rdna-3",
+   "s": 32.8,
+   "zeit": "2026-11-07T13:26:14.524Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.74 bei Lag 0 (n 103), Spitze 0.76 bei -0.4 s, CV Bild 0.23 / Ohr 0.50, 66.2 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "amd/rdna-3",
+   "s": 23,
+   "zeit": "2026-11-07T13:26:47.408Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.6943 (wasserSatz 25465 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.5 σ 36 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "amd/rdna-3",
+   "s": 23.9,
+   "zeit": "2026-11-07T13:27:10.441Z",
+   "abdruck": "e18e9c50847e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "innen haus_alemannisch: 1319 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0138 höchstens 0.936 m | innen-sprint haus_alemannisch: 871 Bilder · heran 12.25 → 1.92 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0392 höchstens 2.285 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.88 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0037 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.039 m (Soll ≤ 0.02)",
+   "exit": 1,
+   "minuten": 1.34,
+   "grund": "ROT: innen haus_alemannisch: 1319 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0138 höchstens 0.936 m | innen-sprint haus_alemannisch: 871 Bilder · heran 12.25 → 1.92 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0392 höchstens 2.285 m | steil 25.9°: 1120 Bilder · heran 8 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0035 höchstens 0.131 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.88 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0037 höchstens 0.169 m — ROT: Täter: Gang innen-sprint: Ruck p95 0.039 m (Soll ≤ 0.02)",
+   "gpu": "amd/rdna-3",
+   "s": 80.6,
+   "zeit": "2026-11-07T13:29:28.090Z",
+   "abdruck": "cd7d62f4d9ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.67 m · Luma 103.4 σ 53.5 schwarz 0.0 % weiß 0.0 % ",
+   "exit": 0,
+   "minuten": 1.17,
+   "gpu": "amd/rdna-3",
+   "s": 70.1,
+   "zeit": "2026-11-07T13:30:58.483Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.5,
+   "zeit": "2026-11-07T13:27:34.352Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T13:25:19.945Z",
+  "port": 7804,
+  "warten": 0.06,
+  "bootS": 5.3,
+  "grundstellungS": [
+   5.7,
+   0.1
+  ],
+  "proben": 7,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 11.7,
+    "takte": 585,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 15.3,
+    "takte": 650,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 9.7,
+    "takte": 582,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 10
+   }
+  ],
+  "ciBlicke": 8,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 6302,
+   "frameP95": 41.79,
+   "taktP95": 36,
+   "vramMax": 154.2,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K1#2",
+     "m": 5581,
+     "ringVor": 4,
+     "ringMin": 1
+    },
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 593,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "leib.K4#2",
+     "m": 320,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 412,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 404.9,
+  "minuten": 6.86
+ }
+}
