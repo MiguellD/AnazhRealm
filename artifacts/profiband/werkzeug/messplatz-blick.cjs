@@ -374,10 +374,11 @@ function messCommits() {
         headless: c.filter((x) => /^Farm headless/.test(x.titel)),
     };
 }
-function laeuferZeile(l, holder) {
+const laeufe = (n) => `${n} ${n === 1 ? "Lauf" : "Läufe"}`;
+function laeuferZeile(l) {
     if (!l) return TOKEN ? grau("Läufer unbekannt") : grau("Läufer ohne Token nicht lesbar");
     const lab = l.labels.map((x) => x.name).filter((x) => !/^(self-hosted|Windows|X64|Linux)$/.test(x)).join(", ");
-    return `${l.name} ${l.status === "online" ? (l.busy ? gelb("belegt") : gruen("frei")) : rot(l.status)} ${grau("[" + lab + "]")}${holder ? "" : ""}`;
+    return `${l.name} ${l.status === "online" ? (l.busy ? gelb("belegt") : gruen("frei")) : rot(l.status)} ${grau("[" + lab + "]")}`;
 }
 const jobText = (h) => `${h.job.name} · ${h.run.head_branch} ${s8(h.run.head_sha)}${h.run.run_attempt > 1 ? " V" + h.run.run_attempt : ""} · seit ${hhmm(h.job.started_at)} (${dauer(Date.now() - new Date(h.job.started_at))})`;
 
@@ -441,7 +442,7 @@ function seite() {
     };
     const ghZ = !TOKEN ? ["grau", grau("ohne Token: Läufer und Jobs ausgelassen")] : !Q.runs ? ["grau", grau("nicht gelesen")]
         : [runs.some((r) => ((jobsJe.get(r.id) || {}).jobs || []).some((j) => j.conclusion === "failure")) ? "rot" : runs.length ? "gelb" : "gruen",
-            [`${runs.length} Läufe`, zr ? `Zug ${s8(zr.head_sha)} ${fortschritt(zr)}` : "", runs.filter((r) => r !== zr).map((r) => `${r.head_branch} ${fortschritt(r)}`).slice(0, 3).join(", ")].filter(Boolean).join(" · ")];
+            [laeufe(runs.length), zr ? `Zug ${s8(zr.head_sha)} ${fortschritt(zr)}` : "", runs.filter((r) => r !== zr).map((r) => `${r.head_branch}${r.name !== "Code-Check" ? "/" + r.name : ""} ${fortschritt(r)}`).slice(0, 3).join(", ")].filter(Boolean).join(" · ")];
 
     // ZUG: Reihenfolge
     const zweigeKurz = (z) => (z.length ? `[${z.join(" ")}]` : "");
@@ -469,7 +470,7 @@ function seite() {
     if (rPush) o.push(mitAlter(`  ${spalte("gepusht", 8)} ${hhmm(rPush.t)} ${urteil(rPush.titel.replace(/^Messung Radeon\s*/, ""))}`, rPush.t, 2 * 3600e3));
 
     if (!Q.api) o.push("", grau("── ") + fett("GITHUB · erste Abfrage läuft"));
-    else o.push("", kopfzeile(`GITHUB · ${runs.length} Läufe · API ${(Q.api || { d: {} }).d.n || 0} Abrufe diese Runde (${(Q.api || { d: {} }).d.neu || 0} neu, ${(Q.api || { d: {} }).d.gleich || 0}× 304${(Q.api || { d: {} }).d.aus ? ", " + (Q.api || { d: {} }).d.aus + " zurückgestellt" : ""}) · ${gezaehlt.filter((t) => Date.now() - t < 3600e3).length}/${DECKEL} je h · Rest ${kontingent.rest}/${kontingent.limit}`, "runs", TAKT_API));
+    else o.push("", kopfzeile(`GITHUB · ${laeufe(runs.length)} · API ${(Q.api || { d: {} }).d.n || 0} Abrufe diese Runde (${(Q.api || { d: {} }).d.neu || 0} neu, ${(Q.api || { d: {} }).d.gleich || 0}× 304${(Q.api || { d: {} }).d.aus ? ", " + (Q.api || { d: {} }).d.aus + " zurückgestellt" : ""}) · ${gezaehlt.filter((t) => Date.now() - t < 3600e3).length}/${DECKEL} je h · Rest ${kontingent.rest}/${kontingent.limit}`, "runs", TAKT_API));
     for (const r of [zr, ...runs.filter((r) => r !== zr)].filter(Boolean).slice(0, 3)) o.push(`  ${r === zr ? spalte("Zug", 8) : spalte("Zweig", 8)} ${runText(r)}`);
     if (mc.headless[0] && o.length) o.push(mitAlter(`  ${spalte("Farm", 8)} ${hhmm(mc.headless[0].t)} ${urteil(mc.headless[0].titel.replace(/^Farm headless\s*/, "").replace(/ · längster.*$/, ""))}`, mc.headless[0].t, 6 * 3600e3));
 
