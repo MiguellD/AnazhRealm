@@ -59,7 +59,7 @@ hauptLauf(async () => {
             res.a[name] = {
                 inBook: !!(f && f.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
                 kind: f && f.recipes && f.recipes[gestalt] ? f.recipes[gestalt].kind : null,
-                ziel: !!(bp.portalMeta && bp.portalMeta.world),
+                ziel: !!bp.portalMeta?.world,
             };
         }
         // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben; das LIVE-Buch führt (ohne Rezept keine Gestalt).
@@ -138,11 +138,11 @@ hauptLauf(async () => {
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
         const _rc = AnazhRealm._studioRenderConfig;
-        const _gz = _rc && _rc.lod && _rc.lod.budget && _rc.lod.budget.gate ? _rc.lod.budget.gate[0] : null;
+        const _gz = _rc && _rc.lod && _rc.lod.budget?.gate ? _rc.lod.budget.gate[0] : null;
         res.c.drawBudget = _gz ? _gz.draws : null;
         res.c.fluegelSlots = (entry.instSlots || []).filter((s) => {
             const g = st.archInstanceGroups && st.archInstanceGroups.get(s.key);
-            return !!(g && g.tuer);
+            return !!g?.tuer;
         }).length;
         res.c.allSlotsFoundry =
             Array.isArray(entry.instSlots) && entry.instSlots.every((s) => /(^|#)f:verkalkt\|/.test(String(s.key)));
@@ -290,7 +290,7 @@ hauptLauf(async () => {
             // welt_-Blueprints tragen KEIN `instanced: true` (classic-intent) -> der Part-
             // Pfad baut den klassischen Group-Mesh (entry.mesh), wie vor W-A3 (byte-alt).
             res.mesh = !!entry2.mesh;
-            res.meshChildren = entry2.mesh && entry2.mesh.children ? entry2.mesh.children.length : 0;
+            res.meshChildren = entry2.mesh?.children ? entry2.mesh.children.length : 0;
             res.instFoundry = entry2.instFoundry === true;
             const rel = (entry2.blockerAABBs || []).map((b) => [
                 +(b.minX - entry2.position.x).toFixed(6),

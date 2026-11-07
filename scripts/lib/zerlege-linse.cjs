@@ -362,7 +362,7 @@ function stempelWache() {
     const be = rend && rend.backend;
     const w =
         window.__stempelWacheStand || (window.__stempelWacheStand = { ueberlauf: 0, spitze: 0, an: false, taeter: {} });
-    const pool = be && be.timestampQueryPool ? be.timestampQueryPool.render : null;
+    const pool = be?.timestampQueryPool ? be.timestampQueryPool.render : null;
     const stand = () => ({
         ueberlauf: w.ueberlauf,
         spitze: w.spitze,
@@ -380,8 +380,8 @@ function stempelWache() {
                 w.ueberlauf++;
                 const ctx = rend._currentRenderContext;
                 const rt = ctx && ctx.renderTarget;
-                const ziel = rt && rt.texture && rt.texture.name ? rt.texture.name : rt ? "ziel" : "leinwand";
-                const k = (ctx && ctx.camera ? window.__passName(null, ctx.camera) : "?") + " → " + ziel;
+                const ziel = rt && rt.texture?.name ? rt.texture.name : rt ? "ziel" : "leinwand";
+                const k = (ctx?.camera ? window.__passName(null, ctx.camera) : "?") + " → " + ziel;
                 w.taeter[k] = (w.taeter[k] || 0) + 1;
             }
             if (this.currentQueryIndex > w.spitze) w.spitze = this.currentQueryIndex;
@@ -434,7 +434,7 @@ function frameAnatomie(uhr, n) {
         const groesse = (s) =>
             Array.isArray(s)
                 ? [s[0] || 1, s[1] || 1, s[2] || 1]
-                : [(s && s.width) || 1, (s && s.height) || 1, (s && s.depthOrArrayLayers) || 1];
+                : [s?.width || 1, s?.height || 1, s?.depthOrArrayLayers || 1];
         const texBytes = (tex, size) => {
             const [w, h, d] = groesse(size);
             return w * h * d * bpt(tex && tex.format);
@@ -502,11 +502,11 @@ function frameAnatomie(uhr, n) {
             const e = buche(A.renderPaesse, p + (neustart ? " (Neustart)" : ""), bytes);
             e.ziele = z.join(" + ");
             const tw = d && d.timestampWrites;
-            if (!tw) buche(A.ungestempelt, p + (d && d.label ? " [" + falte(d.label) + "]" : ""), 0);
+            if (!tw) buche(A.ungestempelt, p + (d?.label ? " [" + falte(d.label) + "]" : ""), 0);
             else if (neustart && tw.beginningOfPassWriteIndex !== undefined) buche(A.stempelBruch, p, 0);
         });
         zaehle(CE, "beginComputePass", (d) =>
-            buche(A.computePaesse, pass() + (d && d.label ? " [" + falte(d.label) + "]" : ""), 0)
+            buche(A.computePaesse, pass() + (d?.label ? " [" + falte(d.label) + "]" : ""), 0)
         );
         const CP = G.GPUComputePassEncoder && GPUComputePassEncoder.prototype;
         zaehle(CP, "dispatchWorkgroups", () => A.dispatches++);
@@ -543,8 +543,8 @@ function frameAnatomie(uhr, n) {
         );
         const Q = G.GPUQueue && GPUQueue.prototype;
         zaehle(Q, "writeBuffer", (buf, off, data, dOff, size) => {
-            const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
-            const b = size != null ? size * bpe : ((data && data.byteLength) || 0) - (dOff || 0) * bpe;
+            const bpe = data?.BYTES_PER_ELEMENT || 1;
+            const b = size != null ? size * bpe : (data?.byteLength || 0) - (dOff || 0) * bpe;
             buche(A.hochladen, `${pass()}: Puffer ${nameOf(buf)}`, b);
         });
         zaehle(Q, "writeTexture", (dst, data, layout, size) =>
@@ -555,12 +555,12 @@ function frameAnatomie(uhr, n) {
         );
         zaehle(Q, "submit", (cbs) => {
             A.submits++;
-            A.befehlsPuffer += (cbs && cbs.length) || 0;
+            A.befehlsPuffer += cbs?.length || 0;
         });
         const RP = G.GPURenderPassEncoder && GPURenderPassEncoder.prototype;
         zaehle(RP, "executeBundles", (b) => {
             A.executeBundles++;
-            A.bundles += (b && b.length) || 0;
+            A.bundles += b?.length || 0;
         });
         for (const k of ["draw", "drawIndexed", "drawIndirect", "drawIndexedIndirect"])
             zaehle(RP, k, () => buche(A.draws, pass(), 0));
@@ -687,7 +687,7 @@ function ketteKante(uName) {
 // (je `.sample(uv)` ein eigener Knoten) — der Beleg einer Ketten-Stufe: ohne Bloom fallen 9, ohne Godrays 20.
 function ketteAbtastungen() {
     const pp = st.postProcessing;
-    const f = pp && pp._quadMesh ? pp._quadMesh.material.fragmentNode : null;
+    const f = pp?._quadMesh ? pp._quadMesh.material.fragmentNode : null;
     if (!f) return null;
     const gesehen = new Set();
     const stapel = [f];
@@ -740,7 +740,7 @@ function zerlegeZustand() {
     });
     const eigen = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
     const csm = st.csmNode;
-    const lichter = csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+    const lichter = csm && csm.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
     const protos = [];
     for (const [K, keys] of [
         [
@@ -806,7 +806,7 @@ function zerlegeZustand() {
             uid: be.updateTimeStampUID,
             ausgabe: pp ? pp.outputNode : null,
             ppKontext: pp ? pp._context : null,
-            ppFragment: pp && pp._quadMesh ? pp._quadMesh.material.fragmentNode : null,
+            ppFragment: pp?._quadMesh ? pp._quadMesh.material.fragmentNode : null,
             protos,
             exemplare,
         },
@@ -881,7 +881,7 @@ function zerlegeInventur(k) {
                 },
                 adapter: (() => {
                     const d = rend.backend.device;
-                    const i = (d && d.adapterInfo) || (rend.backend.adapter && rend.backend.adapter.info) || null;
+                    const i = d?.adapterInfo || rend.backend.adapter?.info || null;
                     return i ? [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") : null;
                 })(),
             };
@@ -1203,7 +1203,7 @@ function zerlegeMessen(k) {
             uhr.ab();
             const csm = st.csmNode;
             const lichter =
-                csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+                csm && csm.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
             vorher.werte.schatten.forEach((f, i) => {
                 if (f && lichter[i] && lichter[i].shadow) {
                     lichter[i].shadow.needsUpdate = f[0];

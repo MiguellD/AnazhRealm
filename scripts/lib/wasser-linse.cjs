@@ -206,7 +206,7 @@ async function wasserKoerper(o = {}) {
         tiefen.sort((a, b) => a - b);
         r.removeCreature(c);
         if (!tiefen.length) return null;
-        const linie = tb && tb.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
+        const linie = tb?.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
         const sohle = tiefen[tiefen.length >> 1];
         const schwimmt = c.userData._motionZustand === "schwimmen";
         return { seele, abstand, sohleUnterSpiegel: R(sohle, 3), wasserlinie: R(linie, 3), schwimmt };
@@ -882,7 +882,7 @@ async function wasserGraben(o = {}) {
                 for (const [key, kt] of st.nahWiese ? st.nahWiese.kacheln : []) if (aussen(key)) n += kt.bueschel.length;
                 g.bueschel = [Math.min(g.bueschel[0], n), Math.max(g.bueschel[1], n)];
                 const wach = (st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks;
-                if (!wach && !(st.pendingWaterIso && st.pendingWaterIso.size)) g.ruhe = t; // Automat, Neubau, Sheets ruhen
+                if (!wach && !st.pendingWaterIso?.size) g.ruhe = t; // Automat, Neubau, Sheets ruhen
                 if (t % 5 === 4) await sleep(0);
             }
         } finally {
@@ -1623,7 +1623,7 @@ async function wasserWagen(o = {}) {
     const S = see.level;
     const R = wasserRund(3);
     await __weltDa(() => st.blueprints && st.blueprints.fahrzeug_gt);
-    if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
+    if (!st.blueprints?.fahrzeug_gt) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
     const BOOT = wasserBoot(st);
     const [pm, leib] = [st.playerMesh.position, window.__wasserLeib()];
     const fahre = (typ, x, z, takte) => {
@@ -1635,7 +1635,7 @@ async function wasserWagen(o = {}) {
         // Fahrzeug-Signatur der Affordanz).
         if (typ === BOOT) e.affordances = Object.assign({}, e.affordances, { moveable: true });
         const m = r.mountArchitecture(e);
-        if (!(m && m.ok) || st.player.mountedArch !== e.id) {
+        if (!m?.ok || st.player.mountedArch !== e.id) {
             r.removeArchitecture(e);
             return { fehler: "nicht geritten " + typ };
         }

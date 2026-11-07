@@ -414,7 +414,7 @@ function bandBefunde(messung, basis) {
             );
         else traeger = new Map(basis.rot.filter((r) => r && r.schluessel).map((r) => [r.schluessel, r]));
     }
-    const tol = (basis && basis.toleranz) || messung.toleranz || null;
+    const tol = basis?.toleranz || messung.toleranz || null;
     const zahl = Number.isFinite;
     for (const r of messung.rot) {
         const a = traeger && r.schluessel ? traeger.get(r.schluessel) : null;
@@ -426,7 +426,7 @@ function bandBefunde(messung, basis) {
 // Die Band-Messung eines Boots (das JSON der Folge: der Schritt „band", seine Messung) — null, wenn keiner da ist.
 const bandMessungAus = (j) => {
     const e = j && Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
-    return e && e.ergebnis ? e.ergebnis.messung || null : null;
+    return e?.ergebnis ? e.ergebnis.messung || null : null;
 };
 
 // die Tiere in der Kurzfassung (je Messung eine Zeile im Bericht)
@@ -698,8 +698,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         gefahren.push(name);
         if (name === "buehne") gehalten = true;
         const nach = await R("/wache", {
-            seit: vor && vor.wetter ? vor.wetter.seq : 0,
-            seitWelt: vor && vor.weltakt ? vor.weltakt.seq : 0,
+            seit: vor?.wetter ? vor.wetter.seq : 0,
+            seitWelt: vor?.weltakt ? vor.weltakt.seq : 0,
         });
         e.wache = nach;
         if (MESSEN.has(name)) e.tiere = tierKurz(nach && nach.tiere);
@@ -812,7 +812,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                     const m = await mitTakt(() => R("/gpu-bank", { n: 12, runden: 3 }));
                     je[String(g)] = m.b;
                     if (je[String(g)] && typeof je[String(g)] === "object") {
-                        je[String(g)].tiere = b && b.ergebnis ? b.ergebnis.tiere : null;
+                        je[String(g)].tiere = b?.ergebnis ? b.ergebnis.tiere : null;
                         je[String(g)].takt = m.takt;
                     }
                 }
@@ -866,7 +866,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                 for (const b of bb) console.log(`  ROT ${b}`);
             }
             schreibe();
-            const vram = messung && messung.vram ? messung.vram.mb : null;
+            const vram = messung?.vram ? messung.vram.mb : null;
             aus.kurz.band = mitTieren(
                 band
                     ? {
@@ -876,7 +876,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                           gestellt:
                               messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
                           vramMB: vram,
-                          geraet: messung && messung.geraet ? messung.geraet.schluessel : null,
+                          geraet: messung?.geraet ? messung.geraet.schluessel : null,
                           sicht: messung ? messung.sicht || null : null,
                           rot: messung && Array.isArray(messung.rot) ? messung.rot.length : null,
                           befunde: messung ? bandBefunde(messung, basis).length : null,

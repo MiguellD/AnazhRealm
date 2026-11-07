@@ -1109,7 +1109,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
-        const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
+        const fl = (tile?.rivers || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
@@ -2242,7 +2242,7 @@ async function checkBandTodZensus({ page, check }) {
             });
             return o;
         } catch (e) {
-            o.fehler = String((e && e.stack) || e).slice(0, 600);
+            o.fehler = String(e?.stack || e).slice(0, 600);
             return o;
         } finally {
             for (const f of restore.reverse())

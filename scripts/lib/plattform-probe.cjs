@@ -266,11 +266,11 @@ function ratscheSelbsttest(satz) {
 async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
     const R = ratscheLesen();
     const zeile = R.saetze[satz];
-    const einzeln = Object.keys((zeile && zeile.kippt) || {});
+    const einzeln = Object.keys(zeile?.kippt || {});
     // nur die Funktionen, die ihre Zeile reißen, werden halbiert (die Halbierung kostet ~20 Güsse je Funktion)
     const nennen = (kipptJe) =>
         Object.keys(kipptJe).filter((n) => {
-            const grenze = n === "pow" && !(zeile && zeile.powWirt) ? 0 : ((zeile && zeile.kippt) || {})[n] || 0;
+            const grenze = n === "pow" && !zeile?.powWirt ? 0 : (zeile?.kippt || {})[n] || 0;
             return kipptJe[n].length > grenze;
         });
     const PP = lauf
@@ -280,7 +280,7 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
     const nenner = Object.entries(PP.gerufen)
         .map(([n, z]) => n + " " + z)
         .join(" · ");
-    const benannt = Object.entries((zeile && zeile.kippt) || {})
+    const benannt = Object.entries(zeile?.kippt || {})
         .map(([n, g]) => `${n} ${g}`)
         .join(" · ");
     // Ein Satz ohne Transzendente (die Daten-Kerne): der Nenner 0 IST der Befund — ruft er eine, reißt die Zeile.

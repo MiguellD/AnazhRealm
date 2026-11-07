@@ -43,7 +43,7 @@ function haengerAn() {
     // Täter-Klasse — eine synchrone Pipeline im Schatten-Pass heißt „k0 tier:wolf", nicht nur „ShadowMaterial".
     const name = (art, d) => {
         if (!H.an || H.namen.length >= 20000) return;
-        const e = { t: +performance.now().toFixed(2), art, n: String((d && d.label) || "?") };
+        const e = { t: +performance.now().toFixed(2), art, n: String(d?.label || "?") };
         const c = H.cur;
         if (c) {
             try {
@@ -125,19 +125,19 @@ function haengerAn() {
     const Q = GPUQueue.prototype;
     const wb = Q.writeBuffer;
     Q.writeBuffer = function (b, o, data, dOff, size) {
-        const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
-        H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
+        const bpe = data?.BYTES_PER_ELEMENT || 1;
+        H.acc.upKB += (size != null ? size * bpe : data?.byteLength || 0) / 1024;
         return wb.apply(this, arguments);
     };
     const wt = Q.writeTexture;
     Q.writeTexture = function (dst, data) {
-        H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
+        H.acc.texKB += (data?.byteLength || 0) / 1024;
         return wt.apply(this, arguments);
     };
     const cei = Q.copyExternalImageToTexture;
     Q.copyExternalImageToTexture = function (src, dst, size) {
-        const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
-        const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
+        const w = Array.isArray(size) ? size[0] : size?.width || 0;
+        const h = Array.isArray(size) ? size[1] || 1 : size?.height || 1;
         H.acc.texKB += (w * h * 4) / 1024;
         return cei.apply(this, arguments);
     };

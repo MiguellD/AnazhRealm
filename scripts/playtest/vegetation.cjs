@@ -104,7 +104,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eDens) {
-            out.densityProbeError = String((_eDens && _eDens.message) || _eDens);
+            out.densityProbeError = String(_eDens?.message || _eDens);
         }
         // Headless (Null-Renderer): der Aktuator setzt die Dichte auf 1 (volle Welt fürs Gate).
         r._nexusPerfActuate({
@@ -189,7 +189,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eThin) {
-            out.thinProbeError = String((_eThin && _eThin.message) || _eThin);
+            out.thinProbeError = String(_eThin?.message || _eThin);
         }
         st._foliageDensityScale = 1;
         st._frameOverBudget = false;

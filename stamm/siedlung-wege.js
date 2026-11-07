@@ -1176,9 +1176,9 @@ class AnazhRealm_siedlung_wege {
     _nahWieseNeuIn(x0, z0, x1, z1, karte = false) {
         this._weltRegt(karte, karte); // die Kacheln fallen: die Stand-Wache weckt Wiese und Streu
         let n = 0;
-        const imRechteck = (key, K) => {
+        const imRechteck = (key, K, rand = 0) => {
             const [tx, tz] = key.split(",").map(Number);
-            return !((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1);
+            return !((tx + 1) * K + rand < x0 || tx * K - rand > x1 || (tz + 1) * K + rand < z0 || tz * K - rand > z1);
         };
         // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus. Die
         // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
@@ -1186,10 +1186,14 @@ class AnazhRealm_siedlung_wege {
         if (nw)
             for (const key of [...nw.kacheln.keys()])
                 if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
-        // die Kacheln der Ferne lesen dieselben Felder (`_nahWieseFernKachel`)
+        // die Kacheln der Ferne lesen dieselben Felder (`_nahWieseFernKachel`) und über ihr FELD (sie und ihre acht Nachbarn) die
+        // Gitter der Ferne (die Grenze der Streckung, `_wieseFernGrenzen`): ein Gitter unter der Fläche fällt, eine Kachel, deren
+        // Feld sie trifft
+        const KF = AnazhRealm.NAH_WIESE.fern.kachel;
+        for (const key of nw && nw.fern ? [...nw.fern.gitter.keys()] : [])
+            if (imRechteck(key, KF)) nw.fern.gitter.delete(key);
         for (const key of nw && nw.fern ? [...nw.fern.kacheln.keys()] : [])
-            if (imRechteck(key, AnazhRealm.NAH_WIESE.fern.kachel) && nw.fern.kacheln.delete(key))
-                ((nw.neu = true), n++);
+            if (imRechteck(key, KF, KF) && nw.fern.kacheln.delete(key)) ((nw.neu = true), n++);
         const ns = this.state.nahStreu;
         if (ns)
             for (const [key, k] of [...ns.kacheln]) {

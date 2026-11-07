@@ -216,7 +216,7 @@ hauptLauf(async () => {
         {
             const wm = st.weltMarch;
             res.d = {
-                voll: r._weltKapselnVollWarn === true || !!(wm && wm.kapselVoll),
+                voll: r._weltKapselnVollWarn === true || !!wm?.kapselVoll,
                 cursor: wm ? wm.kapselCursor : -1,
                 kapazitaet: AR.WELT_MARCH.kapseln,
                 plaetze: wm ? wm.gesetzPlaetze : -1,
@@ -360,7 +360,7 @@ hauptLauf(async () => {
             const bf = r._foundryFlattenFor({ seed: 7 }, "geroell", 1);
             fit.teile =
                 bf && bf.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
-            fit.leaves = bf && bf.leaves ? bf.leaves.length : 0;
+            fit.leaves = bf?.leaves ? bf.leaves.length : 0;
         } catch (e) {
             fit.err = fehlerText(e);
         }
@@ -643,7 +643,7 @@ hauptLauf(async () => {
         // Die Linse: jeder Fehler, den die Loop-Grenze fängt, mit seinen Tätern (die ersten Stamm-Methoden des Stacks).
         const fehler = [];
         r._loopErrorBoundary = function (e) {
-            const zeilen = String((e && e.stack) || e).split("\n");
+            const zeilen = String(e?.stack || e).split("\n");
             const taeter = zeilen
                 .map((z) => (z.match(/^\s*at (?:[\w$]+\.)?(_\w+) /) || [])[1])
                 .filter((n) => n && n !== "_kernPflichtBruch")
@@ -666,7 +666,7 @@ hauptLauf(async () => {
         };
         for (const weiter = __deckel("der kalte Takt ohne Buch", 12000); kalt < KALT && weiter(); ) await takt();
         res.kalt = kalt;
-        res.buchKalt = !(r._foundry && r._foundry.recipes);
+        res.buchKalt = !r._foundry?.recipes;
         res.fehlerKalt = fehler.splice(0);
         // SELBSTTEST 4: die alte Lese-Reihenfolge — ein Deko-Leser fragt das Budget vor dem Buch; H muss ihn nennen.
         r._tickNahStreu = function (dl) {

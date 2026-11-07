@@ -63,7 +63,7 @@ function geraeteHoerer() {
     const zaehle = (dev, art, d) => {
         (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
         // die Namen der Pipelines (r184: `renderPipeline_<Stoff>_<id>`) — die Seelen-Probe nennt, WAS neu baut
-        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push((d && d.label) || "?");
+        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push(d?.label || "?");
     };
     const modul = P.createShaderModule;
     P.createShaderModule = function (d) {
@@ -123,7 +123,7 @@ function geraeteHoerer() {
             if (H.erste.length < 6)
                 H.erste.push(
                     `device ${nr}: ` +
-                        String((ev.error && ev.error.message) || ev.error)
+                        String(ev.error?.message || ev.error)
                             .split("\n")[0]
                             .slice(0, 220)
                 );
@@ -830,7 +830,7 @@ hauptLauf(async () => {
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
         const f = r._foundry;
-        const ids = f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "kreatur") : [];
+        const ids = f?.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "kreatur") : [];
         const id = ids.includes("wolf") ? "wolf" : ids[0];
         if (!id) return { fehlt: "kein Kreatur-Rezept" };
         r.selectStudioRecipeForView(id);
@@ -850,7 +850,7 @@ hauptLauf(async () => {
         const K = new Set();
         O.mess = () => {
             let hoerer = 0;
-            for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
+            for (const s of stoffe) hoerer += s._listeners?.dispose ? s._listeners.dispose.length : 0;
             let b = 0;
             for (const g of K) for (const a of Object.values(g.attributes)) b += a.array.byteLength;
             return {

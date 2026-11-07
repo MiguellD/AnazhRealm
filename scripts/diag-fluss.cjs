@@ -377,7 +377,7 @@ const WELT_MESSEN = async () => {
     await pump(300);
     for (const weiter = __deckel("die Foundry-Schlange", 600); weiter(); ) {
         await pump(20);
-        if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
+        if (!f._vorrat && !f.warte?.length && f.pending.size === 0) break;
     }
     // der Ofen-Vorrat ist Boot-Arbeit (`_ofenPrefetchKreaturen`, nach dem ersten Bild): jeder Boot misst, bis er steht —
     // sonst trägt der schnellere Zweit-Boot ihn ins Fenster, und der erste legte ihn nie auf die Platte
@@ -385,7 +385,7 @@ const WELT_MESSEN = async () => {
     await pump(60);
     const fl = window.__fl;
     const cfg = AnazhRealm._studioRenderConfig;
-    const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
+    const G = cfg && cfg.lod?.budget ? cfg.lod.budget.gestalten : null;
     const T = {};
     for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"])
         T[sp] = r._foundryGestalten(sp);
@@ -561,17 +561,17 @@ function urteilWelt(d) {
         `${s.mul0} → ${s.mul1} · ${s.name} · Präsenz ${s.praesenz} · ${s.laub} Laub-Körper`
     );
     const wk = d.boot && d.boot.werk;
-    const bahnen = (wk && wk.bahnen) || [];
+    const bahnen = wk?.bahnen || [];
     pruef(
         "W6 die Werk-Fäden: auf 16 Kernen bauen mehrere Fäden, jeder wird bereit und baut, jeder Auftrag reist in seiner Bahn und kommt zurück",
         bahnen.length >= 2 &&
-            bahnen.every((b) => b.bereit && b.posts > 0 && b.antworten >= b.posts && !(b.fremd && b.fremd.length)),
+            bahnen.every((b) => b.bereit && b.posts > 0 && b.antworten >= b.posts && !b.fremd?.length),
         `${wk ? wk.kerne : "?"} Kerne · ${bahnen.length} Fäden: ` +
             bahnen
                 .map(
                     (b) =>
                         `werk${b.k || ""} ${b.bereit ? "" : "nicht bereit, "}${b.posts} Aufträge/${b.antworten} Antworten` +
-                        (b.fremd && b.fremd.length ? ` fremde Nummern ${b.fremd.join(" ")}` : "")
+                        (b.fremd?.length ? ` fremde Nummern ${b.fremd.join(" ")}` : "")
                 )
                 .join(" · ") +
             (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")

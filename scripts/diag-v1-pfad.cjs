@@ -1262,7 +1262,7 @@ async function probe(arg) {
         const nB = neue(v1, "baum_birke");
         m.birkenAbsender = nB.length;
         m.birkenZeile = letzteZeile();
-        m.birkenLabel = (st.blueprints.baum_birke && st.blueprints.baum_birke.label) || null;
+        m.birkenLabel = st.blueprints.baum_birke?.label || null;
         const msg = gesendet.find((o) => o && o.type === "dsl");
         m.gesendet = !!msg;
         m.ortKnoten = msg && Array.isArray(msg.program) ? JSON.stringify(msg.program[2]) : null;
@@ -1957,7 +1957,7 @@ async function korpusAufbau(a) {
                 ...Object.entries(ws),
             ],
             wesen: lebt.length,
-            traurig: st.creatures.filter((c) => ((c.userData && c.userData.emotions) || {}).sorrow >= 0.5).length,
+            traurig: st.creatures.filter((c) => (c.userData?.emotions || {}).sorrow >= 0.5).length,
             wetter: st.weather,
             uhr: st.timeOfDay,
             saison: st.season,

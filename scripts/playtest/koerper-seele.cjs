@@ -2203,7 +2203,7 @@ async function checkBandPhasenBF({ page, check }) {
         })();
         out.c7ArmorSitz = (() => {
             const p = st.player;
-            const savedArmor = (p.equipped && p.equipped.armor) || null;
+            const savedArmor = p.equipped?.armor || null;
             try {
                 r.equipArmor("ruestung_brustpanzer");
                 r._tickWornArmorVisual();

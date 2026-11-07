@@ -53,7 +53,8 @@ class AnazhRealm_stoff_material {
     // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
     // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe
     // Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem
-    // Büschel (× v).
+    // Büschel (× v). DIE GRENZE (w21-wiese-fern): die Streckung endet an der Grenze des Büschels (`_wieseFernGrenzen`, in der
+    // vierten Zeile seiner Instanz-Matrix) — es spreizt seine Halme nie über die Wiese der Nähe und seinen Boden hinaus.
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
@@ -81,7 +82,12 @@ class AnazhRealm_stoff_material {
                 .toFloat()
                 .mul(1 / 16777216);
             const A = AnazhRealm._windTsl(T);
-            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w));
+
+            // DIE GRENZE DES BÜSCHELS (w21-wiese-fern): das erste Feld der vierten Zeile seiner Instanz-Matrix
+            // (`_nahWieseFernBlock`) — so weit tragen es die Wiese der Nähe und sein Boden (`_wieseFernGrenzen`); die Spreizung
+            // seiner Füße endet an ihr (`spreiz`), wie im Sicht-Satz
+            const grenze = this._instanzMatrixNode(T).element(0).w;
+            const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze); // prettier-ignore
             const anteil = G.anteil;
             const v = anteil
                 .mul(1 + F.rand)
@@ -95,9 +101,12 @@ class AnazhRealm_stoff_material {
             // über dem Boden: der Fuß ihres Stängels in der Höhe seiner Spitze, `_wieseAehrenFuss`) wandert mit ihrem Stängel, in
             // ihrer Größe. Bis w14-wiese-saum streckte der Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der
             // Höhe) mit ihr — bei s = 14 lag der Halm 12° über dem Boden, die Ferne ein flacher Teppich hinter einem Bogen
-            // stehender Halme bei `radius` (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
+            // stehender Halme bei `radius` (der Saum der Mess-Wiese, swiftshader-Maske 06.11.). Die Füße rücken um die SPREIZUNG
+            // (`G.spreiz` = min(s, Grenze), w21-wiese-fern), die Breite folgt s (der Pixel): an der Grenze steht dieselbe
+            // Blattfläche dichter um den Fuß.
             const c = T.attribute("aCenter", "vec3");
             const s1 = G.streck.sub(1);
+            const sp1 = G.spreiz.sub(1);
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const nG = T.normalGeometry;
             const quer = T.vec3(nG.z, 0, nG.x.negate());
@@ -107,7 +116,7 @@ class AnazhRealm_stoff_material {
                 .x.mul(globalThis.__phytoCore.HALM_GESETZ.aderM / sk)
                 .mul(s1)
                 .mul(T.step(c.y, 1e-4));
-            const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(s1)).add(t.mul(breit));
+            const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(sp1)).add(t.mul(breit));
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
             this._halmFerneKnoten = T.vec3(lage.x, lage.y.mul(ha), lage.z).mul(v).add(sway.mul(v));

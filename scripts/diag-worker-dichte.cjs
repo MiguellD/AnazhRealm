@@ -199,7 +199,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 };
                 const workerZellen = async (sa) => {
                     const m = await warteAck({ type: "chunk-mesh", cx, cz, lod: 0, saat: sa });
-                    const wc = m && m.waterCells ? new Uint8Array(m.waterCells) : new Uint8Array(0);
+                    const wc = m?.waterCells ? new Uint8Array(m.waterCells) : new Uint8Array(0);
                     if (wc.length) r._stampArchitectureSolidCellsInto(wc, ox, oy, oz, 0);
                     return wc;
                 };
@@ -1473,7 +1473,7 @@ async function gebaut(page) {
             const s = st;
             await window
                 .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
-                    fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
+                    fertig: () => !!s.hydrosphere?.ready,
                     takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -1564,7 +1564,7 @@ async function gebaut(page) {
                 s.hydrosphere = h;
                 out.push({
                     seed: saat,
-                    hydro: !!(h && h.ready),
+                    hydro: !!h?.ready,
                     fluesse: h ? h.fluesse : 0,
                     maeander: maeanderWasser(h),
                     maeanderGerade: selbst ? geradeMessung(h) : null,
@@ -1676,7 +1676,7 @@ function klonBytes(v, frei, seen, da) {
 function fadenHuelle(klonBytes) {
     const roh = self.postMessage.bind(self);
     self.postMessage = function (m, tr) {
-        const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
+        const frei = new Set(Array.isArray(tr) ? tr : tr?.transfer || []);
         if (m && typeof m === "object" && !ArrayBuffer.isView(m)) m.__klon = klonBytes(m, frei, new Set());
         return roh(m, tr);
     };
@@ -1733,7 +1733,7 @@ function fadenSeite(bytesQ, huelleQ) {
             `self.__anazhBase=${JSON.stringify(new URL(".", u).href)};importScripts(${JSON.stringify(u.href)});`;
         const quelle = `(${huelleQ})(${bytesQ});\n${innen}`;
         const w = new Roh(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })), opts);
-        F.faeden.push((w.__faden = (opts && opts.name) || "?"));
+        F.faeden.push((w.__faden = opts?.name || "?"));
         return w;
     };
     W.prototype = Roh.prototype;
@@ -1765,7 +1765,7 @@ function fadenSeite(bytesQ, huelleQ) {
     };
     const post = Roh.prototype.postMessage;
     Roh.prototype.postMessage = function (m, tr) {
-        const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
+        const frei = new Set(Array.isArray(tr) ? tr : tr?.transfer || []);
         const art = `${this.__faden}:${(m && (m.type || m.op)) || "?"}`;
         const k = klonBytes(m, frei, new Set(), da);
         if (k) zu("kopie", art, k); // der Klon empfangener Bytes zurück in einen Faden heißt nach seiner Nachricht (Lehre 24)

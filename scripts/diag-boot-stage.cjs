@@ -419,7 +419,7 @@ hauptLauf(async () => {
         // auf ihren ersten Leser (_defaultBlueprints). Jeder Täter beim Namen seiner Tafel; fehlt eine, wirft die Linse laut.
         o.verborgen = ["inventory-recipes", "workshop-list", "library-list"].filter((id) => document.getElementById(id).childElementCount);
         if (!Object.getOwnPropertyDescriptor(st.blueprints.baum_mammut, "parts").get) o.verborgen.push("baum_mammut");
-        const headless = !!(st.renderer && st.renderer._isHeadlessNull);
+        const headless = !!st.renderer?._isHeadlessNull;
         // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
         const terms = () => {
             const f = r._foundry;
@@ -434,7 +434,7 @@ hauptLauf(async () => {
                 biblio: !!(f && f.ready && !f._vorrat),
                 // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                 impost: headless ? true : !q || q.length === 0,
-                luft: !!(st.scene && st.scene.fogNode) && sichtM() >= 5000,
+                luft: !!st.scene?.fogNode && sichtM() >= 5000,
             };
         };
         const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);

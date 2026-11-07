@@ -253,7 +253,7 @@ function validateFunktionsKern(m, entry, erklaert) {
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
-    if (!(entry && entry.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
+    if (!entry?.ns) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
     if (m.presets) v.push("§9: ein Gesetz-Kern trägt keine Rezepte (PRESETS)");
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
     if (m.meshfrei) v.push("§9: MESHFREI gilt Rezept-Kernen ohne Gestalt, nie einem Gesetz-Kern");
@@ -638,7 +638,7 @@ function validateManifest(m, kern) {
         // Foundry) und die eine eigene Gestalten-Zeile hat (nie '*' = 16); ring ∈ {nah, wald}, dichte > 0,
         // skala [min ≤ max] > 0, jedes Band ein Trapez [a ≤ b ≤ c ≤ d].
         if (pl.boden) {
-            const L = (m.cfg && m.cfg.lod) || {};
+            const L = m.cfg?.lod || {};
             const ksB = L.kindStages || {};
             const BB = L.budget || {};
             for (const id in pl.boden) {
@@ -955,7 +955,7 @@ function validateManifest(m, kern) {
         const lodM = m.cfg && m.cfg.lod;
         if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
-        if (entry.ns && lodM && lodM.kindStages && !(lodM.budget && lodM.budget.gestalten))
+        if (entry.ns && lodM && lodM.kindStages && !lodM.budget?.gestalten)
             ohneGestalten.push(entry.file);
         check(`${entry.file}: 0 Vertrags-Verletzungen`, viol.length === 0, viol[0] || "");
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);

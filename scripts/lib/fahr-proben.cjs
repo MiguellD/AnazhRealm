@@ -899,7 +899,7 @@ async function probeLeben(expected) {
                             if (!(Math.hypot(hk.schub[2 * j], hk.schub[2 * j + 1]) > 0.05)) return;
                             m.bau++;
                             if (m.bauOrte.length < 6)
-                                m.bauOrte.push([W.nr, k, ...ort2(L[n]), (q && q.type) || "insel"]);
+                                m.bauOrte.push([W.nr, k, ...ort2(L[n]), q?.type || "insel"]);
                         });
                         hk.schub.length = hk.schubQuelle.length = 0;
                     }
@@ -981,7 +981,7 @@ async function probeLeben(expected) {
             else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
             else res.kette = await kette(expected.kette);
         } catch (e) {
-            res.err = String((e && e.stack) || e);
+            res.err = String(e?.stack || e);
         }
         aufraeumen();
         return res;
@@ -1979,7 +1979,7 @@ async function probeLeben(expected) {
                         const l = dx * ux + dz * uz;
                         if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
                         n++;
-                        const art = (cr.userData && cr.userData.soul) || "?";
+                        const art = cr.userData?.soul || "?";
                         if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
                     }
                     m.gasseTiere = Math.max(m.gasseTiere, n);
@@ -2589,14 +2589,14 @@ async function probeLeben(expected) {
                         aussen.n++;
                         if (aussen.n % 40 === 0) {
                             const lzS = (V.x - e.position.x) * Math.sin(thH) + (V.z - e.position.z) * Math.cos(thH);
-                            strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, (kn && kn.name) || o.name || "?");
+                            strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, kn?.name || o.name || "?");
                         }
                         const dxH = V.x - e.position.x;
                         const dzH = V.z - e.position.z;
                         const lx = (dxH * Math.cos(thH) - dzH * Math.sin(thH)) / scH;
                         const lz = (dxH * Math.sin(thH) + dzH * Math.cos(thH)) / scH;
                         const ly = (V.y - basisH) / scH;
-                        const name = (kn && kn.name) || o.name || "?";
+                        const name = kn?.name || o.name || "?";
                         const T = 0.02;
                         if (ly < hu.ySill - T) raus("unten", hu.ySill - ly, name);
                         else if (ly > hu.yRoof + T) raus("oben", ly - hu.yRoof, name);
@@ -2769,7 +2769,7 @@ async function probeLeben(expected) {
         S.labor = res.kette.labor;
         res.rueck = await rueck(expected.rueck); // RM (fahrzeug.K5) auf dem Weg der Kette
     } catch (e) {
-        res.err = (e && e.stack) || String(e);
+        res.err = e?.stack || String(e);
     }
     aufraeumen();
     return res;
@@ -2999,7 +2999,7 @@ async function probeKoerper(opt) {
         const w = sk.joints.find((j) => j.name === sk.root).scale;
         res.labMensch = sk.leibV * w[0] * w[1] * w[2] * ((8 * A.PLAYER_KH) / 6) ** 3 * mats.leib.rho;
     } catch (e) {
-        res.err = String((e && e.stack) || e);
+        res.err = String(e?.stack || e);
     }
     return res;
 }

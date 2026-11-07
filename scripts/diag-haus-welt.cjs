@@ -118,7 +118,7 @@ const machServer = (platz) =>
         root: ROOT,
         wandle: (p, data) => {
             const z = platz.z;
-            const meine = data && z && z.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
+            const meine = data && z?.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
             if (!meine.length) return data;
             let txt = data.toString("utf8");
             for (const [, geheilt, basis] of meine) {
@@ -183,7 +183,7 @@ async function proben(phasen) {
                 k++ > vor &&
                 e &&
                 (x == null || e.surfMap) &&
-                !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                !s.pendingVegSpawns?.length &&
                 ns &&
                 ns.kacheln.size > 0 &&
                 ns.offen === 0
@@ -193,7 +193,7 @@ async function proben(phasen) {
         return ruhig >= 20;
     };
     // eine lebende Streu-Zelle (ihre Instanz-Slots oder ihr Feld-Wurf)
-    const lebt = (c) => (c.slots && c.slots.length) || c.feld;
+    const lebt = (c) => c.slots?.length || c.feld;
     // jede Streu-Zelle jeder Region
     const streuZellen = () =>
         [...((s.scatterRegions && s.scatterRegions.values()) || [])].flatMap((g) => g.cells || []);
@@ -422,12 +422,12 @@ async function proben(phasen) {
         const takt = window.__anazhAutoSettlement;
         window.__anazhAutoSettlement = true;
         stell(start.x, start.y + 1, start.z);
-        const zelle = () => ((s.worldMeta && s.worldMeta.settlementCells) || {}).start;
+        const zelle = () => (s.worldMeta?.settlementCells || {}).start;
         await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
         window.__anazhAutoSettlement = takt;
         const c = zelle();
         const plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
-        const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
+        const slots = (plan?.slots || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
         o.startDorf = { slots: slots.length, fehlt: [] };
         for (const sl of slots) {
             const [x, z] = [c.x + sl.x, c.z + sl.z];
@@ -1058,7 +1058,7 @@ async function proben(phasen) {
             for (const [b, n] of imBau(e, vorBau, true))
                 if (w7.imBau++ < 4) w7.taeter.push(`${e.type}@${gierVon(e)}°in ${b.type} (${n} Punkte)`);
         // das zweite Dorf: derselbe Akt am Anker des ersten (worldMeta.settlementCells „d:7@x,z")
-        const zelle = Object.entries((s.worldMeta && s.worldMeta.settlementCells) || {}).find(([k]) =>
+        const zelle = Object.entries(s.worldMeta?.settlementCells || {}).find(([k]) =>
             k.startsWith("d:7@")
         );
         if (zelle) {
@@ -1816,7 +1816,7 @@ async function proben(phasen) {
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
         stell(start.x, start.y + 1, start.z);
-        const zellen = () => (s.worldMeta && s.worldMeta.settlementCells) || {};
+        const zellen = () => s.worldMeta?.settlementCells || {};
         let q = null;
         await warteBis(() => !!(q = r._autoSettlementQueue) || !!zellen().start, 1, 600);
         const sl = q && q.plan.slots[q.plan.slots.length - 1];

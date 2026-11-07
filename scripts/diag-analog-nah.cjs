@@ -137,7 +137,7 @@ hauptLauf(async () => {
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     taktFehlerN++;
-                    if (!taktFehler1) taktFehler1 = String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ");
+                    if (!taktFehler1) taktFehler1 = String(e?.stack || e).split("\n").slice(0, 3).join(" | ");
                 }
                 await sleep(20);
             };
@@ -193,8 +193,8 @@ hauptLauf(async () => {
                     return (
                         gleich >= 20 &&
                         bauten > 0 &&
-                        !!(f && f.ready && f.pending.size === 0 && !(f.warte && f.warte.length)) &&
-                        !(r._impostorBakeQueue && r._impostorBakeQueue.length)
+                        !!(f && f.ready && f.pending.size === 0 && !f.warte?.length) &&
+                        !r._impostorBakeQueue?.length
                     );
                 };
             })();
@@ -248,7 +248,7 @@ hauptLauf(async () => {
                 if (zb && zb.bruecken) brueckenMax = Math.max(brueckenMax, zb.bruecken.length);
             }
             const ruheEnde = r._analogZensus();
-            const brueckenEnde = ruheEnde && ruheEnde.bruecken ? ruheEnde.bruecken : [];
+            const brueckenEnde = ruheEnde?.bruecken ? ruheEnde.bruecken : [];
             // T — die Rampe: fort, bis der Ring dort steht, und zurück
             setze(X + 400, Z);
             let stabil = 0,

@@ -82,7 +82,7 @@ hauptLauf(async () => {
                 fx: { place: { mode: "none" } },
             };
             r._foundryAutoRegisterSpecies(f.recipes);
-            res.c.katalog = !!(r.state.blueprints && r.state.blueprints.baum_testnone);
+            res.c.katalog = !!r.state.blueprints?.baum_testnone;
             const pc = r._placePolicyFor(f.recipes.testnone);
             res.c.mode = pc.mode;
             res.c.dispatch = r._placeDispatch(pc, { id: "testnone" });
@@ -135,7 +135,7 @@ hauptLauf(async () => {
                 }
             }
         } catch (e) {
-            res.err = (e && e.stack) || fehlerText(e);
+            res.err = e?.stack || fehlerText(e);
         }
         return res;
     }, SELFTEST);

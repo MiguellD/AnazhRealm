@@ -296,7 +296,7 @@ function zielZensus(k) {
                 ziel: (g.usage & GPUTextureUsage.RENDER_ATTACHMENT) !== 0,
                 kopierbar: (g.usage & GPUTextureUsage.COPY_SRC) !== 0,
                 tiefe: /^depth|stencil/.test(g.format),
-                bytes: (g.__vramH && g.__vramH.b) || 0,
+                bytes: g.__vramH?.b || 0,
                 // eine Leinwand-Textur legt der Kontext an, nicht das Gerät — der Abgriff kennt sie nicht
                 leinwand: !g.__vramH,
                 // eine Attrappe, deren Kopie der Stamm in einen eigenen Pass umleitet (`__umleitung` = das echte Ziel)
@@ -579,7 +579,7 @@ function lebenszeit(x) {
 function zielUrteil(z, lesen) {
     const rot = [],
         hinweis = [];
-    if (!z || z.fehler) return { rot: ["ZENSUS: " + ((z && z.fehler) || "keine Antwort der Seite")], hinweis, zeilen: [] };
+    if (!z || z.fehler) return { rot: ["ZENSUS: " + (z?.fehler || "keine Antwort der Seite")], hinweis, zeilen: [] };
     const ziele = z.ziele || [];
     const byId = new Map(ziele.map((x) => [x.id, x]));
     const klasse = new Map(ziele.map((x) => [x.id, []]));

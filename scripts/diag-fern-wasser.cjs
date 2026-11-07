@@ -34,7 +34,7 @@ async function runOnce(browser, noFoundry) {
         const step = span / 4;
         r._ensureFarWaterSheet();
         const m = s.farWater;
-        o.built = !!(m && m.mesh);
+        o.built = !!m?.mesh;
         o.quads = m ? m.quads : 0;
         o.builtMs = m ? m.builtMs : null;
         o.builtOutR = m ? m.builtOutR : null;
@@ -153,7 +153,7 @@ async function runOnce(browser, noFoundry) {
         o.toggleOffDisposed = s.farWater === null;
         delete s.atmosphere.farWater;
         r._ensureFarWaterSheet();
-        o.toggleOnRebuilt = !!(s.farWater && s.farWater.mesh);
+        o.toggleOnRebuilt = !!s.farWater?.mesh;
         return o;
     });
     console.log(`\n===== FERN-WASSER — LINSE (V18.381) — Regime: ${noFoundry ? "ALT (foundry aus)" : "PRODUKTION (foundry an)"} =====\n`);

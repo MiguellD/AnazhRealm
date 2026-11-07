@@ -339,7 +339,7 @@ async function runPartB() {
                         for (const l of stufen)
                             if (!w[l]) {
                                 const fl = r._foundryFlattenFor(e, preset, l);
-                                w[l] = !!(fl && fl.instanceable);
+                                w[l] = !!fl?.instanceable;
                             }
                         return stufen.every((l) => w[l]);
                     },
@@ -398,7 +398,7 @@ async function runPartB() {
                             const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
                             for (const l of [1, 2]) {
                                 const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                                kalt = kalt || !(fl && fl.instanceable);
+                                kalt = kalt || !fl?.instanceable;
                             }
                         }
                     }
@@ -646,7 +646,7 @@ async function runPartB() {
                 const satzStempel = (g, ref, o) => {
                     const S = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
                     const b = S ? S.bloecke.get(g.key) : null;
-                    const z = b && b.zellen ? b.zellen[ref.slot] : null;
+                    const z = b?.zellen ? b.zellen[ref.slot] : null;
                     let anDerInstanz = false;
                     if (z && !z.huelle.isEmpty()) {
                         const T3 = window.THREE;
@@ -664,7 +664,7 @@ async function runPartB() {
                                 key: String(g.key).slice(0, 48),
                                 slot: ref.slot,
                                 bereich: !!b,
-                                zellen: b && b.zellen ? b.zellen.length : 0,
+                                zellen: b?.zellen ? b.zellen.length : 0,
                             };
                         return null;
                     }
@@ -811,7 +811,7 @@ async function runPartB() {
                 let zwBekannt = false;
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
-                    const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
+                    const ref = lu?.uLodRef ? lu.uLodRef.value : lodRefLive;
                     const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
@@ -1464,7 +1464,7 @@ async function main() {
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
         laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
     );
-    const sp = (laut && laut.spiegel) || {};
+    const sp = laut?.spiegel || {};
     check(
         "SPIEGEL DER BLENDE: die Masken-Uniformen tragen je Bild das CPU-Band (LOD_DISTANCES) — vor dem Bild alt, nach ihm neu",
         sp.seed === true && sp.vorBild === false && sp.nachBild === true && sp.zurueck === true,

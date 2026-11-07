@@ -506,6 +506,23 @@ class AnazhRealm_daten {
     // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
     // `pfadDuennt` = so stark dünnt das Pfad-Feld (`_pfadFeldAt` ∈ [0, 1]) den Wurf: die Dichte × (1 − pfad · pfadDuennt) — der
     // Trampelpfad liest dieselbe Zahl für die Stufe, ab der er Pfad ist (`_trittStufe`, `TRITT.pfadGras`).
+    // DIE GRENZE DER STRECKUNG (w21-wiese-fern): ein Büschel der Ferne spreizt seine Füße nie weiter, als die Wiese der Nähe und
+    // sein Boden es tragen (`_wieseFernGrenzen`, je Büschel die Zahl in der vierten Zeile seiner Instanz-Matrix, die der Stoff
+    // `_halmFerne` und der Sicht-Satz lesen; die Breite der Halme und der Anteil folgen weiter dem Pixel, `_wieseFern`): seine
+    // Füße stehen nur, wo die Nähe mindestens `wiese` ihrer Wiese trägt (`_wieseGrund`: nie auf Weg, Gasse, Pflaster, Fels,
+    // Asche oder Wasser — mit dem vollen Pfad als Schwelle, 0,08, standen am Hang des Genesis-Orts 97 Büschel mit Füßen auf den
+    // Rändern der Wege) und nie über einer Kante, über die der Boden steiler fällt, als die Wiese steht (`GRASS_SLOPE.hi` je
+    // Kante des Gitters), sein Kreis berührt keinen Grund eines Hauses (derselbe Kreis wie in der Nähe, `erdbauGrund`), und jeder Fuß
+    // liegt höchstens `boden` m neben dem gezeichneten Boden. Gelesen über ein Gitter der Kante `gitter` je Kachel der Ferne
+    // (`_wieseFernGitter`; mit 1,5 m lief der getretene Weg — 1,1 m Erde, `TRITT` — zwischen seinen Punkten hindurch, an der
+    // Mess-Wiese 10 Büschel mit Füßen auf ihm; die Maske dehnt sich um eine Kante). `boden` 0,5 m: über dem Rauschen
+    // der Facetten (Surface-Nets auf 1,8 m trägt ±0,2 m, Lehre 22; mit 0,25 m setzten am Genesis-Ort 558 von 1 277 Büscheln ihre
+    // Grenze an Abweichungen von 0,26–0,38 m), unter der Höhe des Halms (L2 0,69–0,72 m). Gemessen (Null-Renderer, je Pose
+    // alle stehenden Büschel der Ferne, die Füße, die erst die Streckung auf eine Maske trug): Stadt (dorf 7 120) auf den Gassen
+    // 56 → 2, Nicht-Wiese 91 → 0, Wasser 15 → 0; Hang am Genesis-Ort (26°) auf Wegen 155 → 0, Nicht-Wiese 197 → 0; Mess-Wiese
+    // auf dem Weg 236 → 0, Nicht-Wiese 107 → 0; die Höhe eines Büschels 83,6 · 72,0 · 95,4 m → 8,6 · 9,9 · 2,1 m (Genesis · Hang ·
+    // Mess-Wiese), die Füße p999 14,0 · 4,2 · 6,7 m neben dem Boden → 0,43 · 0,39 · 0,08 m. Die Stadt trägt wieder Ferne zwischen
+    // den Häusern (504 → 1 099 stehende Büschel, bis dahin fiel jedes im Kreis 11–22 m um einen Grund).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -532,6 +549,9 @@ class AnazhRealm_daten {
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,
+                    gitter: 1,
+                    boden: 0.5,
+                    wiese: 0.5,
                 }),
             })
         );
