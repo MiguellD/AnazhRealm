@@ -1,0 +1,185 @@
+{
+ "sha": "dbf081c511c5f9d27bd3bcd4c0d2e24ef28e6ff2",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T11:48:00.268Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.297 Soll [0.3554,0.533] — strich 0.297 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.3928 Soll [0.3554,0.533] — strich 0.3928 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.43,
+   "grund": "ROT: arm ROT strich 0.297 Soll [0.3554,0.533] — strich 0.297 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.3928 Soll [0.3554,0.533] — strich 0.3928 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 25.5,
+   "zeit": "2026-11-07T11:44:34.892Z",
+   "abdruck": "c0eb0fef1e79",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 183603 px · winter 20791 px · fruehling 143207 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.49 · winter 1.06 · fruehling 1.90 → Winter 0.425 × Sommer",
+   "exit": 0,
+   "minuten": 1.32,
+   "gpu": "nvidia/pascal",
+   "s": 79,
+   "zeit": "2026-11-07T11:45:00.484Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 46.5 · third/gehen 59.9 · ego/wechsel 24.7 · third/wechsel 19.3 · Bild 21.5 ms",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 46.5 · third/gehen 59.9 · ego/wechsel 24.7 · third/wechsel 19.3 · Bild 21.5 ms",
+   "gpu": "nvidia/pascal",
+   "s": 28.9,
+   "zeit": "2026-11-07T11:46:19.544Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7013 (wasserSatz 25499 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.2 σ 36.2 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.37,
+   "gpu": "nvidia/pascal",
+   "s": 22.1,
+   "zeit": "2026-11-07T11:46:48.453Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.1883 (83942 px in der Ebene, 55 Blöcke, Einfall 53.6°, Normale [0.132,0.987,0.087]) · glas spiegelTreue 0.8322 (6276 px in der Ebene, 24 Blöcke, Einfall 71.1°, Normale [0.015,0.999,0.037]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000279 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.1,
+   "gpu": "nvidia/pascal",
+   "s": 6,
+   "zeit": "2026-11-07T11:47:10.595Z",
+   "abdruck": "f348340da034",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.919 · Regen 149 | third porös 0.777 (n 25871) · Glanz 16 · Regenbild 0.912 · Regen 97",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "nvidia/pascal",
+   "s": 17.8,
+   "zeit": "2026-11-07T11:47:16.636Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.3645 Soll [0.4358,0.6538] — strich 0.3645 < 0.4358 · third ROT strich 0.3194 Soll [0.4358,0.6538] — strich 0.3194 < 0.4358",
+   "exit": 0,
+   "minuten": 0.4,
+   "grund": "ROT: arm ROT strich 0.3645 Soll [0.4358,0.6538] — strich 0.3645 < 0.4358 · third ROT strich 0.3194 Soll [0.4358,0.6538] — strich 0.3194 < 0.4358",
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "zeit": "2026-11-07T11:47:35.485Z",
+   "abdruck": "4737c3538058",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 42.5 · third/gehen 44.5 · ego/springen 35.6 · third/springen 46.7 · ego/einsteigen 49 · third/einsteigen 26.2 · ego/hieb 39 · third/hieb 37.7 · Bild 16.81 ms",
+   "exit": 0,
+   "minuten": 1.38,
+   "gpu": "nvidia/pascal",
+   "s": 82.8,
+   "zeit": "2026-11-07T11:48:00.268Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T11:43:58.424Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [
+   0.1,
+   0.1
+  ],
+  "proben": 8,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 28.4,
+    "takte": 868,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "haar.K1#1",
+    "s": 0.9,
+    "takte": 74,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#2",
+    "s": 0.8,
+    "takte": 75,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 9,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 5560,
+   "frameP95": 33.34,
+   "taktP95": 24.77,
+   "vramMax": 135.6,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "wetter.K2#2",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": 1
+    }
+   ],
+   "zapfen": 305,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 323.8,
+  "minuten": 5.47
+ }
+}
