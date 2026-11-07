@@ -3538,9 +3538,16 @@ AnazhRealm.FARBSICHT = Object.freeze({
     staerke: 1,
 });
 // DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
-// KAM_FOV_GRAD) in `sichtfeld` — nie `fov`: `.fov =` schreibt allein `_kamFov` (gate:fahr-leben T5) —, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
+// KAM_FOV_GRAD) in `zugang.fov` im Bereich `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
 // swiftshader, 1,5° Drehung je Bild über 12 Bilder: Kanten-Energie an 3,6, aus 12,5, in Ruhe beide 7,8 — spielgang.K4#2).
-AnazhRealm.ZUGANG = Object.freeze({ sichtfeld: Object.freeze([60, 100]), laufPxAus: 4 });
+AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+// DAS SICHTFELD DES SPIELERS als reine Funktion: die Wahl (Menü, Stand) geklemmt auf ZUGANG.fov, null ohne Zahl — der EINE Weg Menü → Stand
+// → `_kamFov`; die Schreiber legen sie mit `Object.assign(zugang, { fov })` ab (`camera.fov` schreibt allein `_kamFov`, gate:fahr-leben T5)
+AnazhRealm._zugangFov = function (v) {
+    if (v == null || v === "" || !Number.isFinite(+v)) return null;
+    const [f0, f1] = AnazhRealm.ZUGANG.fov;
+    return Math.max(f0, Math.min(f1, +v));
+};
 // die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
 AnazhRealm._farbsichtMatrix = function (art, staerke) {
     const F = AnazhRealm.FARBSICHT;
