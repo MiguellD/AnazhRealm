@@ -896,6 +896,7 @@ class AnazhRealm_gelaende_boden {
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
         const genKarte = this._chunkGenKarte || (this._chunkGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        this._freiWeckenIn(x0 - R, x1 + R, z0 - R, z1 + R); // was über dem Edit ruht, wacht auf und fragt seinen Grund neu
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
@@ -2288,6 +2289,23 @@ class AnazhRealm_gelaende_boden {
         // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
         if (S.feuchte !== undefined) geom.userData.felsFeuchte = S.feuchte;
         col.needsUpdate = true;
+    }
+
+    // DIE MULDE DES BODENS (wetter.K2, das Pfützen-Gesetz): gelaende-core `muldeEcken` — je Vertex die Senke des Gesetzes, in der
+    // der Regen als Pfütze steht (0 … 1 in Einheiten von `MULDE.tiefeM`), nur in den nahen Stufen. Sie entsteht, wo das Netz
+    // entsteht: der Faden rechnet sie beim Chunk-Bau (`buildChunkMesh`), der Haupt-Thread nur im Sync-Bau; das Gedächtnis des
+    // Gitters (`_muldeMemo`) leert der Kern je Lage. Leser: der Boden-Stoff (`_pfuetzeKnoten`, die vierte Komponente der Normale).
+    _muldeStoff(geom, lod) {
+        const pos = geom.attributes.position;
+        const M = globalThis.__gelaendeCore.muldeEcken(
+            this._gelaende(),
+            pos.array,
+            pos.count,
+            lod,
+            this._muldeMemo || (this._muldeMemo = new Map())
+        );
+        geom.setAttribute("aMulde", new THREE.Float32BufferAttribute(M, 1));
+        return M;
     }
 
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache

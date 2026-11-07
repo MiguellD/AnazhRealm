@@ -812,6 +812,9 @@ class AnazhRealm_werkstatt_bauen {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        // was auf ihm ruht, wacht auf (ein freier Körper auf dem Pfosten, die Kiste auf der Kiste, `_freiWeckenIn`)
+        const h = entry._blockerHuelle;
+        if (h && this._freiImTakt) this._freiWeckenIn(h[0], h[1], h[2], h[3]);
         // der Grundriss eines Baus fällt mit ihm — am Ort (`_grundrissFaellt`)
         const fp = this._grundrissVon(entry);
         if (fp) {
@@ -868,11 +871,8 @@ class AnazhRealm_werkstatt_bauen {
         this._blockerAustritt(entry);
         this._cullWecken(entry, "weg");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
-        if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
-        if (this._archFahrende) this._archFahrende.delete(entry); // und fährt nicht weiter (`_archFahrt`)
-        if (this._freiImTakt) this._freiImTakt.delete(entry); // ein abgebauter freier Körper verlässt den Löser
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
-        this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
+        this._bauVerlaesstTakte(entry);
         if (!still && typeof this.journalAppend === "function") {
             this.journalAppend("loss", ["journal.abgebaut", { art: entry.type }], {
                 type: entry.type,
@@ -886,6 +886,21 @@ class AnazhRealm_werkstatt_bauen {
         // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return true;
+    }
+
+    // DER BAU VERLÄSST DIE TAKTE (die EINE Tür, durch die jeder Eintrag geht, der die Welt verlässt — der Abbau
+    // `removeArchitecture` und der neue Bestand des Ladens `_loadStateRestoreArchitectures`): was einen Takt außerhalb von
+    // `state.architectures` trägt, hält den Eintrag selbst — ein Wagen im Nachlauf (`_fahrNachlauf`), ein fahrender Bau
+    // (`_archFahrt`), ein freier Körper im Löser (`_freiSchritt`), ein Werk im Takt des Gesetzes (Sturz, Bruch, Rollen, Schale,
+    // Gerät), ein Bewegter vor seinem Stufen-Urteil, ein Baum vor seiner Hülle. Befund z264: das Laden tauschte den Bestand, die Takte rechneten die alten Werke weiter — ein Bruch ohne Plan
+    // im Buch brach je Bild an `_werkBricht`, ein Sturz endete als Einsturz im Journal eines Werks, das es nicht mehr gab.
+    _bauVerlaesstTakte(entry) {
+        if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
+        if (this._archFahrende) this._archFahrende.delete(entry); // und fährt nicht weiter (`_archFahrt`)
+        if (this._freiImTakt) this._freiImTakt.delete(entry); // ein abgebauter freier Körper verlässt den Löser
+        this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
+        if (this._archBewegte) this._archBewegte.delete(entry); // seine Stufe urteilt nicht mehr (`_archBewegteUrteilen`)
+        if (this._huellenNach) this._huellenNach.delete(entry); // und keine Hülle wächst ihm nach (`_tickHuellenNach`)
     }
 
     // Wasser strömt zurück (Abbau) oder um den Damm (Bau) — nur wo Wasser IST: liegt ein Punkt eines Fußabdrucks

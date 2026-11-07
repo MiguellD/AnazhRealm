@@ -243,6 +243,9 @@ function pruefVerdict(m, b) {
         g.breit > 0.05 && g.hoch < 0.01,
     ];
     const rest = [...konsumTaeter(m.konsum), ...(z.length === 10 ? [] : [`${z.length} von 10 gesetzt`])];
+    // der Takt des Gesetzes (Soll 2,0,1,0): [Bauten der Laube ohne Plan (Rest + Trümmer), der Waise, ihre WERK-WAISE-Meldungen,
+    // Pläne des Gesetzes im Katalog]
+    if (m.takt + "" != "2,0,1,0") rest.push("Takt " + m.takt);
     return { statik: [...rest, ...statik], wirkung: WIRKUNGEN.filter((_, i) => !ok[i]), richtig: z.length - statik.length };
 }
 
@@ -912,6 +915,19 @@ async function probe(argW) {
             if (e) r.removeArchitecture(e);
         }
         emo.chaos = chaos;
+        // DER TAKT DES GESETZES (z264): zwei Lauben, deren Kopf ohne Pfosten schwebt (der Bruch im ersten Takt, `_werkBricht`);
+        // der Stand wird über ihnen geladen (kein Takt hält den alten Bestand, `_bautenLeeren`), dann fällt der Plan der einen
+        // (`deleteBlueprint`: sie bricht nach dem Plan ihres Urteils — Rest und ein Trümmer), die andere verlässt die Welt an
+        // `removeArchitecture` vorbei (sie bricht nie als Geist, meldet sich EINMAL als „WERK-WAISE"); die Pläne des Gesetzes
+        // stehen nie im Katalog des Spielers (`_katalogSichtbar`). Ein Wurf im Takt fällt als Ausnahme der Probe.
+        const um = (d) => st.architectures.filter((e) => /Laube|truemmer_/.test(e.type) && Math.hypot(e.position.x - frei.x - 9, e.position.z - frei.z - d) < 4);
+        for (const d of [9, 18]) setze("Laube" + d, satz.einsturz.Laube, frei.x + 9, frei.z + d);
+        r._loadStateRestoreArchitectures(r.buildStateSnapshot());
+        r.deleteBlueprint(um(9)[0].type);
+        st.architectures = st.architectures.filter((e) => e != um(18)[0]);
+        takte(3, 1 / 30);
+        m.takt = [um(9).length, um(18).length, [...r._bruchBuch.keys()].join().split("Laube18").length - 1, Object.keys(st.blueprints).filter((n) => /truemmer_|_rest_/.test(n) && r._katalogSichtbar(n)).length];
+        for (const e of um(9)) r.removeArchitecture(e);
         for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
     });
     return out;
@@ -1634,6 +1650,7 @@ hauptLauf(async () => {
             rad: { rad: { weg: 4, hinab: 1, neigung: 170 }, klotz: { weg: 0 } },
             schale: { regen: 0.4, sonne: 0.4, sichtbar: true, loch: 0 },
             gruender: { breit: 0.2, hoch: 0 },
+            takt: [2, 0, 1, 0],
         };
         const mitP = (k, o) => ({ ...gesundP, [k]: { ...gesundP[k], ...o } });
         familie("Prüf-Satz", (m, v = pruefVerdict(m, gesundB)) => [...v.statik, ...v.wirkung], gesundP, [
@@ -1642,6 +1659,8 @@ hauptLauf(async () => {
             [mitP("konsum", { k: false }), "Konsum"],
             [mitP("rad", { rad: { weg: 0, hinab: 0, neigung: 0 } }), "Rad"],
             [mitP("schale", { regen: 0 }), "Schale"],
+            // z264: die Waise bricht als Geist (Rest und Trümmer), das Laden hält den alten Bestand, der Trümmer im Katalog
+            [{ ...gesundP, takt: [2, 2, 3, 2] }, "Takt"],
         ]);
         // L-Verben: gesund ohne Täter; ein Werk ohne Policy (das Tor ohne Portal) ist rot an seinem Verb, eines, das nicht steht, am Setzen
         const je = (f) => Object.fromEntries(HERKUNFT.map((h) => [h, Object.fromEntries(SICHTEN.map((s) => [s, f(h + s)]))]));
