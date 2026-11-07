@@ -123,7 +123,7 @@ const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}, luma70
 // Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
 function bauTeile(meshes) {
   return (meshes || [])
-    .filter((m) => m && m.position && m.position.array && m.teil !== "schatten")
+    .filter((m) => m?.position && m.position.array && m.teil !== "schatten")
     .map((m) => {
       const mat = m.mat || {}, grund = mat.color || [0.7, 0.7, 0.7];
       const glut = mat.emissive ? mat.emissive.map((x) => x * (mat.emissiveIntensity || 1)) : null;
@@ -477,7 +477,7 @@ function kanalImVm(quellen = {}) {
         __PHYTO_FOUNDRY_WORKER: true,
     });
     for (const f of WORKER_SCRIPTS) {
-        const src = Object.prototype.hasOwnProperty.call(quellen, f)
+        const src = Object.hasOwn(quellen, f)
             ? quellen[f]
             : ausDatei(path.join(ROOT, f));
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });

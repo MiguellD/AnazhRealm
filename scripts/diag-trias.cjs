@@ -131,7 +131,7 @@ hauptLauf(async () => {
     check(
         "N3: kindStages.haus deklariert [0,1,2,3] (die Mehr-Stufen-Domaene; 3 = NUR-WURF, S3 haus — nie gezeigt, sie wirft)",
         JSON.stringify(
-            FC.PORTAL_RENDER_CONFIG && FC.PORTAL_RENDER_CONFIG.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
+            FC.PORTAL_RENDER_CONFIG?.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
                 ? FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus
                 : null
         ) === "[0,1,2,3]"
@@ -496,7 +496,7 @@ hauptLauf(async () => {
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
             Number.isInteger(out.cap) && out.cap > 64 && out.lightSize === out.cap
         );
-        if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
+        if (out.errors?.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
 
     wandEnde(errs, "DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");

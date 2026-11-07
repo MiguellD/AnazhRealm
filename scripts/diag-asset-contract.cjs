@@ -148,7 +148,7 @@ function fernUrteil(mess) {
 // je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
 function teileAus(meshes) {
     return (meshes || [])
-        .filter((m) => m.attrs && m.attrs.position)
+        .filter((m) => m.attrs?.position)
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
             if (m.tuer) t.tuer = m.tuer;
@@ -537,7 +537,7 @@ hauptLauf(async () => {
             if (!budget || !budget[kind]) return;
             // Nur GELIEFERTE Stufen: eine nicht deklarierte (die Strauch-L0, der Host klemmt sie auf L1) bleibt
             // ein Byte-Golden ohne Budget.
-            if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
+            if (!Array.isArray(stufen[kind]) || !stufen[kind].includes(c.lod)) return;
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
             // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)

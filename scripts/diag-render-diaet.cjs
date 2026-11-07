@@ -104,7 +104,7 @@ hauptLauf(async () => {
             try {
                 mkBp(name, "stein", FARBEN);
                 const flat = r._archFlattenBlueprint(name);
-                o.instanceable = !!(flat && flat.instanceable);
+                o.instanceable = !!(flat?.instanceable);
                 if (!o.instanceable) {
                     o.reason = flat && flat.reason;
                     return o;
@@ -171,7 +171,7 @@ hauptLauf(async () => {
         if (neu.probeFlat) {
             const m0 = neu.probeFlat.leaves[0].mat;
             res.neu.matWeiss = m0 && m0.color && m0.color.getHex() === 0xffffff;
-            res.neu.matMarker = !!(m0 && m0.userData && m0.userData.leafTint && m0.userData.sharedFoliage);
+            res.neu.matMarker = !!(m0?.userData && m0.userData.leafTint && m0.userData.sharedFoliage);
         }
 
         // ── F: die FARB-WAHRHEIT am lebenden Slot (bevor die NEU-Welt drainiert) ──
@@ -227,8 +227,7 @@ hauptLauf(async () => {
             r._archInstanceAdd(eS, flat);
             const erdeMat = nahtFlat.instanceable && nahtFlat.leaves[0].mat;
             farbe.erdeKanaele = !!(
-                erdeMat &&
-                erdeMat.userData &&
+                erdeMat?.userData &&
                 erdeMat.userData.leafTint &&
                 erdeMat.userData.useInstanceTint
             );
@@ -249,7 +248,7 @@ hauptLauf(async () => {
             const gb = r._archFlattenBlueprint("rd_glut_b");
             const gm = ga.instanceable && ga.leaves[0].mat;
             farbe.glutGebacken = !!(gm && (!gm.userData || !gm.userData.leafTint) && gm.color.getHex() !== 0xffffff);
-            farbe.glutEmissiv = !!(gm && gm.emissive && gm.emissive.r + gm.emissive.g + gm.emissive.b > 0.01);
+            farbe.glutEmissiv = !!(gm?.emissive && gm.emissive.r + gm.emissive.g + gm.emissive.b > 0.01);
             farbe.glutGeteilt = !!(gb.instanceable && gb.leaves[0].mat === gm);
             res.farbe = farbe;
         } catch (e) {

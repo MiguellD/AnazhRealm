@@ -1723,7 +1723,7 @@ function scanKartenWand(srcRoh) {
         }
         const rumpf = code.slice(a, b);
         for (const t of ["CanvasTexture", 'createElement("canvas")', "getContext(", "putImageData", "drawImage("])
-            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
+            if (rumpf.includes(t)) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
     }
     return errs;
 }
@@ -2140,7 +2140,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const kette = (x) => {
         let t = "ruft " + x;
         let b = renderBauer.get(x);
-        for (let i = 0; b && b.ueber && i < 24; i++) {
+        for (let i = 0; b?.ueber && i < 24; i++) {
             t += (b.faden ? " ⇢ (Studio-Faden) " : " → ") + b.ueber;
             b = renderBauer.get(b.ueber);
         }
@@ -3510,7 +3510,7 @@ function main() {
         if (
             abschriftRot.length !== 2 ||
             !abschriftRot.every((x) => /Abschrift des Messorts/.test(x)) ||
-            abschriftStill.length !== 0
+            abschriftStill.length
         ) {
             console.log("❌ SELBST-TEST: die Abschrift des Messorts feuert nicht", abschriftRot, abschriftStill);
             process.exit(1);

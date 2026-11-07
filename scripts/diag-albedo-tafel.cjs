@@ -123,7 +123,7 @@ async function messeLabor({ echt, nur, tafel }) {
                 const res = await page.evaluate((o) => window.__laborAlbedo(o), { studio: S, zeilen: [z] });
                 const e = res.find((x) => x.id === z.id || x.name === z.id) || { fehler: "keine Antwort" };
                 const k = res.find((x) => x.name === "graukarte");
-                if (k && k.gesamt) eich = k.gesamt.Y;
+                if (k?.gesamt) eich = k.gesamt.Y;
                 const ordner = opt("--bilder");
                 if (ordner && e.png) {
                     fs.mkdirSync(ordner, { recursive: true });
@@ -566,7 +566,7 @@ async function main() {
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },
         };
         // der Stand beider Seiten reist in die Tafel (K63-n3: die Soll-Tafel prüft Version und Quellen, `messStand`)
-        const st = (s) => (s && s.stand ? { version: s.stand.version, sha: s.stand.sha, quellen: s.stand.quellen } : {});
+        const st = (s) => (s?.stand ? { version: s.stand.version, sha: s.stand.sha, quellen: s.stand.quellen } : {});
         const r = AT.tafelNachziehen(t, m, {
             labor: Object.assign({ datum: labor.datum, geraet: labor.geraet, echt: labor.echt }, st(labor)),
             welt: Object.assign(

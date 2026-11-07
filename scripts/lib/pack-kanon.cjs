@@ -48,7 +48,7 @@ function coreIdFor(rec, manifest) {
     const first = Array.isArray(manifest) && manifest[0] && manifest[0].id ? manifest[0].id : "phyto";
     if (!rec || typeof rec.panel !== "string") return first;
     for (const core of manifest || []) {
-        if (core && core.ns && core.id === rec.panel) return core.id;
+        if (core?.ns && core.id === rec.panel) return core.id;
     }
     return first;
 }
@@ -187,8 +187,8 @@ async function waitLibraryWarm(page) {
     return page.evaluate(async () => {
         const f = r._foundry;
         await __weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
-        const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
-        return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
+        const keys = f?.cache ? Array.from(f.cache.keys()) : [];
+        return { warm: !!(f?.cache && f.cache.size > 0 && f._vorrat === false), keys };
     });
 }
 
@@ -217,7 +217,7 @@ async function installPackSerializer(page) {
                 const om = { kind: m.kind || "unknown", mat: m.mat || null, attrs: {} };
                 for (const k of Object.keys(m)) {
                     const v = m[k];
-                    if (v && v.array && v.itemSize && v.array.buffer) {
+                    if (v?.array && v.itemSize && v.array.buffer) {
                         const u = new Uint8Array(v.array.buffer, v.array.byteOffset, v.array.byteLength);
                         om.attrs[k] = {
                             itemSize: v.itemSize,
@@ -228,7 +228,7 @@ async function installPackSerializer(page) {
                         };
                     }
                 }
-                if (m.index && m.index.buffer) {
+                if (m.index?.buffer) {
                     const u = new Uint8Array(m.index.buffer, m.index.byteOffset, m.index.byteLength);
                     om.index = { type: m.index.constructor.name, bytes: u.length, b64: b64(u), sha256: await sha(u) };
                 }

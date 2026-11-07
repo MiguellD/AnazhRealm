@@ -717,7 +717,7 @@ function abnahmeMessen(opt) {
                   gestalt: ohne.map((id, _i, _a, e = werk(id)) =>
                       e ? `${e.type} ${id}${r._archImBild(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
                   ),
-                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archImBild(e)),
+                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => e && r._archImBild(e)),
               })
             : null,
         pose: {
@@ -767,7 +767,7 @@ async function blickWahl(opt) {
     for (let k = 0; k < n; k++) {
         const ring = Math.floor(k / winkel.length);
         const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
-        const d = d0 * Math.pow(0.8, ring);
+        const d = d0 * 0.8 ** ring;
         const p = [z.x + Math.cos(a) * d, 0, z.z + Math.sin(a) * d];
         p[1] = boden(p[0], p[2]) + h0 + 4 * ring;
         if (Number.isFinite(p[1])) reihe.push({ k, p, oben: k ? (p[1] - z.y) / d : Infinity });

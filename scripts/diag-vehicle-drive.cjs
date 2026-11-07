@@ -195,7 +195,7 @@ hauptLauf(async () => {
                 r._archInstanceUpdate(entry);
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
-                res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
+                res.drive.mounted = !!(mres?.ok) && r.state.player.mountedArch === entry.id;
                 // DONOR-ABSCHIED — der lebende KONSUM/ABSENZ-Beweis am
                 // frisch gespawnten Eintrag (Gier 0 — die Welt-AABB-Spanne ist die
                 // Laengs-Achse): Sitz == Kern-Formel UND != Donor-Anker; Blocker-
@@ -206,7 +206,7 @@ hauptLauf(async () => {
                     const hip = r.constructor.SITZ_HIP_OFFSET;
                     const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
                     const kernSitz =
-                        drv && drv.sitz && Number.isFinite(drv.sitz.y) ? Math.max(0.45, drv.sitz.y * sc + hip) : null;
+                        drv?.sitz && Number.isFinite(drv.sitz.y) ? Math.max(0.45, drv.sitz.y * sc + hip) : null;
                     const donorSp = r._attachPointFor(r.state.blueprints.fahrzeug_gt, "sitz").point;
                     const donorSitz = Number.isFinite(donorSp.y) ? Math.max(0.45, donorSp.y * sc + hip) : null;
                     res.drive.sitzKern =

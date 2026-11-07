@@ -1,0 +1,372 @@
+name: GPU-Probe
+run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
+
+# DER GPU-PROBE-DIENST (w22-gpu-probe): jeder Zweig bekommt in Minuten das Urteil und das Bild einer Wand auf ECHTER GPU — die
+# eigenen Läufer mit dem Label gpu-probe (omen-gtx1060, radeon-890m; GitHub nimmt den freien), nie swiftshader (Lehre 17). Der Ruf
+# steht in der Kopf-Commit-Message: `[gpu-probe: <spec>]`, <spec> eine Komma-Liste aus höchstens drei Proben
+#   gate:<npm-skript>   ein Skript aus package.json (z. B. gate:ego-schatten), wie im echt-Job unter LINSE_GPU=karte
+#   bild:<ort>[@<uhr>]  ein Messort der Orts-Tafel (spec/profiband/haushalt.json `messorte`): Werkbank `start --ort` und
+#                       `umstellen --ort`, dann `bild` an der Kamera des Spiels (ihr Ort, ihre Richtung bis zum Blick des Orts),
+#                       aus dem Ausgabe-Pfad, die Uhr 0..1 (ohne: Mittag); das Beweisbild urteilt selbst (ABNAHME)
+# Nur diese zwei Formen, die Namen gegen package.json und die Tafel geprüft — der EINE Leser ist der Schritt `einlass` unten
+# (EINLASS_JS; gate:apparat Klinge 7 FÄHRT ihn mit freien Befehlen und fremden Namen und hält dieses Gesetz mit Mutanten): nie ein
+# freier Befehl aus der Message, das Repo ist öffentlich.
+# Drei Jobs: einlass (ubuntu: eine abgewiesene Probe weckt nie eine GPU) → probe (self-hosted, unter dem GPU-Schloss des Rechners,
+# das der Start-Hook des Läufers für jeden Job nimmt; je Probe ≤ 8 min, dann fällt ihr Prozessbaum; wartet ein echt-Job aus
+# check.yml, startet die Probe nicht oder gibt nach) → post (ubuntu: probe-post/<zweig>/<sha8>.md mit den Bildern und eine Zeile oben
+# in cloud-post/<zweig>.md im Zweig koordination; ein Push mit GITHUB_TOKEN weckt keine Läufe). Der Lauf ist rot, wenn das Urteil
+# nicht GRÜN ist. Auslöser NUR push (nie pull_request: fremder Code auf eigenen Rechnern); die Vertrauens-Wand des Hooks lässt nur
+# push und schedule von MiguellD durch.
+on:
+    push:
+        # ohne claude/**: eine Cloud-Sitzung pusht ihren Arbeitszweig mit DEMSELBEN SHA wie den benannten Zweig (wie check.yml)
+        branches: ["**", "!claude/**"]
+
+permissions:
+    contents: read
+
+jobs:
+    einlass:
+        if: contains(github.event.head_commit.message, '[gpu-probe:')
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        outputs:
+            plan: ${{ steps.einlass.outputs.plan }}
+            abgewiesen: ${{ steps.einlass.outputs.abgewiesen }}
+        steps:
+            # die Namen: package.json (im Kegel der Wurzel) und die Orts-Tafel
+            - uses: actions/checkout@v4
+              with:
+                  sparse-checkout: spec/profiband
+
+            # DER EINE LESER: die Message geht NUR über env hinein, nie in den Text eines run-Schritts (Injektion); heraus geht EINE
+            # Zeile (`\s+` → „ “: ein Umbruch schmuggelte sonst einen zweiten Ausgang)
+            - name: Einlass (nur gate:<npm-skript> und bild:<ort>[@<uhr>], die Namen gegen package.json und die Orts-Tafel)
+              id: einlass
+              env:
+                  KOPF_NACHRICHT: ${{ github.event.head_commit.message }}
+                  EINLASS_JS: |
+                      const marken = [...String(process.env.KOPF_NACHRICHT).matchAll(/\[gpu-probe:([^\]\n]*)\]/g)];
+                      const skripte = require("./package.json").scripts;
+                      const orte = require("./spec/profiband/haushalt.json").messorte.map((o) => o.id);
+                      const proben = marken.length === 1 ? marken[0][1].split(",").map((p) => p.trim()) : [];
+                      let grund = marken.length === 1 ? "" : `${marken.length} Marken [gpu-probe: …] auf einer Zeile, genau eine`;
+                      for (const p of proben) {
+                          const b = /^bild:([a-z][a-z0-9-]*)(?:@(?:0(?:\.\d{1,3})?|1(?:\.0{1,3})?))?$/.exec(p);
+                          const g = /^gate:[a-z0-9][a-z0-9:-]*$/.test(p)
+                              ? !skripte[p] && "kein npm-Skript in package.json"
+                              : b
+                                ? !orte.includes(b[1]) && `kein Messort der Orts-Tafel (${orte.join(", ")})`
+                                : "weder gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]";
+                          if (g && !grund) grund = `„${p.slice(0, 80)}“: ${g}`;
+                      }
+                      if (!grund && proben.length > 3) grund = `${proben.length} Proben, höchstens 3 je Push`;
+                      const zeile = (grund ? `abgewiesen=${grund}` : `plan=${proben.join(" ")}`).replace(/\s+/g, " ");
+                      if (process.env.GITHUB_OUTPUT) require("fs").appendFileSync(process.env.GITHUB_OUTPUT, zeile + "\n");
+                      console.log(zeile);
+              run: node -e "$EINLASS_JS"
+
+    probe:
+        needs: einlass
+        if: needs.einlass.outputs.plan != ''
+        runs-on: [self-hosted, gpu-probe]
+        # der Start-Hook wartet bis 25 min auf das Schloss, je Probe ≤ 8 min (höchstens drei), dazu Baum und npm ci
+        timeout-minutes: 60
+        permissions:
+            contents: read
+            actions: read
+        env:
+            CI_KLASSE: gpu
+            LINSE_GPU: karte
+            PLAN: ${{ needs.einlass.outputs.plan }}
+        # bash für jeden Schritt: Windows PowerShell fährt auf den Läufern keine Skript-Dateien (wie im echt-Job)
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4, am SHA: der Job läuft auf einem eigenen Rechner
+              with:
+                  node-version: "22"
+
+            # DER BAUM neben dem des echt-Jobs (dessen Arbeitsordner räumt der Hook): $RUNNER_WORKSPACE/gpu-probe, je Lauf auf den
+            # Kopf-SHA gestellt und gefegt; node_modules bleiben, bis sich package-lock.json ändert
+            - name: Baum (eigener Ordner, node_modules bleiben)
+              run: |
+                  B="$(cygpath -u "$RUNNER_WORKSPACE")/gpu-probe"
+                  [ -d "$B/.git" ] || git init -q "$B"
+                  cd "$B"
+                  git remote get-url origin > /dev/null 2>&1 || git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+                  git fetch -q --depth=1 --no-tags origin "$GITHUB_SHA"
+                  git checkout -q -f --detach FETCH_HEAD
+                  git clean -q -ffdx -e node_modules
+                  L=$(git hash-object package-lock.json)
+                  t=$SECONDS
+                  if [ "$(cat node_modules/.probe-lock 2> /dev/null)" = "$L" ]; then
+                      Z="node_modules bleiben (package-lock ${L:0:8})"
+                  else
+                      npm ci --no-audit --no-fund
+                      echo "$L" > node_modules/.probe-lock
+                      Z="npm ci $((SECONDS - t)) s (package-lock ${L:0:8})"
+                  fi
+                  echo "$Z"
+                  { echo "BAUM=$B"; echo "BAUM_ZEILE=$Z"; } >> "$GITHUB_ENV"
+
+            - name: Proben (unter dem Schloss des Rechners, je ≤ 8 min, Vorfahrt dem echt-Job)
+              timeout-minutes: 30
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  set +e
+                  cd "$BAUM"
+                  OUT="$(cygpath -u "$RUNNER_TEMP")/probe"
+                  mkdir -p "$OUT"
+                  SHA8=${GITHUB_SHA:0:8}
+                  DECKEL=480
+                  echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
+                  GPU=$(powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name -join ', '" 2> /dev/null | tr -d '\r')
+                  echo "Läufer **$RUNNER_NAME** · GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
+                  rot_ende() {
+                      echo ROT > "$OUT/urteil.txt"
+                      echo "$1" > "$OUT/kopf.txt"
+                      printf '\nROT: %s\n' "$1" >> "$OUT/ergebnis.md"
+                      cat "$OUT/ergebnis.md"
+                      exit 1
+                  }
+                  # DAS SCHLOSS: die kanonische Bibliothek (koordination meisterkarte-quelle/punkte/werkzeug/gpu-schloss.sh, dieselbe
+                  # wie gpu-lauf.sh). Der Start-Hook des Läufers nahm es für DIESEN Job (besitzer.txt Zeile 1 „ci-runner <lauf>/<versuch>
+                  # <job>“) und löst es am Job-Ende; ein gpu-lauf.sh hier wartete ewig auf den eigenen Runner.Worker (Vorfahrt).
+                  # Hält es ein anderer, zeichnet keine Probe.
+                  SL="$OUT/../gpu-schloss.sh"
+                  curl -sf -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" -o "$SL" \
+                      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/contents/meisterkarte-quelle/punkte/werkzeug/gpu-schloss.sh?ref=koordination" &&
+                      . "$SL" || rot_ende "die Schloss-Bibliothek (koordination meisterkarte-quelle/punkte/werkzeug/gpu-schloss.sh) ist nicht lesbar"
+                  ICH="ci-runner $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT $GITHUB_JOB"
+                  WER=$(schloss_erster)
+                  echo "Schloss $GPU_SCHLOSS hält „${WER:-niemand}“" | tee -a "$OUT/ergebnis.md"
+                  [ "$WER" = "$ICH" ] || rot_ende "das GPU-Schloss hält „${WER:-niemand}“, nicht dieser Job (der Start-Hook des Läufers nahm es nicht)"
+                  echo >> "$OUT/ergebnis.md"
+                  # DIE VORFAHRT: ein CI-Job, der auf das Schloss dieses Rechners wartet (hook.log), oder ein echt-Job aus check.yml in
+                  # der Schlange — dann startet keine Probe, und eine laufende fällt samt Prozessbaum. Ein Blick, der scheitert, gibt
+                  # ebenfalls nach (laut, mit Grund): der echt-Job hält das Profi-Band.
+                  VORFAHRT_JS='
+                  const h = { authorization: `Bearer ${process.env.GH_TOKEN}`, accept: "application/vnd.github+json" };
+                  const a = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/actions`;
+                  const lies = async (u) => {
+                      const r = await fetch(u, { headers: h });
+                      if (!r.ok) throw new Error(`${r.status} ${u}`);
+                      return r.json();
+                  };
+                  (async () => {
+                      for (const s of ["queued", "in_progress"])
+                          for (const l of (await lies(`${a}/workflows/check.yml/runs?status=${s}&per_page=20`)).workflow_runs)
+                              for (const j of (await lies(`${l.jobs_url}?per_page=100`)).jobs)
+                                  if (j.status === "queued" && j.labels.includes("echt-gpu")) return console.log(`echt-Job „${j.name}“ (Lauf ${l.id}) wartet`);
+                  })().catch((e) => console.log(`Vorfahrt-Blick gescheitert: ${e.message}`));'
+                  vorfahrt() { if ci_wartet; then echo "ein CI-Job wartet auf das Schloss (hook.log)"; else node -e "$VORFAHRT_JS"; fi; }
+                  # EIN LAUF mit Deckel und Vorfahrt: am Deckel oder bei Vorfahrt fällt der GANZE Prozessbaum (taskkill -T, wie gpu-lauf.sh:
+                  # Git-Bash-kill träfe nur das Kind, Chrome zeichnete weiter)
+                  lauf() {
+                      "$@" > "$LOG" 2>&1 &
+                      local k=$! t=0 w
+                      w=$(cat /proc/$k/winpid 2> /dev/null)
+                      GRUND=
+                      while kill -0 $k 2> /dev/null; do
+                          sleep 5
+                          t=$((t + 5))
+                          if [ $t -ge $DECKEL ]; then GRUND="DECKEL $DECKEL s"; elif [ $((t % 30)) = 0 ]; then
+                              v=$(vorfahrt)
+                              [ -n "$v" ] && GRUND="NACHGEGEBEN: $v"
+                          fi
+                          if [ -n "$GRUND" ]; then
+                              taskkill -F -T -PID "$w" > /dev/null 2>&1 || kill -9 $k
+                              break
+                          fi
+                      done
+                      wait $k
+                      RC=$?
+                  }
+                  # BILD an der Kamera des Spiels: Werkbank am Ort (Port außerhalb 4690–4699, die gehören dem echt-Job), umstellen,
+                  # die Kamera nach dem Rig des Spiels (_loopCamera) — ihr Ort und ihre Richtung bis zur Weite des Blicks des Orts —,
+                  # dann `bild` an genau dieser Pose (--wahl 0); grün nur mit „ABNAHME GRÜN“
+                  bild_probe() {
+                      local W=4791 wl="$OUT/werkbank-$1.log" rc=0 d kam
+                      node scripts/werkbank.cjs start --port $W --ort "$1" > "$wl" 2>&1 &
+                      local wb=$!
+                      until grep -q "WERKBANK bereit" "$wl"; do
+                          kill -0 $wb 2> /dev/null || { tail -n 20 "$wl"; echo "ROT: die Werkbank endete vor dem Start"; return 1; }
+                          sleep 2
+                      done
+                      grep -h "\[linse-gpu\]" "$wl"
+                      node scripts/werkbank.cjs umstellen --ort "$1" --port $W > "$OUT/umstellen-$1.json" || rc=1
+                      grep -E '"(ort|sicht|spieler|fehler)"' "$OUT/umstellen-$1.json"
+                      d=$(node -e 'const o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); console.log(Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]).toFixed(1))' "$1")
+                      kam=$(node scripts/werkbank.cjs eval "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar($d).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');" --port $W | sed -n 's/.*"ergebnis": "\(.*\)".*/\1/p')
+                      echo "Kamera des Spiels → Blick ($d m): ${kam:-ungelesen}"
+                      [ -n "$kam" ] || rc=1
+                      if [ $rc = 0 ]; then
+                          node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} > "$OUT/bild-$1.json" || rc=1
+                          grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
+                          grep -q '"abnahme": "ABNAHME GRÜN' "$OUT/bild-$1.json" || rc=1
+                      fi
+                      node scripts/werkbank.cjs stop --port $W > /dev/null 2>&1
+                      wait $wb
+                      return $rc
+                  }
+                  URTEIL=GRÜN
+                  KOPF=
+                  for p in $PLAN; do
+                      LOG="$OUT/$(echo "$p" | tr ':@' '--').log"
+                      t=$SECONDS
+                      GRUND=$(vorfahrt)
+                      [ -n "$GRUND" ] && GRUND="NACHGEGEBEN: $GRUND" && echo "$GRUND" > "$LOG"
+                      BILD=
+                      if [ -z "$GRUND" ]; then
+                          case "$p" in
+                              gate:*) lauf npm run "$p" ;;
+                              bild:*)
+                                  o=${p#bild:}
+                                  u=
+                                  case "$o" in *@*) u=${o#*@} && o=${o%@*} ;; esac
+                                  BILD="$SHA8-$o${u:+-$u}.png"
+                                  lauf bild_probe "$o" "$u" "$OUT/$BILD"
+                                  ;;
+                          esac
+                      fi
+                      d=$((SECONDS - t))
+                      ADAPTER=$(grep -ho "\[linse-gpu\].*" "$LOG" | sort -u | tr '\n' ' ')
+                      # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst ihr Exit
+                      case "$GRUND" in
+                          NACHGEGEBEN*) U=NACHGEGEBEN ;;
+                          ?*) U=ROT ;;
+                          *)
+                              if echo "$ADAPTER" | grep -qiE "swiftshader|llvmpipe|lavapipe|software|subzero"; then
+                                  U=ROT
+                                  GRUND="kein Hardware-Adapter: $ADAPTER"
+                              elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi
+                              ;;
+                      esac
+                      case "$U" in ROT) URTEIL=ROT ;; NACHGEGEBEN) [ "$URTEIL" = GRÜN ] && URTEIL=NACHGEGEBEN ;; esac
+                      KOPF="$KOPF${KOPF:+ · }$p $U $d s"
+                      Z=$(grep -E "✅|❌|⛔|ROT|GRÜN|GRUEN|ABSTURZ|Error|ABNAHME|Kamera des Spiels|NACHGEGEBEN|DECKEL" "$LOG" | tail -n 10 | cut -c1-400)
+                      [ -n "$Z" ] || Z=$(tail -n 10 "$LOG" | cut -c1-400)
+                      {
+                          echo "### $p — $U · $d s"
+                          echo
+                          echo "Adapter: ${ADAPTER:-ungenannt (die Probe nannte keinen Browser-Adapter)}${GRUND:+ · $GRUND}"
+                          echo
+                          echo '```text'
+                          echo "$Z"
+                          echo '```'
+                          [ -n "$BILD" ] && [ -f "$OUT/$BILD" ] && echo && echo "![$p]($BILD)"
+                          echo
+                      } >> "$OUT/ergebnis.md"
+                      echo "$p: $U nach $d s${GRUND:+ ($GRUND)}"
+                  done
+                  echo "$URTEIL" > "$OUT/urteil.txt"
+                  echo "$KOPF" > "$OUT/kopf.txt"
+                  cat "$OUT/ergebnis.md"
+                  [ "$URTEIL" = GRÜN ]
+
+            - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2, am SHA
+              if: always()
+              with:
+                  name: probe
+                  path: ${{ runner.temp }}/probe
+                  if-no-files-found: ignore
+                  retention-days: 7
+
+    post:
+        needs: [einlass, probe]
+        if: always() && needs.einlass.result == 'success'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: write
+        env:
+            ZWEIG: ${{ github.ref_name }}
+            PLAN: ${{ needs.einlass.outputs.plan }}
+            ABGEWIESEN: ${{ needs.einlass.outputs.abgewiesen }}
+            PROBE: ${{ needs.probe.result }}
+        steps:
+            - uses: actions/download-artifact@v4
+              if: needs.probe.result != 'skipped'
+              continue-on-error: true
+              with:
+                  name: probe
+                  path: probe
+
+            # nur die Post der Cloud-Sitzungen ausgecheckt (der Zweig trägt die Berichte); probe-post/ kommt per git add --sparse dazu
+            - uses: actions/checkout@v4
+              with:
+                  ref: koordination
+                  path: koord
+                  filter: blob:none
+                  sparse-checkout-cone-mode: false
+                  sparse-checkout: /cloud-post/
+
+            - name: Post nach koordination (probe-post/<zweig>/<sha8>.md, die Bilder, eine Zeile oben in cloud-post/<zweig>.md)
+              run: |
+                  SHA8=${GITHUB_SHA:0:8}
+                  LAUF="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+                  P="$RUNNER_TEMP/post"
+                  mkdir -p "$P"
+                  if [ -n "$ABGEWIESEN" ]; then
+                      URTEIL=ABGEWIESEN
+                      LAEUFER="keinem Läufer"
+                      KOPF="$ABGEWIESEN"
+                      KOERPER="ABGEWIESEN (keine GPU geweckt): $ABGEWIESEN"
+                  elif [ -f probe/urteil.txt ]; then
+                      URTEIL=$(cat probe/urteil.txt)
+                      LAEUFER=$(cat probe/laeufer.txt)
+                      KOPF=$(cat probe/kopf.txt)
+                      KOERPER=$(cat probe/ergebnis.md)
+                      cp probe/*.png "$P/" 2> /dev/null || true
+                  else
+                      URTEIL=ROT
+                      LAEUFER=$(cat probe/laeufer.txt 2> /dev/null || echo "?")
+                      KOPF="der Probe-Job endete ohne Urteil ($PROBE)"
+                      KOERPER="ROT: der Probe-Job endete ohne Urteil (Ergebnis $PROBE) — ein ROT des Start-Hooks (Abweisung, 25 min ohne Schloss), der Job-Deckel oder ein Abbruch; siehe den Lauf."
+                  fi
+                  {
+                      echo "# GPU-PROBE $SHA8 — $URTEIL"
+                      echo
+                      echo "Zweig \`$ZWEIG\` · Kopf $GITHUB_SHA · Läufer $LAEUFER · $(TZ=Europe/Berlin date '+%d.%m. %H:%M') · Lauf $LAUF"
+                      echo
+                      echo "Ruf: \`${PLAN:-—}\`"
+                      echo
+                      echo "$KOERPER"
+                  } > "$P/$SHA8.md"
+                  ZEILE="## $(TZ=Europe/Berlin date '+%d.%m. %H:%M') — GPU-PROBE $SHA8 auf $LAEUFER: $URTEIL ($KOPF) → probe-post/$ZWEIG/$SHA8.md"
+                  echo "$ZEILE"
+                  cd koord
+                  git config user.name "gpu-probe"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  C="cloud-post/$ZWEIG.md"
+                  for versuch in 1 2 3 4 5 6 7 8; do
+                      git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/koordination:refs/remotes/origin/koordination"
+                      git reset -q --hard origin/koordination
+                      mkdir -p "probe-post/$ZWEIG" "$(dirname "$C")"
+                      cp "$P"/* "probe-post/$ZWEIG/"
+                      if [ -f "$C" ]; then
+                          { head -n 1 "$C"; echo; echo "$ZEILE"; tail -n +2 "$C"; } > "$RUNNER_TEMP/c.md"
+                      else
+                          printf '# Post an %s\n\n%s\n' "$ZWEIG" "$ZEILE" > "$RUNNER_TEMP/c.md"
+                      fi
+                      mv "$RUNNER_TEMP/c.md" "$C"
+                      git add --sparse "probe-post/$ZWEIG" "$C"
+                      git commit -q -m "GPU-PROBE $ZWEIG $SHA8 auf $LAEUFER: $URTEIL" -m "$KOPF" -m "Lauf $LAUF"
+                      if git push -q origin HEAD:refs/heads/koordination; then
+                          echo "geschoben im Versuch $versuch"
+                          break
+                      fi
+                      [ "$versuch" = 8 ] && { echo "Push nach koordination 8× abgewiesen"; exit 1; }
+                      sleep $((RANDOM % 20 + 5))
+                  done
+                  echo "$URTEIL" > "$RUNNER_TEMP/urteil"
+
+            # der Lauf trägt das Urteil: rot, wenn die Probe nicht GRÜN ist (abgewiesen, nachgegeben, ROT)
+            - name: Urteil
+              run: |
+                  U=$(cat "$RUNNER_TEMP/urteil")
+                  echo "GPU-PROBE: $U"
+                  [ "$U" = GRÜN ]

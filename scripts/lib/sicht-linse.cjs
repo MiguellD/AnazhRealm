@@ -817,9 +817,9 @@ function sichtPhase(frames, ab) {
             for (const k of e.keys || []) if (a.keys.length < 8 && !a.keys.includes(k)) a.keys.push(k);
         }
     const inhaltOhneJe = summe("inhaltOhne");
-    const inhaltOhneFrames = fs.filter((f) => Object.keys(f.inhaltOhne || {}).length > 0).length;
+    const inhaltOhneFrames = fs.filter((f) => Object.keys(f.inhaltOhne || {}).length).length;
     const inhaltFrames = fs.filter((f) =>
-        Object.values(f.inhalt || {}).some((e) => !!(e && e.grund === "aenderung"))
+        Object.values(f.inhalt || {}).some((e) => (e && e.grund === "aenderung"))
     ).length;
     const ohneAenderung = fs.filter((f) => !window.__sichtAenderung(f));
     // DIE SONNE der Phase: in wie vielen Frames das Licht drehte, um wie viel die Sonne lief (Bogenmaß, aus der Tageszeit —
