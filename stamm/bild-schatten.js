@@ -1583,7 +1583,9 @@ AnazhRealm.LICHT_WURF = Object.freeze({
 // (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
 // End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am Boden seine wahre Normale (ferne.K4: die 2.5D-Lichtung fiel);
 // der Boden trägt die Zuwendung seiner wahren Normale dazu selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
-// über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
+// über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne). `laubTexel` = der Versatz der Krone, deren
+// Normale das Ellipsoid ist, nie die Karte: ihre Probe rückt so viele Texel der Kaskade an ihrem Abstand längs der Fläche der
+// Karte vor sie (`_laubStoffNormale`, w14-lod-sprung — die Karte ist ihr eigener Werfer).
 // DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
 // DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →
 // Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Kegel der Sonne über dem Empfänger (höchstens `sucheM`
@@ -1604,6 +1606,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     normalTexel: 0.5,
     tiefeTexel: 0.75,
+    laubTexel: 2,
     zuwendungSaum: 0.08,
 });
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.

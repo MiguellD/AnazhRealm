@@ -5,8 +5,24 @@ class AnazhRealm_stoff_instanz {
     // einer Karte läse das Ellipsoid nach innen (Prüfer K68: 45–51 % der nahen Dreiecke vom Auge weg, die Nadel-Wedel
     // milchig). Die Normale ist die Geometrie-Normale des Renderers selbst (Instanz-, Batch- und Modell-Rotation), ohne die
     // Seite: beide Seiten einer Karte tragen die Krone an ihrer Stelle. EIN Ort für jeden Kronen-Stoff (Studio, Grammatik).
+    // DER EMPFANG OHNE AKNE (w14-lod-sprung): die Krone ist ihr eigener Werfer — der Wurf-Teil der L1 ist eine Teilmenge ihrer
+    // Karten (S4), die L0 wirft ihn als Zwilling, und mit der EINEN Krone von L0 und L1 liegt jede nahe Karte in ihrem Wurf.
+    // r184 schiebt die Probe jedes Empfängers um normalWorld × normalBias — hier die Normale der KRONE (das Ellipsoid), nie die
+    // der Karte: eine Karte schräg zur Krone fand ihren eigenen Wurf unter sich (Radeon am Dorf: ein Akne-Raster auf der nahen
+    // Birke, Streifen über die fernen Kronen; bei 8 × Bias fällt beides, bei 3 × nicht). Die Probe rückt längs der FLÄCHE der
+    // Karte (`normalFlat`, zum Licht gewendet) um `SCHATTEN_KASKADE.laubTexel` Texel der Kaskade an ihrem Abstand vor die Karte
+    // (der Texel wächst mit dem Abstand: texelM[0] je kontaktM) — der Wurf der Nachbarn und des Gerüsts bleibt.
     _laubStoffNormale(T, mat) {
         mat.normalNode = T.normalViewGeometry;
+        const K = AnazhRealm.SCHATTEN_KASKADE;
+        const flaeche = T.normalFlat.transformDirection(T.cameraViewMatrix);
+        const licht = T.normalize(this._windUniformsEnsure().uSunDir);
+        const zumLicht = T.select(flaeche.dot(licht).greaterThanEqual(0.0), flaeche, flaeche.negate());
+        const luft = T.positionWorld
+            .sub(T.cameraPosition)
+            .length()
+            .mul((K.laubTexel * K.texelM[0]) / K.kontaktM);
+        mat.receivedShadowPositionNode = T.positionWorld.add(zumLicht.mul(luft));
         return mat;
     }
 
