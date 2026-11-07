@@ -158,25 +158,19 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     if (v.length) process.exitCode = 1;
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\e84fd1fb-radeon\fahrzeug.K2_1.json
 [linse-gpu] amd/rdna-3
-  WN Teil 1/6: der Lauf hält nach 36.5 s an der Naht (Spieler bei 679, -1697, 3 Orte wach) — weiter
+  WN Teil 1/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 1217, -1657, 5 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 2/6: der Lauf hält nach 37.1 s an der Naht (Spieler bei -186, -1146, 6 Orte wach) — weiter
+  WN Teil 2/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 285, -1489, 7 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 3/6: der Lauf hält nach 37.1 s an der Naht (Spieler bei 161, -1414, 7 Orte wach) — weiter
+  WN Teil 3/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei 773, -1597, 8 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 4/6: der Lauf hält nach 36.9 s an der Naht (Spieler bei 524, -1749, 7 Orte wach) — weiter
-@@PUNKTE@@ TEIL WEITER
-[linse-gpu] amd/rdna-3
-  WN Teil 5/6: der Lauf hält nach 37.2 s an der Naht (Spieler bei 871, -1431, 8 Orte wach) — weiter
-@@PUNKTE@@ TEIL WEITER
-[linse-gpu] amd/rdna-3
+  ✅ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — auf dem Netz · 29.6 s in der Welt der Sitzung (Teil 4/6)
+WEGENETZ {"lang":2440,"weg":2438,"ende":true,"schritte":12948,"tempo":[13,13,240,179,176,202,269,288,414,11061,93],"steck":[],"anteil":0.8934198331788693,"bezug":{"kmh":{"ortsdurchfahrt":50,"wohnstrasse":30,"gasse":25,"feldweg":40},"vmax":63.81970403432012,"mittel":12.173480245770573},"wegAnteil":0.9823008849557522,"boden":{"wiese":0.26991150442477874,"wald":0.42035398230088494,"dorf":0.30973451327433627},"lage":[1185.7070540583702,-1686.820373336697],"grund":{"anfahrt":103,"kurve":232,"bogen":980,"ende":65},"taeter":[{"s":1275,"n":223,"grund":"bogen","v":2.4,"r":9.1},{"s":2025,"n":153,"grund":"bogen","v":2.7,"r":12},{"s":1525,"n":147,"grund":"bogen","v":2.8,"r":11.8},{"s":2275,"n":127,"grund":"bogen","v":3.8,"r":13.7},{"s":275,"n":104,"grund":"bogen","v":4.3,"r":12.1},{"s":0,"n":101,"grund":"anfahrt","v":0,"r":null},{"s":950,"n":92,"grund":"bogen","v":5.1,"r":null},{"s":700,"n":84,"grund":"bogen","v":7,"r":null},{"s":300,"n":69,"grund":"kurve","v":4.9,"r":13.5},{"s":2425,"n":65,"grund":"ende","v":4.8,"r":468.5},{"s":525,"n":62,"grund":"bogen","v":7.9,"r":null},{"s":1850,"n":62,"grund":"bogen","v":7.8,"r":17.5}]}
 
 --- gpu-zeuge ---
-[linse-gpu] amd/rdna-3
-[linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3

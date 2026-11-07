@@ -1,7 +1,7 @@
 {
  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d",
  "geraet": "radeon",
- "zeit": "2026-11-07T20:12:34.055Z",
+ "zeit": "2026-11-07T20:22:30.760Z",
  "host": "MiguellD",
  "je": {
   "material.K1#1": {
@@ -60,14 +60,13 @@
    "modus": "session"
   },
   "spielgang.K3#1": {
-   "gruen": false,
-   "zahl": "HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 216 ms (20)",
+   "gruen": true,
+   "zahl": "HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 152 ms (20)",
    "exit": 0,
-   "minuten": 0.2,
-   "grund": "ROT: HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 88 ms (50) · Menü 216 ms (20)",
+   "minuten": 0.22,
    "gpu": "amd/rdna-3",
-   "s": 12.2,
-   "zeit": "2026-11-07T20:06:12.604Z",
+   "s": 13.5,
+   "zeit": "2026-11-07T20:19:10.359Z",
    "abdruck": "689117d1994b",
    "port": 7804,
    "bahn": "sitzung",
@@ -99,52 +98,47 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  }
- },
- "ungemessen": {
+  },
   "fahrzeug.K2#1": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen in Teil 6/6 — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-   "exit": 1,
-   "minuten": 3.95,
-   "grund": "Deckel 45 s gerissen in Teil 6/6 — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-   "s": 45.6,
+   "gruen": true,
+   "zahl": "in 4 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 42 % / Dorf 31 % · Exit 0",
+   "exit": 0,
+   "minuten": 2.42,
+   "gpu": "amd/rdna-3",
+   "s": 38.2,
    "teile": [
+    38.1,
+    38.1,
     38.2,
-    38.3,
-    38.4,
-    38.2,
-    38.3,
-    45.6
+    30.4
    ],
-   "zeit": "2026-11-07T20:07:02.014Z",
+   "zeit": "2026-11-07T20:19:23.953Z",
    "abdruck": "f7f51a062279",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "halten.K1#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T20:12:34.054Z",
+   "gruen": true,
+   "zahl": "vor: Treffer KE 74.9 J · p 5.98 · v 23.3 · Schaden 15.9 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.81 · v 21.4 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 79.2 J · p 5.89 · v 23.0 · Schaden 17.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.27,
+   "gpu": "amd/rdna-3",
+   "s": 16.5,
+   "zeit": "2026-11-07T20:22:12.207Z",
    "abdruck": "62e261bf735c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "ankunft.K2#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T20:12:34.055Z",
+   "gruen": true,
+   "zahl": "0.04 % Lücke nach 0.7 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 10.32 s von außen (Eigenmeldung 9.75 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.66,
+   "gpu": "amd/rdna-3",
+   "s": 39.6,
+   "zeit": "2026-11-07T20:22:30.760Z",
    "abdruck": "00e38dd9d4d2",
    "port": 7804,
    "bahn": "sitzung",
@@ -152,77 +146,73 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T20:02:59.094Z",
+  "start": "2026-11-07T20:18:36.345Z",
   "port": 7804,
-  "warten": 0.11,
-  "bootS": 9.3,
+  "warten": 0.09,
+  "bootS": 6.8,
   "grundstellungS": [
-   3.1
+   11.3,
+   0.1
   ],
-  "proben": 7,
+  "proben": 4,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 22,
-    "takte": 572,
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 19.3,
+    "takte": 703,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "lod.K2#1",
-    "s": 18.1,
-    "takte": 637,
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 11.9,
+    "takte": 666,
     "chunks": 81,
     "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 1.9,
+    "takte": 112,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "lod.K2#1",
-    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 3.1
+    "vor": "halten.K1#2",
+    "wege": "wege +25 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
+    "s": 11.3
    }
   ],
-  "unerklaert": [
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "grund": "die Welt trägt nicht mehr vor halten.K1#2: /eval ohne Antwort binnen 60 s",
-  "ciBlicke": 9,
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1023,
-   "frameP95": 58.7,
-   "taktP95": 37.48,
-   "vramMax": 147.5,
-   "seiten": 2,
+   "bilder": 748,
+   "frameP95": 276.11,
+   "taktP95": 115.66,
+   "vramMax": 148.3,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "gelaende.K3#1",
-     "m": 5578,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
      "probe": "fahrzeug.K2#1",
-     "m": 5454,
+     "m": 1618,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 453,
-   "luecken": 6,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 253,
+   "luecken": 3,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 578.5,
-  "minuten": 10.48
+  "fahrtS": 268.8,
+  "minuten": 4.65
  }
 }
