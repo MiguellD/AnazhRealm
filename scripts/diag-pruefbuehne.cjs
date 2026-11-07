@@ -855,12 +855,12 @@ const S0_STOFF = (() => {
 // teurer als `relativ` × main desselben Adapters (`main`: der schnellste Lauf an main, das Höchste aus den ruhigen gpu-probe-
 // Läufen). Steht der Median der Läufe über `ruhe` × dem schnellsten, trug der Läufer fremde Last: das Urteil heißt UNGEMESSEN
 // (Läufer unter Last) und hält wie ein ROT (Regel-Inventur Entwurf 1: die Uhr eines geteilten Läufers urteilt nie das Gesetz).
-// Gemessen 08.11. an cbe910ed + w22-ci-diaet (99 336 Zeichen): Radeon 890M 681–721 ms ruhig (unter Last 911, Median 1 520),
-// GTX 1060 1 040–1 075 ms — beide über dem Ziel (2,9× und 4,3×). Die Zeichen sind Ausgabe. Auf swiftshader urteilt die Frist des Laufs
+// Gemessen 08.11. an cbe910ed + w22-ci-diaet (99 336 Zeichen), 8 Sitzungen: Radeon 890M 681–721 ms ruhig (Median/schnellster
+// 1,05–1,23; unter Last 911 ms bei 1,67), GTX 1060 1 040–1 075 ms (1,02–1,09) — beide über dem Ziel (2,9× und 4,3×). Die Zeichen sind Ausgabe. Auf swiftshader urteilt die Frist des Laufs
 // (`S0_FRIST_S`), nie eine Zeit. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
 // `s0BodenMessung`; 191 751 Zeichen, Radeon +13–17 %, GTX +24 %) auf dem Vendor-Weg: (a) seine Zeit reißt die Wand gegen den
 // Boden derselben Sitzung, (b) sein Weg ist synchron.
-const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.15, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1075 } };
+const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1075 } };
 function s0BodenUrteil(name, p, bezug) {
     const [ms, mitte] = [Math.min(...p.ms), [...p.ms].sort((x, y) => x - y)[p.ms.length >> 1]];
     const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
