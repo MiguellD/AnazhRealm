@@ -475,7 +475,7 @@ async function tempo(K) {
             }
         return d;
     };
-    // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Rahmen seiner Hülle
+    // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Grundriss seiner Hülle (die gezeichnete Gestalt)
     const leibKreise = (c) => {
         const [l, p] = [r._kreaturLeib(c, 0, {}), c.position];
         const m = (o) => l.mitte + o * l.halb; // die Achse um ihre Mitte, je Drittel sein Radius (der Grundriss der Gestalt)
