@@ -352,17 +352,17 @@ async function checkBandNahStreu({ page, check }) {
                 if (grund) out.wind.verstoss.push(a.key + " (" + grund + ")");
             }
         }
-        // KONSUM: der wiegende Stoff fragt die EINE Böen-Welle mit der Höhe aus dem Satz-Attribut aWiege (frisch gebaut,
-        // am Stoff-Cache vorbei; der Spion fängt das Argument)
+        // KONSUM: der wiegende Stoff fragt das EINE Wiegen mit der Höhe und dem Rauschen der Pflanze aus dem Satz-Attribut
+        // aWiege (x die Höhe, y das Rauschen; frisch gebaut, am Stoff-Cache vorbei; der Spion fängt das Argument)
         const wa = [...senken.values()].find((a) => weichK.has((a.mat.userData || {}).foundryKind));
-        let hoehe = null;
+        let [hoehe, rausch] = [null, null];
         if (wa) {
             const u = wa.mat.userData,
                 mats = r._foundryMats,
                 sway = r._windSwayOffset;
             r._foundryMats = {};
             r._windSwayOffset = function (T, o) {
-                hoehe = (o && o.hoehe) || null;
+                [hoehe, rausch] = [o.hoehe, o.rausch];
                 return sway.call(this, T, o);
             };
             try {
@@ -376,8 +376,7 @@ async function checkBandNahStreu({ page, check }) {
                 r._foundryMats = mats;
             }
         }
-        out.windQuelle =
-            !!hoehe && typeof hoehe.getAttributeName === "function" && hoehe.getAttributeName() === "aWiege";
+        out.windQuelle = [hoehe, rausch].every((k, i) => k?.components === "xy"[i] && k.node.getAttributeName() === "aWiege");
         const ns = st.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
         // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)

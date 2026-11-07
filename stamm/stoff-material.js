@@ -43,8 +43,8 @@ class AnazhRealm_stoff_material {
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
     // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), ihr
     // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
-    // Auges über dem eigenen Boden), o ihre Ordnung (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die
-    // oberen 24 Bit), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
+    // Auges über dem eigenen Boden), o ihre Ordnung (die Ziehung des Orts `_ortZiehung`, Zug 0 — dieselbe Rechnung wie
+    // `_wieseOrdnung`), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
     // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
     // Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
@@ -70,16 +70,7 @@ class AnazhRealm_stoff_material {
             // die Ebene des Hangs: die waagrechten Achsen der Instanz liegen in ihr (`_nahWieseKachelDaten`, y += gx·x + gz·z)
             const n = T.cross(naht.spalte(2), naht.spalte(0));
             const v0 = ank.sub(auge.xyz);
-            const q = (v) => T.floor(v.mul(256).add(0.5)).add(8388608).toUint();
-            const pcg = (u) => {
-                const s = u.mul(747796405).add(2891336453);
-                const w = s.shiftRight(s.shiftRight(28).add(4)).bitXor(s).mul(277803737);
-                return w.shiftRight(22).bitXor(w);
-            };
-            const o = pcg(q(ank.x).bitXor(pcg(q(ank.z))))
-                .shiftRight(8)
-                .toFloat()
-                .mul(1 / 16777216);
+            const o = AnazhRealm._ortZiehung(AnazhRealm._wortAlgebra(T), ank.x, ank.z, 0);
             const A = AnazhRealm._windTsl(T);
             const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w));
             const anteil = G.anteil;
@@ -109,7 +100,7 @@ class AnazhRealm_stoff_material {
                 .mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(s1)).add(t.mul(breit));
             const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
-            const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
+            const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
             this._halmFerneKnoten = T.vec3(lage.x, lage.y.mul(ha), lage.z).mul(v).add(sway.mul(v));
             this._halmFerneStoffe = new Map();
         }
@@ -120,12 +111,23 @@ class AnazhRealm_stoff_material {
         return m;
     }
 
-    // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
-    // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
-    // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
-    // gust = sin(uWindTime·omega − dot(worldXZ, uWindDir)·k)·amp + mitte — die wandernde Böe, Zahlen aus WIND_BOE (das Ohr
-    // liest dieselben, `_windAt`).
-    // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
+    // DAS WIEGEN IM EINEN WIND (w20-boee-bild) — die KANONISCHE Wind-Größe des Halms, jeder Halm-Leser LIEST sie (die Nah-Wiese,
+    // ihre Ferne `_halmFerne`, die Nah-Streu): der Versatz der Ecke in Welt-Metern
+    //   die WEITE A = uWindStrength · g · h ist der EINE Wind am Ort (`_windAt`): uWindStrength = WEATHER_WIND_AMP × die Stärke am
+    //     Auge (der Frame-Takt), g die wandernde Böe an der Lage der Ecke, sin(uWindTime·ω − (Lage·uWindDir)·k)·amp + mitte
+    //     (WIND_BOE — dieselben Zahlen hört das Ohr), h die Höhe über der Wurzel (`opts.hoehe` in Metern, sonst die
+    //     Geometrie-Position, Lehre 22);
+    //   die PHASE je Halm: längs des Winds φ = uWindTime·takt + 2π·ν, quer φ' = uWindTime·takt·quer + 2π·fract(256·ν) — ν das
+    //     Rauschen des Halms (`_ortZiehung` Zug 1 am Fuß der Instanz; die Nah-Streu reicht es je Pflanze, `opts.rausch`). Es
+    //     verschiebt NUR die Phase, nie die Weite: ohne Wind steht jeder Halm, und die Wiese wiegt nur, wie die Böe weht;
+    //   Versatz = A · (sin φ · laengs · uWindDir + cos φ' · die Quere zu uWindDir).
+    // Bis w20-boee-bild lief die Phase als zweite Welle über die Wiese (uWindTime·1,7 + (Lage·uWindDir)·0,35: 18 m, 4,9 m/s) und
+    // der Versatz in Welt-x/z: im Ausschnitt der Station (1,8–8,6 m) hielten die Büschel zweimal je Schwung gemeinsam an, die
+    // Bewegung im Bild trug ihren eigenen Takt neben der Böe (klang.K2#1: das Bild gegen `_windAt` r 0,39–0,65, die Spitze
+    // 0,8–2,2 s neben Lag 0; im Modell der Station — dieser Graph über einer Wiese im Ausschnitt, 0,2-s-Fenster gegen die Böe am
+    // Ohr — r 0,65–0,92, mit dem Rauschen 0,97–0,998; die Wache: gate:kopplung F5). `laengs` die Weite längs des Winds (der
+    // Charakter: Gras 1,5, Nah-Streu 1,2), `windScale` dämpft (fehlt → 1). uBend-Sphären biegen Halme radial weg (min(h, 1)).
+    // Render-rein; gibt den vec3-Versatz in der Vorlage zurück.
     _windSwayOffset(TSL, opts = {}) {
         const wu = this._windUniformsEnsure();
         this._ensureWindCoupling(TSL);
@@ -133,66 +135,56 @@ class AnazhRealm_stoff_material {
         const naht = this._weltNaht(TSL);
         const positionWorld = naht.lage;
         const WW = AnazhRealm.WIND_WIEGEN;
-        const ampX = typeof opts.ampX === "number" ? opts.ampX : WW.ampX;
-        const wd = wu.uWindDir || null;
-        const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
-        const phase = wu.uWindTime
-            .mul(float(WW.takt))
-            .add(
-                dotWW
-                    ? dotWW.mul(float(WW.raum))
-                    : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
-            );
-        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Phase, Böe und Biegung
-        // lesen die Welt-Lage des Vertex aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter, Welt-Richtung) geht
-        // über sie in die Vorlage zurück (K20-N1; bis dahin sah jeder Halm die Vorlage — die Wiese wiegte im Gleichtakt,
-        // jede Instanz in ihrer eigenen Drehung, die Biegung des Spielers maß gegen die Vorlage). Ein Satz (Welt-Lage,
-        // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
-        // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
+        const laengs = typeof opts.laengs === "number" ? opts.laengs : WW.laengs;
+        const wd = wu.uWindDir;
+        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Böe und Biegung lesen die
+        // Welt-Lage des Vertex, das Rauschen den Fuß der Instanz aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter,
+        // Welt-Richtung) geht über sie in die Vorlage zurück (K20-N1; bis dahin sah jeder Halm die Vorlage — jede Instanz wiegte
+        // in ihrer eigenen Drehung, die Biegung des Spielers maß gegen die Vorlage). Ein Satz (Welt-Lage, keine Instanz — die
+        // Nah-Streu) liest dieselbe Naht (die Einheit) und trägt sein Rauschen je Pflanze. Die Geometrie-Position
+        // (`positionGeometry`, Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
-        // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windAt`).
         const B = AnazhRealm.WIND_BOE;
         const gust = sin(
             wu.uWindTime
                 .mul(float(B.omega))
-                .sub(
-                    dotWW
-                        ? dotWW.mul(float(B.k))
-                        : positionWorld.x.mul(float(0.03)).add(positionWorld.z.mul(float(0.024)))
-                )
+                .sub(positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)).mul(float(B.k)))
         )
             .mul(float(B.amp))
             .add(float(B.mitte));
         let windEff = wu.uWindStrength.mul(gust);
         if (typeof opts.windScale === "number") windEff = windEff.mul(float(opts.windScale));
-        let offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
-        let offZ = cos(phase.mul(float(WW.quer)))
+        const nu = opts.rausch || AnazhRealm._ortZiehung(AnazhRealm._wortAlgebra(TSL), naht.anker.x, naht.anker.z, 1);
+        const takt = wu.uWindTime.mul(float(WW.takt));
+        const aL = sin(takt.add(nu.mul(float(2 * Math.PI))))
+            .mul(windEff)
+            .mul(hf)
+            .mul(float(laengs));
+        const aQ = cos(takt.mul(float(WW.quer)).add(TSL.fract(nu.mul(float(256))).mul(float(2 * Math.PI))))
             .mul(windEff)
             .mul(hf);
-        // uBend: vec4 xyz+Radius (Radius 0 = Slot aus); Halme biegen radial weg, quadratisch auslaufend.
-        // NaN-Wand: dist trägt +1e-4 unter der Wurzel; tote Slots liegen bei y=−1e6 mit Radius 0 →
+        // längs (uWindDir.x, uWindDir.y), quer (−uWindDir.y, uWindDir.x)
+        let offX = aL.mul(wd.x).sub(aQ.mul(wd.y));
+        let offZ = aL.mul(wd.y).add(aQ.mul(wd.x));
+        // uBend: vec4 xyz+Radius (Radius 0 = Slot aus); Halme biegen radial weg, quadratisch auslaufend. Die Slots legt
+        // `_ensureWindCoupling` (GRAS_BEND_SLOTS); bis w20-boee-bild fragte ein Wenn TSL nach sqrt und min — fehlten sie,
+        // fiele die Biegung still weg. NaN-Wand: dist trägt +1e-4 unter der Wurzel; tote Slots liegen bei y=−1e6 mit Radius 0 →
         // max(w, 0.05) hält den Nenner endlich, der Falloff wird exakt 0.
-        const uB = wu.uBend;
-        const sqrtN = TSL.sqrt;
-        const minN = TSL.min;
-        if (uB && uB.length && sqrtN && minN) {
-            let bendX = float(0.0);
-            let bendZ = float(0.0);
-            for (let i = 0; i < uB.length; i++) {
-                const b = uB[i];
-                const dx = positionWorld.x.sub(b.x);
-                const dy = positionWorld.y.sub(b.y);
-                const dz = positionWorld.z.sub(b.z);
-                const dist = sqrtN(dx.mul(dx).add(dy.mul(dy)).add(dz.mul(dz)).add(float(1e-4)));
-                const fall = max(float(0.0), float(1.0).sub(dist.div(max(b.w, float(0.05)))));
-                const soft = fall.mul(fall);
-                bendX = bendX.add(dx.div(dist).mul(soft));
-                bendZ = bendZ.add(dz.div(dist).mul(soft));
-            }
-            const hfB = minN(hf, float(1.0)); // Interaktion wirkt bodennah (Halm/Busch), nicht am Wipfel
-            offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
-            offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
+        let bendX = float(0.0);
+        let bendZ = float(0.0);
+        for (const b of wu.uBend) {
+            const dx = positionWorld.x.sub(b.x);
+            const dy = positionWorld.y.sub(b.y);
+            const dz = positionWorld.z.sub(b.z);
+            const dist = TSL.sqrt(dx.mul(dx).add(dy.mul(dy)).add(dz.mul(dz)).add(float(1e-4)));
+            const fall = max(float(0.0), float(1.0).sub(dist.div(max(b.w, float(0.05)))));
+            const soft = fall.mul(fall);
+            bendX = bendX.add(dx.div(dist).mul(soft));
+            bendZ = bendZ.add(dz.div(dist).mul(soft));
         }
+        const hfB = TSL.min(hf, float(1.0)); // Interaktion wirkt bodennah (Halm/Busch), nicht am Wipfel
+        offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
+        offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
         return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
@@ -222,15 +214,18 @@ class AnazhRealm_stoff_material {
         const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
         return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
     }
-    // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: Phase t·takt + (Lage ·
-    // Richtung)·raum, quer x: sin · ampX, z: cos(Phase · quer)), die Wind-Wirkung Stärke × WEATHER_WIND_AMP × Böe des EINEN Winds
-    // am Ort (`_windAt`) — der Löser, der eine Uhr der Welt trägt (das Haar auf der Welt-Uhr), wiegt wie das Gras im Bild.
-    // `w` = `_windAt(x, z, t)`, `hoehe` in Metern; ohne Biegung der Halme. Liefert [x, z] in Welt-Metern.
-    _windWiegen(w, x, z, t, hoehe, ampX) {
+    // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: längs des Winds
+    // sin(t·takt + 2π·ν) · laengs, quer cos(t·takt·quer + 2π·fract(256·ν))), die Weite Stärke × WEATHER_WIND_AMP × Böe des EINEN
+    // Winds am Ort (`_windAt`) — der Löser, der eine Uhr der Welt trägt (das Haar auf der Welt-Uhr), wiegt wie das Gras im Bild.
+    // `w` = `_windAt(x, z, t)`, `nu` das Rauschen des Wiegenden (`_ortZiehung` Zug 1), `hoehe` in Metern; ohne Biegung der Halme.
+    // Liefert [x, z] in Welt-Metern.
+    _windWiegen(w, nu, t, hoehe, laengs) {
         const WW = AnazhRealm.WIND_WIEGEN;
         const eff = w.staerke * AnazhRealm.WEATHER_WIND_AMP * w.boe * hoehe;
-        const phase = t * WW.takt + (x * w.x + z * w.z) * WW.raum;
-        return [Math.sin(phase) * eff * (ampX == null ? WW.ampX : ampX), Math.cos(phase * WW.quer) * eff];
+        const nq = nu * 256 - Math.floor(nu * 256);
+        const aL = Math.sin(t * WW.takt + 2 * Math.PI * nu) * eff * (laengs == null ? WW.laengs : laengs);
+        const aQ = Math.cos(t * WW.takt * WW.quer + 2 * Math.PI * nq) * eff;
+        return [aL * w.x - aQ * w.z, aL * w.z + aQ * w.x];
     }
     // DIE BÖEN-DRIFT der Wind-Uhr t (Math.random-frei, ~±18 % um die Wort-Basis): bis wetter.K5 ein Feld, das nur das Bild schrieb
     // — der Wagen im Wind hing an der Bildrate (gate:fahr-leben L8 Lockstep 0,37 mm).
@@ -3786,6 +3781,8 @@ AnazhRealm.GRAS_BEND_SLOTS = 6;
 // GRAS_BEND_CREATURE_DIST_SQ: nur Kreaturen im 18-m-Umkreis des Spielers biegen
 // Gras (18² = 324) — weiter draußen ist der Effekt sub-pixel (Distanz-LOD-Lehre).
 AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
-// DAS WIEGEN IM EINEN WIND (`_windSwayOffset` im Shader, `_windWiegen` auf der CPU): die Phase t·takt + (Lage · Richtung)·raum,
-// quer der Faktor der zweiten Achse, ampX die Weite der ersten (der Charakter des Grases)
-AnazhRealm.WIND_WIEGEN = Object.freeze({ takt: 1.7, raum: 0.35, quer: 0.7, ampX: 1.5 });
+// DAS WIEGEN IM EINEN WIND (`_windSwayOffset` im Shader, `_windWiegen` auf der CPU): die Phase t·takt + 2π·ν je Halm (ν das
+// Rauschen seines Fußes, `_ortZiehung` Zug 1), `quer` der Takt-Faktor der Quer-Achse, `laengs` die Weite längs des Winds (der
+// Charakter des Grases). Die Weite selbst ist der EINE Wind am Ort (`_windAt`); bis w20-boee-bild lief die Phase mit `raum` 0,35
+// je Meter als zweite Welle über die Wiese.
+AnazhRealm.WIND_WIEGEN = Object.freeze({ takt: 1.7, quer: 0.7, laengs: 1.5 });
