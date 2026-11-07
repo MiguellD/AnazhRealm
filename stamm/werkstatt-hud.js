@@ -2776,6 +2776,8 @@ class AnazhRealm_werkstatt_hud {
             this._ichRenderSpecSheet();
             return false;
         }
+        // die Werkstatt ihren ersten Bau (der Init baut sie nicht, w16-lade-atem)
+        if (!this._werkstattGemalt) return (this._renderWorkshopDOM(), false);
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),

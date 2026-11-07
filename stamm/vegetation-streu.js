@@ -2233,6 +2233,13 @@ class AnazhRealm_vegetation_streu {
         const rc = AnazhRealm._studioRenderConfig || null;
         if (!this._wuchsSteht || this._wuchsStehtVon !== rc) [this._wuchsSteht, this._wuchsStehtVon] = [new Set(), rc];
         let fehlt = false;
+        // DIE BAUM-ARTEN DES WURFS (w16-lade-atem): die Affinität der Saat liest die Teile jeder Art des Felds (`FELD_WURF`), und
+        // eine Baum-Art wächst erst an ihrem ersten Leser (`_defaultBlueprints`) — ihr Skelett wächst im Wald-Faden, bevor die
+        // Saat sie liest (headless kalt: die Saat weckte sie im Lade-Frame, 293 ms `growSkeleton` in EINER Aufgabe)
+        const offen = this._builtinWuchsOffen;
+        if (offen && offen.size)
+            for (const art of AnazhRealm.FELD_WURF)
+                if (offen.has(art) && !this._wuchsBestellen(art, offen.get(art))) fehlt = true;
         for (const art of Object.values(AnazhRealm.SAAT_BUSCH)) {
             if (!this._phytoArt(art)) continue;
             const seeds = this._variantSeedsFor(art, true);
