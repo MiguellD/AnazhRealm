@@ -354,12 +354,7 @@ async function checkBandRing6Workshop({ page, check }) {
     const ring63Results = await safeEvaluate(page, () => {
         const out = {};
         // Cleanup
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) {
-                r._cullArchitectureMesh(a);
-            }
-        }
-        st.architectures = [];
+        window.__bautenLeer();
 
         // Struktur nahe spawnen → Mesh + feld-native blockerAABBs gleich da.
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE,
@@ -415,10 +410,7 @@ async function checkBandRing6Workshop({ page, check }) {
         );
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         delete st.blueprints._t_r63_haus;
         return out;
     });
@@ -452,10 +444,7 @@ async function checkBandRing6Workshop({ page, check }) {
     // entry.blockerAABBs) muss ihn aufhalten — gedrückte W-Taste (yaw=0 → forward=+Z), synchrone
     // _gameLoopTick-Pumps (Headless-rAF ~1 Hz).
     const collisionLive = await page.evaluate(() => {
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
         // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
         // ein WAND-Segment (nicht im Weg).
@@ -502,10 +491,7 @@ async function checkBandRing6Workshop({ page, check }) {
     );
     // Cleanup (inkl. Test-Blueprint)
     await page.evaluate(() => {
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         delete st.blueprints._t_live_haus;
     });
 
@@ -551,18 +537,12 @@ async function checkBandRing6Workshop({ page, check }) {
                 },
             ],
         };
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
         out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
 
         // DSL-Op spawn_blueprint funktioniert
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
         out.dslSpawnBlueprintOk =
             dslRes.ok === true &&
@@ -603,10 +583,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.loadRestoresUserBlueprint = !!st.blueprints["test_hut_2"];
 
         // Cleanup
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         delete st.blueprints["test_hut"];
         delete st.blueprints["test_hut_2"];
         return out;
@@ -715,10 +692,7 @@ async function checkBandRing6Workshop({ page, check }) {
         r._clearBuildMode();
         st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r._renderHotbarDOM();
-        for (const a of st.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        st.architectures = [];
+        window.__bautenLeer();
         return out;
     });
 

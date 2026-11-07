@@ -1204,6 +1204,13 @@ class AnazhRealm_dienst {
     // selben Frame zu verschwinden: der Übergang Satz → Mesh trägt keinen Pop. Ohne gezeichneten Feld-Pass fällt er sofort,
     // ebenso mit `sofort` (ein Schalter des Spielers, kein Mesh übernimmt — der Satz verschwindet im selben Frame).
     // Ein laufendes Einblenden (`_weltFeldEintrag`, die Geburt eines fern entstandenen Satzes) bricht beim Aus ab.
+    // ZEICHNET DER FELD-EINTRAG? Sein Slot lebt und trägt sein Brick (Texel 0.w ≠ 0; `_weltFeldAktiv` schaltet es, der
+    // Schwund setzt es am Ende auf 0, `_weltFeldFrei` beim Tod). Leser: `_archImBild`.
+    _weltFeldZeichnet(handle) {
+        const wm = this.state.weltMarch;
+        return !!(wm && handle && !handle._frei && wm.listeDaten[handle.feld * 32 + 3] !== 0);
+    }
+
     _weltFeldAktiv(handle, an, sofort) {
         const wm = this.state.weltMarch;
         if (!wm || !handle) return;
@@ -1650,8 +1657,12 @@ class AnazhRealm_dienst {
     // schreibt (der Spieler benennt um), macht es zu Daten: der Schlüssel fällt.
     static _etikett(o) {
         if (!o) return o;
-        for (const feld of ["parts", "bodyParts"])
-            if (Array.isArray(o[feld])) for (const p of o[feld]) AnazhRealm._etikett(p);
+        // ein Feld, das am ersten Leser wächst (die Baum-Arten, `_defaultBlueprints`), etikettiert sein Wuchs selbst — dieser
+        // Gang weckt es nie
+        for (const feld of ["parts", "bodyParts"]) {
+            const d = Object.getOwnPropertyDescriptor(o, feld);
+            if (d && !d.get && Array.isArray(d.value)) for (const p of d.value) AnazhRealm._etikett(p);
+        }
         const e = o.etikett;
         if (!e || typeof e !== "object") return o;
         // `etikett: [schlüssel, werte]` trägt `label`; `etikett: { feld: [schlüssel, werte], … }` je Feld eine Zeile

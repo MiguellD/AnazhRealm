@@ -318,7 +318,7 @@ async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
         const K = AnazhRealm;
         const out = {};
-        const now = () => performance.now() / 1000;
+        // die Uhr der Gesetze ist die Welt-Uhr (`st.spielZeit`, feld.K2#2) — in dieser Datei jeder Takt eines Gesetzes
 
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
@@ -344,7 +344,7 @@ async function checkBandV1733WorldRules({ page, check }) {
         out.notFiredOnRegister = st.weather === "sunny"; // registriert, Effekt NICHT sofort
 
         // --- (2) Feuern bei wahrer Bedingung ---
-        const t1 = now();
+        const t1 = st.spielZeit;
         r._tickWorldRules(t1);
         out.firesWhenTrue = st.weather === "rainy";
 
@@ -356,15 +356,15 @@ async function checkBandV1733WorldRules({ page, check }) {
         // --- (4) Bedingung false → feuert nicht ---
         e.sorrow = 0.0;
         st.worldRules[0].lastFired = -Infinity; // Gate oeffnen → NUR die Bedingung entscheidet
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         out.skipsWhenFalse = st.weather === "sunny";
 
         // --- (5) TTL entfernt die Regel ---
         st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { ttlSec: 1 }], { source: "nexus" });
         out.ttlRegistered = st.worldRules.length === 1;
-        st.worldRules[0].born = now() - 5; // 5 s alt, ttl 1 s → abgelaufen
-        r._tickWorldRules(now());
+        st.worldRules[0].born = st.spielZeit - 5; // 5 s alt, ttl 1 s → abgelaufen
+        r._tickWorldRules(st.spielZeit);
         out.ttlRemoves = st.worldRules.length === 0;
 
         // --- (6) Budget kappt Effekte/Frame ---
@@ -377,7 +377,7 @@ async function checkBandV1733WorldRules({ page, check }) {
             });
         }
         out.budgetRegistered = st.worldRules.length === N;
-        const tB = now();
+        const tB = st.spielZeit;
         r._tickWorldRules(tB);
         const firedCount = st.worldRules.filter((x) => x.lastFired === tB).length;
         out.budgetCaps = firedCount === K.WORLD_RULES.budgetPerFrame;
@@ -411,12 +411,12 @@ async function checkBandV1733WorldRules({ page, check }) {
                 source: "human",
             }
         );
-        const tR = now();
+        const tR = st.spielZeit;
         r._tickWorldRules(tR); // meta feuert → registriert child; child NICHT same-tick
         out.reentrancyNoCascade = st.weather === "sunny";
         out.childRegistered = st.worldRules.length === 2;
         st.worldRules[1].lastFired = -Infinity; // naechster Frame: child darf feuern
-        r._tickWorldRules(now() + 1);
+        r._tickWorldRules(st.spielZeit + 1);
         out.childFiresNextFrame = st.weather === "rainy";
 
         // --- (10) deterministische Regel-RNG: eine Funktion des Gesetzes (`_regelHash`), nie seiner Platz-Nummer ---
@@ -469,7 +469,6 @@ async function checkBandV1733WorldRules({ page, check }) {
 async function checkBandV1734FieldRules({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
 
         // Save world state
@@ -544,12 +543,12 @@ async function checkBandV1734FieldRules({ page, check }) {
         let prevLeb = lebSeed;
         for (let i = 0; i < 6; i++) {
             ruleObj.lastFired = -Infinity; // Gate oeffnen → nur die Bedingung entscheidet
-            r._tickWorldRules(now());
+            r._tickWorldRules(st.spielZeit);
             const lebNow = r.auraAt(A.x, A.z).lebendig;
             if (lebNow > prevLeb + 1e-6) rose = true;
             if (lebNow >= T) {
                 ruleObj.lastFired = -Infinity; // ein weiterer Tick darf NICHT mehr heben (Bedingung jetzt false)
-                r._tickWorldRules(now());
+                r._tickWorldRules(st.spielZeit);
                 stopped = Math.abs(r.auraAt(A.x, A.z).lebendig - lebNow) < 1e-3;
                 break;
             }
@@ -613,7 +612,6 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
         const K = AnazhRealm;
         const out = {};
-        const now = () => performance.now() / 1000;
         const cfg = K.WORLD_RULES;
         const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
 
@@ -675,7 +673,7 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         const ruleE = st.worldRules[0];
         for (let i = 0; i < 3; i++) {
             ruleE.lastFired = -Infinity;
-            r._tickWorldRules(now());
+            r._tickWorldRules(st.spielZeit);
         }
         ruleE.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
         out.fitnessFires = (ruleE.fires || 0) >= 1;
@@ -684,10 +682,10 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
 
         // --- (F) Erneuerung: gut bewaehrte Regel ueberlebt das ttl-Ende ---
         const idE = ruleE.id;
-        ruleE.born = now() - ruleE.ttlSec - 1; // ttl ueberschritten
-        r._tickWorldRules(now());
+        ruleE.born = st.spielZeit - ruleE.ttlSec - 1; // ttl ueberschritten
+        r._tickWorldRules(st.spielZeit);
         const stillThere = st.worldRules.find((x) => x.id === idE);
-        out.renewSurvives = !!stillThere && now() - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
+        out.renewSurvives = !!stillThere && st.spielZeit - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
 
         // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
         st.worldRules.length = 0;
@@ -696,8 +694,8 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         });
         const ruleG = st.worldRules[0];
         const idG = ruleG.id;
-        ruleG.born = now() - ruleG.ttlSec - 1;
-        r._tickWorldRules(now());
+        ruleG.born = st.spielZeit - ruleG.ttlSec - 1;
+        r._tickWorldRules(st.spielZeit);
         out.inertExpires = !st.worldRules.find((x) => x.id === idG);
 
         // --- (H) Verfall: eine fehlerhafte Regel (100% errors) verfaellt ---
@@ -710,9 +708,9 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         ruleH.fires = 5;
         ruleH.errors = 5;
         ruleH.costMsSum = 2;
-        ruleH.born = now() - ruleH.ttlSec - 1;
+        ruleH.born = st.spielZeit - ruleH.ttlSec - 1;
         out.erroringFitness = r._worldRuleFitness(ruleH); // ~0.36 < renewFitness
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         out.erroringExpires = !st.worldRules.find((x) => x.id === idH);
 
         // --- (I) dslMutate haelt die Regel-Form (kein throw) ---
@@ -1006,7 +1004,6 @@ async function checkBandV1737RulesUI({ page, check }) {
 async function checkBandV1739RulesUX({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
         const host = document.getElementById("status-worldrules");
         const forceRender = () => {
             r._statusRefs.worldrulesSignature = "";
@@ -1019,13 +1016,13 @@ async function checkBandV1739RulesUX({ page, check }) {
         const savedMode = st.worldMeta.gameMode;
 
         // --- (A) Persistenz-Label: permanent / verfaellt / pausiert ---
-        const human = { ttlSec: null, born: now(), fires: 0 };
-        const nexus = { ttlSec: 60, born: now(), fires: 0 };
-        const paused = { ttlSec: null, born: now(), fires: 0, disabled: true };
+        const human = { ttlSec: null, born: st.spielZeit, fires: 0 };
+        const nexus = { ttlSec: 60, born: st.spielZeit, fires: 0 };
+        const paused = { ttlSec: null, born: st.spielZeit, fires: 0, disabled: true };
         out.labels =
-            r._worldRuleStatusLabel(human, now()) === "permanent" &&
-            /verf[äa]llt in ~\d+s/.test(r._worldRuleStatusLabel(nexus, now())) &&
-            r._worldRuleStatusLabel(paused, now()) === "pausiert";
+            r._worldRuleStatusLabel(human, st.spielZeit) === "permanent" &&
+            /verf[äa]llt in ~\d+s/.test(r._worldRuleStatusLabel(nexus, st.spielZeit)) &&
+            r._worldRuleStatusLabel(paused, st.spielZeit) === "pausiert";
 
         // --- (B) Pause: ein pausiertes Gesetz feuert NICHT (Tick skippt) ---
         st.worldRules.length = 0;
@@ -1034,11 +1031,11 @@ async function checkBandV1739RulesUX({ page, check }) {
         ruleB.disabled = true;
         st.weather = "sunny";
         ruleB.lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         const pausedDidNotFire = st.weather === "sunny";
         ruleB.disabled = false; // wieder aktiv → feuert
         ruleB.lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         out.pauseWorks = pausedDidNotFire && st.weather === "rainy";
 
         // --- (C) 📌-Klick adoptiert eine Nexus-Regel (pinned + ttlSec=null → permanent) ---
@@ -1051,7 +1048,7 @@ async function checkBandV1739RulesUX({ page, check }) {
         const pinBtn = host.querySelector(`button[data-pin-rule="${ruleC.id}"]`);
         if (pinBtn) pinBtn.click();
         out.pinAdopts = !!pinBtn && ruleC.pinned === true && ruleC.ttlSec == null;
-        out.pinPermLabel = r._worldRuleStatusLabel(ruleC, now()) === "permanent";
+        out.pinPermLabel = r._worldRuleStatusLabel(ruleC, st.spielZeit) === "permanent";
 
         // --- (D) Eviction schuetzt eine angepinnte Regel ---
         st.worldRules.length = 0;
@@ -1145,7 +1142,6 @@ async function checkBandV1739RulesUX({ page, check }) {
 async function checkBandV1740LlmRules({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const now = () => performance.now() / 1000;
 
         const savedRules = st.worldRules.slice();
         const savedWeather = st.weather;
@@ -1167,7 +1163,7 @@ async function checkBandV1740LlmRules({ page, check }) {
             st.worldRules = [llmRule];
             st.weather = "rainy";
             llmRule.lastFired = -Infinity;
-            r._tickWorldRules(now());
+            r._tickWorldRules(st.spielZeit);
         }
         out.llmFires = st.weather === "sunny";
 
@@ -1206,7 +1202,6 @@ async function checkBandV1741RuleThread({ page, check }) {
     const res = await page.evaluate(() => {
         const regen = () => r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const out = {};
-        const now = () => performance.now() / 1000;
 
         const savedRules = st.worldRules.slice();
         const savedWeather = st.weather;
@@ -1214,7 +1209,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         const savedSeen = { ...st.worldJournal.seen };
 
         // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
-        const tNow = now();
+        const tNow = st.spielZeit;
         const mk = (over) => Object.assign({ fires: 0, lastFired: -Infinity, disabled: false }, over);
         out.labelRuht = r._worldRuleActivityLabel(mk({}), tNow) === "ruht";
         out.labelFeuert = r._worldRuleActivityLabel(mk({ fires: 1, lastFired: tNow }), tNow) === "⚡ feuert";
@@ -1228,7 +1223,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         const domRule = st.worldRules.find((x) => x.source === "human");
         st.weather = "rainy";
         domRule.lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         r._statusRefs.worldrulesSignature = "__force__"; // != aktuelle Signatur → echtes Re-Render
         r.renderWorldRulesList();
         const host = document.getElementById("status-worldrules");
@@ -1247,7 +1242,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         const sigRuht = r._statusRefs.worldrulesSignature;
         st.weather = "rainy";
         sigRule.lastFired = -Infinity;
-        r._tickWorldRules(now()); // feuert
+        r._tickWorldRules(st.spielZeit); // feuert
         r.renderWorldRulesList(); // KEIN manueller Reset — die Signatur muss sich geändert haben
         const sigFeuert = r._statusRefs.worldrulesSignature;
         out.signatureLive = sigRuht !== sigFeuert && /feuert/.test(sigFeuert) && /ruht/.test(sigRuht);
@@ -1262,7 +1257,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         st.worldRules = [hRule];
         st.weather = "rainy";
         hRule.lastFired = -Infinity;
-        r._tickWorldRules(now()); // fires===1 → Erwachen
+        r._tickWorldRules(st.spielZeit); // fires===1 → Erwachen
         const awoke = st.worldJournal.entries
             .slice(jBefore)
             .find((e) => e.type === "rule" && /erwachte/.test(e.text));
@@ -1278,7 +1273,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         st.worldRules = [hRule2];
         st.weather = "rainy";
         hRule2.lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         out.journalIdempotent = st.worldJournal.entries.length === jBefore2;
 
         // --- (6) Gating: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung
@@ -1291,7 +1286,7 @@ async function checkBandV1741RuleThread({ page, check }) {
         st.worldRules = [nRule];
         st.weather = "sunny";
         nRule.lastFired = -Infinity;
-        r._tickWorldRules(now());
+        r._tickWorldRules(st.spielZeit);
         // die Nexus-Regel feuerte (sie wünscht das Wetter nur — Leben-Schau 2), und keine Erinnerung entstand
         out.nexusNoJournal = st.worldJournal.entries.length === jBeforeN && nRule.fires === 1;
 

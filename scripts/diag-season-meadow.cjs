@@ -52,7 +52,7 @@ function pruefe(o) {
     const u = { uSeasonMul: { value: { r: 1, g: 1, b: 1 } } };
     w._ensureSeasonUniforms = () => u;
     if (o.mul) w._saisonMul = o.mul;
-    A.prototype._tickSeason.call(w, 0);
+    A.prototype._tickSeason.call(w);
     pruef(
         "F3 _tickSeason fährt uSeasonMul aus _saisonMul",
         d(u.uSeasonMul.value, o.welt(0.625)) < 1e-12 && d(u.uSeasonMul.value, { r: 1, g: 1, b: 1 }) > 0.3 && w.state.season === "autumn",
