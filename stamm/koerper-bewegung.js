@@ -2029,13 +2029,16 @@ class AnazhRealm_koerper_bewegung {
                     const rx = -Math.cos(this.state.yaw);
                     const rz = Math.sin(this.state.yaw);
                     const fest = (s) => this._fieldSolid(bx + rx * (s + kr), by, bz + rz * (s + kr));
-                    let s =
-                        S *
-                        this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
-                            durchPflanzen: true,
-                            radius: kr,
-                            gelaende: false,
-                        }).t;
+                    // trifft der Wurf einen Bau, steht die Schulter eine HAUT davor (`KAMERA_SCHULTER_HAUT_M`): der Arm, der dort
+                    // beginnt, beginnt frei — stand sie genau auf der Haut der Kugel (r vor der Kante), tauchte der Arm auf dem Weg zur
+                    // Kamera wenige cm tiefer und schnappte heran (Abstieg neben dem GT in voller Fahrt: 10,6 m in einem Bild, 1 von 5
+                    // Läufen, gate:fahr-leben T4)
+                    const wurfS = this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
+                        durchPflanzen: true,
+                        radius: kr,
+                        gelaende: false,
+                    }).t;
+                    let s = wurfS < 1 ? Math.max(0, S * wurfS - AnazhRealm.KAMERA_SCHULTER_HAUT_M) : S;
                     if (fest(s)) {
                         let lo = 0;
                         let hi = s;
@@ -2616,6 +2619,9 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 AnazhRealm.FIXED_DT = 1 / 60;
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// Die Haut der Schulter (m): so weit bleibt das Blickziel vor einem Bau, den ihr Wurf trifft — der Arm beginnt frei (ein gefegter
+// Körper beginnt nie in Berührung, wie die Kontakt-Haut der Physik-Engines).
+AnazhRealm.KAMERA_SCHULTER_HAUT_M = 0.05;
 // Der Übergang des Rigs (`_kamRest`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
 // der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt;
 // das Sichtfeld gleitet mit dem Deckel fovGradS (°/s: 0,4° im längsten Bild von 33 ms, ein Tempo-FOV von 9° in ~0,8 s).
