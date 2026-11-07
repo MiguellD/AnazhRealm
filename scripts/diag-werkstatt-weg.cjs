@@ -15,17 +15,17 @@
 //     (Werkstatt · KI-Satz · geteilter Code) und Sicht (Ego · Third).
 //   PRÜF-SATZ (Bauen K3) — zehn Konstruktionen über den Bau-Weg (spec/pruefsatz/bauen-k3.json): das Stabile steht, das Instabile
 //     stürzt sichtbar (die EINE Statik beim Setzen); Brennglas, Rad, Schale und Gründer wirken aus der Form.
-//   node scripts/diag-werkstatt-weg.cjs [--selftest | --verben | --bild | --echt]          Port: WERKSTATT_WEG_PORT (Standard 4623)
+//   node scripts/diag-werkstatt-weg.cjs [--selftest | --verben]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 //   --verben fährt NUR L-VERBEN, mit echtem Renderer (die Karte; Meisterkarte Bauen K5 Staffel 2 auf beiden Geräten).
-//   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
+//   L-BILD (Bauen K1 Staffel 2) fährt die Probe der Mess-Sitzung (punkte bauen.K1#2) mit `wegHelfer` bild und `wegLauf` in der
+//   Welt der Sitzung — bis w18-bild-weg auch hier ein eigener Lauf (--bild swiftshader, --echt die Karte, je Weg ein frischer
+//   Browser), den nichts mehr rief.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
-const ECHT = process.argv.includes("--echt");
-const BILD = ECHT || process.argv.includes("--bild"); // der Bild-Weg (L-BILD) auf swiftshader, mit --echt auf der Karte
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte Bauen K3: 5 stabil, 5 instabil, die Wirkungen
 
 const { errs, check } = pruefer();
@@ -184,7 +184,7 @@ function wegVerdict(m) {
     return out;
 }
 
-// DER BILD-WEG (Bauen K1 Staffel 2, --bild): je Weg × Lage mit Bau × Werk × Sicht steht das Werk über echte Eingaben in
+// DER BILD-WEG (Bauen K1 Staffel 2, die Probe der Mess-Sitzung): je Weg × Lage mit Bau × Werk × Sicht steht das Werk über echte Eingaben in
 // ≤ 3 Schritten im Bild, in L0 (der Bau-Hash des Bilds = der L0-Bau seiner Anfrage im Werk) — die Mechanik; die Zeit bis zum
 // Bild (p95 kalt und warm ≤ 1 s) urteilt die Station an der Karte (punkte bauen.K1#2), nie swiftshader.
 const BILD_LAGEN = LAGEN.filter((l) => l !== "frieden ohne Material");
@@ -377,7 +377,7 @@ async function probe(argW) {
         st.yaw = 0;
     };
     out.frei = frei;
-    if (argW.nurOrt) return out; // der Bild-Weg (--bild) und die Verben-Karte (--verben) brauchen nur den Ort
+    if (argW.nurOrt) return out; // der Bild-Weg (die Probe der Sitzung) und die Verben-Karte (--verben) brauchen nur den Ort
     // DER BAU-WEG DES SPIELERS: der Plan in die Hotbar, das Phantom an den Ort, `confirmBuild` (schöpfer) — ruft es die Statik?
     const satz = argW.satz;
     const konsum = { "confirmBuild → _workshopPhysicsVerdict": false };
@@ -978,7 +978,7 @@ function wegHelfer(arg) {
     let lauf = null;
     // das eigene Werk kommt geteilt umbenannt (`empfangeWerk`: eigen_bruecke-geteilt), nie überschrieben
     const neue = () => st.architectures.filter((a) => a && !lauf.vorher.has(a) && a.type.startsWith(lauf.name) && typeof a.id === "string");
-    // DER BILD-WEG (--bild, Bauen K1 Staffel 2): die Schleife des Spiels zeichnet selbst; der Haken am Render des Takts
+    // DER BILD-WEG (`bild`, Bauen K1 Staffel 2): die Schleife des Spiels zeichnet selbst; der Haken am Render des Takts
     // (`_loopRender`) fragt nach jedem Bild, ob das neue Werk in L0 darin steht — jede L0-Senke (ohne Schatten-Zwilling) zieht
     // über ein Objekt, das schon für die Kamera der Szene zog (am Backend gezählt: die Erst-Zeichnung zieht erst, wenn seine
     // Pipeline steht, eine Kaskade zählt nicht), in der Arena dazu im Zug dieses Bilds —, und die Uhr steht, wenn die GPU dieses
@@ -1005,16 +1005,14 @@ function wegHelfer(arg) {
             return draw.call(this, ro, ...x);
         };
         // DAS BÜNDEL ZIEHT MIT: eine Region-BundleGroup (Bäume, Bauten, Wagen — der statische Bestand) ruft `backend.draw` nur beim
-        // Aufnehmen; ihr Abspielen (r184 `_renderBundle`, Versions-Treffer, dann `addBundle`) zieht die aufgenommenen RenderObjects
-        // ohne ihn — nach dem Haken nahm keine Region neu auf, ihre Bürger zogen für den Zähler nie (headless am main: die Eiche 240 s
-        // in `_zuegeB` der Kamera, nie in `zog`; Radeon b3f9ae95: beide Eiche-Läufe 600 s an der Frist, Haus 1 773 ms). Wie das Spiel
-        // den Replay bucht (bild-kosten DRAW-WAHRHEIT) und diag-hitch-telemetrie ihn liest: nach dem Aufruf seine RenderObjects.
-        const [rend, rbEigen, rbRoh] = [st.renderer, Object.prototype.hasOwnProperty.call(st.renderer, "_renderBundle"), st.renderer._renderBundle];
-        rend._renderBundle = function (bundle, ...x) {
-            const aus = rbRoh.call(this, bundle, ...x);
-            if (bundle.camera === st.camera)
-                for (const ro of this.backend.get(this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext)).renderObjects || []) zog.add(ro.object);
-            return aus;
+        // Aufnehmen; ihr Abspielen zieht die aufgenommenen RenderObjects ohne ihn. Nach dem Haken nahm keine Region neu auf, ihre
+        // Bürger zogen für den Zähler nie (headless am main: die Eiche 240 s im Bündel-Zug der Kamera, nie in `zog`; Radeon b3f9ae95:
+        // beide Eiche-Läufe 600 s an der Frist). r184 reicht JEDES Bündel des Passes, aufgenommen oder abgespielt, durch
+        // `backend.addBundle(Kontext, Bündel)` — dort zieht es für seine Kamera mit seinen RenderObjects (wie diag-hitch-telemetrie liest).
+        const add = b.addBundle;
+        b.addBundle = function (rc, bu) {
+            if (bu.camera === st.camera) for (const ro of this.get(bu).renderObjects) zog.add(ro.object);
+            return add.call(this, rc, bu);
         };
         // die L0-Senken eines Werks — ein eigener Bauplan ist klassisch (`entry.mesh`: jedes Mesh seiner Gruppe zieht selbst)
         const l0 = (e) =>
@@ -1023,8 +1021,7 @@ function wegHelfer(arg) {
         // offene Rate) und seine Zelle des Platzes im Abschnitt des Hauptbilds — die Lesung des Zug-Zählers (`satzInhalt`)
         const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && zog.has(S?.mesh) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
         // der Zug dieses Bilds: lose je Pass (`_zuege`), in der festen Arena der des Bündels (`_zuegeB`, seine Aufträge schreibt der Takt)
-        const imZug = (A, m) => [st.camera, null].some((k) => A._zuege.get(k)?.zuege.includes(m)) || !!A._zuegeB?.get(st.camera)?.zuege.includes(m);
-        const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && imZug(g.mesh.__arena, g.mesh) : zog.has(g.mesh.__zeichner || g.mesh)));
+        const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && [st.camera, null].some((k) => [g.mesh.__arena._zuege, g.mesh.__arena._zuegeB].some((Z) => Z.get(k)?.zuege.includes(g.mesh))) : zog.has(g.mesh.__zeichner || g.mesh)));
         r._loopRender = function (...a) {
             const [L, e] = [lauf, lauf && lauf.bild == null && neue()[0]];
             if (e) jetzt(L, "standT");
@@ -1037,11 +1034,7 @@ function wegHelfer(arg) {
             }
             return aus;
         };
-        abbau = () => {
-            [r._loopRender, b.draw] = [roh, draw];
-            if (rbEigen) rend._renderBundle = rbRoh;
-            else delete rend._renderBundle;
-        };
+        abbau = () => ([r._loopRender, b.draw, b.addBundle] = [roh, draw, add]);
     } else {
         // der Null-Renderer tickt nur hier, mit echtem Renderer (--verben) tickt die Schleife selbst (wie `__seitenTakt`)
         let vor;
@@ -1314,24 +1307,18 @@ async function wegLauf(page, o) {
     await bauWeg(page, "abschluss");
     return e;
 }
-async function wegProbe(page, frei, bild) {
+async function wegProbe(page, frei) {
     const m = { gestartet: false, wege: {} };
-    await page.evaluate(wegHelfer, { frei, teile: { eigen_huette: TEILE.eigen_huette }, bild: !!bild });
+    await page.evaluate(wegHelfer, { frei, teile: { eigen_huette: TEILE.eigen_huette }, bild: false });
     m.konsum = await bauWeg(page, "konsum");
-    // L-WERKSTATT (ohne --verben); `bild` (der Bild-Weg): nur dieser Weg, je Lage mit Bau, ohne die Proben daneben
+    // L-WERKSTATT (ohne --verben)
     if (!NUR_VERBEN) {
-        for (const wo of raster(bild ? BILD_LAGEN : LAGEN, bild ? [bild] : WEGE)) {
+        for (const wo of raster(LAGEN, WEGE)) {
             const [lage, weg, werk, sicht] = wo;
             const phantom = wo.join() === "schöpfer,hotbar,Eiche,Ego";
             const e = lege(m.wege, wo, await wegLauf(page, { lage, weg, name: WERKE[werk], sicht, phantom }));
-            // der Bild-Weg: je Lauf seine Zeile, und der nächste beginnt an der ruhenden Welt (das Abräumen des Werks füllt die
-            // Natur nach — 18 Aufträge vor der Wurf-Stufe des nächsten Hauses, Konsum-Probe 27.10.)
-            const z = e.zeiten || [];
-            if (bild) console.log(`  [bild] ${wo.join(" · ")} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ${PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`);
-            if (bild) await page.evaluate(() => __weltStehtNach());
             if (phantom) m.phantom = e.phantom;
         }
-        if (bild) return Object.assign(m, await bauWeg(page, "ende"), { gestartet: true });
         // Ein Gerät aus der Hotbar in frieden ohne Material: der Griff schmiedet — und sagt, was fehlt.
         const geraet = await bauWeg(page, "geraet");
         m.geraet = { name: geraet, zeile: geraet && (await wegLauf(page, { lage: "frieden ohne Material", weg: "hotbar", name: geraet, sicht: "Ego", slot: 5 })).zeile };
@@ -1683,12 +1670,10 @@ hauptLauf(async () => {
     await server.lausche(PORT);
     // DER EREIGNIS-STROM: jede Eingabe des Spielers (pointerdown · keydown · wheel), vor jedem Hörer der Seite gefangen
     const seite = async (rest) => {
-        const browser = await starteBrowser({ art: BILD ? (ECHT ? "echt" : "linse") : NUR_VERBEN ? "linse" : "null", frist: 600000 });
+        const browser = await starteBrowser({ art: NUR_VERBEN ? "linse" : "null", frist: 600000 });
         const page = await browser.newPage();
-        if (!BILD && !NUR_VERBEN) await nullRenderer(page); // ohne Bild-Weg und Verben-Karte zeichnet die Seite nichts
-        // swiftshader rastert auf der CPU (1280 × 720: 73 Bilder in 10 min, die Ankunft gleitet nie aus): der Bild-Weg ohne Karte
-        // prüft im kleinen Fenster die Mechanik, die Zeit urteilt nur --echt
-        await page.setViewport(BILD && !ECHT ? { width: 480, height: 270 } : { width: 1280, height: 720 });
+        if (!NUR_VERBEN) await nullRenderer(page); // ohne Verben-Karte zeichnet die Seite nichts
+        await page.setViewport({ width: 1280, height: 720 });
         await page.evaluateOnNewDocument(frageJa); // die souveräne Geste des Teilens (#frage-dialog, spielgang.K5)
         await page.evaluateOnNewDocument(() => {
             const strom = (window.__eingabeStrom = []);
@@ -1698,34 +1683,8 @@ hauptLauf(async () => {
         await server.zeige(page, 60000, rest);
         return { browser, page };
     };
-    // die Rohdatei (der Bild-Weg schreibt sie je Weg)
+    // die Rohdatei
     const roh = (m) => (fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true }), jsonSchreiben(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), m));
-    if (BILD) {
-        // je Weg ein frischer Browser (ein leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne (Mittag ·
-        // Sonne · Sommer) — dann die Läufe; swiftshader (ohne --echt) zeichnet mit dem Holz der CPU-Raster-Linsen (Lehre 26)
-        const gm = { gestartet: true, bild: true, echt: ECHT, wege: {}, konsum: {} };
-        for (const weg of WEGE) {
-            const { browser, page } = await seite(ECHT ? "index.html" : "index.html?holz=kienspan");
-            try {
-                const { frei } = await page.evaluate(probe, { nurOrt: true });
-                await buehne(page);
-                await page.evaluate(() => __weltStehtNach());
-                const m = await wegProbe(page, frei, weg);
-                for (const lage in m.wege) Object.assign((gm.wege[lage] ||= {}), m.wege[lage]);
-                Object.assign(gm.konsum, m.konsum);
-            } catch (e) {
-                gm.err = `${gm.err || ""}${weg}: ${e?.stack || e} | `;
-            }
-            await browser.close();
-            roh(gm);
-        }
-        server.close();
-        console.log("=== L-BILD — VOM WILLEN ZUM BILD DES WERKS IN L0 (Bauen K1 Staffel 2) ===");
-        if (gm.err) check("L-Bild Probe ohne Ausnahme", false, gm.err.split("\n")[0]);
-        const v = bildVerdict(gm);
-        check("L-Bild jeder Weg stellt jedes Werk in ≤ 3 Eingaben in L0 ins Bild (Bau-Hash = L0-Bau)", !v.length, `Täter (${v.length}): ${v.slice(0, 20).join(", ")}`);
-        process.exit(errs.length ? 1 : 0);
-    }
     const { browser, page } = await seite("index.html");
     const out = await page.evaluate(probe, { soll: WORT_SOLL, unbekannt: WORT_UNBEKANNT, satz: PRUEF_SATZ, nurOrt: NUR_VERBEN });
     try {
@@ -1776,7 +1735,7 @@ hauptLauf(async () => {
                     .join(" · ")}`
         );
         const vG = wegVerdict(gm);
-        // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max (die Zeit bis zum Bild urteilt L-BILD, --bild)
+        // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max (die Zeit bis zum Bild urteilt L-BILD, punkte bauen.K1#2)
         const jeWeg = () =>
             WEGE.map((w) => {
                 const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values(gm.wege?.[x][w]).flatMap(Object.values));
