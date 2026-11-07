@@ -299,8 +299,8 @@ async function tierKreis(tor) {
     const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
         ['const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");', "const erst = null;"],
         ["await r._rueckstrahlJetzt(() => (neubeginn(), frame()));", ""],
-        ["const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
-        ["if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };", "if (BW === W && BH === H) return { u8: voll, info, ms };"],
+        ["const nWarm = Math.max(warm ?? 1, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
+        ["if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };", "if (BW === W && BH === H) return { u8: voll, info, ms, tiefe };"],
     ]);
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
