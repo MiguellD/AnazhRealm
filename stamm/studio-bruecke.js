@@ -2200,8 +2200,9 @@ class AnazhRealm_studio_bruecke {
     // NAMEN nennt — sein Name (`lab`, gefaltet wie jedes Wort der Welt: `_wortFalten`, Stämme -en/-e/-s/-er/-es/-em, Umlaut; ein
     // Teil genügt: „dach" → Dachneigung, „blüten" → Blüten-Zahl) oder genau seine id („turm"). Gesucht wird in den Arten, die der
     // Satz nennt (ein Wort des Katalogs, genau — `_studioBlueprintForWord(w, true)` —, oder der Kopf einer Gruppe: „musik");
-    // nennt er keine, in den Arten ohne Ort (KIND_POLICY `werk` "praegung"), dann mit Stamm ≥ 5 („mach mich größer" → die
-    // Gestalt des Spielers; in allen Arten hätte „höher springen" die Federrate des Wagens gerufen). Leser: der Kontext der Welt-KI
+    // nennt er keine, in den Arten ohne Ort (KIND_POLICY `werk` "praegung"), dann mit Stamm ≥ 6 („mach mich größer" → „groess",
+    // die Gestalt des Spielers; in allen Arten hätte „höher springen" die Federrate des Wagens gerufen, mit Stamm 5 rief „färbe
+    // den himmel" die Farbe der Musik: 2,4 s Prefill je Satz für eine falsche Zeile, ki.K5 07.11.). Leser: der Kontext der Welt-KI
     // (`zeile`, hinter dem Prompt-Cache: nur die genannten Zeilen kosten Prefill) und ihre Antwort-Form (`regler`: ein
     // Regler-Objekt trägt GENAU diese Schlüssel, ohne Treffer gibt es keines — „bau mir ein haus" kann keinen Regler mehr
     // schreiben). { regler: {art: [Zeile …]}, zeile } — `zeile` nennt dazu die Werk-Wörter des Satzes in der Form des Programms.
@@ -2242,7 +2243,7 @@ class AnazhRealm_studio_bruecke {
         const eigen = woerter(satz)
             .filter((w) => !werkWort.has(w))
             .flatMap((w) => stamm(w).map(ohneUmlaut))
-            .filter((s) => s.length >= (ohneArt ? 5 : 4));
+            .filter((s) => s.length >= (ohneArt ? 6 : 4));
         const genau = new Set(woerter(satz));
         // ein Teil des Namens („dach" in Dachneigung) oder ein gemeinsamer Anfang ≥ 6 (das Partizip: „verwitterte" ↔ Verwitterung)
         const anfang = (a, b) => {
