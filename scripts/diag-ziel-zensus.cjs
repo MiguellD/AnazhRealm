@@ -70,7 +70,7 @@ function urteil(z) {
     const s = z.selbst || [];
     if (!s.length) v.push("SELBSTTEST: der Schmuggel lief nicht");
     for (const x of s) if (!x.ok) v.push(`SELBSTTEST: blind für ${x.muss}`);
-    if ((z.rest || []).length) v.push(`SELBSTTEST: nach dem Abbau noch im Zensus: ${z.rest.join(", ")}`);
+    if (z.rest?.length) v.push(`SELBSTTEST: nach dem Abbau noch im Zensus: ${z.rest.join(", ")}`);
     return v;
 }
 
@@ -170,7 +170,7 @@ function karteOhneFarbe() {
         const CE = GPUCommandEncoder.prototype;
         const brp = CE.beginRenderPass;
         CE.beginRenderPass = function (d) {
-            const ds = d && d.depthStencilAttachment;
+            const ds = d?.depthStencilAttachment;
             const t = ds && window.__viewTex ? window.__viewTex.get(ds.view) : null;
             if (t && /^kaskade\d+:tiefe/.test(String(t.__vramK || "").replace(/^tex:/, ""))) {
                 schattenPaesse++;
@@ -318,8 +318,8 @@ function rundungProbe() {
         // (a) der Zensus des echten Frames
         const { z, u } = await zensus();
         out.zensusRot = u.rot;
-        const tiefe = (z.ziele || []).find((x) => x.name === "szene:tiefenabbild");
-        out.tiefeGelesen = !!tiefe && tiefe.ereignisse.some((e) => e.art === "R");
+        const tiefe = z.ziele?.find((x) => x.name === "szene:tiefenabbild");
+        out.tiefeGelesen = !!tiefe?.ereignisse.some((e) => e.art === "R");
         out.rest = u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name);
         log(
             `Zensus: ${u.zeilen.length} Texturen, ${z.frames} Frames, ${u.rot.length} rot, ${u.hinweis.length} Hinweise; ` +
@@ -339,9 +339,10 @@ function rundungProbe() {
     await browser.close();
     server.close();
     const v = urteil(out);
+    // ROT trägt seine Verletzungen beim Namen (ABBRUCH zuerst); der grüne Satz liest die Karte und die Rundung nur, wenn es sie gibt
     wandEnde(
         v,
-        `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
+        v.length ? "" : `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
             `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); ` +
             `${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort; die Ausgabe ` +
             `${out.rundung.format} rundet ${out.rundung.rundung || "-"}, die Ditherung (Versatz ${out.rundung.versatz}) ändert ` +
