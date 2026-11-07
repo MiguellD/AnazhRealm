@@ -75,7 +75,7 @@ class AnazhRealm_studio_gestalt {
         const bedarf = this._huellenBedarf();
         if (!bedarf) return 0;
         const neu0 = this._baumGestaltMerk ? this._baumGestaltMerk.size : 0;
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("huellen");
         let n = 0;
         for (let e; (e = this._huellenNaechste(S, bedarf));) {
             S.delete(e);

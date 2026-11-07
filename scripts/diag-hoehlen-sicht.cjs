@@ -638,8 +638,7 @@ const server = statikServer();
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
             let HINAUS = null;

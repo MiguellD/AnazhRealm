@@ -1240,8 +1240,7 @@ hauptLauf(async () => {
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
-            await server.zeige(page, 180000, "index.html", "networkidle0");
-            await warteAufWelt(page, 180000);
+            await warteAufWelt(page, 180000, server);
             if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
             await page.evaluate(() =>

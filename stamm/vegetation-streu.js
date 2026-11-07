@@ -1155,7 +1155,7 @@ class AnazhRealm_vegetation_streu {
         let hops = 0;
         // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): nach dem ersten Zug zieht die Wahl nur, solange sie offen ist —
         // bis hier zogen vier Zellen am Stück (headless GT-Fahrt Genesis: `_tickScatterLod` 44,5 ms in EINEM Takt)
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("streuLod");
         while (
             scanned < maxScan &&
             realloc < maxRealloc &&

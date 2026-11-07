@@ -634,7 +634,7 @@ class AnazhRealm_stoff_karte {
         // die halbe Karte zuerst
         if (at.offen && q.includes(at.offen.z.key)) q.unshift(...q.splice(q.indexOf(at.offen.z.key), 1));
         let n = 0;
-        const frist = this._bauFrist(); // vor der Arbeit gefragt: der erste Leser stellt sie
+        const frist = this._bauFrist("karte"); // vor der Arbeit gefragt
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
         const v0 = gezeichnet();
         for (let i = 0; i < q.length;) {
@@ -913,7 +913,7 @@ class AnazhRealm_stoff_karte {
         // Ansichten — `v0` ist der erste Schritt dieses Aufrufs, `vBis` der des nächsten (der Ring steht, wenn er kopf + V ist)
         const kopf = iR === 0 ? B.dirs.length + 1 : 0;
         const v0 = at.offen ? at.offen.v | 0 : 0;
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("karte");
         let vBis = kopf + at.V;
         const ringe = at.ringe.ringe;
         const ring = ringe[iR];

@@ -22,7 +22,7 @@ class AnazhRealm_gelaende_fern {
         // IN RATEN unter der EINEN Frist der Bau-Arbeit (`_bauFrist`, w19-gang-hitch; der erste Abschied immer): wer bleibt, steht
         // im nächsten Takt wieder in `drop` — bis hier räumte ein Takt jeden fernen Chunk am Stück (headless GT-Fahrt Genesis:
         // `_pruneDistantVoxelChunks` 24,5 ms, ein Abschied samt Satz und Höhlen-Rand bis 24,1)
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("abraeumen");
         let n = 0;
         while (n < drop.length && (n === 0 || performance.now() < frist)) this._disposeVoxelChunk(drop[n++]);
         drop.length = n;
@@ -1672,7 +1672,7 @@ class AnazhRealm_gelaende_fern {
         };
         let done = 0;
         fr.einhaengen.sort((a, b) => a.von - b.von);
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("horizont");
         while (
             fr.einhaengen.length &&
             fr.einhaengen[0].von + (fr.einhaengen[0].k | 0) === fr.cursor &&

@@ -2578,7 +2578,7 @@ class AnazhRealm_gelaende_chunks {
         // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): der Strom ist ihr erster Leser im Takt (prio 0) — er stellt
         // sie und baut im Spiel nie über sie hinaus (EIN Stück je Takt immer, über beide Hälften); unter dem Ladeschirm gelten die
         // Kappen des Lade-Takts
-        const bauFrist = this._bauFrist();
+        const bauFrist = this._bauFrist("strom");
         const weiter = (frist) =>
             this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
             this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist) &&

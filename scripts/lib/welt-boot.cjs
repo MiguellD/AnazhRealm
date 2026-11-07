@@ -268,8 +268,7 @@ async function weltStehtNach(takt, max) {
         throw new Error(
             `DIE WELT STEHT NICHT nach ${n} Takten: ` +
                 (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`) +
-                ` (${f.message})` +
-                (/DIE WELT HÄNGT/.test(f.message) ? "" : ` · ${window.__offenAkte()}`)
+                ` (${f.message})`
         );
     } finally {
         st.perfRegulator = regler;
@@ -319,35 +318,13 @@ function deckel(name, max, offen) {
         still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
         if (still > 3600)
-            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${window.__offenAkte()}`);
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
             );
         return ++n > 0;
     };
-}
-// DIE AKTE DES OFFENEN (w19-gang-hitch): was hängt, beim Namen seiner Schlange — der Wald je Schlange (Saat mit Probe und Flug,
-// Pflanz-Würfe samt denen außer dem ersten Blick), die Karten-Bühne (die halbe Karte, jede Zelle der Schlange mit Stand), das
-// Weltbild und seine Lücken, Takt und Frist. Bis hier nannte die Wand nur „Wald offen 116" (CI z289 · z292 · z293, nie lokal).
-function offenAkte() {
-    try {
-        const [st, at] = [r.state, r._impostorAtlas ? r._impostorAtlas() : null];
-        const S = r._saatOffen ? [...r._saatOffen.values()] : [];
-        const P = st.pendingVegSpawns || [];
-        const aussen = P.filter((t) => t && !r._rangImErstenBlick(r._foundryAuftragD2(t.position))).length;
-        const pl = (p) => (p === undefined ? "u" : p === null ? "0" : p === false ? "f" : "t");
-        const zs = (k, z = at && at.zellen.get(k)) => (z ? `${k}:${z.gebacken ? "g" : ""}${z.gescheitert ? "x" : ""}${z._weltNeu ? "n" : ""}p${pl(z._platte)}` : `${k}:?`);
-        const o = at && at.offen;
-        const saat = S.slice(0, 4).map((c) => `${c.cx},${c.cz} i${c.i}${c.flug ? " flug" : ""}${c.feld ? " feld" : ""}`);
-        return [
-            `Wald: Saat ${S.length} [${saat.join(" · ")}] · Plan ${r._waldPlanSchlange ? r._waldPlanSchlange.size : 0} · Pflanz-Warten ${r._waldPflanzWarten ? r._waldPflanzWarten.size : 0} · Würfe ${P.length} (außer Blick ${aussen}) · Nachwuchs ${r._sukzessionNeu ? r._sukzessionNeu.length : 0}`,
-            `Karten: ${(r._impostorBakeQueue || []).map((k) => zs(k)).join(" ")} · halbe ${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Leine ${r._gpuLeineStraff ? r._gpuLeineStraff() : "?"}`,
-            `Weltbild ${st._weltbildDa ? "da" : "fehlt"}${(r._weltbildFehlt ? r._weltbildFehlt() : []).map((l) => `: ${l}`).join("")} · Lade-Takt ${r._ladeTakt()} · ruht ${r._loopRuht()} · Frist ${r._bauFrist() - performance.now()}`,
-        ].join(" · ");
-    } catch (f) {
-        return "Akte: " + f.message;
-    }
 }
 // DIE WELT IST DA (`await window.__weltDa((r) => bedingung)`): bis der Stamm lebt (`_gameLoopTick`) und die Bedingung gilt — ohne
 // Frist: hängt der Boot, nennt ihn die Stall-Akte samt der Bedingung, auf die er wartet (`__weltDaWartet`, im Puls jeder
@@ -486,7 +463,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__offenAkte = ${offenAkte}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1268,7 +1245,8 @@ async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
     return s;
 }
-async function warteAufWelt(page, frist = 120000) {
+async function warteAufWelt(page, frist = 120000, server) {
+    if (server) await server.zeige(page, frist, "index.html", "networkidle0");
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });

@@ -1215,8 +1215,7 @@ const BRANDLAUF = process.argv.includes("--brand");
     });
     let befund = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL + BUEHNE);
         if (TAT) befund = await tatLauf(page);
         else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: true });

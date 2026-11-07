@@ -2309,7 +2309,7 @@ class AnazhRealm_vegetation_baum {
     // GT-Fahrt Genesis: `_pflanzGang` 35 ms in EINEM Takt, 8 Würfe der Kappe).
     _pflanzGang(queue, rang, maxPerFrame) {
         let spawned = 0;
-        const frist = this._bauFrist();
+        const frist = this._bauFrist("pflanz");
         for (
             let i = 0;
             this._kappeOffen(i, maxPerFrame) && queue.length > 0 && (i === 0 || performance.now() < frist);

@@ -766,8 +766,7 @@ const server = statikServer();
     page.setDefaultTimeout(580000);
     let befund = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
             const r = window.anazhRealm,
