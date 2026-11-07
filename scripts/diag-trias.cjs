@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -147,9 +147,7 @@ hauptLauf(async () => {
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
 
     const out = await page.evaluate(async () => {
         const res = { errors: [] };

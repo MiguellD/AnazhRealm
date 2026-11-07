@@ -792,7 +792,7 @@ class AnazhRealm {
             untertitel: false, // spielgang.K4 — die Untertitel der Klang-Welt (Einstellungen › Ton & Sicht), gewählt vom Spieler
             // spielgang.K4 — DER ZUGANG (Einstellungen › Ton & Sicht, im Snapshot): die Farbsicht (FARBSICHT.arten), das Sichtfeld
             // (null = KAM_FOV_GRAD), das Kopfwackeln (Landung, Tempo-Sichtfeld) und die Unschärfe der Bewegung (`_zugangTakt`)
-            zugang: { farbsicht: "aus", sichtfeld: null, wackeln: true, unschaerfe: true },
+            zugang: { farbsicht: "aus", fov: null, wackeln: true, unschaerfe: true },
             // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),
             // liest perfSense (kein Parallel-Zähler); der PERF-SENSE-Debug-Dump bleibt hinter perfOverlay.
             // Toggle im Einstellungen-Drawer, persistiert via Snapshot.
@@ -1209,7 +1209,7 @@ class AnazhRealm {
         const next = mode === "third" ? "third" : "first";
         this.state.cameraMode = next;
         this._applyEgoSicht(); // T7 — der Modus-Schalter trägt die Sicht-Regel sofort (EINE Naht)
-        this._leibWunsch(); // B5 — zeigt das erste Bild nun die Gestalt, kommt die feine Stufe jetzt
+        this._leibWunsch(); // B5 — zeigt das erste Bild nun die Gestalt, kommt die feine Stufe jetzt; danach baut der Schalter nichts
         const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
         if (toggle) {
             toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
@@ -1857,7 +1857,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.207";
+AnazhRealm.VERSION = "18.546.211";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

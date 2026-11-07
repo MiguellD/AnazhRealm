@@ -30,7 +30,7 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots)
 "use strict";
-const { statikServer, hauptLauf, nullSeite, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 
@@ -50,10 +50,7 @@ function quellBefunde(q) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.evaluateOnNewDocument(installWieseSicht);
-    await server.zeige(page, 60000);
+    const { browser, page } = await nullWelt(server, { frist: 600000, vor: installWieseSicht }, 60000);
     const out = await page.evaluate(async (selbst) => {
         const o = {};
         const r = await window.__weltDa();

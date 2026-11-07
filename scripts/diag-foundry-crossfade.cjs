@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -296,9 +296,7 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 240000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 240000 });
 
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
@@ -803,9 +801,9 @@ async function runPartB() {
                 // reicht für sie null): die L1 wich dem Nichts; (b) das Auge steht NEBEN dem Spieler (die Verfolger-
                 // Kamera, Arm 9,6 m): die Wahl maß vom Spieler, die Maske vom Auge. Selbsttest im selben Lauf: der Halt
                 // fällt stumm (`_lodHaltSetzen`) bzw. die Wahl misst vom Spieler — die Linse MUSS Geister zählen.
-                // DER SCHATTEN-ZWILLING (K36 N1) gehört zur Klasse: das Gesetz — die Karte wirft nicht, der Wurf folgt der
-                // GEZEICHNETEN 3D-Gestalt: wo sie voll steht (auch im Halt), wirft der Zwilling voll, wo sie zur Karte
-                // ausblendet, blendet sein Wurf mit (dieselbe f1o-Rampe), ohne 3D-Stufe wirft nichts. Ein SCHATTEN-GEIST =
+                // DER SCHATTEN-ZWILLING (K36 N1) gehört zur Klasse: das Gesetz — der Wurf folgt der GEZEICHNETEN Gestalt: wo die
+                // 3D-Stufe voll steht (auch im Halt), wirft der Zwilling voll, wo sie zur Karte ausblendet, blendet sein Wurf mit
+                // (dieselbe f1o-Rampe), und die Karte wirft sich selbst (w14-lod-sprung, B2c). Ein SCHATTEN-GEIST =
                 // die Deckung des Zwillings ≠ die Deckung der gezeichneten 3D-Stufen (der Halbschatten unter dem vollen Baum,
                 // der Wurf eines Baums, der nicht steht). Selbsttest: der Zwilling ohne Halt im Stempel — die Linse MUSS ihn zählen.
                 let zwBekannt = false;
@@ -832,6 +830,7 @@ async function runPartB() {
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
                                     karte: true,
+                                    zwilling,
                                     keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
@@ -870,7 +869,9 @@ async function runPartB() {
                     const zw = teile.filter((t) => t.zwilling);
                     const d3 = bild.filter((t) => !t.karte);
                     if (zw.length) zwBekannt = true;
-                    const S = { wurf: deckung(zw), gestalt: deckung(d3) };
+                    // die Karte wirft sich selbst (ihr Zwilling, w14-lod-sprung): wirft sie, steht ihre gezeichnete Deckung auf der
+                    // Seite der Gestalt (das Bild: 3D-Stufen und Karte), ihr Zwilling auf der des Wurfs
+                    const S = { wurf: deckung(zw), gestalt: deckung(zw.some((t) => t.karte) ? bild : d3) };
                     const werte = Object.values(D);
                     return {
                         D,

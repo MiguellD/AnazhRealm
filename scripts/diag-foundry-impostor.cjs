@@ -190,7 +190,8 @@ async function driveImpostor(page) {
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...st.archInstanceGroups.keys()].filter((k) => !vor.has(k));
-                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
+                // die Gruppen des Bilds, nie der Zwilling (der Wurf der Karte "#S", w14-lod-sprung)
+                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:[^#]*$/.test(k));
                 const g = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
@@ -619,7 +620,8 @@ function windUrteil(mess) {
     for (const m of mess) {
         const stoff = m.stoff || "rinde";
         const L = Math.hypot(m.dx, m.dz);
-        // die Rinde weht in uWindDir (+x); die Wiese wiegt in Welt-x/z — sie misst gegen ihre Drehung 0
+        // die Rinde weht in uWindDir (+x); die Wiese wiegt längs und quer zu uWindDir in der Phase ihres Fußes (`_windSwayOffset`,
+        // derselbe Anker in jeder Drehung) — sie misst gegen ihre Drehung 0
         const ref = m.stoff ? mess.find((q) => q.stoff === m.stoff && q.phi === 0 && q.s === m.s) : null;
         const w0 = ref ? (Math.atan2(ref.dz, ref.dx) * 180) / Math.PI : 0;
         const w = (((((Math.atan2(m.dz, m.dx) * 180) / Math.PI - w0 + 540) % 360) + 360) % 360) - 180;
@@ -674,7 +676,7 @@ async function windProbe(page) {
                 const mat = new T.MeshBasicNodeMaterial({ color: 0xffffff });
                 if (wind && stoff === "gras")
                     mat.positionNode = T.TSL.positionLocal.add(
-                        r._windSwayOffset(T.TSL, { ampX: 1.5, hoehe: T.TSL.positionGeometry.y })
+                        r._windSwayOffset(T.TSL, { hoehe: T.TSL.positionGeometry.y })
                     );
                 else if (wind) r._baumWindStoff(mat, "bark", { ht: 10, delta: 0.3, an: 1 });
                 const mesh = new T.InstancedMesh(g, mat, 1);

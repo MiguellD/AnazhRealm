@@ -1132,6 +1132,23 @@ class AnazhRealm_vegetation_streu {
         const wunsch = this._bereitStand(playerPos, true);
         const wecke = () => this._standWecken("streuLod");
         const Z = this._streuLodZusagen || (this._streuLodZusagen = new Map());
+        // DIE EPOCHE DER GEMERKTEN WAHL: was eine ruhige Zelle außer ihrem Abstand liest — der Stand des Wunschs (Buch,
+        // Wahrnehmung, Regler, Ankunft), der Ort-Same, der Wald-Plan, die Grenzen der Bäume und des Felds (je Schirm), die
+        // Referenz der Wahrnehmung, das Band und die Streckung der Ankunft; eine neue Epoche lässt jede Zelle neu urteilen
+        this._stufenSchirm();
+        const rv = [
+            this._standStempelWunsch(),
+            this._ortSameGen | 0,
+            this._forestDartStand(this._forestSeedInt()),
+            this._baumGrenzen,
+            this._feldGrenzen(false),
+            this.state.lodRef,
+            this.state.foundryCrossfade === true,
+            this._ankunftsFerne(),
+            this._foundryEnabled(),
+        ];
+        let ruh = this._streuRuh;
+        if (!ruh || rv.some((x, i) => x !== ruh.v[i])) ruh = this._streuRuh = { v: rv };
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -1158,6 +1175,28 @@ class AnazhRealm_vegetation_streu {
             const cell = cells[cur.c++];
             scanned++;
             if (!cell || !cell.slots || !cell.bpName) continue; // promoted/freigegeben
+            // DIE GEMERKTE WAHL DER ZELLE (w20-leib-takt, Gebot 7 — die Arbeit je Gang-Takt hängt an der Änderung): urteilte die
+            // Zelle ruhig, und wanderte ihr Abstand seither weniger als ihr Spielraum (`_streuZelleMerke`: der Abstand zur nächsten
+            // Grenze, die ihre Wahl liest) unter derselben Epoche, urteilte sie wieder ruhig — kein Gang über Höhe, Stufe und Band.
+            // Bis hier urteilte jeder Gang-Takt 160 Zellen des Bestands voll (die Stand-Wache wacht ab 0,25 m Weg): headless an der
+            // Mess-Wiese 1,53 ms je Takt im Gehen (0,01 im Stand), p95 6,4 ms, max 12,1 ms.
+            const m = cell._ruh;
+            if (
+                m !== undefined &&
+                m.e === ruh &&
+                m.lod === cell.lod &&
+                m.dient === cell.dient &&
+                m.slots === cell.slots &&
+                m.bp === cell.bpName &&
+                m.form === cell.form &&
+                m.bw === cell.bandWunsch &&
+                cell.halt !== "wartet" &&
+                cell.wartet !== true
+            ) {
+                const rx = cell.x - playerPos.x;
+                const rz = cell.z - playerPos.z;
+                if (Math.abs(Math.sqrt(rx * rx + rz * rz) - m.d) < m.spiel) continue;
+            }
             if (this._schlaeft(cell, wunsch)) continue;
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
@@ -1214,7 +1253,12 @@ class AnazhRealm_vegetation_streu {
             // der Partner lädt: die Zelle schläft auf ihm — ohne Zusage bleibt die Wahl wach
             if (!bandWechsel && cell.halt === "wartet" && !(ruhig && this._schlafen(cell, Z, wunsch, wecke)))
                 offen += partner = 1;
-            if (ruhig) continue;
+            if (ruhig) {
+                // die ruhige Zelle merkt ihre Wahl (wer wartet, lädt oder eine Zusage nannte, fragt im nächsten Gang neu)
+                if (cell.halt !== "wartet" && cell.wartet !== true && Z.size === 0)
+                    this._streuZelleMerke(cell, layer, dist, visH, tf, ruh);
+                continue;
+            }
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
             // Materialisieren, kein Duplikat-Slot.
@@ -1291,6 +1335,59 @@ class AnazhRealm_vegetation_streu {
         const wm = this.state.weltMarch;
         this._standMeldet("streuLod", scanned, regung > 0, offen > 0 && (partner || !wm || wm.kapselVoll || "felder"));
         return realloc;
+    }
+
+    // DER SPIELRAUM EINER RUHIGEN STREU-ZELLE (die gemerkte Wahl von `_tickScatterLod`, w20-leib-takt): wie weit ihr Abstand
+    // `dist` wandern darf, ehe eine Grenze, die ihre Wahl liest, anders urteilen kann — die Grenzen der Bäume samt Hysterese in
+    // der Wahrnehmungs-Distanz (`_chooseLODForDistance` → `_stufeNachGrenzen`), die Ränder des Bands (`_lodBandPartnerFor`),
+    // ausser beim Baum die Nah-Grenze des Felds (`_streuFernBahn` → `_feldTraegt`, beide Seiten der Hysterese) — jede in Metern
+    // des Abstands. Die Zelle merkt ihn mit ihrem Stand (Stufe, Band, Slots, Bauplan, Form, Band-Wunsch) und der Epoche `ruh`; was die Wahl
+    // anders liest (eine neue Stufe, ein anderer Satz), fragt neu.
+    _streuZelleMerke(cell, layer, dist, visH, tf, ruh) {
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        if (!cfg || !(visH >= 0) || !Number.isFinite(dist)) return;
+        const k = visH > 0 ? this._lodPerceptionDistance(1, visH) : 1;
+        if (!(k > 0)) return;
+        const dn = dist * k;
+        let spiel = Infinity;
+        const G = this._baumGrenzen;
+        const st = Math.max(0, Math.min(2, cell.lod | 0));
+        for (const g of G.grenzen) {
+            const h = g.h > 0 ? g.h : G.h;
+            spiel = Math.min(spiel, Math.abs(dn - (st >= g.stufe ? g.ab * (1 - h) : g.ab * (1 + h))) / k);
+        }
+        if (Number.isFinite(cell.dient) && this.state.foundryCrossfade === true) {
+            const M = cfg.hysteresis;
+            const b = Math.max(0, Math.min(2, cell.dient | 0));
+            if (b === 0) {
+                const sS = Number.isFinite(tf.scale) && tf.scale > 0 ? tf.scale : 1;
+                const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS) : 1;
+                if (!(kL > 0)) return;
+                spiel = Math.min(spiel, Math.abs(dist * kL - (cfg.thresh01 - cfg.fade0 - M)) / kL);
+            } else if (b === 1)
+                spiel = Math.min(
+                    spiel,
+                    Math.abs(dn - (cfg.thresh01 + M)) / k,
+                    Math.abs(dn - (cfg.thresh12 - cfg.fade - M)) / k
+                );
+            else spiel = Math.min(spiel, Math.abs(dn - (cfg.thresh12 + M)) / k);
+        }
+        if (layer.kind !== "tree")
+            for (const g of this._feldGrenzen(false).grenzen) {
+                const h = g.h > 0 ? g.h : 0;
+                spiel = Math.min(spiel, Math.abs(dist - g.ab * (1 - h)), Math.abs(dist - g.ab * (1 + h)));
+            }
+        if (!(spiel > 0)) return;
+        const m = cell._ruh || (cell._ruh = {});
+        m.e = ruh;
+        m.d = dist;
+        m.spiel = spiel;
+        m.lod = cell.lod;
+        m.dient = cell.dient;
+        m.slots = cell.slots;
+        m.bp = cell.bpName;
+        m.form = cell.form;
+        m.bw = cell.bandWunsch;
     }
 
     // Wechselt das Band einer Streu-Zelle (K36)? Ihr Partner-Wunsch vom Auge (dieselbe Regel wie die Architektur,

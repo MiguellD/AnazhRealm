@@ -281,6 +281,8 @@ class AnazhRealm_siedlung_bauten {
         }
         if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, W.schlaf.size];
         const vb = this._bedarfVoraus(auge) || auge;
+        const ging = W.px !== null && (auge.x !== W.px || auge.z !== W.pz); // das Auge ging in diesem Bild (die Nachlese)
+        let geweckt = 0;
         if (W.px !== null)
             W.odo += Math.max(Math.hypot(auge.x - W.px, auge.z - W.pz), Math.hypot(vb.x - W.vx, vb.z - W.vz));
         [W.px, W.pz, W.vx, W.vz] = [auge.x, auge.z, vb.x, vb.z];
@@ -291,27 +293,37 @@ class AnazhRealm_siedlung_bauten {
                     e._stufeEimer = undefined;
                     W.schlaf.delete(e);
                     W.wach.add(e);
+                    geweckt++;
                 }
             W.eimer.delete(b);
         };
         if (jetzt - W.ab > W.eimer.size) for (const b of [...W.eimer.keys()]) b <= jetzt && wecke(b);
         else for (let b = W.ab; b <= jetzt; b++) if (W.eimer.has(b)) wecke(b);
         W.ab = jetzt + 1;
-        // DIE NACHLESE FOLGT DER BAHN: fährt sie (`_bedarfTempo` über dem Gehen, BEDARF.fahrtAb — dort weckt der Weg die
-        // Eimer ohnehin), weckt sie je Bild STUFEN_NACHLESE Schläfer hinter den Wachen, sonst bis STUFEN_GANG: ein Stand (die
-        // Linse, der stehende Spieler) holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage.
+        // DIE NACHLESE FOLGT DEM WEG DES AUGES (Gebot 7: Kosten an Schirm und Änderung, nie an die Wanduhr): ging das Auge in
+        // diesem Bild (dort weckt der Weg die Eimer ohnehin), weckt sie STUFEN_NACHLESE Schläfer hinter den Wachen, steht es, bis
+        // STUFEN_GANG — ein Stand holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage. Bis
+        // w18-stand-treue fragte sie das Tempo der Bahn, das nur BEDARF.frischMs Wanduhr lang gilt: ein langsamer Läufer stand.
         W.nach = Math.min(W.nach, W.schlaf.size);
-        if (W.nach > 0) {
-            const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
-            let k = faehrt ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG;
-            for (const e of W.schlaf) {
-                if (!(k-- > 0 && W.nach-- > 0)) break;
-                W.schlaf.delete(e);
-                e._stufeEimer = undefined;
-                W.wach.add(e);
-            }
+        for (let k = ging ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG; W.nach > 0 && k > 0; k--, W.nach--) {
+            const e = W.schlaf.values().next().value;
+            W.schlaf.delete(e);
+            e._stufeEimer = undefined;
+            W.wach.add(e);
+            geweckt++;
         }
+        if (geweckt) this._stufeRundeNeu(W);
         return W;
+    }
+
+    // EIN GEWECKTER BEGINNT DIE RUNDE NEU (w18-stand-treue): wer in die Wache tritt (Eimer, Nachlese, Weckruf), gehört in die
+    // Runde, die die Stand-Wache zählt — der nächste Gang misst sie an den Wachen von jetzt (`rest` 0) und weckt den Takt
+    // (`_standWecken`). Bis hier zählte die Runde nur die Wachen ihres Beginns: kamen 185 dazu (die Nachlese nach einem Bau),
+    // ging der Takt die alten 26 ohne Wirkung und ruhte — die Neuen blieben ungeurteilt, bis die gebrochene Wache sie fand
+    // (gate:stand-takt TREUE-LÜCKE „211 → 26 Einheiten“, CI unter Last).
+    _stufeRundeNeu(W) {
+        W.rest = 0;
+        this._standWecken("archLod");
     }
 
     // Der Weckruf der Stufen-Wahl (aus `_cullWecken`: seine gezeichnete Stufe, sein Typ, seine Lage wechselt, er tritt ein oder
@@ -331,7 +343,7 @@ class AnazhRealm_siedlung_bauten {
         if (entry._stufeWer) entry._stufeWer._schlaf = null; // der Schlaf auf seiner Zusage endet (`_schlafen`)
         if (W.wach.has(entry)) return;
         W.wach.add(entry);
-        this._standWecken("archLod"); // ein Geweckter weckt den Takt, der ihn urteilt (`_standWecken`)
+        this._stufeRundeNeu(W); // ein Geweckter weckt den Takt, der ihn urteilt, in einer neuen Runde
     }
 
     // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann
@@ -1316,12 +1328,23 @@ class AnazhRealm_siedlung_bauten {
     // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
     // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
     // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // DER LEIB ZUERST (w20-leib-takt): trägt der Leib des Spielers nah noch die Grobstufe und kam die feine (roh, `_ofenRoh`),
+    // gießt und tauscht der erste Schritt sie (`_leibFeinTausch`) — vor jedem anderen, auch unter Kienspan (ein Bau des Leibs,
+    // kein Vorbau einer Pipeline): jeder Schritt danach (das Tuch, der Leib im Vorwärmen) liest den Leib, der bleibt. Die Sicht
+    // auf Third, die Hand und der Sitz schalten danach nur, was da ist (`setCameraMode`, `equipHeld`).
     _vorbauBedienung() {
         const st = this.state;
         const R = st.renderer;
-        if (!st._weltbildDa || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
+        if (!st._weltbildDa || !this._eingabeRuht()) return;
+        const g = st.playerMesh && st.playerMesh.userData._gelenk;
+        const z = this._spielerVorlagen;
+        if (g && g.nahStufe === 1 && z && z.feinDa === true && !st._deferredAvatarSoul) {
+            if (this._weltSteht()) this._leibFeinTausch();
+            return;
+        }
+        if (st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
         // das eigene Tuch wartet nur auf die ruhende Eingabe, nie auf die stehende Welt: es liest keinen Auftrag der Welt
-        if (!this._eingabeRuht() || !this._tuchVorbau() || !this._weltSteht()) return;
+        if (!this._tuchVorbau() || !this._weltSteht()) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
     }
 

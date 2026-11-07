@@ -32,8 +32,10 @@
 const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
-// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
-// zum Punkt 2 m unter dem Boden 60 m hinter dem gezeichneten Blick das Gelände, das der Satz-Abschnitt des Passes nicht trägt
+// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass blickt die Kamera ohne Pass zum Punkt 2 m unter dem Boden 60 m
+// hinter dem gezeichneten Blick, und der Strahl der Nah-Deckung (scripts/lib/kamera-nah.cjs, die Blick-Wahl fragt so vor jedem Bild)
+// nennt das Gelände, das der Satz-Abschnitt des Passes nicht trägt. Bis w18-abnahme-sicht fragte die Linie zum Ziel — das Ziel
+// urteilt seitdem die Tiefe des Bilds
 const urteil = (b) =>
     STAND.standUrteil(b).concat(
         b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`
@@ -539,7 +541,7 @@ function selbsttest() {
 // den Blöcken der Nah-Streu, auraAt − frozen an den Stämmen) nach einer Spielstunde, nach Save → Reload → einer Stunde und nach
 // 36 Stunden mehr. Urteil: nach der Stunde ≤ 30 % der Bäume, keine Pflanze, je Baum ein Stumpf, das Feld ≥ 0,05 unter frozen.
 function tatUrteil(T) {
-    const h = T && T.stunde;
+    const h = T?.stunde;
     if (!h) return ["LEER: keine Messung nach der Stunde"];
     return [
         T.gefaellt >= 8 && T.gepflueckt >= 25 ? "" : `LEER: ${T.gefaellt} Bäume, ${T.gepflueckt} Pflanzen`,
@@ -553,7 +555,7 @@ function tatUrteil(T) {
 // DIE SEITE DER TAT UND DES BRANDS (`window.__seite()`, wenn die Welt mit der Foundry steht): der Takt des Spiels zu 1/60 s ohne
 // Regler, der Boden, das Stehen an einem Ort und je Pflanze der Nah-Streu, die die Ernte nimmt, `f({ senke, key, id }, it)`
 async function seite() {
-    await __weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
+    await __weltDa((x) => x.state.playerMesh && x._foundry?.ready);
     const pm = st.playerMesh.position;
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
@@ -603,7 +605,7 @@ async function tatSeite(MESS, vorher) {
         await stehen(U);
         return { jahr: r._weltStunde() - h0, da: zeichnet((a, k) => ps.some((p) => p.key + "#" + p.id === k)), p: ps.map((p) => p.w) };
     };
-    if (vorher && vorher.ufer) {
+    if (vorher?.ufer) {
         r._setWeather("sunny", "human"), r.setSeason("sommer");
         for (let d = 20, n = 0; d <= 900 && n < 8; d += 10)
             for (let k = 0; k < 36; k++) {
@@ -677,7 +679,7 @@ async function tatSeite(MESS, vorher) {
         kand.sort((a, b) => P(a.it.x - mitte.x, a.it.z - mitte.z) - P(b.it.x - mitte.x, b.it.z - mitte.z));
         for (const { id, k, it } of kand) {
             if (T.ernte.length >= 30 || T.ernte.includes(id)) continue;
-            const trifft = () => ((q) => q && q.key === k && q.id === it.id)(r._pickScatterAtCrosshair());
+            const trifft = () => ((q) => q?.key === k && q.id === it.id)(r._pickScatterAtCrosshair());
             if (klick({ x: it.x, y: it.y + 0.12, z: it.z }, { x: it.x + 1.2, z: it.z + 0.4 }, 1, trifft))
                 if (!zeichnet((a, x) => x === id)) T.ernte.push(id);
         }
@@ -761,19 +763,19 @@ function brandUrteil(b) {
     return rot([
         ["HALT", h.brannte >= 2 && h.nass >= 1, h],
         ["HALT-BRUCH", h.wasserGebrannt === 0 && h.nassGebrannt === 0, h],
-        ["MUTANTE-HALT", m && m.nassGebrannt >= 1 && m.nass === 0, m],
-        ["FLUSS", m && m.wasser + h.wasser >= 1 && m.wasserGebrannt === 0, m],
+        ["MUTANTE-HALT", m?.nassGebrannt >= 1 && m.nass === 0, m],
+        ["FLUSS", m?.wasser + h.wasser >= 1 && m.wasserGebrannt === 0, m],
         ["FELS", h.fels >= 1, h],
         ["REGEN", rg.brannte >= 1 && rg.s <= 60, rg],
-        ["MUTANTE-REGEN", rm && rm.s > 60, rm],
-        ["LESER", l && l.licht >= 1 && l.rauch >= 1 && l.flammen >= 1 && l.lang >= 0.3 && l.lang <= 8 && l.glutD <= 16 && l.glutF >= 64, l],
-        ["MUTANTE-LESER", lm && lm.licht === 0 && lm.rauch === 0 && lm.flammen === 0 && lm.glutF < 64, lm],
-        ["DECKUNG", l && l.deckung >= 0.9, l],
-        ["MUTANTE-DECKUNG", b.leserD && b.leserD.deckung < 0.6, b.leserD],
+        ["MUTANTE-REGEN", rm?.s > 60, rm],
+        ["LESER", l?.licht >= 1 && l.rauch >= 1 && l.flammen >= 1 && l.lang >= 0.3 && l.lang <= 8 && l.glutD <= 16 && l.glutF >= 64, l],
+        ["MUTANTE-LESER", lm?.licht === 0 && lm.rauch === 0 && lm.flammen === 0 && lm.glutF < 64, lm],
+        ["DECKUNG", l?.deckung >= 0.9, l],
+        ["MUTANTE-DECKUNG", b.leserD?.deckung < 0.6, b.leserD],
         ["KANTE", k.n >= 40 && k.achse <= 0.4 && k.linie >= 0.8, k],
-        ["MUTANTE-KANTE", km && km.achse >= 0.7 && km.linie < 0.5, km],
+        ["MUTANTE-KANTE", km?.achse >= 0.7 && km.linie < 0.5, km],
         ["ASCHE", a.asche.a >= 0.99, a.asche],
-        ["GRÜNT", a.gras && a.gras.a === 0, a.gras],
+        ["GRÜNT", a.gras?.a === 0, a.gras],
         ["MUTANTE-ASCHE", a.mutante.halme >= 0.8 * a.vor.halme, a.mutante],
         ["ZEIT", z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2, z],
         ["SCHIRM", z.schirmMs <= 1, z],
@@ -788,15 +790,15 @@ function brandUrteil(b) {
 // Glieder (die Mutante ohne `alter` dieselben). Der WALD: der Brand nimmt jeden Baum seiner Narbe (≥ 3), der Wald kehrt als
 // Jungwuchs (≥ 60 %) und nach der Heilung gewachsen (≥ 90 %) zurück.
 function sukzessionUrteil(s) {
-    const [a, n, S, W] = [s && s.asche, s && s.naehr, s && s.saemling, s && s.wald];
-    if (!a || !a.asche || !n || !S || !W || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
+    const [a, n, S, W] = [s?.asche, s?.naehr, s?.saemling, s?.wald];
+    if (!a || !a.asche || !n || !S || !W || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a?.vor)];
     const [v, g, e, J] = [a.vor, a.gras, n.ernte, S.stufen || []];
     const jung = J.slice(1, -1);
     const waechst = jung.every((q, i) => q.alter > 0 && q.alter < 1 && Math.abs(q.skala - q.alter) < 0.01 && (!i || q.alter >= jung[i - 1].alter));
     return rot([
         ["ASCHE", a.asche.voll >= 0.4 && a.asche.halmeVoll <= 0.05 * v.halme * a.asche.voll && a.asche.krautVoll === 0, a.asche],
-        ["GRAS", g && g.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
-        ["BUSCH", a.busch && a.busch.kraut >= 0.8 * v.kraut, a.busch],
+        ["GRAS", g?.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
+        ["BUSCH", a.busch?.kraut >= 0.8 * v.kraut, a.busch],
         ["ERNTE", e.n >= 3 && e.N < e.N0 - 0.04 && e.W < e.W0, e],
         ["RÜCKGABE", n.asche >= 1.2 && n.leichnam >= 1.1, n],
         ["MUTANTE-NÄHRSTOFF", n.mutante.W === n.mutante.W0, n.mutante],
@@ -855,7 +857,7 @@ async function brandSeite(MESS) {
     r._brandZuenden = function (cx, cz, ...a) {
         const z = P._brandZuenden.call(this, cx, cz, ...a);
         const k = cx + "," + cz;
-        const f = z && r._brandBett && r._brandBett.get(k);
+        const f = z && r._brandBett?.get(k);
         if (f) gezuendet.set(k, { y: f.y, mx: f.zeile.brenn.mx });
         if (!z && !halt.has(k)) halt.set(k, grund(cx, cz));
         return z;
@@ -1049,9 +1051,9 @@ async function brandSeite(MESS) {
         neu();
         r._vegSpawnImmediate = true;
         const dart = (p, W = C.FOREST.cell) => r._forestCellDarts(Math.floor(p.x / W), Math.floor(p.z / W), r._forestSeedInt()).some((q) => ab(q, p) < 0.05);
-        const baeume = () => st.architectures.filter((e) => e && e.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
+        const baeume = () => st.architectures.filter((e) => e?.position && /^baum_/.test(e._lodSpecies || "") && dart(e.position));
         const am = (p) => baeume().find((e) => ab(e.position, p) < 0.05);
-        const alter = (p) => ((e) => (e ? (e.studioOv && e.studioOv.alter) || 1 : 0))(am(p));
+        const alter = (p) => ((e) => (e ? e.studioOv?.alter || 1 : 0))(am(p));
         const naechster = () => baeume().sort((u, v) => d(u.position) - d(v.position))[0];
         const gestalt = (e, pr = r._foundryPresetForEntry(e), g = r._foundryGestaltFor(e, pr) ?? 1) =>
             [e.studioOv, null].map((ov) => ((k) => [k.P.maxDepth, k.nodes.segs.length])(globalThis.__terrainCore.skelettDerGestalt(pr, g, 0, r._foundryGestaltOv(ov))));
@@ -1082,7 +1084,7 @@ async function brandSeite(MESS) {
             const orte = baeume().filter((e) => ab(e.position, B1.position) < 96).map((e) => ({ x: e.position.x, z: e.position.z }));
             r.setTimeOfDay(0.5, "regler"), r._brandEntfachen(B1.position.x, B1.position.z);
             brennen(900), await stehen(MESS);
-            const N = orte.filter((o) => ((n) => n && n.m >= 0.5)(r._brandNarbe(o.x, o.z)));
+            const N = orte.filter((o) => ((n) => n?.m >= 0.5)(r._brandNarbe(o.x, o.z)));
             const T = r._tatIndex();
             const zaehl = (f) => N.filter((o) => f(alter(o))).length;
             Object.assign(W, { vor: N.length, brand: zaehl((v) => v > 0) });
@@ -1319,7 +1321,10 @@ const BRANDLAUF = process.argv.includes("--brand");
                 const h = st.camera.getWorldDirection(K.clone()).multiplyScalar(-60).add(K);
                 r._passSicht(st.camera, false);
                 r._passSicht(st.camera, true);
-                aus.sonde = window.__nahDeckung({ gw: 1, gh: 1, ziel: h.setY(r._voxelSurfaceY(h.x, h.z) - 2) }).ziel;
+                const q = st.camera.quaternion.clone();
+                st.camera.lookAt(h.setY(r._voxelSurfaceY(h.x, h.z) - 2));
+                aus.sonde = { vor: Object.keys(window.__nahDeckung({ radien: { Gelände: 60 }, gw: 1, gh: 1, neu: true }).taeter)[0] };
+                st.camera.quaternion.copy(q);
                 K.x += 40;
                 aus.fixWach = aus.fixWach || (stand && r._weltSteht() && "Sprung");
                 K.x -= 40;
@@ -1606,7 +1611,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     let ziel = null;
                     const formWartet = (k) =>
                         st.grassDirtyChunks?.has(k) ||
-                        (st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(k));
+                        st.dirtyVoxelChunks?.has(k);
                     for (const [k, e] of st.voxelChunks) {
                         if (!e || e.empty || !e.mesh || e.lod !== 2 || formWartet(k)) continue;
                         const [cx, cz] = k.split(",").map(Number);
@@ -1735,7 +1740,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const recs = r._foundry?.recipes || {};
                     const kultur = Object.keys(recs).find((k) => {
                         const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
-                        return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                        return pol?.prefix === "haus_" && st.blueprints["haus_" + k];
                     });
                     // DAS SOLO-HAUS (K69, B3c: Vorschau, KI) über die Wurzel — gezählt, wie oft der Wirt das ganze Haus im Kern baut,
                     // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
@@ -1833,14 +1838,14 @@ const BRANDLAUF = process.argv.includes("--brand");
                             SH.gesetzt = true;
                             const gruppen = () =>
                                 (e.instSlots || [])
-                                    .map((s) => st.archInstanceGroups && st.archInstanceGroups.get(s.key))
+                                    .map((s) => st.archInstanceGroups?.get(s.key))
                                     .filter((g) => g?.satz && (g.liveCount | 0) > 0);
                             const drin = () => {
                                 const gs = gruppen();
                                 return (
                                     gs.length > 0 &&
                                     gs.every((g) => {
-                                        const s = st.chunkSaetze && st.chunkSaetze.get(g.satz);
+                                        const s = st.chunkSaetze?.get(g.satz);
                                         return (
                                             s?.bloecke.has(g.key) &&
                                             !st.bauSatzSchmutzig?.has(g.key)
@@ -2026,7 +2031,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     .catch((x) => x.message);
                 B.rest = schuld.size;
                 const D = (aus.dorf = {});
-                r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x && x.placed));
+                r.spawnSettlement({ seed: 7, nH: 12, autonomous: true, verlangt: "nexus" }).then((x) => (D.placed = x?.placed));
                 D.steht = await __weltStehtNach(takt).catch((x) => x.message);
                 // (RS) DIE SIMS IN RUHE (feld.K3): an der Mess-Wiese 60 s Spielzeit nach einer Tat (eine Ernte der Nah-Streu über
                 // den echten Schreiber, ein Leben am Spieler), Wetter und Saison ruhen; danach (WS) je Sim ihr Ereignis
@@ -2247,7 +2252,7 @@ const BRANDLAUF = process.argv.includes("--brand");
     // die Sims in ihrer Zeile (Sim-Ruhe, Sim-Wecken — die Stationen feld.K3 und stoffe.K2 lesen sie)
     const namen = Object.keys(STAND.TAKTE);
     const phase = (_, x) =>
-        x && x.takte && x.frames
+        x?.takte && x.frames
             ? `${x.frames} Frames · Σ ${x.summe} · ` + namen.map((n) => ((t = {}) => `${n} ${t.mittel ?? "?"}${t.runde ? ` ${t.gang}/${t.runde}` : ""}${t.wirkt ? ` wirkt ${t.wirkt}` : ""}`)(x.takte[n])).join(" · ")
             : x;
     const { simRuhe, simWecken, ...rest } = befund;

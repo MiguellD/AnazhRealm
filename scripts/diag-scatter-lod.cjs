@@ -26,7 +26,7 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
@@ -47,9 +47,7 @@ hauptLauf(async () => {
         stammLib.fehlt.wo
     );
 
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { frist: 300000 });
 
     const out = await page.evaluate(async () => {
         const res = {};
@@ -265,12 +263,13 @@ hauptLauf(async () => {
                 const fern2 = () => dz2.lod === 2 && huelleLeer();
                 await __gebautNach("die Zelle in der Fern-Stufe", { fertig: fern2, takt: lodTakt(800, fern2), max: 300 });
                 dblk.demotet = dz2.lod === 2;
-                // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe.
+                // Fern-Slots: die Super-Region (Boden-Fernstufen) ODER — die Karte (W6) — die EINE globale Atlas-Gruppe und ihr
+                // Zwilling (der Wurf der Karte, "#S", w14-lod-sprung).
                 dblk.slotsFern =
                     Array.isArray(dz2.slots) &&
                     dz2.slots.length > 0 &&
                     dz2.slots.every((s) => {
-                        if (s.key === r.constructor.IMPOSTOR_ATLAS_GRUPPE) return true;
+                        if (s.key.startsWith(r.constructor.IMPOSTOR_ATLAS_GRUPPE)) return true;
                         const at = s.key.indexOf("@");
                         return at >= 0 && (s.key.startsWith("@s:", at));
                     });
@@ -368,8 +367,9 @@ hauptLauf(async () => {
                         );
                         if (sl) alleK.push(sl);
                     }
-                const neuK = [...r.state.archInstanceGroups.keys()].filter((k) => !vorK.has(k) && /(^|#)fimp:/.test(k));
-                const slotKeys = new Set(alleK.flat().map((x) => x.key));
+                // das Bild der Karte, nie ihr Zwilling (der Wurf "#S", w14-lod-sprung: er wählt je Kaskade in seiner Gruppe)
+                const neuK = [...r.state.archInstanceGroups.keys()].filter((k) => !vorK.has(k) && /(^|#)fimp:[^#]*$/.test(k));
+                const slotKeys = new Set(alleK.map((s) => s[0].key));
                 fern.karten = {
                     instanzen: lebend() - lebendVor,
                     gruppen: slotKeys.size,
