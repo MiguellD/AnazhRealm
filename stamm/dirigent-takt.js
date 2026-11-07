@@ -660,12 +660,19 @@ class AnazhRealm_dirigent_takt {
                 versuch: false,
                 erledigt: 0,
                 erledigtMs: null,
+                haeltSeit: null, // unter dem Ladeschirm: seit wann die Leine das Bild einer offenen Bau-Schuld hält
+                gehaltenMs: 0, // die gehaltene Zeit bis zum fälligen Bild — sein Bau-Guthaben (`_ladeBildFaellig`)
             });
         L.versuch = false;
+        const E = this._erstZeichnung;
         if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
+            // DIE LEINE HÄLT DAS BILD, WÄHREND EIN BAU WARTET (`ladeSchuld`): ihre Zeit wird das Guthaben des Baus (`_ladeBildFaellig`)
+            if (E && E.ladeSchuld === true && L.haeltSeit == null) L.haeltSeit = performance.now();
             return false;
         }
+        if (L.haeltSeit != null)
+            [L.gehaltenMs, L.haeltSeit] = [(L.gehaltenMs || 0) + performance.now() - L.haeltSeit, null];
         if (!this._ladeBildFaellig(L)) return false;
         L.versuch = true;
         return true;
@@ -677,22 +684,23 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
-    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`, seit
-    // wann), ist das Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine
-    // Aufgabe zu halten. DIE WARTEZEIT IST DAS GUTHABEN (`ladeGuthaben`): das fällige Bild baut so lange, wie die Schuld wartete
-    // (`_knotenRate`) — hielt die GPU-Leine die Bilder (swiftshader: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der
-    // Haupt-Faden 2,3 s belegt), wartete der Bau auf ein Bild, nie auf den Faden.
+    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
+    // Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine Aufgabe zu halten.
+    // DIE GEHALTENE ZEIT IST DAS GUTHABEN (`ladeGuthaben`, `_knotenRate`): hielt die GPU-Leine das Bild, während die Schuld offen
+    // war (`gehaltenMs`, `_gpuLeineFrei`), baut das fällige Bild so lange — der Bau wartete auf die GPU, nie auf den Faden
+    // (swiftshader, CPU ×4: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der Haupt-Faden 2,3 s von 15 s belegt).
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
         const E = this._erstZeichnung;
-        const schuld = !!E && E.ladeSchuld != null && L.ladeVorher !== true;
+        const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
         if (
             schuld ||
             jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
             this._weltbildLuecken().length === 0
         ) {
-            if (E) [E.ladeGuthaben, E.ladeSchuld] = [E.ladeSchuld != null ? jetzt - E.ladeSchuld : 0, null];
+            if (E) [E.ladeGuthaben, E.ladeSchuld] = [L.gehaltenMs || 0, false];
+            L.gehaltenMs = 0;
             L.ladeBild = jetzt;
             L.ladeVorher = true;
             return true;

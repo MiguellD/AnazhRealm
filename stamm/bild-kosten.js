@@ -616,7 +616,7 @@ class AnazhRealm_bild_kosten {
                 ) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
-                        if (welt._ladeTakt() && E.ladeSchuld == null) E.ladeSchuld = performance.now();
+                        if (welt._ladeTakt()) E.ladeSchuld = true;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -663,8 +663,8 @@ class AnazhRealm_bild_kosten {
                 aufruf: -1,
                 aufrufMs: 0,
                 deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
-                ladeSchuld: null, // seit wann unter dem Ladeschirm ein Bau auf die nächste Aufgabe wartet — das nächste Bild ist fällig
-                ladeGuthaben: 0, // die Wartezeit der getilgten Schuld: so lange baut das fällige Lade-Bild (`_knotenRate`)
+                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
+                ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
                 bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
                 bauMs: 0,
                 verschoben: 0,
@@ -720,14 +720,15 @@ class AnazhRealm_bild_kosten {
         const d = N.get(ro);
         // die Frist der Aufgabe: im Spiel ERST_BAU_MS ab dem ersten Schritt, unter dem Ladeschirm die EINE Frist des Lade-Frames
         // (`_ladeFrist`, geteilt mit jedem Leser) — der erste Schritt der Aufgabe geht immer (nie verhungert).
-        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DEM BILD (w19-ankunft-takt, das Zeit-Budget der Precache-Lader: je Bild so viel Arbeit,
-        // wie seit dem letzten verging — Unreals PSO-Precache `BatchTime`, der Ingest hier mit `INGEST_RATE_PER_S`): unter dem
-        // Ladeschirm baut das fällige Bild ab seinem ersten Schritt mindestens so lange, wie die Schuld der Erst-Zeichnung wartete
-        // (`ladeGuthaben`, `_ladeBildFaellig`), höchstens einen Lade-Bild-Takt (LADE_BILD_MS). Bis hier baute es nur den Rest der
-        // EINEN Frist, den die Leser des Takts oft schon verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier GPU-Leine:
-        // swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27), Boden-Satz
-        // und 9 Geometrie-Arenen zeichneten nie, ihre Puffer (Teil-Uploads je 14–118 KB) luden nie hoch: die Erst-Zeichnungs-Wand
-        // Teil 1 zählte 0,7 statt > 1 MB (CI z287: 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
+        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget der Precache-Lader — je Bild so viel
+        // Arbeit, wie seit dem letzten verging, Unreals PSO-Precache `BatchTime` —, hier wie der Ingest mit `INGEST_RATE_PER_S`):
+        // unter dem Ladeschirm baut das fällige Bild ab seinem ersten Schritt mindestens so lange, wie die GPU-Leine es hielt, während
+        // die Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), höchstens einen Lade-Bild-Takt (LADE_BILD_MS);
+        // ohne gespannte Leine bleibt es die EINE Frist. Bis hier baute es nur deren Rest, den die Leser des Takts oft schon
+        // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
+        // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
+        // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
+        // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
         let erster = false;
         if (E.rateFrist === null) {
             const jetzt = performance.now();
