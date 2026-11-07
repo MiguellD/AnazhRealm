@@ -2161,8 +2161,15 @@ const WEGENETZ_PROBEN = (() => {
     const lauf = (o = {}) => ({ lang: 2440, weg: 2438, ende: true, schritte: 12946, steck: [], anteil: 0.894, wegAnteil: 0.987,
         bezug: { kmh: tafel, vmax: 63.82, mittel: 12.17 }, boden: { wiese: 0.29, wald: 0.41, dorf: 0.3 }, ...o });
     const z = (m) => "[linse-gpu] google/swiftshader\n  ✅ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — auf dem Netz\nWEGENETZ " + JSON.stringify(m) + "\nEXIT 0";
+    // DIE TEILE: je Halt an der Naht die Zeile des Teils und WEITER (proben-welt.cjs `fahrWegenetz`)
+    const halt = (i) => "  WN Teil " + i + "/6: der Lauf hält nach 36.8 s an der Naht (Spieler bei -312, -1060, " + Math.min(6, 2 * i) + " Orte wach) — weiter\n@@PUNKTE@@ TEIL WEITER\n";
     return [
         { name: "der Bezug aus der Tafel, 89 % der Takte über 0,8 · Bezug", stdout: z(lauf()), gruen: true },
+        { name: "derselbe Lauf in vier Teil-Proben (drei Halte an der Naht)", stdout: halt(1) + halt(2) + halt(3) + z(lauf()), gruen: true },
+        { name: "MUTANTE: die Teile reichten nicht — der letzte riss seine Frist, keine Zeile", stdout: halt(1) + halt(2) + halt(3) + halt(4) + halt(5) +
+            "@@PUNKTE@@ FRIST 39 s der Probe gerissen: Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht (Teil 6/6)\n" +
+            "  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — Error: DIE TEILE DER FAHRT reichten nicht · 36.9 s in der Welt der Sitzung (Teil 6/6)\nWEGENETZ undefined", gruen: false },
+        { name: "MUTANTE: ein späterer Teil fand keinen gehaltenen Lauf", stdout: halt(1) + "  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — DIE TEILE DER FAHRT: kein gehaltener Lauf vor diesem Teil · 0.1 s in der Welt der Sitzung (Teil 2/6)\nWEGENETZ undefined", gruen: false },
         { name: "MUTANTE: der Bezug = vmax des GT (die Fahrt zählt gegen die Höchstgeschwindigkeit)", stdout: z(lauf({ anteil: 0, bezug: { kmh: tafel, vmax: 63.82, mittel: 63.82 } })), gruen: false },
         { name: "MUTANTE: der Bezug = vmax, der Anteil geschönt", stdout: z(lauf({ bezug: { kmh: tafel, vmax: 63.82, mittel: 63.82 } })), gruen: false },
         { name: "ein Stand ohne Bezug in der Zeile", stdout: z(lauf({ bezug: undefined })), gruen: false },
@@ -5549,13 +5556,18 @@ const stationen = [
     // `bezug`: die Tafel, vmax, den mittleren Bezug je Takt). Seit w11-fahrzeug (180d3a68) fährt der GT 63,8 m/s statt ~16: das
     // ideale Profil der Kern-Physik trug auf dieser Route höchstens 35,0 m/s = 0,55 · vmax, der Anteil über 0,8 · vmax war für
     // jeden Fahrer 0,0 %. Eine Zeile ohne Bezug aus der Tafel (der Bezug = vmax des Wagens) ist ROT beim Namen.
+    // DIE TEILE (w19-fahrt-ziel-2-pm, 07.11.): seit w19-fahrt-ziel-2 (`_zellOrt` dreiwertig, die Orte warten auf ihr Wasser) fährt die
+    // Probe in der Sitzung durch — und trägt ~127 s auf der GTX (Radeon: die Orte 43,1 s, die Fahrt 110,9 s in 2 029 Bildern), über
+    // dem Deckel 45 s und über der ausnahme 90 s: jeder Lauf war UNGEMESSEN am Deckel. Jetzt fährt derselbe Lauf der Linse in Teil-
+    // Proben je ≤ 45 s (`teile`, punkte.cjs fahreGruppe; die Naht `window.sleep` in proben-welt.cjs `fahrWegenetz`): EIN Lauf, EINE
+    // Zeile, dasselbe Urteil über die ganze Route; reichen die Teile nicht, nennt der letzte die Frist (UNGEMESSEN beim Namen).
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
             befehl: PW.torBefehl(PW.fahrWegenetz),
-            sek: 10,
+            sek: 45,
+            teile: 6,
             mutiert: true,
-            
         },
         gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {
@@ -5576,9 +5588,11 @@ const stationen = [
             };
             const aus = Object.keys(teile).filter((k) => !teile[k]);
             const p = (x) => Math.round((x || 0) * 1000) / 10 + " %";
+            // der Lauf in seinen Teil-Proben: je Halt an der Naht eine Zeile „WN Teil i/N“ (proben-welt.cjs `fahrWegenetz`)
+            const halte = (String(lauf.stdout).match(/^ {2}WN Teil \d+\/\d+: /gm) || []).length;
             return {
                 gruen: !aus.length && lauf.exit === 0,
-                zahl: "Route " + m.lang + " m (Weg " + p(m.wegAnteil) + "), gefahren " + m.weg + " m · Steckenbleiber " + (m.steck || []).length +
+                zahl: "in " + (halte + 1) + " Teil" + (halte ? "en" : "") + " · Route " + m.lang + " m (Weg " + p(m.wegAnteil) + "), gefahren " + m.weg + " m · Steckenbleiber " + (m.steck || []).length +
                     " · über 0,8 · Bezug " + p(m.anteil) + " von " + m.schritte + " Sim-Schritten (Bezug Ø " + (z.mittel > 0 ? (z.mittel * 3.6).toFixed(1) + " km/h" : "—") +
                     ", vmax " + (z.vmax > 0 ? (z.vmax * 3.6).toFixed(1) + " km/h" : "—") + (tafel ? "" : ", keine Tafel") + ") · Boden Wiese " + p(b.wiese) + " / Wald " + p(b.wald) +
                     " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,

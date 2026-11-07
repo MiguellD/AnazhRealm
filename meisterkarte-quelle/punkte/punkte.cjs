@@ -64,7 +64,9 @@
 //   PUNKTE_SITZUNG_STROM = der Strom der Sitzung (je Bild eine Zeile, stromSeite; Zapfen, Marke und Leser exportiert diese Maschine),
 //   PUNKTE_PROBE = ihr Name. Dazu optional: mutiert (true: sie ändert die Welt — baut, gräbt, Tab-Tod, Speichern/Laden —, nur nach
 //   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · ausnahme (der Grund,
-//   warum sie über PROBE_DECKEL_S braucht; nie über PROBE_AUSNAHME_S, nie an einer Probe bis PROBE_DECKEL_S). Eine Station trägt GENAU
+//   warum sie über PROBE_DECKEL_S braucht; nie über PROBE_AUSNAHME_S, nie an einer Probe bis PROBE_DECKEL_S) · teile (2…TEILE_MAX, nie
+//   mit ausnahme: der Lauf fährt in Teil-Proben derselben Welt, je Teil ein Prozess unter dem Deckel, PUNKTE_TEIL „i/N“ und die Frist
+//   PUNKTE_TEIL_FRIST_S; der nächste nur nach `@@PUNKTE@@ TEIL WEITER`, EIN Urteil über alle — fahreGruppe). Eine Station trägt GENAU
 //   EINES von befehl und probe; auf radeon|gtx NUR probe (DIE FAHRT, fahrtUrteil).
 // DIE FAHRT (29.10., das Gesetz des Schöpfers: „Ein kpl. Fahrt durch jedes System max 30 min, inbegriff ist dann auch die dauerlast"):
 //   je Karte (radeon, gtx) die Summe der Deckel ihrer Läufe in der Sitzung (Zwillinge einmal) in Teilen je ≤ FAHRT_MAX_S samt Boot,
@@ -150,7 +152,10 @@ const PROBE_DECKEL_S = 45;
 const PROBE_AUSNAHME_S = 90;
 const PROBE_SEK = PROBE_DECKEL_S;
 const FAHRT_MAX_S = 1800;
-const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung"];
+const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung", "teile"];
+// DIE TEILE (probe.teile, fahreGruppe): höchstens TEILE_MAX Teil-Proben je Lauf, jede im Gesetz der Probe; die Fahrt zählt jeden Teil
+const TEILE_MAX = 8;
+const teileVon = (st) => (st.probe && st.probe.teile) || 1;
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 // DIE DECKEL-TAFEL (deckel.json, 01.11. mess-werkzeug; Radeon 25ac4c0c: ~35 von 72 offenen Proben rissen Deckel, die die Eich-Fahrt der
 // GTX gesetzt hatte — „die nie endenden auf 10 s“, e245f1813 — und die Radeon nie gefragt): je Karte und Probe der Deckel aus IHREN
@@ -178,7 +183,7 @@ function abdruck(st, hilfe = hilfeText(), geraet = null) {
         k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {}, gpu: !!st.gpu,
         u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe,
         ...(st.probe ? { pr: [st.probe.befehl, sekRoh(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : []),
-            ...(dk ? [dk] : [])] } : {}),
+            ...(st.probe.teile ? ["teile " + st.probe.teile] : []), ...(dk ? [dk] : [])] } : {}),
     });
     return crypto.createHash("sha1").update(roh).digest("hex").slice(0, 12);
 }
@@ -258,6 +263,8 @@ function pruefeStationen(liste, karte) {
                 if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
                 if (p.stellung !== undefined && !["anfang", "ende"].includes(p.stellung)) f.push("probe.stellung nicht anfang|ende");
                 if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 12)) f.push("probe.ausnahme ohne Grund");
+                if (p.teile !== undefined && !(Number.isInteger(p.teile) && p.teile >= 2 && p.teile <= TEILE_MAX)) f.push("probe.teile keine ganze Zahl 2…" + TEILE_MAX);
+                else if (p.teile !== undefined && p.ausnahme !== undefined) f.push("probe.teile mit ausnahme — ein Teil misst im Gesetz " + PROBE_DECKEL_S + " s, nie darüber");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
@@ -306,7 +313,7 @@ function pruefeStationen(liste, karte) {
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
 function fahrtSumme(stationen, geraet) {
     const je = gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet)))
-        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0], geraet)])
+        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0], geraet) * teileVon(g[0])])
         .sort((a, b) => b[1] - a[1]);
     return { je, deckel: je.reduce((s, x) => s + x[1], 0), boot: SITZUNG_BOOT_S, summe: je.reduce((s, x) => s + x[1], 0) + SITZUNG_BOOT_S };
 }
@@ -867,7 +874,10 @@ function fahreGruppe(sts, ctx) {
         const t0 = Date.now();
         // DIE SEKUNDEN DER PROBE (w4-sitzung-eichen): in der Sitzung trägt jedes Ergebnis `s`, vom Start bis zum Ende ihres Prozesses (nie
         // das Leerlaufen der Rohre danach) — die gemessene Zahl, die die Schätzung des Deckels ersetzt; `minuten` bleibt, wie es war
-        const mitS = (e) => (sitz ? { ...e, s: +(((tEnde || Date.now()) - t0) / 1000).toFixed(1) } : e);
+        // DIE TEILE (probe.teile, unten): `s` ist der längste Teil — das Gesetz der Probe gilt je Teil —, `teile` die Sekunden je Teil
+        const teileN = (st.probe && st.probe.teile) || 1, teilS = [];
+        const mitS = (e) => (!sitz ? e : teileN > 1 && teilS.length ? { ...e, s: Math.max(...teilS), teile: teilS }
+            : { ...e, s: +(((tEnde || Date.now()) - t0) / 1000).toFixed(1) });
         const ganz = (es) => ganz0((tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es).map(mitS));
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
         const fertig = (e) => ganz(sts.map(() => e));
@@ -878,8 +888,8 @@ function fahreGruppe(sts, ctx) {
         // in der Sitzung der Deckel der Probe — in der Eich-Fahrt die Ausnahme-Grenze PROBE_AUSNAHME_S (sitz.eich, eichEintrag) —, gekappt
         // am Rest der Fahrt (sitz.restS, fahreSitzung)
         const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st, ctx.geraet);
-        const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
-        const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
+        let fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
+        let deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, { ...ctx, sek: deckelS }));
         const env = { ...process.env };
         // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
@@ -928,41 +938,60 @@ function fahreGruppe(sts, ctx) {
         if (!sitz) portRaeumen(ctx.band || ctx.port);
         let out = "", err = "", tot = false;
         let kind;
-        try {
-            kind = spawn(exe, argv, { cwd: ctx.baum, env, windowsHide: true, detached: process.platform !== "win32" });
-        } catch (e) {
-            return rot("Start: " + e.message);
-        }
         const kappe = (s, d) => (s.length + d.length > 4 << 20 ? (s + d).slice(-(4 << 20)) : s + d);
         // DIE UHR: der Deckel einer GPU-Station zählt ab dem Schloss (die Zeile „gpu-lauf: Schloss …“) und liegt HINTER dem von
         // gpu-lauf.sh, das selbst beendet und löst (trap); davor ist sie die Wache über ein schweigendes gpu-lauf.sh (Nachtruhe und
         // Frist zählt es selbst — eine feste Summe Deckel + Frist riss jeden Lauf, der über die Nacht wartete)
         const stillS = ctx.stillS || SCHLOSS_STILL_S;
         let uhr = null, amSchloss = !schloss;
-        const stelle = (s) => { clearTimeout(uhr); uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, s * 1000); };
+        const stelle = (s) => { clearTimeout(uhr); const k = kind; uhr = setTimeout(() => { tot = true; baumTot(k.pid); }, s * 1000); };
         const lauscht = () => {
             if (amSchloss) return;
             if (/^gpu-lauf: Schloss /m.test(err) || /^gpu-lauf: Schloss /m.test(out)) { amSchloss = true; tSchloss = Date.now(); stelle(deckelS + 120); } else stelle(stillS);
         };
-        kind.stdout.on("data", (d) => { out = kappe(out, String(d)); lauscht(); });
-        kind.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
-        stelle(schloss ? stillS : deckelS);
-        kind.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
-        // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
-        // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
-        // k × 5 min (fahrzeug.K3#1 5,02 gegen 1,07 auf der Radeon); nach "exit" bleiben den Rohren 2 s zum Leerlaufen
-        let gemeldet = false;
-        const ende = (code, sig) => {
-            tEnde = tEnde || Date.now();
-            if (gemeldet) return;
-            gemeldet = true;
-            kind.stdout.destroy();
-            kind.stderr.destroy();
-            abschluss(code, sig);
+        // DIE TEILE EINER PROBE (w19-fahrt-ziel-2-pm, `probe.teile` N): ein Lauf, der mehr Wanduhr braucht als das Gesetz einer Probe
+        // (fahrzeug.K2#1: Orte und Fahrt auf dem Wegenetz ~127 s auf der GTX gegen 45 s), fährt in bis zu N Teil-Proben in DERSELBEN
+        // Welt — je Teil ein Prozess unter dem Deckel der Probe (die Uhr je Teil, gekappt am Rest der Fahrt), mit PUNKTE_TEIL „i/N“ und
+        // der Frist PUNKTE_TEIL_FRIST_S = das Gesetz − FRIST_VORLAUF_S (auch in der Eich-Fahrt: kein Teil misst über dem Gesetz). Der
+        // nächste Teil fährt nur, wenn der vorige mit Exit 0 `@@PUNKTE@@ TEIL WEITER` sagte; sonst urteilt die Station EINMAL über die
+        // Ausgabe aller Teile (EIN Urteil, EIN Gesetz über den ganzen Lauf). Zwischen den Teilen nie eine Grundstellung: die Sitzung
+        // sieht EINE Probe. Sagt der letzte Teil WEITER, reichten die Teile nicht — UNGEMESSEN beim Namen, nie still offen.
+        let teil = 0;
+        const starte = () => {
+            teil++;
+            const rest = teil > 1 && sitz && sitz.restS != null ? sitz.restS - (Date.now() - t0) / 1000 : Infinity;
+            if (rest < deckelS) [fahrtKappt, deckelS] = [true, Math.max(1, Math.floor(rest))];
+            if (teileN > 1) Object.assign(env, { PUNKTE_PROBE_DECKEL_S: String(deckelS), PUNKTE_TEIL: teil + "/" + teileN,
+                PUNKTE_TEIL_FRIST_S: String(Math.max(1, Math.min(deckelS, gesetzVon(st)) - FRIST_VORLAUF_S)) });
+            const tA = Date.now();
+            let k, outTeil = "", tE = null, gemeldet = false;
+            try {
+                k = kind = spawn(exe, argv, { cwd: ctx.baum, env, windowsHide: true, detached: process.platform !== "win32" });
+            } catch (e) {
+                return rot("Start: " + e.message);
+            }
+            k.stdout.on("data", (d) => { out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); });
+            k.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
+            stelle(schloss ? stillS : deckelS);
+            k.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
+            // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
+            // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
+            // k × 5 min (fahrzeug.K3#1 5,02 gegen 1,07 auf der Radeon); nach "exit" bleiben den Rohren 2 s zum Leerlaufen
+            const ende = (code, sig) => {
+                tE = tEnde = tE || Date.now();
+                if (gemeldet) return;
+                gemeldet = true;
+                k.stdout.destroy();
+                k.stderr.destroy();
+                teilS.push(+((tE - tA) / 1000).toFixed(1));
+                const weiter = teileN > 1 && !tot && code === 0 && !sig && /^@@PUNKTE@@ TEIL WEITER$/m.test(outTeil);
+                if (weiter && teil < teileN) return (clearTimeout(uhr), starte());
+                abschluss(code, sig, weiter);
+            };
+            k.on("exit", (code, sig) => ((tE = tEnde = tE || Date.now()), setTimeout(() => ende(code, sig), 2000)));
+            k.on("close", ende);
         };
-        kind.on("exit", (code, sig) => ((tEnde = tEnde || Date.now()), setTimeout(() => ende(code, sig), 2000)));
-        kind.on("close", ende);
-        const abschluss = (code, sig) => {
+        const abschluss = (code, sig, ohneEnde) => {
             clearTimeout(uhr);
             if (!sitz) portRaeumen(ctx.band || ctx.port);
             // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt; in der Sitzung zeugt die
@@ -982,7 +1011,9 @@ function fahreGruppe(sts, ctx) {
             const wobei = zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : "";
             // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe am Deckel UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
             // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
-            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN" + wobei, code);
+            const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
+            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
+            if (ohneEnde) return offen("die Teile reichten nicht: Teil " + teil + "/" + teileN + " sagte WEITER — der Lauf ohne Ende, UNGEMESSEN" + wobei, code);
             if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
@@ -1020,6 +1051,7 @@ function fahreGruppe(sts, ctx) {
                 return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...gz };
             }));
         };
+        starte();
     });
 }
 
@@ -2138,10 +2170,11 @@ function eichTafel(stationen, ms, geraet, faktor = EICH_FAKTOR) {
         const urteil = !d ? "ohne Zahl" : d.zensiert ? "gerissen bei " + d.p90 + " s — das Gesetz " + gesetzS + " s"
             : d.ueber ? "über dem Gesetz " + gesetzS + " s — das Gesetz, schneller machen" : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
         return { ids: g.map(schluessel), sek, s: d ? d.p90 : null, n: d ? d.n : 0, zensiert: !!(d && d.zensiert), ueber: !!(d && d.ueber), neu, gesetzS, urteil,
-            ortM: ort.get(schluessel(g[0])) || null };
+            ortM: ort.get(schluessel(g[0])) || null, probeTeile: teileVon(g[0]) };
     });
-    const ausZahlen = zeilen.reduce((a, z) => a + (z.neu != null ? z.neu : z.sek), 0), budget = FAHRT_MAX_S - SITZUNG_BOOT_S;
-    return { zeilen, heute: zeilen.reduce((a, z) => a + z.sek, 0), ausZahlen, budget, teile: Math.max(1, Math.ceil(ausZahlen / budget)),
+    // je Lauf seine Teil-Proben (probe.teile): der Deckel gilt je Teil, die Fahrt trägt jeden
+    const ausZahlen = zeilen.reduce((a, z) => a + (z.neu != null ? z.neu : z.sek) * z.probeTeile, 0), budget = FAHRT_MAX_S - SITZUNG_BOOT_S;
+    return { zeilen, heute: zeilen.reduce((a, z) => a + z.sek * z.probeTeile, 0), ausZahlen, budget, teile: Math.max(1, Math.ceil(ausZahlen / budget)),
         geeicht: zeilen.filter((z) => z.s != null).length };
 }
 // GERISSEN VORHER ↔ NACHHER an einer Mess-Datei m der Karte: jede Station, die dort am Deckel oder an der eigenen Frist UNGEMESSEN fiel
