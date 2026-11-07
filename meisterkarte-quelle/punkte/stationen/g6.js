@@ -117,7 +117,7 @@ const sitzungBefehl = (lauf, seiten = []) => [
 
 // ─────────────────── klang.K2#1: Wind gesehen ↔ gehört ───────────────────
 // In der Seite am Messort der Wiese: Ego, der Blick der Wiese, Tiere gehalten, Sonne (die Böen frei). Der Klang in einem eigenen
-// Kontext (die Geste trägt /eval), der Analyser am Gain der Wind-Stimme (Bandpass unter 1,5 kHz, an ihrer Erzeugung gefunden);
+// Kontext (die Geste trägt /eval), der Analyser am Gain der Wind-Stimme (an ihrer Erzeugung gefunden, benannt vom Zensus des Graphs);
 // das Bild ist das präsentierte Fenster im Takt seines Bilds (der Zeichen-Puffer, 480 × 270, untere 45 % je 2 px), jedes dritte
 // GEZEICHNETE Bild (ein Takt ohne Bild — die GPU-Leine — liest nichts). Je `fen` ms ein Fenster: die mittlere |ΔLuma| je 50 ms und das RMS des Ohrs. Danach stehen Klang, Tiere, Wetter, Sicht
 // und Loop wie vorher. Bis 29.10. m15-wind: eigener Boot, CDP-Screencast, 60 s in 0,5-s-Fenstern (ea07267e Radeon 3,68 min).
@@ -179,9 +179,18 @@ async function windSeite(o) {
             }
             bilder.push({ t: performance.now(), lum: Float32Array.from(lum) });
         });
+        // DIE WIND-STIMME NENNT DER GRAPH (`umweltGraph`, sein Zensus): erst wenn er `wind` an meldet, ist sie gebaut — gewählt wird das
+        // Paar, das NACH dem Einschalten entstand (Filter-Art des Gesetzes klang:UMWELT.stimmen.wind, ihre Frequenz die des Zensus,
+        // ±5 %). Bis 07.11. nahm die Probe das jüngste Bandpass-Paar unter 1,5 kHz, sobald eines stand — seit w13-klang-fahrt baut
+        // das Einschalten eine stumme Fahrt-Stimme (ihr Abrollen: Bandpass 260 Hz), die Probe hörte sie statt des Winds (Radeon
+        // 323cc9f3 … 5fb21e29: hz 260, Zensus leer, CV Ohr null)
+        const nInit = paare.length, Sw = s.umwelt.kern.UMWELT.stimmen.wind;
         let wind = null;
         for (let i = 0; i < 200 && !wind; i++) {
-            wind = paare.filter((p) => p.filter.type === "bandpass" && p.filter.frequency.value < 1500 && p.filter.context === s.ctx).pop() || null;
+            const zw = s.umwelt.graph.zensus().find((v) => v.name === "wind" && v.an);
+            if (zw)
+                wind = paare.slice(nInit).filter((p) =>
+                    p.filter.type === Sw.filter && p.filter.context === s.ctx && Math.abs(p.filter.frequency.value - zw.hz) <= 0.05 * zw.hz).pop() || null;
             if (!wind) await warte(50);
         }
         const stand = { ctx: s.ctx.state, enabled: s.enabled, um: !!s.umwelt, paare: paare.length, steht: !!r._weltSteht() };
