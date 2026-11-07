@@ -907,6 +907,8 @@ function stripperTafel(root) {
 const fehltMerk = { basis: new Map(), roh: null, nc: null };
 function fehlt(glied, re, quelle) {
     const q = quelle != null && typeof quelle === "object" ? quelle : { wandel: quelle };
+    // die Wirkungs-Messung: die Absenz hängt am Muster (im Stamm oder in q.datei) und an den Gliedern, die sie nennt
+    globalThis.__wirkungNode?.suche.add(JSON.stringify([re.source, re.flags, q.datei || "stamm/", [].concat(glied).flatMap((g) => (g == null ? [] : [].concat(g.ausser || g)).filter((x) => typeof x === "string"))])); // prettier-ignore
     const wurzel = q.wurzel || path.resolve(__dirname, "..", "..");
     const basis = (k = path.join(wurzel, q.datei || "")) => {
         if (!fehltMerk.basis.has(k)) fehltMerk.basis.set(k, q.datei ? fs.readFileSync(k, "utf8") : text(wurzel));

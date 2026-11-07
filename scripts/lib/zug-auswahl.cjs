@@ -149,7 +149,7 @@ function nodeSpur() {
         const st = new Error().stack;
         Error.stackTraceLimit = alt;
         if (/_http_server/.test(st)) return "geliefert";
-        if (/\bdateiMit\b/.test(st)) return "suche"; // stamm.cjs nennt die Stelle selbst
+        if (/\b(dateiMit|fehlt)\b/.test(st)) return "suche"; // stamm.cjs nennt die Stelle (das Muster) selbst
         if (/internal\/modules\/|\b(fadenScope|ladeKlasse)\b/.test(st)) return "lade";
         return "gelesen";
     };
@@ -281,20 +281,21 @@ function glieder(t) {
         baum = acorn.parse(t, { ...OPT, sourceType: (art = "module"), onComment });
     }
     const G = [];
-    const geh = (n, pfad, eltern) => {
+    const geh = (n, pfad, eltern, klasse = false) => {
         const x = nameVon(t, n);
         const p = x ? [...pfad, x[0]] : pfad;
+        klasse ||= /^Class/.test(n.type);
         let g = eltern;
         if (x && x[1]) {
             // wo `toString` beginnt: eine Methode bei `async`/`get`/`*`/Name (ohne `static`), sonst die Funktion selbst
             const methode = n.type === "MethodDefinition" || n.method || /^[gs]et$/.test(n.kind);
             const ts = methode ? n.start + (n.static ? /^static\s*/.exec(t.slice(n.start))[0].length : 0) : (n.value || n.init || n.right || n).start; // prettier-ignore
-            G.push((g = { k: p.join("/"), s: n.start, e: n.end, ts, eltern, sig: [] }));
+            G.push((g = { k: p.join("/"), s: n.start, e: n.end, ts, eltern, klasse, sig: [] }));
         }
         for (const k in n) {
             const v = n[k];
             if (k === "loc" || !v || typeof v !== "object") continue;
-            for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === "string") geh(c, p, g);
+            for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === "string") geh(c, p, g, klasse);
         }
     };
     geh(baum, [], null);
@@ -325,7 +326,7 @@ function glieder(t) {
     }
     const tafel = new Map();
     for (const g of [...G, ...satz]) {
-        const a = tafel.get(g.k) || { sig: "", roh: "", lokal: !!g.eltern };
+        const a = tafel.get(g.k) || { sig: "", roh: "", lokal: !!g.eltern, klasse: !!g.klasse };
         a.sig += g.sig.join(" ") + "\n";
         if (g.ts != null) a.roh += t.slice(g.ts, g.e) + "\n";
         tafel.set(g.k, a);
@@ -518,7 +519,8 @@ function wirkungen(basis, kopf, karte, diff = null) {
             W.push({ alle: `nicht lesbar: ${r}` });
             continue;
         }
-        W.push({ suche: r, t: [g0.t || "", g1.t || ""] }); // wer eine Stelle sucht (`dateiMit`), hängt an jeder Datei, die sie trägt
+        const namen = [...new Set([...g0.tafel.keys(), ...g1.tafel.keys()])].filter((k) => g0.tafel.get(k)?.roh !== g1.tafel.get(k)?.roh).flatMap(namenVon); // prettier-ignore
+        W.push({ suche: r, t: [g0.t || "", g1.t || ""], namen }); // wer eine Stelle sucht (`dateiMit`, `fehlt`), hängt an jeder Datei, die sie trägt
         for (const k of new Set([...g0.tafel.keys(), ...g1.tafel.keys()])) {
             const [a0, a1] = [g0.tafel.get(k), g1.tafel.get(k)];
             const [fn, txt] = [!a0 || !a1 || a0.sig !== a1.sig, !a0 || !a1 || a0.roh !== a1.roh];
@@ -528,7 +530,8 @@ function wirkungen(basis, kopf, karte, diff = null) {
             else if (k.startsWith("§")) subjekt(k, r);
             else {
                 W.push({ glied: [r, k], fn, txt, jung: !!a0 && jung(r, k) }); // ein neues Glied wirkt über seine Rufer und seinen Namen
-                if (!(a0 || a1).lokal && (!a0 || !a1)) for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r); // ein lokales Glied nennt nur sein Eltern-Glied
+                // ein lokales Glied nennt nur sein Eltern-Glied; ein Modul (.cjs) teilt nur Klassen-Glieder über den Namen
+                if (!(a0 || a1).lokal && (!a0 || !a1) && ((a0 || a1).klasse || !/\.cjs$/.test(r))) for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r); // prettier-ignore
                 if (txt || !a0 || !a1) W.push({ fege: r });
             }
         }
@@ -538,11 +541,13 @@ function wirkungen(basis, kopf, karte, diff = null) {
     const bindet = (g, n) => g.tafel.has(n) || [...g.tafel.keys()].some((k) => k[0] === "§" && k.slice(1).split(",").includes(n));
     const fertig = new Set();
     const imKommentar = (g, i) => g.kommentar.some(([s, e]) => s <= i && i < e);
+    const modul = (n) => /\.cjs$/.test(namen.get(n)); // ein Name aus einem Modul gilt nur in ihm
     for (let runde = 0; runde < 4; runde++) {
         const neu = [...namen.keys()].filter((n) => !fertig.has(n));
         if (!neu.length) break;
-        if (fertig.size + neu.length > 60) {
-            W.push({ alle: `Namens-Flut: ${fertig.size + neu.length} Namen wirken (${neu.slice(0, 5).join(", ")} …)` });
+        const global = [...fertig, ...neu].filter((n) => !modul(n));
+        if (global.length > 60) {
+            W.push({ alle: `Namens-Flut: ${global.length} Namen wirken (${global.slice(-5).join(", ")} …)` });
             break;
         }
         neu.forEach((n) => fertig.add(n));
@@ -556,7 +561,8 @@ function wirkungen(basis, kopf, karte, diff = null) {
                 const ab = g.zeilen || (g.zeilen = [0, ...[...g.t.matchAll(/\n/g)].map((m) => m.index + 1)]);
                 for (const n of neu.filter((x) => new RegExp(`(^|[^\\w$])${x.replace(/\$/g, "\\$")}([^\\w$]|$)`).test(text))) {
                     const i = ab[zeile - 1] + Math.max(0, text.indexOf(n));
-                    if ((r !== namen.get(n) && bindet(g, n)) || imKommentar(g, i)) continue;
+                    if (r !== namen.get(n) && (modul(n) || bindet(g, n))) continue;
+                    if (imKommentar(g, i)) continue;
                     const k = satzUm(g, i);
                     if (k === "§") W.push({ laden: r, warum: `eine Anweisung trägt ${n}` });
                     else if (k[0] === "§") subjekt(k, r);
@@ -589,9 +595,18 @@ function grundIm(x, w, idx) {
     if (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) return `liest ${w.datei}`;
     if (w.fege && x.fege.includes(w.fege)) return `fegt ${w.fege} als Text`;
     if (w.verz && x.verz.includes(w.verz)) return `listet ${w.verz}/`;
-    const s = w.suche && (x.suche || []).find((y) => w.t.some((t) => t.includes(y)));
-    if (s) return `sucht „${s.slice(0, 40)}" in ${w.suche}`;
+    const s = w.suche && (x.suche || []).find((y) => sucht(y, w));
+    if (s) return `sucht „${s.slice(0, 50)}" in ${w.suche}`;
     return null;
+}
+// eine Suche: die Stelle von `dateiMit` (ein Text) oder die Absenz von `fehlt` ([Muster, Flags, Ort, Glieder]): sie trifft eine
+// geänderte Datei, wenn deren Text sie trägt (vorher oder nachher, ohne Kommentare) oder die Datei ein genanntes Glied ändert
+function sucht(y, w) {
+    if (y[0] !== "[") return w.t.some((t) => t.includes(y));
+    const [quelle, flags, ort, glieder] = JSON.parse(y);
+    if (ort.endsWith("/") ? !w.suche.startsWith(ort) : w.suche !== ort) return false;
+    const re = new RegExp(quelle, flags.replace("g", ""));
+    return w.t.some((t) => re.test(require("./stamm.cjs").ohneKommentare(t))) || glieder.some((g) => w.namen.includes(g));
 }
 function waehle(namen, karte, W) {
     const [idx, gewaehlt] = [karteIndex(karte), new Map()];

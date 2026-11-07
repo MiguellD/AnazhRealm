@@ -13,7 +13,7 @@ const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
 const zug = require("./lib/zug-auswahl.cjs");
-const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST, path, fs, jsonLesen, stammLib, ROOT: root } = require("./lib/welt-boot.cjs");
 
 const DATEI = ".github/workflows/check.yml";
 const ZEITEN = "spec/ci/ci-zeiten.json";
@@ -1523,8 +1523,15 @@ function traegt(x, w, karte) {
         (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) ||
         (w.fege && x.fege.includes(w.fege)) ||
         (w.verz && x.verz.includes(w.verz)) ||
-        (w.suche && (x.suche || []).some((s) => w.t.some((t) => t.includes(s))))
+        (w.suche && (x.suche || []).some((s) => trifft(s, w)))
     );
+}
+// die Suche gelesen wie `dateiMit` (die Stelle im Text) und `fehlt` (das Muster ohne Kommentare im Ort, ein genanntes Glied)
+function trifft(s, w) {
+    if (s[0] !== "[") return w.t.some((t) => t.includes(s));
+    const [q, f, ort, glieder] = JSON.parse(s);
+    const imOrt = ort.endsWith("/") ? w.suche.startsWith(ort) : w.suche === ort;
+    return imOrt && (w.t.some((t) => new RegExp(q, f.replace("g", "")).test(stammLib.ohneKommentare(t))) || glieder.some((g) => w.namen.includes(g)));
 }
 function auswahlUrteil(namen, karte, W, wahl = zug.waehle) {
     const { gewaehlt } = wahl(namen, karte, W);
@@ -1570,7 +1577,9 @@ function selbsttestAuswahl() {
     const W3 = [{ datei: "spec/x.json" }];
     const W4 = zug.wirkungen("HEAD", "HEAD", K, ["A", "stamm/gibt-es-nie.js"]);
     const W5 = [{ glied: ["a.js", "A/neu"], fn: true, txt: true, jung: true }];
-    const W6 = [{ suche: "c.js", t: ["x()", "this._stelle();"] }];
+    const W6 = [{ suche: "c.js", t: ["x()", "this._stelle();"], namen: [] }];
+    const W7 = [{ suche: "stamm/c.js", t: ["x()", "y()"], namen: ["_ohneDas"] }];
+    K.schritte.eins.suche = [JSON.stringify(["_altWeg\\(", "g", "stamm/", ["_ohneDas"]])];
     const echt = zug.waehle;
     const ohneKarte = (n, k, W) => echt(n, k, W.filter((w) => w.alle)); // die Karte ignoriert
     const ohneText = (n, k, W) => echt(n, k, W.map((w) => ({ ...w, txt: false })));
@@ -1595,6 +1604,8 @@ function selbsttestAuswahl() {
     fall("Mutante: das junge Glied ignoriert", W5, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/neu/);
     fall("die echte Wahl, eine gesuchte Stelle", W6, echt);
     fall("Mutante: die Suche ignoriert", W6, ohneKarte, /AUSGELASSEN: „zwei" trägt .*c\.js/);
+    fall("die echte Wahl, ein genanntes Glied der Absenz", W7, echt);
+    fall("Mutante: die Absenz ignoriert", W7, ohneKarte, /AUSGELASSEN: „eins" trägt .*stamm\/c\.js/);
     return f;
 }
 
