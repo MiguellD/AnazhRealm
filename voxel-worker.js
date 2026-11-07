@@ -4052,7 +4052,15 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
         FERN_KRONEN.C = C;
     }
     for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
-    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z), waldSchnee(x, z, y), waldOrt(x, z));
+    out[6] = core.forestKronenDeckung(
+        sd,
+        B.geburt,
+        FERN_KRONEN,
+        K.forest,
+        waldStand(x, z),
+        waldSchnee(x, z, y),
+        waldOrt(x, z)
+    );
     const S = K.kronenSchatten;
     let summe = 0;
     let r = 0;
