@@ -3004,8 +3004,9 @@ class AnazhRealm_bild_kosten {
     // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
     // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
-    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
-    // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) zeichnet im Hauptbild, ihr Zwilling (die Atlas-Gruppe "#S",
+    // w14-lod-sprung) in den Kaskaden. Eine Gruppe, die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines
+    // Frames — sie zeichnet weiter jede Instanz.
     // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
     // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
     // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
@@ -3015,7 +3016,7 @@ class AnazhRealm_bild_kosten {
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
         if (at.aGang) return "gpu";
-        if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
+        if (leaf.atlasGruppe) return !at.aKarte ? null : leaf.shadowTwin ? "schatten" : castShadow ? null : "haupt";
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
         return castShadow ? null : "haupt";
