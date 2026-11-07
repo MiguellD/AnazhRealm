@@ -1,0 +1,19 @@
+{
+ "sha": "84d5240ebd6bc9d132fee13c74bb1d9dc1d2b045",
+ "geraet": "headless",
+ "zeit": "2026-11-07T00:54:41.325Z",
+ "host": "farm:42321001643",
+ "je": {
+  "spielgang.K4#2": {
+   "gruen": true,
+   "zahl": "Farbsicht: 4 Grenzen, ΔE min 23.52 (vorher 15.73) unter Machado-Deuteranopie [gras|boden 24.71, gras|bau 24.98, boden|bau 23.52, bau|laub 31.26] · Sichtfeld 75→92°, Skala 0.74 (Soll 0.741) · Wackeln an {\"dip\":-0.0791,\"atem\":6,\"bildPx\":42540} aus {\"dip\":0,\"atem\":0,\"bildPx\":0} · Unschärfe an 5.433 aus 12.245 · Untertitel 39 von 39",
+   "exit": 0,
+   "minuten": 12.89,
+   "zeit": "2026-11-07T00:54:41.325Z",
+   "abdruck": "60673ac27553",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42321001643/1"
+  }
+ }
+}
