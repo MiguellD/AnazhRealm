@@ -1776,6 +1776,7 @@ class AnazhRealm_koerper_bewegung {
                 }
                 this.state._kamRig = rig;
                 this.state._kamArm = this.state._kamChase = this.state._kamT = this.state._smoothBodyY = undefined;
+                this.state._kamSteig = this.state._kamSchulter = undefined;
             }
             let tempoFov = 0; // das Tempo der Chase-Cam (H3), nur im Ritt in Third
             if (this.state.cameraMode === "third") {
@@ -1877,20 +1878,36 @@ class AnazhRealm_koerper_bewegung {
                 // eine Box (der Leib unter einer Decke, die er unterläuft), aus seiner Mitte. Bis hier stand er 1 m über der Mitte,
                 // auch unter der Treppe des haus_alemannisch, 1,02 m über der Stufe, auf der der Leib im Sprint stand
                 // (gate:kamera-leib gang2, innen-sprint: die Kugel in 125 von 870 Bildern im Bau).
-                const bx = player.position.x;
-                const bz = player.position.z;
                 const y1 = player.position.y + 1.0;
+                const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
+                // DIE SÄULE TRITT AUS DEM LEIB DES STRAHLS (`_kamSaeule`): steht der Leib im Geländer, steht der Drehpunkt daneben
+                const [bx, bz] = this._kamSaeule(player.position.x, player.position.z, yStufe, y1, kr);
                 const steigt = (y0) => {
                     const w = this._fieldRaycast(bx, y0, bz, bx, y1, bz, {
                         durchPflanzen: true,
                         radius: kr,
                         gelaende: false,
                     });
-                    return w.t >= 1 ? y1 : y0 + (y1 - y0) * w.t; // frei: byte-alt
+                    // frei: byte-alt; sonst hält er KAMERA_SPIEL_M unter dem Halt (nie auf der Haut, s. die Konstante)
+                    return w.t >= 1 ? y1 : Math.max(y0, y0 + (y1 - y0) * w.t - AnazhRealm.KAMERA_SPIEL_M);
                 };
-                const yStufe = fussY + AnazhRealm.PLAYER_STEP_UP + kr;
+                // DER GLEITENDE RIG (leib.K4 Staffel 2): jeder Freiheitsgrad des Rigs folgt dem Gesetz des Arms — ein Hindernis
+                // zieht ihn sofort heran, frei gleitet er hinaus (der Rest `armRuhe` je Sekunde): der
+                // Aufstieg des Drehpunkts und die Schulter sprangen je Bild zwischen ihrem Hindernis und dem freien Maß (unter der
+                // Treppe des haus_alemannisch 0,23 ↔ 1,0 m und 0 ↔ 0,6 m: Ruck p95 0,06–0,085 m im Sprint, gleitend 0,034–0,046). Beide bleiben in der frei
+                // gewürfelten Strecke (vom Start des Aufstiegs bis zu seinem Halt, von der Säule bis zur Schulter) — sicher wie der Arm.
+                const gleit = (alt, frei, lo) =>
+                    Number.isFinite(alt) && frei > alt
+                        ? Math.max(lo, alt + (frei - alt) * (1 - Math.pow(KAM.armRuhe, rigDt)))
+                        : frei;
+                const rigDt = Math.min(0.1, Math.max(0.0001, currentTime - (kamT || currentTime)));
+                let y0Steig = yStufe;
                 let by = steigt(yStufe);
-                if (by === yStufe) by = steigt(player.position.y);
+                if (by === yStufe) by = steigt((y0Steig = player.position.y));
+                by =
+                    player.position.y +
+                    gleit(this.state._kamSteig, by - player.position.y, y0Steig - player.position.y);
+                this.state._kamSteig = by - player.position.y;
                 // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
                 // Kamera über die rechte Schulter — Auge und Blickziel stehen KAMERA_SCHULTER_M rechts (Bildschirm-rechts
                 // = (−cos Gier, 0, sin Gier)), die Figur steht links der Bildmitte, das Fadenkreuz trifft daneben die Welt.
@@ -1904,13 +1921,12 @@ class AnazhRealm_koerper_bewegung {
                     const rx = -Math.cos(this.state.yaw);
                     const rz = Math.sin(this.state.yaw);
                     const fest = (s) => this._fieldSolid(bx + rx * (s + kr), by, bz + rz * (s + kr));
-                    let s =
-                        S *
-                        this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
-                            durchPflanzen: true,
-                            radius: kr,
-                            gelaende: false,
-                        }).t;
+                    const sw = this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
+                        durchPflanzen: true,
+                        radius: kr,
+                        gelaende: false,
+                    }).t;
+                    let s = sw >= 1 ? S : Math.max(0, S * sw - AnazhRealm.KAMERA_SPIEL_M);
                     if (fest(s)) {
                         let lo = 0;
                         let hi = s;
@@ -1923,6 +1939,8 @@ class AnazhRealm_koerper_bewegung {
                             }
                         s = lo;
                     }
+                    s = gleit(this.state._kamSchulter, s, 0);
+                    this.state._kamSchulter = s;
                     sx = rx * s;
                     sz = rz * s;
                 }
@@ -2086,6 +2104,58 @@ class AnazhRealm_koerper_bewegung {
         this._kamFovSoll = st.camera.fov = soll;
         st.camera.updateProjectionMatrix();
         if (st.csmNode && st.csmNode.camera) st.csmNode.updateFrustums();
+    }
+
+    // DIE SÄULE DES DREHPUNKTS (leib.K4 Staffel 2): die Kugel (r) zwischen y0 und y1 über (x, z). Der Leib des Gangs hält jede Box
+    // der Hülle PLAYER_WALL_RADIUS fern, nie den Leib des Strahls (`_strahlBoxenVon`: das Geländer der Treppe — seine Spur ist so
+    // breit wie der Leib —, der offene Flügel): steht er in ihm, stand die Kugel dort in jeder Höhe am Start einer Haut, Wurf und
+    // Arm fielen auf 0 und die Linse stand in seiner Mitte, 0,10 m vor der Wange (gate:kamera-leib gang2, innen-sprint: Bau 16 % in
+    // 47 Proben). Die Säule tritt waagrecht aus jeder Strahl-Box, die sie in ihrer Höhe berührt — je Box quer zu ihrer schmalen Achse
+    // (Wange, Stab, Blatt sind Platten: hinaus auf die Seite, auf der die Säule steht; am Stoß zweier Tritt-Stücke schöbe der kürzere
+    // Weg längs der Wange in das nächste) aus der um r geweiteten Box in ihrem Rahmen (obb), bis keine mehr berührt (höchstens 4
+    // Runden) —, höchstens PLAYER_WALL_RADIUS weit: so fern hält die Kapsel jede Wand des Gangs, die Säule quert keine (die Höhe
+    // in ihr wählt danach der Aufstieg, `steigt`). Ohne Strahl-Box in der Nähe: die Mitte des Leibs, byte-alt.
+    _kamSaeule(x, z, y0, y1, r) {
+        const nah = this._blockerNahe(x, z, r, -Infinity, this._kamSaeuleNah || (this._kamSaeuleNah = []));
+        let px = x;
+        let pz = z;
+        for (let runde = 0; runde < 4; runde++) {
+            let rein = false;
+            for (const e of nah)
+                for (const b of this._strahlBoxenVon(e)) {
+                    if (b.topY < y0 - r || b.botY > y1 + r) continue;
+                    const o = b.obb;
+                    const [mx, mz, c, s, hx, hz] = o
+                        ? [o.cx, o.cz, o.c, o.s, o.hx, o.hz]
+                        : [
+                              (b.minX + b.maxX) / 2,
+                              (b.minZ + b.maxZ) / 2,
+                              1,
+                              0,
+                              (b.maxX - b.minX) / 2,
+                              (b.maxZ - b.minZ) / 2,
+                          ];
+                    const qx = px - mx;
+                    const qz = pz - mz;
+                    const lx = qx * c - qz * s;
+                    const lz = qx * s + qz * c;
+                    const ax = hx + r - Math.abs(lx);
+                    const az = hz + r - Math.abs(lz);
+                    if (!(ax > 0 && az > 0)) continue;
+                    rein = true;
+                    // lokal (dx, dz) → Welt (dx·c + dz·s, −dx·s + dz·c), wie `_hausObb`
+                    const quer = hx <= hz;
+                    const dx = quer ? (lx < 0 ? -1 : 1) * (ax + AnazhRealm.KAMERA_SPIEL_M) : 0;
+                    const dz = quer ? 0 : (lz < 0 ? -1 : 1) * (az + AnazhRealm.KAMERA_SPIEL_M);
+                    px += dx * c + dz * s;
+                    pz += -dx * s + dz * c;
+                }
+            if (!rein) break;
+        }
+        nah.length = 0;
+        const d = Math.hypot(px - x, pz - z);
+        const k = d > AnazhRealm.PLAYER_WALL_RADIUS ? AnazhRealm.PLAYER_WALL_RADIUS / d : 1;
+        return [x + (px - x) * k, z + (pz - z) * k];
     }
 
     // DER ÜBERGANG DES RIGS (F1 b): der Versatz zwischen dem Ort, an dem die Kamera beim Wechsel stand (`_kamVon`), und dem
@@ -2491,6 +2561,10 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 AnazhRealm.FIXED_DT = 1 / 60;
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// DER SPIELRAUM DES DREHPUNKTS (m, leib.K4 Staffel 2): Aufstieg, Schulter und Säule halten ihn so weit vor der Haut (der um r
+// geweiteten Box), an der sie halten. Stand er AUF ihr, kannte der Wurf des Arms von dort nur „hinaus frei, hinein 0" — der Arm
+// sprang beim Orbit in EINEM Bild von 0,99 auf 0 (5,9 m, innen-sprint); mit Spielraum wächst der Wurf stetig mit der Richtung.
+AnazhRealm.KAMERA_SPIEL_M = 0.05;
 // Der Übergang des Rigs (`_kamRest`, F1 b): Ruhe (s, der Versatz fällt je ruheS auf 1/e), Tempo-Deckel (m/s) des Gleitens und
 // der weiteste Versatz (m, zwei Arme der Chase-Cam), der gleitet — ein Sprung des Spielers (Tor, Rettung) bleibt ein Schnitt;
 // das Sichtfeld gleitet mit dem Deckel fovGradS (°/s: 0,4° im längsten Bild von 33 ms, ein Tempo-FOV von 9° in ~0,8 s).

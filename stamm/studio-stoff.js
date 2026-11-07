@@ -33,7 +33,8 @@ class AnazhRealm_studio_stoff {
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
-    // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
+    // der Wurzel in Metern und dem Rauschen der Pflanze aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede
+    // Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
     // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
     // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
@@ -501,10 +502,10 @@ class AnazhRealm_studio_stoff {
             mat.maskNode = _durch;
             mat.maskShadowNode = TSL.bool(true);
         }
-        // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
-        // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
-        // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
-        // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
+        // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest das EINE Wiegen wie die Streu (`_windSwayOffset`: die Weite der
+        // Böe am Ort, die Phase je Büschel aus seinem Fuß) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und der
+        // Spieler biegt die Halme (uBend). r184 rechnet den Versatz VOR der Instanzierung (K20-N1): Böe, Rauschen und Biegung
+        // lesen die Welt über die Naht `_weltNaht`, der Versatz geht über sie in die Vorlage zurück.
         // DIE GESTALT DES JAHRS IM HALM (vegetation.K5#2, SAISON_GESETZ `ha` über `_saisonPraesenz` z): jeder Halm staucht sich
         // über seiner Wurzel (die Vorlage, y 0 am Fuß) VOR dem Wind, und der Wind wiegt die gestauchte Höhe — im Winter liegt
         // die Wiese bei 0,35 ihrer Höhe, im Sommer steht sie ganz (×1, byte-gleich). Bis dahin trug das Jahr dem Gras nur Farbe.
@@ -512,18 +513,19 @@ class AnazhRealm_studio_stoff {
             this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _ha = _suF.uLaubPraesenz.z;
-            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk).mul(_ha) });
+            const _sway = this._windSwayOffset(TSL, { hoehe: TSL.positionGeometry.y.mul(_sk).mul(_ha) });
             mat.positionNode = TSL.positionLocal.mul(TSL.vec3(1, _ha, 1)).add(_sway);
         } else if (wiegen === true) {
             // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
-            // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
-            // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
-            // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
-            // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
-            // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
+            // lesen dasselbe Wiegen wie das Gras aus der EINEN Quelle (`_windSwayOffset`: uWindTime · uWindDir · Böe ·
+            // uBend) — der Satz trägt je Ecke `aWiege` = (die Höhe über der Wurzel in Metern: Vorlage × Welt-Skala der
+            // Pflanze; das Rauschen der Pflanze aus ihrem Fuß, `_satzKernWiege`), seine Positionen liegen in Welt-Lage: Böe
+            // und Biegung lesen die Welt, der Versatz liegt in Welt-Richtung. Jeder Teil einer Pflanze trägt dieselbe Phase —
+            // Rute und Laub, Stiel und Blüte bleiben verbunden; der Charakter (laengs 1,2) ist der des gefallenen
             // Klein-Vegetations-Zwillings.
             this._windUniformsEnsure();
-            const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
+            const _wiege = TSL.attribute("aWiege", "vec2");
+            const _sway = this._windSwayOffset(TSL, { laengs: 1.2, hoehe: _wiege.x, rausch: _wiege.y });
             mat.positionNode = (jahr === true ? this._jahrLage(TSL) : TSL.positionLocal).add(_sway);
         }
         // DAS JAHR OHNE BAUM-WIND (die Blende aus): sonst webt `_baumWindStoff` die Lage des Jahrs in den Wind-Knoten

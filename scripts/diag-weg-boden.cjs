@@ -118,10 +118,10 @@ function probe(stoerung) {
     // 4 KONSUM: das Chunk-Material liest die Karte, die Wiese das Pfad-Feld
     // am Ruf: der frische Chunk-Stoff mischt die Wege-Farbe (nur mit wegeKarte), sie liest die EINE Karte
     const ruft = (f, k) => {
-        const alt = r[k], eigen = Object.prototype.hasOwnProperty.call(r, k);
+        const alt = r[k];
         let n = 0;
-        r[k] = function (...a) { n++; return alt.apply(this, a); };
-        try { f(); } catch { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) r[k] = alt; else delete r[k]; }
+        const zurueck = leihe(r, { [k]: function (...a) { n++; return alt.apply(this, a); } });
+        try { f(); } catch { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { zurueck(); }
         return n > 0;
     };
     const stoffAlt = st.voxelChunkMaterial;

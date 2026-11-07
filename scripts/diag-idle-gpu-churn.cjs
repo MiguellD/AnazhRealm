@@ -312,14 +312,12 @@ hauptLauf(async () => {
         // Render für die Dauer des Takts still; gerendert wird erst, wenn der Schlüssel-Warmup die Neuen kennt.
         window.__takt = () => {
             const c0 = cnt();
-            const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
-            const echt = r._loopRender;
-            r._loopRender = function () {};
+            const zurueck = leihe(r, { _loopRender() {} });
             if (!window.__buehneLos) {
                 window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                 s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
-            try { r._gameLoopTick(performance.now()); } catch {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
+            try { r._gameLoopTick(performance.now()); } catch {} finally { zurueck(); }
             return { cc: cnt() - c0 };
         };
         // je Bild auch der Stand der Erst-Zeichnung (Bauten · verschoben · wartende Draws · offene Pipelines): die Ruhe vor dem
