@@ -419,20 +419,27 @@ class AnazhRealm_stoff_karte {
         const ln = L.x * nx + L.z * nz;
         const quer = (x - W.ex) * -nz + (z - W.ez) * nx;
         const [b0, b1] = [Math.floor((quer - W.quer) / binM) - W.bin0, Math.floor((quer + W.quer) / binM) - W.bin0];
+        // die Krone deckt mit ihrer Deckung im Jahr (`liste[o + 5]`, w21-laub-jahr-fern): die volle nimmt die Sonne ganz, die
+        // kahle Laub-Krone lässt durch, was ihre Winter-Karte durchlässt
+        let sicht = 1;
         for (let b = Math.max(0, b0); b <= b1 && b < kopf.length; b++)
             for (let k = kopf[b]; k >= 0; k = folge[k]) {
-                const o = k * 5;
+                const o = k * 6;
                 const t = ((liste[o] - x) * nx + (liste[o + 2] - z) * nz) / ln;
                 if (!(t > 0)) continue;
                 const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
                 const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) <= 1) return 0;
+                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) > 1) continue;
+                if (liste[o + 5] >= 1) return 0;
+                sicht *= 1 - liste[o + 5];
             }
-        return 1;
+        return sicht;
     }
 
-    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite und halbe Höhe — neu, wenn die Gruppe sich
-    // ändert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
+    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite, halbe Höhe und die Deckung ihrer Krone im
+    // Jahr (w21-laub-jahr-fern: die Nadel-Art ganz, die Laub-Krone nach phyto-core `kroneImJahr` in der Präsenz der Welt — dieselbe
+    // Deckung wie das Dach der Ferne) — neu, wenn die Gruppe sich
+    // ändert, die Präsenz wandert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
     // das Licht sich um `HORIZONT_KARTE.lichtRad` dreht (das Maß, nach dem die Horizont-Karte neu malt) oder das Auge geht: ein Strahl
     // prüft nur die Karten seines Fachs (der Rand trägt Krone und Drehung). Der Messer läuft in jedem Bild (`tickDayNight`): an der
     // Mess-Wiese (Radeon, 2 213 Werfer, 82 Fächer) kostet eine Messung 0,106 statt 0,055 ms, mit neuem Licht je Bild 0,166 statt
@@ -449,7 +456,8 @@ class AnazhRealm_stoff_karte {
         const maske = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && this._blendeK);
         const auge = maske ? lu.uLodAuge.value : cam.position;
         const n = g.liveCount;
-        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}`;
+        const pr = this._fernPraesenz();
+        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}|${pr.toFixed(3)}`;
         let W = this._kartenWurfMerk;
         if (!W || W.stand !== stand) {
             const a = m.instanceMatrix.array;
@@ -464,14 +472,18 @@ class AnazhRealm_stoff_karte {
                       halt: 0,
                   }
                 : null;
-            const liste = W && W.liste.length >= n * 5 ? W.liste : new Float32Array(n * 5);
+            const liste = W && W.liste.length >= n * 6 ? W.liste : new Float32Array(n * 6);
+            const nadel = this._karteNadel(null).array;
+            const PC = globalThis.__phytoCore;
+            const laub = PC.kroneImJahr(PC.WIND_ZAHLEN, pr, 1, 1, 1, 1, 0).deckung;
             let k = 0,
                 hwMax = 0;
             for (let i = 0; i < n; i++) {
                 if (Lm && !this._instanzFenster(g, i, Lm)) continue;
                 const o = i * 16;
                 const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
-                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5], k * 5);
+                const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;
+                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c], k * 6);
                 hwMax = Math.max(hwMax, ak[i * 4 + 1] * s);
                 k++;
             }
@@ -501,7 +513,7 @@ class AnazhRealm_stoff_karte {
                     ? W.kopf.fill(-1)
                     : new Int32Array(Math.ceil((2 * weit) / binM) + 5).fill(-1);
             for (let k = 0; k < W.n; k++) {
-                const b = Math.floor(quer(k * 5) / binM) - bin0;
+                const b = Math.floor(quer(k * 6) / binM) - bin0;
                 if (b < 0 || b >= kopf.length) continue;
                 W.folge[k] = kopf[b];
                 kopf[b] = k;
