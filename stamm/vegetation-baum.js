@@ -1090,6 +1090,7 @@ class AnazhRealm_vegetation_baum {
                     rotationY: d.rotY,
                     _lodSpecies: d.sp,
                     _lodVariantIndex: variantIndex,
+                    _waldDart: true, // die Herkunft: ein Dart des Wald-Plans (der Bestand folgt ihm, `_waldNachwuchs`)
                 },
                 d.alter < 1 ? { _schicht: d.alter } : null, // die Schicht am Eintrag (`entry._schicht`): die Leser des Unterstands
                 alter < 1 ? { studioOv: { alter } } : null
@@ -1099,11 +1100,38 @@ class AnazhRealm_vegetation_baum {
         if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
     }
 
+    // DER SAUM RÄUMT (w20-wald-kosten): kam oder ging der Rand eines Orts `r` [x, z, rand] (`_erdbauWirkt`), folgt der gepflanzte
+    // Wald im Saum (Rand + phyto-core `bestand.saum`) seinem neuen Plan — je gepflanztem Chunk, der den Kreis berührt, EIN Kasten
+    // des Nachwuchses (`_waldNachwuchs`: er wartet auf den Plan, nimmt die Bäume ohne Dart, setzt die neuen). Liegt der Erdbau im
+    // Vorlauf, bevor der Chunk pflanzt, pflanzt der Chunk selbst am neuen Plan; der Kasten trägt den Ort, der NACH der Pflanzung
+    // kam (der Sprung, der Akt, der Reload am Ort). → die Zahl der Kästen
+    _saumRaeumen(r) {
+        const P = this.state.voxelPopulatedChunks;
+        if (!P || !P.size) return 0;
+        const w = r[2] + globalThis.__phytoCore.FOREST_PACK.bestand.saum;
+        const { span } = this._voxelChunkConfig();
+        let n = 0;
+        for (const ck of P) {
+            const i = ck.indexOf(",");
+            const [x0, z0] = [Number(ck.slice(0, i)) * span, Number(ck.slice(i + 1)) * span];
+            const dx = Math.max(x0 - r[0], 0, r[0] - x0 - span);
+            const dz = Math.max(z0 - r[1], 0, r[1] - z0 - span);
+            if (dx * dx + dz * dz > w * w) continue;
+            this._waldNachwuchs(x0, z0, x0 + span, z0 + span);
+            n++;
+        }
+        return n;
+    }
+
     // DER JUNGWUCHS DES WALDS AM ORT (stoffe.K5#2): eine Tat wechselte die Stufe ihrer Sukzession (`_sukzessionMalen`, die
     // Heilung) — jeder stehende Dart des Walds im Kasten x0…x1 · z0…z1 eines gepflanzten Chunks trägt danach den Baum im Alter
     // seines Orts (`_baumAlter`): der Brand nimmt die Bäume seiner Narbe, der Stubben treibt den Sämling, der Jungwuchs wächst
     // Stufe um Stufe, die Heilung stellt den gewachsenen. Steht der Baum in seinem Alter, bleibt er; sonst fällt er still und
     // der neue tritt ein. Ein Chunk ohne Plan oder Saat pflanzt selbst im Alter seiner Orte (`_forestPlantChunk`).
+    // DER BESTAND IST DER PLAN (w20-wald-kosten): ein Baum des Walds (die Herkunft `_waldDart`: nur `_waldDartSetzen` wirft ihn —
+    // nie die Streu-Promotion, der Hof-Baum eines Orts, das Werk) im Kasten, dessen Dart der Plan nicht mehr trägt, fällt still —
+    // der Saum am Siedlungsrand (`_saumRaeumen`: ein Ort kam nach der Pflanzung seines Chunks) nimmt so die Bäume, die er nicht
+    // mehr gebiert. Bis hierher setzte der Kasten nur, was der Plan trug; ohne geänderten Plan (Brand, Fällen) bleibt jeder Baum.
     // → die Zahl der Wechsel.
     _waldNachwuchs(x0, z0, x1, z1) {
         const st = this.state;
@@ -1143,16 +1171,34 @@ class AnazhRealm_vegetation_baum {
             ...nah.filter((e) => e && e._lodSpecies && imKasten(e.position)),
             ...Q.filter((q) => q.opts && q.opts._lodSpecies && imKasten(q.position)),
         ];
-        const am = (d) => steht.find((e) => Math.hypot(e.position.x - d.x, e.position.z - d.z) < 0.05);
+        // je Dart-Ort binnen 5 cm: das Raster der Bäume in 10 cm (die Nachbar-Felder tragen die Kante), nie je Dart alle
+        const raster = new Map();
+        const rk = (ix, iz) => ix * 1048576 + iz;
+        for (const e of steht) {
+            const k = rk(Math.round(e.position.x * 10), Math.round(e.position.z * 10));
+            const l = raster.get(k);
+            if (l) l.push(e);
+            else raster.set(k, [e]);
+        }
+        const am = (d) => {
+            const [ix, iz] = [Math.round(d.x * 10), Math.round(d.z * 10)];
+            for (let a = -1; a <= 1; a++)
+                for (let b = -1; b <= 1; b++)
+                    for (const e of raster.get(rk(ix + a, iz + b)) || [])
+                        if (Math.hypot(e.position.x - d.x, e.position.z - d.z) < 0.05) return e;
+            return undefined;
+        };
         const [zelle, fd] = [this._brandZellen(), this._effectiveFoliageDensity()];
+        const getragen = new Set(); // die Bäume, deren Dart der Plan trägt (auch die der Kappung des Reglers)
         let n = 0;
         for (let gz = ha; gz <= hb; gz++)
             for (let gx = ga; gx <= gb; gx++)
                 for (const d of this._forestCellDarts(gx, gz, seedInt)) {
                     if (d.x < x0 || d.x >= x1 || d.z < z0 || d.z >= z1 || !gepflanzt(d.x, d.z)) continue;
+                    const e = am(d);
+                    if (e) getragen.add(e);
                     if (fd < 1 && d.keep >= fd) continue;
                     const alter = this._baumAlter(d.x, d.z, zelle); // die Prägung des Orts (die Schicht trägt nur die Größe)
-                    const e = am(d);
                     const ov = e && (e.studioOv || (e.opts && e.opts.studioOv));
                     if ((e ? (ov && ov.alter) || 1 : 0) === alter) continue;
                     if (e && e.opts) Q.splice(Q.indexOf(e), 1);
@@ -1160,6 +1206,17 @@ class AnazhRealm_vegetation_baum {
                     if (alter > 0) this._waldDartSetzen(d, alter);
                     n++;
                 }
+        // der Baum des Walds ohne Dart im Plan fällt still (der Kasten der Darts: x0 ≤ x < x1, im gepflanzten Chunk)
+        for (const e of steht) {
+            const p = e.position;
+            const dart = e.opts ? e.opts._waldDart === true : e._waldDart === true;
+            if (!dart || getragen.has(e) || p.x < x0 || p.x >= x1 || p.z < z0 || p.z >= z1 || !gepflanzt(p.x, p.z))
+                continue;
+            const q = e.opts ? Q.indexOf(e) : -1;
+            if (q >= 0) Q.splice(q, 1);
+            else if (!e.opts) this.removeArchitecture(e, { still: true });
+            n++;
+        }
         return n;
     }
 

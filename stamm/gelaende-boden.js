@@ -796,9 +796,46 @@ class AnazhRealm_gelaende_boden {
         const amWasser = nass === undefined ? this._erdbauAmWasser(G.erdbauNormal(splats)) : nass;
         wm.erdbau[key] = splats;
         if (ausGesetz) (this._erdbauAusGesetz || (this._erdbauAusGesetz = new WeakSet())).add(splats);
+        this._ortRandSetzen(key); // eine Siedlung legt mit ihrem Grund ihren Rand (die Waldgrenze am Siedlungsrand)
         this._erdbauWirkt(splats, amWasser, { erdbauDazu: splats });
         this._ortFremdPruefen(key, splats); // ein gesetztes Haus im Ortsradius: die Gasse weicht ihm (bauen.K2 Staffel 2)
         return true;
+    }
+    // DER RAND EINER SIEDLUNG (w20-wald-kosten, die Waldgrenze am Siedlungsrand — phyto-core `forestOrt`): legt ein Ort des
+    // Ort-Gesetzes seinen Erdbau (Schlüssel `ort:`, `_ortSchluessel`; jeder Weg dorthin trägt seinen Plan v2 in `_ortPlaene`:
+    // der Akt, der Vorlauf, das Erwachen, die Wiederkehr nach dem Reload), legt er [x, z, rand] — die Mitte seines Plans (`ort`)
+    // und seine Reichweite nach dem Ort-Gesetz (fachwerk `siedlungsReich` über die Häuser des Plans, `slots`). Der Genesis-Ort
+    // (der Prüfplatz mit seinem Wald, `genesis:`) und das gesetzte Haus (`haus:`) tragen keinen Rand. Ein Ort ohne Plan oder
+    // ohne Gesetz ist ein Bruch beim Namen, nie still ein Ort ohne Rand.
+    _ortRandSetzen(key) {
+        if (!/^ort:/.test(key)) return;
+        const v2 = this._ortPlaene && this._ortPlaene.get(key);
+        const S = AnazhRealm._siedlungGesetz();
+        if (!v2 || !v2.ort || !Array.isArray(v2.slots) || !S)
+            return void this._bruchMelden(
+                `ORT: der Rand des Orts ${key} fehlt — ` +
+                    (!S ? "das Ort-Gesetz ist kalt (fachwerk SIEDLUNG)" : "sein Erdbau liegt ohne Plan v2")
+            );
+        const rand = AnazhRealm.Gesetz("fachwerk:siedlungsReich")(S, v2.slots.length);
+        (this._ortRandVon || (this._ortRandVon = new Map())).set(key, Object.freeze([v2.ort.x, v2.ort.z, rand]));
+    }
+    // DIE RÄNDER DER SIEDLUNGEN, deren Erdbau liegt ([x, z, rand] je Ort, `_ortRandSetzen`), in der Reihe des Erdbaus — EINE
+    // Liste je Stand des Erdbaus (`_erdbauStand`): der Wald-Plan des Wirts liest sie (`_forestGeborene`, ctx.ort), jeder Faden
+    // trägt sie (`orte` im Stand und in der Änderung des Erdbaus, voxel-worker `waldOrt`).
+    _ortRaender() {
+        const wm = this.state.worldMeta;
+        const E = wm && wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : null;
+        const L = this._ortRandListe;
+        if (L && L.stand === (this._erdbauStand | 0) && L.von === E) return L.liste;
+        const liste = [];
+        const M = this._ortRandVon;
+        if (E && M)
+            for (const k of Object.keys(E)) {
+                const r = Array.isArray(E[k]) ? M.get(k) : null;
+                if (r) liste.push(r);
+            }
+        this._ortRandListe = { stand: this._erdbauStand | 0, von: E, liste };
+        return liste;
     }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
     // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
@@ -848,9 +885,15 @@ class AnazhRealm_gelaende_boden {
     // um den Umkreis-Kreis samt einem Chunk Rand: der Grund des Vorschau-Hauses am Tor (4,1 × 4,9 m) warf beim Boot 16
     // gezeichnete Chunks um den Spieler, verändert hat er einen.
     // `delta`: die Änderung für die Fäden (die Splats eines neuen Orts, die Stellen gefallener), ohne sie der ganze Erdbau.
+    // DER SAUM FÄLLT MIT DEM ORT (w20-wald-kosten): kam oder ging mit diesem Erdbau der Rand einer Siedlung (`_ortRaender`
+    // gegen die zuletzt gemeldete Liste, `_ortRandGemeldet`), fällt der Wald bis in die Tiefe ihres Saums (phyto-core
+    // `bestand.saum`) — der Wald-Plan im Vorlauf dünnt um den künftigen Ort, bevor seine Bäume in den Kegel treten; die Liste
+    // reist mit der Änderung an jeden Faden, und der schon gepflanzte Wald im Saum folgt dem neuen Plan (`_saumRaeumen`).
     _erdbauWirkt(splats, amWasser, delta) {
         const G = globalThis.__gelaendeCore;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
+        const raenderVorher = this._ortRandGemeldet || [];
+        const raender = (this._ortRandGemeldet = this._ortRaender());
         const R = G.ERDBAU.reichweiteM;
         const kaesten = splats.map((p) => {
             if (p.art === "trasse") {
@@ -911,15 +954,29 @@ class AnazhRealm_gelaende_boden {
                 if (ch && trifft(a, b, Number.isFinite(ch.lod) ? ch.lod : 0)) this.state.dirtyVoxelChunks.add(key);
                 if (trifft(a, b, 0)) this.state.grassDirtyChunks.add(key);
             }
-        const waldFall = this._forestDartsFallen(x0, z0, x1, z1);
+        let [wx0, wx1, wz0, wz1] = [x0, x1, z0, z1];
+        const saum = globalThis.__phytoCore.FOREST_PACK.bestand.saum;
+        const wechsel = raender.concat(raenderVorher).filter((r) => raender.includes(r) !== raenderVorher.includes(r));
+        for (const r of wechsel) {
+            const w = r[2] + saum;
+            [wx0, wx1, wz0, wz1] = [
+                Math.min(wx0, r[0] - w),
+                Math.max(wx1, r[0] + w),
+                Math.min(wz0, r[1] - w),
+                Math.max(wz1, r[1] + w),
+            ];
+        }
+        const waldFall = this._forestDartsFallen(wx0, wz0, wx1, wz1);
         // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`) — als
         // Änderung (`delta`, voxel-worker `applyStateDelta`), nie als Klon der Welt je Haus (Gebot 7; stadt-erwachen: im Zug
         // nH 300 klonte jeder gefallene Slot ~2 000 Splats an jeden Faden, 5–28 ms je Takt); mit ihm der Kasten der Wald-Zellen,
         // deren geborene Darts er fällt (`waldFall`, w14-strom-tempo) — im selben Zustand, nie davor
         this._voxelZustandPost({
             type: "state-update",
-            delta: Object.assign({ waldFall }, delta || { erdbau: this._erdbauRoh() }),
+            delta: Object.assign({ waldFall, orte: raender }, delta || { erdbau: this._erdbauRoh() }),
         });
+        // der gepflanzte Wald im Saum folgt dem neuen Plan (`_saumRaeumen`), nachdem jeder Faden Ränder und Fall trägt
+        for (const r of wechsel) this._saumRaeumen(r);
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;

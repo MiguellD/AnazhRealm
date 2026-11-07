@@ -2609,11 +2609,12 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
-        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte)
+        // die Waldgrenze im Schnee des Sommers (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur Sommer-Mitte); der
+        // Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand jenseits des nächsten Rands, `forestOrtAbstand`)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee);
+        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee) * forestOrt(ort);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
@@ -2809,7 +2810,11 @@
         // Zehntel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines: die
         // Baumgrenze liegt unter der Schneegrenze). Gemessen (Land ±4 km, 50 m): die Grenze wirkt auf 2,0 %, baumlos 1,2 % — die
         // höchsten Gipfel; mit 0,25 stand am gipfel-blick noch eine Tanne in 28 m im Blick-Strahl zur Stadt.
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1 },
+        // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): `saum` ist die Tiefe des gestuften Waldrands jenseits des Rands
+        // eines Orts (m) — innen kein Baum, über die Tiefe steigt die Geburt glatt auf ihren Bestand (Krautsaum 5–10 m,
+        // Strauchgürtel ≥ 5 m, Waldmantel 15–20 m; das ganze Profil 25–40 m: WWF Schweiz 2012, Naturschutzbund AT 2017, Bio
+        // Austria 2023).
+        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1, saum: 40 },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -2837,6 +2842,32 @@
         let t = schnee / FOREST_PACK.bestand.waldgrenze;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         return 1 - t * t * (3 - 2 * t);
+    }
+    // DER WALD AM SIEDLUNGSRAND (w20-wald-kosten, der Befund KOSTEN der vp-0611h: das Dorf trug 1 117 statt 486 Bäume binnen
+    // 150 m): ein Ort trägt seine Dichte — sein Rand ist die Reichweite nach dem Ort-Gesetz (fachwerk `siedlungsReich`: 30 +
+    // 22·√nH m um die Mitte seines Plans, nH die Häuser des Plans), drinnen liegt sein Land (Hof, Garten, Flur), draußen der
+    // gestufte Waldrand (`bestand.saum`). `d` ist der Abstand jenseits des nächsten Rands (m; drinnen negativ, ohne Ort
+    // Infinity, `forestOrtAbstand`), die Geburt steigt glatt von 0 am Rand auf 1 in der Tiefe des Saums. Ohne Ort (∞) und
+    // jenseits des Saums ist der Wald byte-gleich. Bis hierher wuchs der geschlossene Bestand bis an die Höfe: die Dorf-Pose
+    // stand 21 m hinter dem Rand im Bestand mit Unterstand (Bildzeit im CPU-Raster 7 964 ms gegen main 3 965).
+    function forestOrt(d) {
+        if (typeof d !== "number" || Number.isNaN(d))
+            throw new Error("phyto-core forestOrt: der Abstand zum Siedlungsrand fehlt (KERN-PFLICHT)");
+        let t = d / FOREST_PACK.bestand.saum;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    }
+    // Der Abstand von (x, z) jenseits des nächsten Siedlungsrands: `raender` je Ort [x, z, rand] (die Mitte seines Plans und
+    // seine Reichweite, m) — der Wirt legt sie mit dem Erdbau des Orts (`_ortRaender`), der Faden trägt dieselbe Liste.
+    function forestOrtAbstand(raender, x, z) {
+        let d = Infinity;
+        if (raender)
+            for (let i = 0; i < raender.length; i++) {
+                const o = raender[i];
+                const e = Math.hypot(x - o[0], z - o[1]) - o[2];
+                if (e < d) d = e;
+            }
+        return d;
     }
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
@@ -3193,7 +3224,8 @@
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
-    // feuchteAt(x,z,surfY), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig (byte-deterministisch).
+    // feuchteAt(x,z,surfY), stand(x,z), schnee(x,z,y), ort(x,z), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig
+    // (byte-deterministisch).
     // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
         const F = ctx.F;
@@ -3219,7 +3251,8 @@
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
             // ohne Schnee bleibt jeder Wurf, wie er war
-            if (wurf > geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY))) continue;
+            const grenze = geburt * forestWaldgrenze(ctx.schnee(x, z, surfaceY));
+            if (wurf > grenze) continue;
             const waterY = ctx.waterYAt(x, z);
             const above = surfaceY - waterY;
             if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
@@ -3288,6 +3321,10 @@
             // DER ORT VOR DEM WALD (K10): reserviert ein Ort den Grund (ctx.ortFrei, der Erdbau des Wirts), fällt die Krone,
             // die ihn berührt — NACH allen Würfen des Darts, die folgenden Darts bleiben byte-gleich.
             if (ctx.ortFrei && !ctx.ortFrei(x, z, T)) continue;
+            // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): derselbe Wurf gegen die Geburt jenseits des Rands eines
+            // Orts (ctx.ort: der Abstand, `forestOrtAbstand` über die Ränder des Wirts) — wie K10 NACH allen Würfen des Darts:
+            // ein Ort dünnt den Bestand um sich, er würfelt ihn nie neu; ohne Ort bleibt jeder Wurf, wie er war.
+            if (wurf > grenze * forestOrt(ctx.ort(x, z))) continue;
             out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) });
         }
         return out;
@@ -5915,6 +5952,8 @@
         forestSchluss: forestSchluss, // w16-wald-innen — der Kronen-Schluss des Bestands aus dem Stand (Mindestabstand × c)
         forestLichtung: forestLichtung, // w16-wald-innen — die Geburt des Walds am Stand (0 = Lichtung/Wiese)
         forestWaldgrenze: forestWaldgrenze, // w16-wald-innen-pm — die Geburt im Schnee des Sommers (gelaende-core `schnee`)
+        forestOrt: forestOrt, // w20-wald-kosten — die Geburt im Saum jenseits des Siedlungsrands (fachwerk `siedlungsReich`)
+        forestOrtAbstand: forestOrtAbstand, // w20-wald-kosten — der Abstand jenseits des nächsten Siedlungsrands [x, z, rand]
         forestSchicht: forestSchicht, // w16-wald-innen — die Schicht eines Darts: 1 Dach, das Alter im Zwischen-/Unterstand, 0
         FOREST_URTEIL_REICH: FOREST_URTEIL_REICH, // w16-wald-innen — die Zellen ±n, deren geborene Darts ein Bestand liest
         forestKammKronen: forestKammKronen, // w10-ferne — die Bäume des Bestands, deren Krone den Kamm gegen den Himmel trägt

@@ -2471,6 +2471,7 @@ class AnazhRealm_vegetation_wiese {
         let bodenX = NaN;
         let bodenZ = NaN;
         let bodenY = null;
+        const raender = this._ortRaender(); // die Ränder der Siedlungen (die Waldgrenze am Siedlungsrand, phyto-core `forestOrt`)
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -2500,6 +2501,8 @@ class AnazhRealm_vegetation_wiese {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                       // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)
                       ortFrei: (x, z, T) => this._ortFrei(x, z, T),
+                      // der Saum am Siedlungsrand: der Abstand jenseits des nächsten Rands (`_ortRaender`, wie der Faden `waldOrt`)
+                      ort: (x, z) => core.forestOrtAbstand(raender, x, z),
                   })
                 : [];
         if (vorlaeufig) out.vorlaeufig = true;

@@ -87,6 +87,8 @@ const state = {
     // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null, und seine Liste (`_erdbauRoh` des Mains)
     erdbau: null,
     erdbauRoh: null,
+    // die Ränder der Siedlungen [x, z, rand] (`_ortRaender` des Mains, w20-wald-kosten): der Saum am Siedlungsrand des Walds
+    orte: [],
     // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
     // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
     felsStoff: null,
@@ -1179,6 +1181,11 @@ function waldSchnee(x, z, y) {
     return G.schnee(state, y, x, z, 0);
 }
 
+// Der Abstand jenseits des nächsten Siedlungsrands (der Saum, phyto-core `forestOrt`): dieselbe Liste wie der Wirt (`_ortRaender`).
+function waldOrt(x, z) {
+    return self.__phytoCore.forestOrtAbstand(state.orte, x, z);
+}
+
 // Mirror von `_ortFrei`: trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Erdbau zu berühren?
 function ortFrei(x, z, T) {
     const E = state.erdbau;
@@ -1218,6 +1225,7 @@ function waldCtx(msg) {
         fbm: forestFbm,
         stand: waldStand,
         schnee: waldSchnee,
+        ort: waldOrt,
         surfaceYAt: (x, z) => {
             bodenX = x;
             bodenZ = z;
@@ -1335,6 +1343,8 @@ function applyStateSnapshot(snap) {
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
+    // DIE RÄNDER DER SIEDLUNGEN (w20-wald-kosten, `_ortRaender` des Mains): dieselbe Liste wie der Wald-Plan des Wirts
+    if (snap.orte !== undefined) state.orte = snap.orte;
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
     // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `TERRAIN_GEOLOGY`) — dieselben Zahlen
     if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
@@ -1360,6 +1370,8 @@ function applyStateDelta(delta) {
     // Gedächtnisse der geborenen Darts (`waldGeboren`, `kammGeboren`) die Zellen [ga, gb] × [ha, hb] — im selben Zustand, kein
     // Wald-Takt dazwischen. Bis w14-strom-tempo trug der Stand des Mains den Erdbau, und jeder Ort warf beide ganz.
     if (delta.waldFall) waldFaellt(delta.waldFall);
+    // die Ränder der Siedlungen reisen mit jedem Erdbau (`_erdbauWirkt`: der Saum am Siedlungsrand, w20-wald-kosten)
+    if (delta.orte !== undefined) state.orte = delta.orte;
     // DER ERDBAU ALS ÄNDERUNG (stadt-erwachen, `_erdbauWirkt`): die Splats eines neuen Orts hängen an, die Stellen gefallener
     // (in der Reihe vor dem Fall) fallen — dieselbe Liste wie `_erdbauRoh` im Main, ohne ihren Klon je Haus
     if (delta.erdbauDazu || delta.erdbauOhne) {
@@ -4040,7 +4052,7 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
         FERN_KRONEN.C = C;
     }
     for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
-    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z), waldSchnee(x, z, y));
+    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest, waldStand(x, z), waldSchnee(x, z, y), waldOrt(x, z));
     const S = K.kronenSchatten;
     let summe = 0;
     let r = 0;
@@ -4103,8 +4115,9 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt) {
 // jeder Abschied des Rings, wie bis B2 das Gedächtnis im Haupt-Faden) leert es.
 let fernMemo = { neu: new Map(), alt: new Map(), seed: null, gen: -1 };
 function fernRingTeile(x, z, law, fuss, schutt, gen) {
-    if (fernMemo.seed !== state.seed || fernMemo.gen !== gen)
-        fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed, gen };
+    // die Ränder der Siedlungen (`state.orte`, der Saum am Siedlungsrand) tragen die Kronen-Deckung: eine neue Liste leert es
+    if (fernMemo.seed !== state.seed || fernMemo.gen !== gen || fernMemo.orte !== state.orte)
+        fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed, gen, orte: state.orte };
     const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
     let f = fernMemo.neu.get(key);
     if (f) return f;
@@ -4141,6 +4154,7 @@ function kammKrone(msg) {
         fbm: forestFbm,
         stand: waldStand,
         schnee: waldSchnee,
+        ort: waldOrt,
         surfaceYAt: (x, z) => {
             [bx, bz, by] = [x, z, law(x, z)];
             return by;
