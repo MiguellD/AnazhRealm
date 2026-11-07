@@ -284,9 +284,10 @@ class AnazhRealm {
             weatherEffectTime: 0, // der Halt einer Messung, wenn < 0 (`_messHalt`); der Zug liest die Welt-Uhr
             // DAS WORT DES SPIELERS über das Wetter (`_setWeather`, Leben-Schau 2): steht es, hält der Wetter-Zug und
             // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
-            // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
+            // Die WÜNSCHE der Welt (Nexus, seine Gesetze, die Emotion, die Wesen — jeder Seite, feld.K2#2): je Wunsch Wort, Quelle
+            // und Stempel der Welt-Uhr `w`, die Akte der Fenster, die ein Zug noch zieht (`_wunschNimm`); persistiert.
             wetterWort: null,
-            wetterWunsch: null,
+            wetterWuensche: [],
             // DER SCHREIBER DES WETTERS (affekt.K4#2): wer das Wetter, das gerade gilt, schrieb — die Quelle am EINEN Schreiber
             // `_setWeather` (der Spieler, sein Gesetz, das Laden), beim Zug der Wunsch, den er zog (Nexus, seine Gesetze, die
             // Emotion, die Wesen), ohne Wunsch die Front („front"); persistiert. Leser: der Kontext der KI (`llmBuildContext`),
@@ -789,6 +790,9 @@ class AnazhRealm {
             szeneSkala: null,
             _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter DPR-Cap-Wert (Dead-Band gegen Churn)
             untertitel: false, // spielgang.K4 — die Untertitel der Klang-Welt (Einstellungen › Ton & Sicht), gewählt vom Spieler
+            // spielgang.K4 — DER ZUGANG (Einstellungen › Ton & Sicht, im Snapshot): die Farbsicht (FARBSICHT.arten), das Sichtfeld
+            // (null = KAM_FOV_GRAD), das Kopfwackeln (Landung, Tempo-Sichtfeld) und die Unschärfe der Bewegung (`_zugangTakt`)
+            zugang: { farbsicht: "aus", sichtfeld: null, wackeln: true, unschaerfe: true },
             // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),
             // liest perfSense (kein Parallel-Zähler); der PERF-SENSE-Debug-Dump bleibt hinter perfOverlay.
             // Toggle im Einstellungen-Drawer, persistiert via Snapshot.
@@ -920,16 +924,23 @@ class AnazhRealm {
         // Welle 4 Phase 1+3 — Built-in-Parts ohne Material auf „stein"
         // mappen; ohne opChain auf eine billige Default-Kette. Built-ins
         // bleiben damit visuell wie vorher; die Tag-Berechnung greift.
+        // Eine Art, die am ersten Leser wächst (`_defaultBlueprints`), legt ihre Teile dort selbst so an (`_teileGrund`).
         for (const bp of Object.values(this.state.blueprints)) {
-            if (!bp || !Array.isArray(bp.parts)) continue;
-            for (const p of bp.parts) {
-                if (!p || typeof p !== "object") continue;
-                if (typeof p.material !== "string") p.material = "stein";
-                if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
-            }
+            const d = bp && Object.getOwnPropertyDescriptor(bp, "parts");
+            if (d && !d.get) this._teileGrund(d.value);
         }
         // die Glieder des Zustands bei der Geburt: was init an ihnen neu setzt, ist die Seite (`_seite`, init)
         this._zustandGeburt = { ...this.state };
+    }
+    // DER GRUND DER TEILE EINES BUILT-INS (Welle 4 Phase 1+3): ein Teil ohne Material ist „stein", ohne opChain trägt es die
+    // billige Default-Kette — der Konstruktor legt die Teile jedes Built-ins so an, eine Art, die am ersten Leser wächst, ihr Wuchs.
+    _teileGrund(parts) {
+        if (!Array.isArray(parts)) return;
+        for (const p of parts) {
+            if (!p || typeof p !== "object") continue;
+            if (typeof p.material !== "string") p.material = "stein";
+            if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
+        }
     }
     // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
     _lodAugeGesetzt(c) {
@@ -1846,7 +1857,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.203";
+AnazhRealm.VERSION = "18.546.206";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

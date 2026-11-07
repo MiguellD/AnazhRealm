@@ -240,7 +240,7 @@ class AnazhRealm_bild_himmel {
             K.mitte && K.mitte[0] === mx && K.mitte[1] === mz && K.deckung === c && Math.abs(t - K.zeit) < W.zugS;
         if (!gleich) {
             K.U.ursprung.value.set(mx, mz);
-            this._atmoZeichne(K.pass, K.rt);
+            if (!this._atmoZeichne(K.pass, K.rt)) return; // die Pipeline im Vorbau: der nächste Takt malt
             K.mitte = [mx, mz];
             K.zeit = t;
             K.deckung = c;
@@ -790,17 +790,23 @@ class AnazhRealm_bild_himmel {
                 return true;
             }
             if (!A.tafelnFrisch) return false; // die Himmels-Sicht steht noch nicht (der erste Takt der Atmosphäre)
-            this._atmoZeichne(A.qEq, A.rtEq);
+            if (!this._atmoZeichne(A.qEq, A.rtEq)) return false; // die Pipeline im Vorbau: der nächste Takt malt
             // PMREM per `fromEquirectangular` (WebGPU-tauglich, anders als `fromScene`) in das BESTEHENDE Target (zweites
             // Argument): stabile Texture-Identität, scene.environment nur beim Erst-Aufruf gesetzt (kein Recompile-Kaskade) —
             // das EINE Gesetz der Umgebung (welt-licht.js `umgebungZeichnen`, die Bühne der Studios zeichnet dieselbe).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = __weltLicht.umgebungZeichnen(st._skyPmrem, A, st._skyEnvRT);
+            let rt = st._skyEnvRT || null;
+            const pmrem = st._skyPmrem;
+            // PMREM im Vorbau (`_einmalRender`): der Takt, in dem seine Pipelines stehen, filtert neu
+            if (!this._einmalRender(pmrem, () => (rt = __weltLicht.umgebungZeichnen(pmrem, A, rt)))) {
+                st._skyEnvRT = rt;
+                return false;
+            }
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
             // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
             if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
-            this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
+            if (!this._weltLichtHimmel()) return false; // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;
             this._himmelUmgebungLesen();
@@ -970,19 +976,21 @@ class AnazhRealm_bild_himmel {
     // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
     // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
     // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
-    _tickSeason(currentTime) {
+    _tickSeason() {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
-        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
+        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
+        // Phase ist die ihres Ankers (`_saisonAnker`: Phase und Welt-Uhr, gesetzt vom Wort des Spielers, vom Laden eines Stands, vom
+        // Beginn des Drifts) plus die Welt-Zeit seitdem durch die Länge des Jahrs — zwei Seiten einer Uhr und ein Reload stehen am
+        // selben Tag, und der Pegel des Jahrs (`_pegelTafel`) steigt auf jeder gleich. Bis feld.K2#2 driftete sie mit der Wanduhr
+        // jeder Seite (dt ≤ 0,2 s je Bild): ein Reload und ein Sprung der Uhr ließen das Jahr der Seiten auseinanderlaufen.
         if (st.autoSeason !== false && this._buehneSteht()) {
-            const now = currentTime || 0;
-            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
-            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
-            this._lastSeasonTime = now;
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
-        }
+            let A = this._saisonAnker;
+            if (!A || A.phase !== st.seasonPhase || A.jahr !== yearSec)
+                A = this._saisonAnker = { anker: st.seasonPhase, t: st.spielZeit, jahr: yearSec };
+            A.phase = st.seasonPhase = (((A.anker + (st.spielZeit - A.t) / yearSec) % 1) + 1) % 1;
+        } else if (st.autoSeason === false) this._saisonAnker = null; // ein angehaltenes Jahr setzt beim Weiterlaufen neu an
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -999,12 +1007,16 @@ class AnazhRealm_bild_himmel {
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
-    setSeason(name) {
+    setSeason(name, uhr) {
         const key = AnazhRealm.JAHRESZEITEN[String(name || "").toLowerCase()];
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
         this.state.season = key;
+        // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
+        const yearSec = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
+        const t = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
+        this._saisonAnker = { anker: phaseFor[key], t, jahr: yearSec, phase: phaseFor[key] };
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -1022,8 +1034,8 @@ class AnazhRealm_bild_himmel {
             AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
         const T = THREE.TSL;
         const N = RG.anzahl;
-        // Die Saat je Schliere (Lage im Kasten 0..1, Länge) aus einem festen Strom — das Bild ist reproduzierbar.
-        const saat = new Float32Array(N * 4);
+        // Die Saat je Schliere (Lage im Kasten 0..1) aus einem festen Strom — das Bild ist reproduzierbar.
+        const saat = new Float32Array(N * 3);
         let h = 2166136261 >>> 0;
         const zufall = () => {
             h ^= h << 13;
@@ -1034,15 +1046,15 @@ class AnazhRealm_bild_himmel {
             return h / 4294967296;
         };
         for (let i = 0; i < N; i++) {
-            saat[i * 4] = zufall();
-            saat[i * 4 + 1] = zufall();
-            saat[i * 4 + 2] = zufall();
-            saat[i * 4 + 3] = RG.laenge[0] + zufall() * RG.laenge[1];
+            saat[i * 3] = zufall();
+            saat[i * 3 + 1] = zufall();
+            saat[i * 3 + 2] = zufall();
         }
-        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 4));
+        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 3));
         const uZeit = T.uniform(0);
         const uDrift = T.uniform(new THREE.Vector2(0, 0));
-        const uWinkel = T.uniform(0);
+        // der Weg des Tropfens in der Belichtung im Bild: (sin θ, cos θ) × |v| · `belichtung` (m), θ die Neigung quer zum Blick
+        const uWeg = T.uniform(new THREE.Vector2(0, RG.fall * RG.belichtung));
         const R = RG.raum;
         // Fallen (y) und Treiben (xz), je Achse in den Kasten um das Auge zurückgefaltet.
         const x = T.fract(s4.x.add(uDrift.x.mul(uZeit).div(R[0])))
@@ -1073,10 +1085,19 @@ class AnazhRealm_bild_himmel {
                 .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        // DIE SCHLIERE IST DER WEG DES TROPFENS IN DER BELICHTUNG DES AUGES (w15-pfuetze): v = (Drift, −`fall`), ihr Weg
+        // v × `belichtung` (`uWeg`: 9 m/s → 15 cm) — Länge und Neigung im Wind aus EINEM Gesetz. Das Quad trägt den Hüllkasten des
+        // Wegs (|sin θ| · L + Breite × cos θ · L), die Schliere ist seine Diagonale in der Richtung des Falls (die Deckung je Fragment
+        // nach dem Abstand zu ihr, `breiteM` breit). Bis w15-pfuetze trug sie eine eigene Länge (0,5–1,1 m, Radeon: Stäbe über halbe
+        // Baumhöhe) und eine Drehung, die r184 VOR der Größe anwendet (`rotate(uv) · size`, gelesen im Vendor): das schmale Quad
+        // kippte nie, nur seine Enden schrägten. Ein positionNode, der die Ecke des Quads liest (Lage oder UV), zeichnet in r184 nichts.
+        const kasten = T.vec2(uWeg.x.abs().add(breiteM), uWeg.y);
         mat.positionNode = T.vec3(x, y, z);
-        mat.sizeNode = T.vec2(breiteM, s4.w).mul(uProj);
-        mat.opacityNode = T.materialOpacity.mul(blende);
-        mat.rotationNode = uWinkel;
+        mat.sizeNode = kasten.mul(uProj);
+        const q = T.uv().sub(0.5).mul(kasten);
+        const abstand = q.x.mul(uWeg.y).add(q.y.mul(uWeg.x)).abs().div(uWeg.length().max(1e-4));
+        const strich = T.float(1).sub(T.smoothstep(breiteM.mul(0.25), breiteM.mul(0.75), abstand));
+        mat.opacityNode = T.materialOpacity.mul(blende).mul(strich);
         mat.sizeAttenuation = true;
         const mesh = new THREE.Sprite(mat);
         AnazhRealm._instanzZahl(mesh, N);
@@ -1087,7 +1108,7 @@ class AnazhRealm_bild_himmel {
         mesh.userData.inventar = "wetter-regen";
         mesh.visible = false;
         this.state.scene.add(mesh);
-        this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
+        this._rainSystem = { mesh, uZeit, uDrift, uWeg, uProj, RG };
         return this._rainSystem;
     }
     _tickRain() {
@@ -1124,10 +1145,11 @@ class AnazhRealm_bild_himmel {
         const wd = cam ? this._windAt(cam.position.x, cam.position.z, this._bildZeit) : { x: 0, z: 0, staerke: 0 };
         const v = RG.drift * Math.max(wd.staerke, 0.1);
         sys.uDrift.value.set(wd.x * v, wd.z * v);
-        // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
+        // der Weg im Bild: der Drift-Anteil quer zur Blickrichtung (Bild-Rechts = Spalte 0 der Kamera) gegen das Fallen
         if (cam) {
             const m = cam.matrixWorld.elements;
-            sys.uWinkel.value = Math.atan2(wd.x * v * m[0] + wd.z * v * m[2], RG.fall);
+            const quer = wd.x * v * m[0] + wd.z * v * m[2];
+            sys.uWeg.value.set(quer * RG.belichtung, RG.fall * RG.belichtung);
             sys.uProj.value = cam.projectionMatrix.elements[5];
         }
     }
@@ -1543,11 +1565,13 @@ class AnazhRealm_bild_himmel {
             r.clear(true, false, false);
             r.setClearColor(farbe, alpha);
         }
-        this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
+        // false: seine Pipeline steht unter dem Ladeschirm noch im Vorbau (PSO-Vorbau, `_einmalRender`)
+        const ganz = this._einmalRender(quad, () => this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre"));
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
         if (rof) r.setRenderObjectFunction(rof);
         r.autoClear = auto;
+        return ganz;
     }
 
     // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter in seinen Stufen (Transmittance und
@@ -1617,21 +1641,22 @@ class AnazhRealm_bild_himmel {
         // ehe der Karten-Takt fragte: die Karte begann nie (gate:kamera-leib, swiftshader, Mess-Wiese: 15 Karten und 494 Bauten
         // standen nach 600 s offen, das Weltbild nie; main 0 nach 215 s).
         if (!anker && !sprung && st._skyEnvLast && this._gpuLeineStraff()) return A;
+        // eine Tafel, deren Pipeline noch im Vorbau steht (`_atmoZeichne` false), zeichnet der nächste Takt ganz neu
         if (!A.tafelnFrisch) {
-            this._atmoZeichne(A.qT, A.rtT);
-            this._atmoZeichne(A.qMS, A.rtMS);
+            const durchlass = this._atmoZeichne(A.qT, A.rtT);
+            if (!this._atmoZeichne(A.qMS, A.rtMS) || !durchlass) return A;
             A.tafelnFrisch = true;
             A.himmelSchluessel = null;
         }
         if (A.himmelSchluessel !== schluessel) {
-            this._atmoZeichne(A.qSV, A.rtSV);
+            if (!this._atmoZeichne(A.qSV, A.rtSV)) return A;
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
         }
         // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
         const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
         if (A.tafelSchluessel !== tafel) {
-            this._atmoZeichne(A.qBS, A.rtBS);
+            if (!this._atmoZeichne(A.qBS, A.rtBS)) return A;
             A.tafelSchluessel = tafel;
             // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
             A.tafel = null;
@@ -2855,11 +2880,12 @@ class AnazhRealm_bild_himmel {
         return { wasser: this._stoff("wasser"), eis: this._stoff("eis") };
     }
 
-    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass): Regen benetzt
-    // (τ = NAESSE.benetzenS / rain), ohne Regen trocknet die Welt (τ = trocknenS / max(sun, 0,2)) — exakt je Schritt, also
+    // DIE NÄSSE (wetter.K2) — EIN Zustand der Welt aus dem Wetter-Feld (`state.naesse`, 0 trocken … 1 nass, der Film): Regen
+    // benetzt, ohne Regen verdunstet der Film nach Sonne, Wind und den Poren des Bodens (`_naesseKurve`) — exakt je Schritt, also
     // dieselbe Nässe nach 600 Takten wie nach einem Schritt von 600 s (die Bühne der Linse `werkbank licht --naesse`). Ohne `dt`
-    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Der Leser ist der EINE Welt-Stoff (`_naesseImStoff`) über
-    // `atmoUniforms.naesse`; den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
+    // zählt die Spiel-Zeit seit dem letzten Ruf (`_tickRain`). Die Leser sind der EINE Welt-Stoff (`_naesseImStoff`) und die
+    // Pfütze in den Mulden des Bodens (`_pfuetzeKnoten`) über `atmoUniforms.naesse` (der Regen schlägt Ringe nach
+    // `atmoUniforms.regen`); den Dach-Pool seiner Himmels-Sicht wählt derselbe Takt (`_dachTakt`).
     _naesseTakt(dt) {
         const st = this.state;
         const N = AnazhRealm.NAESSE;
@@ -2870,10 +2896,11 @@ class AnazhRealm_bild_himmel {
         const wf = this._weatherFieldFor(st.weather);
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
-        const tau = ziel ? N.benetzenS / wf.rain : N.trocknenS / Math.max(wf.sun, 0.2);
-        const n = ziel + (n0 - ziel) * Math.exp(-Math.max(0, dt) / tau);
+        const n = AnazhRealm._naesseKurve(n0, wf, dt);
         st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
-        this._ensureAtmoUniforms().naesse.value = st.naesse;
+        const U = this._ensureAtmoUniforms();
+        U.naesse.value = st.naesse;
+        U.regen.value = ziel ? wf.rain : 0;
         this._dachTakt();
         this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;
@@ -2890,11 +2917,12 @@ class AnazhRealm_bild_himmel {
     // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
     // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
     // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
-    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
-    // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
-    // `zug` ({ von, beginn }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus dem Wort der Front `von`,
-    // ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang lief.
-    _setWeather(name, quelle, zug) {
+    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort — ein AKT mit Welt-Uhr-Stempel (`_wunschAkt`, Rückgabe "wunsch"),
+    // der Zug zieht es in seinem Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen
+    // (alle 4,7 s). `zug` ({ von, beginn, wunsch }) trägt der Wetter-Zug: sein Übergang ist eine Funktion der Welt-Uhr — aus
+    // dem Wort der Front `von`, ab `beginn`, über die Dauer des Gesetzes (nie die Laune einer Seite), gleich welcher Übergang
+    // lief —, sein Schreiber der gezogene Wunsch oder die Front. `akt` ({ w }): der Wunsch kam als Akt eines Mitspielers.
+    _setWeather(name, quelle, zug, akt) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
@@ -2910,21 +2938,20 @@ class AnazhRealm_bild_himmel {
                 return false;
             }
             if (wer === "welt") {
-                this.state.wetterWunsch = { wort: name, quelle: quelle || "?" };
+                this._wunschAkt(name, quelle || "?", akt);
                 return "wunsch";
             }
         }
         if (wer === "spieler") {
             this.state.wetterWort = name;
-            this.state.wetterWunsch = null;
+            this.state.wetterWuensche = [];
         } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
-        // der wahre Schreiber (affekt.K4#2): der Zug zieht den Wunsch der Welt (er ist verbraucht, sein Wünscher schrieb) oder die Front
-        const wunsch = quelle === "auto-zug" && this.state.wetterWunsch;
-        if (wunsch && wunsch.wort === name) this.state.wetterWunsch = null;
-        this.state.wetterSchreiber =
-            quelle !== "auto-zug" ? quelle || "?" : wunsch && wunsch.wort === name ? wunsch.quelle : "front";
+        // der wahre Schreiber (affekt.K4#2): der Zug nennt den Wunsch der Welt, den er zog, oder die Front — auch wenn das Wort
+        // blieb (bis feld.K2#2 hieß ein still gezogener Wunsch weiter „front")
+        const wunsch = quelle === "auto-zug" && zug && zug.wunsch;
+        this.state.wetterSchreiber = quelle !== "auto-zug" ? quelle || "?" : wunsch ? wunsch.quelle : "front";
         if (zug) {
             this.state.weatherTransition = null;
             this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);
@@ -2943,9 +2970,52 @@ class AnazhRealm_bild_himmel {
         const wer = this._himmelSchreiber(quelle, "wetter");
         if (wer !== "spieler" && wer !== "gesetz") return false;
         this.state.wetterWort = null;
-        this.state.wetterWunsch = null;
+        this.state.wetterWuensche = [];
         this._wetterZug = Math.floor(this.state.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         return true;
+    }
+
+    // DER WUNSCH DER WELT IST EIN SCHREIB-AKT (feld.K2#2, Lockstep: Zufall und Takt nur aus Saat, Welt-Uhr und Akten). Jede Seite
+    // trägt ihre eigene Welt-Stimme (Nexus, seine Gesetze, das Gemüt ihres Spielers) — ihr Wunsch ist darum keine Funktion von Saat
+    // und Uhr, er ist eine EINGABE: er steht mit seinem Stempel der Welt-Uhr `w` in der Liste der Wünsche (`wetterWuensche`) und
+    // reist als Akt über den dsl-Kanal (`p2pBroadcastDsl` mit Stempel und Quelle), der Empfänger nimmt ihn mit DEM Stempel des
+    // Absenders (`akt`). Der Zug k zieht den letzten Wunsch aus dem Fenster des Zugs davor (`_wunschDesZugs`) — auf jeder Seite
+    // derselbe, gleich in welcher Folge die Akte ankamen. Bis feld.K2#2 hielt jede Seite EINEN Wunsch (`wetterWunsch`), den ihr
+    // eigener Nexus schrieb: unter Last zog A „rainy von rule:emotion:sorrow", B „sunny von rule:nexus" (2 von 3 Läufen).
+    _wunschAkt(wort, quelle, akt) {
+        const w = akt ? akt.w : this.state.spielZeit;
+        if (this._wunschNimm({ wort, quelle, w }) && !akt)
+            this._aktSenden({ type: "dsl", program: ["weather", wort], w, quelle });
+    }
+
+    // Ein Wunsch tritt in die Liste (je Stempel, Wort und Quelle EINMAL — ein doppelt empfangener Akt ist einer); sie trägt nur die
+    // Fenster, die ein Zug noch zieht. Kam er spät (sein Fenster ist das des Zugs, der schon zog — der Mitspieler war voraus), zieht
+    // der Zug neu: das Wetter ist eine Funktion des Fensters, nie der Ankunft. → ob er neu war
+    _wunschNimm(wunsch) {
+        const st = this.state;
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        if (!(wunsch.wort in AnazhRealm.WEATHER_INTENSITY) || !Number.isFinite(wunsch.w)) return false;
+        const L = (st.wetterWuensche || []).filter((x) => Math.floor(x.w / Z) >= Math.floor(st.spielZeit / Z) - 1);
+        if (L.some((x) => x.w === wunsch.w && x.wort === wunsch.wort && x.quelle === wunsch.quelle)) return false;
+        L.push({ wort: wunsch.wort, quelle: String(wunsch.quelle).slice(0, 80), w: wunsch.w });
+        st.wetterWuensche = L;
+        if (this._wetterZug !== undefined && Math.floor(wunsch.w / Z) === this._wetterZug - 1 && !this._messHalt())
+            this._wetterZugZiehen(this._wetterZug);
+        return true;
+    }
+
+    // Der Wunsch, den der Zug `zug` zieht: der letzte (der späteste Stempel; bei gleichem Stempel das größere Wort|Quelle) aus dem
+    // Fenster des Zugs davor — oder keiner.
+    _wunschDesZugs(zug) {
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        let best = null;
+        for (const x of this.state.wetterWuensche || [])
+            if (
+                Math.floor(x.w / Z) === zug - 1 &&
+                (!best || x.w > best.w || (x.w === best.w && x.wort + "|" + x.quelle > best.wort + "|" + best.quelle))
+            )
+                best = x;
+        return best;
     }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. Default-Dauer via _emotionModulate aus den Emotionen

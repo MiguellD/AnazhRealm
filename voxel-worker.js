@@ -386,6 +386,7 @@ function chunkAntwort(mesh, lod, cx, cz) {
             aHimmel: mesh.himmel,
             aFarbeZiel: grob ? mesh.colors : mesh.farbeZiel,
             aSchutt: mesh.schutt,
+            aMulde: mesh.mulde,
         },
         mesh.indices,
         { tri: mesh.hTri, n: mesh.hN },
@@ -410,6 +411,8 @@ function chunkAntwort(mesh, lod, cx, cz) {
         himmel: mesh.himmel.buffer,
         schutt: mesh.schutt.buffer,
         felsFeuchte: mesh.felsFeuchte,
+        // die Mulde des Gesetzes je Vertex (wetter.K2, gelaende-core `muldeEcken`): wo der Regen als Pfütze steht
+        mulde: mesh.mulde.buffer,
         // die Boden-Karte des Netzes (w4-b-boden): Höhe, Grün und je Dreieck sein Zellen-Rechteck — null ohne Dreieck
         karteHoehe: mesh.karte ? mesh.karte.hoehe.buffer : null,
         karteGruen: mesh.karte ? mesh.karte.gruen.buffer : null,
@@ -518,6 +521,7 @@ function bodenHalten(a, cx, cz, lod) {
         col: kopieF(a.colors),
         him: kopieF(a.himmel),
         sch: kopieF(a.schutt),
+        mul: kopieF(a.mulde),
         nZ: kopieF(a.normalZiel),
         fZ: kopieF(a.farbeZiel),
         karte: a.karteHoehe
@@ -645,6 +649,7 @@ function bodenTeil(r, nachbar, gm, teile) {
                         aHimmel: B.HS,
                         aFarbeZiel: B.FZ,
                         aSchutt: B.SC,
+                        aMulde: B.MU,
                     },
                     B.I,
                     null,
@@ -767,11 +772,16 @@ function plattePost(msg) {
                 })
         )
         .then((p) => {
-            // ein Reply ohne Morph-Ziel, Boden-Karte, Naht oder Satz-Vorlage ist eine alte Form: der Faden baut frisch
+            // ein Reply ohne Morph-Ziel, Boden-Karte, Naht, Satz-Vorlage oder Mulde (wetter.K2) ist eine alte Form: der Faden baut frisch
             if (
                 p &&
                 !p.empty &&
-                (!p.morphZiel || p.karteHoehe === undefined || p.zielHoehe === undefined || !p.naht || !p.satz)
+                (!p.morphZiel ||
+                    p.karteHoehe === undefined ||
+                    p.zielHoehe === undefined ||
+                    !p.naht ||
+                    !p.satz ||
+                    !p.mulde)
             )
                 p = null;
             if (p) p.vonPlatte = true;
@@ -3585,6 +3595,8 @@ function stufeZielNetz(fein, feinNormal, feinFarbe, ox, oy, oz, grobLod) {
     ]);
 }
 
+// das Gedächtnis der Höhen des Mulden-Gitters (gelaende-core `muldeEcken`; der Kern leert es je Lage)
+const muldeMemo = new Map();
 function buildChunkMesh(cx, cz, lod, saat = null) {
     const cfg = voxelChunkConfig(lod);
     const { dim, step, span, dimY, floorDrop } = cfg;
@@ -3666,6 +3678,9 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     const BK = state.bodenKarte;
     if (!BK) throw new Error("buildChunkMesh: die Boden-Karte fehlt im Worker-Zustand (bodenKarte)");
     const karte = G.bodenKarte(positionsF32, indicesU32, colors, cx, cz, cfg, BK.teilung, BK.gruenSchwelle, null, null);
+    // DIE MULDE ENTSTEHT, WO DAS NETZ ENTSTEHT (wetter.K2): gelaende-core `muldeEcken` — die Senke des Gesetzes je Vertex, in der
+    // der Regen als Pfütze steht; das Gedächtnis des Gitters teilt der Faden über seine Netze (`muldeMemo`)
+    const mulde = G.muldeEcken(state, positionsF32, nV, lod, muldeMemo);
     // DAS ZIEL DER GRÖBEREN STUFE (K51-2, Geomorph nach CDLOD): das Netz der Stufe lod+1 desselben Orts, eine grobe Zelle
     // weiter nach unten gepolstert (das Gitter beginnt zwei grobe Schritte vor dem Chunk, der Crop behält die Zelle vor der
     // Kante — sie ist die Saum-Zelle des unteren Nachbarn, so trifft jeder geteilte Vertex in beiden Chunks dieselbe Fläche),
@@ -3721,6 +3736,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         himmel,
         schutt: fels.schutt,
         felsFeuchte: fels.feuchte,
+        mulde,
         karte,
         karteZiel,
         waterCells,

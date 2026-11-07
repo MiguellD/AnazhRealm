@@ -26,7 +26,7 @@
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
-//   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
+//   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: jeder Geometrie-Puffer beim Halter nach GC
@@ -898,7 +898,7 @@ async function starte() {
                 ).length;
         });
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
-        for (const i of [`window.__tierZahl = ${tierZahl.toString()};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
+        for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
         await page.evaluate(() => __weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
@@ -3368,9 +3368,11 @@ hauptLauf(async () => {
         const halt = await eigeneWelt();
         const welt = {};
         try {
-            for (const ort of /^(wiese|dorf)/.test(opt("--naesse", "")) ? opt("--naesse").split(",") : ["wiese", "dorf"]) {
-                await umstellen({ ort, sicht: "ego" });
-                const lauf = (o) => evalRuf(`return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});`);
+            // je Ort die Sicht nach dem Doppelpunkt (`wiese:third`, sonst Ego): im Dorf stellt die Probe die Kamera an die Schwelle
+            for (const wahl of /^(wiese|dorf)/.test(opt("--naesse", "")) ? opt("--naesse").split(",") : ["wiese", "wiese:third", "dorf"]) {
+                const [ort, sicht = "ego"] = wahl.split(":");
+                await umstellen({ ort, sicht });
+                const lauf = (o) => evalRuf(`return await (${LL.naesseSicht})(${JSON.stringify(o)});`);
                 let dach;
                 // DIE STÄNDE DES DORFS: am Ort wählt der Spieler das Haus (das nächste mit Hülle und Tür, seine Schwelle) und den
                 // nächsten Dach-Bau, dann tritt er an den Dach-Bau (der Dach-Pool trägt die Dächer um ihn) und an die Schwelle. Bis
@@ -3383,10 +3385,10 @@ hauptLauf(async () => {
                     await umstellen({ x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });
-                welt[ort] = Object.assign(ergebnis(a), dach && { dachBauten: dach });
-                for (const [i, png] of (welt[ort].png || []).entries())
-                    pngDatei(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), png);
-                delete welt[ort].png;
+                welt[wahl] = Object.assign(ergebnis(a), dach && { dachBauten: dach });
+                for (const [i, png] of (welt[wahl].png || []).entries())
+                    pngDatei(path.resolve(opt("--bilder"), `naesse-${wahl}-${["klar", "frisch", "nass"][i]}.png`), png);
+                delete welt[wahl].png;
             }
         } finally {
             if (halt) await halt();

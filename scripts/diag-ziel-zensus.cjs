@@ -86,32 +86,27 @@ function selbsttest() {
         rundung: { gelaufen: true, format: "rg11b10ufloat", rundung: "gegen null", versatz: 0, ruhe: 0, anders: 0.4, mittel: 0.02 },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (f) => {
-        const z = jsonKlon(gruen);
-        f(z);
-        return z;
-    };
     const faelle = [
-        { name: "Täter im Zensus", z: mit((z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"])), muss: /ZENSUS: OHNE LESER/ },
-        { name: "kein Leser der Tiefe im Blick", z: mit((z) => (z.tiefeGelesen = false)), muss: /keinen Leser im Blick/ },
-        { name: "Farbe auf der GPU", z: mit((z) => (z.karte.farbeGpu = true)), muss: /trägt eine GPU-Textur/ },
-        { name: "Farb-Anhang im Schatten-Pass", z: mit((z) => (z.karte.farbAnhaenge = 1)), muss: /mit 1 Farb-Anhängen/ },
-        { name: "Schatten fällt nicht", z: mit((z) => (z.karte.dunkler = 1)), muss: /der Schatten fällt nicht/ },
-        { name: "Hülle fehlt", z: mit((z) => (z.karte.huelle = false)), muss: /trägt die Hülle nicht/ },
-        { name: "Bühne blind", z: mit((z) => (z.karte = {})), muss: /lief nicht/ },
-        { name: "GPU-Validierung", z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])), muss: /GPU: Attachment/ },
-        { name: "Schmuggel blind", z: mit((z) => (z.selbst = [{ muss: "TEILBAR", ok: false }])), muss: /blind für TEILBAR/ },
-        { name: "Schmuggel bleibt", z: mit((z) => (z.rest = ["zensus-selbsttest:bloom"])), muss: /noch im Zensus/ },
-        { name: "Sonde lief nicht", z: mit((z) => (z.rundung.rundung = null)), muss: /die Sonde lief nicht/ },
-        { name: "halber Versatz beim Runden gegen null", z: mit((z) => (z.rundung.versatz = 0.5)), muss: /Versatz 0.5, das Gerät rundet „gegen null“/ },
-        { name: "kein Versatz beim Runden zum nächsten", z: mit((z) => (z.rundung.rundung = "zum nächsten")), muss: /rundet „zum nächsten“/ },
-        { name: "Ditherung erreicht das Ziel nicht", z: mit((z) => (z.rundung.anders = 0)), muss: /das Ziel trägt sie nicht/ },
-        { name: "Ditherung hebt das Mittel", z: mit((z) => (z.rundung.mittel = 1.5)), muss: /verschiebt das Mittel um 1.5/ },
+        ["Täter im Zensus", (z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"]), /ZENSUS: OHNE LESER/],
+        ["kein Leser der Tiefe im Blick", ["tiefeGelesen=", false], /keinen Leser im Blick/],
+        ["Farbe auf der GPU", ["karte.farbeGpu=", true], /trägt eine GPU-Textur/],
+        ["Farb-Anhang im Schatten-Pass", ["karte.farbAnhaenge=", 1], /mit 1 Farb-Anhängen/],
+        ["Schatten fällt nicht", ["karte.dunkler=", 1], /der Schatten fällt nicht/],
+        ["Hülle fehlt", ["karte.huelle=", false], /trägt die Hülle nicht/],
+        ["Bühne blind", (z) => (z.karte = {}), /lief nicht/],
+        ["GPU-Validierung", (z) => (z.gpuFehler = ["Attachment state mismatch"]), /GPU: Attachment/],
+        ["Schmuggel blind", (z) => (z.selbst = [{ muss: "TEILBAR", ok: false }]), /blind für TEILBAR/],
+        ["Schmuggel bleibt", (z) => (z.rest = ["zensus-selbsttest:bloom"]), /noch im Zensus/],
+        ["Sonde lief nicht", ["rundung.rundung=", null], /die Sonde lief nicht/],
+        ["halber Versatz beim Runden gegen null", ["rundung.versatz=", 0.5], /Versatz 0.5, das Gerät rundet „gegen null“/],
+        ["kein Versatz beim Runden zum nächsten", ["rundung.rundung=", "zum nächsten"], /rundet „zum nächsten“/],
+        ["Ditherung erreicht das Ziel nicht", ["rundung.anders=", 0], /das Ziel trägt sie nicht/],
+        ["Ditherung hebt das Mittel", ["rundung.mittel=", 1.5], /verschiebt das Mittel um 1.5/],
         // ein Pixel unter der ruhenden Welt (z121: das Wasser am Bach, 0,011)
-        { name: "die Welt steht nicht", z: mit((z) => (z.rundung.ruhe = 1.3e-5)), muss: /ändert 0.000013 der Pixel — die Welt steht nicht/ },
-        { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
+        ["die Welt steht nicht", (z) => (z.rundung.ruhe = 1.3e-5), /ändert 0.000013 der Pixel — die Welt steht nicht/],
+        ["Rundungs-Probe blind", (z) => (z.rundung = {}), /RUNDUNG: die Probe lief nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
     return fehler;
 }
 

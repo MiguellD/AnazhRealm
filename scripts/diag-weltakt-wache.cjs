@@ -178,8 +178,8 @@ async function probe(GESCHICKT) {
     r.spawnSettlement = function (o) {
         return doerfer[doerfer.push(Object.getPrototypeOf(this).spawnSettlement.call(this, o)) - 1];
     };
-    // die Form jedes Verbs (`_dslForm`), gelesen, ehe der Spion die Welt-Akte hüllt
-    const formen = Object.fromEntries(Object.entries(r.dslEffects).map(([op, fn]) => [op, r._dslForm(fn)]));
+    // die Form jedes Verbs, gelesen, als die Tafel entstand (`_dslFormen`) — der Spion hüllt die Welt-Akte erst danach
+    const formen = r.dslEffects && r._dslFormen;
     window.__weltaktSpion(GESCHICKT);
     const summe = (f) => +st.creatures.reduce((n, c) => n + f(c), 0).toFixed(4);
     const welt = () => ({

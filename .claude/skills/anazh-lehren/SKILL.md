@@ -76,7 +76,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   hochhaus-dach · gipfel-blick: Orte mit `anlauf`, das Dach am Träger der Kapsel; das Band misst sie, `ungemessen` bis zur Ratsche) ·
   12 Ratschen Ort × Gerät × Sicht ·
   Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
-  (`lib/abnahme-urteil.cjs`).
+  (`lib/abnahme-urteil.cjs`; ein Werk am Ziel steht im Bild in der Stufe seiner Kette — Mesh, Instanz oder fern seine Hülle im
+  Welt-March, `_archImBild`).
 
 ## Die tragenden Lehren (die Nummern sind Anker — der Code zitiert sie)
 

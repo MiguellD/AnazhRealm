@@ -1464,17 +1464,21 @@ class AnazhRealm_gelaende_fern {
     // Auge), jenseits trägt der Boden das Kronendach der Deckung (`_fernKroneNahMisch`). Die Laubstreu der echten Kronen
     // (`_wegeBodenFarbe`) liest dieselbe Grenze: unter dem Dach liegt sie im Mittel des Gesetzes, nie ein zweites Mal — bis K53
     // lag sie jenseits unter dem Dach UND im Boden (gate:nah-fern Luft aus: Y −2,5 %, Grün −0,02 gegen das Gesetz).
+    // Die Grenze ist EIN Knoten (`k.ohneWald`): beide Leser im selben Programm lesen dieselbe Variable — bis w15-pfuetze baute
+    // jeder Ruf sie neu, und das Boden-Programm schrieb sie zweimal aus (211 Zeichen WGSL).
     _fernKroneOhneWald(_T) {
         const k = this._fernKroneNahEnsure();
         if (!k || !_T.positionWorld || !_T.cameraPosition)
             throw new Error("Fern-Krone (nah): die Grenze des Walds braucht Karte und TSL");
+        if (k.ohneWald) return k.ohneWald;
         const K = AnazhRealm.FERN_KRONE_NAH;
         const dSp = _T.positionWorld.xz.sub(k.U.spieler).length();
         const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
-        return _T.max(
+        k.ohneWald = _T.max(
             _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
             _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
         );
+        return k.ohneWald;
     }
 
     _fernKroneNahMisch(_T, alb, kroneVertex = null) {

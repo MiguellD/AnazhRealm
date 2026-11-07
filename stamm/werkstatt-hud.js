@@ -1621,7 +1621,7 @@ class AnazhRealm_werkstatt_hud {
     renderWorldRulesList() {
         const r = this._statusRefs;
         if (!r || !r.worldrules) return;
-        const now = performance.now() / 1000;
+        const now = this.state.spielZeit; // die Uhr der Gesetze (`_tickWorldRules`)
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const all = this.state.worldRules || [];
         // Zwei Gruppen: DEINE Gesetze (Mensch + adoptiert, stabil, oben) ↔ DER NEXUS ERPROBT (ephemer,
@@ -1717,6 +1717,46 @@ class AnazhRealm_werkstatt_hud {
     // Umgebungsgeräusche, Render-Ring-Radius. Lädt persistierte Werte
     // aus localStorage. Master + Umgebung wirken live auf den Master-Bus und
     // den Bus der Klang-Welt. Render-Ring greift im nächsten worldgen-Tick.
+    // DER STAND IM MENÜ: jeder Regler und Schalter, dessen Wert im Stand reist, zeigt ihn — beim Bau des Menüs und nach dem Laden
+    // des Stands (`loadState` läuft nach `slidersInitDOM`: bis w15-farbsicht zeigte das Menü nach dem Neuladen Ziel-FPS,
+    // Szenen-Skala, LOD-Referenz, Perf-Panel und Untertitel im Default, während der Stand den geladenen Wert fuhr). Die Hörer der
+    // Regler schreiben den Stand (`slidersInitDOM`), dieser EINE Spiegel liest ihn.
+    _menueZeigtStand() {
+        if (typeof document === "undefined") return;
+        const st = this.state;
+        const el = (id) => document.getElementById(id);
+        const setze = (id, wert, text) => {
+            const e = el(id);
+            if (!e) return;
+            if (typeof wert === "boolean") e.checked = wert;
+            else e.value = String(wert);
+            if (text != null && el(id + "-val")) el(id + "-val").textContent = text;
+        };
+        const fps = Math.max(
+            30,
+            Math.min(
+                60,
+                Math.round(
+                    1000 / (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS) / 5
+                ) * 5
+            )
+        );
+        setze("slider-fpstarget", fps, this._t("rede.fps-wert", { fps }));
+        const sk = Math.round((st.szeneSkala == null ? AnazhRealm.SZENE_SKALA : st.szeneSkala) * 100);
+        setze("slider-szeneskala", sk, `${sk} %`);
+        const lod = Math.max(4, Math.min(30, Math.round(Number.isFinite(st.lodRef) ? st.lodRef : 14)));
+        setze("slider-lodref", lod, `${lod} m`);
+        setze("perf-panel-toggle", st.perfPanel !== false);
+        setze("untertitel-toggle", st.untertitel === true);
+        // spielgang.K4 — der Zugang
+        const Z = st.zugang || {};
+        setze("farbsicht-wahl", AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus");
+        const grad = Math.round(Number.isFinite(Z.sichtfeld) ? Z.sichtfeld : AnazhRealm.KAM_FOV_GRAD);
+        setze("slider-sichtfeld", grad, `${grad}°`);
+        setze("kopfwackeln-toggle", Z.wackeln !== false);
+        setze("unschaerfe-toggle", Z.unschaerfe !== false);
+    }
+
     slidersInitDOM() {
         if (typeof document === "undefined") return;
         // Persistierte Werte laden
@@ -1837,10 +1877,6 @@ class AnazhRealm_werkstatt_hud {
         const fpsS = document.getElementById("slider-fpstarget");
         const fpsSv = document.getElementById("slider-fpstarget-val");
         if (fpsS) {
-            const pt0 = Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
-            const fps0 = Math.max(30, Math.min(60, Math.round(1000 / pt0 / 5) * 5));
-            fpsS.value = String(fps0);
-            if (fpsSv) fpsSv.textContent = this._t("rede.fps-wert", { fps: fps0 });
             fpsS.addEventListener("input", () => {
                 const fps = Math.max(30, Math.min(60, parseInt(fpsS.value, 10) || 60));
                 this.state.perfTargetMs = Math.round(1000 / fps);
@@ -1852,10 +1888,6 @@ class AnazhRealm_werkstatt_hud {
         const skS = document.getElementById("slider-szeneskala");
         const skSv = document.getElementById("slider-szeneskala-val");
         if (skS) {
-            const sk0 = this.state.szeneSkala == null ? AnazhRealm.SZENE_SKALA : this.state.szeneSkala;
-            const pct0 = Math.round(sk0 * 100);
-            skS.value = String(pct0);
-            if (skSv) skSv.textContent = `${pct0} %`;
             skS.addEventListener("input", () => {
                 const pct = Math.max(50, Math.min(100, parseInt(skS.value, 10) || 75));
                 this.state.szeneSkala = pct / 100;
@@ -1867,10 +1899,6 @@ class AnazhRealm_werkstatt_hud {
         const lodS = document.getElementById("slider-lodref");
         const lodSv = document.getElementById("slider-lodref-val");
         if (lodS) {
-            const lr0 = Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14;
-            const lv0 = Math.max(4, Math.min(30, Math.round(lr0)));
-            lodS.value = String(lv0);
-            if (lodSv) lodSv.textContent = `${lv0} m`;
             lodS.addEventListener("input", () => {
                 const v = Math.max(4, Math.min(30, parseInt(lodS.value, 10) || 14));
                 this.state.lodRef = v;
@@ -1881,7 +1909,6 @@ class AnazhRealm_werkstatt_hud {
         // (default an). Setzt `state.perfPanel` (persistiert) + spiegelt die Sichtbarkeit sofort.
         const panelCb = document.getElementById("perf-panel-toggle");
         if (panelCb) {
-            panelCb.checked = this.state.perfPanel !== false;
             panelCb.addEventListener("change", () => {
                 this.state.perfPanel = !!panelCb.checked;
                 const div = this._ensurePerfPanelDiv();
@@ -1891,7 +1918,6 @@ class AnazhRealm_werkstatt_hud {
         // spielgang.K4 — die Untertitel der Klang-Welt (default aus): aus, fällt jede stehende Zeile.
         const utCb = document.getElementById("untertitel-toggle");
         if (utCb) {
-            utCb.checked = this.state.untertitel === true;
             utCb.addEventListener("change", () => {
                 this.state.untertitel = !!utCb.checked;
                 const buch = this.state._untertitel;
@@ -1899,6 +1925,30 @@ class AnazhRealm_werkstatt_hud {
                     for (const schl of [...buch.offen.keys()]) this._untertitelWeg(schl);
             });
         }
+        // spielgang.K4 — DER ZUGANG: jede Wahl schreibt `state.zugang` (die EINE Quelle; die Kette und das Rig lesen sie je Bild),
+        // die Schalter zeigt `_menueZeigtStand` (auch nach dem Laden des Stands)
+        const zg = () => (this.state.zugang = this.state.zugang || {});
+        const fsW = document.getElementById("farbsicht-wahl");
+        if (fsW)
+            fsW.addEventListener(
+                "change",
+                () => (zg().farbsicht = AnazhRealm.FARBSICHT.arten.includes(fsW.value) ? fsW.value : "aus")
+            );
+        const svS = document.getElementById("slider-sichtfeld");
+        if (svS)
+            svS.addEventListener("input", () => {
+                const [f0, f1] = AnazhRealm.ZUGANG.sichtfeld;
+                zg().sichtfeld = Math.max(f0, Math.min(f1, parseInt(svS.value, 10) || AnazhRealm.KAM_FOV_GRAD));
+                this._menueZeigtStand();
+            });
+        for (const [id, feld] of [
+            ["kopfwackeln-toggle", "wackeln"],
+            ["unschaerfe-toggle", "unschaerfe"],
+        ]) {
+            const cb = document.getElementById(id);
+            if (cb) cb.addEventListener("change", () => (zg()[feld] = !!cb.checked));
+        }
+        this._menueZeigtStand();
         // V18.472 — der Perf-Export-Button (unter dem Panel-Toggle): lädt den
         // Flugschreiber-Trace (+ Sekunden-Ring) als .json herunter — die Datei,
         // die der Schöpfer im Chat zustellt. EINE Quelle (_flightRecorderBuildTrace).
@@ -2726,6 +2776,8 @@ class AnazhRealm_werkstatt_hud {
             this._ichRenderSpecSheet();
             return false;
         }
+        // die Werkstatt ihren ersten Bau (der Init baut sie nicht, w16-lade-atem)
+        if (!this._werkstattGemalt) return (this._renderWorkshopDOM(), false);
         for (const el of [
             document.getElementById("inventory-overlay"),
             ...document.querySelectorAll(".drawer[data-drawer]"),
