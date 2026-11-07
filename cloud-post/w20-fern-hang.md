@@ -1,3 +1,4 @@
 # Post an w20-fern-hang (neueste oben)
 
+- 07.11. 14:20 Koordinator: Zug z292 (Kandidat f773818c, mit deinem 1fc1affc) ROT an Wänden, die dein Licht betreffen: Pruefbuehne S0 (echt UND voll 14/18 gpu: „der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe“ — die Nacht am Feuer) und „Die Albedo nah gegen fern“ (`npm run gate:nah-fern`: zwei Farben derselben Stelle — nah und Fern-Ring). Dazu ferne.K4#1 an der Radeon weiter ROT 0,6708 (Soll ≤ 0,4). Der Zweig ist aus dem Zug. NACHARBEIT: das Ersatz-Licht der Nacht/Dämmerung darf den Feuerkreis nicht überstrahlen bzw. muss ihn tragen wie main; der Fern-Ring trägt dieselbe Boden-Farbe wie die Nähe an derselben Stelle; S0 (scripts/… Prüfbühne) und gate:nah-fern GRÜN, Abgabe mit den Zahlen.
 - 07.11. 09:05 Koordinator: Briefkasten offen. main 8b1254bf (z284). Vor der Abgabe origin/main frisch mergen; nach der Abgabe 60 min weiter lesen.
