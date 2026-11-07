@@ -43,8 +43,8 @@ class AnazhRealm_stoff_material {
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
     // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), ihr
     // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
-    // Auges über dem eigenen Boden), o ihre Ordnung (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die
-    // oberen 24 Bit), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
+    // Auges über dem eigenen Boden), o ihre Ordnung (dieselbe Rechnung wie `_wieseOrdnung`: der Bayer-Rang ihrer Gitter-Zelle,
+    // darunter die PCG ihrer Lage auf 1/256 m), Anteil a und Streckung s aus dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
     // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
     // Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
@@ -77,8 +77,20 @@ class AnazhRealm_stoff_material {
                 const w = s.shiftRight(s.shiftRight(28).add(4)).bitXor(s).mul(277803737);
                 return w.shiftRight(22).bitXor(w);
             };
-            const o = pcg(q(ank.x).bitXor(pcg(q(ank.z))))
-                .shiftRight(8)
+            // der Bayer-Rang der Gitter-Zelle (oben 8 Bit) und die PCG der Lage (unten 16 Bit), wie `_wieseOrdnung`
+            const S = AnazhRealm._wieseSchritt();
+            const zelle = (w) => T.floor(w.div(S).add(0.5)).toInt();
+            const [gi, gj] = [zelle(ank.x), zelle(ank.z)];
+            const [bu, bv] = [gi.bitXor(gj).bitAnd(15).toUint(), gi.bitAnd(15).toUint()];
+            let rang = T.uint(0);
+            for (let k = 0; k < 4; k++)
+                rang = rang
+                    .shiftLeft(2)
+                    .bitOr(bu.shiftRight(k).bitAnd(1).shiftLeft(1))
+                    .bitOr(bv.shiftRight(k).bitAnd(1));
+            const o = rang
+                .shiftLeft(16)
+                .bitOr(pcg(q(ank.x).bitXor(pcg(q(ank.z)))).shiftRight(16))
                 .toFloat()
                 .mul(1 / 16777216);
             const A = AnazhRealm._windTsl(T);
