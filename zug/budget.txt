@@ -225,3 +225,5 @@
 2026-11-07T01:17 karte=214 (gebucht am fe57747a, buche.sh)
 2026-11-07T09:17 karte=218 (gebucht am 039509b2, buche.sh)
 2026-11-07T15:48 karte=218 (gebucht am 95ba6fd6, buche.sh)
+2026-11-07T17:45 woche=0 konto=neu karte=218 (Konto 9, Woche bis 12.11. 18:00)
+2026-11-07T20:40 woche=9 karte=218 (Konto 9; z296 gelandet 185e99bb, z300 fährt; ehrlich 215, 3 Rückfälle in Heilung)
