@@ -1,7 +1,7 @@
 {
  "sha": "dbf081c511c5f9d27bd3bcd4c0d2e24ef28e6ff2",
  "geraet": "gtx",
- "zeit": "2026-11-07T12:15:33.046Z",
+ "zeit": "2026-11-07T12:26:31.208Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -164,64 +164,138 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 220.1 über Rausch-Boden 0.000 (×220.1), Tal 34.1 — Kamm/Tal 6.45 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.25,
+   "gpu": "nvidia/pascal",
+   "s": 14.9,
+   "zeit": "2026-11-07T12:21:32.614Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.58 [-14, -4] · lippeA 11.86 [4, 14] · hoehleL -11.2 [-12, 0] · hoehleA 6.58 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.49,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.58 [-14, -4] · lippeA 11.86 [4, 14] · hoehleL -11.2 [-12, 0] · hoehleA 6.58 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 29.5,
+   "zeit": "2026-11-07T12:21:47.522Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.22 · 10–20 1.97 · 20–40 1.62 (Saum springt > 15 %), Farbton 2–5 m 13.55°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.22 · 10–20 1.97 · 20–40 1.62 (Saum springt > 15 %), Farbton 2–5 m 13.55°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 33.7,
+   "zeit": "2026-11-07T12:22:17.116Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 183603 px · winter 20791 px → Winter 0.113 × Sommer",
+   "exit": 0,
+   "minuten": 0.27,
+   "gpu": "nvidia/pascal",
+   "s": 16.2,
+   "zeit": "2026-11-07T12:22:50.912Z",
+   "abdruck": "94c6e9a3bdbe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.434 (5–12,5), Schatten-Anteil 0.184 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.18,
+   "gpu": "nvidia/pascal",
+   "s": 10.8,
+   "zeit": "2026-11-07T12:23:07.191Z",
+   "abdruck": "f585bf83c265",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T12:10:37.972Z",
+  "start": "2026-11-07T12:20:54.454Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
+  "warten": 0.01,
+  "bootS": 8.4,
   "grundstellungS": [
-   3.9
+   5.6,
+   4.9
   ],
-  "proben": 3,
+  "proben": 8,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 21.5,
-    "takte": 748,
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 28.6,
+    "takte": 795,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "vegetation.K4#1",
-    "s": 6.7,
-    "takte": 247,
+    "vor": "ferne.K1#1",
+    "s": 22,
+    "takte": 651,
     "chunks": 81,
-    "nach": null
+    "nach": "der Tür"
    },
    {
     "ort": "genesis",
-    "vor": "mensch.K2#2",
-    "s": 21.1,
+    "vor": "mensch.K5#1",
+    "s": 21.6,
     "takte": 643,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "grund": "die Welt trägt nicht mehr vor affekt.K1#2: /eval ohne Antwort binnen 60 s",
-  "ciBlicke": 5,
+  "ciBlicke": 9,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
    "frameP95": null,
    "taktP95": null,
    "vramMax": null,
-   "seiten": 2,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 131,
-   "luecken": 11,
+   "ortImDeckel": [
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 296,
+   "luecken": 3,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 304.1,
-  "minuten": 5.78
+  "fahrtS": 385.1,
+  "minuten": 6.5
  },
  "ungemessen": {
   "gelaende.K2#1": {
@@ -414,6 +488,63 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "luftwasser.K5#1",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+   "s": 45.2,
+   "zeit": "2026-11-07T12:23:18.084Z",
+   "abdruck": "77511569c24f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dbf081c5-gtx\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dbf081c5-gtx\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T12:24:30.937Z",
+   "abdruck": "f675fa5e3cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dbf081c5-gtx\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\dbf081c5-gtx\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.2,
+   "zeit": "2026-11-07T12:24:30.937Z",
+   "abdruck": "59ada7ab8467",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.2,
+   "zeit": "2026-11-07T12:26:31.208Z",
+   "abdruck": "eb8679013e74",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  }
