@@ -87,7 +87,7 @@ function laborStoff(m0,geo,skin,cache){
         'mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';qS=pS-zS-0.5-mS;lS=dot(qS,kS);dS=sqrt((dot(qS,qS)-lS*lS)*'+gf(FS.strich)+'+lS*lS/'+gf(FS.strich)+');'+
         'haarS=max(haarS,step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+'));';};
       var lockenS='';for(var oS=-FS.nachbarn;oS<=FS.nachbarn;oS++)lockenS+=lockeS(oS);
-      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 kS=vKamm/max(length(vKamm),1e-6);vec3 zS;float h1;float h2;vec3 mS;vec3 qS;float lS;float dS;float haarS=0.0;'+
+      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*(vSchale.z/'+gf(FS.locke)+');vec3 kS=vKamm/max(length(vKamm),1e-6);vec3 zS;float h1;float h2;vec3 mS;vec3 qS;float lS;float dS;float haarS=0.0;'+
         'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+lockenS+
         'float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
 'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
