@@ -675,7 +675,7 @@ class AnazhRealm_vegetation_wiese {
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
         const grenzeMax = G.grenze.reduce((a, b) => Math.max(a, b), 1); // die Kugel der Kachel im Sicht-Satz
-        const schale = this._wieseSchaleDaten(fx, fz, bueschel);
+        const schale = this._wieseSchaleDaten(fx, fz);
         return Object.assign(
             { anteil, reich, chunkKarten, wasser, nie: G.nie, grenze: G.grenze, grenzeMax, schale, bloecke: [] },
             this._nahWieseKachelDaten(fx, fz, bueschel, K)
@@ -832,18 +832,24 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE SCHALE EINER KACHEL DER FERNE (w22-wiese-nachzug): auf dem Gitter ihres Bodens (`_wieseFernGitter`, die Mitten der
     // Zellen) je Punkt, der Wiese trägt — nie an einer Kante, über die der Boden steiler fällt, als die Wiese steht, nie im Grund
-    // eines Hauses — EINE Karte: ihre Matrix (die Lage, gedreht nach Zug 1 ihrer Ziehung, Breite `breite`, Höhe `hoehe` ×
-    // 0,8–1,2; die vierte Zeile trägt in Element 7 ihre Ordnung, Zug 0 der über dem Gitter geschichteten Ziehung — das
-    // Teil-Gitter wie die Büschel), ihr Tint (der eines Büschels in ihrem Fach von 2 m). Nach der Ordnung sortiert.
-    _wieseSchaleDaten(fx, fz, bueschel) {
+    // eines Hauses — EINE Karte. Alles an ihr zieht der Ort (`_ortZiehung`): Zug 0 über dem Gitter geschichtet ihre Ordnung (das
+    // Teil-Gitter wie die Büschel, Element 7 der Matrix), Zug 1 ihre Drehung und Höhe (`hoehe` × 0,8–1,2), Zug 2 und 3 die Saat
+    // ihrer Spitzen (Element 3 und 11, die freie vierte Zeile: der Stoff streut daraus je Spitze Höhe, Neigung und Breite,
+    // `_wieseSchaleSenke`), Zug 4 ihre Helligkeit (0,88–1,12). Ihr Farbton ist der der Halme an ihrem Ort: das EINE Gesetz der
+    // Wiesen-Farbe (`terrain:wiesenTint` über dem Licht der Kronen und der Feuchte, wie `_nahWieseKachelBueschel`). Nach der
+    // Ordnung sortiert. Bis dahin standen elf gleiche Spitzen gleicher Höhe und Farbe je Karte (der Tint des ersten Büschels
+    // im Fach): in 20–40 m ein Zaun aus hell-gelben Zähnen.
+    _wieseSchaleDaten(fx, fz) {
         const F = AnazhRealm.NAH_WIESE.fern,
             S = F.schale;
         const G = this.state.nahWiese.fern.gitter.get(fx + "," + fz);
         const n = Math.round(F.kachel / F.gitter);
         const kante = AnazhRealm.GRASS_SLOPE.hi * F.gitter;
         const [Gb, E, W] = [globalThis.__gelaendeCore, this._erdbauLage(), AnazhRealm._wortAlgebra()];
+        const WT = AnazhRealm.Gesetz("terrain:wiesenTint", null) || AnazhRealm._kernPflichtBruch("terrain:wiesenTint");
+        const licht = G && !G.nie ? this._bodenLichtFeld(fx * F.kachel, fz * F.kachel, (fx + 1) * F.kachel, (fz + 1) * F.kachel) : null; // prettier-ignore
         const p = [];
-        for (let j = 0; G && !G.nie && j < n; j++)
+        for (let j = 0; licht && j < n; j++)
             for (let i = 0; i < n; i++) {
                 const q = j * n + i,
                     y = G.h[q];
@@ -852,51 +858,48 @@ class AnazhRealm_vegetation_wiese {
                 if ((i + 1 < n && steil(q + 1)) || (i && steil(q - 1)) || (j + 1 < n && steil(q + n)) || (j && steil(q - n))) continue; // prettier-ignore
                 const [x, z] = [(fx * n + i + 0.5) * F.gitter, (fz * n + j + 0.5) * F.gitter];
                 if (Gb.erdbauGrund(E, x, z, S.breite * 0.5)) continue;
-                p.push([AnazhRealm._ortZiehung(W, x, z, 0, F.gitter), AnazhRealm._ortZiehung(W, x, z, 1), x, y, z]);
+                p.push([AnazhRealm._ortZiehung(W, x, z, 0, F.gitter), x, y, z]);
             }
         p.sort((a, b) => a[0] - b[0]);
-        // der Tint je Fach von 2 m (das erste Büschel darin), ohne Büschel im Fach der der Kachel — nie eine Suche je Karte
-        const fach = new Map();
-        for (const b of bueschel) {
-            const key = Math.floor(b.x / 2) + "," + Math.floor(b.z / 2);
-            if (!fach.has(key)) fach.set(key, b.f);
-        }
         const K = { n: p.length, o: new Float64Array(p.length), x: new Float64Array(p.length), z: new Float64Array(p.length) }; // prettier-ignore
-        Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3).fill(1), y0: Infinity, y1: -Infinity }); // prettier-ignore
-        p.forEach(([o, w, x, y, z], m) => {
-            const [c, s, h] = [
-                Math.cos(2 * Math.PI * w),
-                Math.sin(2 * Math.PI * w),
-                S.hoehe * (0.8 + 0.4 * ((w * 977) % 1)),
-            ];
-            K.matrizen.set([c * S.breite, 0, -s * S.breite, 0, 0, h, 0, o, s, 0, c, 0, x, y - 0.05, z, 1], m * 16);
+        Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3), y0: Infinity, y1: -Infinity }); // prettier-ignore
+        p.forEach(([o, x, y, z], m) => {
+            const [w, s2, s3, s4] = [1, 2, 3, 4].map((zug) => AnazhRealm._ortZiehung(W, x, z, zug));
+            const [c, s, h] = [Math.cos(2 * Math.PI * w), Math.sin(2 * Math.PI * w), S.hoehe * (0.8 + 0.4 * ((w * 977) % 1))]; // prettier-ignore
+            K.matrizen.set([c * S.breite, 0, -s * S.breite, s2, 0, h, 0, o, s, 0, c, s3, x, y - 0.05, z, 1], m * 16);
             [K.o[m], K.x[m], K.z[m], K.y0, K.y1] = [o, x, z, Math.min(K.y0, y), Math.max(K.y1, y)];
-            const f = fach.get(Math.floor(x / 2) + "," + Math.floor(z / 2)) || (bueschel.length && bueschel[0].f);
-            if (f) K.farben.set(f, m * 3);
+            const f = WT(x, z, licht(x, z), this._feuchteAt ? this._feuchteAt(x, z, y) : 0, [1, 1, 1], 0);
+            const hell = 0.88 + 0.24 * s4;
+            K.farben.set([f[0] * hell, f[1] * hell, f[2] * hell], m * 3);
         });
         return K;
     }
 
     // DIE SENKE DER SCHALE (w22-wiese-nachzug): EINE Senke `nahWiese:Lf:schale` (ein Befehl, die Klasse der Ferne), ihre Karte
-    // ein Band und elf Spitzen von Halm-Breite (13 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der
-    // Pixel mehrere trägt), unten dunkel, oben licht; die Albedo die der Vorlage L2 (ihr Stoff, ihre Ecken-Farben). Der Stoff
-    // liest die Ordnung der Karte (Element 7) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der
-    // Halm der Ferne): sie steigt über `rampe` m hinter der Übergabe, steht unter dem Anteil (`_wieseSchale`, im Band `rand`
-    // sinkt sie wie das Büschel) und ist um 1/Anteil breiter. null, solange die Vorlage fehlt.
+    // ein Band und elf Spitzen (13 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der Pixel mehrere
+    // trägt), unten dunkel, oben in der Helligkeit der Halme (je Spitze 0,78–1); die Albedo die der Vorlage L2 (ihr Stoff, ihre
+    // Ecken-Farben). Jede Ecke trägt `aZahn` (ihre Spitze k, ihre Rolle: 0 Band, 1 Fuß links, 2 Fuß rechts, 3 Spitze). Der Stoff
+    // streut je Spitze aus der Saat ihrer Karte (Element 3 und 11, `_wieseSchaleDaten`): die Höhe über dem Band 0,75–1,45 der
+    // Vorlage (die Karte 0,7 m × 0,8–1,2: die Spitzen 0,5–0,9 m, die Halme der Nah-Wiese 0,48–1,0 m), die Neigung ±0,8
+    // Spitzen-Breiten und die Breite ihres Fußes 1,6–2,2 Spitzen-Breiten — die Spitzen überlappen, ihre Kerben liegen, wo zwei
+    // Nachbarn sich schneiden, in wechselnder Höhe über dem Band: keine Ober-Kante bleibt eine Linie. Er liest die Ordnung der Karte
+    // (Element 7) und ihren Abstand zum Auge der Wiese (`_halmFerneAuge`, derselbe Uniform wie der Halm der Ferne): sie steigt
+    // über `rampe` m hinter der Übergabe, steht unter dem Anteil (`_wieseSchale`, im Band `rand` sinkt sie wie das Büschel) und
+    // ist um 1/Anteil breiter. null, solange die Vorlage fehlt.
     _wieseSchaleSenke(vl) {
         const nw = this.state.nahWiese;
         if (nw.schale || !vl || !vl.fern.length) return nw.schale || null;
         const [T, NW] = [THREE.TSL, AnazhRealm.NAH_WIESE];
         const [F, S] = [NW.fern, NW.fern.schale];
-        const [pos, hell] = [[], []];
-        const ecke = (x, y, h) => (pos.push(x, y, 0), hell.push(h, h, h));
-        for (const [x, y, h] of [[-0.5, 0, 0.55], [0.5, 0, 0.55], [0.5, 0.45, 0.8], [-0.5, 0, 0.55], [0.5, 0.45, 0.8], [-0.5, 0.45, 0.8]]) ecke(x, y, h); // prettier-ignore
+        const [pos, hell, zahn] = [[], [], []];
+        const ecke = (x, y, h, k, rolle) => (pos.push(x, y, 0), hell.push(h, h, h), zahn.push(k, rolle));
+        for (const [x, y, h] of [[-0.5, 0, 0.55], [0.5, 0, 0.55], [0.5, 0.45, 0.78], [-0.5, 0, 0.55], [0.5, 0.45, 0.78], [-0.5, 0.45, 0.78]]) ecke(x, y, h, 0, 0); // prettier-ignore
         const spitze = [1, 0.8, 0.94, 0.72, 0.9, 0.78, 0.98, 0.84, 0.92, 0.75, 0.96];
-        for (let i = 0; i < 11; i++) {
-            const xa = -0.5 + i / 11;
-            ecke(xa, 0.45, 0.8);
-            ecke(xa + 1 / 11, 0.45, 0.8);
-            ecke(xa + 1 / 22, spitze[i], 1.15);
+        for (let k = 0; k < 11; k++) {
+            const xa = -0.5 + k / 11;
+            ecke(xa, 0.45, 0.78, k, 1);
+            ecke(xa + 1 / 11, 0.45, 0.78, k, 2);
+            ecke(xa + 1 / 22, spitze[k], 0.78 + (0.22 * ((k * 7) % 11)) / 10, k, 3);
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -908,6 +911,7 @@ class AnazhRealm_vegetation_wiese {
             )
         );
         geo.setAttribute("color", new THREE.Float32BufferAttribute(hell, 3));
+        geo.setAttribute("aZahn", new THREE.Float32BufferAttribute(zahn, 2));
         const q = vl.fern[0];
         const c = q.geo.attributes.color;
         const albedo = new THREE.Color(1, 1, 1);
@@ -923,9 +927,24 @@ class AnazhRealm_vegetation_wiese {
         const auge = (this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()));
         const d = naht.anker.xz.sub(auge.xz).length();
         const g = AnazhRealm._wieseSchale(AnazhRealm._windTsl(T), d);
-        const o = this._instanzMatrixNode(T).element(1).w;
-        const v = g.anteil.mul(1 + F.rand).sub(o).div(g.anteil.mul(F.rand).max(1e-6)).clamp(0, 1).mul(T.smoothstep(NW.radius, NW.radius + S.rampe, d)); // prettier-ignore
-        mat.positionNode = T.vec3(T.positionLocal.x.mul(g.breit), T.positionLocal.y.mul(v), T.positionLocal.z);
+        const M = this._instanzMatrixNode(T);
+        const v = g.anteil.mul(1 + F.rand).sub(M.element(1).w).div(g.anteil.mul(F.rand).max(1e-6)).clamp(0, 1).mul(T.smoothstep(NW.radius, NW.radius + S.rampe, d)); // prettier-ignore
+        // die Streuung je Spitze aus der Saat der Karte (Element 3 und 11): drei Zahlen je Spitze k
+        const z = T.attribute("aZahn", "vec2");
+        const zahl = (salz, saat) => T.fract(T.sin(z.x.add(salz).mul(12.9898).add(saat.mul(78.233))).mul(43758.5453));
+        const [hh, hl, hw] = [zahl(1, M.element(0).w), zahl(1, M.element(2).w), zahl(41, M.element(2).w)];
+        const [links, rechts, spitz] = [T.step(0.5, z.y).sub(T.step(1.5, z.y)), T.step(1.5, z.y).sub(T.step(2.5, z.y)), T.step(2.5, z.y)]; // prettier-ignore
+        const pl = T.positionLocal;
+        const x = pl.x.add(spitz.mul(hl.sub(0.5).mul(1.6 / 11))).add(
+            rechts.sub(links).mul(
+                hw
+                    .mul(0.6)
+                    .add(0.6)
+                    .mul(1 / 22)
+            )
+        );
+        const y = pl.y.add(spitz.mul(pl.y.sub(0.45).mul(hh.mul(0.7).sub(0.25))));
+        mat.positionNode = T.vec3(x.mul(g.breit), y.mul(v), pl.z);
         const a = { key: "schale", name: "nahWiese:Lf:schale", geo, mat, lokal: new THREE.Matrix4(), leafKey: null, quelle: null, mesh: null, kap: 0, anzahl: 0, anders: false, wachse: 0 }; // prettier-ignore
         this._senkeMesh(a, 1024, this.state.scene);
         nw.senken.set(a.key, a);
