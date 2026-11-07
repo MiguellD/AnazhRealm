@@ -1638,8 +1638,12 @@ async function platzAcht(r, T) {
 // `_startDorfFaellig` nearM 260 m; an der Mess-Wiese bestellte die Probe nichts und wartete, GTX b4bcf19c ≥ 90 s ohne Zeile):
 // `diag-kreatur-takt --werkbank --proben bewohner --ort genesis` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag
 // über 24 Spielstunden, die Wiederkehr; die Stadt am Messort stadt misst mensch.K3#2 headless — kein Urteil dieses Laufs liest sie)
-// und der Dorfplatz um 8 Uhr (`platzAcht`, Third) mit dem Bild aus dem Ausgabe-Pfad
-const BEWOHNER_SITZUNG = { sek: 33, befehl: [
+// und der Dorfplatz um 8 Uhr (`platzAcht`, Third) mit dem Bild aus dem Ausgabe-Pfad.
+// DER DECKEL (w18-mensch-deckel): der Lauf trägt den Tag des Gesetzes (kreatur-proben, die Bühne leiht DAY_LENGTH_DEFAULT_MINUTES)
+// — die Eich-Fahrt der Radeon am Kopf 399bcd92: 83,3 s (die Probe 53,5 s: das Dorf wächst 12,7 s, die stehende Welt 14,6 s, der Tag
+// 8,5 s, die Wiederkehr 10,6 s; dazu der Platz um 8 Uhr). Bis dahin rechnete der Tag nach `umstellen` aus der Tag-Länge des Halts
+// der Bühne (1e12) und endete nie: beide Urteile rissen 45 s, die Seite blieb belegt, die Sitzung starb (GTX fe57747a, 5fb21e29)
+const BEWOHNER_SITZUNG = { sek: 90, ausnahme: "das Start-Dorf wächst bis 81 Leiber, ihr Tag über 24 Spielstunden zu 0,1 s und die Wiederkehr in 16 Prüf-Stunden, dazu der Platz um 8 Uhr mit 8 Spiel-Sekunden im Takt — Radeon 83,3 s (399bcd92)", befehl: [
     "bash",
     "-c",
     [
