@@ -1,0 +1,10 @@
+{
+ "ms": 6398,
+ "fehler": "Execution context was destroyed, most likely because of a navigation.",
+ "stapel": [
+  "at rewriteError (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:458:15)",
+  "at async #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:389:60)",
+  "at async ExecutionContext.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)",
+  "at async IsolatedWorld.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)"
+ ]
+}

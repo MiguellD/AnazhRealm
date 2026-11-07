@@ -1,0 +1,79 @@
+{
+ "sha": "e68cfcc752a21e116533fc2abdae11a0a16becc9",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:13:16.514Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7483 (wasserSatz 25332 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 96.3 σ 35.7 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 0.33,
+   "gpu": "amd/rdna-3",
+   "s": 19.7,
+   "zeit": "2026-11-07T17:12:56.787Z",
+   "abdruck": "e18e9c50847e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.3102 (82203 px in der Ebene, 49 Blöcke, Einfall 53.8°, Normale [0.122,0.988,0.1]) · glas spiegelTreue 0.5011 (6622 px in der Ebene, 23 Blöcke, Einfall 73.3°, Normale [-0.014,1,0.013]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.500000000000026 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.08,
+   "gpu": "amd/rdna-3",
+   "s": 4.5,
+   "zeit": "2026-11-07T17:13:16.514Z",
+   "abdruck": "ec2fd04b86d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:12:29.435Z",
+  "port": 7804,
+  "warten": 0.07,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 15,
+    "takte": 626,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 16,
+   "frameP95": 49.82,
+   "taktP95": 42.19,
+   "vramMax": 119.8,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 48,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 47.5,
+  "minuten": 0.92
+ }
+}

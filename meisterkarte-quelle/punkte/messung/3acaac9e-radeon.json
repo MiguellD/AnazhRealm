@@ -1,0 +1,74 @@
+{
+ "sha": "3acaac9e8b3be0c6e8b63c8a1d7ebf1abe233e5b",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T19:06:57.658Z",
+ "host": "MiguellD",
+ "je": {
+  "ferne.K3#1": {
+   "gruen": true,
+   "zahl": "Kohärenz 0.2399 über 187 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 7.5333 m über 181 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 22.0574 m, Azimut 180° · Ort [-841,-861] · 2.29 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.3,
+   "zeit": "2026-11-04T19:06:57.658Z",
+   "abdruck": "692b53b0701d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.6999 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.38 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Schatten-/Lichthang 0.6999 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.38 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.2,
+   "zeit": "2026-11-04T15:49:12.287Z",
+   "abdruck": "e98c2f31508d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K3#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T19:05:31.123Z",
+  "port": 7804,
+  "warten": 0.24,
+  "bootS": 12.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "ferne.K3#1",
+    "s": 52.4,
+    "takte": 2324,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 73,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 81.6,
+  "minuten": 1.78
+ }
+}

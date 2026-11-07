@@ -1,0 +1,10 @@
+{
+ "ms": 4080,
+ "takte": 313,
+ "steht": true,
+ "chunks": 99,
+ "gier": 0,
+ "dorfZug": false,
+ "ortTakt": [],
+ "dorfSchwebt": null
+}

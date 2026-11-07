@@ -1,0 +1,19 @@
+{
+ "sha": "782ce8a384ebfb31ce8dbeb713f3b1569c982b1d",
+ "geraet": "headless",
+ "zeit": "2026-11-05T14:04:09.967Z",
+ "host": "vp-laptop",
+ "je": {
+  "pflicht.C#1": {
+   "gruen": true,
+   "zahl": "C 10 Uhr GRÜN: 20 am Steuer in jeder Probe, Trasse 180000/180000, Minute ≥ 103 m, 142 Ankünfte, 0 Berührung · 23 Uhr GRÜN: 20 am Steuer in jeder Probe, Trasse 180000/180000, Minute ≥ 176 m, 145 Ankünfte, 0 Berührung",
+   "exit": 1,
+   "minuten": 13.53,
+   "zeit": "2026-11-05T14:04:09.967Z",
+   "abdruck": "0b2c5fec75a1",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "vp-laptop"
+  }
+ }
+}

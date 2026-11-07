@@ -1,7 +1,7 @@
 {
  "sha": "95ba6fd6d21acb5f2721cf7b3d6f4a3648833f9d",
  "geraet": "radeon",
- "zeit": "2026-11-07T15:39:55.571Z",
+ "zeit": "2026-11-07T16:50:52.662Z",
  "host": "MiguellD",
  "je": {
   "leib.K1#1": {
@@ -207,27 +207,26 @@
   },
   "lod.K2#1": {
    "gruen": false,
-   "zahl": "Gehen 4 m/s: 0.1027 % Pop-Pixel je Sekunde (2129 px, Soll ≤ 0,05 %), je Schritt 36*/83*/936*/149*/31*/82*/725*/87* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
-   "exit": 0,
-   "minuten": 0.37,
-   "grund": "ROT: Gehen 4 m/s: 0.1027 % Pop-Pixel je Sekunde (2129 px, Soll ≤ 0,05 %), je Schritt 36*/83*/936*/149*/31*/82*/725*/87* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "zahl": "Folge: pop: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\api\\\\Frame.js:362:20)\"\n ]\n}\n",
+   "exit": 1,
+   "minuten": 0.09,
+   "grund": "ROT: Folge: pop: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\api\\\\Frame.js:362:20)\"\n ]\n}\n",
    "gpu": "amd/rdna-3",
-   "s": 22.2,
-   "zeit": "2026-11-07T14:54:56.596Z",
+   "s": 5.2,
+   "zeit": "2026-11-07T16:48:57.904Z",
    "abdruck": "c3b2c498b360",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "spielgang.K3#1": {
-   "gruen": false,
-   "zahl": "HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 48 ms (50) · Menü 296 ms (20)",
+   "gruen": true,
+   "zahl": "HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 96 ms (50) · Menü 128 ms (20)",
    "exit": 0,
-   "minuten": 0.25,
-   "grund": "ROT: HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 48 ms (50) · Menü 296 ms (20)",
+   "minuten": 0.19,
    "gpu": "amd/rdna-3",
-   "s": 14.8,
-   "zeit": "2026-11-07T14:55:18.784Z",
+   "s": 11.3,
+   "zeit": "2026-11-07T16:49:03.220Z",
    "abdruck": "689117d1994b",
    "port": 7804,
    "bahn": "sitzung",
@@ -277,11 +276,11 @@
    "gruen": false,
    "zahl": "Welt/Labor 0,9–1,1: 12/13 · im realen Band beidseits: 12/13 — klinge 1.8127 ∉ [0.3, 0.95] L 0.1927 W 0.3493 · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 1.15,
+   "minuten": 0.83,
    "grund": "ROT: Welt/Labor 0,9–1,1: 12/13 · im realen Band beidseits: 12/13 — klinge 1.8127 ∉ [0.3, 0.95] L 0.1927 W 0.3493 · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 69.1,
-   "zeit": "2026-11-07T15:00:02.464Z",
+   "s": 49.8,
+   "zeit": "2026-11-07T16:47:49.762Z",
    "abdruck": "c5aaa24bd536",
    "port": 7804,
    "bahn": "sitzung",
@@ -291,11 +290,11 @@
    "gruen": false,
    "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 1.15,
+   "minuten": 0.83,
    "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 69.1,
-   "zeit": "2026-11-07T15:00:02.464Z",
+   "s": 49.8,
+   "zeit": "2026-11-07T16:47:49.762Z",
    "abdruck": "0e4c8d71f895",
    "port": 7804,
    "bahn": "sitzung",
@@ -618,14 +617,13 @@
    "modus": "session"
   },
   "schatten.K1#2": {
-   "gruen": false,
-   "zahl": "Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:958:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:2064:49)\"\n ]\n}\n",
-   "exit": 1,
-   "minuten": 0.02,
-   "grund": "ROT: Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:958:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:2064:49)\"\n ]\n}\n",
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 0.961 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.798 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.923 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.863 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0.2 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.43,
    "gpu": "amd/rdna-3",
-   "s": 1.4,
-   "zeit": "2026-11-07T15:24:21.994Z",
+   "s": 26,
+   "zeit": "2026-11-07T16:49:24.455Z",
    "abdruck": "8b9afa6bfd7d",
    "port": 7804,
    "bahn": "sitzung",
@@ -686,14 +684,13 @@
    "modus": "session"
   },
   "speicher.K4#2": {
-   "gruen": false,
-   "zahl": "bild-diff 1.04 % (Soll ≤ 1; Rauschen ohne Neuladen 0.17 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
+   "gruen": true,
+   "zahl": "bild-diff 0.66 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.43,
-   "grund": "ROT: bild-diff 1.04 % (Soll ≤ 1; Rauschen ohne Neuladen 0.17 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
+   "minuten": 0.51,
    "gpu": "amd/rdna-3",
-   "s": 25.6,
-   "zeit": "2026-11-07T15:28:46.337Z",
+   "s": 30.5,
+   "zeit": "2026-11-07T16:50:05.573Z",
    "abdruck": "cf5db34c59c4",
    "port": 7804,
    "bahn": "sitzung",
@@ -821,18 +818,16 @@
    "modus": "session"
   },
   "ankunft.K2#1": {
-   "gruen": false,
-   "zahl": "0.01 % Lücke nach 0 s bis zur Ruhe der Foundry · offen im Bild 1 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.59 s von außen (Eigenmeldung 9.87 s) · [linse-gpu] amd/rdna-3",
+   "gruen": true,
+   "zahl": "0.00 % Lücke nach 0.3 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 11.83 s von außen (Eigenmeldung 10.98 s) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.6,
-   "grund": "ROT: 0.01 % Lücke nach 0 s bis zur Ruhe der Foundry · offen im Bild 1 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.59 s von außen (Eigenmeldung 9.87 s) · [linse-gpu] amd/rdna-3",
+   "minuten": 0.73,
    "gpu": "amd/rdna-3",
-   "s": 36.2,
-   "zeit": "2026-11-07T15:32:06.110Z",
+   "s": 43.9,
+   "zeit": "2026-11-07T16:50:52.662Z",
    "abdruck": "00e38dd9d4d2",
    "port": 7804,
    "bahn": "sitzung",
-   "zwilling": "pipeline.K4#1",
    "modus": "session"
   },
   "ankunft.K3#1": {
@@ -1048,13 +1043,13 @@
   },
   "halten.K1#2": {
    "gruen": false,
-   "zahl": "vor: Treffer KE 74.1 J · p 5.94 · v 23.2 · Schaden 15.7 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor ? kg β ?° | masse: Treffer KE 75.8 J · p 6.63 · v 20.8 · Schaden 16.3 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor ? kg β ?° | schneide: Treffer KE 76.8 J · p 5.80 · v 22.6 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor ? kg β ?° · ROT: vor-labor,masse-labor,schneide-labor",
+   "zahl": "vor: Treffer KE 70.2 J · p 5.78 · v 22.6 · Schaden 14.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor ? kg β ?° | masse: Treffer KE 76.3 J · p 6.65 · v 20.9 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor ? kg β ?° | schneide: Treffer KE 76.4 J · p 5.79 · v 22.6 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor ? kg β ?° · ROT: vor-labor,masse-labor,schneide-labor",
    "exit": 1,
-   "minuten": 0.07,
-   "grund": "ROT: vor: Treffer KE 74.1 J · p 5.94 · v 23.2 · Schaden 15.7 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor ? kg β ?° | masse: Treffer KE 75.8 J · p 6.63 · v 20.8 · Schaden 16.3 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor ? kg β ?° | schneide: Treffer KE 76.8 J · p 5.80 · v 22.6 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor ? kg β ?° · ROT: vor-labor,masse-labor,schneide-labor",
+   "minuten": 0.09,
+   "grund": "ROT: vor: Treffer KE 70.2 J · p 5.78 · v 22.6 · Schaden 14.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor ? kg β ?° | masse: Treffer KE 76.3 J · p 6.65 · v 20.9 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor ? kg β ?° | schneide: Treffer KE 76.4 J · p 5.79 · v 22.6 · Schaden 16.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor ? kg β ?° · ROT: vor-labor,masse-labor,schneide-labor",
    "gpu": "amd/rdna-3",
-   "s": 4.3,
-   "zeit": "2026-11-07T15:39:11.399Z",
+   "s": 5.6,
+   "zeit": "2026-11-07T16:50:45.981Z",
    "abdruck": "0143bfef7104",
    "port": 7804,
    "bahn": "sitzung",
@@ -1745,359 +1740,105 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T14:47:15.660Z",
+  "start": "2026-11-07T16:47:04.427Z",
   "port": 7804,
-  "warten": 0.08,
-  "bootS": 5.3,
+  "warten": 0.35,
+  "bootS": 6.8,
   "grundstellungS": [
-   5.9,
-   5.3,
-   10.5,
-   4.3,
-   0.1,
-   3.9,
-   4.3,
-   8.1,
+   2.4,
+   1.4,
    0,
-   4.7,
-   0.1,
-   0.1,
-   6,
-   0.1,
-   5.5,
-   6.1,
-   4.6,
-   4.3
+   0.1
   ],
-  "proben": 41,
+  "proben": 7,
   "freigaben": [],
-  "offen": [
-   "fahrzeug.K5#1",
-   "fahrzeug.K2#1",
-   "fahrzeug.K2#2",
-   "klang.K4#1",
-   "klang.K4#2",
-   "klang.K5#2",
-   "speicher.K4#2",
-   "wetter.K2#1",
-   "licht.K3#1",
-   "mensch.K1#1",
-   "mensch.K2#2",
-   "vegetation.K4#1",
-   "vegetation.K4#2",
-   "mensch.K5#1",
-   "siedlung.K1#2",
-   "schatten.K1#1",
-   "schatten.K1#2",
-   "wetter.K3#2",
-   "tiere.K3#2",
-   "tiere.K2#2",
-   "luftwasser.K5#2",
-   "haar.K5#1",
-   "studios.K2#2",
-   "studios.K3#2",
-   "pipeline.K4#1",
-   "pipeline.K4#2",
-   "ankunft.K2#1",
-   "ankunft.K3#1",
-   "ankunft.K1#1",
-   "ankunft.K1#2",
-   "ankunft.K5#1",
-   "bauen.K1#2",
-   "bauen.K5#2",
-   "studios.K4#1",
-   "studios.K4#2",
-   "siedlung.K2#1",
-   "siedlung.K2#2",
-   "siedlung.K5#1",
-   "siedlung.K5#2",
-   "siedlung.K4#2",
-   "leib.K2#1",
-   "leib.K2#2",
-   "leib.K3#2",
-   "halten.K5#1",
-   "halten.K5#2",
-   "halten.K1#2",
-   "tore.K1#1",
-   "tore.K3#1",
-   "tore.K3#2",
-   "streaming.K4#2",
-   "profiband.K1#1",
-   "profiband.K1#2",
-   "pflicht.E#1",
-   "profiband.K2#1",
-   "profiband.K2#2",
-   "profiband.K3#1",
-   "profiband.K3#2",
-   "speicher.K1#1",
-   "speicher.K1#2",
-   "speicher.K2#1",
-   "speicher.K2#2"
-  ],
   "orte": [
-   {
-    "ort": "wiese",
-    "vor": "gelaende.K5#2",
-    "s": 10.4,
-    "takte": 588,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 14.9,
-    "takte": 640,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 14.5,
-    "takte": 645,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 17.7,
-    "takte": 529,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "licht.K5#1",
-    "s": 16.8,
-    "takte": 532,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
    {
     "ort": "genesis",
     "vor": "material.K1#1",
-    "s": 5.3,
-    "takte": 239,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 17.1,
-    "takte": 532,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 31,
-    "takte": 741,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 17.3,
-    "takte": 560,
+    "s": 13.6,
+    "takte": 636,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
-    "vor": "wetter.K2#2",
-    "s": 17,
-    "takte": 639,
+    "vor": "lod.K2#1",
+    "s": 15.8,
+    "takte": 689,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
+    "ort": "buehne",
+    "vor": "schatten.K1#2",
+    "s": 9.9,
+    "takte": 613,
+    "chunks": 84,
+    "nach": null
+   },
+   {
     "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 1.1,
-    "takte": 73,
+    "vor": "speicher.K4#2",
+    "s": 13.6,
+    "takte": 664,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 9.8,
+    "takte": 659,
     "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 16.6,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "affekt.K1#2",
-    "s": 12,
-    "takte": 535,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "oekologie.K4#2",
-    "s": 6.9,
-    "takte": 369,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "haar.K1#1",
-    "s": 19.2,
-    "takte": 605,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#1",
-    "s": 3.3,
-    "takte": 280,
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 1,
+    "takte": 72,
     "chunks": 81,
     "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#2",
-    "s": 18.7,
-    "takte": 593,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 19.5,
-    "takte": 630,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K4#1",
-    "s": 19.4,
-    "takte": 843,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K5#1",
-    "s": 17.6,
-    "takte": 639,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "ankunft.K4#1",
+    "vor": "lod.K2#1",
     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 3.9
-   }
-  ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 10
+    "s": 2.4
    }
   ],
   "unerklaert": [
-   {
-    "probe": "material.K3#1",
-    "wie": "werke +5 (−0)"
-   },
    {
     "probe": "material.K1#1",
     "wie": "werke +5 (−0)"
    }
   ],
-  "ciBlicke": 40,
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 8408,
-   "frameP95": 50.2,
-   "taktP95": 42.46,
-   "vramMax": 171.7,
-   "seiten": 14,
-   "marken": 2,
+   "bilder": 508,
+   "frameP95": 510.59,
+   "taktP95": 194.13,
+   "vramMax": 149,
+   "seiten": 8,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
+     "probe": "schatten.K1#2",
+     "m": 459,
      "ringVor": 4,
      "ringMin": 0
-    },
-    {
-     "probe": "ferne.K5#1",
-     "m": 1204,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "fahrzeug.K5#1",
-     "m": 1071,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "lod.K1#1",
-     "m": 1007,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "streaming.K3#1",
-     "m": 1000,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "leib.K4#1",
-     "m": 319,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "gelaende.K5#2",
-     "m": 312,
-     "ringVor": 4,
-     "ringMin": -1
     }
    ],
-   "zapfen": 1643,
-   "luecken": 9,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 255,
+   "luecken": 6,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 1825.6,
-  "grund": "die Fahrt riss 1800 s in fahrzeug.K5#1 — offen: fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#2, haar.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
-  "minuten": 30.56
+  "fahrtS": 251.5,
+  "minuten": 4.6
  }
 }

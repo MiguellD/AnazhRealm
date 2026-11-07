@@ -1,0 +1,87 @@
+{
+ "sha": "a835e5a127ceb0a7765b597473e9ac1f83c536cb",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T17:34:22.344Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.167 Soll [1,1] — gesicht 0.167 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.388 [0.9, 1] · lippeL -3.17 [-14, -4] · lippeA -0.43 [4, 14] · hoehleL 1.46 [-12, 0] · hoehleA -2.64 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.33,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.167 Soll [1,1] — gesicht 0.167 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.388 [0.9, 1] · lippeL -3.17 [-14, -4] · lippeA -0.43 [4, 14] · hoehleL 1.46 [-12, 0] · hoehleA -2.64 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 19.5,
+   "zeit": "2026-11-04T17:33:41.338Z",
+   "abdruck": "747f7f78f5e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.4355 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3] · third GRÜN strich 0.4387 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.36,
+   "gpu": "amd/rdna-3",
+   "s": 21.3,
+   "zeit": "2026-11-04T17:34:00.916Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.4346 Soll [0.4358,0.6538] — strich 0.4346 < 0.4358 · third ROT strich 0.4027 Soll [0.4358,0.6538] — strich 0.4027 < 0.4358",
+   "exit": 0,
+   "minuten": 0.4,
+   "grund": "ROT: arm ROT strich 0.4346 Soll [0.4358,0.6538] — strich 0.4346 < 0.4358 · third ROT strich 0.4027 Soll [0.4358,0.6538] — strich 0.4027 < 0.4358",
+   "gpu": "amd/rdna-3",
+   "s": 24.1,
+   "zeit": "2026-11-04T17:34:22.344Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T17:33:07.116Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 17.6,
+    "takte": 620,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 91,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 92.6,
+  "minuten": 1.73
+ }
+}

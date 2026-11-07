@@ -1,0 +1,463 @@
+{
+ "art": "gang",
+ "sekunden": 85.9,
+ "schritte": [
+  [
+   "genesis-ego",
+   18.7
+  ],
+  [
+   "genesis-third",
+   8.3
+  ],
+  [
+   "genesis-third-geht",
+   3.3
+  ],
+  [
+   "wiese-ego",
+   35
+  ],
+  [
+   "wiese-ego-geht",
+   3.4
+  ],
+  [
+   "wiese-third",
+   17.1
+  ],
+  [
+   "wiese-sprint",
+   "Uhr"
+  ],
+  [
+   "wiese-fahrt",
+   "Uhr"
+  ],
+  [
+   "wiese-sturm",
+   "Uhr"
+  ],
+  [
+   "dorf",
+   "Uhr"
+  ],
+  [
+   "stadt",
+   "Uhr"
+  ]
+ ],
+ "offen": [
+  "wiese-ego-sprint",
+  "wiese-fahrt",
+  "wiese-ego-sturm",
+  "band:dorf-ego",
+  "band:dorf-third",
+  "stadt-ego-geht"
+ ],
+ "fehler": {},
+ "strom": {
+  "bloecke": 991,
+  "bilder": 7882,
+  "seiten": 13,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "zellen": {
+  "wiese-ego-steht": {
+   "n": 76,
+   "frame": 50.1,
+   "p99": 91.8,
+   "max": 91.8,
+   "ueber33": 16,
+   "ueber100": 0,
+   "takt": 30.1,
+   "vram": 127.1,
+   "gpu": 4.16,
+   "gpuN": 8,
+   "befehle": 51,
+   "dreiecke": 399041,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 76,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.3,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 46.29,
+    "pflicht": 2.37,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 0,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-third-steht": {
+   "n": 82,
+   "frame": 33.6,
+   "p99": 58.5,
+   "max": 58.5,
+   "ueber33": 14,
+   "ueber100": 0,
+   "takt": 25.6,
+   "vram": 130.9,
+   "gpu": 4.15,
+   "gpuN": 8,
+   "befehle": 62,
+   "dreiecke": 466298,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    2
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 82,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.3,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 35.75,
+    "pflicht": 1.74,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 0,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "third",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "genesis-ego-steht": {
+   "n": 116,
+   "frame": 33.6,
+   "p99": 50.3,
+   "max": 83.6,
+   "ueber33": 7,
+   "ueber100": 0,
+   "takt": 29.9,
+   "vram": 130.9,
+   "gpu": 3.58,
+   "gpuN": 9,
+   "befehle": 51,
+   "dreiecke": 301380,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 116,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.3,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 34.68,
+    "pflicht": 1.3,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 0,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "genesis-third-steht": {
+   "n": 92,
+   "frame": 33.6,
+   "p99": 50.2,
+   "max": 50.2,
+   "ueber33": 8,
+   "ueber100": 0,
+   "takt": 27.9,
+   "vram": 121.2,
+   "gpu": 3.62,
+   "gpuN": 8,
+   "befehle": 60,
+   "dreiecke": 342526,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    2
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 92,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.3,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 32.19,
+    "pflicht": 1.29,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 0,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "third",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-ego-geht": {
+   "n": 48,
+   "frame": 66.9,
+   "p99": 75.4,
+   "max": 75.4,
+   "ueber33": 34,
+   "ueber100": 0,
+   "takt": 59.1,
+   "vram": 129.6,
+   "gpu": 6.07,
+   "gpuN": 8,
+   "befehle": 117,
+   "dreiecke": 518007,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 48,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 67.08,
+    "pflicht": 2.67,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 8,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "genesis-third-geht": {
+   "n": 38,
+   "frame": 83.7,
+   "p99": 83.8,
+   "max": 83.8,
+   "ueber33": 35,
+   "ueber100": 0,
+   "takt": 68.3,
+   "vram": 121.9,
+   "gpu": 7.36,
+   "gpuN": 7,
+   "befehle": 92,
+   "dreiecke": 432866,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    2
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 38,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 83.37,
+    "pflicht": 4.19,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 8,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "third",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  }
+ },
+ "baender": {
+  "genesis-ego": {
+   "exit": 1,
+   "urteil": "ROT",
+   "befehle": 92,
+   "dreiecke": 433048,
+   "vram": 124.3,
+   "gpu": 11.72,
+   "stempel": "ROT",
+   "eingeschwungen": false,
+   "last": 1,
+   "amMessort": true,
+   "gestellt": [],
+   "geraet": "radeon",
+   "rot": [
+    "vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)"
+   ],
+   "probe": {
+    "gehalten": false,
+    "sicht": "first",
+    "speed": 1.15,
+    "sprint": 5.175,
+    "skala": 0.75
+   }
+  },
+  "genesis-third": {
+   "exit": 1,
+   "urteil": "ROT",
+   "befehle": 105,
+   "dreiecke": 397032,
+   "vram": 120.7,
+   "gpu": 12.65,
+   "stempel": "ROT",
+   "eingeschwungen": true,
+   "last": 1,
+   "amMessort": true,
+   "gestellt": [],
+   "geraet": "radeon",
+   "rot": [
+    "f:sitzbank:L0: 6 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "baum k1: 7 befehle über der Ratsche 1 (Täter: f:tanne:L1, f:eiche:L1, f:fichte:L1)"
+   ],
+   "probe": {
+    "gehalten": false,
+    "sicht": "third",
+    "speed": 1.15,
+    "sprint": 5.175,
+    "skala": 0.75
+   }
+  },
+  "wiese-ego": {
+   "exit": 1,
+   "urteil": "ROT",
+   "befehle": 113,
+   "dreiecke": 476305,
+   "vram": 126.8,
+   "gpu": 22.4,
+   "stempel": "ROT",
+   "eingeschwungen": false,
+   "last": 1,
+   "amMessort": true,
+   "gestellt": [],
+   "geraet": "radeon",
+   "rot": [
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "baum haupt: 32 befehle über der Ratsche 24 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0)",
+    "baum k1: 12 befehle über der Ratsche 2 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0)"
+   ],
+   "probe": {
+    "gehalten": false,
+    "sicht": "first",
+    "speed": 1.15,
+    "sprint": 5.175,
+    "skala": 0.75
+   }
+  },
+  "wiese-third": {
+   "exit": 1,
+   "urteil": "ROT",
+   "befehle": 125,
+   "dreiecke": 557359,
+   "vram": 130.3,
+   "gpu": 22,
+   "stempel": "ROT",
+   "eingeschwungen": false,
+   "last": 1,
+   "amMessort": true,
+   "gestellt": [],
+   "geraet": "radeon",
+   "rot": [
+    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
+    "streu haupt: 10 befehle über der Ratsche 4 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2)",
+    "streu haupt: 33082 dreiecke über der Ratsche 21267 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2)"
+   ],
+   "probe": {
+    "gehalten": false,
+    "sicht": "third",
+    "speed": 1.15,
+    "sprint": 5.175,
+    "skala": 0.75
+   }
+  }
+ },
+ "sonst": {}
+}

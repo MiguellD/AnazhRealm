@@ -1,0 +1,87 @@
+{
+ "sha": "5edafa2ad2d4821dc05df0b216bf045052d543a5",
+ "geraet": "radeon",
+ "zeit": "2026-11-03T21:34:59.761Z",
+ "host": "MiguellD",
+ "je": {
+  "schatten.K2#1": {
+   "gruen": true,
+   "zahl": "Maß reprojektion: unerklärt je Bild max 0.12 %, Mittel 0.07 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0082) über 15 Bilder Gang 4 m/s, Schatten im Bild 52.2 % (≥ 1 %) · Ort [-841,-861] · 0.75 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.4,
+   "zeit": "2026-11-03T21:34:59.761Z",
+   "abdruck": "22fb7c2e16b6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K4#1": {
+   "gruen": true,
+   "zahl": "Gewinn 10.3 % (Wand 0.2229 gegen 0.202 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.1722 · Ort [-841,-861] · 1.69 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.4,
+   "zeit": "2026-11-03T21:34:59.761Z",
+   "abdruck": "e871a631994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K5#1": {
+   "gruen": true,
+   "zahl": "Kontrast 9.2753:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.4555, Uhr 0 · Ort [-841,-861] · 1.07 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.4,
+   "zeit": "2026-11-03T21:34:59.761Z",
+   "abdruck": "9ac22eab3993",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-03T21:34:20.842Z",
+  "port": 7804,
+  "warten": 0.08,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "schatten.K2#1",
+    "s": 24.2,
+    "takte": 834,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 40,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 43.3,
+  "minuten": 0.87
+ }
+}

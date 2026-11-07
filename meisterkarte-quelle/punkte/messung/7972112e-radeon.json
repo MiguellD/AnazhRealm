@@ -1,0 +1,110 @@
+{
+ "sha": "7972112e644e0bab9c65d2b27f309a367d51638c",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T09:27:17.063Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "haus@0.5 l1 ungemessen/l2 0.564 · birke@0.5 l1 0.993/karte 1.013 · fichte@0.5 l1 1.006/karte 1.175 · haus@0.27 l1 ungemessen/l2 ungemessen · birke@0.27 l1 0.994/karte 0.931 · fichte@0.27 l1 0.998/karte 1.122 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.25,
+   "grund": "ROT: haus@0.5 l1 ungemessen/l2 0.564 · birke@0.5 l1 0.993/karte 1.013 · fichte@0.5 l1 1.006/karte 1.175 · haus@0.27 l1 ungemessen/l2 ungemessen · birke@0.27 l1 0.994/karte 0.931 · fichte@0.27 l1 0.998/karte 1.122 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 74.9,
+   "zeit": "2026-11-05T09:25:24.486Z",
+   "abdruck": "93d9b76222d1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 2.81 % (Soll < 2 %) über 18640 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.8 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "grund": "ROT: Luma-Sprung 2.81 % (Soll < 2 %) über 18640 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.8 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9,
+   "zeit": "2026-11-05T09:27:07.984Z",
+   "abdruck": "37bfc892baa6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "fichte@0.5 1.053 · fichte@0.27 1.005 · fichte@0.05 1.063 · tanne@0.5 0.982 · tanne@0.27 1.077 · tanne@0.05 1.217 · ring@0.5 0.988 · ring@0.27 1.015 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+   "exit": 1,
+   "minuten": 0.64,
+   "grund": "ROT: fichte@0.5 1.053 · fichte@0.27 1.005 · fichte@0.05 1.063 · tanne@0.5 0.982 · tanne@0.27 1.077 · tanne@0.05 1.217 · ring@0.5 0.988 · ring@0.27 1.015 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 38.3,
+   "zeit": "2026-11-05T09:27:17.063Z",
+   "abdruck": "9dfc18ec0163",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T09:24:49.150Z",
+  "port": 7804,
+  "warten": 0.11,
+  "bootS": 6.3,
+  "grundstellungS": [
+   3.4
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "material.K3#2",
+    "s": 19.5,
+    "takte": 646,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 25,
+    "takte": 1072,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "lod.K4#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 3.4
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#2",
+    "wie": "werke +6 (−0)"
+   }
+  ],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 177,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 179.7,
+  "minuten": 3.2
+ }
+}

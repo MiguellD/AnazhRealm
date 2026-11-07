@@ -1,0 +1,78 @@
+{
+ "sha": "ae066b23ac0fdfd19a1db51967eb1ed1fcc0f3fe",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T07:21:58.312Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0.02 % Lücke nach 1.5 s bis zur Ruhe der Foundry · offen im Bild 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 28.28 s von außen (Eigenmeldung 27.34 s) · [linse-gpu] amd/rdna-3) · Täter: ❌ t(Kontrolle) warm — von außen (Soll ≤ 5 s; W trug den Leib im Atem nie)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0.02 % Lücke nach 1.5 s bis zur Ruhe der Foundry · offen im Bild 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 28.28 s von außen (Eigenmeldung 27.34 s) · [linse-gpu] amd/rdna-3) · Täter: ❌ t(Kontrolle) warm — von außen (Soll ≤ 5 s; W trug den Leib im Atem nie)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 80.4,
+   "zeit": "2026-11-05T07:21:58.312Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 28.28 s von außen (Eigenmeldung 27.34 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild 2 Wald-Böden werden bepflanzt, halbes Weltbild — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/r) · Täter: ❌ t(Kontrolle) warm — von außen (Soll ≤ 5 s; W trug den Leib im Atem nie)",
+   "exit": 0,
+   "minuten": 1.34,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 28.28 s von außen (Eigenmeldung 27.34 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild 2 Wald-Böden werden bepflanzt, halbes Weltbild — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/r) · Täter: ❌ t(Kontrolle) warm — von außen (Soll ≤ 5 s; W trug den Leib im Atem nie)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 80.4,
+   "zeit": "2026-11-05T07:21:58.312Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T07:21:09.777Z",
+  "port": 7804,
+  "warten": 0.13,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 32.9,
+    "takte": 2347,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 192,
+   "frameP95": 527.3,
+   "taktP95": 262,
+   "vramMax": 136.1,
+   "seiten": 4,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 113,
+   "luecken": 2,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 121.3,
+  "minuten": 2.21
+ }
+}

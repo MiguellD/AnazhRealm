@@ -1,0 +1,60 @@
+{
+ "sha": "ea7def4766650c7bd9db076661c4e3084d024048",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T00:48:26.872Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 22.093 % Pop-Pixel je Sekunde (458120 px, Soll ≤ 0,05 %), je Schritt 39795*/55445*/53943*/58673*/66165*/52083*/69848*/62168 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: Gehen 4 m/s: 22.093 % Pop-Pixel je Sekunde (458120 px, Soll ≤ 0,05 %), je Schritt 39795*/55445*/53943*/58673*/66165*/52083*/69848*/62168 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 28.6,
+   "zeit": "2026-11-05T00:48:26.872Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T00:47:34.248Z",
+  "port": 7804,
+  "warten": 0.22,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 28,
+    "takte": 769,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 65,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 68.3,
+  "minuten": 1.46
+ }
+}

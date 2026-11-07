@@ -1,0 +1,68 @@
+{
+ "sha": "782ce8a384ebfb31ce8dbeb713f3b1569c982b1d",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T14:42:17.240Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 90.6,
+   "zeit": "2026-11-05T14:42:17.240Z",
+   "abdruck": "77b801818fd8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T14:41:01.784Z",
+  "port": 7804,
+  "warten": 0.73,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 17.8,
+    "takte": 626,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1863,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 120,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 122.2,
+  "minuten": 2.87
+ }
+}

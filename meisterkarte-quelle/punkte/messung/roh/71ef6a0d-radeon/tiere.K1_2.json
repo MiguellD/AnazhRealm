@@ -1,0 +1,155 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43.9,
+   "spieler": 43.9,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1890,
+   "kamera": [
+    -36.01,
+    71.66,
+    183.6,
+    6.82,
+    80.43,
+    179.77
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Laub baum_erle in 27.25 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.23 m · Luma 51.2 σ 30.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\tiere.K1_2-herde-1.png"
+  },
+  {
+   "schuss": 2,
+   "abstand": 43.3,
+   "spieler": 43.8,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1920,
+   "kamera": [
+    37.4,
+    76.22,
+    215.21,
+    7.24,
+    78.85,
+    184.2
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.33 m · Luma 79.5 σ 42.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 13 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier-satz": 38,
+    "tier:bestaeuber": 18,
+    "tier:wesen": 406
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 5,
+    "je": [
+     178,
+     259,
+     136,
+     172,
+     259
+    ],
+    "flecken": 1,
+    "kruemel": 7,
+    "pixel": 462,
+    "leibPx": 40.8
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\tiere.K1_2-herde-2.png"
+  },
+  {
+   "schuss": 3,
+   "abstand": 39.9,
+   "spieler": 44.5,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1950,
+   "kamera": [
+    37.4,
+    76.22,
+    215.21,
+    7.7,
+    78.07,
+    188.62
+   ],
+   "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 39.91 m · Luma 80.4 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "fehler": null,
+   "klassen": {
+    "tier:bestaeuber": 12,
+    "tier:wesen": 245
+   },
+   "pulk": {
+    "glieder": 5,
+    "sichtbar": 2,
+    "je": [
+     0,
+     242,
+     3,
+     0,
+     242
+    ],
+    "flecken": 1,
+    "kruemel": 5,
+    "pixel": 257,
+    "leibPx": 44.2
+   },
+   "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\tiere.K1_2-herde-3.png"
+  }
+ ],
+ "szene": {
+  "kamera": [
+   -36.01,
+   71.66,
+   183.6,
+   6.82,
+   80.43,
+   179.77
+  ],
+  "abstand": 43.9,
+  "punkte": [
+   [
+    6.07,
+    80.6,
+    180.3
+   ],
+   [
+    7.43,
+    81.69,
+    177.2
+   ],
+   [
+    6.61,
+    79.7,
+    182.71
+   ],
+   [
+    4.53,
+    80.94,
+    178.92
+   ],
+   [
+    9.47,
+    80.59,
+    179.72
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 1890,
+  "hang": {
+   "x": 6.3,
+   "z": 179.9,
+   "neigung": 27.3
+  },
+  "wurf": 5,
+  "fluchtBei": 16.7
+ },
+ "ende": {
+  "ende": true,
+  "max": 20,
+  "takt": true
+ }
+}

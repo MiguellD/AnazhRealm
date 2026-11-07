@@ -116,15 +116,15 @@ D.k1Verdict({ ...K, labor: { ...L, masse: L.vor } }).includes("masse-labor")
 return errs.length ? 1 : 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT welt und labor 0.5 s
-@@PUNKTE@@ BILD ohne Seite: /status: {"ms":167,"spieler":[0,90.8,0],"chunks":81,"wetter":"stormy","saison":"summer","boot":{"art":"zweit","serie":null,"profil":"C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-1716-profil-DYBiC5","serieNeu":true,"ladungen":25},"zerstoert":520,"stempel":{"warnung":5,"ueberlauf":0,"spitze":358,"taeter":{},"pool":{"stand":40,"max":2048},"an":true},"fehler":["[konsole] [Invalid Texture] is invalid due to a 
-@@PUNKTE@@ ZEIT vor 2.1 s
-@@PUNKTE@@ ZEIT masse 3.1 s
-@@PUNKTE@@ ZEIT schneide 4.1 s
-  (Q15) {"welt":{"vor":{"lauf":"vor","traf":true,"zielFehl":0.027,"schaden":15.679,"kraft":19.961,"art":"SCHNITT","KE":74.121,"v":23.203,"p":5.943,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":26.27,"schneideBild":1},"masse":{"lauf":"masse","traf":true,"zielFehl":0.023,"schaden":16.337,"kraft":20.339,"art":"SCHNITT","KE":75.793,"v":20.795,"p":6.628,"mEff":0.319,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.646,"mEffWerk":0.319,"edgeWinkel":26.27,"schneideBild":1},"schneide":{"lauf":"schneide","traf":true,"zielFehl":0.02,"schaden":16.547,"kraft":20.339,"art":"SCHNITT","KE":76.769,"v":22.65,"p":5.801,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":22.677,"schneideBild":1}},"labor":{"vor":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"},"masse":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"},"schneide":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"}}}
+@@PUNKTE@@ ZEIT welt und labor 1.6 s
+@@PUNKTE@@ BILD ohne Seite: /status: {"ms":23,"spieler":[0,90.8,0],"chunks":81,"wetter":"sunny","saison":"summer","boot":{"art":"zweit","serie":null,"profil":"C:\\Users\\micha\\AppData\\Local\\Temp\\anazh-42812-profil-5B8uT0","serieNeu":true,"ladungen":5},"zerstoert":4,"stempel":{"warnung":2,"ueberlauf":0,"spitze":632,"taeter":{},"pool":{"stand":10,"max":2048},"an":true},"fehler":["[konsole] [AnazhRealm V18.546.210] [INFO] WebGPU-Ren
+@@PUNKTE@@ ZEIT vor 3.5 s
+@@PUNKTE@@ ZEIT masse 4.6 s
+@@PUNKTE@@ ZEIT schneide 5.4 s
+  (Q15) {"welt":{"vor":{"lauf":"vor","traf":true,"zielFehl":0.029,"schaden":14.849,"kraft":19.961,"art":"SCHNITT","KE":70.193,"v":22.58,"p":5.783,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":26.27,"schneideBild":1},"masse":{"lauf":"masse","traf":true,"zielFehl":0.018,"schaden":16.454,"kraft":20.339,"art":"SCHNITT","KE":76.338,"v":20.87,"p":6.652,"mEff":0.319,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.646,"mEffWerk":0.319,"edgeWinkel":26.27,"schneideBild":1},"schneide":{"lauf":"schneide","traf":true,"zielFehl":0.014,"schaden":16.477,"kraft":20.339,"art":"SCHNITT","KE":76.442,"v":22.602,"p":5.789,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":22.677,"schneideBild":1}},"labor":{"vor":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"},"masse":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"},"schneide":{"abbruch":"das Labor steht in keinem Rahmen der Seite (CDP)"}}}
   ❌ Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk vor-labor,masse-labor,schneide-labor
   ✅ SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation
-@@PUNKTE@@ PROBE 4.2 s · Exit 1
+@@PUNKTE@@ PROBE 5.4 s · Exit 1
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

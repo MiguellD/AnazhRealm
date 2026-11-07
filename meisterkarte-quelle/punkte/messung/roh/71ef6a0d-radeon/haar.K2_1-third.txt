@@ -1,0 +1,63 @@
+{
+ "ms": 380,
+ "kamera": [
+  -276.72,
+  29.26,
+  -1044.03
+ ],
+ "hell": 56.5,
+ "kontrast": 7.21,
+ "dc": 36,
+ "dreiecke": 313883,
+ "klasse": {
+  "ausdruck": "^spieler:kopf/hair$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "spieler:kopf/hair=255/80/80"
+  ],
+  "klassen": {
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.286,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 12.31,
+    "pixel": 914,
+    "luma": 76.01,
+    "kante": 0.6237,
+    "kr": 104,
+    "strich": 0.4537,
+    "si": 103,
+    "bloecke": 7,
+    "glatt": 0,
+    "nyquist": 0.1178,
+    "beta": 1.3092
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\haar.K2_1-third.maske.png"
+ },
+ "zeit": null,
+ "ist": "haar → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.3 % (vorbau:tor_drachentor 0.3 %) · Ziel Blickziel im Bild frei 4 m · Luma 53.5 σ 29.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\haar.K2_1-third.png",
+ "gesamtMs": 4359
+}

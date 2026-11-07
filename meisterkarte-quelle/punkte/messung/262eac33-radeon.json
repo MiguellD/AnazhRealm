@@ -1,0 +1,149 @@
+{
+ "sha": "262eac33ba25f09cb148a79c4f3b07847c84fa66",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T00:31:48.596Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 31 Bilder · max 334.71 ms · 96.77 % > 33 ms · Fahrt 27 Bilder · max 175.24 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 4 Bild(er) > 100 ms (max 334.71), 96.77 % > 33 ms | Fahrt: 13 Bild(er) > 100 ms (max 175.24), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.61,
+   "grund": "ROT: Gehen 31 Bilder · max 334.71 ms · 96.77 % > 33 ms · Fahrt 27 Bilder · max 175.24 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 4 Bild(er) > 100 ms (max 334.71), 96.77 % > 33 ms | Fahrt: 13 Bild(er) > 100 ms (max 175.24), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 36.3,
+   "zeit": "2026-11-07T00:23:36.401Z",
+   "abdruck": "41e0d58bce8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 31 Bilder · max 334.71 ms · 96.77 % > 33 ms · Fahrt 27 Bilder · max 175.24 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 4 Bild(er) > 100 ms (max 334.71), 96.77 % > 33 ms | Fahrt: 13 Bild(er) > 100 ms (max 175.24), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.61,
+   "grund": "ROT: Gehen 31 Bilder · max 334.71 ms · 96.77 % > 33 ms · Fahrt 27 Bilder · max 175.24 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 4 Bild(er) > 100 ms (max 334.71), 96.77 % > 33 ms | Fahrt: 13 Bild(er) > 100 ms (max 175.24), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 36.3,
+   "zeit": "2026-11-07T00:23:36.401Z",
+   "abdruck": "d49b25ac8016",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.0238 % Pop-Pixel je Sekunde (493 px, Soll ≤ 0,05 %), je Schritt 36*/26*/149*/55/88*/33*/47*/59* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.6,
+   "gpu": "amd/rdna-3",
+   "s": 36.1,
+   "zeit": "2026-11-07T00:31:48.596Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "Dauer 0.9 min in 1 Seite(n), 2 Proben: Dauerlast 149 Bilder · Bild-p95 125.53 (p99 334.71, max 359.8) ms · Takt-p95 97.97 ms · VRAM-p95 158.4 MB · Anker Bild-p95 100.5 → 91.89 ms · Heap 267.6 → 463.3 MB · VRAM nach GC 129.4 → 155.1 MB · Weg 0.2 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 3: 0.9 min am Stück < 20 | Gang: gang: 0.9 min — zu kurz · heap: +217.4 MB/min > 5 — Halter: r.state.renderer.info.memoryMap[k].array +19.3 MB · r._erstZeichnung.imFlug[].b.geometry.attributes.color +3.3 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.3 MB · vram: +25.7 MB zurück am Start — buf:szene:bodenSatz +15.5 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x22 +3.2 MB | Weg 209 m < 5 km",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: Dauer 0.9 min in 1 Seite(n), 2 Proben: Dauerlast 149 Bilder · Bild-p95 125.53 (p99 334.71, max 359.8) ms · Takt-p95 97.97 ms · VRAM-p95 158.4 MB · Anker Bild-p95 100.5 → 91.89 ms · Heap 267.6 → 463.3 MB · VRAM nach GC 129.4 → 155.1 MB · Weg 0.2 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 3: 0.9 min am Stück < 20 | Gang: gang: 0.9 min — zu kurz · heap: +217.4 MB/min > 5 — Halter: r.state.renderer.info.memoryMap[k].array +19.3 MB · r._erstZeichnung.imFlug[].b.geometry.attributes.color +3.3 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.3 MB · vram: +25.7 MB zurück am Start — buf:szene:bodenSatz +15.5 MB · tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x22 +3.2 MB | Weg 209 m < 5 km",
+   "gpu": "amd/rdna-3",
+   "s": 17.9,
+   "zeit": "2026-11-07T00:24:35.321Z",
+   "abdruck": "3895554d7dc0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 22.11 s von außen (Eigenmeldung 20.42 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.29,
+   "grund": "ROT: t(Kontrolle) kalt 22.11 s von außen (Eigenmeldung 20.42 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 77.3,
+   "zeit": "2026-11-07T00:26:46.196Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 78 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 91.5 %/– [Differenz 0.9145 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 95.1 %/– [Differenz 0.9507 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (74.9 s)",
+   "exit": 0,
+   "minuten": 1.29,
+   "grund": "Frist der Probe 78 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 91.5 %/– [Differenz 0.9145 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 95.1 %/– [Differenz 0.9507 > 0.021 A) · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (74.9 s)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 77.2,
+   "zeit": "2026-11-07T00:24:53.316Z",
+   "abdruck": "e6768481ae0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 45.8,
+   "zeit": "2026-11-07T00:30:14.461Z",
+   "abdruck": "41e0d58bce8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T00:29:43.992Z",
+  "port": 7804,
+  "warten": 0.12,
+  "bootS": 16.8,
+  "grundstellungS": [
+   0.1
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 38.5,
+    "takte": 638,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 74,
+   "frameP95": 176.11,
+   "taktP95": 150.84,
+   "vramMax": 143.2,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 137,
+   "luecken": 2,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 153.7,
+  "minuten": 2.74
+ }
+}

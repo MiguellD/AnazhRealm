@@ -1,0 +1,89 @@
+{
+ "sha": "402c62106a32d014c7c7d8a81c188cd88a0c3624",
+ "geraet": "radeon",
+ "zeit": "2026-11-06T02:02:09.604Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K2#1": {
+   "gruen": true,
+   "zahl": "0.04 % Lücke nach 0.7 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 13.19 s von außen (Eigenmeldung 12.20 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.82,
+   "gpu": "amd/rdna-3",
+   "s": 49,
+   "zeit": "2026-11-06T02:02:09.604Z",
+   "abdruck": "8ee0163813d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 13.19 s von außen (Eigenmeldung 12.20 s), Bild 0.04 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "ROT: t(Kontrolle) kalt 13.19 s von außen (Eigenmeldung 12.20 s), Bild 0.04 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 49,
+   "zeit": "2026-11-06T02:02:09.604Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 615 ms (Soll ≤ 250) · Haupt-Faden belegt 8.45 s bis zur Kontrolle (Soll ≤ 4; 25 LongTasks 5.49 s) · Kontrolle 13.26 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 92 ms (bei 2.3 s; 13× ≥ 50 ms, Σ 773 ms) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "ROT: längste Aufgabe 615 ms (Soll ≤ 250) · Haupt-Faden belegt 8.45 s bis zur Kontrolle (Soll ≤ 4; 25 LongTasks 5.49 s) · Kontrolle 13.26 s Seiten-Uhr · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 92 ms (bei 2.3 s; 13× ≥ 50 ms, Σ 773 ms) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 49,
+   "zeit": "2026-11-06T02:02:09.604Z",
+   "abdruck": "2bfe3805ab4b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T02:01:43.998Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 5.2,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 19,
+    "takte": 678,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 137,
+   "frameP95": 552.45,
+   "taktP95": 250.94,
+   "vramMax": 136.4,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 66,
+   "luecken": 5,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 74.3,
+  "minuten": 1.28
+ }
+}

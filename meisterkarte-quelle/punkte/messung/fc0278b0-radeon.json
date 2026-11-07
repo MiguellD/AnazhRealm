@@ -1,0 +1,59 @@
+{
+ "sha": "fc0278b0f6e8ce868df382e1d6d045bf06300e0f",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T14:05:20.319Z",
+ "host": "MiguellD",
+ "je": {
+  "licht.K5#1": {
+   "gruen": true,
+   "zahl": "größter Sprung 0.053 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.82 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "amd/rdna-3",
+   "s": 28.6,
+   "zeit": "2026-11-04T14:05:20.319Z",
+   "abdruck": "d5d2726d733f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T14:04:08.489Z",
+  "port": 7804,
+  "warten": 0.75,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "licht.K5#1",
+    "s": 16.7,
+    "takte": 633,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 53,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 55.3,
+  "minuten": 1.74
+ }
+}

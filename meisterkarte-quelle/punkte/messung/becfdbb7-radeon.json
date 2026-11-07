@@ -1,0 +1,152 @@
+{
+ "sha": "becfdbb79fe42a480f3bc5069c217c23a7289a01",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T19:31:06.094Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.456 [0.9, 1] · lippeL -4.02 [-14, -4] · lippeA -0.14 [4, 14] · hoehleL 1.01 [-12, 0] · hoehleA -1.42 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.456 [0.9, 1] · lippeL -4.02 [-14, -4] · lippeA -0.14 [4, 14] · hoehleL 1.01 [-12, 0] · hoehleA -1.42 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 29.7,
+   "zeit": "2026-11-04T19:27:50.590Z",
+   "abdruck": "747f7f78f5e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.4551 Soll [0.3554,0.533] — strich 0.4551 — albedo: veraltet seit 4ef6370e: foundry-core.js geändert (c:5e63dfdb22536599 → c:7a07aa8bd8252d76) · albedo — [0.01; 0.3] · third ROT strich 0.4344 Soll [0.3554,0.533] — strich 0.4344 — albedo: veraltet seit 4ef6370e: foundry-core.js geändert (c:5e63dfdb22536599 → c:7a07aa8bd8252d76) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: arm ROT strich 0.4551 Soll [0.3554,0.533] — strich 0.4551 — albedo: veraltet seit 4ef6370e: foundry-core.js geändert (c:5e63dfdb22536599 → c:7a07aa8bd8252d76) · albedo — [0.01; 0.3] · third ROT strich 0.4344 Soll [0.3554,0.533] — strich 0.4344 — albedo: veraltet seit 4ef6370e: foundry-core.js geändert (c:5e63dfdb22536599 → c:7a07aa8bd8252d76) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 32.6,
+   "zeit": "2026-11-04T19:28:20.417Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm GRÜN strich 0.4528 Soll [0.4358,0.6538] · third ROT strich 0.4118 Soll [0.4358,0.6538] — strich 0.4118 < 0.4358",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: arm GRÜN strich 0.4528 Soll [0.4358,0.6538] · third ROT strich 0.4118 Soll [0.4358,0.6538] — strich 0.4118 < 0.4358",
+   "gpu": "amd/rdna-3",
+   "s": 36,
+   "zeit": "2026-11-04T19:30:18.548Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "nH 12 erstes Haus nach 133.6 ms (haus_tudor, huelle in 207.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 592.7 ms (haus_tudor, mesh in 43.9 m, Bau-Hash 84121d20)",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: nH 12 erstes Haus nach 133.6 ms (haus_tudor, huelle in 207.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 592.7 ms (haus_tudor, mesh in 43.9 m, Bau-Hash 84121d20)",
+   "gpu": "amd/rdna-3",
+   "s": 28.6,
+   "zeit": "2026-11-04T19:31:06.094Z",
+   "abdruck": "db45b3e71c29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "licht.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: LINSE werkbank licht --luft --wetter rainy --zug EXIT=0 nach 45.2 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360))",
+   "exit": 0,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: LINSE werkbank licht --luft --wetter rainy --zug EXIT=0 nach 45.2 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360))",
+   "s": 45.6,
+   "zeit": "2026-11-04T19:29:05.646Z",
+   "abdruck": "0ac1efa0a489",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T19:26:57.614Z",
+  "port": 7804,
+  "warten": 0.15,
+  "bootS": 7.7,
+  "grundstellungS": [
+   5.2,
+   0.1
+  ],
+  "proben": 5,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 32.4,
+    "takte": 1194,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "licht.K5#1",
+    "s": 12.5,
+    "takte": 647,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "haar.K1#1",
+    "s": 22.1,
+    "takte": 1024,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K5#1",
+    "s": 11.3,
+    "takte": 657,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 6,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 306,
+   "frameP95": 501.9,
+   "taktP95": 102,
+   "vramMax": 128.4,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K5#1",
+     "m": 1798,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 256,
+   "luecken": 2,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 268.1,
+  "minuten": 4.71
+ }
+}

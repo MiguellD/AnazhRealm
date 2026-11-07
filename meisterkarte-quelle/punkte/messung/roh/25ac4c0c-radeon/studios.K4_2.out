@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm'); A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\25ac4c0c-radeon\studios.K4_1.json'); export WERKBANK_PORT=$((7904+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7904 33
+K4 garage: Differenz 0.8594 ·  (13.5 s: buehne 0.8 · welt 0.9 · bild 11.4 · schuss 0.5)
+K4 portale: Differenz — · ROT: bild: {"ms":3974,"fehler":"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_tanne in 8.39 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 23.01 m · Luma 45.5 σ 27.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert  (4.9 s: buehne 0.6 · welt 0.3)
+K4 schmiede: Differenz 0.9551 ·  (5.1 s: buehne 0.4 · welt 0.1 · bild 4.2 · schuss 0.4)
+@@PUNKTE@@ FRIST 27 s der Probe gerissen — Studio fachwerk und die folgenden ausgelassen
+@@ PROBE-FEHLER TypeError: Cannot read properties of undefined (reading 'differenz') |     at dOk (C:\Users\micha\AppData\Local\Temp\claude\w3\pm\bericht\2910-w3w-studios\skripte\k4-bild.cjs:330:29) |     at C:\Users\micha\AppData\Local\Temp\claude\w3\pm\bericht\2910-w3w-studios\skripte\k4-bild.cjs:407:44 |     at Array.filter (<anonymous>) |     at k4Bild (C:\Users\micha\AppData\Local\Temp\claude\w3\pm\bericht\2910-w3w-studios\skripte\k4-bild.cjs:407:28)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

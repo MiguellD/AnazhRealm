@@ -1,0 +1,66 @@
+{
+ "sha": "ab884210027d810411fe8e16f57192bb336d2af8",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T23:58:11.880Z",
+ "host": "MiguellD",
+ "je": {
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 75.7 ms (haus_tudor, huelle in 210.1 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 112.2 ms (haus_tudor, mesh in 45 m, Bau-Hash 84121d20)",
+   "exit": 0,
+   "minuten": 0.25,
+   "gpu": "amd/rdna-3",
+   "s": 15,
+   "zeit": "2026-11-04T23:58:11.880Z",
+   "abdruck": "db45b3e71c29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T23:57:37.672Z",
+  "port": 7804,
+  "warten": 0.16,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "siedlung.K5#1",
+    "s": 13.5,
+    "takte": 730,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 463,
+   "frameP95": 50.4,
+   "taktP95": 35.4,
+   "vramMax": 131.2,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K5#1",
+     "m": 1798,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 37,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 39.5,
+  "minuten": 0.91
+ }
+}

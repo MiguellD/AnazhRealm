@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 16.8,
+ "schritte": [
+  [
+   "ende",
+   16.8
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 109,
+  "bilder": 466,
+  "seiten": 3,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 0.00012316666666666777,
+   "mittag": 0.5000860555555555
+  },
+  "minuten": 1.28,
+  "seiten": 3,
+  "proben": 4,
+  "last": {
+   "n": 458,
+   "frame": 108.9,
+   "p99": 192.5,
+   "max": 552.6,
+   "ueber33": 200,
+   "ueber100": 45,
+   "takt": 104.4,
+   "vram": 140.9,
+   "gpu": 11.4,
+   "gpuN": 79,
+   "befehle": 113,
+   "dreiecke": 509666,
+   "voll": 0.457,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 1311,
+  "gegangen": 182,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 104,
+    "frame": 33.5,
+    "p99": 42,
+    "max": 50,
+    "ueber33": 6,
+    "ueber100": 0,
+    "takt": 21.8,
+    "vram": 123.7,
+    "gpu": 4.87,
+    "gpuN": 9,
+    "befehle": 66,
+    "dreiecke": 296238,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 87,
+    "frame": 33.5,
+    "p99": 33.8,
+    "max": 33.8,
+    "ueber33": 7,
+    "ueber100": 0,
+    "takt": 25.6,
+    "vram": 138.2,
+    "gpu": 3.88,
+    "gpuN": 7,
+    "befehle": 67,
+    "dreiecke": 382793,
+    "voll": 1,
+    "halt": false,
+    "last": 0.55,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +27.1 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +4.0 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +3.6 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +2.8 MB"
+  ],
+  "heap": [
+   207.8,
+   242.5
+  ],
+  "vramGC": [
+   122.2,
+   121.2
+  ]
+ }
+}

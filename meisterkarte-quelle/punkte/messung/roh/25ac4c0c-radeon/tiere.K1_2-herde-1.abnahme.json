@@ -1,0 +1,153 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.158",
+  "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 58
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0938,
+   "taeter": {
+    "Gelände": 0.0868,
+    "Laub grown_busch_hazel_v1": 0.0069
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.41,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   167.297,
+   55.37,
+   208.108
+  ],
+  "blick": [
+   -0.65438,
+   0.13706,
+   0.74364
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 39.9,
+  "sigma": 26.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.41 m · Luma 39.9 σ 26.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.158 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 3,
+  "kamera": [
+   167.297,
+   55.37,
+   208.108
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     147.35,
+     60.02,
+     198.23
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 6 Rinde baum_kiefer in 9.86 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     157.974,
+     58.66,
+     201.856
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_kiefer in 3.44 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     136.15,
+     61.123,
+     197.477
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 25.15 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     167.297,
+     55.37,
+     208.108
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 1,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:wesen=80/255/80"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 45
+   },
+   "tier:wesen": {
+    "objekte": 65,
+    "pixel": 373
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\25ac4c0c-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

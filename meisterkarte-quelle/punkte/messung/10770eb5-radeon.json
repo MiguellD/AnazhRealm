@@ -1,0 +1,93 @@
+{
+ "sha": "10770eb5698e05aef55914ee1b08907fb4b285a6",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T00:12:49.574Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 56 Bilder · max 460.2 ms · 80.36 % > 33 ms · Fahrt 35 Bilder · max 376.6 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 460.2), 80.36 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 376.6), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.47,
+   "grund": "ROT: Gehen 56 Bilder · max 460.2 ms · 80.36 % > 33 ms · Fahrt 35 Bilder · max 376.6 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 460.2), 80.36 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 376.6), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 28,
+   "zeit": "2026-11-04T12:47:54.215Z",
+   "abdruck": "5c1471ee9349",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": true,
+   "zahl": "größter Sprung 0.063 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.80 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "amd/rdna-3",
+   "s": 27.9,
+   "zeit": "2026-11-04T12:48:26.514Z",
+   "abdruck": "d5d2726d733f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 67.4 ms (haus_tudor, huelle in 209.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 272.7 ms (haus_tudor, mesh in 44.5 m, Bau-Hash 84121d20)",
+   "exit": 0,
+   "minuten": 0.32,
+   "gpu": "amd/rdna-3",
+   "s": 19.2,
+   "zeit": "2026-11-05T00:12:49.574Z",
+   "abdruck": "db45b3e71c29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T00:09:21.599Z",
+  "port": 7804,
+  "warten": 3.12,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "siedlung.K5#1",
+    "s": 12.6,
+    "takte": 709,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 284,
+   "frameP95": 117.1,
+   "taktP95": 81.8,
+   "vramMax": 123.6,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K5#1",
+     "m": 1798,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 38,
+   "luecken": 1,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 40.3,
+  "minuten": 3.85
+ }
+}

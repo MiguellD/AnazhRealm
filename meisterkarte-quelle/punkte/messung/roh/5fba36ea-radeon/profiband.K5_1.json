@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 15,
+ "schritte": [
+  [
+   "ende",
+   15
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 579,
+  "bilder": 3939,
+  "seiten": 9,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 0.0001394999999999986,
+   "mittag": 0.5000976666666666
+  },
+  "minuten": 9.05,
+  "seiten": 4,
+  "proben": 10,
+  "last": {
+   "n": 3925,
+   "frame": 33.9,
+   "p99": 58.6,
+   "max": 937.2,
+   "ueber33": 424,
+   "ueber100": 11,
+   "takt": 35.8,
+   "vram": 128.3,
+   "gpu": 5.33,
+   "gpuN": 328,
+   "befehle": 76,
+   "dreiecke": 373110,
+   "voll": 0.075,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 66,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 2328,
+  "gegangen": 158,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 152,
+    "frame": 24.9,
+    "p99": 25.2,
+    "max": 25.4,
+    "ueber33": 0,
+    "ueber100": 0,
+    "takt": 16.4,
+    "vram": 122.8,
+    "gpu": 2.93,
+    "gpuN": 8,
+    "befehle": 66,
+    "dreiecke": 295139,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 117,
+    "frame": 25.3,
+    "p99": 25.8,
+    "max": 33.6,
+    "ueber33": 1,
+    "ueber100": 0,
+    "takt": 22.1,
+    "vram": 121,
+    "gpu": 3.69,
+    "gpuN": 8,
+    "befehle": 67,
+    "dreiecke": 373604,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +32.9 MB/min > 5 — Halter: r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +2.8 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +2.8 MB · r._foundry.cache[]._foundryFlat.leaves[].geom +1.9 MB"
+  ],
+  "heap": [
+   208,
+   505.6
+  ],
+  "vramGC": [
+   122.3,
+   121
+  ]
+ }
+}

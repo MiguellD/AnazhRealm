@@ -1,0 +1,122 @@
+{
+ "sha": "2d6439c10c1dbe7e064cbbb47bfa09581d05b02f",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T00:31:32.256Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 2.53 px · Haus 5.98 px · Tor 0.71 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.45,
+   "grund": "ROT: Baum 2.53 px · Haus 5.98 px · Tor 0.71 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 27,
+   "zeit": "2026-11-05T00:30:23.975Z",
+   "abdruck": "eacab06a01be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 16.0139 % Pop-Pixel je Sekunde (332065 px, Soll ≤ 0,05 %), je Schritt 36025*/34719*/52444*/68228*/33811*/28169*/27920/50749* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.33,
+   "grund": "ROT: Gehen 4 m/s: 16.0139 % Pop-Pixel je Sekunde (332065 px, Soll ≤ 0,05 %), je Schritt 36025*/34719*/52444*/68228*/33811*/28169*/27920/50749* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 19.8,
+   "zeit": "2026-11-05T00:30:50.997Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 6.16 % (Soll < 2 %) über 9821 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.71 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: Luma-Sprung 6.16 % (Soll < 2 %) über 9821 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.71 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 7.7,
+   "zeit": "2026-11-05T00:31:32.256Z",
+   "abdruck": "37bfc892baa6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "s": 45.5,
+   "zeit": "2026-11-05T00:29:21.172Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T00:27:58.826Z",
+  "port": 7804,
+  "warten": 0.9,
+  "bootS": 6.3,
+  "grundstellungS": [
+   3.1
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 18.7,
+    "takte": 619,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 14.1,
+    "takte": 659,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 21.4,
+    "takte": 1354,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 249,
+   "frameP95": 58.6,
+   "taktP95": 30.7,
+   "vramMax": 126,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 162,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 167.3,
+  "minuten": 3.76
+ }
+}

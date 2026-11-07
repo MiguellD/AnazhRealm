@@ -1,0 +1,103 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.178",
+  "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 160
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.33,
+   "deckung": 0.0382,
+   "taeter": {
+    "Laub baum_tanne": 0.0382
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 14.67,
+  "gestalt": [
+   "baum_birke 201"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.624,
+   28.97,
+   -1054.505
+  ],
+  "blick": [
+   0.18673,
+   0.29847,
+   -0.93597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 66.3,
+  "sigma": 37.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 66.3 σ 37.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.178 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L1": {
+    "objekte": 6,
+    "pixel": 32582
+   },
+   "f:eiche:L1": {
+    "objekte": 6,
+    "pixel": 159730
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\71ef6a0d-radeon\\vegetation.K5_2-wiese-ego-0.5-sommer-krone.maske.png"
+ }
+}

@@ -1,0 +1,74 @@
+{
+ "sha": "ba87b1585310b2127e4f046e9323f1b4f02660f6",
+ "geraet": "radeon",
+ "zeit": "2026-11-05T01:58:49.175Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.42°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "exit": 0,
+   "minuten": 0.34,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 1.87 · 20–40 1.71 (Saum springt > 15 %), Farbton 2–5 m 13.42°, nahWiese 4 Befehle / 63548 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 20.4,
+   "zeit": "2026-11-05T00:53:59.086Z",
+   "abdruck": "e4046cdfc32b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.483 [0.9, 1] · lippeL -3.18 [-14, -4] · lippeA 1.64 [4, 14] · hoehleL 4.46 [-12, 0] · hoehleA -1.22 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.483 [0.9, 1] · lippeL -3.18 [-14, -4] · lippeA 1.64 [4, 14] · hoehleL 4.46 [-12, 0] · hoehleA -1.22 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 21,
+   "zeit": "2026-11-05T01:58:49.175Z",
+   "abdruck": "0f25f0326aa7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-05T01:58:14.688Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 19.9,
+    "takte": 614,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 46,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 49.6,
+  "minuten": 1
+ }
+}

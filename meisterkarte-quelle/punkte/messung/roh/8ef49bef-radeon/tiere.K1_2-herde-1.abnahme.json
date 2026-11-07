@@ -1,0 +1,233 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.185",
+  "sha": "8ef49bef479165fec47c92ff3cd4ef9c32e60931"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 52
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0104,
+   "taeter": {
+    "Formation": 0.0087,
+    "Laub baum_tanne": 0.0017
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.04,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -62.13,
+   84.213,
+   158.31
+  ],
+  "blick": [
+   -0.07597,
+   -0.04096,
+   -0.99627
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 52.6,
+  "sigma": 34.1,
+  "schwarz": 0.0014,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.04 m · Luma 52.6 σ 34.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.185 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 11 Posen",
+ "wahl": {
+  "versucht": 11,
+  "gewaehlt": 10,
+  "kamera": [
+   -62.13,
+   84.213,
+   158.31
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -108.28,
+     83.62,
+     118.7
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 10.29 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -107.665,
+     84.679,
+     107.49
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 7.55 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -105.973,
+     80.064,
+     129.687
+    ],
+    "rot": [
+     "Sicht verdeckt 4.6 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 2.7 %, Gelände 1.9 %",
+     "Vordergrund 48.4 % näher als 8 m (der halbe Ziel-Abstand): Gelände 23.6 %, Laub baum_kiefer 23.1 %, Laub baum_tanne 0.9 %"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -104.17,
+     84.631,
+     96.822
+    ],
+    "rot": [
+     "Vordergrund 28.1 % näher als 8 m (der halbe Ziel-Abstand): Gelände 28.1 %",
+     "Ziel Herde verdeckt von Gelände in 5.13 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -100.9,
+     74.465,
+     139.702
+    ],
+    "rot": [
+     "Sicht verdeckt 3.1 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 3.1 %",
+     "Vordergrund 39.8 % näher als 8 m (der halbe Ziel-Abstand): Gelände 32.5 %, Laub baum_birke 4.2 %, Laub baum_tanne 2.3 %",
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 31.45 m"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -98.033,
+     85.277,
+     87.422
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 5.91 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -93.408,
+     72.125,
+     148.063
+    ],
+    "rot": [
+     "Vordergrund 42.5 % näher als 8 m (der halbe Ziel-Abstand): Gelände 34.2 %, Rinde baum_tanne 8.3 %",
+     "Ziel Herde verdeckt von an Punkt 1 Gelände in 33.68 m"
+    ]
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -89.672,
+     86.521,
+     79.93
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 7.19 m"
+    ]
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -84.008,
+     70.779,
+     154.2
+    ],
+    "rot": [
+     "Sicht verdeckt 23.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Gelände 23.2 %",
+     "Vordergrund 66.1 % näher als 8 m (der halbe Ziel-Abstand): Gelände 66.1 %",
+     "Ziel Herde verdeckt von Gelände in 3.98 m"
+    ]
+   },
+   {
+    "k": 9,
+    "kamera": [
+     -68.67,
+     89.176,
+     72.55
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Gelände in 12.04 m"
+    ]
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -62.13,
+     84.213,
+     158.31
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80"
+  ],
+  "klassen": {
+   "tier:wesen": {
+    "objekte": 11,
+    "pixel": 83
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\8ef49bef-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

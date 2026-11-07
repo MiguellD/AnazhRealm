@@ -1,0 +1,68 @@
+{
+ "sha": "9936161889fd061fd7142d5f4983477f37c0d310",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T00:40:36.767Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "siedlung.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 75 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "exit": 1,
+   "minuten": 1.26,
+   "grund": "Deckel 75 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "s": 75.4,
+   "zeit": "2026-11-07T00:40:36.767Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T00:39:47.310Z",
+  "port": 7804,
+  "warten": 0.12,
+  "bootS": 8.6,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 30.3,
+    "takte": 839,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 113,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 117.9,
+  "minuten": 2.14
+ }
+}

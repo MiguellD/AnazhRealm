@@ -1,0 +1,78 @@
+{
+ "sha": "ba752b9e97ac94d66a7c546aeab0b41a529795a2",
+ "geraet": "radeon",
+ "zeit": "2026-11-04T15:03:31.629Z",
+ "host": "MiguellD",
+ "je": {
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 66.9 · third/gehen 59.2 · ego/wechsel 78 · third/wechsel 43.3 · Bild 25.2 ms",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 66.9 · third/gehen 59.2 · ego/wechsel 78 · third/wechsel 43.3 · Bild 25.2 ms",
+   "gpu": "amd/rdna-3",
+   "s": 32,
+   "zeit": "2026-11-04T15:03:31.629Z",
+   "abdruck": "70da551f10bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.49,
+   "grund": "Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 29.4,
+   "zeit": "2026-11-04T15:02:44.079Z",
+   "abdruck": "5c1471ee9349",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-04T15:02:31.366Z",
+  "port": 7804,
+  "warten": 0.09,
+  "bootS": 5.8,
+  "grundstellungS": [
+   0.1
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 15.1,
+    "takte": 587,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1284,
+   "frameP95": 58.4,
+   "taktP95": 45.7,
+   "vramMax": 159,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 86,
+   "luecken": 1,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 87.3,
+  "minuten": 1.6
+ }
+}

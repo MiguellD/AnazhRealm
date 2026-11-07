@@ -1,0 +1,125 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.197",
+  "sha": "25374f6fb49d2ed38fe2e1f3abc22e7c73031691"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 58
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.9999999999999983,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 2,
+  "gestalt": [
+   "felsturm 2438"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -81.519,
+   87.9,
+   -92.335
+  ],
+  "blick": [
+   0.92362,
+   -0.24951,
+   -0.291
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 74.7,
+  "sigma": 35.5,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 74.7 σ 35.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.197 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^formationenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "formationenSatz=255/80/80"
+  ],
+  "klassen": {
+   "formationenSatz": {
+    "objekte": 17,
+    "spiegelTreue": -0.1982,
+    "spiegelEbene": 87.213,
+    "sp": [
+     473,
+     0,
+     0,
+     167758.33,
+     167758.33,
+     -33247.72
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 16.25,
+    "pixel": 89832,
+    "luma": 97.29,
+    "kante": 0.5945,
+    "kr": 8791,
+    "strich": 0.4241,
+    "si": 32100,
+    "bloecke": 870,
+    "glatt": 0.2368,
+    "nyquist": 0.1737,
+    "beta": 1.8612
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 2,
+   "ist": 1.984
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\25374f6f-radeon\\material.K2_1.json.d\\fels-2.maske.png",
+  "urteil": [
+   "MIKRO formationenSatz: nyquist 0.1737 glatt 0.2368"
+  ]
+ }
+}

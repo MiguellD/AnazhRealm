@@ -1,0 +1,60 @@
+{
+ "sha": "12f2f1469425ae5f65881cff3f1d39ee818f105d",
+ "geraet": "radeon",
+ "zeit": "2026-11-06T16:41:18.591Z",
+ "host": "MiguellD",
+ "je": {
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 84.7 %/– [Differenz 0.8472 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.8 %/– [Differenz 0.9483 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 68.1 %/– [Differenz 0.681 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.5 %/– [Differenz 0.9754 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.1 %/– [Differenz 0.9914 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.08,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 84.7 %/– [Differenz 0.8472 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.8 %/– [Differenz 0.9483 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 68.1 %/– [Differenz 0.681 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.5 %/– [Differenz 0.9754 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.1 %/– [Differenz 0.9914 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "amd/rdna-3",
+   "s": 64.7,
+   "zeit": "2026-11-06T16:41:18.591Z",
+   "abdruck": "e6768481ae0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-06T16:40:49.407Z",
+  "port": 7804,
+  "warten": 0.04,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 19.9,
+    "takte": 826,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 85,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 91.4,
+  "minuten": 1.62
+ }
+}
