@@ -770,7 +770,7 @@ function __wasserFlussNah(r, x, z) {
     const st = r.state;
     const fluesse = [];
     for (const h of [st.hydrosphere].concat(st.hydroTiles ? [...st.hydroTiles.values()] : []))
-        if (h && h.ready) fluesse.push(...(h.rivers || []));
+        if (h?.ready) fluesse.push(...(h.rivers || []));
     const aus = { p: null, vor: null, fluesse };
     for (const rv of fluesse)
         rv.points.forEach((q, k) => {
@@ -1738,7 +1738,7 @@ function wasserSichtNetz() {
     const boeden = new Map();
     const faecherVon = (m) => {
         let n = null;
-        if (m && m.geometry && m.geometry.attributes && m.geometry.attributes.position) {
+        if (m?.geometry?.attributes?.position) {
             const pos = m.geometry.attributes.position.array;
             const ix = m.geometry.index ? m.geometry.index.array : null;
             const triN = ix ? ix.length / 3 : pos.length / 9;
@@ -1820,7 +1820,7 @@ function wasserSichtNetz() {
             for (const [nx, nz] of ring) {
                 const nk = nx + "," + nz;
                 const ne = st.voxelChunks && st.voxelChunks.get(nk);
-                if (ne && ne.waterCells && !(st.voxelChunkWaterIso && st.voxelChunkWaterIso.has(nk)))
+                if (ne?.waterCells && !(st.voxelChunkWaterIso && st.voxelChunkWaterIso.has(nk)))
                     r._buildVoxelChunkWaterIsoSurface(nx, nz);
             }
         } finally {
@@ -3051,13 +3051,13 @@ async function wasserOrte(o = {}) {
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
-                if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
+                if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
                 da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
-                        if (t && t.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                        if (t?.ready && regionen.indexOf(t) < 0) regionen.push(t);
                 }
             }
         }

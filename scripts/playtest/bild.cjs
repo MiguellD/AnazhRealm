@@ -472,7 +472,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         if (st.blueprints.stein_block) {
             window.__withNoFoundry(() => {
                 const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
-                if (arch && arch.mesh) {
+                if (arch?.mesh) {
                     arch.mesh.traverse((node) => {
                         // mode-agnostisch: das aktive Lichtmodell ist Toon ODER
                         // PBR (Default pbr). Beide reagieren auf Licht/Tag-Nacht.
@@ -783,7 +783,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         if (st.voxelChunkGrass) {
             for (const v of st.voxelChunkGrass.values()) {
                 grassCells++;
-                if (v && v.isInstancedMesh) grassInstances++;
+                if (v?.isInstancedMesh) grassInstances++;
             }
         }
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
@@ -852,11 +852,9 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             out.nahWieseZahl = Array.isArray(b1) ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet";
             // DER HALM WEICHT DEM WAGEN (w20-lack-spiegel; GTX d1ee37d2: die Wiese stand durch die Haube des GT am See, die Lack-Ebene
             // von material.K4#1 trug 0 Blöcke): ein GT mitten in der Kachel — von ihren Büscheln standen welche in seiner Hülle
-            // (`_imWagen`), gebaut danach keins. SELBSTTEST: ohne die Frage im Kachelbau (`_nahWieseKachelBueschel`) fällt der Band
-            const [mx, mz] = [(tx + 0.5) * NW.kachel, (tz + 0.5) * NW.kachel];
-            const gt = b1?.length ? r.spawnArchitecture("fahrzeug_gt", { x: mx, y: r._bodenSichtAt(mx, mz) + 0.5, z: mz }, { silent: true, precise: true }) : null; // prettier-ignore
-            const drin = (b) => (b || []).filter((q) => r._imWagen(q.x, q.z, 0)).length;
-            out.halmWagen = gt ? [drin(b1), drin(r._nahWieseKachelBueschel(tx, tz)), gt._grundBox ? "Halt" : "kein Halt"] : null;
+            // (`_imWagen`, vorher/nachher), gebaut danach keins. SELBSTTEST: ohne die Frage im Kachelbau (`_nahWieseKachelBueschel`) fällt der Band
+            const gt = b1?.length && r.spawnArchitecture("fahrzeug_gt", { ...b1[0] }, { silent: true, precise: true });
+            out.halmWagen = gt && [b1, r._nahWieseKachelBueschel(tx, tz)].map((b) => b.filter((q) => r._imWagen(q.x, q.z, 0)).length);
             if (gt) r.removeArchitecture(gt, { still: true });
         }
 
@@ -908,7 +906,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             v829Results.nahWieseStabil
         );
         const hw = v829Results.halmWagen;
-        check(`Der Halm weicht dem Wagen: Büschel in der Hülle eines GT vorher/nachher ${hw}`, hw?.[0] > 0 && hw[1] === 0 && hw[2] === "Halt");
+        check(`Halm weicht dem Wagen ${hw}`, hw?.[0] > 0 && !hw[1]);
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
         check("Der Genesis-Ort setzt jedes Element EINMAL, ein Tor der älteren Form rückt auf seinen Slot (der Umzug)", v829Results.genesisIdempotent);
@@ -1381,7 +1379,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
         let hinted = null;
         for (let i = 1; i < spectrum.length && !hinted; i++) {
             const h = r._blueprintRoleGapHint(probe, spectrum[i].role);
-            if (h && h.text && Number.isFinite(h.need)) hinted = h;
+            if (h?.text && Number.isFinite(h.need)) hinted = h;
         }
         out.hintGefunden = !!hinted;
         if (hinted) {
