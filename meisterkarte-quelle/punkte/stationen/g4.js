@@ -560,7 +560,7 @@ const STUDIO_PROBE = {
     ...probeBefehl(probeStudios, 75),
     ausnahme: "acht Studios je zwei Seiten mit eigenem Renderer (Besuch und Neuladen), 5 Griffe je Seite: Radeon fünf in 39 s",
 };
-// DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
+// DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg als Bibliothek (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
 // echte Eingaben) in der warmen Welt der Sitzung — die Bühne (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm),
 // jeder Weg mit kalt und warm, Lage und Sicht im Wechsel. KALT räumt die Linse selbst (`wegHelfer`: der erste Lauf eines Werks nimmt
 // seine Körper aus der Foundry, `_foundryCacheEvict`) — bis w4-stationen-schnell lud die Probe dafür die Seite neu (ein Ganz-Welt-Boot
@@ -580,7 +580,7 @@ const BILD_FAELLE = [
 ];
 async function probeBildWeg(H) {
     const { path } = H;
-    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"], { argv: ["--echt"] });
+    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"]);
     const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
@@ -644,7 +644,7 @@ const BILD_PROBEN = [
     { name: "Mutante: ein Werk steht nicht (das Bild trägt den L0-Bau)", j: bildRoh({ steht: 0 }, 2), gruen: false },
     { name: "Mutante: 4 Eingaben", j: bildRoh({ eingaben: 4 }, 5), gruen: false },
     { name: "Mutante: warm 1,2 s bis zum Bild", j: bildRoh({ zeiten: [100, 150, 200, 300, 1200] }, 6), gruen: false },
-    { name: "Mutante: das Bild zeigt nicht den L0-Bau", j: bildRoh({ soll: "c" }, 1), gruen: false },
+    { name: "Mutante: das Bild zeigt die Stufe 1, nicht den L0-Bau", j: bildRoh({ soll: "c", stufe: 1 }, 1), gruen: false },
 ];
 
 // DIE VERBEN (bauen.K5#2): die Linse diag-werkstatt-weg mit `--verben` (`wegHelfer`, `wegLauf`: gesetzt, dann das Verb über die echte
@@ -1614,7 +1614,7 @@ const alle = [
         ],
         quelle: "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom",
     },
-    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg --echt, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
+    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg in der Sitzung, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
     // frischer Browser auf der Karte (leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne; je Lage mit Bau
     // (schöpfer · frieden mit Material · pfad) × Werk (Eiche · Haus · GT · Teil) × Sicht (Ego · Third) über echte Eingaben die Zeit
     // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
@@ -1650,7 +1650,7 @@ const alle = [
                             // das Werk STEHT (genau eines, wie Staffel 1), über echte Eingaben, ≤ 3, im Bild mit dem L0-Bau
                             const ok = e && !e.fehler && e.steht === 1 && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
                             if (!ok) {
-                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht);
+                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht + (e && e.stufe ? " (Stufe " + e.stufe + ")" : ""));
                                 continue;
                             }
                             imBild++;
