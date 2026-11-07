@@ -1,7 +1,7 @@
 {
  "sha": "185e99bb0eaeabefa236bd7d520cb92c2bd559c7",
  "geraet": "gtx",
- "zeit": "2026-11-07T17:14:19.806Z",
+ "zeit": "2026-11-07T17:27:08.832Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "siedlung.K4#2": {
@@ -16,51 +16,250 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 184061 px · winter 20826 px · fruehling 143237 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.50 · winter 1.06 · fruehling 1.90 → Winter 0.425 × Sommer",
+   "exit": 0,
+   "minuten": 1.29,
+   "gpu": "nvidia/pascal",
+   "s": 77.3,
+   "zeit": "2026-11-07T17:19:47.671Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.1019 % Pop-Pixel je Sekunde (2112 px, Soll ≤ 0,05 %), je Schritt 56*/36*/1071*/41/40*/48*/731*/89* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.32,
+   "grund": "ROT: Gehen 4 m/s: 0.1019 % Pop-Pixel je Sekunde (2112 px, Soll ≤ 0,05 %), je Schritt 56*/36*/1071*/41/40*/48*/731*/89* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 19.4,
+   "zeit": "2026-11-07T17:21:05.061Z",
+   "abdruck": "6578ee2ff478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7923 (wasserSatz 25410 px, spiegelEbene 0.877) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 95.2 σ 37 schwarz 0.1 % weiß 0.0 % · Stand 18.546.211 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "nvidia/pascal",
+   "s": 22.7,
+   "zeit": "2026-11-07T17:23:25.067Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.677 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 39 (n 6015/13289)",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "nvidia/pascal",
+   "s": 17.7,
+   "zeit": "2026-11-07T17:24:19.878Z",
+   "abdruck": "4e639c909b43",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 74.8 J · p 5.97 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 76.9 J · p 6.68 · v 20.9 · Schaden 16.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 77.6 J · p 5.83 · v 22.8 · Schaden 16.7 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.18,
+   "gpu": "nvidia/pascal",
+   "s": 10.9,
+   "zeit": "2026-11-07T17:27:08.832Z",
+   "abdruck": "e5a8f60ac4b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T17:13:51.681Z",
+  "start": "2026-11-07T17:19:12.168Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
-  "grundstellungS": [],
-  "proben": 1,
+  "bootS": 7.4,
+  "grundstellungS": [
+   6.2,
+   4.6,
+   4.8,
+   7
+  ],
+  "proben": 8,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 20,
-    "takte": 683,
+    "ort": "wiese",
+    "vor": "vegetation.K5#2",
+    "s": 26.8,
+    "takte": 722,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 13.6,
+    "takte": 638,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 16.4,
+    "takte": 772,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "wetter.K2#1",
+    "s": 32,
+    "takte": 1403,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 19.1,
+    "takte": 631,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K2#1",
+    "s": 17.1,
+    "takte": 742,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 16.6,
+    "takte": 729,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
+  "wegeTueren": [
+   {
+    "vor": "siedlung.K1#2",
+    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+    "s": 4.6
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 9,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 133,
+   "frameP95": 133.29,
+   "taktP95": 83.81,
+   "vramMax": 126.8,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "gelaende.K3#1",
+     "m": 6469,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
+    },
+    {
+     "probe": "siedlung.K2#1",
+     "m": 1350,
+     "ringVor": 4,
+     "ringMin": -1
     }
    ],
-   "zapfen": 91,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 449,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 93.5,
-  "minuten": 1.62
+  "fahrtS": 486.8,
+  "minuten": 8.19
+ },
+ "ungemessen": {
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T17:21:38.172Z",
+   "abdruck": "98240f6809a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "zeit": "2026-11-07T17:21:38.172Z",
+   "abdruck": "a434d5e796c8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 34.7,
+   "zeit": "2026-11-07T17:25:01.277Z",
+   "abdruck": "07e9e78c8434",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "s": 45.3,
+   "zeit": "2026-11-07T17:25:57.903Z",
+   "abdruck": "780be0a8826d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
