@@ -1,0 +1,42 @@
+{
+ "sha": "039509b2fd0f5381ebe7d5704b279d55bd9d5606",
+ "geraet": "headless",
+ "zeit": "2026-11-07T07:55:38.324Z",
+ "host": "farm:42353188193",
+ "je": {
+  "spielgang.K4#2": {
+   "gruen": true,
+   "zahl": "Farbsicht: 4 Grenzen, ΔE min 23.9 (vorher 15.85) unter Machado-Deuteranopie [gras|boden 25.18, gras|bau 25.64, boden|bau 23.9, bau|laub 31.6] · Sichtfeld 75→92°, Skala 0.74 (Soll 0.741) · Wackeln an {\"dip\":-0.0791,\"atem\":6,\"bildPx\":42574} aus {\"dip\":0,\"atem\":0,\"bildPx\":0} · Unschärfe an 5.537 aus 12.457 · Untertitel 39 von 39",
+   "exit": 0,
+   "minuten": 10.96,
+   "zeit": "2026-11-07T07:54:47.983Z",
+   "abdruck": "60673ac27553",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42353188193/1"
+  },
+  "ki.K1#2": {
+   "gruen": true,
+   "zahl": "41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 100.0 % (Soll 95), Absicht 100.0 % (Soll 85), Brüche 0, Negativ 9/9 ohne Tat benannt, p95 4998 ms (genannt)",
+   "exit": 0,
+   "minuten": 5.76,
+   "zeit": "2026-11-07T07:55:38.324Z",
+   "abdruck": "a8876f20dede",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42353188193/2"
+  },
+  "ki.K5#1": {
+   "gruen": true,
+   "zahl": "p95 Satz → Welt 5.00 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "exit": 0,
+   "minuten": 5.76,
+   "zeit": "2026-11-07T07:55:38.324Z",
+   "abdruck": "30202ff53615",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42353188193/2",
+   "zwilling": "ki.K1#2"
+  }
+ }
+}
