@@ -596,6 +596,11 @@ async function probeLeben(expected) {
     // Probe einmal vor den Orten (der offene Ort seit tiere.K1#2 undefined): an f69173b0 warf `ort.x` (Radeon, in der Sitzung nach
     // 29,8 s), und das Wegenetz merkte jeden offenen Ort ohne Nachbarn. Am Gate (Radeon, frische Welt) sind alle sechs Orte offen,
     // ihr Wasser steht nach 2,1 s.
+    // DIE NAHT DER TEILE (Punkte-Maschine fahrzeug.K2#1, w19-fahrt-ziel-2-pm): die Station fährt DIESEN Lauf Byte für Byte in
+    // Teil-Proben je ≤ 45 s (das Gesetz einer Probe; in der Sitzung ~127 s auf der GTX) und hält ihn zwischen zwei Teilen an
+    // `window.sleep` — nach jedem Takt der Orte (`__gebautNach`) und in der Fahrt nach jedem zweiten Bild; die Uhr `tMs` ist die
+    // der Probe, die Welt steht im Halt. Ein Warten, das hier fällt oder eigene Wege geht, nimmt der Station den Halt: sie reißt
+    // dann ihren Deckel und steht UNGEMESSEN beim Namen.
     const wegenetz = async (o) => {
         await __weltDa(() => A._siedlungGesetz() && o.orte.every((k) => r._wegenetzNachbarn(k)));
         let i = 0;
