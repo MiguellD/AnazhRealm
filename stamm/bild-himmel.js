@@ -980,16 +980,13 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
         // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). DAS JAHR IST EINE FUNKTION DER WELT-UHR (feld.K2#2): die
-        // Phase ist die ihres Ankers (`_saisonAnker`: Phase und Welt-Uhr, gesetzt vom Wort des Spielers, vom Laden eines Stands, vom
-        // Beginn des Drifts) plus die Welt-Zeit seitdem durch die Länge des Jahrs — zwei Seiten einer Uhr und ein Reload stehen am
-        // selben Tag, und der Pegel des Jahrs (`_pegelTafel`) steigt auf jeder gleich. Bis feld.K2#2 driftete sie mit der Wanduhr
-        // jeder Seite (dt ≤ 0,2 s je Bild): ein Reload und ein Sprung der Uhr ließen das Jahr der Seiten auseinanderlaufen.
+        // Phase ist die ihres Ankers (`_saisonPhaseZu`) plus die Welt-Zeit seitdem durch die Länge des Jahrs — zwei Seiten einer Uhr
+        // und ein Reload stehen am selben Tag, und der Pegel des Jahrs (`_pegelTafel`) steigt auf jeder gleich. Bis feld.K2#2 driftete
+        // sie mit der Wanduhr jeder Seite (dt ≤ 0,2 s je Bild): ein Reload und ein Sprung der Uhr ließen das Jahr der Seiten
+        // auseinanderlaufen.
         if (st.autoSeason !== false && this._buehneSteht()) {
-            const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            let A = this._saisonAnker;
-            if (!A || A.phase !== st.seasonPhase || A.jahr !== yearSec)
-                A = this._saisonAnker = { anker: st.seasonPhase, t: st.spielZeit, jahr: yearSec };
-            A.phase = st.seasonPhase = (((A.anker + (st.spielZeit - A.t) / yearSec) % 1) + 1) % 1;
+            const A = this._saisonAnkerGilt();
+            A.phase = st.seasonPhase = this._saisonPhaseZu(st.spielZeit);
         } else if (st.autoSeason === false) this._saisonAnker = null; // ein angehaltenes Jahr setzt beim Weiterlaufen neu an
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
@@ -1006,6 +1003,42 @@ class AnazhRealm_bild_himmel {
         this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
+    // DER ANKER DES JAHRS (`_saisonAnker`, feld.K2#2): Phase und Welt-Uhr, gesetzt vom Wort des Spielers (`setSeason`, zur Tat-Uhr
+    // seines Akts), vom Laden eines Stands (sein Anker `saisonAnker`, das Paar reist im Stand), vom Weiterlaufen eines angehaltenen
+    // Jahrs (null) und von jedem anderen Schreiber der Phase. Ohne Anker steht die Welt an dem ihrer GEBURT — ihre Phase zur Welt-Uhr
+    // 0 —, nie am ersten Bild ihrer Bühne: bis w18-pegel-peers setzte jede Seite ihn, wenn ihr Drift begann, und der Stand trug die
+    // Phase ihres letzten Takts neben einer Uhr aus einem anderen Bild (A 0,37552 zur Uhr 2,854 s statt 0,37619) — B lud ein Jahr,
+    // das 1,6 s hinter A stand, und der Tag der Schmelze des Pegels (`_pegelTafel`) wechselte auf B 1,6 s später als auf A.
+    _saisonAnkerGilt() {
+        const st = this.state;
+        const jahr = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
+        let A = this._saisonAnker;
+        if (!A || A.phase !== st.seasonPhase || A.jahr !== jahr)
+            A = this._saisonAnker = {
+                anker: st.seasonPhase,
+                t: A === undefined ? 0 : st.spielZeit,
+                jahr,
+                phase: st.seasonPhase,
+            };
+        return A;
+    }
+    // DER ANKER IM STAND (`saisonAnker`): [Phase, Welt-Uhr] — die Phase des laufenden Jahrs zu jeder Uhr. Die Phase (Kopf) und die Uhr
+    // (`spielZeit`, Augenblick) fragt der Stand in verschiedenen Bildern: bis w18-pegel-peers lud B das Jahr von A aus ihnen, 0,19–1,6 s
+    // hinter A. Ein angehaltenes Jahr trägt keinen (seine Phase steht, `seasonPhase`).
+    _saisonAnkerStand() {
+        const st = this.state;
+        if (st.autoSeason === false || typeof st.seasonPhase !== "number") return null;
+        const A = this._saisonAnkerGilt();
+        return [A.anker, A.t];
+    }
+    // DIE PHASE DES JAHRS ZUR WELT-UHR `t`: die ihres Ankers plus die Welt-Zeit seitdem durch die Länge des Jahrs; ein angehaltenes
+    // Jahr (`autoSeason` false) steht. Leser: der Takt der Saison (`_tickSeason`) und der Stand (`seasonPhase` zu seiner Uhr).
+    _saisonPhaseZu(t) {
+        const st = this.state;
+        if (st.autoSeason === false || typeof st.seasonPhase !== "number") return st.seasonPhase;
+        const A = this._saisonAnkerGilt();
+        return (((A.anker + (t - A.t) / A.jahr) % 1) + 1) % 1;
+    }
     // Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name, uhr) {
         const key = AnazhRealm.JAHRESZEITEN[String(name || "").toLowerCase()];
@@ -2653,9 +2686,10 @@ class AnazhRealm_bild_himmel {
 
     // DER EINE LOOK-WETTER-LESER: die 5 Kanäle {fog,sun,grey,wind,rain}, transition-aware (dieselbe
     // from/to/progress-Lerp wie `_weatherBlendedValue`, vektoriell). `w` = Wort-Vorgabe (Default
-    // state.weather), während einer Transition führen from/to; unbekannt → sunny.
+    // state.weather), während einer Transition führen from/to; unbekannt → sunny. `rein`: das Feld des Worts `w` selbst, ohne den
+    // laufenden Übergang (der Weg des Regens, `_regenWeg`, legt seine Knoten aus den Worten eines Übergangs).
     // Gibt eine FRISCHE Kopie zurück (die frozen Statics bleiben unberührt).
-    _weatherFieldFor(w) {
+    _weatherFieldFor(w, rein) {
         const FLD = AnazhRealm.WEATHER_FIELD;
         const base = FLD.sunny;
         const fieldFor = (word) => FLD[word] || base;
@@ -2667,7 +2701,7 @@ class AnazhRealm_bild_himmel {
             rain: a.rain + (b.rain - a.rain) * p,
         });
         const wt = this.state.weatherTransition;
-        if (wt && wt.from && wt.to) {
+        if (!rein && wt && wt.from && wt.to) {
             const p = Math.max(0, Math.min(1, wt.progress || 0));
             return lerpField(fieldFor(wt.from), fieldFor(wt.to), p);
         }
@@ -3050,6 +3084,7 @@ class AnazhRealm_bild_himmel {
         if (from === target) {
             // Schon dort, kein Übergang nötig.
             this.state.weatherTransition = null;
+            this._regenWeg(target, target, beginn, 0); // ab `beginn` regnet, was das Wort trägt (wetter.K3)
             return true;
         }
         this.state.weatherTransition = {
@@ -3059,6 +3094,7 @@ class AnazhRealm_bild_himmel {
             duration: dur,
             startedAt: beginn,
         };
+        this._regenWeg(from, target, beginn, dur); // der Weg des Regens folgt dem Übergang auf der Welt-Uhr (wetter.K3, feld.K2#2)
         return true;
     }
 
