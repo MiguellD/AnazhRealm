@@ -277,6 +277,8 @@ class AnazhRealm_siedlung_bauten {
         }
         if (W.stempel !== stempel) [W.stempel, W.nach] = [stempel, W.schlaf.size];
         const vb = this._bedarfVoraus(auge) || auge;
+        const ging = W.px !== null && (auge.x !== W.px || auge.z !== W.pz); // das Auge ging in diesem Bild (die Nachlese)
+        let geweckt = 0;
         if (W.px !== null)
             W.odo += Math.max(Math.hypot(auge.x - W.px, auge.z - W.pz), Math.hypot(vb.x - W.vx, vb.z - W.vz));
         [W.px, W.pz, W.vx, W.vz] = [auge.x, auge.z, vb.x, vb.z];
@@ -287,27 +289,37 @@ class AnazhRealm_siedlung_bauten {
                     e._stufeEimer = undefined;
                     W.schlaf.delete(e);
                     W.wach.add(e);
+                    geweckt++;
                 }
             W.eimer.delete(b);
         };
         if (jetzt - W.ab > W.eimer.size) for (const b of [...W.eimer.keys()]) b <= jetzt && wecke(b);
         else for (let b = W.ab; b <= jetzt; b++) if (W.eimer.has(b)) wecke(b);
         W.ab = jetzt + 1;
-        // DIE NACHLESE FOLGT DER BAHN: fährt sie (`_bedarfTempo` über dem Gehen, BEDARF.fahrtAb — dort weckt der Weg die
-        // Eimer ohnehin), weckt sie je Bild STUFEN_NACHLESE Schläfer hinter den Wachen, sonst bis STUFEN_GANG: ein Stand (die
-        // Linse, der stehende Spieler) holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage.
+        // DIE NACHLESE FOLGT DEM WEG DES AUGES (Gebot 7: Kosten an Schirm und Änderung, nie an die Wanduhr): ging das Auge in
+        // diesem Bild (dort weckt der Weg die Eimer ohnehin), weckt sie STUFEN_NACHLESE Schläfer hinter den Wachen, steht es, bis
+        // STUFEN_GANG — ein Stand holt jeden Schläfer in wenigen Bildern. Wer auf seine Zusage schläft, weckt seine Zusage. Bis
+        // w18-stand-treue fragte sie das Tempo der Bahn, das nur BEDARF.frischMs Wanduhr lang gilt: ein langsamer Läufer stand.
         W.nach = Math.min(W.nach, W.schlaf.size);
-        if (W.nach > 0) {
-            const faehrt = Math.hypot(...this._bedarfTempo()) > this._bedarfFuss() * AnazhRealm.BEDARF.fahrtAb;
-            let k = faehrt ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG;
-            for (const e of W.schlaf) {
-                if (!(k-- > 0 && W.nach-- > 0)) break;
-                W.schlaf.delete(e);
-                e._stufeEimer = undefined;
-                W.wach.add(e);
-            }
+        for (let k = ging ? AnazhRealm.STUFEN_NACHLESE : AnazhRealm.STUFEN_GANG; W.nach > 0 && k > 0; k--, W.nach--) {
+            const e = W.schlaf.values().next().value;
+            W.schlaf.delete(e);
+            e._stufeEimer = undefined;
+            W.wach.add(e);
+            geweckt++;
         }
+        if (geweckt) this._stufeRundeNeu(W);
         return W;
+    }
+
+    // EIN GEWECKTER BEGINNT DIE RUNDE NEU (w18-stand-treue): wer in die Wache tritt (Eimer, Nachlese, Weckruf), gehört in die
+    // Runde, die die Stand-Wache zählt — der nächste Gang misst sie an den Wachen von jetzt (`rest` 0) und weckt den Takt
+    // (`_standWecken`). Bis hier zählte die Runde nur die Wachen ihres Beginns: kamen 185 dazu (die Nachlese nach einem Bau),
+    // ging der Takt die alten 26 ohne Wirkung und ruhte — die Neuen blieben ungeurteilt, bis die gebrochene Wache sie fand
+    // (gate:stand-takt TREUE-LÜCKE „211 → 26 Einheiten“, CI unter Last).
+    _stufeRundeNeu(W) {
+        W.rest = 0;
+        this._standWecken("archLod");
     }
 
     // Der Weckruf der Stufen-Wahl (aus `_cullWecken`: seine gezeichnete Stufe, sein Typ, seine Lage wechselt, er tritt ein oder
@@ -327,7 +339,7 @@ class AnazhRealm_siedlung_bauten {
         if (entry._stufeWer) entry._stufeWer._schlaf = null; // der Schlaf auf seiner Zusage endet (`_schlafen`)
         if (W.wach.has(entry)) return;
         W.wach.add(entry);
-        this._standWecken("archLod"); // ein Geweckter weckt den Takt, der ihn urteilt (`_standWecken`)
+        this._stufeRundeNeu(W); // ein Geweckter weckt den Takt, der ihn urteilt, in einer neuen Runde
     }
 
     // DER SPIELRAUM DER STUFE (m): wie weit der Abstand `dist` eines Eintrags wandern darf, ehe seine Wahl anders urteilen kann
