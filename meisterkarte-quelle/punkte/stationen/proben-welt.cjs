@@ -263,10 +263,18 @@ async function bodenRollen(tor) {
 // nach: das Leben lief mit 0,2 Spiel-s je Spiel-Sekunde, der Bestand eines 600-s-Kreises war der von 120 s. Jetzt ruht die Schleife
 // des Renderers und der Raffer ruft die Takte selbst (je rAF der Knoten-Rahmen, dann n Takte) — das Gesetz des Spiels für ein
 // Instrument, das selbst taktet: jeder Takt trägt die ganze Welt, die Leine hält nur sein Bild.
-// DIE UHR ×2 (`UHR`, im Kreis): mit vollem Leben je Takt trügen 12 000 Takte den 90-s-Deckel der Radeon nicht (headless an 8efb6318
-// je Takt Median 2,0 ms bei ruhendem Loop gegen 0,8 ms als Zwischen-Takt; die Radeon schaffte im alten Raffer 146 Spiel-s in den
-// ersten 10 s). Im Kreis ist der Deckel des Takts 0,2 s (TAKT_DECKEL_S × 2) und der Akkumulator darf doppelt so viele Fix-Schritte
-// (FIXED_MAX_STEPS × 2: 16 × 1/60 s ≥ 0,2 s — der Leib geht die volle Zeit): 5 Takte zu 0,2 s je Raffer-Bild, 3 000 Takte je Sicht.
+// DIE UHR ×5 (`UHR`, im Kreis; w19-tier-kreis-pm): die Kosten des Kreises folgen der ZAHL der Takte, nie ihrer Spiel-Länge — jeder
+// Raffer-Takt trägt Streuen, Wiese, Stufen, Bild und Leben eines ganzen Takts (headless-Profil 300 Spiel-s Ego an main 5fb21e29,
+// ohne Masken: 14,6 ms je Takt, `_loopVoxelStreaming` 31 %, `_loopRender` 24 %, `_loopWeatherAndGrowth` 13 %). Mit der Uhr ×2
+// (Takt-Deckel 0,2 s, 3 000 Takte je Sicht) brauchte die Radeon an main 94d9c5a6 allein für Ego 74,8 s (≈ 0,1 s je Spiel-s ohne
+// Maske) — Third riss den Deckel 90 s. Jetzt ist der Deckel des Takts 0,5 s (TAKT_DECKEL_S × 5) und der Akkumulator darf fünfmal so
+// viele Fix-Schritte (FIXED_MAX_STEPS × 5: 40 × 1/60 s ≥ 0,5 s — der Leib geht die volle Zeit): 2 Takte zu 0,5 s je Raffer-Bild,
+// 1 200 Takte je Sicht. DAS GESETZ DER TIERE BLEIBT: es ist auf die Bildrate gebaut (`_kreaturWeg` geht v·dt in Teil-Schritten von
+// höchstens einem halben Leib-Radius, der ruhende Leib trägt schon heute seine aufgelaufene Zeit in einem Schritt, `_kreaturTaktDt`)
+// — gemessen headless ohne Masken, je zwei Läufe (Tier-Sekunden im Blick · davon ≥ 200 px möglich · Tiere ≥ 200 px möglich):
+// Uhr ×2 Ego 1 844/2 270 · 241/694 · 7/7, Third 1 144/1 935 · 297/879 · 6/14; Uhr ×5 Ego 1 118/1 757 · 291/746 · 7/7, Third
+// 1 675/1 071 · 283/394 · 9/5; Bestand bis 20 in allen — die Uhr ×5 liegt im Band der Streuung zweier Läufe der Uhr ×2. Wanduhr headless
+// Ego 52,1/46,8 → 29,7/35,7 s, Third 47,7/50,8 → 24,0/23,3 s. `maskeMs` im Kreis und in FORTSCHRITT nennt die Zeit der Masken.
 // Danach steht die Uhr des Spiels wieder (auch im Abbau des Raffers).
 // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm; Radeon 8efb6318: der Deckel riss nach 384 Spiel-s, 23 Schuss-Paare, gesehen 0 — die
 // Null-Renderer-Sonde zählte an main je 600 Spiel-s Ego Σ15, Third Σ18 in vier Läufen): der Kreis prüft je SPIEL-SEKUNDE (`TAKT_S`,
@@ -283,7 +291,7 @@ async function bodenRollen(tor) {
 // Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Masken, Sichtungen; nie am Anfang `KREIS-`, die Zeile des
 // Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
 async function tierKreis(tor) {
-    const UHR = 2;
+    const UHR = 5;
     const n = 10 / UHR;
     const TAKT_S = 1; // die Prüfung je Raffer-Bild = je Spiel-Sekunde (der Anker `s + 0.5` unten wartet auf das nächste Bild)
     const bild = tor.quelle("scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [
@@ -294,18 +302,20 @@ async function tierKreis(tor) {
     ]);
     const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
-            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
+            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, maskeMs: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
         ["await sleep(250);\n                    st.yaw = kreis.gier",
             "for (const z = s + 0.5; st.spielZeit - kreis.z0 < z; ) await new Promise((ok) => requestAnimationFrame(ok));\n" +
             "                    s = st.spielZeit - kreis.z0;\n                    kreis.pruefungen++;\n                    st.yaw = kreis.gier"],
         ["naechst = s + 2;", ""],
+        ["for (const q of kand)\n                        if (q.neu && q.px >= soll)",
+            "for (const q of kand) window.__kreisPx(q.c, s, 4 * (q.c.userData._ruheKugelR - q.c.userData._ruheKugelH) * q.c.userData._ruheKugelH * (q.rp / q.c.userData._ruheKugelR) ** 2, q.px, soll);\n                    for (const q of kand)\n                        if (q.neu && q.px >= soll)"],
         ['const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
             'const schuss = async () => (await window.__kreisBild(W, H, 0, { satz: "messung" })).u8;'],
-        ["kreis.schuesse++;", "kreis.masken++;"],
+        ["kreis.schuesse++;", "kreis.masken++;\n                    const tMaske = performance.now();"],
         ["neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });",
             "neu: neu && window.__kreisNeu(c, s, 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f, soll) });"],
         ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
-            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
+            "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    kreis.maskeMs += performance.now() - tMaske;\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
     ]);
     const page = await tor.seite();
     tor.karte();
@@ -319,6 +329,12 @@ async function tierKreis(tor) {
         if (Z.roh) return;
         Z.roh = rend.setAnimationLoop;
         Z.gen = 0;
+        // EIN BILD JE RAFFER-BILD: die Leine (`_gpuLeineStraff`) hält das Bild jedes Takts vor dem letzten — bei ruhendem Loop trägt
+        // er dennoch die ganze Welt (`zwischen` ist dort nie wahr), nur sein Bild fällt
+        Z.halt = false;
+        r._gpuLeineStraff = function () {
+            return Z.halt || Object.getPrototypeOf(this)._gpuLeineStraff.call(this);
+        };
         Z.huelle = rend.setAnimationLoop = function (cb) {
             const g = ++Z.gen;
             if (typeof cb !== "function" || !Z.n) return Z.roh.call(this, cb);
@@ -328,7 +344,11 @@ async function tierKreis(tor) {
                 if (Z.gen !== g) return;
                 if (ts === null) ts = t;
                 rend._nodes?.nodeFrame?.update();
-                for (let i = 0; i < Z.n && Z.gen === g; i++) cb.call(rend, (ts += Z.ms));
+                try {
+                    for (let i = 0; i < Z.n && Z.gen === g; i++) (Z.halt = i < Z.n - 1), cb.call(rend, (ts += Z.ms));
+                } finally {
+                    Z.halt = false;
+                }
                 if (Z.gen === g) requestAnimationFrame(bild);
             };
             requestAnimationFrame(bild);
@@ -340,12 +360,13 @@ async function tierKreis(tor) {
         for (const sicht of ["ego", "third"]) {
             await tor.ruf("/umstellen", { ort: "wiese", sicht }, 120000);
             const t = Date.now();
+            const bilder0 = await page.evaluate(() => window.anazhRealm._gpuLeine.gerendert);
             let o = null;
             let f = "";
             const zeile = setInterval(() => {
                 page.evaluate(() => {
                     const k = window.__kreis;
-                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
+                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, maskeS: Math.round(k.maskeMs / 100) / 10, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
                 }).then((z) => z && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
             }, 10000);
             try {
@@ -355,13 +376,24 @@ async function tierKreis(tor) {
                     Z.alt = Z.alt || [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS];
                     [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = [Z.alt[0] * u, Z.alt[1] * u];
                     Z.ms = 1000 * A.TAKT_DECKEL_S;
-                    // je Tier die letzte Maske [Spiel-s, mögliche Fläche]: wieder nach 2 Spiel-s oder wenn die Fläche um 20 % wuchs
+                    // je Tier die letzte Maske [Spiel-s, mögliche Fläche, gezählte px]. Die HOCHRECHNUNG: die px der letzten Maske × das
+                    // Wachstum der möglichen Fläche seitdem. Erreicht sie die halbe Schwelle, kehrt die Maske wie bisher wieder (nach
+                    // 2 Spiel-s oder bei 20 % mehr möglicher Fläche); bleibt sie darunter (fern, verdeckt, im Gras), erst nach 6 Spiel-s.
+                    // Jede Maske zählt JEDES Tier im Blick (die Pixel gehören dem nächsten Leib): sie misst auch die, die sie nicht
+                    // auslösten — so gehen zwei ferne Tiere im selben Takt, nie versetzt (`__kreisPx` je Tier der Maske)
                     const zuletzt = new Map();
                     window.__kreisNeu = (c, s, flaeche, soll) => {
                         const m = zuletzt.get(c);
-                        if (flaeche < soll || (m && s - m[0] < 2 && flaeche < 1.2 * m[1])) return false;
-                        zuletzt.set(c, [s, flaeche]);
+                        if (flaeche < soll) return false;
+                        if (m) {
+                            const hoffnung = !(m[2] >= 0) || (m[2] * flaeche) / m[1] >= soll / 2;
+                            if (hoffnung ? s - m[0] < 2 && flaeche < 1.2 * m[1] : s - m[0] < 6) return false;
+                        }
+                        zuletzt.set(c, [s, flaeche, -1]);
                         return true;
+                    };
+                    window.__kreisPx = (c, s, flaeche, px, soll) => {
+                        if (flaeche >= soll) zuletzt.set(c, [s, flaeche, px]);
                     };
                 }, UHR);
                 o = await page.evaluate("(" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")");
@@ -372,6 +404,7 @@ async function tierKreis(tor) {
                 await page.evaluate(() => {
                     delete window.__kreis;
                     delete window.__kreisNeu;
+                    delete window.__kreisPx;
                     const A = window.anazhRealm.constructor;
                     const Z = window.__zeitraffer;
                     if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
@@ -380,6 +413,8 @@ async function tierKreis(tor) {
                 }).catch(() => {});
             }
             const k = o && o.kreis;
+            // die gezeichneten Bilder der Takte des Kreises (je Raffer-Bild höchstens eines; die Masken zeichnen neben der Leine)
+            if (k) k.bilder = (await page.evaluate(() => window.anazhRealm._gpuLeine.gerendert)) - bilder0;
             console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte zu " + UHR * 100 + " ms je Bild, Prüfung je " + TAKT_S + " Spiel-s" + f + ") " + JSON.stringify(k || {}));
         }
     } finally {
@@ -393,7 +428,7 @@ async function tierKreis(tor) {
             if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
             Z.n = 0;
             Z.gen++;
-            if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer;
+            if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer, delete window.anazhRealm._gpuLeineStraff;
             return 1;
         });
         await tor.ruf("/fenster", { w: 1920, h: 1080 });

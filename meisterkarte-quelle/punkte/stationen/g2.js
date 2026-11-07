@@ -4353,7 +4353,7 @@ const stationen = [
     // der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in BEIDEN Sichten ≥ 3
     // Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Genesis fehlt der Station: der
     // Ring der Tore liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
-    // IN DER SITZUNG (proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je Bild) — 600
+    // IN DER SITZUNG (proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (2 Takte zu 0,5 s Spiel-Zeit je Bild) — 600
     // Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht.
     // DIE SICHTUNG JE BEGEGNUNG (w16-tier-blick-pm): bis 8efb6318 zählte die Station nur in ihren Schüssen — je ungesehenem Tier im Blick
     // ein Paar aus drei Aufnahmen zu 33 Bildern mit Abnahme, höchstens alle 2 Spiel-s, geprüft je 250 ms Wanduhr (≈ 1 Prüfung je 17
@@ -4365,10 +4365,12 @@ const stationen = [
     // Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt Radeon 1,98 gegen GTX 3,25 ms, 715754fc).
     // DER RAFFER TAKTET BEI RUHENDEM LOOP (proben-welt.cjs): im alten Raffer trugen 8 von 10 Takten je Raffer-Bild als Zwischen-Takte
     // kein Leben (headless 184 von 200 Takten ausgesetzt) — die Tiere lebten 0,2 Spiel-s je Spiel-Sekunde; jetzt trägt jeder Takt die
-    // ganze Welt, und die Uhr läuft ×2 (Takt-Deckel 0,2 s, Fix-Schritte 16): 3 000 Takte je Sicht.
-    // DER DECKEL 90 s (die Ausnahme der Fahrt, geschätzt): 6 000 Takte mit vollem Leben, die Masken nur bei einem ungesehenen Tier im
-    // Blick; die Radeon trug im alten Raffer ~6,8 ms je Takt (3ef20f9f: 146 Spiel-s in den ersten 10 s) — reißt er, nennt FORTSCHRITT
-    // Spiel-s, Prüfungen, Masken und Sichtungen am Deckel.
+    // ganze Welt, und die Uhr läuft ×5 (Takt-Deckel 0,5 s, Fix-Schritte 40): 1 200 Takte je Sicht.
+    // DER DECKEL 90 s (die Ausnahme der Fahrt): an der Radeon 94d9c5a6 riss er mit der Uhr ×2 — Ego allein 74,8 s Wanduhr (≈ 0,1 s je
+    // Spiel-s ohne Maske, 63 Masken), Third kam nicht mehr dran, UNGEMESSEN. Die Kosten folgen der ZAHL der Takte (jeder trägt Streuen,
+    // Wiese, Stufen, Bild und Leben eines ganzen Takts; headless-Profil 14,6 ms je Takt): die Uhr ×5 rechnet 2 400 statt 6 000 Takte,
+    // das Gesetz der Tiere im Band der Streuung (proben-welt.cjs, DIE UHR ×5). Reißt er, nennt FORTSCHRITT Spiel-s, Prüfungen, Masken,
+    // ihre Sekunden (`maskeS`) und Sichtungen am Deckel.
     // HEADLESS an main 8efb6318 (swiftshader, Fenster 320×180, die Schwelle am Puffer normiert 12,5 px; 06.11., w16-tier-blick-pm):
     // Ego 2 Sichtungen in 600 Spiel-s (Bär 21 m, Wesen 65 m; 601 Prüfungen, 47 Masken), Third 5 (Wolf 23 m, Fuchs 15 m, Wesen 54/55/75 m;
     // 601 Prüfungen, 230 Masken), Bestand bis 20, im Blick erschienen 0 — ROT an Ego (2 < 3); die Vor-Fassung (Prüfung jede zweite
