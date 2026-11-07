@@ -1188,7 +1188,7 @@ async function starte() {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
+                try { auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w }); } catch (f) { f.message += " DIAG schuss " + (w ? 1 : 2) + " kamera " + JSON.stringify(f.abnahme && f.abnahme.pose) + " wahl " + JSON.stringify(gewaehlt && { g: gewaehlt.gewaehlt, v: gewaehlt.versucht, k: gewaehlt.kamera, p: gewaehlt.posen.map((q) => q.k + ":" + q.rot.join("/")).join(" | ") }); throw f; }
                 if (w) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
