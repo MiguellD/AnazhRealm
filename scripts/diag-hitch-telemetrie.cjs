@@ -140,8 +140,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const aus = gfr.apply(this, arguments);
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
-            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort gesetzt hat (`E.deckel`: im Spiel ERST_BAU_MS, unter dem
-            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse
+            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort trägt (`E.deckel`: ERST_BAU_MS; unter dem Ladeschirm baut er in
+            // Raten bis zur Frist des Lade-Frames, `_knotenRate`) — nie eine Konstante der Linse
             const E = r._erstZeichnung;
             const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
@@ -230,7 +230,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
         // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
-        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS — am Runner steht er beim Einbau der Wand
+        // dem Ladeschirm baut der EINE Ort in Raten bis zur Frist des Lade-Frames — am Runner steht er beim Einbau der Wand
         // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
         const lade = document.getElementById("ladeschirm");
         const ladeVor = lade ? lade.hidden : null;
