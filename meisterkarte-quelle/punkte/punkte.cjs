@@ -4320,6 +4320,13 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · ausnahme mit Grund und nie über " + PROBE_AUSNAHME_S + " s · nichts sonst",
             /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /Deckel 91 s über 90 s — nie, auch mit ausnahme/.test(f2[3]) &&
             /probe trägt nur befehl, sek, mutiert, ausnahme, stellung/.test(f2[4]) && f2[5] === "", f2.join(" || "));
+        // DIE TEILE (probe.teile, fahreGruppe): 2…TEILE_MAX ganz, nie mit ausnahme (ein Teil misst im Gesetz); der Abdruck trägt sie, die
+        // Fahrt zählt den Deckel je Teil
+        const f3 = [pb({ teile: 1 }), pb({ teile: TEILE_MAX + 1 }), pb({ teile: 2.5 }), pb({ teile: 3, ausnahme: "der Grund beim Namen", sek: 90 }), pb({ teile: 3, mutiert: true })];
+        const tlp = { ...gp, probe: { ...gp.probe, teile: 3 } };
+        pruef("SITZUNG-FORMAT die Teile: 2…" + TEILE_MAX + " ganz, nie mit ausnahme; der Abdruck trägt sie, die Fahrt zählt den Deckel je Teil",
+            f3.slice(0, 3).every((x) => /probe\.teile keine ganze Zahl 2…8/.test(x)) && /probe\.teile mit ausnahme — ein Teil misst im Gesetz 45 s/.test(f3[3]) && f3[4] === "" &&
+            abdruck(tlp, "h") !== abdruck(gp, "h") && fahrtSumme([tlp], "gtx").deckel === 3 * fahrtSumme([gp], "gtx").deckel, f3.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
             gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h })).digest("hex").slice(0, 12);
@@ -4431,6 +4438,28 @@ async function selbsttest(o = {}) {
             // die Attrappe c stürzt ohne Zeile ab (Exit 1, ihr Urteil liest nur den Exit): kein Urteil, UNGEMESSEN beim Namen (keinUrteil)
             x["c.K1#1"].ungemessen === true && /^die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN \(die Probe sah: exit 1\)$/.test(x["c.K1#1"].grund),
             JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+        // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
+        // (Gesetz − Vorlauf, nie der Eich-Deckel), der nächste nur nach WEITER, EIN Urteil über alle Teile, `s` der längste, `teile` je Teil;
+        // der Deckel eines Teils und ein letzter Teil, der WEITER sagt, sind UNGEMESSEN beim Namen. DIE MUTANTE (vorher ROT am Täter): ohne
+        // `teile` urteilt die Station nach dem ersten Teil — die Fahrt von fahrzeug.K2#1 hieße ROT, wo sie nur hielt
+        const teilB = (plan) => ["node", "-e", 'const t = process.env.PUNKTE_TEIL || "1/1"; const p = ' + JSON.stringify(plan) + '[t.split("/")[0] - 1]; ' +
+            'console.log("T " + t + " " + process.env.PUNKTE_TEIL_FRIST_S); if (p === "haengt") setTimeout(() => {}, 60000); else console.log(p === "weiter" ? "@@PUNKTE@@ TEIL WEITER" : "ENDE");'];
+        const teilU = (j, l) => ({ gruen: /^ENDE$/m.test(l.stdout), zahl: (l.stdout.match(/^T .*$/gm) || []).join(",") + (/^ENDE$/m.test(l.stdout) ? " ENDE" : "") });
+        const rt = await lauf([[S("t.K1", 1, { befehl: teilB(["weiter", "weiter", "ende"]), sek: 30, teile: 3 }, teilU)], [S("u.K1", 1, { befehl: teilB(["weiter", "ende", "weiter"]), sek: 30, teile: 3 }, teilU)],
+            [S("v.K1", 1, { befehl: teilB(["weiter", "haengt"]), sek: 2, teile: 2 }, teilU)], [S("w.K1", 1, { befehl: teilB(["weiter", "weiter"]), sek: 30, teile: 2 }, teilU)],
+            [S("m.K1", 1, { befehl: teilB(["weiter", "weiter", "ende"]), sek: 30 }, teilU)]], "teile");
+        // in der Eich-Fahrt (Deckel 90 s je Probe) misst ein Teil im Gesetz: die Frist 39 s = 45 − 6, nie 84
+        const re = await lauf([[S("e.K1", 1, { befehl: teilB(["weiter", "ende"]), sek: 30, teile: 2 }, teilU)]], "teile-eich", null, null, true);
+        const xt = { ...rt.es, ...re.es };
+        pruef("SITZUNG DIE TEILE: drei Teile EIN Urteil (Frist 24 s = Deckel 30 − 6, in der Eich-Fahrt 39 s = Gesetz − 6; s der längste, je Teil seine Sekunden); endet Teil 2 ohne WEITER, " +
+            "fährt Teil 3 nie; der Deckel in Teil 2/2 und ein letzter Teil mit WEITER UNGEMESSEN beim Namen; die MUTANTE ohne teile ROT nach Teil 1",
+            xt["t.K1#1"].gruen === true && xt["t.K1#1"].zahl === "T 1/3 24,T 2/3 24,T 3/3 24 ENDE" && xt["t.K1#1"].teile.length === 3 && xt["t.K1#1"].s === Math.max(...xt["t.K1#1"].teile) &&
+            xt["u.K1#1"].gruen === true && xt["u.K1#1"].zahl === "T 1/3 24,T 2/3 24 ENDE" && xt["u.K1#1"].teile.length === 2 &&
+            xt["v.K1#1"].ungemessen === true && /^Deckel 2 s gerissen in Teil 2\/2 — beendet, UNGEMESSEN/.test(xt["v.K1#1"].grund) && xt["v.K1#1"].teile.length === 2 && xt["v.K1#1"].s >= 2 &&
+            xt["w.K1#1"].ungemessen === true && /^die Teile reichten nicht: Teil 2\/2 sagte WEITER/.test(xt["w.K1#1"].grund) &&
+            xt["m.K1#1"].gruen === false && xt["m.K1#1"].zahl === "T 1/1 undefined" && !xt["m.K1#1"].ungemessen &&
+            xt["e.K1#1"].gruen === true && xt["e.K1#1"].zahl === "T 1/2 39,T 2/2 39 ENDE" && xt["e.K1#1"].eich && xt["e.K1#1"].eich.gesetzS === 45,
+            JSON.stringify(Object.entries(xt).map(([id, e]) => [id, e.gruen, e.ungemessen, e.zahl, e.grund, e.s, e.teile])));
         // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
         // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
         const umw = ["node", "-e", 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ strom: process.env.PUNKTE_SITZUNG_STROM, probe: process.env.PUNKTE_PROBE }))', "{AUS}"];
