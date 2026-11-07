@@ -194,7 +194,7 @@ const bildVerdict = (m) =>
         ? ["start"]
         : raster(BILD_LAGEN, WEGE).flatMap((wo) => {
               const e = zelle(m.wege, wo) || { fehler: "nicht gelaufen" };
-              const t = e.fehler || (e.unecht > 0 || !(e.eingaben > 0) ? "kein echter Weg" : e.eingaben > EINGABEN_SOLL ? `${e.eingaben} Eingaben` : !e.bau ? "kein Bild mit dem Werk in L0" : e.bau !== e.soll && "das Bild zeigt nicht den L0-Bau");
+              const t = e.fehler || (e.unecht > 0 || !(e.eingaben > 0) ? "kein echter Weg" : e.eingaben > EINGABEN_SOLL ? `${e.eingaben} Eingaben` : !e.bau ? "kein Bild mit dem Werk in L0" : e.bau !== e.soll && `das Bild zeigt nicht den L0-Bau${e.stufe ? ` (Stufe ${e.stufe})` : ""}`);
               return t ? [`${wo.join(" · ")}: ${t}`] : [];
           });
 
@@ -1014,9 +1014,12 @@ function wegHelfer(arg) {
             if (bu.camera === st.camera) for (const ro of this.get(bu).renderObjects) zog.add(ro.object);
             return add.call(this, rc, bu);
         };
-        // die L0-Senken eines Werks — ein eigener Bauplan ist klassisch (`entry.mesh`: jedes Mesh seiner Gruppe zieht selbst)
+        // die L0-Senken eines Werks — ein eigener Bauplan ist klassisch (`entry.mesh`: jedes Mesh seiner Gruppe zieht selbst). Trägt
+        // das Werk bedient die Stufe, die sein Abstand wählt (`_lodAmAbstand`), und sie ist nicht 0, zählt ihr Bild — der Bau-Hash
+        // urteilt es gegen den L0-Bau (ROT mit der Stufe), nie das Warten bis an die Frist (headless am main: das Haus in Third,
+        // 15 m vor dem Auge der Stufen, Stufe 1 — 600 s ohne Urteil)
         const l0 = (e) =>
-            e?.instSlots?.length ? (!e.instFoundry || e._servedLod === 0) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin) : e?.mesh?.parent && klassisch(e.mesh);
+            e?.instSlots?.length ? (!e.instFoundry || e._servedLod === 0 || (e._lodAmAbstand === true && e._servedLod === e._lodLevel)) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin) : e?.mesh?.parent && klassisch(e.mesh);
         // eine Satz-Art (Haus, Ausstattung, Tor: `BAU_SATZ`) zieht nie selbst: ihr Bereich liegt ganz im Satz ihres Stoffs (keine
         // offene Rate) und seine Zelle des Platzes im Abschnitt des Hauptbilds — die Lesung des Zug-Zählers (`satzInhalt`)
         const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && zog.has(S?.mesh) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
@@ -1125,6 +1128,7 @@ function wegHelfer(arg) {
             const bild = L.gpuT && echt.length && {
                 zeiten: [echt.at(-1).t, L.standT, L.l0T, L.bildT, L.gpuT].map(ms), // PHASEN, ab der ersten Eingabe
                 bau: bauVon(L.bild),
+                stufe: e._servedLod,
                 soll: bauVon(p ? await frisch(e, p) : klassisch(r._buildFromBlueprint(st.blueprints[e.type])).map(([g]) => ({ ...g.geom.attributes, index: g.geom.index }))),
             };
             return {
