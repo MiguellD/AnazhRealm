@@ -7,7 +7,8 @@
 "use strict";
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
+const R6 = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
@@ -148,7 +149,7 @@ const AUSNAHMEN = {
 // npm fährt ein Skript als `sh -c` ohne errexit; `fremd`: eine Shell, deren Text die Linse nicht liest — jeder Befehl stumm.
 const SHELL_NPM = { e: false, pipefail: false, fremd: null };
 function shellArt(shell) {
-    if (shell == null || shell === "") return { e: true, pipefail: false, fremd: null };
+    if (shell == null || shell === "" || shell === R6_SHELL) return { e: true, pipefail: false, fremd: null };
     const s = String(shell).trim();
     if (s === "bash") return { e: true, pipefail: true, fremd: null };
     if (s === "sh") return { e: true, pipefail: false, fremd: null };
@@ -443,6 +444,42 @@ function gateSchritte(doc) {
     return out;
 }
 
+// (Z) DIE ZUG-STELLE (R6, 07.11.): die volle Batterie fährt unter der R6-Shell; jeder Selbsttest läuft nachts, auf Abruf, auf
+// main und auf einem Diff, der nur seine Linse ändert — einer, der nie mehr liefe, ist ROT beim Namen; jede Wand hat im Zug
+// genau EINE Stelle: was der echt-Job fährt, ruht dort in der vollen Batterie; ein R6_ZUSATZ ohne Aufruf ist stale.
+function zugStelle(doc, skripte, r6 = R6) {
+    const v = [];
+    const V = jobsVon(doc)[VOLL_JOB] || {};
+    if (V.defaults?.run?.shell !== R6_SHELL) return [`(Z) R6: „${VOLL_JOB}" fährt nicht unter der Shell ${R6_SHELL}`];
+    const env = (e, ref) => ({ GITHUB_ACTIONS: "true", GITHUB_EVENT_NAME: e, GITHUB_REF: ref });
+    const zug = env("push", "refs/heads/integ-probe");
+    const aufrufe = new Set();
+    for (const s of gates(V)) {
+        const b = [];
+        r6.r6Text(s.run, skripte, (x) => (aufrufe.add(x), { laeuft: false, grund: "" }), b);
+        const echt = gates(jobsVon(doc)[ECHT_JOB] || {}).find((e) => lauf(e) === lauf(s));
+        if (echt && !r6.r6ZugStelle(s.run, doc, zug))
+            v.push(`(Z) ZWILLING: „${name(s)}" fährt im Zug auf swiftshader UND im echt-Job („${name(echt)}")`);
+    }
+    for (const a of aufrufe) {
+        const linse = (/node\s+([\w./-]+\.c?js)/.exec(a) || [])[1];
+        const nie = ["schedule", "workflow_dispatch"]
+            .map((e) => env(e, "refs/heads/main"))
+            .concat(env("push", "refs/heads/main"))
+            .filter((e) => !r6.r6Immer(e) || !r6.r6Urteil(a, { immer: r6.r6Immer(e) }).laeuft)
+            .map((e) => e.GITHUB_EVENT_NAME)
+            .concat(
+                r6.r6Urteil(a, { diff: new Map([[linse, []]]), bekannt: () => true }).laeuft
+                    ? []
+                    : [`Diff nur ${linse}`]
+            );
+        if (nie.length) v.push(`(Z) NIE: der Selbsttest „${a}" liefe nie mehr (${nie.join(" · ")})`);
+    }
+    for (const z of r6.R6_ZUSATZ)
+        if (![...aufrufe].some((a) => a.includes(z)))
+            v.push(`(Z) STALE: R6_ZUSATZ nennt ${z} — kein Selbsttest der vollen Batterie`);
+    return v;
+}
 function urteil(doc) {
     const v = [];
     for (const job of Object.keys(jobsVon(doc)))
@@ -1150,8 +1187,34 @@ function selbsttest() {
         selbsttestPlaytest(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
-        selbsttestKopf()
+        selbsttestKopf(),
+        selbsttestZug()
     );
+}
+// (Z) gegen die echte check.yml: je Mutante der R6-Shell der Täter beim Namen
+function selbsttestZug() {
+    const [doc, sk, f] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts, []];
+    const blind = (l) => ({ ...R6.r6Abhaengig(l), code: new Set() });
+    for (const [n, r6, soll] of [
+        ["die R6-Shell der echten check.yml", R6, null],
+        ["der Zwilling kehrt zurück", { ...R6, r6ZugStelle: () => null }, /\(Z\) ZWILLING: „Ziel-Zensus/],
+        [
+            "nachts ruht ein Selbsttest",
+            { ...R6, r6Immer: (e) => e.GITHUB_EVENT_NAME !== "schedule" && R6.r6Immer(e) },
+            /\(Z\) NIE: .*diag-kreatur-takt.*\(schedule\)/,
+        ],
+        [
+            "die Linse fehlt in ihrer Abhängigkeit",
+            { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, blind) },
+            /\(Z\) NIE: .*diag-haus-welt.*Diff nur scripts\/diag-haus-welt\.cjs/,
+        ],
+    ]) {
+        const u = zugStelle(doc, sk, r6);
+        const ok = soll ? u.some((x) => soll.test(x)) : !u.length;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 2).join(" · ") || "grün"}`);
+        if (!ok) f.push(`(Z) „${n}" fällt nicht rot beim Namen`);
+    }
+    return f;
 }
 
 // (T) Die Waage gegen ein Fixture.
@@ -1509,7 +1572,7 @@ function hauptlauf() {
     const doc = yaml.load(ausDatei(path.join(root, DATEI)));
     const skripte = jsonLesen("package.json").scripts || {};
     const v = urteil(doc);
-    v.push(...klassenUrteil(doc, skripte));
+    v.push(...klassenUrteil(doc, skripte), ...zugStelle(doc, skripte));
     const alleWorkflows = workflowsLesen();
     const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
     v.push(...g.v);
@@ -1547,7 +1610,7 @@ function hauptlauf() {
         );
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
 if (SELBSTTEST) selbsttestLauf();

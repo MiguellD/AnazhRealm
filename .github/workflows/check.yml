@@ -280,6 +280,16 @@ jobs:
         name: voll ${{ matrix.gruppe }}/18 ${{ matrix.klasse }}
         needs: kopf
         if: needs.kopf.outputs.voll == 'ja'
+        # R6 (07.11., der Schöpfer: „wird nicht viel zu viel unnötig gemessen?"): jeder Schritt läuft durch die EINE Shell
+        # scripts/lib/ci-klasse.cjs — ein Selbsttest beweist die Linse, nicht das Spiel: auf einem Zweig, PR und integ-probe
+        # ruht er, wenn der Kandidat gegen die Merge-Basis mit origin/main nichts ändert, woran er hängt (die Shell nennt je
+        # Selbsttest die Datei, die ihn weckt, oder warum er ruht); nachts, auf Abruf und auf main läuft jeder. Im Zug (Push auf
+        # integ-probe) fährt eine Wand, die der echt-Job auf der GTX urteilt, hier nicht noch einmal (EINE Zug-Stelle je Wand).
+        # Ohne Shell-Angabe fährt sie den Text unter bash -e wie die Standard-Shell. Gemessen z296 (42393703986): 262 min
+        # Rechenzeit je Zug, die Selbsttest-Schritte 189 min, die Zwillinge der Karte 40 min.
+        defaults:
+            run:
+                shell: node scripts/lib/ci-klasse.cjs {0}
         strategy:
             fail-fast: false
             matrix:
@@ -339,6 +349,10 @@ jobs:
             contents: read
         steps:
             - uses: actions/checkout@v4
+              # R6 liest die Merge-Basis mit origin/main: die Geschichte ohne Blobs wie im Puls, die Blobs des Diffs holt git nach
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
 
             - uses: actions/setup-node@v4
               with:
