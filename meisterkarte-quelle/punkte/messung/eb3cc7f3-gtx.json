@@ -1,9 +1,130 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T09:25:09.775Z",
+ "zeit": "2026-11-07T10:02:32.595Z",
  "host": "LAPTOP-4BN3RL0L",
- "je": {},
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.24 · 10–20 2.00 · 20–40 satt, Farbton 2–5 m 13.53°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.64,
+   "gpu": "nvidia/pascal",
+   "s": 38.1,
+   "zeit": "2026-11-07T09:30:43.164Z",
+   "abdruck": "ac8a53c780af",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 183484 px · winter 20963 px · fruehling 142945 px → Winter 0.114 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer",
+   "exit": 0,
+   "minuten": 1.34,
+   "gpu": "nvidia/pascal",
+   "s": 80.5,
+   "zeit": "2026-11-07T09:31:21.334Z",
+   "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.685 (wasserSatz 25076 px, spiegelEbene 0.879) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 96.5 σ 36.1 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.36,
+   "gpu": "nvidia/pascal",
+   "s": 21.4,
+   "zeit": "2026-11-07T09:32:41.881Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.858 · Regen 151 | third porös 0.779 (n 25868) · Glanz 16 · Regenbild 0.889 · Regen 102",
+   "exit": 0,
+   "minuten": 0.31,
+   "gpu": "nvidia/pascal",
+   "s": 18.8,
+   "zeit": "2026-11-07T09:33:03.353Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 44.5,
+   "zeit": "2026-11-07T09:40:28.252Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 44.5,
+   "zeit": "2026-11-07T09:40:28.252Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.8 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.67,
+   "gpu": "nvidia/pascal",
+   "s": 40.1,
+   "zeit": "2026-11-07T09:53:08.462Z",
+   "abdruck": "e36ddd1cabae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.736 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 35 (n 5949/13809)",
+   "exit": 0,
+   "minuten": 0.31,
+   "gpu": "nvidia/pascal",
+   "s": 18.6,
+   "zeit": "2026-11-07T09:59:13.744Z",
+   "abdruck": "4e639c909b43",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": true,
+   "zahl": "Bach am Kern-Spiegel +0.2 m nach 20 min Sturm · gezeichnetes Wasser 159992 → 678618 px (×4.24) in 1920×1080 / 1920×1080",
+   "exit": 0,
+   "minuten": 0.54,
+   "gpu": "nvidia/pascal",
+   "s": 32.7,
+   "zeit": "2026-11-07T10:01:49.735Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
  "ungemessen": {
   "siedlung.K4#2": {
    "gruen": false,
@@ -18,51 +139,258 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "zeit": "2026-11-07T09:33:23.287Z",
+   "abdruck": "45f50cdc4a89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "zeit": "2026-11-07T09:35:16.495Z",
+   "abdruck": "bdb360bc9bf7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.2,
+   "zeit": "2026-11-07T09:46:12.254Z",
+   "abdruck": "be3337863a69",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "zeit": "2026-11-07T09:53:48.580Z",
+   "abdruck": "a4b9b090724f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "zeit": "2026-11-07T09:53:48.580Z",
+   "abdruck": "a9d07d4bb8f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "zeit": "2026-11-07T09:55:49.537Z",
+   "abdruck": "1d825ee274e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "s": 90.3,
+   "zeit": "2026-11-07T09:57:01.782Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "s": 90.2,
+   "zeit": "2026-11-07T09:59:57.461Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 71.5 σ 36 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summe)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 71.5 σ 36 schwarz 0.0 % weiß 0.0 % · Stand 18.546.210 · Bühne summe)",
+   "s": 45.2,
+   "zeit": "2026-11-07T10:02:32.595Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T09:24:39.134Z",
+  "start": "2026-11-07T09:52:28.246Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.4,
-  "grundstellungS": [],
-  "proben": 1,
+  "warten": 0.02,
+  "bootS": 7.9,
+  "grundstellungS": [
+   8.1,
+   5.4,
+   6,
+   5,
+   5,
+   0.1
+  ],
+  "proben": 8,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 22,
-    "takte": 664,
+    "ort": "wiese",
+    "vor": "gelaende.K5#2",
+    "s": 30.9,
+    "takte": 837,
     "chunks": 81,
     "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "physik.K2#2",
+    "s": 22.3,
+    "takte": 745,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 21.5,
+    "takte": 743,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "wetter.K2#1",
+    "s": 35.6,
+    "takte": 1030,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 20.1,
+    "takte": 657,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "wetter.K3#2",
+    "s": 16.9,
+    "takte": 837,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 10.1,
+    "takte": 659,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
+  "wegeTueren": [
+   {
+    "vor": "mensch.K1#1",
+    "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+    "s": 5
+   }
+  ],
+  "ciBlicke": 9,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 931,
+   "frameP95": 108.36,
+   "taktP95": 107.94,
+   "vramMax": 137.6,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "siedlung.K4#2",
-     "m": 639,
+     "probe": "gelaende.K2#1",
+     "m": 1718,
      "ringVor": 4,
      "ringMin": 0
+    },
+    {
+     "probe": "wetter.K3#2",
+     "m": 1162,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "tiere.K1#2",
+     "m": 327,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K5#2",
+     "m": 312,
+     "ringVor": 4,
+     "ringMin": -1
     }
    ],
-   "zapfen": 118,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 532,
+   "luecken": 5,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 122.1,
-  "minuten": 2.1
+  "fahrtS": 648.7,
+  "minuten": 10.89
  }
 }
