@@ -213,7 +213,8 @@ class AnazhRealm_bild_himmel {
     // DER TAKT DER KARTE (je Bild aus `_weltLichtTakt`, nach der Bild-Uhr): die Mitte ist der Punkt, an dem das Licht über dem
     // Spieler die Schicht quert, auf die Zelle gelegt (dasselbe Gitter der Welt — kein Schwimmen); neu gemalt, wenn die Bild-Uhr
     // `zugS` weiter ist (der Zug 11 m/s: 1,1 m bei 16 m Zelle), die Deckung oder die Mitte wechselt. Der Null-Renderer malt nichts;
-    // ohne Wurf des Lichts (`castShadow`) ruht der Wurf (1) wie der Horizont (`_horizontKarteTakt`).
+    // ohne Wurf des Lichts (`_lichtWirft`: castShadow und die Schatten-Karte des Renderers) ruht der Wurf (1) wie der Horizont
+    // (`_horizontKarteTakt`).
     _wolkenKarteTakt() {
         const st = this.state;
         const rend = st.renderer;
@@ -222,7 +223,7 @@ class AnazhRealm_bild_himmel {
         const pm = st.playerMesh || st.camera;
         if (!pm) return;
         const K = this._wolkenKarte();
-        if (!st.directionalLight || !st.directionalLight.castShadow) {
+        if (!this._lichtWirft()) {
             K.U.aktiv.value = 0;
             return;
         }

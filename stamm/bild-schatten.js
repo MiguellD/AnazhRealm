@@ -294,6 +294,18 @@ class AnazhRealm_bild_schatten {
         return wach;
     }
 
+    // WIRFT DAS LICHT? Das Richtlicht trägt seinen Wurf (`castShadow`) UND der Renderer zeichnet Schatten (`shadowMap.enabled`:
+    // Holz kienspan schaltet sie GANZ aus, dann baut r184 keine Kaskade — `setupShadow` — und mit ihr fällt die Sonnen-Sicht,
+    // die `csm.setup` jedem Empfänger des Netzes trägt). Die EINE Frage jedes Lesers eines Sonnen-Schattens: die Takte der
+    // Horizont- und der Wolken-Karte (sonst ruht ihre Sicht), die Grat-Sicht und der Karten-Wurf des Lichtmessers. Bis
+    // w20-fern-hang fragten sie nur `castShadow`: unter kienspan lagen Luft, Feld und Himmelsband im Schatten des Grats, der
+    // Boden nie, und der Messer nahm dem Boden der Mess-Wiese einen Wurf, den das Bild nie zeichnete (32 von 32 Strahlen).
+    _lichtWirft() {
+        const dl = this.state.directionalLight;
+        const rend = this.state.renderer;
+        return !!(dl && dl.castShadow && rend && rend.shadowMap && rend.shadowMap.enabled === true);
+    }
+
     // ═══ DER WURF DES FEUERS (schatten.K5) ═══
     // Das Leuchtquellen-Gesetz wirkt als Pool im Stoff (`_lichtPoolTerm`, K11): je Platz ein Zweig, kein Szenen-Licht, kein
     // Schatten — ein Pfosten 2 m vom Feuer warf nichts (Radeon 5fba36ea: Kontrast 0,768:1, ohne Pfosten 0,768). Wie RDR2 und

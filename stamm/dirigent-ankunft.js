@@ -1537,28 +1537,15 @@ class AnazhRealm_dirigent_ankunft {
     // DIE SICHT DES GELÄNDES AUF DER CPU am Punkt (x, y, z) zum Licht `L` (normiert): der Lichtmesser des Orts
     // (`_waagrechtIrradianz`, die Kamera) liest DIESELBE Karte wie jeder Empfänger — das Gitter des Passes (r16f, `hoehen`), derselbe
     // Marsch je Texel-Mitte (`schritte` × `schrittM`, außerhalb `leerM`), bilinear zwischen den vier Mitten wie die Abtastung von
-    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts, unter
-    // dem Horizont, am Null-Renderer) und wo das Bild keinen Schatten zeichnet: ohne Schatten-Karte des Renderers (Holz kienspan)
-    // baut r184 den Knoten der Kaskaden nicht (`setupShadow`), der die Sicht jedem Empfänger trägt — der Boden des Bilds liegt dort
-    // ganz in der Sonne. Bis dahin maß die Kamera am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
+    // `_horizontSicht`, derselbe Halbschatten. 1, wo die Karte ruht (`_horizontKarteTakt`: ohne Gitter, ohne Wurf des Lichts —
+    // `_lichtWirft`, auch ohne Schatten-Karte des Renderers —, unter dem Horizont, am Null-Renderer). Bis dahin maß die Kamera
+    // am Abend die Sonne, die der Grat dem Ort schon nahm: das Bild der
     // Mess-Wiese fiel in 0,002 der Uhr um 0,29 EV (Tag-Achse, Radeon; der Grat 660 m vor ihr, die Sonne 7,35° → 6,68°).
     _horizontSichtAm(x, y, z, L) {
         const st = this.state;
         const K = st.horizontKarte;
         const rend = st.renderer;
-        const dl = st.directionalLight;
-        if (
-            !K ||
-            !K.bereit ||
-            !rend ||
-            rend._isHeadlessNull ||
-            !st.rendererReady ||
-            !rend.shadowMap ||
-            rend.shadowMap.enabled !== true ||
-            !dl ||
-            !dl.castShadow ||
-            !(L.y > 0)
-        )
+        if (!K || !K.bereit || !rend || rend._isHeadlessNull || !st.rendererReady || !this._lichtWirft() || !(L.y > 0))
             return 1;
         const H = AnazhRealm.HORIZONT_KARTE;
         const [n, d] = [H.gitter, H.zelleM];
@@ -1623,8 +1610,8 @@ class AnazhRealm_dirigent_ankunft {
     // den flachen Boden (L.y), unter dem Horizont 0.
     // DIE MESSUNG KOSTET DIE ÄNDERUNG (Gebot 7): sie ist eine Funktion ihrer Eingänge — die Kamera (Lage und Projektion), das Licht,
     // die Karte (Gitter, Anker, Bezug), die Lage des Gelände-Gesetzes (`hoehe` liest Saat, Grundhöhe, Wasserstand, Erbgut und
-    // Erdbau), der Stand des Richtlichts, die Schatten-Karte des Renderers und die werfenden Karten (`_kartenWurfWerfer`);
-    // gleichen sie alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
+    // Erdbau), der Stand des Richtlichts, sein Wurf (`_lichtWirft`) und die werfenden Karten (`_kartenWurfWerfer`); gleichen sie
+    // alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
     // Bis hier fragte jedes Bild 33-mal die Höhe (Werkbank swiftshader, Genesis: 0,28 ms je Ruf, davon 0,21 ms Höhe), auch
     // wo Kamera und Sonne standen.
     _horizontSichtImBild(L) {
@@ -1649,8 +1636,7 @@ class AnazhRealm_dirigent_ankunft {
         for (const x of [K, K.stand, K.U.ursprung.value.x, K.U.ursprung.value.y, K.U.bezug.value]) merk(x);
         for (const x of [L.x, L.y, L.z, G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
         const tan = AnazhRealm.SCHATTEN_KASKADE.sonneTan;
-        const schattenAn = !!(st.renderer && st.renderer.shadowMap && st.renderer.shadowMap.enabled === true);
-        for (const x of [st.renderer, st.rendererReady, schattenAn, dl, !!dl && dl.castShadow, tan]) merk(x);
+        for (const x of [st.renderer, st.rendererReady, dl, this._lichtWirft(), tan]) merk(x);
         // die werfenden Karten, wie `_kartenWurfSicht` sie je Strahl liest: ein neuer Bestand ist ein neues Objekt
         merk(this._kartenWurfWerfer(L));
         // die Kamera, wie die Messung sie liest: der Ursprung der Strahlen (`position`) und `unproject` (Projektion⁻¹, Welt-Matrix)
