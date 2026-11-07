@@ -8,7 +8,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const N = Number(process.env.KALT_BOOTS || 4); // je Seite
+const N = Number(process.env.KALT_BOOTS || 4); // je Seite (zweiter Läufer: derselbe Plan)
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ankunft-kalt-"));
 const TAUSCH = ["stamm/studio-stoff.js", "stamm/stoff-material.js"];
 const neu = Object.fromEntries(TAUSCH.map((f) => [f, fs.readFileSync(f)]));
