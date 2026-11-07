@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T01:02:52.996Z",
+ "zeit": "2026-11-07T01:20:13.151Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -335,45 +335,29 @@
    "bahn": "sitzung",
    "zwilling": "ankunft.K2#1",
    "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-07T01:20:13.151Z",
+   "abdruck": "25872cfe0387",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T01:01:46.399Z",
+  "start": "2026-11-07T01:10:12.995Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.4,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 29.4,
-    "takte": 744,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "grund": "die Welt trägt nicht mehr nach ferne.K1#1: die Werkbank :27804 nimmt keine Verbindung mehr an",
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 47,
-   "luecken": 3,
-   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
-  },
-  "fahrtS": 65.6,
-  "minuten": 1.62
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10
  }
 }
