@@ -32,20 +32,17 @@
 //   node scripts/diag-fernwald.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
-    // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
-    // Renderer baut kein Programm: „voll" kostet hier nichts.
-    await server.zeige(page, 60000, "index.html?holz=voll");
+    // der Messort aus spec/profiband/haushalt.json (`__messWiese`); das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl
+    // auf dem WebGL2-Rückfall den GL-Renderer fragt, wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100
+    // Bäume, A wäre vakuös. Der Null-Renderer baut kein Programm: „voll" kostet hier nichts.
+    const { browser, page } = await nullWelt(server, { frist: 900000, vor: WELT_ORTE_INSTALL }, 60000, "index.html?holz=voll");
 
     const out = await page.evaluate(async () => {
         const res = {};

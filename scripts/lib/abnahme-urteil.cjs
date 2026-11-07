@@ -48,7 +48,7 @@ const SCHWELLEN = Object.freeze({
 
 // DAS URTEIL (rein; in der Seite als `__abnahmeUrteil` mit den Schwellen gebunden): { ok, rot: [{ feld, grund }], zeile }.
 function abnahmeUrteil(m, S) {
-    const satz = (m && m.satz) || "beweis";
+    const satz = m?.satz || "beweis";
     const regeln = (S && S[satz]) || null;
     const rot = [];
     const lies = (feld) => {
@@ -100,26 +100,26 @@ function abnahmeUrteil(m, S) {
             rot.push({ feld: s.feld, grund });
         }
     const t = [];
-    if (m && m.sicht)
+    if (m?.sicht)
         t.push(
             `Sicht ${pct(m.sicht.deckung)}${m.sicht.taeter && Object.keys(m.sicht.taeter).length ? ` (${namen(m.sicht.taeter)})` : ""}`
         );
-    if (m && m.ziel)
+    if (m?.ziel)
         t.push(
             `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m`
         );
     else if (m && satz === "beweis") t.push("Ziel ungenannt");
-    if (m && m.bild)
+    if (m?.bild)
         t.push(`Luma ${m.bild.mittel} σ ${m.bild.sigma} schwarz ${pct(m.bild.schwarz)} weiß ${pct(m.bild.weiss)}`);
-    if (m && m.stand)
+    if (m?.stand)
         t.push(`Stand ${m.stand.version || "?"}${m.stand.sha ? " " + String(m.stand.sha).slice(0, 8) : ""}`);
-    if (m && m.buehne)
+    if (m?.buehne)
         t.push(
             `Bühne ${m.buehne.saison || "?"} ${m.buehne.wetter || "?"} ${m.buehne.uhr != null ? (+m.buehne.uhr).toFixed(2) : "?"}${m.buehne.tiereGehalten ? " Tiere gehalten" : ""}`
         );
-    if (m && m.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
-    if (m && m.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
-    if (m && m.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
+    if (m?.geraet) t.push(`Gerät ${m.geraet.backend || "?"}${m.geraet.adapter ? " " + m.geraet.adapter : ""}`);
+    if (m?.wahl) t.push(`Blick-Wahl ${m.wahl.versucht} Posen`);
+    if (m?.seitenfehler) t.push(`Seitenfehler ${m.seitenfehler}`);
     const kopf = rot.length ? `ABNAHME ROT [${rot.map((r) => r.grund).join(" · ")}]` : "ABNAHME GRÜN";
     return { ok: rot.length === 0, rot, zeile: `${kopf} · ${satz} · ${t.join(" · ")}` };
 }
@@ -289,6 +289,8 @@ function abnahmeSelbsttest(fixtureDir) {
             "sicht.vordergrund.deckung",
             "Vordergrund 36.0 % näher als 3.1 m (der halbe Ziel-Abstand): Gelände 33.0 %",
         ],
+        // ohne die Tiefe des Schusses (kamera-nah `o.ziel.tiefe`) ist `frei` ungemessen: kein Bild, kein Urteil über das Ziel
+        ["Ziel ohne Bild", (m) => (m.ziel.frei = null), "ziel.frei", "ziel.frei ungemessen"],
         [
             "Ziel außerhalb",
             (m) => Object.assign(m.ziel, { imBild: false, ndc: [1.4, 0.2] }),
@@ -458,7 +460,8 @@ function spiegelPartner(m, W, H, s) {
 }
 
 // DIE TIEFE DER AUFNAHME (A13, `__spiegelDaten` gleich nach dem Schuss): die Szenen-Tiefe samt Wasser (depth24plus kopiert WebGPU
-// nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses.
+// nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses; `punkt(i)` ist der
+// Welt-Punkt des Tiefe-Pixels i (null: der Himmel) — die EINE Rückrechnung für den Arm, die Böe und das Ziel der Abnahme.
 function spiegelDaten() {
     return (async () => {
         const S = window.THREE.TSL,
@@ -471,9 +474,11 @@ function spiegelDaten() {
         const tiefe = new Float32Array(await r.state.renderer.getArrayBufferAsync(a.value));
         r._gpuAbschied(a.value);
         cam.updateMatrixWorld(true);
-        const vp = new window.THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const auge = new window.THREE.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray();
-        return { tiefe, tw, th, vp: vp.elements, ivp: vp.clone().invert().elements, auge };
+        const T = window.THREE,
+            vp = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+            ivp = vp.clone().invert();
+        const punkt = (j) => (tiefe[j] < 0.99999 ? new T.Vector3((2 * (j % tw) + 1) / tw - 1, 1 - (2 * Math.floor(j / tw) + 1) / th, tiefe[j]).applyMatrix4(ivp) : null); // prettier-ignore
+        return { tiefe, tw, th, vp: vp.elements, ivp: ivp.elements, auge: new T.Vector3().setFromMatrixPosition(cam.matrixWorld).toArray(), punkt };
     })();
 }
 
@@ -680,7 +685,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
     // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
     const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null,
-        pa = sa && sa.partner;
+        pa = sa?.partner;
     const sp = [0, 0, 0, 0, 0, 0];
     for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
         const z = [0, 0, 0, 0, 0, 0]; // die Block-Mittel der Zeile: n, Σa, Σb, Σa², Σb², Σab
@@ -735,7 +740,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
-        spiegelEbene: sa && sa.yw != null ? +sa.yw.toFixed(3) : null,
+        spiegelEbene: sa?.yw != null ? +sa.yw.toFixed(3) : null,
         sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
         weiss: n ? r4(wt / n) : null,
@@ -861,7 +866,7 @@ function sollRechnung(r, e, q) {
     // Durchlass bei `e.sonne` und sein Himmel: 1 + τ_b / τ_d. Am Mittag selbst ist es der Kehrwert des Diffus-Anteils [1/b, 1/a] (bis
     // w4-himmel-uhr die eigene Rechnung einsDurch, der Mittag allein).
     if (r.art === "klarerTag") {
-        const h = e && e.sonne;
+        const h = e?.sonne;
         if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && r.mittag >= 3)) return { fehler: "klarerTag ohne diffus, mittag, Sonne ab 3°" };
         return band(
             r.diffus.map((kd) => {
@@ -888,7 +893,7 @@ function sollRechnung(r, e, q) {
     // kelvinTon { kelvin, datei, symbol } (w4-himmel-uhr): das Band B/R (linear) zwischen zwei Farbtemperaturen über die EINE
     // Lichtfarbe der Kette (fachwerk-core `lichtFarbe`, der Planck-Ort nach Kim et al. 2002), GELESEN im Kern, nie abgeschrieben
     if (r.art === "kelvinTon") {
-        const lf = q && q.kern && q.kern(r.datei, r.symbol);
+        const lf = q?.kern && q.kern(r.datei, r.symbol);
         if (!(typeof lf === "function" && paar(r.kelvin))) return { fehler: `kelvinTon ohne kelvin oder ${r.symbol}` };
         return band(r.kelvin.map((k) => lf(k)[2] / lf(k)[0]));
     }
@@ -938,7 +943,7 @@ function aperturSchuesse(ma, q) {
     const apRe = new RegExp(rc.apertur),
         tor = new RegExp(rc.tor);
     const sv = rc.stufen;
-    const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+    const K0 = q?.kern ? q.kern(sv.datei, sv.symbol) : undefined;
     const pfad = (p) => {
         let v = K0;
         for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
@@ -1157,7 +1162,7 @@ const MASS_RECHNER = {
             rc = ma.rechnung || {};
         const f = bildMessungFehler(me);
         if (f) return { fehler: f };
-        const ft = me.abstand && me.abstand.farbton;
+        const ft = me.abstand?.farbton;
         if (!ft || !Array.isArray(ft.kacheln)) return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
         if (JSON.stringify([ft.kachel, ft.band, me.leinwand]) !== JSON.stringify([rc.kachel, rc.band, rc.leinwand]))
             return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}` };
@@ -1254,7 +1259,7 @@ const MASS_RECHNER = {
         if (f) return { fehler: f };
         const g = me.gesicht;
         if (!g || typeof g !== "object") return { fehler: "die Messung ohne Gesicht (werkbank bild --gesicht)" };
-        const felder = sb && sb.felder;
+        const felder = sb?.felder;
         if (!felder) return { fehler: "gesicht ohne die Bänder der Züge (verweis felder)" };
         let drin = 0,
             n = 0,
@@ -1346,9 +1351,9 @@ function albedoZeile(ma, q) {
 // beides ROT, nie GRÜN. Dieselbe Regel liest die Albedo-Wand je Zeile (albedo-tafel `tafelStand`).
 function messStand(bloecke, quellen, q) {
     for (const b of bloecke) {
-        const st = (b && b.stand) || {};
-        if (!(st.version || (b && b.version))) return "Stand ungeprüft: die Messung trägt keine Version";
-        const sha = st.sha || (b && b.sha);
+        const st = b?.stand || {};
+        if (!(st.version || b?.version)) return "Stand ungeprüft: die Messung trägt keine Version";
+        const sha = st.sha || b?.sha;
         if (!sha) return "Stand ungeprüft: die Messung trägt keinen Commit (stand.sha)";
         for (const d of quellen) {
             const h = b.quellen && b.quellen[d];
@@ -1555,8 +1560,8 @@ function schussVon(kl, m, bruch) {
 // DIE SONNE EINER MESSUNG (Grad, nachts negativ): ihre Richtung `sonnenRichtung` — vor w4-himmel-uhr trug die Bilanz dort das
 // Richtlicht, am Mittag die Sonne. Die Messung steht unter der Sonne ihres Solls, wenn beide höchstens 0,5° trennen: die Stufe der
 // Sonne (`SONNEN_STUFE_SCHATTIERUNG` 1/255 rad = 0,22°) und drei Stellen der Richtung (≤ 0,06°) liegen darunter.
-const messUhr = (me) => (me && me.uhr != null ? me.uhr : me && me.werkzeug === "licht" ? 0.5 : null);
-function messSonne(me, s = me && me.sonnenRichtung) {
+const messUhr = (me) => (me?.uhr != null ? me.uhr : me?.werkzeug === "licht" ? 0.5 : null);
+function messSonne(me, s = me?.sonnenRichtung) {
     return Array.isArray(s) ? (Math.asin(s[1] / Math.hypot(...s)) * 180) / Math.PI : null;
 }
 
@@ -1570,11 +1575,11 @@ function messSonne(me, s = me && me.sonnenRichtung) {
 function sollTafelUrteil(tafel, q) {
     const fehler = [];
     const zeilen = [];
-    const haushalt = (q && q.haushalt) || null;
+    const haushalt = q?.haushalt || null;
     q = Object.assign({ lesen: () => null }, q);
-    const kl = (tafel && tafel.klassen) || [];
+    const kl = tafel?.klassen || [];
     if (!kl.length) fehler.push("die Tafel trägt keine Klasse (vakuös)");
-    const welt = haushalt ? haushalt.band.vramMB - ((haushalt.renderZiele && haushalt.renderZiele.mb) || 0) : null;
+    const welt = haushalt ? haushalt.band.vramMB - (haushalt.renderZiele?.mb || 0) : null;
     const summeTris = haushalt ? haushalt.klassen.reduce((a, k) => a + (k.dreiecke || 0), 0) : 0;
     const zahl = Number.isFinite;
     const ids = new Set();
@@ -1587,16 +1592,16 @@ function sollTafelUrteil(tafel, q) {
         // DIE VORLAGE: ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
         // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
         for (const vl of k.vorlage || []) {
-            const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
+            const w = vl?.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
             if (w === undefined)
                 fehler.push(
-                    `${wo}: Vorlage ${(vl && vl.karte) || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
+                    `${wo}: Vorlage ${vl?.karte || "?"} ${vl?.datei} ${vl?.symbol} — das Symbol ist dort nicht definiert`
                 );
         }
         if (!Array.isArray(k.quellen))
             fehler.push(`${wo}: ohne quellen (die Dateien, deren Bytes das Ist trägt) — sein Stand ist unprüfbar`);
         const bruch = (f) => void fehler.push(`${wo}: ${f}`);
-        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, (k.mass || {}).messung, bruch) });
+        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, k.mass?.messung, bruch) });
         // DAS SOLL JE UHR (w4-himmel-uhr): eine Eigenschaft mit `uhr` gilt der Messung dieser Uhr (`messUhr`), eine ohne jeder;
         // `sonne` (Grad) nennt die Höhe der Sonne, für die sie gilt (`messSonne`). Jede Zeile jeder Uhr steht unter derselben Wand
         // (Quelle, Band, Rechnung); dieselbe Größe zweimal zur selben Uhr ist ein Bruch.
@@ -1701,9 +1706,9 @@ function sollTafelUrteil(tafel, q) {
         // Befund, Quelle, Bild-Paar und Warum in Zahlen. Widerspricht ein GEMESSENES Maß dem Stand der Klasse (GRÜN neben dem
         // Mangel: blind oder geheilt ohne Bild-Paar; ROT neben geheilt: der Mangel ist zurück), urteilt die ZEILE ROT beim Namen —
         // nie ein Bruch der Tafel (ein abgewiesenes ehrliches ROT wäre fail-soft); veraltet steht ohnehin ROT bis zur Neumessung
-        const mg = (k.wirkung || {}).mangel;
+        const mg = k.wirkung?.mangel;
         if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
-        const gh = (k.wirkung || {}).geheilt;
+        const gh = k.wirkung?.geheilt;
         if (gh != null && !(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
             fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
         else if (gh != null)
@@ -1725,7 +1730,7 @@ function sollTafelUrteil(tafel, q) {
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
-        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, (k.wirkung || {}).messung, bruch) });
+        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, k.wirkung?.messung, bruch) });
         if (anteil == null && wi.messung) {
             const fw = bildMessungFehler(wi.messung);
             if (fw) fehler.push(`${wo}: das Bild der Wirkung: ${fw}`);
@@ -1754,7 +1759,7 @@ function sollTafelUrteil(tafel, q) {
             veraltet: !!stand,
             stand:
                 r.stand ||
-                (me && me.datum
+                (me?.datum
                     ? `${String(me.datum).slice(0, 10)} ${String(me.stand.sha || "").slice(0, 8)} ${me.geraet.adapter || ""}`.trim()
                     : null),
             stufen,
@@ -1954,16 +1959,16 @@ function sollTafelSelbsttest(tafel, q) {
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
     const klon = () => jsonKlon(tafel);
     const finde = (t, f) => (t.klassen || []).find(f);
-    const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
-    const mitVerweis = (t) => finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
-    const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
+    const mitMessung = (t) => finde(t, (k) => k.mass?.messung?.werkzeug === "bild");
+    const mitVerweis = (t) => finde(t, (k) => (k.soll?.eigenschaften || []).some((e) => e.verweis?.symbol));
+    const mitAlbedo = (t) => finde(t, (k) => k.mass?.rohdatei);
     // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
     const frisch = (k, me) => {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
-    const mitMangel = (t, k = finde(t, (x) => x.wirkung && (x.wirkung.mangel || x.wirkung.geheilt) && x.mass && x.mass.name === "zweiton" && x.mass.messung)) =>
-        k && k.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
+    const mitMangel = (t, k = finde(t, (x) => (x.wirkung?.mangel || x.wirkung?.geheilt) && x.mass?.name === "zweiton" && x.mass.messung)) =>
+        k?.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
     // die Zeile des Mangels (Zweiton mit Messung; ein geheilter öffnet für den Fall wieder, A3) als geheilt erklären — das Maß bleibt
     const heile = (t, bildPaar) => {
         const k = mitMangel(t);
@@ -2037,7 +2042,7 @@ function sollTafelSelbsttest(tafel, q) {
         const l1 = linie(1),
             l24 = linie(2.4),
             l3 = linie(3);
-        const lb = (tafel && tafel.klassen ? tafel.klassen : []).find((k) => k.id === "laub-kante");
+        const lb = (tafel?.klassen || []).find((k) => k.id === "laub-kante");
         const grenze = lb ? ((lb.soll.eigenschaften || []).find((e) => e.groesse === "kante") || {}).band : null;
         if (!(l1 < l24 && l24 < l3 && l3 < kq.kante)) v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
         if (grenze && !(l24 <= grenze[1])) v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);
@@ -2263,7 +2268,7 @@ function sollTafelSelbsttest(tafel, q) {
         });
         const z0 = echt.zeilen.find((z) => z.id === ka.id);
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
-        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
+        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1?.ist})`);
     }
     if (tafel && (tafel.klassen || []).length) {
         const t = klon();
@@ -2272,13 +2277,13 @@ function sollTafelSelbsttest(tafel, q) {
         const z = sollTafelUrteil(t, q).zeilen.find((x) => x.id === t.klassen[0].id);
         if (!z || z.urteil !== "ROT") v.push("ein ungemessenes Ist ist GRÜN");
         const t3 = klon();
-        const k3 = finde(t3, (k) => k.mass && k.mass.name === "laiWirk" && k.mass.messung);
+        const k3 = finde(t3, (k) => k.mass?.name === "laiWirk" && k.mass.messung);
         if (k3) frisch(k3, k3.mass.messung);
-        if (k3 && k3.mass.name === "laiWirk") {
+        if (k3?.mass.name === "laiWirk") {
             const ab = k3.mass.messung.abstand.klassen;
             for (const n of Object.keys(ab)) if (new RegExp(k3.mass.rechnung.grund).test(n)) ab[n] = ab[n].map(() => 0);
             const z3 = sollTafelUrteil(t3, q).zeilen.find((x) => x.id === k3.id);
-            if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3 && z3.ist})`);
+            if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3?.ist})`);
         }
     }
     // DER STRICH IN DER TAFEL (haar.K1/K2): fell frisch gemessen im Band der REF GRÜN, darunter ROT; haar trägt daneben die
@@ -2322,16 +2327,16 @@ function sollTafelSelbsttest(tafel, q) {
         delete k4.mass.messung.stand.sha;
         const ohneSha = zeile(q);
         if (!gruen || gruen.urteil !== "GRÜN")
-            v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen && gruen.grund})`);
+            v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen?.grund})`);
         if (!text0) v.push(`Stand: die Quelle ${d0} der Klasse ${k4.id} ist nicht zu lesen`);
         else {
             if (!kommentar || kommentar.urteil !== "GRÜN")
-                v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar && kommentar.grund})`);
+                v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar?.grund})`);
             const sha8 = String(k4.mass.messung.stand.sha || gruen.stand || "").slice(0, 8);
             if (!code || code.urteil !== "ROT" || !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") || !code.grund.includes(d0))
-                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code && code.grund}; ${sha8})`);
+                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code?.grund}; ${sha8})`);
         }
-        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version && version.grund})`);
+        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version?.grund})`);
         if (d0 && (!altForm || altForm.urteil !== "ROT" || !/alter Form/.test(altForm.grund || "")))
             v.push(`Stand: eine Prüfsumme alter Form für ${d0} bleibt GRÜN`);
         if (!ohneSha || ohneSha.urteil !== "ROT" || !/keinen Commit/.test(ohneSha.grund || ""))
@@ -2339,7 +2344,7 @@ function sollTafelSelbsttest(tafel, q) {
     }
     // eine Stufe des Kerns ohne Schuss: das Maß bleibt offen — ROT mit der Stufe beim Namen, auch wenn sein Ist im Band läge
     const t5 = klon();
-    const k5 = finde(t5, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    const k5 = finde(t5, (k) => k.mass?.name === "milchweiss" && k.mass.messung);
     if (k5) {
         // die letzte Stufe fällt, solange eine bleibt (trägt die Tafel nur eine, fehlt die nächste des Kerns schon)
         const st5 = Object.keys(k5.mass.messung).filter((s) => /^L\d$/.test(s));
@@ -2352,7 +2357,7 @@ function sollTafelSelbsttest(tafel, q) {
         delete k5.wirkung.geheilt;
         const z5 = sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
-            v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
+            v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5?.urteil} ${z5?.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
     // DAS LICHT JE UHR (D3, w4-himmel-uhr): die Zelle urteilt mit dem Soll ihrer Uhr (Mittag 0,5 · tiefe Sonne 0,3 · Nacht 0) — je
     // Uhr ein Himmel im Band GRÜN, eine Mutante mit zu hellem Himmel (das Verhältnis unter dem Band) und eine mit zu dunklem ROT am
@@ -2362,8 +2367,8 @@ function sollTafelSelbsttest(tafel, q) {
     // weg, die CPU-gemalte vor D3) ROT beim Namen umgebungAzimut, auch im Band des Verhältnisses. klarerTag ist am Mittag
     // der Kehrwert des Diffus-Anteils [5; 12,5] und trägt bei der tiefen Sonne das Modell des klaren Himmels IES RP-21 (J. IES 1984).
     const t8 = klon(),
-        k8 = finde(t8, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung),
-        sonne = Object.fromEntries(((k8 && k8.soll.eigenschaften) || []).map((e) => [e.uhr, e.sonne])),
+        k8 = finde(t8, (k) => k.mass?.name === "lichtVerhaeltnis" && k.mass.messung),
+        sonne = Object.fromEntries((k8?.soll.eigenschaften || []).map((e) => [e.uhr, e.sonne])),
         lf = q.kern && q.kern("fachwerk-core.js", "lichtFarbe");
     if (k8 && [0.5, 0.3, 0].every((u) => sonne[u] != null) && lf) {
         const [m, s3, n] = [sonne[0.5], sonne[0.3], sonne[0]],
@@ -2398,7 +2403,7 @@ function sollTafelSelbsttest(tafel, q) {
     } else v.push("himmel-licht ohne Soll je Uhr 0,5 · 0,3 · 0 oder ohne lichtFarbe");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
-    const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    const k6 = finde(t6, (k) => k.mass?.name === "milchweiss" && k.mass.messung);
     const s6 = k6 && Object.keys(k6.mass.messung).find((s) => /^L\d$/.test(s) && !/^L3$/.test(s));
     if (k6 && s6) {
         const torRe = new RegExp(k6.mass.rechnung.tor);

@@ -304,6 +304,19 @@
   // ════ WELTMODELL · geteilte Quelle: Öffnungen · Erschließung · Kraftfluss ════
   const circR=[];
   function addSolid(cx,cy,cz,lx,ly,lz,tag){solids.push({min:[cx+SHIFT-lx/2,cy-ly/2,cz-lz/2],max:[cx+SHIFT+lx/2,cy+ly/2,cz+lz/2],tag});}
+  // DER LEIB DES STRAHLS (leib.K4 Staffel 2, additiv): was gezeichnet steht, aber den Gang nicht hält — das Geländer der Treppe
+  // (Wange, Handlauf, Stab, Pfosten: die Spur zwischen ihnen ist so breit wie der Leib, die Kapsel liest nur `solids`). Der Strahl
+  // hält an ihm (die Kamera-Kugel, der Hieb), die Hülle trägt es in der Rolle "strahl". Vorher stand die Kamera unter der Treppe
+  // des haus_alemannisch 0,07–0,10 m vor Wange und Stab (Bau-Pixel im Nahbereich, 3 Proben im Gang innen, 2 im Sprint).
+  const strahl=[];
+  function addStrahl(x0,y0,z0,x1,y1,z1){ strahl.push({min:[x0+SHIFT,y0,z0],max:[x1+SHIFT,y1,z1]}); }
+  function strahlBeam(cx,cy,cz,lx,ly,lz){ addStrahl(cx-lx/2,cy-ly/2,cz-lz/2,cx+lx/2,cy+ly/2,cz+lz/2); }
+  // der Strebe-Leib (`strut`: der Quader th × Länge × th, seine Y-Achse auf der Strecke) in n Stücken je ihre Hülle — die schräge
+  // Wange und der Handlauf je Tritt eine Box, nie eine Box über den ganzen Lauf (die Spur darunter bliebe nie frei)
+  function strahlStrut(x0,y0,z0,x1,y1,z1,th,n){ const d=Vc(x1-x0,y1-y0,z1-z0), len=d.length(); if(len<1e-4)return; d.multiplyScalar(1/len);
+    const q=new THREE.Quaternion().setFromUnitVectors(Vc(0,1,0),d), u=Vc(1,0,0).applyQuaternion(q), v=Vc(0,0,1).applyQuaternion(q);
+    const e=[Math.abs(u.x)+Math.abs(v.x),Math.abs(u.y)+Math.abs(v.y),Math.abs(u.z)+Math.abs(v.z)].map(s=>s*th/2), P=(f)=>[x0+(x1-x0)*f,y0+(y1-y0)*f,z0+(z1-z0)*f];
+    for(let k=0;k<n;k++){ const a=P(k/n), b=P((k+1)/n); addStrahl(Math.min(a[0],b[0])-e[0],Math.min(a[1],b[1])-e[1],Math.min(a[2],b[2])-e[2],Math.max(a[0],b[0])+e[0],Math.max(a[1],b[1])+e[1],Math.max(a[2],b[2])+e[2]); } }
   // ════ GESETZ (geteilt über ALLE Außentüren): jede Tür mit Schwelle auf einer Sockelhöhe bekommt EINE Eingangstreppe — Stufenzahl + Höhe FOLGEN dem Sockel, Richtung = Außennormale (nx,nz). EINE Quelle für Haus-/Hinter-/Flügeltür/Garage. Sockel auf Grund → 0 Stufen (Garage). ════
   function aussentreppe(g, cx, cz, nx, nz, wDoor, baseH){ const h=(baseH==null?baseY:baseH); if(h<0.10)return;
     const n=Math.max(1,Math.round((h+0.02)/0.19)), sh=h/n, tr=0.30, w=wDoor+0.7;
@@ -872,20 +885,20 @@
         addSolid(xc,y-0.06,z,w,0.12,go*1.02,'stufe'); }
       const zA=zStart, zB=zStart+dir*N*go, yB=y0+N*rise;
       [xL,xR].forEach(xo=>{ const isW=(wandS===-1&&xo===xL)||(wandS===1&&xo===xR), sgn=(xo===xL?-1:1);   // TREPPENSEITEN-GESETZ: Spur-Innenkante = Wandseite (Handlauf), Lane-Kante = Absturz (Geländer)
-        strut(g,xo,y0-0.08,zA, xo,yB-0.08,zB,0.1,'holz');                              // Wange (beidseitig, tragend — Statik kennt keine Seiten)
+        strut(g,xo,y0-0.08,zA, xo,yB-0.08,zB,0.1,'holz'); strahlStrut(xo,y0-0.08,zA, xo,yB-0.08,zB,0.1,N);   // Wange (beidseitig, tragend — Statik kennt keine Seiten)
         const ha=Math.max(y0+0.15,Math.min(y0+0.95,roofUnderY(xo,zA)-0.06)), hb=Math.max(yB+0.15,Math.min(yB+0.95,roofUnderY(xo,zB)-0.06));   // METAGESETZ + Puffer: Handlauf nie durch die Haut, nie invertiert
-        if(ha>y0+0.10&&hb>y0+0.10){ strut(g,xo,ha,zA, xo,hb,zB,0.06,'holz');           // Handlauf — METAGESETZ: unter die Dachhaut gekappt
+        if(ha>y0+0.10&&hb>y0+0.10){ strut(g,xo,ha,zA, xo,hb,zB,0.06,'holz'); strahlStrut(xo,ha,zA, xo,hb,zB,0.06,N);   // Handlauf — METAGESETZ: unter die Dachhaut gekappt
           if(isW){ for(let i=0;i<N;i+=3){ const z=zStart+dir*(i+0.5)*go, hy=ha+(hb-ha)*((z-zA)/((zB-zA)||1));   // WAND-HANDLAUF: Konsolen alle 3 Tritte statt Stab-Batterie
-              beam(g,xo,hy-0.10,z,0.03,0.14,0.03,'dunkel'); beam(g,xo+sgn*0.035,hy-0.155,z,0.07,0.03,0.03,'dunkel'); }
+              beam(g,xo,hy-0.10,z,0.03,0.14,0.03,'dunkel'); beam(g,xo+sgn*0.035,hy-0.155,z,0.07,0.03,0.03,'dunkel'); strahlBeam(xo,hy-0.10,z,0.03,0.14,0.03); strahlBeam(xo+sgn*0.035,hy-0.155,z,0.07,0.03,0.03); }
             [[zA,ha,-1],[zB,hb,1]].forEach(([ze,he,s])=>{ if(he<roofUnderY(xo,ze+s*dir*0.25)-0.06){   // SIA-AUSLAUF: Handlauf läuft 25 cm horizontal über Antritt/Austritt hinaus
-              beam(g,xo,he,ze+s*dir*0.125,0.06,0.06,0.25,'holz'); beam(g,xo,he-0.10,ze+s*dir*0.25,0.03,0.14,0.03,'dunkel'); } }); } } });
+              beam(g,xo,he,ze+s*dir*0.125,0.06,0.06,0.25,'holz'); beam(g,xo,he-0.10,ze+s*dir*0.25,0.03,0.14,0.03,'dunkel'); strahlBeam(xo,he,ze+s*dir*0.125,0.06,0.06,0.25); strahlBeam(xo,he-0.10,ze+s*dir*0.25,0.03,0.14,0.03); } }); } } });
       for(let i=0;i<N;i++){ const z=zStart+dir*(i+0.5)*go, y=y0+(i+1)*rise;
         [xL,xR].forEach(xo=>{ if((wandS===-1&&xo===xL)||(wandS===1&&xo===xR))return;   // Wandseite: keine Stab-Batterie (TREPPENSEITEN-GESETZ)
           const top=Math.min(y+0.91,roofUnderY(xo,z)), h=Math.max(0.05,Math.min(top,roofUnderY(xo,z)-0.06)-(y-0.01));
-          if(h>0.12) beam(g,xo,(y-0.01+top)/2,z,0.04,h,0.04,'holz'); }); }            // Geländerstäbe — nur Absturzseite, gekappt
+          if(h>0.12){ beam(g,xo,(y-0.01+top)/2,z,0.04,h,0.04,'holz'); strahlBeam(xo,(y-0.01+top)/2,z,0.04,h,0.04); } }); }   // Geländerstäbe — nur Absturzseite, gekappt
       [[zA,y0],[zB,yB]].forEach(([z,yb])=>[xL,xR].forEach(xo=>{ if((wandS===-1&&xo===xL)||(wandS===1&&xo===xR))return;   // Pfosten gehören zum Geländer → nur Absturzseite
         const top=Math.min(yb+1.0,roofUnderY(xo,z)-0.06), h=Math.max(0.05,top-yb);
-        if(h>0.15) beam(g,xo,yb+h/2,z,0.07,h,0.07,'holz'); })); };                     // Antritts-/Austrittspfosten — gekappt
+        if(h>0.15){ beam(g,xo,yb+h/2,z,0.07,h,0.07,'holz'); strahlBeam(xo,yb+h/2,z,0.07,h,0.07); } })); };   // Antritts-/Austrittspfosten — gekappt
     const beideSpuren=new Set(flights.map(f=>f.tr)).size>1;                           // TREPPENSEITEN-GESETZ: erst wenn BEIDE Spuren belegt sind, existiert eine Spindel-/Wandseite — Einzelspur bleibt beidseitig gesichert
     flights.forEach(f=>{ const w=(f.x1-f.x0)-(f.isLoft?0.10:0.06), xl=f.x0+(f.isLoft?0.04:0.03), xr=f.x1-(f.isLoft?0.04:0.03);
       flight(f.base, xl, xr, f.zFoot, f.dir, f.N, f.rise, f.go, w, beideSpuren?(f.tr==='L'?1:-1):0); });   // Wandseite = Spur-Innenkante (L-Spur→x1, R-Spur→x0)
@@ -1699,7 +1712,7 @@
   { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel'};
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
-  return { P, subsystems, order, solids, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
+  return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
@@ -2973,13 +2986,18 @@
         }
         return (B.koerperTeile = teile);
     }
-    // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest".
-    function huelleAusBoxen(stufe, boxen) {
+    // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest"; die
+    // Leiber des Strahls (`strahl`, dieselbe Zeile: das Geländer) danach in der rolle "strahl".
+    function huelleAusBoxen(stufe, boxen, strahl) {
         var teile = [];
-        for (var i = 0; i + 5 < boxen.length; i += 6) {
-            var t = huelleTeil("box", boxen[i], boxen[i + 3], boxen[i + 1], boxen[i + 4], boxen[i + 2], boxen[i + 5], null, { rolle: "fest" });
-            if (t) teile.push(t);
-        }
+        var nimm = function (L, rolle) {
+            for (var i = 0; L && i + 5 < L.length; i += 6) {
+                var t = huelleTeil("box", L[i], L[i + 3], L[i + 1], L[i + 4], L[i + 2], L[i + 5], null, { rolle: rolle });
+                if (t) teile.push(t);
+            }
+        };
+        nimm(boxen, "fest");
+        nimm(strahl, "strahl");
         return { stufe: stufe, teile: teile };
     }
     // DIE STUFE 3 WIRFT MIT DEM EINEN SCHATTEN-STOFF (das Wurf-Gesetz E1): jede Ecke deckt ganz (`aDeckt` 1 — der Stoff
@@ -4857,6 +4875,26 @@
             z: (c.min[2] + c.max[2]) / 2,
         };
     }
+    // DIE DECKEN DES BAUS (w18-innen-licht, additiv, must-ignore — die EINE Formel): je Körper mit Raum (der Körper-Satz von
+    // `grundVon`, die Arten von `GRUND_BODEN`) sein Grundriss und die Unterkante seines Dachs (`DECKE_HOEHE`: die Traufe;
+    // der Pultdach-Anbau seine tiefe Seite, Turm und Rundbau die Mauerkrone) — je Decke [x0, x1, z0, z1, y], haus-lokal auf
+    // dem Raster. Leser: die Hülle jeder Stufe (`buildInstance`: `__huelle.decken`) und mit ihr der Dach-Pool des Wirts
+    // (`_dachTakt`): darunter steht der Raum unter seiner Decke — kein Regen, kein Boden des offenen Himmels im Licht
+    // (schatten.K4). Bis hier riet der Wirt die Decke aus den Solids (die höchste Box mit der halben Fläche der größten): das
+    // Gesetzbuch teilt jedes Obergeschoss am Treppenloch, und der Anbau trägt keine Solid-Box — 11 von 18 Häusern des
+    // Start-Dorfs standen innen unter offenem Himmel, ihre Anbauten alle.
+    var DECKE_HOEHE = { haupt: "eY", anbau: "yLow", fluegel: "eY", hofarm: "eY", turm: "y1", rund: "y1" };
+    function deckenZeile(masse) {
+        var d = [];
+        for (var i = 0; i < (masse || []).length; i++) {
+            var m = masse[i],
+                k = DECKE_HOEHE[m.art],
+                y = k ? m[k] : NaN;
+            if (!isFinite(y) || !isFinite(m.x0) || !(m.x1 > m.x0) || !(m.z1 > m.z0)) continue;
+            d.push([_hr(m.x0), _hr(m.x1), _hr(m.z0), _hr(m.z1), _hr(y)]);
+        }
+        return d;
+    }
     // KAMIN-RAUCH (.108): Solo-Haus-Spitze aus massBau-AABB (exportSettlement-Formel).
     // null wenn kein chimney (ROUND/modern/kuppel) — Host fail-closed.
     function chimneyTipFromParams(p) {
@@ -4893,13 +4931,15 @@
                   return { g: H.build({ gelaende: false }), H: H };
               })();
     }
-    // Die Solids eines Stufe-0-Baus haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]… (der Aufsatz des Stapels um st.off).
-    function solidZeile(st) {
+    // Die Solids eines Stufe-0-Baus haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]… (der Aufsatz des Stapels um st.off); mit
+    // feld "strahl" die Leiber des Strahls (das Geländer, `addStrahl`) in derselben Zeile.
+    function solidZeile(st, feld) {
         var solL = [];
         var solAus = function (Hs, dy) {
-            if (!Hs || !Hs.solids) return;
-            for (var si = 0; si < Hs.solids.length; si++) {
-                var so = Hs.solids[si];
+            var L = Hs && Hs[feld || "solids"];
+            if (!L) return;
+            for (var si = 0; si < L.length; si++) {
+                var so = L[si];
                 solL.push(so.min[0], so.min[1] + dy, so.min[2], so.max[0], so.max[1] + dy, so.max[2]);
             }
         };
@@ -4911,7 +4951,7 @@
         var hp = stufe0Param(p);
         hp.nur = Object.assign({}, SOLIDLOS, hp.nur);
         var st = stufe0Bau(hp);
-        var z = solidZeile(st);
+        var z = { fest: solidZeile(st), strahl: solidZeile(st, "strahl") };
         st.g.traverse(function (o) {
             if (o.geometry) o.geometry.dispose();
         });
@@ -4969,8 +5009,10 @@
             // — dieselbe Liste, die das Labor begeht (bauSolidsUndTueren). Die Welt stellte statt ihrer vier EG-Riegel
             // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
             geoms.__solids = solidZeile(st);
+            geoms.__strahl = solidZeile(st, "strahl"); // der Leib des Strahls (das Geländer), dieselbe Form
             geoms.__kamin = { spitze: kaminSpitze(st.H && st.H.chimney) }; // die Spitze des Stapels (≡ massBau, die Hülle trägt sie)
             geoms.__tuer = tuerZeile(st.H && st.H.dims); // die Tür-Zeile des Baus (≡ exportSettlement, die Hülle trägt sie)
+            geoms.__decken = deckenZeile(masseVon(st)); // die Decken der Körper (≡ der Mass-Bau der Stufen 1/2, die Hülle trägt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -4986,9 +5028,12 @@
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
             B.frag = null;
             B.fragStufe = undefined;
-            geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            var hs = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
+            geoms.__solids = hs.fest;
+            geoms.__strahl = hs.strahl;
             geoms.__kamin = { spitze: kaminSpitze(B.chimney) };
             geoms.__tuer = tuerZeile(B.dims);
+            geoms.__decken = deckenZeile(B.masse);
         }
         return geoms;
     }
@@ -5084,7 +5129,7 @@
         // Hofmauer zu); die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist, nie mit einer Stufen-Box.
         var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;
         // … in der EINEN Hüllen-Form (S3, N5: jede Solid-Box ein Teil, rolle "fest" — EIN Parser im Wirt, `_huelleVon`)
-        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle ? huelleAusBoxen(huelle.stufe, huelle.boxen) : null };
+        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle ? huelleAusBoxen(huelle.stufe, huelle.boxen, gm.__strahl) : null };
         // DER KAMIN REIST MIT DER HÜLLE (B3c, additiv, must-ignore): die Spitze des gebauten Hauses, haus-lokal auf dem Raster
         // (`kamin` [x, y, z], null = kein Kamin) — der Wirt baut kein Haus im Haupt-Faden, um sie zu finden (`_hausHuelleSetzen`).
         // Ebenso die Tür-Zeile (`tuer`, bauen.K5, null = keine Haustür): was der Slot des Dorfs aus dem Export bringt.
@@ -5092,6 +5137,9 @@
             var ks = gm.__kamin.spitze;
             g.userData.__huelle.kamin = ks ? _hr3([ks.x, ks.y, ks.z]) : null;
             g.userData.__huelle.tuer = gm.__tuer;
+            // DIE DECKEN REISEN MIT DER HÜLLE (w18-innen-licht, additiv, must-ignore): je Körper mit Raum [x0, x1, z0, z1, y]
+            // (`deckenZeile`) — der Dach-Pool des Wirts liest sie (`_dachTakt`)
+            g.userData.__huelle.decken = gm.__decken || [];
         }
         // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
         // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
