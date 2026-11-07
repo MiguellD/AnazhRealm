@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T02:59:43.488Z",
+ "zeit": "2026-11-07T04:27:01.244Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K2#1": {
@@ -413,7 +413,7 @@
    "minuten": 0,
    "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "ungemessen": true,
-   "zeit": "2026-11-07T02:35:50.385Z",
+   "zeit": "2026-11-07T04:27:01.244Z",
    "abdruck": "4737c3538058",
    "port": 7804,
    "bahn": "sitzung",
@@ -421,47 +421,13 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T02:59:10.402Z",
+  "start": "2026-11-07T04:17:01.060Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.3,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "genesis",
-    "vor": "material.K3#2",
-    "s": 25.6,
-    "takte": 761,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K3#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 68,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 73.6,
-  "minuten": 1.28
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
  }
 }
