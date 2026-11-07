@@ -1934,14 +1934,11 @@ async function checkBandTodZensus({ page, check }) {
                     "_p2pTickRemoteCreatures",
                     (alt) =>
                         function (...a) {
-                            const hatte = Object.prototype.hasOwnProperty.call(this, "_leibSicht");
-                            const sicht = this._leibSicht;
-                            this._leibSicht = function () {};
+                            const zurueck = leihe(this, { _leibSicht() {} });
                             try {
                                 return alt.apply(this, a);
                             } finally {
-                                if (hatte) this._leibSicht = sicht;
-                                else delete this._leibSicht;
+                                zurueck();
                             }
                         }
                 );

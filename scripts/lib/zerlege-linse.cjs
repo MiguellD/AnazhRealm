@@ -56,16 +56,8 @@
 // ── Seite ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 // Ein Haken an einer Eigenschaft, der exakt zurückstellt (eine eigene Eigenschaft wird zurückgeschrieben, eine geerbte
-// gelöscht — kein Rest auf dem Objekt).
-function haken(o, key, fn) {
-    const eigen = Object.prototype.hasOwnProperty.call(o, key);
-    const alt = o[key];
-    o[key] = fn;
-    return () => {
-        if (eigen) o[key] = alt;
-        else delete o[key];
-    };
-}
+// gelöscht — kein Rest auf dem Objekt): die EINE Leihe der Seite (`leihe`, welt-boot WARTEN_SEITE; w18-mensch-deckel)
+const haken = (o, key, fn) => leihe(o, { [key]: fn });
 
 // DIE PASS-UHR am Chokepoint `_renderScene`: der Stapel der rendernden Pässe (jeder Render, auch verschachtelt — der
 // Schatten startet mitten im Hauptbild, die Szene mitten im TRAA-Resolve), je Render eine laufende Nummer (die Anatomie

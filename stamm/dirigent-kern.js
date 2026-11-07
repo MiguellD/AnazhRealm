@@ -1209,7 +1209,7 @@ class AnazhRealm {
         const next = mode === "third" ? "third" : "first";
         this.state.cameraMode = next;
         this._applyEgoSicht(); // T7 — der Modus-Schalter trägt die Sicht-Regel sofort (EINE Naht)
-        this._leibWunsch(); // B5 — zeigt das erste Bild nun die Gestalt, kommt die feine Stufe jetzt
+        this._leibWunsch(); // B5 — zeigt das erste Bild nun die Gestalt, kommt die feine Stufe jetzt; danach baut der Schalter nichts
         const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
         if (toggle) {
             toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
@@ -1857,7 +1857,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.209";
+AnazhRealm.VERSION = "18.546.211";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

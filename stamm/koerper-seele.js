@@ -636,9 +636,12 @@ class AnazhRealm_koerper_seele {
         if (!bpName || !this.state.blueprints[bpName]) return { ok: false, reason: "blueprint_unknown" };
         eq.held = bpName;
         this.recomputePlayerStats();
-        // die Hand liest die Hand-Mitte der feinen Stufe: der Wunsch tauscht den Leib (w14-ankunft-weg, `_leibWunsch`) und trägt
-        // die Hand dabei neu (`applyPlayerSoul`)
-        if (!this._leibWunsch()) this._refreshHeldMesh(); // S9 — das Gerät in der Hand sichtbar machen
+        // die Hand liest die Hand-Mitte der feinen Stufe (`handMitte`, nur lod 0 gegossen): vor dem Bild wünscht sie die feine
+        // (`_leibWunsch`, B5), danach trägt der Leib sie aus dem Leerlauf (`_leibFeinTausch` im Vorbau, w20-leib-takt) — nur ein
+        // Griff vor diesem Tausch tauscht selbst (er trägt die Hand dabei neu, `applyPlayerSoul`), jeder danach baut nichts
+        this._leibWunsch();
+        const z = this._spielerVorlagen;
+        if (!(this.state._weltbildDa && z && z.feinDa === true && this._leibFeinTausch())) this._refreshHeldMesh(); // S9
         this._refreshIchIfOpen(); // M5 — Equip-Feedback ist instant
         return { ok: true, equipped: bpName };
     }

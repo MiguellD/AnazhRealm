@@ -75,7 +75,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
@@ -700,7 +700,7 @@ function tierZahl() {
     const cam = st.camera;
     const csm = st.csmNode;
     const dl = st.directionalLight;
-    const kf = (csm?.lights && csm.lights.length ? csm.lights.map((l) => l && l.shadow && l.shadow.camera) : dl?.shadow ? [dl.shadow.camera] : []).map(frustum);
+    const kf = (csm?.lights?.length ? csm.lights.map((l) => l?.shadow?.camera) : dl?.shadow ? [dl.shadow.camera] : []).map(frustum);
     const nahM = r.constructor.ANALOG_NAH_M || 64;
     const aus = { gesamt: 0, sicht: 0, sichtNah: 0, schatten: {}, arten: {}, artenSicht: {} };
     kf.forEach((_, i) => (aus.schatten["k" + i] = 0));
@@ -717,7 +717,7 @@ function tierZahl() {
         let wirft = false;
         c.traverseVisible((n) => (wirft = wirft || (n.isMesh && n.castShadow)));
         kugel.set(c.position, u._ruheKugelR).center.y += u._ruheKugelH;
-        if (wirft) kf.forEach((f, i) => f && f.intersectsSphere(kugel) && aus.schatten["k" + i]++);
+        if (wirft) kf.forEach((f, i) => f?.intersectsSphere(kugel) && aus.schatten["k" + i]++);
     }
     return aus;
 }
@@ -831,6 +831,9 @@ async function starte() {
     const boot = { serie: SERIE || null, profil: profil || browser.profil, serieNeu, ladungen: 0 };
     await adapterZeile(browser);
     const page = await browser.newPage();
+    // DER ABBRUCH DER SEITE (welt-boot `seitenAbbruch`, w18-mensch-deckel): angelegt, solange die Seite ruht; der Leser ist der Rufer,
+    // der vor seiner Antwort stirbt (`x-rufer`, unten) — die Zeile `[abbruch]` im Log nennt ihn
+    const abbrechen = await seitenAbbruch(page);
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
@@ -926,7 +929,7 @@ async function starte() {
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
         const json = jsonLesen(path.join("spec", ort.welt));
-        const slug = json.worldMeta && json.worldMeta.slug;
+        const slug = json.worldMeta?.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
         const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
@@ -948,7 +951,7 @@ async function starte() {
         await lade(
             page.evaluate(() => {
                 delete window.__anazhAutoSettlement;
-                return __weltDa(() => st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht);
+                return __weltDa(() => st.worldMeta.genesisOrt?.steht);
             })
         );
         await loopAus();
@@ -976,7 +979,7 @@ async function starte() {
                                 "der Ort wandert mit der Welt (spec/profiband/haushalt.json)"
                         );
                 }
-                window.__ortTakt = (o && o.takt) || [];
+                window.__ortTakt = o?.takt || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
                 // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
                 // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
@@ -987,7 +990,7 @@ async function starte() {
                     perfTargetMs: ["perfTargetMs"],
                     ring: ["chunkRingRadius", "_activeRingRadius"],
                 };
-                const stell = (o && o.stell) || null;
+                const stell = o?.stell || null;
                 for (const k of Object.keys(stell || {}))
                     if (!FELD[k])
                         throw new Error(
@@ -1010,13 +1013,13 @@ async function starte() {
                 }
                 // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
-                const a = (o && o.anlauf) || [x, z];
+                const a = o?.anlauf || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
-                const g = o && o.gruendung;
-                window.__ortBahn = (o && o.bahn) || null;
+                const g = o?.gruendung;
+                window.__ortBahn = o?.bahn || null;
                 if (g) {
                     const same = g.wort.split(" ")[1];
                     const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
@@ -1075,8 +1078,8 @@ async function starte() {
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
                 const q = r._autoSettlementQueue;
                 const dorfSchwebt =
-                    o && o.dorfZug === false && (q || r._autoSettlementPendingKey)
-                        ? q?.plan && q.plan.slots
+                    o?.dorfZug === false && (q || r._autoSettlementPendingKey)
+                        ? q?.plan?.slots
                             ? `Plan ${q.idx}/${q.plan.slots.length} (Zelle ${q.cellKey})`
                             : `Export ${r._autoSettlementPendingKey || "?"}`
                         : null;
@@ -1123,11 +1126,7 @@ async function starte() {
             // nächste zur Bildmitte, die Kamera steht <m> vor dem Treffer auf ihm; zeigt der Blick keines, ist die Pose ROT beim
             // Namen. Bis mk2-mikro traf der Arm die Bildmitte (durch die Pflanzen, `_fieldRaycast`): die Kuppe des Fels im Gras lag
             // daneben, die Station maß 0 Fels-Pixel. `mitte(S, i)`: der Welt-Punkt des Tiefe-Pixels i (ohne i die Bildmitte).
-            const mitte = ({ tiefe, tw, th, ivp }, i = (th >> 1) * tw + (tw >> 1)) => {
-                const T = THREE;
-                const P = new T.Vector3((2 * (i % tw) + 1) / tw - 1, 1 - (2 * Math.floor(i / tw) + 1) / th, tiefe[i]);
-                return tiefe[i] < 0.99999 ? P.applyMatrix4(new T.Matrix4().fromArray(ivp)) : null;
-            };
+            const mitte = (S, i = (S.th >> 1) * S.tw + (S.tw >> 1)) => S.punkt(i);
             if (k.arm != null) {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
@@ -1184,28 +1183,22 @@ async function starte() {
             // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
             // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
             // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss };
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss !== "false" && k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
-            let auf = null;
-            let gewaehlt = null;
-            // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten. Ohne Wahl
-            // (`--wahl 0`) ist der erste Schuss schon das Bild: er wartet, bis die Welt an der Pose steht (`__weltStehtWarten`),
-            // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
-            for (const w of wahl > 0 ? [wahl, 0] : [0]) {
-                try {
-                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-                } catch {}
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
-                if (w) gewaehlt = auf.abnahme.wahl || null;
-            }
-            if (gewaehlt) {
-                auf.abnahme.wahl = gewaehlt;
-                auf.abnahme.zeile = __abnahmeUrteil(auf.abnahme).zeile;
-            }
+            // DIE WAHL VOR DEM EINEN SCHUSS (w18-abnahme-sicht-3): die Blick-Wahl stellt die Kamera (sie urteilt ihre Pose in deren Welt), der
+            // Schuss steht dort und trägt ihr Ergebnis. Bis dahin lief die Wahl in einem ersten ganzen Schuss, dessen Bild der zweite
+            // verwarf (zweimal Erst-Zeichnung, Rückstrahl, 33 Bilder und Abnahme). Ohne Wahl (`--wahl 0`) wartet der Schuss, bis die Welt
+            // an der Pose steht (`__weltStehtWarten`), und jeder Schuss beginnt seine Geschichte neu
+            if (wahl > 0 && window.__buehneUhr) await __weltStehtWarten();
+            const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
+            try {
+                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+            } catch {}
+            const auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt });
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
-            const spiegel = (window.__letzteSpiegel = k.klasse ? await __spiegelDaten() : null);
+            const spiegel = (window.__letzteSpiegel = k.klasse ? auf.tiefe : null);
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -1473,7 +1466,7 @@ async function starte() {
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
-                            if (!si || !o.skeleton) return o.parent && o.parent.name === "head" ? "head" : null;
+                            if (!si || !o.skeleton) return o.parent?.name === "head" ? "head" : null;
                             let best = null,
                                 bw = 0;
                             for (let c = 0; c < 4; c++) {
@@ -1500,7 +1493,7 @@ async function starte() {
                             const c = o.geometry.attributes.color;
                             if (!c) return null;
                             const a = [c.getX(i), c.getY(i), c.getZ(i)];
-                            const z = o.userData && o.userData.__ton;
+                            const z = o.userData?.__ton;
                             const ta = o.geometry.attributes.aTon;
                             if (z && tafel && ta && (z[0] || z[1])) {
                                 const t = Math.round(ta.getX(i));
@@ -1790,12 +1783,12 @@ async function starte() {
             if (k.zeit != null) {
                 const U = window.__buehneUhr,
                     T0 = U.T,
-                    S = await __spiegelDaten(),
+                    S = auf.tiefe,
                     nah = new Uint8Array(W * H),
                     B = r.constructor.WIND_BOE;
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
-                    nah[p] = P && P.distanceTo(cam.position) <= k.nahM ? 1 : 0;
+                    nah[p] = P?.distanceTo(cam.position) <= k.nahM ? 1 : 0;
                 }
                 const q = cam.getWorldDirection(new THREE.Vector3()).setY(0).setLength(k.nahM / 2).add(cam.position),
                     boe = Array.from({ length: 1200 }, (_, i) => [T0 + i / 20, r._windAt(q.x, q.z, T0 + i / 20).boe]).sort((a, b) => a[1] - b[1]),
@@ -1867,6 +1860,13 @@ async function starte() {
                 b = d ? JSON.parse(d) : {};
             } catch {}
             const t0 = Date.now();
+            // DER RUFER TRÄGT SEINE ARBEIT (w18-mensch-deckel): wer über `werkbankRuf` ruft (Kopf `x-rufer: traegt`), dessen Arbeit lebt in
+            // der Seite, solange er lebt — stirbt er vor der Antwort (der Deckel der Punkte-Maschine beendet den Prozess der Probe), bricht
+            // die Werkbank sie ab (welt-boot `seitenAbbruch`). Ein Ruf mit eigener Frist (der Zapfen der Sitzung, die Grundstellung) trägt den Kopf
+            // nie: seine Frist ist kein Abbruch. Bis hier rechnete die Seite nach dem Deckel weiter (Radeon 5fb21e29: mensch.K1#1 am
+            // Deckel 45 s, die Grundstellung vor mensch.K5#1 „/eval ohne Antwort binnen 60 s“, die Sitzung tot)
+            if (req.headers["x-rufer"] === "traegt")
+                res.on("close", async () => res.writableEnded || console.log(`[abbruch] ${req.url}: der Rufer ist fort, ${await abbrechen()} Abbruch`));
             // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
             const stempel = () =>
                 page
@@ -2239,7 +2239,7 @@ async function starte() {
                         const st = r.state;
                         const t0 = performance.now();
                         const quadrat = () => {
-                            const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const satz = st.chunkSaetze?.get("boden");
                             const span = r._voxelChunkConfig().span;
                             const pp = st.playerMesh.position;
                             const cx = Math.floor(pp.x / span),
@@ -2249,7 +2249,7 @@ async function starte() {
                                 for (let dz = -2; dz <= 2; dz++) {
                                     const key = `${cx + dx},${cz + dz}`;
                                     const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
-                                    if (!(e?.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
+                                    if (!e?.empty && !satz?.bloecke.has(key)) fehlt.push(key);
                                 }
                             return { chunk: `${cx},${cz}`, fehlt };
                         };
@@ -2259,7 +2259,7 @@ async function starte() {
                         // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
                         // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
                         const karteHier = (k) => {
-                            const a = k && k.anker;
+                            const a = k?.anker;
                             const span = r._voxelChunkConfig().span;
                             const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                             const p = st.playerMesh.position;
@@ -2290,7 +2290,7 @@ async function starte() {
                             if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
                             if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
                             const k = st.fernKroneNah;
-                            const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
+                            const baut = st.voxelMeshPending?.size > 0;
                             q = quadrat();
                             return q.fehlt.length === 0 && !baut && (!k || karteHier(k));
                         };
@@ -2346,8 +2346,8 @@ async function starte() {
                         // ruht (nach der Linse lud das Neu-Aufnehmen der Bündel jede Textur ohnehin: blind). Ruht er in fünf
                         // Versuchen nie, urteilt die Probe laut.
                         const satzV = () => {
-                            const s = st.chunkSaetze && st.chunkSaetze.get("boden");
-                            const g = s && s.geom;
+                            const s = st.chunkSaetze?.get("boden");
+                            const g = s?.geom;
                             if (!g) return "leer";
                             let v = g.id + ":" + (g.index ? g.index.version : -1);
                             for (const k in g.attributes) v += ":" + g.attributes[k].version;
@@ -2746,7 +2746,7 @@ async function starte() {
                     // Der Foundry-Kanal dieser Ladung über alle Antwort-Arten (asset · impostor · book …): Platte gegen
                     // Neubau — im Zweit-Boot der Serie die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
                     let fl = null;
-                    for (const k of Object.values((roh.fluss && roh.fluss.kanal) || {})) {
+                    for (const k of Object.values(roh.fluss?.kanal || {})) {
                         fl = fl || { n: 0, platte: 0, mb: 0, platteMb: 0, neuMb: 0 };
                         for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
                     }
@@ -2824,7 +2824,7 @@ async function starte() {
                 // gate:ziel-zensus — bis 31.10. stand hier sein Zwilling mit 5 der 6 Täter, den kein Befehl rief.
                 if (req.url === "/ziele") {
                     const { z, lesen, u } = await ZZ.zensusDer(page, Number(b.n) || 12);
-                    if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
+                    if (!z || z.fehler) return send({ fehler: z?.fehler || "keine Antwort", rot: u.rot });
                     const datei = zeitAblage(b.json, "ziele", "json");
                     jsonAb(datei, { zensus: z, lesen, urteil: u });
                     return send({ ok: u.rot.length === 0, tabelle: ZZ.zielTabelle(u, z), rot: u.rot, datei });
@@ -3092,7 +3092,7 @@ async function starte() {
                 // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
                 send({
                     fehler: fehlerText(e).split("\n")[0],
-                    stapel: String((e && e.stack) || "")
+                    stapel: String(e?.stack || "")
                         .split("\n")
                         .slice(1, 5)
                         .map((s) => s.trim()),
@@ -3124,7 +3124,7 @@ hauptLauf(async () => {
             ly: a[4],
             lz: a[5],
             datei: opt("--datei"),
-            uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
+            uhr: opt("--uhr") && Number(opt("--uhr")),
             wetter: opt("--wetter"),
             saison: opt("--saison"),
             w: Number(opt("--w", 640)),
@@ -3138,6 +3138,7 @@ hauptLauf(async () => {
             arm: opt("--arm"),
             ist: opt("--ist"),
             fov: opt("--fov"),
+            fuss: opt("--fuss"),
             zeit: opt("--zeit") && Number(opt("--zeit")),
         });
     else if (cmd === "methode")
@@ -3280,7 +3281,7 @@ hauptLauf(async () => {
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
         if (o?.zeilen) {
-            const w = o.messung && o.messung.welt;
+            const w = o.messung?.welt;
             if (w)
                 console.log(
                     `  Welt ${w.gestanden ? "steht" : "STAND NICHT"} nach ${w.ms} ms (${w.takte} Takte): Chunk ${w.chunk}, ` +
@@ -3291,7 +3292,7 @@ hauptLauf(async () => {
                     `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
                         `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern}) · Runden ${z.runden}`
                 );
-            const up = o.messung && o.messung.upload;
+            const up = o.messung?.upload;
             if (up)
                 console.log(
                     `  Upload im Hauptbild (${up.ruhig ? "ruhig" : "UNRUHIG"}, Versuch ${up.versuche}, ${up.bilder} Bilder): ` +
@@ -3353,19 +3354,20 @@ hauptLauf(async () => {
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             const o = { uhr, png: !!opt("--bilder"), platte: P.id };
             const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)));
-            for (const [pose, p] of Object.entries((m && m.posen) || {}))
+            for (const [pose, p] of Object.entries(m?.posen || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
         const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && hat("naesse")) {
-        // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus, nasser Marktstand, helles Regenbild ROT
-        const m = (aussen, innen, regenbild, ri = 0, dach = 2) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
+        // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus und nasse Punkte unter dem Dach bei Median 1 (die
+        // Gefache von main 5fb21e29: 5 716 von 13 141), nasser Marktstand, helles Regenbild ROT
+        const m = (aussen, innen, regenbild, ri = 0, dach = 2, nass = 0) => ({ aussen: { n: 400, verhaeltnis: aussen }, innen: { n: 400, verhaeltnis: innen, nass }, dicht: 1, glanz: 16, regen: { innen: ri, aussen: 9 }, dachBauten: { n: 2, trocken: dach }, regenbild });
         const f = [
             [LL.naesseUrteil({ wiese: m(1.0, null, 1.08) }).befunde.join(), /wiese Nässe porös draußen 1 außerhalb.*Regenbild 1\.08/],
             [LL.naesseUrteil({ dorf: m(0.62, 0.64, 0.7) }).befunde.join(), /dorf innen unter dem Dach 0\.64 außerhalb/],
-            [LL.naesseUrteil({ dorf: m(0.62, 1, 0.7, 7, 0) }).befunde.join(), /7 Regen-Punkte innen.*trocken 0\/2/],
+            [LL.naesseUrteil({ dorf: m(0.62, 1, 0.7, 7, 0, 0.435) }).befunde.join(), /Dach 0\.435 außerhalb.*7 Regen-Punkte innen.*trocken 0\/2/],
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
@@ -3578,7 +3580,7 @@ hauptLauf(async () => {
                 if (w?.karte && ordner)
                     w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
                 if (w?.karte) delete w.karte.png;
-                if (w?.oben && w.oben.png) {
+                if (w?.oben?.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
                     delete w.oben.png;
@@ -3604,7 +3606,7 @@ hauptLauf(async () => {
         dateiAb({ welt });
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
-    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")) });
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") && Number(opt("--uhr")) });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {
@@ -3672,7 +3674,7 @@ hauptLauf(async () => {
         const laeufe = dateien.map((f) => {
             const j = jsonLesen(f);
             const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
-            return e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+            return e ? e.ergebnis?.messung || null : j;
         });
         const neu = hat("neu");
         const nurVram = opt("--nur") === "vram";
@@ -3771,8 +3773,8 @@ hauptLauf(async () => {
         if (o.kreis) console.log("KREIS " + JSON.stringify(o.kreis));
         // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
         const rot = [
-            o.wetterHalt && o.wetterHalt.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
-            o.belegung && o.belegung.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
+            o.wetterHalt?.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
+            o.belegung?.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
             o.buehnenTiere < Number(opt("--tiere")) && `BÜHNE ROT: ${o.buehnenTiere} von ${opt("--tiere")} Tieren stehen am Ende`,
         ].filter(Boolean);
         if (rot.length) endeMit(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
@@ -3881,5 +3883,5 @@ hauptLauf(async () => {
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
     // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
-    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit && o.zeit.rot.length))));
+    endeMit(o, !(o && (typeof o.fehler === "string" || o.zeit?.rot.length)));
 });

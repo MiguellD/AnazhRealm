@@ -13,12 +13,7 @@ function diaetZaehler() {
     // JEDER Haken über EINEN Setzer: er merkt den Vorbestand (eigen oder geerbt), das finally stellt jeden zurück.
     const roh = {};
     const zurueck = [];
-    const haken = (name, wo, k, fn) => {
-        const eigen = Object.prototype.hasOwnProperty.call(wo, k);
-        const alt = (roh[name] = wo[k]);
-        zurueck.push(() => (eigen ? (wo[k] = alt) : delete wo[k]));
-        wo[k] = fn;
-    };
+    const haken = (name, wo, k, fn) => zurueck.push(((roh[name] = wo[k]), leihe(wo, { [k]: fn })));
     let c = null;
     const stapel = [];
     let imGang = 0;

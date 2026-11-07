@@ -365,14 +365,16 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
 - `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle` trennt die Leser der EINEN Liste: `"fest"`
   (die Kollision), `"sicht"` (das Fernbild des Welt-March — höchstens 24 Teile je Liste, die Kosten-Grenze: je Pixel
   läuft der March über alle Teile seines Eintrags), `"wurf"` (nur die NUR-WURF-Stufe: ihr Gitter ist die GANZE Liste, der
-  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer) oder `"beide"` (fest und sicht).
+  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer), `"beide"` (fest und sicht) oder
+  `"strahl"` (der Leib, an dem nur der Strahl hält: das Geländer der Treppe — die Kamera-Kugel und der Hieb stoßen an ihn,
+  die Kapsel des Gangs liest `fest`; ohne Farbe, leib.K4 Staffel 2).
 - **EINE Quelle je Gesetzbuch:** die reine Kern-Funktion `huelle(rezeptId, seed, ov)` (fachwerk: der grundriss-treue
   Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform, das Tor aus `buildGate`, das sie im selben Lauf wie
   seine Meshes sammelt); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
   `__fern`, und ihr Gitter IST diese Liste. Die Kollision (`__huelle`, Welle L) trägt dieselbe Form (rolle `fest`).
 - **EIN Transport:** die Beipack-Karte der Foundry-Antwort (`FOUNDRY_BEIPACK`: `__huelle` → `huelle`, `__fern` → `fern`
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
-  (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
+  (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`; rolle `strahl` liest der Strahl, `_strahlBoxenVon`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
 - **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
   (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
