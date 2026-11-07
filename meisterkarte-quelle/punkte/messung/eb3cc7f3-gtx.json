@@ -1,7 +1,7 @@
 {
  "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
  "geraet": "gtx",
- "zeit": "2026-11-07T09:35:16.495Z",
+ "zeit": "2026-11-07T09:40:28.252Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -55,6 +55,35 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 44.5,
+   "zeit": "2026-11-07T09:40:28.252Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Gehen 49 Bilder · max 449.91 ms · 61.22 % > 33 ms · Fahrt 56 Bilder · max 133.35 ms · 78.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 1 Bild(er) > 100 ms (max 449.91), 61.22 % > 33 ms | Fahrt: 3 Bild(er) > 100 ms (max 133.35), 78.57 % > 33 ms",
+   "gpu": "nvidia/pascal",
+   "s": 44.5,
+   "zeit": "2026-11-07T09:40:28.252Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -103,79 +132,38 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T09:30:03.585Z",
+  "start": "2026-11-07T09:40:19.721Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 8.6,
-  "grundstellungS": [
-   0.1,
-   6.9
-  ],
-  "proben": 6,
+  "warten": 0.02,
+  "bootS": 7.1,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
-  "orte": [
+  "orte": [],
+  "wegeTueren": [],
+  "haenger": [
    {
-    "ort": "wiese",
-    "vor": "vegetation.K1#1",
-    "s": 29.8,
-    "takte": 777,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 1,
-    "takte": 74,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 22,
-    "takte": 790,
-    "chunks": 81,
-    "nach": "der Tür"
+    "probe": "profiband.K4#1",
+    "zurueck": 10
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 7,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 2,
-   "marken": 0,
+   "bilder": 209,
+   "frameP95": 66.65,
+   "taktP95": 59.7,
+   "vramMax": 148,
+   "seiten": 1,
+   "marken": 1,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K3#1",
-     "m": 5578,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "wetter.K2#2",
-     "m": 5578,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 1215,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 305,
-   "luecken": 4,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 45,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 357.5,
-  "minuten": 6.01
+  "fahrtS": 52.1,
+  "minuten": 0.95
  }
 }
