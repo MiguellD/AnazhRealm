@@ -5561,6 +5561,9 @@ const stationen = [
     // dem Deckel 45 s und über der ausnahme 90 s: jeder Lauf war UNGEMESSEN am Deckel. Jetzt fährt derselbe Lauf der Linse in Teil-
     // Proben je ≤ 45 s (`teile`, punkte.cjs fahreGruppe; die Naht `window.sleep` in proben-welt.cjs `fahrWegenetz`): EIN Lauf, EINE
     // Zeile, dasselbe Urteil über die ganze Route; reichen die Teile nicht, nennt der letzte die Frist (UNGEMESSEN beim Namen).
+    // Headless an w19-fahrt-ziel-2 a67ca702 (swiftshader, die Sitzung der Maschine je frisch gebootet, der Läufer `fahreStation`):
+    // vorher EINE Probe — Deckel 45 s gerissen, UNGEMESSEN; nachher 2 Teile 38,1 + 18,4 s und 38,0 + 20,1 s, GRÜN (Route 2440 m,
+    // 0 Steckenbleiber, 89,3 % von 12 948 Sim-Schritten über 0,8 · Bezug). `teile` 6 trägt ~6 × 37 s Seite: die GTX (~127 s) in 4.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
