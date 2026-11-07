@@ -60,6 +60,14 @@ class AnazhRealm_bild_schatten {
     // Blicks. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 Schritte zu 1,5 cm seitwärts, je Schritt die Aufnahme samt
     // Messung; die Linse diag-kamera-laub `--teile unten`, K7): der gelesene Boden +15,4 % → ±0,08 %, der Ton der Unterseite
     // +1,03 % → ±0,05 % — ohne Sonnen-Flecken; im Wald unter der Sonne ist der Boden ein Teppich aus Licht und Schatten.
+    // DIE FLÄCHE, NIE DIE KANTE (w21-laub-unten, Nacharbeit; gate:tag-achse:echt, GTX, Zug e663a6ce: SPRUNG wiese 0,274 → 0,276
+    // 0,11 EV, die Kurve der Wiese dort 1,3 EV unter main): die Normale aus der Tiefe ist an einem Sprung der Tiefe Zufall — an der
+    // Wiese nannte das Gesetz die Kanten der Halme Boden, swiftshader kienspan mittags 15 874 Kanten- gegen 249 Flächen-Pixel (Luma
+    // 0,46 gegen 0,34): ihr Licht hängt an der Sonne über die Seite des Halms und am Blick, nie am Boden, und das Raster von 12² las
+    // davon zufällig wenige. Boden ist nur, wo der Schritt zum Nachbarn vorwärts und rückwärts derselbe ist (`ebenRel`). Gemessen
+    // (dieselbe Welt, kienspan): die Wiese misst 39 Proben statt ~2 700, ihr Boden steigt am Morgen je 0,002 Uhr stetig um 12–13 %
+    // mit dem Licht und liegt dort am Boden der Atmosphäre (Luma 0,023 gegen 0,024); die Ankunft, 8 × 1,5 cm seitwärts: Boden
+    // −0,16 … +0,04 %, Ton der Unterseite −0,05 … +0,03 %.
     // Ein Ziel (Kacheln + 1) × Zeilen: die Kacheln, dazu je Zeile ein Texel mit dem Boden der Atmosphäre (die PMREM-Umgebung
     // nach unten in der Stufe der Bestrahlung × das Licht jetzt). ZWEI ZAHLEN, KEINE KARTE: die Lesung kommt
     // zurück (`_rueckstrahlZeichne`) und trägt `boden` (gefolgt mit `folge` je Messung — ohne Boden im Bild hält er) und
@@ -140,18 +148,26 @@ class AnazhRealm_bild_schatten {
             const imBild = kachel.x.lessThan(KX);
             If(imBild, () => {
                 Loop(R.dichte, R.dichte, ({ i, j }) => {
+                    // die Probe und ihre vier Nachbarn liegen im Bild (1 … Breite − 2)
                     const px = ivec2(
                         kachel
                             .mul(R.dichte)
                             .add(vec2(float(i), float(j)))
                             .add(0.5)
                             .div(vec2(KX * R.dichte, KY * R.dichte))
-                            .mul(gr.sub(2))
+                            .mul(gr.sub(3))
+                            .add(1)
                     );
                     const p = welt(px).toVar();
                     If(p.w.lessThan(0.99999), () => {
                         const ax = welt(px.add(ivec2(1, 0))).xyz.sub(p.xyz);
                         const ay = welt(px.add(ivec2(0, 1))).xyz.sub(p.xyz);
+                        const bx = p.xyz.sub(welt(px.sub(ivec2(1, 0))).xyz);
+                        const by = p.xyz.sub(welt(px.sub(ivec2(0, 1))).xyz);
+                        // DIE FLÄCHE, NIE DIE KANTE: der Schritt zum Nachbarn vorwärts und rückwärts ist derselbe (bis `ebenRel`),
+                        // sonst liegt die Probe an einem Sprung der Tiefe — dort ist die Normale aus der Tiefe Zufall
+                        const eben = (a, b) =>
+                            a.sub(b).length().lessThanEqual(T.min(a.length(), b.length()).mul(R.ebenRel));
                         const nY = abs(normalize(cross(ax, ay)).y);
                         const rel = p.xyz.sub(U.auge);
                         // Boden ist nur, was unter dem offenen Himmel liegt (`_offenerHimmel`): der Boden eines Hauses ist kein
@@ -161,6 +177,8 @@ class AnazhRealm_bild_schatten {
                                 .lessThan(-R.unterAugeM)
                                 .and(rel.xz.length().lessThan(R.umkreisM))
                                 .and(nY.greaterThan(R.normalY))
+                                .and(eben(ax, bx))
+                                .and(eben(ay, by))
                                 .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
                             () => {
                                 summe.addAssign(farbe.load(px).rgb);
@@ -1599,13 +1617,15 @@ AnazhRealm.KONTAKT = Object.freeze({
 });
 // DER RÜCKSTRAHL DES BODENS (schatten.K4, `_rueckstrahlPass`): das Bild in `kacheln` [x, y] Kacheln zu je `dichte`² Proben (das
 // Mittel des gezeichneten Bodens, nie eine Stichprobe: w21-laub-unten — 12² Pixel waren der Stand davor, [1, 1] × 12); Boden ist,
-// was `unterAugeM` unter dem Auge und im `umkreisM` liegt und waagrecht ist (|n.y| > `normalY`); der Messwert folgt je Bild mit `folge`.
+// was `unterAugeM` unter dem Auge und im `umkreisM` liegt, waagrecht ist (|n.y| > `normalY`) und eine Fläche (die Schritte zu den
+// Nachbarn vorwärts und rückwärts weichen um höchstens `ebenRel` des kürzeren ab, sonst eine Kante); der Messwert folgt je Bild mit `folge`.
 AnazhRealm.RUECKSTRAHL = Object.freeze({
     kacheln: Object.freeze([32, 18]),
     dichte: 8,
     unterAugeM: 0.5,
     umkreisM: 16,
     normalY: 0.7,
+    ebenRel: 0.5,
     folge: 0.5,
 });
 // DER WURF DES FEUERS (schatten.K5, `_lichtWurf` · `_lichtWurfTakt`): EIN Platz des Licht-Pools wirft — die Würfel-Karte je

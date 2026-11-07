@@ -157,7 +157,7 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // ganz, den gemessenen Boden des Rückstrahls (`_rueckstrahlHalbraum`). Der Pass las ihn an 12² Pixeln fest am Schirm, neu bei jedem Schritt
 // über 1 cm: die Stichprobe wanderte über die ruhende Welt, ihr Mittel sprang. Je Bild des Gangs liest die Linse den Boden (Luma); sein
 // größter Sprung von Bild zu Bild steht im Stand unter `bodenMax`, im Schmuggel (`aus`: dazu das Raster von vor w21-laub-unten, Kacheln
-// [1, 1] × 12²) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
+// [1, 1] × 12², ohne die Ebenheit `ebenRel`) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
 // der Boden +15,4 % → ±0,08 %, der Ton der Unterseite +1,03 % → ±0,05 %.
 const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
@@ -287,9 +287,9 @@ async function leibStrafe(k) {
     const [out, RS] = [{ traa: true, an: [], aus: [], boden: { an: 0, aus: 0 } }, AnazhRealm.RUECKSTRAHL];
     for (const stand of ["an", "aus"])
         for (const seite of ["KeyA", "KeyD"]) {
-            // der Schmuggel trägt dazu das Raster von vor w21-laub-unten: der Pass baut neu mit dem Gesetz, das gilt (sein Ziel bleibt,
-            // die Lesung nimmt die erste Kachel und den Texel daneben)
-            if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12 }), (st.rueckstrahlPass = null);
+            // der Schmuggel trägt dazu das Raster von vor w21-laub-unten, ohne die Ebenheit: der Pass baut neu mit dem Gesetz, das gilt
+            // (sein Ziel bleibt, die Lesung nimmt die erste Kachel und den Texel daneben)
+            if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
             for (let j = 0; j < k.je; j++) {
