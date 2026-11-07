@@ -530,6 +530,10 @@ class AnazhRealm_daten {
     // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
     // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
+    // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
+    // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
+    // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
+    // Bis dahin (b0c18788) trug die Anzahl der Büschel die Blattfläche: 4 567 statt 1 168 im Blick, an der GTX stand die Welt nicht.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
