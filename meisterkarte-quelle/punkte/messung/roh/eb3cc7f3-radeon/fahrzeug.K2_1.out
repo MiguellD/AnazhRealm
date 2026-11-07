@@ -118,6 +118,8 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     if (v.length) process.exitCode = 1;
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\eb3cc7f3-radeon\fahrzeug.K2_1.json
 [linse-gpu] amd/rdna-3
+  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — TypeError: Cannot read properties of undefined (reading 'x') · 32.6 s in der Welt der Sitzung
+WEGENETZ undefined
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

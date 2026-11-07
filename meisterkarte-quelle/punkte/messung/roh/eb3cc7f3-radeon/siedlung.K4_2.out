@@ -26,7 +26,7 @@ teil BILD $W bild $K --uhr 0.5 --datei "$L/ring.png" --w 1600 --h 900
 cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 @@PUNKTE@@ ORT
 {
- "ms": 25,
+ "ms": 12,
  "ergebnis": {
   "S": {
    "x": 400.0000000000001,
@@ -43,7 +43,7 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
 
 @@PUNKTE@@ VOR
 {
- "ms": 125,
+ "ms": 50,
  "ergebnis": {
   "k": "d:7@400,693",
   "groesse": "dorf",
@@ -62,6 +62,58 @@ cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
  }
 }
 
+@@PUNKTE@@ UHR
+{
+ "ms": 2,
+ "ergebnis": {
+  "kern": true,
+  "jahr": 1412,
+  "haeuser": 12,
+  "uhr": 1535.4850099999744
+ }
+}
+
+@@PUNKTE@@ STAND
+{
+ "ms": 3,
+ "ergebnis": {
+  "jahr": [
+   1412,
+   1724
+  ],
+  "haeuser": [
+   12,
+   19
+  ],
+  "slots": 20,
+  "bleiben": 0.917,
+  "ring": {
+   "neu": 8,
+   "zumHaus": 22,
+   "zumOrt": 59
+  },
+  "offen": 0
+ }
+}
+
+@@PUNKTE@@ KAMERA
+{
+ "ms": 3,
+ "ergebnis": {
+  "pose": [
+   446.82,
+   49.75,
+   457.43,
+   405.77,
+   40.34,
+   663.79
+  ],
+  "d": 210,
+  "hoeher": 11.7
+ }
+}
+
+@@PUNKTE@@ BILD
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
