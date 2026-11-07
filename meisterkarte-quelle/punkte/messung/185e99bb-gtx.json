@@ -1,0 +1,66 @@
+{
+ "sha": "185e99bb0eaeabefa236bd7d520cb92c2bd559c7",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T17:14:19.806Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.76 m · Luma 108.6 σ 36.8 schwarz 0.0 % weiß 0.0 % ",
+   "exit": 0,
+   "minuten": 1.1,
+   "gpu": "nvidia/pascal",
+   "s": 66.2,
+   "zeit": "2026-11-07T17:14:19.806Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:13:51.681Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 20,
+    "takte": 683,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 91,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 93.5,
+  "minuten": 1.62
+ }
+}
