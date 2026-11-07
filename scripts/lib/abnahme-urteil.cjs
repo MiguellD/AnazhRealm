@@ -289,6 +289,8 @@ function abnahmeSelbsttest(fixtureDir) {
             "sicht.vordergrund.deckung",
             "Vordergrund 36.0 % näher als 3.1 m (der halbe Ziel-Abstand): Gelände 33.0 %",
         ],
+        // ohne die Tiefe des Schusses (kamera-nah `o.ziel.tiefe`) ist `frei` ungemessen: kein Bild, kein Urteil über das Ziel
+        ["Ziel ohne Bild", (m) => (m.ziel.frei = null), "ziel.frei", "ziel.frei ungemessen"],
         [
             "Ziel außerhalb",
             (m) => Object.assign(m.ziel, { imBild: false, ndc: [1.4, 0.2] }),

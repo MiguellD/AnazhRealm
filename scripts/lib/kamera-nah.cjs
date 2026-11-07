@@ -113,12 +113,10 @@ function nahDeckungInSeite(o) {
         if (e && r._istNatur(e)) return { klasse: "Fels", name: "Natur " + e.type };
         return { klasse: "Bau", name: (e && e.type) || nm || r._taeterKlasse(obj) };
     };
-    const zaehlt = (obj) =>
-        window.__kameraZeichnet(obj, st.camera) &&
-        !obj.isSkinnedMesh &&
-        obj.name !== "himmel" &&
-        !obj.userData.isHydrosphere &&
-        !unter(obj, player);
+    // was die Kamera zeigt (Leiber mit) und was die Linse zählt (ohne Leiber)
+    const zeigt = (obj) =>
+        window.__kameraZeichnet(obj, st.camera) && obj.name !== "himmel" && !obj.userData.isHydrosphere && !unter(obj, player);
+    const zaehlt = (obj) => zeigt(obj) && !obj.isSkinnedMesh;
     const TAETER = {};
     for (const [k, v] of Object.entries(R)) if (v > 0) TAETER[k] = v;
     // die Stoffe der wiegenden Nah-Streu: ihr Schlüssel im Stoff-Speicher des Stamms trägt das Glied „|wiegt", wo auch immer —
@@ -484,16 +482,25 @@ function nahDeckungInSeite(o) {
                 if (m >= 1) break;
             }
         }
-    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, punkte }): liegt es im Bild (Projektion der
-    // Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und verdeckt es nichts? Der Strahl Auge → Ziel fragt jede gezeichnete
-    // Fläche bis `saum` (0,5 m) vor dem Ziel — Laub · Rinde · Fels · Bau · Gelände · Wagen, nie die Nah-Streu (Gras und Blumen
-    // sind die Boden-Schicht) und nie das Ziel selbst (`o.ohne`); Blatt-Karten mit dem Alpha ihres Atlas, Flächen mit der
-    // Durchsicht der Kamera mit dem Gewicht der EINEN Formel (verdeckt ab 0,5). Der erste Verdecker steht beim Namen.
-    // Ein Ziel aus mehreren Leibern (die Herde, tiere.K1) oder mit Fuß nennt seine `punkte` ([x, y, z]): jeder liegt im Bild
-    // und frei, sonst ist das Ziel verdeckt — die Mitte einer Herde zwischen Stämmen sagt nichts über ihre Glieder. ──
+    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum, r, punkte, tiefe }): liegt es im Bild
+    // (Projektion der Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und zeigt das BILD es? Die EINE Quelle ist die Tiefe der
+    // Aufnahme (`o.ziel.tiefe`, `__spiegelDaten`): je Punkt die Fläche W, die das Bild an seinem Pixel zeigt. Verdeckt ist der Punkt,
+    // wenn W mehr als `saum` (0,5 m) vor ihm liegt und weder dem Ziel gehört (`o.ohne`, oder näher als `r`, 1,5 m, am Punkt) noch
+    // die Boden-Schicht seiner fernen Hälfte ist; der Verdecker heißt nach der kleinsten gezeichneten Hülle, die W trägt. Ohne Tiefe
+    // ist `frei` ungemessen — die Abnahme ist dann ROT. Ein Ziel aus mehreren Leibern (die Herde, tiere.K1) oder mit Fuß nennt
+    // seine `punkte` ([x, y, z]): jeder liegt im Bild und frei, sonst ist das Ziel verdeckt.
+    // BIS w18-abnahme-sicht urteilte ein Strahl Auge → Ziel über die Dreiecke, die die CPU hält, ohne die Nah-Streu. Die Karten der
+    // Fern-Stufe (`fimp:<art>:L2`) spannt erst der Vertex-Shader zur Fläche (die CPU hält ihren Fuß und eine Einheits-Linie, Hülle
+    // 0,9 m, im Bild 3 m hoch) — der Strahl sah durch jede hindurch: siedlung.K4#2 Radeon f3911ab9 „Ziel Blickziel im Bild frei
+    // 210,41 m“, das Bild zeigte am Ziel-Pixel die Karte einer Erle in 33,31 m, Wald. Eine solche LINIE trägt W, wo W senkrecht
+    // über ihrem Fuß steht.
+    // DIE BODEN-SCHICHT (Halme der Nah-Wiese, die wiegende Streu: Farn, Gestrüpp, Schilf, Blume) verdeckt näher als der halbe
+    // Ziel-Abstand (wie der Vordergrund der Abnahme); in der fernen Hälfte ist sie der Boden, auf dem das Ziel steht
+    // (vegetation.K1#1 Wiese: der Blick-Punkt im Gras in 14,76 m, das Bild zeigt an ihm Halme in 12,62 m).
     let zielOut = null;
     if (o.ziel) {
         const Z = o.ziel;
+        const S = Z.tiefe;
         const punkte = [[Z.x, Z.y, Z.z]].concat(Z.punkte || []);
         const zv = new T.Vector3(Z.x, Z.y, Z.z).project(cam);
         const imBild = punkte.every(([x, y, z]) => {
@@ -502,62 +509,46 @@ function nahDeckungInSeite(o) {
             v.project(cam);
             return vorn && Math.abs(v.x) <= 0.95 && Math.abs(v.y) <= 0.95;
         });
-        // DIE LINIE Auge → Punkt bis `saum` davor: der erste Verdecker und sein Abstand
-        const linie = (px, py, pz, saum) => {
-            const zx = px - ex,
-                zy = py - ey,
-                zz = pz - ez;
-            const L = Math.hypot(zx, zy, zz) || 1e-6;
-            const ux = zx / L,
-                uy = zy / L,
-                uz = zz / L;
-            const bis = Math.max(0, L - saum);
-            // die Hülle einer Instanz schneidet die Strecke [0, bis]
-            const amStrahl = (s) => {
-                const cx = s.center.x - ex,
-                    cy = s.center.y - ey,
-                    cz = s.center.z - ez;
-                const t = Math.max(0, Math.min(bis, cx * ux + cy * uy + cz * uz));
-                return (cx - ux * t) ** 2 + (cy - uy * t) ** 2 + (cz - uz * t) ** 2 <= s.radius * s.radius;
-            };
-            let vor = null;
-            let vorD = Infinity;
-            const pruefe = (a, b, c, uvs, me) => {
-                if (me.k.klasse === "Streu") return;
-                const d = schnitt(ux, uy, uz, a.x, a.y, a.z, b.x - a.x, b.y - a.y, b.z - a.z, c.x - a.x, c.y - a.y, c.z - a.z);
-                if (!(d > near && d < bis && d < vorD)) return;
-                const { u, v } = UV;
-                if (me.karte && uvs) {
-                    const w0 = 1 - u - v;
-                    if (atlasA(w0 * uvs[0] + u * uvs[2] + v * uvs[4], w0 * uvs[1] + u * uvs[3] + v * uvs[5]) < me.cut)
-                        return;
-                }
-                const ma = maskeArt(me);
-                if (
-                    ma &&
-                    gewicht({ x: ex + ux * d, y: ey + uy * d, z: ez + uz * d }, ma === "fremd" ? me.art : ma) < 0.5
-                )
-                    return;
-                vorD = d;
-                vor = me.k.name;
-            };
+        // je Punkt: der Abstand d der gezeigten Fläche (null: der Himmel) und ihr Name, wenn sie ihn verdeckt
+        const sieht = ([x, y, z]) => {
+            const P = new T.Vector3(x, y, z);
+            const v = P.clone().applyMatrix4(new T.Matrix4().fromArray(S.vp));
+            // außerhalb des Bilds liest der Index ein fremdes Pixel — dann ist `imBild` schon ROT
+            const [ix, iy] = [Math.floor(((v.x + 1) / 2) * S.tw), Math.floor(((1 - v.y) / 2) * S.th)];
+            const t = S.tiefe[iy * S.tw + ix];
+            if (!(t < 0.99999)) return { d: null };
+            const W = new T.Vector3((2 * ix + 1) / S.tw - 1, 1 - (2 * iy + 1) / S.th, t).applyMatrix4(new T.Matrix4().fromArray(S.ivp));
+            const [d, L] = [W, P].map((q) => q.distanceTo(new T.Vector3().fromArray(S.auge)));
+            if (d >= L - (Z.saum ?? 0.5) || W.distanceTo(P) <= (Z.r ?? 1.5)) return { d };
+            let best = null;
+            const traegt = (s) => Math.hypot(s.center.x - W.x, s.center.z - W.z) <= s.radius + 0.25 && W.y >= s.center.y - s.radius - 0.25;
+            const nimm = (s, obj, e, linie) => (linie || s.center.distanceTo(W) <= s.radius + 0.25) && !(best && best.rad <= s.radius) && (best = { rad: s.radius, obj, e }); // prettier-ignore
             st.scene.traverseVisible((obj) => {
-                if (!zaehlt(obj)) return;
-                jeInstanz(obj, amStrahl, (ob, i) => legeDreiecke(ob, i, () => true, pruefe, amStrahl));
+                if (!zeigt(obj)) return;
+                const satz = satzVon.get(obj);
+                const g = obj.geometry;
+                const linie = (g.boundingBox || (g.computeBoundingBox(), g.boundingBox)).getSize(new T.Vector3()).toArray().filter((q) => q < 1e-6).length > 1;
+                if (!satz) return jeInstanz(obj, traegt, (ob, i) => nimm(bs, ob, eintragVon(ob, i), linie));
+                for (const b of satz.bloecke.values())
+                    b.zellen.forEach((zl, j) => traegt(zl.huelle.getBoundingSphere(zs)) && nimm(zs, obj, st.archInstanceGroups.get(b.key)?.slotEntry?.[j]));
             });
-            return { vor, vorD, L };
+            if (best && best.e && OHNE.has(best.e.id)) return { d };
+            const mat = best && (Array.isArray(best.obj.material) ? best.obj.material[0] : best.obj.material);
+            const kl = !best ? { name: "unbenannte Fläche" } : (!best.obj.isSkinnedMesh && klasseVon(best.obj, mat, best.e)) || { name: r._taeterKlasse(best.obj) };
+            return { d, vor: kl.klasse === "Streu" && d >= L / 2 ? null : kl.name };
         };
-        const saum = Z.saum != null ? Z.saum : 0.5;
-        const linien = punkte.map(([x, y, z]) => linie(x, y, z, saum));
-        const i = linien.findIndex((l) => l.vor != null);
+        const blick = S ? punkte.map(sieht) : [];
+        const i = blick.findIndex((b) => b.vor);
         zielOut = {
             name: Z.name || "Ziel",
             imBild,
             ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
-            frei: i < 0,
-            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + linien[i].vor,
-            vorAbstand: i < 0 ? null : +linien[i].vorD.toFixed(2),
-            abstand: +linien[0].L.toFixed(2),
+            frei: S ? i < 0 : null,
+            vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
+            vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            abstand: +Math.hypot(Z.x - ex, Z.y - ey, Z.z - ez).toFixed(2),
+            // der Abstand der Fläche, die das Bild am Ziel-Pixel zeigt (null: der Himmel oder keine Tiefe)
+            bildAbstand: S && blick[0].d != null ? +blick[0].d.toFixed(2) : null,
         };
     }
     const N = gw * gh;

@@ -32,8 +32,10 @@
 const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
-// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
-// zum Punkt 2 m unter dem Boden 60 m hinter dem gezeichneten Blick das Gelände, das der Satz-Abschnitt des Passes nicht trägt
+// (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass blickt die Kamera ohne Pass zum Punkt 2 m unter dem Boden 60 m
+// hinter dem gezeichneten Blick, und der Strahl der Nah-Deckung (scripts/lib/kamera-nah.cjs, die Blick-Wahl fragt so vor jedem Bild)
+// nennt das Gelände, das der Satz-Abschnitt des Passes nicht trägt. Bis w18-abnahme-sicht fragte die Linie zum Ziel — das Ziel
+// urteilt seitdem die Tiefe des Bilds
 const urteil = (b) =>
     STAND.standUrteil(b).concat(
         b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`
@@ -1319,7 +1321,10 @@ const BRANDLAUF = process.argv.includes("--brand");
                 const h = st.camera.getWorldDirection(K.clone()).multiplyScalar(-60).add(K);
                 r._passSicht(st.camera, false);
                 r._passSicht(st.camera, true);
-                aus.sonde = window.__nahDeckung({ gw: 1, gh: 1, ziel: h.setY(r._voxelSurfaceY(h.x, h.z) - 2) }).ziel;
+                const q = st.camera.quaternion.clone();
+                st.camera.lookAt(h.setY(r._voxelSurfaceY(h.x, h.z) - 2));
+                aus.sonde = { vor: Object.keys(window.__nahDeckung({ radien: { Gelände: 60 }, gw: 1, gh: 1, neu: true }).taeter)[0] };
+                st.camera.quaternion.copy(q);
                 K.x += 40;
                 aus.fixWach = aus.fixWach || (stand && r._weltSteht() && "Sprung");
                 K.x -= 40;

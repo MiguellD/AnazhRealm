@@ -665,7 +665,7 @@ function abnahmeMessen(opt) {
                   ort: { id: "abnahme", x: E.x, z: E.z, r: RADIUS + 2 },
                   neu: true,
                   ohne,
-                  ziel: z ? { ...z, punkte: punkte(z) } : null,
+                  ziel: z ? { ...z, punkte: punkte(z), tiefe: o.tiefe || null } : null,
               });
     // DER VORDERGRUND: mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
     // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
@@ -742,6 +742,9 @@ function nahFolgt() {
 // Einschwingen zahlt); was schon im Augenblick verdeckt ist, fällt ohne Warten. Bis dahin urteilte sie in der Welt der vorigen Pose:
 // siedlung.K4#2 wählte Pose 6, 160 m neben dem Spieler auf dem Hügel, frei, der Welt dort fehlten noch 130 Takte bis zum Stehen, und
 // der zweite Schuss fand die Tanne, die sie dann warf (Radeon fe57747a: „Blickziel verdeckt von Rinde baum_tanne in 13.35 m“).
+// DAS BILD DER POSE (w18-abnahme-sicht): ob die Pose das Ziel zeigt, sagt ein Bild der Tiefe an ihr (`__bildTiefe`), geurteilt wie der
+// Schuss (kamera-nah `o.ziel.tiefe`) — erst im Augenblick, dann in ihrer Welt. Bis dahin urteilte ein Strahl über die Dreiecke der
+// CPU: siedlung.K4#2 Radeon f3911ab9 Pose 6 im Wald, „frei 210,41 m“, am Ziel-Pixel zeigte das Bild die Karte einer Erle in 33,31 m.
 async function blickWahl(opt) {
     const cam = st.camera;
     const z = opt.ziel;
@@ -754,7 +757,6 @@ async function blickWahl(opt) {
     const a0 = Math.atan2(P0.z - z.z, P0.x - z.x);
     const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
     const posen = [];
-    let beste = null;
     for (let k = 0; k < n; k++) {
         const ring = Math.floor(k / winkel.length);
         const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
@@ -767,21 +769,22 @@ async function blickWahl(opt) {
         cam.lookAt(z.x, z.y, z.z + 1e-4);
         cam.updateMatrixWorld(true);
         let m;
-        const urteil = () => window.__abnahmeUrteil((m = window.__abnahmeMessen(opt))).rot.filter((q) => !q.feld.startsWith("bild."));
+        const urteil = (tiefe) =>
+            window.__abnahmeUrteil((m = window.__abnahmeMessen({ ...opt, tiefe }))).rot.filter((q) => !q.feld.startsWith("bild.") && (tiefe || q.feld !== "ziel.frei"));
         let rest = urteil();
+        if (!rest.length) rest = urteil(await window.__bildTiefe());
         if (!rest.length && window.__buehneUhr) {
             await window.__weltStehtWarten();
             window.__nahFolgt();
-            rest = urteil();
+            rest = urteil(await window.__bildTiefe());
         }
         posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
         if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
-        if (!beste || rest.length < beste.n) beste = { n: rest.length, k };
     }
     cam.position.copy(P0);
     cam.quaternion.copy(Q0);
     cam.updateMatrixWorld(true);
-    return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, posen };
+    return { versucht: posen.length, gewaehlt: null, posen };
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
@@ -810,8 +813,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
         // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
         // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
-        const abnahme = (u8, W2, H2) => {
-            const m = window.__abnahmeMessen(opt);
+        // DAS BILD AM ZIEL (w18-abnahme-sicht): die Abnahme liest die Tiefe DIESES Schusses (`__spiegelDaten`, der Szenen-Pass des
+        // gezählten Bilds) und fragt an jedem Ziel-Punkt, welche Fläche das Bild dort zeigt (kamera-nah `o.ziel.tiefe`)
+        const abnahme = async (u8, W2, H2) => {
+            const tiefe = opt?.ziel && opt.satz !== "messung" ? await window.__spiegelDaten() : null;
+            const m = window.__abnahmeMessen({ ...opt, tiefe });
             m.buehne.weltTakte = weltTakte; // so viele Takte wartete der Schuss, bis die Welt stand (A9)
             m.bild = window.__bildMasse(u8, W2, H2);
             if (wahl) m.wahl = wahl;
@@ -910,7 +916,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // die EINE Ziel-Lesung (welt-boot): das Polster der 256-Byte-Zeilen fällt dort
             const voll = await window.__zielLesen(rt, BW, BH);
             const ms = performance.now() - t0;
-            if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };
+            if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: await abnahme(voll, W, H) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
             for (let y = 0; y < H; y++) {
@@ -927,7 +933,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                     }
                 }
             }
-            return { u8, info, ms, abnahme: abnahme(u8, W, H) };
+            return { u8, info, ms, abnahme: await abnahme(u8, W, H) };
         } finally {
             window.__imSchuss = 0;
             rend.setOutputRenderTarget(prevOut);
@@ -1427,6 +1433,8 @@ module.exports = {
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
+        // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
+        `window.__bildTiefe = async () => (await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), window.__spiegelDaten());` +
         `(${seitenfehlerZaehlen})();` +
         `window.__erstRuhe = ${erstRuhe};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme};` +
