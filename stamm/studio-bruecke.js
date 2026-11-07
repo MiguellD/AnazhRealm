@@ -3021,9 +3021,20 @@ class AnazhRealm_studio_bruecke {
     // 05.10.: der Horizont-Schwund der Welle (eine Distanz-Blende 352–384 m in der Karten-Maske, für JEDE Karte des
     // Atlas) ließ jeden Baum, der im Band STAND, dauerhaft halb durchsichtig — am Grat der Mess-Wiese Geister, und die
     // ganze Streu dort mit. Die Streu hat ihren eigenen Rand (`_scatterRegion`, outerM ab dem Erzeugungs-Ort).
-    _archKartenHorizont(entry) {
+    // DER EINTRITT AM LAUB-RAND (w22-wald-geburt, lod.K2#1): ein Wurf des Felds (`feldWurf`: der Wald, sein Strauch-Teppich, sein
+    // Nachwuchs) entsteht, wo der Laub-Rand die Saat seines Chunks erreicht (`_foliageChunkInRadius`: die Mitte des Chunks) — sein
+    // Rand des EINTRITTS (`eintritt`, solange er ungezeichnet ist) liegt im Saum vor dem Laub-Rand (`_laubRand`), aus demselben
+    // Samen; gezeichnet hält er bis zu seinem Karten-Horizont. So tritt der Wald eines Chunks Karte um Karte ein, wie er am Horizont
+    // ausdünnt. Bis hierher trat jede Karte des Chunks bei der Saat zugleich ein, bis 30 m diesseits des Laub-Rands (die halbe
+    // Diagonale des Chunks): an der Mess-Wiese 16 Bäume als EIN Ring vor dem Himmel (Radeon, lod.K2#1 Schritt 7: 662 von 727
+    // Pop-Pixeln, Koordinator 07.11.).
+    _archKartenHorizont(entry, eintritt = false) {
         const u = this._pcg2d(entry.seed >>> 0, AnazhRealm.KARTEN_HORIZONT_SALZ) / 4294967296;
-        return AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M * u;
+        const R = AnazhRealm.SCATTER.outerM;
+        return (
+            (eintritt && entry.feldWurf === true ? Math.min(this._laubRand(), R) : R) -
+            AnazhRealm.KARTEN_HORIZONT_SAUM_M * u
+        );
     }
 
     // Foundry-Fit eines gesetzten Studio-Dings ohne Karte (Fels, Kristall): der Box-Satz (_archBoxFit) über eine

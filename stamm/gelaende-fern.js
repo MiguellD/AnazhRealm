@@ -1538,7 +1538,7 @@ class AnazhRealm_gelaende_fern {
         const pm = st.playerMesh;
         if (!k || !pm) return;
         const K = AnazhRealm.FERN_KRONE_NAH;
-        k.U.waldR.value = Number.isFinite(st.foliageRadius) ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        k.U.waldR.value = this._laubRand();
         k.U.spieler.value.set(pm.position.x, pm.position.z);
         const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
         const span = this._voxelChunkConfig().span;

@@ -289,7 +289,9 @@ hauptLauf(async () => {
             return h !== null && r._lodPerceptionDistance(d, h) >= LD.thresh12 + (LD.hysteresis || 0);
         };
         const partner = (e) => (Number.isFinite(e._lodBandLevel) ? e._lodBandLevel : null);
-        const rand = (e) => AR.prototype._archKartenHorizont.call(r, e);
+        // der Rand eines Karten-Dings: gezeichnet sein Karten-Horizont, ungezeichnet der Rand seines Eintritts (ein Wurf des Felds
+        // tritt im Saum vor dem Laub-Rand ein)
+        const rand = (e, ein) => AR.prototype._archKartenHorizont.call(r, e, ein);
         // A: der Zustand jedes Karten-Dings der Karten-Zone, Täter beim Namen.
         const formZensus = () => {
             const R = st.architectureCullingRadius;
@@ -299,7 +301,7 @@ hauptLauf(async () => {
                 riesen = 0;
             for (const e of karten()) {
                 const d = dist(e);
-                if (!(d > R && d <= rand(e))) continue;
+                if (!(d > R && d <= rand(e, !r._archIsRendered(e)))) continue;
                 n++;
                 const p = kartenPreset(e);
                 const karte = jenseitsBand(e, d);
@@ -344,6 +346,7 @@ hauptLauf(async () => {
             return t;
         };
         res.B = { taeter: absenz() };
+
         {
             const probe = karten().find((e) => dist(e) > st.architectureCullingRadius);
             const rend = st.renderer;
@@ -526,6 +529,42 @@ hauptLauf(async () => {
         }
         res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
+        // ── G: die Geburt am Laub-Rand — der Spieler geht ins Offene, je Schritt 1 m und 12 Takte; jedes Karten-Ding, das zum
+        // ersten Mal gezeichnet steht, nennt seinen Abstand. Ein Wurf des Felds im Saum vor dem Laub-Rand tritt erst an seinem
+        // Rand des Eintritts ein — nie ein Chunk als Ring bei seiner Saat. Der Abstand zählt vom Spieler, die Bahn darf um ihren
+        // Vorlauf (`_bedarfVoraus().weg`, das Maximum des Gangs) und den Schritt vorausgehen.
+        const geburt = async (dx, dz) => {
+            const gezeichnet = new Set(karten().filter((e) => r._archIsRendered(e)));
+            const [x0, z0, saum] = [pm.x, pm.z, AR.KARTEN_HORIZONT_SAUM_M];
+            const g = { rand: r._laubRand(), n: 0, ring: 0, weg: 0, taeter: [] };
+            for (let i = 1; i <= 40; i++) {
+                stelle(x0 + dx * i, z0 + dz * i);
+                for (let k = 0; k < 12; k++) (await tick(1), (g.weg = Math.max(g.weg, r._bedarfVoraus().weg)));
+                let neu = 0;
+                for (const e of karten()) {
+                    if (gezeichnet.has(e) || !r._archIsRendered(e)) continue;
+                    gezeichnet.add(e);
+                    const d = dist(e);
+                    if (e.feldWurf !== true || d < g.rand - saum - g.weg - 1) continue; // diesseits des Saums: kein Rand
+                    neu++;
+                    const h = rand(e, true);
+                    if (d > h + g.weg + 1 && g.taeter.length < 6)
+                        g.taeter.push(`${e.type} @ ${d.toFixed(0)} m (Rand des Eintritts ${h.toFixed(0)} m)`);
+                }
+                g.n += neu;
+                g.ring = Math.max(g.ring, neu);
+            }
+            g.weg = +g.weg.toFixed(1);
+            return g;
+        };
+        res.G = await geburt(1, 0);
+        // ── SELBSTTEST (6): der alte Eintritt — jede Karte tritt an ihrem Karten-Horizont ein, der Chunk zugleich bei seiner Saat ──
+        r._archKartenHorizont = function (e) {
+            return AR.prototype._archKartenHorizont.call(this, e, false);
+        };
+        res.S6 = await geburt(0, 1);
+        delete r._archKartenHorizont;
+
         // ── SELBSTTEST (1): der alte Weg — kein Karten-Ding: jenseits der Mesh-Zone geräumt ──
         stelle(MX, MZ);
         await einschwingen(120000);
@@ -681,6 +720,14 @@ hauptLauf(async () => {
         E.selbst === true,
         E.kachel ? "" : "keine Probe"
     );
+    // G: kein Wurf des Felds tritt jenseits seines Rands des Eintritts ein; nicht vakuös: der Gang trägt Eintritte im Saum
+    const G = out.G || { taeter: ["nicht gelaufen"] };
+    const gZeile = (g) =>
+        `Laub-Rand ${g.rand} m, 40 m Gang (Bahn ≤ ${g.weg} m voraus): ${g.n} Würfe des Felds treten im Saum ein, höchstens ${g.ring} je Schritt` +
+        (g.taeter.length ? ` · Täter: ${g.taeter.join(" | ")}` : "");
+    check("G GEBURT (die Karte tritt an ihrem Rand ein, kein Ring der Saat)", G.n >= 5 && G.taeter.length === 0, gZeile(G));
+    const S6 = out.S6 || { taeter: [] };
+    check("SELBSTTEST 6 (der Eintritt am Karten-Horizont macht G rot)", S6.taeter.length > 0, gZeile(S6));
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
     urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });

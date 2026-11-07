@@ -3238,17 +3238,17 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
         );
-        // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse kehrt in eine Kopie zurück und
-        // wird beim Namen genannt.
-        const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
+        // Die Linsen stehen in der Wand: ein toter Aufruf (`_weltSeiteDirty`, ihn rief die gefallene Fernwald-Bild-Linse) kehrt in
+        // eine Kopie der Stand-Linse zurück und wird beim Namen genannt.
+        const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]stand-linse\.cjs$/.test(f));
         const tmpLinse = path.join(require("os").tmpdir(), "altlasten-selftest-linse.cjs");
         let linsenFeuert = false;
         if (fernwald) {
             const quelle = ausDatei(fernwald);
-            const anker = "                    delete h.__fw;\n                }\n";
+            const anker = "            r._gameLoopTick(t);\n";
             fs.writeFileSync(
                 tmpLinse,
-                quelle.replace(anker, anker + "                r._weltSeiteDirty(wm, h.feld);\n")
+                quelle.replace(anker, anker + "            r._weltSeiteDirty(wm, h.feld);\n")
             );
             const t = scan([tmpLinse]);
             fs.unlinkSync(tmpLinse);
@@ -3265,7 +3265,7 @@ function main() {
             process.exit(1);
         }
         console.log(
-            `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
+            `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf in der Stand-Linse erkannt)`
         );
         // Die Stoff-Wand muss feuern: (1) JEDER laute Bruch des Stamms, wieder still gemacht
         // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,

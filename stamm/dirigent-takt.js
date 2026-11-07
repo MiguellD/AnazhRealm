@@ -1819,6 +1819,7 @@ class AnazhRealm_dirigent_takt {
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
         setze(st.architectureCullingRadius);
+        setze(this._laubRand()); // der Eintritt der Würfe des Felds (`_archKartenHorizont`) liegt vor ihm
         const f = this._foundry;
         setze(f ? f.ankunft | 0 : -1, true);
         // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die

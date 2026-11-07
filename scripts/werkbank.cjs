@@ -27,7 +27,6 @@
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
-//   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: jeder Geometrie-Puffer beim Halter nach GC
 //   node scripts/werkbank.cjs puffer --gang [min]          DER GANG (profiband K5): Heap ≤ 5 MB/min, VRAM ≤ 2 MB zurück
@@ -86,7 +85,6 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
-const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -901,7 +899,7 @@ async function starte() {
                 ).length;
         });
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
-        for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
+        for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
         // DIE SEITE IST GELADEN, WENN IHR ERSTES BILD DIE KETTE ENTSCHIED (w18-grund-post): die Post-Kette entsteht erst im ersten
         // gezeichneten Bild (`_ensurePostProcessing` in `_loopRender`), und `loopAus` hält die Welt danach still. Bis hier galt die Seite
@@ -3063,14 +3061,6 @@ async function starte() {
                     if (b.messung) o.messung = me;
                     return send(o);
                 }
-                if (req.url === "/fernwald")
-                    return send(
-                        await seite("__fernwaldLinse", {
-                            blicke: b.blicke ? String(b.blicke).split(",") : null,
-                            w: Number(b.w) || 1280,
-                            h: Number(b.h) || 720,
-                        })
-                    );
                 if (req.url === "/reload") {
                     await lade();
                     await loopAus();
@@ -3607,7 +3597,6 @@ hauptLauf(async () => {
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
     } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") && Number(opt("--uhr")) });
-    else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {
         o = await rufe("/gang", { min: opt("--gang") });
