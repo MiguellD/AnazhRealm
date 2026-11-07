@@ -1,0 +1,50 @@
+{
+ "quelle": "der Richter der Zug-Auswahl (scripts/lib/zug-auswahl.cjs --geschichte): die Züge z280–z297 auf integ-probe, je deterministisch roter Schritt sein Täter-Zweig (Beleg: Job-Log, koordination cloud-post/FUND-REGISTER, die Zweig-Mengen der Nachbar-Züge); Wackler beim Namen ausgenommen",
+ "zeiten_lauf": 42393703986,
+ "basis": "5fb21e29",
+ "zuege": [
+  { "z": 280, "kopf": "60e60d09" }, { "z": 281, "kopf": "45e260c3" }, { "z": 282, "kopf": "d41abf4f" }, { "z": 283, "kopf": "4428acb9" },
+  { "z": 284, "kopf": "8b1254bf" }, { "z": 285, "kopf": "a84ac312" }, { "z": 286, "kopf": "039509b2" }, { "z": 287, "kopf": "f69173b0" },
+  { "z": 288, "kopf": "eb3cc7f3" }, { "z": 289, "kopf": "e663a6ce" }, { "z": 290, "kopf": "dbf081c5" }, { "z": 291, "kopf": "d1ee37d2" },
+  { "z": 292, "kopf": "f773818c" }, { "z": 293, "kopf": "adcd2c00" }, { "z": 294, "kopf": "95ba6fd6" }, { "z": 295, "kopf": "ef5863a3" },
+  { "z": 296, "kopf": "185e99bb" }, { "z": 297, "kopf": "2f70c000" }
+ ],
+ "taeter": [
+  { "z": 287, "zweig": "w19-ankunft-takt", "schritt": "Erst-Zeichnungs-Wand Teil 1", "beleg": "2/2, FUND-REGISTER 07.11. 13:40 UPLOAD-BYTES" },
+  { "z": 287, "zweig": "w19-ankunft-takt", "schritt": "Takt-Wand", "beleg": "2/2 T9 die Kappen des Lade-Takts; z288 ohne ihn grün, seine z290-Fassung zieht diag-takt.cjs nach" },
+  { "z": 287, "zweig": "w19-ankunft-takt", "schritt": "Frost-Wand", "beleg": "2/2 S2 Seelenwechsel kompiliert nach; z288 ohne ihn grün" },
+  { "z": 290, "zweig": "w19-ankunft-takt", "schritt": "Erst-Zeichnungs-Wand Teil 1", "beleg": "3/4, FUND-REGISTER 07.11. 13:40" },
+  { "z": 288, "zweig": "w19-gang-hitch", "schritt": "Die Albedo nah gegen fern", "beleg": "3/3 Wald offen; z287 mit saum-lai ohne gang-hitch grün (UEBERGABE 07.11.)" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Voller Playtest", "beleg": "2/2, Täter-Matrix z289 (cloud-post w20-wald-kosten 14:00)" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Werk im Wasser", "beleg": "2/2, Täter-Matrix z289" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Die Klang-Linse", "beleg": "2/2, Täter-Matrix z289" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Die Kamera-Laub-Linse", "beleg": "2/2, Täter-Matrix z289" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Die Werkstatt-Weg-Linse", "beleg": "2/2, Täter-Matrix z289" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Prägung-Welt", "beleg": "2/2, Täter-Matrix z289" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Die Kreatur-Linse Teil 1", "beleg": "2/2, Täter-Matrix z289 (bewohner)" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Die Kreatur-Linse Teil 3", "beleg": "2/2, Täter-Matrix z289 (herde-zerfall)" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Satz-Wand", "beleg": "2/2, Täter-Matrix z289 (9 von 10 CPU-Wänden)" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "Fern-Ring", "beleg": "2/2 voll und echt, Täter-Matrix z289 GPU-Verdacht" },
+  { "z": 289, "zweig": "w20-wald-kosten-2", "schritt": "echt: Fern-Ring", "beleg": "2/2" },
+  { "z": 289, "zweig": "w19-gang-hitch", "schritt": "Die Kamera-Leib-Linse", "beleg": "2/2 K2 DER BAU STEHT NICHT, dem Weltbild fehlen Bäume — derselbe Bruch in z292 ohne wald-kosten" },
+  { "z": 289, "zweig": "w21-laub-unten", "schritt": "echt: Tag-Achse", "beleg": "2/2, Täter-Matrix z289 (cloud-post w21-laub-unten)" },
+  { "z": 292, "zweig": "w20-fern-hang", "schritt": "Pruefbuehne S0 im Bild", "beleg": "voll und echt, cloud-post w20-fern-hang 14:20/15:08" },
+  { "z": 292, "zweig": "w20-fern-hang", "schritt": "echt: Pruefbuehne S0", "beleg": "cloud-post w20-fern-hang" },
+  { "z": 292, "zweig": "w19-gang-hitch", "schritt": "Die Albedo nah gegen fern", "beleg": "cloud-post w19-gang-hitch 15:08" },
+  { "z": 292, "zweig": "w19-gang-hitch", "schritt": "Die Kamera-Leib-Linse", "beleg": "K2 DER BAU STEHT NICHT wie z289" },
+  { "z": 293, "zweig": "w19-gang-hitch", "schritt": "Die Albedo nah gegen fern", "beleg": "2/2, cloud-post w19-gang-hitch 15:08; z294 ohne ihn grün" },
+  { "z": 295, "zweig": "w21-leib-bau", "schritt": "Tier-Gang ohne Gleiten", "beleg": "2/2; z296 ohne ihn grün" },
+  { "z": 295, "zweig": "w21-leib-bau", "schritt": "echt: Kamera-Leib", "beleg": "2/2, cloud-post w21-leib-bau 18:05" },
+  { "z": 297, "zweig": "w20-lack-spiegel", "schritt": "Ego-Schatten", "beleg": "2/2 Stall im Bild-Weg; schmiede-heil ändert nur schmiede-core.js" }
+ ],
+ "wackler": [
+  { "schritt": "Die Ankunfts-Linse", "beleg": "z280 und z282 mit fremden Zweig-Mengen: ReferenceError tick in der Linse (main), geheilt von w18-ankunft-takte" },
+  { "schritt": "Stand-Takt", "beleg": "z281 und z282 mit fremden Zweig-Mengen; z279 lokal 2/2 grün" },
+  { "schritt": "Die Kreatur-Linse Teil 2", "beleg": "FUND-REGISTER 07.11. 05:55 (Mutante jaeger-faellt nicht trennscharf)" },
+  { "schritt": "Fenster-Wand", "beleg": "z285, z288, z295, z297 mit fremden Zweig-Mengen" },
+  { "schritt": "Ziel-Zensus", "beleg": "rot im gelandeten z294 (Versuch 1)" },
+  { "schritt": "Mehrspieler-Wand", "beleg": "rot im gelandeten z286 (Versuch 1)" },
+  { "schritt": "Die Fahr-Linse des Lebens", "beleg": "T4 am Steilhang gleich in z285 und z288 mit fremden Zweig-Mengen" },
+  { "schritt": "je Versuch einmal rot", "beleg": "jeder Schritt, der im Wiederholungs-Versuch desselben Kopfs grün stand" }
+ ]
+}

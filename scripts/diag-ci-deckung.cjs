@@ -1,7 +1,8 @@
 // diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI: jede Art, einen Schritt zu verlieren, zu vervielfachen oder stumm zu
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
 // (S) STUMM · (K) KLASSE · (E) ECHT · (T) WAAGE · (P) PLAYTEST · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen
-// Schritt, der Job nennt jeden roten), je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs
+// Schritt, der Job nennt jeden roten) · (Z) ZUG-AUSWAHL (sie lässt nie einen Schritt aus, dessen Karte eine Wirkung trägt), je
+// Regel an ihrer Funktion erklärt. check.yml trägt die Jobs
 // puls (je Push), kopf und voll (unter VOLL_WENN) und echt; ein weiterer Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
@@ -11,6 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber } = require("./l
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
+const zug = require("./lib/zug-auswahl.cjs");
 const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
 const DATEI = ".github/workflows/check.yml";
@@ -1150,7 +1152,8 @@ function selbsttest() {
         selbsttestPlaytest(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
-        selbsttestKopf()
+        selbsttestKopf(),
+        selbsttestAuswahl()
     );
 }
 
@@ -1499,6 +1502,94 @@ async function selbsttestZeiten() {
     console.log(`  ${gut ? "✅" : "❌"} Selbsttest „ein roter, nie gelandeter Lauf mit 723 s" → ${w}`);
     return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`]);
 }
+// (Z) DIE ZUG-AUSWAHL (scripts/lib/zug-auswahl.cjs): das ORAKEL liest jede Wirkung selbst gegen jede Karte (das Bit, der Text,
+// die Datei, der Ordner, das Fegen, das Laden) — trägt eine Karte eine Wirkung, steht ihr Schritt in der Wahl; `alle` wählt
+// alle; ein Schritt ohne Karte (nie gemessen, Messung rot) ist gewählt. Am Kopf urteilt es die echte Auswahl über den echten Diff
+// (Merge-Basis mit origin/main, sonst HEAD~1) und je Schritt sein erstes Glied als Wirkung.
+function traegt(x, w, karte) {
+    const flach = Object.keys(karte.glieder)
+        .sort()
+        .flatMap((r) => karte.glieder[r].map((k) => r + "\0" + k));
+    const i = (r, k) => flach.indexOf(r + "\0" + k);
+    const bit = (j) => j >= 0 && (Buffer.from(x.fn, "base64")[j >> 3] >> (j & 7)) & 1;
+    const g = w.glied || [];
+    return !!(
+        (w.glied && ((w.fn && bit(i(...g))) || (w.txt && x.txt.includes(i(...g))) || (w.jung && bit(i(g[0], "§"))))) ||
+        (w.laden && bit(i(w.laden, "§"))) ||
+        (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) ||
+        (w.fege && x.fege.includes(w.fege)) ||
+        (w.verz && x.verz.includes(w.verz))
+    );
+}
+function auswahlUrteil(namen, karte, W, wahl = zug.waehle) {
+    const { gewaehlt } = wahl(namen, karte, W);
+    const alle = W.find((w) => w.alle);
+    const v = [];
+    for (const n of namen.filter((m) => !gewaehlt.has(m))) {
+        const x = karte.schritte[n];
+        const w = !alle && x && x.gruen && W.find((y) => traegt(x, y, karte));
+        if (alle) v.push(`(Z) ALLE (${alle.alle}): „${n}" fehlt in der Wahl`);
+        else if (!x || !x.gruen) v.push(`(Z) OHNE KARTE: „${n}" fehlt in der Wahl`);
+        else if (w) v.push(`(Z) AUSGELASSEN: „${n}" trägt ${JSON.stringify(w)} in seiner Karte`);
+    }
+    return v;
+}
+function zugUrteil(namen, karte) {
+    const v = [];
+    const idx = zug.karteIndex(karte);
+    // je Schritt sein erstes ausgeführtes Glied als Wirkung — die Wahl muss ihn tragen
+    for (const n of namen) {
+        const x = karte.schritte[n];
+        if (!x || !x.gruen) continue;
+        const ein = [...idx].flatMap(([r, m]) => [...m].map(([k, i]) => [r, k, i])).find(([, , i]) => zug.bits.hat(x.fn, i));
+        if (ein) v.push(...auswahlUrteil(namen, karte, [{ glied: ein.slice(0, 2), fn: true, txt: false, jung: false }]));
+    }
+    const git = (a) => require("child_process").spawnSync("git", a, { cwd: root, encoding: "utf8" });
+    const basis = git(["merge-base", "HEAD", "origin/main"]).stdout.trim() || "HEAD~1";
+    const W = zug.wirkungen(basis, "HEAD", karte);
+    v.push(...auswahlUrteil(namen, karte, W));
+    const { gewaehlt } = zug.waehle(namen, karte, W);
+    return { v, zeile: `${basis.slice(0, 8)}..HEAD: ${W.length} Wirkungen → ${gewaehlt.size}/${namen.length} Schritte${W.some((w) => w.alle) ? " (ALLE)" : ""}` }; // prettier-ignore
+}
+function selbsttestAuswahl() {
+    const K = { kopf: "HEAD", glieder: { "a.js": ["§", "A/f", "A/g"], "b.js": ["§", "B/h"] }, schritte: {} };
+    const fn = (...i) => zug.bits.aus(i, 5);
+    K.schritte = {
+        eins: { gruen: true, fn: fn(0, 1), txt: [], datei: [], verz: [], probe: [], fege: [] },
+        zwei: { gruen: true, fn: fn(3), txt: [2], datei: ["spec/x.json"], verz: [], probe: [], fege: [] },
+        drei: { gruen: false, fn: fn(), txt: [], datei: [], verz: [], probe: [], fege: [] },
+    };
+    const namen = ["eins", "zwei", "drei", "vier"];
+    const W1 = [{ glied: ["a.js", "A/f"], fn: true, txt: false, jung: false }];
+    const W2 = [{ glied: ["a.js", "A/g"], fn: false, txt: true, jung: false }];
+    const W3 = [{ datei: "spec/x.json" }];
+    const W4 = zug.wirkungen("HEAD", "HEAD", K, ["A", "stamm/gibt-es-nie.js"]);
+    const W5 = [{ glied: ["a.js", "A/neu"], fn: true, txt: true, jung: true }];
+    const echt = zug.waehle;
+    const ohneKarte = (n, k, W) => echt(n, k, W.filter((w) => w.alle)); // die Karte ignoriert
+    const ohneText = (n, k, W) => echt(n, k, W.map((w) => ({ ...w, txt: false })));
+    const ohneAlle = (n, k, W) => echt(n, k, W.filter((w) => !w.alle));
+    const nurGemessen = (n, k, W) => echt(n.filter((m) => k.schritte[m]), k, W);
+    const f = [];
+    const fall = (name, W, wahl, muss) => {
+        const v = auswahlUrteil(namen, K, W, wahl);
+        const gut = muss ? v.some((s) => muss.test(s)) : !v.length;
+        console.log(`  ${gut ? "✅" : "❌"} Selbsttest (Z) „${name}" → ${v.join(" · ") || "grün"}`);
+        if (!gut) f.push(`(Z) ${name}: ${v.join(" · ") || "grün"}`);
+    };
+    fall("die echte Wahl, ein Glied", W1, echt);
+    fall("die echte Wahl, ein Text", W2, echt);
+    fall("die echte Wahl, eine neue Datei", W4, echt);
+    fall("die echte Wahl, ein Glied jünger als die Karte", W5, echt);
+    fall("Mutante: die Karte ignoriert", W1, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/f/);
+    fall("Mutante: der Text vergessen", W2, ohneText, /AUSGELASSEN: „zwei" trägt .*A\/g/);
+    fall("Mutante: die Datei ignoriert", W3, ohneKarte, /AUSGELASSEN: „zwei" trägt .*spec\/x\.json/);
+    fall("Mutante: die unbekannte Datei wählt nicht alles", W4, ohneAlle, /ALLE \(Datei ohne Karte: stamm\/gibt-es-nie\.js.*„eins" fehlt/);
+    fall("Mutante: ein Schritt ohne Karte fällt aus", W1, nurGemessen, /OHNE KARTE: „vier" fehlt/);
+    fall("Mutante: das junge Glied ignoriert", W5, ohneKarte, /AUSGELASSEN: „eins" trägt .*A\/neu/);
+    return f;
+}
+
 async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
     selbsttestEnde(selbsttest().concat(await selbsttestZeiten()), "jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.");
@@ -1520,6 +1611,12 @@ function hauptlauf() {
         ? waage(doc, jsonLesen(zeitenDatei))
         : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
     v.push(...w.v);
+    const karte = jsonLesen(zug.KARTE);
+    const z = zugUrteil(
+        zug.vollSchritte().map((s) => s.name),
+        karte
+    );
+    v.push(...z.v);
     const jeKlasse = g.zahl.jeKlasse;
     console.log("=== CI-DECKUNG — " + DATEI + " ===");
     console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs)`);
@@ -1545,9 +1642,11 @@ function hauptlauf() {
         console.log(
             `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg, benannt, sperrt nie): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
         );
+    const ohne = zug.vollSchritte().filter((s) => !(karte.schritte[s.name] || {}).gruen).length;
+    console.log(`  Zug-Auswahl (Karte ${karte.kopf.slice(0, 8)}, ${ohne} Schritte ohne Karte fahren immer): ${z.zeile}`);
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
 if (SELBSTTEST) selbsttestLauf();

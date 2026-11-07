@@ -117,7 +117,15 @@ function nodeSpur() {
         geliefert: new Set(),
         verz: new Set(),
         probe: new Set(),
+        text: new Set(),
     });
+    // was Node als Text reicht (`page.evaluate(fn)`, `${fn}` in einer Seiten-Vorlage): ausgeführt wird es in der Seite, gemessen hier
+    const roh = Function.prototype.toString;
+    Function.prototype.toString = function () {
+        const x = roh.call(this);
+        spur.text.add(x);
+        return x;
+    };
     const art = () => {
         const alt = Error.stackTraceLimit;
         Error.stackTraceLimit = 30;
@@ -216,10 +224,485 @@ async function messen(nummern, bahnen = 1, fristS = 2700) {
     await Promise.all(Array.from({ length: bahnen }, bahn));
 }
 
-module.exports = { haken, vollSchritte };
+// ─── II. DIE GLIEDER ────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Ein GLIED ist eine Funktion, die einen Namen trägt (Deklaration, Methode, Eigenschaft, Variable, Zuweisung); sein Schlüssel der
+// Pfad der Namen von außen (`AnazhRealm_kreatur_leben/removeCreature`). Eine namenlose Funktion (ein Rückruf) gehört dem Glied um
+// sie. Je Glied zwei Abdrücke: `sig` die Token ohne Kommentare (ein inneres Glied als ⟨Name⟩) — was ausgeführt wird; `roh` der Text,
+// wie `toString` ihn liefert — was eine Absenz liest. Der Rest der Datei ist `§<Subjekt>` je Anweisung (`AnazhRealm.TOD_LAGE = …`),
+// ohne Subjekt `§` — `§` heißt auch: die Datei ist geladen.
+const OPT = { ecmaVersion: "latest", allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true };
+const IST_FN = (n) => n && /^(FunctionExpression|ArrowFunctionExpression)$/.test(n.type);
+const abdruck = (s) => require("crypto").createHash("sha1").update(s).digest("base64").slice(0, 11);
+function nameVon(t, n) {
+    const schluessel = () => (n.computed ? t.slice(n.key.start, n.key.end) : n.key.name ?? String(n.key.value));
+    const art = () => (/^[gs]et$/.test(n.kind) ? n.kind + " " : "") + (n.static ? "static " : "");
+    switch (n.type) {
+        case "FunctionDeclaration":
+        case "ClassDeclaration":
+        case "ClassExpression":
+            return n.id && [n.id.name, n.type === "FunctionDeclaration"];
+        case "MethodDefinition":
+        case "PropertyDefinition":
+        case "Property":
+            return [art() + schluessel(), n.type === "MethodDefinition" || IST_FN(n.value)];
+        case "VariableDeclarator":
+            return n.id.type === "Identifier" && [n.id.name, IST_FN(n.init)];
+        case "AssignmentExpression":
+            return /^(Identifier|MemberExpression)$/.test(n.left.type) && [t.slice(n.left.start, n.left.end), IST_FN(n.right)];
+    }
+}
+function glieder(t) {
+    const acorn = require("acorn");
+    let [baum, art, kommentar] = [null, "script", []];
+    const onComment = (block, text, s, e) => kommentar.push([s, e]);
+    try {
+        baum = acorn.parse(t, { ...OPT, sourceType: art, onComment });
+    } catch {
+        kommentar = [];
+        baum = acorn.parse(t, { ...OPT, sourceType: (art = "module"), onComment });
+    }
+    const G = [];
+    const geh = (n, pfad, eltern) => {
+        const x = nameVon(t, n);
+        const p = x ? [...pfad, x[0]] : pfad;
+        let g = eltern;
+        if (x && x[1]) {
+            // wo `toString` beginnt: eine Methode bei `async`/`get`/`*`/Name (ohne `static`), sonst die Funktion selbst
+            const methode = n.type === "MethodDefinition" || n.method || /^[gs]et$/.test(n.kind);
+            const ts = methode ? n.start + (n.static ? /^static\s*/.exec(t.slice(n.start))[0].length : 0) : (n.value || n.init || n.right || n).start; // prettier-ignore
+            G.push((g = { k: p.join("/"), s: n.start, e: n.end, ts, eltern, sig: [] }));
+        }
+        for (const k in n) {
+            const v = n[k];
+            if (k === "loc" || !v || typeof v !== "object") continue;
+            for (const c of Array.isArray(v) ? v : [v]) if (c && typeof c.type === "string") geh(c, p, g);
+        }
+    };
+    geh(baum, [], null);
+    // die Anweisungen der Wurzel und ihr Subjekt
+    const satz = baum.body.map((n) => {
+        const e = n.type === "ExpressionStatement" ? n.expression : n;
+        const x = e.type === "VariableDeclaration" ? [e.declarations.map((d) => t.slice(d.id.start, d.id.end)).join(",")] : nameVon(t, e);
+        return { s: n.start, e: n.end, k: "§" + (e.type === "ClassDeclaration" ? "class " : "") + ((x && x[0]) || ""), sig: [] };
+    });
+    // die Token ohne Kommentare in ihr innerstes Glied (ein inneres Glied hinterlässt ⟨Name⟩), sonst in ihre Anweisung
+    const stapel = [];
+    let [gi, si] = [0, 0];
+    for (const tok of acorn.tokenizer(t, { ...OPT, sourceType: art })) {
+        const p = tok.start;
+        while (stapel.length && stapel.at(-1).e <= p) stapel.pop();
+        while (gi < G.length && G[gi].s <= p) {
+            const g = G[gi++];
+            while (stapel.length && stapel.at(-1).e <= g.s) stapel.pop();
+            if (stapel.length) stapel.at(-1).sig.push("⟨" + g.k.slice(g.k.lastIndexOf("/") + 1) + "⟩");
+            stapel.push(g);
+        }
+        const text = t.slice(tok.start, tok.end);
+        if (stapel.length) stapel.at(-1).sig.push(text);
+        else {
+            while (si < satz.length - 1 && satz[si].e <= p) si++;
+            satz[si].sig.push(text);
+        }
+    }
+    const tafel = new Map();
+    for (const g of [...G, ...satz]) {
+        const a = tafel.get(g.k) || { sig: "", roh: "", lokal: !!g.eltern };
+        a.sig += g.sig.join(" ") + "\n";
+        if (g.ts != null) a.roh += t.slice(g.ts, g.e) + "\n";
+        tafel.set(g.k, a);
+    }
+    for (const a of tafel.values()) [a.sig, a.roh] = [abdruck(a.sig), a.roh && abdruck(a.roh)];
+    return { G, satz, tafel, t, kommentar };
+}
+// das innerste Glied um [s, e] — für eine Funktion der Abdeckung das Glied mit demselben Ende, sonst das umschließende; außerhalb `§`
+function gliedUm(gl, s, e) {
+    let [lo, hi] = [0, gl.G.length - 1];
+    while (lo < hi) {
+        const m = (lo + hi + 1) >> 1;
+        if (gl.G[m].s <= s) lo = m;
+        else hi = m - 1;
+    }
+    for (let g = gl.G[lo]; g; g = g.eltern) if (g.s <= s && e <= g.e) return g.k;
+    return "§";
+}
+// die Anweisung (oder das Glied) an einer Stelle — für die Namens-Treffer
+function satzUm(gl, i) {
+    const k = gliedUm(gl, i, i + 1);
+    return k !== "§" ? k : (gl.satz.find((x) => x.s <= i && i < x.e) || { k: "§" }).k;
+}
+
+// ─── III. DIE KARTE ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Je Schritt aus seiner Roh-Spur: `fn` die ausgeführten Glieder (Bitfeld über die EINE Tafel `glieder`), `txt` die als Text
+// gelesenen, `datei` was er als Datei liest (Text, ausgelieferte Nicht-Skripte, ausgelieferte Skripte, die keine Seite ausführt),
+// `verz` die gelisteten Ordner, `probe` die erfragten Pfade, `fege` die Dateien, deren Glieder er zur Hälfte und mehr als Text las.
+const JS = /\.(c|m)?js$/;
+const bits = {
+    aus: (idx, n) => {
+        const b = Buffer.alloc((n + 7) >> 3);
+        for (const i of idx) b[i >> 3] |= 1 << (i & 7);
+        return b.toString("base64");
+    },
+    hat: (b64, i) => {
+        const b = (bits.puffer[b64] ||= Buffer.from(b64, "base64"));
+        return !!(b[i >> 3] & (1 << (i & 7)));
+    },
+    puffer: {},
+};
+function karteBauen(wurzel = ROOT) {
+    const lies = (r) => fs.readFileSync(path.join(wurzel, r), "utf8");
+    const gl = new Map();
+    const gliederVon = (r) => {
+        if (!gl.has(r)) {
+            try {
+                gl.set(r, glieder(lies(r)));
+            } catch {
+                gl.set(r, null);
+            }
+        }
+        return gl.get(r);
+    };
+    const relW = (u) => {
+        const x = path.relative(wurzel, path.resolve(wurzel, u)).replace(/\\/g, "/");
+        return x && !x.startsWith("..") && !/^(node_modules|\.git)\//.test(x) ? x : null;
+    };
+    const vonUrl = (u) =>
+        /^https?:/.test(u) ? relW(decodeURIComponent(new URL(u).pathname).slice(1)) : relW(u.startsWith("file:") ? new URL(u).pathname : u);
+    const schritte = {};
+    const zaehler = { ende: 0, um: 0, text: 0, textFrei: 0 };
+    for (const nr of fs.readdirSync(ROH)) {
+        const d = path.join(ROH, nr);
+        if (!fs.existsSync(path.join(d, "status.json"))) continue;
+        const st = JSON.parse(fs.readFileSync(path.join(d, "status.json"), "utf8"));
+        const [fn, txt, datei, verz, probe, gefuehrt, geliefert] = [new Map(), new Map(), new Set(), new Set(), new Set(), new Set(), new Set()];
+        const merk = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
+        const lauf = (r, s, e) => {
+            const g = gliederVon(r);
+            if (!g) return datei.add(r);
+            gefuehrt.add(r);
+            merk(fn, r, gliedUm(g, s, e));
+        };
+        const texte = [];
+        for (const f of fs.readdirSync(d)) {
+            const j = () => JSON.parse(fs.readFileSync(path.join(d, f), "utf8"));
+            if (f.startsWith("b-")) {
+                const b = j();
+                for (const [u, liste] of Object.entries(b.fn)) {
+                    const r = vonUrl(u);
+                    if (r) for (const x of liste) lauf(r, ...x.split(",").map(Number));
+                }
+                texte.push(...b.text);
+            } else if (f.startsWith("n-")) {
+                const n = j();
+                for (const r of n.gelesen) datei.add(r);
+                for (const r of n.geliefert) geliefert.add(r);
+                for (const r of n.verz) verz.add(r);
+                for (const r of n.probe) probe.add(r);
+                texte.push(...(n.text || []));
+            }
+        }
+        for (const f of fs.readdirSync(path.join(d, "node"))) {
+            for (const sc of JSON.parse(fs.readFileSync(path.join(d, "node", f), "utf8")).result) {
+                const r = vonUrl(sc.url);
+                if (r && JS.test(r)) for (const x of sc.functions) if (x.ranges[0].count > 0) lauf(r, x.ranges[0].startOffset, x.ranges[0].endOffset);
+            }
+        }
+        for (const r of geliefert) if (!gefuehrt.has(r)) datei.add(r);
+        // die gelesenen Texte: das Glied, dessen Text `toString` liefert, sonst die Stelle in einer geführten Datei
+        const roh = new Map();
+        for (const r of gefuehrt) {
+            const g = gliederVon(r);
+            for (const x of g.G) roh.set(g.t.slice(x.ts, x.e), [r, x.k]);
+        }
+        for (const t of new Set(texte)) {
+            let hit = roh.get(t);
+            if (!hit && t.length >= 40)
+                for (const r of gefuehrt) {
+                    const i = gl.get(r).t.indexOf(t);
+                    if (i >= 0) {
+                        hit = [r, gliedUm(gl.get(r), i, i + t.length)];
+                        break;
+                    }
+                }
+            if (hit) merk(txt, ...hit);
+            zaehler[hit ? "text" : "textFrei"]++;
+        }
+        const fege = [...txt].filter(([r, ks]) => ks.size * 2 >= new Set(gl.get(r).G.map((x) => x.k)).size).map(([r]) => r);
+        schritte[st.name] = { gruen: st.code === 0, s: st.s, fn, txt, datei: [...datei].sort(), verz: [...verz].sort(), probe: [...probe].sort(), fege }; // prettier-ignore
+    }
+    // die EINE Tafel: je Datei die Schlüssel, die ein Schritt ausführt oder liest
+    const tafel = new Map();
+    for (const x of Object.values(schritte)) for (const m of [x.fn, x.txt]) for (const [r, ks] of m) for (const k of ks) merkTafel(tafel, r, k);
+    const dateien = [...tafel.keys()].sort();
+    const idx = new Map();
+    const glieder_ = {};
+    for (const r of dateien) {
+        glieder_[r] = [...tafel.get(r)].sort();
+        for (const k of glieder_[r]) idx.set(r + "\0" + k, idx.size);
+    }
+    const nach = (m) => [...m].flatMap(([r, ks]) => [...ks].map((k) => idx.get(r + "\0" + k)));
+    const kopf = spawnSync("git", ["rev-parse", "HEAD"], { cwd: wurzel, encoding: "utf8" }).stdout.trim();
+    const out = {
+        quelle: "scripts/lib/zug-auswahl.cjs --karte: je Schritt der vollen Batterie, was er ausführt (fn, Bitfeld über glieder), als Text liest (txt), als Datei liest (datei), listet (verz), erfragt (probe) und zur Hälfte als Text fegt (fege)",
+        kopf,
+        erzeugt: new Date().toISOString().slice(0, 10),
+        glieder: glieder_,
+        schritte: Object.fromEntries(
+            Object.entries(schritte)
+                .sort()
+                .map(([n, x]) => [n, { gruen: x.gruen, s: x.s, fn: bits.aus(nach(x.fn), idx.size), txt: nach(x.txt).sort((a, b) => a - b), datei: x.datei, verz: x.verz, probe: x.probe, fege: x.fege }]) // prettier-ignore
+        ),
+    };
+    fs.writeFileSync(path.join(ROOT, KARTE), JSON.stringify(out, null, 1) + "\n");
+    return { out, zaehler };
+}
+const merkTafel = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
+
+// ─── IV. DIE AUSWAHL ────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Der Diff wird zu WIRKUNGEN: `alle` (beim Namen) · `glied` [Datei, Schlüssel] mit fn (die Token änderten sich) / txt (der Text) /
+// jung (die Karte kennt das Glied nicht: wer die Datei lädt) · `laden` (wer die Datei lädt) · `datei` · `verz` · `fege`. Ein
+// neues oder gefallenes Glied und ein geändertes Subjekt (`AnazhRealm.X = …`) wirken über ihren NAMEN: jedes Glied, das den Namen
+// trägt (git grep -w, am Grund und am Kopf; ein Subjekt, das ihn trägt, gibt seinen Namen weiter) — ein bewachter Ruf
+// (`typeof this._x === "function"`) und jeder Leser einer Konstante. SICHER, nie still: alles, was die Karte nicht sieht, wählt ALLE.
+const ALLE = [
+    [/^package(-lock)?\.json$/, "Abhängigkeiten"],
+    [/^\.github\//, "Workflow"],
+    [/^scripts\/lib\//, "Linsen-Bibliothek"],
+    [/^index\.html$/, "Kern-Boot (die Seite der Welt)"],
+    [/^spec\/ci\/wirkung-karte\.json$/, "die Karte selbst"],
+];
+const KERN_GLIED = /^AnazhRealm(_dirigent_takt)?\/(constructor|_gameLoopTick)$/; // der Kern-Boot und der Haupt-Takt
+const git = (args) => {
+    const r = spawnSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 30 });
+    if (r.status > 1 || (r.status === 1 && args[0] !== "grep")) throw new Error(`git ${args.slice(0, 3).join(" ")}: ${r.stderr.trim()}`);
+    return r.stdout;
+};
+const zeige = (rev, r) => {
+    const x = spawnSync("git", ["show", `${rev}:${r}`], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 30 });
+    return x.status ? null : x.stdout;
+};
+const LEER = { tafel: new Map() };
+// die Namen eines Glieds oder Subjekts: das letzte Glied des Pfads, einer Kette (`AnazhRealm.TOD_LAGE` → TOD_LAGE), jedes einer Liste
+const namenVon = (k) => k.replace(/^§/, "").split("/").pop().replace(/^(get |set )?(static )?/, "").split(",").map((n) => n.split(".").pop()).filter((n) => /^[\w$]{3,}$/.test(n)); // prettier-ignore
+function wirkungen(basis, kopf, karte, diff = null) {
+    const W = [];
+    const cache = new Map();
+    const gl = (rev, r) => {
+        const k = rev + ":" + r;
+        if (!cache.has(k)) {
+            const t = zeige(rev, r);
+            let g = null;
+            try {
+                g = t == null ? null : glieder(t);
+            } catch {
+                g = "kaputt";
+            }
+            cache.set(k, g);
+        }
+        return cache.get(k);
+    };
+    const kennt = new Map(Object.entries(karte.glieder).map(([r, ks]) => [r, new Set(ks)]));
+    // jünger als die Karte: kein Schritt kennt das Glied, und am Kopf der Karte gab es es nicht (dort hieße es: nie ausgeführt)
+    const jung = (r, k) => !kennt.get(r)?.has(k) && !(gl(karte.kopf, r) || LEER).tafel?.has(k);
+    // ein Subjekt der Wurzel: `module.exports` wirkt auf jeden, der die Datei lädt, sonst über seine Namen (Herkunft: seine Datei)
+    const namen = new Map();
+    const subjekt = (k, r) => {
+        if (/^§((module\.)?exports\b|class )/.test(k)) W.push({ laden: r, warum: `die Datei ändert ${k}` });
+        else for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r);
+    };
+    const z = diff || git(["diff", "--name-status", "--no-renames", "-z", basis, kopf]).split("\0").filter(Boolean);
+    for (let i = 0; i < z.length; i += 2) {
+        const [st, r] = [z[i][0], z[i + 1]];
+        const a = ALLE.find(([re]) => re.test(r));
+        if (a) W.push({ alle: `${a[1]}: ${r}` });
+        else if (st === "A" && zeige(karte.kopf, r) == null) W.push({ alle: `Datei ohne Karte: ${r} (neu, die Karte kennt sie nicht)` });
+        if (a || W.at(-1)?.alle?.includes(r)) continue;
+        W.push({ datei: r });
+        if (st !== "M") W.push({ verz: path.posix.dirname(r) });
+        if (!JS.test(r)) continue;
+        const [g0, g1] = [st === "A" ? LEER : gl(basis, r), st === "D" ? LEER : gl(kopf, r)];
+        if (g0 === "kaputt" || g1 === "kaputt" || !g0 || !g1) {
+            W.push({ alle: `nicht lesbar: ${r}` });
+            continue;
+        }
+        for (const k of new Set([...g0.tafel.keys(), ...g1.tafel.keys()])) {
+            const [a0, a1] = [g0.tafel.get(k), g1.tafel.get(k)];
+            const [fn, txt] = [!a0 || !a1 || a0.sig !== a1.sig, !a0 || !a1 || a0.roh !== a1.roh];
+            if (!fn && !txt) continue;
+            if (KERN_GLIED.test(k)) W.push({ alle: `Kern-Boot: ${r} ${k}` });
+            else if (k === "§") W.push({ laden: r, warum: "die Datei ändert eine Anweisung ohne Subjekt" });
+            else if (k.startsWith("§")) subjekt(k, r);
+            else {
+                W.push({ glied: [r, k], fn, txt, jung: jung(r, k) });
+                if (!(a0 || a1).lokal && (!a0 || !a1)) for (const n of namenVon(k)) if (!namen.has(n)) namen.set(n, r); // ein lokales Glied nennt nur sein Eltern-Glied
+                if (txt || !a0 || !a1) W.push({ fege: r });
+            }
+        }
+    }
+    // die Namen: jedes Glied, das sie trägt, am Grund und am Kopf — außer in einer fremden Datei, die den Namen an ihrer Wurzel
+    // selbst bindet (ihr eigenes `const lin` ist nicht das geänderte); ein Subjekt gibt seinen Namen weiter (höchstens 4 Runden)
+    const bindet = (g, n) => g.tafel.has(n) || [...g.tafel.keys()].some((k) => k[0] === "§" && k.slice(1).split(",").includes(n));
+    const fertig = new Set();
+    const imKommentar = (g, i) => g.kommentar.some(([s, e]) => s <= i && i < e);
+    for (let runde = 0; runde < 4; runde++) {
+        const neu = [...namen.keys()].filter((n) => !fertig.has(n));
+        if (!neu.length) break;
+        if (fertig.size + neu.length > 60) {
+            W.push({ alle: `Namens-Flut: ${fertig.size + neu.length} Namen wirken (${neu.slice(0, 5).join(", ")} …)` });
+            break;
+        }
+        neu.forEach((n) => fertig.add(n));
+        for (const rev of [basis, kopf]) {
+            const out = git(["grep", "-n", "-w", "-F", ...neu.flatMap((n) => ["-e", n]), rev, "--", "*.js", "*.cjs", "*.mjs", "*.html", ":!vendor"]); // prettier-ignore
+            for (const zl of out.split("\n").filter(Boolean)) {
+                const [, r, zeile, text] = /^[^:]+:([^:]+):(\d+):(.*)$/.exec(zl) || [];
+                const g = r && JS.test(r) && gl(rev, r);
+                if (r && (!g || g === "kaputt")) W.push({ datei: r });
+                if (!g || g === "kaputt") continue;
+                const ab = g.zeilen || (g.zeilen = [0, ...[...g.t.matchAll(/\n/g)].map((m) => m.index + 1)]);
+                for (const n of neu.filter((x) => new RegExp(`(^|[^\\w$])${x.replace(/\$/g, "\\$")}([^\\w$]|$)`).test(text))) {
+                    const i = ab[zeile - 1] + Math.max(0, text.indexOf(n));
+                    if ((r !== namen.get(n) && bindet(g, n)) || imKommentar(g, i)) continue;
+                    const k = satzUm(g, i);
+                    if (k === "§") W.push({ laden: r, warum: `eine Anweisung trägt ${n}` });
+                    else if (k[0] === "§") subjekt(k, r);
+                    else W.push({ glied: [r, k], fn: true, txt: false, jung: jung(r, k), nennt: n });
+                }
+            }
+        }
+    }
+    return W;
+}
+// Die Wahl ist rein (Karte · Wirkungen → Schritte), die Linse (gate:ci-deckung, Z) prüft sie gegen ihr eigenes Orakel
+function karteIndex(karte) {
+    if (karte.__idx) return karte.__idx;
+    const idx = new Map();
+    let i = 0;
+    for (const r of Object.keys(karte.glieder).sort()) idx.set(r, new Map(karte.glieder[r].map((k) => [k, i++])));
+    Object.defineProperty(karte, "__idx", { value: idx });
+    return idx;
+}
+function grundIm(x, w, idx) {
+    const bei = (r, k) => idx.get(r)?.get(k);
+    const laedt = (r) => bei(r, "§") != null && bits.hat(x.fn, bei(r, "§"));
+    if (w.glied) {
+        const i = bei(...w.glied);
+        if (i != null && w.fn && bits.hat(x.fn, i)) return `führt ${w.glied.join(" ")} aus${w.nennt ? ` (nennt ${w.nennt})` : ""}`;
+        if (i != null && w.txt && x.txt.includes(i)) return `liest ${w.glied.join(" ")} als Text`;
+        if (w.jung && laedt(w.glied[0])) return `lädt ${w.glied[0]} (${w.glied[1]} ist jünger als die Karte)`;
+    }
+    if (w.laden && laedt(w.laden)) return `lädt ${w.laden} (${w.warum})`;
+    if (w.datei && (x.datei.includes(w.datei) || x.probe.includes(w.datei))) return `liest ${w.datei}`;
+    if (w.fege && x.fege.includes(w.fege)) return `fegt ${w.fege} als Text`;
+    if (w.verz && x.verz.includes(w.verz)) return `listet ${w.verz}/`;
+    return null;
+}
+function waehle(namen, karte, W) {
+    const [idx, gewaehlt] = [karteIndex(karte), new Map()];
+    const alle = W.filter((w) => w.alle).map((w) => w.alle);
+    for (const n of namen) {
+        const x = karte.schritte[n];
+        if (alle.length) gewaehlt.set(n, `ALLE — ${alle[0]}`);
+        else if (!x || !x.gruen) gewaehlt.set(n, x ? "ohne Karte (ihre Messung war ROT)" : "ohne Karte");
+        else
+            for (const w of W) {
+                const g = grundIm(x, w, idx);
+                if (g) {
+                    gewaehlt.set(n, g);
+                    break;
+                }
+            }
+    }
+    return { alle, gewaehlt, aus: namen.filter((n) => !gewaehlt.has(n)) };
+}
+function auswahl(basis, kopf, karte = JSON.parse(fs.readFileSync(path.join(ROOT, KARTE), "utf8"))) {
+    const namen = vollSchritte(zeige(kopf, ".github/workflows/check.yml") ?? undefined).map((s) => s.name);
+    const W = wirkungen(basis, kopf, karte);
+    return { ...waehle(namen, karte, W), W, namen };
+}
+
+// ─── V. DER RICHTER ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// An den Zügen seit z280 (spec/ci/zug-geschichte.json): je Zug die Zweige, die er neu trug (die Merges „Merge <zweig> in
+// integ-probe" auf dem Erst-Eltern-Pfad bis zum letzten gelandeten Kopf), je Zweig die Auswahl über SEINEN Merge (Eltern 1 → Merge).
+// TREFFER: jeder rote Schritt eines Täters ist gewählt (echt ist Kern); ERSPARNIS: gewählte Rechenzeit gegen voll, mit den
+// Schritt- und Vorbereitungs-Zeiten des Laufs `zeiten_lauf` (die Vorbereitung einer Gruppe zählt, wenn sie einen Schritt fährt).
+async function geschichte() {
+    const G = JSON.parse(fs.readFileSync(path.join(ROOT, "spec/ci/zug-geschichte.json"), "utf8"));
+    const karte = JSON.parse(fs.readFileSync(path.join(ROOT, KARTE), "utf8"));
+    const token = process.env.GITHUB_TOKEN || /password=(.*)/.exec(spawnSync("git", ["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n", encoding: "utf8" }).stdout || "")?.[1]; // prettier-ignore
+    const api = require("../ci-kopf.cjs").apiMit("https://api.github.com/repos/MiguellD/AnazhRealm", token);
+    const jobs = (await api(`/actions/runs/${G.zeiten_lauf}/attempts/1/jobs?per_page=100`)).jobs;
+    const sek = (a, b) => (new Date(b) - new Date(a)) / 1000;
+    const [zeit, gruppeVon, vorb] = [new Map(), new Map(), new Map()];
+    let kern = 0;
+    for (const j of jobs) {
+        const voll = /^voll (\d+)/.exec(j.name);
+        let schritte = 0;
+        for (const s of j.steps) {
+            if (!voll || /^(Set up|Run actions|Cache|System-Libs|Dependencies|Urteil|Post |Complete)/.test(s.name)) continue;
+            zeit.set(s.name, sek(s.started_at, s.completed_at));
+            gruppeVon.set(s.name, +voll[1]);
+            schritte += zeit.get(s.name);
+        }
+        if (voll) vorb.set(+voll[1], sek(j.started_at, j.completed_at) - schritte);
+        else kern += sek(j.started_at, j.completed_at);
+    }
+    const voll = kern + [...zeit.values(), ...vorb.values()].reduce((a, b) => a + b, 0);
+    const kosten = (gewaehlt) => {
+        const gr = new Set([...gewaehlt].map((n) => gruppeVon.get(n)));
+        return kern + [...gewaehlt].reduce((a, n) => a + (zeit.get(n) || 0), 0) + [...gr].reduce((a, g) => a + (vorb.get(g) || 0), 0);
+    };
+    const gelandet = (h) => spawnSync("git", ["merge-base", "--is-ancestor", h, "origin/main"], { cwd: ROOT }).status === 0;
+    const [merges, wahl] = [[], new Map()];
+    let L = G.basis;
+    for (const z of G.zuege) {
+        for (const l of git(["log", "--first-parent", "--format=%H %s", "-n", "80", z.kopf]).split("\n").filter(Boolean)) {
+            const [h, s] = [l.slice(0, 40), l.slice(41)];
+            if (spawnSync("git", ["merge-base", "--is-ancestor", h, L], { cwd: ROOT }).status === 0) break;
+            const m = /^Merge (\S+) in integ-probe/.exec(s);
+            if (m) merges.push({ z: z.z, zweig: m[1], m: h });
+        }
+        if (gelandet(z.kopf)) L = z.kopf;
+    }
+    const waehleM = (m) => wahl.get(m) || wahl.set(m, auswahl(m + "^1", m, karte)).get(m);
+    let treffer = 0;
+    for (const t of G.taeter) {
+        const m = merges.find((x) => x.z === t.z && x.zweig === t.zweig);
+        const a = m && waehleM(m.m);
+        const n = a && a.namen.find((x) => x.startsWith(t.schritt));
+        const ok = t.schritt.startsWith("echt: ") ? "Kern (echt)" : n && a.gewaehlt.get(n);
+        treffer += !!ok;
+        console.log(`${ok ? "TREFFER" : "LÜCKE  "} z${t.z} ${t.zweig} → ${t.schritt}${ok ? ` — ${ok}` : m ? "" : " (kein Merge)"}`);
+    }
+    const anteile = [];
+    for (const m of [...new Map(merges.map((x) => [x.m, x])).values()]) {
+        const a = waehleM(m.m);
+        const q = kosten(new Set(a.namen.filter((n) => a.gewaehlt.has(n)))) / voll;
+        anteile.push(q);
+        console.log(`  z${m.z} ${m.zweig.padEnd(24)} ${(100 * q).toFixed(1).padStart(5)} %  ${a.alle.length ? a.alle[0] : `${a.gewaehlt.size}/${a.namen.length} Schritte`}`); // prettier-ignore
+    }
+    anteile.sort((a, b) => a - b);
+    const q = (p) => (100 * anteile[Math.min(anteile.length - 1, Math.floor(p * anteile.length))]).toFixed(1);
+    console.log(`TREFFER ${treffer}/${G.taeter.length} · voll ${Math.round(voll / 60)} min Rechenzeit · je Zweig (${anteile.length} Merges): Median ${q(0.5)} % · p25 ${q(0.25)} % · p75 ${q(0.75)} % · min ${q(0)} % · max ${q(1)} % · ALLE ${anteile.filter((x) => x > 0.999).length}`); // prettier-ignore
+    return { treffer, anteile };
+}
+
+module.exports = { KARTE, haken, vollSchritte, glieder, gliedUm, satzUm, wirkungen, waehle, karteIndex, bits, auswahl };
 
 if (require.main === module) {
     const a = process.argv.slice(2);
     const zahl = (n) => +(a[a.indexOf(n) + 1] || 0);
-    if (a[0] === "--messen") messen(a.slice(1).filter((x) => /^\d+$/.test(x) && a[a.indexOf(x) - 1] !== "--parallel").map(Number), zahl("--parallel") || 1); // prettier-ignore
+    if (a[0] === "--messen") messen(a.slice(1).filter((x, i) => /^\d+$/.test(x) && a[i] !== "--parallel").map(Number), zahl("--parallel") || 1); // prettier-ignore
+    else if (a[0] === "--karte") {
+        const { out, zaehler } = karteBauen(a[1] || ROOT);
+        console.log(`[karte] ${Object.keys(out.schritte).length} Schritte, ${Object.values(out.glieder).reduce((s, x) => s + x.length, 0)} Glieder in ${Object.keys(out.glieder).length} Dateien · Texte ${zaehler.text} zugeordnet, ${zaehler.textFrei} frei`); // prettier-ignore
+    } else if (a[0] === "--geschichte") geschichte().catch((e) => (console.error(e), process.exit(1)));
+    else if (a.length === 2) {
+        const { alle, gewaehlt, aus, namen } = auswahl(a[0], a[1]);
+        console.log(JSON.stringify(namen.filter((n) => gewaehlt.has(n))));
+        if (alle.length) console.log(`# ALLE: ${alle.join(" · ")}`);
+        for (const n of aus) console.log(`# aus: ${n} — seine Karte trägt keine der Wirkungen von ${a[0].slice(0, 12)}..${a[1].slice(0, 12)}`);
+    } else {
+        console.error("node scripts/lib/zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--parallel n] | --karte [wurzel] | --geschichte");
+        process.exit(2);
+    }
 }
