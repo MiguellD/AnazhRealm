@@ -25,3 +25,12 @@
 
 ## Werkzeuge
 `zug/werkzeug-w3/` = Kopie aus `%TEMP%\claude\w3`: zug-weiter, kand-weiter, mess-kandidat, radeon-offen2, bildpaar, bild-kette, paar.cjs, ausschnitt.cjs, auslauf.sh, blick.ps1 (Messplatz-Blick, Start: `powershell -NoProfile -ExecutionPolicy Bypass -File …\blick.ps1`), abgabe-wache8, zug-schlange6, zug-sammler7.
+
+## Kontowechsel (die nächste Sitzung startet in einem NEUEN Konto, gleicher Ordner, Radeon-Laptop + OMEN)
+- **Meisterkarte**: Das Artifact PzVLsV4EA53UT2VqQ6bgmi gehört dem alten Konto. Das neue Konto veröffentlicht `meisterkarte.html` als NEUES Artifact und gibt dem Schöpfer den neuen Link.
+- **Cloud-Sitzungen** (w19-/w20-/w21-…) gehören dem alten Konto: das neue sieht sie nicht in list_sessions/ListAgents und kann ihnen nicht schreiben. Die Arbeit liegt auf den Zweigen (GitHub); die Post in `cloud-post/<zweig>.md`. Nacharbeit = NEUE Cloud-Sitzung auf denselben Zweig, Brief aus der jüngsten Post-Zeile.
+- **w20-haar-arm arbeitet noch** (Stand 16:20, letzte Abgabe 0aaf9d31 um 11:32: Locke im Raster 1,4). Vor jedem Zug: haar.K1 an der Radeon messen — am main war haar.K1 arm 0,43 / third 0,56 GRÜN, der alte Zweig fiel auf 0,36 / 0,32 (z290/z291). Erst wenn beide nicht fallen, in den Zug.
+- Letzte Abgaben der anderen laufenden Sitzungen: wald-kosten 8e4c2c79, lack-spiegel e68cfcc7, laub-unten f9a116b0 (in z295), leib-takt f2360c8b.
+- **OMEN**: ruht seit 16:05 (zug/erledigt.txt b700a42b), der GTX-Dauer-Wächter steht auf HALT, kein Schloss. Ihre Claude-Sitzung („Koordinator-Meldung“, Remote Control) war am alten Konto — die neue Sitzung spricht die OMEN-Sitzung an, die der Schöpfer neu verbindet.
+- **auslauf.sh** läuft auf dem Laptop; schläft der Laptop, stirbt er. Dann zuerst prüfen: z295 gelandet? (`git log origin/main`), Buchung in `zug/auslauf-0711.txt`, sonst `BUCHE_KOPF=<main> bash artifacts/profiband/werkzeug/buche.sh` von Hand.
+- Der Punkte-Worktree `%TEMP%\claude\w3\pm` (Zweig punkte-maschine) ist nur ein Checkout; fehlt er, neu: `git worktree add <pfad> punkte-maschine`.
