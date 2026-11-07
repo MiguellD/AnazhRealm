@@ -42,7 +42,7 @@ const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
 // Blick, Dorf-Zug, Ort-Takt und seine EIGENE Ratsche (die Kosten zweier Orte sind zwei Hüllen, nie eine). Ohne Wahl
 // gilt der erste Ort (die Mess-Wiese).
 function ortOf(haushalt, id) {
-    const orte = (haushalt && haushalt.messorte) || [];
+    const orte = haushalt?.messorte || [];
     const o = id == null ? orte[0] : orte.find((x) => x.id === id);
     if (!o) throw new Error(`unbekannter Messort „${id}" (messorte: ${orte.map((x) => x.id).join(", ")})`);
     return o;
@@ -254,8 +254,8 @@ function einschwingOffen(r) {
     const st = r.state;
     const f = r._foundry;
     const o = {};
-    if (f && f.warte && f.warte.length) o.foundryWarte = f.warte.length;
-    if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
+    if (f?.warte?.length) o.foundryWarte = f.warte.length;
+    if (f?.pending?.size) o.foundryImFlug = f.pending.size;
     // eine Lieferung, die angekommen ist und auf die Freigabe des Ingest-Takts wartet (`_foundryIngestTakt`), baut noch
     if (r._foundryIngestQueue && r._foundryIngestQueue.length) o.foundryIngest = r._foundryIngestQueue.length;
     const kb = (r._impostorBakeQueue || []).length;
@@ -274,7 +274,7 @@ function einschwingOffen(r) {
     if (q != null && r._dorfTaktLebt()) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
     let schrumpft = 0;
-    for (const [, s] of st.chunkSaetze || []) if (s && s.ueberSeit >= 0) schrumpft++;
+    for (const [, s] of st.chunkSaetze || []) if (s?.ueberSeit >= 0) schrumpft++;
     if (schrumpft) o.satzSchrumpft = schrumpft;
     return o;
 }
@@ -332,7 +332,7 @@ function rahmenZielBefunde(vram, texturen) {
 }
 // Eine FREIE Klasse misst den Weltzustand, nicht die Kosten (die Tiere wandern: an der Mess-Wiese 0 bis 3 Arten im Bild):
 // die Ratsche hält sie nicht, ihre Kosten je Einheit hält das Gate, das ihr Grund nennt. Im Band zählt sie voll.
-const freiGrund = (ratsche, id) => (ratsche && ratsche.frei && ratsche.frei[id]) || null;
+const freiGrund = (ratsche, id) => ratsche?.frei?.[id] || null;
 
 function regelPasst(regel, e) {
     if (regel.muster && !new RegExp(regel.muster).test(e.klasse)) return false;
@@ -459,7 +459,7 @@ function renderZieleUrteil(haushalt, erzeuger, rot) {
 function haushaltPruefen(h) {
     const f = [];
     if (!h || h.version !== 1) f.push("haushalt.version ist nicht 1");
-    const b = (h && h.band) || {};
+    const b = h?.band || {};
     for (const k of ["befehle", "dreiecke", "vramMB", "gpuMs"]) if (!(b[k] > 0)) f.push(`band.${k} fehlt`);
     const paesse = h && h.paesse;
     if (!Array.isArray(paesse) || !paesse.length) f.push("paesse fehlt");
@@ -492,7 +492,7 @@ function haushaltPruefen(h) {
         } catch {
             f.push("renderZiele.erzeuger ist kein Muster");
         }
-    const kl = (h && h.klassen) || [];
+    const kl = h?.klassen || [];
     if (!kl.length) f.push("keine Klassen");
     const ids = new Set();
     let sb = 0,
@@ -523,7 +523,7 @@ function haushaltPruefen(h) {
     }
     if (sb > b.befehle) f.push(`Haushalt-Summe ${sb} Befehle über dem Band ${b.befehle}`);
     if (st > b.dreiecke) f.push(`Haushalt-Summe ${st} Dreiecke über dem Band ${b.dreiecke}`);
-    for (const w of (h && h.stufenWand) || [])
+    for (const w of h?.stufenWand || [])
         if (!ganz(w.stufe) || !(w.maxM > 0) || !w.grund) f.push("stufenWand-Eintrag ohne stufe/maxM/grund");
     return { fehler: f, summe: { befehle: sb, dreiecke: st } };
 }
@@ -556,9 +556,9 @@ function ratschePruefen(r, h) {
         }
         for (const p of Object.keys(e)) if (!paesse.includes(p)) f.push(`Ratsche ${id} trägt fremden Pass ${p}`);
     }
-    for (const id of Object.keys((r && r.klassen) || {}))
+    for (const id of Object.keys(r?.klassen || {}))
         if (!ids.includes(id)) f.push(`Ratsche trägt Klasse ${id}, die der Haushalt nicht kennt`);
-    for (const [id, grund] of Object.entries((r && r.frei) || {})) {
+    for (const [id, grund] of Object.entries(r?.frei || {})) {
         if (!ids.includes(id)) f.push(`frei: ${id} ist keine Haushalt-Klasse`);
         if (typeof grund !== "string" || !/gate:[a-z-]+/.test(grund))
             f.push(`frei.${id} braucht einen Grund, der das Gate der Kosten je Einheit nennt (gate:…)`);
@@ -566,7 +566,7 @@ function ratschePruefen(r, h) {
         if (e && Object.values(e).some((z) => z && (z.befehle != null || z.dreiecke != null)))
             f.push(`frei.${id}: eine freie Klasse trägt keine Ratschen-Werte`);
     }
-    for (const [k, v] of Object.entries((r && r.vramMB) || {}))
+    for (const [k, v] of Object.entries(r?.vramMB || {}))
         if (!nullOderZahl(v)) f.push(`vramMB.${k} ist weder null noch Zahl >= 0`);
     return f;
 }
@@ -575,8 +575,8 @@ function ratschePruefen(r, h) {
 // ein Tier mehr im Bild sind +6 Befehle, kein Rückschritt).
 function ueberRatsche(ist, r, ratsche, groesse) {
     if (r == null) return false;
-    const pct = 1 + ((ratsche && ratsche.toleranzPct) || 0) / 100;
-    const abs = (ratsche && ratsche.toleranzAbs && ratsche.toleranzAbs[groesse]) || 0;
+    const pct = 1 + (ratsche?.toleranzPct || 0) / 100;
+    const abs = ratsche?.toleranzAbs?.[groesse] || 0;
     return ist > Math.max(r * pct, r + abs);
 }
 
@@ -746,7 +746,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
                     groesse: "vramMB",
                     text: `VRAM-Leck ${e.erzeuger}: ${e.mb} MB in ${e.n} Puffern, die kein Bild trägt (${e.form.join(" · ")})`,
                 });
-        const rv = (ratsche && ratsche.vramMB) || {};
+        const rv = ratsche?.vramMB || {};
         let frei = 0;
         for (const e of liste) {
             if (vramFrei(ratsche, e.erzeuger)) {
@@ -779,7 +779,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
                     `Textur-Objekt ohne Erzeuger: ${t.klasse}${t.tiefe ? " (Tiefe)" : ""} ${(t.groesse || []).join("x")} ` +
                     `${t.mb} MB${t.ziel ? " in einem namenlosen Ziel" : ", ohne Ziel"}`,
             });
-    const rg = (ratsche && ratsche.gesamt) || {};
+    const rg = ratsche?.gesamt || {};
     if (ueberRatsche(gebunden.befehle, rg.befehle, ratsche, "befehle"))
         rot.push({
             art: "ratsche",
@@ -871,7 +871,7 @@ function ratscheWeit(ratsche, u, paesse) {
         const z = je.get(id);
         for (const p of paesse)
             for (const g of ["befehle", "dreiecke"]) {
-                const ist = z && z.je && z.je[p] ? z.je[p][g] || 0 : 0;
+                const ist = z?.je?.[p] ? z.je[p][g] || 0 : 0;
                 weit(`weit:${id}:${p}:${g}`, (rz[p] || {})[g], ist, g, `${id} ${p} ${g}`);
             }
     }
@@ -1161,7 +1161,7 @@ function bandTabelle(u) {
         // der Inhalt jedes Satzes der Klasse je Pass (wer im EINEN Befehl liegt)
         for (const t of r.taeter)
             for (const [p, ih] of Object.entries(t.inhalt || {}))
-                if (ih && ih.length) z.push(`    ${t.klasse} ${p}: ${inhaltText(ih, 4)}`);
+                if (ih?.length) z.push(`    ${t.klasse} ${p}: ${inhaltText(ih, 4)}`);
     }
     z.push(
         pad("SUMME", 15) +

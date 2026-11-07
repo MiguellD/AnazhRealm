@@ -96,8 +96,7 @@ class AnazhRealm_vegetation_wiese {
         const NW = AnazhRealm.NAH_WIESE;
         const reich = this.state.nahWiese ? this.state.nahWiese.reich : 0;
         if (!(reich > 0)) return null;
-        const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
-        const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
+        const step = AnazhRealm._wieseSchritt();
         const GS = AnazhRealm.GRASS_SLOPE;
         const seedInt = this._forestSeedInt();
         const x0 = tx * NW.kachel;
@@ -167,17 +166,39 @@ class AnazhRealm_vegetation_wiese {
         return out;
     }
 
+    // DER SCHRITT DES GITTERS der Wiese (Studio `understory.grassStep`): je Zelle ein Wurf (`_nahWieseKachelBueschel`), die
+    // Ordnung der Ferne liest die Zelle aus der Lage (`_wieseOrdnung`, `_halmFerne`) — EINE Zahl für Wurf und Ordnung
+    static _wieseSchritt() {
+        const u = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
+        return u && Number.isFinite(u.grassStep) ? u.grassStep : 0.72;
+    }
+
     // DIE ORDNUNG DER FERNE (rein): o ∈ [0, 1) eines Büschels aus der Lage seines Fußes — der Stoff der Ferne rechnet dieselbe
-    // Zahl aus dem Ursprung seiner Instanz (`_halmFerne`): die Lage auf 1/256 m (in f32 exakt bis ±32 km, keine
-    // Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen, die oberen 24 Bit.
+    // Zahl aus dem Ursprung seiner Instanz (`_halmFerne`). Die oberen 8 Bit sind der BAYER-RANG seiner Gitter-Zelle (gi, gj =
+    // die Lage durch den Schritt, gerundet: der Jitter ±0,34 m bleibt unter dem halben Schritt) in der Tafel 16 × 16 — die
+    // Bit-Umkehr von (gi ⊕ gj, gi) verschränkt; die unteren 16 Bit der PCG über der Lage auf 1/256 m (versetzt um 2²³, beide
+    // Achsen) ordnen innerhalb eines Rangs. 24 Bit: in f32 exakt. So ist jeder Anteil a (o < a) ein gleichmäßiges TEIL-GITTER
+    // der Nähe (bei a = 1/4 jede zweite Zelle je Achse, der Abstand der Nachbarn 1/√a Zellen), nie ein Poisson-Wurf.
+    // Bis w19-saum-lai war o die PCG allein: die Nähe steht im geschichteten Gitter (eine Zelle je Schritt, gleichmäßiger als
+    // Poisson), die Ferne dünnte es ZUFÄLLIG — Klumpen und Lücken, durch die der flache Blick den Boden sah. Die Blattfläche je
+    // Boden hielt das Gesetz (Probe am Keil ±30° der Station, swiftshader: 10–20 m 2,64 · 20–40 m 2,25–2,75, nah 2,48–2,74),
+    // der Pixel-LAI fiel dort, wo die Ferne dünnt: je Fläche 1,02 · 0,97 · 0,78 · 0,72 (2–5 · 5–10 · 10–20 · 20–40 m). Die
+    // Station an derselben Pose (swiftshader): Boden-Pixel 10–20 m 881 → 809, 20–40 m 3 → 0 (satt), 40–80 m 9 → 3,
+    // 80–200 m 1 106 → 626, zurückgetauscht in derselben Welt wieder 880 · 3 · 9 · 1 105; der Bestand der Ferne 13 748 → 13 680
+    // Büschel, im Blick 1 259 → 1 282 (dieselbe Erwartung a je Zelle). Die Wand: gate:profiband P-Ferne, das Teil-Gitter.
     static _wieseOrdnung(x, z) {
-        const q = (v) => (Math.floor(Math.fround(v) * 256 + 0.5) + 8388608) >>> 0;
-        const pcg = (u) => {
-            const s = (Math.imul(u, 747796405) + 2891336453) >>> 0;
+        const S = AnazhRealm._wieseSchritt();
+        const [gi, gj] = [Math.floor(x / S + 0.5), Math.floor(z / S + 0.5)];
+        const [u, v] = [(gi ^ gj) & 15, gi & 15];
+        let rang = 0;
+        for (let k = 0; k < 4; k++) rang = (rang << 2) | (((u >> k) & 1) << 1) | ((v >> k) & 1);
+        const q = (w) => (Math.floor(Math.fround(w) * 256 + 0.5) + 8388608) >>> 0;
+        const pcg = (w0) => {
+            const s = (Math.imul(w0, 747796405) + 2891336453) >>> 0;
             const w = Math.imul(((s >>> ((s >>> 28) + 4)) ^ s) >>> 0, 277803737) >>> 0;
             return ((w >>> 22) ^ w) >>> 0;
         };
-        return (pcg((q(x) ^ pcg(q(z))) >>> 0) >>> 8) / 16777216;
+        return ((rang << 16) | (pcg((q(x) ^ pcg(q(z))) >>> 0) >>> 16)) / 16777216;
     }
 
     // Eine Kachel baut neu (eine Tat, ihr Heilen, ein Weg): sie trägt nur Daten, der Sicht-Satz legt sich neu — und die

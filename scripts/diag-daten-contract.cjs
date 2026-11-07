@@ -77,7 +77,7 @@ function validateDaten(N, spec) {
             continue;
         }
         if (spec.feld === "klang") {
-            if (!(typeof feld.bpm === "number" && isFinite(feld.bpm) && feld.bpm > 0))
+            if (!(Number.isFinite(feld.bpm) && feld.bpm > 0))
                 v.push(`§8.3: "${id}" klang.bpm ungueltig`);
             if (
                 !Array.isArray(feld.scale) ||
@@ -105,8 +105,8 @@ function validateDaten(N, spec) {
                     for (const k in prof) {
                         const pv = prof[k];
                         const ok =
-                            (typeof pv === "number" && isFinite(pv)) ||
-                            (Array.isArray(pv) && pv.every((x) => typeof x === "number" && isFinite(x)));
+                            Number.isFinite(pv) ||
+                            (Array.isArray(pv) && pv.every(Number.isFinite));
                         if (!ok) v.push(`§8.2: "${id}" motion.presets.${pn}.${k} nicht Zahl/Zahl-Liste`);
                     }
                 }

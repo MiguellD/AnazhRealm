@@ -115,7 +115,7 @@ const SCHUSS_FN = async (kam) => {
     cam.position.set(kam.px, kam.py, kam.pz);
     // BODEN-KLEMME: das Auge nie im Hang.
     const sy = r._voxelSurfaceY(kam.px, kam.pz);
-    if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
+    if (Number.isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
     cam.lookAt(kam.lx, kam.ly, kam.lz);
     cam.updateMatrixWorld(true);
     // Die March-Uniforms folgen der Kamera über den EINEN Produktions-Pfad (sonst
@@ -311,7 +311,7 @@ hauptLauf(async () => {
         setzeMittag();
         const boden = (x, z) => {
             const y = r._voxelSurfaceY(x, z);
-            return typeof y === "number" && isFinite(y) ? y : pm.y;
+            return Number.isFinite(y) ? y : pm.y;
         };
         const trocken = (x, z) => r._landAt(x, z, 0.3);
         // DIE BÜHNE: je Klasse ein FLACHER, TROCKENER Platz um die Mess-Wiese —
