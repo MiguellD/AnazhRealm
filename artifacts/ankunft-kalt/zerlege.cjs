@@ -8,7 +8,11 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const N = Number(process.env.KALT_BOOTS || 4); // je Seite (zweiter Läufer: derselbe Plan)
+// `--bild`: je Seite EIN Boot mit dem Bild der Kontrolle (Ausgabe-Pfad) und seiner Ruhe — die PNG liegen in $RUNNER_TEMP/probe
+// (die Probe-Post nimmt jedes PNG dort mit)
+const BILD = process.argv.includes("--bild");
+const N = BILD ? 1 : Number(process.env.KALT_BOOTS || 4); // je Seite
+const PNG = path.join(process.env.RUNNER_TEMP || os.tmpdir(), "probe", String(process.env.GITHUB_SHA || "lokal").slice(0, 8) + "-kontrolle");
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ankunft-kalt-"));
 const TAUSCH = ["stamm/studio-stoff.js", "stamm/stoff-material.js"];
 const neu = Object.fromEntries(TAUSCH.map((f) => [f, fs.readFileSync(f)]));
@@ -28,7 +32,7 @@ try {
         setze(seite);
         const j = path.join(dir, `k${i}.json`);
         const s = path.join(dir, `s${i}.json`);
-        const p = spawnSync(process.execPath, ["scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", j, "--spur", s], { encoding: "utf8", timeout: 200000 });
+        const p = spawnSync(process.execPath, ["scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", j, "--spur", s, ...(BILD ? ["--bild", `${PNG}-${seite}.png`] : [])], { encoding: "utf8", timeout: 300000 }); // prettier-ignore
         const txt = (p.stdout || "") + (p.stderr || "");
         adapter = adapter || (/\[linse-gpu\][^\r\n]*/.exec(txt) || [""])[0];
         const tK = /t\(Kontrolle\) kalt ([\d.]+) s/.exec(txt);
@@ -102,6 +106,11 @@ const phasen = (seite) => {
     for (const o of boots[seite].map((b) => b.out)) for (const m of o.halter.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push(m.t);
     return [...ph].filter(([k]) => !/^(HTML|Skripte|DOM|buch steht)/.test(k)).map(([k, v]) => `${k.replace(" steht", "")} ${sek(med(v))}`).join(" | ");
 };
+if (BILD)
+    for (const seite of ["A", "B"]) {
+        const o = boots[seite][0].out;
+        zeile(`BILD ${seite}: ${PNG.split(/[\\/]/).pop()}-${seite}.png · t(Kontrolle) ${sek(boots[seite][0].tK)} s · Lücke gegen die Ruhe ${o.bild ? (100 * o.bild.luecke).toFixed(2) + " %" : "?"} · dc ${o.bild ? o.bild.a.dc : "?"} · Dreiecke ${o.bild ? o.bild.a.dreiecke : "?"} · offen ${(o.offen || []).join(" · ") || "nichts"}`); // prettier-ignore
+    }
 zeile(`ABAB ${adapter} V${boots.B[0].out.version} · ${kopf("A")}`);
 zeile(kopf("B"));
 zeile(`KLASSEN A: ${klassen("A")}`);
