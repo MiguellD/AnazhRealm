@@ -1282,7 +1282,9 @@ class AnazhRealm_gelaende_kollision {
     // Fahrzeug-Kollisions-Hülle aus der gezeichneten Gestalt (`_fahrzeugGestaltUmriss`): der Unterkörper (yFloor..yBelt) als
     // EINE Box über Bug..Heck und die Breite des Grundrisses (sein Rahmen: an Bug, Heck und Flanke die Gestalt, an den gerundeten
     // Ecken konservativ — Teil-Boxen je Scheibe bildeten Fugen und Stufen an der Flanke: der Spieler steckte 0,18 m darin und
-    // wurde je Schritt neu gestoßen, gate:fahr-leben L6) + Greenhouse (cowl..back × ±cw × yBelt..Dach des Umrisses) + 4
+    // wurde je Schritt neu gestoßen, gate:fahr-leben L6) + Greenhouse (cowl..back × ±cw × yBelt..yRoof: die Dach-Station; die
+    // Wölbung der Gestalt darüber, beim GT 0,11 m über der Dach-Mitte, über die ganze Länge gezogen, stand über der abfallenden
+    // Frontscheibe in der Luft, und der Arm der Third-Kamera schnappte dort beim Abstieg 10,6 m heran, gate:fahr-leben T4) + 4
     // Rad-Boxen an fAx/rAx — als PSEUDO-Parts durch `_blockerComputePartAABB` (Skala + Gier gratis). null → Donor-Parts.
     _fahrzeugBlockerParts(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
@@ -1296,8 +1298,8 @@ class AnazhRealm_gelaende_kollision {
             },
         ];
         teile.push({
-            position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + u.dach) / 2, z: 0 },
-            size: { x: Math.max(0.4, h.cowlX - h.backX), y: u.dach - h.yBelt, z: h.cw * 2 },
+            position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + h.yRoof) / 2, z: 0 },
+            size: { x: Math.max(0.4, h.cowlX - h.backX), y: h.yRoof - h.yBelt, z: h.cw * 2 },
         });
         for (const ax of [h.fAx, h.rAx]) {
             for (const sz of [-1, 1]) {
