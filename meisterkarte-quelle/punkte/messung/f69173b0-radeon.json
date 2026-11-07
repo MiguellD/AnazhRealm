@@ -1,0 +1,255 @@
+{
+ "sha": "f69173b022098343b8966dd1f38f642bc14225b5",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T08:33:09.927Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 49 Bilder · max 225.95 ms · 87.76 % > 33 ms · Fahrt 41 Bilder · max 100.47 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 225.95), 87.76 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.47), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: Gehen 49 Bilder · max 225.95 ms · 87.76 % > 33 ms · Fahrt 41 Bilder · max 100.47 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 225.95), 87.76 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.47), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 34.8,
+   "zeit": "2026-11-07T08:26:17.468Z",
+   "abdruck": "41e0d58bce8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.24 · 10–20 2.01 · 20–40 satt, Farbton 2–5 m 13.52°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.33,
+   "gpu": "amd/rdna-3",
+   "s": 19.8,
+   "zeit": "2026-11-07T08:27:04.908Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": true,
+   "zahl": "Krone sommer 182898 px · winter 20690 px · fruehling 143197 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.425 × Sommer",
+   "exit": 0,
+   "minuten": 1,
+   "gpu": "amd/rdna-3",
+   "s": 60.1,
+   "zeit": "2026-11-07T08:27:24.780Z",
+   "abdruck": "3d56669bb478",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4263 · Karte fimp:birke:L2 0.3302 (32131 px), fimp:eiche:L2 0.2357 (80765 px), fimp:fichte:L2 0.2044 (38635 px), fimp:strauch:L2 0.4263 (22993 px), fimp:tanne:L2 0.2305 (119279 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4263 · Karte fimp:birke:L2 0.3302 (32131 px), fimp:eiche:L2 0.2357 (80765 px), fimp:fichte:L2 0.2044 (38635 px), fimp:strauch:L2 0.4263 (22993 px), fimp:tanne:L2 0.2305 (119279 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 44.6,
+   "zeit": "2026-11-07T08:28:24.905Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "r 0.45 bei Lag 0 (n 104), Spitze 0.49 bei -1.8 s, CV Bild 0.19 / Ohr 0.21, 63.8 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: r 0.45 bei Lag 0 (n 104), Spitze 0.49 bei -1.8 s, CV Bild 0.19 / Ohr 0.21, 63.8 fps, Klang an",
+   "gpu": "amd/rdna-3",
+   "s": 23.5,
+   "zeit": "2026-11-07T08:29:09.589Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.6385 (wasserSatz 24994 px, spiegelEbene 0.879) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 96.9 σ 35.7 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "exit": 0,
+   "minuten": 0.35,
+   "gpu": "amd/rdna-3",
+   "s": 21.3,
+   "zeit": "2026-11-07T08:29:33.134Z",
+   "abdruck": "e18e9c50847e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 55.5 m, ID 600 s hält (Flucht 483 / 283 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.7 m: 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (255 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (308 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (300 px)",
+   "exit": 0,
+   "minuten": 0.81,
+   "grund": "ROT: (a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 55.5 m, ID 600 s hält (Flucht 483 / 283 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.7 m: 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (255 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (308 px) · 43.5 m 5/5 fliehen, 5 sichtbar, 3 Fleck(en) (300 px)",
+   "gpu": "amd/rdna-3",
+   "s": 48.4,
+   "zeit": "2026-11-07T08:29:54.457Z",
+   "abdruck": "4cbb53e14031",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": true,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 19/20, die alten 0.917 · Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 134.67 m · Luma 112.1 σ 49.3 schwarz 0.0 % weiß 0.0 % ",
+   "exit": 0,
+   "minuten": 1.15,
+   "gpu": "amd/rdna-3",
+   "s": 69.3,
+   "zeit": "2026-11-07T08:31:42.849Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 354 ms (Soll ≤ 250) · Haupt-Faden belegt 11.14 s bis zur Kontrolle (Soll ≤ 4; 69 LongTasks 8.35 s) · Kontrolle 12.36 s Seiten-Uhr · die längste: 354 ms bei 1.8 s: _runFrameScheduler (verteilt) 61 · _renderScene [three.webgpu.min.js] 60 · _buildPbrNodeMaterial 55 · 1 Pipelines synchron (mipmap-r8unorm-2d-array) · belegt je Klasse (s): Jobs 4.57 · Knoten-Bau 3.92 · Bild 3.70 · program 0.52 · garbage collector 0.28 · Himmel 0.28 · Streu 0.18 · Saat 0.16 · Buch 0.10 · Bauten 0.09 · Gruppen-Bau 0.08 · Boden 0.07 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: längste Aufgabe 354 ms (Soll ≤ 250) · Haupt-Faden belegt 11.14 s bis zur Kontrolle (Soll ≤ 4; 69 LongTasks 8.35 s) · Kontrolle 12.36 s Seiten-Uhr · die längste: 354 ms bei 1.8 s: _runFrameScheduler (verteilt) 61 · _renderScene [three.webgpu.min.js] 60 · _buildPbrNodeMaterial 55 · 1 Pipelines synchron (mipmap-r8unorm-2d-array) · belegt je Klasse (s): Jobs 4.57 · Knoten-Bau 3.92 · Bild 3.70 · program 0.52 · garbage collector 0.28 · Himmel 0.28 · Streu 0.18 · Saat 0.16 · Buch 0.10 · Bauten 0.09 · Gruppen-Bau 0.08 · Boden 0.07 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.7,
+   "zeit": "2026-11-07T08:33:09.927Z",
+   "abdruck": "8d570e46999f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
+   "exit": 1,
+   "minuten": 0.51,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30.4,
+   "zeit": "2026-11-07T08:30:50.061Z",
+   "abdruck": "fcd98a81c138",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T08:26:03.942Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 5.8,
+  "grundstellungS": [
+   0.1,
+   7.2,
+   3.1
+  ],
+  "proben": 10,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 12.6,
+    "takte": 597,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 7.1,
+    "takte": 588,
+    "chunks": 91,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 15,
+    "takte": 597,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K5#1",
+    "s": 14.6,
+    "takte": 635,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "siedlung.K4#2",
+    "wege": "wege +15 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-294.9,-1139.8,-143.6,-1110.1/32] …",
+    "s": 7.2
+   },
+   {
+    "vor": "ankunft.K5#1",
+    "wege": "wege +6 [152.6,505.5,647.4,926.8/331] [234.5,504.5,580.5,843.3/329] [239.3,559.1,507,832.5/12] …",
+    "s": 3.1
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 10
+   }
+  ],
+  "ciBlicke": 11,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1471,
+   "frameP95": 158.78,
+   "taktP95": 111.41,
+   "vramMax": 171.4,
+   "seiten": 7,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "tiere.K1#2",
+     "m": 5808,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5578,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1215,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 592,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 443,
+   "luecken": 3,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 463.2,
+  "minuten": 7.87
+ }
+}
