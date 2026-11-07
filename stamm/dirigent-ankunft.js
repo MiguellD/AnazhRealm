@@ -77,8 +77,9 @@ class AnazhRealm_dirigent_ankunft {
         // Ring 6.5 — Hotbar im DOM rendern. Wird hier einmal aufgesetzt;
         // setHotbarSlot löst ein Re-Render aus.
         this._renderHotbarDOM();
-        // Ring 6.6 — Werkstatt-Editor initial mit Default-Bauplan rendern.
-        this._renderWorkshopDOM();
+        // Die Werkstatt (Liste, Steckbrief, Vorschau) baut, wer sie zeigt: der Vorbau der Bedienung (`_uiVorbau`) oder ihr
+        // Öffner (`_workshopHandleDrawerChange`) — nie der Init unter dem Ladeschirm (w16-lade-atem: headless kalt 124 ms, und der
+        // Steckbrief des Default-Bauplans ließ die Eiche wachsen).
         this._updateBuildModeHud();
         this.initTopbar();
         this.initConsoleDOM();
@@ -1614,10 +1615,12 @@ class AnazhRealm_dirigent_ankunft {
     // Belichtung trägt), je Strahl der Boden des Gesetzes, wo er die Ebene unter dem Auge trifft (höchstens `weitM`). Bis dahin
     // mass er am Punkt des Spielers: der Grat nahm ihm die Sonne in einem Schritt der Uhr ganz, dem Bild nur den nahen Boden
     // (die fernen besonnten Flecken blieben) — die Belichtung überholte das Bild um 0,10 EV (Wiese 0,728 → 0,73, Radeon und GTX).
-    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge 1.
+    // Ohne Strahl auf den Boden (das Auge blickt in den Himmel, steht unter dem Gelände) misst er am Auge; ohne Auge oder Karte
+    // den flachen Boden (L.y), unter dem Horizont 0.
     // DIE MESSUNG KOSTET DIE ÄNDERUNG (Gebot 7): sie ist eine Funktion ihrer Eingänge — die Kamera (Lage und Projektion), das Licht,
     // die Karte (Gitter, Anker, Bezug), die Lage des Gelände-Gesetzes (`hoehe` liest Saat, Grundhöhe, Wasserstand, Erbgut und
-    // Erdbau) und der Stand des Richtlichts; gleichen sie alle dem letzten Ruf, ist ihr Wert derselbe (`_messerGedaechtnis`).
+    // Erdbau), der Stand des Richtlichts und die werfenden Karten (`_kartenWurfWerfer`); gleichen sie alle dem letzten Ruf, ist
+    // ihr Wert derselbe (`_messerGedaechtnis`).
     // Bis hier fragte jedes Bild 33-mal die Höhe (Werkbank swiftshader, Genesis: 0,28 ms je Ruf, davon 0,21 ms Höhe), auch
     // wo Kamera und Sonne standen.
     _horizontSichtImBild(L) {
@@ -1643,6 +1646,8 @@ class AnazhRealm_dirigent_ankunft {
         for (const x of [L.x, L.y, L.z, G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
         const tan = AnazhRealm.SCHATTEN_KASKADE.sonneTan;
         for (const x of [st.renderer, st.rendererReady, dl, !!dl && dl.castShadow, tan]) merk(x);
+        // die werfenden Karten, wie `_kartenWurfSicht` sie je Strahl liest: ein neuer Bestand ist ein neues Objekt
+        merk(this._kartenWurfWerfer(L));
         // die Kamera, wie die Messung sie liest: der Ursprung der Strahlen (`position`) und `unproject` (Projektion⁻¹, Welt-Matrix)
         for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
         for (const x of cam.matrixWorld.elements) merk(x);
@@ -1689,7 +1694,10 @@ class AnazhRealm_dirigent_ankunft {
                     const l = Math.hypot(n[0], n[1], n[2]) * Math.sign(n[1] || 1);
                     if (l) nl = Math.max(0, (n[0] * L.x + n[1] * L.y + n[2] * L.z) / l);
                 }
-                summe += this._horizontSichtAm(q[0], q[1], q[2], L) * nl;
+                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung), auf
+                // der Neigung, mit der er sie empfängt
+                const [x, y, z] = q;
+                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L) * nl;
                 zahl++;
             }
         return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L) * L.y;

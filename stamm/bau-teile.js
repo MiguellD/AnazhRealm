@@ -2506,11 +2506,20 @@ class AnazhRealm_bau_teile {
                   ? "knickt"
                   : null;
         const name = AnazhRealm._namensKopf(bp.label || entry.type);
-        const g = { pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
-        if (grund) {
+        // DAS URTEIL TRÄGT SEINEN PLAN (`plan`): der Bruch nennt Teile des geurteilten Plans (Indizes), der Fall landet mit ihm —
+        // der Takt liest ihn hier, nie neu aus dem Buch. Befund z264: ein Plan, gelöscht oder umgeschrieben zwischen dem Setzen
+        // und dem ersten Takt (`deleteBlueprint`, die Aufräumer des Playtests), ließ `_werkBricht` je Bild an `undefined` brechen;
+        // der Fall eines Werks ohne Plan im Buch verschwand, statt zu landen.
+        const g = { plan: bp, pose: { q: new THREE.Quaternion(), um: { x: 0, y: 0, z: 0 }, sinken: 0 } };
+        if (grund === "schwebt") {
+            // DER LASTPFAD BRICHT: die nicht getragenen Teile werden freie Körper, im ersten Takt des Gesetzes (`_werkBricht`)
+            g.bruch = v.floatingParts.slice();
+            const text = v.lines.find((l) => l.sev === "warn").text;
+            this._spielerSagt(["bauen.sagt-sturz-einsturz", { name, text }]);
+        } else if (grund) {
             const text = v.lines.find((l) => l.sev === "warn" && (grund !== "knickt" || /knickt/.test(l.text))).text;
             g.sturz = { grund, name, text, t: 0, w: 0, theta: 0, boden };
-            if (faellt || grund === "schwebt") {
+            if (faellt) {
                 // was schwebt, fällt, bis sein tiefstes Stück den Grund erreicht
                 const unten = v.floatingParts.map((i) => this._partWorldAABB(bp.parts[i]).min.y);
                 g.sturz.hoehe = Math.max(0, Math.min(...unten) - boden);
@@ -2544,7 +2553,7 @@ class AnazhRealm_bau_teile {
             }
             g.gefaess = this._gefaessFassung(bp);
         }
-        if (!g.sturz && !g.roll && !g.gefaess) return;
+        if (!g.bruch && !g.sturz && !g.roll && !g.gefaess) return;
         entry._gesetz = g;
         (this._werkGesetzImTakt || (this._werkGesetzImTakt = new Set())).add(entry);
     }
@@ -2558,7 +2567,8 @@ class AnazhRealm_bau_teile {
         const wf = this._weatherFieldFor(this.state.weather);
         for (const e of B) {
             const g = e._gesetz;
-            if (g.sturz) this._werkSturzSchritt(e, g, schwere, dt);
+            if (g.bruch) this._werkBricht(e, g.plan, g.bruch);
+            else if (g.sturz) this._werkSturzSchritt(e, g, schwere, dt);
             else {
                 if (g.roll) this._werkRollSchritt(e, g, schwere, dt);
                 if (g.gefaess) this._gefaessSchritt(e, g.gefaess, wf, dt);
@@ -2572,7 +2582,7 @@ class AnazhRealm_bau_teile {
     // landet: sein tiefstes Teil ist der Grund, die Blocker ziehen mit, das Gesetz urteilt neu.
     _werkSturzSchritt(e, g, schwere, dt) {
         const s = g.sturz;
-        const frei = s.grund === "faellt" || s.grund === "schwebt";
+        const frei = s.grund === "faellt";
         s.t += dt;
         if (frei) g.pose.sinken = Math.min(s.hoehe, 0.5 * schwere * s.t * s.t);
         else {
@@ -2582,14 +2592,14 @@ class AnazhRealm_bau_teile {
         }
         this._werkPoseZeigen(e);
         if (frei ? g.pose.sinken < s.hoehe : s.theta < Math.PI / 2) return;
-        const bp = this.state.blueprints && this.state.blueprints[e.type];
-        if (s.grund === "faellt" && bp) {
+        if (this._werkWaise(e, "der Sturz")) return;
+        if (s.grund === "faellt") {
             this._werkGesetzAus(e);
             delete e._gesetz;
             e.position.y -= s.hoehe;
             this._blockerBewegt(e);
             if (e.blockerAABBs) this._populateBlockerAABBs(e);
-            this._werkGesetzSetzen(e, bp, s.boden + s.hoehe);
+            this._werkGesetzSetzen(e, g.plan, s.boden + s.hoehe);
             return this._werkPoseZeigen(e);
         }
         this.removeArchitecture(e, { still: true });
@@ -2598,6 +2608,121 @@ class AnazhRealm_bau_teile {
             id: e.id,
             grund: s.grund,
         });
+    }
+
+    // DER EINSTURZ (physik.K3 Staffel 2; der Maßstab Teardown und Red Faction: Lastpfad → Bruch → Starrkörper): was der Lastpfad
+    // nicht mehr trägt (`_loadPath` am Grund des Plans, `frei` die Indizes), bricht aus dem Werk — je Teil ein freier Körper des
+    // EINEN Lösers (`_freiSchritt`), geboren, wo und wie er im Werk saß (Gier des Werks mal Drehung des Teils, die `drehung` des
+    // Eintrags), und fällt, stößt, ruht; was trägt, steht weiter als das Werk mit den tragenden Teilen (sein Bauplan
+    // `<art>_rest_<hash>`, die Verbindungen umgezählt; dieselbe Kennung, derselbe Same) und urteilt neu. Ein Trümmer ist ein
+    // Bauplan `truemmer_<hash>` (EIN Teil, `frei`): gleiche Teile teilen ihn, der Stand trägt ihn wie jeden eigenen Bauplan, die
+    // Lage und Drehung seines Körpers jeder Bau (`architectures`). Vorher fiel das ganze Werk als ½ g t² und verschwand.
+    _werkBricht(e, bp, frei) {
+        if (this._werkWaise(e, "der Bruch")) return;
+        const fallend = new Set(frei);
+        const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const [c, sn] = [Math.cos(ry), Math.sin(ry)];
+        const name = AnazhRealm._namensKopf(bp.label || e.type);
+        const opts = {
+            seed: e.seed,
+            scale: s,
+            precise: true,
+            silent: true,
+            tintH: e.tintH,
+            tintS: e.tintS,
+            tintV: e.tintV,
+            werk: e.werk === true,
+            freeBorn: e.freeBorn === true,
+            geburt: e.geburt,
+            geburtNass: e.geburtNass,
+        };
+        // ein Plan des Gesetzes (`vomGesetz`, die Herkunfts-Marke; sie reist im Stand): er trägt Trümmer und Rest, nie den
+        // Katalog des Spielers (`_katalogSichtbar`) — sonst stünde jeder Einsturz als „eigenes Werk" zuoberst im Rezeptbuch
+        const bauplan = (stamm, teile, mehr) => {
+            const n = stamm + "_" + this._fastHash(JSON.stringify(teile) + JSON.stringify(mehr));
+            if (!this.state.blueprints[n])
+                this.state.blueprints[n] = AnazhRealm._etikett({
+                    name: n,
+                    builtIn: false,
+                    vomGesetz: true,
+                    parts: teile,
+                    ...mehr,
+                });
+            return n;
+        };
+        // die Trümmer: je fallendes Teil sein Körper in der Lage des Werks
+        const truemmer = [];
+        for (const i of frei) {
+            const p = bp.parts[i];
+            const q = p.position || {};
+            const [px, py, pz] = [(q.x || 0) * s, (q.y || 0) * s, (q.z || 0) * s];
+            const teil = JSON.parse(JSON.stringify(p));
+            const r = teil.rotation;
+            delete teil.rotation; // die Drehung trägt der Körper
+            teil.position = { x: 0, y: 0, z: 0 };
+            const typ = bauplan("truemmer", [teil], { etikett: ["bau.truemmer", { name }], frei: true });
+            // die Drehung: die Gier des Werks mal die Euler-Drehung (XYZ) des Teils
+            const [hx, hy, hz] = [((r && r.x) || 0) / 2, ((r && r.y) || 0) / 2, ((r && r.z) || 0) / 2];
+            const [c1, c2, c3, s1, s2, s3] = [
+                Math.cos(hx),
+                Math.cos(hy),
+                Math.cos(hz),
+                Math.sin(hx),
+                Math.sin(hy),
+                Math.sin(hz),
+            ];
+            const t = [
+                c1 * c2 * c3 - s1 * s2 * s3,
+                s1 * c2 * c3 + c1 * s2 * s3,
+                c1 * s2 * c3 - s1 * c2 * s3,
+                c1 * c2 * s3 + s1 * s2 * c3,
+            ];
+            const [gw, gy] = [Math.cos(ry / 2), Math.sin(ry / 2)];
+            const drehung = [
+                gw * t[0] - gy * t[2],
+                gw * t[1] + gy * t[3],
+                gw * t[2] + gy * t[0],
+                gw * t[3] - gy * t[1],
+            ];
+            const ort = {
+                x: e.position.x + px * c + pz * sn,
+                y: e.position.y + py,
+                z: e.position.z - px * sn + pz * c,
+            };
+            truemmer.push([typ, ort, drehung]);
+        }
+        // der Rest: die tragenden Teile, ihre Verbindungen umgezählt
+        const neu = new Map();
+        const teile = [];
+        bp.parts.forEach(
+            (p, i) => fallend.has(i) || (neu.set(i, teile.length), teile.push(JSON.parse(JSON.stringify(p))))
+        );
+        const verbunden = (bp.connections || [])
+            .filter((v) => neu.has(v.partA) && (!(v.partB >= 0) || neu.has(v.partB)))
+            .map((v) => ({
+                ...JSON.parse(JSON.stringify(v)),
+                partA: neu.get(v.partA),
+                ...(v.partB >= 0 ? { partB: neu.get(v.partB) } : {}),
+            }));
+        const rest = teile.length
+            ? bauplan(e.type + "_rest", teile, { etikett: ["bau.rest", { name }], connections: verbunden })
+            : null;
+        const [id, ort] = [e.id, { ...e.position }];
+        this.removeArchitecture(e, { still: true });
+        if (rest) this.spawnArchitecture(rest, ort, { ...opts, id, rotationY: ry });
+        for (const [typ, o, drehung] of truemmer) this.spawnArchitecture(typ, o, { ...opts, drehung });
+        this.journalAppend(
+            "loss",
+            ["journal.einsturz", { name, grund: this._t("bauen.bruch-lastpfad", { n: frei.length }) }],
+            {
+                type: e.type,
+                id,
+                grund: "schwebt",
+                truemmer: truemmer.length,
+            }
+        );
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
     }
 
     // Das Werk rollt: der Hang treibt es längs seiner Roll-Richtung (quer zur Achse; die Kugel die Falllinie hinab) mit
@@ -2662,6 +2787,20 @@ class AnazhRealm_bau_teile {
     _werkWeltMatrix(e) {
         return this._archEntryWorldMatrix(e, this._werkPoseTmpW || (this._werkPoseTmpW = new THREE.Matrix4()));
     }
+    // DIE WAISE DES TAKTS: der Akt des Gesetzes (Bruch, Ende des Sturzes) ist ein Akt an der Welt — ein Eintrag, der die Welt
+    // verließ, ohne durch die EINE Tür zu gehen (`removeArchitecture` → `_bauVerlaesstTakte`), bricht nicht: kein Rest, kein
+    // Trümmer, kein Einsturz im Journal eines Werks, das es nicht mehr gibt. Er meldet sich laut beim Namen über den EINEN Melder
+    // und verlässt den Takt. Befund z264: der Playtest räumte seinen Wagen (`test_10b_car`, ein Quarz-Block 0,1 m über den
+    // Rädern: schwebt) per `filter` aus `state.architectures` — der Bruch lief je Bild weiter, vorher der Sturz eines Geists.
+    _werkWaise(e, akt) {
+        if (this.state.architectures.includes(e)) return false;
+        this._werkGesetzAus(e);
+        this._bruchMelden(
+            `WERK-WAISE: ${akt} an „${e.type}" (${e.id}) — der Eintrag verließ die Welt an removeArchitecture vorbei, sein Takt lief weiter`
+        );
+        return true;
+    }
+
     // Der Abbau nimmt das Werk aus dem Takt des Gesetzes, sein Wasser mit.
     _werkGesetzAus(entry) {
         if (!entry._gesetz || !this._werkGesetzImTakt) return;

@@ -2600,7 +2600,7 @@ class AnazhRealm_bild_sicht {
         const st = this.state;
         const WL = this._weltLicht();
         const quelle = st._skyEnvRT && st._skyEnvRT.texture;
-        if (!quelle || !st.atmoLut) return;
+        if (!quelle || !st.atmoLut) return true;
         if (!WL.pass) {
             const TSL = THREE.TSL;
             WL.pass = AnazhRealm._schirmDreieck(
@@ -2612,8 +2612,9 @@ class AnazhRealm_bild_sicht {
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
             );
-        this._atmoZeichne(WL.pass, WL.himmel);
+        if (!this._atmoZeichne(WL.pass, WL.himmel)) return false; // die Pipeline im Vorbau (die Umgebung malt neu)
         WL.stand++;
+        return true;
     }
 
     // Der EINE Schreiber der Lichter: je Bild (`_loopRender`, neben der Bild-Uhr) und je Anwendung des Tags

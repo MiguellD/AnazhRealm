@@ -13,8 +13,8 @@ class AnazhRealm_dirigent_takt {
             // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis
             // 5 km, `gate:move-under-load` (d)). `delta` (der Spiel-Takt) liest jede Bewegung: Fix-Schritt, Tiere, Ritt,
             // Rauch, Wetter-Zug. Die Wanduhr lesen nur, die sie benannt brauchen: `wandDelta` das Mess-Instrument
-            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange) und das Foundry-Laden (die Welt lädt mit der
-            // Wanduhr); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
+            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange), das Foundry-Laden und die Pflanz-Schlange (die
+            // Welt lädt mit der Wanduhr, `_pflanzKappe`); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
             const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
@@ -102,8 +102,10 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Welt-Regeln ###
                     // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
-                    // geplante Geste vor den Regeln läuft.
-                    this._tickWorldRules(currentTime);
+                    // geplante Geste vor den Regeln läuft. DIE GESETZE LAUFEN AN DER WELT-UHR (feld.K2#2): Takt, Leben und
+                    // Erneuerung jedes Gesetzes (Nexus, Gemüt, Spieler) zählen `spielZeit` — die Uhr, die jeder Mitspieler trägt
+                    // (`_weltUhrNimm`) und die der Wurf schon las (`_worldRuleSeed`); bis feld.K2#2 die Takt-Uhr der Seite.
+                    this._tickWorldRules(this.state.spielZeit);
 
                     // ### Player-Emotionen (Ring 3) ###
                     this.updatePlayerEmotions(currentTime);
@@ -230,7 +232,7 @@ class AnazhRealm_dirigent_takt {
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
-                this._loopVoxelStreaming();
+                this._loopVoxelStreaming(wandDelta);
                 this._perfSenseLap("streaming", _pt);
 
                 if (!ruht) {
@@ -388,9 +390,22 @@ class AnazhRealm_dirigent_takt {
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
-        this._gameLoopTick = loop;
-        this._takt = loop; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
-        this.state.renderer.setAnimationLoop(loop);
+        // DER TAKT IST DER ORT DES PSO-VORBAUS (`_psoVorbau`): nur was ein Takt zeichnet, darf unter dem Ladeschirm auf seine
+        // Pipeline warten — der nächste Takt zeichnet es neu. Ein Leser außerhalb des Takts (eine Probe, `_himmelFrisch`, eine
+        // Aufnahme) zeichnet einmal und liest; ihm verschluckte der Vorbau den Draw still (w16-lade-atem an d3708675: das
+        // Wasser-Bild 0 Pixel, S0 ohne Lesung der Umgebung, die Frost-Wand 0,00 % der Blöcke).
+        const takt = (time) => {
+            const vor = this._imTakt;
+            this._imTakt = true;
+            try {
+                return loop(time);
+            } finally {
+                this._imTakt = vor;
+            }
+        };
+        this._gameLoopTick = takt;
+        this._takt = takt; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
+        this.state.renderer.setAnimationLoop(takt);
     }
 
     // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
@@ -1504,33 +1519,36 @@ class AnazhRealm_dirigent_takt {
         this._bestaeuberTakt(delta); // die Bestäuber lesen Blüte, Wind, Feuchte und Tag (luftwasser.K4)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
-        // — er zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die Wesen
-        // schreiben nie selbst), sonst das Wort der Front am Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über
-        // Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus dem Wort, das die Front einen Zug vorher am Ort trug: Wetter
-        // und Übergang sind eine Funktion von Saat, Ort und Welt-Uhr — zwei Seiten einer Uhr und ein Reload mitten im Sturm
-        // stehen im selben Übergang, und der erste Takt einer Seite (Boot, Reload, Beitritt) zieht den laufenden Zug. Bis
-        // feld.K2#2 zählte jede Seite ihre Sitzung (`weatherEffectTime`) und ihre Wanduhr. Steht das Wort des Spielers
-        // (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug (danach steht das Wetter bis zum nächsten); er
-        // wartet auf die Bühne.
+        // (`_wetterZugZiehen`). Steht das Wort des Spielers (`wetterWort`), ruht er; der Halt einer Messung verbraucht seinen Zug
+        // (danach steht das Wetter bis zum nächsten); er wartet auf die Bühne.
         const st = this.state;
         this._pegelUhr(); // der Pegel folgt der Welt-Uhr: der Regen fließt über die Lag-Zeit seines Laufs ab, die Dürre senkt ihn
-        const Z = AnazhRealm.WETTER_ZUG_SEK;
-        const zug = Math.floor(st.spielZeit / Z);
+        const zug = Math.floor(st.spielZeit / AnazhRealm.WETTER_ZUG_SEK);
         if (st.wetterWort || zug === this._wetterZug || !this._buehneSteht()) return;
         this._wetterZug = zug;
-        if (this._messHalt()) return;
-        const wunsch = st.wetterWunsch;
+        if (!this._messHalt()) this._wetterZugZiehen(zug);
+    }
+
+    // DER ZUG `zug` ZIEHT: das Wort des Wunschs der Welt aus dem Fenster des Zugs davor (`_wunschDesZugs` — Nexus, seine Gesetze,
+    // das Gemüt, die Wesen schreiben nie selbst, ihr Wunsch ist ein Akt mit Stempel, `_wunschAkt`), sonst das Wort der Front am
+    // Ort zur Zeit des Zugs (`_wetterAmOrt`: phyto-core wetterAt über Saat, Ort und Uhr), und geht ab DIESER Zeit 45 s über aus
+    // dem Wort, das die Front einen Zug vorher am Ort trug. Wort, Übergang und Schreiber sind eine Funktion von Saat, Ort,
+    // Welt-Uhr und den Akten — nie davon, was vorher galt: zwei Seiten einer Uhr, ein Reload mitten im Sturm und ein Akt, der
+    // spät kam (`_wunschNimm` zieht neu), stehen im selben Übergang. Bis feld.K2#2 zählte jede Seite ihre Sitzung
+    // (`weatherEffectTime`) und ihre Wanduhr, danach zog sie den Wunsch ihres eigenen Nexus, und ein Zug ohne neues Wort ließ den
+    // Übergang des vorigen stehen.
+    _wetterZugZiehen(zug) {
+        const st = this.state;
+        const Z = AnazhRealm.WETTER_ZUG_SEK;
+        const wunsch = this._wunschDesZugs(zug);
         const pm = st.playerMesh;
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
-        const next =
-            wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
+        const next = wunsch ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
         const von = this._wetterAmOrt(x, z, (zug - 1) * Z);
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
-        // der Zug zieht den Wunsch: `_setWeather` liest ihn als Schreiber (`wetterSchreiber`); danach ist er verbraucht
-        if (next !== st.weather || von !== next) this._setWeather(next, "auto-zug", { von, beginn: zug * Z });
-        if (st.wetterWunsch === wunsch) st.wetterWunsch = null;
+        this._setWeather(next, "auto-zug", { von, beginn: zug * Z, wunsch });
     }
 
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
@@ -1645,6 +1663,13 @@ class AnazhRealm_dirigent_takt {
         return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
     }
 
+    // DER PSO-VORBAU GILT JETZT (w16-lade-atem, ankunft.K5): unter dem Ladeschirm UND im Takt des Loops (`_imTakt`) — ein Render
+    // außerhalb der Welt-Szene wartet dann auf seine Pipeline, statt sie synchron zu bauen; der nächste Takt zeichnet ihn neu.
+    // Wer außerhalb des Takts zeichnet, liest danach (Probe, `_himmelFrisch`, Aufnahme): er zeichnet ganz, wie vor dem Vorbau.
+    _psoVorbau() {
+        return this._imTakt === true && this._ladeTakt();
+    }
+
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
     // eigenen Takt (per setTimeout; bis K5 die Ort-Wahl, heute im Ort-Faden) eine andere; gestellt beim ersten Leser, gelöscht am Ende
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
@@ -1732,9 +1757,16 @@ class AnazhRealm_dirigent_takt {
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
                     // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
                     // Im Lade-Takt ist die Deko ein Leser mit Kappe (K60-2): bis zur EINEN Frist des Lade-Frames, mindestens ihr Boden.
+                    // DER BODEN IM FADEN IST TERRAIN (w15-strom-takt, die Konkurrenz um den Takt): wartet ein Netz des Boden-Strom
+                    // im Fenster seines Fadens (`_frameBodenWartet`), arbeitet das Terrain — die Deko trägt dann ihren Boden wie im
+                    // Takt mit Terrain-Bau, nie das ganze Bild. Bis w15-strom-takt galt nur der Einbau als Terrain: im GT stand der
+                    // Strom fast jedes Bild am Fenster (BODEN_IM_FLUG), headless nahm sich die Deko jedes Bild ganz (die Nah-Wiese
+                    // 8,5 ms in den Bildern über p90, an main 1,2 ms).
                     const lade = this._ladeTakt();
                     const msDeko =
-                        st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                        (st._frameChunksBuilt || st._frameBodenWartet) && !lade
+                            ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS)
+                            : ms;
                     const _dl = !Number.isFinite(msDeko)
                         ? undefined
                         : lade
@@ -1837,6 +1869,19 @@ class AnazhRealm_dirigent_takt {
         return b.stempel;
     }
 
+    // DIE PFLANZ-SCHLANGE LÄDT MIT DER WANDUHR (w15-strom-takt, das Muster der Foundry-Freigabe `_tickFoundryIngest`): ein Bild
+    // setzt die Würfe des Ziel-Takts (PFLANZ_RATE_PER_S / 60) und mehr, wenn es länger dauert — so viele, wie die Rate in
+    // seiner Wanduhr trägt (`dt` s), gedeckelt durch PFLANZ_BURST_CAP; ohne Uhr (Linse, Test) die des Ziel-Takts. Bis
+    // w15-strom-takt setzte jedes Bild 4 — der Durchsatz der Karten folgte der Bildrate (GT 64 m/s, Station headless:
+    // 2 131 Bilder → Karten 51,6 % fertig beim Eintritt, 2 542 → 59,6 %; die Bäume der Bahn warteten in der Schlange, als
+    // sie in den Kegel traten).
+    _pflanzKappe(dt) {
+        const R = AnazhRealm.PFLANZ_RATE_PER_S;
+        const ziel = Math.round(R / 60);
+        if (!(dt > 0)) return ziel;
+        return Math.max(ziel, Math.min(AnazhRealm.PFLANZ_BURST_CAP, Math.round(R * Math.min(0.25, dt))));
+    }
+
     // Ein Bau-Eintrag änderte Stufe oder Gestalt (ein Bau-Takt wirkte, ein Studio-Asset dockte an): die Bau-Takte gehen.
     _bauRegt() {
         this._bauRegung = (this._bauRegung | 0) + 1;
@@ -1845,7 +1890,8 @@ class AnazhRealm_dirigent_takt {
     // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
     // archLOD/canopy/waterCA/dirtyChunks) laufen immer, die budgetierten durch `_dispatchFrameJobs`.
     // `_frameOverBudget` ist die FOLGE des Schedulers (Budget leer).
-    _runFrameScheduler(playerPos) {
+    // `wandDelta` (s, optional): die Wanduhr des Bilds — die Pflanz-Schlange lädt mit ihr (`_pflanzKappe`), nie mit der Bildrate.
+    _runFrameScheduler(playerPos, wandDelta) {
         const st = this.state;
         this._bedarfTakt(); // DER EINE RANG (w7-rang): das Tempo der Bahn, bevor eine Schlange dieses Bilds nach ihm fragt
         this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
@@ -1853,10 +1899,11 @@ class AnazhRealm_dirigent_takt {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._frameBodenWartet = false; // der Boden-Strom setzt ihn, wenn ein Netz im Fenster seines Fadens wartet
         st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
-        this._tickPendingVegSpawns(4);
+        this._tickPendingVegSpawns(this._pflanzKappe(wandDelta));
         this._tickHuellenNach(); // nach dem ersten Bild und dem ersten Leib: die Hüllen der Bäume, die warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
@@ -1871,7 +1918,7 @@ class AnazhRealm_dirigent_takt {
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)
-        this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
+        this._tickSeason(); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickCanopyStreaming();
@@ -1883,10 +1930,10 @@ class AnazhRealm_dirigent_takt {
         if (B.remainingMs() <= 0 && !this._ladeTakt() && st._nachlauf == null) st._frameOverBudget = true;
     }
 
-    _loopVoxelStreaming() {
+    _loopVoxelStreaming(wandDelta) {
         // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
         // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
-        return this._runFrameScheduler(this.state.playerMesh.position);
+        return this._runFrameScheduler(this.state.playerMesh.position, wandDelta);
     }
 
     // DAS SPEICHERN IM LEERLAUF (fahrt-takt, Lehre 14): der Takt entscheidet nur, dass ein Stand fällig ist; Schnappschuss,
@@ -2077,6 +2124,7 @@ class AnazhRealm_dirigent_takt {
         const ppu = this.state.postProcessingUniforms;
         if (ppu && ppu.nachSchaerfe)
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
+        this._zugangTakt(ppu); // die Farbsicht und die Unschärfe der Bewegung aus dem Stand (spielgang.K4)
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
@@ -2182,6 +2230,10 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// Die Pflanz-Schlange (`_pflanzKappe`): Würfe je Sekunde der Wanduhr (= 4 je Bild bei 60 fps, byte-alt am Ziel-Takt) und je
+// einzelnem Bild höchstens (Anti-LongTask-Deckel).
+AnazhRealm.PFLANZ_RATE_PER_S = 240;
+AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;

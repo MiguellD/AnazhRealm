@@ -902,37 +902,78 @@ class AnazhRealm_bau_vorlagen {
             ["baum_tanne", "bau.tanne"],
             ["baum_mammut", "bau.mammutbaum"], // die Mammut-Nische des Wald-Generators (04.10., vorher als baum_buche)
         ];
+        // DER WUCHS AM ERSTEN LESER (w16-lade-atem, ankunft.K5): die Gestalt einer Art wächst, wenn einer ihre Teile oder ihr
+        // Skelett liest — nie im Konstruktor. Bis hier wuchsen alle sieben im Init-Task vor der ersten Zeichnung (headless kalt
+        // `_defaultBlueprints` 118–260 ms Haupt-Faden, in der längsten Aufgabe des Boots), auch die, die keine Sitzung liest.
+        // Der Wuchs ist derselbe Bit für Bit: fester kanonischer Seed und das Rausch-Feld des Konstruktors (`_growTreeNoise`,
+        // gestellt wie bisher hier, vor jeder Welt — der Wuchs liest es, auch wenn die Welt ihr eigenes Feld schon trägt);
+        // Instanz-Varianz im Worldgen über scale/yaw/tint. Der erste Leser schreibt `parts` und `_skeleton` als Werte zurück
+        // (Material, Kette und Etikett wie jedes Built-in); ein Wuchs, der wirft oder keine Gestalt trägt, bricht laut.
+        if (!this._growTreeNoise) {
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._growTreeNoise = new SimplexNoise(worldSeed + "-veg-grammatik");
+        }
+        const rausch = this._growTreeNoise;
+        // die Arten, deren Wuchs noch auf seinen Leser wartet (Art → Same): die Saat bestellt ihr Skelett beim Wald-Faden, bevor
+        // ihre Affinität sie liest (`_wuchsFehlt`) — der Haupt-Faden setzt dann nur noch zusammen
+        const offen = (this._builtinWuchsOffen = new Map());
+        const alsWert = (bp, k, value) =>
+            Object.defineProperty(bp, k, { value, writable: true, enumerable: true, configurable: true });
+        const wuchsAmLeser = (bp, species) => {
+            let w = null;
+            offen.set(species, `builtin-${species}-v1`);
+            const wachse = () => {
+                if (w) return w;
+                offen.delete(species);
+                const welt = this._growTreeNoise;
+                this._growTreeNoise = rausch;
+                let parts = null;
+                try {
+                    parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`); // das Skelett aus dem Vorrat, wenn bestellt
+                } catch (e) {
+                    this._bruchMelden(`BAUM-BUILTIN ${species}: der Wuchs warf (${(e && e.message) || e})`);
+                } finally {
+                    this._growTreeNoise = welt;
+                }
+                const sk = this._lastTreeSkeleton;
+                this._lastTreeSkeleton = null; // der Seiten-Kanal des Wuchses
+                if (!Array.isArray(parts) || parts.length < 2)
+                    this._bruchMelden(`BAUM-BUILTIN ${species}: keine Gestalt (${parts ? parts.length : 0} Teile)`);
+                if (!Array.isArray(parts)) parts = [];
+                this._teileGrund(parts); // Material und Kette jedes Teils wie jedes Built-in (der Konstruktor)
+                for (const p of parts) AnazhRealm._etikett(p); // der Name jedes Teils (`_etikett` geht den Wuchs nie)
+                w = { parts, _skeleton: sk && Array.isArray(sk.branches) ? sk : null };
+                for (const k in w) alsWert(bp, k, w[k]);
+                return w;
+            };
+            for (const k of ["parts", "_skeleton"])
+                Object.defineProperty(bp, k, {
+                    get: () => wachse()[k],
+                    set: (v) => {
+                        wachse();
+                        alsWert(bp, k, v);
+                    },
+                    enumerable: true,
+                    configurable: true,
+                });
+            return bp;
+        };
         for (const [species, label] of TREE_SPECIES) {
             if (!this._phytoArt(species)) continue;
-            let parts = null;
-            let skeleton = null;
-            try {
-                // Fester kanonischer Seed → die Art ist EINE deterministische Gestalt (Instanz-Varianz im Worldgen
-                // über scale/yaw/tint). _growTreeBlueprintRich liest nur das Gesetzbuch (_phytoArt → treeParams) + den
-                // lazy _growTreeNoise → konstruktor-sicher.
-                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`);
-                skeleton =
-                    this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
-                        ? this._lastTreeSkeleton
-                        : null;
-                this._lastTreeSkeleton = null; // Side-Channel räumen (defensive)
-            } catch {
-                parts = null;
-            }
-            if (!Array.isArray(parts) || parts.length < 2) continue;
-            treeSpeciesBlueprints[species] = {
-                name: species,
-                etikett: [label],
-                builtIn: true,
-                instanced: true,
-                // KEIN roleManual-Pflaster: das geschärfte Seelen-Gesetz (livingBody liest
-                // lebendig NUR über beseelte Substanz, nicht holz+laub) lässt den Baum
-                // emergent auf architecture fallen — die Rolle wächst aus der Wahrheit.
-                _grownSpecies: species,
-                _isMerged: true,
-                _skeleton: skeleton,
-                parts,
-            };
+            treeSpeciesBlueprints[species] = wuchsAmLeser(
+                {
+                    name: species,
+                    etikett: [label],
+                    builtIn: true,
+                    instanced: true,
+                    // KEIN roleManual-Pflaster: das geschärfte Seelen-Gesetz (livingBody liest
+                    // lebendig NUR über beseelte Substanz, nicht holz+laub) lässt den Baum
+                    // emergent auf architecture fallen — die Rolle wächst aus der Wahrheit.
+                    _grownSpecies: species,
+                    _isMerged: true,
+                },
+                species
+            );
         }
 
         const defaults = {

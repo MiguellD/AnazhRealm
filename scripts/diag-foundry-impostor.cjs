@@ -190,7 +190,8 @@ async function driveImpostor(page) {
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...st.archInstanceGroups.keys()].filter((k) => !vor.has(k));
-                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
+                // die Gruppen des Bilds, nie der Zwilling (der Wurf der Karte "#S", w14-lod-sprung)
+                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:[^#]*$/.test(k));
                 const g = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
@@ -454,6 +455,10 @@ async function kleberProbe(page, fmtWunsch) {
                 pc.karteTiefeVersatz = versatz;
                 window.__fimpStoff();
             }
+            // (C8) JENSEITS DER FERN-EBENE (material.K3#2): dieselbe Karte wie C6 aus 0° (dort ihr Bild, der Selbsttest) unter einer
+            // Fern-Ebene von 150 m zeichnet nichts — die Spanne ihrer Ecken-Tiefe klemmt nur den Rück, nie die Lage
+            (camO.far = 150), camO.updateProjectionMatrix();
+            out.fern = (await deckt(0, mO)).reduce(addiere, 0);
             rtO.dispose();
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
             // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt)
@@ -830,6 +835,8 @@ hauptLauf(async () => {
         console.log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
         if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
         else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
+        // C8 JENSEITS DER FERN-EBENE zeichnet die Karte nichts (Selbsttest: C6 aus 0°, dieselbe Karte diesseits)
+        if (C.fern) errs.push(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
     }
     {
         console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");

@@ -11,16 +11,26 @@ class AnazhRealm_gelaende_fern {
         const v = this._bedarfVoraus(playerPos);
         const vcx = v ? Math.floor(v.x / span) : pcx;
         const vcz = v ? Math.floor(v.z / span) : pcz;
+        const bleibt = (cx, cz) =>
+            (Math.abs(cx - pcx) <= ringRadius + 1 && Math.abs(cz - pcz) <= ringRadius + 1) ||
+            (Math.abs(cx - vcx) <= ringRadius && Math.abs(cz - vcz) <= ringRadius);
         const drop = [];
         for (const key of this.state.voxelChunks.keys()) {
             const parts = key.split(",");
-            const cx = Number(parts[0]);
-            const cz = Number(parts[1]);
-            if (Math.abs(cx - pcx) <= ringRadius + 1 && Math.abs(cz - pcz) <= ringRadius + 1) continue;
-            if (Math.abs(cx - vcx) <= ringRadius && Math.abs(cz - vcz) <= ringRadius) continue;
-            drop.push(key);
+            if (!bleibt(Number(parts[0]), Number(parts[1]))) drop.push(key);
         }
         for (const key of drop) this._disposeVoxelChunk(key);
+        // DIE GELIEFERTEN NETZE FALLEN MIT DEM RING (w14-strom-tempo): ein Netz des Fadens, das kein Einbau nahm (seine Stufe
+        // wechselte, sein Chunk ging), fällt, sobald sein Chunk die Pflege verlässt — der Faden gibt es frei (`_bodenFrei`). Bis
+        // w14-strom-tempo lag es bis zum Welt-Wechsel: im GT (63,8 m/s, 60 s) 281 Netze im Cache, keins davon im Ring.
+        const C = this.state.voxelMeshCache;
+        if (C && C.size)
+            for (const [key, m] of C) {
+                const parts = key.split(",");
+                if (bleibt(Number(parts[0]), Number(parts[1]))) continue;
+                this._bodenFrei(m);
+                C.delete(key);
+            }
         // Basis-Density-Cache distanzbasiert prunen (Speicher bounded), beide LOD-Keys (`,0`/`,1`). NICHT
         // in `_disposeVoxelChunk` — das ruft der Edit-Rebuild vor dem Build und hebelte den Cache aus.
         if (this.state.voxelBaseDensityCache) {
