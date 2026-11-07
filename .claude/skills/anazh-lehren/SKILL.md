@@ -44,7 +44,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Ort ist EIN Plan des Ort-Gesetzes (fachwerk `GENESIS_ORT` → `genesisLayout` → `ortPlan`, der erste Auftrag
   des Voxel-Fadens; der Wirt liest ihn, `_genesisOrt`, seine Flächen sind Grundriss der Natur-Wand, ihr `belag` ein Kanal der EINEN
   Wege-Karte: `WEGE_KARTE.belag` rg8snorm — der Boden zeichnet Kopfstein aus porta `STEIN_GESETZ.kopfstein` und Rasen aus `WIESEN_GRUND`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
-  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
+  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`); der Wald trägt den
+  Saum am Siedlungsrand (phyto-core `forestOrt`: drinnen kahl, über `bestand.saum` steigt die Geburt; der Rand `siedlungsReich` je Plan,
+  `_ortRaender` in Wirt und Faden, der gepflanzte Wald folgt dem Plan, `_saumRaeumen`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
   ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —

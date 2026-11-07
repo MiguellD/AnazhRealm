@@ -1496,6 +1496,10 @@ class AnazhRealm_siedlung_satz {
                 entry._lodSpecies = opts._lodSpecies;
                 entry._lodVariantIndex = opts._lodVariantIndex;
                 entry._lodLevel = Number.isFinite(opts._lodLevel) ? opts._lodLevel : 0;
+                // die Schicht des Bestands (phyto-core `forestSchicht`: Zwischen- und Unterstand < 1) — eine Größe, keine Prägung
+                if (opts._schicht > 0 && opts._schicht < 1) entry._schicht = opts._schicht;
+                // die Herkunft aus dem Wald-Plan (`_waldDartSetzen`): der Bestand folgt seinem Plan (`_waldNachwuchs`)
+                if (opts._waldDart === true) entry._waldDart = true;
             } else if (bp._isGrown && typeof bp._grownSpecies === "string" && Number.isFinite(bp._variantIndex)) {
                 entry._lodSpecies = bp._grownSpecies;
                 entry._lodVariantIndex = bp._variantIndex;
