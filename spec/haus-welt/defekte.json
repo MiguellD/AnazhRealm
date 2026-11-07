@@ -446,6 +446,19 @@
     ]
    ]
   ],
+  "feldakt": [
+   [
+    "grund",
+    "W9 Zug",
+    "W9 Feld-Akt"
+   ],
+   [
+    [
+     "        else if (opts.feldWurf === true || (opts.autonomous === true && opts.ausGesetz !== true)) entry.feldWurf = true;",
+     "        else if (opts.feldWurf === true && AnazhRealm.FELD_WURF.includes(type)) entry.feldWurf = true;"
+    ]
+   ]
+  ],
   "verblassen": [
    [
     "grund",

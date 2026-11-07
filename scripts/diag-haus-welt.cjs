@@ -98,6 +98,7 @@ const BILD = process.argv.includes("--bild");
 //   waise: W9: der geschlossene Slot lässt seinen Grund liegen
 //   ausstattung: W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
 //   zugreload: W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
+//   feldakt: W9: der Akt des Felds (`autonomous`) trägt die Marke des Wurfs nicht — sein Wasserfall schließt den Slot
 //   verblassen: W9: das Verblassen nimmt nur den Eintrag
 const DEFEKTE = require("../spec/haus-welt/defekte.json").defekte;
 const patchZiel = (z) =>
@@ -1811,7 +1812,8 @@ async function proben(phasen) {
         }
         // W9 WAISE: das Start-Dorf wächst, ein Bau sperrt seinen letzten Slot, nach dem dritten Haus fällt der Zug wie mit der
         // Seite (Reload), ein Haus verblasst — danach trägt jeder Grund einen Bau an seiner Mitte. ZUG: jeder andere Slot steht.
-        // AUSSTATTUNG: Brunnen, Laternen und Stände stehen am Ort des Plans.
+        // AUSSTATTUNG: Brunnen, Laternen und Stände stehen am Ort des Plans. FELD-AKT: nach dem Reload setzt das Feld (wie der
+        // Nexus, `autonomous`) einen Wasserfall auf die Mitte eines offenen Slots — er weicht dem Haus, das Haus räumt ihn.
         const takt = window.__anazhAutoSettlement;
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
@@ -1829,12 +1831,22 @@ async function proben(phasen) {
             r._autoSettlementQueue = null;
             r._stlWegeKeys.delete(q.cellKey);
         }
+        const fi = reload ? q.reihe.slice(q.idx).find((i) => i !== q.plan.slots.length - 1) : undefined;
+        const fsl = fi !== undefined && q.plan.slots[fi];
+        const akt =
+            fsl &&
+            r.spawnArchitecture(
+                "waterfall",
+                { x: q.origin.x + fsl.x, y: fsl.y + 0.5, z: q.origin.z + fsl.z },
+                { autonomous: true, seed: 9 }
+            );
         // der Zug des Start-Dorfs (samt seinem Rebuild) ist leer, bevor der Takt ein nächstes Dorf beginnt
         const zugLebt = () => r._autoSettlementQueue || r._stlWegePending || (q && !r._stlWegeKeys.has(q.cellKey));
         const zugOffen = !(await warteBis(() => !zugLebt() && !!zellen().start, 1, 1200));
         window.__anazhAutoSettlement = takt;
         const an = (x, z, typ) => (e) =>
             e !== sperre &&
+            e !== akt &&
             (!typ || e.type === typ) &&
             e.position &&
             Math.hypot(e.position.x - x, e.position.z - z) < 0.05;
@@ -1871,6 +1883,7 @@ async function proben(phasen) {
             haeuser,
             reload,
             zugOffen,
+            feldAkt: akt ? (s.architectures.includes(akt) ? "steht" : "weicht") : null,
             ausstattung,
             verblasst: !!verblasst,
             ms: Math.round(performance.now() - t0),
@@ -2168,6 +2181,8 @@ function urteil(o) {
         if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt");
         else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
+        if (wa.feldAkt !== "weicht")
+            f.push(`W9 Feld-Akt: der Wasserfall des Felds im offenen Slot ${wa.feldAkt || "fehlt (blind)"}`);
         if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
             f.push("W9 Ausstattung: blind — kein Brunnen, keine Laterne");
         else if (au && Object.values(au).some(([n, soll]) => n < soll)) f.push(`W9 Ausstattung: ${JSON.stringify(au)}`);
@@ -2240,6 +2255,15 @@ hauptLauf(async () => {
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
+            // HAUS_WELT_KERNE: die Kerne der Seite (die CI-Läufer haben 4: Geräte-Klasse schwach, EIN Werk-Faden) — lokal ist das
+            // Dorf sonst eine andere Welt (w22-dorf-reload: W9 Zug rot nur auf der CI, lokal mit 4 Kernen 4 von 5 Läufen rot)
+            if (process.env.HAUS_WELT_KERNE)
+                await page.evaluateOnNewDocument((n) => {
+                    Object.defineProperty(Navigator.prototype, "hardwareConcurrency", {
+                        configurable: true,
+                        get: () => n,
+                    });
+                }, Number(process.env.HAUS_WELT_KERNE));
             if (!BILD) await nullRenderer(page);
             // das Bild misst Schatten: auf dem Software-Adapter das Holz nah (kienspan schaltet die Schatten aus)
             const holz = BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "?holz=nah" : "";
