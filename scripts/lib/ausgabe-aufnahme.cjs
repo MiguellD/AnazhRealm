@@ -757,7 +757,9 @@ async function blickWahl(opt) {
     const a0 = Math.atan2(P0.z - z.z, P0.x - z.x);
     const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
     const posen = [];
+    const t0 = performance.now();
     for (let k = 0; k < n; k++) {
+        const tk = performance.now();
         const ring = Math.floor(k / winkel.length);
         const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
         const d = d0 * Math.pow(0.8, ring);
@@ -782,13 +784,13 @@ async function blickWahl(opt) {
             m = await window.__zielMessen(opt, await window.__spiegelDaten());
             rest = urteil();
         }
-        posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
-        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
+        posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund), ms: Math.round(performance.now() - tk) });
+        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen, ms: Math.round(performance.now() - t0) };
     }
     cam.position.copy(P0);
     cam.quaternion.copy(Q0);
     cam.updateMatrixWorld(true);
-    return { versucht: posen.length, gewaehlt: null, posen };
+    return { versucht: posen.length, gewaehlt: null, posen, ms: Math.round(performance.now() - t0) };
 }
 
 // DIE ABNAHME AM BILD (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): gemessen mit der Tiefe S des Bilds; zeigt S an einem Ziel-Punkt eine
