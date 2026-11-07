@@ -1,7 +1,7 @@
 {
  "sha": "ed7d3d23b6367c8cf904469231518699e5bfedb7",
  "geraet": "gtx",
- "zeit": "2026-11-07T04:27:01.244Z",
+ "zeit": "2026-11-07T04:48:01.015Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "klang.K2#1": {
@@ -55,6 +55,20 @@
    "s": 41.3,
    "zeit": "2026-11-07T02:59:43.488Z",
    "abdruck": "25872cfe0387",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.4268 Soll [0.4358,0.6538] — strich 0.4268 < 0.4358 · third GRÜN strich 0.5578 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "ROT: arm ROT strich 0.4268 Soll [0.4358,0.6538] — strich 0.4268 < 0.4358 · third GRÜN strich 0.5578 Soll [0.4358,0.6538]",
+   "gpu": "nvidia/pascal",
+   "s": 28.9,
+   "zeit": "2026-11-07T04:48:01.015Z",
+   "abdruck": "4737c3538058",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -405,29 +419,44 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
-  "haar.K1#1": {
-   "gruen": false,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "exit": null,
-   "minuten": 0,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-   "ungemessen": true,
-   "zeit": "2026-11-07T04:27:01.244Z",
-   "abdruck": "4737c3538058",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-07T04:17:01.060Z",
+  "start": "2026-11-07T04:47:27.620Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 5.8,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K1#1",
+    "s": 26.5,
+    "takte": 721,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 56,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 61.5,
+  "minuten": 1.08
  }
 }
