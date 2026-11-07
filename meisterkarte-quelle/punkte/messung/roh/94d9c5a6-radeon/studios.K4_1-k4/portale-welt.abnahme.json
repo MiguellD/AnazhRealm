@@ -1,0 +1,120 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.204",
+  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 525
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0035,
+   "taeter": {
+    "Laub baum_kiefer": 0.0035
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 23.01,
+  "gestalt": [
+   "tor_kathedrale w-tor_kathedrale-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   34.028,
+   101.235,
+   28.335
+  ],
+  "blick": [
+   -0.78344,
+   -0.31457,
+   -0.53598
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 86.4,
+  "sigma": 37.7,
+  "schwarz": 0.0022,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 23.01 m · Luma 86.4 σ 37.7 schwarz 0.2 % weiß 0.0 % · Stand 18.546.204 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:kathedrale:L\\d$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:kathedrale:L2=255/80/80"
+  ],
+  "klassen": {
+   "f:kathedrale:L2": {
+    "objekte": 6,
+    "spiegelTreue": 0.298,
+    "spiegelEbene": 93.748,
+    "sp": [
+     452,
+     0,
+     0,
+     33567.52,
+     33567.52,
+     10002.47
+    ],
+    "zweiton": 0.0009,
+    "weiss": 0.0952,
+    "wt": 26984,
+    "wtZiel": null,
+    "bunt": 15.46,
+    "pixel": 283321,
+    "luma": 101.13,
+    "kante": 0.3158,
+    "kr": 19248,
+    "strich": 0.3286,
+    "si": 125330,
+    "bloecke": 3021,
+    "glatt": 0.0026,
+    "nyquist": 0.1447,
+    "beta": 1.8726
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\94d9c5a6-radeon\\studios.K4_1-k4\\portale-welt.maske.png"
+ }
+}

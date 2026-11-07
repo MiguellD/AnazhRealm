@@ -1,7 +1,7 @@
 {
  "sha": "94d9c5a6a2176df9ca6c65c233e2b6a7b745017e",
  "geraet": "radeon",
- "zeit": "2026-11-06T23:30:34.606Z",
+ "zeit": "2026-11-06T23:47:58.187Z",
  "host": "MiguellD",
  "je": {
   "lod.K2#1": {
@@ -42,6 +42,119 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 48 Bilder · max 217.59 ms · 81.25 % > 33 ms · Fahrt 41 Bilder · max 100.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 217.59), 81.25 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.36), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "ROT: Gehen 48 Bilder · max 217.59 ms · 81.25 % > 33 ms · Fahrt 41 Bilder · max 100.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 217.59), 81.25 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.36), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 33.5,
+   "zeit": "2026-11-06T23:43:42.130Z",
+   "abdruck": "41e0d58bce8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 48 Bilder · max 217.59 ms · 81.25 % > 33 ms · Fahrt 41 Bilder · max 100.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 217.59), 81.25 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.36), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "ROT: Gehen 48 Bilder · max 217.59 ms · 81.25 % > 33 ms · Fahrt 41 Bilder · max 100.36 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 217.59), 81.25 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.36), 100.00 % > 33 ms",
+   "gpu": "amd/rdna-3",
+   "s": 33.5,
+   "zeit": "2026-11-06T23:43:42.130Z",
+   "abdruck": "d49b25ac8016",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.6005 Soll [0.3554,0.533] — strich 0.6005 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4982 Soll [0.3554,0.533] — strich 0.4982 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.36,
+   "grund": "ROT: arm ROT strich 0.6005 Soll [0.3554,0.533] — strich 0.6005 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3] · third ROT strich 0.4982 Soll [0.3554,0.533] — strich 0.4982 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:0aad4f719d0b180b) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 21.6,
+   "zeit": "2026-11-06T23:44:31.400Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.17 · 10–20 1.99 · 20–40 1.67 (Saum springt > 15 %), Farbton 2–5 m 12.94°, nahWiese 4 Befehle / 55791 Dreiecke",
+   "exit": 0,
+   "minuten": 0.32,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.17 · 10–20 1.99 · 20–40 1.67 (Saum springt > 15 %), Farbton 2–5 m 12.94°, nahWiese 4 Befehle / 55791 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 19.3,
+   "zeit": "2026-11-06T23:44:53.016Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4243 · Karte fimp:birke:L2 0.3045 (35013 px), fimp:eiche:L2 0.2343 (82493 px), fimp:fichte:L2 0.2061 (37702 px), fimp:strauch:L2 0.4243 (21866 px), fimp:tanne:L2 0.2281 (117623 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.7,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4243 · Karte fimp:birke:L2 0.3045 (35013 px), fimp:eiche:L2 0.2343 (82493 px), fimp:fichte:L2 0.2061 (37702 px), fimp:strauch:L2 0.4243 (21866 px), fimp:tanne:L2 0.2281 (117623 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Rinde baum_tanne in 45.09 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.1,
+   "zeit": "2026-11-06T23:45:12.406Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K3#1": {
+   "gruen": false,
+   "zahl": "REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Spiel-Baum): ROT · Licht-Flecken unter Kronen CV 0.8255 gegen offen 0.4841, Wandern Uhr [0.5,0.56] r -0.0455 · Ort [-841,-861] · 0.92 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Spiel-Baum): ROT · Licht-Flecken unter Kronen CV 0.8255 gegen offen 0.4841, Wandern Uhr [0.5,0.56] r -0.0455 · Ort [-841,-861] · 0.92 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 7.9,
+   "zeit": "2026-11-06T23:46:16.698Z",
+   "abdruck": "0dd47976fcf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "Dauer 2.66 min in 1 Seite(n), 3 Proben: Dauerlast 748 Bilder · Bild-p95 58.62 (p99 83.7, max 217.59) ms · Takt-p95 55.68 ms · VRAM-p95 146.6 MB · Anker Bild-p95 50.17 → 17.05 ms · Heap 266.7 → 650.2 MB · VRAM nach GC 129.3 → 139.4 MB · Weg 2.4 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 3: 2.66 min am Stück < 20 | Gang: heap: +144.2 MB/min > 5 — Halter: r._bewohnerSiedlungen[].aktivListe[].leib.userData._gelenk +11.3 MB · r._foundry.cache[].children[].geometry.attributes +6.2 MB · r._erstZeichnung.imFlug[].b.object.geometry.attributes +5.7 MB · vram: +10.1 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB · buf:? +3.4 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x22 +3.2 MB | Weg 2397 m < 5 km",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: Dauer 2.66 min in 1 Seite(n), 3 Proben: Dauerlast 748 Bilder · Bild-p95 58.62 (p99 83.7, max 217.59) ms · Takt-p95 55.68 ms · VRAM-p95 146.6 MB · Anker Bild-p95 50.17 → 17.05 ms · Heap 266.7 → 650.2 MB · VRAM nach GC 129.3 → 139.4 MB · Weg 2.4 km (gegangen/gefahren 0.1) · [linse-gpu] amd/rdna-3 — ROT 3: 2.66 min am Stück < 20 | Gang: heap: +144.2 MB/min > 5 — Halter: r._bewohnerSiedlungen[].aktivListe[].leib.userData._gelenk +11.3 MB · r._foundry.cache[].children[].geometry.attributes +6.2 MB · r._erstZeichnung.imFlug[].b.object.geometry.attributes +5.7 MB · vram: +10.1 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x22 +6.4 MB · buf:? +3.4 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x22 +3.2 MB | Weg 2397 m < 5 km",
+   "gpu": "amd/rdna-3",
+   "s": 18.2,
+   "zeit": "2026-11-06T23:46:24.725Z",
+   "abdruck": "3895554d7dc0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 91.5 %/– [Differenz 0.9145 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 95.0 %/– [Differenz 0.95 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 91.2 %/– [Differenz 0.9124 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 99.6 %/– [Differenz 0.9958 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.0 %/– [Differenz 0.9897 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.18,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 91.5 %/– [Differenz 0.9145 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 95.0 %/– [Differenz 0.95 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · schmiede 91.2 %/– [Differenz 0.9124 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 99.6 %/– [Differenz 0.9958 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain 99.0 %/– [Differenz 0.9897 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "amd/rdna-3",
+   "s": 70.8,
+   "zeit": "2026-11-06T23:46:43.020Z",
+   "abdruck": "e6768481ae0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -72,51 +185,134 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T23:47:58.185Z",
+   "abdruck": "3662d44cb1bd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T23:47:58.185Z",
+   "abdruck": "22243a48e3b7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K3#1",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T23:47:58.187Z",
+   "abdruck": "a4809dc2e930",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T23:47:58.187Z",
+   "abdruck": "bded3260dbec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-06T23:47:58.187Z",
+   "abdruck": "f53ad5c4b546",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-06T23:30:02.758Z",
+  "start": "2026-11-06T23:43:31.118Z",
   "port": 7804,
-  "warten": 0.05,
+  "warten": 0.04,
   "bootS": 5.7,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 7,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 21.6,
-    "takte": 680,
+    "vor": "haar.K2#1",
+    "s": 15.7,
+    "takte": 749,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "vegetation.K3#1",
+    "s": 22.1,
+    "takte": 1333,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 2,
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 10
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor ankunft.K3#1: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}",
+  "ciBlicke": 9,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
+   "bilder": 748,
+   "frameP95": 58.62,
+   "taktP95": 55.68,
+   "vramMax": 166.2,
+   "seiten": 2,
+   "marken": 2,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "fahrzeug.K2#1",
-     "m": 1618,
+     "probe": "profiband.K5#1",
+     "m": 1204,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 106,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 240,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 109.1,
-  "minuten": 1.93
+  "fahrtS": 264.5,
+  "minuten": 4.51
  }
 }

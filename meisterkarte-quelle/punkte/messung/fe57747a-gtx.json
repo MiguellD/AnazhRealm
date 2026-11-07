@@ -1,0 +1,59 @@
+{
+ "sha": "fe57747abe37e821bf62bb5902e1e7786ac63242",
+ "geraet": "gtx",
+ "zeit": "2026-11-07T00:11:00.925Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.871 · Regen 146 | third porös 0.779 (n 25869) · Glanz 16 · Regenbild 0.872 · Regen 102",
+   "exit": 0,
+   "minuten": 0.25,
+   "gpu": "nvidia/pascal",
+   "s": 15.1,
+   "zeit": "2026-11-07T00:11:00.925Z",
+   "abdruck": "76e9ff9f66a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T00:10:22.623Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "wetter.K2#2",
+    "s": 30.5,
+    "takte": 688,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 50,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 52.3,
+  "minuten": 0.93
+ }
+}
