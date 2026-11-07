@@ -1,7 +1,7 @@
 {
  "sha": "f69173b022098343b8966dd1f38f642bc14225b5",
  "geraet": "gtx",
- "zeit": "2026-11-07T08:43:30.038Z",
+ "zeit": "2026-11-07T08:48:35.874Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K1#1": {
@@ -26,6 +26,32 @@
    "s": 84,
    "zeit": "2026-11-07T08:41:14.168Z",
    "abdruck": "3b5d6b96f324",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.7723 (wasserSatz 24935 px, spiegelEbene 0.879) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 97.3 σ 35.8 schwarz 0.1 % weiß 0.0 % · Stand 18.546.210 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.2,
+   "zeit": "2026-11-07T08:46:13.403Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.783 (n 25920) · Glanz 16 · Regenbild 0.869 · Regen 150 | third porös 0.779 (n 25869) · Glanz 16 · Regenbild 0.886 · Regen 102",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "nvidia/pascal",
+   "s": 28.6,
+   "zeit": "2026-11-07T08:46:48.926Z",
+   "abdruck": "76e9ff9f66a8",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -75,40 +101,15 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "gelaende.K3#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T08:43:30.034Z",
-   "abdruck": "e73e2fe62927",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "wetter.K2#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-11-07T08:43:30.035Z",
-   "abdruck": "76e9ff9f66a8",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-07T08:43:30.036Z",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: WEGENETZ undefined)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: WEGENETZ undefined)",
+   "s": 45.2,
+   "zeit": "2026-11-07T08:47:18.915Z",
    "abdruck": "bdb360bc9bf7",
    "port": 7804,
    "bahn": "sitzung",
@@ -116,12 +117,13 @@
   },
   "siedlung.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-07T08:43:30.038Z",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ BILD)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ BILD)",
+   "s": 90.3,
+   "zeit": "2026-11-07T08:48:35.874Z",
    "abdruck": "05919a6be0cf",
    "port": 7804,
    "bahn": "sitzung",
@@ -129,44 +131,87 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-07T08:39:05.475Z",
+  "start": "2026-11-07T08:45:37.496Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.4,
+  "warten": 0.01,
+  "bootS": 7.6,
   "grundstellungS": [
-   0.2
+   0.1,
+   12.4
   ],
   "proben": 4,
   "freigaben": [],
   "orte": [
    {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 27,
+    "takte": 755,
+    "chunks": 81,
+    "nach": null
+   },
+   {
     "ort": "wiese",
-    "vor": "vegetation.K1#1",
-    "s": 28.3,
-    "takte": 749,
+    "vor": "wetter.K2#2",
+    "s": 12.2,
+    "takte": 691,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 1.3,
+    "takte": 94,
     "chunks": 81,
     "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 19.3,
+    "takte": 759,
+    "chunks": 81,
+    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "grund": "die Welt trägt nicht mehr vor gelaende.K3#1: abweichend vom Grund: worldJournal architectures · wie {\"worldJournal\":\"{\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa → {\\\"entries\\\":[{\\\"id\\\":1,\\\"at\\\":1794040750350,\\\"type\\\":\\\"genesis\\\",\\\"d\\\":1,\\\"t\\\":[\\\"journal.erwa\",\"architectures\":{\"vorher\":3,\"nachher\":3,\"fehlt\":[],\"neu\":[],\"anders\":[\"werkbank-fahrt:position\"]}}",
-  "ciBlicke": 6,
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 336,
-   "frameP95": 108.28,
-   "taktP95": 95.99,
-   "vramMax": 173.6,
-   "seiten": 3,
-   "marken": 1,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 190,
-   "luecken": 7,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1215,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 265,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 263.7,
-  "minuten": 4.48
+  "fahrtS": 270.5,
+  "minuten": 4.6
  }
 }
