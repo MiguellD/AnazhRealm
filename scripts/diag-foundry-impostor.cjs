@@ -619,7 +619,8 @@ function windUrteil(mess) {
     for (const m of mess) {
         const stoff = m.stoff || "rinde";
         const L = Math.hypot(m.dx, m.dz);
-        // die Rinde weht in uWindDir (+x); die Wiese wiegt in Welt-x/z — sie misst gegen ihre Drehung 0
+        // die Rinde weht in uWindDir (+x); die Wiese wiegt längs und quer zu uWindDir in der Phase ihres Fußes (`_windSwayOffset`,
+        // derselbe Anker in jeder Drehung) — sie misst gegen ihre Drehung 0
         const ref = m.stoff ? mess.find((q) => q.stoff === m.stoff && q.phi === 0 && q.s === m.s) : null;
         const w0 = ref ? (Math.atan2(ref.dz, ref.dx) * 180) / Math.PI : 0;
         const w = (((((Math.atan2(m.dz, m.dx) * 180) / Math.PI - w0 + 540) % 360) + 360) % 360) - 180;
@@ -674,7 +675,7 @@ async function windProbe(page) {
                 const mat = new T.MeshBasicNodeMaterial({ color: 0xffffff });
                 if (wind && stoff === "gras")
                     mat.positionNode = T.TSL.positionLocal.add(
-                        r._windSwayOffset(T.TSL, { ampX: 1.5, hoehe: T.TSL.positionGeometry.y })
+                        r._windSwayOffset(T.TSL, { hoehe: T.TSL.positionGeometry.y })
                     );
                 else if (wind) r._baumWindStoff(mat, "bark", { ht: 10, delta: 0.3, an: 1 });
                 const mesh = new T.InstancedMesh(g, mat, 1);

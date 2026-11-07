@@ -3,10 +3,12 @@
 // diag-kopplung.cjs — DIE KOPPLUNGS-LINSE (npm run gate:kopplung): die Welt fasst den Körper an (F1, die Strömung, misst
 // gate:wasser-leben K4 STRÖMUNG).
 //   F2 GLEITEN (PM_ClipVelocity): eine 45°-Wand behält ~Tempo/2 entlang der Absicht; am STEILHANG rutscht der Körper.
-//   F3 WIND: EIN uWindDir (seeded, langsam) treibt die Phase als dot(worldXZ, windDir) — quer gleich, längs verschieden, die
-//      Richtung dreht mit; das FELD (wetter.K5): der EINE Wind am Ort `_windAt`, vom Gelände geformt (Lee −40 %, Tal-Düse
-//      +20 %), und jeder Leser (Wasser, Regen, Tuch, Rauch, Wagen) ruft ihn und folgt seiner Mutation.
+//   F3 WIND: EIN uWindDir (seeded, langsam) treibt die wandernde Böe als dot(worldXZ, windDir) — quer gleich, längs
+//      verschieden, die Richtung dreht mit; das FELD (wetter.K5): der EINE Wind am Ort `_windAt`, vom Gelände geformt (Lee
+//      −40 %, Tal-Düse +20 %), und jeder Leser (Wasser, Regen, Tuch, Rauch, Wagen) ruft ihn und folgt seiner Mutation.
 //   F4 GRAS: die uBend-Sphären biegen Halme RADIAL weg, die CPU-Seite (`_tickGrasBend`) füllt Spieler, Ritt, nahe Kreaturen.
+//   F5 DIE BÖE IM BILD (klang.K2#1): ohne Stärke steht jeder Halm, und derselbe Halm wiegt im Verhältnis der Böe am Ort
+//      (`_windAt`) — das Rauschen je Halm verschiebt nur die Phase; die zweite Welle (die Phase wandert mit dem Ort) MUSS rot sehen.
 // Jede Fixture läuft durch die ECHTEN Methoden (Shim = Object.create(realm) mit synthetischem Dichtefeld/Wasser) und trägt
 // ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
 // Exit 1 bei jedem Fail.
@@ -176,61 +178,33 @@ hauptLauf(async () => {
                     );
             }
 
-            // ══ FIXTURE 3 (F3) — WIND-RICHTUNG (dot-getriebene Phase) ══
-            // Skalar-Mock-TSL: derselbe Knoten-Baum, numerisch ausgewertet — die ECHTE
-            // `_windSwayOffset`-Quelle rechnet, kein Nachbau.
-            const val = (x) => (x && typeof x === "object" ? x.v : x);
-            const N = (v) => ({
-                v,
-                mul: (oo) => N(v * val(oo)),
-                add: (oo) => N(v + val(oo)),
-                sub: (oo) => N(v - val(oo)),
-                div: (oo) => N(v / val(oo)),
-            });
-            const mockTSL = {
-                float: (x) => N(val(x)),
-                sin: (x) => N(Math.sin(val(x))),
-                cos: (x) => N(Math.cos(val(x))),
-                max: (a, b) => N(Math.max(val(a), val(b))),
-                min: (a, b) => N(Math.min(val(a), val(b))),
-                sqrt: (x) => N(Math.sqrt(val(x))),
-                vec3: (a, b, c) => ({ x: N(val(a)), y: N(val(b)), z: N(val(c)) }),
-                positionWorld: null,
-                positionLocal: null,
-                positionGeometry: null,
+            // ══ FIXTURE 3 (F3) — WIND-RICHTUNG ══
+            // DIE SKALAR-ALGEBRA (F4, F5): derselbe Knoten-Baum, den `_windSwayOffset` für die GPU baut, numerisch an EINER Umgebung
+            // e (Uhr t, Stärke U, Richtung dx/dz, Lage der Ecke lx/lz, Höhe hy, Slot 0 der Biegung b, das Rauschen des Halms `rausch`
+            // (e) — sonst 0,37; seine Ziehung aus dem Fuß rechnet der Stoff in u32, `_ortZiehung`) — die ECHTE Quelle rechnet, kein
+            // Nachbau. Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit; an der echten Instanz misst sie gate:foundry-impostor C4.
+            const val = (x) => (x && x.v !== undefined ? x.v : x);
+            const N = (v) => {
+                const op = (f) => (b) => N(f(v, val(b)));
+                return { v, mul: op((a, b) => a * b), add: op((a, b) => a + b), sub: op((a, b) => a - b), div: op((a, b) => a / b) };
             };
-            const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
-            const mkWindShim = (dirX, dirZ, bend0) => {
+            const V = (...a) => Object.fromEntries(a.map((x, i) => ["xyzw"[i], N(val(x))]));
+            const f = (g) => (...a) => N(g(...a.map(val)));
+            const T = { float: f((x) => x), fract: f((x) => x - Math.floor(x)), vec3: V };
+            for (const k of ["sin", "cos", "sqrt", "max", "min"]) T[k] = f(Math[k]);
+            const E0 = { t: 3.7, U: 0.4, dx: 1, dz: 0 };
+            const sway = (e, rausch = () => 0.37) => {
                 const s = Object.create(r);
-                // Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit; an der echten Instanz misst sie gate:foundry-impostor C4.
-                s._weltNaht = (T) => ({ lage: T.positionWorld, vorlage: (w) => w });
-                s.state = {
-                    windUniforms: {
-                        uWindTime: N(3.7),
-                        uWindStrength: N(0.4),
-                        uWindDir: { x: N(dirX), y: N(dirZ) },
-                        uBend: [bend0 || bendOff(), bendOff(), bendOff(), bendOff(), bendOff(), bendOff()],
-                    },
-                };
-                return s;
+                [T.positionWorld, T.positionGeometry] = [V(e.lx, 0.5, e.lz), V(0, e.hy, 0)];
+                s._weltNaht = () => ({ lage: T.positionWorld, vorlage: (x) => x });
+                const uBend = [0, 1, 2, 3, 4, 5].map((i) => V(...((!i && e.b) || [0, -1e6, 0, 0])));
+                s.state = { windUniforms: { uWindTime: N(e.t), uWindStrength: N(e.U), uWindDir: V(e.dx, e.dz), uBend } };
+                const o = r._windSwayOffset.call(s, T, { rausch: N(rausch(e)) });
+                return { x: o.x.v, z: o.z.v };
             };
-            const evalSway = (shim, wx, wz, localY) => {
-                mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
-                mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
-                // Das Höhen-Gewicht liest die Geometrie-Position (Wurzel bei y = 0, Lehre 22).
-                mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
-                const res = r._windSwayOffset.call(shim, mockTSL, {});
-                return { x: res.x.v, z: res.z.v };
-            };
+            // die Böe längs und quer der Richtung prüft F5 gegen `_windAt` selbst (bis w20-boee-bild hier quer gleich / längs
+            // verschieden an drei Punkten)
             {
-                // Wind aus +x, dann aus +z: quer teilt die Phase EXAKT, längs nicht — die ROLLEN TAUSCHEN an denselben Punkten
-                // (der Selbst-Test: ohne uWindDir-Konsum bräche die Quer-Paarung in einer Richtung)
-                const ab = (p, q) => Math.max(Math.abs(p.x - q.x), Math.abs(p.z - q.z));
-                for (const [d, qu, la] of [[[1, 0], [0, 40], [40, 0]], [[0, 1], [40, 0], [0, 40]]]) {
-                    const [a, q, l] = [[0, 0], qu, la].map(([x, z]) => evalSway(mkWindShim(...d), x, z, 0.8));
-                    if (!(ab(a, q) < 1e-9 && ab(a, l) > 1e-4))
-                        fail(`F3: Wind ${d} — quer ${ab(a, q)} (Soll 0), längs ${ab(a, l)} (Soll ≠ 0): die Phase folgt der Richtung nicht`);
-                }
                 // Die CPU-Richtungs-Quelle: seeded, langsam (< 0.02 rad/s Drift) und einheitslang.
                 const d10 = r._windDirAt(10);
                 const d10b = r._windDirAt(10);
@@ -302,49 +276,59 @@ hauptLauf(async () => {
 
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
             {
-                const sphere = { x: N(2), y: N(0.5), z: N(0), w: N(2.0) }; // Sphäre bei x=2, r=2
-                const on = mkWindShim(1, 0, sphere);
-                const off = mkWindShim(1, 0); // Slot aus (w=0, y=−1e6)
-                const nearL = evalSway(on, 1.2, 0, 0.8); // Halm links der Sphäre
-                const nearL0 = evalSway(off, 1.2, 0, 0.8);
-                const nearR = evalSway(on, 2.8, 0, 0.8); // Halm rechts der Sphäre
-                const nearR0 = evalSway(off, 2.8, 0, 0.8);
-                const root = evalSway(on, 1.2, 0, 0.0); // Wurzel (hf=0) biegt nie
-                const root0 = evalSway(off, 1.2, 0, 0.0);
-                const far = evalSway(on, 30, 0, 0.8); // außer Reichweite
-                const far0 = evalSway(off, 30, 0, 0.8);
-                o.zahlen.bend = { dLinks: nearL.x - nearL0.x, dRechts: nearR.x - nearR0.x };
-                if (!(nearL.x < nearL0.x - 1e-3)) fail("F4: Halm links der Sphäre biegt nicht RADIAL WEG (−x)");
-                if (!(nearR.x > nearR0.x + 1e-3)) fail("F4: Halm rechts der Sphäre biegt nicht RADIAL WEG (+x)");
-                if (!(Math.abs(root.x - root0.x) < 1e-9)) fail("F4: die WURZEL biegt sich (hf-Gewichtung fehlt)");
-                if (!(Math.abs(far.x - far0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
-                // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus dem EINEN Wind (`_windAt`, Richtung
-                // `_windDirAt(t)`) und füllt über `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
-                if (window.THREE && THREE.TSL && st.windUniforms) {
-                    r._ensureWindCoupling(THREE.TSL);
-                    const wu = st.windUniforms;
-                    if (wu.uBend && wu.uWindDir && pm) {
-                        const pp = pm.position;
-                        const t = 1234.5;
-                        wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
-                        wu.uWindDir.value.set(0, 0);
-                        r._bildZeit = t; // die Bild-Uhr (A9), die der Frame-Tick liest
-                        r._loopRender();
-                        const b0 = wu.uBend[0].value;
-                        const wd = r._windDirAt(t);
-                        o.zahlen.tick = { x: b0.x, w: b0.w, px: pp.x };
-                        if (!(Math.abs(b0.x - pp.x) < 1e-6 && b0.w > 0))
-                            fail(`F4: der Frame-Tick trägt den Spieler nicht in Slot 0 (x=${b0.x}, w=${b0.w})`);
-                        if (!(wu.uWindDir.value.x === wd.x && wu.uWindDir.value.y === wd.z))
-                            fail("F3: der Frame-Tick (`_loopRender`) speist uWindDir nicht aus `_windDirAt`");
-                        const bLast = wu.uBend[wu.uBend.length - 1].value;
-                        if (!(bLast.w === 0)) fail("F4: ungenutzte Slots sind nicht aus (w≠0)");
-                    } else {
-                        fail("F4: windUniforms/uBend fehlen nach `_ensureWindCoupling` (TSL vorhanden)");
+                // die Sphäre bei x=2 (r=2) gegen den Slot aus (w=0, y=−1e6): der Halm links und rechts der Sphäre, an der Wurzel
+                // (hf=0 biegt nie) und außer Reichweite
+                const [L, L0, R, R0, W, W0, F, F0] = [[1.2, 0.8], [2.8, 0.8], [1.2, 0], [30, 0.8]].flatMap(([lx, hy]) =>
+                    [[2, 0.5, 0, 2], null].map((b) => sway({ ...E0, b, lx, lz: 0, hy }))
+                );
+                o.zahlen.bend = { dLinks: L.x - L0.x, dRechts: R.x - R0.x };
+                if (!(L.x < L0.x - 1e-3)) fail("F4: Halm links der Sphäre biegt nicht RADIAL WEG (−x)");
+                if (!(R.x > R0.x + 1e-3)) fail("F4: Halm rechts der Sphäre biegt nicht RADIAL WEG (+x)");
+                if (!(Math.abs(W.x - W0.x) < 1e-9)) fail("F4: die WURZEL biegt sich (hf-Gewichtung fehlt)");
+                if (!(Math.abs(F.x - F0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
+                // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus dem EINEN Wind (`_windAt`, Richtung `_windDirAt(t)`) und
+                // füllt über `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen. THREE.TSL, die Slots und der Spieler stehen in
+                // jeder gebooteten Welt (bis w20-boee-bild fragte ein Wenn danach und ließ die Probe sonst still).
+                const wu = r._ensureWindCoupling(THREE.TSL);
+                const [pp, t] = [pm.position, 1234.5];
+                wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
+                wu.uWindDir.value.set(0, 0);
+                r._bildZeit = t; // die Bild-Uhr (A9), die der Frame-Tick liest
+                r._loopRender();
+                const [b0, wd] = [wu.uBend[0].value, r._windDirAt(t)];
+                if (!(Math.abs(b0.x - pp.x) < 1e-6 && b0.w > 0))
+                    fail(`F4: der Frame-Tick trägt den Spieler nicht in Slot 0 (x=${b0.x}, w=${b0.w})`);
+                if (!(wu.uWindDir.value.x === wd.x && wu.uWindDir.value.y === wd.z))
+                    fail("F3: der Frame-Tick (`_loopRender`) speist uWindDir nicht aus `_windDirAt`");
+                if (!(wu.uBend[5].value.w === 0)) fail("F4: ungenutzte Slots sind nicht aus (w≠0)");
+            }
+
+            // ══ F5 DIE BÖE IM BILD (klang.K2#1: der Wind-Klang folgt dem Wind im Bild, w20-boee-bild) — gespeist wie im Frame-Takt
+            //    (Uhr, WEATHER_WIND_AMP × Stärke und Richtung des EINEN Winds am Auge, `_windAt`): ohne Stärke steht jeder Halm (kein
+            //    zweiter Wind), und derselbe Halm (sein Rauschen) mit der Ecke 37 m längs und 29 m quer zum Wind wiegt im Verhältnis
+            //    der Böe am Ort (`_windAt(x, z, t).boe`) — das Rauschen je Halm verschiebt nur die Phase. Bis w20-boee-bild lief die
+            //    Phase als zweite Welle über die Wiese (uWindTime·1,7 + (Lage·uWindDir)·0,35): im Ausschnitt der Station hielten die
+            //    Büschel gemeinsam an, das Bild trug einen eigenen Takt neben der Böe. Selbst-Test: die zweite Welle (das Rauschen
+            //    aus (Lage·uWindDir)·0,35/2π = 0,0557) MUSS rot sehen. ══
+            {
+                const P = pm.position;
+                const boe = (rausch) => {
+                    let ab = 0;
+                    for (let i = 0; i < 30; i++) {
+                        const [t, ax] = [20 + i * 2.31, P.x + (i % 7)];
+                        const w = r._windAt(P.x, P.z, t);
+                        const [x, z] = [ax + w.x * 37 - w.z * 29, P.z + w.z * 37 + w.x * 29];
+                        const e = { t, U: w.staerke * AR.WEATHER_WIND_AMP, dx: w.x, dz: w.z, lx: ax, lz: P.z, hy: 0.5 };
+                        const [a, b, n] = [{}, { lx: x, lz: z }, { U: 0 }].map((q) => sway({ ...e, ...q }, rausch));
+                        const soll = r._windAt(x, z, t).boe / r._windAt(ax, P.z, t).boe;
+                        ab = Math.max(ab, Math.abs(Math.hypot(b.x, b.z) / Math.hypot(a.x, a.z) / soll - 1), Math.abs(n.x) + Math.abs(n.z));
                     }
-                } else {
-                    o.zahlen.tick = "TSL fehlt headless — CPU-Seite unmessbar (Mock-Seite deckt die Mathematik)";
-                }
+                    return ab;
+                };
+                const [ab, welle] = [boe(), boe((e) => (e.lx * e.dx + e.lz * e.dz) * 0.0557)];
+                o.zahlen.boe = { ab, welle };
+                if (!(ab < 1e-9)) fail(`F5: das Wiegen folgt der EINEN Böe am Ort nicht (±${ab}) — ein zweiter Wind`);
+                if (!(welle > 1e-3)) fail("F5-Selbsttest: die zweite Welle bleibt unerkannt");
             }
 
             // ══ KONSUM-PROBEN (Lehre 5/6: der Ruf, nie der Text — der Lieferant zählt, der Leser läuft) ══
@@ -396,7 +380,7 @@ hauptLauf(async () => {
             `  F2 Gleiten: 45°-Wand ${(z.klip.ratio * 100).toFixed(0)} % Absichts-Tempo (frei ${z.klip.frei.toFixed(2)} m → Wand ${z.klip.wand.toFixed(2)} m) · Voll-Stopp-Kontrolle ${(z.klipTot ? z.klipTot.ratio * 100 : NaN).toFixed(0)} % · Steilhang-Rutsch ${z.steilhang ? z.steilhang.x.toFixed(2) : "?"} m`
         );
     if (z.windDir)
-        console.log(`  F3 Wind: quer-invariant + richtungs-getrieben · Drift ${z.windDir ? "seeded/langsam" : "?"}`);
+        console.log(`  F3 Wind: Drift ${z.windDir ? "seeded/langsam" : "?"}`);
     const fd = z.feld;
     if (fd)
         console.log(
@@ -405,8 +389,9 @@ hauptLauf(async () => {
         );
     if (z.bend)
         console.log(
-            `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)} · Tick ${typeof z.tick === "string" ? z.tick : "Slot 0 = Spieler"}`
+            `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)}`
         );
+    if (z.boe) console.log(`  F5 Böe am Ort ±${z.boe.ab} · zweite Welle ±${z.boe.welle}`);
     console.log("");
     for (const f of out.fails) console.log(`  ❌ ${f}`);
     const ok = out.fails.length === 0;
