@@ -833,7 +833,7 @@ class AnazhRealm_vegetation_wiese {
     // Zellen) je Punkt, der Wiese trägt — nie an einer Kante, über die der Boden steiler fällt, als die Wiese steht, nie im Grund
     // eines Hauses — EINE Karte: ihre Matrix (die Lage, gedreht nach Zug 1 ihrer Ziehung, Breite `breite`, Höhe `hoehe` ×
     // 0,8–1,2; die vierte Zeile trägt in Element 7 ihre Ordnung, Zug 0 der über dem Gitter geschichteten Ziehung — das
-    // Teil-Gitter wie die Büschel), ihr Tint (der des nächsten Büschels der Kachel). Nach der Ordnung sortiert.
+    // Teil-Gitter wie die Büschel), ihr Tint (der eines Büschels in ihrem Fach von 2 m). Nach der Ordnung sortiert.
     _wieseSchaleDaten(fx, fz, bueschel) {
         const F = AnazhRealm.NAH_WIESE.fern,
             S = F.schale;
@@ -854,6 +854,12 @@ class AnazhRealm_vegetation_wiese {
                 p.push([AnazhRealm._ortZiehung(W, x, z, 0, F.gitter), AnazhRealm._ortZiehung(W, x, z, 1), x, y, z]);
             }
         p.sort((a, b) => a[0] - b[0]);
+        // der Tint je Fach von 2 m (das erste Büschel darin), ohne Büschel im Fach der der Kachel — nie eine Suche je Karte
+        const fach = new Map();
+        for (const b of bueschel) {
+            const key = Math.floor(b.x / 2) + "," + Math.floor(b.z / 2);
+            if (!fach.has(key)) fach.set(key, b.f);
+        }
         const K = { n: p.length, o: new Float64Array(p.length), x: new Float64Array(p.length), z: new Float64Array(p.length) }; // prettier-ignore
         Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3).fill(1), y0: Infinity, y1: -Infinity }); // prettier-ignore
         p.forEach(([o, w, x, y, z], m) => {
@@ -864,9 +870,8 @@ class AnazhRealm_vegetation_wiese {
             ];
             K.matrizen.set([c * S.breite, 0, -s * S.breite, 0, 0, h, 0, o, s, 0, c, 0, x, y - 0.05, z, 1], m * 16);
             [K.o[m], K.x[m], K.z[m], K.y0, K.y1] = [o, x, z, Math.min(K.y0, y), Math.max(K.y1, y)];
-            let [best, d2] = [null, Infinity];
-            for (const b of bueschel) if ((b.x - x) ** 2 + (b.z - z) ** 2 < d2) [best, d2] = [b, (b.x - x) ** 2 + (b.z - z) ** 2]; // prettier-ignore
-            if (best) K.farben.set(best.f, m * 3);
+            const f = fach.get(Math.floor(x / 2) + "," + Math.floor(z / 2)) || (bueschel.length && bueschel[0].f);
+            if (f) K.farben.set(f, m * 3);
         });
         return K;
     }
