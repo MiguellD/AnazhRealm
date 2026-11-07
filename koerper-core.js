@@ -826,6 +826,34 @@
     //     kinnZurueck = das Kinn hinter die Unterlippe.
     //   rumpf: brustkorb/nacken = Höhen-Faktoren der Brustkorb-Ellipse und des oberen Rückens (beide reichten bis ans
     //     Kinn — jede Hülle über ihnen verschluckte den Hals).
+    //   w21-leib-bau (DER LEIB IM KANON, Drillis & Contini 1966 nach Winter 2009 Abb. 4.1, `_kopfLage`): kopf.mass 0,75 → 0,70 —
+    //     der Scheitel steht auf H, der Kopf misst 0,130 H (vorher 0,839 E über einem Kinn, das der Ofen auf der Höhe des Labors
+    //     hielt: der Mensch maß 6,28 statt 6,07 E, 7,49 Köpfe). rumpf.brust = die Höhe der Brust-Ellipse (ihr Scheitel lag 0,18 E
+    //     über der Drosselgrube, der Hals stand hinter einem Sims), pecTiefer = der Schlüsselbein-Teil des Brustmuskels unter das
+    //     Schlüsselbein. hals = der Hals als EINE geneigte Röhre von der Hals-Wurzel (`unten` unter ihr) bis in den Kopf (`inKopf`
+    //     über das Kinn), r (× der Hals-Dicke labMorph neckThick) und tief (Tiefe/Breite, Körper-Einheiten), `laenge` = die Röhre
+    //     ragt über ihre Enden (das Ellipsoid des Zylinders spitzt dort zu), z = [unten, oben] (vorn +); scm = der Kopfnicker als
+    //     Schrägzug [Brustbein-Kopf relativ zur Hals-Wurzel, Warzenfortsatz relativ zum Kinn, Radius] — vorher zwei senkrechte
+    //     Stäbe vorn am Hals, die Kugel neckMain endete unter dem Kinn. schluesselbein = [innen] an der Drosselgrube, [aussen] an
+    //     der Schulterhöhe (relativ zur Hals-Wurzel), Radius — der Zylinder des Labors stand fast senkrecht (seine Drehung kippte
+    //     die Achse y nur 29°): zwei Pfähle neben dem Hals bis 0,13 E unter das Kinn. rumpf.trapTiefer = der Trapez-Muskel und der
+    //     obere Rücken unter die Schulterhöhe, nacken 0,56 (vorher 0,6) — ihre Buckel stiegen über das Kinn und rissen die Naht in
+    //     drei Ringe; schulter = der Deltamuskel je Seite (tiefer unter die Schulterhöhe, hoch × 1,1 seiner Höhe, breit und tief ×
+    //     seiner Breite und Tiefe, aussen nach außen) — sein Scheitel stand 5,245 E hoch, über dem Kinn.
+    //   leibHaut (w21-leib-bau, DIE HAUT IST EIN GUSS — foundry-core `__leibHaut`): die Haut des Leibs ist EIN glattes Feld über
+    //     jedem Primitiv von Rumpf, Hals, Gliedern und Kopf (derselbe SDF-Guss wie das Gesicht, das Tier und die Menge). vox = das
+    //     Raster des Leibs (Körper-Einheiten, 0,06 E ≈ 1,7 cm; die Grobstufe × 1,6), blend = die Verrundung der Nähte zwischen den
+    //     Muskeln, dicke = die Haut über den Muskeln (Unterhaut: 0,06 E ≈ 1,7 cm — so weit lag die Punkt-Splat-Haut im Median über
+    //     ihren Primitiven: Bein 0,068, Arm 0,066, Hals 0,054; das Gesicht IST die Haut und trägt keine), reich = wie weit ein
+    //     Primitiv seine Ecken wiegt (× 1/0,3 seines Radius: die Gewichte der Haut). naht = wo das feine Raster des Gesichts (der
+    //     Kopf-Raum, kopfHaut) das des Leibs trifft: eine Ebene `unterKinn` unter dem tiefsten Punkt des Kopfs (Kinn, Kiefer), um
+    //     `neigung` rad nach hinten gekippt (vorn tiefer: der Ring folgt dem Unterkiefer zum Nacken, ein waagrechter schnitt den
+    //     Nacken über der Haar-Kante); dort schließt ein Reißverschluss von Dreiecken die Ringe beider Raster zu EINER Haut —
+    //     der Leib endet in genau einem Ring (`zylinder` × der Radius des Halses um seine Achse: was die Ebene außerhalb schneidet,
+    //     die Arme der Spreiz-Pose, bleibt ganz); über `band` unter der Naht (die Hals-Wurzel) wächst das Gewicht des Kopfs bis 1
+    //     an ihr (der Hals folgt dem Kopf), die Normalen am Ring trägt das Feld des Kopfs. Bis w21-leib-bau waren Kopf und Leib
+    //     zwei Häute, die sich nie berührten (der Kopf schwebte: 31 von 36 Sektoren um den Hals ohne Berührung, die Fuge bis 9,5
+    //     cm, kein Hals-Gewicht am Kopf); das Urteil `leibUrteil` (gate:mensch-anatomie LEIB).
     //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
     //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · hoehleSaum = wie weit (in
     //     Halbachsen über ihrem Rand) die Haut um das Auge den Ton der Höhle trägt (A4: sie liegt unter der Haut) · brauSaum =
@@ -881,7 +909,7 @@
         unterarm: Object.freeze({ breite: 0.66, tiefe: 0.8, bauch: 0.42 }),
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
-        kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
+        kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
         auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
             lidRand: Object.freeze({ saum: 0.06, tief: 0.25 }) }),
@@ -891,7 +919,12 @@
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
-        rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
+        rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.56, brust: 0.82, pecTiefer: 0.25, trapTiefer: 0.16 }),
+        schulter: Object.freeze({ tiefer: 0.2, hoch: 0.75, breit: 0.8, tief: 1, aussen: 0.03 }),
+        hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
+            scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
+        schluesselbein: Object.freeze({ innen: Object.freeze([0.07, -0.03, 0.17]), aussen: Object.freeze([0.68, -0.03, -0.03]), r: 0.035 }),
+        leibHaut: Object.freeze({ vox: 0.06, blend: 0.06, dicke: 0.06, reich: 0.6, naht: Object.freeze({ unterKinn: 0.01, neigung: 0.25, band: 0.3, zylinder: 1.4 }) }),
         kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
@@ -922,17 +955,26 @@
     // handgelenk = Breite am Handgelenk (0,033) · unterarm = Unterarm-Breite / Oberarm-Breite (0,8–1,0) · kopfH = Kinn bis
     // Scheitel (0,13) · kopfB = Kopf-Breite ohne Ohren (0,086) · augenAbstand = Pupillen-Abstand (0,035) · augapfel
     // (0,0135) · iris (0,0066) · mund = Mund-Breite (0,028) · fuss = Fuß, Ferse bis Zeh (0,15).
+    // DER KANON DES LEIBS (w21-leib-bau): die Höhen der Gelenke über der Sohle — Drillis & Contini 1966, Body Segment Parameters
+    // (New York University, Technical Report 1166.03), nach Winter, Biomechanics and Motor Control of Human Movement, 4. Aufl. 2009,
+    // Abb. 4.1: Kopf 0,130 H (kopfH: 7,5–8 Köpfe, der Kanon der Zeichner; das Kinn steht damit auf 0,870 H), schulter 0,818 H,
+    // huefte (Trochanter) 0,530 H, knie 0,285 H, je ± 0,012 H; hals = Kinn − Schulter (0,052 H). labProportionen baut den Leib aus
+    // denselben Zahlen (H = 6); bis w21-leib-bau maß das Gesetz 7,49 Köpfe (kopfH 0,1335), Schulter 0,792, Hüfte 0,517, Hals 0,074
+    // (der Scheitel stand 0,21 E über H). Offen außerhalb dieses Schnitts: die Oberschenkel tragen die Hüfte (Hüftbreite 0,248 H
+    // gegen 0,191 H, Taille/Hüfte 0,81 gegen den Mann 0,85–0,95, WHO 2008) — die Beine.
     // prettier-ignore
     var MENSCH_SOLL = Object.freeze({
         handL: [0.1, 0.116], handB: [0.042, 0.053], handgelenk: [0.028, 0.04], unterarm: [0.78, 1.0],
-        kopfH: [0.12, 0.138], kopfB: [0.078, 0.096], augenAbstand: [0.031, 0.039], augapfel: [0.012, 0.016],
+        kopfH: [0.125, 0.1333], kopfB: [0.078, 0.096], augenAbstand: [0.031, 0.039], augapfel: [0.012, 0.016],
         iris: [0.0058, 0.0076], mund: [0.025, 0.033], fuss: [0.135, 0.165],
+        schulter: [0.806, 0.83], huefte: [0.518, 0.542], knie: [0.273, 0.297], hals: [0.04, 0.064],
     });
     // DAS SOLL DES KOPFES (K57, gate:mensch-anatomie KOPF): die Verhältnisse des Gesichts, nicht nur seine Größen —
     // gemessen am GEBACKENEN Kopf (Ofen L0: die Haut, die Augen, das Haar, wie die Welt sie zeichnet), normiert auf die
     // Kopfhöhe kH (Kinn bis Scheitel, ohne Haar). Anthropometrie des erwachsenen Mannes (Farkas-Normen: v–gn 232 mm,
     // en–en 33 mm, ex–en 30 mm, ch–ch 54 mm, IPD 63 mm, sa–sba 62 mm) und Farbmetrik der Lippe gegen die Wange (CIELAB):
-    //   kopfAnteil = kH / Körperhöhe (Soll 1/7,5) · augenLinie = Augenmitte über dem Kinn / kH (die Augen auf halber
+    //   (kH / Körperhöhe ist MENSCH_SOLL kopfH, der Kanon — bis w21-leib-bau stand er hier ein zweites Mal als kopfAnteil)
+    //   augenLinie = Augenmitte über dem Kinn / kH (die Augen auf halber
     //   Kopfhöhe) · augenSpalt = Lücke zwischen den Augen / Augenbreite (der Abstand ist eine Augenbreite; die Breite
     //   ist die sichtbare Spalte: Augapfel samt Lidern) · mundZuPupille = Mundbreite / Pupillen-Abstand (die
     //   Mundwinkel unter den Pupillen) · ohrOben / ohrUnten = Ohr-Oberkante über der Augenlinie und Ohr-Unterkante über
@@ -948,14 +990,27 @@
     //   als VOLUMEN trägt (Stil mittel; die Strähnen sind sein Rand, nie der Fleck auf der Glatze) · kopfDreiecke =
     //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar).
     //   mensch.K4 (das Gesicht auf 6 m): brauKontrast = |ΔL*| des Brauen-Tons gegen die Haut (die Braue ist Fläche, nie fünf
-    //   Striche unter einem Bildpunkt).
+    //   Striche unter einem Bildpunkt). Am Guss urteilt `kopfGussUrteil` augenVorstand, augeFrei, haarDeckung und kopfDreiecke.
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
-        kopfAnteil: [0.127, 0.14], augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
+        augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
         brauKontrast: [8, 80],
+    });
+    // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
+    // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
+    // einer von ihnen zur Haut des Leibs (E) in der Ruhe und unter dem Kopf in Pose (nicken 0,18, drehen 0,3, neigen 0,05 rad — der
+    // Hals folgt ihm) · nahtNormale = der größte Sprung der Normalen über den Ring (Grad) · saumUmlauf = je Saum eines Stoffs aus
+    // der Haut die Summe seiner Abbiegungen in Umläufen (ein glatter Saum ~1–2; die Treppe der Dreiecke 5–8) · bauchKnick = der
+    // größte Knick zwischen zwei Dreiecken der Haut des sichtbaren Bauchs (Grad; vorn, zwischen den Flanken, nackt) ·
+    // bauchSplitter = Anteil der Dreiecke dort mit einem Winkel unter 10°. Bis w21-leib-bau: zwei Häute ohne Ring (der Kopf schwebte,
+    // die Fuge bis 9,5 cm, kein Hals-Gewicht am Kopf), Bund und Hemd-Saum 5,8–7,8 Umläufe, Knick im Bauch des Hemds 54°.
+    // prettier-ignore
+    var LEIB_SOLL = Object.freeze({
+        nahtRing: [1, 1], nahtSpalt: [0, 1e-5], nahtPose: [0, 1e-5], nahtNormale: [0, 1], saumUmlauf: [0, 3], bauchKnick: [0, 25],
+        bauchSplitter: [0, 0.05],
     });
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
@@ -1573,6 +1628,34 @@
         };
     }
 
+    // DIE LAGE DES KOPFS IM KANON (w21-leib-bau): der Scheitel steht auf H, der Kopf misst kopf.mass × die Schädel-Höhe — Drillis &
+    // Contini 1966 (nach Winter, Biomechanics and Motor Control of Human Movement, 4. Aufl. 2009, Abb. 4.1): Kopf 0,130 H (Kinn bis
+    // Scheitel), Kinn 0,870 H, Schulter 0,818 H, Hüfte 0,530 H — die Zahlen, aus denen labProportionen den Leib baut. Bis
+    // w21-leib-bau hielt der Ofen das KINN auf der Höhe des Labors (5,45 E) und wuchs den Kopf darüber: der Scheitel stand 0,21 E
+    // über H, der Mensch maß 6,28 statt 6,07 E (die Welt nimmt 6 E = 1,70 m an, LEIB.kopfM), der Kopf 0,839 E = 0,134 H — Schulter
+    // 0,792 statt 0,818, Hüfte 0,517 statt 0,530 der Statur, der Hals 0,074 statt 0,052. Rückgabe { S, B (die Kopf-Skala hoch und
+    // quer), posY (die Lage der Kopf-Gruppe, Leib-Raum), kinnY (der tiefste Punkt des Kinns), kinn (die Kinn-Mitte, Kopf-Raum) }.
+    function _kopfLage() {
+        var P = labProportionen(),
+            MG = MENSCH_GESTALT;
+        var S = MG.kopf.mass,
+            SH = MG.schaedel.hoch;
+        var nY = P.noseY - MG.gesicht.naseTiefer;
+        var kinn = nY + (P.chinY - nY) * MG.gesicht.unten;
+        // der Scheitel im Kopf-Raum: die Schädel-Kugel (bauMensch: Mitte skullCY + SH/2, Halbachse rS·1,12 + SH/2)
+        var scheitel = P.skullCY + SH + P.skullBaseR * 1.03 * 1.12;
+        var posY = P.H - scheitel * S;
+        return { S: S, B: MG.kopf.breite, posY: posY, kinnY: posY + (kinn - (P.chinW / 2) * 0.9) * S, kinn: kinn };
+    }
+    // Die Drehung (Euler XYZ, wie die Gelenke) eines Zylinders, dessen Achse (lokal y) von a nach b zeigt — und Mitte und Länge
+    function _zylinderZwischen(a, b) {
+        var d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        var L = Math.hypot(d[0], d[1], d[2]);
+        var u = [d[0] / L, d[1] / L, d[2] / L];
+        // Rx(θx)·Rz(θz)·(0, 1, 0) = (−sin θz, cos θz cos θx, cos θz sin θx)
+        return { mitte: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2], L: L, rot: [Math.atan2(u[2], u[1]), 0, -Math.asin(u[0])] };
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // KONVERGENZ-WELLE — DER EINE MENSCH: bauMensch(F) baut den kompletten
     // Da-Vinci-Teile-Baum (verbatim aus worlds/koerperstudio/koerperstudio.js
@@ -1615,19 +1698,19 @@
         [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});
         const upperBack=reg('upperBack',s(0.8,matSkin,[1.15,0.8*MENSCH_GESTALT.rumpf.nacken,0.5]));upperBack.position.set(0,acromionY-0.2-trochanterY,-0.2);torsoG.add(upperBack);
         [-1,1].forEach(sd=>{const o=reg('oblique'+(sd===1?'1':'-1'),s(0.24,matSkin,[0.48,1.4,0.4]));o.position.set(sd*0.46,(nippleY+trochanterY)/2-trochanterY,0.08);torsoG.add(o);});
-        const chestCore=reg('chest',s(0.5,matSkin,[1.8,1.0,0.8]));chestCore.position.set(0,nippleY+0.2-trochanterY,0.3);torsoG.add(chestCore);
-        [-1,1].forEach(sd=>{const g=F.gruppe();const l=s(0.4,matSkin,[1.4,0.6,0.8]);l.position.set(sd*0.22,nippleY+0.2-trochanterY,0.35);l.rotation.z=sd*-0.2;g.add(l);const u=s(0.3,matSkin,[1.2,0.4,0.6]);u.position.set(sd*0.55,nippleY+0.6-trochanterY,0.32);u.rotation.set(0,sd*0.2,sd*0.4);g.add(u);reg('pec'+(sd===1?'1':'-1'),g);torsoG.add(g);});
+        const RB=MENSCH_GESTALT.rumpf;const chestCore=reg('chest',s(0.5,matSkin,[1.8,RB.brust,0.8]));chestCore.position.set(0,nippleY+0.2-0.5*(1-RB.brust)-trochanterY,0.3);torsoG.add(chestCore);   // w21-leib-bau: die brust endet unter der drosselgrube (ihr scheitel lag 0.18 E ueber ihr, der hals stand hinter einem sims)
+        [-1,1].forEach(sd=>{const g=F.gruppe();const l=s(0.4,matSkin,[1.4,0.6,0.8]);l.position.set(sd*0.22,nippleY+0.2-trochanterY,0.35);l.rotation.z=sd*-0.2;g.add(l);const u=s(0.3,matSkin,[1.2,0.4,0.6]);u.position.set(sd*0.55,nippleY+0.6-RB.pecTiefer-trochanterY,0.32);u.rotation.set(0,sd*0.2,sd*0.4);g.add(u);reg('pec'+(sd===1?'1':'-1'),g);torsoG.add(g);});
         [-1,1].forEach(sd=>{const br=reg('breast'+(sd===1?'1':'-1'),s(0.32,matSkin,[1.0,1.05,1.0]));br.position.set(sd*0.27,nippleY+0.06-trochanterY,0.44);br.rotation.x=-0.12;torsoG.add(br);});
         const sternum=s(0.04,matDark,[0.4,2.5,0.5]);sternum.position.set(0,nippleY+0.1-trochanterY,0.38);torsoG.add(sternum);
         const absBase=reg('abs',s(0.5,matSkin,[0.8,1.6,0.4]));absBase.position.set(0,(nippleY+trochanterY)/2-trochanterY,0.3);torsoG.add(absBase);
         for(let i=0;i<4;i++){const y=(nippleY-0.1)-(i*0.2*headSeg)-trochanterY;const aL=s(0.11,matSkin,[1,1,0.8]);aL.position.set(-0.12,y-0.02,0.37);torsoG.add(aL);const aR=s(0.11,matSkin,[1,1,0.8]);aR.position.set(0.12,y-0.02,0.37);torsoG.add(aR);const tV=s(0.035,matDark,[0.22,0.6,0.5]);tV.position.set(0,y-0.04,0.4);torsoG.add(tV);const tH=s(0.03,matDark,[1.8,0.1,0.5]);tH.position.set(0,y+0.05,0.4);torsoG.add(tH);}
-        [-1,1].forEach(sd=>{const t=reg('trap'+(sd===1?'1':'-1'),s(0.3,matSkin,[1.3,0.6,0.6]));t.position.set(sd*0.3,acromionY-trochanterY,-0.1);t.rotation.z=sd*0.2;torsoG.add(t);});
-        const nSY=acromionY+0.02,nEY=acromionY+0.46,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const neckMain=reg('neckMain',c(0.10,0.12,nH*0.75,matSkin));neckMain.position.set(0,nSY+0.12+nH*0.375-trochanterY,0);torsoG.add(neckMain);const neckTop=c(0.10,0.11,0.05,matSkin);neckTop.position.set(0,nEY-0.025-trochanterY,0);torsoG.add(neckTop);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);
-        [-1,1].forEach(sd=>{const scm=reg('scm'+(sd===1?'1':'-1'),c(0.026,0.042,nH*0.95,matSkin));scm.position.set(sd*0.06,nSY+nH*0.42-trochanterY,0.035);scm.rotation.z=sd*-0.18;scm.rotation.x=0.10;torsoG.add(scm);});   // sternocleidomastoideus: v-zug kiefer->drosselgrube
-        [-1,1].forEach(sd=>{const tn=reg('tneck'+(sd===1?'1':'-1'),s(0.115,matSkin,[0.85,1.4,0.70]));tn.position.set(sd*0.17,nSY+0.06-trochanterY,-0.10);tn.rotation.z=sd*0.55;torsoG.add(tn);});   // nacken-trapez-bruecke: schliesst die harte hals->schulter-kante
+        [-1,1].forEach(sd=>{const t=reg('trap'+(sd===1?'1':'-1'),s(0.3,matSkin,[1.3,0.6,0.6]));t.position.set(sd*0.3,acromionY-MENSCH_GESTALT.rumpf.trapTiefer-trochanterY,-0.1);t.rotation.z=sd*0.2;torsoG.add(t);});   // w21-leib-bau: der trapez faellt vom hals zur schulterhoehe (sein scheitel lag 0.15 E darueber)
+        const KL=_kopfLage(),HA=MENSCH_GESTALT.hals,SB=MENSCH_GESTALT.schluesselbein;const nSY=acromionY+0.02,nEY=KL.kinnY+HA.inKopf,nH=nEY-nSY;const neckBase=reg('neckBase',c(0.125,0.155,0.13,matSkin));neckBase.position.set(0,nSY+0.06-trochanterY,0);torsoG.add(neckBase);const hl=_zylinderZwischen([0,nSY-HA.unten,HA.z[0]],[0,nEY,HA.z[1]]);const nm0=c(HA.r,HA.r,hl.L*HA.laenge,matSkin);nm0.scale.set(1,1,HA.tief);const neckMain=reg('neckMain',nm0);neckMain.position.set(hl.mitte[0],hl.mitte[1]-trochanterY,hl.mitte[2]);neckMain.rotation.set(hl.rot[0],hl.rot[1],hl.rot[2]);torsoG.add(neckMain);const neckTop=c(0.10,0.11,0.05,matSkin);neckTop.position.set(0,nEY-0.025-trochanterY,0);torsoG.add(neckTop);const adamsApple=s(0.019,matSkin,[0.85,0.9,0.8]);adamsApple.position.set(0,nSY+0.16-trochanterY,0.06);torsoG.add(adamsApple);const nape=s(0.028,matSkin,[0.55,0.55,0.45]);nape.position.set(0,nSY+0.08-trochanterY,-0.04);torsoG.add(nape);   // w21-leib-bau: der hals ist eine geneigte roehre von der hals-wurzel bis unter den schaedel (die kugel neckMain endete unter dem kinn)
+        [-1,1].forEach(sd=>{const z=_zylinderZwischen([sd*HA.scm[0][0],nSY+HA.scm[0][1],HA.scm[0][2]],[sd*HA.scm[1][0],KL.kinnY+HA.scm[1][1],HA.scm[1][2]]);const scm=reg('scm'+(sd===1?'1':'-1'),c(HA.scm[2],HA.scm[2],z.L,matSkin));scm.position.set(z.mitte[0],z.mitte[1]-trochanterY,z.mitte[2]);scm.rotation.set(z.rot[0],z.rot[1],z.rot[2]);torsoG.add(scm);});   // sternocleidomastoideus: der schraegzug brustbein -> warzenfortsatz (w21-leib-bau: vorher zwei senkrechte staebe vorn am hals)
+        [-1,1].forEach(sd=>{const tn=reg('tneck'+(sd===1?'1':'-1'),s(0.115,matSkin,[0.85,1.4,0.70]));tn.position.set(sd*0.17,nSY+0.06-0.5*MENSCH_GESTALT.rumpf.trapTiefer-trochanterY,-0.10);tn.rotation.z=sd*0.55;torsoG.add(tn);});   // nacken-trapez-bruecke: schliesst die harte hals->schulter-kante (w21-leib-bau: mit dem trapez gesenkt)
         const nf1=reg('napeFill1',s(0.10,matSkin,[0.9,1.3,1.0]));nf1.position.set(0,5.10-trochanterY,-0.14);torsoG.add(nf1);   // HINTERHAUPT-NACKEN-FUELLER: harness-befund -- schaedelbasis hing 0.39-0.43 HINTER dem hals,
         const nf2=reg('napeFill2',s(0.08,matSkin,[0.85,1.1,0.95]));nf2.position.set(0,5.24-trochanterY,-0.15);torsoG.add(nf2);   // man sah von hinten unter den offenen schaedel ins leere. koerperfeld waechst jetzt hoch dagegen.
-        [-1,1].forEach(sd=>{const cl=reg('clavicle'+(sd===1?'1':'-1'),c(0.07,0.05,0.55,matSkin));cl.position.set(sd*0.38,acromionY+0.08-trochanterY,0.08);cl.rotation.set(0,sd*0.2,sd*-0.5);torsoG.add(cl);});
+        [-1,1].forEach(sd=>{const z=_zylinderZwischen([sd*SB.innen[0],nSY+SB.innen[1],SB.innen[2]],[sd*SB.aussen[0],nSY+SB.aussen[1],SB.aussen[2]]);const cl=reg('clavicle'+(sd===1?'1':'-1'),c(SB.r,SB.r*0.8,z.L,matSkin));cl.position.set(z.mitte[0],z.mitte[1]-trochanterY,z.mitte[2]);cl.rotation.set(z.rot[0],z.rot[1],z.rot[2]);torsoG.add(cl);});   // w21-leib-bau: das schluesselbein liegt von der drosselgrube zur schulterhoehe (die lab-drehung kippte den y-zylinder nur 29 grad: zwei pfaehle neben dem hals)
         [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);const bic=reg('bicep'+(sd===1?'1':'-1'),s(0.26,matSkin,[0.9,upperArmLen/0.52,1]));bic.position.set(0,-upperArmLen/2,0.1);armG.add(bic);const tri=reg('tricep'+(sd===1?'1':'-1'),s(0.27,matSkin,[0.9,upperArmLen/0.54,0.9]));tri.position.set(0,-upperArmLen/2,-0.15);armG.add(tri);const uarm=reg('uarm'+(sd===1?'1':'-1'),s(0.23,matSkin,[1.0,upperArmLen/0.46,0.96]));uarm.position.set(0,-upperArmLen/2,-0.02);armG.add(uarm);const el=s(0.165,matJoint,[1,0.75,1]);el.position.set(0,-upperArmLen,0);armG.add(el);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const UA=MENSCH_GESTALT.unterarm,HG=MENSCH_GESTALT.handgelenk;const fa=reg('forearm'+(sd===1?'1':'-1'),s(0.24,matSkin,[1.2*UA.breite,forearmLen/0.48,UA.tiefe]));fa.position.set(sd*0.05,-forearmLen*UA.bauch,0);elbowG.add(fa);const wY=-forearmLen;const wr=s(0.14,matSkin,[HG.breite,0.5,HG.tiefe]);wr.position.set(sd*0.05,wY,0);elbowG.add(wr);
         const hk=MENSCH_GESTALT.hand.mass,hb=MENSCH_GESTALT.hand.breite;const hand=F.gruppe();hand.userData.sd=sd;hand.userData.fingers=[];hand.userData.thumbs=[];
         const palmG=F.gruppe();hand.add(palmG);hand.userData.palmG=palmG;reg('palm'+(sd===1?'1':'-1'),palmG);
@@ -1636,7 +1719,8 @@
         const thumbG=F.gruppe();thumbG.position.set(-sd*0.3*hk*hb,-0.15*hk,0.1*hk);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1*hk,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06*hk,0.05*hk,0.12*hk,matSkin);thumbF1.position.y=-0.06*hk;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12*hk,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06*hk,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05*hk,0.04*hk,0.08*hk,matSkin);thumbTip.position.y=-0.04*hk;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
         hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
         armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
-        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=MENSCH_GESTALT.kopf.mass,HEAD_B=MENSCH_GESTALT.kopf.breite;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;const UG=MENSCH_GESTALT.gesicht.unten,lipY=nY+(lipY0-nY)*UG-MENSCH_GESTALT.gesicht.mundTiefer,chinY=nY+(chinY0-nY)*UG,jawY=nY+(jawY0-nY)*UG;base.headPosY-=(chinY-chinY0)*HEAD_S;const SH=MENSCH_GESTALT.schaedel.hoch;   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
+        [-1,1].forEach(sd=>{const n='deltoid'+(sd===1?'1':'-1'),d=parts[n],SU=MENSCH_GESTALT.schulter;d.position.set(sd*SU.aussen,-SU.tiefer,0);d.scale.set(SU.breit,1.1*SU.hoch,SU.tief);base[n]={x:d.scale.x,y:d.scale.y,z:d.scale.z};});   // w21-leib-bau: die schulter-kappe haengt unter der schulterhoehe (die kugel um das gelenk ragte 0.34 E darueber, ueber das kinn)
+        const headGroup=F.gruppe();headGroup.position.y=KL.posY-trochanterY;reg('head',headGroup);var HEAD_S=KL.S,HEAD_B=KL.B;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=KL.posY;const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;const UG=MENSCH_GESTALT.gesicht.unten,lipY=nY+(lipY0-nY)*UG-MENSCH_GESTALT.gesicht.mundTiefer,chinY=nY+(chinY0-nY)*UG,jawY=nY+(jawY0-nY)*UG;const SH=MENSCH_GESTALT.schaedel.hoch;   // w21-leib-bau: der scheitel steht auf H, der kopf misst den kanon (_kopfLage; vorher hielt die pivot-korrektur das KINN und der kopf wuchs ueber H)
         const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12+SH/(2*skullBaseR*1.03),1.0]);skull.position.y=skullCY+SH/2;headGroup.add(skull);
         [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*0.36,headSeg*0.48,0);headGroup.add(t);});
         const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
@@ -1949,6 +2033,336 @@
         return { innen: tuchDrapieren([netz(arm, arm)], [netz(rumpf, nrm)], leibMassstab()), arm: arm.length / 3, spreizGrad: Math.round(grad * 10) / 10 };
     }
 
+    // DIE RAND-RINGE einer Fläche (w21-leib-bau; Leser: der Ofen an der Naht der EINEN Haut, foundry-core `__leibHaut`, und
+    // `leibUrteil`): die Kanten mit EINEM Dreieck, je Ring die Ecken in Umlauf-Folge (die Richtung der Rand-Kante in ihrem Dreieck),
+    // die Ringe ab ihrer kleinsten Ecke. `I`: der Index der Dreiecke, flach.
+    function randRinge(I) {
+        var zahl = new Map(),
+            nach = new Map(),
+            ringe = [],
+            gesehen = new Set();
+        var kante = function (t, e) {
+            var a = I[t + e],
+                b = I[t + ((e + 1) % 3)];
+            return a < b ? a + ":" + b : b + ":" + a;
+        };
+        var t, e;
+        for (t = 0; t < I.length; t += 3) for (e = 0; e < 3; e++) zahl.set(kante(t, e), (zahl.get(kante(t, e)) || 0) + 1);
+        for (t = 0; t < I.length; t += 3) for (e = 0; e < 3; e++) if (zahl.get(kante(t, e)) === 1) nach.set(I[t + e], I[t + ((e + 1) % 3)]);
+        Array.from(nach.keys())
+            .sort(function (a, b) {
+                return a - b;
+            })
+            .forEach(function (s) {
+                if (gesehen.has(s)) return;
+                var r = [];
+                for (var v = s; !gesehen.has(v) && nach.has(v); v = nach.get(v)) {
+                    gesehen.add(v);
+                    r.push(v);
+                }
+                ringe.push(r);
+            });
+        return ringe;
+    }
+
+    // DIE NETZE DES GUSSES (w21-leib-bau; Leser: `leibUrteil`, gate:mensch-anatomie KOPF): je Mesh des Gusses `g` (Ofen) seine
+    // Ecken und Normalen im Raum, in dem Welt und Labor ihn zeichnen (stamm `_ofenAssembleAsset`: jede Hülle hängt an ihrem Gelenk,
+    // die geskinnte an der Wurzel — und die Wurzel trägt die Skala der Gestalt, x und z 0,93 am Start): eine geskinnte Hülle liegt
+    // im Raum der Wurzel, eine starre trägt ihre Matrix in der Gruppe und ihr Gelenk (`__assetJoint`). `pose`: der Kopf in LEIB_POSE
+    // (das Gelenk head um Euler XYZ gedreht); jede Ecke einer geskinnten Hülle folgt ihm mit ihrem Gewicht an ihm und seinen
+    // Kindern, jede starre an ihnen ganz. Rückgabe [{ k: Klasse, j: Gelenk, haut: geskinnt, P, N, I (null ohne Index), o: das Mesh }]
+    // mit `lage(n)`, der Lage des Gelenks n in Ruhe, und `wurzel`.
+    var LEIB_POSE = [0.18, 0.3, 0.05];
+    function gussNetze(g, pose) {
+        var sk = g.userData.__skelett,
+            J = {},
+            qP = _qEuler(LEIB_POSE[0], LEIB_POSE[1], LEIB_POSE[2]),
+            out = [];
+        sk.joints.forEach(function (j) {
+            J[j.name] = j;
+        });
+        // die Lage p (im Raum des Gelenks n) im Raum des Gusses; `richtung`: eine Normale (durch die Skala geteilt, ohne Lage)
+        var welt = function (n, p, pz, richtung) {
+            for (var j = J[n]; j; j = J[j.parent]) {
+                var s = j.scale,
+                    q = pz && j.name === "head" ? _qMul(j.quat, qP) : j.quat;
+                p = _qRot(q, richtung ? [p[0] / s[0], p[1] / s[1], p[2] / s[2]] : [p[0] * s[0], p[1] * s[1], p[2] * s[2]]);
+                if (!richtung) p = _add(p, j.pos);
+            }
+            return p;
+        };
+        // zurück: die Lage im Raum des Gusses im Raum des Gelenks n (Ruhe)
+        var lokal = function (n, p) {
+            var kette = [];
+            for (var j = J[n]; j; j = J[j.parent]) kette.unshift(j);
+            kette.forEach(function (j) {
+                var r = _qRot(_qInv(j.quat), _sub(p, j.pos));
+                p = [r[0] / j.scale[0], r[1] / j.scale[1], r[2] / j.scale[2]];
+            });
+            return p;
+        };
+        var amKopf = sk.skinJoints.map(function (n) {
+            for (var j = J[n]; j; j = J[j.parent]) if (j.name === "head") return true;
+            return false;
+        });
+        g.updateMatrixWorld(true);
+        g.traverse(function (o) {
+            var a = o.isMesh && o.geometry.attributes;
+            if (!a) return;
+            var jn = o.userData.__assetJoint || sk.root,
+                e = o.matrixWorld.elements,
+                n = a.position.count,
+                P = new Float64Array(3 * n),
+                N = new Float64Array(3 * n);
+            // die Normalen-Matrix der Gruppe: die Kofaktoren ihrer 3×3 (die Kreuze der Spalten), im Vorzeichen der Determinante
+            var c0 = [e[0], e[1], e[2]],
+                c1 = [e[4], e[5], e[6]],
+                c2 = [e[8], e[9], e[10]],
+                k0 = _cross(c1, c2),
+                k1 = _cross(c2, c0),
+                k2 = _cross(c0, c1),
+                sg = _dot(c0, k0) < 0 ? -1 : 1;
+            for (var i = 0; i < n; i++) {
+                var v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)],
+                    w = a.normal ? [a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i)] : [0, 0, 0];
+                if (a.skinIndex) {
+                    v = welt(sk.root, v, false);
+                    w = welt(sk.root, w, false, true);
+                    var wK = 0;
+                    for (var k = 0; k < 4; k++) if (amKopf[a.skinIndex.getComponent(i, k)]) wK += a.skinWeight.getComponent(i, k);
+                    if (pose && wK) v = _mix(v, welt("head", lokal("head", v), true), wK);
+                } else {
+                    v = welt(jn, [e[0] * v[0] + e[4] * v[1] + e[8] * v[2] + e[12], e[1] * v[0] + e[5] * v[1] + e[9] * v[2] + e[13], e[2] * v[0] + e[6] * v[1] + e[10] * v[2] + e[14]], pose);
+                    w = welt(jn, _mul(_add(_add(_mul(k0, w[0]), _mul(k1, w[1])), _mul(k2, w[2])), sg), pose, true);
+                }
+                P.set(v, 3 * i);
+                N.set(_norm(w), 3 * i);
+            }
+            out.push({ k: o.material.userData.__klasse, j: jn, haut: !!a.skinIndex, P: P, N: N, I: o.geometry.index ? o.geometry.index.array : null, o: o });
+        });
+        out.lage = function (n) {
+            return welt(n, [0, 0, 0], false);
+        };
+        out.wurzel = sk.root;
+        return out;
+    }
+
+    // DAS URTEIL DER EINEN HAUT (w21-leib-bau, gate:mensch-anatomie LEIB; die Bänder LEIB_SOLL): am Guss des Ofens L0 — `g` mit den
+    // Start-Dials, `nackt` derselbe Leib ohne Kleider. (1) DIE NAHT: jede Rand-Ecke der Kopf-Haut (haut am Gelenk head, starr) gegen
+    // die nächste Ecke der Haut des Leibs (geskinnt, an der Wurzel), in der Ruhe und unter dem Kopf in Pose (`gussNetze`); auf ihr
+    // liegt sie unter 0,1 mm, dort der Winkel der Normalen. (2) DIE SÄUME: je Stoff aus der Haut (beide Güsse) jeder Rand-Ring ab 12
+    // Ecken, die Summe seiner Abbiegungen in Umläufen. (3) DER BAUCH (nackt): die Dreiecke der Haut des Leibs vorn (z > 0,15),
+    // zwischen den Flanken (|x| < 0,35), Hüfte + 0,25 … 0,6 der Höhe bis zur Schulter — ihr größter Knick zwischen zwei Nachbarn
+    // (Grad) und der Anteil der Splitter (ein Winkel unter 10°). Was der Guss nicht trägt, ist NaN (nicht messbar = ROT).
+    function leibUrteil(g, nackt) {
+        var m = { nahtRing: NaN, nahtSpalt: NaN, nahtPose: NaN, nahtNormale: NaN, saumUmlauf: 0, bauchKnick: NaN, bauchSplitter: NaN };
+        var ecke = function (P, i) {
+            return [P[3 * i], P[3 * i + 1], P[3 * i + 2]];
+        };
+        var grad = function (u, w) {
+            return (Math.acos(Math.max(-1, Math.min(1, _dot(u, w) / (_len(u) * _len(w) || 1e-30)))) * 180) / Math.PI;
+        };
+        var haut = function (L, kopf) {
+            return L.filter(function (x) {
+                return x.k === "haut" && x.I && (kopf ? x.j === "head" : x.haut && x.j === L.wurzel);
+            })[0];
+        };
+        var ruhe = gussNetze(g, false),
+            ohne = gussNetze(nackt, false);
+        // (1) DIE NAHT — in Ruhe (der Ring, die Fuge, die Normalen) und in Pose (die Fuge)
+        [ruhe, gussNetze(g, true)].forEach(function (L, pose) {
+            var kopf = haut(L, true),
+                leib = haut(L, false);
+            if (!kopf || !leib) return;
+            var rand = new Set(),
+                auf = 0,
+                weit = 0,
+                knick = 0,
+                Q = leib.P;
+            randRinge(kopf.I).forEach(function (r) {
+                r.forEach(function (i) {
+                    rand.add(i);
+                });
+            });
+            rand.forEach(function (i) {
+                var p = ecke(kopf.P, i),
+                    bd = Infinity,
+                    bj = -1;
+                for (var j = 0; j < Q.length; j += 3) {
+                    var d = (Q[j] - p[0]) * (Q[j] - p[0]) + (Q[j + 1] - p[1]) * (Q[j + 1] - p[1]) + (Q[j + 2] - p[2]) * (Q[j + 2] - p[2]);
+                    if (d < bd) (bd = d), (bj = j / 3);
+                }
+                weit = Math.max(weit, Math.sqrt(bd));
+                if (Math.sqrt(bd) < 1e-4) {
+                    auf++;
+                    knick = Math.max(knick, grad(ecke(kopf.N, i), ecke(leib.N, bj)));
+                }
+            });
+            if (!rand.size) return;
+            if (pose) m.nahtPose = weit;
+            else {
+                m.nahtSpalt = weit;
+                m.nahtRing = auf / rand.size;
+                m.nahtNormale = auf ? knick : NaN;
+            }
+        });
+        // (2) DIE SÄUME
+        [ruhe, ohne].forEach(function (L) {
+            L.forEach(function (x) {
+                if (!/^stoff_/.test(x.k) || !x.I) return;
+                randRinge(x.I).forEach(function (r) {
+                    if (r.length < 12) return;
+                    var dreh = 0;
+                    for (var k = 0; k < r.length; k++) {
+                        var b = ecke(x.P, r[k]);
+                        dreh += grad(_sub(b, ecke(x.P, r[(k + r.length - 1) % r.length])), _sub(ecke(x.P, r[(k + 1) % r.length]), b));
+                    }
+                    m.saumUmlauf = Math.max(m.saumUmlauf, dreh / 360);
+                });
+            });
+        });
+        // (3) DER BAUCH (nackt)
+        var leib = haut(ohne, false);
+        if (!leib) return m;
+        var yH = ohne.lage("hip1")[1],
+            yS = ohne.lage("arm1")[1],
+            y0 = yH + 0.25 * (yS - yH),
+            y1 = yH + 0.6 * (yS - yH),
+            P = leib.P,
+            I = leib.I;
+        var drin = function (t) {
+            for (var k = 0; k < 3; k++) {
+                var q = ecke(P, I[t + k]);
+                if (!(q[1] > y0 && q[1] < y1 && q[2] > 0.15 && Math.abs(q[0]) < 0.35)) return false;
+            }
+            return true;
+        };
+        var normale = function (t) {
+            var a = ecke(P, I[t]);
+            return _norm(_cross(_sub(ecke(P, I[t + 1]), a), _sub(ecke(P, I[t + 2]), a)));
+        };
+        var kanten = new Map(),
+            n = 0,
+            splitter = 0,
+            knick = 0;
+        for (var t = 0; t < I.length; t += 3) {
+            if (!drin(t)) continue;
+            n++;
+            var spitz = Infinity;
+            for (var k = 0; k < 3; k++) {
+                var a = ecke(P, I[t + k]);
+                spitz = Math.min(spitz, grad(_sub(ecke(P, I[t + ((k + 1) % 3)]), a), _sub(ecke(P, I[t + ((k + 2) % 3)]), a)));
+                var u = I[t + k],
+                    v = I[t + ((k + 1) % 3)],
+                    key = u < v ? u + ":" + v : v + ":" + u;
+                if (kanten.has(key)) knick = Math.max(knick, grad(normale(kanten.get(key)), normale(t)));
+                else kanten.set(key, t);
+            }
+            if (spitz < 10) splitter++;
+        }
+        if (n) {
+            m.bauchKnick = knick;
+            m.bauchSplitter = splitter / n;
+        }
+        return m;
+    }
+
+    // DAS URTEIL DES KOPFS AM GUSS (K57, gate:mensch-anatomie KOPF; die Bänder KOPF_SOLL): am Guss `g` (Ofen L0, `gussNetze`) —
+    // augenVorstand = je Augapfel sein Scheitel vor dem Median der Kopf-Haut im Ring 1,0–1,8 Augapfel-Radien um ihn (vor seinem
+    // hintersten Punkt), / die Höhe der Kopf-Haut; augeFrei = der Anteil der Iris-Vorderseite, den kein Dreieck der Kopf-Haut nach
+    // vorn (+z) verdeckt (beide Seiten der Dreiecke, das Gesetz von three `Ray.intersectTriangle`); haarDeckung = der Anteil der
+    // Kopf-Haut über der Haarlinie (`haarH` Pupillen-Abstände über ihrem tiefsten Punkt — der Abstand im Guss: die Mitten der
+    // Iris), der den Ton der Kappe trägt (`aTon`); kopfDreiecke = die Dreiecke an Kopf, Augen, Iris und Lidern.
+    function kopfGussUrteil(g, haarH) {
+        var L = gussNetze(g, false);
+        var ecken = function (x) {
+            var o = [];
+            for (var i = 0; i < x.P.length; i += 3) o.push([x.P[i], x.P[i + 1], x.P[i + 2]]);
+            return o;
+        };
+        var spanne = function (P, d) {
+            var a = Infinity,
+                b = -Infinity;
+            P.forEach(function (p) {
+                a = Math.min(a, p[d]);
+                b = Math.max(b, p[d]);
+            });
+            return { a: a, b: b, l: b - a, m: (a + b) / 2 };
+        };
+        var von = function (k) {
+            return L.filter(function (x) {
+                return x.k === k;
+            }).map(ecken);
+        };
+        var haut = L.filter(function (x) {
+            return x.k === "haut" && x.j === "head" && x.I;
+        })[0];
+        var tris = 0;
+        L.forEach(function (x) {
+            if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(x.j)) tris += x.I ? x.I.length / 3 : x.P.length / 9;
+        });
+        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris };
+        var hp = ecken(haut),
+            hy = spanne(hp, 1),
+            I = haut.I,
+            vorstand = -Infinity;
+        von("eye").forEach(function (bp) {
+            var sx = spanne(bp, 0),
+                sy = spanne(bp, 1),
+                sz = spanne(bp, 2),
+                rb = sx.l / 2;
+            var zs = hp
+                .filter(function (p) {
+                    var d = Math.hypot(p[0] - sx.m, p[1] - sy.m);
+                    return d >= rb && d <= 1.8 * rb && p[2] > sz.a;
+                })
+                .map(function (p) {
+                    return p[2];
+                })
+                .sort(function (a, b) {
+                    return a - b;
+                });
+            vorstand = Math.max(vorstand, (sz.b - (zs.length ? zs[zs.length >> 1] : NaN)) / hy.l);
+        });
+        // der Strahl nach +z aus o gegen das Dreieck abc: Möller–Trumbore mit der Richtung (0, 0, 1), beide Seiten
+        var trifft = function (o) {
+            for (var t = 0; t < I.length; t += 3) {
+                var a = hp[I[t]],
+                    e1 = _sub(hp[I[t + 1]], a),
+                    e2 = _sub(hp[I[t + 2]], a),
+                    n = _cross(e1, e2),
+                    s = n[2] > 0 ? 1 : -1,
+                    q = _sub(o, a);
+                if (!n[2]) continue;
+                var u = s * (q[0] * e2[1] - q[1] * e2[0]),
+                    w = s * (e1[0] * q[1] - e1[1] * q[0]);
+                if (u >= 0 && w >= 0 && u + w <= Math.abs(n[2]) && -s * _dot(q, n) >= 0) return true;
+            }
+            return false;
+        };
+        var irisN = 0,
+            frei = 0;
+        var iris = von("iris");
+        iris.forEach(function (ip) {
+            var zc = spanne(ip, 2).m;
+            ip.forEach(function (p) {
+                if (p[2] <= zc) return;
+                irisN++;
+                if (!trifft(p)) frei++;
+            });
+        });
+        var ton = haut.o.geometry.attributes.aTon,
+            yHaar = hy.a + haarH * (iris.length === 2 ? Math.abs(spanne(iris[0], 0).m - spanne(iris[1], 0).m) : NaN),
+            kal = 0,
+            bedeckt = 0;
+        hp.forEach(function (p, i) {
+            if (!(p[1] >= yHaar)) return;
+            kal++;
+            if (ton && ton.getX(i) === menschTon("haarKappe")) bedeckt++;
+        });
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris };
+    }
+
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
     // (`_armRuhe`, ARM_RUHE.luft); was der Rumpf darüber trägt — Haut, Stoff, das Fett-Depot (studios.K1) — und das Depot des
     // Arms schiebt er beiseite, in drei Schritten an der Gestalt der Stufe (Rumpf-Ecke = Gewicht an Rumpf und Wurzel > 0,5):
@@ -2049,16 +2463,19 @@
         });
         // 1) eine Rumpf-Ecke weicht beiden Armen (bis zu vier Runden) waagrecht zur Mitte des Leibs, je Runde um das Fehlende durch
         // die Steigung der Höhe in dieser Richtung (mindestens 0,3), im Saum um den Anteil f; Antwort: ob sie wich
+        // die Lage einer Hülle über der Haut (`h.lage`, w21-leib-bau: der Stoff aus der Haut trägt seine Dicke) — sie weicht bis ihre
+        // Höhe über dem Arm um sie größer ist: Haut und Stoff fielen sonst am Bund neben der Hand auf DIESELBE Fläche, und die Haut
+        // unter dem Saum stach als Sägezahn durch ihn
         var weiche = function (h, o) {
             var hob = false;
             for (var s = 0; s < seiten.length; s++) {
-                var Z = seiten[s], f = Z.f(h.pos, o);
+                var Z = seiten[s], f = Z.f(h.pos, o), soll = Z.soll + (h.lage || 0);
                 if (f <= 0) continue;
                 for (var runde = 0; runde < 4; runde++) {
-                    var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], Z.soll);
-                    if (d >= Z.soll) break;
+                    var d = hoehe(Z.E, h.pos[o], h.pos[o + 1], h.pos[o + 2], soll);
+                    if (d >= soll) break;
                     var u = Z.mitte(h.pos[o], h.pos[o + 1], h.pos[o + 2]), ul = Math.sqrt(u[0] * u[0] + u[1] * u[1]) || 1e-9,
-                        k = (f * (Z.soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
+                        k = (f * (soll - d)) / ul / Math.max(0.3, (u[0] * q[0] + u[1] * q[2]) / ul);
                     h.pos[o] += k * u[0];
                     h.pos[o + 2] += k * u[1];
                     hob = true;
@@ -2073,14 +2490,24 @@
             if (!gewichen.length) return;
             bewegt += gewichen.length;
             // 2) die Nachbarn aus den Dreiecken, der Umkreis `rand` längs der Fläche (nur Rumpf-Ecken), die Entspannung
-            var nb = [];
+            var nb = [], kanten = new Map();
             for (i = 0; i < h.n; i++) nb.push([]);
             for (var t = 0; t < h.idx.length; t += 3)
                 for (var e = 0; e < 3; e++) {
-                    var a = h.idx[t + e], b = h.idx[t + ((e + 1) % 3)];
+                    var a = h.idx[t + e], b = h.idx[t + ((e + 1) % 3)], key = a < b ? a * h.n + b : b * h.n + a;
+                    kanten.set(key, (kanten.get(key) || 0) + 1);
                     if (nb[a].indexOf(b) < 0) nb[a].push(b);
                     if (nb[b].indexOf(a) < 0) nb[b].push(a);
                 }
+            // der Rand einer Hülle (der Saum des Stoffs, der Rand der Haut unter ihm) entspannt sich entlang SEINER Kanten (w21-leib-bau):
+            // im Mittel mit seinen inneren Nachbarn zog er sich ungleich ein — der Bund neben der Hand stand als Sägezahn
+            var rand = [];
+            kanten.forEach(function (z, key) {
+                if (z !== 1) return;
+                var a = Math.floor(key / h.n), b = key % h.n;
+                (rand[a] || (rand[a] = [])).push(b);
+                (rand[b] || (rand[b] = [])).push(a);
+            });
             var weit = new Float64Array(h.n).fill(Infinity), frei = gewichen.slice();
             for (i = 0; i < frei.length; i++) weit[frei[i]] = 0;
             for (var z = 0; z < frei.length; z++) {
@@ -2095,7 +2522,7 @@
             var neu = new Float64Array(3 * h.n);
             for (var r = 0; r < A.entspannen; r++) {
                 for (z = 0; z < frei.length; z++) {
-                    var m = [0, 0, 0], n = 0, L = nb[(v = frei[z])];
+                    var m = [0, 0, 0], n = 0, L = rand[(v = frei[z])] || nb[v];
                     for (k = 0; k < L.length; k++) {
                         if (h.kl[L[k]] !== 1) continue;
                         n++;
@@ -6393,6 +6820,10 @@
         // Anlage, mit der die Rumpf-Hülle dem ruhenden Arm weicht (Leser: der Mensch-Guss)
         ARM_RUHE: ARM_RUHE,
         armRuheUrteil: armRuheUrteil,
+        leibUrteil: leibUrteil,
+        gussNetze: gussNetze,
+        kopfGussUrteil: kopfGussUrteil,
+        randRinge: randRinge,
         armAnlage: armAnlage,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         HAUT_LOOK: HAUT_LOOK,
@@ -6401,6 +6832,7 @@
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,
+        LEIB_SOLL: LEIB_SOLL,
         kopfToene: kopfToene,
         // w12-gesicht — das Gesicht im Bild: seine Züge unter seinem Licht (Leser: werkbank bild, die Soll-Tafel mensch-kopf) und sein
         // Selbsttest mit Mutanten (Leser: diag-kamera-laub K5)
