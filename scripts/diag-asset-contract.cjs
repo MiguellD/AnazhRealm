@@ -315,10 +315,12 @@ function deckungsUrteil(paare, band, atlas) {
 //      ausgedünnte L0);
 //  (D0) die L0 DECKT ihr Bild der Tafel: Bild-Deckung (Krone und Rinde) nachher/vorher ∈ [0,92; 1,08] gegen die Tafel.
 // (L) und (Q) gelten Zeilen, die ihr Feld tragen (Pflicht ab dem Vertrags-Akt); (D0) gilt immer.
+// DIE KRONE HAT EIN LAGEN-MASS (w10-lod): jede Stufe misst an tree[0].lagen — die Laub-L1 trägt die Krone der L0, Trauer und
+// Nadel wählen ihre Peitschen und Wedel nach derselben Zahl.
 function lagenUrteil(mess, budget) {
     const v = [];
     for (const m of mess) {
-        const z = budget && budget.tree && budget.tree[m.lod];
+        const z = budget && budget.tree && budget.tree[0];
         if (!z || z.lagen == null) continue;
         if (m.quad > z.lagen) v.push(`tree[${m.lod}] ${m.fall}: ${m.quad.toFixed(1)} Lagen > ${z.lagen}`);
     }
@@ -539,7 +541,7 @@ hauptLauf(async () => {
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
             // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
-            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true && budget[kind].fernform === "huelle") {
+            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf && budget[kind].fernform === "huelle") {
                 const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
                 fernMess.push({ fall, fern: fb || null });
             }
@@ -865,15 +867,15 @@ hauptLauf(async () => {
         const gestern = {};
         for (const [k, p] of eins(laubP))
             gestern[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
-        const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, wand.alpha).length === 1;
+        const s3 = laubP.length && deckungsUrteil(gestern, wand.band, wand.alpha).length === 1;
         const lang = {};
         for (const [k, p] of eins(nadelP)) lang[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
-        const s4 = nadelP.length > 0 && deckungsUrteil(lang, wand.band, wand.alpha).length === 1;
+        const s4 = nadelP.length && deckungsUrteil(lang, wand.band, wand.alpha).length === 1;
         const grossL0 = {};
         for (const [k, p] of eins(laubP).concat(eins(nadelP)))
             grossL0[k] = Object.assign({}, p, { l0: kartenSkaliert(p.l0, 1.5) });
         const s7 =
-            laubP.length > 0 && nadelP.length > 0 && deckungsUrteil(grossL0, wand.band, wand.alpha).length === 2;
+            laubP.length && nadelP.length && deckungsUrteil(grossL0, wand.band, wand.alpha).length === 2;
         const ohneRinde = (schwebeProbe || []).filter((m) => m.kind === "foliage" || m.kind === "foliageTex");
         const sw8 = schwebe(ohneRinde);
         const s8 = sw8.karten > 0 && sw8.schwebend === sw8.karten;
@@ -882,12 +884,12 @@ hauptLauf(async () => {
             for (let i = 1; i < p.length; i += 3) p[i] -= 100;
             return Object.assign({}, m, { pos: p });
         });
-        const s9 = tief.length > 0 && unterBoden(tief) < 0;
+        const s9 = tief.length && unterBoden(tief) < 0;
         const sMax = schwebeMess.reduce((m, x) => Math.max(m, x.schwebend), 0);
         console.log(
             `Schwebe-Wand: ${schwebeMess.length} Baum-L0 gemessen, ${schwebeMess.reduce((m, x) => m + x.karten, 0)} Karten, schwebend höchstens ${sMax}`
         );
-        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.wedel, at.gross, at.weide).length > 0;
+        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.wedel, at.gross, at.weide).length;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         // keine L1-Krone aus Klingen — jede Krone ist Karte.
         const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;
@@ -1040,7 +1042,7 @@ hauptLauf(async () => {
         const qs = Object.values(quotePaare)
             .filter((p) => p.l0 > 0 && p.l1 > 0)
             .map((p) => p.l1 / p.l0);
-        sQ2 = qs.length > 0 && quoteUrteil(quotePaare, { tree: { 1: { quote: Math.min(...qs) - 0.01 } } }).length >= 1;
+        sQ2 = qs.length && quoteUrteil(quotePaare, { tree: { 1: { quote: Math.min(...qs) - 0.01 } } }).length >= 1;
         console.log(
             `Selbsttest Kronen-Kosten: verdreifachte Karten > 16 Lagen ${sL ? "✅" : "❌"} · die Wand liest ${lagenMess.length} Kronen ${sL2 ? "✅" : "❌"} · ` +
                 `Birke-L1 0,63 > 0,35 ${sQ ? "✅" : "❌"} · die Wand liest ${qs.length} Paare ${sQ2 ? "✅" : "❌"} · Schatten-Teil fehlt/schwer/dicht wird rot (${wurfMess.length} gelesen) ${sW ? "✅" : "❌"} · halbierte Krone, Karte 0,8 und Kronenfarbe +12 % Grün fallen aus der Bild-Tafel (${Object.keys(bildMess).length} Bäume) ${sD ? "✅" : "❌"}`
