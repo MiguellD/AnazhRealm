@@ -99,7 +99,7 @@ function installiereDrift(M, funktionen) {
             var y = o.apply(M, arguments);
             if (!Number.isFinite(y) || exakt(a, b, y)) return y;
             gerufen[n] = (gerufen[n] || 0) + 1;
-            if (!D || !aktiv || aktiv.indexOf(n) < 0) return y;
+            if (!D || !aktiv || !aktiv.includes(n)) return y;
             var i = nr++;
             if (i === fangen) gefangen = stelleVon(n);
             if (i >= bis) return y;
@@ -148,8 +148,8 @@ async function probeAblauf({ lauf, drift = [1, -1], einzeln = [], nennen = () =>
         for (const k of s) kippt.add(k);
     };
     // die benannten Funktionen (einzeln) je für sich, der Rest gemeinsam — kippt der Rest, dann auch er je Funktion
-    for (const n of einzeln) if (alle.indexOf(n) >= 0) await einzelLauf(n);
-    const rest = alle.filter((n) => einzeln.indexOf(n) < 0);
+    for (const n of einzeln) if (alle.includes(n)) await einzelLauf(n);
+    const rest = alle.filter((n) => !einzeln.includes(n));
     if (rest.length) {
         let restKippt = false;
         for (const d of drift) if (kipptIn(await nurR(d, rest)).length) restKippt = true;
@@ -293,7 +293,7 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
         check(`SELBST-TEST: die Ratsche ${satz} reißt bei kippendem Math.pow — beim Namen`, ratscheSelbsttest(satz));
         return PP;
     }
-    const powSatz = zeile && zeile.powWirt
+    const powSatz = zeile?.powWirt
         ? "Math.pow hält seine Zeile (gepinnter Wirt — CI und lokal dieselbe V8)"
         : "Math.pow ±1 ULP kippt kein Byte";
     check(

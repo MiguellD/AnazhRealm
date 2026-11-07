@@ -1034,7 +1034,7 @@ const server = statikServer();
                     for (const x of r._instanzWahlGruppen()) {
                         const w0 = x._wahlJe && x._wahlJe.get("k0"),
                             w1 = x._wahlJe && x._wahlJe.get("k1");
-                        if (x.wahl === "schatten" && x.mesh && w0 && w1 && w1.refs.length > 0 && (x.liveCount | 0) >= 2)
+                        if (x.wahl === "schatten" && x.mesh && w0 && w1 && w1.refs.length && (x.liveCount | 0) >= 2)
                             if (!pass || pass(x, w1)) return [x, w1];
                     }
                     return [null, null];
@@ -1389,7 +1389,7 @@ const server = statikServer();
         `${x.abschnitt.mittel} · Ecken ${x.ecken.mittel} (Schirm ${x.rect.mittel}, Licht ${x.lichtLage.mittel} Boxen) · _passTrifft ${x.passTrifft.mittel} (Werfer ${x.werferTrifft.mittel}) · ` +
         `Instanzen ${x.instanzBehalten.mittel} · Bytes ${x.bytes.mittel} · neu gelegt ohne Änderung ` +
         `${x.legeOhne ? x.legeOhne.mittel : "?"} · Treffer ${x.treffer.mittel}` +
-        (x.taeter && x.taeter.length
+        (x.taeter?.length
             ? `
           neu: ${x.taeter.join(", ")}`
             : "");
@@ -1438,7 +1438,7 @@ const server = statikServer();
             `  Instanz-Treue: ${befund.instanzTreue.faelle.join(", ")} · ${befund.instanzTreue.geprueft} geprüft · ` +
                 `${befund.instanzTreue.wuerfe} Würfe, ${befund.instanzTreue.nan} NaN, ${befund.instanzTreue.tot} tote Marken, ` +
                 `${befund.instanzTreue.fehlen} fehlen ${befund.instanzTreue.namen.join(" · ")}` +
-                (befund.instanzTreue.leichen && befund.instanzTreue.leichen.length
+                (befund.instanzTreue.leichen?.length
                     ? ` · ohne Prüfung: ${befund.instanzTreue.leichen.join(" · ")}`
                     : "")
         );

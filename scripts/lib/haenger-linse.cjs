@@ -717,7 +717,7 @@ function linseWerten(roh, spur, b) {
 const ANKUNFT_HALT_MS = 50;
 function ankunftsHalter(spur, seite, opts) {
     const o = Object.assign({ schwelle: ANKUNFT_HALT_MS, top: 25 }, opts);
-    const P = spur && spur.profil && spur.profil.samples.length ? profilLesen(spur.profil) : null;
+    const P = spur?.profil && spur.profil.samples.length ? profilLesen(spur.profil) : null;
     const s = seite || {};
     const n = Math.min(spur ? spur.marken.length : 0, (s.marken || []).length);
     const paare = [];
@@ -880,7 +880,7 @@ function ankunftsHalterTafel(a, nAufgaben = 10, nSummen = 15) {
         `  DER HAUPT-FADEN bis zum Bild (${((a.bisMs || 0) / 1000).toFixed(2)} s): belegt ${a.belegtMs} ms · Collector ${kl["(garbage collector)"] || 0} · ` +
             `Programm ${kl["(program)"] || 0} · leer ${kl["(idle)"] || 0} ms`
     );
-    if ((a.meilensteine || []).length)
+    if (a.meilensteine?.length)
         z.push(
             `  die Phasen (t · Haupt-Faden belegt bis dahin): ${a.meilensteine.map((m) => `${m.name} ${(m.t / 1000).toFixed(2)} s · ${m.belegtMs} ms`).join(" | ")}`
         );

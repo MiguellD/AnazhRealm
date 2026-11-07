@@ -1999,7 +1999,7 @@ async function probeLeben(expected) {
                         if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
                         n++;
                         const art = (cr.userData && cr.userData.soul) || "?";
-                        if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
+                        if (!m.gasseArten.includes(art)) m.gasseArten.push(art);
                     }
                     m.gasseTiere = Math.max(m.gasseTiere, n);
                     if (h.je) h.je(ziel);

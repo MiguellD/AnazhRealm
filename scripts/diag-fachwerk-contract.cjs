@@ -124,7 +124,7 @@ function shellPfad(name, seed, stufe) {
         const fluegelL = [];
         st.g.updateMatrixWorld(true);
         st.g.traverse((o) => {
-            if (o.userData && o.userData.door && typeof o.userData.side === "number") fluegelL.push(o);
+            if (o.userData?.door && typeof o.userData.side === "number") fluegelL.push(o);
         });
         const tuerWraps = [];
         for (const Lf of fluegelL) {
@@ -451,7 +451,7 @@ function bogenLinse() {
         let laube = 0;
         let sturz = false;
         g.traverse((o) => {
-            if (o.userData && o.userData.sturz) sturz = true;
+            if (o.userData?.sturz) sturz = true;
         });
         for (const { B, befunde } of bogenBefunde(BG, g)) {
             if (B.art === "arkade") laube++;
@@ -462,7 +462,7 @@ function bogenLinse() {
                     `bogenRahmen[${B.art}] ${k}${ov ? " " + JSON.stringify(ov) : ""} (${B.kurve}, R ${B.R.toFixed(2)}): ${befunde[0]}`
                 );
         }
-        if (ov && ov.arkade && !laube && !sturz)
+        if (ov?.arkade && !laube && !sturz)
             taeter.push(`arkade ${k} ${JSON.stringify(ov)}: die Laube trägt weder Bogen noch Sturz`);
         disposeGroup(g);
     }
@@ -761,7 +761,7 @@ function posenLinse() {
         check(
             `SELBST-TEST: roh gelesene Farbe wird rot (${bruchRoh.length} Brüche)`,
             bruchRoh.length > 0,
-            bruchRoh.length > 0 ? "" : "die Linse misst nichts"
+            bruchRoh.length ? "" : "die Linse misst nichts"
         );
     }
 

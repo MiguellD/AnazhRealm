@@ -1450,7 +1450,7 @@ async function main() {
             "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
             B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false
         );
-        if ((out.samples || []).length) {
+        if (out.samples?.length) {
             console.log(
                 "   Sweep: " +
                     out.samples.map((s) => `${s.dn}m→[${s.stages}]${s.inB01 ? "B01" : s.inB12 ? "B12" : ""}`).join(" ")
@@ -1588,7 +1588,7 @@ async function main() {
                     zk(op.gegenSatz)
                 );
         }
-        if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
+        if (!out.kette?.length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     // (10) DER GEISTER-BAUM: je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;

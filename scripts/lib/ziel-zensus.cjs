@@ -98,7 +98,7 @@ function zielZensus(k) {
             if (!proto || typeof proto[key] !== "function") return;
             const ziele = [proto];
             for (const x of exemplare)
-                if (Object.prototype.hasOwnProperty.call(x, key) && proto.isPrototypeOf(x)) ziele.push(x);
+                if (Object.hasOwn(x, key) && proto.isPrototypeOf(x)) ziele.push(x);
             for (const o of ziele) {
                 const roh = o[key];
                 ab.push(
@@ -312,14 +312,14 @@ function zielZensus(k) {
         });
         // DAS GERÄT: ob es rg11b10ufloat rendert — das Urteil über das Ausgabe-Format liest es.
         const geraet = {
-            rg11b10: !!(be.device && be.device.features && be.device.features.has("rg11b10ufloat-renderable")),
+            rg11b10: !!(be.device?.features && be.device.features.has("rg11b10ufloat-renderable")),
             ausgabe: st._ausgabeFormat || null,
         };
         // DAS SZENEN-ZIEL, wie der Host es ausweist (das Ziel des Szenen-Passes; der Selbsttest weist für seine Dauer einen
         // eigenen Täter aus, `window.__zielAusgabe`) — das Urteil über das Ausgabe-Format liest genau dieses Ziel, nie einen Namen
         const ausT = window.__zielAusgabe || (st.scenePass && st.scenePass.renderTarget && st.scenePass.renderTarget.texture);
         const ausD = ausT && be.has(ausT) ? be.get(ausT) : null;
-        geraet.ausgabeId = ausD && ausD.texture && idVon.has(ausD.texture) ? idVon.get(ausD.texture) : null;
+        geraet.ausgabeId = ausD?.texture && idVon.has(ausD.texture) ? idVon.get(ausD.texture) : null;
         return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele, erst, geraet };
     })();
 }
@@ -458,7 +458,7 @@ function zielSchmuggel(an) {
     }
     if (S) return { fehler: "der Schmuggel steht schon" };
     const tiefe =
-        st.scenePass && st.scenePass.getTextureNode ? st.scenePass.getTextureNode("depth").value : null;
+        st.scenePass?.getTextureNode ? st.scenePass.getTextureNode("depth").value : null;
     if (!tiefe) return { fehler: "keine Szenen-Tiefe (Post-Kette fehlt)" };
     const db = rend.getDrawingBufferSize(new T.Vector2());
     const W = Math.max(1, Math.round(db.x)),
@@ -592,7 +592,7 @@ function zielUrteil(z, lesen) {
         rot.push(
             `ZENSUS: ${z.blind} Bündel ohne bekannten Inhalt — der Abgriff lief nicht ab Dokument-Start, die Linse ist blind`
         );
-    if (!ziele.some((x) => (x.ereignisse || []).length))
+    if (!ziele.some((x) => x.ereignisse?.length))
         rot.push("ZENSUS: keine Textur trug einen Zugriff — die Haken sind blind");
     for (const x of ziele) {
         if (x.leinwand) continue;
@@ -676,7 +676,7 @@ function zielUrteil(z, lesen) {
     // TEILBAR: Paare derselben Form, die keinen Inhalt über den Frame tragen und in keinem gemeinsamen Frame zugleich leben.
     const gruppen = new Map();
     for (const x of ziele) {
-        if (!x.ziel || x.leinwand || !(x.ereignisse || []).length || traegt(x)) continue;
+        if (!x.ziel || x.leinwand || !x.ereignisse?.length || traegt(x)) continue;
         const key = [x.format, x.w, x.h, x.schichten, x.mips, x.proben].join("|");
         if (!gruppen.has(key)) gruppen.set(key, []);
         gruppen.get(key).push(x);

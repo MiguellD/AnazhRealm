@@ -178,7 +178,7 @@ function urteilLeib(L) {
         const posen = [];
         for (const ort of ["wiese", "hang"]) posen.push(...((L[ort] && L[ort][modus] && L[ort][modus].posen) || []));
         if (posen.length < LEIB_N) out.push(`Leib ${modus}: ${posen.length} von ${LEIB_N} Posen gemessen (Vorbedingung)`);
-        const fehl = posen.filter((p) => p.taeter && p.taeter.length);
+        const fehl = posen.filter((p) => p.taeter?.length);
         if (fehl.length)
             out.push(
                 `Leib ${modus}: ${fehl.length} von ${posen.length} Posen — ` +
@@ -1050,7 +1050,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen, 3 m vor dem Stamm (die Verfolger-Kamera des Kerns hinter ihm)
             if (!gt) gt = gtHolen(P.x + 30, P.z);
             const mr = gt ? r.mountArchitecture(gt) : null;
-            if (mr && mr.ok) {
+            if (mr?.ok) {
                 // der Wagen steht im Bild, wo er steht (`L.ritt`: Lage, Gier, Instanz-Matrizen bzw. Mesh)
                 const rittStelle = (x, y, zz, gier) => ritt(gt, x, zz, gier);
                 // DIE WAGEN-KLASSE SIEHT SEINE NAH-GESTALT (kamera-nah: der gerittene Wagen ist Täter bis 3 m): er steht an der Stelle

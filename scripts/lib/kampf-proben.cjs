@@ -235,7 +235,7 @@ async function WELLE_L(ort) {
         w.z.zoneKopfBein = aK && aB ? aK.amount / aB.amount : null;
         const jz = [...sK.juice, ...sB.juice];
         w.z.zonen = jz.map((j) => j.zone);
-        w.c.zoneJederTreffer = jz.length >= 2 && jz.every((j) => !!j.zone);
+        w.c.zoneJederTreffer = jz.length >= 2 && jz.every((j) => j.zone);
         w.c.zoneWirkt = w.z.zoneKopfBein !== null && w.z.zoneKopfBein >= 1.5;
         // (T2) hangab und klein, je 10 Hiebe auf die Leibes-Mitte: Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m, kleiner Hirsch
         // L 0,64 gleich hoch — alle in Reichweite der Klinge.
@@ -749,7 +749,7 @@ async function WELLE_L(ort) {
             const gl = r._kreaturTrefferGlieder(frisch);
             w.z.kernMitZone = Array.isArray(gl) ? gl.length : 0;
             w.c.kernPflichtZone =
-                w.z.kernOhneZone === "Bruch benannt" && Array.isArray(gl) && gl.length > 0 && gl.every((g) => !!g.zone);
+                w.z.kernOhneZone === "Bruch benannt" && Array.isArray(gl) && gl.length > 0 && gl.every((g) => g.zone);
             r.removeCreature(frisch);
             tiere.splice(tiere.indexOf(frisch), 1);
         }
@@ -2096,7 +2096,7 @@ async function WELLE_L(ort) {
             // der Leichnam ist kein Wesen: nicht in der Liste, nicht im Fadenkreuz, in keiner Kappe, im Nexus oder in
             // findNearestCreature (der Lebenszyklus wählt im Verzeichnis des Bestands, das ihn beim Fall verlässt, oekologie.K2#2);
             // die Frage nach dem Sterben lebt nur im Tod, im Leichnam-Takt und im Schadens-Tor
-            tod.unterWesen = s.creatures.indexOf(hT) !== -1;
+            tod.unterWesen = s.creatures.includes(hT);
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
             const FRAGT_ERLAUBT = new Set([
                 "damageCreature",
@@ -2131,7 +2131,7 @@ async function WELLE_L(ort) {
                 s.maxCreatures = cap0;
                 tod.platzFrei = !!neuS;
                 if (neuS) r.removeCreature(neuS);
-                const lebend = s.creatures.filter((c) => c && c.userData && !c.userData.dying).length;
+                const lebend = s.creatures.filter((c) => c?.userData && !c.userData.dying).length;
                 tod.nexusZaehlt = r.dslConditions.creatures_count_above([lebend], { state: s }) === true;
             }
             // DER TOD AM ALTER (Nachbesserung 3, K-D19 auf dem Weg des Lebenszyklus): ein Wesen, das _creatureNaturalDeath
@@ -2144,7 +2144,7 @@ async function WELLE_L(ort) {
                     const emo0 = p.emotions ? { ...p.emotions } : null;
                     r._creatureNaturalDeath(hN);
                     for (let k = 0; k < 200; k++) r.updateCreatures(0.05);
-                    tod.alterLiegt = !!hN.parent && !!hN.userData.dying && s.creatures.indexOf(hN) === -1;
+                    tod.alterLiegt = !!hN.parent && !!hN.userData.dying && !s.creatures.includes(hN);
                     if (emo0) Object.assign(p.emotions, emo0);
                     if (hN.parent) r.removeCreature(hN);
                 }
@@ -2775,7 +2775,7 @@ async function WELLE_L(ort) {
             T4.lageGleich =
                 sp2.length > 0 &&
                 sp2.every((y, i) => y.teil === sp[i].teil && y.p.every((v, j) => Math.abs(v - sp[i].p[j]) < 1e-3));
-            T4.bildWieder = sp2.length > 0 && sp2.every((y) => y.mesh && y.mesh.parent);
+            T4.bildWieder = sp2.length > 0 && sp2.every((y) => y.mesh?.parent);
             for (const c of [h, h2]) if (c) (tiere.push(c), parke(c));
             const sw = jsonKlon(r.buildStateSnapshot());
             const vor = sw.pfeileStecken || [];
@@ -2896,7 +2896,7 @@ async function WELLE_L(ort) {
                     }
                     x.verb = p._mausVerb;
                     x.wirk = typ ? a.harvestProgress || 0 : zaehl.carve > c0 ? 1 : (p._dig && p._dig.progress) || 0;
-                    if (typ && s.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+                    if (typ && s.architectures.includes(a)) r.removeArchitecture(a);
                 }
                 x.zehrt = w0 - r._blueprintWear(b);
                 return x;

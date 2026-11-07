@@ -471,7 +471,7 @@ async function probe() {
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
-        const focusing = archs.filter((e) => e.affordances && e.affordances.focusing);
+        const focusing = archs.filter((e) => e.affordances?.focusing);
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
@@ -485,7 +485,7 @@ async function probe() {
         for (const target of archs) {
             const vorher = target.heatBuildup || 0;
             if (!(vorher > 0) && !punkte.length) continue;
-            if (target.affordances && target.affordances.focusing) continue;
+            if (target.affordances?.focusing) continue;
             if (riddenId != null && target.id === riddenId) continue;
             const w = r._brennWaerme(target, punkte, focusing, dt);
             if (!w) continue;
@@ -566,7 +566,7 @@ async function probe() {
             return (
                 Array.isArray(bps[n].parts) &&
                 bps[n].parts.length > 0 &&
-                bps[n].parts.some((p) => !!st.materials[p.material] && r._stoff(p.material).tZuend > 0) &&
+                bps[n].parts.some((p) => st.materials[p.material] && r._stoff(p.material).tZuend > 0) &&
                 !(r.computeBlueprintAffordances(bps[n]) || {}).focusing
             );
         } catch {
@@ -775,7 +775,7 @@ async function probe() {
         // die Betroffenen vor dem Schritt: die warmen und, wenn die Sonne durch ein Glas scheint, die Plätze in Reichweite
         const N = r._blockerNetz();
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
-        const gl = archs.filter((e) => e && e.affordances && e.affordances.focusing && e.position);
+        const gl = archs.filter((e) => e?.affordances && e.affordances.focusing && e.position);
         const scheint = !!(sonne && sonne.y > 0 && gl.some((fa) => r._brennpunkte(fa, sonne).length));
         const R = AR.FOCUSING_HEAT_RANGE_M + AR.BLOCKER_ZELLE;
         let betroffen = 0;
@@ -784,7 +784,7 @@ async function probe() {
             const reich = R + (e._blockerReach || 0);
             if (
                 e.heatBuildup > 0 ||
-                (N && N.beweger && N.beweger.has(e)) ||
+                (N?.beweger && N.beweger.has(e)) ||
                 (scheint &&
                     e.position &&
                     gl.some(
@@ -908,9 +908,9 @@ async function probe() {
     stelle(ox, oz);
     aus.verzeichnis.push(vergleiche("Spawn (Dorf)"));
     const weg = st.architectures
-        .filter((e) => e && e.affordances && Object.values(e.affordances).some(Boolean))
+        .filter((e) => e?.affordances && Object.values(e.affordances).some(Boolean))
         .slice(0, 3);
-    const wegRauch = st.architectures.filter((e) => e && e.chimney).slice(0, 2);
+    const wegRauch = st.architectures.filter((e) => e?.chimney).slice(0, 2);
     for (const e of weg.concat(wegRauch)) r.removeArchitecture(e);
     aus.verzeichnis.push(vergleiche("Abriss"));
     // ein Tor wird nachgezogen: der Klon eines Brennglases (focusing), zwei stehende Einträge, dann `setBlueprintAsPortal` —
@@ -984,7 +984,7 @@ async function probe() {
     aus.rauch = { quellen: JSON.parse(qa).length, gleich: qa === qn };
     // (H) DIE HAUS-TÜR: fern von jedem Haus scannt der Tür-Takt (nichts), dann 5 m vor ein Haus mit Tür — 2 s Frames später
     // steht es in der Nähe-Liste und trägt sein Tür-Gedächtnis (`_tuerRec`); die Liste ist der Filter über den Bestand
-    const haeuser = st.architectures.filter((e) => e && e.tuer && e.position);
+    const haeuser = st.architectures.filter((e) => e?.tuer && e.position);
     const echt = { x: st.playerMesh.position.x, y: st.playerMesh.position.y, z: st.playerMesh.position.z };
     // wie ein Spieler: zum Haus gehen, bis die Mesh-Zone es zeichnet (`tickArchitectureCulling` → seine Instanz, asynchron
     // über die Werkstatt; das EINE Warten auf den Bau, welt-boot `__gebautNach`)
@@ -1010,7 +1010,7 @@ async function probe() {
         const q = st.playerMesh.position;
         const soll = st.architectures.filter(
             (e) =>
-                e && e.tuer && e.position && e.instSlots && (e.position.x - q.x) ** 2 + (e.position.z - q.z) ** 2 < 1600
+                e?.tuer && e.position && e.instSlots && (e.position.x - q.x) ** 2 + (e.position.z - q.z) ** 2 < 1600
         );
         Object.assign(aus.tuer, {
             fernListe,

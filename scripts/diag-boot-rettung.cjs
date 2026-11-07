@@ -253,7 +253,7 @@ async function fahreForm(browser, form, schein) {
             if (b2.zeiger !== b2.welt) befund(`Boot 2: der Zeiger zeigt auf ${b2.zeiger}, die Seite trägt ${b2.welt}`);
         }
     } catch (e) {
-        befund(`ABBRUCH: ${e && e.message ? e.message : e}`);
+        befund(`ABBRUCH: ${e?.message ? e.message : e}`);
     } finally {
         rep.ms = Date.now() - t0;
         await ctx.close();
@@ -274,7 +274,7 @@ hauptLauf(async () => {
         berichte.push(rep);
         const gruen = rep.befunde.length === 0;
         if (!gruen) rot = true;
-        const weg = rep.boots.map((b) => (b && b.ok ? `${b.welt} [${b.marken.join(",")}]` : "—")).join(" → ");
+        const weg = rep.boots.map((b) => (b?.ok ? `${b.welt} [${b.marken.join(",")}]` : "—")).join(" → ");
         console.log(`  ${gruen ? "✓" : "⛔"} ${form.padEnd(17)} ${weg} · ${(rep.ms / 1000).toFixed(1)} s`);
         for (const f of rep.befunde) console.log(`      ⛔ ${f}`);
     }
