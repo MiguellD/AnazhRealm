@@ -113,7 +113,7 @@ class AnazhRealm_koerper_leib {
         const hairCol = typeof g.hairColor === "number" ? g.hairColor : anker.hair;
         // DIE GROBSTUFE TRÄGT DEN LEIB VOR DEM BILD (B5): liegt vor dem ersten Weltbild nur die Grobstufe im Memo (die feine
         // bestellt `_ofenSpielerVorlagen` erst nach dem Bild), ist sie die Nah-Gestalt — nie ein Haupt-Faden-Guss der feinen
-        // (K60-2: 2,4 s); die feine tauscht ein, sobald die Sicht sie zeigt (`_leibFeinTausch`, `_leibWunsch`)
+        // (K60-2: 2,4 s); die feine tauscht der Leerlauf ein (`_leibFeinTausch` im Vorbau)
         const memo = AnazhRealm._tierOfenMemo;
         const grob =
             g.eigen !== true &&
@@ -1926,8 +1926,8 @@ class AnazhRealm_koerper_leib {
     // 2,36 s bis zum ersten Weltbild, K602/p2.cpuprofile) und nach dem Buch ein zweites Mal mit den Dials des Studios. Der
     // Auftrag geht NAH zuerst (am Ort des Spielers); der Vorrat (`_ofenPrefetchKreaturen`) wartet auf denselben Zug.
     // DER LEIB WÜNSCHT, WAS SEIN ERSTES BILD ZEIGT (B5): zeigt es nur seinen Wurf (`_leibGrobVorBild`), geht vor dem Bild die
-    // Grobstufe allein — die feine bestellt das Ereignis des Bilds (`_weltbildKommt`), sie wartet roh auf ihren Leser (`_ofenRoh`)
-    // und tauscht ein, sobald die Sicht sie zeigt (`_leibFeinTausch`). Befund B5 (OMEN 18.10., GTX kalt): die feine wartete in w0 hinter dem Blatt-Atlas, baute 4,4 s und
+    // Grobstufe allein — die feine bestellt das Ereignis des Bilds (`_weltbildKommt`), sie wartet roh (`_ofenRoh`), bis der
+    // Leerlauf sie gießt und eintauscht (`_leibFeinTausch`). Befund B5 (OMEN 18.10., GTX kalt): die feine wartete in w0 hinter dem Blatt-Atlas, baute 4,4 s und
     // hielt den Leib bis 10,46 s, die Grobstufe lag bei 4,23 s. Die Grobstufe zuerst: die erste Bestellung nach dem Buch
     // wartet im Werk hinter dem Atlas. `{ steht, da }`: steht = jede Vorlage des ersten Bilds liegt im Memo — oder ihr Guss
     // fiel LAUT (`OFEN-PREFETCH LEER`), dann gießt der Bau sie hier wie ohne Faden; da = alle Vorlagen.
@@ -1976,8 +1976,8 @@ class AnazhRealm_koerper_leib {
                                 this.log(`OFEN-PREFETCH LEER: mensch lod${lodM} (Buch kalt/Timeout)`, "WARN");
                             return;
                         }
-                        // die feine nach dem Bild wartet ROH auf ihren Leser (`_ofenRoh`): zeigt das Bild nur den Wurf, gießt sie
-                        // der Haupt-Faden erst, wenn ein Leser sie liest (die Sicht, die Hand, die Ich-Bühne, ein Neubau)
+                        // die feine nach dem Bild wartet ROH (`_ofenRoh`): zeigt das Bild nur den Wurf, gießt sie der Haupt-Faden
+                        // erst im Leerlauf (`_leibFeinTausch` im Vorbau) oder wenn ein anderer Leser sie fragt (die Ich-Bühne, ein Neubau)
                         if (nachBild && !z.gewuenscht) {
                             if (!memo.has(keyM)) this._ofenRoh(keyM, meshes);
                         } else this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
@@ -1988,11 +1988,12 @@ class AnazhRealm_koerper_leib {
                     z.feinDa = true;
                     z.steht = z.vorBildDa === true;
                 };
+                // die Ankunft tauscht nur die gewünschte feine (die Sicht ging vor dem Bild auf Third); die rohe tauscht der Leerlauf
                 const auftrag = nachBild
                     ? Promise.race([this._weltbildKommt(), new Promise((ja) => (z.wunsch = ja))])
                           .then(bestellen)
                           .finally(fein)
-                          .then(() => this._leibFeinTausch())
+                          .then(() => z.gewuenscht === true && this._leibFeinTausch())
                     : bestellen();
                 if (!nachBild) vorBild.push(auftrag);
                 auftraege.push(auftrag);
@@ -2031,31 +2032,32 @@ class AnazhRealm_koerper_leib {
     // geht sie jetzt als Kopf der Ankunft — wie bei einem Boot in Third; ist der Leib noch nicht gegossen, wartet er auf sie
     // (`_leibBereit`) und trägt nah die feine. Bis hier trug ein Leib, dessen Sicht vor dem ersten Bild auf Third ging, nah die
     // Grobstufe (die Kappe ohne Strähnen), bis das Bild kam und die feine eintauschte (haar.K3: die Werkbank tauschte mitten in
-    // der Messung, Bild 0 bis 6). NACH DEM BILD (w14-ankunft-weg) ist der Wunsch der Leser der feinen: die Sicht geht auf Third
-    // oder die Hand greift ein Gerät (`equipHeld`) — liegt sie roh da, tauscht der Leib jetzt; ist sie im Werk, tauscht ihre
-    // Ankunft. → true, wenn der Leib getauscht wurde (er trägt dann seine Hand neu).
+    // der Messung, Bild 0 bis 6). NACH DEM BILD wünscht die Eingabe nichts mehr: der Leerlauf tauscht (`_leibFeinTausch`).
     _leibWunsch() {
         const z = this._spielerVorlagen;
-        if (!z || this._leibGrobVorBild()) return false;
-        if (this.state._weltbildDa) return z.feinDa === true && this._leibFeinTausch();
-        if (!z.wunsch) return false;
+        if (!z || this.state._weltbildDa || !z.wunsch || this._leibGrobVorBild()) return;
         const ja = z.wunsch;
         z.wunsch = null;
         z.gewuenscht = true;
         z.steht = z.vorBildDa === true && z.feinDa === true;
         ja();
-        return false;
     }
     // DER TAUSCH DER FEINEN STUFE (B5): kam sie nach dem Bild, trägt der Leib des Spielers sie ab jetzt — derselbe Bau
     // (`applyPlayerSoul`, die Lage reist mit), die Grobstufe fällt mit dem alten Leib. Nur ein Leib, der nah die Grobstufe
-    // trägt (`nahStufe`), tauscht; ein deferierter Bau trifft die feine selbst. DIE FEINE WARTET AUF IHREN LESER (w14-ankunft-weg,
-    // FUND 06.11. `koerper-leib.js:1970`): zeigt das Bild nur den Wurf (Ego, leere Hand, `_leibGrobVorBild`), tauscht er nicht —
-    // die feine trägt dort kein Pixel; bis hier goss der Haupt-Faden sie im Fenster Weltbild→Kontrolle (Radeon 111–152 ms) und
-    // tauschte sie ein (81–134 ms). Den Tausch ruft der Wunsch (`_leibWunsch`), sobald die Sicht sie zeigt. → true = getauscht.
+    // trägt (`nahStufe`), tauscht; ein deferierter Bau trifft die feine selbst. Die feine nach dem Bild wartet roh (`_ofenRoh`):
+    // im Fenster Weltbild→Kontrolle gießt und tauscht sie niemand (w14-ankunft-weg, Radeon 111–152 + 81–134 ms).
+    // DER LEIB TAUSCHT IM LEERLAUF (w20-leib-takt, Lehre 14): gegossen und getauscht wird sie als erster Schritt des Vorbaus
+    // (`_vorbauBedienung`: die Eingabe ruht, die Welt steht), nie auf dem Pfad der Eingabe — die Sicht auf Third und der Sitz im
+    // Wagen schalten nur, was schon da ist. Bis hier tauschte der Wunsch beim ersten Wechsel auf Third (`setCameraMode`),
+    // beim Griff (`equipHeld`) und beim Einsteigen: GTX ego/wechsel p95 228,9 ms, ego/einsteigen 75,6 ms, Radeon 139,9–140,9 ms;
+    // headless `setCameraMode(third)` 34–63 ms (Rohguss 17–36, Gelenk-Gestalt 13–24), und der getauschte Leib ließ jeden Leser
+    // des alten mit einer toten Hand zurück (leib.K1#2 „hieb fehlt 15/15 je Sicht"). Leser: der Vorbau, die Ankunft einer
+    // gewünschten feinen (Third vor dem Bild) und ein Griff vor dem Tausch (die Hand liest die Hand-Mitte der feinen). → true =
+    // getauscht.
     _leibFeinTausch() {
         const st = this.state;
         const g = st.playerMesh && st.playerMesh.userData._gelenk;
-        if (!g || g.nahStufe !== 1 || st._deferredAvatarSoul || this._leibGrobVorBild()) return false;
+        if (!g || g.nahStufe !== 1 || st._deferredAvatarSoul) return false;
         this.applyPlayerSoul(st.player.soul);
         return true;
     }
