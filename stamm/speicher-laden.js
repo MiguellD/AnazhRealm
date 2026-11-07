@@ -514,9 +514,8 @@ class AnazhRealm_speicher_laden {
             if (zg && typeof zg === "object") {
                 const Z = (this.state.zugang = Object.assign({}, this.state.zugang));
                 if (AnazhRealm.FARBSICHT.arten.includes(zg.farbsicht)) Z.farbsicht = zg.farbsicht;
-                const [f0, f1] = AnazhRealm.ZUGANG.sichtfeld;
-                if (zg.sichtfeld != null && Number.isFinite(+zg.sichtfeld))
-                    Z.sichtfeld = Math.max(f0, Math.min(f1, +zg.sichtfeld));
+                const fov = AnazhRealm._zugangFov(zg.fov);
+                if (fov != null) Object.assign(Z, { fov });
                 if (typeof zg.wackeln === "boolean") Z.wackeln = zg.wackeln;
                 if (typeof zg.unschaerfe === "boolean") Z.unschaerfe = zg.unschaerfe;
             }
