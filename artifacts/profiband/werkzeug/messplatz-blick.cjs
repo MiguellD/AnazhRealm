@@ -266,6 +266,20 @@ function zugLog(id, D) {
     const urt = f1 && zeilen(f1.text).filter((l) => new RegExp(`\\[${id}\\] (GELANDET|FAHRT ROT)`).test(l)).pop();
     return { f1, urteil: urt || null };
 }
+// DIE BESETZUNG eines Zugs (Koordinator 07.11. 20:40: „läuft z300 [… w21-laub-jahr-fern …]“ war die BESTELLUNG der Schlange, laub-jahr-fern
+// fiel im Bau am Konflikt): drin ist, was fahre-<id>.log mit „drin <zweig>@<sha>“ nennt; gefallen, was es mit „gefallen <zweig>@<sha>: <Grund>“
+// nennt, dazu die Statik- und Vorzug-Proben des Sammlers („[<id>] STATIK FÄLLT <zweig>: …“, „VORZUG FÄLLT“). Ohne Bau-Zeile gilt die Bestellung
+// abzüglich der Gefallenen.
+function besetzung(id, bestellt, D) {
+    const f1 = lies(path.join(D.tc, `fahre-${id}.log`)), sl = lies(path.join(D.tc, `zug-sammler-${id}.log`));
+    const drin = f1 ? [...new Set([...f1.text.matchAll(/^\s*drin (\S+?)@\w+/gm)].map((m) => m[1]))] : [];
+    const gefallen = [];
+    for (const m of f1 ? f1.text.matchAll(/^\s*gefallen (\S+?)@\w+:\s*(.*)$/gm) : []) gefallen.push({ z: m[1], grund: m[2].trim() });
+    for (const m of sl ? sl.text.matchAll(new RegExp(`\\[${id}\\] (STATIK|VORZUG) FÄLLT (\\S+?):\\s*(.*)$`, "gm")) : []) if (!gefallen.some((g) => g.z === m[2])) gefallen.push({ z: m[2], grund: (m[1] === "STATIK" ? "Statik " : "Vorzug ") + m[3].trim() });
+    return { zweige: drin.length ? drin : bestellt.filter((z) => !gefallen.some((g) => g.z === z)), gefallen };
+}
+// „✗ w21-laub-jahr-fern: Konflikt Klasse d“ — der Grund bis zu seinem Datei-Anker
+const gefallenKurz = (g, lang) => g.map((x) => rot("✗") + " " + x.z + ": " + (lang ? x.grund : x.grund.split(/\s+/).filter((w) => !/[\/\\]|\.\w+:\d+/.test(w)).slice(0, 3).join(" "))).join(" · ");
 const kurzSha = (s) => String(s).replace(/\b([0-9a-f]{8})[0-9a-f]{32}\b/g, "$1").replace(/\s+/g, " ").trim();
 const letzteZeile = (r) => (r ? kurzSha((zeilen(r.text).pop() || "").replace(/^\d\d:\d\d(:\d\d)? (\[\S+\] )?/, "")) : "");
 function zug(ps, D = { tc: TEMP_CLAUDE, w3: W3 }) {
@@ -283,7 +297,7 @@ function zug(ps, D = { tc: TEMP_CLAUDE, w3: W3 }) {
         if (fah && !urteil) { phase = "fahre: " + letzteZeile(f1); seit = fah.start; pt = f1 && f1.t; }
         else if (sam && !fah && !zu) { const sl = lies(path.join(D.tc, `zug-sammler-${id}.log`)); phase = "sammelt: " + letzteZeile(sl); seit = sam.start; pt = sl && sl.t; }
         else if (wei && urteil && /FAHRT ROT/.test(urteil) && !(fw && /\] (GELANDET|FAHRT ROT)/.test(fw.text))) { phase = "Wackler-Neulauf: " + (letzteZeile(fw) || "liest die roten Schritte"); seit = wei.start; pt = fw ? fw.t : f1 && f1.t; }
-        return { id, zweige, phase, seit, pt, zu };
+        return { id, ...besetzung(id, zweige, D), phase, seit, pt, zu };
     };
     const gesehen = new Set();
     // die Schlangen: je Prozess der Vorgänger und die Aufträge in Reihe (ein Token „zNNN:“ beginnt einen Auftrag)
@@ -413,7 +427,8 @@ function zugVonKandidat(sha, tc = TEMP_CLAUDE) {
         for (const { n } of logs) {
             const r = lies(path.join(tc, n));
             if (!r || !r.text.includes("Kandidat " + sha)) continue;
-            const z = { id: n.replace(/^fahre-|\.log$/g, ""), zweige: [...new Set([...r.text.matchAll(/^\s*drin (\S+?)@\w+/gm)].map((m) => m[1]))] };
+            const id = n.replace(/^fahre-|\.log$/g, "");
+            const z = { id, ...besetzung(id, [], { tc, w3: W3 }) };
             zugJeSha.set(sha, z); // nur Treffer merken: ein Fehlschlag kann zum Treffer werden, sobald fahre den Kandidaten schreibt
             return z;
         }
@@ -524,11 +539,11 @@ function seite() {
     // fahre-Log diesen Kandidaten nennt (die Prozess-Liste kann fehlen; der Lauf nie, solange der Zug fährt)
     const zk = zr && zr.status !== "completed" ? zugVonKandidat(zr.head_sha) : null;
     const ZL = Z.laeuft.filter((e) => !zk || e.id !== zk.id || e.phase), ZW = Z.wartet.filter((e) => !zk || e.id !== zk.id);
-    if (zk && !ZL.some((e) => e.id === zk.id)) ZL.unshift({ id: zk.id, zweige: zk.zweige, phase: `CI am Kandidaten ${s8(zr.head_sha)} (aus dem Lauf auf integ-probe)`, seit: new Date(zr.run_started_at || zr.created_at), pt: Date.now() });
+    if (zk && !ZL.some((e) => e.id === zk.id)) ZL.unshift({ id: zk.id, zweige: zk.zweige, gefallen: zk.gefallen, phase: `CI am Kandidaten ${s8(zr.head_sha)} (aus dem Lauf auf integ-probe)`, seit: new Date(zr.run_started_at || zr.created_at), pt: Date.now() });
     for (const e of ZL) if (zk && e.id === zk.id) e.ci = fortschritt(zr);
     Z = { ...Z, laeuft: ZL, wartet: ZW };
     const zweigeKurz = (z) => (z.length ? `[${z.join(" ")}]` : "");
-    const reihe = [...Z.laeuft.map((e) => `läuft ${fett(e.id)} ${zweigeKurz(e.zweige)}`), ...Z.wartet.map((e) => `wartet ${e.id} [${e.zweige.length} Zweig${e.zweige.length === 1 ? "" : "e"}]`)];
+    const reihe = [...Z.laeuft.map((e) => `läuft ${fett(e.id)} ${zweigeKurz(e.zweige)}${(e.gefallen || []).length ? " " + gefallenKurz(e.gefallen) : ""}`), ...Z.wartet.map((e) => `wartet ${e.id} [${e.zweige.length} Zweig${e.zweige.length === 1 ? "" : "e"}]`)];
     const zugZ = reihe.length ? ["gelb", reihe.join(" → ")] : ["gruen", `steht${Z.zuletzt ? " · zuletzt " + urteil(Z.zuletzt.text.slice(0, 60)) : ""}`];
 
     // ── Kopf: eine Zeile je Gerät
@@ -563,7 +578,7 @@ function seite() {
     if (mc.headless[0] && o.length) o.push(mitAlter(`  ${spalte("Farm", 8)} ${hhmm(mc.headless[0].t)} ${urteil(mc.headless[0].titel.replace(/^Farm headless\s*/, "").replace(/ · längster.*$/, ""))}`, mc.headless[0].t, 6 * 3600e3));
 
     o.push("", kopfzeile("ZUG · Schlange des Koordinators", "zug", TAKT_LOKAL));
-    for (const e of Z.laeuft.slice(0, 2)) o.push(mitAlter(`  ${spalte("läuft", 8)} ${fett(e.id)} ${zweigeKurz(e.zweige)} · seit ${hhmm(e.seit)}${e.ci ? " · CI " + e.ci : ""} · ${urteil(e.phase).slice(0, 160)}`, e.pt, 45 * 60e3));
+    for (const e of Z.laeuft.slice(0, 2)) o.push(mitAlter(`  ${spalte("läuft", 8)} ${fett(e.id)} ${zweigeKurz(e.zweige)}${(e.gefallen || []).length ? " " + gefallenKurz(e.gefallen) : ""} · seit ${hhmm(e.seit)}${e.ci ? " · CI " + e.ci : ""} · ${urteil(e.phase).slice(0, 160)}`, e.pt, 45 * 60e3));
     for (const e of Z.wartet.slice(0, 1)) o.push(`  ${spalte("wartet", 8)} ${e.id} ${zweigeKurz(e.zweige)} ${grau("nach " + e.nach)}`);
     if (!Z.laeuft.length && !Z.wartet.length) o.push(`  ${grau("kein Zug in Fahrt, keine Schlange")}`);
     if (Z.zuletzt) o.push(mitAlter(`  ${spalte("zuletzt", 8)} ${hhmm(Z.zuletzt.t)} ${urteil(Z.zuletzt.text)}`, Z.zuletzt.t, 2 * 3600e3));
@@ -622,6 +637,13 @@ function selbsttest() {
     const k = zugVonKandidat("e84fd1fb99ee167658e625c473ea4f3c8d1f746d", D.tc);
     if (!k || k.id !== "z300" || k.zweige.join() !== "w22-schmiede-heil,w20-lack-spiegel") fehler.push("Kandidat → Zug: " + JSON.stringify(k));
     if (zugVonKandidat("0123456789abcdef0123456789abcdef01234567", D.tc)) fehler.push("fremder Kandidat nennt einen Zug");
+    // die Besetzung statt der Bestellung: bestellt sind drei, drin zwei, laub-jahr-fern fiel im Bau am Konflikt
+    fs.appendFileSync(path.join(D.tc, "fahre-z300.log"), "  gefallen w21-laub-jahr-fern@2b4a0120: Konflikt Klasse d scripts/diag-beweis-e.cjs:49\n");
+    const d = zug([p("bash zug-schlange6.sh z299w z300:w22-schmiede-heil w20-lack-spiegel w21-laub-jahr-fern"),
+        p("bash artifacts/profiband/werkzeug/fahre.sh z300 w22-schmiede-heil@c194cb3f w20-lack-spiegel@e8110daa w21-laub-jahr-fern@2b4a0120")], D);
+    const z3 = d.laeuft.find((e) => e.id === "z300");
+    if (!z3 || z3.zweige.join() !== "w22-schmiede-heil,w20-lack-spiegel" || sicht(gefallenKurz(z3.gefallen)) !== "✗ w21-laub-jahr-fern: Konflikt Klasse d")
+        fehler.push("Besetzung: " + JSON.stringify(z3 && { zweige: z3.zweige, gefallen: z3.gefallen }));
     // das ABAB: A und B derselben Reihe paaren je Messort, „?“ fällt, ohne B steht „—“ nicht
     const erl = "omen-gtx-z298-liste-1-2f70c000 UNGEMESSEN 2 GRÜN\n" +
         "omen-gtx-abab-wiese-A1-1-185e99bb ROT 0 GRÜN / 4 ROT · ROT profiband.K1#1 ‖ profiband.K1#1: Bild-p95 ≤ 33: wiese-ego-geht 50.12 · wiese-fahrt ? ‖ profiband.K3#1: Band im Stand (Befehle · Dreiecke): wiese-ego 108 · 499k · 131.4 MB | dorf-t ‖ vegetation.K1#1: LAI 2.41 (punkte-maschine 2eb11744 messung/185e99bb-gtx.json)\n" +
