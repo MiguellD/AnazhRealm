@@ -1,11 +1,41 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-07T20:18:45.859Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:52:29.774Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-[seite] 2026-11-07T20:21:58.811Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-07T20:22:31.360Z navigiert about:blank
-[seite] 2026-11-07T20:22:31.648Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-07T20:22:48.914Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-07T20:22:56.845Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-07T20:23:03.104Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-07T20:23:11.509Z GESCHLOSSEN
-[seite] 2026-11-07T20:23:11.592Z Browser getrennt
+[seite] 2026-11-07T21:53:23.089Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:54:26.071Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:56:09.354Z navigiert http://localhost:7804/index.html
+[abbruch] /eval: der Rufer ist fort, 1 Abbruch
+[seite] 2026-11-07T21:57:10.324Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:58:05.109Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:58:57.221Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:59:18.298Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:59:22.692Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T21:59:28.025Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:01:17.706Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:02:45.295Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:06:33.475Z navigiert about:blank
+[seite] 2026-11-07T22:06:33.777Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:06:52.771Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:07:00.145Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:07:06.327Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:07:13.835Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:08:01.099Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:08:50.971Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:10:44.838Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:11:04.629Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:11:16.378Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:12:32.941Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:14:03.165Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:15:06.912Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:15:21.527Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:15:35.728Z navigiert http://localhost:7804/cores.manifest.json
+[seite] 2026-11-07T22:15:35.927Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:15:56.503Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:17:35.206Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:17:53.725Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:18:07.436Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:18:19.869Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:18:29.182Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:18:34.840Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-07T22:19:13.133Z GESCHLOSSEN
+[seite] 2026-11-07T22:19:13.214Z Browser getrennt

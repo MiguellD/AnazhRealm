@@ -1,0 +1,134 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.212",
+  "sha": "e84fd1fb99ee167658e625c473ea4f3c8d1f746d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0174,
+   "taeter": {
+    "fern-ring": 0.0139,
+    "Rinde baum_kiefer": 0.0035
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 46.75,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -583.28,
+   59.614,
+   -864.94
+  ],
+  "blick": [
+   0.73111,
+   -0.39217,
+   -0.55828
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 88.3,
+  "sigma": 50.6,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 10,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -575.2,
+     39.37,
+     -925.22
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Boden-Schicht in 19.98 m"
+    ],
+    "ms": 243
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -583.28,
+     59.614,
+     -864.94
+    ],
+    "rot": [],
+    "ms": 5214
+   }
+  ],
+  "ms": 5457
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 46.75 m · Luma 88.3 σ 50.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.212 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 23
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 19
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 434
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e84fd1fb-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

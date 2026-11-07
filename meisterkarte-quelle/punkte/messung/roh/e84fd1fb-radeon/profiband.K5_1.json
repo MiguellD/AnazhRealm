@@ -1,0 +1,133 @@
+{
+ "art": "dauer",
+ "sekunden": 9.2,
+ "schritte": [
+  [
+   "ende",
+   9.2
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 956,
+  "bilder": 2534,
+  "seiten": 7,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 8.7885e-15,
+   "mittag": 0.5000000000000039
+  },
+  "minuten": 16.61,
+  "seiten": 5,
+  "proben": 5,
+  "last": {
+   "n": 2517,
+   "frame": 58.55,
+   "p99": 92.01,
+   "max": 694.66,
+   "ueber33": 1259,
+   "ueber100": 21,
+   "takt": 53.54,
+   "vram": 138.6,
+   "gpu": 12.63,
+   "gpuN": 314,
+   "befehle": 76,
+   "dreiecke": 482234,
+   "voll": 0.057,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 2171,
+  "gegangen": 126,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 56,
+    "frame": 49.99,
+    "p99": 83.69,
+    "max": 83.69,
+    "ueber33": 35,
+    "ueber100": 0,
+    "takt": 37.61,
+    "vram": 132.6,
+    "gpu": 12.85,
+    "gpuN": 8,
+    "befehle": 82,
+    "dreiecke": 361846,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 72,
+    "frame": 41.86,
+    "p99": 184.15,
+    "max": 184.15,
+    "ueber33": 13,
+    "ueber100": 2,
+    "takt": 28.56,
+    "vram": 134.9,
+    "gpu": 12.63,
+    "gpuN": 7,
+    "befehle": 73,
+    "dreiecke": 459831,
+    "voll": 1,
+    "halt": false,
+    "last": 0.57,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +26.8 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +10.7 MB · r._bewohnerSiedlungen[].aktivListe[].leib.userData._gelenk +8.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +5.1 MB",
+   "vram: +4.4 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · tex:karte-licht:atlas rgba8unorm 32x896x20 +2.2 MB"
+  ],
+  "heap": [
+   315.7,
+   760.6
+  ],
+  "vramGC": [
+   129.7,
+   134.1
+  ]
+ }
+}
