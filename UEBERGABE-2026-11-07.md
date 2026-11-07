@@ -34,3 +34,6 @@
 - **OMEN**: ruht seit 16:05 (zug/erledigt.txt b700a42b), der GTX-Dauer-Wächter steht auf HALT, kein Schloss. Ihre Claude-Sitzung („Koordinator-Meldung“, Remote Control) war am alten Konto — die neue Sitzung spricht die OMEN-Sitzung an, die der Schöpfer neu verbindet.
 - **auslauf.sh** läuft auf dem Laptop; schläft der Laptop, stirbt er. Dann zuerst prüfen: z295 gelandet? (`git log origin/main`), Buchung in `zug/auslauf-0711.txt`, sonst `BUCHE_KOPF=<main> bash artifacts/profiband/werkzeug/buche.sh` von Hand.
 - Der Punkte-Worktree `%TEMP%\claude\w3\pm` (Zweig punkte-maschine) ist nur ein Checkout; fehlt er, neu: `git worktree add <pfad> punkte-maschine`.
+
+## Alle Kandidaten-Stände
+`zug/offene-zweige-0711.txt`: 46 Zweige nicht in main (27 offen, 4 in z295, 16 -pm-Zweige der Punkte-Maschine, davon 7 offen), je mit letztem Push, Kopf und Status. Die Arbeit der Cloud-Sitzungen liegt vollständig auf diesen Zweigen (GitHub); nur nie gepushte Reste in den Cloud-Containern fehlen.
