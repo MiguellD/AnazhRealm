@@ -241,17 +241,36 @@ function kernProbe(VC) {
         `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
     ]);
     const [G9, m9] = [gesetzVon(VC, "gt"), { achse: 0, lenk: 0, schwimm: 0 }];
-    lauf("gt", () => 0, 270, (i, z) => {
-        const w = +((Math.abs(Math.atan2(z.vlat, z.vlong)) * 180) / Math.PI).toFixed(1);
-        if (i < 150) m9.achse = Math.max(m9.achse, w);
-        else [m9.schwimm, m9.lenk] = [Math.max(m9.schwimm, w), Math.max(m9.lenk, +(Math.abs(z.yawRate * z.speed) / (G9.g * G9.maxGrip * G9.grip)).toFixed(2))];
-        return { throttle: 1, steer: +(i >= 150) };
-    });
-    out.push(["K9 Fahr-Gefühl: Gas, dann voller Einschlag — Fahrt an der Bug-Achse ≤ 10°, v·ω ≤ 1,8 g·μ, Schwimmwinkel ≤ 40°", !gefuehlVerdict(m9).length, JSON.stringify(m9)]);
+    lauf(
+        "gt",
+        () => 0,
+        270,
+        (i, z) => {
+            const w = +((Math.abs(Math.atan2(z.vlat, z.vlong)) * 180) / Math.PI).toFixed(1);
+            if (i < 150) m9.achse = Math.max(m9.achse, w);
+            else
+                [m9.schwimm, m9.lenk] = [
+                    Math.max(m9.schwimm, w),
+                    Math.max(m9.lenk, +(Math.abs(z.yawRate * z.speed) / (G9.g * G9.maxGrip * G9.grip)).toFixed(2)),
+                ];
+            return { throttle: 1, steer: +(i >= 150) };
+        }
+    );
+    out.push([
+        "K9 Fahr-Gefühl: Gas, dann voller Einschlag — Fahrt an der Bug-Achse ≤ 10°, v·ω ≤ 1,8 g·μ, Schwimmwinkel ≤ 40°",
+        !gefuehlVerdict(m9).length,
+        JSON.stringify(m9),
+    ]);
     // K10 DER TRITT IST ANALOG (w16-fahrt-weg): der GT nach 4 s Gas 0,5 s Bremse — ein Viertel Tritt verliert halb so viel
     // Tempo wie ein halber (0,4–0,6; beide unter dem Reibkreis, der Fahrtwind zählt in beide). Bis hier bremste jeder Druck voll:
     // der Abzug des Pads ein Schalter, der Fahrer der Welt drehte sich im Bogen (am Kern von main ROT: 1,00).
-    const ab = (b) => lauf("gt", () => 0, 270, (i) => (i < 240 ? { throttle: 1 } : { brake: b })).z.speed;
+    const ab = (b) =>
+        lauf(
+            "gt",
+            () => 0,
+            270,
+            (i) => (i < 240 ? { throttle: 1 } : { brake: b })
+        ).z.speed;
     const k10 = (ab(0) - ab(0.25)) / (ab(0) - ab(0.5));
     out.push(["K10 der Tritt ist analog", Math.abs(k10 - 0.5) <= 0.1, k10.toFixed(2)]);
     return out;
@@ -261,7 +280,10 @@ function kernProbe(VC) {
 // Gas geradeaus, dann 120 mit vollem Einschlag — achse die Fahrt an der Bug-Achse · lenk die Quer-Kinematik v·ω in der
 // Reifen-Grenze g·μ · schwimm im vollen Einschlag läuft er nicht quer.
 const GEFUEHL = { achse: 10, lenk: 1.8, schwimm: 40 };
-const gefuehlVerdict = (m) => Object.keys(GEFUEHL).filter((k) => !(m[k] <= GEFUEHL[k])).map((k) => `${k} ${m[k]}`);
+const gefuehlVerdict = (m) =>
+    Object.keys(GEFUEHL)
+        .filter((k) => !(m[k] <= GEFUEHL[k]))
+        .map((k) => `${k} ${m[k]}`);
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
 // der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
 // 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(gras) halb in der Stoff-Zeile (`zeile`) ──
@@ -782,7 +804,7 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2 };
 const verkehrVerdict = (m) =>
     [
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
@@ -803,8 +825,10 @@ const verkehrVerdict = (m) =>
             !m.netz.verboten.some((v) => !/ (kein Bogen|spur)$/.test(v)),
             `verbotene Abbieger ${m.netz.verboten.filter((v) => !/ (kein Bogen|spur)$/.test(v)).join(", ")}`,
         ],
-        [!m.netz.ausNetz, `Strecken außer dem Netz in seiner Richtung ${m.netz.ausNetz}`],
-        [!m.netz.irrweg, `Irrweg ${m.netz.irrweg}× (kein Abbieger trägt das Ziel)`],
+        [
+            !m.netz.ausNetz && !m.netz.irrweg,
+            `Strecken außer dem Netz in seiner Richtung ${m.netz.ausNetz}, Irrweg ${m.netz.irrweg}× (kein Abbieger trägt das Ziel)`,
+        ],
         [
             m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
             `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
@@ -826,10 +850,15 @@ const verkehrVerdict = (m) =>
             m.ankunft && m.ankunft.d !== null && m.ankunft.d < m.ankunft.K,
             `die Ankunft sieht die Hülle des Wagens nicht ${JSON.stringify(m.ankunft)} (dort stellte sie einen Bewohner hin)`,
         ],
-        [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× tiefste ${JSON.stringify(m.beruehrt.tief)}`],
-        [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
+        // DER RAUM (w23-verkehr): zwischen zwei Karosserien, fahrend wie stehend, bleiben in jeder Probe `raumM` — wer einander
+        // näher kommt, streift im Takt (je 8 Stunden: main 0,08–0,19 m an der Begegnung der Wende 908/289), tiefer als 1 cm stecken
+        // sie ineinander (`beruehrt.wagen`); das knappste Paar beim Namen
+        [m.knapp[0] >= VERKEHR.raumM, `Wagen an Wagen ${JSON.stringify(m.knapp)}, ineinander ${m.beruehrt.wagen}×`],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
-        [!m.stoss.bau && !m.stoss.wagen && !m.stoss.leib, `Stoß ${JSON.stringify(m.stoss)}`],
+        [
+            !m.beruehrt.bau && !m.stoss.bau && !m.stoss.wagen && !m.stoss.leib,
+            `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)} · Stoß ${JSON.stringify(m.stoss)}`,
+        ],
         [
             m.querMax <= 1.5,
             `neben der Spur (außer im Ort, den er allein hält) ${m.querMax} m ${JSON.stringify(m.querOrt)}`,
@@ -838,10 +867,9 @@ const verkehrVerdict = (m) =>
         // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen; die Probe `stufe` in fahr-proben)
         [m.stufe.nah >= 20, `kein Wagen im 3D-Raum (${m.stufe.nah})`],
         [
-            !m.stufe.ohneBild,
-            `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)}`,
+            !m.stufe.ohneBild && !m.stufe.ohneFahrer,
+            `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)} · Wagen im Bild ohne gezeichneten Fahrer ${m.stufe.ohneFahrer}× ${JSON.stringify(m.stufe.ohneFahrerOrte)}`, // prettier-ignore
         ],
-        [!m.stufe.ohneFahrer, `Wagen im Bild ohne gezeichneten Fahrer ${m.stufe.ohneFahrer}× ${JSON.stringify(m.stufe.ohneFahrerOrte)}`], // prettier-ignore
         [
             !m.stufe.veraltet,
             `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`,
@@ -2205,9 +2233,15 @@ hauptLauf(async () => {
             for (const [name, taeter, re] of [
                 [
                     "F1 Fels (Schau 2 #6: 38° steil, 40° gewankt)",
-                    bahnPlatzVerdict(
-                        { ...gutP, neigung: 41, steig: 38, wank: -17, waende: 3, vor: 0.08, zurueck: 0.2 }
-                    ),
+                    bahnPlatzVerdict({
+                        ...gutP,
+                        neigung: 41,
+                        steig: 38,
+                        wank: -17,
+                        waende: 3,
+                        vor: 0.08,
+                        zurueck: 0.2,
+                    }),
                     /Neigung 41°.*3 Wände.*W 2 s 0\.08.*S 2,5 s 0\.20/,
                 ],
                 [
@@ -2225,11 +2259,7 @@ hauptLauf(async () => {
                     bahnPlatzVerdict({ ...gutP, eingestiegen: false, statt: "Portal betreten" }),
                     /E steigt nicht ein \(Portal betreten\)/,
                 ],
-                [
-                    "F1 rückwärts 0,1 m (Auge 06)",
-                    bahnPlatzVerdict({ ...gutP, zurueck: 0.1 }),
-                    /S 2,5 s 0\.10 m/,
-                ],
+                ["F1 rückwärts 0,1 m (Auge 06)", bahnPlatzVerdict({ ...gutP, zurueck: 0.1 }), /S 2,5 s 0\.10 m/],
                 [
                     "F3 Natur-Wand ohne Wagen",
                     bahnWandVerdict({ da: true, art: "baum_tanne", l: 1.5, urteil: false }),
@@ -2242,16 +2272,13 @@ hauptLauf(async () => {
                 ],
                 [
                     "F4 Befreiung −0,9 km/h",
-                    bahnStossVerdict(
-                        { ...gutS, versuche: [{ seite: "mit A", freiFrame: -1, weg: 0.25, vMinKmh: -0.9 }] }
-                    ),
+                    bahnStossVerdict({
+                        ...gutS,
+                        versuche: [{ seite: "mit A", freiFrame: -1, weg: 0.25, vMinKmh: -0.9 }],
+                    }),
                     /glutbrunnen mit A: nach 2 s 0\.25 m/,
                 ],
-                [
-                    "F4 kein Stoß",
-                    bahnStossVerdict({ ...gutS, stoss: false }),
-                    /kein Stoß am glutbrunnen/,
-                ],
+                ["F4 kein Stoß", bahnStossVerdict({ ...gutS, stoss: false }), /kein Stoß am glutbrunnen/],
                 ["F5 kein Tacho", bahnTachoVerdict({ element: false }), /kein Tacho/],
                 [
                     "F5 falsche Zahl",
@@ -2270,9 +2297,11 @@ hauptLauf(async () => {
                 ],
                 [
                     "F7 Shift wirkungslos",
-                    bahnTastenVerdict(
-                        { ...gutH, handbremseWirkt: false, handbremseDetail: "Shift im Fahr-Schritt 0/30" }
-                    ),
+                    bahnTastenVerdict({
+                        ...gutH,
+                        handbremseWirkt: false,
+                        handbremseDetail: "Shift im Fahr-Schritt 0/30",
+                    }),
                     /Shift kommt im Fahr-Schritt nicht/,
                 ],
             ])
@@ -2306,8 +2335,15 @@ hauptLauf(async () => {
                     sAlt.slice(0, 2).join(" · ")
                 );
                 // K9 (wie bis dahin gate:vehicle-drive B-e): quer 90°, Aufdrehen 3,4 g·μ, Schwimmwinkel 70° — jeder beim Namen
-                const v9 = [{ achse: 2.1, lenk: 1.45, schwimm: 6 }, { achse: 90, lenk: 3.4, schwimm: 70 }].map(gefuehlVerdict);
-                check("Selbst-Test K9: quer, Aufdrehen, Schwimmen → beim Namen", v9.join("|") === "|achse 90,lenk 3.4,schwimm 70", v9.join("|"));
+                const v9 = [
+                    { achse: 2.1, lenk: 1.45, schwimm: 6 },
+                    { achse: 90, lenk: 3.4, schwimm: 70 },
+                ].map(gefuehlVerdict);
+                check(
+                    "Selbst-Test K9: quer, Aufdrehen, Schwimmen → beim Namen",
+                    v9.join("|") === "|achse 90,lenk 3.4,schwimm 70",
+                    v9.join("|")
+                );
                 // K8: der Kern verstimmt; Kosten, keine Achse
                 const R8 = VCs.FAHR.reifen;
                 const alt8 = [R8.spitzeGrad, R8.C, R8.taktHz];
@@ -2375,7 +2411,8 @@ hauptLauf(async () => {
                 enden: 4,
                 stufen: [],
                 fest: [],
-                beruehrt: { leib: 0, wagen: 0, bau: 0, tief: [0] },
+                beruehrt: { leib: 0, wagen: 0, bau: 0 },
+                knapp: [0.6],
                 ohneSchluessel: 0,
                 ohneOrte: [],
                 ankunft: { d: 0.14, K: 0.71, wagen: 3 },
@@ -2406,10 +2443,9 @@ hauptLauf(async () => {
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
-                [
-                    { beruehrt: { leib: 0, wagen: 40, tief: [0.22, "1|2", 0, 828, 441] } },
-                    /Wagen in Wagen 40× tiefste \[0.22,"1\|2",0,828,441/,
-                ],
+                // die Radeon 10 Uhr: drei stehende Wagen 0,22 m ineinander; main an der Begegnung der Wende 908/289 0,08 m
+                [{ knapp: [-0.22, "1|2", 0, 828, 441], beruehrt: { leib: 0, wagen: 40 } }, /\[-0.22,"1\|2",0,828,441\], ineinander 40/], // prettier-ignore
+                [{ knapp: [0.08, "12|16"] }, /Wagen an Wagen \[0.08/],
                 [{ ankunft: { d: 1.1, K: 0.71, wagen: 3 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [{ ankunft: { d: null, K: 0.71 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [
@@ -2441,13 +2477,13 @@ hauptLauf(async () => {
             // in die Strecke der Wende w10 führte keiner, 10 von 20 Wagen pendelten ohne Ziel zwischen zwei Wenden (12 Ankünfte,
             // Fahrt 752 s), Wagen in Wagen 15× vor der einen Wende — alle beim Namen; neu GRÜN
             const verbotenAlt = ["k0 0>1 laterne@842,435", "k0 0>3 laterne@842,435", "k0 1>2 laterne@831,442", "k0 1>3 laterne@842,435", "k0 2>1 laterne@831,442", "k0 2>3 laterne@831,442", "k0 3>0 laterne@842,435"]; // prettier-ignore
-            const alt = verkehrVerdict({ ...g, netz: { verboten: verbotenAlt, ausNetz: 0, irrweg: 0 }, ziele: { erreicht: 12, ohne: [0, 1, 3, 5, 6, 7, 10, 12, 13, 14], laengsteS: 752, wer: 0 }, beruehrt: { leib: 0, wagen: 15, bau: 0, tief: [0.4] } }); // prettier-ignore
+            const alt = verkehrVerdict({ ...g, netz: { verboten: verbotenAlt, ausNetz: 0, irrweg: 0 }, ziele: { erreicht: 12, ohne: [0, 1, 3, 5, 6, 7, 10, 12, 13, 14], laengsteS: 752, wer: 0 }, beruehrt: { leib: 0, wagen: 15, bau: 0 }, knapp: [-0.4] }); // prettier-ignore
             const altRot =
                 alt.length === 4 &&
                 /verbotene Abbieger k0 0>1 laterne/.test(alt[0]) &&
                 /ohne Ziel erreicht: Wagen 0, 1, 3/.test(alt[1]) &&
                 /Fahrt 752 s/.test(alt[2]) &&
-                /Wagen in Wagen 15/.test(alt[3]);
+                /ineinander 15/.test(alt[3]);
             check(
                 "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Laterne, Ziel, Fahrt und Wagen, neu GRÜN)",
                 !verkehrVerdict(g).length && !brueche.length && altRot,
@@ -2555,7 +2591,7 @@ hauptLauf(async () => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },

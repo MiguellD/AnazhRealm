@@ -290,14 +290,26 @@ class AnazhRealm_siedlung_verkehr {
                       )
                       .map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM))
                 : [];
-        // DIE WENDE IST IHR RING SAMT PLATZ (der Ort, an dem wer aus dem Platz oder in ihn fährt, den Weg der Durchfahrt kreuzt): ihre
-        // Bahnen hinein und heraus kreuzen keinen Wagen (fachwerk `verkehrsNetz`: zwei halbe Wagen auseinander, jede quert die Spur
-        // der anderen nur, wo keiner fährt) — wer auf ihnen fährt, folgt dem vor ihm. Bis w13-verkehr-heil reichte der Ort bis an den
-        // Abzweig beider Bahnen (stadt-voll, die Wende 924/354: 44,9 m, 105 m der Linie je Durchfahrt): wer ausparkte, wartete, bis
-        // keiner mehr auf 105 m der Bahn fuhr, die Plätze leerten sich einer nach dem anderen, und eine Reihe von sieben stand 90 s
-        // vor dem Abzweig (23 Uhr, 15–55 s nach dem Sprung fuhren 13 von 20 Wagen 30 m)
-        for (const w of VK.wenden.values())
+        // DIE WENDE IST IHR RING SAMT PLATZ (der Ort, an dem wer aus dem Platz oder in ihn fährt, den Weg der Durchfahrt kreuzt), IHRE
+        // BEGEGNUNG EINE ENGE (fachwerk `engen`: wo Bahn hinein und heraus einander samt dem Ausscheren im Bogen näher als zwei halbe
+        // Wagen kommen; je Richtung, hinein 0, heraus 1, `_verkehrZugZonen`, in ihrem genauen Maß ohne den Vorlauf `engeRandM` der
+        // Strecke) — sonst kreuzen die Bahnen keinen Wagen, wer auf ihnen fährt, folgt dem vor ihm. Bis w13-verkehr-heil reichte die
+        // Wende bis an den Abzweig beider Bahnen (stadt-voll, die Wende 924/354: 44,9 m, 105 m der Linie je Durchfahrt): wer
+        // ausparkte, wartete, bis keiner mehr auf 105 m der Bahn fuhr (23 Uhr eine Reihe von sieben 90 s vor dem Abzweig), und wer
+        // sie verträglich durchfuhr, begegnete dem Entgegenkommenden, wo beide Bahnen 2,42 m nebeneinander liefen (die Wende 908/289,
+        // 0,08 m bis „Wagen in Wagen"). DIE SCHLEIFE TRÄGT, WEN SIE FASST (die Regel des Kreisverkehrs): so viele Wagen samt Abstand,
+        // wie ihre Bahn im Ring außer der Begegnung lang ist, halten die Wende zugleich, wer dann kommt, wartet draußen — ohne sie
+        // hielten zwei Hineinfahrende die Begegnung, der Herausfahrende wartete vor ihr und der Ring hinter ihm (die West-Wende
+        // 668/419: 7 Halter, eine Fahrt 671 s).
+        for (const w of VK.wenden.values()) {
             w.zone = zone("wende", w.x, w.z, w.r + VG.halbM + VG.parkRandM + VG.parkB + VG.parkL / 2);
+            w.engZonen = (w.engen || []).map((e) => zone("enge", e.x, e.z, e.r));
+            const frei = (q) => Math.hypot(q.x - w.x, q.z - w.z) < w.zone.r && !w.engZonen.some((Z) => Math.hypot(q.x - Z.x, q.z - Z.z) < Z.r); // prettier-ignore
+            let L = 0;
+            for (let i = 1; i < w.bahn.length; i++)
+                if (frei(w.bahn[i])) L += Math.hypot(w.bahn[i].x - w.bahn[i - 1].x, w.bahn[i].z - w.bahn[i - 1].z);
+            w.zone.platz = Math.max(1, Math.floor(L / (VG.parkL + V.abstandM)));
+        }
         // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,
         // koerper-core TAGES_GESETZ: am Platz wechselt die Schicht, der Wagen fährt bei Tag und bei Nacht); steht das Haus nicht
         // oder trägt es die Person nicht, fährt die erste freie der folgenden Häuser (bis hier fuhr dort keiner: 4 von 20 Wagen
@@ -1016,8 +1028,16 @@ class AnazhRealm_siedlung_verkehr {
     // Richtung (dir: wer in derselben Richtung fährt, folgt dem, der schon darin ist); die Wende samt Platz.
     _verkehrZugZonen(S, m) {
         const VK = S.verkehr;
-        if (m.art !== "strecke")
-            return [{ Z: VK.wenden.get(m.ki).zone, dir: null, ziel: !!m.ziel, durch: m.art === "wende" }];
+        if (m.art !== "strecke") {
+            // DIE BEGEGNUNG DER WENDE (`w.engZonen`, vom Abzweig her): wer hinein fährt (Durchfahrt, in den Platz), durchfährt sie
+            // vor der Wende in Richtung 0, wer heraus fährt (Durchfahrt, aus dem Platz), danach in Richtung 1 — dieselbe Enge zweimal
+            // in EINEM Zug, die zweite Durchfahrt hinter der ersten (`_verkehrLinie`). Bis hier begegneten sich dort zwei Wagen, die
+            // beide den Schlüssel der Wende hielten (die Durchfahrten verträglich): stadt-voll 908/289, 0,08 m bis „Wagen in Wagen"
+            const w = VK.wenden.get(m.ki);
+            const hin = m.art === "aus" ? [] : w.engZonen.map((Z) => ({ Z, dir: 0 }));
+            const her = m.art === "ein" ? [] : w.engZonen.map((Z) => ({ Z, dir: 1 })).reverse();
+            return [...hin, { Z: w.zone, dir: null, ziel: !!m.ziel, durch: m.art === "wende" }, ...her];
+        }
         const s = VK.strecken[m.si];
         const ki = m.dir === 0 ? s.a : s.b;
         // (durch die Kreuzung sein Weg `wort`, von>nach: wer einen verträglichen fährt, fährt zugleich — `_verkehrZonen`)
@@ -1095,17 +1115,22 @@ class AnazhRealm_siedlung_verkehr {
         });
         const vorher = W.zonen;
         W.zonen = [];
+        // DIE DURCHFAHRT (EIN Gesetz, unten ihr Ende): tritt ein Ort zweimal in die Linie (die Enge vor der Wende hinein und
+        // heraus), beginnt die zweite Durchfahrt hinter der ersten
+        const nach = new Map();
         for (const { Z: z, dir, wort, ziel, durch, hat, von, bis } of Z) {
-            let i = 0;
+            const i0 = nach.has(z) ? nach.get(z) + 1 : 0;
+            let i = i0;
             while (i < F.pts.length && F.bogen[i] < von) i++;
             while (i < F.pts.length && F.bogen[i] <= bis && Math.hypot(F.pts[i].x - z.x, F.pts[i].z - z.z) >= z.r) i++;
             if (i >= F.pts.length || F.bogen[i] > bis) continue;
             // die Durchfahrt beginnt, wo die Linie in EINEM Zug in den Kreis tritt — auch vor dem Fenster ihres Zugs: die Bahn heraus
             // der Wende läuft schon im Kreis der Enge, deren Spur sie trifft (stadt-voll, die Wende 741/579: 5 m vor der Mitte der
             // Enge 736/556), und wer dort wartete, wartete in ihr (10 Uhr 521× „ohne Schlüssel im Ort")
-            while (i > 0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
+            while (i > i0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
             let j = i;
             while (j + 1 < F.pts.length && Math.hypot(F.pts[j + 1].x - z.x, F.pts[j + 1].z - z.z) < z.r) j++;
+            nach.set(z, j);
             // die Wende beginnt eine Wagenlänge vor ihrer Bahn: wer aus ihr in seine Spur einbiegt, hat den Bogen am Ende der
             // Strecke hinter sich, bevor er den Wartenden passiert — bis hier wartete der im Bogen (10 Uhr: beide 40 s, der
             // Wartende 1,21 m neben der Bahn bei 1,31 m Breite samt Bogen)
@@ -1127,7 +1152,7 @@ class AnazhRealm_siedlung_verkehr {
         // kann, fährt beide mit einem Schlüssel): verlässt die Linie den Kreis einer Enge und tritt sie wieder in ihn, ohne
         // dazwischen einen Punkt außerhalb jedes Orts seiner Linie zu berühren (der Ring der Wende, deren Bahn hinein und heraus
         // den Kreis kreuzen), reicht die Durchfahrt bis zum letzten Punkt dieses Wiedereintritts — vor der nächsten Durchfahrt
-        // desselben Orts. Bis hier endete sie am ersten Austritt: an der Wende 994/372 von stadt-voll fuhr die Bahn heraus durch
+        // desselben Orts (oben, `nach`). Bis hier endete sie am ersten Austritt: an der Wende 994/372 von stadt-voll fuhr die Bahn heraus durch
         // den Kreis der Enge 980,8/366, ohne dass eine Durchfahrt sie trug — Wagen 18 fuhr dort ohne Schlüssel (10 Uhr 207×,
         // 23 Uhr 247×), verdeckt, solange die Kette den Schlüssel der gefahrenen Durchfahrt noch einmal nahm und nie abgab.
         const imOrt = (k) => W.zonen.some((y) => Math.hypot(F.pts[k].x - y.Z.x, F.pts[k].z - y.Z.z) < y.Z.r);
@@ -1561,9 +1586,10 @@ class AnazhRealm_siedlung_verkehr {
     // hinter dem letzten Platz für ihn ist (der Wagen vor ihm). Bekommt er ihn nicht, hält er an der Linie (der Deckel).
     // DER SCHLÜSSEL GILT JE DURCHFAHRT (`hat` am Ort seiner Linie): was er von einer Kette schon hält, fährt er; gefragt wird ab
     // dem ersten Ort, den er nicht hält — bis hier fuhr, wer den ersten Ort der Kette hielt, ohne den Rest zu fragen. DIE KETTE
-    // TRÄGT EINEN ORT NIE ZWEIMAL: die Enge vor der Wende am Ende einer Sackgasse fährt er hinein und heraus — die Durchfahrt
-    // heraus fragt er in der Wende (ihre Bahn hinein und heraus liegen zwei halbe Wagen auseinander, fachwerk `verkehrsNetz`: wer
-    // dort wartet, hält keinem den Weg), und die Enge wechselt ihre Richtung wie jede andere. DIE KETTE IST GANZ: reicht seine
+    // TRÄGT EINEN ORT JE RICHTUNG EINMAL: die Enge vor der Wende (der Strecke wie die Begegnung der Wende) fährt er hinein und
+    // heraus — liegen beide Durchfahrten näher als zwei Wagen samt Abstand an der Wende, hält er sie in einer Kette hin und zurück
+    // (die Richtung „hin und zurück": kein anderer fährt in ihr, bis er hinaus ist), sonst fragt er die Durchfahrt heraus vor ihr
+    // wie jede andere Enge (bis w13-verkehr-heil trug die Kette einen Ort nie zweimal). DIE KETTE IST GANZ: reicht seine
     // Linie nicht über ihr Ende hinaus (zwei Wagen, Abstand und der Vorlauf einer Wende), hängt die Route erst an (`kurz`, der
     // Sim-Schritt), dann fragt er. Bis hier gab er die Enge hinter der ersten Durchfahrt frei, deren zweite seine Kette schon
     // trug: der Entgegenkommende nahm sie, und beide standen Bug an Bug in ihr — stadt-voll 10 Uhr an beiden Sackgassen mit Enge
@@ -1582,9 +1608,9 @@ class AnazhRealm_siedlung_verkehr {
         if (i0 < 0) return Infinity;
         // DIE KETTE TRÄGT NUR, WAS VOR IHM LIEGT: eine Durchfahrt, die er schon hinter sich hat (`weg`), gehört ihr nie — auch wo sie
         // in der Folge nach dem ersten offenen Ort steht (die Enge, die die Bahn hinein der Wende kreuzt, endet vor der Wende). Bis
-        // hier trug die Kette sie mit, und er nahm ihren Schlüssel noch einmal (`drinnen`), den er nie wieder abgab: stadt-voll
-        // 23 Uhr hielt Wagen 7 die Enge 980,8/366 vor der Wende 994/372 vom Ring bis ans Ende, Wagen 15 wartete davor auf sie,
-        // die Reihe hinter ihm füllte die Enge 956/394, und ab Minute 9 fuhr dort keiner mehr.
+        // hier trug die Kette sie mit und er nahm ihren Schlüssel noch einmal (`drinnen`), den er nie wieder abgab: stadt-voll
+        // 23 Uhr hielt Wagen 7 die Enge 980,8/366 vor der Wende 994/372 vom Ring bis ans Ende, ab Minute 9 fuhr dort keiner mehr;
+        // 10 Uhr fragte er die Durchfahrt heraus derselben Enge nie (17 040× „ohne Schlüssel im Ort", eine Fahrt 712 s).
         const voll = [W.zonen[i0]];
         for (let k = i0 + 1; k < W.zonen.length; k++) {
             const z = W.zonen[k];
@@ -1682,9 +1708,10 @@ class AnazhRealm_siedlung_verkehr {
         // Kreuzung, deren Halter alle verträgliche Wege fahren (bis hier einer zur Zeit: an der Mitte der Metropole kam in 40 s
         // nicht jeder 30 m weit)
         const darf = (z) =>
-            !z.Z.halter.length ||
-            z.Z.halter.every((o) => o === W || vertraeglich(z, o)) ||
-            (z.Z.art === "enge" && z.Z.richtung === z.dir);
+            (!z.Z.platz || z.Z.halter.includes(W) || z.Z.halter.length < z.Z.platz) &&
+            (!z.Z.halter.length ||
+                z.Z.halter.every((o) => o === W || vertraeglich(z, o)) ||
+                (z.Z.art === "enge" && z.Z.richtung === z.dir));
         // der Kopf der Reihe: der erste Wartende, vor dem keiner in seiner Spur auf denselben Ort wartet (bis hier stand an der
         // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander) und dessen Kette frei ist
         // (`gesperrt`: einen Ort hinter dem gefragten hält ein anderer; wer nur auf den gefragten wartet, bleibt Kopf — sonst
