@@ -160,12 +160,13 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // DER GANG VOR DEM SCHUSS, IN STEHENDER PHASE (w23-k6-flimmern): je Stand und Seite nach dem Anlauf `bodenBilder` gezählte Bilder, ehe
 // ein Schuss fällt; Versatz und Dither-Blende der zeitlichen Auflösung stehen (wie im Schuss jeder Aufnahme). Bis dahin zählte der
 // Sprung in den Fenstern ZWISCHEN den Schüssen: die Aufnahme ohne Leib misst den Boden ihrer Szene (`_rueckstrahlJetzt`), der Sprung
-// des Auges danach (`_traaR.neu`) nimmt den Boden des Gangs ganz (`folge` 1) — Radeon 664e127d, 4 Läufe in 2 Boots: der rote Sprung
-// war IMMER diese erste Änderung (0,89 · 1,21 · 1,00 · 1,19 %, Bild 2–3 des Fensters), ein Boden, den das Spiel nie zeigt. Der Gang
-// ohne Schuss sprang 0,60–0,77 %: das Rauschen der Messung an Versatz und Dither-Phase des Bilds (fest 0,19–0,28 %; im Stand mit
-// erzwungener Messung 0,47–0,77 %, fest 0,01 % bei laufender Zeit — Wind und Laub 0; ohne Leib 0,57–0,82 % — der Leib 0). Was der
-// Spieler davon sieht, trägt die Unterseite zu einem Fünfzehntel (K7), die Geschichte der zeitlichen Auflösung mittelt es weg.
-// Das Raster (der Schmuggel) wandert mit dem Auge über die ruhende Welt: 3,3–8,2 % je Bild.
+// des Auges danach (`_traaR.neu`) nimmt den Boden des Gangs ganz (`folge` 1) — Radeon 664e127d + f423f129, 8 Läufe in 4 Boots: der
+// rote Sprung war IMMER diese erste Änderung (0,85–1,21 %, Bild 2–3 des Fensters), ein Boden, den das Spiel nie zeigt. Der Gang ohne
+// Schuss sprang 0,59–0,77 %: der Rückstrahl misst den Szenen-Pass mit dem Halton-Versatz der zeitlichen Auflösung (Versatz fest
+// 0,21–0,40 %, Dither-Phase allein fest 0,54–0,74 %, beide fest 0,19–0,30 %; im Stand mit erzwungener Messung 0,47–0,77 %, fest
+// 0,01 % bei laufender Zeit — Wind und Laub 0; ohne Leib 0,57–0,82 % — der Leib 0). Was der Spieler davon sieht, trägt die
+// Unterseite zu einem Fünfzehntel (K7), die Geschichte der zeitlichen Auflösung mittelt es weg. Das Raster (der Schmuggel) wandert
+// mit dem Auge über die ruhende Welt: 4,4–8,2 % je Bild, in stehender Phase 3,7–6,9 %.
 const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, bodenBilder: 90, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
@@ -301,9 +302,9 @@ async function leibStrafe(k) {
             if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
-            // DER RÜCKSTRAHL IM GANG vor dem ersten Schuss: der Anlauf (`warm`: der Wechsel des Passes, der Schritt aus dem Stand), dann
-            // `bodenBilder` gezählte Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`) fort, der nächste
-            // zeichnet wieder in derselben Phase
+            // j = 0: DER RÜCKSTRAHL IM GANG vor dem ersten Schuss der Seite — der Anlauf (`warm`: der Wechsel des Passes, der Schritt aus
+            // dem Stand), dann `bodenBilder` gezählte Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`)
+            // fort, der nächste zeichnet wieder in derselben Phase. j ≥ 1: die Fenster zwischen den Schüssen, in der Phase des Spiels
             for (let j = 0; j < k.je; j++) {
                 for (let i = 0, b0, b, v, D = st.lodUniforms.uDitherT; i < (j ? k.zwischen : k.warm + k.bodenBilder); i++, b0 = b) {
                     v = [st.traaNode._jitterIndex, D.value];
