@@ -104,12 +104,8 @@ function ladeschirmVerdict(m) {
         out.push("die Terme des ersten Weltbilds fehlen (`WELTBILD_TERME`) — die Linse sieht nicht, was das Bild hält");
     else {
         const gedeckt = new Set();
-        for (const [k, z] of Object.entries(f)) {
-            for (const t of (z && z.terme) || []) {
-                if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
+        for (const [k, z] of Object.entries(f)) for (const t of (z && z.terme) || []) if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
                 else if (!z.weg) gedeckt.add(t);
-            }
-        }
         for (const t of terme)
             if (!gedeckt.has(t)) out.push(`der Term „${t}“ des ersten Weltbilds hat keinen Fall, der den Ladeschirm hält (L2a)`);
     }
@@ -272,11 +268,9 @@ function gurtVerdict(m) {
     if (!m.buch) return ["Buch kalt (Vorbedingung)"];
     const belegt = (m.hotbar || []).filter(Boolean);
     if (!belegt.length) out.push("der Start-Gurt ist leer");
-    for (const e of m.eintraege || []) {
-        if (!e.sichtbar) out.push(`${e.name} ist im Katalog versteckt${e.altDoppel ? ` (Alt-Doppel → ${e.altDoppel})` : ""}`);
+    for (const e of m.eintraege || []) if (!e.sichtbar) out.push(`${e.name} ist im Katalog versteckt${e.altDoppel ? ` (Alt-Doppel → ${e.altDoppel})` : ""}`);
         else if (!e.art) out.push(`${e.name} ist kein Studio-Werk`);
         else if (!e.platzierbar) out.push(`${e.name} lässt sich nicht setzen`);
-    }
     const arten = (m.eintraege || []).map((e) => e.art).filter(Boolean);
     const doppelt = arten.filter((a, i) => arten.indexOf(a) !== i);
     if (doppelt.length) out.push(`Studio-Art doppelt im Gurt: ${doppelt.join(", ")}`);
@@ -676,7 +670,7 @@ async function probe(arg) {
                 taste(document.body, "keyup", "w", "KeyW");
                 taste(document.body, "keydown", "Enter");
                 const ae = document.activeElement;
-                if (ae && ae.id === "chat-input") ae.blur();
+                if (ae?.id === "chat-input") ae.blur();
                 // jeder Eingang: Strg+K öffnete die Omnibox hinter
                 // dem Ladeschirm, sie führte Befehle aus
                 const omni = document.getElementById("omnibox-overlay");
@@ -780,10 +774,8 @@ async function probe(arg) {
                             r._weltbildSteht();
                             if (merkDa) st._weltbildDa = merkDa;
                         }
-                        for (const k of Object.keys(alt)) {
-                            if (alt[k] === P[k]) delete r[k];
+                        for (const k of Object.keys(alt)) if (alt[k] === P[k]) delete r[k];
                             else r[k] = alt[k];
-                        }
                     }
                     v.ende = f._vorrat === false;
                     if (!v.laeuft) v.fehler = "der Vorrat lief nicht an (`f._vorrat` blieb aus)";
@@ -1131,15 +1123,13 @@ async function probe(arg) {
                 (a) => a && natur(a) && a.blockerAABBs && a.blockerAABBs.length && a.blockerAABBs.every((b) => b && b.pflanze === true)
             );
             const ohneStaemme = (an) => {
-                for (const a of pflanzen) {
-                    if (an) {
+                for (const a of pflanzen) if (an) {
                         a.__lkBlocker = a.blockerAABBs;
                         a.blockerAABBs = null;
                     } else if (a.__lkBlocker) {
                         a.blockerAABBs = a.__lkBlocker;
                         delete a.__lkBlocker;
                     }
-                }
             };
             let T = 1000;
             const arm = () => {
@@ -1159,8 +1149,7 @@ async function probe(arg) {
                 const ist = [];
                 const soll = [];
                 const taeter = new Set();
-                for (const L of linien) {
-                    for (let s = 0; s <= 30; s += schritt) {
+                for (const L of linien) for (let s = 0; s <= 30; s += schritt) {
                         const x = L.x0 + Math.sin(L.gier) * s;
                         const zz = L.z0 + Math.cos(L.gier) * s;
                         if (!Number.isFinite(hh(x, zz))) continue;
@@ -1177,7 +1166,6 @@ async function probe(arg) {
                             taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
                         }
                     }
-                }
                 z.armIst = med(ist);
                 z.armSoll = med(soll);
                 z.unter3 = ist.filter((a) => a < 3).length;
@@ -1188,9 +1176,7 @@ async function probe(arg) {
                 const fahre = (mitPflanzen) => {
                     let n = 0;
                     let hinaus = 0;
-                    if (!mitPflanzen) {
-                        ohneStaemme(true);
-                    }
+                    if (!mitPflanzen) ohneStaemme(true);
                     for (const L of linien.slice(0, 8)) {
                         let vor = null;
                         for (let s = 0; s <= 30; s += bildM) {
@@ -1208,9 +1194,7 @@ async function probe(arg) {
                         }
                         ruhig();
                     }
-                    if (!mitPflanzen) {
-                        ohneStaemme(false);
-                    }
+                    if (!mitPflanzen) ohneStaemme(false);
                     return { n, hinaus };
                 };
                 const jSoll = fahre(false);
