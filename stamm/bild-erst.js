@@ -288,6 +288,7 @@ class AnazhRealm_bild_erst {
         const pm = this.state.playerMesh;
         const e = { seed: 0, wo: pm ? pm.position : undefined };
         const E = this._erstZeichnungStand();
+        const weiss = this._vorwaermWeiss || (this._vorwaermWeiss = new THREE.Color(1, 1, 1)); // der neutrale Tint des Platzes
         let steht = true;
         for (const lod of AnazhRealm.VORWAERM_STUFEN) {
             const flat = this._foundryFlattenFor(e, preset, lod);
@@ -297,6 +298,11 @@ class AnazhRealm_bild_erst {
             flat.leaves.forEach((leaf, i) => {
                 const studio = !streu && typeof leaf.leafKey === "string" && /^(f|fimp):/.test(leaf.leafKey);
                 const g = this._archInstanceGroupFor(name, studio ? leaf.leafKey : i, leaf, streu ? region : null);
+                // die Farbe des Platzes, wie die Welt sie schreibt (`_archSlotColor` in `_archInstanceAdd`): sie trägt die Instanz-
+                // Farbe der Arena (`instanzFarbe`) und mit ihr das Programm — ohne sie baute der gesetzte GT seine Arena neu
+                // (GTX ac1ccd56: „haupt arena f:gt:L0" 174 ms nach vorgewärmter Hülle; die Gestalten 1 und 6 tragen gleiche Stoffe)
+                const farbe = !g.mesh.instanceColor && this._archSlotColor(leaf, weiss);
+                if (farbe) g.mesh.setColorAt(0, farbe);
                 if ((g.liveCount || 0) === 0 && !E.vorwaermHalt.has(g.mesh)) E.vorwaermHalt.set(g.mesh, g.key);
             });
         }
