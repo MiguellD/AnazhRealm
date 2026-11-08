@@ -810,7 +810,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                     gesetz.push(Math.abs(h[0].point.y - r._voxelSurfaceY(x, z)));
                 }
             }
-            const median = (a) => (a.length ? a.slice().sort(aufsteigend)[Math.floor(a.length / 2)] : null);
+            const median = (a) => (a.length ? rang(a.slice().sort(aufsteigend)) : null);
             const anteil = (a) => (a.length ? a.filter((d) => d <= 0.05).length / a.length : 0);
             out.bodenKarteTrifftMesh = karte.length >= 128 && median(karte) <= 0.02 && anteil(karte) >= 0.75;
             out.bodenKarteZahl =
@@ -1741,7 +1741,7 @@ async function checkBandSchattenTakt({ page, check }) {
             csm: st.csmNode,
             dl: st.directionalLight,
             iv: st._shadowMinInterval,
-            eigen: Object.prototype.hasOwnProperty.call(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
+            eigen: Object.hasOwn(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
         };
         const kaskade = () => ({ shadow: { autoUpdate: true, needsUpdate: false } });
         const sonne = { position: { x: 10, y: 200, z: 10 } };

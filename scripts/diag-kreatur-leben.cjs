@@ -323,7 +323,7 @@ async function lebenBuehnen() {
                 zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce(addiere, 0), 0) / G.length).toFixed(1),
                 fremd: [...G, ...(H || [])].reduce((p, l) => p + l.fremd, 0),
                 nahrung: G[0].orte.map((x, j) => effekt(G, L.halb || G, (l) => l.orte[j], 2.365)),
-                ms: +ms[Math.floor(ms.length * 0.95)].toFixed(2),
+                ms: +rang(ms, 0.95).toFixed(2),
             },
         };
     });

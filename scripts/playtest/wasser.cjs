@@ -261,7 +261,7 @@ async function checkBandHydrosphere({ page, check }) {
             const lk = seeH.lakes[li];
             if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
             if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
-            const idx = lk.cells[(lk.cells.length / 2) | 0];
+            const idx = rang(lk.cells);
             const ci = idx % seeH.dim;
             const cj = (idx / seeH.dim) | 0;
             const wx = seeH.originX + (ci + 0.5) * seeH.cell;
@@ -355,7 +355,7 @@ async function checkBandHydrosphere({ page, check }) {
             };
             let rp = null;
             for (const rv of hydro.rivers || []) if (rv.points && rv.points.length > 2) {
-                    rp = rv.points[Math.floor(rv.points.length / 2)];
+                    rp = rang(rv.points);
                     break;
                 }
             out.hasRiver = !!rp;

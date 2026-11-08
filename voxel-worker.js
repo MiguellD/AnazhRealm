@@ -3909,6 +3909,10 @@ function fleckMittel(noise) {
 // und je Auftrag die Laubfarbe der fünf Arten und der Wasser-Körper (`fernAuftrag`). Fehlt etwas, bricht die Ferne laut.
 let fernLaub = null;
 let fernWasser = null;
+// DAS JAHR DER FÜNF ARTEN (w21-laub-jahr-fern, `_fernJahrArten` im Main): je Art ihre Rinde (linear, der Wipfel des Phänotyps)
+// und ob sie ihr Laub wirft (der Phänotyp: keine Konifere) — die Teile des Jahrs (`fernFarbeTeile` `jahr`) tragen daraus den
+// Laub werfenden Anteil des Dachs und seine kahle Krone.
+let fernJahr = null;
 function fernK() {
     const K = state.fern;
     if (!K || !K.forest) throw new Error("Fern-Faden: die Konstanten der Ferne fehlen im Zustand (fern)");
@@ -3992,12 +3996,14 @@ function fernNischeCtx() {
 // ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`), × die Selbstbeschattung
 // der Krone; die Deckung ist der gepflanzte Bestand (`forestKronenDeckung`). `fuss` = die Masche, für die der Punkt steht
 // (dann das Mittel über sie, `fernFarbeMasche`); `fussM` die Kante einer Abtastung; `schutt` das Gewicht des Schutts aus dem
-// Höhen-Ruf, der `y` gab (null: EIN eigener Ruf).
+// Höhen-Ruf, der `y` gab (null: EIN eigener Ruf). `jahr` (optional, 8 Zahlen, w21-laub-jahr-fern): DIE TEILE DES JAHRS je
+// Einheit Kronen-Deckung — [Laub der Laub werfenden Arten r, g, b · ihr Anteil an der Deckung · ihre Rinde r, g, b (× Anteil) ·
+// 0], wie das Dach × Selbstbeschattung; der Leser legt Präsenz und Tönung darüber (phyto-core `kroneImJahr`).
 const FERN_KRONEN = [];
-function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
+function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
     if (schutt == null) schutt = fernSchuttAt(x, z);
-    if (fuss) return fernFlussTeil(x, z, fernFarbeMasche(x, y, z, out, fuss, schutt), Math.max(fuss.ht, fuss.hr));
-    if (fussM === undefined) return fernFlussTeil(x, z, fernFarbeTeile(x, y, z, out, null, 0, schutt), 0);
+    if (fuss) return fernFlussTeil(x, z, fernFarbeMasche(x, y, z, out, fuss, schutt, jahr), Math.max(fuss.ht, fuss.hr));
+    if (fussM === undefined) return fernFlussTeil(x, z, fernFarbeTeile(x, y, z, out, null, 0, schutt, jahr), 0);
     const core = self.__phytoCore;
     if (
         !core ||
@@ -4042,18 +4048,54 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
     out[3] = r * k;
     out[4] = g * k;
     out[5] = b * k;
+    if (jahr) {
+        const J = fernJahr;
+        if (!J || !Array.isArray(J.rinde) || !Array.isArray(J.wirft) || J.rinde.length !== 5 || J.wirft.length !== 5)
+            throw new Error("Fern-Farbe: das Jahr der Arten fehlt im Auftrag (jahr: rinde · wirft)");
+        let dr = 0,
+            dg = 0,
+            db = 0,
+            dw = 0,
+            rr = 0,
+            rg = 0,
+            rb = 0;
+        for (let i = 0; i < 5; i++) {
+            if (!J.wirft[i]) continue;
+            dw += w[i];
+            dr += w[i] * L[i][0];
+            dg += w[i] * L[i][1];
+            db += w[i] * L[i][2];
+            rr += w[i] * J.rinde[i][0];
+            rg += w[i] * J.rinde[i][1];
+            rb += w[i] * J.rinde[i][2];
+        }
+        jahr[0] = dr * k;
+        jahr[1] = dg * k;
+        jahr[2] = db * k;
+        jahr[3] = summe > 0 ? dw / summe : 0;
+        jahr[4] = rr * k;
+        jahr[5] = rg * k;
+        jahr[6] = rb * k;
+        jahr[7] = 0;
+    }
     return out;
 }
 
 // DER FUSSABDRUCK DER FERN-FARBE (K16): das Mittel der Masche (`fuss` = { ax, az, ht, hr }) aus 3 × 3 Abtastungen, isotrop über
-// die längere Maschen-Seite × 1,5; exakt für jede Saison (Deckung ā = ⟨a⟩, Krone ⟨k·a⟩/ā, Boden (⟨c⟩ − ⟨c·a⟩)/(1 − ā)).
+// die längere Maschen-Seite × 1,5; exakt für jede Saison (Deckung ā = ⟨a⟩, Krone ⟨k·a⟩/ā, Boden (⟨c⟩ − ⟨c·a⟩)/(1 − ā)) — die
+// Teile des Jahrs je Einheit Deckung wie die Krone (⟨j·a⟩/ā).
 const FERN_MASCHE_T = new Float32Array(8);
+const FERN_MASCHE_J = new Float32Array(8);
 const FERN_MASCHE_S = new Float64Array(10);
+const FERN_MASCHE_JS = new Float64Array(8);
 const FERN_U = [-2 / 3, 0, 2 / 3];
-function fernFarbeMasche(x, y, z, out, fuss, schutt) {
+function fernFarbeMasche(x, y, z, out, fuss, schutt, jahr) {
     const t = FERN_MASCHE_T;
     const S = FERN_MASCHE_S;
+    const tj = jahr ? FERN_MASCHE_J : null;
+    const SJ = FERN_MASCHE_JS;
     S.fill(0);
+    SJ.fill(0);
     const dx = x - fuss.ax;
     const dz = z - fuss.az;
     const d = Math.hypot(dx, dz) || 1;
@@ -4065,7 +4107,7 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt) {
         for (let j = 0; j < 3; j++) {
             const ur = FERN_U[i] * h;
             const ut = FERN_U[j] * h;
-            fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM, schutt);
+            fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM, schutt, tj);
             const a = t[6];
             for (let c = 0; c < 3; c++) {
                 S[c] += t[c];
@@ -4073,6 +4115,7 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt) {
                 S[6 + c] += t[3 + c] * a;
             }
             S[9] += a;
+            if (tj) for (let c = 0; c < 8; c++) SJ[c] += tj[c] * a;
         }
     const a = S[9] / 9;
     const frei = 9 - S[9];
@@ -4081,12 +4124,14 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt) {
         out[3 + c] = S[9] > 1e-6 ? S[6 + c] / S[9] : 0;
     }
     out[6] = a;
+    if (jahr) for (let c = 0; c < 8; c++) jahr[c] = S[9] > 1e-6 ? SJ[c] / S[9] : 0;
     return out;
 }
 
 // DAS GEDÄCHTNIS DER RING-FARBEN (zwei Generationen à `memo` Punkte): Schnapp-Punkte sind ganzzahlig, der Schlüssel trägt die
 // Maschen-Breite in Viertel-Oktaven — ein Re-Anker rechnet nur, was neu ist; die Saat oder die Generation des Mains (`memo`:
 // jeder Abschied des Rings, wie bis B2 das Gedächtnis im Haupt-Faden) leert es.
+// Ein Eintrag trägt 16 Zahlen: die acht Teile und die acht des Jahrs (`fernFarbeTeile` `jahr`).
 let fernMemo = { neu: new Map(), alt: new Map(), seed: null, gen: -1 };
 function fernRingTeile(x, z, law, fuss, schutt, gen) {
     if (fernMemo.seed !== state.seed || fernMemo.gen !== gen)
@@ -4094,7 +4139,10 @@ function fernRingTeile(x, z, law, fuss, schutt, gen) {
     const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
     let f = fernMemo.neu.get(key);
     if (f) return f;
-    f = fernMemo.alt.get(key) || fernFarbeTeile(x, law, z, new Float32Array(8), fuss, undefined, schutt);
+    if (!(f = fernMemo.alt.get(key))) {
+        f = new Float32Array(16);
+        fernFarbeTeile(x, law, z, f.subarray(0, 8), fuss, undefined, schutt, f.subarray(8, 16));
+    }
     if (fernMemo.neu.size >= fernK().memo) {
         fernMemo.alt = fernMemo.neu;
         fernMemo.neu = new Map();
@@ -4358,6 +4406,7 @@ function fernAuftrag(msg) {
     if (msg.art === "kamm") return kammKrone(msg);
     fernLaub = msg.laub;
     fernWasser = msg.wasser;
+    fernJahr = msg.jahr;
     const p = msg.punkte;
     const n = (p.length / 2) | 0;
     const wl = msg.wl;
@@ -4372,6 +4421,7 @@ function fernAuftrag(msg) {
         const flussC = new Float64Array(n);
         const flussSp = new Float64Array(n);
         const teile = new Float32Array(n * 8).fill(NaN);
+        const jahr = new Float32Array(n * 8); // die Teile des Jahrs je Punkt (`fernFarbeTeile` `jahr`)
         const krone = new Float64Array(n);
         const fl = { spiegel: NaN };
         const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: 0 };
@@ -4404,9 +4454,11 @@ function fernAuftrag(msg) {
             flussC[k] = fernFlussDeckung(x, z, Math.max(fuss.ht, fuss.hr), fl);
             flussSp[k] = fl.spiegel;
             if (wet && !zone) continue;
-            teile.set(fernRingTeile(x, z, L, fuss, s, msg.memo | 0), k * 8);
+            const f = fernRingTeile(x, z, L, fuss, s, msg.memo | 0);
+            teile.set(f.subarray(0, 8), k * 8);
+            jahr.set(f.subarray(8, 16), k * 8);
         }
-        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile, krone };
+        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile, jahr, krone };
         return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
     }
     if (msg.art === "feld") {
@@ -4414,8 +4466,20 @@ function fernAuftrag(msg) {
         let hMax = -Infinity;
         const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: msg.hr };
         const t = new Float32Array(8);
+        const tj = new Float32Array(8);
         const R = fernWasser;
         const sai = msg.saison;
+        // DAS JAHR DES FELDS (w21-laub-jahr-fern): die Krone liest Präsenz und Tönung des Bilds nach DEMSELBEN Gesetz wie
+        // Ring und Boden (phyto-core `kroneImJahr`, Zahlen-Algebra) — das Laub fällt, die Nadel steht, die kahle Krone deckt
+        const pc = self.__phytoCore;
+        if (!pc || typeof pc.kroneImJahr !== "function" || !Number.isFinite(msg.praesenz))
+            throw new Error("Fern-Feld: das Jahr der Krone fehlt (phyto-core kroneImJahr · praesenz)");
+        const Z = pc.WIND_ZAHLEN;
+        const pr = msg.praesenz;
+        const kanal = (c, S) => {
+            const j = pc.kroneImJahr(Z, pr, S, t[3 + c], tj[c], tj[3], tj[4 + c]);
+            return (t[c] + (j.farbe - t[c] * j.deckung) * t[6]) * (1 - t[7]) + R[c] * t[7];
+        };
         for (let k = 0; k < n; k++) {
             const px = p[k * 2];
             const pz = p[k * 2 + 1];
@@ -4429,11 +4493,10 @@ function fernAuftrag(msg) {
             let b = R[2];
             if (!wet) {
                 fuss.ht = (Math.PI * Math.hypot(px - msg.ax, pz - msg.az)) / msg.azN;
-                fernFarbeTeile(px, y, pz, t, fuss, undefined, s);
-                const c = t[7];
-                r = (t[0] + (t[3] * sai.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
-                g = (t[1] + (t[4] * sai.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
-                b = (t[2] + (t[5] * sai.b - t[2]) * t[6]) * (1 - c) + R[2] * c;
+                fernFarbeTeile(px, y, pz, t, fuss, undefined, s, tj);
+                r = kanal(0, sai.r);
+                g = kanal(1, sai.g);
+                b = kanal(2, sai.b);
             }
             daten[k * 4] = y;
             daten[k * 4 + 1] = r;
@@ -4445,31 +4508,46 @@ function fernAuftrag(msg) {
     }
     if (msg.art === "krone") {
         const rgba = new Uint8Array(n * 4);
+        // die Teile des Jahrs in zwei Schichten der Fern-Karte (w21-laub-jahr-fern): [Laub der Laub werfenden Arten sRGB ·
+        // ihr Anteil] und [ihre Rinde × Anteil sRGB · 1], je Schicht n Texel
+        const jahr = new Uint8Array(n * 8);
         const t = new Float32Array(8);
+        const tj = new Float32Array(8);
         const sRGB = (c) => {
             const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
             return Math.round(v * 255);
         };
+        const lin = (c) => Math.round(Math.max(0, Math.min(1, c)) * 255);
         for (let k = 0; k < n; k++) {
             const x = p[k * 2];
             const z = p[k * 2 + 1];
             const o = k * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
             if (fernNass(x, z, G.hoehe(state, x, z, false, aus), wl, nass)) continue;
-            fernFarbeTeile(x, nass.y, z, t, undefined, undefined, fernSchuttVon(aus));
+            fernFarbeTeile(x, nass.y, z, t, undefined, undefined, fernSchuttVon(aus), tj);
             rgba[o] = sRGB(t[3]);
             rgba[o + 1] = sRGB(t[4]);
             rgba[o + 2] = sRGB(t[5]);
-            rgba[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+            rgba[o + 3] = lin(t[6]);
+            jahr[o] = sRGB(tj[0]);
+            jahr[o + 1] = sRGB(tj[1]);
+            jahr[o + 2] = sRGB(tj[2]);
+            jahr[o + 3] = lin(tj[3]);
+            jahr[n * 4 + o] = sRGB(tj[4]);
+            jahr[n * 4 + o + 1] = sRGB(tj[5]);
+            jahr[n * 4 + o + 2] = sRGB(tj[6]);
+            jahr[n * 4 + o + 3] = 255;
         }
-        return { antwort: { rgba }, transfer: [rgba.buffer] };
+        return { antwort: { rgba, jahr }, transfer: [rgba.buffer, jahr.buffer] };
     }
     if (msg.art === "teile") {
         const teile = new Float32Array(n * 8);
+        const jahrA = new Float32Array(n * 8); // die Teile des Jahrs (w21-laub-jahr-fern), wie der Ring sie trägt
         const law = new Float64Array(n);
         const schutt = new Float32Array(n);
         const nassA = new Uint8Array(n);
         const t = new Float32Array(8);
+        const tj = new Float32Array(8);
         const fuss = msg.ht ? { ax: msg.ax, az: msg.az, ht: 0, hr: 0 } : null;
         for (let k = 0; k < n; k++) {
             const x = p[k * 2];
@@ -4485,14 +4563,15 @@ function fernAuftrag(msg) {
                 fuss.ht = msg.ht[k];
                 fuss.hr = msg.hr[k];
             }
-            if (msg.roh && fuss) fernFarbeMasche(x, y, z, t, fuss, s);
-            else if (msg.roh) fernFarbeTeile(x, y, z, t, null, 0, s);
-            else fernFarbeTeile(x, y, z, t, fuss, undefined, s);
+            if (msg.roh && fuss) fernFarbeMasche(x, y, z, t, fuss, s, tj);
+            else if (msg.roh) fernFarbeTeile(x, y, z, t, null, 0, s, tj);
+            else fernFarbeTeile(x, y, z, t, fuss, undefined, s, tj);
             teile.set(t, k * 8);
+            jahrA.set(tj, k * 8);
         }
         return {
-            antwort: { teile, law, schutt, nass: nassA },
-            transfer: [teile.buffer, law.buffer, schutt.buffer, nassA.buffer],
+            antwort: { teile, jahr: jahrA, law, schutt, nass: nassA },
+            transfer: [teile.buffer, jahrA.buffer, law.buffer, schutt.buffer, nassA.buffer],
         };
     }
     throw new Error("Fern-Faden: unbekannte Art des Auftrags (" + msg.art + ")");

@@ -93,7 +93,7 @@ function energieVerdict(E) {
             v.push(
                 `energie-ort: ${x.name}@${x.d} trifft mit ${x.eff} ohne benannten Ort — die Streuung ist nicht benannt`
             );
-    const med = (a) => a.slice().sort(aufsteigend)[a.length >> 1];
+    const med = (a) => rang(a.slice().sort(aufsteigend));
     if (!(med(g) >= med(d)))
         v.push(`energie-waffe: Großschwert ${med(g).toFixed(1)} J im Mittel unter dem Dolch ${med(d).toFixed(1)} J`);
     // zu nah: der Ort ist benannt (nicht der Schlagpunkt), die Wirkung steht auf oder über dem Boden des Kerns (0,25)
@@ -557,7 +557,7 @@ function bogenK4Taeter(K) {
 // gleicht dem vor dem Speichern je Teil, das Alter des Fuchses eingeschlossen (das erste Bild der Wiederkehr zählt keinen Takt
 // des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
 const hash = (o) => stammLib.sha(JSON.stringify(o)).slice(0, 12);
-const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
+const f1 = (v) => (v == null ? "–" : Number(v).toFixed(2));
 // DER BERICHT einer Probe: JSON, Zahlen auf Tausendstel; `keys` (Leerzeichen-Liste) wählt die Größen
 const json = (o) => JSON.stringify(o, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x));
 const zeig = (name, o, keys) =>

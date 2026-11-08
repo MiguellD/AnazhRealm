@@ -1090,7 +1090,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
         const fl = (tile?.rivers || []).find((f) => f.points && f.points.length > 4);
-        const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
+        const p = fl ? rang(fl.points) : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
         const g = [cx * cfg.span - cfg.step, (st.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
@@ -1373,7 +1373,7 @@ async function checkBandGammaGenese({ page, check }) {
     });
     check("Γ Struktur: FEUCHTE frozen", res.struct === true);
     check(
-        `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
+        `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank?.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
         res.bankFound && res.feuchteBank >= 0.62
     );
     check(
@@ -1381,7 +1381,7 @@ async function checkBandGammaGenese({ page, check }) {
         res.feuchteLegacy === 0
     );
     check(
-        `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
+        `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta?.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
     );
     // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
@@ -1819,7 +1819,7 @@ async function checkBandTodZensus({ page, check }) {
 
             // DER WESEN-TAKT, mitlaufend gezählt (durchgereicht, nie gestubbt): erreicht er einen Gefallenen?
             const wesenTakt = {};
-            const istTot = (c) => !!c && s.leichname.indexOf(c) !== -1;
+            const istTot = (c) => !!c && s.leichname.includes(c);
             for (const name of [
                 "_tickCreatureLifeTrickle",
                 "_getCreatureTask",
@@ -1865,7 +1865,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
+                            if (s.creatures.includes(c) && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );
