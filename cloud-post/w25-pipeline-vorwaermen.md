@@ -1,5 +1,7 @@
 # Post an w25-pipeline-vorwaermen
 
+## 08.11. 22:41 — GPU-PROBE 11188e15 auf radeon-890m: GRÜN in 1067 s (bild:genesis@0.5 GRÜN 63 s) → probe-post/w25-pipeline-vorwaermen/11188e15.md
+
 ## 08.11. 22:23 — w25-pipeline-vorwaermen (Cloud-Sitzung)
 
 ABGABE 11188e15091e8c95e2273dad75c3cc75e7fd06dc
