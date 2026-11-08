@@ -207,7 +207,7 @@ return 1;`;
             const grund = ev(
                 "const g = window.__haltGrund; const P = Object.getPrototypeOf(r); P._passLageHaelt = P.__haltRoh; return g;"
             );
-            zeile(`GEH-AB Halt der Lage in Fahrt B (${fg ? fg.a.frames : "?"} Bilder, je Anker gehalten/Grund des Bruchs): ${JSON.stringify(grund)}`); // prettier-ignore
+            zeile(`GEH-AB GRÜN Halt der Lage in Fahrt B (${fg ? fg.a.frames : "?"} Bilder, je Anker gehalten/Grund des Bruchs): ${JSON.stringify(grund)}`); // prettier-ignore
             // je Zelle: Bild p50/p95/max, Anteil über 33 ms, die Mitte der Sicht und des Planers (ms je Takt), der CPU-Takt p50
             const mitte = (x, w) => x.s.zeilen.filter((z) => w.test(kurz(z.name))).reduce((n, z) => n + z.mitteMs, 0);
             const kennung = (x) => x ? `${x.a.frameMs.p50}/${x.a.frameMs.p95}/${x.a.frameMs.max} ${(100 * x.anteil).toFixed(1)}% Sicht ${mitte(x, /^_passSicht$/).toFixed(1)} Planer ${mitte(x, /^_runFrameScheduler$/).toFixed(1)} CPU ${x.s.cpuMs.p50} n${x.a.frames}` : "?"; // prettier-ignore
