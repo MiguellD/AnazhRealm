@@ -156,6 +156,25 @@ const kurz = (n) =>
                         weg: l.bahnM,
                     });
                 }
+            // DAS BILD A GEGEN B an derselben Pose (die Kamera des Spiels am Messort der Wiese, Mittag, aus dem Ausgabe-Pfad): je
+            // Satz ein Bild, dann Wert für Wert verglichen — die gehaltene Obermenge zeichnet, was der exakte Satz zeichnet
+            const { pngLesen } = require("./lib/abnahme-urteil.cjs");
+            const bilder = {};
+            for (const v of ["A", "B", "A"]) {
+                setze(v === "A");
+                wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
+                const kam = ev(
+                    "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar(10).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');"
+                );
+                const datei = path.join(D, `bild-${v}-${Object.keys(bilder).length}.png`);
+                wb(["bild", ...String(kam).split(" "), "--wahl", "0", "--w", "960", "--h", "540", "--uhr", "0.5", "--datei", datei], 240); // prettier-ignore
+                bilder[v + Object.keys(bilder).length] = fs.existsSync(datei) ? pngLesen(fs.readFileSync(datei)).u8 : null;
+            }
+            const [b0, b1, b2] = Object.values(bilder);
+            const anders = (x, y) => (x && y && x.length === y.length ? x.reduce((n, w, i) => n + (w !== y[i]), 0) : -1);
+            const [ab, aa] = [anders(b0, b1), anders(b0, b2)];
+            gruen = gruen && ab === 0;
+            zeile(`GEH-AB ${ab === 0 ? "GRÜN" : "ROT"} Bild der Wiese an derselben Pose: A gegen B ${ab} Werte anders, A gegen A ${aa} (von ${b0 ? b0.length : 0})`); // prettier-ignore
             const med = (a) => a.slice().sort((x, y) => x - y)[(a.length - 1) >> 1];
             for (const ort of ["wiese", "genesis"]) {
                 const z = (v, k, p) => M[v][ort].map((x) => (x[k] ? x[k][p] : NaN));
