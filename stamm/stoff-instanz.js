@@ -536,14 +536,14 @@ class AnazhRealm_stoff_instanz {
         // DER EINE LESER EINES INSTANZ-ATTRIBUTS (w25-gpu-wahl): in der Wahl am Index der Liste aus dem Speicher-Puffer der Arena
         // (`_instanzSeite` legt jedes unter seinem Namen in ihre Quelle), wie Matrix und Gang — als Vertex-Attribut läse r184 es am
         // Index des ZUGS (erste Instanz = der Abschnitt der Liste dieser Kamera): jede gewählte Instanz trüge Farbe, Höhe der
-        // Blende und Karte einer fremden, je Bild eine andere (die Wahl zählt atomar); sonst das Attribut. vec3 liegt dicht (3 Zahlen).
+        // Blende und Karte einer fremden, je Bild eine andere (die Wahl zählt atomar); sonst das Attribut. vec3 liegt auf 4
+        // Zahlen (`_instanzSeite`: r184 richtet jeden Speicher-Puffer der Größe 3 auf 4 aus).
         const attribute = new Map();
         const attribut = (name, typ) => {
             if (!attribute.has(name)) {
-                const n = { float: 1, vec3: 3, vec4: 4 }[typ];
+                const n = typ === "float" ? 1 : 4;
                 const p = new SenkenPuffer(name, n === 4 ? "vec4" : "float", n, "arena_" + name).toReadOnly();
-                const lies =
-                    n === 3 ? T.vec3(...[0, 1, 2].map((k) => p.element(index.mul(3).add(k)))) : p.element(index);
+                const lies = typ === "vec3" ? p.element(index).xyz : p.element(index);
                 attribute.set(
                     name,
                     T.nodeObject(
@@ -1411,13 +1411,16 @@ class AnazhRealm_stoff_instanz {
                     raumGib(this._nFrei, this._nCap, zu);
                     this._nCap += zu;
                 }
-                // in der Wahl liest der Shader jede Instanz-Größe am Index ihrer Liste: ein Speicher-Puffer (`_senkenKnoten`)
+                // in der Wahl liest der Shader jede Instanz-Größe am Index ihrer Liste: ein Speicher-Puffer (`_senkenKnoten`).
+                // Ein vec3 liegt dort auf 4 Zahlen: r184 richtet jeden Speicher-Puffer der Größe 3 beim Anlegen auf 4 aus und
+                // tauscht dabei Array und Größe des Attributs (WebGPUAttributeUtils `_force3to4BytesAlignment`) — wer danach
+                // dicht schrieb, schrieb jede Instanz nach der ersten an einen fremden Platz (GTX 0136ab62: Halm und Krone in
+                // fremden Farben). Die Arena legt den Schritt selbst, `_block` kopiert in ihn.
                 const K = this._wahl ? T.StorageInstancedBufferAttribute : T.InstancedBufferAttribute;
-                const neu = (k, a) =>
-                    g.setAttribute(
-                        k,
-                        new K(new a.array.constructor(this._nCap * a.itemSize), a.itemSize, a.normalized)
-                    );
+                const neu = (k, a) => {
+                    const s = this._wahl && a.itemSize === 3 ? 4 : a.itemSize;
+                    g.setAttribute(k, new K(new a.array.constructor(this._nCap * s), s, a.normalized));
+                };
                 for (const k in m0.geometry.attributes)
                     if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
                 if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
@@ -1609,20 +1612,20 @@ class AnazhRealm_stoff_instanz {
                         mwNeu = true;
                         break;
                     }
-                // je Quelle [Quelle, Ziel in der Arena, Größe, geändert]: die Matrizen, die Instanz-Größen, die Farbe
-                const quellen = [[im, this.__instanzQuelle.instanceMatrix, 16, st[0] !== im.version]];
+                // je Quelle [Quelle, Ziel in der Arena, geändert]: die Matrizen, die Instanz-Größen, die Farbe
+                const quellen = [[im, this.__instanzQuelle.instanceMatrix, st[0] !== im.version]];
                 let k = 1;
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
-                    quellen.push([a, G.attributes[nm], a.itemSize, st[k] !== a || st[k + 1] !== a.version]);
+                    quellen.push([a, G.attributes[nm], st[k] !== a || st[k + 1] !== a.version]);
                     st[k++] = a;
                     st[k++] = a.version;
                 }
-                if (c) quellen.push([c, G.attributes.instanzFarbe, c.itemSize, st[k] !== c.version]);
-                if (c) st[k] = c.version;
+                if (c) quellen.push([c, G.attributes.instanzFarbe, st[k] !== c || st[k + 1] !== c.version]);
+                if (c) [st[k], st[k + 1]] = [c, c.version];
                 st[0] = im.version;
-                const neu = n > z.n || mwNeu || quellen.some((x) => x[3]);
+                const neu = n > z.n || mwNeu || quellen.some((x) => x[2]);
                 if (!neu) return;
                 // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
                 // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
@@ -1630,23 +1633,28 @@ class AnazhRealm_stoff_instanz {
                 // der Bestand `_nahWieseBestand`); sonst ganz, wie jede Senke ohne Maß (ein Schreiber ohne Version ginge sonst verloren).
                 const e = z.erst,
                     alt = z.n,
-                    teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[3] || x[0].updateRanges.length); // prettier-ignore
+                    teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[2] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
-                for (const [a, d, g, anders] of quellen) {
+                for (const [a, d, anders] of quellen) {
                     if (teil && !anders && n <= alt) continue;
-                    // der Zuwachs der Zahl kopiert ganz (seine Plätze schrieb die Quelle vielleicht, als die Zahl sie noch kappte)
-                    const zu = teil && n > alt ? [{ start: alt * g, count: (n - alt) * g }] : [];
-                    if (teil)
-                        for (const r of anders ? a.updateRanges.concat(zu) : zu) {
-                            const bis = Math.min(r.start + r.count, n * g);
-                            if (bis <= r.start) continue;
-                            d.array.set(a.array.subarray(r.start, bis), e * g + r.start);
-                            schreib(this._rend, d, e * g + r.start, bis - r.start);
-                        }
-                    else if (a === im && !istEins(mw))
+                    // die Plätze [i0, i1) der Quelle in den Block, im Schritt des Ziels (`_instanzSeite`: vec3 liegt auf 4)
+                    const [ga, gd] = [a.itemSize, d.itemSize];
+                    const kopie = (i0, i1) => {
+                        if (i1 <= i0) return;
+                        if (ga === gd) d.array.set(a.array.subarray(i0 * ga, i1 * ga), (e + i0) * gd);
+                        else for (let i = i0; i < i1; i++) d.array.set(a.array.subarray(i * ga, i * ga + ga), (e + i) * gd); // prettier-ignore
+                        if (teil) schreib(this._rend, d, (e + i0) * gd, (i1 - i0) * gd);
+                    };
+                    if (teil) {
+                        if (anders)
+                            for (const r of a.updateRanges)
+                                kopie(Math.floor(r.start / ga), Math.min(n, Math.ceil((r.start + r.count) / ga)));
+                        // der Zuwachs der Zahl kopiert ganz (seine Plätze schrieb die Quelle vielleicht, als die Zahl sie noch kappte)
+                        kopie(alt, n);
+                    } else if (a === im && !istEins(mw))
                         for (let i = 0; i < n; i++) mal(d.array, (e + i) * 16, mw, im.array, i * 16); // prettier-ignore
-                    else d.array.set(a.array.subarray(0, n * g), e * g);
-                    if (!teil) schreib(this._rend, d, e * g, n * g);
+                    else kopie(0, n);
+                    if (!teil) schreib(this._rend, d, e * gd, n * gd);
                     // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
                     a.clearUpdateRanges();
                 }

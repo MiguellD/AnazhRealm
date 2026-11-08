@@ -854,6 +854,63 @@ function popGang() {
     })();
 }
 
+// DIE BLOCK-TREUE DER WAHL (w25-gpu-wahl, Seiten-Code): jedes Glied, das das letzte Hauptbild aus einer Arena der GPU-Wahl zog,
+// trägt im GPU-Puffer seines Blocks die Quelle — Matrizen, Instanz-Größen, Farbe, im Schritt der Arena (vec3 auf 4, `_instanzSeite`).
+// Befund GTX 0136ab62: r184 richtet einen Speicher-Puffer der Größe 3 still auf 4 aus, `_block` schrieb dicht — Halm und Krone in
+// fremden Farben, jeder Stempel stimmte. Der Täter beim Namen: Stoff · Glied · Attribut · Instanzen fremd. Selbsttest: ein Wert eines
+// Blocks auf der GPU verfälscht MUSS genau dieses Glied nennen; danach kopiert sein Block neu (`z.n` −1).
+function blockTreue() {
+    return (async () => {
+        const dev = st.renderer.backend.device, be = st.renderer.backend, eins = new THREE.Matrix4();
+        const lies = async (G) => {
+            const b = be.get(G).buffer, l = dev.createBuffer({ size: b.size, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const e = dev.createCommandEncoder();
+            e.copyBufferToBuffer(b, 0, l, 0, b.size);
+            dev.queue.submit([e.finish()]);
+            await l.mapAsync(GPUMapMode.READ);
+            const f = new Float32Array(l.getMappedRange().slice(0));
+            return (l.unmap(), l.destroy(), f);
+        };
+        const pruefe = async () => {
+            const fremd = [];
+            let n = 0;
+            for (const a of r.constructor.__arenen.values()) {
+                const zug = a._wahl && a._zuege.get(st.camera);
+                if (!zug) continue;
+                const G = a.geometry.attributes, Q = { instanceMatrix: a.__instanzQuelle.instanceMatrix };
+                for (const k in G) if (G[k].isInstancedBufferAttribute && be.get(G[k]).buffer && !/^a(Wahl|InstanzSenke|WindArt)$/.test(k)) Q[k] = G[k];
+                for (const [k, D] of Object.entries(Q)) {
+                    const f = await lies(D);
+                    for (const m of zug.zuege) {
+                        const q = k === "instanceMatrix" ? m.instanceMatrix : k === "instanzFarbe" ? m.instanceColor : m.geometry?.attributes[k];
+                        const z = m.__arenaZ, nz = Math.min(m.count, z ? z.n : 0);
+                        if (!q || !z || (k === "instanceMatrix" && !m.matrixWorld.equals(eins))) continue;
+                        let x = 0;
+                        for (let i = 0; i < nz; i++)
+                            for (let c = 0; c < q.itemSize; c++) if (Math.abs(f[(z.erst + i) * D.itemSize + c] - q.array[i * q.itemSize + c]) > 1e-5) { x++; break; }
+                        n++;
+                        if (x) fremd.push({ m, text: `${a.material.name || a.material.type} · ${m.name || m.uuid.slice(0, 8)} · ${k}: ${x}/${nz} Instanzen fremd` });
+                    }
+                }
+            }
+            return { n, fremd };
+        };
+        const ist = await pruefe(), aus = { glieder: ist.n, rot: ist.fremd.map((x) => x.text) };
+        // der Selbsttest am ersten geprüften Block: verfälscht auf der GPU, genannt, neu kopiert
+        for (const a of r.constructor.__arenen.values()) {
+            const zug = a._wahl && a._zuege.get(st.camera), m = zug?.zuege.find((x) => x.__arenaZ && x.instanceColor && x.count > 0);
+            if (!m) continue;
+            const D = a.geometry.attributes.instanzFarbe, z = m.__arenaZ;
+            dev.queue.writeBuffer(be.get(D).buffer, z.erst * D.itemSize * 4, new Float32Array([-7]));
+            const s = await pruefe();
+            aus.selbsttest = s.fremd.length === 1 && s.fremd[0].m === m ? s.fremd[0].text : `BLIND: ${s.fremd.length} genannt`;
+            z.n = -1;
+            break;
+        }
+        return aus;
+    })();
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -3197,12 +3254,17 @@ hauptLauf(async () => {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o.block = ergebnis(await evalRuf(`return await (${blockTreue})();`)); // die Blöcke des letzten Bilds (`blockTreue`)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {
             halt?.();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+        // die Block-Treue urteilt mit: ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied ist ROT
+        const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
+        console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
+        if (rot.length) o.fehler = "BLOCK-TREUE ROT";
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
