@@ -15,19 +15,18 @@
 //       Karten-Codec (phyto-core impostorMips) kodiert jede Mip-Stufe linear → sRGB, gemessen am echten Codec gegen
 //       die Referenz-Formel (alle 256 Stufen, Stufe 0 und die linear gemittelte Stufe 1) (die CPU-Mips der Normale fielen mit
 //       `karteKodiere`: die GPU-Ablage mittelt sie, KARTE_RECHNER_WGSL normalK);
-//   (6) DER SAUM DER KARTE (w4-laub-saum, lod.K1; phyto-core `karteSaum`): EINE Krone aus 900 4 × 4-Flecken je Ansicht
-//       (8 Ansichten 128 × 256 wie der Atlas, Lage aus dem Gesetz-Zufall mulberry32), je Baum- und Strauch-Art des Kerns ihre
-//       Stufen mit dem Saum ihres Gesetzes (treeParams der Nah-Stufe, Same 1, Rahmen-Höhe 1,02 × Wuchshöhe): (a) jede Stufe
-//       deckt den Anteil der Stufe 0 (± ½ Texel je Ansicht, gezählt in ihren Bytes — kein Ausdünnen in der Ferne); (b) der
-//       Umriss folgt der Art: je Saum-Gesetz (Zelle, Laub oder Nadel) ein eigener Umriss der Stufe 2 (ein stummer Saum, ein
-//       Saum der Stärke 0 gibt allen Arten denselben); (c) die Konifere (artPhaenotyp) trägt den Nadel-Saum, die Nadel ist
-//       feiner als das kleinste Blatt.
+//   (6) DER SAUM DER KARTE (w4-laub-saum, w23-karte-l2, lod.K1#1; phyto-core `karteSaumRinge` · `karteSaumSchluessel`): eine
+//       glatte Krone (die Scheibe in einer Ansicht 128 × 256 wie der Atlas), je Saum-Gesetz des Kerns (Laub, Nadel — aus dem
+//       Phänotyp jeder Baum- und Strauch-Art) ihre Stufen: (a) jede Stufe deckt den Anteil der Stufe 0 (± ½ Texel, gezählt in
+//       ihren Bytes — kein Ausdünnen in der Ferne); (b) der Umriss folgt der Art (Laub und Nadel je eine eigene Kante, ein
+//       Saum der Stärke 0 gibt beiden dieselbe); (c) die Konifere (artPhaenotyp) trägt den Nadel-Saum; (d) jeder Ring trägt
+//       Seitenmaß und Kronen-Fuß; (e) Stufe 0 und 1 FRANSEN: kante unter 0,57 (die Scheibe ohne Saum 0,944).
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
 // --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, Lambert-Wege und die
 // Karten-Brüche (Hüllen um den Codec: ungekodiert, roh gemittelt, der Saum stumm, Ausdünnen in der Ferne, die Nadel als
-// Laub) → alle MÜSSEN beim Namen feuern.
+// Laub, ein Ring ohne Saum, Stufe 0 roh wie main) → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
@@ -36,15 +35,11 @@ const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
 
-// Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
-function codecAus(phytoSrc) {
-    const sandbox = {};
-    new Function("self", phytoSrc)(sandbox);
-    return sandbox.__phytoCore || null;
-}
+// Der Karten-Codec, je Ruf frisch aus der Quelle (der EINE Lader `kernAusText`; bis w23-karte-l2 lud ihn die Linse selbst)
+const codecAus = () => kernAusText(PHYTO, "__phytoCore");
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
-const { linSrgb } = require("./lib/abnahme-urteil.cjs");
-const { kernKontext } = require("./lib/asset-worker-harness.cjs");
+const { linSrgb, klassenMasse } = require("./lib/abnahme-urteil.cjs");
+const { kernKontext, kernAusText } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
@@ -67,25 +62,35 @@ function kartenFarbe(core) {
     return fehler;
 }
 
-// (6) DER SAUM DER KARTE — ein Rausch-Feld (30 % deckend, 8 Ansichten 128 × 256 wie der Atlas), je Baum- und Strauch-Art des
-// Kerns seine Stufen mit dem Saum ihres Gesetzes; Rückgabe { fehler, n: die Saum-Gesetze }. Dazu JE HEBUNGS-RING des Rezepts
-// (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt eine Zelle und
-// seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
+// (6) DER SAUM DER KARTE — eine glatte Krone (die Scheibe in einer Ansicht 128 × 256 wie der Atlas), je Saum-Gesetz des Kerns ihre
+// Stufen: jede deckt wie Stufe 0, Laub und Nadel tragen je ihren Umriss; Rückgabe { fehler, n: die Saum-Gesetze }. Dazu JE HEBUNGS-RING des Rezepts
+// (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt sein
+// Seitenmaß und seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
+// DIE KANTE DES SAUMS (w23-karte-l2, lod.K1#1): eine glatte Krone (die Scheibe, Kohärenz ≈ 1) trägt auf Stufe 0 UND Stufe 1 einen
+// zerfransten Umriss — `kante` der Soll-Tafel (abnahme-urteil `klassenMasse`) unter 0,57 (die Scheibe ohne Saum 0,944), je Laub
+// und Nadel.
+// Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
+// an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
 function kartenSaum(core, presets, ic) {
-    const [rnd, rgba, fehler, umriss] = [core.mulberry32(1), new Uint8Array(1 << 20), [], new Map()];
+    const [fehler, umriss] = [[], new Map()]; // je Saum-Gesetz die Kante seiner Stufe 0
     const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
-    rgba.forEach((x, i) => i % 4 === 3 && rnd() < 0.3 && (rgba[i] = 255));
+    const scheibe = Uint8Array.from({ length: 1 << 17 }, (_, i) => (i % 4 === 3 && Math.hypot(((i >> 2) % 128) - 64, (i >> 9) - 128) < 48 ? 255 : 0));
+    const kante = (s) => klassenMasse(s.data, s.data.filter((x, i) => i % 4 === 3).map(Boolean), s.w, s.h).kante;
     for (const [art, pre] of Object.entries(presets)) {
         if (!pre.s || !/^(tree|shrub)$/.test(pre.kind)) continue;
-        const P = core.treeParams(pre.s, 1, 0, pre, 0), sa = core.karteSaum(P, 0.51 * P.height, 256);
-        core.karteSaumRinge(P, 1, 1, { minY: 0, R: 0 }, ringe, 256).ringe.forEach((r, i) => r.e * r.fuss > 0 || fehler.push(`Saum ${art}: Ring ${ringe[i].hebung}° ohne Saum`));
-        const st = core.impostorMips(rgba, 128, 2048, 8, null, 6, { saum: Object.assign({ fuss: 256 }, sa) }).stufen.map((s) => s.data.filter((x, i) => i % 4 === 3));
-        const d = st.map((m) => m.filter((x) => x).length / m.length);
-        d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
+        const sa = core.karteSaumRinge(core.treeParams(pre.s, 1, 0, pre, 0), 1, 0.5, { minY: 0, R: 0 }, ringe, 128, 256);
+        sa.ringe.forEach((r, i) => r.seite * r.fuss > 0 || fehler.push(`Saum ${art}: Ring ${ringe[i].hebung}° ohne Saum`));
         if (sa.nadel !== !!core.artPhaenotyp(pre.s, pre).conifer) fehler.push(`Saum ${art}: Laub und Nadel vertauscht`);
-        umriss.set(sa.e + " " + sa.nadel, String(st[2]));
+        // je Saum-Gesetz (Laub, Nadel — im selben Rahmen ist es die Art) EINMAL die Stufen und ihre Kante
+        if (umriss.has(sa.nadel)) continue;
+        const st = core.impostorMips(scheibe, 128, 256, 1, null, 6, { saum: { ...sa.ringe[1], nadel: sa.nadel } }).stufen;
+        const d = st.map((s) => s.data.filter((x, i) => i % 4 === 3 && x).length / (s.w * s.h));
+        d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
+        const k = st.slice(0, 2).map(kante);
+        umriss.set(sa.nadel, k[0]);
+        if (!(Math.max(...k) < 0.57)) fehler.push(`Saum ${art}: der Umriss franst nicht (kante ${k})`);
     }
-    if (new Set(umriss.values()).size < umriss.size) fehler.push(`Saum: ${umriss.size} Saum-Gesetze, ${new Set(umriss.values()).size} Umrisse — der Umriss folgt nicht der Art`);
+    if (new Set(umriss.values()).size < umriss.size) fehler.push("Saum: Laub und Nadel tragen denselben Umriss — der Umriss folgt nicht der Art");
     return { fehler, n: umriss.size };
 }
 
@@ -172,9 +177,9 @@ function pruefe(o = {}) {
     // das Fundament (`_archFundMat`, der Stoff des Podests) fiel mit dem Podest (K10: der Erdbau des Plans trägt das Haus) —
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
-    for (const f of kartenFarbe(o.core || codecAus(PHYTO))) fehler.push(f);
+    for (const f of kartenFarbe(o.core || codecAus())) fehler.push(f);
     // (6) DER SAUM DER KARTE — am echten Codec, je Art des Kerns
-    const saum = kartenSaum(o.core || codecAus(PHYTO), d.presets, d.cfg.impostor);
+    const saum = kartenSaum(o.core || codecAus(), d.presets, d.cfg.impostor);
     fehler.push(...saum.fehler);
     return { fehler, arten, weich, saum: saum.n };
 }
@@ -183,7 +188,8 @@ function main() {
     if (SELBSTTEST) {
         const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
-        const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
+        const codec = (bruch) => { const c = Object.assign({}, codecAus()); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
+        const roh0 = codec((m, lin) => (m.stufen[0].data.set(lin), m)); // Stufe 0 wie eingegeben: ungekodiert und ohne Saum
         // [Name, Muster, Bruch]
         const brueche = [
             ["Farn mit roher Palette", /farn \(emitFern\): new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
@@ -194,11 +200,12 @@ function main() {
                 /Lambert-Stoff/,
                 { src: (t) => stammLib.ersetze(t, "_kistenPool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
-            ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
-            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus(PHYTO)) }],
+            ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: roh0 }],
+            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus()) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
-            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaum) => Object.assign(c, { karteSaum: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
-            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].e = 0), a) }))(codecAus(PHYTO)) }],
+            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
+            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
+            ["Stufe 0 roh, ohne Saum (main)", /der Umriss franst nicht/, { core: roh0 }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
