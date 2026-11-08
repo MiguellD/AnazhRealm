@@ -969,7 +969,8 @@ function probe(selbsttest) {
     aus.w9 = w9(null);
     if (selbsttest) aus.s10 = ["zellen", "werfer"].map((x) => Object.assign({ leser: x }, w9(x)));
 
-    // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
+    // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Kind der Gruppe der GPU-Wahl (`_gpuWahlWirt`,
+    // dieselbe Werfer-Hülle in `_kaskadenHuellen`), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
     // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. Ein Gefallener liegt in der
     // Szene (state.leichname, mit Schatten bis er versunken ist): die Probe legt einen hin,
@@ -1006,7 +1007,7 @@ function probe(selbsttest) {
             for (const s of st.chunkSaetze.values()) if (s.spec.schatten === true) satzWerfer.add(s.mesh);
         const fremd = [];
         for (const top of st.scene.children) {
-            if (top.isBundleGroup || frei.has(top) || satzWerfer.has(top)) continue;
+            if (top.isBundleGroup || top === st.gpuWahlWirt || frei.has(top) || satzWerfer.has(top)) continue;
             top.traverse((o) => {
                 if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
             });
