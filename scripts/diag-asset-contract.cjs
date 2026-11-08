@@ -144,6 +144,18 @@ function fernUrteil(mess) {
     return out;
 }
 
+// DIE HÖHE EINER GESTALT über dem Boden der Vorlage (Lagen, Schatten-Teil, Raster der Tafel): die höchste y-Lage ihrer Punkte
+// über max(0, der tiefsten) — `ps` die Lagen-Reihen (xyz). Bis w21-laub-jahr-fern zählte jede Wand sie in eigener Schleife.
+function hoeheVon(ps) {
+    let lo = Infinity,
+        hi = -Infinity;
+    for (const p of ps)
+        for (let i = 1; i < p.length; i += 3) {
+            if (p[i] < lo) lo = p[i];
+            if (p[i] > hi) hi = p[i];
+        }
+    return hi - Math.max(0, lo);
+}
 // Dreiecke und Draws einer gebauten Antwort — DIESELBE Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen:
 // je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
 function teileAus(meshes) {
@@ -151,9 +163,7 @@ function teileAus(meshes) {
         .filter((m) => m.attrs?.position)
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
-            if (m.tuer) t.tuer = m.tuer;
-            if (m.joint) t.joint = m.joint;
-            if (m.teil) t.teil = m.teil;
+            for (const k of ["tuer", "joint", "teil"]) if (m[k]) t[k] = m[k];
             for (const k of Object.keys(m.attrs))
                 t[k] = { array: dek(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
             if (m.index) t.index = dek(m.index, Uint32Array);
@@ -223,24 +233,19 @@ function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
     const f = atlas.fill.slice(0, breit.zellen).reduce(addiere, 0) / breit.zellen;
     if (Math.abs(f - breit.fuellung) > 0.01)
         v.push(`Breitblatt-Füllung ${f.toFixed(4)} ≠ Steckbrief ${breit.fuellung}`);
-    if (atlas.ext[wedel.zelle] > wedel.kern)
-        v.push(
-            `Wedel-Zelle ${wedel.zelle}: Alpha reicht bis ${atlas.ext[wedel.zelle].toFixed(4)} > kern ${wedel.kern}`
-        );
-    if (Math.abs(atlas.fill[wedel.zelle] - wedel.fuellung) > 0.01)
-        v.push(`Wedel-Füllung ${atlas.fill[wedel.zelle].toFixed(4)} ≠ Steckbrief ${wedel.fuellung}`);
-    // Die Großblatt-Zelle und die Weiden-Zelle — Kern wie
-    // die Baum-Zweige, je eine eigene Füllung.
-    for (const [name, z] of [
-        ["GROSS", gross],
-        ["WEIDE", weide],
+    // Die Wedel-Zelle mit ihrem eigenen Kern, die Großblatt- und die Weiden-Zelle mit dem Kern der Baum-Zweige — je eine
+    // eigene Füllung.
+    for (const [name, z, kern] of [
+        ["Wedel", wedel, wedel.kern],
+        ["GROSS", gross, breit.kern],
+        ["WEIDE", weide, breit.kern],
     ]) {
         if (!z || !Number.isInteger(z.zelle) || !(z.fuellung > 0)) {
             v.push(`Steckbrief BLATT_ATLAS_${name} fehlt`);
             continue;
         }
-        if (atlas.ext[z.zelle] > breit.kern)
-            v.push(`${name}-Zelle ${z.zelle}: Alpha reicht bis ${atlas.ext[z.zelle].toFixed(4)} > kern ${breit.kern}`);
+        if (atlas.ext[z.zelle] > kern)
+            v.push(`${name}-Zelle ${z.zelle}: Alpha reicht bis ${atlas.ext[z.zelle].toFixed(4)} > kern ${kern}`);
         if (Math.abs(atlas.fill[z.zelle] - z.fuellung) > 0.01)
             v.push(`${name}-Füllung ${atlas.fill[z.zelle].toFixed(4)} ≠ Steckbrief ${z.fuellung}`);
     }
@@ -289,7 +294,9 @@ function gestaltenUrteil(abdruecke, gestalten, kernVon) {
     }
     return v;
 }
-const istLuege = (urteil, kern, preset) => urteil.some((x) => x.startsWith(`Gestalten-Lüge: ${kern}-Rezept ${preset} (`));
+// der Selbsttest: trägt das Rezept `preset` V Gestalten, nennt die Wand es eine Lüge? (`G` die Wand: abdruecke · gestalten · kernVon)
+const luegtMit = (G, preset, V) =>
+    gestaltenUrteil(G.abdruecke, { ...G.gestalten, [preset]: V }, G.kernVon).some((x) => x.startsWith(`Gestalten-Lüge: ${G.kernVon(preset)}-Rezept ${preset} (`)); // prettier-ignore
 
 // Die Bild-Deckung eines Paars: L1 gegen L0 auf demselben Raster (Pixel-Kante = L0-Höhe / 300).
 function deckungsWert(p, atlas) {
@@ -442,8 +449,8 @@ hauptLauf(async () => {
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
-        const aa0 = await atlasAlpha();
-        const alpha0 = { w: aa0.w, h: aa0.h, alpha: new Uint8Array(Buffer.from(aa0.b64, "base64")), schwelle: 0.5 };
+        const alphaVon = (aa) => ({ w: aa.w, h: aa.h, alpha: dek(aa.b64, Uint8Array), schwelle: 0.5 });
+        const alpha0 = alphaVon(await atlasAlpha());
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -508,14 +515,8 @@ hauptLauf(async () => {
                     ix = dek(m.index, Uint32Array);
                 const karten = [];
                 if (deckt) for (let t = 0; t < ix.length; t += 3) if (!deckt[ix[t]] && !deckt[ix[t + 1]] && !deckt[ix[t + 2]]) karten.push(ix[t], ix[t + 1], ix[t + 2]);
-                let lo = Infinity,
-                    hi = -Infinity;
-                for (let i = 1; i < pos.length; i += 3) {
-                    if (pos[i] < lo) lo = pos[i];
-                    if (pos[i] > hi) hi = pos[i];
-                }
                 if (karten.length && uv)
-                    lag = bildLagen([{ kind: "foliageTex", pos, idx: Uint32Array.from(karten), uv }], alpha0, (hi - Math.max(0, lo)) / LAGEN_TEILER).quad;
+                    lag = bildLagen([{ kind: "foliageTex", pos, idx: Uint32Array.from(karten), uv }], alpha0, hoeheVon([pos]) / LAGEN_TEILER).quad;
                 if (!deckt) wurfMess.push({ fall, fehlt: "aDeckt" });
             }
             wurfMess.push({ fall, teile: teile.length, tris: k.tris, lagen: lag });
@@ -525,15 +526,8 @@ hauptLauf(async () => {
         const kronenMass = (c, a) => {
             if (c.lod > 1 || c.season !== "summer" || artVon(c.presetId) !== "tree" || !a.meshes) return;
             const key = `${c.presetId}-s${c.seed}`;
-            let lo = Infinity,
-                hi = -Infinity;
             const bild = bildAus(a.meshes.filter((m) => m.teil !== "schatten"));
-            for (const m of bild)
-                for (let i = 1; i < m.pos.length; i += 3) {
-                    if (m.pos[i] < lo) lo = m.pos[i];
-                    if (m.pos[i] > hi) hi = m.pos[i];
-                }
-            const H = hi - Math.max(0, lo);
+            const H = hoeheVon(bild.map((m) => m.pos));
             const krone = kroneAus(a.meshes);
             const lg = bildLagen(krone, alpha0, H / LAGEN_TEILER);
             lagenMess.push({ fall: `${key}-L${c.lod}`, art: c.presetId, lod: c.lod, quad: lg.quad, alpha: lg.alpha });
@@ -564,6 +558,17 @@ hauptLauf(async () => {
             gemessen.add(c.presetId + "|" + c.lod);
             if (c.season === "summer") gemessenFall.add(c.presetId + "|" + c.seed + "|" + c.lod);
         };
+        // DIE WÄNDE JE BAU (Goldens und Gestalten der Welt): Kosten, Krone (Schwebe · Boden · Jahr), Kronen-Kosten und
+        // (W) DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz, Konsum von tree[1].wurf): die Baum-L1 liefert GENAU EIN Teil
+        // `teil: "schatten"` — das Gerüst als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) —, höchstens
+        // wurf.tris Dreiecke, seine Karten auf höchstens wurf.lagen Lagen (kronen-linse). Der Wirt bricht ohne das Teil
+        // (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf.
+        const waende = (c, a, fall) => {
+            miss(c, a, fall);
+            kroneWand(c, a, fall);
+            kronenMass(c, a);
+            if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, fall);
+        };
         for (const f of files) {
             const c = parseName(f);
             const gold = jsonLesen(path.join(DIR, f));
@@ -591,14 +596,7 @@ hauptLauf(async () => {
                 if (roh?.b64 && roh.b64.length <= 65536)
                     console.log(`DIVERGENZ-BYTES ${f} Mesh${mm[1]}.${mm[2]} ${roh.b64}`);
             } else ok++;
-            miss(c, a, f.replace(/\.json$/, ""));
-            kroneWand(c, a, f.replace(/\.json$/, ""));
-            kronenMass(c, a);
-            // (W) DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz, Konsum von tree[1].wurf): die Baum-L1 liefert GENAU EIN Teil
-            // `teil: "schatten"` — das Gerüst als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) —, höchstens
-            // wurf.tris Dreiecke, seine Karten auf höchstens wurf.lagen Lagen (kronen-linse). Der Wirt bricht ohne das Teil
-            // (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf.
-            if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, f.replace(/\.json$/, ""));
+            waende(c, a, f.replace(/\.json$/, ""));
             if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
                 // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
@@ -607,18 +605,7 @@ hauptLauf(async () => {
                 const krone = kroneAus(a.meshes);
                 if (c.lod === 0) {
                     pp.l0 = krone;
-                    let lo = Infinity,
-                        hi = -Infinity;
-                    for (const m of a.meshes) {
-                        if (!m.attrs || !m.attrs.position) continue;
-                        const b = Buffer.from(m.attrs.position.b64, "base64");
-                        const p = new Float32Array(b.buffer, b.byteOffset, b.byteLength / 4);
-                        for (let i = 1; i < p.length; i += 3) {
-                            if (p[i] < lo) lo = p[i];
-                            if (p[i] > hi) hi = p[i];
-                        }
-                    }
-                    pp.H = hi - Math.max(0, lo);
+                    pp.H = hoeheVon(a.meshes.filter((m) => m.attrs?.position).map((m) => dek(m.attrs.position.b64, Float32Array)));
                 } else {
                     pp.art = krone.some((m) => m.kind === "foliageTex") ? (ph.conifer ? "nadel" : "laub") : "klinge";
                     pp.l1 = krone;
@@ -700,12 +687,7 @@ hauptLauf(async () => {
                     for (let v = 1; v <= V; v++) {
                         if (gemessenFall.has(preset + "|" + v + "|" + lod)) continue;
                         const c = { presetId: preset, seed: v, lod, season: "summer" };
-                        const a = await build(c);
-                        miss(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
-                        kroneWand(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
-                        kronenMass(c, a);
-                        if (!tafelSchreiben && lod === 1 && kind === "tree")
-                            wurfMass(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
+                        waende(c, await build(c), `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                     }
                 }
             }
@@ -728,8 +710,7 @@ hauptLauf(async () => {
         const budgetOhneZB = (vereint(ohneZB).lod || {}).budget || {};
         wand = { budgetOhneZB, kernVonArt };
         const at = await atlas();
-        const aa = await atlasAlpha();
-        const alpha = { w: aa.w, h: aa.h, alpha: new Uint8Array(Buffer.from(aa.b64, "base64")), schwelle: 0.5 };
+        const alpha = alphaVon(await atlasAlpha());
         const band = budget && budget.tree && budget.tree[1] && budget.tree[1].deckung;
         wand = Object.assign(wand, { at, alpha, band, budget, stufen, b1: budget && budget.tree && budget.tree[1] });
         if (!budget) fails.push("Budget: render-config trägt kein lod.budget");
@@ -804,8 +785,9 @@ hauptLauf(async () => {
     }
     if (wand?.budget && Array.isArray(wand.band)) {
         const B = wand.budget;
-        // Die Kosten je Zeile: Maximum über alle gebauten Fälle, der Täter-Kandidat steht daneben.
-        const zeilen = [];
+        // Die Kosten je Zeile: Maximum über alle gebauten Fälle, der Täter-Kandidat steht daneben. Dabei die SELBST-TESTS 1 und 2
+        // der Gitter-Zeile (unten): `halb` die Zeilen, die halbiert nicht rot werden, `leer` die ohne gebauten Fall.
+        const [zeilen, halb, leer] = [[], [], []];
         for (const k of Object.keys(wand.stufen))
             for (const st of wand.stufen[k]) {
                 const z = B[k] && B[k][st];
@@ -827,15 +809,24 @@ hauptLauf(async () => {
                         (z.band ? ` · Band ${z.band} (${top ? (top.tris / z.band).toFixed(1) : "—"}×)` : "") +
                         ` (${mm.length} Fälle, max ${top ? top.fall : "—"})`
                 );
+                if (!mm.length) leer.push(`${k}[${st}]`);
+                else
+                    for (const [feld, wert] of [
+                        ["tris", Math.floor(z.tris / 2)],
+                        ["draws", z.draws - 1],
+                    ]) {
+                        const B2 = jsonKlon(B);
+                        B2[k][st][feld] = wert;
+                        if (!kostenUrteil(messungen, B2).some((x) => x.startsWith(`${k}[${st}] `)))
+                            halb.push(`${k}[${st}].${feld}`);
+                    }
             }
         console.log("Budget-Wand (Dreiecke max/Zeile · Draws max/Zeile):\n  " + zeilen.join("\n  "));
         const at = wand.at;
         console.log(
             `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
                 `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce(addiere, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
-                `Wedel-Zelle bis ${at.ext[at.wedel.zelle].toFixed(4)} · Füllung ${at.fill[at.wedel.zelle].toFixed(4)} (${at.wedel.fuellung}) · ` +
-                `Großblatt-Zelle bis ${at.ext[at.gross.zelle].toFixed(4)} · Füllung ${at.fill[at.gross.zelle].toFixed(4)} (${at.gross.fuellung}) · ` +
-                `Weiden-Zelle bis ${at.ext[at.weide.zelle].toFixed(4)} · Füllung ${at.fill[at.weide.zelle].toFixed(4)} (${at.weide.fuellung})`
+                [["Wedel", at.wedel], ["Großblatt", at.gross], ["Weiden", at.weide]].map(([n, z]) => `${n}-Zelle bis ${at.ext[z.zelle].toFixed(4)} · Füllung ${at.fill[z.zelle].toFixed(4)} (${z.fuellung})`).join(" · ") // prettier-ignore
         );
         const gemesseneP = Object.entries(paare).filter(([, p]) => p.deckung != null);
         console.log(
@@ -859,44 +850,17 @@ hauptLauf(async () => {
         //      Brücke meldet vorher > Zeile) und GEFALTET darin (die Kosten oben);
         //  (12, Seh) ein Stoff ohne Seh-Klasse MUSS brechen (die erste Seh-Probe, ein Stoff entkleidet);
         //  (13, Seh) eine Faltung Auge → Haut und eine Glimmen → ohne Glimmen MUSS die Kreuz-Linse fangen.
-        const halb = [],
-            leer = [];
-        for (const k of Object.keys(wand.stufen))
-            for (const st of wand.stufen[k]) {
-                const z = B[k] && B[k][st];
-                if (!z || z.karte) continue;
-                if (!messungen.some((x) => x.kind === k && x.lod === st)) {
-                    leer.push(`${k}[${st}]`);
-                    continue;
-                }
-                for (const [feld, wert] of [
-                    ["tris", Math.floor(z.tris / 2)],
-                    ["draws", z.draws - 1],
-                ]) {
-                    const B2 = jsonKlon(B);
-                    B2[k][st][feld] = wert;
-                    if (!kostenUrteil(messungen, B2).some((x) => x.startsWith(`${k}[${st}] `)))
-                        halb.push(`${k}[${st}].${feld}`);
-                }
-            }
         const s1 = halb.length === 0;
         const s2 = leer.length === 0;
         const laubP = gemesseneP.filter(([, p]) => p.art === "laub");
         const nadelP = gemesseneP.filter(([, p]) => p.art === "nadel");
-        // Die Selbsttests der Deckung rastern je Kronen-Art EIN Paar neu (die Wand ist dieselbe Funktion).
-        const eins = (P) => P.slice(0, 1);
-        const gestern = {};
-        for (const [k, p] of eins(laubP))
-            gestern[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
-        const s3 = laubP.length && deckungsUrteil(gestern, wand.band, wand.alpha).length === 1;
-        const lang = {};
-        for (const [k, p] of eins(nadelP)) lang[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
-        const s4 = nadelP.length && deckungsUrteil(lang, wand.band, wand.alpha).length === 1;
-        const grossL0 = {};
-        for (const [k, p] of eins(laubP).concat(eins(nadelP)))
-            grossL0[k] = Object.assign({}, p, { l0: kartenSkaliert(p.l0, 1.5) });
-        const s7 =
-            laubP.length && nadelP.length && deckungsUrteil(grossL0, wand.band, wand.alpha).length === 2;
+        // Die Selbsttests der Deckung rastern je Kronen-Art EIN Paar neu (die Wand ist dieselbe Funktion): die Stufe `l` jedes
+        // Paars mit 1,5-facher Kante — die Zahl der Befunde
+        const gross = (P, l) => deckungsUrteil(Object.fromEntries(P.map(([k, p]) => [k, { ...p, [l]: kartenSkaliert(p[l], 1.5) }])), wand.band, wand.alpha).length; // prettier-ignore
+        const [laub1, nadel1] = [laubP.slice(0, 1), nadelP.slice(0, 1)];
+        const s3 = laubP.length && gross(laub1, "l1") === 1;
+        const s4 = nadelP.length && gross(nadel1, "l1") === 1;
+        const s7 = laubP.length && nadelP.length && gross(laub1.concat(nadel1), "l0") === 2;
         const ohneRinde = (schwebeProbe || []).filter((m) => m.kind === "foliage" || m.kind === "foliageTex");
         const sw8 = schwebe(ohneRinde);
         const s8 = sw8.karten > 0 && sw8.schwebend === sw8.karten;
@@ -1099,13 +1063,7 @@ hauptLauf(async () => {
                 (luegen.length ? ` (${luegen.map((x) => x.replace(/^Gestalten-Lüge: /, "")).join("; ")})` : "") +
                 ` · Zweit-Kern-Zug ${G.zweitBauten} Bauten · Hash-Bauten ${G.hashBauten}`
         );
-        const s14 =
-            !!G.abdruecke[SELBST_GESTALT] &&
-            istLuege(
-                gestaltenUrteil(G.abdruecke, Object.assign({}, G.gestalten, { [SELBST_GESTALT]: 2 }), G.kernVon),
-                G.kernVon(SELBST_GESTALT),
-                SELBST_GESTALT
-            );
+        const s14 = !!G.abdruecke[SELBST_GESTALT] && luegtMit(G, SELBST_GESTALT, 2);
         const s15 = geprueft.some((p) => {
             const V = gestaltenV(G.gestalten, p);
             const h = G.abdruecke[p].h.slice(0, V);
@@ -1116,11 +1074,7 @@ hauptLauf(async () => {
             vAchse >= 2 &&
             !!G.abdruecke[SELBST_ACHSE] &&
             !!G.abdruecke[SELBST_ACHSE].h[vAchse] &&
-            istLuege(
-                gestaltenUrteil(G.abdruecke, Object.assign({}, G.gestalten, { [SELBST_ACHSE]: vAchse + 1 }), G.kernVon),
-                G.kernVon(SELBST_ACHSE),
-                SELBST_ACHSE
-            );
+            luegtMit(G, SELBST_ACHSE, vAchse + 1);
         console.log(
             `Selbsttest Gestalten-Wand: ${SELBST_GESTALT} mit V 2 wird rot ${s14 ? "✅" : "❌"} · V verschiedene Abdrücke gesehen ${s15 ? "✅" : "❌"} · ` +
                 `${SELBST_ACHSE} mit V ${vAchse + 1} wird rot (Same ${vAchse + 1} = Same 1) ${s16 ? "✅" : "❌"}`
