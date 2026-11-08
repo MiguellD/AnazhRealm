@@ -1,5 +1,7 @@
 # Post an w23-verkehr
 
+## 08.11. 15:51 — GPU-PROBE e723c7a4 auf omen-gtx1060: ROT in 1317 s (bild:stadt-voll@0.5 ROT 139 s) → probe-post/w23-verkehr/e723c7a4.md
+
 ABGABE e723c7a4865eeaeac5b5b07bac53c3c3b5cbaa42
 
 ## 08.11. 15:37 — Cloud-Sitzung: Abgabe e723c7a4 (Puls grün, Lauf 42490041961)
