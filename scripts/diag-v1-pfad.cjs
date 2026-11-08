@@ -43,7 +43,7 @@ const WARTENDE = [
     "_workshopFoundryPreviewGroup",
 ];
 function zugVerdict(m) {
-    if (!m || m.gestartet !== true) return ["zug start"];
+    if (startFehlt(m)) return ["zug start"];
     const out = [];
     for (const [wer, z] of [
         ["vorschau", m.vorschau],
@@ -88,7 +88,7 @@ function zugVerdict(m) {
     return out;
 }
 function rahmenVerdict(m) {
-    if (!m || m.gestartet !== true) return ["rahmen start"];
+    if (startFehlt(m)) return ["rahmen start"];
     const out = [];
     const e = m.eintraege || [];
     const waffen = e.filter((q) => q.kind === "weapon" && Number.isFinite(q.fuell)).length;

@@ -354,16 +354,16 @@ function selbsttest() {
             ["fachwerk", { bank: 4.1, bankCpu: 4 }, /^H8 fachwerk: L0 GPU-ms 0.4 ↔ Bank 4.1 CPU-gebunden/, true],
             ["klang", 0, /^H8 klang: die Leiste ohne Zeile/],
             ["klang", 3.1, /^H8 klang: sturm Audio-ms 3.1 über dem Deckel/],
+            // H10 (studios.K4): die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt), die garage ohne Maß, die Ratsche
+            ["schmiede", { werkBuehne: 0.43, werkWelt: 0.24 }, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/],
+            ["garage", { werkWelt: undefined }, /^H10 garage: kein Maß/],
+            ["terrain", { werkWelt: 2 }, /^H10 terrain: .* die Ratsche zieht an/],
         ].map(([id, m, soll, zeit]) => [soll.source, {}, soll, mit(id, id === "klang" ? ort(m) : wahr(9000, 9000, 0, 62000, m)), { zeit }]),
         ["H7 ein Griff der garage zeigt nie einen neuen Bau-Hash", {}, /^H7 garage: 19 von 20 Griffen/, mit("garage", { griffe: [...sitz.griffe.slice(1), {}] }), { zeit: true }],
         ["H7 der Gesetz-Wert der portale wartet die Ruhe ab (290 ms, auf der Karte)", {}, /^H7 portale: p95 Gesetz-Wert 290 ms > 200/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 290 : 9 })) }), { zeit: true }],
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
-        // H10 (studios.K4): die Parzelle und der Flügel in der Wurzel der fachwerk, die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt)
-        ["H10 die Schnitt-Karte in der schmiede", {}, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/, mit("schmiede", wahr(9000, 9000, 0, 62000, { werkBuehne: 0.43, werkWelt: 0.24 }))],
-        ["H10 die garage misst ihr Werk nicht", {}, /^H10 garage: kein Maß/, mit("garage", wahr(9000, 9000, 0, 62000, { werkWelt: undefined }))],
-        ["H10 die Ratsche des terrain zieht an", {}, /^H10 terrain: .* die Ratsche zieht an/, mit("terrain", wahr(9000, 9000, 0, 62000, { werkWelt: 2 }))],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);

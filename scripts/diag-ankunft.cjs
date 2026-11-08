@@ -420,7 +420,7 @@ async function probe(arg) {
     // die Zeilen des Chats — mit `k` ihre Schlüssel (die Welt spricht aus der Tafel, `_chatEcho` trägt ihn am Knoten): die Linse
     // liest den Schlüssel, nie den Wortlaut
     const zeilen = (k) => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => (k ? d.querySelector("[data-t]")?.dataset.t : d.textContent));
-    const ueber = (P, h) => st.playerMesh.position.set(P.x, P.y + h, P.z); // der Spieler h über dem Punkt P
+    const ueber = (P) => st.playerMesh.position.set(P.x, P.y + 2.2, P.z); // der Spieler 2,2 m über dem Punkt P
     const buch = await r._foundryAwaitBook(45000);
     await __takte(30, 30);
     // ── L2a: das erste Weltbild ──
@@ -1140,6 +1140,7 @@ async function probe(arg) {
                 linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
             }
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
+            const aufHang = (x, z) => st.playerMesh.position.set(x, hh(x, z) + 1.0, z); // der Spieler 1 m über dem Hang bei (x, z)
             // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen. Der Täter beim
             // Namen: der Stamm (Blocker).
             // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
@@ -1244,7 +1245,7 @@ async function probe(arg) {
             weg(
                 "fuss",
                 (x, zz, gier) => {
-                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                    aufHang(x, zz);
                     st.yaw = gier;
                 },
                 1.0,
@@ -1296,7 +1297,7 @@ async function probe(arg) {
             // Arm begann er 0,52–0,78 m hinter dem Blickpunkt)
             const lu = st.lodUniforms;
             if (lu && lu.uKamZiel) {
-                ueber(P, 2.2);
+                ueber(P);
                 r._loopCamera((T += 0.1));
                 const v = lu.uKamZiel.value;
                 const p = st.playerMesh.position;
@@ -1306,7 +1307,7 @@ async function probe(arg) {
             // DAS FADENKREUZ IN 3RD: der Abstand der Brust vom Strahl
             // durch die Bildmitte
             {
-                ueber(P, 2.2);
+                ueber(P);
                 st.pitch = 0;
                 ruhig();
                 const c = st.camera.position;
@@ -1338,7 +1339,7 @@ async function probe(arg) {
                         const x = b.position.x + Math.sin(g) * 2.5;
                         const zz = b.position.z + Math.cos(g) * 2.5;
                         if (!Number.isFinite(hh(x, zz))) continue;
-                        st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                        aufHang(x, zz);
                         st.yaw = g;
                         st.pitch = 0;
                         const arm2 = ruhig();
@@ -1453,7 +1454,7 @@ async function probe(arg) {
                     r.setCameraMode(modus);
                     const x = cx + ux * 3;
                     const zz = cz + uz * 3;
-                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                    aufHang(x, zz);
                     if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
                     const gier = Math.atan2(-ux, -uz);
                     st.yaw = gier;
@@ -1522,7 +1523,7 @@ async function probe(arg) {
                             const x = b.position.x + Math.sin(g) * 2.5 - seite * Math.cos(g);
                             const zz = b.position.z + Math.cos(g) * 2.5 + seite * Math.sin(g);
                             if (!Number.isFinite(hh(x, zz))) continue;
-                            st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                            aufHang(x, zz);
                             st.yaw = g;
                             st.pitch = 0;
                             ruhig();
@@ -1543,7 +1544,7 @@ async function probe(arg) {
                 }
             }
             r.setCameraMode("first");
-            ueber(P, 2.2);
+            ueber(P);
         }
         m.gestartet = true;
     } catch (e) {
@@ -1623,7 +1624,7 @@ async function probe(arg) {
             const w = nb * 3 + maxDh;
             if (!best || w < best.w) best = { yaw, w };
         }
-        ueber(P, 2.2);
+        ueber(P);
         st.yaw = best.yaw;
         const cam = st.camera;
         const tanH = Math.tan(((cam.fov || 75) * Math.PI) / 360) * (cam.aspect || 16 / 9);
@@ -1679,7 +1680,7 @@ async function probe(arg) {
                 for (const a of st.architectures.filter((a) => !vorM.has(a)).reverse()) r.removeArchitecture(a);
                 return orte;
             };
-            ueber(P, 2.2);
+            ueber(P);
             st.yaw = best.yaw;
             const sprecher = await haeuserVon("human", { x: P.x, y: P.y + 2.2, z: P.z }, best.yaw);
             const mx = P.x + 200;
@@ -1695,7 +1696,7 @@ async function probe(arg) {
             m.mpAbweichung = sprecher.length && mitspieler.length ? +maxD.toFixed(2) : null;
             m.hierNaechstes = sprecher.length ? +Math.min(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
             m.hierWeitestes = sprecher.length ? +Math.max(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
-            ueber(P, 2.2);
+            ueber(P);
             st.yaw = best.yaw;
         }
         // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Orts (sein Grundriss reicht 2 m in den Freiraum der Tore; die
