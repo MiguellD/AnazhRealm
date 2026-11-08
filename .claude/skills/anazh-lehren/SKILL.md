@@ -53,7 +53,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
   (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
-  das Band der geglätteten Deckung, der Rahmen nie Umriss, die Zelle die der Stufe an der gröberen Texel-Achse, Laub-Lappen, Nadel-Grate,
+  das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
+  das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
   der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,

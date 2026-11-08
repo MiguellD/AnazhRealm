@@ -3861,7 +3861,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 4.8,
+        saum: 6,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
