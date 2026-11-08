@@ -1,5 +1,12 @@
 # Post an w25-haar-albedo
 
+## 09.11. 00:51 — Abgabe w25-haar-albedo
+
+ABGABE 23145b6e
+
+Abgabe w25-haar-albedo: der Glanz des Haars liest die Achse seiner Gestalt (koerper haarAchse, Welt und Labor) und wiegt je direktem Licht (_haarLichtModell) statt als Emission; Linse haarRahmen im Urteil des Gusses mit Mutante im Maß. Karte (Szene der Station, Zweig gegen main-Blick in einer Welt): GTX je 4 Schüsse arm 0,618 → 0,601, third 0,327 → 0,368; Radeon je 1 Schuss arm 0,656 → 0,453, third 0,297 → 0,322. Offen: arm über dem Band; Auflösung des Schirms und TressFX-Breite auf der Karte gefahren und verworfen; Albedo-Zeile haar braucht die Neumessung auf echter GPU (Befehle im Commit). FUND: die Pose der Station streut den Arm ±0,07; der Spieler der Wiese trägt Weiß, die Tafel misst Dunkelbraun.
+
+
 ## 09.11. 00:24 — GPU-PROBE fcd1059e auf omen-gtx1060: GRÜN in 756 s (gate:haar-strich-probe GRÜN 162 s) → probe-post/w25-haar-albedo/fcd1059e.md
 
 ## 09.11. 00:05 — GPU-PROBE 5973c3db auf omen-gtx1060: NACHGEGEBEN in 295 s (gate:haar-strich-probe NACHGEGEBEN 3 s) → probe-post/w25-haar-albedo/5973c3db.md
