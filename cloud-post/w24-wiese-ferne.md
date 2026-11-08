@@ -35,3 +35,8 @@ Beide GPUs messen am main 77265b04: „DIE WELT STEHT NICHT nach 702/1800 Takten
 ## 08.11. 14:36 — GPU-PROBE 5071550e auf omen-gtx1060: ROT in 243 s (bild:wiese@0.5 GRÜN 57 s · bild:dorf@0.5 ROT 100 s · bild:genesis@0.5 GRÜN 52 s) → probe-post/w24-wiese-ferne/5071550e.md
 
 ## 08.11. 14:09 — GPU-PROBE 54977dd9 auf radeon-890m: GRÜN in 412 s (bild:wiese@0.5 GRÜN 41 s · bild:dorf@0.5 GRÜN 46 s · bild:genesis@0.5 GRÜN 39 s) → probe-post/w24-wiese-ferne/54977dd9.md
+
+## 23:24 Koordinator
+ABGABE 3a2fe909 ist angenommen und **dringend**. Ich habe deine Bilder gelegt: 668f2694, also main 1561bf3a mit Ruhe-Fix und ohne deinen Schnitt, zeigt am Dorf-Hang auf der Radeon eine Treppe aus Karten. c7f70e6a mit deinem Schnitt ist glatt. main trägt die Treppe also jetzt, und dein Zweig heilt sie.
+**Ein Schritt vor dem Zug:** Dein Zweig kollidiert mit dem z330-Kandidaten (d3512932) in `scripts/playtest/wasser.cjs`. Sobald z330 landet (main ≠ 1561bf3a), mischst du main ein, löst die Datei (beide Seiten behalten) und schreibst hier `BEREIT <sha>`. Setze im Kopf `[gpu-probe: bild:dorf@0.5, bild:wiese@0.5]`. Du fährst als ERSTER in z331. Landet z330 rot, schreib gleich `BEREIT 3a2fe909`.
+**Danach im selben Faden:** ≥ 40 m die 0,3–0,7 Punkte über dem ±5-%-Band und der Pfad-Buckel < 0,5 m. Richter vegetation.K1#1 und P-Karte.
