@@ -279,7 +279,9 @@ class AnazhRealm_siedlung_verkehr {
                       )
                       .map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM))
                 : [];
-        for (const w of VK.wenden.values())
+        // die Wende samt ihrer Begegnung (fachwerk `engen`: wo Bahn hinein und heraus einander samt dem Ausscheren im Bogen zu
+        // nahe kommen) — die Enge der Wende ist eine Enge wie die der Strecke, je Richtung (hinein 0, heraus 1, `_verkehrZugZonen`)
+        for (const w of VK.wenden.values()) {
             w.zone = zone(
                 "wende",
                 w.x,
@@ -289,6 +291,16 @@ class AnazhRealm_siedlung_verkehr {
                     ...[w.bahn[0], w.bahn[w.bahn.length - 1]].map((q) => Math.hypot(q.x - w.x, q.z - w.z) + VG.halbM)
                 )
             );
+            w.engZonen = (w.engen || []).map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM));
+            // DIE SCHLEIFE TRÄGT, WEN SIE FASST (die Regel des Kreisverkehrs): so viele Wagen samt Abstand, wie ihre Bahn außer der
+            // Begegnung lang ist, halten die Wende zugleich — wer dann noch kommt, wartet draußen. Bis hier nahm sie jeden, der ihr
+            // folgte: hielt der letzte die Begegnung hinein, während der erste vor ihr heraus wartete, stand die Schleife im Kreis
+            let L = 0;
+            for (let i = 1; i < w.bahn.length; i++)
+                if (!w.engZonen.some((Z) => Math.hypot(w.bahn[i].x - Z.x, w.bahn[i].z - Z.z) < Z.r))
+                    L += Math.hypot(w.bahn[i].x - w.bahn[i - 1].x, w.bahn[i].z - w.bahn[i - 1].z);
+            w.zone.platz = Math.max(1, Math.floor(L / (VG.parkL + V.abstandM)));
+        }
         // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,
         // koerper-core TAGES_GESETZ: am Platz wechselt die Schicht, der Wagen fährt bei Tag und bei Nacht); steht das Haus nicht
         // oder trägt es die Person nicht, fährt die erste freie der folgenden Häuser (bis hier fuhr dort keiner: 4 von 20 Wagen
@@ -952,8 +964,16 @@ class AnazhRealm_siedlung_verkehr {
     // Richtung (dir: wer in derselben Richtung fährt, folgt dem, der schon darin ist); die Wende samt Platz.
     _verkehrZugZonen(S, m) {
         const VK = S.verkehr;
-        if (m.art !== "strecke")
-            return [{ Z: VK.wenden.get(m.ki).zone, dir: null, ziel: !!m.ziel, durch: m.art === "wende" }];
+        if (m.art !== "strecke") {
+            // DIE BEGEGNUNG DER WENDE (`w.engZonen`, vom Abzweig her): wer hinein fährt (Durchfahrt, in den Platz), durchfährt sie
+            // vor der Wende in Richtung 0, wer heraus fährt (Durchfahrt, aus dem Platz), danach in Richtung 1 — dieselbe Enge zweimal
+            // in EINEM Zug, die zweite Durchfahrt hinter der ersten (`_verkehrLinie`). Bis hier begegneten sich dort zwei Wagen, die
+            // beide den Schlüssel der Wende hielten (die Durchfahrten verträglich): stadt-voll 908/289, 0,08 m bis „Wagen in Wagen"
+            const w = VK.wenden.get(m.ki);
+            const hin = m.art === "aus" ? [] : w.engZonen.map((Z) => ({ Z, dir: 0 }));
+            const her = m.art === "ein" ? [] : w.engZonen.map((Z) => ({ Z, dir: 1 })).reverse();
+            return [...hin, { Z: w.zone, dir: null, ziel: !!m.ziel, durch: m.art === "wende" }, ...her];
+        }
         const s = VK.strecken[m.si];
         const ki = m.dir === 0 ? s.a : s.b;
         // (durch die Kreuzung sein Weg `wort`, von>nach: wer einen verträglichen fährt, fährt zugleich — `_verkehrZonen`)
@@ -1027,17 +1047,21 @@ class AnazhRealm_siedlung_verkehr {
         });
         const vorher = W.zonen;
         W.zonen = [];
+        // tritt ein Ort zweimal in die Linie (die Enge der Wende hinein und heraus), beginnt die zweite Durchfahrt hinter der ersten
+        const nach = new Map();
         for (const { Z: z, dir, wort, ziel, durch, hat, von, bis } of Z) {
-            let i = 0;
+            const i0 = nach.has(z) ? nach.get(z) + 1 : 0;
+            let i = i0;
             while (i < F.pts.length && F.bogen[i] < von) i++;
             while (i < F.pts.length && F.bogen[i] <= bis && Math.hypot(F.pts[i].x - z.x, F.pts[i].z - z.z) >= z.r) i++;
             if (i >= F.pts.length || F.bogen[i] > bis) continue;
             // die Durchfahrt beginnt, wo die Linie in EINEM Zug in den Kreis tritt — auch vor dem Fenster ihres Zugs: die Bahn heraus
             // der Wende läuft schon im Kreis der Enge, deren Spur sie trifft (stadt-voll, die Wende 741/579: 5 m vor der Mitte der
             // Enge 736/556), und wer dort wartete, wartete in ihr (10 Uhr 521× „ohne Schlüssel im Ort")
-            while (i > 0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
+            while (i > i0 && Math.hypot(F.pts[i - 1].x - z.x, F.pts[i - 1].z - z.z) < z.r) i--;
             let j = i;
             while (j + 1 < F.pts.length && Math.hypot(F.pts[j + 1].x - z.x, F.pts[j + 1].z - z.z) < z.r) j++;
+            nach.set(z, j);
             // die Wende beginnt eine Wagenlänge vor ihrer Bahn: wer aus ihr in seine Spur einbiegt, hat den Bogen am Ende der
             // Strecke hinter sich, bevor er den Wartenden passiert — bis hier wartete der im Bogen (10 Uhr: beide 40 s, der
             // Wartende 1,21 m neben der Bahn bei 1,31 m Breite samt Bogen)
@@ -1385,9 +1409,13 @@ class AnazhRealm_siedlung_verkehr {
             }
         const i0 = W.zonen.findIndex((z) => !z.weg);
         if (i0 < 0) return Infinity;
+        // die Kette trägt nur Orte, die vor ihm liegen: eine passierte Durchfahrt in der Spanne eines Orts, der ihn noch hält (die
+        // Begegnung hinein in der Spanne der Wende), ist keiner — bis hier nahm die Kette sie auf, gab ihr den Schlüssel neu, und
+        // die Durchfahrt heraus derselben Enge fragte er nie (stadt-voll 10 Uhr: 17 040× „ohne Schlüssel im Ort", 712 s Fahrt)
         const voll = [W.zonen[i0]];
         for (let k = i0 + 1; k < W.zonen.length; k++) {
             const z = W.zonen[k];
+            if (z.weg) continue;
             if (z.ein - voll[voll.length - 1].aus < 2 * W.hl + V.abstandM && !voll.some((y) => y.Z === z.Z))
                 voll.push(z);
             else break;
@@ -1443,9 +1471,10 @@ class AnazhRealm_siedlung_verkehr {
         // Kreuzung, deren Halter alle verträgliche Wege fahren (bis hier einer zur Zeit: an der Mitte der Metropole kam in 40 s
         // nicht jeder 30 m weit)
         const darf = (z) =>
-            !z.Z.halter.length ||
-            z.Z.halter.every((o) => o === W || vertraeglich(z, o)) ||
-            (z.Z.art === "enge" && z.Z.richtung === z.dir);
+            (!z.Z.platz || z.Z.halter.includes(W) || z.Z.halter.length < z.Z.platz) &&
+            (!z.Z.halter.length ||
+                z.Z.halter.every((o) => o === W || vertraeglich(z, o)) ||
+                (z.Z.art === "enge" && z.Z.richtung === z.dir));
         // der Kopf der Reihe: der erste Wartende, vor dem keiner in seiner Spur auf denselben Ort wartet (bis hier stand an der
         // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander)
         const kopf = Z.warte.find((o) => o === W || !(o.vorne && Z.warte.includes(o.vorne.O)));
