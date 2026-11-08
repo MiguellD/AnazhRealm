@@ -3204,7 +3204,44 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "geh") {
+        // DIE ZERLEGUNG DES GEHENS (`gate:geh-zerlegung`, die Bewegungszellen von profiband.K1#1; der Messplatz des GPU-Probe-Dienstes):
+        // je Ort frisch umgestellt der erste Gang wie die Station (Bahn, Regler voll, Tiere frei, 4 s nach 0,5 s), in der Stadt danach
+        // 2 s Stand und ein zweiter Gang — aus DERSELBEN Spur die Hänger über 33 ms (je Hänger die Domäne seiner Engstelle) und die
+        // Takt-Spitze je Domäne (ms je Takt ab p95 / Mitte, `HL.domaenen`). Zeilen „GEH …“ ≤ 590 Zeichen (der Dienst postet die
+        // letzten zehn). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält.
+        const halt = await eigeneWelt();
+        const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
+        const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
+        let gruen = true;
+        try {
+            for (const [ort, gaenge] of [["wiese", 1], ["stadt", 2]]) {
+                await umstellen({ ort, sicht: "ego" });
+                for (let g = 1; g <= gaenge; g++) {
+                    if (g > 1) {
+                        const l = await rufe("/lauf", { sek: 2, ein: 0.3, ruhe: 0, regler: "voll", tiere: "frei" });
+                        zeile(`GEH Stand ${ort}: Bild ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} · Befehle ${l.befehle?.p95} · Dreiecke ${l.dreiecke?.p95} · Phasen ${JSON.stringify(l.phasenEwmaMs)}`); // prettier-ignore
+                    }
+                    const name = `${ort}-ego Gang ${g}`;
+                    const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
+                    if (!o?.datei) throw new Error(`${name}: ${JSON.stringify(o).slice(0, 300)}`);
+                    const a = jsonLesen(o.datei), { roh, spur } = jsonLesen(o.datei.replace(/\.json$/, ".roh.json"));
+                    const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s);
+                    const u = a.frameMs.p95 <= 33.4 ? "GRÜN" : "ROT";
+                    gruen = gruen && u === "GRÜN";
+                    zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Pipe sync ${a.pipelines.sync} · Weg ${roh.bahnM} m`); // prettier-ignore
+                    zeile(`GEH ${u} ${name} Takt ab p95/Mitte (${s.spitzeN} Takte, CPU ${q(s.cpuMs)}): ${d.jeDomaene}`);
+                    zeile(`GEH ${u} ${name} Rahmen selbst: ${d.rahmen}`);
+                }
+            }
+        } catch (e) {
+            gruen = false;
+            zeile(`GEH ROT Error ${String(e?.stack || e).slice(0, 500)}`);
+        } finally {
+            halt?.();
+        }
+        process.exit(gruen ? 0 : 1);
+    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
