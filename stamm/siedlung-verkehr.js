@@ -280,7 +280,10 @@ class AnazhRealm_siedlung_verkehr {
                       .map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM))
                 : [];
         // die Wende samt ihrer Begegnung (fachwerk `engen`: wo Bahn hinein und heraus einander samt dem Ausscheren im Bogen zu
-        // nahe kommen) — die Enge der Wende ist eine Enge wie die der Strecke, je Richtung (hinein 0, heraus 1, `_verkehrZugZonen`)
+        // nahe kommen) — die Enge der Wende ist eine Enge wie die der Strecke, je Richtung (hinein 0, heraus 1, `_verkehrZugZonen`),
+        // in ihrem genauen Maß: ihre nahen Punkte samt halbem Wagen — vor ihr liegen die Bahnen schon weit genug auseinander, wer
+        // ihr entgegenkommt, wartet an ihrem Rand (die Enge der Strecke wächst allmählich und trägt den Vorlauf `engeRandM`). Mit
+        // ihm sperrte sie 7–8 m Bahn mehr, die Schleife fasste 5 Wagen, und die West-Wende staute die Stadt (eine Fahrt 501 s)
         for (const w of VK.wenden.values()) {
             w.zone = zone(
                 "wende",
@@ -291,10 +294,11 @@ class AnazhRealm_siedlung_verkehr {
                     ...[w.bahn[0], w.bahn[w.bahn.length - 1]].map((q) => Math.hypot(q.x - w.x, q.z - w.z) + VG.halbM)
                 )
             );
-            w.engZonen = (w.engen || []).map((e) => zone("enge", e.x, e.z, e.r + V.engeRandM));
+            w.engZonen = (w.engen || []).map((e) => zone("enge", e.x, e.z, e.r));
             // DIE SCHLEIFE TRÄGT, WEN SIE FASST (die Regel des Kreisverkehrs): so viele Wagen samt Abstand, wie ihre Bahn außer der
-            // Begegnung lang ist, halten die Wende zugleich — wer dann noch kommt, wartet draußen. Bis hier nahm sie jeden, der ihr
-            // folgte: hielt der letzte die Begegnung hinein, während der erste vor ihr heraus wartete, stand die Schleife im Kreis
+            // Begegnung lang ist, halten die Wende zugleich — wer dann noch kommt, wartet draußen. Ohne sie hielten zwei
+            // Hineinfahrende die Begegnung, während der Herausfahrende vor ihr wartete und der Ring hinter ihm: 7 Halter, eine Fahrt
+            // 671 s (die West-Wende 668/419, A/B am Kopf: ohne ROT, mit GRÜN)
             let L = 0;
             for (let i = 1; i < w.bahn.length; i++)
                 if (!w.engZonen.some((Z) => Math.hypot(w.bahn[i].x - Z.x, w.bahn[i].z - Z.z) < Z.r))

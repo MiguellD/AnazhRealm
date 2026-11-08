@@ -803,7 +803,7 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, raumM: 0.25 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, raumM: 0.2 };
 const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
@@ -844,7 +844,8 @@ const verkehrVerdict = (m) =>
             m.ankunft && m.ankunft.d !== null && m.ankunft.d < m.ankunft.K,
             `die Ankunft sieht die Hülle des Wagens nicht ${JSON.stringify(m.ankunft)} (dort stellte sie einen Bewohner hin)`,
         ],
-        // DER RAUM (w23-verkehr): zwischen zwei Wagen bleiben in jeder Probe `raumM` — wer einander näher kommt, streift im Takt,
+        // DER RAUM (w23-verkehr): zwischen zwei Wagen bleiben in jeder Probe `raumM` — wer einander näher kommt, streift im Takt
+        // (je 8 Stunden: main 0,08–0,19 m an der Begegnung der Wende 908/289, der Schnitt ≥ 0,27 m an der Kreuzung am Markt),
         // tiefer als 0,05 m stecken sie ineinander (`beruehrt.wagen`); das knappste Paar beim Namen
         [m.knapp[0] >= VERKEHR.raumM, `Wagen an Wagen ${JSON.stringify(m.knapp)}, ineinander ${m.beruehrt.wagen}×`],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
