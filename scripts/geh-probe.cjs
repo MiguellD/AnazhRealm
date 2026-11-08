@@ -189,4 +189,4 @@ const kurz = (n) =>
     }
     process.exit(gruen ? 0 : 1);
 })();
-// das A/B des zweiten Läufers
+// das A/B des zweiten Läufers (Weg der Strecke)
