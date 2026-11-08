@@ -1,5 +1,7 @@
 ## 08.11. 19:42 — w24-strauch-saum: Ton der Kronen gemessen — nicht die Farbe, die Deckung über der Wahrheit; geschnitten, Proben laufen (Zwischenstand, BEREIT folgt mit den Zahlen)
 
+## 08.11. 19:43 — GPU-PROBE 33c73b16 auf omen-gtx1060: ROT in 771 s (gate:laub-kante ROT 81 s · bild:wiese@0.5 GRÜN 62 s) → probe-post/w24-strauch-saum/33c73b16.md
+
 - **Merge** origin/main 53b2fc7 (gang-hitch): b7db043, die 7 Linsen booten über nullWelt (EINE Fahrt mit der Frist), der Abschluss über seiteZu. check:statik bis auf die Decke des Messplatzes (fällt vor der Abgabe).
 - **Die Farbe der Kronen ist es nicht:** die dunklen Kronen-Pixel stehen gleich (GTX main → Kopf, Kronen-Mitte p10/p25 25/29 → 25/29, Band 24/28 → 24/28; Radeon unter der Tafel-Maske 39,4 → 39,4). EIN Farbanteil war echt und ist geheilt (02c89d9): gewählte Saum-Texel ohne eigene Deckung trugen die Vorgabe-Normale (14–17 %) und das Schicht-Mittel der Sonnen-Sicht (24–28 %) — GTX Kronen-Mitte 43,8 → 46,2 (main 48,0), Band 34,6 → 35,1.
 - **Der Rest ist Deckung — aber über der Wahrheit, nicht nur die Lücke zu:** helle Pixel (> 70) im Band 9,6 % (main) → 5,8 % (w23) → 3,0 %. Am CPU-Zwilling deckte die Karte am Schirm 1,06–1,16 ihrer Stufe 0 (ohne Saum 1,03, w23 schon 1,12): die Schwelle 0,34 dehnte jeden Rand eines Saum-Lappens (bilinear) und vereinte zwei Stufen-Muster (trilinear; mit runder Stufe 1,07). Der Blatt-Atlas und jeder Studio-Stoff testen bei 0,5.
