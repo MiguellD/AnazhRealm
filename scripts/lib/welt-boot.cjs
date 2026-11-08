@@ -318,7 +318,7 @@ function deckel(name, max, offen) {
         still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
         if (still > 3600)
-            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis`);
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
@@ -1227,27 +1227,29 @@ async function nullRenderer(page) {
     });
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
-// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; mit `server` lauscht zuerst der Statik-Server (an `port`,
-// sonst frei) — bis w12-verkehr trug jede von 38 Linsen ihr eigenes `await server.lausche(…)` davor.
-async function nullSeite(opts, server, port = 0) {
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; `opts.bild` zeichnet (ohne Null-Renderer, das Rezept nennt `art`); mit
+// `server` lauscht zuerst der Statik-Server (an `port`, sonst frei) — bis w12-verkehr trug jede von 38 Linsen ihr eigenes `lausche` davor.
+async function nullSeite({ bild, ...opts } = {}, server, port = 0) {
     if (server) await server.lausche(port);
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
-    await nullRenderer(page);
+    if (!bild) await nullRenderer(page);
     return { browser, page };
 }
-// DIE NULL-WELT: die Null-Seite samt lauschendem Server (`opts.port`, sonst ein freier; `opts` wie `nullSeite`; `opts.vor` trägt die
-// Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo
-// `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen (die Null-Probe aus
-// w13-verkehr-heil fiel in sie).
-async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
+// DIE NULL-WELT: die Null-Seite samt lauschendem Server (`opts.port`, sonst ein freier; `opts` wie `nullSeite`; `opts.fenster` ihr Viewport,
+// `opts.vor` — eines oder eine Liste — trägt die Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`:
+// Frist, Adresse, Warte-Art) und wartet, wo `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge
+// in 25 Linsen, bis w24-strauch-saum dazu in 19 mit Bild, Viewport oder zwei Vor-Skripten (die Null-Probe aus w13-verkehr-heil fiel in sie).
+async function nullWelt(server, { port = 0, vor, da, fenster, ...opts }, ...zeige) {
     const s = await nullSeite(opts, server, port);
-    if (vor) await s.page.evaluateOnNewDocument(vor);
+    if (fenster) await s.page.setViewport(fenster);
+    for (const v of [vor || []].flat()) await s.page.evaluateOnNewDocument(v);
     await server.zeige(s.page, ...zeige);
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
     return s;
 }
-async function warteAufWelt(page, frist = 120000) {
+async function warteAufWelt(page, frist = 120000, server) {
+    if (server) await server.zeige(page, frist, "index.html", "networkidle0");
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });
@@ -1879,6 +1881,7 @@ async function selbsttest() {
             offen: 1,
             _gameLoopTick() {},
             _archIsRendered: (e) => !!e.mesh,
+            _weltOffenAkte: String, // die Akte des Offenen, die der Deckel nennt (ohne Welt leer)
         });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
         r._weltOffen = () => ({ foundry: 0, chunks: 0, wald: 0, karten: r.offen });

@@ -72,7 +72,7 @@ function laborStoff(m0,geo,skin,cache){
   var schale=k==='fellSchale',koerper=k==='fell',strand=schale||k.indexOf('straehne')===0;
   if(koerper||strand){
     var L=koerper?FL.koerper:FL.straehne,ton=m0.color,tonL=Math.max(1e-4,0.2126*ton.r+0.7152*ton.g+0.0722*ton.b);
-    if(schale)m.alphaTest=0.5;
+    if(schale){m.alphaTest=0.5;m.extensions=Object.assign({},m.extensions,{derivatives:true});}
     m.onBeforeCompile=function(sh){
       sh.uniforms.uZeit=uZeit;
       var vk='uniform float uZeit;\nvarying vec3 vGeo;\n'+(schale?'attribute vec3 aSchale;\nattribute vec3 aWurzel;\nvarying vec3 vSchale;\nvarying vec3 vWurzel;\nvarying vec3 vKamm;\n':'')+(koerper?GLSL_RAUSCHEN:'');
@@ -85,16 +85,20 @@ function laborStoff(m0,geo,skin,cache){
         'h1=fract(sin(dot(zS,vec3('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+','+gf(FS.hashA[2])+')))*'+gf(FS.hashA[3])+');'+
         'h2=fract(sin(dot(zS,vec3('+gf(FS.hashB[0])+','+gf(FS.hashB[1])+','+gf(FS.hashB[2])+')))*'+gf(FS.hashB[3])+');'+
         'mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';qS=pS-zS-0.5-mS;lS=dot(qS,kS);dS=sqrt((dot(qS,qS)-lS*lS)*'+gf(FS.strich)+'+lS*lS/'+gf(FS.strich)+');'+
-        'haarS=max(haarS,step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+'));';};
+        'hS=step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+');haarS=max(haarS,hS);'+
+        // der Querschnitt (w20-haar-arm): der Ton der Locke dünnt vom Kern zur Kante auf den Unterton aus
+        'querS=max(querS,hS*(1.0-smoothstep('+gf(FS.kern)+',1.0,dS/max(rS,1e-6))));';};
       var lockenS='';for(var oS=-FS.nachbarn;oS<=FS.nachbarn;oS++)lockenS+=lockeS(oS);
-      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 kS=vKamm/max(length(vKamm),1e-6);vec3 zS;float h1;float h2;vec3 mS;vec3 qS;float lS;float dS;float haarS=0.0;'+
+      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*(vSchale.z/'+gf(FS.locke)+');vec3 kS=vKamm/max(length(vKamm),1e-6);vec3 zS;float h1;float h2;vec3 mS;vec3 qS;float lS;float dS;float hS;float haarS=0.0;float querS=0.0;'+
         'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+lockenS+
         'float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
-'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
+        // die Auflösung der Locke (w20-haar-arm, FS.aufloesung): ihre Breite in Pixeln blendet den Ton ein, darunter der mittlere Ton FS.mittel
+        'float zeigS=smoothstep('+gf(FS.aufloesung[0])+','+gf(FS.aufloesung[1])+',sqrt(vSchale.y)*'+gf((FS.radius*(1-0.5*FS.zulauf)*2)/Math.sqrt(FS.strich))+'/max(max(length(dFdx(pS)),length(dFdy(pS))),1e-6))*(wolleS+(1.0-wolleS)*querS);'+
+'diffuseColor.rgb*=mix('+gf(FS.mittel.ton)+',mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS),zeigS);diffuseColor.a=max(haarS,wolleS);':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(koerper){var mf=L.microFur;look+='totalEmissiveRadiance+='+gv(L.rimFarbe)+'*pow(rimL,'+gf(L.rimPow)+')*'+gf(L.rimAmt)+'+'+gv(L.sheenFarbe)+'*pow(max(ndvL,0.0),'+gf(L.sheenPow)+')*'+gf(L.sheenAmt)+
         '+'+gv(mf.farbe)+'*pow(rimL,3.0)*step('+gf(mf.schwelle)+',fract(sin(dot(floor(vGeo.xz*'+gf(mf.dichte)+'),vec2('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+')))*'+gf(FS.hashA[3])+'))*'+gf(mf.amt)+';';}
-      else{/* ohne Vertex-Farbe ist der Ton der Anker selbst (die Welt füllt color mit mp.color): die Achse steht bei 1 */var sT=schale?'vSchale.x':!vc?'1.0':'clamp((dot(vColor,vec3(0.2126,0.7152,0.0722))/'+gf(tonL)+'-'+gf(L.wurzelAnker)+')/'+gf(Math.max(1e-3,1-L.wurzelAnker))+',0.0,1.0)';
+      else{/* ohne Vertex-Farbe ist der Ton der Anker selbst (die Welt füllt color mit mp.color): die Achse steht bei 1 */var sT=schale?'mix('+gf(FS.mittel.t)+',vSchale.x,zeigS)':!vc?'1.0':'clamp((dot(vColor,vec3(0.2126,0.7152,0.0722))/'+gf(tonL)+'-'+gf(L.wurzelAnker)+')/'+gf(Math.max(1e-3,1-L.wurzelAnker))+',0.0,1.0)';
         look+='float sTL='+sT+';totalEmissiveRadiance+='+gv(L.tipRimFarbe)+'*pow(rimL,'+gf(L.tipRimPow)+')*sTL+'+gv(L.specFarbe)+'*pow(max(ndvL,0.0),'+gf(L.specPow)+')*sTL*'+gf(L.specAmt)+';';}
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+raster).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look);
       if(koerper)sh.fragmentShader=sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','outgoingLight*=max(ndvL,0.0)*'+gf(L.wrap)+'+'+gf(1-L.wrap)+';\ngl_FragColor = vec4( outgoingLight, diffuseColor.a );');

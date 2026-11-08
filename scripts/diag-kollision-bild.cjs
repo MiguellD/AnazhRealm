@@ -210,7 +210,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST, rahmen } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullWelt, pngDatei, SELBSTTEST, rahmen, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
@@ -219,17 +219,12 @@ if (SELBSTTEST) {
 }
 
 const { messort } = require("./lib/welt-orte.cjs");
-const { fehlerText } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `--bild`: die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot (`linsenWebGpuArgs`, die Adapter-Zeile
 // `[linse-gpu] <Hersteller>/…`), ohne Null-Renderer, das Beweisbild aus dem Ausgabe-Pfad — physik.K2 Staffel 2 auf beiden Geräten
 const BILD = process.argv.includes("--bild");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const bildSeite = async (o) => {
-    const browser = await require("./lib/welt-boot.cjs").starteBrowser({ art: BILD ? "linse" : "null", viewport: { width: 640, height: 360 }, ...o });
-    return { browser, page: await browser.newPage() };
-};
 const server = statikServer();
 // DIE GEOMETRIE, eigen (nie der Löser, den sie richtet; in der Seite global): eine Box im eigenen Rahmen (`rahmen`, welt-boot),
 // ein Punkt (u, w) längs ihrer Achsen
@@ -753,12 +748,10 @@ async function tempo(K) {
 
 (async () => {
     console.log(`=== KOLLISION = BILD — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Mess-Wiese 150 m ===`);
-    await server.lausche(PORT);
-    const { browser, page } = await (BILD ? bildSeite : nullSeite)({ frist: BILD ? 36e5 : 9e5 });
+    const { browser, page } = await nullWelt(server, { port: PORT, bild: BILD, art: BILD ? "linse" : "null", viewport: BILD ? { width: 640, height: 360 } : undefined, frist: BILD ? 36e5 : 9e5 }, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined); // prettier-ignore
     page.setDefaultTimeout(BILD ? 36e5 : 88e4);
     let befund = null;
     try {
-        await server.zeige(page, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined);
         await warteAufWelt(page, 180000);
         // die Welt zeichnet: der Renderer steht, die Aufnahme ist eingebaut, der eigene Loop der Seite ruht (die Probe taktet)
         if (BILD) await page.evaluate(AUSGABE_INSTALL + ";__weltDa((r) => r.state.rendererReady).then((r) => r.state.renderer.setAnimationLoop(null))");
@@ -769,12 +762,7 @@ async function tempo(K) {
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + befund.fehler);
-        process.exit(1);
-    }
+    await seiteZu(browser, server, befund, null, "fehler");
     const m = befund.zensus.max.map((x) => x.toFixed(2));
     console.log(`  ${befund.zensus.werke} Studio-Werke · Box ohne Bild seitlich/oben ${m[0]}/${m[1]} m · Bild ohne Box ${m[2]} m`);
     // OFFEN (nie grün gezählt): Haus und Ausstattung — Bild im Körper-Band ohne Box, Zahl und Ort im Werk-Rahmen (x/y/z)

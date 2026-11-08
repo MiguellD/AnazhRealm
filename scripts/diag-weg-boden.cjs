@@ -16,7 +16,7 @@
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
-const { statikServer, hauptLauf, nullSeite, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WEG_PORT || 4596);
 const server = statikServer();
 
@@ -307,8 +307,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    const { browser, page } = await nullSeite({ frist: 120000 }, server, PORT);
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 120000 }, 30000);
     // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
     // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe).
     // Die Büschel einer Kachel stehen erst mit der Weite der gezeichneten Vorlagen (`nahWiese.reich`, ihr EINER Schreiber ist
