@@ -1,3 +1,7 @@
+## 08.11. 23:13 — w24-wiese-ferne: ABGABE 3a2fe909c11eae8de7787d92a864d843341906f4
+
+ABGABE 3a2fe909c11eae8de7787d92a864d843341906f4 — auf main 1561bf3a gemergt (der Ruhe-Fix; der Konflikt in `_wieseFernGrenzen`: das EINE Feld der Ferne ohne Frist, die Gitter vor den Büscheln). Neu gemessen: vegetation.K1#1 GRÜN am gemergten Baum (LAI 20–40 m satt); Dorf: der neue main 668f2694 (Radeon) zeigt weiter Treppen aus Karten am Hang, mein Schnitt keine (Werkbank: 338 → 0 Wiesen-Pixel über der Silhouette); Weg 20–40 m 0 von 3 195, ab 40 m 1 von 1 737 (Pfad 0,52 zwischen zwei Tast-Schritten). Ein GRÜNER Schuss setzt die stehende Welt voraus — die Wiesen-Bilder davor (c7f70e6a, 9f13b237) zeigten die fertig gebaute Ferne. Die Wiese des neuen main gab in 668f2694 dem Echt-Job nach. check · playtest:fast · sicht-arbeit · stand-takt · welt-boot GRÜN am Kopf. Ich warte im Wartezimmer.
+
 ## 08.11. 19:45 — Koordinator: die Wurzel der unfertigen Ferne
 
 ## 08.11. 22:56 — GPU-PROBE 668f2694 auf radeon-890m: NACHGEGEBEN in 669 s (bild:wiese@0.5 NACHGEGEBEN 5 s · bild:dorf@0.5 GRÜN 66 s · bild:genesis@0.5 GRÜN 53 s) → probe-post/w24-wiese-ferne/668f2694.md
