@@ -3335,7 +3335,7 @@ class AnazhRealm_bild_kosten {
     // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
     // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
     // EINEN Gesetz der Pass-Wahl (`_passTrifft` als WGSL, `PASS_WAHL_WGSL`), schreibt die getroffenen verdichtet in die Liste
-    // und zählt die Zahl des Zugs atomar im Auftrags-Puffer der Arena; der Instanz-Knoten liest `matrizen[liste[instance_index]]`
+    // und schreibt die Zahl des Zugs in den Auftrags-Puffer der Arena (in der Folge der Instanzen, `PASS_WAHL_WGSL`); der Instanz-Knoten liest `matrizen[liste[instance_index]]`
     // (`_senkenKnoten`). Ein Wurf ist der Bruch der Arena (`_arenaBruch`): jedes Glied zeichnet wieder über seinen Zeichner.
     _instanzWahlGpu(kamera, S) {
         const reg = AnazhRealm.__arenen;
@@ -3356,7 +3356,7 @@ class AnazhRealm_bild_kosten {
 
     // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
     // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
-    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (x: die Instanzen zu 64, y: ihre Züge).
+    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (y: ihre Züge, je Zug EINE Arbeitsgruppe, `PASS_WAHL_WGSL`).
     _wahlRechnen(rend, L, arenen) {
         const be = rend.backend,
             dev = be.device,
@@ -3404,7 +3404,7 @@ class AnazhRealm_bild_kosten {
             W.f = new Float32Array(size / 4);
             W.u = new Uint32Array(W.f.buffer);
         }
-        const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
+        off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
         dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
@@ -3425,7 +3425,7 @@ class AnazhRealm_bild_kosten {
                 bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
             }
             pass.setBindGroup(0, bg.bg, [off[j]]);
-            pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
+            pass.dispatchWorkgroups(1, n); // je Auftrag EINE Arbeitsgruppe: sie verdichtet in der Folge der Instanzen
         }
         pass.end();
         dev.queue.submit([enc.finish()]);
@@ -3460,9 +3460,7 @@ class AnazhRealm_bild_kosten {
     // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 12 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
     // erste Instanz · Zahl · Platz der Zahl im Auftrags-Puffer · Abschnitt der Liste, der Saum (die Gestalt des Gangs trägt
     // keinen: ihre Kugel deckt jede Pose). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
-    // Liefert die größte Zahl (die Breite des Dispatch).
     static _wahlAuftraege(wahl, f, u, o) {
-        let nMax = 0;
         for (let j = 0; j < wahl.length; j += 5, o += 12) {
             const g = wahl[j].geometry;
             if (!g.boundingSphere) g.computeBoundingSphere();
@@ -3470,9 +3468,7 @@ class AnazhRealm_bild_kosten {
             f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
             u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
             f.set([0, 0, 0, 0], o + 8);
-            nMax = Math.max(nMax, wahl[j + 2]);
         }
-        return nMax;
     }
 
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
@@ -3742,7 +3738,10 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
 // jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
 // entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
-// Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
+// Ebene, wirft sie dort nicht. DIE VERDICHTUNG IST DETERMINISTISCH (w25-gpu-wahl, Atlas Schnitt 2): je Zug EINE Arbeitsgruppe
+// geht seine Instanzen in Blöcken zu 64 durch, eine Präfix-Summe im geteilten Speicher legt jede getroffene auf ihren Platz
+// in der Folge der Instanzen, die Zahl des Zugs schreibt sie am Ende. Bis hier zählte `atomicAdd` je Instanz: die Liste
+// ordnete sich je Bild anders (Spike w25: die Pop-Treue brach um 109–128 Bytes, zwei Aufnahmen derselben Pose wichen ab).
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
@@ -3753,12 +3752,9 @@ struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
 @group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
 @group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
 @group(0) @binding(3) var<storage, read_write> liste: array<u32>;
-@group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
-@compute @workgroup_size(64)
-fn wahl(@builtin(global_invocation_id) id: vec3u) {
-    let a = auftraege[id.y];
-    if (id.x >= a.platz.y) { return; }
-    let i = a.platz.x + id.x;
+@group(0) @binding(4) var<storage, read_write> args: array<u32>;
+var<workgroup> summe: array<u32, 64>;
+fn behalten(a: Auftrag, i: u32) -> bool {
     let m = matrizen[i];
     let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
@@ -3766,17 +3762,41 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {
         let e = lage.ebenen[p];
-        if (dot(e.xyz, c) + e.w < -rr) { return; }
+        if (dot(e.xyz, c) + e.w < -rr) { return false; }
     }
     if (lage.licht.w > 0.5) {
         let ende = c + lage.licht.xyz * max(0.0, dot(lage.tiefe.xyz, c) + lage.tiefe.w + r);
         let st = r + lage.saum.x;
         for (var p = 0u; p < 6u; p++) {
             let e = lage.kapsel[p];
-            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
+            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return false; }
         }
     }
-    liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
+    return true;
+}
+@compute @workgroup_size(64)
+fn wahl(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
+    let a = auftraege[wid.y];
+    let t = lid.x;
+    var basis = 0u;
+    for (var k = 0u; k < a.platz.y; k += 64u) {
+        let j = k + t;
+        var ja = 0u;
+        if (j < a.platz.y && behalten(a, a.platz.x + j)) { ja = 1u; }
+        summe[t] = ja;
+        workgroupBarrier();
+        for (var o = 1u; o < 64u; o *= 2u) {
+            var v = 0u;
+            if (t >= o) { v = summe[t - o]; }
+            workgroupBarrier();
+            summe[t] += v;
+            workgroupBarrier();
+        }
+        if (ja == 1u) { liste[a.platz.w + basis + summe[t] - 1u] = a.platz.x + j; }
+        basis += summe[63];
+        workgroupBarrier();
+    }
+    if (t == 0u) { args[a.platz.z] = basis; }
 }
 `;
 // DIE FARBSICHT (spielgang.K4, `_farbsichtMatrix`, die Post-Kette `_ensurePostProcessing`): die Simulation der Dichromasie nach
