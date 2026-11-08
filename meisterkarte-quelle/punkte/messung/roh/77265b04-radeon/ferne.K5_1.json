@@ -1,0 +1,310 @@
+{
+ "gy": 210,
+ "zeilen": [
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 0,
+   "kante": {
+    "spalten": 60,
+    "rand": 0,
+    "linie": 0,
+    "stufe": 0
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 1374,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 1.336
+    },
+    {
+     "d": 2000,
+     "n": 820,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0.6579
+    },
+    {
+     "d": 5000,
+     "n": 84,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 173,
+     "q": [
+      0,
+      0.01589,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.1392,
+    0.09411,
+    0.05059
+   ],
+   "rand": {
+    "km": 32.2,
+    "C": 0.01715
+   },
+   "sicht": {
+    "m": 1644,
+    "n": 4397
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 90,
+   "kante": {
+    "spalten": 60,
+    "rand": 16,
+    "linie": 0.47,
+    "stufe": 0.0284
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 351,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 1.822
+    },
+    {
+     "d": 2000,
+     "n": 822,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0.7128
+    },
+    {
+     "d": 5000,
+     "n": 70,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 113,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.1262,
+    0.0876,
+    0.04682
+   ],
+   "rand": {
+    "km": 33.6,
+    "C": 0.005141
+   },
+   "sicht": {
+    "m": 1562,
+    "n": 3952
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 180,
+   "kante": {
+    "spalten": 60,
+    "rand": 29,
+    "linie": 4.68,
+    "stufe": 0.021
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 1357,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 1.109
+    },
+    {
+     "d": 2000,
+     "n": 546,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 5000,
+     "n": 78,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 226,
+     "q": [
+      0,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.1191,
+    0.08386,
+    0.04558
+   ],
+   "rand": {
+    "km": 33,
+    "C": 0.01931
+   },
+   "sicht": {
+    "m": 1712,
+    "n": 4609
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 270,
+   "kante": {
+    "spalten": 60,
+    "rand": 21,
+    "linie": 3.27,
+    "stufe": 0.0276
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 5,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 2.63
+    },
+    {
+     "d": 2000,
+     "n": 206,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0.7128
+    },
+    {
+     "d": 5000,
+     "n": 323,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 231,
+     "q": [
+      0,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.1262,
+    0.0876,
+    0.04682
+   ],
+   "rand": {
+    "km": 35.9,
+    "C": 0.01108
+   },
+   "sicht": {
+    "m": 1520,
+    "n": 2729
+   }
+  }
+ ],
+ "weiss": {
+  "sonne": 5,
+  "blende": 1,
+  "RB": null
+ }
+}

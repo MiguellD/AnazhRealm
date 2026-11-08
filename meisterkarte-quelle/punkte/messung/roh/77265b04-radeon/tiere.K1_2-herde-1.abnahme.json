@@ -1,0 +1,257 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.223",
+  "sha": "77265b04554159d5c93e0e124cc44a87facef5c9"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0521,
+   "taeter": {
+    "Rinde baum_kiefer": 0.0503,
+    "Laub baum_tanne": 0.0017
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.41,
+  "gestalt": [
+   "baum_birke 2239"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -538.467,
+   33.715,
+   -934.98
+  ],
+  "blick": [
+   -0.13161,
+   0.13878,
+   0.98154
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 43.7,
+  "sigma": 28.7,
+  "schwarz": 0.0003,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 12,
+  "gewaehlt": 5,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -570.27,
+     38.18,
+     -926.54
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Rinde baum_birke in 27.73 m"
+    ],
+    "ms": 293
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -578.35,
+     57.733,
+     -866.28
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 3 Natur baum_tanne in 38.5 m"
+    ],
+    "ms": 5155
+   },
+   {
+    "k": 12,
+    "kamera": [
+     -549.893,
+     54.465,
+     -849.76
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 5 Natur baum_kiefer in 33.02 m"
+    ],
+    "ms": 122
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -586.817,
+     51.787,
+     -886.86
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Boden-Schicht in 11.23 m"
+    ],
+    "ms": 115
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -586.79,
+     48.144,
+     -898.083
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_birke in 15.95 m"
+    ],
+    "ms": 180
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -583.86,
+     44.961,
+     -908.917
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Boden-Schicht in 11.5 m"
+    ],
+    "ms": 232
+   },
+   {
+    "k": 13,
+    "kamera": [
+     -518.09,
+     42.506,
+     -858.2
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Rinde baum_tanne in 40 m"
+    ],
+    "ms": 138
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -578.225,
+     41.96,
+     -918.623
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Boden-Schicht in 17.08 m"
+    ],
+    "ms": 119
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -560.537,
+     35.588,
+     -932.128
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Boden-Schicht in 20.98 m"
+    ],
+    "ms": 119
+   },
+   {
+    "k": 11,
+    "kamera": [
+     -501.57,
+     35.405,
+     -886.657
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 6 fern-ring in 13.18 m"
+    ],
+    "ms": 150
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -549.69,
+     34.427,
+     -935.007
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von Natur grown_busch_hazel_v1 in 9.23 m"
+    ],
+    "ms": 88
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -538.467,
+     33.715,
+     -934.98
+    ],
+    "rot": [],
+    "ms": 3108
+   }
+  ],
+  "ms": 9819
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.41 m · Luma 43.7 σ 28.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.223 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 12 Posen",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:fisch=80/120/255",
+   "tier:wesen=255/220/60"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 34
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 620
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 517
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\77265b04-radeon\\tiere.K1_2-herde-1.maske.png"
+ }
+}

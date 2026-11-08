@@ -1,0 +1,48 @@
+{
+ "wiese": {
+  "ego": {
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25920,
+    "verhaeltnis": 0.785
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 151
+   },
+   "regenbild": 0.953
+  },
+  "third": {
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25860,
+    "verhaeltnis": 0.778
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 96
+   },
+   "regenbild": 0.928
+  }
+ }
+}
