@@ -1525,6 +1525,43 @@ const K3_LAUF = (aus) =>
 const VOR_EVAL = `const s = r.state, P = [-258.4, -1132.8], f = r._hydroRiverAt(P[0], P[1]); if (!f) return { fehler: "kein Bach an " + P.join("/") }; window.__wetterSetzen("sunny"); r._naesseTakt(1e6); window.__k3Grund = s.regenStempel && s.regenStempel.slice(); const [ex, ez] = [P[0] - f.flowZ * 7, P[1] + f.flowX * 7], ey = r._voxelSurfaceY(ex, ez) + 1.7; return { vor: r._hydroRiverAt(P[0], P[1]).surfaceY, kamera: [ex, ey, ez, P[0], f.surfaceY, P[1]].map((v) => +v.toFixed(3)) };`;
 const STURM_EVAL = `const s = r.state, P = [-258.4, -1132.8]; window.__wetterSetzen("stormy"); r._naesseTakt(0); for (let k = 0; k < 240; k++) (s.spielZeit += 5), r._tickRain(); window.__wetterSetzen("sunny"); r._naesseTakt(0); r._pegelTakt(); r._drainDirtyVoxelChunks(); return { nach: r._hydroRiverAt(P[0], P[1]).surfaceY };`;
 const ZURUECK_EVAL = `const s = r.state; window.__wetterSetzen("sunny"); s.regenStempel = window.__k3Grund; r._pegelTakt(); r._drainDirtyVoxelChunks(); return { zurueck: true };`;
+// DAS ZIEL AUF DEM WASSER (gelaende.K3#1, w24-linse-wasserziel; `W eval '…'`: ohne einfaches Anführungszeichen): die Ego-Pose am Ufer
+// (Gier −1,309, Neigung 0) und EIN Bild ihrer Tiefe (`__spiegelDaten`); je Gier-Versatz (0, ±5° … ±50°, die Breite des Bilds) jede
+// nasse Stelle 3–120 m voraus (`_nassAt`, je 2 m) als Punkt auf ihrem Spiegel (`_koerperWasser`), gefragt an DIESEM Bild über die EINE
+// Abnahme des Ziels (`__abnahmeMessen` nurZiel): frei heißt, das Bild zeigt an seinem Pixel nichts davor — nie die Nachsicht für die
+// Boden-Schicht der fernen Hälfte (`__zielMessen`: ein Strauch in 25 m vor dem Wasser in 40 m hieß dort frei, das Bild zeigte den
+// Strauch). Der erste sichtbare Punkt ist das Ziel; das Auge des Spiels dreht dorthin (zweimal: die Kamera sitzt am Kopf), das Ziel
+// auf seinem Strahl im Abstand des Wassers — vom selben Auge sieht es dasselbe, in jeder Richtung
+// die Roh-Ausgaben der Proben (knapp: was das Urteil liest): am main 53b2fc7a das Ziel auf dem Wasser (Radeon 08.11., dieser Zweig),
+// am main e475c6b4 der alte Weg — das Ziel 100 m voraus in Augenhöhe, ohne Zeile WASSER (Radeon 08.11., damals GRÜN)
+const K3_ROH = { neu: {"j":{"klasse":{"klassen":{"wasserSatz":{"spiegelTreue":0.7231,"pixel":20554,"spiegelEbene":1.091}}},"bild":{"w":1920,"h":1080},"pose":{"kamera":[1866.6,3.928,-6193.9],"blick":[-0.96499,-0.044,0.25857]},"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 49.05 m · Luma 94.1 σ 35.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.226 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3"},"stdout":"KAMERA 1866.6 3.928 -6193.9 1819.27 1.77 -6181.218\nWASSER {\"y\":1.77,\"nass\":true,\"versatz\":0,\"gefragt\":8}"}, alt: {"j":{"klasse":{"klassen":{"wasserSatz":{"spiegelTreue":0.7181,"pixel":25551,"spiegelEbene":0.877}}},"bild":{"w":1920,"h":1080},"pose":{"kamera":[1866.6,3.928,-6193.9],"blick":[-0.96593,0,0.25882]},"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 94.7 σ 36.9 schwarz 0.1 % weiß 0.0 % · Stand 18.546.217 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3"},"stdout":"KAMERA 1866.6 3.928 -6193.9 1770.007 3.928 -6168.018"} };
+const k3Wasser = (o) => K3_ROH.neu.stdout.replace(/^WASSER .*$/m, "WASSER " + JSON.stringify(Object.assign(JSON.parse(/^WASSER (.*)$/m.exec(K3_ROH.neu.stdout)[1]), o)));
+const WASSER_ZIEL = `const s = r.state, G = -1.309;
+if (s.cameraMode !== "first") r.setCameraMode("first");
+const stell = (g, n) => { s.yaw = g; s.pitch = n; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); return s.camera; };
+const E0 = stell(G, 0).position.clone();
+const nass = (x, z) => r._nassAt(x, z);
+const spiegel = (x, z) => r._koerperWasser(x, z, r._voxelSurfaceY(x, z));
+window.__loopBild();
+const S = await window.__spiegelDaten();
+const sieht = (p) => { const z = window.__abnahmeMessen({ ziel: { x: p.x, y: p.y, z: p.z, name: "Wasser", fuss: false }, nurZiel: true, tiefe: S }).ziel || {}; return z.imBild === true && z.frei === true; };
+let gefragt = 0, wahl = null;
+for (const w of [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25, 30, -30, 35, -35, 40, -40, 45, -45, 50, -50]) {
+    const g = G + (w * Math.PI) / 180, dx = Math.sin(g), dz = Math.cos(g);
+    for (let d = 3; d <= 120 && !wahl; d += 2) {
+        const x = E0.x + dx * d, z = E0.z + dz * d;
+        if (!nass(x, z)) continue;
+        gefragt++;
+        const p = new T.Vector3(x, spiegel(x, z), z);
+        if (sieht(p)) wahl = { w, p };
+    }
+    if (wahl) break;
+}
+if (!wahl) return { kamera: null, wasser: { fehler: gefragt ? "kein Wasser im Bild der Ego-Pose (" + gefragt + " nasse Stellen verdeckt)" : "kein Gewässer 3–120 m im Blick", gefragt } };
+let c = s.camera;
+for (let i = 0; i < 2; i++) { const v = wahl.p.clone().sub(c.position); c = stell(Math.atan2(v.x, v.z), Math.asin(v.y / v.length())); }
+const L = wahl.p.distanceTo(c.position), t = c.position.clone().addScaledVector(c.getWorldDirection(new T.Vector3()), L);
+return { kamera: [c.position.x, c.position.y, c.position.z, t.x, t.y, t.z].map((q) => +q.toFixed(3)), wasser: { y: +spiegel(t.x, t.z).toFixed(3), nass: nass(t.x, t.z), versatz: wahl.w, gefragt } };`;
 const WELT_PFAD = ["stamm/dirigent-*.js", "stamm/daten.js", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "spec/profiband/haushalt.json"];
 
 // DIE ROH-AUSGABE der Welt-Probe am main 25ac4c0c (01.11., Cloud, headless): die Proben jeder Station urteilen sie und ihre Mutanten
@@ -1787,9 +1824,14 @@ module.exports = [
     // die Kamera aus dem Spiel (state.camera nach `_loopCamera`), geschossen mit `bild --wahl 0` in 1920×1080 aus dem
     // Ausgabe-Pfad (werkbank start --echt gegen den eigenen save-server auf {PORT}, die Werkbank auf {PORT} + 20000)
     // DAS BUDGET DER SITZUNG (29.10., ≤ 30 min je Gerät): EIN Teleport an den See, EIN Schuss — Ziel 20 s, Deckel 45 s
-    // DER BLICK-PUNKT SCHWEBT (w18-abnahme-sicht, `--fuss false`): das Ziel liegt 100 m voraus in Augenhöhe über dem See, kein Werk —
-    // sein Fuß (Boden + 0,3 m) ist kein Beweis; seit die Abnahme die Tiefe des Bilds fragt, stand er hinter dem Ufer in 90,78 m (Radeon
-    // 1b1fe4d4, d16b407a), der Strahl der CPU sah dort nichts
+    // DAS ZIEL LIEGT AUF DEM WASSER, DAS DIE STATION MISST (w24-linse-wasserziel, `--fuss false`, `--ziel Wasser`): bis dahin lag der
+    // Blick-Punkt 100 m voraus in Augenhöhe, ein Punkt ohne Bezug — er stand hinter dem Ufer in 90,78 m (Radeon 1b1fe4d4, d16b407a), dann
+    // im Wald, und seit die Eichen-Krone der Karte breiter ist (w23-karte-l2, `_karteSaumVon`) verdeckte sie ihn in 33,98 m (Radeon
+    // 77265b04), während das Wasser links im Bild lag. Jetzt ist das Ziel die erste nasse Stelle (`_nassAt`, die EINE Wahrheit „ist hier
+    // Wasser"), die das Bild der Ego-Pose an ihrem Pixel zeigt (`WASSER_ZIEL`: je Gier-Versatz 0, ±5° … ±50°, 3–120 m voraus, auf ihrem
+    // Spiegel); das Auge des Spiels dreht Gier und Neigung dorthin (`_loopCamera`), das Ziel liegt auf seinem Strahl im Abstand des
+    // Wassers. Die Zeile WASSER nennt Spiegel, Nässe, Gier-Versatz und die Zahl der gefragten nassen Stellen; das Urteil verlangt das
+    // Ziel ≤ 0,1 m am Spiegel einer nassen Stelle.
     {
         kriterium: "gelaende.K3",
         staffel: 1,
@@ -1797,14 +1839,15 @@ module.exports = [
         probe: { sek: 26, befehl: [
             "bash",
             "-c",
-            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --fuss false --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
+            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval '${WASSER_ZIEL}' > "$D/kamera.txt" 2>&1; node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let o = {}; try { o = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {}; } catch (_e) { o = {}; } console.log((o.kamera || []).join(" ")); console.log("WASSER " + JSON.stringify(o.wasser || { fehler: t.slice(0, 300) }))' "$D/kamera.txt" > "$D/ziel.txt" 2>&1; KAM=$(head -1 "$D/ziel.txt"); echo "KAMERA $KAM"; tail -1 "$D/ziel.txt"; [ -n "$KAM" ] || exit 1; W bild $KAM --w 1920 --h 1080 --wahl 0 --fuss false --ziel Wasser --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
         ] },
         gpu: true,
         zeit: false,
         minuten: 6,
         urteil: (j, lauf) => {
             if (!j || !j.klasse) {
-                const f = /"fehler": "([^"]*)/.exec(lauf.stdout || "");
+                // der erste Fehler der Ausgabe: die Zeile WASSER (kein Wasser im Bild) vor dem Schuss, sonst der Schuss selbst
+                const f = /"fehler": ?"([^"]*)/.exec(lauf.stdout || "");
                 return { gruen: false, zahl: "kein Begleit-JSON mit Klassen (Exit " + lauf.exit + (f ? ": " + f[1].slice(0, 200) : "") + ")" };
             }
             const w = (j.klasse.klassen || {}).wasserSatz || {};
@@ -1813,16 +1856,28 @@ module.exports = [
             const pk = (j.pose && j.pose.kamera) || [];
             const pb = (j.pose && j.pose.blick) || [];
             // die Pose des Schusses ist die Kamera des Spiels, Ort UND Blick (Schlupfloch: die Blick-Wahl verschiebt sie, B09;
-            // 23.10.: ohne `_loopCamera` blieb die Kamera der Werkbank auf Gier 0 stehen, der Schuss sah nach +z ins Laub)
+            // 23.10.: ohne `_loopCamera` blieb die Kamera der Werkbank auf Gier 0 stehen, der Schuss sah nach +z ins Laub) — der Blick
+            // ist die Richtung zum Ziel, über seinen Abstand
+            const L = kam ? Math.hypot(+kam[4] - +kam[1], +kam[5] - +kam[2], +kam[6] - +kam[3]) : 0;
             const gleich =
-                !!kam && pk.length === 3 && pb.length === 3 &&
-                [1, 2, 3].every((i) => Math.abs(+kam[i] - pk[i - 1]) <= 0.05 && Math.abs((+kam[i + 3] - +kam[i]) / 100 - pb[i - 1]) <= 0.01);
-            const gruen = w.spiegelTreue != null && w.spiegelTreue >= 0.6 && b.w === 1920 && b.h === 1080 && gleich && j.ok === true;
+                !!kam && L > 0 && pk.length === 3 && pb.length === 3 &&
+                [1, 2, 3].every((i) => Math.abs(+kam[i] - pk[i - 1]) <= 0.05 && Math.abs((+kam[i + 3] - +kam[i]) / L - pb[i - 1]) <= 0.01);
+            // DAS ZIEL AUF DEM WASSER: der Blick-Punkt liegt ≤ 0,1 m am Spiegel einer nassen Stelle (die Zeile WASSER des Spiels)
+            const wm = /^WASSER (\{.*\})\s*$/m.exec(lauf.stdout || "");
+            let wz = null;
+            try {
+                wz = wm ? JSON.parse(wm[1]) : null;
+            } catch (_e) {
+                wz = null;
+            }
+            const aufWasser = !!kam && !!wz && wz.nass === true && Number.isFinite(wz.y) && Math.abs(+kam[5] - wz.y) <= 0.1;
+            const gruen = w.spiegelTreue != null && w.spiegelTreue >= 0.6 && b.w === 1920 && b.h === 1080 && gleich && aufWasser && j.ok === true;
             return {
                 gruen,
                 zahl:
                     "spiegelTreue " + w.spiegelTreue + " (wasserSatz " + w.pixel + " px, spiegelEbene " + w.spiegelEbene + ") in " + b.w + "×" + b.h +
                     ", Pose " + (gleich ? "= Kamera des Spiels" : "WEICHT AB (" + (kam ? kam.slice(1).join("/") : "?") + " gegen " + pk.join("/") + " Blick " + pb.join("/") + ")") +
+                    ", Ziel " + (aufWasser ? "auf dem Wasser in " + L.toFixed(1) + " m (Gier-Versatz " + wz.versatz + "°)" : "OHNE Bezug zum Wasser" + (wz && wz.fehler ? " (" + wz.fehler + ")" : wz ? " (Spiegel " + wz.y + ", nass " + wz.nass + ")" : "")) +
                     ", " + (j.zeile || "ohne Abnahme-Zeile"),
             };
         },
@@ -1843,6 +1898,13 @@ module.exports = [
             "scripts/lib/abnahme-urteil.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/software-gpu.cjs",
+        ],
+        proben: [
+            { name: "die Messung am main 53b2fc7a (das Ziel auf dem Wasser in 49,0 m, spiegelTreue 0,7231)", stdout: K3_ROH.neu.stdout, j: K3_ROH.neu.j, gruen: true },
+            { name: "der alte Weg am main e475c6b4 (das Ziel 100 m voraus in Augenhöhe, ohne Wasser)", stdout: K3_ROH.alt.stdout, j: K3_ROH.alt.j, gruen: false, zahl: /Ziel OHNE Bezug zum Wasser/ },
+            { name: "MUTANTE das Ziel 2 m über dem Spiegel", stdout: k3Wasser({ y: -0.23 }), j: K3_ROH.neu.j, gruen: false, zahl: /Ziel OHNE Bezug zum Wasser/ },
+            { name: "MUTANTE das Ziel auf trockenem Grund", stdout: k3Wasser({ nass: false }), j: K3_ROH.neu.j, gruen: false, zahl: /Ziel OHNE Bezug zum Wasser/ },
+            { name: "MUTANTE kein Wasser im Bild der Ego-Pose", stdout: ["KAMERA ", "WASSER " + JSON.stringify({ fehler: "kein Wasser im Bild der Ego-Pose (8 nasse Stellen verdeckt)", gefragt: 8 })].join("\n"), j: null, gruen: false, zahl: /kein Wasser im Bild der Ego-Pose/ },
         ],
         quelle: "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät",
     },
