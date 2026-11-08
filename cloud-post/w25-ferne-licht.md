@@ -1,5 +1,9 @@
 # Post an w25-ferne-licht
 
+## 08.11. 21:40 — w25-ferne-licht: Nachtrag zur ABGABE 1f8b19ed
+
+Die geschärfte NEUN-Seite des Zweigs w25-ferne-licht-pm (4b84b72) lief am Kopf 1f8b19ed ganz durch (swiftshader voll, Dorf, Teil B, nichts ausgelassen): ferne.K4 ohne den Schleier der Luft 0,4297 (Ls 0,0282 / Ll 0,0657, 21/64 Orte, Grat 5,33 km, Sonne 5,01°, luft 0, 30,6 s auf swiftshader) — 0,03 über dem Soll 0,4; der Rest ist der Grat-Himmel der 96-m-Karte (FUND unten).
+
 ## 08.11. 21:25 — w25-ferne-licht: ABGABE 1f8b19ed145a3a6f11cc1e2bf9adfa3492e1338e
 
 ABGABE 1f8b19ed145a3a6f11cc1e2bf9adfa3492e1338e — Abgabe w25-ferne-licht (main 53b2fc7a im Kopf; Proben bild:gipfel-blick@0.5, bild:wiese@0.5, bild:gipfel-blick@0.735 am Kopf, dieselben drei am Vorher-Zweig w25-ferne-licht-vorher 888b476d = main-Licht + nur Linse und Decke).
@@ -15,14 +19,14 @@ Geschnitten:
 Gemessen (swiftshader, das Urteil der Station über `werkbank licht --luft`):
 - ferne.K1#2: 9 → 4 Befunde. JE KANAL Uhr 0,27 Azimut 90/180/270: ungemessen (0 Paare) → Δβ blau−rot 1,03 / 0,98 / 0,97 × Referenz (1 077 / 755 / 790 Paare); HIMMEL 4 → 0 (Ton 101–125° → 210–216°, Soll 222 ± 15); FARBTON 2 → 4 Azimute (10,5–16,4° → 14,7–25,7°).
 - ferne.K1#1 T/T_soll 0,89–1,00 · ferne.K2#1 Restkontrast 0,6–1,4 % · K2-2 GRÜN — gehalten.
-- ferne.K4 (swiftshader voll, Dorf, Sonne 5°, 21/64 Orte): mit Luft 0,629 → 0,622 (Radeon main 0,6352), ohne Luft 0,468 → 0,444; der Grat nimmt dem Schattenhang 3,6 → 6,2 % seines Himmels.
+- ferne.K4 (swiftshader voll, Dorf, Sonne 5°, 21/64 Orte): mit Luft 0,629 → 0,622 (Radeon main 0,6352), ohne Luft 0,468 → 0,444 (Zerlegungs-Sonde; die geschärfte Station selbst 0,4297, Nachtrag); der Grat nimmt dem Schattenhang 3,6 → 6,2 % seines Himmels.
 - Physik (CPU-Nachbau Hillaire je Probe): der 5,7-km-Weg aus 1 500 m trägt In-Streuung 0,0037 E0 (das Bild 0,0023) — durch die Luft der Referenz (Koschmieder 20 km) erreicht kein richtiges Bild 0,4.
 
 Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:welt-boot · gate:post-kette (kein [ERROR] STOFF) · gate:ego-schatten · gate:schatten-terminator · gate:betriebsgesetz (scripts +204 → −41 Atome: die `lin`-Tafeln und `Y`-Namen der Licht-Linsen waren Zwillinge von srgbLin/luma709, dazu Gleichschritte).
 
 Ehrlich offen:
 - FARBTON 8 km 15–26° — FUND stamm/daten.js:614 `WIESEN_GRUND` / stamm/gelaende-chunks.js:3214 `FERN_FARBE` · Wurzel: die Wiese der Ferne trägt keine Selbstbeschattung des Halm-Bestands (nur die Krone, `kronenSchatten` 0,32 auf Satelliten-Band), ohne Luft 0,75 der In-Streuung statt ~0,4 — gegen den nun blauen Horizont zeigt ihr Grün durch · ferne.K1#2 FARBTON · L (Nah-Fern-Naht, Soll-Tafel boden-nah).
-- ferne.K4 ohne Luft 0,444 > 0,4 — FUND stamm/dirigent-ankunft.js:1797 `HORIZONT_KARTE` (`zelleM` 96 m) · Wurzel: die Karte liest nahe Grate (60–240 m vor dem Hang) bis 10° zu flach (Grat des Gesetzes 10,3° → Karte 8,1° im Median), der Abzug des Himmels 6,2 % statt 18,5 % (Nachbau, Band ±30°) — mit ihm ergäbe der Nachbau 0,38 · ferne.K4#1 · M.
+- ferne.K4 ohne Luft 0,43 > 0,4 — FUND stamm/dirigent-ankunft.js:1797 `HORIZONT_KARTE` (`zelleM` 96 m) · Wurzel: die Karte liest nahe Grate (60–240 m vor dem Hang) bis 10° zu flach (Grat des Gesetzes 10,3° → Karte 8,1° im Median), der Abzug des Himmels 6,2 % statt 18,5 % (Nachbau, Band ±30°) — mit ihm ergäbe der Nachbau 0,38 · ferne.K4#1 · M.
 - ferne.K1#2: 7 von 8 Befunden der Karte heil, FARBTON wuchs von 1 auf 4 Azimute; ferne.K4#1 nicht GRÜN.
 
 Maßstab: Hillaire 2020 (Ψ_ms über einer grauen Erde wie Bruneton 2017), die CIE-Tageslicht-Ortskurve (Judd, MacAdam, Wyszecki 1964), Horizon-Based AO aus der Himmels-Sicht der Atmosphäre (UE5 SkyAtmosphere liest die Sky-View-LUT).
