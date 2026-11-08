@@ -3217,8 +3217,14 @@ hauptLauf(async () => {
         try {
             // je Pass die Befehle (p50) eines Laufs, die größten zuerst
             const passe = (b) => Object.entries(b?.jePass || {}).sort((x, y) => y[1].p50 - x[1].p50).slice(0, 5).map(([p, v]) => `${p} ${v.p50}`).join(" "); // prettier-ignore
+            // DIE AKTE der Bewohner neben jedem Gang: was die Welt offen nennt (`_weltOffen`), je Siedlung Köpfe/Werk der Liste/Ungeborene,
+            // und wie oft seit der letzten Akte die Bevölkerung ging, ein Ort wuchs, die Liste begann, einer geboren wurde
+            const ZM = ["_bewohnerFort", "_ortWaechst", "_bewohnerListe", "_bewohnerGeburt"];
+            await evalRuf(`const P = Object.getPrototypeOf(r); if (!P.__gehZ) { P.__gehZ = {}; for (const m of ${JSON.stringify(ZM)}) { const f = P[m]; P[m] = function () { P.__gehZ[m] = (P.__gehZ[m] | 0) + 1; return f.apply(this, arguments); }; } } return 1;`); // prettier-ignore
+            const akte = async () => JSON.stringify(ergebnis(await evalRuf(`const P = Object.getPrototypeOf(r), z = P.__gehZ; P.__gehZ = {}; const o = r._weltOffen(), q = r._autoSettlementQueue; return { offen: Object.fromEntries(Object.entries(o).filter(([, v]) => v)), z, q: q ? q.cellKey + " " + q.idx : null, S: [...(r._bewohnerSiedlungen || new Map()).values()].map((S) => S.key + ":" + (S.liste ? S.liste.length : "-") + (S.listeWerk ? " werk" + (S.listeRest | 0) : "") + " u" + (S.liste || []).filter((b) => b.leib == null).length) };`))); // prettier-ignore
             for (const [ort, gaenge] of [["wiese", 1], ["stadt", 2]]) {
                 await umstellen({ ort, sicht: "ego" });
+                if (ort === "stadt") zeile(`GEH ROT Akte nach dem Umstellen: ${await akte()}`);
                 for (let g = 1; g <= gaenge; g++) {
                     if (g > 1) {
                         const l = await rufe("/lauf", { sek: 2, ein: 0.3, ruhe: 0, regler: "voll", tiere: "frei" });
@@ -3232,7 +3238,7 @@ hauptLauf(async () => {
                     const u = a.frameMs.p95 <= 33.4 ? "GRÜN" : "ROT";
                     gruen = gruen && u === "GRÜN";
                     zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
-                    zeile(`GEH ${u} ${name} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
+                    zeile(`GEH ${u} ${name} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene} · Akte ${await akte()}`);
                     if (g < gaenge) continue; // der letzte Gang des Orts trägt den Baum (der Dienst postet die letzten zehn Zeilen)
                     for (let i = 0, k = 1; i < d.baum.length; k++) {
                         let t = `GEH ${u} ${name} Baum ${k}:`;
@@ -3240,7 +3246,6 @@ hauptLauf(async () => {
                         while (i < d.baum.length && t.length + d.baum[i].length < 580);
                         zeile(t);
                     }
-                    zeile(`GEH ${u} ${name} selbst nach Mitte: ${d.rahmen}`);
                 }
             }
         } catch (e) {
