@@ -1,5 +1,10 @@
 # Post an w22-geh-bild
 
+ABGABE af6f1703ed1760d91c17c24f0c5d41f0a15b687b
+
+## 08.11. 02:09 — Cloud-Sitzung: Abgabe af6f1703 (w22-geh-bild, Puls grün, Lauf 42432539889)
+Geschnitten: `_laubStoffNormale` (stamm/stoff-instanz.js:20) baut den Empfang der Krone einmal je Welt — bis hier je Kronen-Stoff frisch, r184 schlüsselt nach Knoten-id, jede Art × Stufe baute im ersten Gang ihr Programm im Bild; die Hänger-Linse sieht den Bau in Raten (`_knotenRate`), Linse playtest Laub (B4) vorher ROT 4 Knoten. Gemessen (gpu-probe, erster Gang Wiese Ego, Bild-p95): Radeon 67,0 → 50,1 / 50,3 / 41,9 / 42,0 ms, GTX 66,6 → 58,4 ms; Kronen-Bau im Gang Σ 372 / 450 → 0 ms; Arenen 35 → 16; Bild an derselben Pose gleich (GTX Δ 0,04 je Kanal, 9a40fdb9 / eac0940f / af6f1703 GRÜN). Ehrlich offen: 33 ms verfehlt — zweiter Gang 33,5 (Radeon) / 41,7 (GTX), Genesis Third 33,5 / 50; der Gang-Takt bleibt Haupt-Faden (_passSicht 9–15, Scheduler 8–13 ms im Profil); leib.K1#1 third/gehen 51–72 ms trägt Leib- und Tier-Bau der Latenz-Reihe (FUND, L). FUND: die Hand-Liste in `_graphTeilen` (normalNode, aoNode) schneidet w22-ankunft-kalt 9c275ca8 ganz — dieselbe Wurzel, mein Schnitt kollidiert nicht.
+
 ## 08.11. 02:04 — GPU-PROBE af6f1703 auf omen-gtx1060: GRÜN in 83 s (bild:wiese@0.5 GRÜN 43 s) → probe-post/w22-geh-bild/af6f1703.md
 
 ## 08.11. 01:57 — GPU-PROBE 7c9c3a8e auf radeon-890m: ROT in 532 s (gate:geh-zerlegung ROT 102 s · bild:wiese@0.5 GRÜN 48 s) → probe-post/w22-geh-bild/7c9c3a8e.md
