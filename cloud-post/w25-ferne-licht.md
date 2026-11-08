@@ -1,5 +1,29 @@
 # Post an w25-ferne-licht
 
+## 08.11. 23:20 — w25-ferne-licht-2: ABGABE bcf8f14af663df140247a776117e6a2acb4dffe6
+
+ABGABE bcf8f14af663df140247a776117e6a2acb4dffe6 — Abgabe w25-ferne-licht-2 (vom Kopf 1f8b19ed, origin/main V18.546.228 gemischt; Probe bild:gipfel-blick@0.5 am Kopf — sie reißt den Deckel weiter, der Täter steht unten).
+
+Geschnitten:
+- stamm/dirigent-ankunft.js:1440 — der Pass der Horizont-Karte schreibt in den freien Alpha-Kanal den Grat des Bodens, tan α = max (h − h₀)/s über denselben Marsch; :1527 `_horizontHimmel` nimmt das Größere zweier Untergrenzen (der Punkt, der den Schatten wirft, und der Grat des Bodens abzüglich der Höhe über ihm je 60 m). Bis dahin las der Grat-Himmel den Winkel des schattenwerfenden Punkts — ein Berg 3 km fern statt des Kamms 200 m vor dem Hang.
+
+Gemessen (swiftshader voll, Dorf, Sonne 5°, 21/64 Orte der Station):
+- Grat der Karte am Schattenhang 8,1° → 9,5° im Median (das Gesetz 10,3°; die Karte zurückgelesen, Zeilen auf 224 Texel gepolstert).
+- Abzug des Himmels am Schattenhang 6,2 → 7,1 %, am Lichthang 0 → 1,8 %; ferne.K4 ohne Luft 0,444 → 0,446 (Sonde), die geschärfte Station am Kopf von Welle 1: 0,4297.
+- Der Term selbst ist richtig: ein Schirm-Pass wertet `_horizontHimmel` am Punkt des Gesetzes mit seiner Normale aus — 10–25 % Abzug (Median 14 %); die PMREM-Stufe 1 trifft die Kosinus-Bestrahlung der Tafel auf 7 % (0,103 gegen 0,096 bei 19° Neigung); ohne Himmels-Licht ist der Schattenhang 0. Was die Station misst, ist das Pixel des projizierten Gesetz-Punkts — der Fern-Ring steht bei 5 km ±50 m neben dem Gesetz (Masche 164 × 490 m), das Pixel trifft den Ring 20–200 m neben dem Hang.
+- Gipfel-Blick, Phasen (swiftshader, 4 Kerne): Ring am Anlauf 104 Takte / 10 s · „die Welt steht" am Anlauf 22 046 Takte / 516 s · am Gipfel ~2 300 Takte; das Bild 47 s. Was offen hält, je 1 000 Takte: bis Takt 13 000 die Foundry-Bauten der Metropole (461 → 0) und 35 Bauten, ab 13 000 die Leiber ihrer Bewohner (959 → 0, ein Leib je ~12 Takte) samt Feldern. Die Ferne baut nicht mit. Auf der GTX (~20 ms je Takt) trägt das die 480 s. Dazu steht am Gipfel eine Tanne 29 m vor dem Auge im Blick (ABNAHME ROT „Blickziel verdeckt von Rinde baum_tanne in 28,89 m", swiftshader).
+- FARBTON-Wurzel geprüft: mit Halmen steht die nahe Wiese heller als ihr Grund (Y 0,071 gegen 0,046 im mittleren Band, gelbgrün; Schatten-Holz, Mittag) — die Fern-Wiese ist nicht heller als die Nähe, die Wiese der Welt ist es.
+
+Wände am gemischten Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:welt-boot · gate:post-kette · gate:ego-schatten · gate:schatten-terminator · gate:betriebsgesetz.
+
+Ehrlich offen:
+- ferne.K4 > 0,4 — FUND Zweig w25-ferne-licht-pm, g3.js ferne.K4 `je` · Wurzel: das Pixel des Orts ist der Gesetz-Punkt projiziert, der gezeichnete Ring steht ±50 m daneben — die Station misst daneben, der Grat-Himmel am Hang zieht 14 % (Median) · ferne.K4#1 · S (der Ort aus der Tiefe des Bilds statt aus dem Gesetz).
+- Gipfel-Blick ≤ 3 min — FUND stamm (Leib-Guss der Bewohner, `_weltOffen` leiber) · Wurzel: die Metropole am Anlauf trägt 959 Leiber, ein Leib je ~12 Takte, und 461 Foundry-Bauten — die Welt steht erst nach 26 000 Takten; dazu die Tanne im Blick des Gipfels (spec/profiband/haushalt.json gipfel-blick) · M.
+- FARBTON 8 km 15–26° — FUND spec/abnahme/soll-tafel.json boden-nah / stamm/daten.js:614 `WIESEN_GRUND` · Wurzel: die Wiese der Welt (Halm-Mittel Y 0,17, gelbgrün) steht ohne Luft bei 0,75 der In-Streuung (real ~0,4); eine dunklere Fern-Wiese bräche die Naht zur helleren Nähe — eine Look-Entscheidung über die Wiese als Ganzes · L.
+- Welle 2: keiner der drei Punkte fiel ganz.
+
+Ich warte im Wartezimmer.
+
 ## 08.11. 22:49 — GPU-PROBE 1f8b19ed auf omen-gtx1060: ROT in 1964 s (bild:gipfel-blick@0.5 ROT 579 s · bild:wiese@0.5 GRÜN 49 s · bild:gipfel-blick@0.735 ROT 537 s) → probe-post/w25-ferne-licht/1f8b19ed.md
 
 ## 08.11. 21:40 — w25-ferne-licht: Nachtrag zur ABGABE 1f8b19ed
