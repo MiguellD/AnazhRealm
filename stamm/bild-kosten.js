@@ -564,8 +564,9 @@ class AnazhRealm_bild_kosten {
                 // ganz ist, und zeichnet im nächsten Takt neu (`_atmoZeichne` → false). Bis hier entstanden 16 Pipelines des
                 // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
                 // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
+                // Im Einmal-Render (`_einmalRender`, sein Sammler steht) gilt der Vorbau auch nach dem Bild (`_einmalVorbau`).
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    if (!welt._psoVorbau()) zeichne(this, ro, aufnahme, false);
+                    if (!welt._psoVorbau() && !E.einmalSammel) zeichne(this, ro, aufnahme, false);
                     else if (!zeichne(this, ro, aufnahme, true)) {
                         E.einmalOffen++;
                         if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
@@ -905,12 +906,17 @@ class AnazhRealm_bild_kosten {
     // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
     // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
     // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    // NACH DEM BILD GILT DER VORBAU WEITER (w25-ankunft-block): in jedem Takt des laufenden Loops entsteht die Pipeline eines
+    // Einmal-Renders asynchron (`_einmalVorbau`) — sein Leser hält den alten Stand, bis sie steht (Spiegel, Horizont-Karte,
+    // Tafeln, Umgebung, Rückstrahl). Bis hier baute der erste Lauf eines Passes, der nach dem Bild begann, seine Pipeline synchron
+    // im GPU-Prozess: Radeon kalt der Spiegel 0,4 s nach dem Bild (73 k Zeichen WGSL), die Horizont-Karte nach 2,5 s — der rAF
+    // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
-        if (!this._psoVorbau()) {
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er ganz, worauf er auch wartete
+        if (!this._einmalVorbau()) {
             W.delete(schluessel);
             fn();
             return true;
@@ -920,11 +926,12 @@ class AnazhRealm_bild_kosten {
             W.delete(schluessel);
         }
         const vorbau = E.einmalOffen;
+        const vorSammel = E.einmalSammel;
         const sammel = (E.einmalSammel = new Set());
         try {
             fn();
         } finally {
-            E.einmalSammel = null;
+            E.einmalSammel = vorSammel || null;
         }
         if (E.einmalOffen === vorbau) return true;
         if (sammel.size) W.set(schluessel, sammel);
@@ -2444,12 +2451,14 @@ class AnazhRealm_bild_kosten {
             else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
         } else if (k >= 0) this._instanzWahlPass("schatten", S);
         else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
-        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt)
+        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt) — je
+        // Bild neu, darum in der Lage des Auges (`L.auge`)
         if (!nach) this._instanzWahlGpu(kamera, S);
         // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
         this._chunkSatzPass(kamera, nach, k, S);
-        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
-        if (!nach && k < 0) this._nahWieseSicht(kamera, L);
+        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht) — ihre Stufen und
+        // ihre Übergabe messen vom Auge dieses Bilds (`L.auge`)
+        if (!nach && k < 0) this._nahWieseSicht(kamera, L.auge);
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         if (k < 0) {
@@ -2572,6 +2581,7 @@ class AnazhRealm_bild_kosten {
                 ref: 1,
                 kanten: null,
                 halt: 0,
+                haltBlende: 0,
                 dreh: 0,
                 licht: 0,
                 gen: 0,
@@ -2586,7 +2596,7 @@ class AnazhRealm_bild_kosten {
         L.az = we[14];
         L.rand = PW.sichtRand;
         // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
-        L.halt = PW.haltM * (1 + PW.sichtRand);
+        L.halt = L.haltBlende = PW.haltM * (1 + PW.sichtRand);
         // der Dreh-Rand: eine Perspektive wählt mit `drehRand` (je Meter Abstand der Sinus) und hält bis zur Hälfte (`_wahlHaelt`)
         L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
         // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
@@ -2623,10 +2633,41 @@ class AnazhRealm_bild_kosten {
             }
             L.kanten = K;
         }
+        // DIE LAGE DES AUGES (`L.auge`, w24-fahrt-takt): dieselbe Lage mit dem Halt am Punkt (haltM) — sie lesen, wer vom Auge
+        // DIESES Bilds abhängt (die Stufen und die Übergabe der Nah-Wiese, die Höhlen-Sicht und der Höhlen-Satz des Hauptbilds, die
+        // Wahl der GPU je Bild); jeder Cull liest die Lage des WEGS (`L`, `_passLageGen`)
+        const A = L.auge || (L.auge = { v: new THREE.Vector3() });
+        for (const f of AnazhRealm.LAGE_GETEILT) A[f] = L[f];
         // `neu`: dieser Pass legte einen neuen Anker (die Lage hielt nicht) — wer jetzt wählt, wählt am Anker (die Höhlen-Sicht der
         // Kaskade hält darum nur dann ihre Licht-Rechtecke über die Stufen der Sonne, `_hoehlenSichtLicht`)
         L.neu = this._passLageGen(L, kamera, k);
         return L;
+    }
+
+    // DER WEG DES AUGES (w24-fahrt-takt, Gebot 7: der Takt kostet, was sich ändert — nie das Tempo): EIN Weg je Bild, die Richtung
+    // und das Tempo des letzten Schritts der Kamera (unter ZEIT_SPRUNG_M, binnen 250 ms; im Stand und nach einem Sprung Tempo 0).
+    // Leser: die Lage des Wegs (`_lageAnker`) und der Anker der Ferne der Wiese (`_wieseFernAnker`). Mehrere Pässe eines Bilds
+    // lesen denselben Schritt (das Auge steht zwischen ihnen).
+    _augeWegJetzt() {
+        const W = this._augeWeg || (this._augeWeg = { x: NaN, y: 0, z: 0, t: -Infinity, u: [0, 0, 0], v: 0, n: 0 });
+        const cam = this.state.camera;
+        if (!cam) return W;
+        const e = cam.matrixWorld.elements;
+        const t = performance.now();
+        const [dx, dy, dz] = [e[12] - W.x, e[13] - W.y, e[14] - W.z];
+        if (dx === 0 && dy === 0 && dz === 0) {
+            if (t - W.t > 250) W.v = 0;
+            return W;
+        }
+        const s = Math.hypot(dx, dy, dz);
+        const dt = t - W.t;
+        W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250 ? (s / Math.max(dt, 1)) * 1000 : 0;
+        // `n`: so viele Schritte in Folge in derselben Richtung (auf 25°) — ein einzelner Versatz ist noch kein Weg
+        const gleich = W.v > 0 && W.n > 0 && (dx * W.u[0] + dy * W.u[1] + dz * W.u[2]) / s > 0.9;
+        W.n = W.v > 0 ? (gleich ? W.n + 1 : 1) : 0;
+        if (W.v > 0) W.u = [dx / s, dy / s, dz / s];
+        [W.x, W.y, W.z, W.t] = [e[12], e[13], e[14], t];
+        return W;
     }
 
     // Die Matrix einer Perspektive ohne den Versatz der zeitlichen Auflösung, ihr Sichtfeld je Halbwinkel um 1,5 × `dreh`
@@ -2738,29 +2779,59 @@ class AnazhRealm_bild_kosten {
         s[86] = f ? f.weg : 0;
         s[87] = f ? f.band0 : 0;
         s[88] = f ? f.band1 : 0;
+        // DAS AUGE (`L.auge`): sein Anker hält am Punkt. DER WEG (`L`): nur das Auge der Spiel-Kamera wandert auf ihm — das
+        // Hauptbild und die Kaskaden (ihr Fenster misst vom selben Auge); jede andere Kamera hält am Punkt
+        if (!a.auge) a.auge = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0 };
+        L.auge.neu = this._lageAnker(a.auge, s, kamera, L.auge, key, null);
+        return this._lageAnker(a, s, kamera, L, key, key === "anders" ? null : this._augeWegJetzt());
+    }
+
+    // EIN ANKER DER LAGE (`_passLageGen`): hält die Lage `s` gegen den Anker `a`, urteilt jeder Leser vom Auge des Ankers mit dessen
+    // Halt; sonst legt sie hier einen neuen Anker (true). DER HALT IST DER WEG (w24-fahrt-takt): `weg` (`_augeWegJetzt`) gibt dem
+    // Anker die Strecke, die das Auge in `zeitS` fährt (höchstens `wegMax`), quer bis `querM` — er hält, solange das Auge auf ihr
+    // bleibt (`_aufStrecke`), und sein Halt ist der Rand, der jede Wahl auf ihr trägt: zwei Augen der Strecke liegen höchstens
+    // lw + 2q auseinander, der Rand je Meter misst vom Auge des Ankers (bis lw + q daneben). Die Ebenen einer Perspektive wandern
+    // mit dem Auge (`halt`), die einer Kaskade stehen zwischen zwei Fits — sie trägt den Weg nur im Fenster der Blende
+    // (`haltBlende`, das Auge der Maske ist die Spiel-Kamera). Ohne Weg der Punkt: lw 0, q haltM/2, der Halt wie bis w24. Befund
+    // (gpu-probe 13cac9d9, Radeon, GT 20 m/s am Genesis-Ring): je Bild legte jeder Pass einen neuen Anker (das Auge fährt 0,7 m,
+    // der Halt war 1 cm), jeder Leser wählte voll — `_passSicht` 21,6–30,9 ms je Bild in der Mitte.
+    _lageAnker(a, s, kamera, L, key, weg) {
         if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
-            L.gen = a.gen;
-            L.key = key;
-            L.ax = a.ax;
-            L.ay = a.ay;
-            L.az = a.az;
+            [L.gen, L.key, L.ax, L.ay, L.az, L.halt, L.haltBlende, L.dreh] = [a.gen, key, a.ax, a.ay, a.az, a.halt, a.haltBlende, a.dreh]; // prettier-ignore
             // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
-            L.ex = a.sig[67];
-            L.ez = a.sig[68];
-            L.licht = a.sig[85];
+            [L.ex, L.ez, L.licht] = [a.sig[67], a.sig[68], a.sig[85]];
             if (s[86] > a.wegMax) a.wegMax = s[86];
             return false;
         }
+        const PW = AnazhRealm.PASS_WAHL;
+        const lw = weg && weg.v > 0 ? Math.min(PW.weg.wegMax, weg.v * PW.weg.zeitS) : 0;
+        // quer und lotrecht (der Wagen wiegt auf dem Gelände), die Drehung der folgenden Kamera um `drehRad` mehr — eine
+        // Perspektive wählt mit dem weiteren Dreh-Rand (`L.dreh`), der Anker hält bis zu seiner Hälfte (`_passLageHaelt`)
+        const [q, qv] = lw > 0 ? [PW.weg.querM, PW.weg.lotM] : [PW.haltM / 2, PW.haltM / 2];
+        const u = lw > 0 ? weg.u.slice() : [0, 0, 0];
+        const h = Math.hypot(u[0], u[2]);
+        a.drehRand = PW.drehRand + (lw > 0 ? PW.weg.drehRad : 0);
+        a.dreh = L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(a.drehRand) : 0;
+        const punkt = PW.haltM * (1 + PW.sichtRand);
+        const strecke = punkt + (lw + 2 * (q === qv ? q : Math.hypot(q, qv)) - PW.haltM) * (1 + PW.sichtRand + L.dreh);
         a.sig.set(s);
-        a.kamera = kamera.id;
-        a.ax = L.ax;
-        a.ay = L.ay;
-        a.az = L.az;
-        a.wegMax = s[86];
+        Object.assign(a, { kamera: kamera.id, ax: L.ax, ay: L.ay, az: L.az, wegMax: s[86], u, lw, q, qv });
+        a.blende = { u: h > 1e-6 ? [u[0] / h, 0, u[2] / h] : [0, 0, 0], lw: lw * h, q, qv };
+        [a.halt, a.haltBlende] = [s[84] === 1 ? strecke : punkt, strecke];
         a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
-        L.gen = a.gen;
-        L.key = key;
+        [L.gen, L.key, L.halt, L.haltBlende] = [a.gen, key, a.halt, a.haltBlende];
         return true;
+    }
+
+    // Liegt der Schritt (dx, dy, dz) vom Auge des Ankers `w` auf seinem Weg (`_lageAnker`: die Strecke lw entlang u, quer höchstens
+    // q, lotrecht höchstens qv, vor ihrem Anfang und hinter ihrem Ende ebenso)? Ohne Weg (lw 0, q = qv = haltM/2) das Gesetz des
+    // Halts am Punkt (`_wahlHaelt`).
+    _aufStrecke(dx, dy, dz, w) {
+        const u = w.u;
+        const voran = w.lw > 0 ? dx * u[0] + dy * u[1] + dz * u[2] : 0;
+        const t = voran < 0 ? 0 : voran > w.lw ? w.lw : voran;
+        const [rx, ry, rz] = [dx - t * u[0], dy - t * u[1], dz - t * u[2]];
+        return w.q === w.qv ? Math.hypot(rx, ry, rz) <= w.q : Math.hypot(rx, rz) <= w.q && Math.abs(ry) <= w.qv;
     }
 
     // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
@@ -2798,7 +2869,7 @@ class AnazhRealm_bild_kosten {
                 for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
             }
             if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
-            if (!this._blendeHaelt(a, s)) return false;
+            if (!this._blendeHaelt(a, s, anker)) return false;
             const cx = a[64] * s[65] - a[65] * s[64],
                 cy = a[65] * s[63] - a[63] * s[65],
                 cz = a[63] * s[64] - a[64] * s[63];
@@ -2811,8 +2882,10 @@ class AnazhRealm_bild_kosten {
         const dx = s[0] - a[0],
             dy = s[1] - a[1],
             dz = s[2] - a[2];
-        if (!steht(Math.sqrt(dx * dx + dy * dy + dz * dz))) return false;
         const persp = s[84] === 1;
+        // das Auge einer Perspektive auf dem Weg ihres Ankers (`_aufStrecke`), das einer orthogonalen Kamera am Punkt
+        if (!(persp ? this._aufStrecke(dx, dy, dz, anker) : steht(Math.sqrt(dx * dx + dy * dy + dz * dz))))
+            return false;
         // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
         // Richtung bis auf die Rundung, die Konstante um haltM
         if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
@@ -2828,9 +2901,9 @@ class AnazhRealm_bild_kosten {
             let spur = 0;
             for (let i = 75; i < 84; i++) spur += s[i] * a[i];
             const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
-            if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
+            if (!this._wahlHaelt(dreh, 1, anker.drehRand)) return false;
         } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
-        return this._blendeHaelt(a, s);
+        return this._blendeHaelt(a, s, anker);
     }
 
     // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
@@ -2840,9 +2913,10 @@ class AnazhRealm_bild_kosten {
     // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
     // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
     // Prüfungen je Frame).
-    _blendeHaelt(a, s) {
+    // Mit Weg (w24-fahrt-takt) hält es auf der Strecke des Ankers in der Ebene (`anker.blende`, `_aufStrecke`).
+    _blendeHaelt(a, s, anker) {
         if (s[66] !== a[66]) return false;
-        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, AnazhRealm.PASS_WAHL.haltM)) return false;
+        if (!this._aufStrecke(s[67] - a[67], 0, s[68] - a[68], anker.blende)) return false;
         for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
         return true;
     }
@@ -3056,6 +3130,7 @@ class AnazhRealm_bild_kosten {
         R.A = this._wahlAbdruck(L, S);
         Object.assign(R.weit, L).halt = L.halt + D;
         Object.assign(R.eng, L).halt = L.halt - D;
+        [R.weit.haltBlende, R.eng.haltBlende] = [L.haltBlende + D, L.haltBlende - D];
         return R;
     }
 
@@ -3079,7 +3154,8 @@ class AnazhRealm_bild_kosten {
         a[49] = f ? f.zb : 0;
         a[50] = f ? f.saum : 0;
         for (let i = 0; i < 9; i++) a[51 + i] = bi ? bi[AnazhRealm.WAHL_BASIS[i]] : 0;
-        a[60] = a[61] = 0;
+        a[60] = L.haltBlende;
+        a[61] = 0;
         a[62] = bi ? bi[14] : 0;
         a[63] = f ? L.dir.x : 0;
         a[64] = f ? L.dir.y : 0;
@@ -3310,7 +3386,11 @@ class AnazhRealm_bild_kosten {
         const dx = a[o + 12] + mw[12] - L.ex,
             dz = a[o + 14] + mw[14] - L.ez;
         const d = Math.sqrt(dx * dx + dz * dz);
-        const halt = L.halt;
+        // der Rand des Fensters (w24-fahrt-takt: getrennt vom Halt der Ebenen, `_lageAnker`) — eine Lage ohne ihn ist ein Bruch,
+        // nie ein stilles NaN im Fenster (z327: eine von Hand gebaute Lage trug nur `halt`)
+        const halt = L.haltBlende;
+        if (typeof halt !== "number")
+            throw new Error("_instanzFenster: die Lage trägt keinen Rand der Blende (`haltBlende`)");
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
@@ -3348,7 +3428,7 @@ class AnazhRealm_bild_kosten {
                 const zug = a._wahlVor(rend, kamera);
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
-            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen);
+            if (arenen.length) this._wahlRechnen(rend, S.lage.auge, arenen);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -3735,7 +3815,12 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
     wegM: 0.5,
+    // DER WEG DES AUGES (`_lageAnker`, w24-fahrt-takt): die Strecke, die das Auge in `zeitS` fährt, höchstens `wegMax`, quer `querM`
+    // die Box der Kaskaden liegt über ihn erst in Fahrt (`kaskadeAb` m/s, zwei Schritte in Folge): im Gang hält sie ihre Größe
+    weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05, kaskadeAb: 10 }),
 });
+// die Felder, die die Lage des Auges mit der des Wegs teilt (`_passWahlLage`): Ebenen, Kapsel, Licht und Blende dieses Passes
+AnazhRealm.LAGE_GETEILT = Object.freeze(["fr", "ax", "ay", "az", "rand", "halt", "haltBlende", "dreh", "fit", "dir", "licht", "an", "ex", "ez", "perf", "ref", "kanten"]); // prettier-ignore
 // die Drehung der Licht-Basis im Abdruck einer Lage (`_wahlAbdruck`): die Elemente ihrer 3 × 3
 AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags

@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { fehlerText, statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf, jsonSchreiben, nullWelt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -136,14 +136,14 @@ const SCHUSS_FN = async (kam) => {
         const g = o.geometry;
         const tri = g.index
             ? g.index.count / 3
-            : g.attributes && g.attributes.position
+            : g.attributes?.position
               ? g.attributes.position.count / 3
               : 0;
         const n = o.isInstancedMesh ? o.count : 1;
         let k = (o.userData && (o.userData.inventar || o.userData.kind)) || "";
         if (!k) {
             let p = o;
-            while (p && p.parent && p.parent !== scene) p = p.parent;
+            while (p?.parent && p.parent !== scene) p = p.parent;
             k = (p && p.userData && p.userData.inventar) || (p && p.name) || o.name || o.type;
         }
         k = String(k)
@@ -179,7 +179,7 @@ const SCHUSS_FN = async (kam) => {
               gesetzBloecke: wm.gesetzBloecke || 0,
           }
         : null;
-    zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
+    zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh?.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
     try {
         zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch {}
@@ -189,12 +189,8 @@ const SCHUSS_FN = async (kam) => {
 
 hauptLauf(async () => {
     fs.mkdirSync(OUT, { recursive: true });
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
-    const page = await browser.newPage();
-    await page.setViewport({ width: W, height: H });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await server.zeige(page, 60000);
+    // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: PROTO_MS, fenster: { width: W, height: H }, vor: WELT_ORTE_INSTALL }, 60000); // prettier-ignore
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
@@ -224,13 +220,12 @@ hauptLauf(async () => {
             if (au && !au.__linse) {
                 const orig = au.updateAttribute.bind(au);
                 au.updateAttribute = (attr) => {
-                    const ba = attr && attr.isInterleavedBufferAttribute ? attr.data : attr;
+                    const ba = attr?.isInterleavedBufferAttribute ? attr.data : attr;
                     const d = ba && rend.backend.get(ba);
                     const rg = (ba && ba.updateRanges) || [];
                     const bis = rg.reduce((m, u) => Math.max(m, (u.start + u.count) * ba.array.BYTES_PER_ELEMENT), 0);
                     if (
-                        d &&
-                        d.buffer &&
+                        d?.buffer &&
                         ba.array &&
                         (ba.array.byteLength > d.buffer.size || bis > ba.array.byteLength)
                     ) {
@@ -257,9 +252,9 @@ hauptLauf(async () => {
         return {
             version: AnazhRealm && AnazhRealm.VERSION,
             renderer: rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?",
-            backendWebGPU: !!(rend.backend && rend.backend.isWebGPUBackend),
+            backendWebGPU: !!(rend.backend?.isWebGPUBackend),
             chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-            foundryBereit: !!(r._foundry && r._foundry.ready),
+            foundryBereit: !!(r._foundry?.ready),
         };
     });
     if (!boot || boot.fatal) {
@@ -419,7 +414,7 @@ hauptLauf(async () => {
             __handTakt();
             takte++;
             const fp = st.feldPass;
-            const fpVis = !!(fp && fp.mesh && fp.mesh.visible);
+            const fpVis = !!(fp?.mesh && fp.mesh.visible);
             const u = wolf && wolf.userData;
             const feldBesitzt = !!(u && (u._kzGlieder || u._kzVersuch));
             if (wolf && !wolf.visible && feldBesitzt && !fpVis) lueckeTakte++;
@@ -430,7 +425,7 @@ hauptLauf(async () => {
                     fpVis,
                     feldBesitzt,
                     meshVis: wolf ? wolf.visible : null,
-                    glieder: u && u._kzGlieder ? u._kzGlieder.length : 0,
+                    glieder: u?._kzGlieder ? u._kzGlieder.length : 0,
                 });
             // Fertig: Pass sichtbar (oder es gibt keinen Pass) und 40 Takte eingeschwungen.
             if (takte >= 40 && (fpVis || !fp) && (fpSichtbarBei == null || takte - fpSichtbarBei >= 20)) break;
@@ -466,7 +461,7 @@ hauptLauf(async () => {
                 const y = r._voxelSurfaceY(x, z);
                 // Maße: der Feld-Satz (lokale Größe) oder die Nenn-Größe
                 const kk = e._ziegelSlot && e._ziegelSlot.brick;
-                const g = kk && kk.lokalGroesse ? kk.lokalGroesse : null;
+                const g = kk?.lokalGroesse ? kk.lokalGroesse : null;
                 const s = e.scale && isFinite(e.scale) ? e.scale : 1;
                 k[name] = {
                     x,
@@ -613,7 +608,7 @@ hauptLauf(async () => {
                     `Bühne ${st._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0}` +
                     ` · gescheitert ${z.gescheitert || 0} · wartend ${z.wartend || 0}` +
                     ` · Queue ${(r._impostorBakeQueue || []).length}` +
-                    (z.gescheitertArten && z.gescheitertArten.length
+                    (z.gescheitertArten?.length
                         ? ` · Fehler: ${z.gescheitertArten.join(", ").slice(0, 80)}`
                         : "");
                 return {
@@ -667,7 +662,7 @@ hauptLauf(async () => {
         console.log(
             `${substanz ? "✅" : "❌"} ${klasse}/${art}: dc=${z.dc} tris=${z.tris} · Feld=${z.weltMarch ? `belegt ${z.weltMarch.belegt} kapseln ${z.weltMarch.kapseln}` : "–"} · Pass=${z.feldPass ? (z.feldPass.sichtbar ? "sichtbar" : "UNSICHTBAR") : "–"} · ${path.relative(root, file)}`
         );
-        if (z.herkunft && z.herkunft.length) console.log("      Herkunft (Dreiecke): " + z.herkunft.join(" · "));
+        if (z.herkunft?.length) console.log("      Herkunft (Dreiecke): " + z.herkunft.join(" · "));
     };
     const infos = await objektInfo();
     for (const klasse of ["kreatur", "baum", "haus"].filter((k) => KLASSEN.includes(k))) {

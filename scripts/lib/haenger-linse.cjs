@@ -238,7 +238,7 @@ function spurProfil(ev, marke = "anazh-takt") {
 function versatzVon(spur, T, P) {
     const nT = T.t.length;
     if (!P || spur.marken.length !== nT) return null;
-    return spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((a, b) => a - b)[nT >> 1];
+    return rang(spur.marken.map((m, q) => m - T.c0[q] * 1000).sort((a, b) => a - b));
 }
 // Die Proben-Knoten im Seiten-Zeit-Bereich [von, bis) (ms; ohne Versatz keine).
 function probenIn(P, versatz, von, bis) {
@@ -259,7 +259,7 @@ function probenIn(P, versatz, von, bis) {
 // Die Quantile einer Reihe wie `lauf` (der Wert am Rang floor(q·n)): q(p) und die Zahl p50 · p95 · p99 · max.
 function quantil(werte) {
     const s = werte.slice().sort((a, b) => a - b);
-    const q = (p) => (s.length ? +s[Math.min(s.length - 1, Math.floor(p * s.length))].toFixed(2) : null);
+    const q = (p) => (s.length ? +rang(s, p).toFixed(2) : null);
     return Object.assign(q, { zahl: { p50: q(0.5), p95: q(0.95), p99: q(0.99), max: q(1) } });
 }
 
@@ -354,7 +354,7 @@ function haengerAuswerten(roh, spur, opts) {
     const nT = T.t.length;
     const versatz = versatzVon(spur, T, P);
     const abst = T.c0.slice(1).map((c, q) => c - T.c0[q]).sort((a, b) => a - b);
-    const periode = abst.length ? abst[abst.length >> 1] : 16.7;
+    const periode = abst.length ? rang(abst) : 16.7;
     const proben = (von, bis) => probenIn(P, versatz, von, bis);
     const gerendert = [...T.g.keys()].filter((i) => T.g[i]);
     const [dts, haenger] = [[], []];
@@ -783,7 +783,7 @@ function ankunftsHalter(spur, seite, opts) {
     const paare = [];
     for (let i = 0; i < n; i++) paare.push(spur.marken[i] - s.marken[i] * 1000);
     paare.sort((a, b) => a - b);
-    const versatz = P && n ? paare[n >> 1] : null;
+    const versatz = P && n ? rang(paare) : null;
     const out = {
         profil: !!P,
         verlust: P?.verlust,
@@ -1371,7 +1371,7 @@ function latenzAn(k) {
         st.playerMesh.position.copy(L.start);
         r.setCameraMode(L.sicht);
         const d = L.bilder.slice(1).map((t, i) => t - L.bilder[i]).sort((a, b) => a - b);
-        return d[d.length >> 1];
+        return rang(d);
     };
 }
 
@@ -1382,18 +1382,18 @@ function latenzAn(k) {
 // Jede gemessene Probe trägt die Pflicht-Größen, sonst ROT beim Namen (bis latenz-verben brach jede Tasten-Reihe an imHoerer).
 const PFLICHT = ["eingabe", "imHoerer", "regung", "takte"];
 function latenzUrteil(proben, bildMs, soll = 50) {
-    const rang = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
+    const rangAuf = (v, q) => ((v = v.filter(Number.isFinite).sort((a, b) => a - b)).length ? +v[Math.min(v.length - 1, Math.ceil(q * v.length) - 1)].toFixed(1) : null);
     const reihen = {}, rot = [];
     for (const [name, ps] of Object.entries(proben)) {
-        const ok = ps.filter((p) => p.ms != null), med = (f) => rang(ok.map((p) => p[f]), 0.5);
+        const ok = ps.filter((p) => p.ms != null), med = (f) => rangAuf(ok.map((p) => p[f]), 0.5);
         const ohne = PFLICHT.filter((g) => ok.some((p) => !Number.isFinite(p[g])));
         if (ohne.length) rot.push(`${name} ohne ${ohne.join(", ")}`);
         for (const p of ok) (p.kette = p.regung - p.eingabe), (p.kurve = p.ms - p.regung);
         const z = { eingabe: med("eingabe"), hoerer: med("imHoerer"), kette: med("kette"), kurve: med("kurve") };
-        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rang(ms, 0.5), p95: rang(ms, 0.95), max: rang(ms, 1) });
+        const ms = ok.map((p) => p.ms), e = (reihen[name] = { n: ok.length, fehlt: ps.length - ok.length, p50: rangAuf(ms, 0.5), p95: rangAuf(ms, 0.95), max: rangAuf(ms, 1) });
         Object.assign(e, z, { takte: med("takte") });
         if (name.endsWith("hieb")) {
-            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rang(ps.map((p) => p.halt || 0), 0.5));
+            const verben = ps.map((p) => p.verb || "kein").join(), halt = (e.halt = rangAuf(ps.map((p) => p.halt || 0), 0.5));
             if (/[^,]/.test(verben.replace(/hieb/g, "")) || !(halt >= 2)) rot.push(`${name} Verben ${verben}, Hit-Stop ${halt} Bilder`);
         }
         if (e.fehlt || !(e.p95 <= soll)) {
