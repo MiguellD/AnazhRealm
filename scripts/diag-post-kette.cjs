@@ -444,7 +444,10 @@ function saumProbe(ort) {
             const paritaet = new Set();
             for (let y = 0; y < H; y++) {
                 for (let x = Math.ceil(W / 2); x < W - 1; x++) {
-                    if (L(b, x + 1, y) < 12 && L(b, x, y) > 60 && L(a, x + 1, y) < 12) {
+                    // die Kante darf EIN Übergangs-Pixel tragen (die Kantenglättung der Karte: in 1281×721 auf der Radeon trugen
+                    // sonst nur 7 Zeilen einen harten Sprung, die Probe war blind); geurteilt wird das letzte Wasser-Pixel vor ihr
+                    const kante = (u) => L(u, x + 1, y) < 12 || L(u, x + 2, y) < 12;
+                    if (L(b, x, y) > 60 && L(b, x + 1, y) <= 60 && kante(b) && kante(a)) {
                         kanten++;
                         paritaet.add(x & 1);
                         const d = L(a, x, y) - L(b, x, y);
