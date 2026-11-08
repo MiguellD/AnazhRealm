@@ -10,7 +10,7 @@
 //
 //   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);
 //      die Kosten der Stufe 3 (Zeile und Draw je Rezept und Rand) richtet gate:regler-wirkt STUFEN über die echte Brücke
-//   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (Projektion entlang der Sonne auf y = 0, Raster
+//   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (`wurfIou`, kronen-linse — dieselbe wie die Haus-Linse) (Projektion entlang der Sonne auf y = 0, Raster
 //      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute) — die L0 mit den Teilen, die sie wirft (castShadow:
 //      die leuchtenden Türen, der Bogen-Saum, der Leucht-Ring und die Scheibe warfen nie)
 //   I  INNEN: die Stufe 3 steht nicht aus dem Gezeichneten — je Ecke ihres Gitters der Abstand zur L0-Oberfläche (Proben: jede
