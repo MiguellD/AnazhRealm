@@ -11,3 +11,10 @@ w19-fahrt-ziel-2-pm Inhalt steckt in punkte-maschine
 w22-zug-auswahl gemessen 95,6 % der Linsen ausgewählt (Median) — kein Zug-Gewinn; ersetzt durch Vorlauf/Nachlauf (w23-vorlauf)
 w22-zeitraffer gemessen 1,11× statt Ziel ≥ 5× — geparkt ohne Punkt, offen benannt (T9)
 w23-wiese-zurueck Revert abgesagt 08.11. (Schöpfer: vorwärts heilen) — ersetzt durch w24-wiese-ferne
+claude/great-brahmagupta-kq4sy6 Vorfahr von w19-gang-hitch eac1b29a (heimholer 16:40)
+w19-gang-hitch-2 Merge-Fassung des z287-Kandidaten; w19-gang-hitch eac1b29a ist neuer (heimholer 16:40)
+w20-wald-kosten-2 baumgleich mit w20-wald-kosten 37c7097e (heimholer 16:40)
+w16-wald-innen Vorfahr von w20-wald-kosten 8e4c2c79, kommt mit heim2-w20-wald-kosten (heimholer 16:40)
+claude/dazzling-clarke-o52ivq Vorfahr von w21-laub-jahr-fern 4cb80591 (heimholer 16:40)
+w18-grund-post Inhalt steckt in main (merge-tree = main, heimholer 16:40)
+mess-z274 Inhalt steckt in main (merge-tree = main, heimholer 16:40)
