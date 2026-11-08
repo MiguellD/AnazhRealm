@@ -1375,7 +1375,9 @@ class AnazhRealm_vegetation_wiese {
         // Basis ihres Zustands, wer ihn schreibt (der erste Teil der L1), das Band (Übergabe, Stufe 1, ihr Rand); die Ferne (6) die
         // Halbbreite ihres Halms (`breite`), die Schale (7) Breite und Höhe ihrer Karte — beide die Übergabe und den Rand des
         // Anteils. Bis ihre Arena sie nimmt, zählt eine Senke 0 und meldet sich selbst (ihr Zeichner trüge den ganzen Bestand).
-        const Fe = NW.fern;
+        const Fe = NW.fern,
+            kann = AnazhRealm._arenaKann(st.renderer),
+            webgl = !kann && !!(st.renderer && st.renderer.backend && st.renderer.backend.isWebGLBackend === true);
         for (const f of familien) {
             const F = B[f.key];
             if (!f.senken || !F) continue;
@@ -1394,8 +1396,11 @@ class AnazhRealm_vegetation_wiese {
                 });
                 a.anzahl = F.hoch;
                 const wartet = !a.mesh.__arena;
-                if (wartet) AnazhRealm._arenaMelden(a.mesh);
-                AnazhRealm._instanzZahl(a.mesh, wartet ? 0 : F.hoch);
+                if (wartet && kann) AnazhRealm._arenaMelden(a.mesh);
+                // OHNE GEOMETRIE-ARENA (WebGL2, `__arenaOhne`) wählt niemand: die Ferne und die Schale zeichnen ihren Bestand
+                // voll (ihr Stoff legt das Gesetz je Instanz selbst, `_halmFerne`), die Nähe nicht (sie stünde in beiden Stufen);
+                // der Null-Renderer zeichnet nie (0, bis eine Arena nimmt)
+                AnazhRealm._instanzZahl(a.mesh, !wartet || (webgl && art !== 5) ? F.hoch : 0);
             });
         }
         return anders;
