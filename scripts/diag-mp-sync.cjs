@@ -288,7 +288,7 @@ function installiere(alteTuer) {
             !!(
                 (ls?.seeded && ls.x === 0 && ls.z === 0) ||
                 entry.snapBuf?.some((q) => q.x === 0 && q.z === 0) ||
-                (oz && oz.x === 0 && oz.z === 0)
+                (oz?.x === 0 && oz.z === 0)
             )
         );
         return res;
@@ -964,8 +964,7 @@ hauptLauf(async () => {
         for (const [n, s] of [
             ["A", endA],
             ["B", endB],
-        ]) {
-            check(
+        ]) check(
                 `(a) Seite ${n}: kein Mitspieler-Takt im Ursprung`,
                 s.ursprung === 0,
                 `${s.ursprung} Takte am Ursprung (davon ${s.ursprungOhneOrt} ohne je empfangenen Ort) von ${s.peerTakte} Peer-Takten` +
@@ -973,7 +972,6 @@ hauptLauf(async () => {
                         ? ` — Täter _p2pEnsurePeerEntry: Leib/Schild sichtbar bei 0/0/0 (${JSON.stringify(s.ursprungBeispiel)})`
                         : "")
             );
-        }
 
         // (e) der Reload von B: sein Speicher (saveState, derselbe Schreiber wie die Sicherung), dann die Seite neu, bis ihre Welt
         // steht und den Bau trägt

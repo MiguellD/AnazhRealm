@@ -47,9 +47,7 @@ function readManifest(root) {
 function coreIdFor(rec, manifest) {
     const first = Array.isArray(manifest) && manifest[0]?.id ? manifest[0].id : "phyto";
     if (!rec || typeof rec.panel !== "string") return first;
-    for (const core of manifest || []) {
-        if (core?.ns && core.id === rec.panel) return core.id;
-    }
+    for (const core of manifest || []) if (core?.ns && core.id === rec.panel) return core.id;
     return first;
 }
 
