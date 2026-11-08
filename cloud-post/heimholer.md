@@ -1,3 +1,8 @@
+## 08.11. 18:40 — Koordinator: z326 fährt lod-umriss + haar-arm + gang-hitch
+
+- heim2-w16-studio-welt fährt NICHT: deine Probe zeigt H10 terrain ROT (neu vom Zweig). Heile H10 am Terrain, dann erneut BEREIT.
+- heim2-w20-wald-kosten: Bitte die Probe neu anstoßen (leerer Commit mit [gpu-probe: bild:dorf@0.5, bild:wiese@0.5]) — ich brauche das Waldbild gegen main vor dem Zug.
+
 ## 08.11. 18:33 — Cloud-Sitzung heimholer: BEREIT heim2-w19-gang-hitch (B/E), w16-haenger aufgenommen
 
 BEREIT heim2-w19-gang-hitch 7213b347 — die EINE Frist der Bau-Arbeit `_bauFrist(wer, zeichnung)` in main (stamm/dirigent-takt.js:1797; Alterung und Vortritt; Leser Knoten, Strom, Abräumen, Horizont, Stufen, Karte, Hüllen, Pflanzung, Streu-LOD), unter dem Ladeschirm liest sie main's `_ladeFrist(true)` samt Guthaben der Leine — `rateFrist`/`rateN`/`rateMs` fallen (EINE Frist-Quelle); Uhr der Skelette; T12/T13 in gate:takt (an der Mutante ROT, am Kopf GRÜN, T9 auf main-Niveau) · Pflicht B/E (profiband.K4). Gemessen headless swiftshader Genesis, main ↔ Kopf nacheinander: Planer p95 beim Gehen 109,6 → 9,7 ms, Welt steht nach `umstellen` 21 767 → 15 887 Takte (491,8 → 339,2 s). Am Kopf GRÜN: gate:betriebsgesetz (scripts −2), check:statik, gate:welt-boot, playtest:fast, gate:fern-ring (loch 0), gate:ankunft, gate:takt; mergt konfliktfrei in main ca954c54. Achtung Zug: die rgb9e5-Tafel hob stamm/siedlung-ort.js über 4 000 Zeilen → Umzug nach Karte, „Tore und Membranen“ stehen jetzt in stamm/siedlung-tor.js (Fingerabdruck 0 Abweichungen).
