@@ -108,14 +108,13 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
     const stufe = (n) => ({ stufe: n, dritt: { wurf: 1500, leib: 900 }, vertrag: true, kopf: gut(), gegenprobe: GEGENPROBEN.map((g) => Object.assign({ m: gut(taeter[g.soll]) }, g)) }); // prettier-ignore
     const gruen = { grob: stufe(1), fein: stufe(0) };
     const fehler = [];
-    if (urteilJeStufe(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteilJeStufe(gruen).join(" · "));
     // prettier-ignore
     const faelle = [
         ["main (der Wurf geht mit der Haut)", ["fein.kopf.ego", { wurf: 0 }], /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/],
@@ -132,7 +131,7 @@ function selbsttest() {
         ["Bühne schreitet nicht (Gegenprobe Karte steht blind)", ["grob.gegenprobe.5.m.ego", { wurf: 754 }], /GEGENPROBE: die Regel „Karte steht" fällt nicht/],
         ["Bühne am falschen Leib", ["fein", { stufe: 1 }], /STUFE: die Bühne „fein" misst .* nahStufe 1/],
     ];
-    taeterFaelle(faelle, urteilJeStufe, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteilJeStufe, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

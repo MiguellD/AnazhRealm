@@ -340,7 +340,7 @@ function urteil(b) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gruen = {
         spiegel: [
             {
@@ -433,9 +433,6 @@ function selbsttest() {
         muendungen: { anzahl: 20, km2: 4, jeKm2: 5 },
     };
     const fehler = [];
-    const g = urteil(gruen);
-    if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
-    const klon = () => jsonKlon(gruen);
     const faelle = [
         ["Spiegel-Drift", ["spiegel.0.felder.tri=", false], /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", ["spiegel=", []], /SPIEGEL: kein Chunk/],
@@ -610,7 +607,7 @@ function selbsttest() {
             /RECHENWERK: .* 0\.31 an 400/,
         ],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

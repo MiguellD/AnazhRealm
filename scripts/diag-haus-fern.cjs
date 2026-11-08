@@ -9,8 +9,10 @@
 //      (der Schatten springt weg)
 //   K  WURF-KOSTEN: der Werfer jeder Stufe ≤ seiner Budget-Zeile (Haus Stufe 3 ≤ 96 · Ausstattung ≤ 48, die Feuerstelle
 //      ≤ 32)
-//   S  SPRUNG-DECKUNG: der Umriss L1 ↔ L2 entlang x und z (Orthoprojektion, Raster 5 cm, über dem Boden) ≥ 0,84 je Achse,
-//      Median ≥ 0,90 — kein Umriss-Sprung beim Stufenwechsel (26 m)
+//   P  POP AM WECHSEL (lod.K5, w25-lod-pop): jede gezeigte Stufe ≤ 1 px Kanten-Versatz zur L0 an der Grenze, die das Gesetz des
+//      Stamms aus der Zeile ihrer Vorlage legt (die Messung der Station am Bau, `wechselProbe`) — sie trägt die Frage der
+//      Sprung-Deckung S (Umriss L1 ↔ L2 als IoU ≥ 0,84 an 26 m, bis w25-lod-pop) in Bildpunkten an der echten Grenze
+
 //   F  FIRST-ACHSE: das Dach der Stufen 2 und 3 trägt seinen First auf x (das Haus-Gesetz: die Traufen laufen längs x,
 //      die Schrägen schauen nach ±z) — 0 von 64 quer
 //   A  AUFBLÄHUNG: die Wandebenen der Stufe 3 gegen die der L1 im Wand-Band (Sockel bis unter die Traufe) ≤ 0,05 m
@@ -31,7 +33,7 @@
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
-const { rasterDreieck, kantenVersatz, wechselFehler } = require("./lib/kronen-linse.cjs");
+const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -56,8 +58,6 @@ const SOLL = {
     wurfIou: 0.87,
     wurfMedian: 0.92,
     wurfAus: 0.85,
-    sprung: 0.84,
-    sprungMedian: 0.9,
     aufblaehung: 0.05,
     wand: -0.015,
     dach: -0.03,
@@ -153,9 +153,9 @@ function tuerGefangen(g) {
 }
 // drei Sonnen: Höhe und Azimut (aus +z über +x) — tief, mittel, hoch, aus drei Richtungen
 const SONNEN = [
-    [25, 35],
-    [40, 125],
-    [60, 215],
+    [25, 215],
+    [40, 305],
+    [60, 35],
 ];
 const KULTUREN = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "haus" && (!NUR || NUR.test(k)));
 const AUS = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "ausstattung" && (!NUR || NUR.test(k)));
@@ -201,75 +201,11 @@ const kreuz = (w, i) => {
 };
 const anzahl = (tl) => tl.reduce((s, w) => s + w.length / 9, 0);
 
-// ── Das Raster (Kanten-Funktionen je Dreieck, Pixel-Mitte): `abb(x, y, z) → [u, v]` bildet in die Ebene ab ──
-function raster(tl, abb, r, rand) {
-    let u0 = Infinity,
-        v0 = Infinity,
-        u1 = -Infinity,
-        v1 = -Infinity;
-    const uv = tl.map((w) => {
-        const q = new Float64Array((w.length / 3) * 2);
-        for (let i = 0, j = 0; i < w.length; i += 3, j += 2) {
-            const p = abb(w[i], w[i + 1], w[i + 2]);
-            q[j] = p[0];
-            q[j + 1] = p[1];
-            if (p[0] < u0) u0 = p[0];
-            if (p[0] > u1) u1 = p[0];
-            if (p[1] < v0) v0 = p[1];
-            if (p[1] > v1) v1 = p[1];
-        }
-        return q;
-    });
-    return { uv, u0, v0, u1, v1, r, rand };
-}
-function maske(roh, box) {
-    const { r } = roh;
-    const nu = Math.ceil((box.u1 - box.u0) / r) + 1,
-        nv = Math.ceil((box.v1 - box.v0) / r) + 1;
-    const [m, R] = [new Uint8Array(nu * nv), { u0: box.u0, v0: box.v0, r, nu, nv }];
-    for (const q of roh.uv)
-        for (let j = 0; j < q.length; j += 6) rasterDreieck(...q.subarray(j, j + 6), R, (o) => (m[o] = 1));
-    return m;
-}
-function iou(rohe, r) {
-    const box = { u0: Infinity, v0: Infinity, u1: -Infinity, v1: -Infinity };
-    for (const x of rohe) {
-        box.u0 = Math.min(box.u0, x.u0 - r);
-        box.v0 = Math.min(box.v0, x.v0 - r);
-        box.u1 = Math.max(box.u1, x.u1 + r);
-        box.v1 = Math.max(box.v1, x.v1 + r);
-    }
-    const [a, b] = rohe.map((x) => maske(x, box));
-    let i = 0,
-        u = 0;
-    for (let k = 0; k < a.length; k++) {
-        if (a[k] && b[k]) i++;
-        if (a[k] || b[k]) u++;
-    }
-    return u ? i / u : 1;
-}
+// die Sonne aus Höhe und Azimut (aus +z über +x), der Vektor zu ihr
 function sonne(h, az) {
     const e = (h * Math.PI) / 180,
         a = (az * Math.PI) / 180;
-    return [Math.cos(e) * Math.sin(a), -Math.sin(e), Math.cos(e) * Math.cos(a)];
-}
-// der Wurf auf den Boden (y = 0) entlang der Sonne; was unter dem Boden liegt (der Keller, der Fuß des Fundaments), wirft
-// nicht — es zählt mit seinem Grundriss (y auf 0 geklemmt), nie als Schatten auf der Gegenseite
-const wurfAbb = (d) => (x, y, z) => {
-    const t = Math.max(0, y) / -d[1];
-    return [x + d[0] * t, z + d[2] * t];
-};
-// die Schatten-Fußabdrücke zweier Werfer-Listen unter einer Sonne → IoU (Raster 10 cm)
-function wurfIou(a, b, d) {
-    if (!anzahl(a) || !anzahl(b)) return 0;
-    const ab = wurfAbb(d);
-    return iou([raster(a, ab, 0.1), raster(b, ab, 0.1)], 0.1);
-}
-// der Umriss entlang einer Achse → IoU (Raster 5 cm); was unter dem Boden liegt (der Keller), sieht kein Auge — y auf 0
-// geklemmt, es trägt keine Fläche
-function umrissIou(a, b, achse) {
-    const ab = achse === "x" ? (x, y, z) => [z, Math.max(0, y)] : (x, y) => [x, Math.max(0, y)];
-    return iou([raster(a, ab, 0.05), raster(b, ab, 0.05)], 0.05);
+    return [Math.cos(e) * Math.sin(a), Math.sin(e), Math.cos(e) * Math.cos(a)];
 }
 
 // ── F: die First-Achse eines Dachs — die Fläche der geneigten Dachflächen (0,15 < ny < 0,98), die nach ±z schauen,
@@ -595,10 +531,9 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
         const soll = B[w] && B[w].nurWurf ? B[w].tris : null;
         if (w !== 3) z.befund.push(`L${s} wirft sich selbst über L${w} (${anzahl(wv)} Dreiecke je Kaskade)`);
         else if (soll != null && anzahl(wv) > soll) z.befund.push(`Stufe 3 wirft ${anzahl(wv)} > ${soll} Dreiecke`);
-        if (wurfJe[w] == null) wurfJe[w] = Math.min(...SONNEN.map(([h, az]) => wurfIou(wv, werf[0], sonne(h, az))));
+        if (wurfJe[w] == null) wurfJe[w] = Math.min(...SONNEN.map(([h, az]) => wurfIou(wv, werf[0], sonne(h, az), 0.1)));
         z.wurf[s] = wurfJe[w];
     }
-    z.sprung = { x: umrissIou(alle[1], alle[2], "x"), z: umrissIou(alle[1], alle[2], "z") };
     // das Haus-Gesetz (First auf x) gilt dem Satteldach — Kuppel, Terrassen, Flachdach tragen keinen First
     const sattelDach = ((M.H.masse || []).find((m) => m.art === "haupt") || {}).dach === "sattel";
     z.first = sattelDach ? { 2: firstAchse(alle[2]), 3: firstAchse(alle[3]) } : { 2: null, 3: null };
@@ -613,8 +548,6 @@ function hausUrteil(z) {
     const f = z.befund.slice();
     for (const s of [0, 1, 2])
         if (z.wurf[s] < SOLL.wurfIou) f.push(`Wurf L${s} IoU ${f3(z.wurf[s])} < ${SOLL.wurfIou}`);
-    for (const a of ["x", "z"])
-        if (z.sprung[a] < SOLL.sprung) f.push(`Umriss L1↔L2 entlang ${a} ${f3(z.sprung[a])} < ${SOLL.sprung}`);
     for (const s of [2, 3]) if (z.first[s] === "z") f.push(`First der Stufe ${s} quer (längs z)`);
     if (z.aufbl == null || z.aufbl > SOLL.aufblaehung) f.push(`Aufblähung ${f3(z.aufbl)} m > ${SOLL.aufblaehung}`);
     if (!(z.innen.wand <= SOLL.wand + RASTER)) f.push(`Wand ${f3(z.innen.wand)} m (Soll ≤ ${SOLL.wand})`);
@@ -654,65 +587,22 @@ function ausFall(id, seed) {
         // die L0 wirft selbst (Plan §3.3: nah, höchstens drei im Bild, ≤ 3 400), jede andere Stufe über die Stufe 3
         if (w !== 3 && !(s === 0 && w === 0)) z.befund.push(`L${s} wirft über L${w} (${t} Dreiecke je Kaskade)`);
         else if (t > soll) z.befund.push(`Stufe 3 wirft ${t} > ${soll} Dreiecke`);
-        z.wurf[s] = Math.min(...SONNEN.map(([h, az]) => wurfIou(werf[w], werf[0], sonne(h, az))));
+        z.wurf[s] = Math.min(...SONNEN.map(([h, az]) => wurfIou(werf[w], werf[0], sonne(h, az), 0.1)));
         if (z.wurf[s] < SOLL.wurfAus) z.befund.push(`Wurf L${s} IoU ${f3(z.wurf[s])} < ${SOLL.wurfAus}`);
     }
     for (const s in g) entsorge(g[s]);
     return z;
 }
 
-// ── P: DER POP AM WECHSEL (lod.K5, w25-lod-pop) — je Kultur (Samen 1) und Ausstattung jede gezeigte Stufe gegen die L0
-//    (`kantenVersatz`, die Messung der Station am Bau) an der Grenze, die das Gesetz des Stamms aus der Zeile ihrer Vorlage legt
-//    (`_wechselGesetz`, LOD_SCHIRM.fehler), ≤ LOD_SCHIRM.px; die Türen der L0 zu (der Wirt dreht um −offen am Scharnier).
-//    `--tafel` prägt die Zeilen: der Versatz am Haushalt × 1,1, in Metern. ──
-const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
-function netze(g) {
-    const [out, v] = [[], new T.Vector3()];
-    g.updateMatrixWorld(true);
-    g.traverse((o) => {
-        if (!o.isMesh) return;
-        let w = o.parent;
-        while (w && w !== g && !(w.userData && typeof w.userData.side === "number")) w = w.parent;
-        const a = w && w !== g ? -(w.userData.offen || 0) : 0;
-        const P = o.geometry.attributes.position,
-            pos = new Float32Array(P.count * 3);
-        for (let i = 0; i < P.count; i++) {
-            v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
-            const [x, z] = a ? [v.x - w.position.x, v.z - w.position.z] : [0, 0];
-            if (a)
-                [v.x, v.z] = [
-                    w.position.x + Math.cos(a) * x + Math.sin(a) * z,
-                    w.position.z - Math.sin(a) * x + Math.cos(a) * z,
-                ];
-            pos.set([v.x, v.y, v.z], i * 3);
-        }
-        out.push({
-            pos,
-            idx: o.geometry.index ? o.geometry.index.array : Uint32Array.from({ length: P.count }, (_, i) => i),
-        });
-    });
-    return out;
-}
-function pop(ids, tafel) {
-    const F = WIRT._brennweite(0);
-    return ids.map((id) => {
-        const art = FC.PRESETS[id].kind;
-        const n0 = netze(FC.buildInstance(id, 1, 0));
-        const z = { id, e: [], px: [], txt: [] };
-        for (const s of LOD.kindStages[art].filter((x) => x && !LOD.budget[art][x].nurWurf)) {
-            const ab = WIRT._wechselGesetz(art, s, 1, 0, undefined, tafel ? undefined : id);
-            const ns = netze(FC.buildInstance(id, 1, s));
-            const w = tafel ? wechselFehler(n0, ns, ab, F) : { px: kantenVersatz(n0, ns, ab, F), d: ab };
-            [z.e[s - 1], z.txt[s - 1]] = [w.e, `L${s} ${w.px.toFixed(2)} px @ ${w.d.toFixed(1)} m`];
-            z.px.push([s, w.px]);
-        }
-        return z;
-    });
-}
-const popBruch = (zeilen) =>
-    zeilen.flatMap((z) =>
-        z.px.filter(([, px]) => !(px <= WIRT.LOD_SCHIRM.px)).map(([s, px]) => `${z.id} L${s} ${px.toFixed(2)} px`)
-    );
+// ── P: DER POP AM WECHSEL (lod.K5, w25-lod-pop) — jede gebaute Art, die ihre Stufen nach Grenzen wählt (Haus je Kultur, Ausstattung,
+//    Tor je Rezept; Samen 1): jede gezeigte Stufe gegen die L0 (`wechselProbe`, die Messung der Station am Bau) an der Grenze, die
+//    das Gesetz des Stamms aus der Zeile ihrer Vorlage legt (`_wechselGesetz`, LOD_SCHIRM.fehler), ≤ LOD_SCHIRM.px; die Haus-Türen
+//    der L0 zu (der Wirt dreht um −offen am Scharnier), die Tor-Flügel in der Fern-Pose des Spiels (`_tickTorFluegel`: Seite ·
+//    sign(z) · TUER_GESETZ.fern · offen — die Stufen tragen sie fest im Körper). `grenze` ersetzt die Grenze (Selbsttest). ──
+const [WIRT, PC] = [require("./lib/asset-worker-harness.cjs").wirtMitBuch(), studioKern("porta-core.js", "__portaCore")];
+const TORE = Object.keys(PC.PRESETS).filter((k) => !NUR || NUR.test(k));
+const pop = (ids, grenze) =>
+    wechselProbe({ ids, kern: (id) => (FC.PRESETS[id] ? FC : PC), wirt: WIRT, fern: PC.TUER_GESETZ.fern * PC.TUER_GESETZ.offen, grenze });
 
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
@@ -785,31 +675,14 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
         fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
-    // P: die Pueblo-Zeile am Haushalt (der Deckel bis w25-lod-pop) — ihre L2 trägt die Dach-Terrassen nicht
-    const T0 = WIRT.LOD_SCHIRM;
-    const haus = Object.assign({}, T0.fehler.haus, { pueblo: { 1: T0.fehler.haus.pueblo[1], 2: 1e-4 } });
-    WIRT.LOD_SCHIRM = Object.assign({}, T0, { fehler: Object.assign({}, T0.fehler, { haus }) });
-    const b7 = popBruch(pop(["pueblo"]));
-    WIRT.LOD_SCHIRM = T0;
-    if (!b7.some((b) => /^pueblo L2 \d/.test(b))) fehler.push("P: die Pueblo-Zeile am Haushalt ist nicht rot");
+    // P: die Grenze am Haushalt (der Deckel bis w25-lod-pop) — die Pueblo-L2 trägt ihre Dach-Terrassen nicht
+    const b7 = pop(["pueblo", "geisttor"], (id, s, art) => WIRT._wechselGesetz(art, s, 1, 0)).bruch;
+    if (!(b7.some((b) => /^pueblo L2 /.test(b)) && b7.some((b) => /^geisttor L2 /.test(b)))) fehler.push("P: die Grenze am Haushalt ist nicht rot");
     return fehler;
 }
 
 (function main() {
     const t0 = Date.now();
-    if (ARG.includes("--tafel")) {
-        for (const [art, ids] of [
-            ["haus", KULTUREN],
-            ["ausstattung", AUS],
-        ]) {
-            const t = pop(ids, true);
-            for (const z of t) console.log(`  ${z.id.padEnd(17)} ${z.txt.filter(Boolean).join(" · ")}`);
-            console.log(
-                `TAFEL ${art}: ` + t.map((z) => `${z.id}: [${z.e.filter((x) => x != null).join(", ")}]`).join(", ")
-            );
-        }
-        return;
-    }
     console.log("=== DIE LINSE DES HAUS-FERNKÖRPERS (gate:haus-fern) ===");
     if (!hatStufe3("haus") || !hatStufe3("ausstattung")) {
         console.log(
@@ -831,7 +704,7 @@ function selbsttest() {
             if (u.length) rot.push(`${id}/s${s}: ${u.join(" · ")}`);
             if (ZEILEN)
                 console.log(
-                    `  ${id}/s${s} Wurf ${[0, 1, 2].map((x) => f3(z.wurf[x])).join("/")} · Umriss ${f3(z.sprung.x)}/${f3(z.sprung.z)} · ` +
+                    `  ${id}/s${s} Wurf ${[0, 1, 2].map((x) => f3(z.wurf[x])).join("/")} · ` +
                         `First ${z.first[2] || "—"}/${z.first[3] || "—"} · Aufbl ${f3(z.aufbl)} · Wand ${f3(z.innen.wand)} · Dach ${f3(z.innen.dach)} · S3 ${z.tris3}`
                 );
         }
@@ -843,19 +716,13 @@ function selbsttest() {
             if (z.befund.length) rot.push(`${id}/s${s}: ${z.befund.join(" · ")}`);
         }
     const wurfAlle = zeilen.flatMap((z) => [0, 1, 2].map((s) => z.wurf[s]));
-    const sprungMin = zeilen.map((z) => Math.min(z.sprung.x, z.sprung.z));
     const quer = zeilen.reduce((n, z) => n + (z.first[2] === "z") + (z.first[3] === "z"), 0);
     const mWurf = median(wurfAlle);
     if (zeilen.length && !(mWurf >= SOLL.wurfMedian)) rot.push(`Wurf-IoU Median ${f3(mWurf)} < ${SOLL.wurfMedian}`);
-    for (const a of ["x", "z"]) {
-        const mS = median(zeilen.map((z) => z.sprung[a]));
-        if (zeilen.length && !(mS >= SOLL.sprungMedian))
-            rot.push(`Umriss L1↔L2 entlang ${a} Median ${f3(mS)} < ${SOLL.sprungMedian}`);
-    }
     const kosten3 = zeilen.map((z) => (z.kosten[2] ? z.kosten[2].tris : null));
     console.log(
         `  Häuser ${zeilen.length} (${KULTUREN.length} Kulturen × Samen ${SAMEN.join("/")}): Wurf-IoU zu L0 Median ${f3(mWurf)} · min ${f3(Math.min(...wurfAlle))} · ` +
-            `Umriss L1↔L2 Median ${f3(median(sprungMin))} · min ${f3(Math.min(...sprungMin))} · First quer ${quer}/${zeilen.length * 2} · ` +
+            `First quer ${quer}/${zeilen.length * 2} · ` +
             `Aufblähung Median ${f3(median(zeilen.map((z) => z.aufbl)))} m · max ${f3(Math.max(...zeilen.map((z) => z.aufbl ?? -9)))} · ` +
             `Wand max ${f3(Math.max(...zeilen.map((z) => z.innen.wand)))} · Dach max ${f3(Math.max(...zeilen.map((z) => z.innen.dach)))} · ` +
             `Wurf-Kosten L2 Median ${median(kosten3) ?? "—"}`
@@ -891,18 +758,10 @@ function selbsttest() {
                 )
                 .join(" · ")
     );
-    const P = pop(KULTUREN.concat(AUS));
-    const pb = popBruch(P);
-    for (const b of pb) rot.push(`P POP AM WECHSEL ${b} > ${WIRT.LOD_SCHIRM.px} px an der Grenze seiner Vorlage`);
-    console.log(
-        `  Pop am Wechsel (P, lod.K5, Soll ≤ ${WIRT.LOD_SCHIRM.px} px an der Grenze der Vorlage): ` +
-            ["haus", "ausstattung"]
-                .map((art) => {
-                    const px = P.filter((z) => FC.PRESETS[z.id].kind === art).flatMap((z) => z.px);
-                    return `${art} ${px.length} Stufen, max ${Math.max(...px.map(([, x]) => x)).toFixed(2)} px`;
-                })
-                .join(" · ")
-    );
+    const P = pop(KULTUREN.concat(AUS, TORE));
+    if (ZEILEN) for (const z of P.txt) console.log("  " + z);
+    for (const b of P.bruch) rot.push("P POP AM WECHSEL " + b);
+    console.log(`  Pop am Wechsel (P, Soll ≤ 1 px an der Grenze der Vorlage): ${P.txt.length} Vorlagen, ${P.bruch.length} Täter`);
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
@@ -910,6 +769,6 @@ function selbsttest() {
     );
     wandEnde(
         rot,
-        "jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
+        "jede Stufe wirft den grundriss-treuen Fernkörper, zeigt sich erst ≤ 1 px von der L0, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
     );
 })();

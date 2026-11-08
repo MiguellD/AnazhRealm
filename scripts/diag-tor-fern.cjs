@@ -20,8 +20,8 @@
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
 
-const { studioKern, pruefer, ROOT: root, stammLib } = require("./lib/welt-boot.cjs");
-const { rasterDreieck, kantenVersatz, wechselFehler } = require("./lib/kronen-linse.cjs");
+const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const { wurfIou } = require("./lib/kronen-linse.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
@@ -33,25 +33,10 @@ const NUR = ARG.includes("--nur") ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : 
 // Fern-Strang der Ruine über ihren fehlenden Steinen — 9,1) → ≤ 10 cm; der Tiefen-Bias der nahen Kaskade trägt 5–13 cm.
 const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 
-// ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` aus der Quelle (die Fernform liest, was er liest) ──
-const STAMM = stammLib.text(root);
-// die Methode am NAMEN (gate:apparat Klinge 3): Rumpf und Parameter liest der EINE Leser `methodeAm` (scripts/lib/stamm.cjs)
-const KEIL_TYP = (() => {
-    const m = stammLib.treffer(STAMM, null, /AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
-    return m ? Function("return " + m[1])() : {};
-})();
-function leser(rumpf) {
-    const stub = {
-        HUELLE_KEIL_TYP: KEIL_TYP,
-        _kernPflichtBruch: (q) => {
-            throw new Error("KERN-PFLICHT " + q);
-        },
-    };
-    return Function("AnazhRealm", "return function _huelleVon(" + HUELLE.args + ") {" + rumpf + "};")(stub);
-}
-const HUELLE = stammLib.methodeAm(STAMM, "_huelleVon");
-const RUMPF = HUELLE.rumpf;
-const huelleVon = leser(RUMPF);
+// ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` des geladenen Wirts (die Fernform liest, was er liest; bis w25-lod-pop
+//    aus dem Quelltext nachgebaut, mit einem Zwilling von HUELLE_KEIL_TYP und `_kernPflichtBruch`) ──
+const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
+const huelleVon = (h, rolle, q) => WIRT._huelleVon(h, rolle, q);
 
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
 const RASTER = 0.05;
@@ -72,21 +57,6 @@ function dreiecke(g, nurWerfer) {
     });
     return out;
 }
-function abdruck(D, d, box) {
-    const nu = Math.ceil((box.u1 - box.u0) / RASTER),
-        nv = Math.ceil((box.v1 - box.v0) / RASTER),
-        m = new Uint8Array(nu * nv);
-    const pr = (x, y, z) => {
-        const t = Math.max(0, y) / d[1];
-        return [x - d[0] * t, z - d[2] * t];
-    };
-    const R = { u0: box.u0, v0: box.v0, r: RASTER, nu, nv };
-    for (let i = 0; i < D.length; i += 9) {
-        const [a, b, c] = [0, 3, 6].map((j) => pr(D[i + j], D[i + j + 1], D[i + j + 2]));
-        rasterDreieck(...a, ...b, ...c, R, (o) => (m[o] = 1), 1e-9);
-    }
-    return m;
-}
 const SONNEN = [];
 for (const h of [25, 40, 60, 74])
     for (const az of [0, 120, 240]) {
@@ -95,34 +65,7 @@ for (const h of [25, 40, 60, 74])
         SONNEN.push([Math.cos(e) * Math.sin(a), Math.sin(e), Math.cos(e) * Math.cos(a)]);
     }
 function wurfDeckung(L0, W) {
-    const ious = [];
-    for (const d of SONNEN) {
-        let u0 = 1e9,
-            u1 = -1e9,
-            v0 = 1e9,
-            v1 = -1e9;
-        for (const D of [L0, W])
-            for (let i = 0; i < D.length; i += 3) {
-                const t = Math.max(0, D[i + 1]) / d[1],
-                    u = D[i] - d[0] * t,
-                    v = D[i + 2] - d[2] * t;
-                u0 = Math.min(u0, u);
-                u1 = Math.max(u1, u);
-                v0 = Math.min(v0, v);
-                v1 = Math.max(v1, v);
-            }
-        const box = { u0: u0 - 0.2, u1: u1 + 0.2, v0: v0 - 0.2, v1: v1 + 0.2 };
-        const a = abdruck(L0, d, box),
-            b = abdruck(W, d, box);
-        let s = 0,
-            v = 0;
-        for (let k = 0; k < a.length; k++) {
-            if (a[k] && b[k]) s++;
-            if (a[k] || b[k]) v++;
-        }
-        ious.push(v ? s / v : 0);
-    }
-    ious.sort(aufsteigend);
+    const ious = SONNEN.map((d) => wurfIou([L0], [W], d, RASTER)).sort(aufsteigend);
     return { min: ious[0], median: ious[ious.length >> 1] };
 }
 
@@ -274,78 +217,16 @@ const FERN = {
     genesisThird: ["maurentor", "drachentor", "maschine", "kathedrale", "ruine"],
 };
 FERN.rest = FERN.klasse - FERN.fest;
-const STUFE_NACH_GRENZEN = Function(
-    "return function _stufeNachGrenzen(d, cur, G, s) {" + stammLib.methodeAm(STAMM, "_stufeNachGrenzen").rumpf + "};"
-)();
-const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
 // die gezeigten Stufen des Tors mit der Grenze, die das Gesetz des Stamms aus der Fehler-Zeile seiner Vorlage `id` legt (ohne `id`
 // der Haushalt der Art, `_wechselGesetz` ohne Vorlage)
-function grenzenVon(K, id) {
-    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate;
-    return K.PORTAL_RENDER_CONFIG.lod.kindStages.gate
-        .slice(1)
+function stufeBei(K, d, id) {
+    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
+        S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
+    const grenzen = S.slice(1)
         .filter((st) => art[st] && art[st].nurWurf !== true)
         .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0, undefined, id) }));
+    return WIRT._stufeNachGrenzen(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
 }
-function stufeBei(K, d, id) {
-    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate;
-    const G = { erste: K.PORTAL_RENDER_CONFIG.lod.kindStages.gate[0], grenzen: grenzenVon(K, id), h: art.hyst };
-    return STUFE_NACH_GRENZEN(d, undefined, G, 1);
-}
-// ── P: DER POP AM WECHSEL (lod.K5, w25-lod-pop) — je Tor und gezeigter Stufe der Kanten-Versatz zur L0 (`kantenVersatz`, die
-//    Messung der Station am Bau) an der Grenze seiner Vorlage, ≤ LOD_SCHIRM.px; die L0 mit den Flügeln in der Fern-Pose des
-//    Spiels (`_tickTorFluegel`: um ihr Scharnier, Seite · sign(z) · TUER_GESETZ.fern · offen — die Stufen tragen sie fest im
-//    Körper). `--tafel` druckt die Zeilen der Tafel LOD_SCHIRM.fehler.gate: der Versatz am Haushalt × 1,1, in Metern.
-function netze(g) {
-    const fern = PC.TUER_GESETZ.fern * PC.TUER_GESETZ.offen,
-        v = new THREE.Vector3(),
-        out = [];
-    g.updateMatrixWorld(true);
-    g.traverse((o) => {
-        if (!o.isMesh) return;
-        let t = o.parent;
-        while (t && !(t.userData && typeof t.userData.side === "number")) t = t.parent;
-        const [P, w] = [o.geometry.attributes.position, t ? t.userData.side * Math.sign(t.position.z) * fern : 0];
-        const pos = new Float32Array(P.count * 3);
-        for (let i = 0; i < P.count; i++) {
-            v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
-            const [x, z] = t ? [v.x - t.position.x, v.z - t.position.z] : [0, 0];
-            pos.set(
-                t
-                    ? [
-                          t.position.x + x * Math.cos(w) + z * Math.sin(w),
-                          v.y,
-                          t.position.z - x * Math.sin(w) + z * Math.cos(w),
-                      ]
-                    : [v.x, v.y, v.z],
-                i * 3
-            );
-        }
-        out.push({ pos, idx: o.geometry.index.array });
-    });
-    return out;
-}
-function pop(nur, tafel) {
-    const F = WIRT._brennweite(0);
-    const zeilen = [];
-    for (const id of Object.keys(PC.PRESETS).filter((x) => (!NUR || NUR.test(x)) && (!nur || nur.includes(x)))) {
-        const n0 = netze(PC.buildInstance(id, 1, 0));
-        const z = { id, e: [], px: [], txt: [] };
-        for (const { stufe, ab } of grenzenVon(PC, tafel ? null : id)) {
-            const ns = netze(PC.buildInstance(id, 1, stufe));
-            const w = tafel ? wechselFehler(n0, ns, ab, F) : { px: kantenVersatz(n0, ns, ab, F), d: ab };
-            z.e[stufe - 1] = w.e;
-            z.px.push([stufe, w.px]);
-            z.txt.push(`L${stufe} ${w.px.toFixed(2)} px @ ${w.d.toFixed(1)} m`);
-        }
-        zeilen.push(z);
-    }
-    return zeilen;
-}
-const popBruch = (zeilen) =>
-    zeilen.flatMap((z) =>
-        z.px.filter(([, px]) => !(px <= WIRT.LOD_SCHIRM.px)).map(([s, px]) => `${z.id} L${s} ${px.toFixed(2)} px`)
-    );
 const stoffKey = (m) =>
     [
         m.type,
@@ -394,13 +275,6 @@ function fernStufe(K, verfaelsche) {
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
 const { errs: fails, check, wandEnde } = pruefer();
-if (ARG.includes("--tafel")) {
-    // DIE PRÄGUNG der Zeilen LOD_SCHIRM.fehler.gate: der Versatz am Haushalt der Art × 1,1, in Metern (dieselbe Messung wie P)
-    const t = pop(null, true);
-    for (const z of t) console.log(`     ${z.id.padEnd(11)} ${z.txt.join(" · ")}`);
-    console.log("TAFEL gate: " + t.map((z) => `${z.id}: [${z.e.join(", ")}]`).join(", "));
-    process.exit(0);
-}
 console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle) ===`);
 const k = kosten(huelleVon);
 check(
@@ -432,29 +306,9 @@ check(
         ? f.bruch.slice(0, 6).join(" · ")
         : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
 );
-const p = pop();
-for (const z of p) console.log(`     ${z.id.padEnd(11)} ${z.txt.join(" · ")}`);
-check(
-    `P POP AM WECHSEL (lod.K5): je Tor und Stufe ≤ ${WIRT.LOD_SCHIRM.px} px Kanten-Versatz zur L0 an der Grenze seiner Vorlage`,
-    popBruch(p).length === 0,
-    popBruch(p).join(" · ") || `max ${Math.max(...p.flatMap((z) => z.px.map(([, x]) => x))).toFixed(2)} px`
-);
 if (SELBST) {
-    // S7: die Zeile des Geisttors am Haushalt (der Deckel bis w25-lod-pop) — die Linse nennt seine L2 beim Namen
-    const T0 = WIRT.LOD_SCHIRM;
-    const gate = Object.assign({}, T0.fehler.gate, { geisttor: { 1: T0.fehler.gate.geisttor[1], 2: 1e-4 } });
-    WIRT.LOD_SCHIRM = Object.assign({}, T0, { fehler: Object.assign({}, T0.fehler, { gate }) });
-    const b7 = popBruch(pop(["geisttor"]));
-    WIRT.LOD_SCHIRM = T0;
-    check(
-        "SELBSTTEST P: die Geisttor-Zeile am Haushalt wird rot beim Namen",
-        b7.some((b) => /^geisttor L2 \d/.test(b)),
-        b7.join(" · ")
-    );
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
-    const K5 = Object.assign({}, PC, {
-        buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov),
-    });
+    const K5 = Object.assign({}, PC, { buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov) });
     const f5 = fernStufe(K5);
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
@@ -512,5 +366,5 @@ if (SELBST) {
 }
 wandEnde(
     fails,
-    "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll, jede Stufe zeigt sich erst, wo sie ≤ 1 px von der L0 steht."
+    "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll."
 );

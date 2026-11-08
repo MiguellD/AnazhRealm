@@ -196,9 +196,6 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
@@ -754,7 +751,7 @@ function selbsttest() {
         ["Ferne ohne Kachel", ["ferneWeg.kacheln=", undefined], /FERNE: je Bild/],
         ["Halt-Bruch stumpf", ["ferneWegHalt.neu=", 9], /STUMPF: Halt/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
