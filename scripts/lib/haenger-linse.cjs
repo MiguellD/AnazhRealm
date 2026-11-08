@@ -716,19 +716,21 @@ const DOMAENEN = [
 ];
 const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
 function domaenen(a, s) {
-    const je = {}, rahmen = [], stapel = [];
+    const je = {}, rahmen = [], stapel = [], baum = [];
     const plus = (d, sp, mi) => ((je[d] = je[d] || { spitze: 0, mitte: 0 }), (je[d].spitze += sp), (je[d].mitte += mi));
+    const r1 = (x) => x.toFixed(1);
     s.zeilen.forEach((z, i) => {
         stapel.length = z.tiefe;
         stapel.push(z.name);
         let sp = z.spitzeMs, mi = z.mitteMs;
         for (let j = i + 1; j < s.zeilen.length && s.zeilen[j].tiefe > z.tiefe; j++)
             if (s.zeilen[j].tiefe === z.tiefe + 1) [(sp -= s.zeilen[j].spitzeMs), (mi -= s.zeilen[j].mitteMs)];
-        const d = domaeneVon(stapel);
+        const d = domaeneVon(stapel), name = z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32);
         plus(d, Math.max(0, sp), Math.max(0, mi));
-        rahmen.push({ name: z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 36), d, sp: Math.max(0, sp), mi: Math.max(0, mi) });
+        rahmen.push({ name, d, sp: Math.max(0, sp), mi: Math.max(0, mi) });
+        // DER BAUM DER MITTE (inklusive, bis Tiefe 3, ab 1 ms): wohin die Zeit des gewöhnlichen Takts fließt
+        if (z.tiefe <= 3 && z.mitteMs >= 1) baum.push(`${"›".repeat(z.tiefe)}${name} ${r1(z.mitteMs)}`);
     });
-    const r1 = (x) => x.toFixed(1);
     const hJe = {};
     for (const h of a.haenger || []) {
         const d = h.klasse === "TAKT" || h.klasse === "NEBEN" ? domaeneVon(h.pfad.map((p) => p.name).concat(h.name)) : h.klasse;
@@ -740,9 +742,10 @@ function domaenen(a, s) {
             .sort((x, y) => y[1].spitze - x[1].spitze)
             .map(([d, v]) => `${d} ${r1(v.spitze)}/${r1(v.mitte)}`)
             .join(" · "),
+        baum: baum.join(" "),
         rahmen: rahmen
-            .sort((x, y) => y.sp - x.sp)
-            .slice(0, 10)
+            .sort((x, y) => y.mi - x.mi)
+            .slice(0, 12)
             .map((x) => `${x.name} (${x.d}) ${r1(x.sp)}/${r1(x.mi)}`)
             .join(" · "),
         haenger: Object.entries(hJe)

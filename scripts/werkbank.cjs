@@ -3078,7 +3078,7 @@ async function starte() {
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
                     const datei = zeitAblage(b.json, b.spitze ? "takt" : "haenger", "json");
-                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile() }, a));
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile(), befehle: l.befehle, dreiecke: l.dreiecke, gpuMs: l.gpuMs }, a));
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     const { tabelle, befunde, cpuMs, taeter } = a;
@@ -3215,12 +3215,14 @@ hauptLauf(async () => {
         const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
         let gruen = true;
         try {
+            // je Pass die Befehle (p50) eines Laufs, die größten zuerst
+            const passe = (b) => Object.entries(b?.jePass || {}).sort((x, y) => y[1].p50 - x[1].p50).slice(0, 5).map(([p, v]) => `${p} ${v.p50}`).join(" "); // prettier-ignore
             for (const [ort, gaenge] of [["wiese", 1], ["stadt", 2]]) {
                 await umstellen({ ort, sicht: "ego" });
                 for (let g = 1; g <= gaenge; g++) {
                     if (g > 1) {
                         const l = await rufe("/lauf", { sek: 2, ein: 0.3, ruhe: 0, regler: "voll", tiere: "frei" });
-                        zeile(`GEH Stand ${ort}: Bild ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} · Befehle ${l.befehle?.p95} · Dreiecke ${l.dreiecke?.p95} · Phasen ${JSON.stringify(l.phasenEwmaMs)}`); // prettier-ignore
+                        zeile(`GEH ${l.frameMs?.p95 <= 33.4 ? "GRÜN" : "ROT"} Stand ${ort}: Bild ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} · Befehle ${l.befehle?.p95} (${passe(l.befehle)}) · Dreiecke ${l.dreiecke?.p95} · Phasen ${JSON.stringify(l.phasenEwmaMs)}`); // prettier-ignore
                     }
                     const name = `${ort}-ego Gang ${g}`;
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
@@ -3229,9 +3231,10 @@ hauptLauf(async () => {
                     const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s);
                     const u = a.frameMs.p95 <= 33.4 ? "GRÜN" : "ROT";
                     gruen = gruen && u === "GRÜN";
-                    zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Pipe sync ${a.pipelines.sync} · Weg ${roh.bahnM} m`); // prettier-ignore
-                    zeile(`GEH ${u} ${name} Takt ab p95/Mitte (${s.spitzeN} Takte, CPU ${q(s.cpuMs)}): ${d.jeDomaene}`);
-                    zeile(`GEH ${u} ${name} Rahmen selbst: ${d.rahmen}`);
+                    zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
+                    zeile(`GEH ${u} ${name} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
+                    zeile(`GEH ${u} ${name} Baum der Mitte: ${d.baum}`);
+                    zeile(`GEH ${u} ${name} selbst nach Mitte: ${d.rahmen}`);
                 }
             }
         } catch (e) {
