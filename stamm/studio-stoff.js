@@ -309,57 +309,21 @@ class AnazhRealm_studio_stoff {
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
                 if (L) {
-                    // DER RAHMEN DES HAARS (w25-haar-albedo): `aStraehne` [Achse, Quer, Länge, Samen] (koerper `haarAchse`, am Bau
-                    // `_haarAchse`); ein Teil ohne Rahmen (die Kappe der Grobstufe) trägt die Achse 0 und zeigt sich ganz
-                    const HS = kind === "hair" ? kkC && kkC.HAAR_STRICH : null;
-                    const lumW = TSL.vec3(0.2126, 0.7152, 0.0722);
-                    if (kind === "hair" && !(HS && Array.isArray(HS.aufloesung) && _tonA))
-                        throw this._stoffBruch("das Haar ohne koerper HAAR_STRICH.aufloesung oder ohne Ton-Anker");
-                    const rahmen = (f, ohne) =>
-                        TSL.Fn((b) =>
-                            b.geometry && b.geometry.hasAttribute("aStraehne")
-                                ? f(TSL.attribute("aStraehne", "vec4"))
-                                : ohne
-                        )();
-                    const haarT = HS ? rahmen((a) => a.x.div(a.z.max(1e-6)).clamp(0.0, 1.0), TSL.float(0)) : null;
-                    if (HS) {
-                        // DAS HAAR LÖST SICH AM SCHIRM AUF (koerper HAAR_STRICH.aufloesung, derselbe Satz wie die Locke des Fells):
-                        // die Breite des Bands in Pixeln des Schirms (quer läuft −1 → +1: 2 ÷ fwidth, × Schirm je Szene wie der
-                        // Halm) blendet die eigenen Züge der
-                        // Strähne ein — ihren Ton (der Würfel von Strähne und Locke: Ton ÷ Ton-Anker ÷ Verlauf der Achse) und ihre
-                        // Rundung (die Normale ohne ihren Teil quer zur Strähne ist die der Kappe; quer = der Gradient von `quer`
-                        // in der Fläche, aus den Ableitungen von Lage und quer). Darunter trägt das Band den Ton des Haars und das
-                        // Licht der Kappe. Am Arm (Band ≥ 8 Pixel) unverändert; bis hier zeigte der Third ein Grieß aus Weiß und
-                        // Braun (headless 53b2fc7a strich 0,20).
-                        if (!this._haarAufloesung)
-                            this._haarAufloesung = TSL.uniform(new THREE.Vector2(HS.aufloesung[0], HS.aufloesung[1]));
-                        const schirm = this._ensureAtmoUniforms().schirmJeSzene;
-                        const zeigt = rahmen(
-                            (a) =>
-                                TSL.smoothstep(
-                                    this._haarAufloesung.x,
-                                    this._haarAufloesung.y,
-                                    TSL.float(2).div(TSL.fwidth(a.y).mul(schirm).max(1e-6))
-                                ),
-                            TSL.float(1)
-                        );
-                        const wuerfel = vcolRoh
-                            .dot(lumW)
-                            .div(
-                                this._stoffWert(TSL, "userData.stoffWerte.tonL").mul(
-                                    TSL.mix(TSL.float(HS.wurzel), TSL.float(1), haarT)
-                                )
-                            )
-                            .max(1e-4);
-                        mat.colorNode = TSL.vec4(TSL.mix(vcol.div(wuerfel), vcol, zeigt), 1.0);
-                        const nGeo = TSL.normalViewGeometry.mul(TSL.faceDirection).normalize();
-                        const quer = rahmen((a) => a.y, TSL.float(0));
-                        const g = TSL.cross(TSL.dFdy(TSL.positionView), nGeo)
-                            .mul(TSL.dFdx(quer))
-                            .add(TSL.cross(nGeo, TSL.dFdx(TSL.positionView)).mul(TSL.dFdy(quer)));
-                        const v = g.div(g.length().max(1e-12));
-                        mat.normalNode = TSL.mix(nGeo.sub(v.mul(nGeo.dot(v))), nGeo, zeigt).normalize();
-                    }
+                    // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` [Achse, Länge] je Ecke (koerper
+                    // `haarAchse`, am Bau `_haarAchse`) — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton jeder
+                    // Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der Würfel des Tons,
+                    // und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe der Grobstufe) trägt das
+                    // Haar keinen Glanz der Spitze.
+                    const haarT =
+                        kind === "hair"
+                            ? TSL.Fn((b) =>
+                                  b.geometry && b.geometry.hasAttribute("aStraehne")
+                                      ? ((a) => a.x.div(a.y.max(1e-6)).clamp(0.0, 1.0))(
+                                            TSL.attribute("aStraehne", "vec2")
+                                        )
+                                      : TSL.float(0)
+                              )()
+                            : null;
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -451,11 +415,6 @@ class AnazhRealm_studio_stoff {
                                 TSL.max(haar, wolle)
                             );
                         }
-                        // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` (koerper-leib `_haarAchse`) trägt
-                        // je Ecke Achse und Länge ihres Bands — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton
-                        // jeder Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der
-                        // Würfel des Tons, und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe
-                        // der Grobstufe) trägt das Haar keinen Glanz der Spitze.
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
                             : haarT

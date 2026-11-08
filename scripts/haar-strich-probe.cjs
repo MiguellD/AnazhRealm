@@ -11,12 +11,22 @@ const PORT = 4793;
 const env = { ...process.env, WERKBANK_PORT: String(PORT) };
 const wb = (...a) => execFileSync(process.execPath, ["scripts/werkbank.cjs", ...a], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 1 << 26 });
 const json = (t) => JSON.parse(t.slice(t.indexOf("{")));
-// eine Spielart des Zweigs (live, dieselbe Welt): die Uniform der Auflösung C [a0, a1] (Schirm-Pixel; [0, 0,0001] = aus), je
-// Spielart vier Wiederholungen — die Pose zwischen zwei Schüssen trägt ±0,07 am Arm
-const SPIELART = (a0, a1) => `r._haarAufloesung.value.set(${a0}, ${a1}); return [r._haarAufloesung.value.x, r._haarAufloesung.value.y];`;
+// der Blick von main, live in derselben Welt: der Glanz als Emission über Ton ÷ Ton-Anker, das Licht des Standard-Stoffs
+const MAIN_BLICK = `const S = T.TSL, L = window.__koerperCore.HAAR_LOOK, mats = new Set();
+r.state.playerMesh.traverse((o) => o.isMesh && o.material && o.material.userData && o.material.userData.__klasse === "hair" && mats.add(o.material));
+for (const m of mats) {
+  const vc = S.attribute("color", "vec3"), lw = S.vec3(0.2126, 0.7152, 0.0722);
+  const sT = vc.dot(lw).div(m.userData.stoffWerte.tonL).sub(0.85).div(0.15).clamp(0, 1);
+  const ndv = S.normalView.normalize().dot(S.positionViewDirection).clamp(-1, 1), rim = S.float(1).sub(ndv.abs()).clamp(0, 1);
+  m.colorNode = S.vec4(vc, 1); m.normalNode = null;
+  m.emissiveNode = S.vec3(...L.tipRimFarbe).mul(rim.pow(L.tipRimPow).mul(sT)).add(S.vec3(...L.specFarbe).mul(ndv.max(0).pow(L.specPow).mul(sT).mul(L.specAmt)));
+  m.setupLightingModel = T.MeshStandardNodeMaterial.prototype.setupLightingModel; m.needsUpdate = true;
+}
+window.__bundlesNeu && window.__bundlesNeu(); return mats.size;`;
 const STAENDE = [];
-for (let i = 1; i <= 4; i++)
-    STAENDE.push(["ohne-C#" + i, SPIELART(0, 0.0001)], ["C0.5-1#" + i, SPIELART(0.5, 1)], ["C0.75-1.5#" + i, SPIELART(0.75, 1.5)]);
+for (let i = 1; i <= 4; i++) STAENDE.push(["zweig#" + i, null]);
+STAENDE.push(["main-blick#1", MAIN_BLICK]);
+for (let i = 2; i <= 4; i++) STAENDE.push(["main-blick#" + i, null]);
 (async () => {
     const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
     let log = "";

@@ -784,12 +784,6 @@
     //          Strähne unter einem Pixel, die Locke 3 Pixel breit · ton  die Melanin-Streuung je Strähne (±)
     //   wurzel der Ton der Wurzel (die Lage darüber verdeckt sie; `haarAchse` liest an ihm die Ecken des Bands) — die Albedo
     //          des Haars bleibt sein Ton, wo man es sieht (Keratin mit Melanin, die Zeile haar der Albedo-Tafel).
-    //   aufloesung  [von, bis] Szenen-Pixel Breite des Bands (w25-haar-albedo; derselbe Satz wie die Locke des Fells, tetrapoda
-    //          FELL_SCHALE.aufloesung): quer zu seiner Strähne zeigt das Haar nur, was der Schirm auflöst — ihren Ton (ton, locke)
-    //          und ihre Rundung (rund) blendet die Breite ein; darunter trägt das Band den Ton des Haars (Ton ÷ seinen Würfel) und
-    //          die Normale der Kappe. Die Mitte eines Bildpunkts träfe ein schmaleres Band nur zufällig: sein Ton und sein Licht
-    //          wären Rauschen (headless 53b2fc7a: der Third strich 0,20, das Haar ein Grieß aus Weiß und Braun). Gemessen in
-    //          Pixeln des SCHIRMS (der Hochskalierer löst über den Zitter auf, was die Szene unter ihrem Pixel trägt).
     // Bis haar.K2 stand jede Strähne als Kreuz-Karte vom Kopf ab, die Wurzel bei 0,12 über die ganze Länge: das Bild zeigte das
     // Raster der Kappe statt Strähnen (Strich arm 0,28 / third 0,38 gegen die REF 0,44, Radeon 20d09a04), das Haar las dunkler als
     // Schwarz (Dunkelbraun: der Ton 0,0127, gerechnet über die Strähne im Mittel ≈ 0,006 — unter dem Band [0,01; 0,3]).
@@ -802,7 +796,6 @@
         locke: Object.freeze([48, 0.3]),
         ton: 0.2,
         wurzel: 0.85,
-        aufloesung: Object.freeze([0.5, 1]),
     });
     var HAAR_LOOK = Object.freeze({
         tipRimPow: 3,
@@ -813,20 +806,19 @@
     });
     // DER RAHMEN DER STRÄHNE (w25-haar-albedo; Leser: der Welt-Stoff über stamm `_haarAchse`, das Labor `laborStoff`): das Gesetz
     // der Ecken des Bäckers (foundry-core `__streuGeo`: je Band vier Ecken — zwei an der Wurzel im Ton × HAAR_STRICH.wurzel, zwei
-    // an der Spitze im Ton, je Ende erst quer −1, dann +1) rückwärts gelesen. Je Ecke [Achse, Quer, Länge, Samen]: die Achse 0 an
-    // der Wurzel, an der Spitze die Länge des Bands (die Feder des Winds liest sie, haar.K3), quer −1/+1 an seinen Kanten, die
-    // Länge an jeder Ecke (Achse ÷ Länge = der Anteil Wurzel → Spitze, den der Glanz der Spitze liest) und der Samen des Bands
-    // [0, 1). Die Farbe kann die Achse nicht tragen: jede Strähne trägt ihren eigenen Ton (HAAR_STRICH ton, locke) über einer
+    // an der Spitze im Ton) rückwärts gelesen. Je Ecke [Achse, Länge]: die Achse 0 an der Wurzel, an der Spitze die Länge des Bands
+    // (die Feder des Winds liest sie, haar.K3), die Länge an jeder Ecke (Achse ÷ Länge = der Anteil Wurzel → Spitze, den der Glanz
+    // der Spitze liest). Die Farbe kann die Achse nicht tragen: jede Strähne trägt ihren eigenen Ton (HAAR_STRICH ton, locke) über einer
     // Wurzel von 0,85 — bis hier lasen Welt und Labor den Anteil als Ton ÷ Ton-Anker und maßen den Würfel des Tons (der Glanz
     // schaltete je Strähne ganz an oder aus: das dunkelbraune Haar stand weiß, haar.K2#1). Eingaben je Ecke: Lage und Farbe
     // (xyz hintereinander), Ton (`menschTon`). Ein Vierer im Ton des Haars, dessen Farben dem Gesetz nicht folgen, ist ein Bruch
-    // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 4 je Ecke), zahl,
+    // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 2 je Ecke), zahl,
     // bruch }.
     function haarAchse(lage, farbe, ton) {
         var n = ton.length,
             haarTon = menschTon("hair"),
             wz = HAAR_STRICH.wurzel,
-            A = new Float32Array(n * 4),
+            A = new Float32Array(n * 2),
             zahl = 0,
             bruch = 0;
         var gleich = function (x, y) {
@@ -857,12 +849,9 @@
             for (f = 0; f < 3; f++)
                 d[f] = (lage[(i + 2) * 3 + f] + lage[(i + 3) * 3 + f] - lage[i * 3 + f] - lage[(i + 1) * 3 + f]) / 2;
             var l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
-            var samen = (Math.imul((i >> 2) + 1, 0x9e3779b1) >>> 8) / 16777216;
             for (k = 0; k < 4; k++) {
-                A[(i + k) * 4] = k < 2 ? 0 : l;
-                A[(i + k) * 4 + 1] = k & 1 ? 1 : -1;
-                A[(i + k) * 4 + 2] = l;
-                A[(i + k) * 4 + 3] = samen;
+                A[(i + k) * 2] = k < 2 ? 0 : l;
+                A[(i + k) * 2 + 1] = l;
             }
             zahl++;
         }
@@ -1058,8 +1047,8 @@
     //   von der Oberlippe bis anderthalb Lippen-Höhen unter die Unterlippe, vorn), deren Ton (Farbe × Verdeckung) unter 40 % des
     //   hellen Haut-Tons fällt — die harte Falte von den Mundwinkeln zum Kiefer, die Unterlippe wie ein abgesetzter Puppen-Kiefer
     //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0). haarRahmen = der Anteil der Bänder
-    //   des Haars am Guss L0, deren Ecken der EINE Leser `haarAchse` als Strähne liest (w25-haar-albedo: Welt und Labor lesen Achse,
-    //   Quer und Länge aus ihm — ein Band ohne Rahmen glänzte nie und löste sich nie auf).
+    //   des Haars am Guss L0, deren Ecken der EINE Leser `haarAchse` als Strähne liest (w25-haar-albedo: Welt und Labor lesen Achse
+    //   und Länge aus ihm — ein Band ohne Rahmen glänzte an seiner Spitze nie).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],

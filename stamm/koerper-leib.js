@@ -1654,7 +1654,7 @@ class AnazhRealm_koerper_leib {
         return this._tonLeibKnoten;
     }
     // DIE ACHSE DER STRÄHNE (haar.K3, w25-haar-albedo): je Ecke des nahen Haars der Rahmen ihrer Strähne `aStraehne` [Achse,
-    // Quer, Länge, Samen] — das EINE Gesetz koerper `haarAchse` (das Gesetz der Ecken des Bäckers `__streuGeo` rückwärts; das Labor
+    // Länge] — das EINE Gesetz koerper `haarAchse` (das Gesetz der Ecken des Bäckers `__streuGeo` rückwärts; das Labor
     // liest dasselbe). Die Achse trägt die Feder des Winds, Achse ÷ Länge den Glanz der Spitze (`_foundryTreeMaterial`); die
     // Braue im selben Teil trägt ihren eigenen Ton und steht. Gelesen hier, am Bau jedes Teils (`_foundryBuildMesh`): ein Band,
     // das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt byte-gleich (gate:ofen-contract); die
@@ -1677,7 +1677,7 @@ class AnazhRealm_koerper_leib {
             return 0;
         }
         if (!r.zahl) return 0;
-        mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(r.achse, 4));
+        mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(r.achse, 2));
         return r.zahl;
     }
     // DAS HAAR IM EINEN WIND UND MIT DEM LEIB (haar.K3) — der Lage-Knoten jedes Haar-Stoffs: der Versatz der Ecke ist die
@@ -1693,7 +1693,7 @@ class AnazhRealm_koerper_leib {
         const feder = T.reference("userData.__haarFeder", "vec3");
         const naht = this._weltNaht(T);
         const achse = T.Fn((b) =>
-            b.geometry && b.geometry.hasAttribute("aStraehne") ? T.attribute("aStraehne", "vec4").x : T.float(0)
+            b.geometry && b.geometry.hasAttribute("aStraehne") ? T.attribute("aStraehne", "vec2").x : T.float(0)
         )();
         const zug = naht.vorlage(feder.mul(achse.mul(naht.skala).div(H.bezug)));
         const deckel = achse.mul(H.reichweite).div(zug.length().max(1e-9)).min(1);
