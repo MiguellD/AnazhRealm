@@ -369,11 +369,13 @@ function dorfVerdict(m) {
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
 // m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
 // m.r = [hinten ohne Leerlauf, vorn,
-// Leerlauf-Ruf, hinten mit Leerlauf]
+// Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
     const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
+        !m.k && "die Kacheln um das Auge: keine Probe",
+        ...Object.entries(m.k || {}).map(([n, [warten, los]]) => (warten ? `${n} baut ${warten} Kacheln, die warten (\`_nahKachelWartet\`)` : !los && `${n} baut nichts`)), // prettier-ignore
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
         ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
         fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
@@ -942,6 +944,20 @@ async function probe(arg) {
             delete r._ensureVoxelChunkAt;
             st._weltbildDa = da;
         }
+        // DIE KACHELN UM DAS AUGE (w23-ankunft-faden): die Nah-Wiese, ihre Ferne und die Nah-Streu fallen (die Nah-Streu mit ihren
+        // Senken) und wachsen einen Takt lang, einmal unter „jede Kachel wartet“ (`_nahKachelWartet`, die EINE Frage vor dem Bild),
+        // einmal unter „keine wartet“ — je Bauer [gebaut mit Warten, gebaut ohne]
+        const [nw, ns] = [st.nahWiese, st.nahStreu];
+        if ((m.k = nw?.reich > 0 && ns && {}))
+            try {
+                for (const w of [true, false]) {
+                    [nw.kacheln.clear(), nw.fern.kacheln.clear(), ns.kacheln.forEach((k) => r._nahStreuKachelEntsorgen(k)), ns.kacheln.clear()]; // prettier-ignore
+                    [(r._nahKachelWartet = () => w), (r._standRuht = () => false), r._tickNahWiese(), r._tickNahStreu()];
+                    for (const [n, k] of Object.entries({ _tickNahWiese: nw.kacheln, _nahWieseFernTakt: nw.fern.kacheln, _tickNahStreu: ns.kacheln })) (m.k[n] ||= []).push(k.size); // prettier-ignore
+                }
+            } finally {
+                [delete r._nahKachelWartet, delete r._standRuht];
+            }
         m.gestartet = true;
     } catch (e) {
         out.huelle = { err: fehlerStapel(e) };
@@ -1780,20 +1796,20 @@ hauptLauf(async () => {
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
-                    ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
-                    ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
+                    ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet"],
+                    ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet"],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle:"],
                     ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten"],
                     ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die"],
-                    ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild"],
+                    ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ vorBild: ["a"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild"],
                     ["der Vorrat stirbt (er wartet ewig)", { vorrat: vr({ vorBild: [], nachBild: 0, ende: true }) }, "der Vorrat bestellt nie"],
                     ["der Vorrat endet nicht", { vorrat: vr({ vorBild: [], nachBild: 0, ende: false }) }, "der Vorrat endet nicht"],
-                    ["das Tor wartet auf den Vorrat", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], fehltNeu: ["die Werkstatt backt vor"] }) }, "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0"],
-                    ["die Streu wartet auf den Vorrat statt auf ihr Asset", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], streu: { aufgeschoben: true, zellen: 0 } }) }, "während der Vorrat läuft,"],
-                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: vr({ karten: 14, kartenBsp: ["eiche|1"] }) }, "der Vorrat bestellt 14"],
-                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } }, "solange der Vorrat auf"],
-                    ["der Vorrat bestellt in der Warte-Phase (K30-N1)", { vorrat: vr({ ohneLeser: ["Siedlungs-Probe"], vorBild: [], nachBild: 1, ende: true, phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] }) }, "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe"],
-                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine"],
+                    ["das Tor wartet auf den Vorrat", { vorrat: vr({ fehltNeu: ["a"] }) }, "während der Vorrat läuft, wartet das"],
+                    ["die Streu wartet auf den Vorrat statt auf ihr Asset", { vorrat: vr({ streu: { aufgeschoben: true, zellen: 0 } }) }, "während der Vorrat läuft,"],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: vr({ karten: 14 }) }, "der Vorrat bestellt 14"],
+                    ["der Merker sagt „an“, während der Vorrat auf das Bild wartet", { vorrat: vr({ nachBild: 1, ende: true, phaseStart: true, phaseVorBild: true, phaseBestellung: ["a: true"] }) }, "solange der Vorrat auf"],
+                    ["der Vorrat bestellt in der Warte-Phase (K30-N1)", { vorrat: vr({ nachBild: 1, ende: true, phaseBestellung: ["a"] }) }, "der Vorrat bestellt, ohne dass"],
+                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: vr({ nachBild: 1, ende: true, PH: undefined }) }, "der Vorrat nennt keine"],
                     ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
                     ["die Zusage wartet auf die ganze Schlange", { wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans"],
                     ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans:"],
@@ -1845,7 +1861,7 @@ hauptLauf(async () => {
                     unbekanntListe: false,
                     antworten: { hilfe: hilfeGut, help: hilfeGut, "?": hilfeGut },
                 },
-                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes"], ["Tafel halb", { antworten: { hilfe: { ...hilfeGut, fehlt: ["folge mir"] }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" nennt 1 Beispiel"]],
+                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "?", fehlt: [], tastenFehlen: [], v1: false }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes"], ["Tafel halb", { antworten: { hilfe: { ...hilfeGut, fehlt: ["folge mir"] }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" nennt 1 Beispiel"]],
             ],
             ["L3", gespraechVerdict, { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" }, [["Enter öffnet nichts", { enterFokus: "BODY" }, "Enter öffnet das Gespräch"], ["Fokus bleibt im Feld", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt"], ["Enter stiehlt dem Knopf den Fokus", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten"]]],
             [
@@ -1926,16 +1942,16 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true] }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"]]], // prettier-ignore
-            ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"]]], // prettier-ignore
+            ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
                 kiVerdict,
-                { gestartet: true, status: "Fehler (Ollama): Keine Antwort von 127.0.0.1:4604 — der lokale Dienst läuft nicht", ohneSchluessel: "(Grok schweigt: für Claude fehlt der Schlüssel …)", ursprung: "http://127.0.0.1:4601", proxyUrl: "http://127.0.0.1:4601/api/proxy/llm", proxyFehler: "der Proxy fehlt: … antwortet 404" },
+                { gestartet: true, status: "läuft nicht", ohneSchluessel: "Schlüssel", ursprung: "http://a", proxyUrl: "http://a/llm", proxyFehler: "Proxy fehlt" },
                 [
-                    ["Aktiv ohne Dienst", { status: "Aktiv: Ollama (lokal oder gehostet) (llama3.2)." }, "der Status sagt"],
+                    ["Aktiv ohne Dienst", { status: "Aktiv" }, "der Status sagt"],
                     ["Schweigen ohne Schlüssel", { ohneSchluessel: null }, "ohne Schlüssel schweigt der"],
-                    ["Proxy fest auf 4312", { proxyUrl: "http://localhost:4312/api/proxy/llm", proxyFehler: "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?)." }, "der Proxy fragt einen"],
+                    ["Proxy fest auf 4312", { proxyUrl: "http://b/llm", proxyFehler: "nicht erreichbar" }, "der Proxy fragt einen"],
                 ],
             ],
             [
@@ -2022,7 +2038,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

@@ -11,6 +11,15 @@ class AnazhRealm_vegetation_wiese {
         if (d > AnazhRealm._nahRingReich()) return 0;
         return this._nahWieseNeuIn(x0, z0, x1, z1);
     }
+    // DIE KACHEL WARTET AUF DEN NACHLAUF (w23-ankunft-faden): vor dem ersten Weltbild wächst eine neue Kachel der Nah-Wiese, ihrer
+    // Ferne oder der Nah-Streu (Kante `kante` m, (tx, tz) ihr Gitter) nur im Blick der Ankunft — die EINE Frage `_blickDerAnkunft`
+    // mit der halben Diagonale, wie die Region der Streu; dahinter bleibt sie offen (ihr Takt bleibt wach) und wächst rundum,
+    // sobald das Bild steht. Bis hier baute der Lade-Takt den ganzen Ring um das Auge, die Ferne bis 200 m (~870 Kacheln à
+    // 144 Boden-Proben): kalt vor der Kontrolle 7,3 s Haupt-Faden (GTX) und 7,9 s (Radeon) in `_tickNahWiese`, der größte
+    // Block der Ankunft — mehr als der Knoten-Bau (3,2–3,4 s).
+    _nahKachelWartet(tx, tz, kante) {
+        return !this._blickDerAnkunft((tx + 0.5) * kante, (tz + 0.5) * kante, kante * Math.SQRT1_2);
+    }
     // DIE REICHWEITE DER RINGE um die EINE Mitte: so weit stehen Kacheln der Wiese (ihre Ferne, `NAH_WIESE.fern`) oder der
     // Nah-Streu (ihr Rand-Band) — der weitere zählt (EINE Rechnung für den Neubau im Rechteck und das Licht der Kronen)
     static _nahRingReich() {
@@ -377,8 +386,13 @@ class AnazhRealm_vegetation_wiese {
         let gebaut = 0;
         for (const w of wunsch) {
             if (nw.kacheln.has(w.key)) continue;
-            if (gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
-                nw.offen++; // das Takt-Budget ist leer
+            // das Takt-Budget ist leer, oder die Kachel liegt vor dem ersten Weltbild außer Blick (`_nahKachelWartet`)
+            if (
+                gebaut >= NW.kachelnJeTakt ||
+                (deadline && performance.now() > deadline) ||
+                this._nahKachelWartet(w.tx, w.tz, NW.kachel)
+            ) {
+                nw.offen++;
                 continue;
             }
             const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
@@ -472,7 +486,11 @@ class AnazhRealm_vegetation_wiese {
         for (const [key, k] of fk) if (k.marke !== marke) fk.delete(key) && o.gefallen++;
         bau.sort((a, b) => a.d - b.d);
         for (const w of bau) {
-            if (o.gebaut >= F.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+            if (
+                o.gebaut >= F.kachelnJeTakt ||
+                (deadline && performance.now() > deadline) ||
+                this._nahKachelWartet(w.fx, w.fz, K)
+            ) {
                 o.offen++;
                 continue;
             }
@@ -2094,7 +2112,11 @@ class AnazhRealm_vegetation_wiese {
             );
             const rand = anteile.join(",");
             if (k && k.zustand === this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand) continue;
-            if (gebaut >= NS.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+            if (
+                gebaut >= NS.kachelnJeTakt ||
+                (deadline && performance.now() > deadline) ||
+                (!k && this._nahKachelWartet(w.tx, w.tz, NS.kachel))
+            ) {
                 ns.offen++;
                 continue;
             }
