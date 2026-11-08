@@ -139,7 +139,7 @@ async function bootLauf(text) {
     vm.runInContext(blob.replace(/\bimport\(/, "__lader("), vm.createContext(w));
     for (let i = 0; i < 250 && !aus.fehler && (!aus.laden || st.length < echt.length); i++) await new Promise((r) => setImmediate(r)); // prettier-ignore
     w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
-    aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
+    aus.wand = !!(aus.post?.meshes[0].position && !aus.post.meshes[0].aWind);
     return aus;
 }
 

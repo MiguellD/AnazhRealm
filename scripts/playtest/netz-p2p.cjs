@@ -1394,7 +1394,7 @@ async function checkBandLateMultiUser({ page, check }) {
         out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
         // NICHT in state.creatures (updateCreatures ignoriert sie).
         const rc = p2p.remoteCreatures.get("farPeer:c9");
-        out.remoteNotInLocalSim = !!rc && st.creatures.indexOf(rc.mesh) === -1;
+        out.remoteNotInLocalSim = !!rc && !st.creatures.includes(rc.mesh);
 
         // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
         r._p2pHandleCreaturePos("farPeer", {
@@ -2035,7 +2035,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         );
         const pv2 = p2p.peers.get("pv2");
         out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
-        out.customMeshBuilt = !!(pv2?.mesh?.children && pv2.mesh.children.length >= 1);
+        out.customMeshBuilt = !!(pv2?.mesh?.children && pv2.mesh.children.length);
 
         // aura-Nachricht (SYNERGIE-WELLE): must-ignore-Stub — ein alter Peer darf sie
         // weiter senden, sie crasht nie und hinterlaesst KEINEN Aura-State am Entry.
@@ -2348,8 +2348,8 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
             out.helperRaycastNoop =
                 !!pre &&
-                Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
-                Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
+                Object.hasOwn(pre.gridHelper, "raycast") &&
+                Object.hasOwn(pre.axesHelper, "raycast");
         }
 
         // C — Einstellungen-Sektionen faltbar.
@@ -2360,7 +2360,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             // Die Einstellungen tragen 11 Präferenz-Sektionen (die Welt-Verwaltung lebt im Welt-Manager) →
             // Schwelle ≥11; der Beweis ist die Falt-MECHANIK (collapseToggles).
             out.collapsibleHeaders = headers.length >= 11;
-            if (headers.length > 0) {
+            if (headers.length) {
                 const sec = headers[0].closest("section");
                 const before = sec.classList.contains("collapsed");
                 headers[0].click();

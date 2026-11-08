@@ -138,7 +138,7 @@ hauptLauf(async () => {
 
         // ── (E) DER EIGENE AVATAR bleibt byte-identisch (kein transienter Leck) ──
         res.e.eigenNachher = fpGroup(r.state.playerMesh);
-        res.e.activeLeer = r._activePeerUebergabe === undefined || r._activePeerUebergabe === null;
+        res.e.activeLeer = r._activePeerUebergabe == null;
         // Erneuter EIGENER Guss nach all den Peer-Güssen ⇒ Default (die eigene Übergabe ist leer).
         try {
             r.applyPlayerSoul("human");
