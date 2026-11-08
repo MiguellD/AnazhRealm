@@ -1,0 +1,26 @@
+# GPU-PROBE cc951faf — ROT
+
+Zweig `w22-geh-bild` · Kopf cc951fafbe777eedbdcb8a4c1ad2e385c1bc85bd · Läufer omen-gtx1060 · 08.11. 01:04 · Wanduhr ab Push 506 s · Lauf https://github.com/MiguellD/AnazhRealm/actions/runs/42427448784
+
+Ruf: `gate:geh-zerlegung`
+
+GPU NVIDIA GeForce GTX 1060 · npm ci 35 s (package-lock 4c7ceb0e)
+Schloss /c/Users/micha/AppData/Local/Temp/claude/gpu-schloss hält „ci-runner 42427448784/1 probe“
+- Hook 2026-11-08 01:01:23 start ci-runner 42427448784/1 probe: Schloss genommen (refs/heads/w22-geh-bild cc951fafbe777eedbdcb8a4c1ad2e385c1bc85bd ws=C:\actions-runner\_work\AnazhRealm\AnazhRealm)
+
+### gate:geh-zerlegung — ROT · 101 s
+
+Adapter: [linse-gpu] nvidia/pascal
+
+```text
+GEH ROT wiese-ego Profil: Bild 41.7/108.4/141.7/150 · CPU-Takt 42.1/106.4/140.3/145.8 · >33: 181 von 199 · Ursachen [n Σms max]: 103 5758 150 TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js] | 62 2783 108 TAKT: verteilt | 6 308 67 TAKT: _loopVoxelStreaming › _runFrameScheduler | 2 184 108 TAKT: r._knotenRate › _knotenRate | 2 183 92 TAKT: _knotenRate › build [three.webgpu.min.js] | 2 67 33 TAKT: scene.onBeforeRender › _passSicht | 1 125 125 TAKT: renderer.renderObject › renderObject [three.webgpu.min.js]
+GEH ROT wiese-ego B1: 0_renderScene 80.6·23 1_renderBundles 51.9·1.4 2_renderBundle 51.9·1.3 3_renderObjects 51.8·0.4 4renderObject 51.8·0.4 5_renderObjectDirect 51.2·0.3 6r._knotenRate 48.7·0 1scene.onBeforeRender 18.2·14.9 2_passSicht 18.2·14.9 3_instanzWahlPass 8.5·5.4 4_instanzBehalten 4.6·3.3 5_passTrifft 1.7·1.4 5_instanzFenster 0.6·0.3 4_archGroupTausch 1.2·0.6 5_instanzTausch 1·0.5 6tausch 0.9·0.5 4_arenaTakt 1.1·0.4 5_takt 0.7·0.4 3_chunkSatzPass 4.1·4 4_hoehlenSicht 2.6·2.9 5_hoehlenSichtLicht 2.2·2.5 6_passTrifft 0.5·0.5
+GEH ROT wiese-ego B2: 4_chunkSatzAbschnitt 1.3·1 5_passTrifft 0.3·0.3 3_nahWieseSicht 3.4·4.1 4_passTrifft 0.4·0.4 3_kaskadenPassen 0.6·0.7 1_renderObjects 7.2·4.6 2renderObject 4.4·2.9 3_renderObjectDirect 4.2·2.8 4zeichne 3.5·2.4 5needsRefresh 1.5·1.2 6_diaetRefresh 1.5·1.1 7_diaetGeteiltSchreiben 0.8·0.8 8_update 0.5·0.5 9update 0.4·0.5 5updateForRender 1.5·0.9 2i 2.8·1.7 3renderObject 2.8·1.6 4_renderObjectDirect 2.4·1.2 5zeichne 2.1·1 6needsRefresh 0.9·0.6 7_diaetRefresh 0.9·0.6 8_diaetGeteiltSchreiben 0.5·0.3 1finishRender 0.5·0.4 2submit 0.4·0.4
+GEH ROT wiese-ego B3: 1_projectObject 0.5·0.5 1beginRender 0.5·0.3 0_loopVoxelStreaming 27.8·12.1 1_runFrameScheduler 27.8·12.1 2_dispatchFrameJobs 16·7.1 3run 10.5·6.6 4_tickScatterStreaming 4.2·0.1 4_tickNahWiese 2.8·5.4 5_nahWieseFernTakt 1.8·4.8 6_wasserKennungenGleich 0.3·0.4 5_nahWieseKachelBueschel 0.7·0.3 4_tickNahStreu 0.5·0.8 3_tickVoxelChunkStreaming 5.3·0.4 2_tickArchitectureLOD 5.1·2.8 3_zusagenVon 3.5·2.6 4(anonym) 3.4·2.5 5_archStufeUrteil 3.4·2.4 6_updateFoundryLodBand 1.6·0.8 7_foundryLodBandPartner 0.4·0.4 8_lodTreeVisHeight 0.3·0.3
+GEH ROT wiese-ego B4: 6_lodTreeVisHeight 0.5·0.7 2_tickPendingVegSpawns 4.7·1 3_pflanzGang 4.7·1 4_naturSetzen 4.6·1 5spawnArchitecture 3.9·0.9 6_kronenStreuNeu 1.8·0.3 7_kronenStreuWiese 1.7·0.3 6_populateBlockerAABBs 0.9·0.3 2_tickFernRing 0.5·0.8 3_fernRingRefresh 0.4·0.7 4_fernRingDeckWache 0.4·0.7 5_fernRingY 0.4·0.5 0tickArchitectureCulling 2.5·0.7 0_loopRender 2.4·0.5 0tickDayNight 1.6·1.6 1_applyDayNightToScene 1.6·1.6 2_belichtungAusLicht 1.4·1.4 3_waagrechtIrradianz 1.4·1.4 4_horizontSichtImBild 1.4·1.4 5_kartenWurfWerfer 0.9·0.7
+GEH ROT wiese-ego B5: 5_horizontSichtMessen 0.4·0.6 0_loopWeatherAndGrowth 1.2·0.9 1updateCreatures 0.4·0.3 0_loopFixedStep 1·0.5 1_stepFixedSim 1·0.5 2_loopPhysicsSync 0.8·0.4 3_stepCharacter 0.7·0.3 0e 0.4·0.4 1takt 0.4·0.4 2mark 0.3·0.4 0_spiegelFeldTakt 0.3·0.5
+GEH ROT wiese-ego Knoten-Bau Gang 1: 6 Schlüssel · Σ 767.7 ms in 52 Schritten · 6 fertig · 0 vorher im Cache (Σ 0 ms) · 0 gelöscht · Arenen 37 · [Stoff|Glied alt/neu n|Pass|t ms Schritte max]: [["MSNM|arena f:eiche:L0 neu n1|haupt|t2762",143.1,12,54.3],["MSNM|arena f:fichte:L0 alt n1|haupt|t2621",135.6,8,54.8],["MSNM|arena f:birke:L0 neu n1|haupt|t3758",132.1,8,55.2],["MSNM|arena f:eiche:L1 neu n1|haupt|t4621",124.2,8,48.6],["MSNM|arena f:strauch:L0 neu n1|haupt|t7129",122.7,8,48.3],["MSNM|arena f:eiche:L0 neu n1|haupt|t8471",110,8,49.6]]
+GEH ROT wiese-ego Lauf 6 s: Bild 33.2/49.9/66.7/75 · CPU 28.4/47.3/60.5/74.4 · GPU 3.2/3.9/4.1/4.1 (n 24) · Durchsatz 29.4/48.6/75.1/118.7 · Befehle p95 85 · Dreiecke p95 494935 · Belegung 29.2/48.7// · außer Takt 0.5/0.9// · Weg 25 m · Phasen {"streaming":4.36,"waterIso":0.01,"archCulling":0.16,"creatures":1.24,"physics":0.28,"render":17.03,"gpuMs":3.17}
+GEH ROT wiese-ego Knoten-Bau Gang 2 (dieselbe Bahn): 1 Schlüssel · Σ 95.9 ms in 8 Schritten · 1 fertig · 0 vorher im Cache (Σ 0 ms) · 0 gelöscht · Arenen 37 · [Stoff|Glied alt/neu n|Pass|t ms Schritte max]: [["MSNM|streuSatz|haupt|t1356",95.9,8,34]]
+GEH ROT genesis-third Lauf 6 s: Bild 33.2/58.3/66.8/75 · CPU 28.5/51.3/70.1/70.2 · GPU 2.4/3.4/3.6/3.6 (n 24) · Durchsatz 29.7/52.4/72.1/193 · Befehle p95 95 · Dreiecke p95 497125 · Belegung 29.8/55.8// · außer Takt 0.6/1.4// · Weg 25 m · Phasen {"streaming":5.12,"waterIso":0,"archCulling":0.18,"creatures":0.85,"physics":0.46,"render":15.84,"gpuMs":2.84}
+```
