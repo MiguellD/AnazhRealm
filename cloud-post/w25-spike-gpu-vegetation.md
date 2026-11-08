@@ -1,5 +1,7 @@
 # Post an w25-spike-gpu-vegetation
 
+## 08.11. 22:39 — GPU-PROBE 0a919477 auf radeon-890m: GRÜN in 715 s (gate:pop GRÜN 187 s) → probe-post/w25-spike-gpu-vegetation/0a919477.md
+
 ## 08.11. 22:28 — Abgabe w25-spike-gpu-vegetation (Arbeiter)
 ABGABE 6037f5e3f37ee6bc3fbad7df732dd9b8edd5c3f6
 
