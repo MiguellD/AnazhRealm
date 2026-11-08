@@ -2336,7 +2336,7 @@ class AnazhRealm_bild_himmel {
         // DER LUFTSCHATTEN (ferne.K4; Hillaire 2020 „shadowed in-scattering“, UE/Frostbite Sky Atmosphere): wo die Luft zwischen
         // Auge und Punkt im Schatten des Grats liegt, streut die Sonne dort nicht hinein — nur Himmel und Mond (die Mehrfach-
         // streuung). Der Strahl liest die EINE Horizont-Karte (`_horizontSicht`) an `luftProben` Punkten, je Punkt gewogen mit
-        // seinem Beitrag zur In-Streuung (Dichte der Luft × Durchlass bis zum Auge, dieselbe Extinktion wie `faktor`); die Farbe
+        // seinem Beitrag zur In-Streuung (der Abschnitt um ihn, Beer-Lambert exakt, dieselbe Extinktion wie `faktor`); die Farbe
         // verliert davon den Anteil der einfachen Streuung der Sonne (`himmelEinfach`, Alpha der Himmels-Sicht). Wo die Karte
         // ruht (ohne Gitter, unter dem Horizont), ist ihre Sicht 1; ohne Schatten-Karte des Renderers (kienspan) baut kein
         // Programm den Luftschatten (`_wirftImStoff`).
@@ -2362,7 +2362,17 @@ class AnazhRealm_bild_himmel {
             T.Loop(n, ({ i }) => {
                 const p = auge.add(v.mul(T.float(i).add(0.5).div(n))).toVar();
                 const dtau = b.mul(T.exp(p.y.sub(U.bezugY).div(U.hoehe).negate())).toVar();
-                const w = dtau.mul(T.exp(tau.add(dtau.mul(0.5)).negate())).toVar();
+                // DER ANTEIL DES ABSCHNITTS exakt nach Beer-Lambert: e^{−τ}·(1 − e^{−Δτ}) = e^{−τ}·Δτ·φ(Δτ), φ(x) = (1 − e^{−x})/x,
+                // x→0: 1 − x/2 (wie `fk`); die Summe ist 1 − e^{−τ}. Die Mittelpunkt-Regel Δτ·e^{−τ−Δτ/2} fiel in dichter Luft unter
+                // die Klemme der Summe (1e-12, ab Δτ ≈ 63 je Abschnitt): die Sicht 0, die Luft verlor ihre ganze einfache Streuung
+                // der Sonne (Radeon, Mittag, Genesis-Hügel: In-Streuung sRGB 93/101/92 bei β 1 gegen 130/139/129 bei β 0,05) — die
+                // Luft-Linse (Schuss β 1) las den Himmel ohne Sonne: Koschmieder T/T_soll −7,98…8,37, Restkontrast am Rand 38–72 %.
+                const phi = T.select(
+                    dtau.lessThan(1e-3),
+                    T.float(1).sub(dtau.mul(0.5)),
+                    T.float(1).sub(T.exp(dtau.negate())).div(T.max(dtau, 1e-3))
+                );
+                const w = T.exp(tau.negate()).mul(dtau).mul(phi).toVar();
                 const sonne = T.exp(inTafel.sub(tauSonne(T.max(p.y.sub(U.bezugY).mul(0.001), 0.001))));
                 tau.addAssign(dtau);
                 summe.addAssign(w);
