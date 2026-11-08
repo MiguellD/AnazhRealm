@@ -346,7 +346,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             wesenPart && typeof wesenPart.shape === "string" && typeof wesenPart.material === "string";
         out.spriteAuraY = souls && souls.wolf && souls.wolf.auraY === 0.75;
         out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-        if (st.creatures.length > 0) {
+        if (st.creatures.length) {
             const c0 = st.creatures[0];
             out.initialIsGroup = c0 && c0.isGroup === true;
             out.initialHasSoul =
@@ -420,7 +420,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             (prof.emotion === "happy" || prof.emotion === "sad") && // BINÄR, ehrlich geerdet (§G.2)
             Number.isFinite(prof.wariness) &&
             typeof prof.moodLabel === "string" &&
-            prof.moodLabel.length > 0 &&
+            prof.moodLabel.length &&
             typeof prof.section === "string"
         );
         // Der Renderer ist ein ECHTER Konsument: der rowTitle (title-Attr auf .creature-row-main) trägt die moodLabel.

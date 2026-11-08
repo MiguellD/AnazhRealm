@@ -920,7 +920,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         );
         out.k2HasFlare = sockelParts.length >= 1;
         // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
-        if (sockelParts.length >= 1) {
+        if (sockelParts.length) {
             const s = sockelParts[0];
             out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
         }
@@ -1687,7 +1687,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             out.hasLiveInstances = liveInstances > 0;
             out.liveInstanceCount = liveInstances;
             // Cells tragen species + variantIndex + slots (Lookup-Fütterung)
-            if (region && region.cells.length > 0) {
+            if (region && region.cells.length) {
                 const c0 = region.cells[0];
                 out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
                 out.cellHasVariant = Number.isFinite(c0.variantIndex);
@@ -1728,7 +1728,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 const regX2 = Math.floor(pp2.x / SC.regionM);
                 const regZ2 = Math.floor(pp2.z / SC.regionM);
                 const region = r._scatterRegion(regX2, regZ2, pp2);
-                if (region && region.cells.length > 0) {
+                if (region && region.cells.length) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
                     // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);

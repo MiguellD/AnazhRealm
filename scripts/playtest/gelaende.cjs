@@ -704,7 +704,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._renderHofChronik();
         out.hofChronikRenders = (() => {
             const h = document.getElementById("hof-chronik");
-            return !!(h && h.childNodes.length > 0);
+            return !!(h && h.childNodes.length);
         })();
         // WERKSTATT-TOPOLOGIE: drei Spalten — LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
         // MITTE Inventar/Hotbar (zentral), RECHTS Rezepte (WERK); darunter die vollbreite STATSBAR

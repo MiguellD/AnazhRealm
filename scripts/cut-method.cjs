@@ -61,7 +61,7 @@ stammLib.wandere(ast, (node) => {
     if (node.type === "MethodDefinition" && node.key && node.key.name === name) hits.push(node);
 });
 
-if (hits.length === 0) {
+if (!hits.length) {
     console.error(`⛔ Keine Methode '${name}' in ${fileArg} gefunden.`);
     process.exit(1);
 }

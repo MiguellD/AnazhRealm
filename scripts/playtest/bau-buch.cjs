@@ -3183,7 +3183,7 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
             out.flatLeafCount = flat ? flat.leaves.length : -1;
             // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
-            if (flat && flat.leaves.length > 0) {
+            if (flat && flat.leaves.length) {
                 // T6: bark-Geometrie trägt color + viele Vertices; der Wind lebt im Stoff (K19: `_baumWindStoff` liest
                 // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
                 const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));

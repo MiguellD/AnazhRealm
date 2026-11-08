@@ -1639,7 +1639,7 @@ async function checkBandV18134Social({ page, check }) {
             // einem Object still leer).
             st.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
-            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
+            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length);
         } finally {
             st.socialRatings = saved || new Map();
             r._saveSocialRatings();

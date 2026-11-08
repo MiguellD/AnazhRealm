@@ -567,7 +567,7 @@ hauptLauf(async () => {
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
         res.f = {
-            fluegelGefunden: !!(recF?._fluegel && recF._fluegel.length > 0),
+            fluegelGefunden: !!(recF?._fluegel && recF._fluegel.length),
             anzahl: recF?._fluegel ? recF._fluegel.length : 0,
             geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
             winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
