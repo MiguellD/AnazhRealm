@@ -3379,7 +3379,11 @@ class AnazhRealm_bild_kosten {
         const dx = a[o + 12] + mw[12] - L.ex,
             dz = a[o + 14] + mw[14] - L.ez;
         const d = Math.sqrt(dx * dx + dz * dz);
+        // der Rand des Fensters (w24-fahrt-takt: getrennt vom Halt der Ebenen, `_lageAnker`) — eine Lage ohne ihn ist ein Bruch,
+        // nie ein stilles NaN im Fenster (z327: eine von Hand gebaute Lage trug nur `halt`)
         const halt = L.haltBlende;
+        if (typeof halt !== "number")
+            throw new Error("_instanzFenster: die Lage trägt keinen Rand der Blende (`haltBlende`)");
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];

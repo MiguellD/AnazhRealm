@@ -464,7 +464,7 @@ class AnazhRealm_stoff_karte {
                       perf: lu.uLodPerf.value,
                       ref: lu.uLodRef.value,
                       kanten: this._blendeK,
-                      halt: 0,
+                      haltBlende: 0, // der Rand des Fensters (`_instanzFenster`): der Wurf wählt am Auge, ohne Halt
                   }
                 : null;
             const liste = W && W.liste.length >= n * 5 ? W.liste : new Float32Array(n * 5);
