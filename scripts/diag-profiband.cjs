@@ -1143,7 +1143,7 @@ function selbsttest() {
             ["_wieseFern", "A.min(s, grenze)", "s", "Gesetz"],
             ["_nahWieseFernBlock", "+ 3] = gr", "+ 3] = 0", "Block"],
             // P-Karte (w24-wiese-ferne): die Maske, der Hang, der Boden und der Grund des Hauses der Karte
-            ["_wieseSchaleDaten", "D.frei(x, z, true)", "1e9", "gasse: Karte"],
+            ["_wieseSchaleDaten", "ok = D.weg(", "ok = 1 || D.weg(", "gasse: Karte"],
             ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
             ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
             ["_wieseSchaleDaten", "!(haus &&", "!(0 &&", "haus: Karte"],
