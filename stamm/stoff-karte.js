@@ -1472,8 +1472,8 @@ class AnazhRealm_stoff_karte {
             param: mk("param", slots.length * 256, U.UNIFORM | U.COPY_DST),
             summe: mk("summe", summeN * 16, U.STORAGE),
             nsum: mk("nsum", no * 16, U.STORAGE),
-            dA: mk("dA", W * H * 4, U.STORAGE), // der Schlüssel jeder Stufe, auch der Stufe 0 (w23-karte-l2)
-            dB: mk("dB", W * H * 4, U.STORAGE),
+            dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
+            dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
             zahl: mk("zahl", (V + 5) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
@@ -1871,7 +1871,10 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     let Y = (f32(g.y - fe.y) + 0.5) * f;
     var kk = 0.0;
     if (Y > saum.fuss[ri]) {
-        if (c > 0.0) { kk = select(dLies(i, p.flag == 1u), 4.0, p.k == 0u); }
+        if (c > 0.0) {
+            kk = 4.0;
+            if (p.k > 0u) { kk = dLies(i, p.flag == 1u); }
+        }
     } else {
         let st = schritt(ri);
         let gb = band(g.x, g.y, fe, st).a / f32(p.fuss);
@@ -1881,11 +1884,13 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
         }
     }
     if (kk > 0.0) { kk += 1e-6 * c; }
-    if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
+    // Stufe 0 legt ihre Schlüssel in die Summe (erst Stufe 1 beschreibt sie): die Rechen-Puffer bleiben im Maß von Stufe 1
+    if (p.k == 0u) { summe[i / 4u][i % 4u] = kk; } else if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
 }
 
-// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in den Puffer flag (0 ohne eigene Deckung)
+// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in den Puffer flag, Stufe 0 in die Summe (0: nie gewählt)
 fn schluessel(i: u32) -> f32 {
+    if (p.k == 0u) { return summe[i / 4u][i % 4u]; }
     return select(dA[i], dB[i], p.flag == 1u);
 }
 
