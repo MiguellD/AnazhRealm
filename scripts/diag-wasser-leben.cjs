@@ -787,7 +787,7 @@ function selbsttest() {
         );
         if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
-    taeterFaelle([{ name: "der grüne Befund", z: gut }, ...taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }])], urteil, { fehler, klon: kopie });
+    taeterFaelle(taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }]), urteil, { fehler, gruen: gut });
     selbsttestEnde(fehler);
 }
 

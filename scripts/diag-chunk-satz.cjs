@@ -227,7 +227,6 @@ function selbsttest() {
         },
     };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         {
             name: "voxelChunk:0,0:lod0 direkt in der Szene",
@@ -352,7 +351,7 @@ function selbsttest() {
             muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
         },
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
     // ein fremder Umzug fallen rot, beim Namen.
     const neuFaelle = [

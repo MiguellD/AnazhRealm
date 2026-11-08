@@ -1515,10 +1515,10 @@
     beam(g,0,baseY-0.12,0,W,0.24,Dp,'boden');   // angehobene Bodenplatte
     for(let ix=0;ix<=nx;ix++)for(let iz=0;iz<=nz;iz++){ const x=-W/2+W*ix/nx, z=-Dp/2+Dp*iz/nz; if(ix>0&&ix<nx&&iz>0&&iz<nz)continue; beam(g,x,gy+h/2,z,0.34,h,0.34,wr); }   // Stützenraster am Rand
     beam(g,0,gy+h/2,0,0.4,h,0.4,wr); return g; }
-  function terrasse(){ const g=grp(); if(!P.terrasse) return g;   // TERRASSIERUNG — SETBACK-GESETZ (NYC 1916) + LOCHWAND-GESETZ: ECHTE Fenster-/Tür-Öffnungen in hohlen Tiers; Absturzkanten → BRÜSTUNGS-GESETZ
+  function terrasse(){ const g=grp(); if(!P.terrasse) return g; const _fT=!!(P.nur&&P.nur.fern);   // DIE FERNE STUFE (DESTNUR, w25-lod-pop-2): die Tiers als geschlossener Körper mit Brüstung — kein Loch, kein Fenster, kein Treppenauge (der Umriss bleibt, die L2 hält ihre Zeile)   // TERRASSIERUNG — SETBACK-GESETZ (NYC 1916) + LOCHWAND-GESETZ: ECHTE Fenster-/Tür-Öffnungen in hohlen Tiers; Absturzkanten → BRÜSTUNGS-GESETZ
     const nT=Math.min(4, 2+((P.seed*13)%3)+(P.storeys>2?1:0)), _ir=0.095+((P.seed*7)%4)*0.014, role=(P.stil==='stein'||P.stil==='klinker')?'putz':'stein', grl=(P.stil==='modern'||P.stil==='glas')?'metall':'holz', tH=Math.max(2.2,P.ogH*0.8), fwd=(ww)=>Math.min(0.85,ww), asym=Math.max(-1,Math.min(1,P.terrAsym||0)), wT=0.24; let y=eaveY-0.15, pw=W, pd=Dp, pcx=0, pcz=0;
     for(let t=0;t<nT;t++){ const ins=t*W*_ir, w=Math.max(1.4,W-2*ins), dd=Math.max(1.4,Dp-2*ins), cx=asym*ins, cz=-(Dp-dd)/2;
-      if(t===0&&LOFT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
+      if(t===0&&LOFT&&!_fT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
         [[pcx-pw/2,hx0,pcz-pd/2,pcz+pd/2],[hx1,pcx+pw/2,pcz-pd/2,pcz+pd/2],[hx0,hx1,pcz-pd/2,hz0],[hx0,hx1,hz1,pcz+pd/2]].forEach(([a,b2,c2,d2])=>{ if(b2-a>0.06&&d2-c2>0.06) beam(g,(a+b2)/2,y+0.07,(c2+d2)/2,b2-a,0.14,d2-c2,'boden'); });
         const zA=(LOFT.dir>0)?hz0:hz1; bruestungSeg(g,'z',hx0,hx1,zA,zA,y+0.14,grl); bruestungSeg(g,'x',hx0,hx0,hz0,hz1,y+0.14,grl); bruestungSeg(g,'x',hx1,hx1,hz0,hz1,y+0.14,grl); }   // 3-seitig: der Austritt bleibt frei
       else beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                // GESCHOSSPLATTE über den VORHERIGEN Footprint
@@ -1526,19 +1526,19 @@
       const fx=[],bx=[],sz2=[];
       for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx, ww2=fwd(w/nx*0.5); fx.push({c:px,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); if(!(t>0&&Math.abs(px-cx)<0.8)) bx.push({c:px,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); }
       for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz, ww2=fwd(dd/nz*0.5); sz2.push({c:pz,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); }
-      lochWand(g,true, cz-dd/2+wT/2, cx-w/2, cx+w/2, y, y+tH, fx, role);                                                // Front: echte Fensteröffnungen
-      lochWand(g,false, cx-w/2+wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, sz2, role);
-      lochWand(g,false, cx+w/2-wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, sz2, role);
-      if(t===0) lochWand(g,true, cz+dd/2-wT/2, cx-w/2, cx+w/2, y, y+tH, bx, role);
+      lochWand(g,true, cz-dd/2+wT/2, cx-w/2, cx+w/2, y, y+tH, _fT?[]:fx, role);                                                // Front: echte Fensteröffnungen
+      lochWand(g,false, cx-w/2+wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, _fT?[]:sz2, role);
+      lochWand(g,false, cx+w/2-wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, _fT?[]:sz2, role);
+      if(t===0) lochWand(g,true, cz+dd/2-wT/2, cx-w/2, cx+w/2, y, y+tH, _fT?[]:bx, role);
       else { const dwB=0.95, dhB=Math.min(2.05,tH-0.18), zb=cz+dd/2-wT/2;
-        lochWand(g,true, zb, cx-w/2, cx+w/2, y, y+tH, bx.concat([{c:cx,w:dwB+0.10,b:y-0.02,t:y+dhB}]), role);           // Rückwand: Fenster UND Terrassentür aus derselben Loch-Quelle
-        beam(g,cx,y+0.14+(dhB-0.14)/2,zb+0.10,dwB-0.10,dhB-0.20,0.06,'holz'); beam(g,cx,y+0.17,zb+0.16,dwB+0.2,0.06,0.34,'stein');   // Türblatt + Schwelle auf dem Deck
+        lochWand(g,true, zb, cx-w/2, cx+w/2, y, y+tH, _fT?[]:bx.concat([{c:cx,w:dwB+0.10,b:y-0.02,t:y+dhB}]), role);           // Rückwand: Fenster UND Terrassentür aus derselben Loch-Quelle
+        if(!_fT){ beam(g,cx,y+0.14+(dhB-0.14)/2,zb+0.10,dwB-0.10,dhB-0.20,0.06,'holz'); beam(g,cx,y+0.17,zb+0.16,dwB+0.2,0.06,0.34,'stein'); }   // Türblatt + Schwelle auf dem Deck
         const rw={z1:(pcz+pd/2)-(cz+dd/2), x0:(cx-w/2)-(pcx-pw/2), x1:(pcx+pw/2)-(cx+w/2)};
         if(rw.z1>0.15) bruestungSeg(g,'z',pcx-pw/2,pcx+pw/2,pcz+pd/2,pcz+pd/2,y+0.14,grl);
         if(rw.x0>0.15) bruestungSeg(g,'x',pcx-pw/2,pcx-pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl);
         if(rw.x1>0.15) bruestungSeg(g,'x',pcx+pw/2,pcx+pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl); }
-      for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx; fensterAt(g,px,wy,cz-dd/2-0.02,fwd(w/nx*0.5),wh,true); if(t>0&&Math.abs(px-cx)<0.8)continue; fensterAt(g,px,wy,cz+dd/2+0.02,fwd(w/nx*0.5),wh,true); }
-      for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz; fensterAt(g,cx-w/2-0.02,wy,pz,fwd(dd/nz*0.5),wh,false); fensterAt(g,cx+w/2+0.02,wy,pz,fwd(dd/nz*0.5),wh,false); }
+      if(!_fT) for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx; fensterAt(g,px,wy,cz-dd/2-0.02,fwd(w/nx*0.5),wh,true); if(t>0&&Math.abs(px-cx)<0.8)continue; fensterAt(g,px,wy,cz+dd/2+0.02,fwd(w/nx*0.5),wh,true); }
+      if(!_fT) for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz; fensterAt(g,cx-w/2-0.02,wy,pz,fwd(dd/nz*0.5),wh,false); fensterAt(g,cx+w/2+0.02,wy,pz,fwd(dd/nz*0.5),wh,false); }
       addMasse({art:'stufe',x0:cx-w/2,x1:cx+w/2,z0:cz-dd/2,z1:cz+dd/2,y0:y,y1:y+tH});
       pw=w; pd=dd; pcx=cx; pcz=cz; y+=tH; }
     beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                                          // Dachplatte des obersten Tiers
@@ -1979,8 +1979,15 @@
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     const KULLVOL=0.012;
+    // DER UMRISS DER FERNEN STUFE (w25-lod-pop-2, lod.K5): Portikus und Veranda stehen in der L2 — ohne sie lag ihr Umriss 3,1 px (georgian)
+    // und 4,5 px (viktorianisch) neben der L0 am Haushalt 26 m, mit ihnen 0,58 / 0,39 px; die L2 hält ihre Zeile (höchstens 7 104 Dreiecke am
+    // Regler-Rand, L2/L0 ≤ 0,084). Die Terrasse des Pueblo steht fern als Körper mit Brüstung (`terrasse`, `_fT`): voll gebaut riss sie die Zeile (10 778 bei
+    // doppel=1), so 6 504 höchstens; Pueblo 12,76 → 1,90 px (es fehlen die Stäbe der Brüstung und die Vigas).
     // prettier-ignore
-    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:true,veranda:true,terrasse:true,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    // DER BEFUND DER TURM-STUFE 1 (w25-lod-pop-2, lod.K5): die Hochhaus-L1 steht am Haushalt 12 m 9,67 px neben der L0 — der Körper der
+    // Liste (`lod2Koerper`) liegt je Fenster-Band ~46 cm hinter der Glas-Fassade der L0 (das Gesetz des Wechsels hält die L0 darum bis zur
+    // Mesh-Grenze); `geruest` in der Stufe brächte 6,36 px, kein einzelnes Flag trägt das Soll — der Schnitt gehört an den Körper der Liste.
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
