@@ -3222,15 +3222,15 @@ hauptLauf(async () => {
             while ((q.length || at.offen) && performance.now() - t0 < 180000) { r._tickImpostorBake(); await new Promise((f) => requestAnimationFrame(f)); }
             return { n, rest: q.length, ms: Math.round(performance.now() - t0) };`;
         try {
-            const sch = { w: "saumWeite", z: "saumZelle", s: "saum" };
-            const varianten = String(opt("--varianten", "")).split(",").filter(Boolean).map((t) => Object.fromEntries([...t.matchAll(/([wzs])([\d.]+)/g)].map((m) => [sch[m[1]], +m[2]])));
+            const sch = { w: "saumWeite", z: "saumZelle", s: "saum", m: "saumMin" };
+            const varianten = String(opt("--varianten", "")).split(",").filter(Boolean).map((t) => Object.fromEntries([...t.matchAll(/([wzsm])([\d.]+)/g)].map((m) => [sch[m[1]], +m[2]])));
             for (const [i, v] of [null, ...varianten].entries()) {
                 if (v) console.log("Variante", JSON.stringify(v), JSON.stringify((await evalRuf(neu(v))).ergebnis));
                 o = await rufe("/bild", { px, py, pz, lx, ly, lz, ziel: w[9], klasse: w[11].slice(1, -1), datei: i ? undefined : datei });
                 const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
                 console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
                 if (!i)
-                    console.log("lod.K1#1 Strauch-Karten im Bild [Abstand m, Hebung φ°, Höhe m, Boden über dem Strahl Auge→Fuß m, Fuß über Boden m]", JSON.stringify((await evalRuf(`const c = ${JSON.stringify(o.kamera)}, kg = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE), zz = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z]));
+                    console.log("✅ Strauch-Karten [m, φ°, Höhe, Boden über Strahl, Fuß über Boden]", JSON.stringify((await evalRuf(`const c = ${JSON.stringify(o.kamera)}, kg = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE), zz = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z]));
                         const m = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s = new T.Vector3(), aus = [], cam = r.state.camera.clone();
                         cam.aspect = 16 / 9; cam.position.set(...c); cam.lookAt(${lx}, ${ly}, ${lz}); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
                         for (let i = 0; i < kg.liveCount; i++) { const z = zz.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
@@ -3241,7 +3241,7 @@ hauptLauf(async () => {
                             let ueber = -9;
                             for (let t = 0.05; t < 0.97; t += 0.01) { const x = c[0] + (p.x - c[0]) * t, zq = c[2] + (p.z - c[2]) * t, g = r._bodenSichtAt(x, zq); if (g != null) ueber = Math.max(ueber, g - (c[1] + (p.y - c[1]) * t)); }
                             aus.push([+d.toFixed(1), +((Math.atan2(c[1] - p.y - h, d) * 180) / Math.PI).toFixed(1), +(2 * h).toFixed(2), +ueber.toFixed(2), +(p.y - (r._bodenSichtAt(p.x, p.z) ?? p.y)).toFixed(2)]); }
-                        return aus.sort((a, b) => a[0] - b[0]).slice(0, 24);`)).ergebnis));
+                        return aus.sort((a, b) => a[0] - b[0]).slice(0, 16).map((a) => a.join(" ")).join(",");`)).ergebnis));
             }
         } finally {
             halt?.();
