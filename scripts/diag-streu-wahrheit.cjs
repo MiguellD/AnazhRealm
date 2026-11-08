@@ -210,7 +210,7 @@ function main() {
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus(PHYTO)) }],
-            ["Stufe 0 ohne Saum (main)", /der Umriss franst nicht/, { core: ((c, f = c.impostorMips) => Object.assign(c, { impostorMips: (x, w, h, V, sw, n, o) => Object.assign(f(x, w, h, V, sw, n, o), { stufen: [f(x, w, h, V, sw, 1, {}).stufen[0], ...f(x, w, h, V, sw, n, o).stufen.slice(1)] }) }))(codecAus(PHYTO)) }],
+            ["Stufe 0 ohne Saum (main)", /der Umriss franst nicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
             ["die Zelle der Blattgröße (Strauch 55 Texel)", /der Umriss franst nicht/, { core: ((c) => ((c.KARTEN_GESETZ.saumZelle = 55), c))(codecAus(PHYTO)) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];

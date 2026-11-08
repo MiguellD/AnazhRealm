@@ -3218,6 +3218,7 @@ hauptLauf(async () => {
             tor.stop();
         }
         const je = Object.entries(o.klasse?.klassen || {}).filter((e) => e[1].pixel >= 5000);
+        console.log(/\[linse-gpu\].*/.exec(tor.log)?.[0]);
         console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", je.map((e) => `${e[0]} ${e[1].kante} (${e[1].pixel} px, zweiton ${e[1].zweiton})`).join(" · "));
         o = o.abnahme;
     } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });

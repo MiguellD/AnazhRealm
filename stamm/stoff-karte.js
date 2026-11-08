@@ -1824,9 +1824,16 @@ fn farbSumme(x: u32, y: u32) -> vec4<f32> {
     }
     return summe[p.ziel + y * p.w + x];
 }
-// DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht (der Rand leer — der Rahmen ist nie der Umriss),
-// durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss die geglättete Deckung)
-fn band(x: u32, y: u32, fe: vec4<u32>) -> vec4<f32> {
+// Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (phyto-core saumSchritt): Band und Zelle messen in der
+// Welt — beim Strauch (das Texel 3,5-mal so breit wie hoch) schritten sie sonst in der feinen Achse
+fn schritt(ri: u32) -> vec2<f32> {
+    let s = saum.seite[ri];
+    return vec2<f32>(max(1.0 / s, 1.0), max(s, 1.0));
+}
+// DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht, je Achse im Schritt st (der Rand leer — der
+// Rahmen ist nie der Umriss), durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss
+// die geglättete Deckung)
+fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
     let n = i32(saum.band.x);
     var B: array<f32, 17>;
     B[0] = 1.0;
@@ -1837,10 +1844,10 @@ fn band(x: u32, y: u32, fe: vec4<u32>) -> vec4<f32> {
     }
     var s = vec4<f32>(0.0);
     for (var dy = -n; dy <= n; dy++) {
-        let yy = i32(y) + dy;
+        let yy = i32(y) + i32(round(f32(dy) * st.y));
         if (yy < i32(fe.y) || yy >= i32(fe.y + fe.w)) { continue; }
         for (var dx = -n; dx <= n; dx++) {
-            let xx = i32(x) + dx;
+            let xx = i32(x) + i32(round(f32(dx) * st.x));
             if (xx < i32(fe.x) || xx >= i32(fe.x + fe.z)) { continue; }
             s += B[dy + n] * B[dx + n] * farbSumme(u32(xx), u32(yy));
         }
@@ -1866,10 +1873,10 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     if (Y > saum.fuss[ri]) {
         if (c > 0.0) { kk = select(dLies(i, p.flag == 1u), 4.0, p.k == 0u); }
     } else {
-        let gb = band(g.x, g.y, fe).a / f32(p.fuss);
+        let st = schritt(ri);
+        let gb = band(g.x, g.y, fe, st).a / f32(p.fuss);
         if (gb >= saum.art.w) {
-            let sw = saum.seite[ri];
-            let m = saumMuster(X * max(sw, 1.0), Y * max(1.0 / sw, 1.0), saum.art.z * f, saum.art.x > 0.5);
+            let m = saumMuster(X / st.x, Y / st.y, saum.art.z * f, saum.art.x > 0.5);
             kk = max(1e-9, gb + select(0.0, 2.0, gb >= 1.0) + saum.art.y * (m - 0.5));
         }
     }
@@ -2008,7 +2015,7 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
         var c = vec3<f32>(0.0);
         if (o) {
             var e = farbSumme(x, y);
-            if (e.a == 0.0) { e = band(x, y, gf); }
+            if (e.a == 0.0) { e = band(x, y, gf, schritt(gv0 / jeRing())); }
             c = e.rgb / e.a;
         }
         ok[t] = o;

@@ -3942,34 +3942,42 @@
     // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
-    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k an der gröberen Achse des Texels; ganz Gedecktes
-    //     (g = 1) liegt +2 darüber und bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern)
+    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt +2 darüber und bleibt
+    //     (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
+    //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
+    //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
+    //     0,3919, die Bäume 0,17–0,21)
     //   unter ihm der STAMM: Stufe 0 bleibt, wie sie backt (4), jede tiefere wählt ihn geglättet (dK) — ganz oder gar nicht
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
-    function karteSaumBand(c, w, h) {
+    // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
+    function saumSchritt(seite) {
+        return [Math.max(1 / seite, 1), Math.max(seite, 1)];
+    }
+    function karteSaumBand(c, w, h, schritt) {
         const n = 2 * KARTEN_GESETZ.saumBand,
             B = [1];
         for (let j = 0; j < n; j++) B.push((B[j] * (n - j)) / (j + 1));
         const s = B.reduce((a, b) => a + b, 0);
-        const lauf = (q, schritt, laenge, wo) => {
+        const lauf = (q, schritt, laenge, wo, weit) => {
             const out = new Float64Array(q.length);
             for (let i = 0; i < q.length; i++) {
                 const a = wo(i);
                 let v = 0;
                 for (let j = 0; j <= n; j++) {
-                    const t = a + j - n / 2;
+                    const t = a + Math.round((j - n / 2) * weit);
                     if (t >= 0 && t < laenge) v += B[j] * q[i + (t - a) * schritt];
                 }
                 out[i] = v / s;
             }
             return out;
         };
-        const zeilen = lauf(c, 1, w, (i) => i % w);
-        return lauf(zeilen, w, h, (i) => (i / w) | 0);
+        const zeilen = lauf(c, 1, w, (i) => i % w, schritt[0]);
+        return lauf(zeilen, w, h, (i) => (i / w) | 0, schritt[1]);
     }
     function karteSaumSchluessel(c, w, h, k, saum, dK) {
         const G = KARTEN_GESETZ,
-            g = karteSaumBand(c, w, h),
+            st = saumSchritt(saum.seite),
+            g = karteSaumBand(c, w, h, st),
             f = 1 << k,
             key = new Float64Array(w * h);
         for (let i = 0; i < w * h; i++) {
@@ -3981,14 +3989,7 @@
                     1e-9,
                     g[i] +
                         (g[i] >= 1 ? 2 : 0) +
-                        G.saum *
-                            (karteSaumMuster(
-                                X * Math.max(saum.seite, 1),
-                                Y * Math.max(1 / saum.seite, 1),
-                                G.saumZelle * f,
-                                saum.nadel
-                            ) -
-                                0.5)
+                        G.saum * (karteSaumMuster(X / st[0], Y / st[1], G.saumZelle * f, saum.nadel) - 0.5)
                 );
             if (key[i] > 0) key[i] += 1e-6 * c[i];
         }
@@ -4207,14 +4208,16 @@
             for (let v = 0; v < V; v++) {
                 const o0 = v * wA * hA;
                 const c = Float64Array.from({ length: wA * hA }, (_, i) => sa[o0 + i]);
+                const st = saumSchritt(saum.seite);
                 const farbe = [sr, sg, sb].map((q) =>
                     karteSaumBand(
                         c.map((x, i) => x * q[o0 + i]),
                         wA,
-                        hA
+                        hA,
+                        st
                     )
                 );
-                const g = karteSaumBand(c, wA, hA);
+                const g = karteSaumBand(c, wA, hA, st);
                 const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum, null), Math.round(cov0[v] * wA * hA));
                 for (let i = 0; i < wA * hA; i++) {
                     const o = (o0 + i) * 4;
@@ -4305,7 +4308,8 @@
                           karteSaumBand(
                               Float64Array.from({ length: nA }, (_, i) => q[tex(v, i)]),
                               nwA,
-                              nhA
+                              nhA,
+                              saumSchritt(saum.seite)
                           )
                       )
                     : null;
