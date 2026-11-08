@@ -1757,7 +1757,7 @@ hauptLauf(async () => {
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)
         const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
         // der kleine Satz der Stand-Zeile (je Mutante ein Fall getauscht)
-        const l2Klein = { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } };
+        const l2Klein = { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "Bäume und Bauten" }, karteOffen: { weg: false, stand: "ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } };
         // der ruhende Vorrat: keine Streu aufgeschoben, jede Phase „wartet auf das erste Bild"
         const vorratRuhe = { streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" };
         // die gesunde Ankunft aus der Ferne und der ruhende Vorrat (je Mutante ein Teil getauscht); ein Satz mit einem getauschten Teil
@@ -1769,25 +1769,25 @@ hauptLauf(async () => {
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         const l2aFaelle = {
-            ohneBoden: halt("der Boden wächst (Ring 0 von 3)", "boden"),
-            baumUngebaut: halt("1 Bäume und Bauten wachsen", "bauten"),
-            streuNie: halt("6 Wald-Stücke warten auf ihre Gestalt", "streu"),
-            karteOffen: halt("1 ferne Bäume werden gemalt", "karten"),
+            ohneBoden: halt("Boden", "boden"),
+            baumUngebaut: halt("Bäume und Bauten", "bauten"),
+            streuNie: halt("Wald-Stück", "streu"),
+            karteOffen: halt("ferne Bäume", "karten"),
             ...Object.fromEntries(["bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, weicht])),
-            weltFehlt: halt("die Welt entsteht", "welt"),
-            buchZu: halt("das Buch der Studios öffnet sich", "buch"),
-            leibFehlt: halt("der Spieler erhält seinen Leib", "leib"),
-            pflanzung: halt("1 Bäume werden gepflanzt", "pflanzung"),
-            saat: halt("1 Wald-Böden werden bepflanzt", "pflanzung"),
-            horizont: halt("der Horizont wächst (0 %)", "horizont"),
-            licht: halt("das Licht des Orts wird gemessen", "licht"),
-            dorfExport: halt("das Dorf wird geplant", "dorf"),
-            dorfSchlange: halt("1 Häuser des Dorfs wachsen", "dorf"),
-            dorfFaellig: halt("das Dorf wird gegründet", "dorf"),
+            weltFehlt: halt("Welt entsteht", "welt"),
+            buchZu: halt("Buch der Studios", "buch"),
+            leibFehlt: halt("Leib", "leib"),
+            pflanzung: halt("gepflanzt", "pflanzung"),
+            saat: halt("bepflanzt", "pflanzung"),
+            horizont: halt("Horizont", "horizont"),
+            licht: halt("Licht des Orts", "licht"),
+            dorfExport: halt("Dorf", "dorf"),
+            dorfSchlange: halt("Dorf", "dorf"),
+            dorfFaellig: halt("Dorf", "dorf"),
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
-            lueckeArbeitet: halt("das Buch der Studios öffnet sich", "buch"),
+            lueckeArbeitet: halt("Buch", "buch"),
         };
         const faelle = [
             [
@@ -1809,12 +1809,12 @@ hauptLauf(async () => {
                     koepfe,
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
-                    vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], kartenBsp: [], vorBild: [], nachBild: 2, ende: true, phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] }),
+                    vorrat: vr({ nachBild: 2, ende: true }),
                 },
                 [
-                    ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter"],
+                    ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false } }) }, "mit einem Baum hinter"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im"],
-                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
+                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet"],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet"],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle:"],
@@ -1834,7 +1834,7 @@ hauptLauf(async () => {
                     ["der Wald-Fall ohne fernen Kasten", { wald: { ferne: 0, steht: false, zusage: true, kam: true, rest: 0 } }, "die Zusage des Wald-Plans:"],
                     ...[[{ geweckt: false, vor2: 1 }, "das Weltbild wartete auf"], [{ vor1: null }, "das halbe Weltbild"], [{ nach2: null }, "der Rundblick vergisst"], [{ n: [] }, "das Bild der Ankunft:"]].map(([b, soll]) => [soll, { blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1, ...b } }, soll]), ["Lade-Takt", { takt: { lief: 1 } }, "die Streu setzte im"], ["ohne Lade-Takt", { takt: undefined }, "der Lade-Takt: kein Fall"],
                     ["ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)", { terme: l2aTerme.concat(["zauber"]) }, "der Term „zauber“ des"],
-                    ["ein Fall nennt einen Term außerhalb der Liste", { faelle: mitFall(l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) }, "der Fall pflanzung nennt"],
+                    ["ein Fall nennt einen Term außerhalb der Liste", { faelle: mitFall(l2aFaelle, { pflanzung: { weg: false, terme: ["saat"] } }) }, "der Fall pflanzung nennt"],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten"],
                     ["das Tor wartet auf seine L0", { ankunft: ank({ fein: ["geisttor 9 m L0"], nahKarte: 0 }) }, "das erste Weltbild wartet"],
                     ["der nahe Baum vor dem Bild ohne Karte", { ankunft: ank({ nahKarte: 0 }) }, "ein naher Baum wünscht"],
@@ -1853,8 +1853,8 @@ hauptLauf(async () => {
                     ["der Leerlauf tauscht nie", { koepfe: mitFall(koepfe, { leib: { ...koepfe.leib, baut: ["vor 1"] } }) }, "im Leerlauf tauscht"],
                     ["der Dorf-Export wartet auf den Takt", { koepfe: mitFall(koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht"],
                     ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines"],
-                    ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch"],
-                    ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) }, "eine arbeitende Lücke weicht"],
+                    ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "400 m" } }, "mit einem fälligen, noch"],
+                    ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true } }) }, "eine arbeitende Lücke weicht"],
                     ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im"],
                     ["kein Ladeschirm", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter"],
