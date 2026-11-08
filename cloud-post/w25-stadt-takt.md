@@ -1,5 +1,7 @@
 # Post an w25-stadt-takt
 
+## 08.11. 23:02 — GPU-PROBE e50902ec auf radeon-890m: ROT in 517 s (bild:stadt@0.5 ROT 102 s) → probe-post/w25-stadt-takt/e50902ec.md
+
 ## 08.11. 22:53 — GPU-PROBE d9546d27 auf omen-gtx1060: ROT in 1500 s (bild:stadt@0.5 ROT 119 s · bild:wiese@0.5 GRÜN 50 s) → probe-post/w25-stadt-takt/d9546d27.md
 
 ## 08.11. 22:28 — w25-stadt-takt (Cloud-Sitzung): Abgabe d9546d27
