@@ -2088,6 +2088,14 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
     return { linie, stufe: +stufe.toFixed(4) };
 }
 
+// DIE AUFLÖSUNG DES BILDS (w25-ferne-licht): ein Durchlass je Kanal (l − S)/(l0 − S) ist so genau, wie die 8-bit-Stufen zwischen
+// L0 und S ihn tragen — die Wache zählt Stufen der Kanäle `kanaele` am Pixel `i` (≥ 12), nie lineare Einheiten. Bis dahin forderte
+// das Paar Rot/Blau 0,05 · Blende linear: am Morgen (Sonne 7°, In-Streuung 0,03–0,06) verwarf es Paare mit 18–34 Stufen und jede
+// Sicht abseits der Sonne stand ungemessen (0 Paare, T/T_soll je Kanal 0,92–1,03), im Hellen nahm es 9 Stufen (Radeon 77265b04).
+function luftAufgeloest(L0, S, i, kanaele) {
+    return kanaele.every((c) => Math.abs(L0[i + c] - S[i + c]) >= 12);
+}
+
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
 // Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
 // Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
@@ -2242,13 +2250,12 @@ function luftTiefe(o) {
                     sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
-                    const tg = Math.abs(L0[i + 1] - S[i + 1]) >= 12 && (l[1] - sa[1]) / (l0[1] - sa[1]);
+                    const tg = luftAufgeloest(L0, S, i, [1]) && (l[1] - sa[1]) / (l0[1] - sa[1]);
                     if (t.szene && tg > 0.05 && tg < 0.95) sb.push((-Math.log(R.kontrast) * t.g * t.d * U.spektrum.value.y) / -Math.log(tg));
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
-                    if (tc[0] > 0.01 && tc[2] > 0.01 && Math.min(Math.abs(l0[0] - sa[0]), Math.abs(l0[2] - sa[2])) >= 0.05 * k)
-                        b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
+                    if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
                     const dh = Math.abs(ton(L, i) - ton(S, i));
                     b.dh.push(Math.min(dh, 360 - dh));
                 }
@@ -2484,6 +2491,12 @@ function luftTiefeSelbsttest(R) {
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.join().includes("T < 0") || "T < 0 namenlos",
+        // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
+        // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
+        luftAufgeloest([38, 32, 21], [62, 54, 40], 0, [0, 2]) || "das Paar am Morgen (24/19 Stufen) ist nicht messbar",
+        !luftAufgeloest([120, 121, 119], [124, 123, 126], 0, [0, 2]) || "4 Stufen Rauschen messen",
+        !luftAufgeloest([191, 191, 191], [200, 200, 200], 0, [0, 2]) || "9 Stufen im Hellen messen",
+        (luftAufgeloest([0, 100, 0], [0, 112, 0], 0, [1]) && !luftAufgeloest([0, 100, 0], [0, 111, 0], 0, [1])) || "die Grenze 12 Stufen im Grün hält nicht",
         ...[[1500, 4, true], [1800, 4, false], [1500, 2, false]].map(([m, n, g]) =>
             wetterLuftUrteil({ zeilen: Array(n).fill({ sicht: { m, n: 50 } }) }, R).sicht.gruen === g || `Sicht ${m} m × ${n} nicht ${g}`),
         ...[[0.05, "rainy", true], [0.5, "rainy", false], [0.05, "sunny", false]].map(([e, w, g]) =>
@@ -2871,6 +2884,7 @@ module.exports = {
     naesseUrteil,
     kantenLinie,
     luftBetaRef,
+    luftAufgeloest,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
