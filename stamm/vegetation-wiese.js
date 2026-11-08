@@ -1204,47 +1204,57 @@ class AnazhRealm_vegetation_wiese {
         nw.neu = true;
     }
 
-    // DIE SCHICHTEN DER NARBE DER VORLAGE (die Schale der Ferne, `_wieseSchaleSenke`): die Dreiecke der Vorlage L2 (ihre Halme
-    // und Ähren, wie die Ferne sie zeichnet) nach ihrer Tiefe Λ in der Narbe (uv.y, `_halmStoff`: die Blattfläche über ihnen je
-    // Boden) geordnet, in `n` Schichten gleicher FLÄCHE — je Schicht ihre Grenzen in Λ (`von`, `bis`: die Mitte zwischen den
-    // Nachbarn), ihre Farbe und ihre Narbe als Mittel nach der Fläche. Der Stoff der Schale wiegt sie mit dem ersten Treffer des
-    // Blicks (e^−K·von − e^−K·bis). Bis dahin trug eine Gerade über der relativen Höhe die Farbe: je Ecke gewogen hielten die
-    // Ährchen (die Farbe des Samens, drei Ecken je Ährchen) und die schmale Spitze sie (Mess-Wiese GTX 5071550e: Farbton 77,6° →
-    // 65,8°), nach der Fläche hob die höchste Ecke — die Ähre auf dem Stängel, bis 1,6 × die Länge des Blatts — die Höhe des
-    // ersten Treffers über das Laub zu Stängel und Samen (249f2374: ≥ 40 m Farbton 76,3° → 68,0°). Die Tiefe ist das Maß, das
-    // das Gesetz der Narbe selbst trägt. Eine Vorlage ohne Farbe, Narbe oder Fläche bricht laut.
-    static _wieseSchaleHalm(geo, name, n = 4) {
+    // DIE SCHICHTEN DER NARBE DER VORLAGE (die Schale der Ferne, `_wieseSchaleSenke`): die Vorlage L2 (ihre Halme und Ähren, wie
+    // die Ferne sie zeichnet) von oben nach unten als Narbe — jedes Dreieck in `m`² Teile zerlegt (Lage und Ecken-Farbe in
+    // seiner Fläche wie der Rasterer), die Tiefe Λ jedes Teils die Blattfläche ÜBER ihm je Boden: Λ am Fuß (die Narbe der Vorlage,
+    // uv.y, `_halmStoff`) × die Fläche über ihm / die ganze Fläche — das Maß, nach dem die Narbe Licht und Blick durchlässt
+    // (`halmNarbe`, exp(−K·Λ)). Je Schicht zwischen den Grenzen `GRENZEN` × Λ am Fuß (oben fein: dort fällt der flache Blick)
+    // ihre Farbe und ihre Narbe als Mittel nach der Fläche; die letzte reicht bis zum Fuß. Der Stoff der Schale wiegt sie mit
+    // dem ersten Treffer des Blicks (e^−K·von − e^−K·bis). Gemessen an der Vorlage der Mess-Wiese (Werkbank, 08.11.): jeder
+    // Halm ist EIN Dreieck (Λ 2,44 an den Fuß-Ecken, 0 an der Spitze), die Ähren tragen 0,4 % der Fläche. Bis dahin las die
+    // Karte Λ je Ecke (uv.y): je Dreieck gemittelt trug jeder Halm Λ 1,62 (die Schichten fielen zusammen, ≥ 40 m −26 %, GTX
+    // fefeba7e); als Gerade über der Höhe der höchsten Ecke (die Ähre auf dem Stängel) lag der erste Treffer in den Ähren
+    // (Farbton 76,3° → 68,0°, 249f2374). Eine Vorlage ohne Farbe, Narbe oder Fläche bricht laut.
+    static _wieseSchaleHalm(geo, name, m = 6) {
         const [P, C, U] = [geo.attributes.position, geo.attributes.color, geo.attributes.uv];
         if (!P || !C || !U)
             throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) ohne Lage, Farbe oder Narbe (uv)`);
         const ecke = geo.index ? (i) => geo.index.getX(i) : (i) => i;
         const nE = geo.index ? geo.index.count : P.count;
         const [pa, pb, pc] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
-        const dreiecke = []; // [Λ, Fläche, r, g, b]
-        let summe = 0;
+        const teile = []; // [Höhe, Fläche, r, g, b]
+        let [summe, fuss] = [0, 0];
+        for (let i = 0; i < U.count; i++) fuss = Math.max(fuss, U.getY(i));
         for (let e = 0; e + 2 < nE; e += 3) {
             const q = [ecke(e), ecke(e + 1), ecke(e + 2)];
             [pa, pb, pc].forEach((v, k) => v.fromBufferAttribute(P, q[k]));
-            const w = pb.sub(pa).cross(pc.sub(pa)).length() / 2;
-            const mittel = (f) => q.reduce((s, i) => s + f(i), 0) / 3;
-            dreiecke.push([mittel((i) => U.getY(i)), w, mittel((i) => C.getX(i)), mittel((i) => C.getY(i)), mittel((i) => C.getZ(i))]); // prettier-ignore
-            summe += w;
+            const [y, a] = [[pa.y, pb.y, pc.y], pb.sub(pa).cross(pc.sub(pa)).length() / 2 / (m * m)];
+            const wert = (f, w) => f(q[0]) * w[0] + f(q[1]) * w[1] + f(q[2]) * w[2];
+            for (let i = 0; i < m; i++)
+                for (let j = 0; i + j < m; j++)
+                    for (const o of i + j < m - 1 ? [1, 2] : [1]) {
+                        const [u, v] = [(i + o / 3) / m, (j + o / 3) / m];
+                        const w = [1 - u - v, u, v];
+                        teile.push([y[0] * w[0] + y[1] * w[1] + y[2] * w[2], a, wert((x) => C.getX(x), w), wert((x) => C.getY(x), w), wert((x) => C.getZ(x), w)]); // prettier-ignore
+                        summe += a;
+                    }
         }
-        if (!(summe > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Fläche`);
-        dreiecke.sort((a, b) => a[0] - b[0]);
-        const schichten = [];
-        for (let s = 0, i = 0, bisher = 0; s < n; s++) {
-            const z = [0, 0, 0, 0, 0]; // Σw ΣwΛ Σwr Σwg Σwb
-            for (; i < dreiecke.length && (s === n - 1 || bisher + dreiecke[i][1] / 2 <= (summe * (s + 1)) / n); i++) {
-                const [l, w, r, g, b] = dreiecke[i];
-                [z[0], z[1], z[2], z[3], z[4], bisher] = [z[0] + w, z[1] + w * l, z[2] + w * r, z[3] + w * g, z[4] + w * b, bisher + w]; // prettier-ignore
-            }
-            if (!(z[0] > 0))
-                throw new Error(`Nah-Wiese: die Narbe der Vorlage der Schale (${name}) trägt keine Schicht ${s}`);
-            const bis = i < dreiecke.length ? (dreiecke[i - 1][0] + dreiecke[i][0]) / 2 : Infinity;
-            schichten.push({ von: s ? schichten[s - 1].bis : 0, bis, farbe: [z[2] / z[0], z[3] / z[0], z[4] / z[0]], narbe: z[1] / z[0] }); // prettier-ignore
+        if (!(summe > 0 && fuss > 0))
+            throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Fläche oder Narbe`);
+        teile.sort((a, b) => b[0] - a[0]);
+        const G = AnazhRealm.WIESE_SCHALE_SCHICHTEN;
+        const schichten = G.map((von, s) => ({ von: von * fuss, bis: s + 1 < G.length ? G[s + 1] * fuss : Infinity, z: [0, 0, 0, 0, 0] })); // prettier-ignore
+        let ueber = 0;
+        for (const [, a, r, g, b] of teile) {
+            const l = (fuss * (ueber + a / 2)) / summe;
+            ueber += a;
+            const z = schichten[schichten.findLastIndex((x) => x.von <= l)].z;
+            [z[0], z[1], z[2], z[3], z[4]] = [z[0] + a, z[1] + a * l, z[2] + a * r, z[3] + a * g, z[4] + a * b];
         }
-        return schichten;
+        return schichten.map(({ von, bis, z }) => {
+            if (!(z[0] > 0)) throw new Error(`Nah-Wiese: die Narbe der Vorlage der Schale (${name}) trägt keine Schicht ab ${von}`); // prettier-ignore
+            return { von, bis, farbe: [z[2] / z[0], z[3] / z[0], z[4] / z[0]], narbe: z[1] / z[0] };
+        });
     }
 
     // DIE ÄHRE AM FUSS IHRES STÄNGELS (die Ferne, `_halmFerne`): das Studio legt den Anker der Ähre (`aCenter`) auf die Spitze
@@ -3641,6 +3651,9 @@ AnazhRealm.FOREST = Object.freeze({
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.
 AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
+// DIE SCHICHTEN DER NARBE der Schale der Ferne (`_wieseSchaleHalm`): ihre oberen Grenzen in Teilen der Narbe am Fuß, oben fein
+// (der flache Blick fällt in die ersten Zehntel: aus 1,7–2,4 m in 20–80 m Λ 0,1–0,3), die letzte reicht bis zum Fuß
+AnazhRealm.WIESE_SCHALE_SCHICHTEN = Object.freeze([0, 0.02, 0.05, 0.1, 0.2, 0.35, 0.55]);
 // DIE ACHT STRAHLEN der Grenze der Ferne (`_wieseFernGrenzen`): je Ring der Füße die Richtungen (cos, sin) im Abstand von 45°, an
 // denen der Boden die Ebene des Hangs trägt
 AnazhRealm.WIESE_ACHT = Object.freeze(Array.from({ length: 16 }, (_, k) => (k & 1 ? Math.sin : Math.cos)((Math.PI * (k >> 1)) / 4))); // prettier-ignore
