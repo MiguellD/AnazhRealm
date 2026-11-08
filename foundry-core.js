@@ -2720,15 +2720,18 @@ function emitTreeRezept(P, stufe) {
                 );
         }
     }
-    // DER BODEN (S7): keine Karte der Nahkrone reicht unter den Boden der Vorlage — eine solche Karte faellt (die Krone
+    // DER BODEN (S7): keine Karte einer Krone reicht unter den Boden der Vorlage — eine solche Karte faellt (die Krone
     // haengt nie in die Erde; der Pruefer sah die Weiden-Straehnen unter dem Boden-Rand, die Birke senkte haengende
-    // Karten bis 0,37 unter y = 0).
-    if (_L0)
-        for (let i = folGeosTex.length - 1; i >= 0; i--) {
-            const p = folGeosTex[i].attributes.position.array;
+    // Karten bis 0,37 unter y = 0). In JEDER Stufe und im Schatten-Teil (w24-strauch-saum): bis dahin galt es nur der
+    // Baum-L0 — die L1, aus der die Karte backt, und der Strauch (Krone ab Grund, Rezept 1 auch nah) hingen ihr Laub bis
+    // 27 % der Hoehe in die Erde, Boden und Rahmen der Karte schnitten es als Gerade (laub-kante: die Sohle des Strauchs
+    // auf dem Weg 0,345, Radeon 02611cdf).
+    for (const karten of [folGeosTex, wurfKarten])
+        for (let i = karten.length - 1; i >= 0; i--) {
+            const p = karten[i].attributes.position.array;
             for (let k = 1; k < p.length; k += 3)
                 if (p[k] < 0) {
-                    folGeosTex.splice(i, 1);
+                    karten.splice(i, 1);
                     break;
                 }
         }

@@ -34,7 +34,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -2012,18 +2012,14 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.setViewport({ width: 1280, height: 720 });
     // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
     // schneller Boot ließ ihn weichen, ehe das Protokoll fragte); L2a trägt den Befund
-    await page.evaluateOnNewDocument(() =>
+    const lade = () =>
         document.addEventListener("DOMContentLoaded", () => {
             const l = document.getElementById("ladeschirm");
             window.__ladeHtml = l ? { imHtml: true, htmlVersteckt: !!l.hidden, zIndex: +getComputedStyle(l).zIndex || 0 } : { imHtml: false };
-        })
-    );
-    await server.zeige(page, 30000);
+        });
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 }, vor: lade }, 30000); // prettier-ignore
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();
