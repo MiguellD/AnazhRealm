@@ -12,6 +12,8 @@
 //   P  POP AM WECHSEL (lod.K5, w25-lod-pop): jede gezeigte Stufe ≤ 1 px Kanten-Versatz zur L0 an der Grenze, die das Gesetz des
 //      Stamms aus der Zeile ihrer Vorlage legt (die Messung der Station am Bau, `wechselProbe`) — sie trägt die Frage der
 //      Sprung-Deckung S (Umriss L1 ↔ L2 als IoU ≥ 0,84 an 26 m, bis w25-lod-pop) in Bildpunkten an der echten Grenze
+//      (w25-lod-pop-2 am Haushalt 26 m: Georgian-L2 3,08 → 0,58 px mit Portikus, Viktorianisch 4,53 → 0,39 mit Veranda, Pueblo 12,76 → 1,90
+//      mit der fernen Terrasse; offen Hochhaus-L1 9,67 — der Körper der Liste hinter der Glas-Fassade)
 
 //   F  FIRST-ACHSE: das Dach der Stufen 2 und 3 trägt seinen First auf x (das Haus-Gesetz: die Traufen laufen längs x,
 //      die Schrägen schauen nach ±z) — 0 von 64 quer
