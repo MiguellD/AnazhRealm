@@ -1925,7 +1925,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
         const pv1 = p2p.peers.get("pv1");
         out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
-        out.placeholderMesh = !!(pv1?.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
+        out.placeholderMesh = !!(pv1?.mesh?.children && pv1.mesh.children.length === 2);
         out.entryHasV3Fields =
             !!pv1 && "soulName" in pv1 && !("auraHue" in pv1) && "walkPhase" in pv1 && "nameLabel" in pv1;
 
@@ -1959,10 +1959,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         out.builtinSoulName = !!pv1b && pv1b.soulName === "fluegel-probe";
         out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul-custom";
         out.builtinHasParts = !!(
-            pv1b?.mesh &&
-            pv1b.mesh.userData &&
-            pv1b.mesh.userData.parts &&
-            pv1b.mesh.userData.parts.leftWing &&
+            pv1b?.mesh?.userData?.parts?.leftWing &&
             pv1b.mesh.rotation.order === "YXZ"
         );
         out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
@@ -2038,7 +2035,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         );
         const pv2 = p2p.peers.get("pv2");
         out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
-        out.customMeshBuilt = !!(pv2?.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
+        out.customMeshBuilt = !!(pv2?.mesh?.children && pv2.mesh.children.length >= 1);
 
         // aura-Nachricht (SYNERGIE-WELLE): must-ignore-Stub — ein alter Peer darf sie
         // weiter senden, sie crasht nie und hinterlaesst KEINEN Aura-State am Entry.

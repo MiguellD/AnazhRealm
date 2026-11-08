@@ -165,7 +165,7 @@ async function checkBandRing8({ page, check }) {
             const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
             const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
             const POSITIV = new Set(["visibility", "creator"]);
-            const wmNeu = (leer && leer.worldMeta) || {};
+            const wmNeu = (leer?.worldMeta) || {};
             out.geborenGeerbt = Object.keys(wmNeu).filter(
                 (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
             );

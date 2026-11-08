@@ -1377,7 +1377,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
             if (cR.material?.color) cR.material.color.setHex(0xff0000);
             else if (typeof cR.traverse === "function") {
                 cR.traverse((n) => {
-                    if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                    if (n.isMesh && n.material?.color) n.material.color.setHex(0xff0000);
                 });
             }
         }
@@ -1391,7 +1391,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
                 colorAfter = cFirst.material.color.getHex();
             } else if (typeof cFirst.traverse === "function") {
                 cFirst.traverse((n) => {
-                    if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                    if (!colorAfter && n.isMesh && n.material?.color) {
                         colorAfter = n.material.color.getHex();
                     }
                 });
@@ -1700,7 +1700,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
         const was = r._feedFollowed(pub);
-        const jBefore = ((st.worldJournal && st.worldJournal.entries) || []).length;
+        const jBefore = ((st.worldJournal?.entries) || []).length;
         const on = r._toggleFeedFollow(pub);
         out.toggleOn = on === true && r._feedFollowed(pub) === true;
         let persisted = false;
@@ -1713,7 +1713,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Das Journal cappt bei entryCap (200) — nach dem langen Warmup wächst
         // length NICHT mehr; der Beweis sitzt am NEUESTEN Eintrag.
         void jBefore;
-        const j = (st.worldJournal && st.worldJournal.entries) || [];
+        const j = (st.worldJournal?.entries) || [];
         out.witnessWritten = j.slice(-3).some((e) => e.type === "witness" && /folge nun/.test(e.text || ""));
         const off = r._toggleFeedFollow(pub);
         out.toggleOff = off === false && r._feedFollowed(pub) === false;
@@ -1754,7 +1754,7 @@ async function checkBandV18143Comments({ page, check }) {
         const own = await r._socialSignOwnComment("band143:ziel", "  Ein gutes Werk!  ");
         out.ownSigned = !!own && own.x === "Ein gutes Werk!" && typeof own.sig === "string";
         out.ownStored = r._feedComments("band143:ziel").length === 1;
-        const j = (st.worldJournal && st.worldJournal.entries) || [];
+        const j = (st.worldJournal?.entries) || [];
         out.shareWritten = j.slice(-3).some((e) => e.type === "share" && /Wort/.test(e.text || ""));
         // (2) die ZWEITE Identitaet: ihr Wort verifiziert + landet; Tamper bricht.
         const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
@@ -2285,11 +2285,9 @@ async function checkBandRezeptKatalog({ page, check }) {
                 () =>
                     !!(
                         f?.ready &&
-                        f.recipes &&
-                        f.recipes.drachentor &&
+                        f.recipes?.drachentor &&
                         f.recipes.gras &&
-                        f.paramsByKind &&
-                        f.paramsByKind.gate &&
+                        f.paramsByKind?.gate &&
                         !f._vorrat
                     )
             );

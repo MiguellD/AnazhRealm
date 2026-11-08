@@ -1199,7 +1199,7 @@ async function checkBandWelle6HCreatureStats({ page, check }) {
         for (const row of rows) {
             // Hof-E — der Stats-title sitzt jetzt auf der kompakten Zeile (.creature-row-main).
             const main = row.querySelector(".creature-row-main");
-            const t = (main && main.title) || "";
+            const t = (main?.title) || "";
             if (t && /HP\s+\d/.test(t) && /SPD\s+\d/.test(t) && /DMG\s+\d/.test(t)) rowsWithTitle++;
         }
         out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
@@ -1731,11 +1731,7 @@ async function checkBandV18208CreatureSizeSymmetry({ page, check }) {
         // (C4) Floor-Disziplin für alle Kreaturen: Floor = (2/7)·Gesetz-base (Formel des Stamms; kalter Kern
         // → Fallback-base 7 ⇒ Floor 2).
         const bewGesetzC =
-            (globalThis.__koerperCore &&
-                globalThis.__koerperCore.PRESETS &&
-                globalThis.__koerperCore.PRESETS.mensch &&
-                globalThis.__koerperCore.PRESETS.mensch.fx &&
-                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+            (globalThis.__koerperCore?.PRESETS?.mensch?.fx?.bewegung) ||
             null;
         const speedBaseC =
             bewGesetzC?.speed && Number.isFinite(bewGesetzC.speed.base) ? bewGesetzC.speed.base : 7;

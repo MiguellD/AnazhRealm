@@ -753,7 +753,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             };
             const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
             if (kopf) sammle(kopf);
-            for (const ch of (pm && pm.children) || []) if (ch.userData?._creatureSkin) sammle(ch);
+            for (const ch of (pm?.children) || []) if (ch.userData?._creatureSkin) sammle(ch);
             const vorher = st.cameraMode;
             r.setCameraMode("third");
             const dritt = knoten.map((o) => o.layers.mask);

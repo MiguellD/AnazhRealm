@@ -104,7 +104,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eDens) {
-            out.densityProbeError = String((_eDens && _eDens.message) || _eDens);
+            out.densityProbeError = String((_eDens?.message) || _eDens);
         }
         // Headless (Null-Renderer): der Aktuator setzt die Dichte auf 1 (volle Welt fürs Gate).
         r._nexusPerfActuate({
@@ -136,7 +136,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
             else delete window.__anazhGateNoFoundry;
             st._foliageDensityScale = 1;
         } catch (_eOne) {
-            out.oneSourceProbeError = String((_eOne && _eOne.message) || _eOne);
+            out.oneSourceProbeError = String((_eOne?.message) || _eOne);
         }
         try {
             const ppT = st.playerMesh?.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
@@ -189,7 +189,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eThin) {
-            out.thinProbeError = String((_eThin && _eThin.message) || _eThin);
+            out.thinProbeError = String((_eThin?.message) || _eThin);
         }
         st._foliageDensityScale = 1;
         st._frameOverBudget = false;
@@ -1833,7 +1833,7 @@ async function checkBandWahrerAnblickFels({ page, check }) {
 
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
-        out.rockGeomBuilt = !!(geom?.attributes && geom.attributes.position);
+        out.rockGeomBuilt = !!(geom?.attributes?.position);
         out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
         // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
         if (geom && geom.attributes.position) {
@@ -1901,10 +1901,10 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
             const skel = bp && bp._skeleton;
             if (skel) {
                 const tube = r._buildTreeTubeGeometry(skel);
-                tubeOk = !!(tube?.attributes && tube.attributes.position && tube.attributes.position.count > 0);
+                tubeOk = !!(tube?.attributes?.position && tube.attributes.position.count > 0);
                 if (tube?.dispose) tube.dispose();
                 const card = r._buildTreeFoliageCardGeometry(skel);
-                cardOk = !!(card?.attributes && card.attributes.position && card.attributes.position.count > 0);
+                cardOk = !!(card?.attributes?.position && card.attributes.position.count > 0);
                 // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
                 // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
                 // Vielfaches von 4.
@@ -2088,7 +2088,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 return st.scatterRegions.get(key) === reg5 ? reg5._weiter : -1;
             };
             wecker.plaetze = wartend();
-            for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+            for (let i = 0; i < 4000 && r._waldPlanSchlange?.size; i++)
                 (r._tickWaldPlan(Infinity), await sleep(10));
             r._scatterRefillPending = true; // eine FREMDE Lieferung
             wecker.fremd = await runde();
@@ -2159,7 +2159,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 // ohne Faden plant der Takt die Schlange im Haupt-Faden: die Referenz pumpt sie leer (ohne Warten — kein
                 // Asset kommt dazwischen) und baut die Region dann neu
                 r._scatterRegion(rx, rz, pos);
-                for (let i = 0; i < 20000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+                for (let i = 0; i < 20000 && r._waldPlanSchlange?.size; i++)
                     r._tickWaldPlan(Infinity);
                 clean();
                 stoff.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === neuSnap;

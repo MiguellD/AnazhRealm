@@ -265,7 +265,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         const orig = r._disposeFoundryGroupGeom.bind(r);
         r._disposeFoundryGroupGeom = function (g) {
             disposeCalls++;
-            const refs = (g && g._liveRefs) || 0;
+            const refs = (g?._liveRefs) || 0;
             if (refs > maxRefsAtDispose) maxRefsAtDispose = refs;
             return orig(g);
         };
@@ -320,7 +320,7 @@ async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
-        await __weltDa(() => !!(f?.ready && f.recipes && f.recipes.feuerstelle));
+        await __weltDa(() => !!(f?.ready && f.recipes?.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
@@ -423,7 +423,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             {
                 // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
-                const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
+                const vorrat = () => (r._foundry?._vorrat) || false;
                 // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(pm ? pm.position : null, liste);
                 await window
@@ -585,7 +585,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             let bpName = null;
             for (const n in st.blueprints) {
                 const fl = r._archFlattenBlueprint(n);
-                if (fl?.instanceable && fl.leaves && fl.leaves.length) {
+                if (fl?.instanceable && fl.leaves?.length) {
                     bpName = n;
                     break;
                 }

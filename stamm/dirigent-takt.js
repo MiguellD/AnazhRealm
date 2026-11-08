@@ -1570,6 +1570,7 @@ class AnazhRealm_dirigent_takt {
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next = wunsch ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
         const von = this._wetterAmOrt(x, z, (zug - 1) * Z);
+        this._pegelVergangenheit(x, z); // eine Welt ohne Gedächtnis des Pegels tritt mit ihrer Vergangenheit in die Front
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");

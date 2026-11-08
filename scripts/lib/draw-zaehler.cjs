@@ -31,9 +31,9 @@ function passName(scene, camera) {
         for (let i = 0; i < csm.lights.length; i++)
             if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
     const dl = st.directionalLight;
-    if (dl && dl.shadow && dl.shadow.camera === camera) return "k0";
+    if (dl?.shadow && dl.shadow.camera === camera) return "k0";
     if (scene && scene.name === "Render Pipeline") return "post";
-    return (scene && scene.name) || (camera && (camera.name || camera.type)) || "?";
+    return (scene?.name) || (camera && (camera.name || camera.type)) || "?";
 }
 
 // DER SATZ-INHALT (S3 haus, 1b): ein Satz (je Stoff des gesetzten Baus) zeichnet je Pass EINEN Befehl über die Zellen
@@ -98,7 +98,7 @@ function drawZensus(opts) {
         const satzOf = new Map();
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
-                if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
+                if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -190,7 +190,7 @@ function drawZensus(opts) {
                         kette: kette.join(" < "),
                         material: (material && (material.name || material.type)) || null,
                         geometrie: g ? g.name || g.type : null,
-                        vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
+                        vertices: g?.attributes?.position ? g.attributes.position.count : 0,
                         instanzen: senke.isInstancedMesh ? senke.count : null,
                         userData: Object.keys(object.userData || {}).slice(0, 8),
                     });
@@ -198,7 +198,7 @@ function drawZensus(opts) {
             }
             return roh.call(this, object, material, scene, camera, ...rest);
         };
-        const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
+        const q = rend.backend?.device ? rend.backend.device.queue : null;
         let frameMs = null;
         try {
             __bundlesNeu();
@@ -220,11 +220,11 @@ function drawZensus(opts) {
             nahe(Array.from((await lies(a.__instanzQuelle.liste)).subarray(li, li + ind[arg]), (x) => x - erst));
         }
         // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
-        const rezepte = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
+        const rezepte = r._foundry?.recipes ? r._foundry.recipes : {};
         const artOf = (kl) => {
             const m = /^(f|fimp|fscatter):([^:]+):/.exec(kl);
             const rz = m ? rezepte[m[2]] : null;
-            return rz && rz.kind ? rz.kind : null;
+            return rz?.kind ? rz.kind : null;
         };
         const passe = {};
         const klassen = {};
@@ -283,7 +283,7 @@ function drawZensus(opts) {
                     inst: w ? w.inst : 0,
                     exemplare: w ? w.eintraege.size || w.orte.size : 0,
                     dMin: w && Number.isFinite(w.dMin) ? Math.round(w.dMin) : null,
-                    dMax: w && w.inst ? Math.round(w.dMax) : null,
+                    dMax: w?.inst ? Math.round(w.dMax) : null,
                     ...(v.inhalt ? { inhalt: v.inhalt } : {}),
                 };
             });
@@ -404,7 +404,7 @@ function pufferZensus() {
         }
         const k = "buf:" + window.__vramFalte(name);
         if (window.__vramUmbuchen) window.__vramUmbuchen(buf, k);
-        const b = (buf.__vramH && buf.__vramH.b) || buf.size || 0;
+        const b = (buf.__vramH?.b) || buf.size || 0;
         gesamt += b;
         const h = name.split(":")[0];
         je.set(h, (je.get(h) || 0) + b);
@@ -596,7 +596,7 @@ function gangUrteil({ vor, nach }) {
                 " MB zurück am Start — " +
                 wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
         );
-    for (const [k, x] of Object.entries((nach.puffer && nach.puffer.halter) || {}))
+    for (const [k, x] of Object.entries((nach.puffer?.halter) || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
     return f;
 }

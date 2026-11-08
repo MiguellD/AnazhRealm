@@ -167,7 +167,7 @@ function tafelPruefen(t) {
             fz(`ratsche ist weder null noch Zahl`);
         // DIE STUFEN-PFLICHT: eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
-        const wk = String((z.welt && z.welt.klasse) || "");
+        const wk = String((z.welt?.klasse) || "");
         const st = z.welt && z.welt.stufen;
         if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
             fz(`welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
@@ -231,7 +231,7 @@ function tafelUrteil(t, messung) {
     const randA = Math.log(1 + t.messRand);
     const sollA = Math.log(1 + t.toleranz);
     const zeilen = [];
-    const eich = (messung && messung.eichung) || {};
+    const eich = (messung?.eichung) || {};
     const eichOk = (y) => zahl(y) && Math.abs(y - t.karte.albedo) <= t.karte.eichRand;
     if (!eichOk(eich.welt)) rot.push({ art: "eichung", text: `Welt-Karte liest ${eich.welt} statt ${t.karte.albedo}` });
     for (const [s, y] of Object.entries(eich.labor || {}))
@@ -242,9 +242,9 @@ function tafelUrteil(t, messung) {
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
         if (z.labor && !(L && zahl(L.Y) && L.Y > 0))
-            rz("stumm", `das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})`);
+            rz("stumm", `das Labor maß nichts (${(L?.fehler) || "keine Zeile"})`);
         if (!W || !zahl(W.Y) || !(W.Y > 0))
-            rz("stumm", `die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})`);
+            rz("stumm", `die Welt maß nichts (${(W?.fehler) || "keine Zeile"})`);
         // DIE STUFE DES EXEMPLARS: eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
         // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
@@ -385,7 +385,7 @@ function tafelTabelle(u) {
                 lpad(zahl(e.ratsche) ? e.ratsche.toFixed(3) : "–", 9) +
                 "  " +
                 pad(e.imSoll ? "ja" : "nein", 5) +
-                ` ${(e.labor && e.labor.rgb) || "–"} · ${(e.welt && e.welt.rgb) || "–"}`
+                ` ${(e.labor?.rgb) || "–"} · ${(e.welt?.rgb) || "–"}`
         );
     z.push("");
     z.push(
@@ -466,7 +466,7 @@ function laborAlbedo(o) {
             r: m.roughness,
             mt: m.metalness,
             cc: m.clearcoat || 0,
-            seh: (m.userData && m.userData.__seh) || null,
+            seh: (m.userData?.__seh) || null,
         });
         const matsOf = (x) => (Array.isArray(x.material) ? x.material : [x.material]).filter(Boolean);
         const alleMeshes = [];

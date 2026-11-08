@@ -17,7 +17,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
-        const savedSoul = (p && p.soul) || "mensch";
+        const savedSoul = (p?.soul) || "mensch";
         const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
         // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:

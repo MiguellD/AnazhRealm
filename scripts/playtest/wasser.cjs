@@ -632,7 +632,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
         let bergseeCellsFound = false;
         let bergseeCheckable = false;
         const hydro = st.hydrosphere;
-        if (hydro?.ready && hydro.water && hydro.water.waterKind) {
+        if (hydro?.ready && hydro.water?.waterKind) {
             // Suche eine Lake-Cell mit waterY > wlGlobal + 1 (klarer Bergsee)
             const wK = hydro.water.waterKind;
             const wY = hydro.water.waterY;
@@ -1507,7 +1507,7 @@ async function checkBandWasserWahrheit({ page, check }) {
             const h = r._hydroFor(rx * kachel, rz * kachel);
             if (!h || gesehen.has(h)) continue;
             gesehen.add(h);
-            if (h?.ready && h.water && h.water.waterKind) {
+            if (h?.ready && h.water?.waterKind) {
                 const wK = h.water.waterKind;
                 // der Spiegel der Zelle, der Leser des Kerns (`koerperY`): der See trägt den Pegel seines Laufs (wetter.K3)
                 const wY = Array.from(wK, (_, i) => window.__gelaendeCore.koerperY(r._gelaende(), h, i));
@@ -1550,7 +1550,7 @@ async function checkBandWasserWahrheit({ page, check }) {
         let core = null;
         {
             const h = r._hydroFor(0, 0);
-            if (h?.ready && h.water && h.water.waterKind) {
+            if (h?.ready && h.water?.waterKind) {
                 const wK = h.water.waterKind;
                 const hd = h.dim;
                 const bodyNear = (x, z) => {
