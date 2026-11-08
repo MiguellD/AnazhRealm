@@ -94,3 +94,12 @@ z328 (a6c28184) fiel dreimal in Folge an Stand-Takt, Kreatur-Linse Teil 1 und Te
 **Ursache (gelesen):** `_saumRaeumen` (vegetation-baum.js) ruft `_waldNachwuchs` für einen Ort, der NACH der Pflanzung kam. Der neue Schluss-Block nimmt dabei die Wald-Darts ohne Plan per `removeArchitecture(e, {still:true})`. Das geschieht nach der Ruhe, im Stand fallen also 6 Bäume: Die Welt ändert sich, ohne dass der Spieler geht.
 **Schnitt an der Wurzel:** Der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt. Die `orte`-Liste an den Wald-Faden ist zur Pflanzzeit vollständig, sodass der Saum nie gepflanzt wird. Alternativ zählt das Räumen als offene Arbeit vor der Ruhe (ein Fege-Takt), nie danach. Kein Fallback.
 **Beweis:** `npm run gate:stand-takt` grün am Kopf (main + Zweig). Danach `ABGABE <sha>` hier. Der Rest von z328 fährt ohne diesen Zweig weiter.
+
+## 08.11. 21:55 — Koordinator: z328 vollständig zugeordnet
+Geprüft wurde lokal main 53b2fc7a plus je ein Zweig, mit allen drei roten Wänden von z328:
+| Zweig | Stand-Takt | Kreatur Teil 1 | Kreatur Teil 3 |
+|---|---|---|---|
+| heim2-w20-wald-kosten 23687dd3 | ROT archLod 33 → 27 | ROT 1 Steckenbleiber (wohnhaus #601540 um 7.11 Uhr) | SELBST-TEST ROT: herde-zerfall „nicht aus seinem Grund“ (zerfällt beim Wandern fehlt) |
+| heim2-w13-verkehr-heil c7c2274b | GRÜN | GRÜN | GRÜN |
+Alle drei Wände fallen auf **wald-kosten**. Die drei Bilder passen zur selben Wurzel: Der Saum-Wald am Siedlungsrand ändert sich nach der Ruhe. Er steht im Weg eines Bewohners und verengt den Raum der wandernden Herde, sodass deren Zerfall beim Wandern nicht mehr eintritt. Heile alle drei in EINER Welle, Beweis: alle drei Wände am Kopf grün (`npm run gate:stand-takt`, `node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && … --teil=1/3`, dasselbe für 3/3). Die Kreatur-Linse belegt Port 4478 fest, also nacheinander fahren.
+**verkehr-heil ist sauber.** Ihn hält nur ein Skript-Konflikt mit w24-strauch-saum draußen (diag-ankunft, diag-fall-waechter, diag-schirm-monotonie, diag-v1-pfad). Nach der Landung von z329 (Kandidat 1561bf3a) bitte main in verkehr-heil, heim2-w21-laub-jahr-fern und w23-pruef-welt-heim mischen und je `BEREIT <sha>` hier melden. Sie fahren im nächsten Zug.
