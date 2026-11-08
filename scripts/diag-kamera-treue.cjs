@@ -16,40 +16,21 @@
 //   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
 //   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph, in zwei
 //       Lichter aus EINEM Knoten-Zustand (w4-b-knoten, `_schattenGrund`); (h) zählt dazu Metall und Index (`_gestaltSchluessel`).
-//   (k) VORWÄRMEN (w25) — das Vorwärm-Gesetz baut ohne Draw nur im Leerlauf und im ruhenden Loop, nie unter dem Ladeschirm,
-//       nie unter kienspan, nie mit bewegtem Auge, ruhender Eingabe zum Trotz nie an straffer GPU-Leine (`_vorwaermUrteil`).
+//   (k) VORWÄRMEN (w25) — das Vorwärm-Gesetz baut ohne Draw nur im Leerlauf und in der ruhenden Werkbank: nie unter dem
+//       Ladeschirm, nie unter kienspan, nie mit bewegtem Auge (die Fahrt), nie in der Eingabe, nie an straffer GPU-Leine.
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const {
-    statikServer,
-    starteBrowser,
-    laufUhr,
-    taeterFaelle,
-    selbsttestEnde,
-    wandEnde,
-    jsonKlon,
-    fehlerText,
-    seiteZu,
-    SELBSTTEST,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, jsonKlon, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
 const BLICK_GRENZE = 0.9; // Blick X und Blick Y sind verschiedene Bilder
-// (k) DIE FÄLLE DES VORWÄRM-GESETZES: Name · Stand (`_vorwaermUrteil`) · baut es? — der Leerlauf und die ruhende Werkbank bauen,
-// kein Ladeschirm, kein kienspan, keine Fahrt (bewegtes Auge), keine Eingabe, keine straffe GPU-Leine
+// (k) DIE FÄLLE DES VORWÄRM-GESETZES (`_vorwaermUrteil`): Name · Stand · baut es? — je Fall der Täter beim Namen
 const VZ = { holz: "voll", bild: true, lade: false, ruht: false, eingabe: true, leine: false, auge: true };
-const VORWAERM_FAELLE = [
-    ["Leerlauf", VZ, true],
-    ["Werkbank", { ...VZ, ruht: true, eingabe: false, auge: false }, true],
-    ["Ladeschirm", { ...VZ, bild: false, lade: true, ruht: true }, false],
-    ["kienspan", { ...VZ, holz: "kienspan", ruht: true }, false],
-    ["Fahrt", { ...VZ, auge: false }, false],
-    ["Eingabe", { ...VZ, eingabe: false }, false],
-    ["GPU-Leine", { ...VZ, leine: true }, false],
-];
+const VF = [["Leerlauf", VZ, 1], ["Werkbank", { ...VZ, ruht: true, eingabe: false, auge: false }, 1], ["Ladeschirm", { ...VZ, bild: false, lade: true, ruht: true }], ["kienspan", { ...VZ, holz: "kienspan", ruht: true }], ["Fahrt", { ...VZ, auge: false }], ["Eingabe", { ...VZ, eingabe: false }], ["GPU-Leine", { ...VZ, leine: true }]]; // prettier-ignore
+const vfSoll = (baut = () => 0) => VF.map(([n, , s]) => (s || baut(n) ? "baut" : "ruht")).join();
 
 const namen = (w) =>
     Object.entries(w || {})
@@ -71,61 +52,39 @@ function urteil(z) {
         );
     if (!(a.schattenRenders > 0)) v.push("STAPEL: kein Schatten-Render während der Aufnahme (die Probe ist blind)");
     if (a.unterOverride !== 0)
-        v.push(
-            `OVERRIDE: ${a.unterOverride} Bundle(s) unter einem overrideMaterial gesammelt — der Replay refresht sie gegen den geteilten Stoff`
-        );
+        v.push(`OVERRIDE: ${a.unterOverride} Bundle(s) unter einem overrideMaterial gesammelt — der Replay refresht sie gegen den geteilten Stoff`);
     const b = z.bild || {};
     if (!(b.replay >= BILD_SOLL))
-        v.push(
-            `BILD: der Replay zeichnet Blick Y zu ${b.replay} gleich mit dem direkten Pfad (Soll ≥ ${BILD_SOLL}) — ein Bürger klebt an der Kamera seiner Aufnahme`
-        );
+        v.push(`BILD: der Replay zeichnet Blick Y zu ${b.replay} gleich mit dem direkten Pfad (Soll ≥ ${BILD_SOLL}) — ein Bürger klebt an der Kamera seiner Aufnahme`);
     if (!(b.fremd >= BILD_SOLL))
-        v.push(
-            `BILD: mit fremdem Schatten-Stoff zeichnet der Replay Y zu ${b.fremd} gleich (Soll ≥ ${BILD_SOLL}) — ein Schatten-Bundle wirft gegen den geteilten Stoff`
-        );
+        v.push(`BILD: mit fremdem Schatten-Stoff zeichnet der Replay Y zu ${b.fremd} gleich (Soll ≥ ${BILD_SOLL}) — ein Schatten-Bundle wirft gegen den geteilten Stoff`);
     if (!(b.ohneStapel < BLIND_GRENZE))
-        v.push(
-            `BILD: ohne den Chokepoint zeichnet der Replay Y zu ${b.ohneStapel} gleich (Soll < ${BLIND_GRENZE}) — die Stapel-Probe ist blind`
-        );
+        v.push(`BILD: ohne den Chokepoint zeichnet der Replay Y zu ${b.ohneStapel} gleich (Soll < ${BLIND_GRENZE}) — die Stapel-Probe ist blind`);
     if (!(b.schattenBundle < BLIND_GRENZE))
-        v.push(
-            `BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu ${b.schattenBundle} gleich (Soll < ${BLIND_GRENZE}) — die Override-Probe ist blind`
-        );
-    if (!(b.xGegenY < BLICK_GRENZE))
-        v.push(`BILD: Blick X und Blick Y sind zu ${b.xGegenY} gleich (Soll < ${BLICK_GRENZE}) — die Bühne ist blind`);
+        v.push(`BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu ${b.schattenBundle} gleich (Soll < ${BLIND_GRENZE}) — die Override-Probe ist blind`);
+    if (!(b.xGegenY < BLICK_GRENZE)) v.push(`BILD: Blick X und Blick Y sind zu ${b.xGegenY} gleich (Soll < ${BLICK_GRENZE}) — die Bühne ist blind`);
     // DIE SENKE (1410-1): EIN Knoten-Zustand je Signatur auch für Instanz-Senken, und sie zeichnet wie r184s InstancedMesh.
     const sk = z.senke || {};
     if (sk.kontrolle !== true)
-        v.push(
-            "SENKE: zwei r184-InstancedMesh EINES Stoffs tragen nicht zwei Knoten-Zustände — die Lauf-Kontrolle ist blind"
-        );
+        v.push("SENKE: zwei r184-InstancedMesh EINES Stoffs tragen nicht zwei Knoten-Zustände — die Lauf-Kontrolle ist blind");
     if (sk.geteilt !== true)
-        v.push(
-            "SENKE: zwei Senken EINER Gestalt (Metall 0 und 0,5, mit und ohne Index) tragen zwei Knoten-Zustände — uuid, Zahl oder Index im Bau-Schlüssel"
-        );
+        v.push("SENKE: zwei Senken EINER Gestalt (Metall 0 und 0,5, mit und ohne Index) tragen zwei Knoten-Zustände — uuid, Zahl oder Index im Bau-Schlüssel");
     if (!(sk.bild >= BILD_SOLL))
-        v.push(
-            `SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`
-        );
+        v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
-        v.push(
-            `SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`
-        );
+        v.push(`SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`);
     // (i) SCHLÜSSEL · (j) WURF
     const ks = z.schluessel || {},
         wu = z.wurf || {};
     if (!ks.geprueft) v.push("SCHLÜSSEL: die Welt zeichnete kein Render-Objekt — die Probe ist blind");
-    if (Object.keys(ks.veraltet || {}).length)
-        v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
+    if (Object.keys(ks.veraltet || {}).length) v.push(`SCHLÜSSEL: ${namen(ks.veraltet)} — nach der Erst-Zeichnung ein anderer Schlüssel als der des Baus`);
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
     if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
-    // (k) je Fall des Urteils der Täter beim Namen: der Fall, der anders baut als sein Soll
-    const vw = String(z.vorbau || "").split(",");
-    const falsch = VORWAERM_FAELLE.filter(([n, , soll], i) => vw[i] !== (soll ? "baut" : "ruht")).map(([n, , soll]) => `${n} ${soll ? "baut nicht" : "baut"}`); // prettier-ignore
-    if (vw.length !== VORWAERM_FAELLE.length || falsch.length) v.push(`VORWÄRMEN: ${falsch.join(" · ") || "das Urteil fehlt (" + z.vorbau + ")"}`); // prettier-ignore
-    if (!(wu.werfer || []).some((x) => x.aus && x.haupt))
-        v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
+    const vw = String(z.vorbau).split(",");
+    const falsch = VF.filter(([, , s], i) => vw[i] !== (s ? "baut" : "ruht")).map(([n, , s]) => n + (s ? " baut nicht" : " baut"));
+    if (falsch.length || vw.length !== VF.length) v.push(`VORWÄRMEN: ${falsch.join(" · ") || z.vorbau}`);
+    if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
         if (!x.aus && x.farbe) v.push(`WURF: ${x.name} — ohne Ausschnitt trägt der Wurf den Farb-Graphen`);
@@ -135,8 +94,7 @@ function urteil(z) {
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
     const s = z.stand || {};
     const t = s.teilen || {};
-    if (!(t.programme >= 8))
-        v.push(`TEILEN: ${t.programme || 0} Karten-Programme im Hauptbild gesammelt (Soll 8) — die Probe ist blind`);
+    if (!(t.programme >= 8)) v.push(`TEILEN: ${t.programme || 0} Karten-Programme im Hauptbild gesammelt (Soll 8) — die Probe ist blind`);
     else if (t.gruppen !== t.gruppenJeProgramm)
         v.push(
             `TEILEN: die ${t.programme} Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen ${t.gruppen} geteilte Gruppen statt ${t.gruppenJeProgramm} — jedes Programm lädt Kamera und Schatten in seinen eigenen Puffer`
@@ -145,33 +103,25 @@ function urteil(z) {
         const r = s[pfad] || {};
         const zl = r.zahl || {};
         // die Ruhe urteilt die Diät-Linse
-        for (const u of diaetUrteil({ modus: "ruhe", frames: 4, zahl: zl, ohneMeldung: r.ohneMeldung }))
-            v.push(`STAND ${pfad}: ${u}`);
+        for (const u of diaetUrteil({ modus: "ruhe", frames: 4, zahl: zl, ohneMeldung: r.ohneMeldung })) v.push(`STAND ${pfad}: ${u}`);
         if ((zl.voll || 0) !== 0)
             v.push(
                 `STAND ${pfad}: ${zl.voll} Voll-Refreshs je Render ohne Änderung (Soll 0: ${namen(r.vollWer)}) — ein Refresh je Frame ohne Änderung`
             );
         const e1 = r.einmal || {};
-        if (!(e1.erst > 0))
-            v.push(`EINMAL ${pfad}: die Attribut-Änderung der Kiste frischt nichts auf — die Probe ist blind`);
+        if (!(e1.erst > 0)) v.push(`EINMAL ${pfad}: die Attribut-Änderung der Kiste frischt nichts auf — die Probe ist blind`);
         if (e1.danach !== 0)
             v.push(
                 `EINMAL ${pfad}: der Frame nach einer Attribut-Änderung frischt ${e1.danach}× ein zweites Mal auf (Soll 0: ${namen(e1.wer)}) — ein Refresh ohne Änderung, die Geometrie zweimal geprüft`
             );
-        if ((zl.uploadGeteilt || 0) !== 0)
-            v.push(`STAND ${pfad}: ${zl.uploadGeteilt} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
+        if ((zl.uploadGeteilt || 0) !== 0) v.push(`STAND ${pfad}: ${zl.uploadGeteilt} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
         const a = s.aenderung?.[pfad] || {};
         if (!(a.diaet >= BILD_SOLL))
-            v.push(
-                `ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`
-            );
+            v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
-            v.push(
-                `ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`
-            );
+            v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
         const n = s.verschachtelt?.[pfad] || {};
-        if (!(n.renders > 0))
-            v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
+        if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
             v.push(
                 `VERSCHACHTELT ${pfad}: nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät ${n.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein Stempel überlebte den verschachtelten Render, die nächste geteilte Gruppe trug dessen Kamera`
@@ -185,36 +135,21 @@ function urteil(z) {
 }
 
 function selbsttest() {
-    const ruhig = {
-        zahl: { pruef: 13, pruefVoll: 2 },
-        vollWer: {},
-        ohneMeldung: [],
-        einmal: { erst: 2, danach: 0, wer: {} },
-    };
+    const ruhig = { zahl: { pruef: 13, pruefVoll: 2 }, vollWer: {}, ohneMeldung: [], einmal: { erst: 2, danach: 0, wer: {} } };
     const gruen = {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
-        wurf: {
-            leer: { verwirft: false },
-            formen: "2/1",
-            werfer: [
-                { name: "wurf:voll", farbe: false },
-                { name: "wurf:schnitt", aus: true, haupt: true, wurf: true },
-            ],
-        },
-        vorbau: VORWAERM_FAELLE.map(([, , soll]) => (soll ? "baut" : "ruht")).join(),
+        wurf: { leer: { verwirft: false }, formen: "2/1", werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
+        vorbau: vfSoll(),
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
             replay: ruhig,
             aenderung: { direkt: { diaet: 1, taeter: 0.93 }, replay: { diaet: 1, taeter: 0.93 } },
-            verschachtelt: {
-                direkt: { renders: 1, diaet: 1, taeter: 0.11 },
-                replay: { renders: 1, diaet: 1, taeter: 0.11 },
-            },
+            verschachtelt: { direkt: { renders: 1, diaet: 1, taeter: 0.11 }, replay: { renders: 1, diaet: 1, taeter: 0.11 } },
         },
     };
     const fehler = [];
@@ -229,78 +164,33 @@ function selbsttest() {
         ["Override-Probe blind", ["bild", { schattenBundle: 1 }], /die Override-Probe ist blind/],
         ["Bühne blind", ["bild", { xGegenY: 0.99 }], /die Bühne ist blind/],
         ["Refresh je Frame ohne Änderung", ["stand.direkt.zahl", { voll: 2 }], /STAND direkt: 2 Voll-Refreshs/],
-        [
-            "Ausschnitt je Pass frischt auf (K71)",
-            ["stand.replay", { zahl: { pruef: 13, voll: 2 }, vollWer: { SATZ: 2 } }],
-            /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/,
-        ],
-        [
-            "Geometrie zweimal geprüft (K71)",
-            ["stand.direkt", { einmal: { erst: 2, danach: 2, wer: { KISTE: 2 } } }],
-            /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/,
-        ],
-        [
-            "Einmal-Probe blind",
-            ["stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }],
-            /EINMAL replay: .* die Probe ist blind/,
-        ],
-        [
-            "Gang je Programm (Replay)",
-            ["stand.replay.zahl", { wiederholtKnoten: 28, wiederholtGruppe: 3 }],
-            /STAND replay: RUHE: 31 wiederholte Gänge/,
-        ],
+        ["Ausschnitt je Pass frischt auf (K71)", ["stand.replay", { zahl: { pruef: 13, voll: 2 }, vollWer: { SATZ: 2 } }], /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/],
+        ["Geometrie zweimal geprüft (K71)", ["stand.direkt", { einmal: { erst: 2, danach: 2, wer: { KISTE: 2 } } }], /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/],
+        ["Einmal-Probe blind", ["stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }], /EINMAL replay: .* die Probe ist blind/],
+        ["Gang je Programm (Replay)", ["stand.replay.zahl", { wiederholtKnoten: 28, wiederholtGruppe: 3 }], /STAND replay: RUHE: 31 wiederholte Gänge/],
         ["Upload ohne Änderung", ["stand.direkt.zahl", { uploadGeteilt: 1 }], /1 Uploads geteilter Gruppen/],
-        [
-            "Prüfung ohne Meldung",
-            ["stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }],
-            /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/,
-        ],
-        [
-            "vergessener Refresh",
-            ["stand.aenderung.replay", { diaet: 0.9 }],
-            /ÄNDERUNG replay: .* ein vergessener Refresh/,
-        ],
+        ["Prüfung ohne Meldung", ["stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }], /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/],
+        ["vergessener Refresh", ["stand.aenderung.replay", { diaet: 0.9 }], /ÄNDERUNG replay: .* ein vergessener Refresh/],
         ["Änderungs-Probe blind", ["stand.aenderung.direkt", { taeter: 1 }], /die Änderungs-Probe ist blind/],
         ["Gruppe je Programm", ["stand.teilen", { gruppen: 8 }], /tragen 8 geteilte Gruppen statt 1/],
         ["Teilen blind", ["stand.teilen", { programme: 0 }], /TEILEN: 0 Karten-Programme/],
         ["Programm je Senke", ["senke", { geteilt: false }], /SENKE: zwei Senken EINER Gestalt/],
         ["Form je Kaskade", ["wurf", { formen: "2/2" }], /Lichter\/Zustände 2\/2/],
-        { name: "Vorwärmen in der Fahrt", z: { ...gruen, vorbau: VORWAERM_FAELLE.map(([n, , soll]) => (soll || n === "Fahrt" ? "baut" : "ruht")).join() }, muss: /VORWÄRMEN: Fahrt baut/ }, // prettier-ignore
-        { name: "Vorwärmen unter dem Ladeschirm", z: { ...gruen, vorbau: VORWAERM_FAELLE.map(([n, , soll]) => (soll || n === "Ladeschirm" ? "baut" : "ruht")).join() }, muss: /VORWÄRMEN: Ladeschirm baut/ }, // prettier-ignore
-        { name: "Vorwärmen nie", z: { ...gruen, vorbau: VORWAERM_FAELLE.map(() => "ruht").join() }, muss: /VORWÄRMEN: Leerlauf baut nicht · Werkbank baut nicht/ }, // prettier-ignore
+        { name: "Vorwärmen in der Fahrt", z: { ...gruen, vorbau: vfSoll((n) => n === "Fahrt") }, muss: /VORWÄRMEN: Fahrt baut$/ },
+        { name: "Vorwärmen unter dem Ladeschirm", z: { ...gruen, vorbau: vfSoll((n) => n === "Ladeschirm") }, muss: /VORWÄRMEN: Ladeschirm baut$/ },
         ["Senken-Kontrolle blind", ["senke", { kontrolle: false }], /SENKE: zwei r184-InstancedMesh/],
         ["Senke zeichnet anders", ["senke", { bild: 0.97 }], /SENKE: der Zeichner zeichnet 0.97/],
         ["Senken-Bild blind", ["senke", { blind: 0.999 }], /SENKE: ohne die Senke/],
         ["Diät nach Anlage (B-K1)", ["schluessel", { veraltet: { bauSatz: 1 } }], /SCHLÜSSEL: bauSatz ×1/],
         ["Schlüssel-Kontrolle blind", ["schluessel", { kontrolle: false }], /die Kontrolle ist blind/],
         ["Welt ohne Render-Objekt", ["schluessel", { geprueft: 0 }], /die Welt zeichnete kein Render-Objekt/],
-        [
-            "alphaTest-0,5-Werfer verliert discard",
-            ["wurf.werfer.1", { wurf: false }],
-            /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/,
-        ],
+        ["alphaTest-0,5-Werfer verliert discard", ["wurf.werfer.1", { wurf: false }], /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/],
         ["Farb-Graph im Wurf", ["wurf.werfer.0", { farbe: true }], /WURF: wurf:voll — ohne Ausschnitt/],
         ["Stand blind", ["stand.direkt.zahl", { pruef: 0 }], /STAND direkt: DIÄT: keine Diät-Prüfung/],
-        [
-            "Stempel überlebt den verschachtelten Render",
-            ["stand.verschachtelt.replay", { diaet: 0.1099 }],
-            /VERSCHACHTELT replay: .* 0\.1099 .* ein Stempel überlebte den verschachtelten Render/,
-        ],
-        [
-            "Verschachtelt blind (Täter)",
-            ["stand.verschachtelt.direkt", { taeter: 1 }],
-            /nur aus der Render-Id zeichnet 1 gleich/,
-        ],
-        [
-            "kein verschachtelter Render",
-            ["stand.verschachtelt.replay", { renders: 0 }],
-            /VERSCHACHTELT replay: kein verschachtelter Render/,
-        ],
-        [
-            "Spiel-Frame in der Bühne",
-            ["lauf", { spielBilder: 2, kehraus: 51 }],
-            /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/,
-        ],
+        ["Stempel überlebt den verschachtelten Render", ["stand.verschachtelt.replay", { diaet: 0.1099 }], /VERSCHACHTELT replay: .* 0\.1099 .* ein Stempel überlebte den verschachtelten Render/],
+        ["Verschachtelt blind (Täter)", ["stand.verschachtelt.direkt", { taeter: 1 }], /nur aus der Render-Id zeichnet 1 gleich/],
+        ["kein verschachtelter Render", ["stand.verschachtelt.replay", { renders: 0 }], /VERSCHACHTELT replay: kein verschachtelter Render/],
+        ["Spiel-Frame in der Bühne", ["lauf", { spielBilder: 2, kehraus: 51 }], /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/],
         ["Kehraus ohne Spiel-Bild", ["lauf", { kehraus: 3 }], /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
@@ -312,6 +202,7 @@ if (SELBSTTEST) {
     selbsttest();
     process.exit(0);
 }
+
 
 const server = statikServer();
 
@@ -329,8 +220,7 @@ function buehne(VF) {
             const ros = new Set();
             st.scene.traverse((o) => {
                 for (const q of [o, o.__zeichner])
-                    for (const ro of q?.__renderObjekte || [])
-                        if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
+                    for (const ro of q?.__renderObjekte || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
             });
             for (const ro of ros) {
                 const n = ro.material.name || ro.object.name || ro.object.type;
@@ -379,11 +269,7 @@ function buehne(VF) {
             new T.PlaneGeometry(30, 30),
             diaet(
                 new T.MeshStandardNodeMaterial({
-                    colorNode: TSL.mix(
-                        TSL.color(0x2a6a2a),
-                        TSL.color(0xc8b080),
-                        TSL.positionWorld.x.div(30).add(0.5).clamp()
-                    ),
+                    colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
                 })
             )
         );
@@ -416,11 +302,7 @@ function buehne(VF) {
         {
             const m4 = new T.Matrix4();
             for (let i = 0; i < 6; i++) {
-                m4.makeRotationX(-Math.PI / 2 + 0.25 * (i % 3)).setPosition(
-                    -7 + (i % 3) * 7,
-                    3.5,
-                    -4 + Math.floor(i / 3) * 7
-                );
+                m4.makeRotationX(-Math.PI / 2 + 0.25 * (i % 3)).setPosition(-7 + (i % 3) * 7, 3.5, -4 + Math.floor(i / 3) * 7);
                 laub.setMatrixAt(i, m4);
             }
             laub.instanceMatrix.needsUpdate = true;
@@ -431,10 +313,7 @@ function buehne(VF) {
         gruppe.add(laub);
         const kisten = [];
         for (let i = 0; i < 3; i++) {
-            const kiste = new T.Mesh(
-                new T.BoxGeometry(1.5, 1.5 + i, 1.5),
-                diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 }))
-            );
+            const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
             kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
             // die erste Kiste ist STATISCH (rückt über updateMatrix)
@@ -528,12 +407,7 @@ function buehne(VF) {
             let g = 0;
             for (let i = 0; i < W * H; i++) {
                 const o = i * 4;
-                if (
-                    Math.abs(a[o] - b[o]) <= 2 &&
-                    Math.abs(a[o + 1] - b[o + 1]) <= 2 &&
-                    Math.abs(a[o + 2] - b[o + 2]) <= 2
-                )
-                    g++;
+                if (Math.abs(a[o] - b[o]) <= 2 && Math.abs(a[o + 1] - b[o + 1]) <= 2 && Math.abs(a[o + 2] - b[o + 2]) <= 2) g++;
             }
             return +(g / (W * H)).toFixed(4);
         };
@@ -602,24 +476,14 @@ function buehne(VF) {
                 const pruefRoh = A._diaetRefresh;
                 A._diaetRefresh = function (obs, ro, frame, altNR) {
                     if (!ro.material.isShadowPassMaterial && karten.includes(ro.object))
-                        sammle.set(
-                            ro.getNodeBuilderState(),
-                            ro
-                                .getBindings()
-                                .filter((g) => g.bindings[0]?.groupNode?.shared === true)
-                                .map((g) => g.id)
-                        );
+                        sammle.set(ro.getNodeBuilderState(), ro.getBindings().filter((g) => g.bindings[0]?.groupNode?.shared === true).map((g) => g.id));
                     return pruefRoh(obs, ro, frame, altNR);
                 };
                 await schuss().finally(() => (A._diaetRefresh = pruefRoh));
                 const jeProgramm = [...sammle.values()];
                 const alle = new Set();
                 for (const ids of jeProgramm) for (const id of ids) alle.add(id);
-                stand.teilen = {
-                    programme: jeProgramm.length,
-                    gruppenJeProgramm: jeProgramm.length ? jeProgramm[0].length : 0,
-                    gruppen: alle.size,
-                };
+                stand.teilen = { programme: jeProgramm.length, gruppenJeProgramm: jeProgramm.length ? jeProgramm[0].length : 0, gruppen: alle.size };
                 // (e) STAND: einschwingen, dann je Pfad (direkt · Replay) vier Frames ohne jede Änderung, gezählt.
                 const ruhe = async (bundle) => {
                     gruppe.isBundleGroup = bundle;
@@ -679,10 +543,7 @@ function buehne(VF) {
                     aendere();
                     const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
                     const wahr2 = await mitDiaet(immer);
-                    bild[bundle ? "replay" : "direkt"] = {
-                        diaet: gleich(diaetBild, wahr),
-                        taeter: gleich(taeterBild, wahr2),
-                    };
+                    bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
                 stand.aenderung = bild;
                 // (g) VERSCHACHTELT: im Schatten-Render wirft nur ein Werfer ohne Diät (die Vendor-Bahn stellt die Kamera-Knoten);
@@ -698,10 +559,7 @@ function buehne(VF) {
                 const gruppe2 = new T.BundleGroup();
                 gruppe2.name = "kamera-treue:VERSCHACHTELT";
                 szene2.add(gruppe2);
-                const stein = new T.Mesh(
-                    new T.BoxGeometry(2, 2, 2),
-                    diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 }))
-                );
+                const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 })));
                 stein.position.set(-6, 1, 3);
                 stein.renderOrder = -1;
                 stein.castShadow = false;
@@ -712,11 +570,7 @@ function buehne(VF) {
                     new T.PlaneGeometry(30, 30),
                     diaet(
                         new T.MeshStandardNodeMaterial({
-                            colorNode: TSL.mix(
-                                TSL.color(0x2a6a2a),
-                                TSL.color(0xc8b080),
-                                TSL.positionWorld.x.div(30).add(0.5).clamp()
-                            ),
+                            colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
                         })
                     )
                 );
@@ -725,10 +579,7 @@ function buehne(VF) {
                 boden2.castShadow = false;
                 boden2.frustumCulled = false;
                 gruppe2.add(boden2);
-                const werfer = new T.Mesh(
-                    new T.BoxGeometry(2, 4, 2),
-                    new T.MeshStandardNodeMaterial({ color: 0x8a6a4a })
-                );
+                const werfer = new T.Mesh(new T.BoxGeometry(2, 4, 2), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
                 werfer.position.set(3, 2, 0);
                 werfer.renderOrder = 1;
                 werfer.castShadow = true;
@@ -736,8 +587,7 @@ function buehne(VF) {
                 werfer.frustumCulled = false;
                 gruppe2.add(werfer);
                 // Der Täter (Kontrolle): derselbe Gang mit stehendem `info.calls` — sein Stempel ist nur die Render-Id.
-                const taeterGang = (rr, ro, rid) =>
-                    schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
+                const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
                 const mit2 = async (refresh, gang) => {
                     const altR = A._diaetRefresh,
                         altG = A._diaetGeteiltSchreiben;
@@ -756,16 +606,11 @@ function buehne(VF) {
                     gruppe2.needsUpdate = true;
                     for (let i = 0; i < 3; i++) await schuss(szene2);
                     let diaetBild = null;
-                    const renders =
-                        (await gezaehlt(async () => (diaetBild = await mit2(null, null)))).n.schattenRenders || 0;
+                    const renders = (await gezaehlt(async () => (diaetBild = await mit2(null, null)))).n.schattenRenders || 0;
                     const wahr = await mit2(immer, null);
                     const taeterBild = await mit2(null, taeterGang);
                     const wahr2 = await mit2(immer, null);
-                    verschachtelt[bundle ? "replay" : "direkt"] = {
-                        renders,
-                        diaet: gleich(diaetBild, wahr),
-                        taeter: gleich(taeterBild, wahr2),
-                    };
+                    verschachtelt[bundle ? "replay" : "direkt"] = { renders, diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
                 stand.verschachtelt = verschachtelt;
             } finally {
@@ -793,10 +638,7 @@ function buehne(VF) {
                     return m;
                 };
                 // die zweite Senke EINER Gestalt: Metall 0,5 und ohne Index (beides liest der Bau nie, `_gestaltSchluessel`)
-                const [stoffB, geoB] = [
-                    diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a, metalness: 0.5 })),
-                    sGeo.toNonIndexed(),
-                ];
+                const [stoffB, geoB] = [diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a, metalness: 0.5 })), sGeo.toNonIndexed()];
                 const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
                 const sB = lage(A._instanzMesh(geoB, stoffB, 3), 6);
                 A._instanzZahl(sA, 3);
@@ -836,46 +678,20 @@ function buehne(VF) {
                 for (const wl of [new T.DirectionalLight(0xffffff, 3), new T.DirectionalLight(0xffffff, 1)])
                     (wSzene.add(wl, wl.target), (wl.castShadow = true));
                 const karte = new T.DataTexture(new Uint8Array(16).fill(200), 2, 2);
-                const stoff = (name, o, colorNode) =>
-                    Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
+                const stoff = (name, o, colorNode) => Object.assign(new T.MeshStandardNodeMaterial(o), { name }, colorNode ? { colorNode } : {});
                 const probe = [
                     stoff("wurf:leer", {}),
                     stoff("wurf:voll", {}, TSL.vec4(TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.uv().x), 1)),
                     stoff("wurf:karte", { map: karte }),
-                    stoff(
-                        "wurf:ausschnitt",
-                        { alphaTest: 0.5 },
-                        TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))))
-                    ),
+                    stoff("wurf:ausschnitt", { alphaTest: 0.5 }, TSL.vec4(TSL.color(0x3a8a2a), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3))))),
                 ];
-                for (const m of probe)
-                    wSzene.add(
-                        Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), m), {
-                            castShadow: true,
-                            receiveShadow: true,
-                            frustumCulled: false,
-                        })
-                    );
+                for (const m of probe) wSzene.add(Object.assign(new T.Mesh(new T.PlaneGeometry(2, 2), m), { castShadow: true, receiveShadow: true, frustumCulled: false }));
                 const fang = [];
                 const odVor = rend._renderObjectDirect;
                 rend._renderObjectDirect = function (object, material, sc, camera, lightsNode, group, clip, passId) {
-                    const ro = this._objects.get(
-                        object,
-                        material,
-                        sc,
-                        camera,
-                        lightsNode,
-                        this._currentRenderContext,
-                        clip,
-                        passId
-                    );
+                    const ro = this._objects.get(object, material, sc, camera, lightsNode, this._currentRenderContext, clip, passId);
                     const w = material.isShadowPassMaterial === true;
-                    fang.push([
-                        object.material.name,
-                        w,
-                        ro.getNodeBuilderState().fragmentShader,
-                        ro.getNodeBuilderState(),
-                    ]);
+                    fang.push([object.material.name, w, ro.getNodeBuilderState().fragmentShader, ro.getNodeBuilderState()]);
                     if (!w) this._nodes.updateBefore(ro); // der Hauptpass startet die Kaskade
                 };
                 try {
@@ -890,21 +706,13 @@ function buehne(VF) {
                 const leer = frag("wurf:leer", true);
                 wurf.leer = leer && { verwirft: verwirft(leer) };
                 for (const { name, alphaTest } of probe.slice(1))
-                    wurf.werfer.push({
-                        name,
-                        aus: alphaTest > 0,
-                        haupt: verwirft(frag(name, false)),
-                        wurf: verwirft(frag(name, true)),
-                        farbe: frag(name, true) !== leer,
-                    });
+                    wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
                 const formen = fang.filter((f) => f[0] === "wurf:voll" && f[1]).map((f) => f[3]);
                 wurf.formen = [formen.length, new Set(formen).size].join("/");
                 for (const m of probe) m.dispose();
             }
             // (k) DAS URTEIL DES VORWÄRM-GESETZES (w25, `_vorwaermUrteil`): je Fall des Stands baut es oder ruht
-            const vorbau = A._vorwaermUrteil
-                ? VF.map(([, z]) => (A._vorwaermUrteil(z) ? "baut" : "ruht")).join()
-                : "fehlt";
+            const vorbau = A._vorwaermUrteil ? VF.map(([, z]) => (A._vorwaermUrteil(z) ? "baut" : "ruht")).join() : "fehlt";
             return {
                 vorbau,
                 wurf,
@@ -935,9 +743,7 @@ function buehne(VF) {
 }
 
 (async () => {
-    console.log(
-        "=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ==="
-    );
+    console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
@@ -969,7 +775,7 @@ function buehne(VF) {
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
         log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         await page.evaluate(DIAET_INSTALL);
-        out = await page.evaluate(buehne, VORWAERM_FAELLE);
+        out = await page.evaluate(buehne, VF);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
