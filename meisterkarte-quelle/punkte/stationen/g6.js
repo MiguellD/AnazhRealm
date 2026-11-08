@@ -4137,7 +4137,7 @@ module.exports = [
         probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true,
             ausnahme: "die Wiederkehr: ein Neuladen der Seite und zweimal das Ufer, bis das Wasser zeichnet — Radeon 35 s" },
         gpu: true,
-        zeit: false,
+        zeit: true, // Wanduhr-empfindlich gemessen (pm-fremdlast, Befund 08.11.: bild-diff 1,03–1,04 % unter fremder Last an e84fd1fb und a7a9d7bf, 0,66–0,69 % in Ruhe)
         minuten: 1,
         urteil: (j, lauf) => {
             if (!j || !(j.diff >= 0)) return { gruen: false, zahl: "kein Bild-Rundlauf (Exit " + lauf.exit + ")" };

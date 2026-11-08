@@ -1684,11 +1684,13 @@ async function vegetationLauf() {
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
     const erg = { schuesse: [] };
+    // ein Wurf der Wege, die Ort und Seite stellen, trägt `messort` (punkte.cjs keinUrteil (d): die EINE Marke im catch unten)
     const ruf = async (weg, o) => {
         const t0 = Date.now();
-        const a = await werkbankRuf(W, weg, o);
+        const a = await werkbankRuf(W, weg, o).catch((e) => ({ fehler: String((e && e.message) || e) }));
         console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
-        if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+        if (!a || a.fehler)
+            throw Object.assign(new Error(weg + ": " + JSON.stringify(a).slice(0, 300)), /^\/(umstellen|fenster|status|reload)\b/.test(weg) ? { messort: weg + ": " + String((a && a.fehler) || "keine Antwort").replace(/\s+/g, " ").slice(0, 260) } : {});
         return a;
     };
     const SPIEL =
@@ -1739,6 +1741,7 @@ async function vegetationLauf() {
         }
     } catch (e) {
         erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
     console.log("VEGETATION " + JSON.stringify(erg));
@@ -5359,7 +5362,7 @@ const stationen = [
         ].join("\n"),
     ],  mutiert: true },
     gpu: true,
-    zeit: false,
+    zeit: true, // das Urteil fällt an der Wanduhr: die Kopf-Zuwendung in s (pm-fremdlast)
     minuten: 8,
     // DIE FORM DER ZEILE seit mensch-begegnung 03da8f59 (27.10.): je Gang `imBild` = als Leib UND im Bild (das getrennte `nah`
     // fiel), `beruehrt` = die Takte, in denen ein Bewohner draußen näher als zwei Kapseln stand (vorher die Liste der Berührten).
