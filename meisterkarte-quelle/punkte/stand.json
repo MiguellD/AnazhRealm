@@ -1,5 +1,5 @@
 {
- "kopf": "03300ec8",
+ "kopf": "818b466d",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -123,16 +123,15 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ankunft.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
-     "ungemessen": true,
+     "zahl": "t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+     "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
+     "grund": "ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
      "beide": true
     },
     {
@@ -166,17 +165,16 @@
    ]
   },
   "ankunft.K2": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K2#1 gtx: Station seit der Messung geändert",
+   "punkte": 1,
+   "beleg": "Maschine: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3 an 818b466d radeon",
    "stationen": [
     {
      "id": "ankunft.K2#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
+     "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
+     "grund": null
     },
     {
      "id": "ankunft.K2#1",
@@ -191,16 +189,15 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K3#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: ROT: warm Median 5.41 s (4.95 · 5.86, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K3#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "ankunft.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)",
-     "ungemessen": true
+     "zahl": "warm Median 5.41 s (4.95 · 5.86, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
+     "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
+     "grund": "ROT: warm Median 5.41 s (4.95 · 5.86, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3"
     },
     {
      "id": "ankunft.K3#1",
@@ -239,16 +236,15 @@
   },
   "ankunft.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dbf081c5: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle",
+   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: ROT: längste Aufgabe 308 ms (Soll ≤ 250) · Haupt-Faden belegt 7.42 s bis zur Kontrolle (Soll ≤ 4; 42 LongTasks 5.14 s) · Kontrolle 8.85 s Seiten-Uhr · die längste: 308 ms bei 4.1 s: build [three.webgpu.min.js] 77 · _runFrameScheduler (verteilt) 53 · _renderScene [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.81 · Bild 1.95 · Knoten-Bau 1.54 · program 0.34 · Himmel 0.21 · garbage collector 0.19 · Saat 0.12 · Streu 0.11 · Buch 0.07 · Gruppen-Bau 0.07 · Bauten 0.06 · Boden 0.06 · [linse-gpu] amd/rdna-3 an 818b466d",
    "stationen": [
     {
      "id": "ankunft.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dbf081c5: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle",
-     "ungemessen": true
+     "zahl": "längste Aufgabe 308 ms (Soll ≤ 250) · Haupt-Faden belegt 7.42 s bis zur Kontrolle (Soll ≤ 4; 42 LongTasks 5.14 s) · Kontrolle 8.85 s Seiten-Uhr · die längste: 308 ms bei 4.1 s: build [three.webgpu.min.js] 77 · _runFrameScheduler (verteilt) 53 · _renderScene [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.81 · Bild 1.95 · Knoten-Bau 1.54 · program 0.34 · Himmel 0.21 · garbage collector 0.19 · Saat 0.12 · Streu 0.11 · Buch 0.07 · Gruppen-Bau 0.07 · Bauten 0.06 · Boden 0.06 · [linse-gpu] amd/rdna-3",
+     "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
+     "grund": "ROT: längste Aufgabe 308 ms (Soll ≤ 250) · Haupt-Faden belegt 7.42 s bis zur Kontrolle (Soll ≤ 4; 42 LongTasks 5.14 s) · Kontrolle 8.85 s Seiten-Uhr · die längste: 308 ms bei 4.1 s: build [three.webgpu.min.js] 77 · _runFrameScheduler (verteilt) 53 · _renderScene [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.81 · Bild 1.95 · Knoten-Bau 1.54 · program 0.34 · Himmel 0.21 · garbage collector 0.19 · Saat 0.12 · Streu 0.11 · Buch 0.07 · Gruppen-Bau 0.07 · Bauten 0.06 · Boden 0.06 · [linse-gpu] amd/rdna-3"
     }
    ]
   },
@@ -1813,7 +1809,7 @@
   },
   "lod.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 4 m/s: 0.0394 % Pop-Pixel je Sekunde (818 px, Soll ≤ 0,05 %), je Schritt 26*/48*/370*/125/97*/57/43*/52* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3 an 03300ec8 radeon",
+   "beleg": "Maschine: gehalten: Gehen 4 m/s: 0.0394 % Pop-Pixel je Sekunde (818 px, Soll ≤ 0,05 %), je Schritt 26*/48*/370*/125/97*/57/43*/52* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3 an 03300ec8 radeon",
    "stationen": [
     {
      "id": "lod.K2#1",
@@ -1821,7 +1817,8 @@
      "gruen": true,
      "zahl": "Gehen 4 m/s: 0.0394 % Pop-Pixel je Sekunde (818 px, Soll ≤ 0,05 %), je Schritt 26*/48*/370*/125/97*/57/43*/52* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
      "sha": "03300ec8d14e857b41e0d923920eccc7f8decfa7",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +21) — zuletzt an d3708675: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: pegelZustand · wie {\"pegelZustand\":\"{\\\"t\\\":0,\\\"grund\\\":1,\\\"s\\\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, →",
+     "gehalten": true
     },
     {
      "id": "lod.K2#1",
@@ -3297,7 +3294,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +30)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +31)",
      "gehalten": true
     },
     {
@@ -3330,7 +3327,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +30)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +31)",
      "gehalten": true
     },
     {
@@ -3339,7 +3336,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +30)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +31)",
      "gehalten": true
     }
    ]
@@ -4187,15 +4184,16 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: REF real-mischwald fehlt (spec/abnahme/real-mischwald.json): ROT · Licht-Flecken unter Kronen CV 0.8109 gegen offen 0.4981, Wandern r -0.0861 · Ort [-841,-861] · 1.05 s · [linse-gpu] amd/rdna-3 an 03300ec8",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +20) — zuletzt an e475c6b4: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 9.7 s",
    "stationen": [
     {
      "id": "vegetation.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "REF real-mischwald fehlt (spec/abnahme/real-mischwald.json): ROT · Licht-Flecken unter Kronen CV 0.8109 gegen offen 0.4981, Wandern r -0.0861 · Ort [-841,-861] · 1.05 s · [linse-gpu] amd/rdna-3",
-     "sha": "03300ec8d14e857b41e0d923920eccc7f8decfa7",
-     "grund": "ROT: REF real-mischwald fehlt (spec/abnahme/real-mischwald.json): ROT · Licht-Flecken unter Kronen CV 0.8109 gegen offen 0.4981, Wandern r -0.0861 · Ort [-841,-861] · 1.05 s · [linse-gpu] amd/rdna-3"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +20) — zuletzt an e475c6b4: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 9.7 s",
+     "ungemessen": true
     }
    ]
   },
@@ -4484,9 +4482,9 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "03300ec8d14e857b41e0d923920eccc7f8decfa7",
- "zeit": "2026-11-08T08:21:53.093Z",
- "vorher": "e475c6b4",
+ "kopfVoll": "818b466db2fc417c3cd4a08945af0c80e143617f",
+ "zeit": "2026-11-08T09:17:53.348Z",
+ "vorher": "03300ec8",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4561,7 +4559,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)"
+      "zeile": "ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d"
      },
      {
       "station": "ankunft.K1#1",

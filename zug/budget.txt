@@ -235,3 +235,4 @@
 2026-11-08T06:57 woche=21 karte=218 kopf=e475c6b4 (ehrlich: 4 Rückfälle ankunft.K2#1 ferne.K1#1/K2#1/K2#2 gegen +profiband.K4 +siedlung.K4; lod.K2 schwankt)
 2026-11-08T09:21 karte=220 (gebucht am 03300ec8, buche.sh)
 2026-11-08T09:23 woche=23 karte=220 kopf=03300ec8 (+vegetation.K1 Wiese-Schale, +lod.K2 Pop; Rückfall 0)
+2026-11-08T10:17 karte=221 (gebucht am 818b466d, buche.sh)

@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-08",
-  "kopf": "03300ec8",
-  "version": "V18.546.218",
+  "kopf": "818b466d",
+  "version": "V18.546.219",
   "skala": "2.0",
-  "summe": 220,
+  "summe": 221,
   "max": 330,
   "maschine": {
-    "kopf": "03300ec8",
-    "zeit": "2026-11-08T08:21:53.093Z",
+    "kopf": "818b466d",
+    "zeit": "2026-11-08T09:17:53.348Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -247,7 +247,7 @@
           {
             "station": "ankunft.K1#1",
             "geraet": "radeon",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)"
+            "zeile": "ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d"
           },
           {
             "station": "ankunft.K1#1",
@@ -449,7 +449,7 @@
     {
       "key": "fundament",
       "titel": "VI · FUNDAMENT — Ankunft, Streaming und Fäden, Profi-Band, Klang, Speicher",
-      "summe": 25,
+      "summe": 26,
       "max": 50,
       "bereiche": [
         "ankunft",
@@ -1086,7 +1086,7 @@
           "punkte": 0,
           "staffel": "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke",
           "messung": "werkbank bild an der Spielgang-Station wald gegen REF real-mischwald: Stämme je Bildbreite, Unterholz-Deckung 0–2 m, Licht-Flecken-Anteil (Varianz der Boden-Luma unter Kronen gegen offenen Boden), Strahl-Kontrast im Gegenlicht ≥ 1,1; die Flecken müssen mit der Sonne wandern (zwei Uhrzeiten).",
-          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: ROT: REF real-mischwald fehlt (spec/abnahme/real-mischwald.json): ROT · Licht-Flecken unter Kronen CV 0.8109 gegen offen 0.4981, Wandern r -0.0861 · Ort [-841,-861] · 1.05 s · [linse-gpu] amd/rdna-3 an 03300ec8",
+          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +20) — zuletzt an e475c6b4: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 9.7 s",
           "schlupfloch": "Ein gemaltes Licht-Fleck-Muster bewegt sich nicht mit der Sonne: die Flecken kommen aus der Kaskade, zwei Uhrzeiten verschieben sie; Luft-Nebel als Strahl-Ersatz scheitert am Gegenlicht-Kontrast.",
           "aenderung": "Neu (V21): der Umriss zählt LOD K1, der Kamm-Saum Ferne K3 — frei wurde die Tiefe, die RDR2 und Tsushima tragen und die keine Karte maß.",
           "maschine": true
@@ -2417,7 +2417,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde · 2 = Gehen, Ritt, Fahrt (vmax des Spiels), Ego↔Third alle 5 s, Wiese → Genesis und durch das Start-Dorf, 0 Geister, beide Geräte",
           "messung": "Pfad-Linse: Pixel mit ΔLuma > 18, die der reprojizierte Kamera-Fluss (TAAU-Bewegungs-Puffer) nicht erklärt, summiert über 1 s, an jeder Stufen-Grenze von Boden, Baum, Bau und Karte und am Rand des foliageRadius; der Regler des Spielers (Standard-perfTarget) auf dem Gerät, wo er atmet (GTX in Fahrt) — `regler voll` nur für E (R8).",
-          "beleg": "Maschine: Gehen 4 m/s: 0.0394 % Pop-Pixel je Sekunde (818 px, Soll ≤ 0,05 %), je Schritt 26*/48*/370*/125/97*/57/43*/52* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3 an 03300ec8 radeon",
+          "beleg": "Maschine: gehalten: Gehen 4 m/s: 0.0394 % Pop-Pixel je Sekunde (818 px, Soll ≤ 0,05 %), je Schritt 26*/48*/370*/125/97*/57/43*/52* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3 an 03300ec8 radeon",
           "schlupfloch": "Ein Dither über viele Frames besteht ΔLuma je Frame: die Summe über 1 s gegen die Erklärung durch die Bewegung; Regler voll nagelt den Rand fest und versteckt den Täter (B05).",
           "aenderung": "Pop zählte dreifach mit drei Schwellen (Vegetation K4, LOD K2, Streaming K2) → EINE Linse, EIN Heim (V20); die 1 der Synthese stand auf f1-rest (B37) → 0.",
           "maschine": true
@@ -3752,7 +3752,7 @@
       "key": "ankunft",
       "titel": "Ankunft — Klick, Bild, Wiederkehr, der erste Blick, das Lade-Bild",
       "gruppe": "fundament",
-      "punkte": 0,
+      "punkte": 1,
       "pfad": "v1 (ankommen) · B",
       "dateien": "`stamm/dirigent-ankunft.js` (`_weltbildSteht`, `_weltbildLuecken`) · `stamm/dirigent-takt.js` (`_kappeOffen`, Lade-Takt) · `stamm/bild-kosten.js` (Erst-Bau) · `stamm/studio-bruecke.js` (Platte) · `scripts/diag-boot-stage.cjs`",
       "aaaa": "Ein Klick auf den Link: nach höchstens 5 s kalt (leere Platte, auch direkt nach einer Versions-Stufe) hält der Spieler die Kontrolle in einem GANZEN Bild, auf der Radeon 890M wie auf der GTX 1060 mit i7-8750H; warm höchstens 1,5 s. Das Lade-Bild friert nie (keine Aufgabe über 100 ms, eine Eingabe wird angenommen). Wer sich 2 s nach der Kontrolle umdreht oder 30 m hochschaut, sieht höchstens 2 % Lücke; und der erste Blick hält jede sichtbare Klasse im Soll. **Wo wir die Besten schlagen:** Spider-Man 2 braucht für die Schnellreise 1,33 s auf einer 5,5-GB/s-SSD — wir kommen im Browser an; die Index-Skripte wiegen 8,8 MB roh bzw. 2,7 MB gzip (64 Dateien am Baum dc6702ab), weit unter Pokis 10-MB-Schwelle; und das erste Weltbild folgt aus (Seed, Gesetz-SHA, Spawn) — vorab berechenbar, was kein Asset-Spiel kann.",
@@ -3768,16 +3768,16 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
         {
           "name": "Das Bild bei der Kontrolle ist ganz, auch rundum",
-          "punkte": 0,
+          "punkte": 1,
           "staffel": "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte",
           "messung": "Spielgang-Station ankunft: Ausgabe-Bild bei t(Kontrolle von außen) gegen dieselbe Pose nach 60 s Ruhe (`bild-diff.cjs`; Lücke = offener Bedarf im Bild plus Pixel-Diff), dazu 180°-Drehung nach 2 s und Blick aus 30 m.",
-          "beleg": "Maschine: 0 — offen: ankunft.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K2#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3 an 818b466d radeon",
           "schlupfloch": "Die Ankunfts-Pose auf Himmel richten oder alles außer Blick hinter die Kontrolle schieben: die Pose ist die des Spawns, die 180°-Drehung nach 2 s zählt mit demselben Soll.",
           "aenderung": "Die 1 der Synthese stand auf Bildern zur Zeit der Eigenmeldung (B65) → 0; die Messung von außen steht als Messschuld M10.",
           "maschine": true
@@ -3787,7 +3787,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: ROT: warm Median 5.41 s (4.95 · 5.86, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K3#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },
@@ -3806,7 +3806,7 @@
           "punkte": 0,
           "staffel": "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet",
           "messung": "CPU-Profil + LongTask-Trace des Kalt-Boots (`diag-boot-stage --kalt --echt`), ≥ 4 je Gerät: blockierte Summe bis zur Kontrolle, längste Aufgabe, Antwort auf eine Kamera-Drehung im Lade-Bild.",
-          "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dbf081c5: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle",
+          "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: ROT: längste Aufgabe 308 ms (Soll ≤ 250) · Haupt-Faden belegt 7.42 s bis zur Kontrolle (Soll ≤ 4; 42 LongTasks 5.14 s) · Kontrolle 8.85 s Seiten-Uhr · die längste: 308 ms bei 4.1 s: build [three.webgpu.min.js] 77 · _runFrameScheduler (verteilt) 53 · _renderScene [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.81 · Bild 1.95 · Knoten-Bau 1.54 · program 0.34 · Himmel 0.21 · garbage collector 0.19 · Saat 0.12 · Streu 0.11 · Buch 0.07 · Gruppen-Bau 0.07 · Bauten 0.06 · Boden 0.06 · [linse-gpu] amd/rdna-3 an 818b466d",
           "schlupfloch": "Die Arbeit in 49-ms-Stücke hacken: die Summe zählt mit; ein CSS-Spinner animiert ohne den Haupt-Faden: gemessen werden LongTask und Eingabe-Antwort.",
           "aenderung": "Architektur K1 (Haupt-Faden bis zur Kontrolle) maß dieselbe längste Aufgabe — zusammengeführt.",
           "maschine": true
@@ -4759,15 +4759,15 @@
     },
     {
       "stand": "2026-11-08",
-      "kopf": "03300ec8",
-      "summe": 220,
+      "kopf": "818b466d",
+      "summe": 221,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 08.11.2026, Kopf main 03300ec8 (V18.546.218)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 08.11.2026, Kopf main 818b466d (V18.546.219)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
