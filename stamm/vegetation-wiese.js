@@ -929,10 +929,10 @@ class AnazhRealm_vegetation_wiese {
     // jedes Studio-Gras (`_foundryTreeMaterial`), Dach und Adern (`_halmStoff`, quer die Adern ihrer Breite), das Laub-Licht mit
     // der Narbe (`_laubLichtStoff`). DER ERSTE TREFFER: die Karte ist die Wiese, wie das Auge sie aus der Ferne sieht — sein
     // Strahl trifft die Narbe von oben, und der Halm, den er trifft, liegt in der Tiefe Λ, bis zu der die Narbe ihn durchlässt:
-    // je Pixel der Erwartungswert von Λ am ersten Treffer, E = (1 − (1 + x)·e^−x) / (K·(1 − e^−x)), x = K·Λ am Fuß, K das
-    // Ellipsoid-Gesetz der Narbe in der Richtung des Blicks (`halmNarbe`, Campbell 1986: die Narbe lässt exp(−K·Λ) durch). An
-    // dieser Tiefe liest sie Farbe und Narbe des Halms der Vorlage L2 (`_wieseSchaleHalm`, die Geraden über der Höhe nach der
-    // Fläche): flach (20–80 m aus 1,7–2,4 m) die oberen Halme im Licht, steil von oben tiefer bis zum Fuß. So zeichnet Ghost of
+    // je Pixel Farbe und Narbe des ersten Treffers als Mittel über die Schichten der Narbe der Vorlage L2 (`_wieseSchaleHalm`:
+    // vier Schichten gleicher Fläche nach Λ), jede gewogen mit e^−K·von − e^−K·bis (Beer-Lambert in Schichten), K das
+    // Ellipsoid-Gesetz der Narbe in der Richtung des Blicks (`halmNarbe`, Campbell 1986: die Narbe lässt exp(−K·Λ) durch):
+    // flach (20–80 m aus 1,7–2,4 m) das Laub oben im Licht, steil von oben tiefer bis zum Fuß. So zeichnet Ghost of
     // Tsushima die ferne Wiese in der Farbe ihrer Spitzen. Bis w24-wiese-ferne ein eigener Stoff (die Albedo das Mittel der
     // Ecken-Farben × Helligkeiten von Hand: das Band 0,55, die Spitzen 0,78–1, ohne die Farbe des Jahrs, ohne Narbe und
     // Laub-Licht): an der Mess-Wiese ein gelbes Band aus Zähnen über einem dunklen Fuß, am Genesis-Ort ein braunes Band unter
@@ -981,17 +981,16 @@ class AnazhRealm_vegetation_wiese {
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
         geo.setAttribute("aZahn", new THREE.Float32BufferAttribute(zahn, 2));
         const mat = new THREE.MeshStandardNodeMaterial({ roughness: 1, metalness: 0, side: THREE.DoubleSide });
-        // der erste Treffer: K in der Richtung des Blicks (die Narbe lässt bei Λ 1 e^−K durch), Λ am Treffer, seine Höhe f
+        // der erste Treffer: K in der Richtung des Blicks (die Narbe lässt bei Λ 1 e^−K durch), je Schicht der Narbe die
+        // Wahrscheinlichkeit, dass er in ihr fällt (die letzte trägt den Rest bis zum Fuß), Farbe und Narbe danach gewogen
         const [A, PC] = [AnazhRealm._windTsl(T), globalThis.__phytoCore];
         const blick = T.normalize(T.cameraPosition.sub(T.positionWorld)).y;
         const K = T.log(PC.halmNarbe(A, T.float(1), blick).direkt).negate();
-        const [l0, l1] = halm.narbe;
-        const ex = T.exp(K.mul(-l0));
-        const lam = T.float(1)
-            .sub(K.mul(l0).add(1).mul(ex))
-            .div(K.mul(T.float(1).sub(ex)).max(1e-6));
-        const f = lam.sub(l0).div(l1).clamp(0, 1);
-        const farbe = T.vec3(...halm.farbe.map(([a, s]) => f.mul(s).add(a).max(0)));
+        let [farbe, lam] = [T.vec3(0, 0, 0), T.float(0)];
+        halm.forEach((s, i) => {
+            const w = T.exp(K.mul(-s.von)).sub(i + 1 < halm.length ? T.exp(K.mul(-s.bis)) : T.float(0));
+            [farbe, lam] = [farbe.add(T.vec3(...s.farbe).mul(w)), lam.add(w.mul(s.narbe))];
+        });
         mat.colorNode = T.vec4(farbe.mul(this._ensureSeasonUniforms().uSeasonMul), 1.0);
         this._halmStoff(T, mat);
         mat.aoNode = PC.halmNarbe(A, lam, T.float(1)).himmel;
@@ -1205,46 +1204,47 @@ class AnazhRealm_vegetation_wiese {
         nw.neu = true;
     }
 
-    // DER HALM DER VORLAGE JE HÖHE (die Schale der Ferne, `_wieseSchaleSenke`): über die Dreiecke der Vorlage L2 (ihre Halme und
-    // Ähren, wie die Ferne sie zeichnet) die Ecken-Farbe und die Narbe Λ (uv.y, `_halmStoff`) als Gerade über der relativen Höhe
-    // (die Mitte des Dreiecks / die höchste Ecke), jedes Dreieck mit seiner FLÄCHE gewogen (kleinste Quadrate: die Farbe, die das
-    // Auge in dieser Höhe sieht) — `farbe` je Kanal und `narbe` als [Wert am Fuß, Steigung je relativer Höhe]. Je Ecke gewogen trugen
-    // die Ährchen (die Farbe des Samens, drei Ecken je Ährchen) und die schmale Spitze des Halms die Gerade: die Karten lagen
-    // als ockergelbes Band in 20–40 m (Mess-Wiese, GTX: Farbton 77,6° → 65,8°, gelbe Pixel 7,3 → 15,8 %). Eine Vorlage ohne
-    // Farbe, Narbe, Höhe oder Fläche bricht laut.
-    static _wieseSchaleHalm(geo, name) {
+    // DIE SCHICHTEN DER NARBE DER VORLAGE (die Schale der Ferne, `_wieseSchaleSenke`): die Dreiecke der Vorlage L2 (ihre Halme
+    // und Ähren, wie die Ferne sie zeichnet) nach ihrer Tiefe Λ in der Narbe (uv.y, `_halmStoff`: die Blattfläche über ihnen je
+    // Boden) geordnet, in `n` Schichten gleicher FLÄCHE — je Schicht ihre Grenzen in Λ (`von`, `bis`: die Mitte zwischen den
+    // Nachbarn), ihre Farbe und ihre Narbe als Mittel nach der Fläche. Der Stoff der Schale wiegt sie mit dem ersten Treffer des
+    // Blicks (e^−K·von − e^−K·bis). Bis dahin trug eine Gerade über der relativen Höhe die Farbe: je Ecke gewogen hielten die
+    // Ährchen (die Farbe des Samens, drei Ecken je Ährchen) und die schmale Spitze sie (Mess-Wiese GTX 5071550e: Farbton 77,6° →
+    // 65,8°), nach der Fläche hob die höchste Ecke — die Ähre auf dem Stängel, bis 1,6 × die Länge des Blatts — die Höhe des
+    // ersten Treffers über das Laub zu Stängel und Samen (249f2374: ≥ 40 m Farbton 76,3° → 68,0°). Die Tiefe ist das Maß, das
+    // das Gesetz der Narbe selbst trägt. Eine Vorlage ohne Farbe, Narbe oder Fläche bricht laut.
+    static _wieseSchaleHalm(geo, name, n = 4) {
         const [P, C, U] = [geo.attributes.position, geo.attributes.color, geo.attributes.uv];
         if (!P || !C || !U)
             throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) ohne Lage, Farbe oder Narbe (uv)`);
-        let yMax = 0;
-        for (let i = 0; i < P.count; i++) yMax = Math.max(yMax, P.getY(i));
-        if (!(yMax > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Höhe`);
         const ecke = geo.index ? (i) => geo.index.getX(i) : (i) => i;
         const nE = geo.index ? geo.index.count : P.count;
-        const S = new Float64Array(11); // Σw Σwt Σwt² Σwr Σwg Σwb ΣwΛ Σwtr Σwtg Σwtb ΣwtΛ
         const [pa, pb, pc] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
-        const wert = [(i) => C.getX(i), (i) => C.getY(i), (i) => C.getZ(i), (i) => U.getY(i)];
+        const dreiecke = []; // [Λ, Fläche, r, g, b]
+        let summe = 0;
         for (let e = 0; e + 2 < nE; e += 3) {
             const q = [ecke(e), ecke(e + 1), ecke(e + 2)];
             [pa, pb, pc].forEach((v, k) => v.fromBufferAttribute(P, q[k]));
-            const t = Math.max(0, (pa.y + pb.y + pc.y) / 3) / yMax;
             const w = pb.sub(pa).cross(pc.sub(pa)).length() / 2;
-            [S[0], S[1], S[2]] = [S[0] + w, S[1] + w * t, S[2] + w * t * t];
-            for (let k = 0; k < 4; k++) {
-                const x = (wert[k](q[0]) + wert[k](q[1]) + wert[k](q[2])) / 3;
-                [S[3 + k], S[7 + k]] = [S[3 + k] + w * x, S[7 + k] + w * t * x];
-            }
+            const mittel = (f) => q.reduce((s, i) => s + f(i), 0) / 3;
+            dreiecke.push([mittel((i) => U.getY(i)), w, mittel((i) => C.getX(i)), mittel((i) => C.getY(i)), mittel((i) => C.getZ(i))]); // prettier-ignore
+            summe += w;
         }
-        if (!(S[0] > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Fläche`);
-        const [mt, v] = [S[1] / S[0], S[2] / S[0] - (S[1] / S[0]) ** 2];
-        const gerade = (k) => {
-            const s = v > 1e-9 ? (S[7 + k] / S[0] - mt * (S[3 + k] / S[0])) / v : 0;
-            return [S[3 + k] / S[0] - s * mt, s];
-        };
-        const [r, g, b, l] = [0, 1, 2, 3].map(gerade);
-        if (!(l[0] > 0 && l[1] < 0))
-            throw new Error(`Nah-Wiese: die Narbe der Vorlage der Schale (${name}) fällt nicht mit der Höhe (${l})`);
-        return { farbe: [r, g, b], narbe: l };
+        if (!(summe > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Fläche`);
+        dreiecke.sort((a, b) => a[0] - b[0]);
+        const schichten = [];
+        for (let s = 0, i = 0, bisher = 0; s < n; s++) {
+            const z = [0, 0, 0, 0, 0]; // Σw ΣwΛ Σwr Σwg Σwb
+            for (; i < dreiecke.length && (s === n - 1 || bisher + dreiecke[i][1] / 2 <= (summe * (s + 1)) / n); i++) {
+                const [l, w, r, g, b] = dreiecke[i];
+                [z[0], z[1], z[2], z[3], z[4], bisher] = [z[0] + w, z[1] + w * l, z[2] + w * r, z[3] + w * g, z[4] + w * b, bisher + w]; // prettier-ignore
+            }
+            if (!(z[0] > 0))
+                throw new Error(`Nah-Wiese: die Narbe der Vorlage der Schale (${name}) trägt keine Schicht ${s}`);
+            const bis = i < dreiecke.length ? (dreiecke[i - 1][0] + dreiecke[i][0]) / 2 : Infinity;
+            schichten.push({ von: s ? schichten[s - 1].bis : 0, bis, farbe: [z[2] / z[0], z[3] / z[0], z[4] / z[0]], narbe: z[1] / z[0] }); // prettier-ignore
+        }
+        return schichten;
     }
 
     // DIE ÄHRE AM FUSS IHRES STÄNGELS (die Ferne, `_halmFerne`): das Studio legt den Anker der Ähre (`aCenter`) auf die Spitze
