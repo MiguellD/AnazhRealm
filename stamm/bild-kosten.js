@@ -2954,7 +2954,7 @@ class AnazhRealm_bild_kosten {
                 const zug = a._wahlVor(rend, kamera);
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
-            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen);
+            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen, kamera === this.state.camera);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -2963,7 +2963,7 @@ class AnazhRealm_bild_kosten {
     // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
     // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
     // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (y: ihre Züge, je Zug EINE Arbeitsgruppe, `PASS_WAHL_WGSL`).
-    _wahlRechnen(rend, L, arenen) {
+    _wahlRechnen(rend, L, arenen, haupt) {
         const be = rend.backend,
             dev = be.device,
             U = GPUBufferUsage;
@@ -2978,6 +2978,7 @@ class AnazhRealm_bild_kosten {
                     "storage",
                     "storage",
                     ...Array(3).fill("read-only-storage"),
+                    "storage",
                 ].map((type, i) => ({
                     binding: i,
                     visibility: GPUShaderStage.COMPUTE,
@@ -2994,6 +2995,7 @@ class AnazhRealm_bild_kosten {
             const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 304, usage: U.UNIFORM | U.COPY_DST });
             // der Speicher einer Arena ohne Maß des Fensters (`aH0` · `aH0L` · `aKarte`)
             const leer = dev.createBuffer({ label: "pass-wahl-leer", size: 16, usage: U.STORAGE });
+            const leerRW = dev.createBuffer({ label: "pass-wahl-leer-rw", size: 16, usage: U.STORAGE });
             W = AnazhRealm.__wahlGpu = {
                 dev,
                 lay,
@@ -3001,6 +3003,8 @@ class AnazhRealm_bild_kosten {
                 lage,
                 lageF: new Float32Array(76),
                 leer,
+                leerRW,
+                par: 0,
                 puffer: null,
                 f: null,
                 u: null,
@@ -3021,7 +3025,14 @@ class AnazhRealm_bild_kosten {
             W.u = new Uint32Array(W.f.buffer);
         }
         off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        // die Hälften des Zustands der Nah-Wiese wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
+        // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_nahWieseSicht`)
+        const F = AnazhRealm._wahlLage(L, W.lageF),
+            nw = this.state.nahWiese;
+        if (haupt) W.par ^= 1;
+        [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && nw && nw.sprung ? 1 : 0];
+        if (haupt && nw) nw.sprung = false;
+        dev.queue.writeBuffer(W.lage, 0, F);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
         const pass = enc.beginComputePass({ label: "pass-wahl" });
@@ -3037,6 +3048,8 @@ class AnazhRealm_bild_kosten {
                 W.puffer,
                 ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer),
                 ...mass,
+                // der Zustand der Stufe der Nah-Wiese (`_nahWieseZustand`), sonst ein leerer
+                (this.state.nahWiese && this.state.nahWiese.zustand) || W.leerRW,
             ];
             let bg = a.__wahlBG;
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
@@ -3098,7 +3111,7 @@ class AnazhRealm_bild_kosten {
             const s = g.boundingSphere;
             f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
             u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
-            f.set([wahl[j].__wahlSaum || 0, 0, 0, 0], o + 8);
+            f.set([wahl[j].__wahlSaum || 0, ...(wahl[j].__wahlNah || [0, 0, 0])], o + 8);
             f.set(wahl[j].__wahlFenster || [0, 0, 0, 0], o + 12);
         }
     }
@@ -3379,6 +3392,10 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // der Maske zum Ursprung der Instanz in XZ × Perf × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
 // Kanten des EINEN Blend-Gesetzes (`_blendeKanten` → `_blendeBehaelt`, dieselbe Folge der Bedingungen; die Kanten trägt die
 // Lage). Die Karte wählt ihr Quad auf der Stammachse als Kugel. Das Fenster gilt je Pass-Art (Hauptbild · Kaskade).
+// DIE NÄHE DER NAH-WIESE (Art 5, `_nahWieseBestand`): ein toter Platz (Element 11 < 0) fällt; die Stufe nach `_nahStufe` — L1 bis
+// `stufe1`, gehalten bis `stufe1Rand` dahinter — mit dem ZUSTAND des Platzes (`zustand`, Basis + Platz im Glied, zwei Hälften:
+// gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild und nur vom ersten Teil der L1; nach einem
+// Sprung des Auges aus dem Jetzt); jenseits der Übergabe `radius` zeichnet die Ferne; jede Senke behält ihre Stufe.
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
@@ -3394,6 +3411,7 @@ struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f, fenster: vec4f }
 @group(0) @binding(5) var<storage, read> h0: array<f32>;
 @group(0) @binding(6) var<storage, read> h0l: array<f32>;
 @group(0) @binding(7) var<storage, read> karte: array<vec4f>;
+@group(0) @binding(8) var<storage, read_write> zustand: array<u32>;
 var<workgroup> summe: array<u32, 64>;
 fn haelt(art: u32, sLo: f32, sHi: f32, lLo: f32, lHi: f32) -> bool {
     let K = lage.kanten;
@@ -3417,9 +3435,19 @@ fn fenster(art: u32, i: u32, m: mat4x4f) -> bool {
     let kL = min(B.w / max(abs(hl), 1e-3), 1.0);
     return hl < 0.0 || haelt(art, lo * kS, hi * kS, lo * kL, hi * kL);
 }
-fn behalten(a: Auftrag, i: u32) -> bool {
+fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
     let m = matrizen[i];
     let art = u32(a.fenster.x);
+    if (art == 5u) {
+        if (m[2].w < 0.0) { return false; }
+        let d = length(vec2f(m[0].w, m[1].w) - lage.auge.xz);
+        let z = (u32(a.fenster.z) + j) * 2u;
+        let par = u32(lage.rand.z);
+        let war = zustand[z + par] == 1u && lage.saum.w < 0.5;
+        let l1 = d <= a.saum.z + select(0.0, a.saum.w, war);
+        if (a.fenster.w > 0.5 && lage.rand.w > 0.5) { zustand[z + 1u - par] = select(0u, 1u, l1); }
+        if (d >= a.saum.y || l1 != (a.fenster.y < 1.5)) { return false; }
+    }
     var c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
     var r = a.kugel.w * sqrt(s2) + a.saum.x;
@@ -3443,7 +3471,7 @@ fn behalten(a: Auftrag, i: u32) -> bool {
         }
     }
     let gilt = select(a.fenster.y, a.fenster.z, lage.licht.w > 0.5);
-    return art == 0u || gilt < 0.5 || lage.saum.z < 0.5 || fenster(art, i, m);
+    return art == 0u || art == 5u || gilt < 0.5 || lage.saum.z < 0.5 || fenster(art, i, m);
 }
 @compute @workgroup_size(64)
 fn wahl(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
@@ -3453,7 +3481,7 @@ fn wahl(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: ve
     for (var k = 0u; k < a.platz.y; k += 64u) {
         let j = k + t;
         var ja = 0u;
-        if (j < a.platz.y && behalten(a, a.platz.x + j)) { ja = 1u; }
+        if (j < a.platz.y && behalten(a, a.platz.x + j, j)) { ja = 1u; }
         summe[t] = ja;
         workgroupBarrier();
         for (var o = 1u; o < 64u; o *= 2u) {

@@ -824,6 +824,40 @@ class AnazhRealm_stoff_instanz {
         }
         return THREE.TSL.nodeObject(new AnazhRealm.__windArtK(stoff));
     }
+    // DER PLATZ-RAUM (der EINE Verwalter freier Strecken: die Arena — Lager und Instanz-Seite —, der Bestand der Nah-Wiese):
+    // `frei` = [Anfang, Länge, …] aufsteigend. Nehmen: die erste Strecke, die passt (−1: keine); Geben: einsortiert, mit den
+    // Nachbarn verschmolzen; Abschneiden: was ab `bis` frei liegt, fällt (der Raum endet dort).
+    static _raumNimm(frei, n) {
+        for (let k = 0; k < frei.length; k += 2) {
+            if (frei[k + 1] < n) continue;
+            const s = frei[k];
+            if (frei[k + 1] === n) frei.splice(k, 2);
+            else {
+                frei[k] += n;
+                frei[k + 1] -= n;
+            }
+            return s;
+        }
+        return -1;
+    }
+    static _raumGib(frei, s, n) {
+        let k = 0;
+        while (k < frei.length && frei[k] < s) k += 2;
+        frei.splice(k, 0, s, n);
+        if (k + 2 < frei.length && s + n === frei[k + 2]) {
+            frei[k + 1] += frei[k + 3];
+            frei.splice(k + 2, 2);
+        }
+        if (k > 0 && frei[k - 2] + frei[k - 1] === s) {
+            frei[k - 1] += frei[k + 1];
+            frei.splice(k, 2);
+        }
+    }
+    static _raumAbschneiden(frei, bis) {
+        for (let k = frei.length - 2; k >= 0; k -= 2)
+            if (frei[k] >= bis) frei.splice(k, 2);
+            else if (frei[k] + frei[k + 1] > bis) frei[k + 1] = bis - frei[k];
+    }
     static _arenaKlasse() {
         if (AnazhRealm.__arenaK) return AnazhRealm.__arenaK;
         const T = THREE;
@@ -859,32 +893,7 @@ class AnazhRealm_stoff_instanz {
         // — und die Matrizen jeder Quelle blieben daneben auf der GPU (0,49–0,51 MB). Der Platz-Raum (`raumNimm`/`raumGib`)
         // ist der EINE Verwalter beider Seiten; was frei wird, nimmt erst der nächste Takt (`spaet`): ein offener Pass (das
         // Hauptbild um den verschachtelten Schatten-Render) liest den alten Inhalt noch.
-        const raumNimm = (frei, n) => {
-            for (let k = 0; k < frei.length; k += 2) {
-                if (frei[k + 1] < n) continue;
-                const s = frei[k];
-                if (frei[k + 1] === n) frei.splice(k, 2);
-                else {
-                    frei[k] += n;
-                    frei[k + 1] -= n;
-                }
-                return s;
-            }
-            return -1;
-        };
-        const raumGib = (frei, s, n) => {
-            let k = 0;
-            while (k < frei.length && frei[k] < s) k += 2;
-            frei.splice(k, 0, s, n);
-            if (k + 2 < frei.length && s + n === frei[k + 2]) {
-                frei[k + 1] += frei[k + 3];
-                frei.splice(k + 2, 2);
-            }
-            if (k > 0 && frei[k - 2] + frei[k - 1] === s) {
-                frei[k - 1] += frei[k + 1];
-                frei.splice(k, 2);
-            }
-        };
+        const [raumNimm, raumGib] = [AnazhRealm._raumNimm, AnazhRealm._raumGib];
         const raumSpaet = (frei, spaet) => {
             for (let k = 0; k < spaet.length; k += 2) raumGib(frei, spaet[k], spaet[k + 1]);
             spaet.length = 0;
@@ -1570,44 +1579,54 @@ class AnazhRealm_stoff_instanz {
                     q = m.geometry.attributes,
                     c = m.instanceColor,
                     st = z.stempel,
-                    mw = m.matrixWorld.elements;
-                let neu = n > z.n || st[0] !== im.version,
-                    k = 1;
+                    mw = m.matrixWorld.elements,
+                    G = this.geometry;
+                let mwNeu = false;
                 for (let i = 0; i < 16; i++)
                     if (z.mw[i] !== mw[i]) {
                         z.mw.set(mw);
-                        neu = true;
+                        mwNeu = true;
                         break;
                     }
+                // je Quelle [Quelle, Ziel in der Arena, Größe, geändert]: die Matrizen, die Instanz-Größen, die Farbe
+                const quellen = [[im, this.__instanzQuelle.instanceMatrix, 16, st[0] !== im.version]];
+                let k = 1;
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
-                    if (st[k] !== a || st[k + 1] !== a.version) neu = true;
+                    quellen.push([a, G.attributes[nm], a.itemSize, st[k] !== a || st[k + 1] !== a.version]);
                     st[k++] = a;
                     st[k++] = a.version;
                 }
-                if (c && st[k] !== c.version) neu = true;
+                if (c) quellen.push([c, G.attributes.instanzFarbe, c.itemSize, st[k] !== c.version]);
                 if (c) st[k] = c.version;
                 st[0] = im.version;
+                const neu = n > z.n || mwNeu || quellen.some((x) => x[3]);
                 if (!neu) return;
-                z.n = n;
+                // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
+                // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
+                // der Nah-Wiese schreibt ihren Block, nie den Ring. Sonst ganz (eine Quelle ohne Bereich: ein Schreiber ohne Maß).
                 const e = z.erst,
-                    G = this.geometry,
-                    M = this.__instanzQuelle.instanceMatrix;
-                if (istEins(mw)) M.array.set(im.array.subarray(0, n * 16), e * 16);
-                else for (let i = 0; i < n; i++) mal(M.array, (e + i) * 16, mw, im.array, i * 16);
-                schreib(this._rend, M, e * 16, n * 16);
-                for (const nm in q) {
-                    const a = q[nm];
-                    if (!a.isInstancedBufferAttribute) continue;
-                    const d = G.attributes[nm];
-                    d.array.set(a.array.subarray(0, n * a.itemSize), e * a.itemSize);
-                    schreib(this._rend, d, e * a.itemSize, n * a.itemSize);
-                }
-                if (c) {
-                    const d = G.attributes.instanzFarbe;
-                    d.array.set(c.array.subarray(0, n * c.itemSize), e * c.itemSize);
-                    schreib(this._rend, d, e * c.itemSize, n * c.itemSize);
+                    alt = z.n,
+                    teil = alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[3] || x[0].updateRanges.length);
+                z.n = n;
+                for (const [a, d, g, anders] of quellen) {
+                    if (teil && !anders && n <= alt) continue;
+                    // der Zuwachs der Zahl kopiert ganz (seine Plätze schrieb die Quelle vielleicht, als die Zahl sie noch kappte)
+                    const zu = teil && n > alt ? [{ start: alt * g, count: (n - alt) * g }] : [];
+                    if (teil)
+                        for (const r of anders ? a.updateRanges.concat(zu) : zu) {
+                            const bis = Math.min(r.start + r.count, n * g);
+                            if (bis <= r.start) continue;
+                            d.array.set(a.array.subarray(r.start, bis), e * g + r.start);
+                            schreib(this._rend, d, e * g + r.start, bis - r.start);
+                        }
+                    else if (a === im && !istEins(mw))
+                        for (let i = 0; i < n; i++) mal(d.array, (e + i) * 16, mw, im.array, i * 16); // prettier-ignore
+                    else d.array.set(a.array.subarray(0, n * g), e * g);
+                    if (!teil) schreib(this._rend, d, e * g, n * g);
+                    // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
+                    a.clearUpdateRanges();
                 }
             }
             // der Zug je Kamera — lose je Pass, im Bündel die aufgenommenen Plätze —, jeder ein Abschnitt des EINEN
