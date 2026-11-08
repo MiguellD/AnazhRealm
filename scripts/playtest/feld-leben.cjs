@@ -954,7 +954,7 @@ async function checkBandWelle6APolish({ page, check }) {
         } catch {
             /* localStorage gesperrt — worldJournal trägt das Flag */
         }
-        if (st.worldJournal && st.worldJournal.seen) st.worldJournal.seen.intro = false;
+        if (st.worldJournal?.seen) st.worldJournal.seen.intro = false;
         const box = document.getElementById("dialogue-box");
         if (box) box.textContent = "";
         r._firstWorldWelcome({ immediate: true });
@@ -1027,10 +1027,10 @@ async function checkBandWelle6APolish({ page, check }) {
             // W-G (V9.56-i): die ACHSEN-GEISTER (isJointAxis — Linien +
             // Kegel-Spitzen) sind eine NEUE Viewer-Schicht; der Verbindungs-Zähler
             // klammert sie aus (der Test prüft die Verbindung, nicht die Achse).
-            if (node.userData && node.userData.isConnectionLine && !node.userData.isJointAxis) {
+            if (node.userData?.isConnectionLine && !node.userData.isJointAxis) {
                 if (node.isLine) connLineCount++;
                 if (node.isMesh) connMarkerCount++;
-                if (node.material && node.material.color) lineColor = node.material.color.getHex();
+                if (node.material?.color) lineColor = node.material.color.getHex();
             }
         });
         out.lineExists = connLineCount === 1 && connMarkerCount === 1;
@@ -1041,7 +1041,7 @@ async function checkBandWelle6APolish({ page, check }) {
         let worldLines = 0;
         const builtPlain = r._buildFromBlueprint(st.blueprints[testName]);
         builtPlain.traverse((node) => {
-            if (node.userData && node.userData.isConnectionLine) worldLines++;
+            if (node.userData?.isConnectionLine) worldLines++;
         });
         out.worldClean = worldLines === 0;
 
@@ -1076,24 +1076,24 @@ async function checkBandWelle6APolish({ page, check }) {
         out.weakIsBelowThreshold = weakStrength < 0.7;
 
         // Journal-Counter vor spawn
-        const beforeJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const beforeJournal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         const beforeSeenKeys =
-            st.worldJournal && st.worldJournal.seen
+            st.worldJournal?.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
         const bautenZurueck = __bautenSeit();
         r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
         const afterSeenKeys =
-            st.worldJournal && st.worldJournal.seen
+            st.worldJournal?.seen
                 ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const afterJournal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const afterJournal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
         out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
         // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
         r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-        const after2Journal = st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
+        const after2Journal = st.worldJournal?.entries ? st.worldJournal.entries.length : 0;
         out.weakIsIdempotent = after2Journal === afterJournal;
 
         // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
@@ -1276,7 +1276,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
         // Inseln aus der Surface-Nets-Pipeline: Vollkörper per Konstruktion (Iso-Fläche schließt oben +
         // unten). Gemessen wird die Y-Spanne (> 0.5 m), nicht die auflösungsabhängige Vertex-Zahl.
-        if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
+        if (newIsland?.geometry && newIsland.geometry.attributes.position) {
             const pa = newIsland.geometry.attributes.position.array;
             let minY = Infinity;
             let maxY = -Infinity;
@@ -1622,7 +1622,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             out.archAffinityTags[n] = slim;
             out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
             const aff = r.computeBlueprintAffordances(bp);
-            out.archBroadcasting[n] = !!(aff && aff.broadcasting);
+            out.archBroadcasting[n] = !!(aff?.broadcasting);
         }
         return out;
     });
@@ -1987,7 +1987,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             cam.updateMatrixWorld(true);
             r._pickArchitectureAtCrosshair = () => null;
             const realHit = r._raycastWorldHit(40);
-            out.realRaycastHit = !!(realHit && realHit.hit);
+            out.realRaycastHit = !!(realHit?.hit);
             const matSumBefore = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             r.tryMouseBreak();
             const matSumAfter = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);

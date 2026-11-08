@@ -61,7 +61,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
 
-        const ppD = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const ppD = st.playerMesh?.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // CONSUM (behavioral): die Scatter-Region des Spielers (der Warmup baut sie nicht) bei voller vs
         // gedrosselter Dichte neu bauen → `instanceCount` fällt. Der Faktor lichtet Platzierungs-
         // Wahrscheinlichkeit UND Pro-Region-Cap (sonst maskiert der Cap die Drosselung im dichten Wald).
@@ -139,7 +139,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
             out.oneSourceProbeError = String((_eOne && _eOne.message) || _eOne);
         }
         try {
-            const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+            const ppT = st.playerMesh?.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const SCt = (window.AnazhRealm || AnazhRealm).SCATTER;
             if (SCt && Number.isFinite(SCt.regionM) && st.scatterRegions) {
                 // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
@@ -870,7 +870,7 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
             // Snapshot bauen und das grownBlueprints-Feld prüfen.
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
-            out.snapshotHasMetadata = !!(gb && gb._grownSpecies && gb._grownSeed);
+            out.snapshotHasMetadata = !!(gb?._grownSpecies && gb._grownSeed);
             out.snapshotNoParts = !!(gb && !Array.isArray(gb.parts));
             // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
             // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
@@ -945,7 +945,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         }
 
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
-        if (st && st.architectures) {
+        if (st?.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
             if (grownKey && st.blueprints[grownKey]) {
                 // Spawn an Test-Position + harvest sofort.
@@ -954,13 +954,11 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
                     if (spawn) {
                         const harvest = r.harvestArchitecture(spawn, "test-harvester");
                         out.hHarvestHasProvenance = !!(
-                            harvest &&
-                            harvest.provenance &&
+                            harvest?.provenance &&
                             harvest.provenance.bornFrom === "world-genesis"
                         );
                         out.hProvenanceCarriesSpecies = !!(
-                            harvest &&
-                            harvest.provenance &&
+                            harvest?.provenance &&
                             harvest.provenance.species === "baum_eiche"
                         );
                     }
@@ -1014,7 +1012,7 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
         const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =
-            !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
+            !(A.SPECIES_TREE_PARAMS?.baum_totholz) &&
             (totholzPreset == null || totholzPreset === "totholz");
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
@@ -1185,7 +1183,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
-        out.freshHasPool = !!(newMeta && newMeta.variantSeed && typeof newMeta.variantSeed === "object");
+        out.freshHasPool = !!(newMeta?.variantSeed && typeof newMeta.variantSeed === "object");
         if (out.freshHasPool) {
             // K24: die Zeile einer Art entsteht beim ersten Wuchs (_variantSeedsFor) — jede Pflanze des Gesetzbuchs,
             // nie ein Fels; im TEMPORÄREN Meta-Kontext, der Welt-Stand bleibt unberührt.
@@ -1306,7 +1304,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
         }
 
         // ─── (G) Größe (Snapshot-Tragbarkeit) ────────────────────────
-        if (st.worldMeta && st.worldMeta.variantSeed) {
+        if (st.worldMeta?.variantSeed) {
             const json = JSON.stringify(st.worldMeta.variantSeed);
             out.poolJsonSize = json.length;
             // 16 Varianten × 11 Spezies × ~30 Bytes/Seed ≈ ~5-7 KB; sicherheits-
@@ -1383,7 +1381,7 @@ async function checkBandV18218LODStufen({ page, check }) {
             const B = A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.budget;
             const map = r._ensureScatterRegionMap();
             const pm = st.playerMesh && st.playerMesh.position;
-            if (B && B.rock && pm && r._foundryEnabled()) {
+            if (B?.rock && pm && r._foundryEnabled()) {
                 const felsFern = (reg) =>
                     (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
                         (c) => c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
@@ -1588,7 +1586,7 @@ async function checkBandV18219bisVollendung({ page, check }) {
         try {
             st.atmosphere.canopyStreaming = true;
             const mesh = r._canopyEnsureChunk(2, 3);
-            out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
+            out.canopyMeshBuilt = !!(mesh?.geometry && mesh.material);
             if (mesh) {
                 out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
                 out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
@@ -1835,7 +1833,7 @@ async function checkBandWahrerAnblickFels({ page, check }) {
 
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
-        out.rockGeomBuilt = !!(geom && geom.attributes && geom.attributes.position);
+        out.rockGeomBuilt = !!(geom?.attributes && geom.attributes.position);
         out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
         // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
         if (geom && geom.attributes.position) {
@@ -1853,8 +1851,8 @@ async function checkBandWahrerAnblickFels({ page, check }) {
 
         // (C) stein_block gewachsen + Kiesel/Felsbrocken-Baupläne
         const bp = st.blueprints;
-        out.steinIsRock = !!(bp && bp.stein_block && bp.stein_block.parts[0].shape === "noiserock");
-        out.kieselIsRock = !!(bp && bp.kiesel && bp.kiesel.parts.every((p) => p.shape === "noiserock"));
+        out.steinIsRock = !!(bp?.stein_block && bp.stein_block.parts[0].shape === "noiserock");
+        out.kieselIsRock = !!(bp?.kiesel && bp.kiesel.parts.every((p) => p.shape === "noiserock"));
         // computeCompoundTags von stein_block trägt dichte (noiserock = box → dicht)
         try {
             const tags = r.computeCompoundTags(bp.stein_block);
@@ -1903,10 +1901,10 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
             const skel = bp && bp._skeleton;
             if (skel) {
                 const tube = r._buildTreeTubeGeometry(skel);
-                tubeOk = !!(tube && tube.attributes && tube.attributes.position && tube.attributes.position.count > 0);
-                if (tube && tube.dispose) tube.dispose();
+                tubeOk = !!(tube?.attributes && tube.attributes.position && tube.attributes.position.count > 0);
+                if (tube?.dispose) tube.dispose();
                 const card = r._buildTreeFoliageCardGeometry(skel);
-                cardOk = !!(card && card.attributes && card.attributes.position && card.attributes.position.count > 0);
+                cardOk = !!(card?.attributes && card.attributes.position && card.attributes.position.count > 0);
                 // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
                 // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
                 // Vielfaches von 4.
@@ -1914,7 +1912,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
                     const cnt = card.attributes.position.count;
                     taperProven = !!card.attributes.uv && cnt % 4 === 0;
                 }
-                if (card && card.dispose) card.dispose();
+                if (card?.dispose) card.dispose();
             } else {
                 // kein Skeleton (gen < 7) → CONSUM-Source trägt den Beweis
                 tubeOk = cardOk = taperProven = true;
@@ -1961,7 +1959,7 @@ async function checkBandScatterScheibe({ page, check }) {
         const key = `${rx},${rz}`;
         const snapshot = (reg) =>
             JSON.stringify(
-                (reg && reg.cells ? reg.cells : []).map((c) => [
+                (reg?.cells ? reg.cells : []).map((c) => [
                     c.cellX,
                     c.cellZ,
                     c.layer,
@@ -2039,12 +2037,12 @@ async function checkBandScatterScheibe({ page, check }) {
         try {
             let reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             let guard = 0;
-            while (reg2 && reg2._cont && !reg2._cont.darts && guard++ < 300) {
+            while (reg2?._cont && !reg2._cont.darts && guard++ < 300) {
                 await sleep(10); // die Würfe rechnet der Streu-Faden
                 reg2 = r._scatterRegion(rx, rz, pos, performance.now() + 0.4);
             }
             // jetzt in der Zellen-Phase (oder fertig) → mitten drin disposen
-            if (reg2 && reg2._cont) {
+            if (reg2?._cont) {
                 r._disposeScatterRegion(key);
                 storno.contDead = !st.scatterRegions.has(key) && reg2._cont === null;
                 const fresh = r._scatterRegion(rx, rz, pos);
@@ -2123,9 +2121,9 @@ async function checkBandScatterScheibe({ page, check }) {
         };
         try {
             clean();
-            const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
+            const bereit = () => !!(r._foundry?.ready && r._foundry.recipes && r._forestGesetzWahr());
             await __weltDa(bereit);
-            stoff.buch = !!(r._foundry && r._foundry.recipes);
+            stoff.buch = !!(r._foundry?.recipes);
             stoff.wahr = r._forestGesetzWahr();
             stoff.faden = !!st.voxelWorker;
             // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_zusagenSammler`)?
@@ -2153,7 +2151,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 zaehler = 0;
                 const neu = r._scatterRegion(rx, rz, pos);
                 stoff.nachher = zaehler;
-                stoff.zellen = neu && neu.cells ? neu.cells.length : 0;
+                stoff.zellen = neu?.cells ? neu.cells.length : 0;
                 const neuSnap = snapshot(neu);
                 clean();
                 st.voxelWorker = null;

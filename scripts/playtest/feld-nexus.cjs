@@ -55,7 +55,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         const voxelChunksBefore = st.voxelChunks ? st.voxelChunks.size : 0;
         const someVoxelVisible = () => {
             const s = st.chunkSaetze ? st.chunkSaetze.get("boden") : null;
-            return !!(s && s.mesh && s.mesh.visible && s.mesh.parent === st.scene);
+            return !!(s?.mesh && s.mesh.visible && s.mesh.parent === st.scene);
         };
         r.processChatCommand("Boden deaktivieren");
         out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
@@ -90,7 +90,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         const someCreature = st.creatures[0];
         const readCreatureColor = (c) => {
             if (!c) return 0;
-            if (c.material && c.material.color) return c.material.color.getHex();
+            if (c.material?.color) return c.material.color.getHex();
             let hex = 0;
             if (typeof c.traverse === "function") {
                 c.traverse((n) => {
