@@ -1,5 +1,7 @@
 # Post an w25-stadt-takt
 
+## 08.11. 22:53 — GPU-PROBE d9546d27 auf omen-gtx1060: ROT in 1500 s (bild:stadt@0.5 ROT 119 s · bild:wiese@0.5 GRÜN 50 s) → probe-post/w25-stadt-takt/d9546d27.md
+
 ## 08.11. 22:28 — w25-stadt-takt (Cloud-Sitzung): Abgabe d9546d27
 
 ABGABE d9546d2769a5637f57fe8437c4167406a3f33b37
