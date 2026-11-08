@@ -1849,7 +1849,7 @@ async function checkBandTodZensus({ page, check }) {
 
             // DER WESEN-TAKT, mitlaufend gezählt (durchgereicht, nie gestubbt): erreicht er einen Gefallenen?
             const wesenTakt = {};
-            const istTot = (c) => !!c && s.leichname.indexOf(c) !== -1;
+            const istTot = (c) => !!c && s.leichname.includes(c);
             for (const name of [
                 "_tickCreatureLifeTrickle",
                 "_getCreatureTask",
@@ -1897,7 +1897,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
+                            if (s.creatures.includes(c) && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );

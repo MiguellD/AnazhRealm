@@ -1761,7 +1761,7 @@ async function checkBandSchattenTakt({ page, check }) {
             csm: st.csmNode,
             dl: st.directionalLight,
             iv: st._shadowMinInterval,
-            eigen: Object.prototype.hasOwnProperty.call(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
+            eigen: Object.hasOwn(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
         };
         const kaskade = () => ({ shadow: { autoUpdate: true, needsUpdate: false } });
         const sonne = { position: { x: 10, y: 200, z: 10 } };
