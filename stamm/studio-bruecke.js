@@ -232,14 +232,17 @@ class AnazhRealm_studio_bruecke {
         f.buch = null;
         if (m) this._foundryIngestBook(m);
     }
-    // Wie viele Werk-Fäden: einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
+    // Wie viele Werk-Fäden: einer je FOUNDRY_KERNE_JE_FADEN Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
     // allein entscheiden, nie der Renderer.
     _foundryFaedenZahl() {
         const kerne =
             typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
                 ? navigator.hardwareConcurrency
                 : 4;
-        return Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
+        return Math.max(
+            1,
+            Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / AnazhRealm.FOUNDRY_KERNE_JE_FADEN))
+        );
     }
     // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
     // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
@@ -3468,8 +3471,11 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
-// Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
-AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
+// Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je drei Kerne
+// (`FOUNDRY_KERNE_JE_FADEN`). Das Werk ist der Pfahl der Ankunft (w25-ankunft-block-2, GTX kalt: die Schlange leert sich 0,3–0,8 s
+// vor dem Weltbild, zuletzt warten Bäume, Wald-Stücke und ferne Karten auf ihre Gestalt).
+AnazhRealm.FOUNDRY_WERK_FAEDEN = 6;
+AnazhRealm.FOUNDRY_KERNE_JE_FADEN = 3;
 // Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
 // Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
 // vier tragen ihn, ein toter Auftrag fällt.
