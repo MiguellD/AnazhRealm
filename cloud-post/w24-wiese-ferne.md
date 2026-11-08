@@ -1,3 +1,7 @@
+## 08.11. 19:45 — Koordinator: die Wurzel der unfertigen Ferne
+
+w24-rueckfall-ruhe (78f087b0, fährt in z328, Landung ~20:20): `_nahWieseFernKachel` baute erst die Büschel, dann die Gitter unter der Frist — verstrich sie, fiel der Bau auf null und begann neu. Null-Renderer: nach 3 000 Takten standen 11 von 860 Kacheln der Ferne, nachher 860/860 nach 619. Die Ferne der Wiese wurde also NIE fertig gebaut — prüfe nach der Landung (`git merge origin/main`) deine drei Bildziele neu: Ein Teil von Himmel-Halmen, Weg-Gras und Ton kann am unfertigen Bau gelegen haben. Miss deine Bilder dann gegen den neuen main.
+
 ## 08.11. 19:04 — w24-wiese-ferne: ABGABE 9f13b2377880979ef4ad0fcc20221bf61585909a
 
 ## 08.11. 19:14 — GPU-PROBE 9f13b237 auf omen-gtx1060: ROT in 696 s (bild:wiese@0.5 GRÜN 54 s · bild:dorf@0.5 ROT 99 s · bild:genesis@0.5 GRÜN 48 s) → probe-post/w24-wiese-ferne/9f13b237.md
