@@ -23,7 +23,7 @@
 //       Seitenmaß und Kronen-Fuß; (e) Stufe 0 und 1 FRANSEN IM MASS DES SCHIRMS: kante auf dem Raster der Stufe (die Welt liest
 //       jede verkleinerte Stufe mit einem Texel je Pixel) unter dem Soll der Laub-Silhouette (soll-tafel laub-kante, 0,22; die
 //       Scheibe ohne Saum 0,944, der Saum im Maß EINES Texels wie w23-karte-l2: Laub 0,328, Nadel 0,547 — ROT beim Namen;
-//       Weite 3 / Zelle 2,5 / Stärke 8,4: Laub und Nadel je unter 0,13, die Deckung je Stufe 0,220).
+//       Weite 3 / Zelle 2,5 / Stärke 8,4: Laub 0,125 / 0,087, Nadel 0,104 / 0,070, die Deckung je Stufe 0,220).
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
