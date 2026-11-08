@@ -1315,10 +1315,10 @@ class AnazhRealm_vegetation_wiese {
     _nahWieseFernSatz(kamera, L, auge, ziel, rMax, schale) {
         const nw = this.state.nahWiese;
         const HW = AnazhRealm.NAH_WIESE.fern.halt;
-        const H = nw.fernHalt || (nw.fernHalt = { wahl: new WeakMap(), folge: [], neu: 0, vor: null });
+        const H = nw.fernHalt || (nw.fernHalt = { wahl: new WeakMap(), folge: [], neu: 0 });
         const [t0, we] = [performance.now(), kamera.matrixWorld.elements];
         let jetzt = null;
-        const anker = () => jetzt || (jetzt = this._wieseFernAnker(kamera, L, auge, H.vor, t0));
+        const anker = () => jetzt || (jetzt = this._wieseFernAnker(kamera, L, auge));
         // die Drift eines Ankers in Teilen seines Wegs (je Lage einmal): voran auf der Strecke, quer, lotrecht, die Höhe, die Drehung
         const drift = (a) => {
             if (a.gen === L.gen) return a.drift;
@@ -1345,23 +1345,23 @@ class AnazhRealm_vegetation_wiese {
             }
             folge.push(w);
         }
-        H.vor = { x: auge.x, z: auge.z, t: t0 };
         this._wieseFernSchreib(H, folge, ziel, schale);
     }
 
     // DER ANKER DER FERNE (`_nahWieseFernSatz`) am Auge dieses Bilds: der WEG, den das Auge geht — waagrecht in der Richtung seines
-    // letzten Schritts (`vor`), so lang wie es in `zeitS` geht (höchstens `wegMax`), lotrecht mit dem Boden unter ihm
+    // letzten Schritts (der EINE Weg des Auges, `_augeWegJetzt`), so lang wie es in `zeitS` geht (höchstens `wegMax`), lotrecht mit dem Boden unter ihm
     // (`_bodenSichtAt` an beiden Enden) —, quer bis `querM` und lotrecht bis `lotM` um ihn (mit dem Weg bis `wegM` wachsend); ohne
     // Schritt (Stand, ein Sprung über ZEIT_SPRUNG_M, die erste Bewegung nach 250 ms) ein Punkt mit dem Halt der Lage (`standM`). Dazu die Lage mit dem Rand des Wegs (der Halt um die weiteste
     // Wanderung des Auges, die Drehung bis `drehRad` mit dem Weg — `_passTrifft` trägt beide), die Drehung der Kamera, ihr
     // Sichtfeld, ihre Projektion.
-    _wieseFernAnker(kamera, L, auge, vor, t0) {
+    _wieseFernAnker(kamera, L, auge) {
         const HW = AnazhRealm.NAH_WIESE.fern.halt;
         const we = kamera.matrixWorld.elements;
         let [ux, uy, uz, lw] = [0, 0, 0, 0];
-        const [s, dt] = vor ? [Math.hypot(auge.x - vor.x, auge.z - vor.z), t0 - vor.t] : [0, Infinity];
-        if (s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250) {
-            [ux, uz, lw] = [(auge.x - vor.x) / s, (auge.z - vor.z) / s, Math.min(HW.wegMax, (s / Math.max(dt, 1)) * 1000 * HW.zeitS)]; // prettier-ignore
+        const W = this._augeWegJetzt();
+        const h = Math.hypot(W.u[0], W.u[2]);
+        if (W.v > 0 && h > 1e-6) {
+            [ux, uz, lw] = [W.u[0] / h, W.u[2] / h, Math.min(HW.wegMax, W.v * h * HW.zeitS)];
             const [g0, g1] = [
                 this._bodenSichtAt(auge.x, auge.z),
                 this._bodenSichtAt(auge.x + ux * lw, auge.z + uz * lw),

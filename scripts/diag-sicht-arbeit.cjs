@@ -1216,13 +1216,14 @@ const server = statikServer();
                     // Instanz, deren Maske vom Auge DIESES Frames etwas behält — scharf an einer Instanz auf der Kante ihres
                     // Fensters: der Anker liegt 3 mm jenseits (das Gesetz ohne Rand verwirft sie dort), dann wandert das Auge
                     // 9,5 mm herüber (0,95 × der halbe Halt — die Lage hält, die Maske behält sie). Der Rand des Fensters
-                    // (`L.halt` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
+                    // (`L.haltBlende` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
                     // Die Kamera steht; nur das Auge der Maske wandert.
                     const lageHaupt = () => {
                         const Lw = lageBlick();
                         return Object.assign({}, Lw, {
                             fr: new T.Frustum().copy(S.frustum),
                             halt: 0,
+                            haltBlende: 0,
                             rand: 0,
                             dreh: 0,
                             licht: 0,
@@ -1293,12 +1294,12 @@ const server = statikServer();
                         B.fall = f.name;
                         if (ohneRand)
                             r._instanzFenster = function (g, i, Lx) {
-                                const h = Lx.halt;
-                                Lx.halt = 0;
+                                const h = Lx.haltBlende;
+                                Lx.haltBlende = 0;
                                 try {
                                     return P._instanzFenster.call(this, g, i, Lx);
                                 } finally {
-                                    Lx.halt = h;
+                                    Lx.haltBlende = h;
                                 }
                             };
                         try {
@@ -1353,7 +1354,7 @@ const server = statikServer();
                         frame();
                         o.neu += f && nw.fernHalt.neu - neu0;
                     }
-                    const L = lageBlick();
+                    const L = lageBlick().auge; // die Nah-Wiese liest die Lage des Auges (w24-fahrt-takt)
                     const zaehle = leihe(r, { _passTrifft: (...a) => (o.ruf++, P._passTrifft.apply(r, a)) });
                     r._nahWieseSicht(cam, L);
                     o.liest = !o.ruf;

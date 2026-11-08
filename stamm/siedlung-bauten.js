@@ -2811,15 +2811,18 @@ class AnazhRealm_siedlung_bauten {
                 continue;
             }
             let a = s.abschnitte.get(key);
-            if (this._satzAbschnittSteht(s, a, S.lage, kamera)) {
+            // der Höhlen-Satz des Hauptbilds wählt in der Lage des Auges (`L.auge`, w24-fahrt-takt): seine Höhlen-Sicht läuft vom
+            // Auge DIESES Bilds durch die Portale; jeder andere Satz und jede Kaskade in der Lage des Wegs
+            const L = haupt && s.hoehle ? S.lage.auge : S.lage;
+            if (this._satzAbschnittSteht(s, a, L, kamera)) {
                 this._chunkSatzRuht(s, a, key);
                 // die Höhlen-Sicht dieses Passes prüfte keine Mündung frisch
                 if (s.hoehle && s.hoehle.offen && kamera.isPerspectiveCamera === true) s.hoehle.offen.length = 0;
             } else {
                 // Die Höhlen-Schicht (Welle 7): welche Höhlen-Zelle die Pass-Kamera durch Luft erreicht
-                if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt);
-                a = this._chunkSatzAbschnitt(s, key, S.lage, haupt);
-                this._satzAbschnittMerke(s, a, S.lage, kamera);
+                if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt, L);
+                a = this._chunkSatzAbschnitt(s, key, L, haupt);
+                this._satzAbschnittMerke(s, a, L, kamera);
             }
             this._chunkSatzZeige(s, a, S.ab);
         }

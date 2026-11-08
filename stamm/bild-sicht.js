@@ -3277,7 +3277,8 @@ class AnazhRealm_bild_sicht {
     // Portale und (5) aus jeder erreichten Zelle hinaus zu den gesperrten Mündungen dahinter (`_hoehlenHinaus`) — die Sperre
     // gilt nur Strahlen, die bis zu ihr in Himmels-Luft laufen; einer, der in einer Höhle beginnt oder durch sie hindurch
     // läuft, kommt an ihr vorbei. Das Hauptbild merkt seine erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
-    _hoehlenSicht(s, kamera, S, haupt) {
+    // `L`: die Lage, in der der Satz dieses Passes wählt (das Hauptbild in der Lage des Auges, `_chunkSatzPass`).
+    _hoehlenSicht(s, kamera, S, haupt, L = S.lage) {
         if (!kamera || kamera.isPerspectiveCamera !== true) return this._hoehlenSichtLicht(s, S, kamera);
         const H = s.hoehle;
         const st = ++H.stempel;
@@ -3309,7 +3310,7 @@ class AnazhRealm_bild_sicht {
         imBild.length = 0;
         for (const b of s.ordnung) {
             const bh = b.hoehle;
-            if (bh && bh.startHuelle && this._passTrifftBox(S.lage, bh.startHuelle, 0)) imBild.push(bh);
+            if (bh && bh.startHuelle && this._passTrifftBox(L, bh.startHuelle, 0)) imBild.push(bh);
         }
         // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
         // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch). Eine gesperrte
@@ -3407,7 +3408,7 @@ class AnazhRealm_bild_sicht {
         // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt); eine neue Menge zählt `sichtGen`
         if (besucht) {
             const neu = besucht.filter(
-                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(S.lage, kn.zelle.huelle, 0)
+                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(L, kn.zelle.huelle, 0)
             );
             if (!H.sichtHaupt || !this._satzListeGleich(H.sichtHaupt, neu)) {
                 H.sichtHaupt = neu;

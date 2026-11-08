@@ -77,7 +77,7 @@ const SEK = arg("--sek", "4");
             return o.stdout || "";
         };
         const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis;
-        const zelle = (name, wandern, code, tief) => {
+        const zelle = (name, wandern, code, tief, still) => {
             const j = path.join(D, name.replace(/\W+/g, "-") + ".json");
             ev(code);
             wb(
@@ -105,6 +105,7 @@ const SEK = arg("--sek", "4");
             const s = HL.linseWerten(roh, spur, { spitze: true });
             const anteil = a.frames ? a.haengerN / a.frames : 1;
             const ok = anteil <= 0.01 && a.frameMs.max <= 100;
+            if (still) return { a, s, anteil, weg: roh.bahnM };
             const stand = vorStand;
             vorStand = "";
             gruen = gruen && ok;
@@ -144,12 +145,49 @@ const SEK = arg("--sek", "4");
             const l = json(wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120)) || {};
             vorStand = `Stand Bild ${q(l.frameMs)} GPU ${q(l.gpuMs)} · `;
         };
-        steh("genesis", "ego");
-        zelle("genesis Gehen", "bahn", SEITE.geh, false);
-        wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
-        zelle("genesis Fahrt Ego", "fahrt", SEITE.fahrt, true);
-        wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
-        zelle("genesis Fahrt Third", "fahrt", SEITE.fahrt, true);
+        if (process.argv.includes("--ab")) {
+            // DAS A/B IN EINER WELT (`--ab`, npm run gate:fahrt-ab): A = die Anker der Lage am Punkt (der Stand vor w24:
+            // `_lageAnker` ohne Weg), B = der Weg des Auges; je Variante eine Fahrt (GT, E aus und ein) und ein Gang am
+            // Genesis-Ring, Folge A B B A nach einer unbewerteten Aufwärm-Fahrt (der erste GT der Sitzung baut seine Programme)
+            const setze = (punkt) =>
+                ev(
+                    "const P = Object.getPrototypeOf(r); P.__lageAnker = P.__lageAnker || P._lageAnker; " +
+                        `P._lageAnker = ${punkt} ? function (a, s, k, L, key) { return P.__lageAnker.call(this, a, s, k, L, key, null); } : P.__lageAnker; ` + // prettier-ignore
+                        "if (r._passLagen) r._passLagen.clear(); return P._lageAnker === P.__lageAnker;"
+                );
+            const M = { A: [], B: [] };
+            wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+            zelle("Aufwaermen", "fahrt", SEITE.fahrt, false, true);
+            for (const [i, v] of ["A", "B", "B", "A"].entries()) {
+                if (setze(v === "A") !== (v === "B")) throw new Error(`Variante ${v} nicht gesetzt`);
+                wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+                M[v].push({ f: zelle(`Fahrt ${v}${i}`, "fahrt", SEITE.fahrt, false, true), g: zelle(`Gehen ${v}${i}`, "bahn", SEITE.geh, false, true) }); // prettier-ignore
+            }
+            // je Zelle: Bild p50/p95/max, Anteil über 33 ms, die Mitte der Sicht und des Planers (ms je Takt), der CPU-Takt p50
+            const mitte = (x, w) => x.s.zeilen.filter((z) => w.test(kurz(z.name))).reduce((n, z) => n + z.mitteMs, 0);
+            const kennung = (x) => x ? `${x.a.frameMs.p50}/${x.a.frameMs.p95}/${x.a.frameMs.max} ${(100 * x.anteil).toFixed(1)}% Sicht ${mitte(x, /^_passSicht$/).toFixed(1)} Planer ${mitte(x, /^_runFrameScheduler$/).toFixed(1)} CPU ${x.s.cpuMs.p50} n${x.a.frames}` : "?"; // prettier-ignore
+            const med = (l) => l.slice().sort((x, y) => x - y)[(l.length - 1) >> 1];
+            for (const [art, k] of [
+                ["Fahrt", "f"],
+                ["Gehen", "g"],
+            ]) {
+                const p95 = (v) => med(M[v].map((m) => (m[k] ? m[k].a.frameMs.p95 : Infinity)));
+                const anteil = (v) => med(M[v].map((m) => (m[k] ? m[k].anteil : 1)));
+                const ok = p95("B") <= p95("A") && anteil("B") <= anteil("A");
+                gruen = gruen && ok;
+                zeile(
+                    `GEH-AB ${ok ? "GRÜN" : "ROT"} ${art} Genesis (Bild p50/p95/max · > 33 ms · Mitte je Takt): A ${M.A.map((m) => kennung(m[k])).join(" ; ")} ‖ ` + // prettier-ignore
+                        `B ${M.B.map((m) => kennung(m[k])).join(" ; ")} ‖ Median p95 ${p95("A")} → ${p95("B")} ms, > 33 ms ${(100 * anteil("A")).toFixed(1)} → ${(100 * anteil("B")).toFixed(1)} %` // prettier-ignore
+                );
+            }
+        } else {
+            steh("genesis", "ego");
+            zelle("genesis Gehen", "bahn", SEITE.geh, false);
+            wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+            zelle("genesis Fahrt Ego", "fahrt", SEITE.fahrt, true);
+            wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
+            zelle("genesis Fahrt Third", "fahrt", SEITE.fahrt, true);
+        }
     } catch (e) {
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)} · ${tor.log.slice(-300)}`);
