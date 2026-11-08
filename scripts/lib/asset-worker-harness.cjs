@@ -512,7 +512,18 @@ function ersteAbweichung(ist, soll, pfad = "") {
     return { pfad: wo, ist: kurz(ist), soll: kurz(soll) };
 }
 
+// DER WIRT MIT DEM BUCH (Node): die geladene Klasse des Stamms und ihr Buch nach dem Umschlag (die Kerne vereint wie
+// `_foundryIngestRenderConfig`) — eine Linse fragt das Gesetz des Wirts (`_wechselGesetz`, `_stufeNachGrenzen`) an derselben
+// Zahl wie die Welt (gate:tor-fern, gate:haus-fern).
+function wirtMitBuch() {
+    const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(ROOT);
+    const rc = kanalImVm()({ type: "get-book" }).renderConfig;
+    ctx.__phytoCore.kerneVereinen(rc);
+    A._studioRenderConfig = rc;
+    return A;
+}
 module.exports = {
+    wirtMitBuch,
     runWithWorker,
     fingerprintMeshes,
     DATEN_KANAELE,

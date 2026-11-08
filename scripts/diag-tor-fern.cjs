@@ -21,7 +21,7 @@
 "use strict";
 
 const { studioKern, pruefer, ROOT: root, stammLib } = require("./lib/welt-boot.cjs");
-const { rasterDreieck } = require("./lib/kronen-linse.cjs");
+const { rasterDreieck, kantenVersatz, wechselFehler } = require("./lib/kronen-linse.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
@@ -275,25 +275,77 @@ const FERN = {
 };
 FERN.rest = FERN.klasse - FERN.fest;
 const STUFE_NACH_GRENZEN = Function(
-    "return function _stufeNachGrenzen(d, cur, G, s) {" +
-        stammLib.methodeAm(STAMM, "_stufeNachGrenzen").rumpf +
-        "};"
+    "return function _stufeNachGrenzen(d, cur, G, s) {" + stammLib.methodeAm(STAMM, "_stufeNachGrenzen").rumpf + "};"
 )();
-const WIRT = (() => {
-    const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(root);
-    const rc = require("./lib/asset-worker-harness.cjs").kanalImVm()({ type: "get-book" }).renderConfig;
-    ctx.__phytoCore.kerneVereinen(rc);
-    A._studioRenderConfig = rc;
-    return A;
-})();
-function stufeBei(K, d) {
-    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
-        S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
-    const grenzen = S.slice(1)
+const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
+// die gezeigten Stufen des Tors mit der Grenze, die das Gesetz des Stamms aus der Fehler-Zeile seiner Vorlage `id` legt (ohne `id`
+// der Haushalt der Art, `_wechselGesetz` ohne Vorlage)
+function grenzenVon(K, id) {
+    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate;
+    return K.PORTAL_RENDER_CONFIG.lod.kindStages.gate
+        .slice(1)
         .filter((st) => art[st] && art[st].nurWurf !== true)
-        .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0) }));
-    return STUFE_NACH_GRENZEN(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
+        .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0, undefined, id) }));
 }
+function stufeBei(K, d, id) {
+    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate;
+    const G = { erste: K.PORTAL_RENDER_CONFIG.lod.kindStages.gate[0], grenzen: grenzenVon(K, id), h: art.hyst };
+    return STUFE_NACH_GRENZEN(d, undefined, G, 1);
+}
+// ── P: DER POP AM WECHSEL (lod.K5, w25-lod-pop) — je Tor und gezeigter Stufe der Kanten-Versatz zur L0 (`kantenVersatz`, die
+//    Messung der Station am Bau) an der Grenze seiner Vorlage, ≤ LOD_SCHIRM.px; die L0 mit den Flügeln in der Fern-Pose des
+//    Spiels (`_tickTorFluegel`: um ihr Scharnier, Seite · sign(z) · TUER_GESETZ.fern · offen — die Stufen tragen sie fest im
+//    Körper). `--tafel` druckt die Zeilen der Tafel LOD_SCHIRM.fehler.gate: der Versatz am Haushalt × 1,1, in Metern.
+function netze(g) {
+    const fern = PC.TUER_GESETZ.fern * PC.TUER_GESETZ.offen,
+        v = new THREE.Vector3(),
+        out = [];
+    g.updateMatrixWorld(true);
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        let t = o.parent;
+        while (t && !(t.userData && typeof t.userData.side === "number")) t = t.parent;
+        const [P, w] = [o.geometry.attributes.position, t ? t.userData.side * Math.sign(t.position.z) * fern : 0];
+        const pos = new Float32Array(P.count * 3);
+        for (let i = 0; i < P.count; i++) {
+            v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+            const [x, z] = t ? [v.x - t.position.x, v.z - t.position.z] : [0, 0];
+            pos.set(
+                t
+                    ? [
+                          t.position.x + x * Math.cos(w) + z * Math.sin(w),
+                          v.y,
+                          t.position.z - x * Math.sin(w) + z * Math.cos(w),
+                      ]
+                    : [v.x, v.y, v.z],
+                i * 3
+            );
+        }
+        out.push({ pos, idx: o.geometry.index.array });
+    });
+    return out;
+}
+function pop(nur, tafel) {
+    const F = WIRT._brennweite(0);
+    const zeilen = [];
+    for (const id of Object.keys(PC.PRESETS).filter((x) => (!NUR || NUR.test(x)) && (!nur || nur.includes(x)))) {
+        const n0 = netze(PC.buildInstance(id, 1, 0));
+        const z = { id, e: [], px: [], txt: [] };
+        for (const { stufe, ab } of grenzenVon(PC, tafel ? null : id)) {
+            const ns = netze(PC.buildInstance(id, 1, stufe));
+            const w = tafel ? wechselFehler(n0, ns, ab, F) : { px: kantenVersatz(n0, ns, ab, F), d: ab };
+            z.e[stufe - 1] = w.e;
+            z.px.push([stufe, w.px]);
+            z.txt.push(`L${stufe} ${w.px.toFixed(2)} px @ ${w.d.toFixed(1)} m`);
+        }
+        zeilen.push(z);
+    }
+    return zeilen;
+}
+const popBruch = (zeilen) =>
+    zeilen.flatMap((z) =>
+        z.px.filter(([, px]) => !(px <= WIRT.LOD_SCHIRM.px)).map(([s, px]) => `${z.id} L${s} ${px.toFixed(2)} px`)
+    );
 const stoffKey = (m) =>
     [
         m.type,
@@ -316,13 +368,12 @@ function fernStufe(K, verfaelsche) {
         ist = [];
     let maxT = 0,
         summe = 0;
-    const st13 = stufeBei(K, FERN.dM[0]),
-        zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st13];
     for (const id of Object.keys(K.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const L0 = stoffe(K.buildInstance(id, 7, 0));
         for (const d of FERN.dM) {
-            const st = stufeBei(K, d),
+            const st = stufeBei(K, d, id),
+                zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st],
                 g = K.buildInstance(id, 7, st);
             if (verfaelsche) verfaelsche(g);
             const n = tris(g);
@@ -338,11 +389,18 @@ function fernStufe(K, verfaelsche) {
     }
     if (!NUR && summe > FERN.rest)
         bruch.push(
-            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) Stufe ${st13}: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
+            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) bei ${FERN.dM[0]} m: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
         );
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
 const { errs: fails, check, wandEnde } = pruefer();
+if (ARG.includes("--tafel")) {
+    // DIE PRÄGUNG der Zeilen LOD_SCHIRM.fehler.gate: der Versatz am Haushalt der Art × 1,1, in Metern (dieselbe Messung wie P)
+    const t = pop(null, true);
+    for (const z of t) console.log(`     ${z.id.padEnd(11)} ${z.txt.join(" · ")}`);
+    console.log("TAFEL gate: " + t.map((z) => `${z.id}: [${z.e.join(", ")}]`).join(", "));
+    process.exit(0);
+}
 console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle) ===`);
 const k = kosten(huelleVon);
 check(
@@ -374,14 +432,34 @@ check(
         ? f.bruch.slice(0, 6).join(" · ")
         : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
 );
+const p = pop();
+for (const z of p) console.log(`     ${z.id.padEnd(11)} ${z.txt.join(" · ")}`);
+check(
+    `P POP AM WECHSEL (lod.K5): je Tor und Stufe ≤ ${WIRT.LOD_SCHIRM.px} px Kanten-Versatz zur L0 an der Grenze seiner Vorlage`,
+    popBruch(p).length === 0,
+    popBruch(p).join(" · ") || `max ${Math.max(...p.flatMap((z) => z.px.map(([, x]) => x))).toFixed(2)} px`
+);
 if (SELBST) {
+    // S7: die Zeile des Geisttors am Haushalt (der Deckel bis w25-lod-pop) — die Linse nennt seine L2 beim Namen
+    const T0 = WIRT.LOD_SCHIRM;
+    const gate = Object.assign({}, T0.fehler.gate, { geisttor: { 1: T0.fehler.gate.geisttor[1], 2: 1e-4 } });
+    WIRT.LOD_SCHIRM = Object.assign({}, T0, { fehler: Object.assign({}, T0.fehler, { gate }) });
+    const b7 = popBruch(pop(["geisttor"]));
+    WIRT.LOD_SCHIRM = T0;
+    check(
+        "SELBSTTEST P: die Geisttor-Zeile am Haushalt wird rot beim Namen",
+        b7.some((b) => /^geisttor L2 \d/.test(b)),
+        b7.join(" · ")
+    );
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
-    const K5 = Object.assign({}, PC, { buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov) });
+    const K5 = Object.assign({}, PC, {
+        buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov),
+    });
     const f5 = fernStufe(K5);
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
         f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
-            f5.bruch.some((b) => /^Genesis Third fern .* Stufe 2: \d+ Dreiecke > Rest/.test(b)),
+            f5.bruch.some((b) => /^Genesis Third fern .* bei 13 m: \d+ Dreiecke > Rest/.test(b)),
         f5.bruch[0] || ""
     );
     // S6: ein Stoff der fernen Stufe heller als sein L0-Stoff
@@ -432,4 +510,7 @@ if (SELBST) {
         `max p95 ${(Math.max(...z4.map((r) => r.innenP95)) * 100).toFixed(1)} cm`
     );
 }
-wandEnde(fails, "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll.");
+wandEnde(
+    fails,
+    "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll, jede Stufe zeigt sich erst, wo sie ≤ 1 px von der L0 steht."
+);

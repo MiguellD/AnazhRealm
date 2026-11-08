@@ -431,7 +431,100 @@ function unterBoden(krone) {
     return y;
 }
 
+// (5) DER KANTEN-VERSATZ AM WECHSEL (lod.K5, die Messung der Station am Bau — gate:tor-fern P, gate:haus-fern P): die L0 `n0`
+//     und die Stufe `ns` ([{ pos (Welt, Vorlagen-Meter), idx }]) je Peilung — acht Azimute, waagrecht: das Auge des Spielers sieht
+//     ein Werk im Wechsel-Abstand nahezu waagrecht; θ und θ + π sind im Orthobild Spiegel (derselbe Chamfer), gerastert werden vier — in den Bildpunkten des Abstands `d` (ein Bildpunkt = d / f, `f` die
+//     Brennweite des Schirms in Bildpunkten) gerastert, je Pixel-Mitte gedeckt, nie unter dem Boden der Vorlage (y < 0); die
+//     Kanten jeder Maske, ihre Euklid-Distanz-Transformation (Felzenszwalb), der Chamfer beidseitig gemittelt — in Bildpunkten,
+//     gemittelt über die Peilungen. Ein Teil der L0, das der Stufe fehlt, liegt mit seinem Abstand zur nächsten Kante der Stufe
+//     im Mittel (die Geisttor-L2 der Quote: 14 px von der L0 zur Stufe), ein verschobener Umriss mit seinem Versatz.
+function kantenVersatz(n0, ns, d, f) {
+    const r = d / f;
+    let summe = 0;
+    for (let k = 0; k < 4; k++) {
+        const [cx, cz] = [Math.cos((k * Math.PI) / 4 + 0.2), Math.sin((k * Math.PI) / 4 + 0.2)];
+        let [u0, v0, u1, v1] = [Infinity, Infinity, -Infinity, -Infinity];
+        for (const { pos: p } of n0.concat(ns))
+            for (let i = 0; i < p.length; i += 3) {
+                const u = p[i] * cx + p[i + 2] * cz;
+                [u0, v0, u1, v1] = [Math.min(u0, u), Math.min(v0, p[i + 1]), Math.max(u1, u), Math.max(v1, p[i + 1])];
+            }
+        const R = {
+            u0: u0 - 4 * r,
+            v0: v0 - 4 * r,
+            r,
+            nu: Math.ceil((u1 - u0) / r) + 8,
+            nv: Math.ceil((v1 - v0) / r) + 8,
+        };
+        const maske = (netze) => {
+            const b = new Uint8Array(R.nu * R.nv);
+            for (const { pos: p, idx } of netze)
+                for (let t = 0; t < idx.length; t += 3) {
+                    const [a, c, e] = [idx[t] * 3, idx[t + 1] * 3, idx[t + 2] * 3];
+                    const [ua, uc, ue] = [a, c, e].map((i) => p[i] * cx + p[i + 2] * cz);
+                    rasterDreieck(ua, p[a + 1], uc, p[c + 1], ue, p[e + 1], R, (o, w0, w1, w2) => {
+                        if (w0 * p[a + 1] + w1 * p[c + 1] + w2 * p[e + 1] >= 0) b[o] = 1;
+                    });
+                }
+            return b;
+        };
+        summe += chamfer(maske(n0), maske(ns), R.nu, R.nv);
+    }
+    return summe / 4;
+}
+// DIE PRÄGUNG einer Zeile der Tafel LOD_SCHIRM.fehler: der Abstand, an dem der GEMESSENE Versatz mit dem Rand × 1,1 einen
+// Bildpunkt trägt — vom Haushalt `h` aus gesucht (d ← 1,1 · px · d, höchstens sechsmal: fern skaliert der Versatz nicht mehr mit
+// 1 / d, die dünnen Teile rauschen im Raster), als Fehler in Metern (Abstand / Brennweite); trägt die Stufe das Soll schon am
+// Haushalt, ihr Versatz dort × 1,1. → { e, px, d }
+function wechselFehler(n0, ns, h, f) {
+    let [d, px] = [h, kantenVersatz(n0, ns, h, f)];
+    for (let i = 0; i < 6 && 1.1 * px > 1; i++) px = kantenVersatz(n0, ns, (d *= 1.1 * px), f);
+    return { e: Math.ceil(((d > h ? d : 1.1 * px * d) * 1e4) / f) / 1e4, px, d };
+}
+// die quadrierte Distanz-Transformation einer Zeile `g` (n Werte ab `o` mit Schritt `w`) in `d` (Felzenszwalb & Huttenlocher, die
+// untere Hülle der Parabeln; `v` · `z` · `f` die Arbeits-Puffer)
+function edt(g, o, w, n, d, v, z, f) {
+    for (let q = 0; q < n; q++) f[q] = g[o + q * w];
+    const s = (q, p) => (f[q] + q * q - (f[p] + p * p)) / (2 * q - 2 * p);
+    let k = 0;
+    [v[0], z[0], z[1]] = [0, -Infinity, Infinity];
+    for (let q = 1; q < n; q++) {
+        while (k >= 0 && s(q, v[k]) <= z[k]) k--;
+        k++;
+        [v[k], z[k], z[k + 1]] = [q, k ? s(q, v[k - 1]) : -Infinity, Infinity];
+    }
+    for (let q = 0, j = 0; q < n; q++) {
+        while (z[j + 1] < q) j++;
+        d[o + q * w] = (q - v[j]) ** 2 + f[v[j]];
+    }
+}
+// der Chamfer zweier Masken W × H: der mittlere Abstand der Kanten-Pixel jeder Maske zur nächsten Kante der anderen, beidseitig
+function chamfer(a, b, W, H) {
+    const N = Math.max(W, H);
+    const [v, z, f] = [new Int32Array(N), new Float64Array(N + 1), new Float64Array(N)];
+    const kante = (m) =>
+        m.map((x, o) =>
+            x && (o % W === 0 || o % W === W - 1 || !m[o - 1] || !m[o + 1] || !m[o - W] || !m[o + W]) ? 1 : 0
+        );
+    const abstand = (k) => {
+        const g = new Float64Array(W * H);
+        for (let o = 0; o < g.length; o++) g[o] = k[o] ? 0 : 1e20;
+        for (let x = 0; x < W; x++) edt(g, x, W, H, g, v, z, f);
+        for (let y = 0; y < H; y++) edt(g, y * W, 1, W, g, v, z, f);
+        return g;
+    };
+    const mittel = (k, g) => {
+        let [s, n] = [0, 0];
+        for (let o = 0; o < k.length; o++) if (k[o]) [s, n] = [s + Math.sqrt(g[o]), n + 1];
+        return n ? s / n : Infinity;
+    };
+    const [ka, kb] = [kante(a), kante(b)];
+    return (mittel(ka, abstand(kb)) + mittel(kb, abstand(ka))) / 2;
+}
+
 module.exports = {
+    kantenVersatz,
+    wechselFehler,
     rasterDreieck,
     dek,
     bildDeckung,
@@ -443,4 +536,3 @@ module.exports = {
     schwebe,
     unterBoden,
 };
-

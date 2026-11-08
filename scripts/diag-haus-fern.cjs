@@ -31,7 +31,7 @@
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
-const { rasterDreieck } = require("./lib/kronen-linse.cjs");
+const { rasterDreieck, kantenVersatz, wechselFehler } = require("./lib/kronen-linse.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -661,6 +661,59 @@ function ausFall(id, seed) {
     return z;
 }
 
+// ── P: DER POP AM WECHSEL (lod.K5, w25-lod-pop) — je Kultur (Samen 1) und Ausstattung jede gezeigte Stufe gegen die L0
+//    (`kantenVersatz`, die Messung der Station am Bau) an der Grenze, die das Gesetz des Stamms aus der Zeile ihrer Vorlage legt
+//    (`_wechselGesetz`, LOD_SCHIRM.fehler), ≤ LOD_SCHIRM.px; die Türen der L0 zu (der Wirt dreht um −offen am Scharnier).
+//    `--tafel` prägt die Zeilen: der Versatz am Haushalt × 1,1, in Metern. ──
+const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
+function netze(g) {
+    const [out, v] = [[], new T.Vector3()];
+    g.updateMatrixWorld(true);
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        let w = o.parent;
+        while (w && w !== g && !(w.userData && typeof w.userData.side === "number")) w = w.parent;
+        const a = w && w !== g ? -(w.userData.offen || 0) : 0;
+        const P = o.geometry.attributes.position,
+            pos = new Float32Array(P.count * 3);
+        for (let i = 0; i < P.count; i++) {
+            v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+            const [x, z] = a ? [v.x - w.position.x, v.z - w.position.z] : [0, 0];
+            if (a)
+                [v.x, v.z] = [
+                    w.position.x + Math.cos(a) * x + Math.sin(a) * z,
+                    w.position.z - Math.sin(a) * x + Math.cos(a) * z,
+                ];
+            pos.set([v.x, v.y, v.z], i * 3);
+        }
+        out.push({
+            pos,
+            idx: o.geometry.index ? o.geometry.index.array : Uint32Array.from({ length: P.count }, (_, i) => i),
+        });
+    });
+    return out;
+}
+function pop(ids, tafel) {
+    const F = WIRT._brennweite(0);
+    return ids.map((id) => {
+        const art = FC.PRESETS[id].kind;
+        const n0 = netze(FC.buildInstance(id, 1, 0));
+        const z = { id, e: [], px: [], txt: [] };
+        for (const s of LOD.kindStages[art].filter((x) => x && !LOD.budget[art][x].nurWurf)) {
+            const ab = WIRT._wechselGesetz(art, s, 1, 0, undefined, tafel ? undefined : id);
+            const ns = netze(FC.buildInstance(id, 1, s));
+            const w = tafel ? wechselFehler(n0, ns, ab, F) : { px: kantenVersatz(n0, ns, ab, F), d: ab };
+            [z.e[s - 1], z.txt[s - 1]] = [w.e, `L${s} ${w.px.toFixed(2)} px @ ${w.d.toFixed(1)} m`];
+            z.px.push([s, w.px]);
+        }
+        return z;
+    });
+}
+const popBruch = (zeilen) =>
+    zeilen.flatMap((z) =>
+        z.px.filter(([, px]) => !(px <= WIRT.LOD_SCHIRM.px)).map(([s, px]) => `${z.id} L${s} ${px.toFixed(2)} px`)
+    );
+
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
 function selbsttest() {
@@ -732,11 +785,31 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
         fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
+    // P: die Pueblo-Zeile am Haushalt (der Deckel bis w25-lod-pop) — ihre L2 trägt die Dach-Terrassen nicht
+    const T0 = WIRT.LOD_SCHIRM;
+    const haus = Object.assign({}, T0.fehler.haus, { pueblo: { 1: T0.fehler.haus.pueblo[1], 2: 1e-4 } });
+    WIRT.LOD_SCHIRM = Object.assign({}, T0, { fehler: Object.assign({}, T0.fehler, { haus }) });
+    const b7 = popBruch(pop(["pueblo"]));
+    WIRT.LOD_SCHIRM = T0;
+    if (!b7.some((b) => /^pueblo L2 \d/.test(b))) fehler.push("P: die Pueblo-Zeile am Haushalt ist nicht rot");
     return fehler;
 }
 
 (function main() {
     const t0 = Date.now();
+    if (ARG.includes("--tafel")) {
+        for (const [art, ids] of [
+            ["haus", KULTUREN],
+            ["ausstattung", AUS],
+        ]) {
+            const t = pop(ids, true);
+            for (const z of t) console.log(`  ${z.id.padEnd(17)} ${z.txt.filter(Boolean).join(" · ")}`);
+            console.log(
+                `TAFEL ${art}: ` + t.map((z) => `${z.id}: [${z.e.filter((x) => x != null).join(", ")}]`).join(", ")
+            );
+        }
+        return;
+    }
     console.log("=== DIE LINSE DES HAUS-FERNKÖRPERS (gate:haus-fern) ===");
     if (!hatStufe3("haus") || !hatStufe3("ausstattung")) {
         console.log(
@@ -816,6 +889,18 @@ function selbsttest() {
                             .map((k) => k.tris)
                             .join("/")} Dreiecke)`
                 )
+                .join(" · ")
+    );
+    const P = pop(KULTUREN.concat(AUS));
+    const pb = popBruch(P);
+    for (const b of pb) rot.push(`P POP AM WECHSEL ${b} > ${WIRT.LOD_SCHIRM.px} px an der Grenze seiner Vorlage`);
+    console.log(
+        `  Pop am Wechsel (P, lod.K5, Soll ≤ ${WIRT.LOD_SCHIRM.px} px an der Grenze der Vorlage): ` +
+            ["haus", "ausstattung"]
+                .map((art) => {
+                    const px = P.filter((z) => FC.PRESETS[z.id].kind === art).flatMap((z) => z.px);
+                    return `${art} ${px.length} Stufen, max ${Math.max(...px.map(([, x]) => x)).toFixed(2)} px`;
+                })
                 .join(" · ")
     );
     const st = selbsttest();
