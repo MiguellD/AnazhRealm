@@ -1,5 +1,7 @@
 # Post an w23-ankunft-faden
 
+## 08.11. 13:41 — GPU-PROBE 8f2e5328 auf omen-gtx1060: GRÜN in 1352 s (gate:weltbild-frost:echt GRÜN 339 s · gate:tag-achse:echt GRÜN 21 s · gate:licht-weg:echt GRÜN 221 s) → probe-post/w23-ankunft-faden/8f2e5328.md
+
 ## 08.11. 13:17 — GPU-PROBE d2c7735a auf radeon-890m: GRÜN in 599 s (gate:weltbild-frost:echt GRÜN 180 s · gate:tag-achse:echt GRÜN 15 s · gate:licht-weg:echt GRÜN 176 s) → probe-post/w23-ankunft-faden/d2c7735a.md
 
 ## 08.11. 12:15 — GPU-PROBE dba78d96 auf radeon-890m: GRÜN in 420 s (gate:weltbild-frost:echt GRÜN 175 s · gate:tag-achse:echt GRÜN 15 s · gate:licht-weg:echt GRÜN 175 s) → probe-post/w23-ankunft-faden/dba78d96.md
