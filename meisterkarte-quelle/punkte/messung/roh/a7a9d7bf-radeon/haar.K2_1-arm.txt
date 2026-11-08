@@ -1,0 +1,63 @@
+{
+ "ms": 627,
+ "kamera": [
+  -281.02,
+  29.26,
+  -1045.88
+ ],
+ "hell": 49.6,
+ "kontrast": 5.4,
+ "dc": 39,
+ "dreiecke": 374283,
+ "klasse": {
+  "ausdruck": "^spieler:kopf/hair$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "spieler:kopf/hair=255/80/80"
+  ],
+  "klassen": {
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.345,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0205,
+    "wt": 170,
+    "wtZiel": null,
+    "bunt": 5.44,
+    "pixel": 8273,
+    "luma": 73.45,
+    "kante": 0.6827,
+    "kr": 605,
+    "strich": 0.5028,
+    "si": 3066,
+    "bloecke": 85,
+    "glatt": 0.0118,
+    "nyquist": 0.1244,
+    "beta": 2.0594
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\a7a9d7bf-radeon\\haar.K2_1-arm.maske.png"
+ },
+ "zeit": null,
+ "ist": "haar → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.7 m · Luma 43.6 σ 33.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.214 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\a7a9d7bf-radeon\\haar.K2_1-arm.png",
+ "gesamtMs": 5930
+}
