@@ -1,13 +1,12 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 08.11. 14:55 · main 77265b04 (z323) · gebucht 221/330 · Woche 32 %
-gelandet z322 z323  ferne-heil · karte-l2 (A: 4/5 Laub-Klassen ≤ 0,22) · geh-takt (E: Wiese Ego 41,8 → 33,5 ms)  —  Zug  —  messen + buchen
-läuft   z324  w23-ankunft-faden (B: Radeon 13,97 → 12,95 s bis Kontrolle)  —  Zug  —  landen
-läuft   Mess-Fenster 1  Radeon: alle 124 offenen Stationen am main nach z323 (R6/Deckel hielten 18 Kriterien auf 0)  —  Laptop, gpu-probe-Label ab  —  Buchung
-danach  Mess-Fenster 2  GTX: 115 offene Stationen, selber SHA  —  OMEN, Labels gpu-probe+echt-gpu ab  —  EINE Buchung beider Geräte
-läuft   heimholer  11 alte Abgaben (06.–08.11.) heim oder offen abgelöst + Decke 233 von w23-pruef-welt-heim  —  Cloud  —  BEREIT → Zug z325+
-läuft   w24-strauch-saum  A: Strauch laub-kante 0,354 → ≤ 0,22 (letzte Klasse)  —  Cloud  —  Pflicht A fällt an der laub-kante
-läuft   w24-fahrt-takt  E: Fahrt am Genesis-Ring 100 % > 33 ms → ≤ 1 %  —  Cloud  —  profiband.K4
-läuft   w24-wiese-ferne  Ferne der Wiese: kein Halm im Himmel, kein Gras auf dem Weg, Ton wie vor dem Nachzug  —  Cloud  —  Bild ≥ vorher
-läuft   w23-verkehr · w23-k6-flimmern  C: Wagen mit Bewohnern ohne Wagen-in-Wagen · K6 an der Wurzel  —  Cloud  —  Pflicht C, Wackler 0
-läuft   Blick  EIN Messplatz-Blick (Zwilling w22-blick wird gelöscht)  —  champion lokal  —  ein Werkzeug
-Regel   jede Abgabe landet binnen 4 h oder steht mit Grund in zug/abgeloest.txt · Wackler ohne Täter landen ohne Neulauf · nach jeder Landung messen + buchen
+# Stand 08.11. 20:30 · main 53b2fc7a (z326) · gebucht 221/330
+gelandet z322–z326  Ferne-Heil · Karte L2 4/5 · Geh-Takt · Ankunft-Faden · K6 · Verkehr · Haus-Umriss · Fell · Gang-Frist  —  Zug  —  gezielt messen + buchen
+läuft   z328  w24-rueckfall-ruhe (die ferne Wiese baute nie fertig) · Wald · Verkehrs-Richter (C) · Studio  —  Zug  —  danach gezielte Messung + Buchung
+rot     z327  w24-fahrt-takt: foundry-crossfade-Selbsttest verliert die L1 der Birke  —  Cloud heilt  —  neu BEREIT
+läuft   Strauch (A: alle Arten ≤ 0,22) · Ton der Kronen klären + Merge  —  Cloud  —  z329
+läuft   Heimholer: Laub-Jahr + Prüf-Welt nach z328 mergen  —  Cloud  —  z329/z330
+läuft   w24-wiese-ferne  Ferne der Wiese gegen den fertigen Bau  —  Cloud  —  Bild ≥ vorher
+läuft   w25-ankunft-block (B) · w25-stadt-takt (E) · w25-lod-pop (lod.K5) · w25-ferne-licht (ferne.K1/K4) · w25-haar-albedo (haar.K2)  —  Cloud  —  je Station GRÜN
+läuft   Rückfall-Reste: material.K1, gelaende.K3 (Linsen), schatten.K5 (Bisektion)  —  champion lokal  —  Buchung ohne Rückfall
+danach  gpu-probe „sichtbar“ (OMEN, Fenster) als Opt-in  —  Koordinator  —  der Schöpfer sieht zu
+Regel   keine Voll-Messung · nach jeder Landung nur die beanspruchten Stationen messen und sofort buchen · jede Abgabe binnen 4 h im Zug oder abgelöst
