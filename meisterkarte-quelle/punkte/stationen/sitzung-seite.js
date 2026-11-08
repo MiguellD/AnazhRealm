@@ -56,9 +56,19 @@ function sitzungWerkzeug() {
             Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
             H.schlaf(Math.max(0, ms)).then(() => ersatz),
         ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
     // DIE WERKBANK der Sitzung (POST mit Frist)
     H.wb = (weg, nutz, ms = 120000) =>
-        new Promise((ja, nein) => {
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
             const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
                 let d = "";
                 r.on("data", (c) => (d += c));
@@ -87,7 +97,7 @@ function sitzungWerkzeug() {
             env: process.env,
             timeout: 240000,
         });
-        if (p.status !== 0) throw new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | "));
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
     };
     // DER BROWSER DER SITZUNG
     H.verbinde = async () => {
@@ -124,7 +134,7 @@ function sitzungWerkzeug() {
                 if (b) await b.disconnect().catch(() => {});
             }
         }
-        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")");
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
     };
     // DIE LINSE ALS BIBLIOTHEK
     H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
@@ -211,6 +221,7 @@ function sitzungWerkzeug() {
             .then(
                 (j) => ende(0, j),
                 (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
                     console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
                     ende(2, H.teil);
                 }

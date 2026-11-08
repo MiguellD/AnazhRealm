@@ -75,16 +75,22 @@ async function folge(plan) {
                 aus.dateien[s.name] = fs.existsSync(f) ? duenn(JSON.parse(fs.readFileSync(f, "utf8"))) : null;
             }
             console.log("  " + s.name + " · Exit " + r.status + (e.json ? "" : " · " + String(e.rest).trim().split("\n").slice(-1)[0]));
-            if (s.muss && r.status !== 0) throw new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300));
+            if (s.muss && r.status !== 0)
+                throw Object.assign(new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300)), {
+                    messort: s.name + ": " + (e.json && typeof e.json.fehler === "string" ? e.json.fehler : String(e.rest || "").trim().split("\n").slice(-1)[0] || "Exit " + r.status),
+                });
         }
     } catch (e) {
         aus.fehler = String((e && e.message) || e);
+        aus.messort = String((e && e.messort) || "Folge: " + aus.fehler).replace(/\s+/g, " ").slice(0, 300);
         code = 1;
     } finally {
         fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
     }
     console.log(aus.adapter || "[linse-gpu] ungenannt");
-    console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
+    // jeder Wurf der Folge fällt VOR dem Urteil der Linse (sie urteilt erst in punkte.cjs über die ganze Ausgabe): ein `muss`-Schritt,
+    // ein Feld, das ein früherer Schritt nicht trug, ein Blob, das Log der Sitzung — die EINE Marke des Messorts (punkte.cjs keinUrteil (d))
+    console.log(aus.fehler ? "@@PUNKTE@@ MESSORT " + aus.messort : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
     process.exit(code);
 }
 const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.stringify(plan) + ")", "{AUS}", "{KOORD}"];
@@ -2157,7 +2163,7 @@ const stationen = [
         }) },
         env: envDer,
         gpu: true,
-        zeit: false,
+        zeit: true, // Wanduhr-empfindlich gemessen (pm-fremdlast, Befund 08.11.: unter fremder Last ROT, in Ruhe GRÜN — die Belichtung schwingt in Bildern ein)
         minuten: 5,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -2463,7 +2469,7 @@ const stationen = [
         // SCHNELL (w4-stationen-schnell-b, ZUG_PROBE): Genesis VOR dem Deckel, die Aufnahmen im Fenster der Licht-Linsen
         probe: ZUG_PROBE,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: der größte Sprung in EV je Sekunde über den Wetter-Zug (pm-fremdlast)
         minuten: 8,
         urteil: (j, lauf) => {
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
@@ -3040,7 +3046,7 @@ const stationen = [
         }) },
         env: envDer,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: Pop-Pixel je Sekunde im Gang (pm-fremdlast, der Zeuge urteilt die Fremd-Last)
         minuten: 10,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };

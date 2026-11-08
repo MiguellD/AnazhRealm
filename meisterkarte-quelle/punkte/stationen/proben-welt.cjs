@@ -18,9 +18,18 @@ function sitzungTor() {
     const http = require("http");
     const W = Number(process.env.WERKBANK_PORT);
     const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die den Ort und die Seite stellen (/umstellen, /fenster, /status,
+    // /reload), und des Anschlusses an die Seite trägt `messort` — erreicht er den Rand der Probe (torBefehl), sagt sie die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    const messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if (MESSORT_WEG.test(weg) && t && !e.messort) e.messort = (t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
     // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
     tor.ruf = (weg, nutzlast, ms = 120000) =>
-        new Promise((ok, nein) => {
+        new Promise((ok0, nein0) => {
+            const ok = ok0, nein = (e) => nein0(messort(e, weg));
             const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
                 let d = "";
                 a.on("data", (c) => (d += c));
@@ -47,21 +56,26 @@ function sitzungTor() {
         console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
         return z;
     };
+    // der Anschluss an die Seite der Welt ist Messort: jeder Wurf darin trägt `messort`
     tor.seite = async () => {
         if (tor.page) return tor.page;
-        const s = await tor.ruf("/status", {}, 30000);
-        const profil = s && s.boot && s.boot.profil;
-        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
-        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
-        const puppeteer = require(path.resolve("node_modules/puppeteer"));
-        tor.browser = await puppeteer.connect({
-            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
-            defaultViewport: null,
-            protocolTimeout: 900000,
-        });
-        for (const p of await tor.browser.pages())
-            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
-        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+        try {
+            const s = await tor.ruf("/status", {}, 30000);
+            const profil = s && s.boot && s.boot.profil;
+            if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+            const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+            const puppeteer = require(path.resolve("node_modules/puppeteer"));
+            tor.browser = await puppeteer.connect({
+                browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+                defaultViewport: null,
+                protocolTimeout: 900000,
+            });
+            for (const p of await tor.browser.pages())
+                if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+            throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+        } catch (e) {
+            throw messort(e, "/status");
+        }
     };
     const baum = (datei) => {
         const text = fs.readFileSync(datei, "utf8");
@@ -107,13 +121,14 @@ function sitzungTor() {
     return tor;
 }
 
-// der Befehl einer Probe: das Tor, dann `fn(tor)`; ein Wurf ist ROT beim Namen (PROBE-FEHLER mit den ersten Rahmen), nie still
+// der Befehl einer Probe: das Tor, dann `fn(tor)`; ein Wurf ist ROT beim Namen (PROBE-FEHLER mit den ersten Rahmen), nie still — ein
+// Wurf des Messorts (`messort`, das Tor) sagt davor die EINE Marke (punkte.cjs keinUrteil (d): UNGEMESSEN beim Namen)
 function torBefehl(fn, ...arg) {
     return [
         "node",
         "-e",
-        "const tor = (" + sitzungTor + ")();\n(" + fn + ")(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + " +
-            "String((e && e.stack) || e).split('\\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); });",
+        "const tor = (" + sitzungTor + ")();\n(" + fn + ")(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), " +
+            "console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); });",
         "{AUS}",
         ...arg,
     ];
