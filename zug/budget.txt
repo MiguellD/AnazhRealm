@@ -237,3 +237,4 @@
 2026-11-08T09:23 woche=23 karte=220 kopf=03300ec8 (+vegetation.K1 Wiese-Schale, +lod.K2 Pop; Rückfall 0)
 2026-11-08T10:17 karte=221 (gebucht am 818b466d, buche.sh)
 2026-11-08T10:18 woche=23 karte=221 kopf=818b466d (+ankunft.K2 zurück; Ankunft kalt 8,78 s Radeon, warm 5,41 s)
+2026-11-08T10:35 karte=221 (gebucht am ef667956, buche.sh)

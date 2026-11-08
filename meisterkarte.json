@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-08",
-  "kopf": "818b466d",
-  "version": "V18.546.219",
+  "kopf": "ef667956",
+  "version": "V18.546.220",
   "skala": "2.0",
   "summe": 221,
   "max": 330,
   "maschine": {
-    "kopf": "818b466d",
-    "zeit": "2026-11-08T09:17:53.348Z",
+    "kopf": "ef667956",
+    "zeit": "2026-11-08T09:35:51.061Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -196,7 +196,7 @@
           {
             "station": "lod.K1#1",
             "geraet": "radeon",
-            "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4023 · Karte fimp:birke:L2 0.3293 (30911 px), fimp:eiche:L2 0.2264 (80507 px), fimp:fichte:L2 0.2079 (39848 px), fimp:strauch:L2 0.4023 (22796 px), fimp:tanne:L2 0.2219 (118725 px) | Spielgang:"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +21) — zuletzt an e475c6b4: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)"
           },
           {
             "station": "lod.K1#1",
@@ -247,7 +247,7 @@
           {
             "station": "ankunft.K1#1",
             "geraet": "radeon",
-            "zeile": "ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9)"
           },
           {
             "station": "ankunft.K1#1",
@@ -1066,7 +1066,7 @@
           "punkte": 1,
           "staffel": "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           "messung": "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          "beleg": "Maschine: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 2.10 · 20–40 satt, Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke an 03300ec8 radeon — offen: vegetation.K1#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: gehalten: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 2.10 · 20–40 satt, Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke an 03300ec8 radeon — offen: vegetation.K1#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           "aenderung": "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1.",
           "maschine": true
@@ -1076,7 +1076,7 @@
           "punkte": 1,
           "staffel": "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte",
           "messung": "NEU: werkbank bild --zeit Δt nimmt zwei Ausgabe-Frames unter laufender _bildZeit bei fester Kamera; Rausch-Boden aus einer TAAU-Referenz bei Wind 0; Kreuzkorrelation Gras ↔ Krone mit der Laufzeit Abstand/Böen-Tempo ±20 %. Die Kopplung an den Klang zählt Klang K2, die Formung des Winds Wetter K5.",
-          "beleg": "Maschine: Kamm 212.9 über Rausch-Boden 0.000 (×212.9), Tal 32.3 — Kamm/Tal 6.59 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.5 % in 0–15 m, Δt 0.25 s an 03300ec8 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
+          "beleg": "Maschine: gehalten: Kamm 212.9 über Rausch-Boden 0.000 (×212.9), Tal 32.3 — Kamm/Tal 6.59 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.5 % in 0–15 m, Δt 0.25 s an 03300ec8 radeon · gehalten: Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an b4bcf19c gtx",
           "schlupfloch": "TAAU-Flimmern und ein eigener Sinus je Schicht erzeugen Varianz ohne gemeinsames Feld: Rausch-Boden aus der Wind-0-Referenz und die Kreuzkorrelation bei physikalischer Laufzeit — nur EINE wandernde Böe besteht.",
           "aenderung": "Der Klang-Teil wanderte nach Klang K2 (B16, V25); die Karte 1.0 gab 1 für die Existenz des Codes → 0.",
           "maschine": true
@@ -1224,7 +1224,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +15) — zuletzt an a7a9d7bf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {\"spielS\":460,\"pruefungen\":464,\"masken\":8,\"maskeS\":1.9,\"gesehen\":1,\"imBlick\":0})",
+          "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +17) — zuletzt an a7a9d7bf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {\"spielS\":460,\"pruefungen\":464,\"masken\":8,\"maskeS\":1.9,\"gesehen\":1,\"imBlick\":0})",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -2001,7 +2001,7 @@
           "punkte": 1,
           "staffel": "1 = C = e^(−βd) ±15 % bei 1/2/5/8 km an einem Gerät, Uhr 0,5 · 2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
           "messung": "Spielgang-Station Hügel (Auge 120 m) und Augenhöhe: Grat gegen Himmel bei 1/2/5/8 km im Ausgabe-Bild; β aus einer EXTERNEN Referenz in spec (meteorologische Sichtweite je Wetter, Rayleigh-β je Kanal), nie aus LUFT gelesen.",
-          "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 34e04548: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Station seit der Messung geändert — zuletzt an eb3cc7f3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
+          "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +15) — zuletzt an 34e04548: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Station seit der Messung geändert — zuletzt an eb3cc7f3: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\n0611-pm\\meisterkarte-quelle\\punkte\\messung\\roh\\eb3cc7f3-gtx\\ferne.K2_1.json.d\\band.json)",
           "schlupfloch": "Ein Nebel, der die Ferne grau macht, senkt den Kontrast ohne Physik: Farb- und Mie-Bedingung. β aus LUFT prüfte nur, ob der Code sich selbst folgt (B36).",
           "aenderung": "Das Soll kommt aus einer externen Referenz (B36).",
           "maschine": true
@@ -2011,7 +2011,7 @@
           "punkte": 1,
           "staffel": "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
           "messung": "Station Hügel und Gipfel, klar, 4 Azimute: Restkontrast Gelände/Himmel am Rand der letzten Fern-Schale.",
-          "beleg": "Maschine: gehalten: Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +13) — zuletzt an 34e04548: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+          "beleg": "Maschine: gehalten: Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +15) — zuletzt an 34e04548: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
           "schlupfloch": "Mehr Nebel versteckt die Kante und verliert die Ferne — K1 verbietet das; bei Dunst gemessen wäre die Kante immer unsichtbar: darum klar.",
           "maschine": true
         },
@@ -2407,7 +2407,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4023 · Karte fimp:birke:L2 0.3293 (30911 px), fimp:eiche:L2 0.2264 (80507 px), fimp:fichte:L2 0.2079 (39848 px), fimp:strauch:L2 0.4023 (22796 px), fimp:tanne:L2 0.2219 (118725 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an 03300ec8 · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an 185e99bb: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +21) — zuletzt an e475c6b4: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an 185e99bb: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true
@@ -3768,7 +3768,7 @@
           "punkte": 0,
           "staffel": "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen · 2 = ≤ 5 s an beiden",
           "messung": "`diag-boot-stage --kalt --echt`, ≥ 4 Boots je Gerät mit leerer Platte (IDB und Cache geleert, auch direkt nach bump-version); t = erste angenommene Eingabe (ein KeyboardEvent bewegt den Leib ≥ 0,1 m) UND erstes Ausgabe-Bild über `ausgabe-aufnahme.cjs`, das K2 besteht — nie `state._weltbildDa`.",
-          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: ROT: t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#1 gtx: Station seit der Messung geändert · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Den Ladeschirm früher fallen lassen, während das Bild halb ist, oder `_weltbildDa` früher setzen: t entsteht nur aus einer Eingabe mit Wirkung und einem Bild, das K2 besteht; ein gefälschtes `_weltbildDa` ändert die Zahl nicht (Selbsttest).",
           "maschine": true
         },
@@ -3777,7 +3777,7 @@
           "punkte": 1,
           "staffel": "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen · 2 = auch nach 180°-Drehung 2 s nach der Kontrolle und aus 30 m Höhe, beide Geräte",
           "messung": "Spielgang-Station ankunft: Ausgabe-Bild bei t(Kontrolle von außen) gegen dieselbe Pose nach 60 s Ruhe (`bild-diff.cjs`; Lücke = offener Bedarf im Bild plus Pixel-Diff), dazu 180°-Drehung nach 2 s und Blick aus 30 m.",
-          "beleg": "Maschine: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3 an 818b466d radeon",
+          "beleg": "Maschine: gehalten: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3 an 818b466d radeon",
           "schlupfloch": "Die Ankunfts-Pose auf Himmel richten oder alles außer Blick hinter die Kontrolle schieben: die Pose ist die des Spawns, die 180°-Drehung nach 2 s zählt mit demselben Soll.",
           "aenderung": "Die 1 der Synthese stand auf Bildern zur Zeit der Eigenmeldung (B65) → 0; die Messung von außen steht als Messschuld M10.",
           "maschine": true
@@ -3787,7 +3787,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: ROT: warm Median 5.41 s (4.95 · 5.86, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3 an 818b466d · ankunft.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) · ankunft.K3#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },
@@ -3806,7 +3806,7 @@
           "punkte": 0,
           "staffel": "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät · 2 = ≤ 100 ms und ≤ 2 s an beiden, eine Eingabe im Lade-Bild antwortet",
           "messung": "CPU-Profil + LongTask-Trace des Kalt-Boots (`diag-boot-stage --kalt --echt`), ≥ 4 je Gerät: blockierte Summe bis zur Kontrolle, längste Aufgabe, Antwort auf eine Kamera-Drehung im Lade-Bild.",
-          "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: ROT: längste Aufgabe 308 ms (Soll ≤ 250) · Haupt-Faden belegt 7.42 s bis zur Kontrolle (Soll ≤ 4; 42 LongTasks 5.14 s) · Kontrolle 8.85 s Seiten-Uhr · die längste: 308 ms bei 4.1 s: build [three.webgpu.min.js] 77 · _runFrameScheduler (verteilt) 53 · _renderScene [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.81 · Bild 1.95 · Knoten-Bau 1.54 · program 0.34 · Himmel 0.21 · garbage collector 0.19 · Saat 0.12 · Streu 0.11 · Buch 0.07 · Gruppen-Bau 0.07 · Bauten 0.06 · Boden 0.06 · [linse-gpu] amd/rdna-3 an 818b466d",
+          "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +9) — zuletzt an dbf081c5: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 591 ms (Soll ≤ 250) · Haupt-Faden belegt 17.17 s bis zur Kontrolle (Soll ≤ 4; 100 LongTasks 14.30 s) · Kontrolle",
           "schlupfloch": "Die Arbeit in 49-ms-Stücke hacken: die Summe zählt mit; ein CSS-Spinner animiert ohne den Haupt-Faden: gemessen werden LongTask und Eingabe-Antwort.",
           "aenderung": "Architektur K1 (Haupt-Faden bis zur Kontrolle) maß dieselbe längste Aufgabe — zusammengeführt.",
           "maschine": true
@@ -4759,7 +4759,7 @@
     },
     {
       "stand": "2026-11-08",
-      "kopf": "818b466d",
+      "kopf": "ef667956",
       "summe": 221,
       "max": 330,
       "skala": "2.0",
@@ -4767,7 +4767,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 08.11.2026, Kopf main 818b466d (V18.546.219)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 08.11.2026, Kopf main ef667956 (V18.546.220)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
