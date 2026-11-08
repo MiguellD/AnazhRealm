@@ -2,15 +2,17 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-sicht-arbeit.cjs — DIE SICHT KOSTET, WAS SICH ÄNDERT (Lehre 25). Die Wand fährt die
 // Sicht-Kette an der Mess-Wiese (Null-Renderer; das Hauptbild über `_passSicht`, zwei Stellvertreter-Kaskaden über den
-// EINEN Chokepoint `_chunkSatzPass` samt Instanz-Wahl, wie gate:chunk-satz) und zählt mit der Sicht-Linse
-// (scripts/lib/sicht-linse.cjs, dieselbe wie `werkbank sicht`) je Frame die Arbeit:
+// EINEN Chokepoint `_chunkSatzPass` samt der Werfer der Bündel, wie gate:chunk-satz) und zählt mit der Sicht-Linse
+// (scripts/lib/sicht-linse.cjs, dieselbe wie `werkbank sicht`) je Frame die Arbeit (die Instanzen der globalen Gruppen
+// und die Büschel der Nah-Wiese wählt die GPU, `_instanzWahlGpu` — der Null-Renderer zieht keine Arena, die Wand misst die
+// Kette der CPU):
 //   (R) RUHE — Kamera, Kaskaden und Welt stehen (nachdem jede Mündung im Bild ihre Horizont-Sperre trägt): ab dem
-//       zweiten Frame 0 Prüfungen (`_passTrifft` der Sätze · der Höhlen · der Instanz-Wahl · der Nah-Wiese, `_hoehlenRect`,
-//       `_hoehlenLichtLage`, `_instanzBehalten`), 0 Aufrufe von `_hoehlenSicht` / `_hoehlenSichtLicht` /
+//       zweiten Frame 0 Prüfungen (`_passTrifft` der Sätze · der Höhlen · der Werfer, `_hoehlenRect`,
+//       `_hoehlenLichtLage`), 0 Aufrufe von `_hoehlenSicht` / `_hoehlenSichtLicht` /
 //       `_chunkSatzAbschnitt`, 0 Index-Bytes, kein Abschnitt neu gelegt — und die Pässe treffen ihren Cache;
 //   (B) BEWEGUNG — Drehen (36 × 1°) und Gehen (20 × 1 m): jede neue Lage rechnet neu (eine gehaltene Wahl wäre ein Loch);
 //   (T) TREUE — die gehaltene Wahl ist die frisch gerechnete: nach der Ruhe vergisst die Kette jede Lage, ein Frame
-//       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Gruppe der Wahl dieselbe Zahl;
+//       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Kaskade dieselben Werfer;
 //   (S) SCHARF — ein eingeschmuggelter Cache-Bruch (die Lage-Erinnerung fällt je Pass) arbeitet in Ruhe und fällt rot;
 //       ein eingeschmuggelter Lege-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
 //       schuldet) zählt als Neulegen OHNE Änderung und steht als `dicht:ohne` beim Namen (die Linse trennt die Arbeit einer
@@ -24,11 +26,12 @@
 //       (die Stellvertreter tragen keine Box — den Licht-Rand der echten Kaskaden, über den ihre Wahl die Stufen hält, prüft
 //       gate:schatten-werfer K8, im echten Loop `werkbank sicht --sonne`);
 //   (A) DAS ATMENDE AUGE: die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm quer, unter dem Halt — die
-//       Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende; die
-//       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
-//       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
-//   (C) EIN Gesetz der Lage: die Nah-Wiese prüft ihre Kacheln nur bei neuer Generation (`L.gen`, am Ruf von `_passTrifft`);
-//       die eigene Kamera-Signatur der Nah-Wiese ist gefallen (gate:altlasten); (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
+//       Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende (das Fenster der Stufe urteilt die GPU mit
+//       dem Halt als Rand, `PASS_WAHL_WGSL` — sein Gesetz prüft gate:foundry-crossfade (4));
+//   (D) DIE DREH-TREUE: nach einer Neu-Wahl mitten in einer gehaltenen Drehung zeichnet die gehaltene Wahl jede Zelle, die
+//       das echte Frustum trifft;
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen. (C) die Kacheln der Nah-Wiese je
+//       Generation und (W) ihre Ferne im Gang fielen mit dem Sicht-Satz der CPU (`_nahWieseSicht`, w25-gpu-wahl).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser — MUSS rot fallen und ihn beim
 // Namen nennen.
@@ -45,66 +48,21 @@ function urteil(b) {
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
     if (!b.legeBruch) v.push("LEER: kein Lege-Bruch gemessen — (S) prüfte das Neulegen ohne Änderung nicht");
     if (!b.standBruch) v.push("LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht");
-    // (A) das atmende Auge (die Phase urteilt `sichtUrteil`) und die Blende-Treue an der Kante eines Fensters
+    // (A) das atmende Auge (die Phase urteilt `sichtUrteil`)
     if (!b.augeAn) v.push("LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht");
     else if (!b.auge) v.push("LEER: keine Phase mit atmendem Auge gemessen — (A) prüfte nichts");
-    const BT = b.blendeTreue;
-    if (b.augeAn) {
-        if (!BT || !BT.fall)
-            v.push("LEER: Blende-Treue ohne Instanz an der Kante eines Fensters — (A) prüfte die gehaltene Wahl nicht");
-        else if (!BT.gehalten)
-            v.push(
-                `BLENDE-TREUE VAKUÖS: die Lage hielt das Auge der Maske über 9,5 mm nicht (unter dem halben Halt) — ${BT.fall}`
-            );
-        else if (!BT.traegt)
-            v.push(`BLENDE-TREUE VAKUÖS: die Maske behält die Instanz an der Kante nicht — ${BT.fall}`);
-        else if (BT.loecher > 0)
-            v.push(
-                `BLENDE-TREUE: ${BT.loecher} Löcher — das Auge der Maske wanderte unter dem Halt, die gehaltene Wahl zeichnet ` +
-                    `nicht, was die Maske vom Auge dieses Frames behält: ${BT.namen.join(", ")} (Kante: ${BT.fall})`
-            );
-        const BO = b.blendeTreueOhneRand;
-        if (BT?.fall && BT.gehalten && !(BO && BO.loecher > 0))
-            v.push(
-                "LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts " +
-                    `(${BO ? BO.loecher : "?"} Löcher) — die Blende-Treue prüft die Kante nicht`
-            );
-    }
-    const I = b.instanzTreue;
-    if (!I || !(I.faelle && I.faelle.length >= 2))
-        v.push(
-            `LEER: Instanz-Treue ohne beide Fälle (${I?.faelle ? I.faelle.join(", ") : "keine Messung"})` +
-                (I?.leichen?.length
-                    ? ` — ohne Prüfung: ${I.leichen.join(" · ")} (eine leere Gruppe zeichnet in keinem Pass)`
-                    : "") +
-                " — (I) prüfte nicht alles"
-        );
-    else if (I.wuerfe > 0 || I.nan > 0 || I.tot > 0 || I.fehlen > 0)
-        v.push(
-            `INSTANZ: nach einem fremden Schreiber (${I.faelle.join(", ")}) ${I.wuerfe} Würfe, ${I.nan} NaN-Slots, ` +
-                `${I.tot} tote Marken, ${I.fehlen} fehlende Werfer — eine Kaskade hielt ihre Wahl: ${I.namen.join(" · ")}`
-        );
-    else if (!(I.geprueft > 0)) v.push("LEER: Instanz-Treue ohne Werfer im Gesetz");
     const D = b.drehTreue;
     if (!D) v.push("LEER: keine Dreh-Treue gemessen — (D) prüfte nichts");
     else if (!D.gehalten)
         v.push(
             `DREH-TREUE VAKUÖS: die Lage hielt die Drehfolge nicht (Grenze ${D.grenze} rad) — der Fall trat nie ein`
         );
-    else if (!(D.geprueft > 0)) v.push("LEER: Dreh-Treue ohne Zelle oder Instanz im Frustum");
+    else if (!(D.geprueft > 0)) v.push("LEER: Dreh-Treue ohne Zelle im Frustum");
     else if (D.loecher > 0)
         v.push(
             `DREH-TREUE: ${D.loecher} Löcher — nach einer Neu-Wahl mitten in der gehaltenen Drehung (Grenze ${D.grenze} rad) ` +
                 `zeichnet die gehaltene Wahl nicht, was das echte Frustum trifft: ${D.namen.join(", ")}`
         );
-    const c = b.code || {};
-    if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
-    else if (!c.wieseLiest)
-        v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
-    // (W) die Ferne der Wiese im Gang: keine Lücke gegen das Gesetz, je Bild nur ein Teil der Kacheln neu; die Brüche fallen rot
-    const [W, WH] = [b.ferneWeg || {}, b.ferneWegHalt || {}];
-    if (!(W.neu * 4 <= W.kacheln * 44)) v.push(`FERNE: je Bild ${W.neu / 44} von ${W.kacheln} Kacheln neu (\`_nahWieseFernSatz\`)`);
-    if (!(WH.neu * 4 > WH.kacheln * 44)) v.push("LINSE STUMPF: Halt-Bruch (W)");
     return v;
 }
 
@@ -132,7 +90,6 @@ function selbsttest() {
         hoehlenSichtLicht: werte(0),
         abschnitt: werte(0),
         passTrifft: werte(0),
-        instanzBehalten: werte(0),
         werferTrifft: werte(0),
         hinaus: werte(0),
     });
@@ -162,37 +119,8 @@ function selbsttest() {
         }),
         augeAn: true,
         auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0, blendeFrames: 0 }),
-        blendeTreue: {
-            gehalten: true,
-            traegt: true,
-            loecher: 0,
-            namen: [],
-            geprueft: 640,
-            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
-        },
-        blendeTreueOhneRand: {
-            gehalten: true,
-            traegt: true,
-            loecher: 1,
-            namen: ["f:eiche|2|1:0 Slot 3"],
-            geprueft: 640,
-            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
-        },
         treue: { geprueft: 12, abweichung: [] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
-        instanzTreue: {
-            faelle: ["Freigeben+Belegen g", "Stufen-Wechsel g 1→0"],
-            leichen: [],
-            wuerfe: 0,
-            nan: 0,
-            tot: 0,
-            fehlen: 0,
-            geprueft: 40,
-            namen: [],
-        },
-        code: { wieseLiest: true },
-        ferneWeg: { kacheln: 8, neu: 9 },
-        ferneWegHalt: { kacheln: 8, neu: 352 },
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
@@ -530,7 +458,7 @@ function selbsttest() {
         paesse: 3,
         nach: 1,
         arbeit: 15072,
-        // die Instanz-Wahl der Gruppen steht weiter (nur die Sätze churnen)
+        // die übrigen Abschnitte stehen weiter (nur die Stände dieser drei Sätze churnen)
         trefferSumme: 61,
         bytes: 0,
         bytesJe: {},
@@ -539,7 +467,7 @@ function selbsttest() {
         aufrufe: { _chunkSatzAbschnitt: 16, _hoehlenSicht: 3, _hoehlenSichtLicht: 2 },
         pruefung: { _passTrifft: 12109, _hoehlenRect: 1227 },
         trifft: {},
-        treffer: { _instanzWahlSteht: 61 },
+        treffer: { _satzAbschnittSteht: 61 },
         verfehlt: { _satzAbschnittSteht: 10 },
         neu: { "satz streuSatz|haupt": 5, "satz bauSatz|haupt": 2 },
         jePass: { haupt: { pruefung: 13336, ecken: 9816 }, k0: { pruefung: 1736, ecken: 0 } },
@@ -587,7 +515,7 @@ function selbsttest() {
                     kameraFrames: 0,
                     blendeFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
-                    taeter: ["satz streuSatz|haupt ×5", "gruppe f:eiche|2|1:0#S ×2"],
+                    taeter: ["satz streuSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
                 })],
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
         ],
@@ -604,27 +532,6 @@ function selbsttest() {
         ],
         ["kein atmendes Auge", ["auge"], /LEER: keine Phase mit atmendem Auge/],
         ["die Maske ist aus", ["augeAn=", false], /LEER: die Maske ist aus/],
-        [
-            "Loch an der Kante des Fensters",
-            ["blendeTreue", { loecher: 1, namen: ["f:eiche|2|1:0 Slot 3"] }],
-            /BLENDE-TREUE: 1 Löcher — .*f:eiche\|2\|1:0 Slot 3/,
-        ],
-        [
-            "die Lage hält das Auge nicht",
-            ["blendeTreue.gehalten=", false],
-            /BLENDE-TREUE VAKUÖS: die Lage hielt/,
-        ],
-        [
-            "die Maske behält die Kante nicht",
-            ["blendeTreue.traegt=", false],
-            /BLENDE-TREUE VAKUÖS: die Maske behält/,
-        ],
-        ["keine Instanz an einer Kante", ["blendeTreue.fall=", null], /LEER: Blende-Treue ohne Instanz/],
-        [
-            "ohne Rand fehlt nichts (die Probe ist stumpf)",
-            ["blendeTreueOhneRand.loecher=", 0],
-            /LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts/,
-        ],
         [
             "der Inhalt ändert sich in der eingefrorenen Welt",
             ["ruhe", {
@@ -724,35 +631,6 @@ function selbsttest() {
         ],
         ["Drehfolge ohne Halt", ["drehTreue.gehalten=", false], /DREH-TREUE VAKUÖS/],
         ["keine Dreh-Treue", ["drehTreue"], /LEER: keine Dreh-Treue/],
-        [
-            "die zweite Kaskade hält eine tote Marke",
-            ["instanzTreue", {
-                    wuerfe: 1,
-                    nan: 1,
-                    tot: 1,
-                    namen: ["Wurf: Cannot set properties of undefined (setting 'slot')"],
-                }],
-            /INSTANZ: .*1 Würfe, 1 NaN-Slots, 1 tote Marken/,
-        ],
-        ["ein Werfer fehlt der Kaskade", ["instanzTreue.fehlen=", 2], /INSTANZ: .*2 fehlende Werfer/],
-        [
-            "Instanz-Treue ohne den echten Weg",
-            (b) => b.instanzTreue.faelle.pop(),
-            /LEER: Instanz-Treue ohne beide Fälle/,
-        ],
-        [
-            "der Stufen-Wechsel leert seine Gruppe",
-            (b) => {
-                b.instanzTreue.faelle.pop();
-                b.instanzTreue.leichen.push("Stufen-Wechsel f:weide|1|1:0#S 1→0 leerte die Gruppe");
-            },
-            /LEER: Instanz-Treue ohne beide Fälle .* — ohne Prüfung: Stufen-Wechsel f:weide\|1\|1:0#S 1→0 leerte die Gruppe/,
-        ],
-        ["Wiese liest nicht", ["code.wieseLiest=", false], /WIESE: `_nahWieseSicht` prüft/],
-        ["Wiese leer", ["code.wieseLiest=", "leer"], /LEER: die Nah-Wiese trägt keine Kachel/],
-        ["Ferne wählt je Bild neu", ["ferneWeg.neu=", 352], /FERNE: je Bild 8 von 8/],
-        ["Ferne ohne Kachel", ["ferneWeg.kacheln=", undefined], /FERNE: je Bild/],
-        ["Halt-Bruch stumpf", ["ferneWegHalt.neu=", 9], /STUMPF: Halt/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -790,24 +668,13 @@ const server = statikServer();
             const takte = await __weltStehtNach(takt);
             const ring = st.voxelChunks.size;
             r._tickChunkSatz();
-            const aus = { ring, takte, code: {} };
+            const aus = { ring, takte };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
             // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, die Kaskaden-Treue, W)
             const lageBlick = () => (S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem), r._passWahlLage(S, cam, -1)); // prettier-ignore
             const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
             const vergiss = () => r._passLagen && r._passLagen.clear(); // jede Lage-Erinnerung fällt
-            // je Instanz einer Wahl-Gruppe des Hauptbilds, die das Gesetz in der Lage L trifft: `je(g, j, ob die gehaltene Wahl sie zeichnet)`
-            const instanzWahr = (L, je) => {
-                for (const g of r._instanzWahlGruppen()) {
-                    const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
-                    if (!w || !g.mesh) continue;
-                    const gezeichnet = new Set(w.refs);
-                    const fenster = L.an && r._instanzFensterGilt(g);
-                    for (let j = 0; j < (g.liveCount | 0); j++)
-                        if (r._instanzBehalten(g, j, L, fenster)) je(g, j, gezeichnet.has(g.slotRef[j]));
-                }
-            };
             const ppos = st.playerMesh.position.clone();
             const boden = r._voxelSurfaceY(MESS.x, MESS.z);
             // Die Stellvertreter-Kaskaden (wie gate:chunk-satz): Ortho-Kameras über dem Blick, k0 ±120 m, k1 ±400 m, die
@@ -832,33 +699,27 @@ const server = statikServer();
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`
-            // (Matrix, Frustum, das Gesetz der Lage; die Instanz-Wahl der Schatten-Gruppen, der EINE Satz-Chokepoint und die
-            // Werfer der Region-Bündel — K72: auch ihre Wahl rechnet nur bei Änderung, die Linse zählt sie wie jeden Leser).
+            // (Matrix, Frustum, das Gesetz der Lage; der EINE Satz-Chokepoint und die Werfer der Region-Bündel — K72: auch ihre
+            // Wahl rechnet nur bei Änderung, die Linse zählt sie wie jeden Leser).
             const frame = () => {
                 r._tickChunkSatz();
                 r._passSicht(cam, false);
                 const wahl = [];
-                for (const g of r._instanzWahlGruppen())
-                    if (g.wahl === "haupt" && g.mesh) wahl.push(["haupt", g, g.mesh.count]);
                 const bunde = st._regionBundles;
                 kaskaden.forEach((c, i) => {
                     S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
                     S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
                     r._passWahlLage(S, c, i);
-                    r._instanzWahlPass("schatten", S);
-                    for (const g of r._instanzWahlGruppen())
-                        if (g.wahl === "schatten" && g.mesh) wahl.push(["k" + i, g, g.mesh.count]);
                     r._chunkSatzPass(c, false, i, S);
                     if (bunde?.size) {
                         r._werferWahlPass(bunde, S);
                         // die Wahl der Werfer: die ruhenden Werfer und die werfenden Bündel (die Treue vergleicht sie)
                         const ruhen = S.ab.map((o) => o.id).sort(aufsteigend);
                         const werfen = [...bunde.values()].filter((bg) => bg.visible).map((bg) => bg.id);
-                        wahl.push(["k" + i, "werfer", ruhen.join(",") + "|" + werfen.join(",")]);
+                        wahl.push(["k" + i, ruhen.join(",") + "|" + werfen.join(",")]);
                     }
                     r._chunkSatzPass(c, true, -1, S);
                     r._passSichtZurueck(S);
-                    r._instanzWahlZurueck(S.wahlSchatten);
                 });
                 r._passSicht(cam, true);
                 return wahl;
@@ -895,8 +756,7 @@ const server = statikServer();
                 const m = new Map();
                 for (const satz of st.chunkSaetze.values())
                     for (const [k, a] of satz.abschnitte) m.set(satz.art + "|" + k, a.liste.slice());
-                for (const [art, g, n] of wahl)
-                    m.set("gruppe:" + (typeof g === "string" ? g : g.mesh.name || g.mesh.id) + "|" + art, n);
+                for (const [k, w] of wahl) m.set("werfer|" + k, w);
                 return m;
             };
             const halt = stand(frame());
@@ -910,7 +770,7 @@ const server = statikServer();
                 if (Array.isArray(x)) {
                     const gleich = Array.isArray(y) && y.length === x.length && y.every((z, i) => z === x[i]);
                     if (!gleich) abw.push(`${k}: gehalten ${y ? y.length : 0} Zellen, frisch ${x.length}`);
-                } else if (y !== x) abw.push(`${k}: gehalten ${y} Instanzen, frisch ${x}`);
+                } else if (y !== x) abw.push(`${k}: gehalten ${y}, frisch ${x}`);
             }
             aus.treue = { geprueft, abweichung: abw.slice(0, 8) };
             // (B) DREHEN 36 × 1°, GEHEN 20 × 1 m
@@ -922,13 +782,12 @@ const server = statikServer();
                 phase(20, (i) => stelle(Math.PI / 5, i + 1)),
                 0
             );
-            // (D) DIE DREH-TREUE: die Lage des Hauptbilds hält über eine kleine Drehung. Wählt ein Leser mitten in ihr neu (ein
-            // Satz mit neuem Stand, eine Gruppe mit neuen Slots), urteilt er vom Blick DIESES Frames — dreht die Kamera danach
-            // weiter, darf ihr echtes Frustum nichts tragen, was die gehaltene Wahl nicht zeichnet. Die Folge erzwingt den Fall:
-            // die Grenze des Halts aus dem Lauf gemessen (H), Anker bei 0, Drehung auf −0,95 H, jeder Satz und jede Gruppe des
-            // Hauptbilds wählt dort neu, Weiterdrehen auf +0,95 H. Gezählt: Zellen (ohne Höhlen-Zellen, ihre Wahrheit prüft
-            // gate:hoehlen-sicht) und Instanzen, die das Gesetz ohne jeden Rand im Frustum dieses Blicks trifft und die
-            // gehaltene Wahl nicht zeichnet.
+            // (D) DIE DREH-TREUE: die Lage des Hauptbilds hält über eine kleine Drehung. Wählt ein Satz mitten in ihr neu (ein
+            // neuer Stand), urteilt er vom Blick DIESES Frames — dreht die Kamera danach weiter, darf ihr echtes Frustum nichts
+            // tragen, was die gehaltene Wahl nicht zeichnet. Die Folge erzwingt den Fall: die Grenze des Halts aus dem Lauf
+            // gemessen (H), Anker bei 0, Drehung auf −0,95 H, jeder Satz des Hauptbilds wählt dort neu, Weiterdrehen auf
+            // +0,95 H. Gezählt: Zellen (ohne Höhlen-Zellen, ihre Wahrheit prüft gate:hoehlen-sicht), die das Gesetz ohne jeden
+            // Rand im Frustum dieses Blicks trifft und die gehaltene Wahl nicht zeichnet.
             {
                 const gen = genHaupt;
                 const neuAnker = () => {
@@ -951,8 +810,6 @@ const server = statikServer();
                 frame();
                 const gX = gen();
                 for (const x of st.chunkSaetze.values()) x.stand++;
-                for (const g of r._instanzWahlGruppen())
-                    if (g.wahl === "haupt" && g.mesh) g.mesh.instanceMatrix.needsUpdate = true;
                 frame();
                 const gX2 = gen();
                 stelle(0.95 * grenze, 0);
@@ -986,140 +843,10 @@ const server = statikServer();
                             }
                         }
                     }
-                    instanzWahr(Lw, (g, j, da) => (D.geprueft++, da || loch((g.mesh.name || g.key) + " Instanz")));
                 } finally {
                     [Lw.rand, Lw.dreh, Lw.halt, Lw.licht] = rand;
                 }
                 aus.drehTreue = D;
-            }
-            // (I) DIE INSTANZ-TREUE DER KASKADEN: beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
-            // fremder Schreiber, der die Zahl lässt (Freigeben + Belegen; der echte Weg: der Stufen-Wechsel eines Baums,
-            // `_switchArchitectureLOD`), muss JEDE Kaskade neu wählen lassen: keine tote Marke (Slot −1), kein Wurf, kein NaN
-            // in einem lebenden Slot, und jeder Werfer, den das Gesetz in der Lage einer Kaskade trifft, steht in ihrer Wahl.
-            {
-                nullReif();
-                const I = { faelle: [], leichen: [], wuerfe: 0, nan: 0, tot: 0, fehlen: 0, geprueft: 0, namen: [] };
-                const nenne = (x) => {
-                    if (I.namen.length < 6) I.namen.push(x);
-                };
-                r._instanzWahlPass = function (...a) {
-                    try {
-                        return P._instanzWahlPass.apply(this, a);
-                    } catch (e) {
-                        I.wuerfe++;
-                        nenne("Wurf: " + (e?.message || e));
-                    }
-                };
-                const pruefe = (g, fall) => {
-                    const a = g.mesh.instanceMatrix.array;
-                    for (let i = 0; i < (g.liveCount | 0) * 16; i++)
-                        if (!Number.isFinite(a[i])) {
-                            I.nan++;
-                            nenne(fall + ": NaN in " + (g.mesh.name || g.key));
-                            break;
-                        }
-                    kaskaden.forEach((c, k) => {
-                        S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
-                        S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
-                        const Lk = r._passWahlLage(S, c, k);
-                        const w = g._wahlJe && g._wahlJe.get("k" + k);
-                        const gehalten = new Set(w ? w.refs : []);
-                        for (const ref of gehalten)
-                            if (!(ref.slot >= 0)) {
-                                I.tot++;
-                                nenne(`${fall}: k${k} hält eine tote Marke`);
-                            }
-                        const fenster = Lk.an && r._instanzFensterGilt(g);
-                        for (let j = 0; j < (g.liveCount | 0); j++) {
-                            if (!r._instanzBehalten(g, j, Lk, fenster)) continue;
-                            I.geprueft++;
-                            if (!gehalten.has(g.slotRef[j])) {
-                                I.fehlen++;
-                                nenne(`${fall}: k${k} fehlt ein Werfer`);
-                            }
-                        }
-                    });
-                };
-                const gruppe = (pass) => {
-                    for (const x of r._instanzWahlGruppen()) {
-                        const w0 = x._wahlJe && x._wahlJe.get("k0"),
-                            w1 = x._wahlJe && x._wahlJe.get("k1");
-                        if (x.wahl === "schatten" && x.mesh && w0 && w1 && w1.refs.length && (x.liveCount | 0) >= 2)
-                            if (!pass || pass(x, w1)) return [x, w1];
-                    }
-                    return [null, null];
-                };
-                try {
-                    frame();
-                    frame();
-                    // Fall 1: Freigeben + Belegen (die Zahl bleibt), k0 rechnet zuerst
-                    {
-                        const [g, w1] = gruppe(null);
-                        if (g) {
-                            const R = w1.refs[0];
-                            const m = new T.Matrix4();
-                            g.mesh.getMatrixAt(R.slot, m);
-                            r._archGroupFree(g, R);
-                            const R2 = r._archGroupAlloc(g, null);
-                            g.mesh.setMatrixAt(R2.slot, m);
-                            g.mesh.instanceMatrix.needsUpdate = true;
-                            r._instanzWahlZurueck([g]);
-                            frame();
-                            pruefe(g, "Freigeben+Belegen");
-                            I.faelle.push("Freigeben+Belegen " + (g.mesh.name || g.key));
-                        }
-                    }
-                    // Fall 2: der echte Weg — der Stufen-Wechsel eines Baums, dessen Zwilling die k1-Wahl trägt. Die Gruppe muss
-                    // den Wechsel ÜBERLEBEN: CI 37612012391 traf `f:weide|1|1:0#S` mit diesem Baum als einzigem Bewohner — der
-                    // Wechsel 1→0 leerte sie, der Null-Renderer räumte sie sofort (`_archGroupLeerDispose`), und die Linse
-                    // zählte die Marken der letzten Wahl einer Gruppe, die in keinem Pass mehr zeichnet, als „tot" (lokal
-                    // traf die Wahl eine Gruppe mit Nachbarn: grün — die Folge der Gruppen ist ihre Münz-Folge). Eine leere
-                    // Gruppe prüft die Klasse nicht: die Gefahr ist eine Kaskade, die über einer LEBENDEN Gruppe ihre alte Wahl
-                    // hält. Ein Baum mit Nachbarn in seiner Gruppe zuerst; ein Wechsel, der seine Gruppe leert, ist eine
-                    // Leiche — er zählt nicht als Fall, wird genannt, und der nächste Baum wechselt.
-                    {
-                        const kand = [];
-                        for (const x of r._instanzWahlGruppen()) {
-                            const w1 = x.wahl === "schatten" && x._wahlJe && x._wahlJe.get("k1");
-                            if (!w1 || !x._wahlJe.get("k0") || !x.mesh) continue;
-                            for (const R of w1.refs) {
-                                const e = (st.architectures || []).find(
-                                    (en) =>
-                                        en && ((en.instSlots || []).includes(R) || (en.instSlotsBand || []).includes(R))
-                                );
-                                if (e) kand.push([x, R, e, (x.liveCount | 0) >= 2 ? 0 : 1]);
-                            }
-                        }
-                        kand.sort((a, b) => a[3] - b[3]);
-                        let gewechselt = false;
-                        for (const [g, R, e] of kand) {
-                            if (gewechselt || I.leichen.length >= 4) break;
-                            if (!(R.slot >= 0) || g.slotRef[R.slot] !== R || !r._instanzWahlGruppen().has(g)) continue;
-                            const lod0 = e._lodLevel | 0;
-                            const name = g.mesh.name || g.key;
-                            let ok = false;
-                            for (const ziel of [0, 1, 2])
-                                if (ziel !== lod0 && r._switchArchitectureLOD(e, ziel) && R.slot === -1) {
-                                    ok = true;
-                                    break;
-                                }
-                            if (!ok) continue;
-                            const fall = "Stufen-Wechsel " + name + " " + lod0 + "→" + (e._lodLevel | 0);
-                            if (!r._instanzWahlGruppen().has(g) || !((g.liveCount | 0) > 0)) {
-                                I.leichen.push(fall + " leerte die Gruppe");
-                                continue;
-                            }
-                            r._instanzWahlZurueck([g]);
-                            frame();
-                            pruefe(g, "Stufen-Wechsel");
-                            I.faelle.push(fall);
-                            gewechselt = true;
-                        }
-                    }
-                } finally {
-                    delete r._instanzWahlPass;
-                }
-                aus.instanzTreue = I;
             }
             // (L) RUHE MIT LAUFENDER SONNE: die Tageslänge des Spiels, 60 Frames je s; das Licht folgt `_applyDayNightToScene`,
             // die Stellvertreter-Kaskaden stehen entlang des Lichts (ihre Mitte ein halbes Feld vor dem Auge)
@@ -1211,164 +938,14 @@ const server = statikServer();
                         }),
                         1
                     );
-                    // (A) DIE BLENDE-TREUE: hält die Lage über das wandernde Auge der Maske, trägt die gehaltene Wahl jede
-                    // Instanz, deren Maske vom Auge DIESES Frames etwas behält — scharf an einer Instanz auf der Kante ihres
-                    // Fensters: der Anker liegt 3 mm jenseits (das Gesetz ohne Rand verwirft sie dort), dann wandert das Auge
-                    // 9,5 mm herüber (0,95 × der halbe Halt — die Lage hält, die Maske behält sie). Der Rand des Fensters
-                    // (`L.halt` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
-                    // Die Kamera steht; nur das Auge der Maske wandert.
-                    const lageHaupt = () => {
-                        const Lw = lageBlick();
-                        return Object.assign({}, Lw, {
-                            fr: new T.Frustum().copy(S.frustum),
-                            halt: 0,
-                            rand: 0,
-                            dreh: 0,
-                            licht: 0,
-                            fit: null,
-                            ax: cam.position.x,
-                            ay: cam.position.y,
-                            az: cam.position.z,
-                        });
-                    };
-                    const kante = () => {
-                        stelle(0, 0);
-                        cam.getWorldPosition(lu.uLodAuge.value);
-                        vergiss();
-                        frame();
-                        const L0 = lageHaupt();
-                        const ex = lu.uLodAuge.value.x,
-                            ez = lu.uLodAuge.value.z;
-                        for (const g of r._instanzWahlGruppen()) {
-                            if (g.wahl !== "haupt" || !g.mesh || !(g.liveCount > 0) || !r._instanzFensterGilt(g))
-                                continue;
-                            const a = g.mesh.instanceMatrix.array,
-                                mw = g.mesh.matrixWorld.elements;
-                            for (let j = 0; j < g.liveCount; j++) {
-                                if (!r._instanzBehalten(g, j, L0, false)) continue;
-                                const px = a[j * 16 + 12] + mw[12],
-                                    pz = a[j * 16 + 14] + mw[14];
-                                const l = Math.hypot(ex - px, ez - pz) || 1;
-                                const ux = (ex - px) / l,
-                                    uz = (ez - pz) / l;
-                                const behaelt = (t) =>
-                                    r._instanzFenster(
-                                        g,
-                                        j,
-                                        Object.assign({}, L0, { ex: px + ux * t, ez: pz + uz * t })
-                                    );
-                                const b0 = behaelt(0);
-                                if (b0 === behaelt(2000)) continue;
-                                let lo = 0,
-                                    hi = 2000;
-                                for (let k = 0; k < 60; k++) {
-                                    const mitte = 0.5 * (lo + hi);
-                                    if (behaelt(mitte) === b0) lo = mitte;
-                                    else hi = mitte;
-                                }
-                                // die Seite, auf der die Maske verwirft: jenseits (eine Stufe behält nah) bzw. diesseits (die
-                                // Karte behält fern) der Kante
-                                const s = b0 ? 1 : -1;
-                                const k0 = b0 ? hi : lo;
-                                const tA = k0 + s * 0.003,
-                                    tJ = k0 + s * (0.003 - 0.0095);
-                                if (tA < 0 || tJ < 0 || behaelt(tA) || !behaelt(tJ)) continue;
-                                // die Instanz beim Namen ihrer Slot-Marke (die Wahl ordnet die Slots um)
-                                return {
-                                    g,
-                                    ref: g.slotRef[j],
-                                    A: [px + ux * tA, pz + uz * tA],
-                                    J: [px + ux * tJ, pz + uz * tJ],
-                                    name: `${g.mesh.name || g.key} Slot ${j} (Stufe ${g.wahlStufe}, Kante ${k0.toFixed(3)} m)`,
-                                };
-                            }
-                        }
-                        return null;
-                    };
-                    const blendeTreue = (ohneRand) => {
-                        const B = { gehalten: false, loecher: 0, namen: [], geprueft: 0, fall: null, traegt: false };
-                        const f = kante();
-                        if (!f) return B;
-                        B.fall = f.name;
-                        if (ohneRand)
-                            r._instanzFenster = function (g, i, Lx) {
-                                const h = Lx.halt;
-                                Lx.halt = 0;
-                                try {
-                                    return P._instanzFenster.call(this, g, i, Lx);
-                                } finally {
-                                    Lx.halt = h;
-                                }
-                            };
-                        try {
-                            lu.uLodAuge.value.x = f.A[0];
-                            lu.uLodAuge.value.z = f.A[1];
-                            vergiss();
-                            frame();
-                            const g0 = genHaupt();
-                            lu.uLodAuge.value.x = f.J[0];
-                            lu.uLodAuge.value.z = f.J[1];
-                            frame();
-                            B.gehalten = g0 > 0 && genHaupt() === g0;
-                        } finally {
-                            delete r._instanzFenster;
-                        }
-                        // die Wahrheit: das Gesetz ohne Rand vom Auge DIESES Frames
-                        const Lt = Object.assign(lageHaupt(), { ex: f.J[0], ez: f.J[1] });
-                        instanzWahr(Lt, (g, j, da) => {
-                            B.geprueft++;
-                            const kantig = g === f.g && g.slotRef[j] === f.ref;
-                            if (kantig) B.traegt = true;
-                            if (!da) {
-                                B.loecher++;
-                                if (B.namen.length < 6)
-                                    B.namen.push((g.mesh.name || g.key) + " Slot " + j + (kantig ? " (die Instanz an der Kante)" : ""));
-                            }
-                        });
-                        return B;
-                    };
-                    aus.blendeTreue = blendeTreue(false);
-                    aus.blendeTreueOhneRand = blendeTreue(true);
                 } finally {
-                    delete r._instanzFenster;
                     lu.uLodAuge.value.copy(augeVorher);
                     stelle(0, 0);
                     vergiss();
                 }
             }
             L.aus();
-            // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m; je Bild wählt
-            // nur ein Teil der Kacheln der Ferne neu. Scharf: der
-            // Halt-Bruch (die Wahlen fallen je Bild — der Satz bis w23) wählt jede Kachel neu. DIE WIESE AM RUF (C): bei gleicher
-            // Lage-Generation prüft `_nahWieseSicht` keine Kachel neu (`_passTrifft`), bei neuer jede.
-            const ferneWeg = (bruch) => {
-                const [nw, o] = [st.nahWiese, { neu: 0, ruf: 0 }];
-                try {
-                    [nw.fernHalt, nw.neu, o.kacheln] = [null, true, nw.fern?.kacheln.size];
-                    for (let f = 0; f < 45; f++) {
-                        stelle(Math.PI / 5, f / 15);
-                        if (bruch && f) nw.fernHalt.wahl = new WeakMap();
-                        const neu0 = nw.fernHalt?.neu;
-                        frame();
-                        o.neu += f && nw.fernHalt.neu - neu0;
-                    }
-                    const L = lageBlick();
-                    const zaehle = leihe(r, { _passTrifft: (...a) => (o.ruf++, P._passTrifft.apply(r, a)) });
-                    r._nahWieseSicht(cam, L);
-                    o.liest = !o.ruf;
-                    r._nahWieseSicht(cam, { ...L, gen: L.gen + 1 });
-                    zaehle();
-                    o.liest &&= o.ruf > 0 && nw.gen === L.gen + 1;
-                } finally {
-                    [nw.fernHalt, nw.neu] = [null, true];
-                    stelle(0, 0);
-                }
-                return o;
-            };
-            [aus.ferneWeg, aus.ferneWegHalt] = [ferneWeg(), ferneWeg(1)];
-            aus.code.wieseLiest = st.nahWiese?.kacheln.size ? aus.ferneWeg.liest : "leer";
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
-            aus.gruppen = r._instanzWahlGruppen().size;
             const H = s.hoehle;
             aus.hoehle = H
                 ? {
@@ -1388,14 +965,14 @@ const server = statikServer();
         `  ${n.padEnd(7)} ${x.frames} Frames · Pässe ${x.paesse.mittel} · Arbeit Ø ${x.arbeit.mittel} (Median ${x.arbeit.median}, ` +
         `max ${x.arbeit.max}) · Höhlen-Sicht ${x.hoehlenSicht.mittel} + Licht ${x.hoehlenSichtLicht.mittel} · Abschnitte ` +
         `${x.abschnitt.mittel} · Ecken ${x.ecken.mittel} (Schirm ${x.rect.mittel}, Licht ${x.lichtLage.mittel} Boxen) · _passTrifft ${x.passTrifft.mittel} (Werfer ${x.werferTrifft.mittel}) · ` +
-        `Instanzen ${x.instanzBehalten.mittel} · Bytes ${x.bytes.mittel} · neu gelegt ohne Änderung ` +
+        `Bytes ${x.bytes.mittel} · neu gelegt ohne Änderung ` +
         `${x.legeOhne ? x.legeOhne.mittel : "?"} · Treffer ${x.treffer.mittel}` +
         (x.taeter?.length
             ? `
           neu: ${x.taeter.join(", ")}`
             : "");
     console.log(
-        `  Ring ${befund.ring} Chunks nach ${befund.takte} Takten · Sätze ${befund.saetze.join(", ")} · Gruppen der Wahl ${befund.gruppen} · Höhle ` +
+        `  Ring ${befund.ring} Chunks nach ${befund.takte} Takten · Sätze ${befund.saetze.join(", ")} · Höhle ` +
             JSON.stringify(befund.hoehle)
     );
     const k = befund.ruheKalt;
@@ -1411,15 +988,6 @@ const server = statikServer();
                 `Kamera ${befund.auge.kameraFrames}, Blende ${befund.auge.blendeFrames}, ohne Änderung ` +
                 `${befund.auge.arbeitOhne.frames}`
         );
-    for (const [n, x] of [
-        ["Blende-Treue", befund.blendeTreue],
-        ["Blende-Treue ohne Rand", befund.blendeTreueOhneRand],
-    ])
-        if (x)
-            console.log(
-                `  ${n}: ${x.fall || "keine Kante"} · gehalten ${x.gehalten} · getragen ${x.traegt} · ${x.geprueft} geprüft, ` +
-                    `${x.loecher} Löcher ${x.namen.join(", ")}`
-            );
     for (const n of ["ruhe", "standBruch"])
         if (befund[n])
             console.log(
@@ -1434,21 +1002,11 @@ const server = statikServer();
                 `Stufe ${befund.sonne.stufe} rad), die Kette arbeitete in ${befund.sonne.arbeitFrames}`
         );
     console.log(`  Treue: ${befund.treue.geprueft} Wahlen verglichen, ${befund.treue.abweichung.length} Abweichungen`);
-    if (befund.instanzTreue)
-        console.log(
-            `  Instanz-Treue: ${befund.instanzTreue.faelle.join(", ")} · ${befund.instanzTreue.geprueft} geprüft · ` +
-                `${befund.instanzTreue.wuerfe} Würfe, ${befund.instanzTreue.nan} NaN, ${befund.instanzTreue.tot} tote Marken, ` +
-                `${befund.instanzTreue.fehlen} fehlen ${befund.instanzTreue.namen.join(" · ")}` +
-                (befund.instanzTreue.leichen?.length
-                    ? ` · ohne Prüfung: ${befund.instanzTreue.leichen.join(" · ")}`
-                    : "")
-        );
     if (befund.drehTreue)
         console.log(
             `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
-    console.log(`  Ferne im Gang, Halt-Bruch: ${JSON.stringify([befund.ferneWeg, befund.ferneWegHalt])}`);
     const v = urteil(befund);
     wandEnde(
         v,
