@@ -2943,7 +2943,7 @@ class AnazhRealm_bild_kosten {
         // wählt die GPU (`_instanzWahlGpu`, das Fenster ihrer Stufe im Compute) — sie zieht lose aus der Szene, ihre Arena wählt
         // je Pass; die CPU wählt sie nicht. Der Wechsel gibt sie ihrer Arena zurück (sie tritt im Takt in die der anderen Wahl) —
         // jede Gruppe JEDER Pass-Art im Haken des Hauptbilds, nie im Kaskaden-Render, der verschachtelt in ihm läuft.
-        const gpu = (this.state.wahlGpuWiese ?? globalThis.__anazhWahlGpu) === true && AnazhRealm._arenaKann(this.state.renderer); // prettier-ignore
+        const gpu = this.state.wahlGpuWiese === true && AnazhRealm._arenaKann(this.state.renderer); // prettier-ignore
         for (const g of set) {
             const m = g.mesh;
             if (art === "haupt" && m && (m.__wahlGpu === true) !== gpu) {

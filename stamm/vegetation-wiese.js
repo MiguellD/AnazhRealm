@@ -311,11 +311,12 @@ class AnazhRealm_vegetation_wiese {
         const nw = st.nahWiese;
         if (!nw.fern) nw.fern = { kacheln: new Map(), gitter: new Map() };
         // DER SPIKE w25-spike-gpu-vegetation (nur im Zweig, nie ein Weg des Spiels): der MESSORT-SCHALTER `state.wahlGpuWiese` —
-        // gesetzt nur von der Werkbank (`pop`, A/B) — legt die Senken der Nähe in die Wahl der GPU (`_instanzWahlGpu`): jede
+        // gesetzt nur von der Messung (die Mess-Wand der Probe-Commits 047129c..a8bf76c, `werkbank eval`) — legt die Senken der Nähe in
+        // die Wahl der GPU (`_instanzWahlGpu`): jede
         // trägt den GANZEN Ring ihrer Vorlage (`_nahWieseSicht` schreibt ihn nur, wenn der Ring sich ändert), der Compute urteilt
         // je Büschel Frustum und Stufen-Band (`__wahlBand`, `PASS_WAHL_WGSL`). Der Wechsel im Takt, nie im Render: jede Senke
         // verlässt ihre Arena und tritt im nächsten Takt in die der anderen Wahl (`_arenaSchluessel` trägt `__wahlGpu`).
-        const gpu = (st.wahlGpuWiese ?? globalThis.__anazhWahlGpu) === true && AnazhRealm._arenaKann(st.renderer);
+        const gpu = st.wahlGpuWiese === true && AnazhRealm._arenaKann(st.renderer);
         if (nw.wahlGpu !== gpu) {
             nw.wahlGpu = gpu;
             nw.neu = true;
