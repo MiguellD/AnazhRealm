@@ -813,7 +813,7 @@ function popGang() {
             cam.lookAt(p.x + fwd.x * 50, y(p) + 1.7, p.z + fwd.z * 50);
             cam.updateMatrixWorld(true);
             const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
-            aus.kosten.push([f.info.drawCalls, f.info.triangles, +f.ms.toFixed(1)]); // Befehle, Dreiecke, ms des gezählten Bilds
+            aus.kosten.push([f.info.drawCalls, f.info.triangles]); // Befehle und Dreiecke des gezählten Bilds
             return f.u8;
         };
         const geh = async (p) => {
@@ -821,8 +821,7 @@ function popGang() {
             for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
         };
         const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
-        const ad = await navigator.gpu?.requestAdapter();
-        const aus = { adapter: `${ad?.info.vendor}/${ad?.info.architecture}`, schritte: [], popPixel: 0, kosten: [] };
+        const aus = { schritte: [], popPixel: 0, kosten: [] };
         try {
             for (let i = 0; i < 8; i++) {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
@@ -3205,11 +3204,12 @@ hauptLauf(async () => {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {
             tor?.stop();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
-        if (je.length) console.log(`[linse-gpu] ${o.adapter}\nlod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke, ms je Bild ${o.kosten.at(-1)}`);
+        if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
