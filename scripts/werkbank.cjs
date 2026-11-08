@@ -3227,6 +3227,7 @@ hauptLauf(async () => {
             for (const [i, v] of [null, ...varianten].entries()) {
                 if (v) console.log("Variante", JSON.stringify(v), JSON.stringify((await evalRuf(neu(v))).ergebnis));
                 o = await rufe("/bild", { px, py, pz, lx, ly, lz, ziel: w[9], klasse: w[11].slice(1, -1), datei: i ? undefined : datei });
+                if (!o.klasse) throw new Error(`/bild ohne Klasse: ${o.fehler} ${(o.stapel || []).join(" | ")}`);
                 const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
                 console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
                 if (!i)
