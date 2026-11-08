@@ -202,6 +202,12 @@ function bericht(teil) {
             }
         }
     }
+    if (AB && teil === 1 && !BILD) {
+        const KL = (S) => Z.filter((z) => z.e.seite === S);
+        const namen = new Set(Z.flatMap((z) => Object.keys(z.klassen)));
+        const d = [...namen].map((k) => [k, med(KL("B").map((z) => z.klassen[k] || 0)) - med(KL("A").map((z) => z.klassen[k] || 0))]).filter(([, v]) => Math.abs(v) >= 20); // prettier-ignore
+        zeile(`B − A je Klasse (Median s): ${d.sort((a, b) => a[1] - b[1]).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${sek(v)}`).join(" · ")}`);
+    }
     if (AB && teil === 1 && !BILD)
         zeile(
             `B − A: t(Kontrolle) ${sek(med(Z.filter((z) => z.e.seite === "B").map((z) => z.e.tK)) - med(Z.filter((z) => z.e.seite === "A").map((z) => z.e.tK)))} s · belegt ` +
