@@ -109,7 +109,7 @@ function kernDaten(phytoSrc, kernSrc) {
             phytoSrc +
                 "\n;" +
                 kernSrc +
-                "\n;__daten = { presets: typeof PRESETS !== 'undefined' ? PRESETS : null, cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null };",
+                "\n;__daten = { presets: PRESETS, cfg: PORTAL_RENDER_CONFIG };",
             ctx,
             { timeout: 30000, filename: "foundry-core.js" }
         );

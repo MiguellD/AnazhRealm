@@ -36,7 +36,7 @@
 const {
     statikServer,
     warteAufWelt,
-    nullSeite,
+    nullWelt,
     pruefer,
     wandEnde,
     fehlerText,
@@ -47,12 +47,10 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
+    const { browser, page } = await nullWelt(server, { frist: 300000 }, 120000, "index.html", "networkidle0"); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
     let out = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
             const res = {};
