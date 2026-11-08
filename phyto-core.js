@@ -3818,7 +3818,15 @@
     // Welt-Renderer sie backt (S2, `_karteWeltBacken`: Zeile 0 oben). Die GPU-Ablage des Hosts (`KARTE_RECHNER_WGSL`: Mips,
     // BC1/BC5) rechnet DIESES Gesetz, `impostorMips` ist es auf der CPU (die Linse liest es; die Kodierung der Transport-
     // Schale fiel mit S2 — `karteKodiere` las niemand mehr):
-    //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
+    //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt — dort, wo der Filter der
+    //                 Welt (bilinear, zwei Stufen trilinear gemischt) deckt, was Stufe 0 deckt (Castaño 2010, an der Schwelle
+    //                 statt an der Alpha gemessen; gate:streu-wahrheit „am Schirm", die Scheibe: 0,34 → 1,20 · 0,42 → 1,01 ·
+    //                 0,45 → 0,995 · 0,5 → 0,95). 0,34 dehnte jeden Rand des Saums und vereinte die Muster zweier Stufen: die
+    //                 Karte deckte am Schirm 1,06–1,16 ihrer Stufe 0 (CPU-Zwilling, Tafel-Größen, Strauch · Birke · Eiche ·
+    //                 Fichte · Tanne 1,13 · 1,16 · 1,16 · 1,13 · 1,06; bei 0,45 1,05 · 1,08 · 1,08 · 1,01 · 0,97; bei 0,5
+    //                 1,00 · 0,97 · 0,97 · 0,93 · 0,94, aber an ½ verliert die Mischung ihre Teil-Ränder — Löcher im Kern der
+    //                 Birke 3,4 → 9,6 %) — die Wiese stand dunkler, die Lücken zum Licht zu (w24-strauch-saum, Koordinator 08.11.:
+    //                 bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
     //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
     //                 die Ablage mittelt die volle Normale der Bühne als Vektor (KARTE_RECHNER_WGSL normalK) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
@@ -3834,32 +3842,47 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses
-    //   saumZelle     die Zelle des Musters in Texeln der Stufe, gemessen an der gröberen Achse des Texels: die Lappen und
-    //                 Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
+    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 8,4: das Muster führt, das Band grenzt
+    //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
+    //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
+    //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
+    //                 Lappen und Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
     //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
     //                 Saums, laub-kante strauch 0,4023, birke 0,3293)
     //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (8: der 17 × 17-Kern, Binomial 16 / 65536), der Rand der
     //                 Ansicht leer — der Rahmen ist nie der Umriss (an der Scheibe, Kohärenz 0,944: Zelle 6 / Band 4 / Stärke
     //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
     //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
-    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
+    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt; 0,01
+    //                 trug am Strauch ein Raster, zweiton 0,0011)
+    //   saumWeite     der Schritt des Saums in Texeln der gröberen Achse (`saumSchritt`): Band UND Zelle messen in ihm. Die Welt
+    //                 liest jede verkleinerte Stufe mit einem Texel der gröberen Achse je Pixel (anisotrop), ihr Laub-Versatz
+    //                 und die zeitliche Auflösung decken drei Pixel, die Linse glättet mit σ 2 px — ein Saum im Maß EINES
+    //                 Texels (Zelle 6, Band σ 2) stand am Schirm als 6-px-Welle und las gerade (w24-strauch-saum: der
+    //                 Strauch der Tafel steht 17–25 px hoch, verkleinert auf Stufe 1–3, Bäume vergrößert auf Stufe 0)
     // DIE TAFEL-POSE mit 2,4 / 6 / 8 / 0,05 (laub-kante je Art, main ef667956 → c61e3a9b, Radeon 890M, je zwei Läufe ±0,0007):
     // birke 0,2721 → 0,1889 · eiche 0,2044 → 0,1553 · fichte 0,2122 → 0,1575 · tanne 0,2232 → 0,1770 · strauch 0,3911 → 0,3536
     // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
     // Band unter fremdem Laub auf dem Weg: 72 % seines gezählten Rands ist seine Sohle, ohne sie 0,337 (die Flanken).
+    // DER STRAUCH (w24-strauch-saum): seine Sohle war Laub im Grund (foundry-core S7 galt nur der Baum-L0: die Karte schnitt
+    // Karten bis 27 % seiner Höhe unter y = 0 als Gerade), seine Flanken der Saum im Maß eines Texels (`saumWeite`). Mit 8,4 /
+    // 2,5 / 8 / 0,02 / 3 (laub-kante, Tafel-Pose): Radeon c61e3a9b → 9adc557b birke 0,1887 → 0,1688 · eiche 0,1556 → 0,1438 ·
+    // fichte 0,1575 → 0,1500 · tanne 0,1775 → 0,1612 · strauch 0,3515 → 0,2109; GTX 41d69a4f (der w23-Saum in derselben Welt
+    // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
+    // 0,3242 → 0,2083.
     var KARTEN_GESETZ = {
-        schwelle: 0.34,
+        schwelle: 0.45,
         normalTeiler: 2,
         minSeite: 4,
         minOpak: 64,
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 2.4,
-        saumZelle: 6,
+        saum: 8.4,
+        saumZelle: 2.5,
         saumBand: 8,
-        saumMin: 0.05,
+        saumMin: 0.02,
+        saumWeite: 3,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -3947,7 +3970,8 @@
     // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
-    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
+    //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
+    //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
     //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
@@ -3956,7 +3980,8 @@
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
     // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
     function saumSchritt(seite) {
-        return [Math.max(1 / seite, 1), Math.max(seite, 1)];
+        const w = KARTEN_GESETZ.saumWeite;
+        return [w * Math.max(1 / seite, 1), w * Math.max(seite, 1)];
     }
     function karteSaumBand(c, w, h, schritt) {
         const n = 2 * KARTEN_GESETZ.saumBand,
@@ -3989,7 +4014,7 @@
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
             if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin)
+            else if (g[i] >= G.saumMin || c[i] > 0)
                 key[i] = Math.max(
                     1e-9,
                     g[i] +

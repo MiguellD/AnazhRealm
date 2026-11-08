@@ -196,11 +196,7 @@ function albedoSicht(opts) {
                 if (c) {
                     await ticke(gesetzt ? 120 : 0, () => false);
                     window.__halten?.();
-                    // DAS FELL IM BLICK DER TAFEL: die Schalen sind eine Stufe der Gestalt am Schirm (`_fellBildschirmGesetz`),
-                    // gesetzt in DEM Frame, in dem der Leib in den Blick kommt (`_leibSicht`, die EINE Stelle) — der Schuss tickt
-                    // nicht, und der Wolf außer Blick des Spielers trug seine Schalen aus (Radeon, Genesis: Fell 0,1846 ohne,
-                    // 0,1659 mit; das Labor zeigt sie: 0,1620). Das Auge der Tafel: 3,5 m schräg über dem Leib, wie ihre Blicke
-                    r._leibSicht(c, true, c.position.clone().addScalar(2));
+                    // sein Fell bestellt die Tafel an der Inventur (DIE BESTELLUNG DES LEIBS, unten)
                     pos = c.position.clone();
                     kreatur = c;
                 }
@@ -280,6 +276,14 @@ function albedoSicht(opts) {
         const ergebnisse = [];
         for (const uhr of opts.uhren) {
             window.__buehne({ uhr });
+            // DIE BESTELLUNG DES LEIBS AN DER INVENTUR (material.K1, w24-rueckfall-fell): das Fell im Blick der Tafel — die Schalen
+            // sind eine Stufe der Gestalt am Schirm (`_fellBildschirmGesetz`), gesetzt in DEM Frame, in dem der Leib in den Blick
+            // kommt (`_leibSicht`, die EINE Stelle), am Auge der Tafel 3,5 m schräg über ihm, wie ihre Blicke; der Schuss tickt nicht
+            // (der Wolf außer Blick des Spielers trug seine Schalen aus: Fell 0,1846 ohne, 0,1659 mit, das Labor 0,1620). Bestellt
+            // wird HIER, nach dem letzten Takt: bis dahin bestellte die Zeile des Tiers, und die Takte der folgenden Zeilen (der
+            // Mensch 20, ein Werk bis 600) wählten das Fell im Kreatur-Takt neu, am Auge der Stufen — nach ferne.K1 stand die Kamera
+            // 92 m über Genesis und nahm dem Wolf die Schalen vor der Inventur (Radeon, dieselbe Sitzung: 0,1844 ohne, 0,1641 mit)
+            for (const { kreatur: k } of exemplare) if (k?.userData._tierBaum) r._leibSicht(k, true, k.position.clone().addScalar(2));
             const karte = new T.Mesh(
                 new T.PlaneGeometry(2, 2),
                 new T.MeshStandardNodeMaterial({
@@ -439,7 +443,7 @@ function albedoSicht(opts) {
                     if (!g || g.satz !== s.art || !g.slotEntry) continue;
                     bau = true;
                     const b = s.bloecke.get(key);
-                    const n = b?.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                    const n = b?.idx && g.geom?.attributes.position ? g.geom.attributes.position.count : 0;
                     for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
                         if (g.slotEntry[i] !== eintrag) continue;
                         const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
@@ -542,7 +546,7 @@ function albedoSicht(opts) {
                     if (w.blick !== "oben")
                         for (const m of sel) {
                             const zz = m.isInstancedMesh ? ziel(m, um, ex.eintrag) : zielSatz(m, um, R);
-                            if (zz && zz.d <= R) ziele.set(m, zz);
+                            if (zz?.d <= R) ziele.set(m, zz);
                         }
                     if (w.blick !== "oben") sel = sel.filter((m) => ziele.has(m));
                     if (!sel.length) {
@@ -1331,7 +1335,7 @@ function nahFernUrteil(messung, band) {
                 `NAH-FERN Upload: ${u.name} — die GPU hält Version ${u.gpu}, der Schreiber hob sie auf ${u.soll}; der Boden ` +
                     "zeichnet im Hauptbild ein altes Bild"
             );
-    if (messung && messung.nahKarte === 0)
+    if (messung?.nahKarte === 0)
         befunde.push(
             "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht für diesen Ort (bereit 0 oder Füll-Job offen) — der Boden mischt nichts"
         );
@@ -1363,7 +1367,7 @@ function nahFernUrteil(messung, band) {
             );
             continue;
         }
-        const gY = o.gesetz && o.gesetz.Y > 0 ? o.gesetz.Y : null;
+        const gY = o.gesetz?.Y > 0 ? o.gesetz.Y : null;
         if (!gY) {
             befunde.push(`NAH-FERN ${o.klasse} ${o.ort.join("/")}: ohne das Gesetz an der Stelle kein Urteil`);
             continue;
@@ -1471,8 +1475,8 @@ function laubGegenlicht(opts) {
         if (opts.haus) {
             const von = opts.ziel || opts.anker || [pp.x, pp.z];
             for (const e of st.architectures || []) {
-                const pr = e && e.instFoundry === true && Array.isArray(e.instSlots) ? r._foundryPresetForEntry(e) : null;
-                const d = pr && r._foundry.recipes[pr] && r._foundry.recipes[pr].kind === "haus" ? Math.hypot(e.position.x - von[0], e.position.z - von[1]) : Infinity;
+                const pr = e?.instFoundry === true && Array.isArray(e.instSlots) ? r._foundryPresetForEntry(e) : null;
+                const d = pr && r._foundry.recipes[pr]?.kind === "haus" ? Math.hypot(e.position.x - von[0], e.position.z - von[1]) : Infinity;
                 if (!(d < (ziel ? ziel.d : Infinity))) continue;
                 const box = e.instSlots.map((sl) => st.archInstanceGroups.get(sl.key) && [st.archInstanceGroups.get(sl.key), sl.slot]).filter((gs) => gs && gs[0].mesh && !gs[0].shadowTwin)
                     .reduce((b, [g, i]) => (g.mesh.getMatrixAt(i, m4), b.union((g.mesh.geometry.boundingBox || (g.mesh.geometry.computeBoundingBox(), g.mesh.geometry.boundingBox)).clone().applyMatrix4(m4.premultiply(g.mesh.matrixWorld)))), new T.Box3());
@@ -2021,9 +2025,9 @@ function laubLichtUrteil(messung, band) {
             continue;
         }
         const lab = messung.labor && messung.labor[art];
-        const lv = lab && lab.verhaeltnis > 0 ? lab.verhaeltnis : null;
+        const lv = lab?.verhaeltnis > 0 ? lab.verhaeltnis : null;
         // Das Labor misst unter EINEM Licht (Key allein): gegen die Welt-Seite nur unter der Sonne, wo gemessen.
-        const ws = w.sonne && w.sonne.verhaeltnis > 0 ? w.sonne.verhaeltnis : w.verhaeltnis;
+        const ws = w.sonne?.verhaeltnis > 0 ? w.sonne.verhaeltnis : w.verhaeltnis;
         zeilen.push({ art, welt: w.verhaeltnis, weltSonne: ws, labor: lv, gegen: w.gegen.Y, auf: w.auf.Y });
         if (w.verhaeltnis < band.glanz)
             befunde.push(
@@ -2393,7 +2397,7 @@ function luftTiefeUrteil(m, R) {
         const s = h[1] > 0 ? +(h[0] / h[1]).toFixed(3) : null;
         if (!(s >= B.seite)) liste.push(`K1-2 SONNENSEITE Uhr ${u}: Y der In-Streuung zur Sonne / gegen sie ${s} < ${B.seite}`);
     }
-    if (!(m.weiss && m.weiss.RB >= B.weissRB)) liste.push(`K1-2 FERNES WEISS bei Sonne 5°: R/B ${JSON.stringify(m.weiss)} < ${B.weissRB}`);
+    if (!(m.weiss?.RB >= B.weissRB)) liste.push(`K1-2 FERNES WEISS bei Sonne 5°: R/B ${JSON.stringify(m.weiss)} < ${B.weissRB}`);
     // K2-2 am Hügel und am Gipfel zu Mittag: keine waagrechte Linie über `band.linie` Grad
     for (const [ort, zs] of [["Hügel", m.zeilen], ["Gipfel", m.gipfel && m.gipfel.zeilen]])
         for (const az of [0, 90, 180, 270]) {
@@ -2694,10 +2698,10 @@ function naesseUrteil(welt) {
         if (ort === "dorf") band(`${ort} innen unter dem Dach`, m.innen.verhaeltnis, 0.95, 1.05), band(`${ort} nasser Anteil unter dem Dach`, m.innen.nass, 0, 0.01);
         band(`${ort} dicht (Metall)`, m.dicht, 0.95, 1.05);
         band(`${ort} Glanz nass/trocken`, m.glanz, 2, Infinity);
-        if (!(m.regen && m.regen.aussen >= 1)) befunde.push(`${ort}: keine Schliere draußen — die Regen-Zählung ist blind`);
-        if (ort === "dorf" && !(m.regen && m.regen.innen === 0)) befunde.push(`${ort}: ${m.regen && m.regen.innen} Regen-Punkte innen`);
+        if (!(m.regen?.aussen >= 1)) befunde.push(`${ort}: keine Schliere draußen — die Regen-Zählung ist blind`);
+        if (ort === "dorf" && !(m.regen?.innen === 0)) befunde.push(`${ort}: ${m.regen && m.regen.innen} Regen-Punkte innen`);
         const d = m.dachBauten;
-        if (ort === "dorf" && !(d && d.n >= 1 && d.trocken === d.n)) befunde.push(`${ort}: Dach-Bauten trocken ${d && d.trocken}/${d && d.n}`);
+        if (ort === "dorf" && !(d?.n >= 1 && d.trocken === d.n)) befunde.push(`${ort}: Dach-Bauten trocken ${d && d.trocken}/${d && d.n}`);
         if (!(m.regenbild <= 1)) befunde.push(`${ort} Regenbild ${m.regenbild} × so hell wie die Sonne (unter offenem Himmel)`);
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };

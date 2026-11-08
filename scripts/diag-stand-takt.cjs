@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass blickt die Kamera ohne Pass zum Punkt 2 m unter dem Boden 60 m
@@ -1216,18 +1216,13 @@ const BRANDLAUF = process.argv.includes("--brand");
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
-    await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
+    // der Fern-Ring (die Saum-Wache) läuft auch ohne GPU — sein Haken; kein Start-Dorf (was es baut, hinge an der Bildrate): die
+    // Ankunft trägt ihren Dorf-Zug (`server.zeige`, haushalt genesis)
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, vor: () => (window.__anazhFernRing = true) }, 120000, "index.html", "networkidle0"); // prettier-ignore
     page.setDefaultTimeout(580000);
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true;
-        window.__anazhFernRing = true; // der Fern-Ring (die Saum-Wache) läuft auch ohne GPU — sein Haken
-        // kein Start-Dorf (was es baut, hinge an der Bildrate): die Ankunft trägt ihren Dorf-Zug (`server.zeige`, haushalt genesis)
-    });
     let befund = null;
     try {
-        await warteAufWelt(page, 120000, server);
+        await warteAufWelt(page, 120000);
         await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL + BUEHNE);
         if (TAT) befund = await tatLauf(page);
         else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: true });

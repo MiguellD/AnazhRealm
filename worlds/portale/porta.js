@@ -241,4 +241,7 @@ AnazhHuelle.bruecke({
         });
         return { kind: "gate", preset: rezeptId(), seed: 1, ov: ov };
     },
+    wurzel: function () {
+        return gate;
+    },
 });
