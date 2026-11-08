@@ -1231,20 +1231,21 @@ async function nullRenderer(page) {
     });
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
-// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; `opts.bild` zeichnet (ohne Null-Renderer, das Rezept nennt `art`).
-async function nullSeite({ bild, ...opts } = {}) {
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; `opts.bild` zeichnet (ohne Null-Renderer, das Rezept nennt `art`); mit
+// `server` lauscht zuerst der Statik-Server (an `port`, sonst frei) — bis w12-verkehr trug jede von 38 Linsen ihr eigenes `lausche` davor.
+async function nullSeite({ bild, ...opts } = {}, server, port = 0) {
+    if (server) await server.lausche(port);
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
     if (!bild) await nullRenderer(page);
     return { browser, page };
 }
-// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.fenster` ihr Viewport,
+// DIE NULL-WELT: die Null-Seite samt lauschendem Server (`opts.port`, sonst ein freier; `opts` wie `nullSeite`; `opts.fenster` ihr Viewport,
 // `opts.vor` — eines oder eine Liste — trägt die Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`:
 // Frist, Adresse, Warte-Art) und wartet, wo `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge
-// in 25 Linsen, bis w24-strauch-saum dazu in 19 mit Bild, Viewport oder zwei Vor-Skripten.
+// in 25 Linsen, bis w24-strauch-saum dazu in 19 mit Bild, Viewport oder zwei Vor-Skripten (die Null-Probe aus w13-verkehr-heil fiel in sie).
 async function nullWelt(server, { port = 0, vor, da, fenster, ...opts }, ...zeige) {
-    await server.lausche(port);
-    const s = await nullSeite(opts);
+    const s = await nullSeite(opts, server, port);
     if (fenster) await s.page.setViewport(fenster);
     for (const v of [vor || []].flat()) await s.page.evaluateOnNewDocument(v);
     await server.zeige(s.page, ...zeige);
@@ -1411,7 +1412,10 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 // der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
 // Der Täter eines Falls ist eine Funktion des Klons oder seine TAFEL `[pfad, wert]` („a.b.0"): „pfad=" setzt den Wert, sonst
 // mischt er sich in den Knoten, ohne Wert fällt der Pfad — bis w6-stoffe-k5 schrieb jede Wand je Täter ihre eigene Closure.
-function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
+// `gruen`: der grüne Befund — er steht als erster Fall („der grüne Lauf", kein Befund verlangt) und ist der Klon jeder Tat
+// (bis w25-lod-pop prüfte und klonte ihn jede Wand selbst).
+function taeterFaelle(faelle, urteil, { fehler = [], klon, gruen } = {}) {
+    if (gruen) [faelle, klon] = [[{ name: "der grüne Lauf", z: gruen }, ...faelle], () => jsonKlon(gruen)];
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
