@@ -704,7 +704,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._renderHofChronik();
         out.hofChronikRenders = (() => {
             const h = document.getElementById("hof-chronik");
-            return !!(h && h.childNodes.length > 0);
+            return !!(h && h.childNodes.length);
         })();
         // WERKSTATT-TOPOLOGIE: drei Spalten — LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
         // MITTE Inventar/Hotbar (zentral), RECHTS Rezepte (WERK); darunter die vollbreite STATSBAR
@@ -1901,7 +1901,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             cappedTotal = 0;
         out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
+            if (entry.mesh?.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
                 out.t2HasMorphAttrs = true;
             if (entry.hasMorph) out.t2ChunksWithMorph++;
             if (!entry.lodStitchMesh) continue;

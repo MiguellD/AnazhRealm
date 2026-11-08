@@ -1639,7 +1639,7 @@ async function checkBandV18134Social({ page, check }) {
             // einem Object still leer).
             st.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
-            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
+            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length);
         } finally {
             st.socialRatings = saved || new Map();
             r._saveSocialRatings();
@@ -2409,7 +2409,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 r._workshopRebuildPreviewMesh = orig;
                 res.d.rebuilds = rebuilds;
                 res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;
-                res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.indexOf("{") >= 0);
+                res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.includes("{"));
                 delete ws.studioOv["drachentor"];
             } catch (e) {
                 res.d.err = fehlerText(e);

@@ -69,7 +69,7 @@ function scanAnker(playtestSrc, stammSrc) {
     if (!/window\.__consumes\s*=/.test(playtestSrc))
         errs.push("Apparat-Schlüssel fehlt: window.__consumes ist nicht mehr in scripts/playtest.cjs definiert.");
     const entries = parseAnker(playtestSrc);
-    if (!entries || entries.length === 0) {
+    if (!entries || !entries.length) {
         errs.push(
             "Apparat-Schlüssel fehlt: der ANKER-KATALOG (window.__anker) ist nicht mehr in scripts/playtest.cjs."
         );

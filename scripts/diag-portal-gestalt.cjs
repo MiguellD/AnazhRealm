@@ -55,7 +55,7 @@ hauptLauf(async () => {
         for (const [name, gestalt] of Object.entries(res.gestalt)) {
             const bp = st.blueprints[name];
             res.a[name] = {
-                inBook: !!(f?.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
+                inBook: !!(f?.recipes && Object.hasOwn(f.recipes, gestalt)),
                 kind: f?.recipes?.[gestalt] ? f.recipes[gestalt].kind : null,
                 ziel: !!bp.portalMeta?.world,
             };
@@ -144,7 +144,7 @@ hauptLauf(async () => {
         }).length;
         res.c.allSlotsFoundry =
             Array.isArray(entry.instSlots) && entry.instSlots.every((s) => /(^|#)f:verkalkt\|/.test(String(s.key)));
-        res.c.meshNull = entry.mesh === null || entry.mesh === undefined;
+        res.c.meshNull = entry.mesh == null;
         // KEIN Doppel-Bild: keine LEBENDE welt_terrain-Gruppe ausserhalb des f:-Namensraums.
         res.c.partGroupsAlive = 0;
         if (st.archInstanceGroups) {

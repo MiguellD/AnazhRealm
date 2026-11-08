@@ -612,6 +612,6 @@ hauptLauf(async () => {
         loesche(W17JS_DIR);
     }
 
-    console.log(failures.length === 0 ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);
-    process.exit(failures.length === 0 ? 0 : 1);
+    console.log(!failures.length ? "\n✅ WebRTC-Mesh verifiziert" : `\n❌ ${failures.length} Fehler`);
+    process.exit(!failures.length ? 0 : 1);
 });

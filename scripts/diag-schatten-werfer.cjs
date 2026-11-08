@@ -696,7 +696,7 @@ function probe(selbsttest) {
             const kinder = (o) => {
                 for (const c of o.children) {
                     if (c.visible === false && !abgewaehlt.has(c)) continue;
-                    if (c.isMesh && c.castShadow && (c.children.length === 0 || (c.__zeichner !== undefined && c.children.length === 1))) {
+                    if (c.isMesh && c.castShadow && (!c.children.length || (c.__zeichner !== undefined && c.children.length === 1))) {
                         const b = c.userData._werferKind;
                         const soll = !!b && !b.isEmpty() && r._passTrifftBox(L, b, 0);
                         if (c.visible !== soll) w.kindFalsch++;

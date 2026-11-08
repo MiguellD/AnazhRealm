@@ -334,7 +334,7 @@ async function checkBandNahStreu({ page, check }) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
                 const satz = st.chunkSaetze ? st.chunkSaetze.get(a.satz) : null;
-                const wiege = !!(satz && satz.geom.attributes.aWiege);
+                const wiege = !!(satz?.geom.attributes.aWiege);
                 const knoten = e.weich
                     ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
                     : still(a.mat);
@@ -912,7 +912,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
         const sk = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
-        const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        const baseR = sk && sk.branches[0]?.points[0] ? sk.branches[0].points[0].r : 0;
         // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
         // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
         const sockelParts = parts.filter(
@@ -920,7 +920,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         );
         out.k2HasFlare = sockelParts.length >= 1;
         // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
-        if (sockelParts.length >= 1) {
+        if (sockelParts.length) {
             const s = sockelParts[0];
             out.k2FlareAtTrunkBase = Math.abs(s.position.x) < 0.5 && Math.abs(s.position.z) < 0.5;
         }
@@ -1687,7 +1687,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             out.hasLiveInstances = liveInstances > 0;
             out.liveInstanceCount = liveInstances;
             // Cells tragen species + variantIndex + slots (Lookup-Fütterung)
-            if (region && region.cells.length > 0) {
+            if (region && region.cells.length) {
                 const c0 = region.cells[0];
                 out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
                 out.cellHasVariant = Number.isFinite(c0.variantIndex);
@@ -1728,7 +1728,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 const regX2 = Math.floor(pp2.x / SC.regionM);
                 const regZ2 = Math.floor(pp2.z / SC.regionM);
                 const region = r._scatterRegion(regX2, regZ2, pp2);
-                if (region && region.cells.length > 0) {
+                if (region && region.cells.length) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
                     // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
@@ -1834,9 +1834,9 @@ async function checkBandWahrerAnblickFels({ page, check }) {
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
         out.rockGeomBuilt = !!(geom?.attributes?.position);
-        out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
+        out.rockGeomDetailed = !!(geom?.attributes.position && geom.attributes.position.count >= 12);
         // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
-        if (geom && geom.attributes.position) {
+        if (geom?.attributes.position) {
             const p = geom.attributes.position;
             let rmin = Infinity,
                 rmax = 0;
@@ -1908,7 +1908,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
                 // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
                 // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
                 // Vielfaches von 4.
-                if (card && card.attributes.position && card.attributes.position.count >= 4) {
+                if (card?.attributes.position && card.attributes.position.count >= 4) {
                     const cnt = card.attributes.position.count;
                     taperProven = !!card.attributes.uv && cnt % 4 === 0;
                 }

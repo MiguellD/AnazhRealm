@@ -1239,7 +1239,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
         out.sanitizeDefault =
             !!empty &&
             /^#[0-9a-f]{6}$/.test(empty.sky.top) &&
-            ["flat", "hills", "water", "void"].indexOf(empty.ground.style) >= 0 &&
+            ["flat", "hills", "water", "void"].includes(empty.ground.style) &&
             Array.isArray(empty.objects);
         out.sanitizeGarbage = !!r._sanitizeWorldScene("kaputt") && !!r._sanitizeWorldScene(null);
         // Clamps: schlechte Farbe → Default-Hex, Objekte gedeckelt, Licht geklemmt.

@@ -1037,7 +1037,7 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
     const O = {
         _tickRadiatingAffordances(dt) {
             const radiating = this._blockerMit("radiating");
-            if (radiating.length === 0) return;
+            if (!radiating.length) return;
             const pm = this.state.playerMesh && this.state.playerMesh.position;
             if (!pm) return;
             const emo = this.state.player && this.state.player.emotions;
@@ -1075,7 +1075,7 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
         },
         _tickBalancingAffordances(dt) {
             const balancing = this._blockerMit("balancing");
-            if (balancing.length === 0) return;
+            if (!balancing.length) return;
             const pm = this.state.playerMesh && this.state.playerMesh.position;
             if (!pm) return;
             const emo = this.state.player && this.state.player.emotions;
@@ -1098,7 +1098,7 @@ function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
             if (!pl) return;
             const lifting = this._blockerMit("lifting");
             const pm = this.state.playerMesh && this.state.playerMesh.position;
-            if (!pm || lifting.length === 0) {
+            if (!pm || !lifting.length) {
                 pl.liftingField = { active: false, strength: 0 };
                 return;
             }
