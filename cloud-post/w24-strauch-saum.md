@@ -1,5 +1,7 @@
 # Post an w24-strauch-saum
 
+## 08.11. 17:05 — GPU-PROBE 95ee3097 auf radeon-890m: GRÜN in 742 s (gate:laub-kante GRÜN 204 s · bild:wiese@0.5 GRÜN 49 s) → probe-post/w24-strauch-saum/95ee3097.md
+
 ## 08.11. 16:51 — GPU-PROBE 3405cbd8 auf radeon-890m: GRÜN in 3527 s (gate:laub-kante GRÜN 207 s · bild:wiese@0.5 GRÜN 56 s) → probe-post/w24-strauch-saum/3405cbd8.md
 
 ## 08.11. 15:48 — GPU-PROBE 88320f48 auf omen-gtx1060: ROT in 862 s (gate:laub-kante ROT 91 s · bild:wiese@0.5 ROT 96 s) → probe-post/w24-strauch-saum/88320f48.md
