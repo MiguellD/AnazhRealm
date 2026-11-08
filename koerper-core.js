@@ -2391,7 +2391,22 @@
         L.forEach(function (x) {
             if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(x.j)) tris += x.I ? x.I.length / 3 : x.P.length / 9;
         });
-        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris, mundFalte: NaN };
+        // DER RAHMEN DER STRÄHNE (w25-haar-albedo, KOPF_SOLL haarRahmen): der Anteil der Bänder des Haars, die der EINE Leser
+        // `haarAchse` als Strähne liest — ohne Band 0. DIE MUTANTE IM MASS (die Linse ist nie vakuös): dieselben Ecken mit der Wurzel
+        // × 0,7 (das Gesetz der Ecken gebrochen) — bricht der Leser nicht jedes ihrer Bänder, ist das Maß 0
+        var hz = [0, 0, 0];
+        L.forEach(function (x) {
+            var a = x.k === "hair" && x.o.geometry.attributes;
+            if (!a || !a.color || !a.aTon) return;
+            var r = haarAchse(a.position.array, a.color.array, a.aTon.array),
+                m = Float32Array.from(a.color.array);
+            for (var i = 0; i + 3 < a.aTon.count; i += 4) for (var c = 0; c < 6; c++) m[i * 3 + c] *= 0.7;
+            hz[0] += r.zahl;
+            hz[1] += r.bruch;
+            hz[2] += haarAchse(a.position.array, m, a.aTon.array).bruch < r.zahl ? 1 : 0;
+        });
+        var rahmen = hz[0] && !hz[2] ? hz[0] / (hz[0] + hz[1]) : 0;
+        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris, mundFalte: NaN, haarRahmen: rahmen }; // prettier-ignore
         var hp = ecken(haut),
             hy = spanne(hp, 1),
             I = haut.I,
@@ -2484,7 +2499,7 @@
             });
             falte = zone ? dunkel / zone : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
