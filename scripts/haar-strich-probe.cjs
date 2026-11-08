@@ -11,34 +11,12 @@ const PORT = 4793;
 const env = { ...process.env, WERKBANK_PORT: String(PORT) };
 const wb = (...a) => execFileSync(process.execPath, ["scripts/werkbank.cjs", ...a], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 1 << 26 });
 const json = (t) => JSON.parse(t.slice(t.indexOf("{")));
-// eine Spielart des Zweigs (live, dieselbe Welt): die Uniformen der Breite D und der Auflösung C, dazu ein Stoff mit verstärktem
-// Ton der Strähne (k: Ton = Mittel × (1 + k · (Würfel − 1))) und verstärkter Rundung (n: der Teil der Normale quer × n)
-const SPIELART = (d, a0, a1) =>
-    `r._haarStrichPx.value = ${d}; r._haarAufloesung.value.set(${a0}, ${a1}); return [r._haarStrichPx.value, r._haarAufloesung.value.x, r._haarAufloesung.value.y];`;
-const STOFF = (k, n) => `r._haarStrichPx.value = 0; r._haarAufloesung.value.set(0, 0.0001);
-const S = T.TSL, HS = window.__koerperCore.HAAR_STRICH, mats = new Set();
-r.state.playerMesh.traverse((o) => o.isMesh && o.material && o.material.userData && o.material.userData.__klasse === "hair" && mats.add(o.material));
-for (const m of mats) {
-  const vcol = S.attribute("color", "vec3"), lw = S.vec3(0.2126, 0.7152, 0.0722);
-  const rahmen = (f, ohne) => S.Fn((b) => (b.geometry && b.geometry.hasAttribute("aStraehne") ? f(S.attribute("aStraehne", "vec4")) : ohne))();
-  const haarT = rahmen((a) => a.x.div(a.z.max(1e-6)).clamp(0, 1), S.float(0));
-  const w = vcol.dot(lw).div(S.float(m.userData.stoffWerte.tonL).mul(S.mix(S.float(HS.wurzel), S.float(1), haarT))).max(1e-4);
-  m.colorNode = S.vec4(vcol.div(w).mul(S.float(1).add(w.sub(1).mul(${k}))).max(0), 1);
-  const nGeo = S.normalViewGeometry.mul(S.faceDirection).normalize(), quer = rahmen((a) => a.y, S.float(0));
-  const g = S.cross(S.dFdy(S.positionView), nGeo).mul(S.dFdx(quer)).add(S.cross(nGeo, S.dFdx(S.positionView)).mul(S.dFdy(quer)));
-  const v = g.div(g.length().max(1e-12));
-  m.normalNode = nGeo.add(v.mul(nGeo.dot(v)).mul(${n} - 1)).normalize();
-  m.needsUpdate = true;
-}
-window.__bundlesNeu && window.__bundlesNeu(); return mats.size;`;
-const STAENDE = [
-    ["ohne-C-D", SPIELART(0, 0, 0.0001)],
-    ["C0.75-1.5", SPIELART(0, 0.75, 1.5)],
-    ["C0.75-1.5#2", SPIELART(0, 0.75, 1.5)],
-    ["Ton×2", STOFF(2, 1)],
-    ["Rundung×1.6", STOFF(1, 1.6)],
-    ["Ton×2+Rundung×1.6", STOFF(2, 1.6)],
-];
+// eine Spielart des Zweigs (live, dieselbe Welt): die Uniform der Auflösung C [a0, a1] (Schirm-Pixel; [0, 0,0001] = aus), je
+// Spielart vier Wiederholungen — die Pose zwischen zwei Schüssen trägt ±0,07 am Arm
+const SPIELART = (a0, a1) => `r._haarAufloesung.value.set(${a0}, ${a1}); return [r._haarAufloesung.value.x, r._haarAufloesung.value.y];`;
+const STAENDE = [];
+for (let i = 1; i <= 4; i++)
+    STAENDE.push(["ohne-C#" + i, SPIELART(0, 0.0001)], ["C0.5-1#" + i, SPIELART(0.5, 1)], ["C0.75-1.5#" + i, SPIELART(0.75, 1.5)]);
 (async () => {
     const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
     let log = "";
@@ -71,14 +49,22 @@ const STAENDE = [
             const a = schuss(stand + "-arm", "0.7"),
                 t = schuss(stand + "-third", "-4");
             const im = (x) => x.strich != null && x.strich >= 0.3554 && x.strich <= 0.533;
-            zeilen.push(`${im(a) && im(t) ? "✅ GRÜN" : "❌ ROT"} haar-strich ${stand}: arm ${JSON.stringify(a)} · third ${JSON.stringify(t)} · Soll [0.3554; 0.533]`);
-            console.log(zeilen[zeilen.length - 1]);
+            zeilen.push([stand.split("#")[0], a.strich, t.strich, im(a), im(t)]);
+            console.log(`haar-strich ${stand}: arm ${JSON.stringify(a)} · third ${JSON.stringify(t)}`);
         }
     } finally {
         try {
             wb("stop");
         } catch {}
         welt.kill();
+    }
+    // je Spielart das Mittel und die Zahl der Schüsse im Band [0,3554; 0,533]
+    const m = (v) => (v.length ? +(v.reduce((x, y) => x + y, 0) / v.length).toFixed(4) : null);
+    for (const art of [...new Set(zeilen.map((z) => z[0]))]) {
+        const z = zeilen.filter((x) => x[0] === art);
+        const arm = z.map((x) => x[1]).filter(Number.isFinite), third = z.map((x) => x[2]).filter(Number.isFinite);
+        const ok = z.filter((x) => x[3] && x[4]).length;
+        console.log(`${ok === z.length ? "✅ GRÜN" : "❌ ROT"} ${art}: arm Mittel ${m(arm)} [${arm.join(", ")}] im Band ${z.filter((x) => x[3]).length}/${z.length} · third Mittel ${m(third)} [${third.join(", ")}] im Band ${z.filter((x) => x[4]).length}/${z.length}`);
     }
     process.exit(0);
 })().catch((e) => {
