@@ -1,3 +1,11 @@
+## 08.11. 20:30 — w24-strauch-saum: Proben GRÜN auf beiden GPUs, der Ton steht wieder bei main (Zwischenstand; die Abgabe mit BEREIT folgt, sobald die Decke bezahlt ist)
+
+- **Die Schwelle der Karte 0,45** (9ed32a3, c65c80d): dort deckt der Filter der Welt, was Stufe 0 deckt (gate:streu-wahrheit misst es jetzt: Scheibe 0,34 → 1,20 · 0,45 → 0,995 · 0,5 → 0,95 — an ½ verliert die Mischung zweier Stufen ihre Teil-Ränder, Kern-Löcher der Birke 3,4 → 9,6 %). Der Winter-Hub bleibt 0,5 (0,95: volle Kerne stehen).
+- **laub-kante GRÜN** — Radeon 9ed32a3: strauch 0,2089 · birke 0,1539 · eiche 0,1368 · fichte 0,142 · tanne 0,151 (Gestalten fichte L1 0,1835 · tanne L0 0,1685 · L1 0,1762); GTX c65c80d: strauch 0,2151 · birke 0,158 · eiche 0,1396 · fichte 0,1392 · tanne 0,1526 (fichte L1 0,1818 · tanne L0 0,1767 · L1 0,1722), zweiton überall 0 (auch f:tanne:L1, bis hier 0,0001).
+- **Ton, bild:wiese@0.5 gegen main fdfa9795 (Radeon):** Kronen-Mitte 48,6 → 48,4 (dein Kopf bd17b634: 45,4) · Band 38,6 → 37,5 (36,0) · Büsche rechts 47,3 → 43,3 (42,5) · Vordergrund 63,8 = 63,8. Unter der Tafel-Maske sind die Karten-Kronen HELLER als main: birke 37,2 → 42,3 · fichte 35,0 → 38,8 · strauch 40,9 → 43,2 (gesamt 39,4 → 40,3). GTX c65c80d gegen den Kopf 688408a: Kronen-Mitte 43,8 → 46,8 · Band 34,6 → 36,0.
+- **Ehrlich offen:** Büsche rechts −4,0 gegen main — die mittelfernen Kronen und Büsche lesen als Laub-Ballen mit Löchern im Kern statt als weicher Klecks (der Saum trägt die ganze kleine Krone; Zwilling: Kern-Loch Strauch 12 %, Birke 3,4 %).
+- **Die GTX-Probe brach** (02c89d91, 33c73b16: „DIE WELT STEHT NICHT nach 2099 Takten") an meiner Licht-WGSL: binom() als Feld-Rückgabe, 16-fach in der BC5-Ablage entrollt — D3D12 backte die frische Welt nie. Geheilt c65c80d (das Gewicht je Abgriff aus dem vorigen, bitgleich), GTX GRÜN in 229 s.
+
 ## 08.11. 19:42 — w24-strauch-saum: Ton der Kronen gemessen — nicht die Farbe, die Deckung über der Wahrheit; geschnitten, Proben laufen (Zwischenstand, BEREIT folgt mit den Zahlen)
 
 ## 08.11. 19:56 — GPU-PROBE 9ed32a3d auf radeon-890m: GRÜN in 453 s (gate:laub-kante GRÜN 77 s · bild:wiese@0.5 GRÜN 42 s) → probe-post/w24-strauch-saum/9ed32a3d.md
