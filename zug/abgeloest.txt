@@ -1,0 +1,13 @@
+# Abgelöste Abgaben (Schöpfer 08.11.: nichts wartet still) — <zweig> <grund>; der Messplatz-Blick zählt sie nicht als wartend
+w16-tier-blick Inhalt steckt in main (merge-tree = main, 08.11. 14:50)
+w16-fahrt-weg-pm in punkte-maschine
+w17-siedlung-abnahme-pm in punkte-maschine
+w16-studio-welt-pm Inhalt steckt in punkte-maschine
+w16-tier-blick-pm in punkte-maschine
+w16-wald-innen-pm Inhalt steckt in punkte-maschine
+w18-kamera-haus-pm Inhalt steckt in punkte-maschine
+w19-tier-kreis-pm in punkte-maschine
+w19-fahrt-ziel-2-pm Inhalt steckt in punkte-maschine
+w22-zug-auswahl gemessen 95,6 % der Linsen ausgewählt (Median) — kein Zug-Gewinn; ersetzt durch Vorlauf/Nachlauf (w23-vorlauf)
+w22-zeitraffer gemessen 1,11× statt Ziel ≥ 5× — geparkt ohne Punkt, offen benannt (T9)
+w23-wiese-zurueck Revert abgesagt 08.11. (Schöpfer: vorwärts heilen) — ersetzt durch w24-wiese-ferne
