@@ -210,7 +210,7 @@ if (require.main === module) hauptLauf(async () => {
                     const h = r._hydroFor(k.x, k.z);
                     const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
                     if (!lake) continue;
-                    ort = { ...zelle(h, lake.cells[(lake.cells.length / 2) | 0]), lake };
+                    ort = { ...zelle(h, rang(lake.cells)), lake };
                     break;
                 }
             } else if (art === "hoehle") {

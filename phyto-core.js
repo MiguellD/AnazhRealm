@@ -5637,6 +5637,27 @@
         sin: (a) => Math.sin(a),
         sqrt: (a) => Math.sqrt(a),
     });
+    // DIE KRONE IM JAHR (w21-laub-jahr-fern, additiv): das Kronendach der Ferne (Ring, Boden, Kamm, Panorama — jenseits der
+    // Karte stehen keine Gestalten mehr) trägt das Jahr nach DEMSELBEN Gesetz wie die Gestalt: das Laub (aType 1) zieht sich um
+    // die Präsenz auf seine Mitte (`_jahrLage`), die Nadel (2) und die Rinde stehen, nur Laub tönt. Gemessen an der Gestalt
+    // (kronen-linse, 24 Ansichten, die Formel von `_jahrLage` auf die gebauten Puffer; Same 1, Hebung 0°): die Bild-Deckung des
+    // Laubs folgt der Präsenz linear — L1 Eiche 0,72 → 0,737 · 0,55 → 0,579 · 0,30 → 0,315, Birke 0,747 · 0,588 · 0,332, Weide
+    // 0,734 · 0,566 · 0,277, das Holz abgezogen —, und das Holz der kahlen Krone deckt `holz` ihrer Sommer-Krone (Eiche 0,061 ·
+    // Birke 0,048 · Weide 0,047: die Karte backt die L1, das Gerüst). Je Einheit Kronen-Deckung: K das Kronendach (Laub aller
+    // Arten), D sein Anteil der Laub werfenden Arten, delta deren Anteil an der Deckung, R deren Rinde × delta (alle wie das Dach
+    // × Selbstbeschattung), p die Präsenz, S die Tönung des Laubs. Rückgabe: { farbe (vormultipliziert), deckung } — Sommer
+    // (p 1, S 1) exakt { K, 1 }. Über einer Algebra wie `windAusschlag` (WIND_ZAHLEN: Faden und CPU; die TSL-Algebra: der Stoff).
+    // Mit f = 1 − p (das gefallene Laub): farbe = K + D·(p·S − 1) + R·f·holz, deckung = 1 + delta·f·(holz − 1). p liegt nach
+    // seinem Gesetz in [0, 1] (`_saisonPraesenz`: linear zwischen den Stützen `pr` des SAISON_GESETZ) — keine Klemme; f baut
+    // jeder Leser frisch: im Stoff wird kein Knoten geteilt, das Boden-Programm trägt keine Variable des Jahrs mehr als nötig.
+    var KRONE_JAHR = Object.freeze({ holz: 0.05 });
+    function kroneImJahr(A, p, S, K, D, delta, R) {
+        const fiel = (x) => A.mul(A.add(A.k(1), A.mul(p, A.k(-1))), A.k(x));
+        return {
+            farbe: A.add(A.add(K, A.mul(D, A.add(A.mul(p, S), A.k(-1)))), A.mul(R, fiel(KRONE_JAHR.holz))),
+            deckung: A.add(A.k(1), A.mul(delta, fiel(KRONE_JAHR.holz - 1))),
+        };
+    }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
         k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
@@ -6015,6 +6036,8 @@
         windSchlankheitAchse: windSchlankheitAchse, // K19 — dasselbe δ an der Stamm-Achse eines Skeletts (Werkstatt-Baum)
         windAusschlag: windAusschlag, // K19 — DER EINE Wind-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
+        KRONE_JAHR: KRONE_JAHR, // w21 — das Holz der kahlen Krone (Anteil ihrer Sommer-Deckung)
+        kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

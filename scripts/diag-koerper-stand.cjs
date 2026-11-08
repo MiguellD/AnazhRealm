@@ -371,7 +371,7 @@ async function proben(mitWiese, umfang) {
             }
             const bodenW = r._fieldSurfaceBelow(hoehle.x + 1.5, hoehle.boden + 1.0, hoehle.z, 3);
             hs.sort(aufsteigend);
-            o.k3 = { tierY: hs[hs.length >> 1], boden: bodenW };
+            o.k3 = { tierY: rang(hs), boden: bodenW };
             o.k3.abstandM = Number.isFinite(bodenW) ? Math.round(Math.abs(o.k3.tierY - bodenW) * 100) / 100 : null;
             r.removeCreature(w);
         }
@@ -466,7 +466,7 @@ async function proben(mitWiese, umfang) {
                 if (mL !== null) leib.push(Math.abs(c.position.y - mL));
             }
             leib.sort(aufsteigend);
-            o.k4 = { leibMedianCm: leib.length ? Math.round(leib[leib.length >> 1] * 1000) / 10 : null };
+            o.k4 = { leibMedianCm: leib.length ? Math.round(rang(leib) * 1000) / 10 : null };
             // der Weg über den Hang: je Takt 0,12 m, der Sprung über die Neigung hinaus
             const kx = karte(hang.x + 1, hang.z) - hang.karte;
             const kz = karte(hang.x, hang.z + 1) - hang.karte;
@@ -832,7 +832,7 @@ async function rollen(n) {
     };
     const cm = (a, f) => {
         const b = a.slice().sort(aufsteigend);
-        return b.length ? Math.round(b[Math.min(b.length - 1, Math.floor(f * b.length))] * 1000) / 10 : null;
+        return b.length ? Math.round(rang(b, f) * 1000) / 10 : null;
     };
     const mass = (a) => ({ n: a.length, p95: cm(a.map(Math.abs), 0.95), median: cm(a, 0.5) });
     const v = new T.Vector3();
