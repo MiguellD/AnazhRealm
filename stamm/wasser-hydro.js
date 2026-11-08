@@ -187,9 +187,11 @@ class AnazhRealm_wasser_hydro {
     // `_regenWeg`, der Übergang des Gesetzes), gefaltet in den Zustand an ihrem ersten Stempel (gelaende-core `pegelZustand`); ihre
     // Stempel laufen von ihm weiter. Bis hier begann jede frische Welt trocken („vor dem ersten Stempel regnete es nicht"), obwohl ihre
     // Front davor regnete: mit dem ersten Regen stieg jeder Lauf in Stufen von 1 cm zur Krone, und jede Stufe baute die Chunks mit
-    // Wasser neu — am Bach der Mess-Wiese 634 Marken-Wechsel in der ersten Spielminute, dort wechselte das Wassernetz 0,15-mal je
-    // Takt (136 in 900 Takten), die Nah-Wiese fiel 669-mal, und das Ufer stand nie (gate:fenster-wechsel, gate:ziel-zensus: „DER BAU
-    // STEHT NICHT: das Ufer im Blick"). Ein Gedächtnis (der Zustand) faltet nie neu.
+    // Wasser neu — am Bach der Mess-Wiese 634 Marken-Wechsel in der ersten Spielminute; am Ufer (Null-Renderer, 2 700 Takte = 51 s)
+    // 18 Stufen, 451 Wechsel des Wassernetzes bis zum letzten Takt, 2 968 gefallene Kacheln der Nah-Wiese und Nah-Streu, das Ufer
+    // stand nie (gate:fenster-wechsel, gate:ziel-zensus: „DER BAU STEHT NICHT: das Ufer im Blick"); seither steht das Netz nach der
+    // Ankunft (letzter Wechsel Takt 84), 0 Kacheln fallen, die Faltung kostet einmal 5,4 ms. Ein Gedächtnis (der Zustand) faltet
+    // nie neu. Hält eine Messung das Wetter oder spricht der Spieler sein Wort, zieht kein Zug: die Welt bleibt ohne Vergangenheit.
     _pegelVergangenheit(x, z) {
         const st = this.state;
         if (st.pegelZustand) return;
