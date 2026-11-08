@@ -2,7 +2,9 @@
 // Bau-Haken (haken.cjs), die Zerlegung des Haupt-Fadens BIS ZUR KONTROLLE (ankunft.K5#1: belegt ≤ 4 s, längste ≤ 250 ms) je
 // Klasse, Funktion, System, Sekunde und je Knoten-Bau (Stoff, Szene, Code-Länge). Teil 1 bootet und schreibt ≤ 10 Zeilen mit
 // Marke (gpu-probe.yml liest die letzten 10 mit ✅/❌), `--teil 2` liest dieselben Läufe und schreibt die nächsten 10.
-// ABAB: `KALT_AB=1` tauscht zwischen den Boots die Dateien in vorher/ (A) gegen den Baum (B).
+// ABAB (Standard, `KALT_AB=0` aus): zwischen den Boots tauschen die Dateien in vorher/ (A, main) gegen den Baum (B, der Schnitt),
+// je Seite KALT_BOOTS. `--bild`: je Seite EIN Boot mit dem Bild der Kontrolle und seiner Ruhe (`diag-boot-stage --bild`; die PNG
+// liegen in $RUNNER_TEMP/probe, die Probe-Post nimmt sie mit).
 "use strict";
 /* global process, console, __dirname */
 const { spawnSync } = require("child_process");
@@ -10,9 +12,11 @@ const fs = require("fs");
 const path = require("path");
 const HL = require(path.resolve("scripts/lib/haenger-linse.cjs"));
 
-const N = Number(process.env.KALT_BOOTS || 5);
-const AB = process.env.KALT_AB === "1";
-const LAUF = path.join(__dirname, "lauf");
+const BILD = process.argv.includes("--bild");
+const N = BILD ? 1 : Number(process.env.KALT_BOOTS || 4);
+const AB = process.env.KALT_AB !== "0";
+const LAUF = path.join(__dirname, BILD ? "lauf-bild" : "lauf");
+const PNG = path.join(process.env.RUNNER_TEMP || require("os").tmpdir(), "probe", String(process.env.GITHUB_SHA || "lokal").slice(0, 8) + "-kontrolle");
 const TEIL2 = process.argv.includes("--teil") && process.argv[process.argv.indexOf("--teil") + 1] === "2";
 const med = (a) => {
     const s = a.filter((x) => Number.isFinite(x)).sort((x, y) => x - y);
@@ -38,9 +42,10 @@ function boote() {
             setze(seite);
             const j = path.join(LAUF, `k${i}.json`);
             const s = path.join(LAUF, `s${i}.json`);
-            const p = spawnSync(process.execPath, ["-r", "./artifacts/ankunft-faden/haken.cjs", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", j, "--spur", s], {
+            const bild = BILD ? ["--bild", `${PNG}-${seite}.png`] : [];
+            const p = spawnSync(process.execPath, ["-r", "./artifacts/ankunft-faden/haken.cjs", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", j, "--spur", s, ...bild], {
                 encoding: "utf8",
-                timeout: 150000,
+                timeout: BILD ? 240000 : 150000,
             });
             const txt = (p.stdout || "") + (p.stderr || "");
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(txt) || [""])[0];
@@ -117,6 +122,12 @@ function zerlege(e) {
     return R;
 }
 
+function phasen(zs, pre) {
+    const ph = new Map();
+    for (const z of zs) for (const m of z.a.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push([m.t, m.belegtMs]);
+    zeile(`${pre}PHASEN (t · belegt, Median): ${[...ph].filter(([k]) => !/^(HTML|Skripte|DOM|buch steht)/.test(k)).map(([k, v]) => `${k.replace(" steht", "")} ${sek(med(v.map((x) => x[0])))}·${sek(med(v.map((x) => x[1])))}`).join(" | ")}`);
+}
+
 function bericht(teil) {
     const liste = JSON.parse(fs.readFileSync(path.join(LAUF, "liste.json"), "utf8"));
     if (!liste.length) return console.log("❌ keine Boots"), process.exit(1);
@@ -141,9 +152,12 @@ function bericht(teil) {
                     `Eigenmeldung ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} · BELEGT bis Kontrolle ${zs.map((z) => sek(z.belegt)).join("/")} Median ${sek(med(zs.map((z) => z.belegt)))} s · ` +
                     `LongTasks ${zs.map((z) => z.langN).join("/")} Σ ${zs.map((z) => sek(z.langMs)).join("/")} s · längste ${zs.map((z) => z.laengste).join("/")} ms`
             );
-            const ph = new Map();
-            for (const z of zs) for (const m of z.a.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push([m.t, m.belegtMs]);
-            zeile(`${pre}PHASEN (t · belegt, Median): ${[...ph].map(([k, v]) => `${k} ${sek(med(v.map((x) => x[0])))}·${sek(med(v.map((x) => x[1])))}`).join(" | ")}`);
+            if (BILD) {
+                const o = zs[0].out;
+                zeile(`${pre}BILD ${PNG.split(/[\\/]/).pop()}-${S}.png · Lücke gegen die Ruhe ${o.bild ? (100 * o.bild.luecke).toFixed(2) + " %" : "?"} · dc ${o.bild ? o.bild.a.dc : "?"} · Dreiecke ${o.bild ? o.bild.a.dreiecke : "?"} · offen im Bild ${(o.offen || []).join(" · ") || "nichts"} · halbes Weltbild ${(o.ohne || []).length ? "JA" : "nein"}`); // prettier-ignore
+                continue;
+            }
+            if (!AB) phasen(zs, pre);
             const kl = new Set(zs.flatMap((z) => Object.keys(z.klassen)));
             zeile(`${pre}KLASSEN bis Kontrolle (Median s, verschachtelt je): ${[...kl].map((k) => [k, med(zs.map((z) => z.klassen[k] || 0))]).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${sek(v)}`).join(" · ")}`);
             const B = zs.map((z) => z.bau);
@@ -160,7 +174,7 @@ function bericht(teil) {
                 })
                 .sort((a, b) => b[1] - a[1])
                 .map(([k, ms, n, len, s]) => `${k} ${Math.round(ms)}/${n}/${Math.round(len / 1000)}k${s}`);
-            zeile(`${pre}BAU je Stoff (ms/fertig/Code, Szene): ${je.slice(0, 12).join(" · ")}`);
+            if (!AB) zeile(`BAU je Stoff (ms/fertig/Code, Szene): ${je.slice(0, 12).join(" · ")}`);
             if (!AB) zeile(`BAU je Stoff 2: ${je.slice(12, 30).join(" · ")}`);
             const inkl = medMap(zs, "inkl", 60, (k) => /\[[a-z-]+\.js[:\]]/.test(k) && !/three\.(webgpu|core)/.test(k));
             zeile(`${pre}INKL 1: ${inkl.slice(0, 14).join(" · ")}`);
@@ -171,11 +185,12 @@ function bericht(teil) {
                     `AUFGABEN (Boot 1, längste vor der Kontrolle): ${zs[0].a.aufgaben.slice(0, 6).map((x) => `${sek(x.t)} s ${x.ms} ms ${x.halter.slice(0, 2).map((h) => `${h.name} ${h.ms}`).join("+")}`).join(" | ")}`
                 );
         } else {
+            if (AB) phasen(zs, pre);
             const self = medMap(zs, "selbst", 40);
             zeile(`${pre}SELBST 1: ${self.slice(0, 14).join(" · ")}`);
             if (!AB) zeile(`SELBST 2: ${self.slice(14, 30).join(" · ")}`);
             const inkl = medMap(zs, "inkl", 80, (k) => /\[[a-z-]+\.js[:\]]/.test(k) && !/three\.(webgpu|core)/.test(k));
-            zeile(`${pre}INKL 3: ${inkl.slice(30, 46).join(" · ")}`);
+            zeile(AB ? `${pre}INKL 2: ${inkl.slice(14, 30).join(" · ")}` : `INKL 3: ${inkl.slice(30, 46).join(" · ")}`);
             if (!AB) zeile(`INKL 4: ${inkl.slice(46, 62).join(" · ")}`);
             const S0 = Math.max(...zs.map((z) => z.jeSek.length));
             zeile(`${pre}BELEGT je Sekunde (Median ms): ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.jeSek[s] || 0)))}`).join(" ")} · BAU je s: ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.bau.sekMs[s] || 0)))}`).join(" ")}`);
@@ -187,7 +202,7 @@ function bericht(teil) {
             }
         }
     }
-    if (AB && teil === 1)
+    if (AB && teil === 1 && !BILD)
         zeile(
             `B − A: t(Kontrolle) ${sek(med(Z.filter((z) => z.e.seite === "B").map((z) => z.e.tK)) - med(Z.filter((z) => z.e.seite === "A").map((z) => z.e.tK)))} s · belegt ` +
                 `${sek(med(Z.filter((z) => z.e.seite === "B").map((z) => z.belegt)) - med(Z.filter((z) => z.e.seite === "A").map((z) => z.belegt)))} s (Median, je ${N} Boots abwechselnd)`
