@@ -670,7 +670,10 @@ class AnazhRealm_stoff_instanz {
             if (!m.__arena) continue;
             (neu || (neu = new Set())).add(m.__arena);
             // die Arena tritt in das Vorwärm-Gesetz (`_vorwaermMerken`): ihr Programm entsteht in jeder Familie ihrer Pässe, bevor
-            // eine Instanz dort zeichnet — auch eine ohne lebende Instanz (sie betritt keinen Pass, ihre Glieder warten leer)
+            // eine Instanz dort zeichnet — auch eine ohne lebende Instanz (sie betritt keinen Pass, ihre Glieder warten leer). Ihre
+            // Form (Lager und Index) legt der Takt vor den Pässen (`_takt`, sein Renderer `_rend`): bis w25 erst nach ihrem ersten
+            // Zug — eine leere Arena (die kommende Gestalt der Hotbar) trug nie eine Form, und kein Vorbau baute sie
+            if (!m.__arena._rend) m.__arena._rend = rend;
             this._vorwaermMerken(m.__arena);
         }
         return neu;

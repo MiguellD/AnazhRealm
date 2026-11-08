@@ -1372,6 +1372,7 @@ class AnazhRealm_siedlung_bauten {
         // DIE ZEIT IST DIE DES VORWÄRM-GESETZES (`_vorwaermZeit`, w25): ruhende Eingabe UND stehendes Auge, lose GPU-Leine — bis
         // hier reichte die ruhende Eingabe, und der Gast baute in der Fahrt (GTX vorher: „vorbau:baum_eiche" 128 ms im Fenster)
         if (!R || !R.__anazhErstZeichnung || !this._vorwaermZeit()) return;
+        this._vorwaermArten(); // die kommenden Stufen jeder Art (`_vorwaermStufen`)
         // das eigene Tuch wartet nur auf die ruhende Eingabe, nie auf die stehende Welt: es liest keinen Auftrag der Welt
         if (!this._tuchVorbau() || !this._weltSteht()) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
@@ -1387,12 +1388,15 @@ class AnazhRealm_siedlung_bauten {
         const V =
             this._geistVorbauStand ||
             (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null, gestalt: new Set() });
-        // die KOMMENDE GESTALT jedes Bauplans (`_vorwaermGestalt`): gesetzt zeichnet er als Arena seiner Teile, nie als Geist —
-        // ihre Arenen treten ins Vorwärm-Gesetz, bevor der erste gesetzte steht
+        // die KOMMENDEN STUFEN jedes Bauplans (`_vorwaermStufen`): gesetzt zeichnet er als Arena seiner Teile, nie als Geist —
+        // seine Art tritt ins Vorwärm-Gesetz, bevor der erste gesetzte steht
+        const A = this._erstZeichnungStand().vorwaermArten;
         for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
             if (!name || V.gestalt.has(name)) continue;
+            V.gestalt.add(name);
             const bp = st.blueprints && st.blueprints[name];
-            if (!bp || !this._isPlaceableBlueprint(bp) || this._vorwaermGestalt(name)) V.gestalt.add(name);
+            const preset = bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
+            if (preset && !A.has(preset + "@null")) A.set(preset + "@null", { preset, streu: false, region: null });
         }
         if (V.gast) {
             const fehlt = this._vorbauFehlt(V.gast.gruppe);

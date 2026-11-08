@@ -41,6 +41,8 @@ class AnazhRealm_bild_erst {
                 vorwaermRufe: 0,
                 vorwaermVerweigert: 0,
                 ohneDraw: new WeakSet(), // Objekte, die ein Pass der Welt ohne Draw fand (die Arena ohne Instanz im Pass, der Gast)
+                vorwaermHalt: new Map(), // die leere Senke einer kommenden Stufe → ihre Gruppe: sie hält, bis ihre Arena steht
+                vorwaermArten: new Map(), // Art@Region → die Art, deren Stufen vorwärmen (null: sie stehen) (`_vorwaermStufen`)
                 leer: new Set(),
             };
         return this._erstZeichnung;
@@ -56,7 +58,7 @@ class AnazhRealm_bild_erst {
     //   Familie zeichnete (oder ohne Draw ankam: die Arena ohne Instanz im Pass, der Gast der Bedienung, die geborene Arena),
     //   wartet in jeder anderen, in die es gehört (`_vorwaermGehoert`: das Auge über die Ebenen samt der Ego-Maske `_maskeVorEgo`,
     //   der Wurf über `castShadow` und die Wurf-Ebene) — dazu die kommende Gestalt der Hotbar als Arena ihrer Teile
-    //   (`_vorwaermGestalt`): Art × Stufe × Stoff, wie die Welt sie setzt.
+    //   (`_vorwaermStufen`): Art × Stufe × Stoff, wie die Welt sie setzt.
     //   WO — im ersten Pass seiner Familie je Bild (`_vorwaermPass`, nach dem Opaken, nie in einer Bündel-Aufnahme), durch die
     //   Render-Funktion des Passes (der Schatten-Stoff des Wurfs wie im Bild), ohne Zug (`onBeforeRender` ruht: kein Auftrag,
     //   keine Wahl) und ohne Draw — die Erst-Zeichnung baut wie jede Erst-Zeichnung (`_knotenRate`, die Pipeline asynchron).
@@ -98,6 +100,13 @@ class AnazhRealm_bild_erst {
             E.vorwaermFehlt.set(o, f);
         }
         if (f.size) E.vorwaerm.add(o);
+        // eine geborene Arena nennt ihre Art: deren übrige Stufen wärmen vor (`_vorwaermStufen`, im Leerlauf)
+        const g0 = o.isGeometrieArena === true && o.glieder[0];
+        const art = g0 && AnazhRealm._vorwaermArtVon(g0.userData.archInstanceKey);
+        if (art) {
+            const k = art.preset + "@" + art.region;
+            if (!E.vorwaermArten.has(k)) E.vorwaermArten.set(k, art);
+        }
     }
     // In einer Familie steht es (gezeichnet oder ohne Draw gebaut); `neu` = die erste Zeichnung: die übrigen wärmen vor
     _vorwaermFertig(o, scene, camera, neu = false) {
@@ -110,7 +119,15 @@ class AnazhRealm_bild_erst {
             E.vorwaermN++;
             this._vorwaermErgebnis = "gebaut";
         }
-        if (f && f.size === 0) E.vorwaerm.delete(o);
+        if (f && f.size === 0) this._vorwaermFrei(o);
+    }
+    // Es steht in jeder Familie (oder fällt aus dem Gesetz): es verlässt die Reihe — die Hüllen der kommenden Stufen
+    // (`_vorwaermStufen`) hielten bis hier, jetzt räumt der Leer-Chokepoint sie (`_archGroupLeerDispose`)
+    _vorwaermFrei(o) {
+        const E = this._erstZeichnung;
+        E.vorwaerm.delete(o);
+        for (const m of o.glieder || [])
+            if (E.vorwaermHalt.has(m)) (this._archGroupLeerDispose(E.vorwaermHalt.get(m)), E.vorwaermHalt.delete(m));
     }
     // DIE ZEIT DES VORWÄRMENS (das WANN oben)
     _vorwaermZeit() {
@@ -172,7 +189,7 @@ class AnazhRealm_bild_erst {
             let w = o;
             while (w.parent) w = w.parent;
             if (!f || f.size === 0 || w !== scene) {
-                E.vorwaerm.delete(o);
+                this._vorwaermFrei(o);
                 continue;
             }
             if (!f.has(fam)) continue;
@@ -194,7 +211,7 @@ class AnazhRealm_bild_erst {
                     E.vorwaermVerweigert++;
                 }
             }
-            if (f.size === 0) E.vorwaerm.delete(o);
+            if (f.size === 0) this._vorwaermFrei(o);
         }
     }
     // EIN RUF: das Objekt geht durch die Render-Funktion seines Passes, ohne Zug (sein `onBeforeRender` und `onBeforeShadow`
@@ -219,44 +236,58 @@ class AnazhRealm_bild_erst {
             } else if (m && m.visible !== false)
                 fn.call(rend, o, scene, camera, o.geometry, m, null, lightsNode, clip, passId);
         } catch (e) {
-            E.vorwaerm.delete(o);
+            this._vorwaermFrei(o);
             this._bruchMelden(`VORWÄRMEN: ${this._taeterKlasse(o)} warf im Pass (${(e && e.message) || e})`);
         } finally {
             this._vorwaermObjekt = null;
             ZUG.forEach((n, i) => (eigen[i] === undefined ? delete o[n] : (o[n] = eigen[i])));
         }
     }
-    // DIE KOMMENDE GESTALT DER BEDIENUNG (Art × Stufe × Stoff, wie die Welt sie setzt): was ein Hotbar-Bauplan setzt, zeichnet
-    // gesetzt als Arena seiner Teile (`_archInstanceAdd`: je Teil die Gruppe seines Studio-Schlüssels), nie als der Geist der
-    // Auswahl (`_geistVorbau`: ein Mesh, ein anderes Programm). Je Stufe (VORWAERM_STUFEN, die Foundry serviert die deklarierte,
-    // `_foundryServierStufe`) entstehen ihre Gruppen jetzt leer — ihre Arenen treten ins Gesetz (`_arenaKommt`), der
-    // Leer-Chokepoint räumt die Hüllen nach seiner Gnade (`_archGroupLeerDispose`), Knoten-Bau und Pipeline bleiben ihrem
-    // Schlüssel (`_renderObjekteLoesen`): der gesetzte Wagen findet sie vor. Ein Baum wächst aus dem Wald (seine Stufen und
-    // seine Karte trägt der Bestand). GTX vorher (53b2fc7a): der gesetzte GT baute im Fenster der ersten Fahrt „haupt arena
-    // f:gt:L0" 149 ms und „k0" 100 ms. true: jede Stufe steht (oder der Bauplan hat keine Studio-Gestalt).
-    _vorwaermGestalt(name) {
+    // DIE KOMMENDEN STUFEN (Art × Stufe × Stoff, wie die Welt sie setzt — keine Liste von Hand): steht eine Art in einer Stufe in
+    // der Welt (ihre Arena wird geboren, `_vorwaermMerken`) oder liegt sie in der Hotbar (`_geistVorbau`: gesetzt zeichnet sie
+    // als Arena ihrer Teile, nie als der Geist der Auswahl), wartet jede ihrer Stufen (VORWAERM_STUFEN, die Foundry serviert die
+    // deklarierte, `_foundryServierStufe`) auf ihre Gruppen — sie entstehen leer (`_vorwaermStufen`) in der Form, in der die Welt
+    // sie setzt: die Streu regional (`fscatter:<art>:<gestalt>:<stufe>`, die Region der Arena, die sie rief), der gesetzte Bau
+    // global (sein Studio-Schlüssel); ihre Arenen treten ins Gesetz (`_arenaKommt`), die leeren Hüllen halten, bis ihre Arena in
+    // jeder Familie steht (`vorwaermHalt` → `_vorwaermFrei`). Knoten-Bau und Pipeline bleiben ihrem Schlüssel
+    // (`_renderObjekteLoesen`): die Blume, die in L0 tritt, und der gesetzte Wagen finden sie vor. Ein Baum wächst aus dem Wald
+    // (seine Stufen und seine Karte trägt der Stufen-Vorlauf). GTX vorher (53b2fc7a), im Fenster gebaut: „haupt arena
+    // fscatter:blume:L2" 294 ms im Gehen, „haupt arena f:gt:L0" 244 ms und „fscatter:blume:L0" 87 ms in der ersten Fahrt.
+    // Die Art einer Gruppe aus ihrem Schlüssel (`_archInstanceGroupFor`, gelesen wie `_instanzKlasse`); null: keine Studio-Art
+    static _vorwaermArtVon(key) {
+        const s = String(key);
+        const st = /^fscatter:([^:#]+):[^:#]+:\d#[^@]*(?:@(.+))?$/.exec(s);
+        if (st) return { preset: st[1], streu: true, region: st[2] == null ? null : st[2] };
+        const f = /^f:([^|:]+)\|/.exec(s);
+        return f ? { preset: f[1], streu: false, region: null } : null;
+    }
+    // die gemerkten Arten im Leerlauf (`_vorbauBedienung`): je Takt jede, deren Stufen noch nicht stehen
+    _vorwaermArten() {
+        const A = this._erstZeichnungStand().vorwaermArten;
+        for (const [k, art] of A) if (this._vorwaermStufen(art)) A.set(k, null);
+    }
+    // die Stufen EINER Art als leere Gruppen; true: jede steht (oder die Art hat keine Studio-Gestalt, ist ein Baum)
+    _vorwaermStufen(art) {
         const R = this.state.renderer;
-        if (!R || R._isHeadlessNull || this.state._holzProfil === "kienspan") return true; // dort wärmt nichts vor
-        const preset = this._foundryPresetForEntry({ type: name });
-        if (!preset || !this._foundryEnabled() || this._foundryPresetIsTree(preset)) return true;
-        // ohne Ort die Gestalt des Samens 0; der Rang in der Foundry-Schlange ist der Ort des Spielers (`wo`) — als ortloser
-        // Vorrat stand sie hinter jedem Auftrag der Welt (lokal: die L0 des GT nach dem Stand der Welt noch nicht geliefert)
+        if (!art || !R || R._isHeadlessNull || this.state._holzProfil === "kienspan") return true; // dort wärmt nichts vor
+        const { preset, streu, region } = art;
+        if (!this._foundryEnabled() || this._foundryPresetIsTree(preset)) return true;
+        // die Gestalt des Samens 0 (ihre Stoffe teilen das Programm jeder Gestalt der Art, `_graphTeilen`); der Rang in der
+        // Foundry-Schlange ist der Ort des Spielers (`wo`) — als ortloser Vorrat stand sie hinter jedem Auftrag der Welt (lokal:
+        // die L0 des GT nach dem Stand der Welt noch nicht geliefert)
         const pm = this.state.playerMesh;
-        const e = { type: name, wo: pm ? pm.position : undefined };
+        const e = { seed: 0, wo: pm ? pm.position : undefined };
+        const E = this._erstZeichnungStand();
         let steht = true;
         for (const lod of AnazhRealm.VORWAERM_STUFEN) {
             const flat = this._foundryFlattenFor(e, preset, lod);
             if (flat === null) steht = false;
             if (!flat || !Array.isArray(flat.leaves)) continue;
+            const name = streu ? `fscatter:${preset}:${this._foundryGestaltFor(e, preset)}:${flat.lod}` : "";
             flat.leaves.forEach((leaf, i) => {
-                const studio = typeof leaf.leafKey === "string" && /^(f|fimp):/.test(leaf.leafKey);
-                const g = this._archInstanceGroupFor(
-                    studio ? "" : name,
-                    leaf.leafKey != null ? leaf.leafKey : i,
-                    leaf,
-                    null
-                );
-                if ((g.liveCount || 0) === 0) this._archGroupLeerDispose(g.key);
+                const studio = !streu && typeof leaf.leafKey === "string" && /^(f|fimp):/.test(leaf.leafKey);
+                const g = this._archInstanceGroupFor(name, studio ? leaf.leafKey : i, leaf, streu ? region : null);
+                if ((g.liveCount || 0) === 0 && !E.vorwaermHalt.has(g.mesh)) E.vorwaermHalt.set(g.mesh, g.key);
             });
         }
         return steht;
@@ -518,7 +549,7 @@ AnazhRealm.VORWAERM_FAMILIEN = Object.freeze(["auge", "wurf"]);
 AnazhRealm.VORWAERM_JE_PASS = 48;
 AnazhRealm.VORWAERM_VERSUCHE = 3;
 AnazhRealm.VORWAERM_RUHE_MS = 0.3;
-// die Stufen der kommenden Gestalt (`_vorwaermGestalt`): die Foundry serviert je Art die deklarierte (`_foundryServierStufe`)
+// die kommenden Stufen jeder Art (`_vorwaermStufen`): die Foundry serviert je Art die deklarierte (`_foundryServierStufe`)
 AnazhRealm.VORWAERM_STUFEN = Object.freeze([0, 1, 2]);
 AnazhRealm.KNOTEN_GANG = Object.freeze([
     Object.freeze(["setup", "analyze", "generate"]),
