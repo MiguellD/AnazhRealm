@@ -3230,19 +3230,6 @@ hauptLauf(async () => {
                 if (!o.klasse) throw new Error(`/bild ohne Klasse: ${o.fehler} ${(o.stapel || []).join(" | ")}`);
                 const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
                 console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
-                if (!i)
-                    console.log("✅ Strauch-Karten [m, φ°, Höhe, Boden über Strahl, Fuß über Boden]", JSON.stringify((await evalRuf(`const c = ${JSON.stringify(o.kamera)}, kg = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE), zz = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z]));
-                        const m = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s = new T.Vector3(), aus = [], cam = r.state.camera.clone();
-                        cam.aspect = 16 / 9; cam.position.set(...c); cam.lookAt(${lx}, ${ly}, ${lz}); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-                        for (let i = 0; i < kg.liveCount; i++) { const z = zz.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
-                            if (!z || !/strauch/.test(z.key)) continue;
-                            m.fromArray(kg.mesh.instanceMatrix.array, i * 16).decompose(p, q, s);
-                            const h = z.frame.halfH * s.y, d = Math.hypot(c[0] - p.x, c[2] - p.z);
-                            if (d > 150 || !fr.containsPoint(new T.Vector3(p.x, p.y + h, p.z))) continue;
-                            let ueber = -9;
-                            for (let t = 0.05; t < 0.97; t += 0.01) { const x = c[0] + (p.x - c[0]) * t, zq = c[2] + (p.z - c[2]) * t, g = r._bodenSichtAt(x, zq); if (g != null) ueber = Math.max(ueber, g - (c[1] + (p.y - c[1]) * t)); }
-                            aus.push([+d.toFixed(1), +((Math.atan2(c[1] - p.y - h, d) * 180) / Math.PI).toFixed(1), +(2 * h).toFixed(2), +ueber.toFixed(2), +(p.y - (r._bodenSichtAt(p.x, p.z) ?? p.y)).toFixed(2)]); }
-                        return aus.sort((a, b) => a[0] - b[0]).slice(0, 16).map((a) => a.join(" ")).join(",");`)).ergebnis));
             }
         } finally {
             halt?.();
