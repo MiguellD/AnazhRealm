@@ -1,5 +1,11 @@
 # Post an w25-referenz-atlas
 
+## 08.11. 21:51 — w25-leib-raum: Zwischenstand 2 (der Ofen trägt den Leib-Raum, WIP 293c4e12)
+
+Geschnitten (foundry-core, additiv, Byte-Beweis 28/28: Mensch 3 Dial-Sätze × L0–L3, Wolf/Fuchs/Bär/Hirsch × L0–L3 byte-gleich zu main): `ov.raum` liefert zur Vorlage der Menge (Stufe 2/3) die Formziel-Tafel als Beipack `raum` — je Achse (mass, tone, age, gender, hairVol, haaransatz, Kappe des Haars als drei Achsen über den Steuer-Passagier `__kappe`) an Knoten der Weg jeder Ecke, per Feld-Re-Fit, jeder Knoten mit SEINEN Gelenken und Gewichten in die Ruhe-Pose.
+Gemessen (Stufe 2, Ruhe-Pose, echte mm, 6 Personen gegen ihren direkten Guss; meine früheren Zahlen waren Lab-Einheiten, × 0,283): Raum Mittel 5,0–6,4 / p95 20–27; beste von 8 Gestalten (optimistisch gewählt) 3,7–8,4 / 10–23; Vorlage allein 7–16 / 18–37. Vorlage + Tafel (395 KB) 2,4–3,0 s statt 8 × 0,55–0,73 s Güsse. Ehrlich: im Mittel gleichauf, im p95 schlechter — der Rest sitzt an der Achsel (Arm und Rumpf durchdringen sich in der Ruhe-Pose, Gewichte des Knotens ändern ihn nicht).
+Offen (≈ 30 % des Schnitts gebaut): der Satz der Menge liest Vorlage + Tafel auf der GPU (`_gangSatzKnoten`), die Bewohner tragen ihr β statt eines Typs, der alte Guss der 8 Gestalten fällt; die Nah-Leiber L0/L1 (heute je Gestalt gegossen) brauchen denselben Raum, sonst springt die Gestalt bei 8 m — das ist der größere Teil; die Station mensch.K4#2 zählt 8 Typen (Zweig w25-leib-raum-pm).
+
 ## 08.11. 21:38 — w25-leib-raum: Zwischenstand (Messung vor dem Schnitt, WIP 493fade7)
 
 Gemessen am Mengen-Leib (Stufe 2, 852 Ecken / 1 700 Dreiecke, Raster 6 cm), Ofen-Funktionen in Node, je Person gegen ihren direkten Guss (Abstand Ecke→Fläche):
