@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, FLUEGEL } = require("../playtest.cjs");
 
 // Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
@@ -110,7 +110,7 @@ async function checkBandRing5Soul({ page, check }) {
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
-    const ring5Results = await safeEvaluate(page, async () => {
+    const ring5Results = await safeEvaluate(page, async (FLUEGEL) => {
         const out = {};
         // V2: state.playerMesh wird bei jedem Soul-Wechsel
         // ersetzt (neuer Group). Wir lesen jedes Mal frisch
@@ -300,26 +300,7 @@ async function checkBandRing5Soul({ page, check }) {
         st.customSouls = st.customSouls || {};
         st.customSouls.fluegelprobe = {
             label: "Flügel-Probe",
-            bodyParts: [
-                {
-                    shape: "box",
-                    material: "federn",
-                    size: { x: 0.5, y: 0.55, z: 0.4 },
-                    position: { x: 0, y: 0.5, z: 0 },
-                },
-                {
-                    shape: "plane",
-                    material: "federn",
-                    size: { x: 0.9, y: 0.04, z: 0.5 },
-                    position: { x: 0.62, y: 0.55, z: 0 },
-                },
-                {
-                    shape: "plane",
-                    material: "federn",
-                    size: { x: 0.9, y: 0.04, z: 0.5 },
-                    position: { x: -0.62, y: 0.55, z: 0 },
-                },
-            ],
+            bodyParts: FLUEGEL,
         };
         r.applyPlayerSoul("fluegelprobe");
         const phGroup = currentMesh();
@@ -347,7 +328,7 @@ async function checkBandRing5Soul({ page, check }) {
         // Cleanup
         r.applyPlayerSoul("human");
         return out;
-    });
+    }, FLUEGEL);
 
     if (erreichbar(check, "Ring 5: Seele-Snapshot erreichbar", ring5Results)) {
         check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);

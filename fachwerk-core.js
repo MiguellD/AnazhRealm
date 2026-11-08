@@ -3956,7 +3956,12 @@
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
-    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich, und DER STOSS: das Ende einer Trasse trifft
+    // das Ende einer anderen bis `stossM` — am Knoten des Straßengraphen liegen sie bis zu einem Schritt der Trasse (3 m, `strassengraph`
+    // DS) auseinander. Bis w13-verkehr-heil trug nur `naheM` (2,5): an stadt-voll endeten zwei Trassen am Knoten 961,6/387,7 und 732/570
+    // im Stoß von 3,0 m, das Netz hieß dort „Ende", und das Ende im Osten (am Brunnen) trug keine Wende — Wenden 3 an 4 Enden; `naheM`
+    // 3,1 für jeden Punkt verband auch die Gabel zweier Trassen im Start-Dorf (-59/-141, ein Schritt Seite an Seite) und rückte sein
+    // Netz), ihr längster zusammenhängender Teil. Knoten mit drei und
     // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
     // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
@@ -3972,9 +3977,10 @@
     // (`parkL` × `parkB`) längs des Kreises, frei von Grundriss, Tritt, der Mitte jedes Wegs (die Gasse bleibt dem Fuß) und der
     // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
-    // Boden (`verkehrsBoden`).
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 40], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+    // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
+    // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
@@ -3999,15 +4005,17 @@
       // DIE KNOTEN: je Punkt einer Trasse, die zwei Wagen trägt (über dem Wasser die Achse der Brücke, `wegUeberBruecken`), die
       // Folge ihre Kante, zwei Punkte zweier Trassen näher als `naheM` (sie treffen sich) verbunden; DIE LÄUFE aller Wege
       // (Straßen und Feldwege), an denen kein Platz liegt (`amWeg`)
-      const kn=[], nb=[], laeufe=[], netz=new Map(), zN=V.naheM;
+      const kn=[], nb=[], laeufe=[], netz=new Map(), ende=[], zN=Math.max(V.naheM,V.stossM);   /*das Raster trägt den weiteren Griff*/
       (plan.roads||[]).concat(plan.feldwege||[]).forEach((rd,ri)=>{ let vor=null;
-        for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue; const P={x:ox+q.x, z:oz+q.z};
+        const Q=wegUeberBruecken(rd.pts||[], rd.bruecken).filter(q=>q&&isFinite(q.x)&&isFinite(q.z));
+        for(let u=0;u<Q.length;u++){ const q=Q[u], P={x:ox+q.x, z:oz+q.z};
           if(vor) laeufe.push([vor,P]); vor=P;
-          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]);
+          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]); ende.push(u===0||u===Q.length-1);
           if(i>0&&kn[i-1].ri===ri){ nb[i].push(i-1); nb[i-1].push(i); } P.ri=ri;
           const ix=Math.floor(P.x/zN), iz=Math.floor(P.z/zN);
-          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[])
-            if(kn[j].ri!==ri&&(kn[j].x-P.x)**2+(kn[j].z-P.z)**2<zN*zN&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); }
+          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[]){
+            const d2=(kn[j].x-P.x)**2+(kn[j].z-P.z)**2;
+            if(kn[j].ri!==ri&&(d2<V.naheM*V.naheM||(ende[i]&&ende[j]&&d2<V.stossM*V.stossM))&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); } }
           (netz.get(ix*2097152+iz)||(netz.set(ix*2097152+iz,[]),netz.get(ix*2097152+iz))).push(i); } });
       const n=kn.length;
       const teil=new Int32Array(n).fill(-1); let best=-1, bestL=0;
@@ -4257,7 +4265,10 @@
     function verkehrsBoden(plan, ox, oz, ctx, flaeche, kern){
       const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
       const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
-      const trasse=(a,b,y,w)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w)});
+      // DIE WEGE DES VERKEHRS je mit ihrer Zahl (ab 3000; gelaende-core erdbauY: auf EINEM Weg trägt die nächste Mitte) — ohne sie
+      // trug an jedem Gelenk die spätere Strecke die Höhe ihres Anfangs, jede Rampe der Bahn war eine Treppe (stadt-voll des Worts,
+      // die Bahn der Wende im Osten: 0,21 m je Meter, die Wende fiel an der Stufe 889,5/351,8)
+      let wegN=3000; const trasse=(a,b,y,w,weg=wegN++)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w), weg});
       // EIN WEG AUF DEN FLÄCHEN (`aufFlaechen`, der Abbieger und der Übergang der Wende): die Punkte Q je Meter (P, ihr Weg s), je
       // Punkt die Höhe der Fläche, die er kreuzt (`f`: jede Fläche — Kern, Saum, Platz — oder nur die Kerne), dazwischen
       // gleichmäßig nach dem Weg; `y0`/`y1` (nicht null) heften Anfang/Ende an eine Höhe. null, wo keine Fläche und kein Anker eine
@@ -4271,7 +4282,7 @@
         for(let i=0;i<ys.length;i++){ if(ys[i]!==null) continue; let i0=i-1, i1=i; while(i1<ys.length&&ys[i1]===null) i1++;
           for(let j=i;j<i1;j++) ys[j]=i0<0?ys[i1]:i1>=ys.length?ys[i0]:ys[i0]+(ys[i1]-ys[i0])*(s[j]-s[i0])/(s[i1]-s[i0]); i=i1-1; }
         return {P, s, ys}; };
-      const lege=(A,w)=>{ for(let i=1;i<A.P.length;i++) erdbau.push({art:"trasse", x0:r6(A.P[i-1].x), z0:r6(A.P[i-1].z), y0:r6(A.ys[i-1]), x1:r6(A.P[i].x), z1:r6(A.P[i].z), y1:r6(A.ys[i]), w:r6(w)}); };
+      const lege=(A,w,weg=wegN++)=>{ for(let i=1;i<A.P.length;i++) erdbau.push({art:"trasse", x0:r6(A.P[i-1].x), z0:r6(A.P[i-1].z), y0:r6(A.ys[i-1]), x1:r6(A.P[i].x), z1:r6(A.P[i].z), y1:r6(A.ys[i]), w:r6(w), weg}); };
       // DIE HÖHE DER WENDE: Ring und Plätze liegen auf der Höhe des Wegs am Abzweig (y, im Mittel der Kerne unter dem Anfang der Bahn
       // hinein und dem Ende der Bahn heraus), die Übergänge je Meter
       // auf dem Kern, den sie kreuzen (die Spuren, die sie verlassen, treffen und queren), dazwischen gleichmäßig bis an den Ring
@@ -4299,7 +4310,7 @@
           K.wende=Object.assign({},w,{plaetze,y:r6(y),hEin,hAus}); break; }
         const w=K.wende; if(!w) continue;
         const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
-        for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM);
+        const wr=wegN++; for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM,wr);
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
         for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
           trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
@@ -4565,7 +4576,7 @@
       let done=false;
       const a0=rnd()*Math.PI*2, rB=(Rw?Rw-4.5-rq:34+rq);
       for(let k2=0;k2<10&&!done;k2++){ const a2=a0+k2*0.63;
-        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(-Math.sin(a2),-Math.cos(a2))*0+Math.atan2(-Math.cos(a2)*0-Math.sin(a2), -Math.cos(a2));
+        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(Math.cos(a2),Math.sin(a2));   /*die Front (lokal −z) zur Stadt: der Rücken (lokal +z → sin φ, cos φ) zeigt nach außen (cos a2, sin a2) — bis w13-verkehr-heil atan2(−sin, −cos), die Tür 90° quer zur Mauer (Stadt am Messort stadt: die Burg #304883 öffnete nach Westen, ihr Herr fand keinen Weg)*/
         const o={cx:ccx,cz:ccz,phi,ex:exB,ez:ezB};
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
