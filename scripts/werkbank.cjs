@@ -862,20 +862,14 @@ function popGang() {
 function blockTreue() {
     return (async () => {
         const dev = st.renderer.backend.device, be = st.renderer.backend, eins = new THREE.Matrix4();
-        const lies = async (G) => {
-            const b = be.get(G).buffer, l = dev.createBuffer({ size: b.size, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+        const lies = async (G, b = be.get(G).buffer, l = dev.createBuffer({ size: b.size, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST })) => {
             const e = dev.createCommandEncoder();
-            e.copyBufferToBuffer(b, 0, l, 0, b.size);
-            dev.queue.submit([e.finish()]);
-            await l.mapAsync(GPUMapMode.READ);
-            const f = new Float32Array(l.getMappedRange().slice(0));
-            return (l.unmap(), l.destroy(), f);
+            (e.copyBufferToBuffer(b, 0, l, 0, b.size), dev.queue.submit([e.finish()]), await l.mapAsync(GPUMapMode.READ));
+            return Object.assign(new Float32Array(l.getMappedRange().slice(0)), (l.unmap(), l.destroy(), {}));
         };
-        const pruefe = async () => {
-            const fremd = [];
-            let n = 0;
+        const pruefe = async (fremd = [], n = 0) => {
             for (const a of r.constructor.__arenen.values()) {
-                const zug = a._wahl && a._zuege.get(st.camera);
+                const zug = a._wahl ? a._zuege.get(st.camera) : null;
                 if (!zug) continue;
                 const G = a.geometry.attributes, Q = { instanceMatrix: a.__instanzQuelle.instanceMatrix };
                 for (const k in G) if (G[k].isInstancedBufferAttribute && be.get(G[k]).buffer && !/^a(Wahl|InstanzSenke|WindArt)$/.test(k)) Q[k] = G[k];
@@ -898,14 +892,13 @@ function blockTreue() {
         const ist = await pruefe(), aus = { glieder: ist.n, rot: ist.fremd.map((x) => x.text) };
         // der Selbsttest am ersten geprüften Block: verfälscht auf der GPU, genannt, neu kopiert
         for (const a of r.constructor.__arenen.values()) {
-            const zug = a._wahl && a._zuege.get(st.camera), m = zug?.zuege.find((x) => x.__arenaZ && x.instanceColor && x.count > 0);
+            const zug = a._wahl ? a._zuege.get(st.camera) : null, m = zug?.zuege.find((x) => x.__arenaZ?.n > 0 && x.instanceColor && x.count > 0);
             if (!m) continue;
-            const D = a.geometry.attributes.instanzFarbe, z = m.__arenaZ;
+            const [D, z] = [a.geometry.attributes.instanzFarbe, m.__arenaZ];
             dev.queue.writeBuffer(be.get(D).buffer, z.erst * D.itemSize * 4, new Float32Array([-7]));
             const s = await pruefe();
             aus.selbsttest = s.fremd.length === 1 && s.fremd[0].m === m ? s.fremd[0].text : `BLIND: ${s.fremd.length} genannt`;
-            z.n = -1;
-            break;
+            return ((z.n = -1), aus);
         }
         return aus;
     })();
