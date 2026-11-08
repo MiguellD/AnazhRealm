@@ -22,3 +22,6 @@ ECHTE GPU (seit z303, 07.11. 22:40 auf main — vorher `git merge origin/main`):
 5. Bild: git show origin/koordination:probe-post/<zweig>/<sha8>-<ort>.png > bild.png, dann mit Read ansehen — vergleiche mit demselben Ort an main.
 Der Zug-echt-Job hat Vorrang; eine Probe dauert höchstens 8 min.
 WEITERE WÄNDE (07.11.): Boden-WGSL ≤ 100 000 Zeichen (S0-Linse; main steht knapp darunter — jede Shader-Zeile bezahlen); Siegel-Wörter werden auch als Wortteil getroffen („Kronenschluss“); `npm run gate:welt-boot` am Kopf grün (ein Aufruf einer umbenannten Funktion bricht den Zug-Bau).
+
+## WARTEZIMMER (bindend seit 08.11.; der einzige Weg, wie Post dich erreicht)
+Nachrichten anderer Sitzungen erreichen eine Cloud-Sitzung NICHT (gemessen: 0 von 6). Nach deiner Zeile `ABGABE <sha>` in `cloud-post/<zweig>.md` beendest du die Runde NICHT. Fahre Warte-Schritte von je ≤ 9 min: alle 5 min `git fetch origin koordination` und prüfe, ob in `cloud-post/<zweig>.md` nach deiner ABGABE ein neuer Abschnitt `## … Koordinator` steht. Kommt Post, arbeitest du sie ab und gibst wieder ab; danach wartest du erneut. Kommt 3 h nichts, darfst du enden.
