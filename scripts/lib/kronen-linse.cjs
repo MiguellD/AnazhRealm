@@ -24,6 +24,13 @@
 //     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
 //       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }
 //     bildAus(meshes) → die ganze Stufe als Bild (Krone UND Rinde: die Rinde deckt voll) — die L0-Deckungs-Tafel.
+//
+// (5) DER POP AM WECHSEL (lod.K5) — je Vorlage jede gezeigte Stufe gegen die L0 an der Grenze, die das Gesetz des Wirts aus ihrer
+//     Zeile legt: der Kanten-Versatz (Chamfer der Silhouetten in den Bildpunkten des Abstands, die Messung der Station am Bau).
+//       wechselProbe({ ids, kern, wirt, fern, grenze? }) → { txt, bruch } (gate:haus-fern P: Haus, Ausstattung, Tor)
+//
+// (6) DER WURF-ABDRUCK — die IoU zweier Werfer entlang einer Sonne auf y = 0 (gate:tor-fern W, gate:haus-fern W).
+//       wurfIou(a, b, d, r) → 0..1
 "use strict";
 
 const AZIMUTE = 8;
