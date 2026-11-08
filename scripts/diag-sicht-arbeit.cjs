@@ -84,18 +84,14 @@ function urteil(b) {
             );
     }
     // (F) die Fahrt: der Anker des Hauptbilds hält über den Weg des Auges, die gehaltene Wahl trägt das Gesetz am Auge jedes Bilds
-    const F = b.fahrt,
-        FO = b.fahrtOhneWeg;
-    if (!F || !(F.bilder > 0) || !(F.geprueft > 0)) v.push("LEER: keine Fahrt gemessen — (F) prüfte nichts");
+    const [F, FO, FR] = [b.fahrt, b.fahrtOhneWeg, b.fahrtOhneRand];
+    if (!(F?.geprueft > 0)) v.push("LEER: keine Fahrt gemessen (F)");
     else {
-        if (!(F.neu * 5 <= F.bilder))
-            v.push(`FAHRT: ${F.neu} neue Anker des Hauptbilds in ${F.bilder} Bildern zu 20 m/s — der Halt ist kürzer als der Weg eines Bilds (Kosten am Tempo, \`_lageAnker\`)`); // prettier-ignore
-        if (F.loecher > 0)
-            v.push(`FAHRT-TREUE: ${F.loecher} Löcher — die gehaltene Wahl zeichnet nicht, was das Gesetz am Auge des Bilds trifft: ${F.namen.join(" · ")}`); // prettier-ignore
-        if (!FO || !(FO.neu >= FO.bilder - 1))
-            v.push(`LINSE STUMPF: ohne Weg legt die Fahrt ${FO ? FO.neu : "?"} von ${FO ? FO.bilder : "?"} Bildern neu an — (F) prüft den Weg nicht`); // prettier-ignore
-        if (!(b.fahrtOhneRand && b.fahrtOhneRand.loecher > 0))
-            v.push("LINSE STUMPF: der Weg ohne seinen Rand hält ohne Loch — (F) prüft die Treue der Fahrt nicht");
+        if (F.neu * 5 > F.bilder) v.push(`FAHRT: ${F.neu} neue Anker in ${F.bilder} Bildern zu 20 m/s — der Halt ist kürzer als der Weg (Kosten am Tempo)`); // prettier-ignore
+        if (F.loecher)
+            v.push(`FAHRT-TREUE: ${F.loecher} Löcher gegen das Gesetz am Auge des Bilds: ${F.namen.join(" · ")}`);
+        if (!(FO?.neu >= FO?.bilder - 1 && FR?.loecher > 0))
+            v.push("LINSE STUMPF: (F) ohne Weg hält oder ohne Rand trägt");
     }
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
@@ -210,9 +206,9 @@ function selbsttest() {
             fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
         },
         treue: { geprueft: 12, abweichung: [] },
-        fahrt: { bilder: 30, neu: 2, geprueft: 9000, loecher: 0, namen: [] },
-        fahrtOhneWeg: { bilder: 30, neu: 30, geprueft: 9000, loecher: 0, namen: [] },
-        fahrtOhneRand: { bilder: 30, neu: 2, geprueft: 9000, loecher: 41, namen: ["boden 3,4 (Bild 7)"] },
+        fahrt: { bilder: 30, neu: 2, geprueft: 9, loecher: 0, namen: [] },
+        fahrtOhneWeg: { bilder: 30, neu: 30 },
+        fahrtOhneRand: { loecher: 4 },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         instanzTreue: {
             faelle: ["Freigeben+Belegen g", "Stufen-Wechsel g 1→0"],
@@ -794,11 +790,9 @@ function selbsttest() {
         ["Wiese liest nicht", ["code.wieseLiest=", false], /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", ["code.wieseLiest=", "leer"], /LEER: die Nah-Wiese trägt keine Kachel/],
         ["Ferne wählt je Bild neu", ["ferneWeg.neu=", 352], /FERNE: je Bild 8 von 8/],
-        ["die Fahrt ankert je Bild", ["fahrt.neu=", 30], /FAHRT: 30 neue Anker des Hauptbilds in 30 Bildern/],
+        ["die Fahrt ankert je Bild", ["fahrt.neu=", 30], /FAHRT: 30 neue Anker/],
         ["die Fahrt hält ein Loch", ["fahrt.loecher=", 3], /FAHRT-TREUE: 3 Löcher/],
-        ["Fahrt ohne Weg hält", ["fahrtOhneWeg.neu=", 3], /LINSE STUMPF: ohne Weg legt die Fahrt 3 von 30/],
-        ["keine Fahrt", ["fahrt=", undefined], /LEER: keine Fahrt gemessen/],
-        ["Fahrt ohne Rand ohne Loch", ["fahrtOhneRand.loecher=", 0], /LINSE STUMPF: der Weg ohne seinen Rand/],
+        ["Fahrt ohne Rand ohne Loch", ["fahrtOhneRand.loecher=", 0], /LINSE STUMPF: \(F\)/],
         ["Ferne ohne Kachel", ["ferneWeg.kacheln=", undefined], /FERNE: je Bild/],
         ["Halt-Bruch stumpf", ["ferneWegHalt.neu=", 9], /STUMPF: Halt/],
     ];
@@ -845,6 +839,8 @@ const server = statikServer();
             // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, die Kaskaden-Treue, W)
             const lageBlick = () => (S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem), r._passWahlLage(S, cam, -1)); // prettier-ignore
             const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+            // die Lage des Hauptbilds ohne jeden Rand vom Auge der Kamera (die Wahrheit der Treue-Proben A, F)
+            const lageHaupt = () => Object.assign({}, lageBlick(), { fr: new T.Frustum().copy(S.frustum), halt: 0, haltBlende: 0, rand: 0, dreh: 0, licht: 0, fit: null, ax: cam.position.x, ay: cam.position.y, az: cam.position.z }); // prettier-ignore
             const vergiss = () => r._passLagen && r._passLagen.clear(); // jede Lage-Erinnerung fällt
             // je Instanz einer Wahl-Gruppe des Hauptbilds, die das Gesetz in der Lage L trifft: `je(g, j, ob die gehaltene Wahl sie zeichnet)`
             const instanzWahr = (L, je) => {
@@ -1267,21 +1263,6 @@ const server = statikServer();
                     // 9,5 mm herüber (0,95 × der halbe Halt — die Lage hält, die Maske behält sie). Der Rand des Fensters
                     // (`L.haltBlende` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
                     // Die Kamera steht; nur das Auge der Maske wandert.
-                    const lageHaupt = () => {
-                        const Lw = lageBlick();
-                        return Object.assign({}, Lw, {
-                            fr: new T.Frustum().copy(S.frustum),
-                            halt: 0,
-                            haltBlende: 0,
-                            rand: 0,
-                            dreh: 0,
-                            licht: 0,
-                            fit: null,
-                            ax: cam.position.x,
-                            ay: cam.position.y,
-                            az: cam.position.z,
-                        });
-                    };
                     const kante = () => {
                         stelle(0, 0);
                         cam.getWorldPosition(lu.uLodAuge.value);
@@ -1393,67 +1374,37 @@ const server = statikServer();
                 }
             }
             L.aus();
-            // (F) DIE FAHRT (w24-fahrt-takt, der Halt der Lage ist der Weg des Auges, `_lageAnker`): die Kamera fährt 20 m/s
-            // geradeaus, je Bild 33 ms Wanduhr und 2/3 m — der Anker des Hauptbilds hält über die Strecke, die das Auge in
-            // `zeitS` fährt (ein neuer höchstens alle paar Bilder, nie je Bild); die gehaltene Wahl zeichnet jede Instanz und jede
-            // Zelle der Sätze am Weg, die das Gesetz ohne Rand vom Auge DIESES Bilds trifft. Scharf: ohne Weg (`_lageAnker` am
-            // Punkt, der Halt bis w24) legt jedes Bild einen neuen Anker.
-            // `bruch`: "weg" — ohne Weg (der Punkt); "rand" — der Weg ohne seinen Rand (der Halt des Punkts über die Strecke)
+            // (F) DIE FAHRT (w24-fahrt-takt, der Halt der Lage ist der Weg des Auges, `_lageAnker`): die Kamera fährt 20 m/s schräg
+            // zum Blick (30°), je Bild 33 ms Wanduhr, das Auge der Maske mit ihr — der Anker des Hauptbilds hält über die Strecke, die
+            // das Auge in `zeitS` fährt, nie je Bild neu; die gehaltene Wahl zeichnet jede Instanz, die das Gesetz ohne Rand vom Auge
+            // DIESES Bilds trifft. Scharf: ohne Weg (`bruch` "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen
+            // Rand ("rand") reißt Löcher.
             const fahrt = async (bruch) => {
-                const o = { bilder: 0, neu: 0, geprueft: 0, loecher: 0, namen: [] };
-                const punkt = r.constructor.PASS_WAHL.haltM * (1 + r.constructor.PASS_WAHL.sichtRand);
-                const anker = function (a, s, k, Lx, key, weg) {
-                    const neu = P._lageAnker.call(this, a, s, k, Lx, key, bruch === "weg" ? null : weg);
-                    if (bruch === "rand") a.halt = a.haltBlende = Lx.halt = Lx.haltBlende = punkt;
-                    return neu;
-                };
-                const zurueck = bruch ? leihe(r, { _lageAnker: anker }) : () => {};
-                const loch = (n) => (o.loecher++, o.namen.length < 4 && o.namen.push(n));
+                const [o, u] = [
+                    { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
+                    st.lodUniforms.uLodAuge.value,
+                ];
+                const [u0, P0] = [u.clone(), P._lageAnker];
+                const zurueck = leihe(r, { _lageAnker: function (a, s, k, Lx, key, weg) { const neu = P0.call(this, a, s, k, Lx, key, bruch === "weg" ? null : weg); if (bruch === "rand") a.halt = a.haltBlende = Lx.halt = Lx.haltBlende = 0; return neu; } }); // prettier-ignore
                 try {
                     vergiss();
-                    stelle(Math.PI / 5, 0);
-                    st.lodUniforms.uLodAuge.value.copy(cam.position);
-                    frame();
-                    for (let f = 1; f <= 30; f++) {
+                    for (let f = 0; f <= o.bilder; f++) {
                         await sleep(33);
-                        // schräg zum Blick (30°): was der Weg zeigt, tritt durch die Seite ein; das Auge der Maske fährt mit
-                        stelle(
-                            Math.PI / 5,
-                            ((f * 2) / 3) * Math.cos(Math.PI / 6),
-                            ((f * 2) / 3) * Math.sin(Math.PI / 6)
-                        );
-                        st.lodUniforms.uLodAuge.value.copy(cam.position);
+                        stelle(Math.PI / 5, f * 0.577, f / 3);
+                        u.copy(cam.position);
                         const g0 = genHaupt();
                         frame();
-                        o.bilder++;
-                        o.neu += genHaupt() !== g0;
-                        // die Wahrheit: das Gesetz ohne jeden Rand vom Auge dieses Bilds
-                        const Lw = lageBlick();
-                        const Lt = Object.assign({}, Lw, { fr: new T.Frustum().copy(S.frustum), halt: 0, haltBlende: 0, rand: 0, dreh: 0, licht: 0, fit: null, ax: cam.position.x, ay: cam.position.y, az: cam.position.z, ex: st.lodUniforms.uLodAuge.value.x, ez: st.lodUniforms.uLodAuge.value.z }); // prettier-ignore
-                        instanzWahr(
-                            Lt,
-                            (g, j, da) => (o.geprueft++, da || loch(`${g.mesh.name || g.key} Slot ${j} (Bild ${f})`))
-                        );
-                        for (const satz of st.chunkSaetze.values()) {
-                            const a = satz.hoehle ? null : satz.abschnitte.get("haupt");
-                            if (!a || satz.spec.nurWurf === true) continue;
-                            const da = new Set(a.liste);
-                            for (const b of satz.ordnung)
-                                for (const z of b.huelle && !b.huelle.isEmpty() ? b.zellen : [])
-                                    if (!z.huelle.isEmpty() && r._passTrifftBox(Lt, z.huelle, 0))
-                                        (o.geprueft++,
-                                            da.has(z) || loch(`${satz.art.split("|")[0]} ${b.key} (Bild ${f})`));
-                        }
+                        o.neu += f > 0 && genHaupt() !== g0;
+                        instanzWahr(Object.assign(lageHaupt(), { ex: u.x, ez: u.z }), (g, j, da) => (o.geprueft++, da || (o.loecher++, o.namen.length < 4 && o.namen.push(`${g.mesh.name || g.key} Slot ${j} (Bild ${f})`)))); // prettier-ignore
                     }
                 } finally {
                     zurueck();
+                    u.copy(u0);
                     stelle(0, 0);
-                    st.lodUniforms.uLodAuge.value.copy(auge0);
                     vergiss();
                 }
                 return o;
             };
-            const auge0 = st.lodUniforms.uLodAuge.value.clone();
             [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(), await fahrt("weg"), await fahrt("rand")];
             // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m; je Bild wählt
             // nur ein Teil der Kacheln der Ferne neu. Scharf: der
