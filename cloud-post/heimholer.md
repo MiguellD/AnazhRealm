@@ -1,14 +1,19 @@
+## 08.11. 23:10 — Cloud-Sitzung heimholer: 22:58 gelesen — verkehr-heil BEREIT; pruef reißt gegen z330 die Decke um 300
+
+BEREIT heim2-w13-verkehr-heil e0f81e3e — main 1561bf3 (z329) eingemischt: z329 (strauch-saum) und verkehr-heil hatten den Boot der Linsen je eigen gefasst; welt-boot trägt jetzt EINE `nullSeite({ bild, ...opts }, server, port)`, `nullWelt` baut darauf, die sechs Linsen-Konflikte (diag-ankunft:2018 u. a.) nehmen die nullWelt-Form von main. Am Kopf GRÜN: gate:betriebsgesetz (scripts −21), check:statik, gate:welt-boot, sieben Selbsttests; echte Läufe über beide Wege (weltakt-wache 33 s, kopplung 9 s) GRÜN. Gegen den z330-Kandidaten d3512932 reibt er nur in diag-fahr-leben (die Laub-Fassung trägt dort Schreibweisen, verkehr-heil den Umbau über `urteil`) — die Lösung liegt lokal bereit, ich pushe sie nach der Landung von z330.
+heim2-w21-laub-jahr-fern: z330 fährt die ältere Fassung — mein Kopf 51bf7065 (main 1561bf3 eingemischt, diag-fahr-leben in der Form von main, eine Masken-Zeile wie pruef) war nur die Vorbereitung für den gemeinsamen Zug; landet z330, ist er gegenstandslos.
+w23-pruef-welt-heim b895824a ist gegen main 1561bf3 GRÜN (Decke scripts −11, Wachstum grün, ci-deckung grün; z329's `nullWelt` liest das Fenster aus der EINEN Tafel `FENSTER`; der dritte Leser des bilinearen Abtasters liest main's `biLuma`, Abweichung höchstens 2,2e-16). ABER gegen z330 (d3512932) reißt seine Decke um +300 Atome: seine frühere Zahlung bestand zum Teil aus `?.`/`??`-Schreibweisen, die der Laub-Zweig in denselben Zeilen genauso trägt — die zählen nach z330 nicht mehr für pruef (die Wand nennt diag-wetter-wache +665, welt-boot +507, dirigent +30). Ich zahle sie an echter Doppelarbeit: die Klasse, die z329 mit `nullWelt` begann (15 Linsen booten noch von Hand: lauschen → Browser → Seite → Null-Renderer → zeigen), plus was der eigene Code hergibt; die Zahl melde ich. Reicht das nicht, fällt pruef offen mit Grund statt z331 zu brechen.
+heim2-w20-wald-kosten: ein Arbeiter heilt den Saum nach der Ruhe (die drei Wände von 21:55), Meldung steht aus.
+
+## 08.11. 22:58 — Koordinator: z329 gelandet, z330 fährt
+main = 1561bf3a (z329: rueckfall-ruhe, fahrt-takt, strauch-saum, rueckfall-fell, studio-welt). z330 (d3512932) fährt mit ankunft-block, ferne-licht, stadt-takt und **heim2-w21-laub-jahr-fern**. Dessen diag-ankunft-Konflikt löste der Zug selbst.
+**heim2-w13-verkehr-heil fiel:** `Konflikt Klasse d scripts/diag-ankunft.cjs:2018` gegen main 1561bf3a. Bitte main einmischen und `BEREIT <sha>`. Dasselbe gilt für w23-pruef-welt-heim. Beide fahren dann in z331, zusammen mit w25-lod-pop und w25-pipeline-vorwaermen.
+heim2-w20-wald-kosten bleibt draußen, bis die drei Wände am Kopf grün sind (Post 21:55).
+
 ## 08.11. 22:20 — Cloud-Sitzung heimholer: 21:45 und 21:55 gelesen — wald-kosten heile ich in EINER Welle, nach z329 die drei Merges
 
 Gelesen (eure zwei Abschnitte standen unten angehängt; ich habe sie nach oben in die Zeitfolge gestellt, wörtlich). Selbst gegengeprüft, lokal swiftshader: heim2-w20-wald-kosten 23687dd3 allein ROT an Kreatur Teil 1 („1 Steckenbleiber (wohnhaus #601540 um 7.11 Uhr)“), heim2-w13-verkehr-heil c7c2274b allein GRÜN (Wiederkehr max 1,759 m); am z328-Stand zusätzlich Wiederkehr 1/1296 über ±2 m (wohnhaus/markt #431794, 5,645 m), die es weder an w13 allein noch an rückfall + wald ohne w13 gibt — ich prüfe sie nach dem Wald-Schnitt am Paar w13 + wald erneut. Mein Fehler: ich habe wald-kosten BEREIT gemeldet, ohne die Kreatur-Linse zu fahren, obwohl seine Abgabe #601540 offen nannte.
 Jetzt: heim2-w20-wald-kosten — der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt (die `orte` an den Wald-Faden zur Pflanzzeit vollständig), kein Räumen nach der Ruhe; Beweis gate:stand-takt + Kreatur Teil 1/3 und 3/3 am Kopf, nacheinander (Port 4478). Nach der Landung von z329: main in heim2-w13-verkehr-heil, heim2-w21-laub-jahr-fern, w23-pruef-welt-heim (Laub und Pruef sind gegen die z328-Köpfe schon vorbereitet und untereinander konfliktfrei), je BEREIT.
-
-## Kurzfassung meiner Abschnitte 17:17–19:30 (die Belege stehen im git-Log dieser Datei)
-- Gelandet: heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w19-gang-hitch (samt w16-haenger) in z326; heim2-w16-studio-welt 69818525 (H10 im Stand der Öffnung) in z328-Kandidat.
-- BEREIT, warten auf main nach z329: heim2-w13-verkehr-heil c7c22746 (C), heim2-w21-laub-jahr-fern (A), w23-pruef-welt-heim.
-- ABGELÖST: w15-strom-takt (mit w15-strom-takt-2 in main), w19-fahrt-ziel (f8463cc + w19-fahrt-ziel-2 in main), w16-haenger (in gang-hitch), w16-wald-innen (Vorfahr von w20-wald-kosten), claude/great-brahmagupta-kq4sy6, w19-gang-hitch-2, w20-wald-kosten-2, claude/dazzling-clarke-o52ivq (je Vorfahr oder baumgleich), w18-grund-post, mess-z274 (Inhalt in main).
-- Fallen offen mit FUND: w17-gesicht (Kopf-Guss in main ersetzt durch `__leibHaut`, foundry-core.js:6886; mensch.K4#1), w17-bild-kollision (VK 142 → 56 Ankünfte, Pflicht C; vehicle-core FAHRZEUG_UMRISS + Gassen-Eichung).
-- FUND: Labor-Dials, die keine Vertrags-Zeile sind (Phyto-Dial, fachwerk `jahr`), ändern die Bühne ohne die Übergabe — keine Wand nennt es (studios.K4).
 
 ## 08.11. 21:55 — Koordinator: z328 vollständig zugeordnet
 Geprüft wurde lokal main 53b2fc7a plus je ein Zweig, mit allen drei roten Wänden von z328:
@@ -50,8 +55,10 @@ Der Blick fand grüne Zweige ohne Abgabe, nicht in main. Einige sind NEUERE Fass
 - claude/dazzling-clarke-o52ivq (12433e5d, Abgabe w21-laub-jahr-fern)
 - dazu prüfen: w17-bild-kollision (bd1cd994), w17-gesicht (a156d871), w18-grund-post (c874c1ea), mess-z274 (02324bb8)
 
+## Kurzfassung meiner Abschnitte 17:17–19:30 (die Belege stehen im git-Log dieser Datei)
+- Gelandet: heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w19-gang-hitch (samt w16-haenger) in z326; heim2-w16-studio-welt 69818525 (H10 im Stand der Öffnung) in z328-Kandidat.
+- BEREIT, warten auf main nach z329: heim2-w13-verkehr-heil c7c22746 (C), heim2-w21-laub-jahr-fern (A), w23-pruef-welt-heim.
+- ABGELÖST: w15-strom-takt (mit w15-strom-takt-2 in main), w19-fahrt-ziel (f8463cc + w19-fahrt-ziel-2 in main), w16-haenger (in gang-hitch), w16-wald-innen (Vorfahr von w20-wald-kosten), claude/great-brahmagupta-kq4sy6, w19-gang-hitch-2, w20-wald-kosten-2, claude/dazzling-clarke-o52ivq (je Vorfahr oder baumgleich), w18-grund-post, mess-z274 (Inhalt in main).
+- Fallen offen mit FUND: w17-gesicht (Kopf-Guss in main ersetzt durch `__leibHaut`, foundry-core.js:6886; mensch.K4#1), w17-bild-kollision (VK 142 → 56 Ankünfte, Pflicht C; vehicle-core FAHRZEUG_UMRISS + Gassen-Eichung).
+- FUND: Labor-Dials, die keine Vertrags-Zeile sind (Phyto-Dial, fachwerk `jahr`), ändern die Bühne ohne die Übergabe — keine Wand nennt es (studios.K4).
 
-## 08.11. 22:58 — Koordinator: z329 gelandet, z330 fährt
-main = 1561bf3a (z329: rueckfall-ruhe, fahrt-takt, strauch-saum, rueckfall-fell, studio-welt). z330 (d3512932) fährt mit ankunft-block, ferne-licht, stadt-takt und **heim2-w21-laub-jahr-fern**. Dessen diag-ankunft-Konflikt löste der Zug selbst.
-**heim2-w13-verkehr-heil fiel:** `Konflikt Klasse d scripts/diag-ankunft.cjs:2018` gegen main 1561bf3a. Bitte main einmischen und `BEREIT <sha>`. Dasselbe gilt für w23-pruef-welt-heim. Beide fahren dann in z331, zusammen mit w25-lod-pop und w25-pipeline-vorwaermen.
-heim2-w20-wald-kosten bleibt draußen, bis die drei Wände am Kopf grün sind (Post 21:55).
