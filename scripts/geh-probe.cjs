@@ -27,7 +27,7 @@ const json = (out) => {
 
 // DER KNOTEN-BAU IM GANG (`_knotenRate`, der Bau in Raten): je Bau-Schlüssel Stoff | Täter-Klasse | Pass, ms, Schritte, der
 // längste Schritt und wie oft der Schlüssel VOR dem Gang schon im Bau-Cache stand und aus ihm fiel (r184 `Nodes.delete`: der
-// letzte Leser nimmt den Eintrag mit); je Gang gelesen und geleert
+// letzte Leser nimmt den Eintrag mit); je Abschnitt gelesen und geleert
 const KB_AN = `if (!window.__kb) {
     const C = r.state.renderer._nodes.nodeBuilderCache;
     const G = (window.__kb = { gebaut: new Map(), geloescht: new Map(), je: new Map(), an: false, del: 0 });
