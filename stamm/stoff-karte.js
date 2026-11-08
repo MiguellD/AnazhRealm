@@ -1855,7 +1855,8 @@ fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
     return s / (sb * sb);
 }
 // DER SCHLÜSSEL DER WAHL (phyto-core karteSaumSchluessel): über dem Kronen-Fuß das Band — wählbar ab der Schwelle seiner
-// Deckung, g + Stärke × (Muster − ½) in der Zelle der Stufe an der gröberen Achse des Texels, ganz Gedecktes +2 (es bleibt);
+// Deckung, g + Stärke × (Muster − ½) in der Zelle der Stufe an der gröberen Achse des Texels, ganz Gedecktes + 2 × Stärke (es
+// bleibt);
 // darunter der Stamm — Stufe 0 bleibt, wie sie backt (4), tiefer die geglättete Deckung des Puffers flag; 0 heißt nie —
 // in den anderen Puffer
 @compute @workgroup_size(16, 16)
@@ -1880,7 +1881,7 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
         let gb = band(g.x, g.y, fe, st).a / f32(p.fuss);
         if (gb >= saum.art.w) {
             let m = saumMuster(X / st.x, Y / st.y, saum.art.z * f, saum.art.x > 0.5);
-            kk = max(1e-9, gb + select(0.0, 2.0, gb >= 1.0) + saum.art.y * (m - 0.5));
+            kk = max(1e-9, gb + select(0.0, 2.0 * saum.art.y, gb >= 1.0) + saum.art.y * (m - 0.5));
         }
     }
     if (kk > 0.0) { kk += 1e-6 * c; }

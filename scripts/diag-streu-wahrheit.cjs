@@ -36,15 +36,11 @@ const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
 
-// Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
-function codecAus(phytoSrc) {
-    const sandbox = {};
-    new Function("self", phytoSrc)(sandbox);
-    return sandbox.__phytoCore || null;
-}
+// Der Karten-Codec, je Ruf frisch aus der Quelle (der EINE Lader `kernAusText`; bis w23-karte-l2 lud ihn die Linse selbst)
+const codecAus = () => kernAusText(PHYTO, "__phytoCore");
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
 const { linSrgb, klassenMasse } = require("./lib/abnahme-urteil.cjs");
-const { kernKontext } = require("./lib/asset-worker-harness.cjs");
+const { kernKontext, kernAusText } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
@@ -181,9 +177,9 @@ function pruefe(o = {}) {
     // das Fundament (`_archFundMat`, der Stoff des Podests) fiel mit dem Podest (K10: der Erdbau des Plans trägt das Haus) —
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
-    for (const f of kartenFarbe(o.core || codecAus(PHYTO))) fehler.push(f);
+    for (const f of kartenFarbe(o.core || codecAus())) fehler.push(f);
     // (6) DER SAUM DER KARTE — am echten Codec, je Art des Kerns
-    const saum = kartenSaum(o.core || codecAus(PHYTO), d.presets, d.cfg.impostor);
+    const saum = kartenSaum(o.core || codecAus(), d.presets, d.cfg.impostor);
     fehler.push(...saum.fehler);
     return { fehler, arten, weich, saum: saum.n };
 }
@@ -192,7 +188,7 @@ function main() {
     if (SELBSTTEST) {
         const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
-        const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
+        const codec = (bruch) => { const c = Object.assign({}, codecAus()); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
         // [Name, Muster, Bruch]
         const brueche = [
             ["Farn mit roher Palette", /farn \(emitFern\): new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
@@ -204,12 +200,12 @@ function main() {
                 { src: (t) => stammLib.ersetze(t, "_kistenPool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
             ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
-            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus(PHYTO)) }],
+            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus()) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
-            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
-            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus(PHYTO)) }],
+            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
+            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
             ["Stufe 0 ohne Saum (main)", /der Umriss franst nicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
-            ["die Zelle der Blattgröße (Strauch 55 Texel)", /der Umriss franst nicht/, { core: ((c) => ((c.KARTEN_GESETZ.saumZelle = 55), c))(codecAus(PHYTO)) }],
+            ["die Zelle der Blattgröße (Strauch 55 Texel)", /der Umriss franst nicht/, { core: ((c) => ((c.KARTEN_GESETZ.saumZelle = 55), c))(codecAus()) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;

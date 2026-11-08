@@ -3839,9 +3839,10 @@
     //                 Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
     //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
     //                 Saums, laub-kante strauch 0,4023, birke 0,3293)
-    //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (6: der 13 × 13-Kern, Binomial 12 / 4096), der Rand der
+    //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (8: der 17 × 17-Kern, Binomial 16 / 65536), der Rand der
     //                 Ansicht leer — der Rahmen ist nie der Umriss (an der Scheibe, Kohärenz 0,944: Zelle 6 / Band 4 / Stärke
-    //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; 8 / 6 / 2,4 / 0,05 auf 0,36 Laub, 0,52 Nadel)
+    //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
+    //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
     //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
     var KARTEN_GESETZ = {
         schwelle: 0.34,
@@ -3852,8 +3853,8 @@
         glaetteBis: 2,
         lichtTeiler: 4,
         saum: 2.4,
-        saumZelle: 8,
-        saumBand: 6,
+        saumZelle: 6,
+        saumBand: 8,
         saumMin: 0.05,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
@@ -3942,8 +3943,8 @@
     // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
-    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt +2 darüber und bleibt
-    //     (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
+    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
+    //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
     //     0,3919, die Bäume 0,17–0,21)
@@ -3988,7 +3989,7 @@
                 key[i] = Math.max(
                     1e-9,
                     g[i] +
-                        (g[i] >= 1 ? 2 : 0) +
+                        (g[i] >= 1 ? 2 * G.saum : 0) +
                         G.saum * (karteSaumMuster(X / st[0], Y / st[1], G.saumZelle * f, saum.nadel) - 0.5)
                 );
             if (key[i] > 0) key[i] += 1e-6 * c[i];
