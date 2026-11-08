@@ -62,11 +62,8 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
-                // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`); DAS BAU-BILD
-                // (w25-ankunft-block-2, `_ladeBildFaellig` `bauBild`: fällig nur durch die Schuld der Erst-Zeichnung) gibt sie ihr ganz.
-                // Es trägt das ganze Spiel wie jedes Lade-Bild — als Takt ohne Spiel hielt es die Kette des Lichts (`tickDayNight`:
-                // Tafeln, Umgebung, Belichtung), der Term „licht“ schloss Radeon kalt bei 20,3 statt 8,1 s (cbe61706).
-                this._ladeBildTakt = bild && this._ladeTakt() ? (this._gpuLeine.bauBild ? "bau" : true) : false;
+                // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
+                this._ladeBildTakt = bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
                 // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
                 // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
@@ -725,18 +722,16 @@ class AnazhRealm_dirigent_takt {
     // DIE GEHALTENE ZEIT IST DAS GUTHABEN (`ladeGuthaben`, `_knotenRate`): hielt die GPU-Leine das Bild, während die Schuld offen
     // war (`gehaltenMs`, `_gpuLeineFrei`), baut das fällige Bild so lange — der Bau wartete auf die GPU, nie auf den Faden
     // (swiftshader, CPU ×4: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der Haupt-Faden 2,3 s von 15 s belegt).
-    // DAS BAU-BILD (`bauBild`, w25-ankunft-block-2): fällig nur durch die Schuld — die Uhr ging nicht ab, und eine Lücke fehlt noch (es
-    // kann nicht das Weltbild sein); seine Frist gehört der Zeichnung (`_ladeFrist`).
     _ladeBildFaellig(L) {
-        L.bauBild = false;
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
         const E = this._erstZeichnung;
         const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
-        const uhr = jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS;
-        const ganz = !uhr && this._weltbildLuecken().length === 0;
-        if (schuld || uhr || ganz) {
-            L.bauBild = schuld && !uhr && !ganz;
+        if (
+            schuld ||
+            jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
+            this._weltbildLuecken().length === 0
+        ) {
             if (E) [E.ladeGuthaben, E.ladeSchuld] = [L.gehaltenMs || 0, false];
             L.gehaltenMs = 0;
             L.ladeBild = jetzt;
@@ -1700,12 +1695,7 @@ class AnazhRealm_dirigent_takt {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
-        if (this._ladeTakt())
-            return this._ladeBildTakt === "bau"
-                ? 0
-                : this._ladeBildTakt
-                  ? AnazhRealm.LADE_TAKT_MS / 2
-                  : AnazhRealm.LADE_TAKT_MS;
+        if (this._ladeTakt()) return this._ladeBildTakt ? AnazhRealm.LADE_TAKT_MS / 2 : AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1770,11 +1760,8 @@ class AnazhRealm_dirigent_takt {
             [this._ladeFristBis, this._ladeZeichnungBis] = [performance.now() + AnazhRealm.LADE_TAKT_MS, null];
             Promise.resolve().then(() => (this._ladeFristBis = this._ladeZeichnungBis = null));
         }
-        // das Bau-Bild (`_ladeBildTakt` „bau“): die Leser des Takts gehen nur ihr Stück, die Frist gehört der Zeichnung
         if (!zeichnung)
-            return this._ladeBildTakt
-                ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS * (this._ladeBildTakt === "bau" ? 1 : 0.5)
-                : this._ladeFristBis;
+            return this._ladeBildTakt ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
         if (this._ladeZeichnungBis == null) {
             const E = this._erstZeichnung;
             const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;

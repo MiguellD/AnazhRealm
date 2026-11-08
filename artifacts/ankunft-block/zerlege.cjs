@@ -223,6 +223,16 @@ function berichtAB(teil, Z) {
             zeile(`${pre}GLIEDER vor dem Bild (Median ms): ${w.filter(([k]) => !/:/.test(k) || /^(job|karte)/.test(k)).map(([k, v]) => `${k.replace(/^_tick/, "")} ${Math.round(v)}`).join(" · ")}`);
             const zahl = (k) => zs.map((z) => ((((z.out.nach && z.out.nach.glied) || {})[k] || [0, 0])[1])).join("/");
             zeile(`${pre}ZAHLEN vor dem Bild je Boot: Ferne gebaut ${zahl("fern:gebaut")} · gefallen ${zahl("fern:gefallen")} · Fern-Kacheln-Rufe ${zahl("_nahWieseFernKachel")} · Büschel-Rufe ${zahl("_nahWieseKachelBueschel")} · Lade-Bilder Uhr ${zahl("lade:uhr")} · Schuld ${zahl("lade:schuld")} · ganz ${zahl("lade:ganz")}`); // prettier-ignore
+            // die Foundry bis zum Bild: wann die Schlange (wartend + im Werk) zuletzt nicht leer war, ihr Höchststand, und was dem Bild
+            // in seiner letzten Sekunde fehlte
+            const fo = (z) => {
+                const P = (z.out.proben || []).filter((q) => q.t <= z.out.weltbildDa);
+                const n = (q) => ((q.schlange || "").match(/\d+/g) || []).reduce((m, x) => m + +x, 0);
+                const voll = P.filter((q) => n(q) > 0);
+                const letzt = P.filter((q) => q.t > z.out.weltbildDa - 1000 && q.fehlt && q.fehlt.length).map((q) => q.fehlt.join("+"));
+                return `leer ab ${voll.length ? sek(voll[voll.length - 1].t) : "–"} s, max ${Math.max(0, ...P.map(n))} · zuletzt fehlt ${letzt.slice(-2).join(" / ").slice(0, 90)}`;
+            };
+            zeile(`${pre}FOUNDRY bis zum Bild je Boot: ${zs.map(fo).join(" | ")}`);
             zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
         });
         return;
