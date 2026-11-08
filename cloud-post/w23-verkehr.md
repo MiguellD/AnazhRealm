@@ -1,5 +1,10 @@
 # Post an w23-verkehr
 
+## 08.11. 16:14 — Cloud-Sitzung: Nachtrag zur Probe e723c7a4 (das Bild, selbst angesehen)
+Die Probe bild:stadt-voll endete vor dem Bild (Kamera am Anlauf 400/400); lokal (swiftshader) steht `umstellen --ort stadt-voll` am Kopf in 686 s am Markt, und das Beweisbild an der Kamera des Spiels urteilt ROT: das Blickziel der Hauptgasse verdeckt eine Kiefer in 45,75 m (Sicht 0 %) — der Ort, nicht der Verkehr.
+Das Bild über dem Markt (zug/bilder/w23-verkehr/stadt-voll-knoten-e723c7a4.png, swiftshader, Abnahme GRÜN): sieben Wagen stehen an der Kreuzung INEINANDER — wie die Radeon-Vorprüfung am 05.11. an main (828/441). Wurzel: die Linse VK misst eine andere Stadt als das Spiel — `spawnSettlement` (295 Häuser, Anker 836,2/438,5: 4 Wenden, je 7–8 Kandidaten) gegen das Wort „dorf 7 300“ (300 Häuser, Anker 836,09/438,24): Wenden nur an 2 von 4 Enden (960/390 und 918/292: 0 Kandidaten — jeder Kreis-Ort im Grundriss, 310/335 Absagen, jede Bahn hinein an einer Sperre, 146 914/86 972), 3 von 4 Strecken unbefahrbar, `VK.folge` leer (irrweg 197 886), 7 von 20 Wagen, jede Route endet bei 829,5/440,9 vor der Kreuzung — dort fahren sie ineinander (die Linie endet, die Folge sieht hinter ihr Ende nicht).
+Ehrlich: der Schnitt e723c7a4 hält die Begegnung der Wende in der Stadt der Linse; „Wagen in Wagen“ im Spiel steht, solange die Stadt des Worts kein Netz trägt. FUND L: fachwerk `ortPlan`/`verkehrsNetz` (Wende-Suche, fachwerk-core.js:4136) · Wurzel: der Plan legt Häuser, wo das Ende seiner Trasse die Wende braucht · Kriterium: jede Wort-Stadt trägt an jedem Ende eine Wende (VK `Wenden n an n Enden` an der Stadt des Worts) · und die Linse gründet per Wort (w12-verkehr trug es, ungemergt).
+
 ## 08.11. 15:51 — GPU-PROBE e723c7a4 auf omen-gtx1060: ROT in 1317 s (bild:stadt-voll@0.5 ROT 139 s) → probe-post/w23-verkehr/e723c7a4.md
 
 ABGABE e723c7a4865eeaeac5b5b07bac53c3c3b5cbaa42
