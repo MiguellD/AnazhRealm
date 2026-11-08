@@ -2176,30 +2176,35 @@ function luftTiefe(o) {
         // (`maersche`, bitgenau), nie am Schuss — bis dahin marschierte die Nachsicht mit Blende 1/4 denselben Blick ein zweites Mal
         // (bis 2,6 Mio. Rufe des Gesetzes je Sicht, lokal 1,50 Mio. davon für die Strahlen in den Himmel); Schritte und Halbierung dieselben
         const maersche = new Map();
-        const treffer = (xx, yy, D) => {
+        // JE SPALTE VON UNTEN (w22-ferne-heil): die Strahlen einer Spalte liegen in EINER lotrechten Ebene (die Neigung des Blicks
+        // dreht sie über die Spalte um höchstens 0,1°, zwischen zwei gemessenen Zeilen 0,7 m auf 60 km) — der höhere liegt bei jedem
+        // Schritt über dem tieferen: er taucht frühestens am Schritt ins Gesetz, an dem der tiefere tauchte (`vor`, [a, t] vor der
+        // Halbierung), und verfehlt es, wo der tiefere es verfehlte. Schritte, Halbierung und Weg dieselben; bis dahin lief jeder
+        // Strahl ab 30 m und jeder in den Himmel 530 Schritte (Station ferne riss den Deckel 90 s, Radeon 5584e669).
+        const treffer = (xx, yy, D, vor) => {
             const nx = ((xx + 0.5) / W) * 2 - 1;
             const ny = 1 - ((yy + 0.5) / H) * 2;
             s.set(nx, ny, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
             const schl = s.toArray().join();
             if (!maersche.has(schl)) {
-                let a = 0;
-                let t = 30;
+                let [a, t] = vor || [0, 30];
                 while (t < 6e4 && !unter(t)) {
                     a = t;
                     t += Math.max(8, t * 0.01);
                 }
+                const schritt = [a, t];
                 for (let k = 0; k < 12 && t < 6e4; k++) {
                     if (unter((a + t) / 2)) t = (a + t) / 2;
                     else a = (a + t) / 2;
                 }
-                maersche.set(schl, t);
+                maersche.set(schl, [t, schritt]);
             }
-            const d = maersche.get(schl);
+            const [d, schritt] = maersche.get(schl);
             if (d >= 6e4) return null;
             const k = (s.y * d) / Hs;
             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
             const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / d - 1) <= 0.15;
-            return { d, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
+            return { d, szene, schritt, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
         const bRef = luftBetaRef(R);
         const uhr = (u) => {
@@ -2222,9 +2227,11 @@ function luftTiefe(o) {
             const gesetzOben = {};
             const inS = [[], [], []];
             const sb = [];
+            const tr = {};
+            for (let xx = 4; xx < W; xx += 8) for (let yy = H - 2, t; yy >= 0 && (t = tr[yy * W + xx] = treffer(xx, yy, D, t?.schritt)); yy -= 2);
             for (let yy = 0; yy < H; yy += 2)
                 for (let xx = 4; xx < W; xx += 8) {
-                    const t = treffer(xx, yy, D);
+                    const t = tr[yy * W + xx];
                     const i = (yy * W + xx) * 4;
                     const l = roh(L, i);
                     const l0 = roh(L0, i);
@@ -2466,17 +2473,17 @@ function luftTiefeSelbsttest(R) {
     };
     return [
         urteil(sichten(k, 0.005)).urteil === "GRUEN" || "die Referenz selbst ist ROT",
-        urteil(sichten(0, 0.005)).befunde.some((b) => /JE KANAL/.test(b)) || "ein grauer β ist nicht ROT",
+        urteil(sichten(0, 0.005)).befunde.join().includes("JE KANAL") || "ein grauer β ist nicht ROT",
         urteil(sichten(k, 0.21)).staffel["K2-1"] === "ROT" || "die Kante 21 % ist nicht ROT",
         urteil(sichten(k, 0.005, 50, R.band.linie)).staffel["K2-2"] === "ROT" || "eine Linie an der Schwelle ist nicht ROT",
         urteil(sichten(k, 0.005), []).staffel["K2-2"] === "ROT" || "ein fehlender Gipfel ist nicht ROT",
-        urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.some((b) => /SONNENSEITE/.test(b)) || "die Sonnenseite 1,15 ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.join().includes("SONNENSEITE") || "die Sonnenseite 1,15 ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL.*\(Duv 0\.008\)/.test(b)) || "ein grüner Horizont ist nicht ROT",
-        urteil(sichten(k, 0.005), undefined, null).befunde.some((b) => /FERNES WEISS/.test(b)) || "ein ungemessenes fernes Weiß ist nicht ROT",
+        urteil(sichten(k, 0.005), undefined, null).befunde.join().includes("FERNES WEISS") || "ein ungemessenes fernes Weiß ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
-        urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.some((b) => /T < 0/.test(b)) || "T < 0 namenlos",
+        urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.join().includes("T < 0") || "T < 0 namenlos",
         ...[[1500, 4, true], [1800, 4, false], [1500, 2, false]].map(([m, n, g]) =>
             wetterLuftUrteil({ zeilen: Array(n).fill({ sicht: { m, n: 50 } }) }, R).sicht.gruen === g || `Sicht ${m} m × ${n} nicht ${g}`),
         ...[[0.05, "rainy", true], [0.5, "rainy", false], [0.05, "sunny", false]].map(([e, w, g]) =>
