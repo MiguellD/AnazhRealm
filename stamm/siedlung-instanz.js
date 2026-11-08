@@ -385,8 +385,8 @@ class AnazhRealm_siedlung_instanz {
     // DER EINE SLOT-STEMPEL (beide Slot-Chokepoints rufen ihn): Sichthöhe = Template ×
     // Instanz-Skala (exakt das Studio-`aH0*_isy`) + VOLL (`_lodSlotVoll`: die Karte des Verdeckten und der Brücke, die
     // Stufe ohne Partner — das Vorzeichen von aKarte.w bzw. aH0L, die Maske hält) + — trägt das Leaf eine Karte —
-    // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben). `ein`: der Rand des
-    // Eintritts der Karte (m, `_archKartenHorizont`; 0 = kein Rand), gestempelt mit dem Leaf.
+    // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben). `ein`: der Welt-Takt
+    // des Eintritts der Karte (`state.weltTakt`, `_archInstanceAdd`; 0 = sie blendet nicht ein), gestempelt mit dem Leaf.
     _lodSlotStamp(g, slot, scale, voll, leaf, ein = 0) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
@@ -828,6 +828,15 @@ class AnazhRealm_siedlung_instanz {
             entry._lodHalt = true;
             entry._lodHaltWartet = false;
         }
+        // DER EINTRITT IN WELT-TAKTEN (w22-wald-geburt-heil): die Karte eines Wurfs des Felds blendet ab ihrem ersten Bild über
+        // `KARTEN_EINTRITT_TAKTE` Takte der Welt-Uhr ein (`aEin` am Slot, der Karten-Stoff vergleicht `uLodTakt`) — jede Stufe
+        // trägt denselben Takt, nur das erste Bild blendet (der Cull räumt ihn mit dem Mesh); unter dem Ladeschirm tritt sie ganz
+        // ein (0: kein Bild sieht sie kommen). Bis hier blendete sie über den Weg des Auges unter ihren Rand: ruhte das Auge im
+        // Band, stand die Karte für immer halb durchsichtig — die Geister des Karten-Horizonts vom 05.10.
+        if (entry.feldWurf === true && entry._einTakt === undefined)
+            entry._einTakt = this._ladeTakt() ? 0 : this.state.weltTakt | 0;
+        const ein = entry.feldWurf === true ? entry._einTakt : 0;
+        if (ein > 0) this._einBlendeBis = Math.max(this._einBlendeBis | 0, ein + AnazhRealm.KARTEN_EINTRITT_TAKTE);
         const slots = [];
         // instanceColor trägt die Farbe als RGB (0..1); InstancedMesh alloziert mesh.instanceColor LAZY beim
         // ersten setColorAt. OB und WAS geschrieben wird, entscheidet `_archSlotColor`. instanceColor
@@ -881,7 +890,7 @@ class AnazhRealm_siedlung_instanz {
                 entry.scale,
                 this._lodSlotVoll(entry, !!(opts && opts.band), opts && opts.bandLod),
                 leaf,
-                entry.feldWurf === true ? this._archKartenHorizont(entry, true) : 0
+                ein
             );
             slots.push(ref);
         }

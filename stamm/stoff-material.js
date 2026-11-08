@@ -1193,17 +1193,17 @@ class AnazhRealm_stoff_material {
                                         });
                                         {
                                             // DER EINTRITT AM LAUB-RAND (w22-wald-geburt, lod.K2#1): die Karte eines Wurfs des
-                                            // Felds tritt an ihrem Rand des Eintritts ein (`aEin`, am Slot gestempelt; 0 = kein
-                                            // Rand) und blendet über das Band der Stufen (`uLodFade`) ein, während das Auge ihn
-                                            // unterschreitet — dieselbe Blende (`_ditherIGN`), dasselbe Auge wie die Stufen. Bis
-                                            // hierher trat sie hart ein: ein Ereignis im Takt, kein Ort des Auges (GPU-Probe
+                                            // Felds blendet ab ihrem Eintritt ein (`aEin`, am Slot gestempelt: der Welt-Takt
+                                            // ihres ersten Bilds; 0 = sie blendet nicht) über `KARTEN_EINTRITT_TAKTE` Takte der
+                                            // Welt-Uhr (`uLodTakt`) — dieselbe Blende (`_ditherIGN`) wie die Stufen, an keinem
+                                            // Ort des Auges: an ihm gemessen stand die Karte bei ruhendem Auge im Band für immer
+                                            // halb (w22-wald-geburt-heil). Bis w22-wald-geburt trat sie hart ein (GPU-Probe
                                             // aec208de, Radeon: 25 harte Eintritte in 4 m Gang, 0,0663 % Pop-Pixel/s)
                                             const _lu = this._ensureLodUniforms();
                                             const _ein = _Ta.attribute("aEin", "float");
-                                            const _dAuge = _Ta.length(_lu.uLodAuge.xz.sub(this._instanzMitteNode(_Ta)));
-                                            const _rampe = _ein
-                                                .sub(_dAuge)
-                                                .div(_lu.uLodFade.max(_Ta.float(1e-3)))
+                                            const _rampe = _lu.uLodTakt
+                                                .sub(_ein)
+                                                .div(_Ta.float(AnazhRealm.KARTEN_EINTRITT_TAKTE))
                                                 .clamp(0.0, 1.0);
                                             const _keepEin = _Ta.step(
                                                 this._ditherIGN(_Ta, 0),
@@ -3013,6 +3013,8 @@ class AnazhRealm_stoff_material {
             uLodD1: _T.uniform(_D.thresh12),
             uLodFade: _T.uniform(_D.fade),
             uLodFade0: _T.uniform(_D.fade0),
+            // DIE WELT-UHR IN TAKTEN (`state.weltTakt`, je Bild gespiegelt): der Eintritt einer Karte blendet an ihr ein (`aEin`)
+            uLodTakt: _T.uniform(0),
             // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
             // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
             // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
