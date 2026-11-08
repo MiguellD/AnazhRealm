@@ -304,12 +304,14 @@ class AnazhRealm_studio_stoff {
                         // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
                         // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
                         const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                        // Die Zahlen des Rasters sind DATEN des Gesetzbuchs (tetrapoda FELL_SCHALE, K45) — das Labor
+                        // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
+                        const FS = schale ? tkC.FELL_SCHALE : null;
+                        let zeigt = null; // der Anteil, den das Bild von der Locke aufzulösen vermag (unten)
                         if (schale) {
-                            // Die Zahlen des Rasters sind DATEN des Gesetzbuchs (tetrapoda FELL_SCHALE, K45) — das Labor
-                            // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
-                            const FS = tkC.FELL_SCHALE;
                             const t = aS.x;
-                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                            // das Raster der Locke: `locke` Strähnen-Zellen weit (w20-haar-arm — die Locke klumpt)
+                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z.div(FS.locke));
                             const hA = FS.hashA,
                                 hB = FS.hashB;
                             // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu;
@@ -322,7 +324,8 @@ class AnazhRealm_studio_stoff {
                                 .sqrt()
                                 .mul(FS.radius)
                                 .mul(TSL.float(1.0).sub(t.mul(FS.zulauf)));
-                            let haar = null;
+                            let haar = null,
+                                quer = null;
                             for (let o = -FS.nachbarn; o <= FS.nachbarn; o++) {
                                 const zelle = TSL.floor(o === 0 ? p : p.add(kd.mul(o)));
                                 const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
@@ -340,19 +343,42 @@ class AnazhRealm_studio_stoff {
                                     .sqrt();
                                 const h = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
                                 haar = haar ? TSL.max(haar, h) : h;
+                                // DER QUERSCHNITT (w20-haar-arm): der Ton der Locke dünnt vom Kern zur Kante auf den Unterton aus
+                                const g = h.mul(
+                                    TSL.float(1).sub(TSL.smoothstep(FS.kern, 1, dist.div(radius.max(1e-6))))
+                                );
+                                quer = quer ? TSL.max(quer, g) : g;
                             }
                             const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
+                            // das Gewicht des eigenen Tons: die Wolle 1, die Locke ihr Querschnitt — mal die Auflösung (unten)
+                            const gewicht = wolle.add(TSL.float(1).sub(wolle).mul(quer));
+                            // DIE AUFLÖSUNG DER LOCKE (w20-haar-arm, tetrapoda FELL_SCHALE.aufloesung): ihre Breite in Szenen-
+                            // Pixeln — die breiteste Locke (t = ½) 2 r / √strich Locken-Zellen durch den Fuß des Pixels im
+                            // Raster (die größere Ableitung) — blendet ihren Ton ein; darunter trägt jede Schale den mittleren
+                            // Ton des Stapels (`mittel`): die Mitte des Pixels träfe die Locke nur zufällig, ihr Ton wäre Rauschen
+                            const fuss = TSL.max(TSL.dFdx(p).length(), TSL.dFdy(p).length());
+                            const breite = aS.y
+                                .sqrt()
+                                .mul((FS.radius * (1 - 0.5 * FS.zulauf) * 2) / Math.sqrt(FS.strich))
+                                .div(fuss.max(1e-6));
+                            zeigt = TSL.smoothstep(FS.aufloesung[0], FS.aufloesung[1], breite).mul(gewicht);
                             // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
                             // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
                             // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
                             mat.alphaTest = 0.5;
                             mat.colorNode = TSL.vec4(
-                                vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
+                                vcol.mul(
+                                    TSL.mix(
+                                        TSL.float(FS.mittel.ton),
+                                        TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t),
+                                        zeigt
+                                    )
+                                ),
                                 TSL.max(haar, wolle)
                             );
                         }
                         const sT = schale
-                            ? aS.x
+                            ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
                             : tonL !== null
                               ? vcolRoh
                                     .dot(TSL.vec3(0.2126, 0.7152, 0.0722))

@@ -38,7 +38,7 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 
 const { errs, check } = pruefer();
@@ -89,9 +89,12 @@ hauptLauf(async () => {
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
-        // und DER PUFFER (w4-b-boden3) — die Antworten, die nach dem Takt noch warten (`einhaengen`): der Ring hängt in Index-Folge
-        // ein, eine Antwort wartet nur, wenn eine frühere fehlt — der Fern-Faden antwortete nicht in der Reihe der Bestellung (am
-        // Stamm c389e0f1 legte er die Nachricht, die er bei seiner Geburt in eine zweite Liste nahm, hinter seine Reihe: Puffer 2)
+        // und DAS LOCH (w4-b-boden3, geschärft w16-haenger): Antworten dürfen nach dem Takt warten (`einhaengen`) — das Einhängen geht
+        // in Raten unter der EINEN Frist der Bau-Arbeit (`_bauFrist`) —, aber nie, während die Scheibe am Cursor fehlt: dann hätte der
+        // Fern-Faden nicht in der Reihe der Bestellung geantwortet (am Stamm c389e0f1 legte er die Nachricht, die er bei seiner Geburt in
+        // eine zweite Liste nahm, hinter seine Reihe), und der Ring hinge mit einem Loch ein. Selbsttest: das Prädikat an zwei Ständen.
+        const loch = (f) => f.einhaengen.length && !f.einhaengen.some((e) => e.von <= f.cursor);
+        res.lochSelbst = loch({ cursor: 0, einhaengen: [{ von: 512 }] }) && !loch({ cursor: 9, einhaengen: [{ von: 0 }] });
         const pumpe = async (
             pos,
             fertig = (f) => f.cursor >= f.totalVerts && r._fernRingGeteilt(f), // die Teilung im Fern-Faden steht (w14-ankunft-weg)
@@ -100,16 +103,16 @@ hauptLauf(async () => {
         ) => {
             let takte = 0;
             let maxD = 0;
-            let puffer = 0;
+            let lochN = 0;
             let vor = st.fernRing ? st.fernRing.cursor : 0;
             for (const weiter = __deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
                 takt();
                 takte++;
                 const f = st.fernRing;
-                if (f) [maxD, vor, puffer] = [Math.max(maxD, f.cursor - vor), f.cursor, Math.max(puffer, f.einhaengen.length)];
+                if (f) [maxD, vor, lochN] = [Math.max(maxD, f.cursor - vor), f.cursor, lochN + loch(f)];
                 if (f && fertig(f)) break;
             }
-            return { takte, maxD, puffer };
+            return { takte, maxD, lochN };
         };
         let ticks = 0;
         let maxDelta = 0;
@@ -119,7 +122,7 @@ hauptLauf(async () => {
             const b = await pumpe(st.playerMesh.position);
             ticks = b.takte + 1;
             maxDelta = b.maxD;
-            res.buildPuffer = b.puffer;
+            res.buildLoch = b.lochN;
         }
         const fr = st.fernRing;
         const frBau = fr;
@@ -130,7 +133,8 @@ hauptLauf(async () => {
             maxDelta <= F.scheibe * F.scheibenImFlug &&
             ticks >= 2 &&
             fr.cursor === fr.totalVerts &&
-            !res.buildPuffer;
+            !res.buildLoch &&
+            res.lochSelbst;
         res.ready = fr.ready === true;
 
         // ===== (1) STRUKTUR: 3 Schalen, deklarierte Vertex-Zahlen, EIN Material =====
@@ -1435,13 +1439,7 @@ hauptLauf(async () => {
         return res;
     });
 
-    await browser.close();
-    server.close();
-
-    if (out.fatal) {
-        console.error(`❌ FATAL: ${out.fatal}`);
-        process.exit(2);
-    }
+    await seiteZu(browser, server, out, null, "fatal"); // ein Wurf der Probe (`fatal`): ROT beim Grund
     check("4: HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht)", out.headlessQuiet === true);
     check(
         "1: genau 4 Ring-Meshes in der Szene — 3 Schalen und die Naht der Schale 0 (Draw-Calls gedeckelt)",
@@ -1460,9 +1458,9 @@ hauptLauf(async () => {
     check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
-        "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, Index-Folge ohne Puffer, mehrere Takte, Cursor voll)",
+        "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, Index-Folge ohne Loch, mehrere Takte, Cursor voll)",
         out.buildBudgeted === true,
-        `ticks=${out.buildTicks} maxDelta=${out.buildMaxDelta} puffer=${out.buildPuffer}`
+        `ticks=${out.buildTicks} maxDelta=${out.buildMaxDelta} loch=${out.buildLoch}`
     );
     check(
         "2: HÖHEN == GESETZ — 60 Proben |mesh − _terrainMacroSurfaceY(snap,false)| < 0.01 (inkl. Wasser-Klemme/Saum)",

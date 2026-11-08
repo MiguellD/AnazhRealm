@@ -205,6 +205,8 @@ async function proben(phasen) {
                 q.add(`${Math.floor((x + dx) / A.SCATTER.regionM)},${Math.floor((z + dz) / A.SCATTER.regionM)}`);
         return q;
     };
+    // die Streu steht: jede Region gebaut, ohne Foundry-Aufschub (`_streuRegionWartet`)
+    const regionenStehen = (q) => [...q].every((k) => !r._streuRegionWartet(k));
     // ── das Drehbuch-Dorf 7/18, der Akt des Chats „dorf 7 18" — AN EINEM HANG: der nächste 16-m-Ring (160–480 m um den
     // Start) mit einem trockenen Ort (kein Wasser im 40-m-Kreis), dessen Gefälle über ±8 m 0,3–0,6 ist, darin der steilste ──
     let dorfOrt = null;
@@ -1202,10 +1204,9 @@ async function proben(phasen) {
                     const keys = regionenUm(L.x, L.z);
                     for (const k of keys) r._disposeScatterRegion(k);
                     keysW8 = keys;
-                    const steht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-                    await warteBis(steht, 2, 1500);
+                    await warteBis(() => regionenStehen(keys), 2, 1500);
                     await pumpe(10);
-                    w8.streuSteht = steht();
+                    w8.streuSteht = regionenStehen(keys);
                 }
                 w8.zellen = 0;
                 w8.zellenNeu = 0;
@@ -1437,9 +1438,7 @@ async function proben(phasen) {
         // läuft der Spieler hin, der Promotions-Ring (64 m) macht aus Streu-Bäumen echte Bäume
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
-        // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut, ohne Foundry-Aufschub
-        // (`_streuRegionWartet`)
-        const steht = (q) => [...q].every((k) => !r._streuRegionWartet(k));
+        // die Streu steht vor dem Dorf (wie im Spiel): jede Region unter dem Dorf-Ort gebaut (`regionenStehen`)
         // der Ort des fernen Dorfs: der dichteste 40-m-Kreis der Zellen 200–360 m vom Start, auf Land, jede Region unter ihm
         // in Reichweite (`_streuWartet`) — die Probe braucht Zellen unter den Häusern
         const p0 = { x: start.x, z: start.z };
@@ -1462,7 +1461,7 @@ async function proben(phasen) {
             o.fernOrt = { x: Math.round(fx), z: Math.round(fz), zellen: best.n };
         }
         const dorfRegionen = regionenUm(fx, fz);
-        const streuSteht = () => steht(dorfRegionen);
+        const streuSteht = () => regionenStehen(dorfRegionen);
         await warteBis(streuSteht, 4, 1500);
         let vorZellen = 0;
         for (const c of streuZellen()) if (lebt(c) && Math.hypot(c.x - fx, c.z - fz) < 40) vorZellen++;
@@ -1495,11 +1494,10 @@ async function proben(phasen) {
                 if (r._streuRegionInReichweite(rx, rz, pm.position)) keys.add(`${rx},${rz}`);
             }
             for (const k of keys) r._disposeScatterRegion(k);
-            const neuSteht = () => [...keys].every((q) => !r._streuRegionWartet(q));
-            await warteBis(neuSteht, 2, 1500);
+            await warteBis(() => regionenStehen(keys), 2, 1500);
             await pumpe(10);
             o.w4b.neubau = streuImHaus(FH);
-            o.w4b.neubau.steht = neuSteht();
+            o.w4b.neubau.steht = regionenStehen(keys);
             o.w4b.neubau.grund = [...keys].map((q) => q + " " + (r._streuRegionWartet(q) || "steht")).join(", ");
         }
         // hinlaufen: der Spieler steht in der Mitte der Häuser, bis die Chunks um ihn stehen und die Promotion (3 je Takt)

@@ -1848,8 +1848,7 @@ async function zensus(page, browser, ergebnis) {
         if (!ECHT) await nullRenderer(page);
         // der Quellen-Abgriff kostet je Quelle einen Stapel — der Takt misst ohne ihn
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);
-        await server.zeige(page, 180000, "index.html", "networkidle0");
-        await warteAufWelt(page, 180000);
+        await warteAufWelt(page, 180000, server);
         await page.evaluate(`window.__klangW = (${werkzeug})();`);
         exit = await (TAKT
             ? takt(page, ergebnis)

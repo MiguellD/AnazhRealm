@@ -45,8 +45,7 @@ const { errs, check } = pruefer();
     page.setDefaultTimeout(280000);
     let out = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
 
         out = await page.evaluate(async () => {
             const s = st;
