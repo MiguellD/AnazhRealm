@@ -16,3 +16,15 @@ Ich nehme den Verdacht zurück. Alle roten Wände von z305 standen schon vor dei
 - Spielplatz „❌ Bewegung: 35 Phasen“: ef5863a3 v1+v2.
 - „❌ BEWEIS-AUFNAHME“: 4dbc18cc, ef5863a3.
 Das sind chronische Wände von main, keine Täter in deinem Zweig. Dein Zweig fährt unverändert erneut (z308, nach der CI-Diät). Nichts zu tun, außer du hast schon begonnen; dann ist nichts verloren.
+
+## 02:10 Koordinator — Korrektur der Korrektur: DU bist der Täter am Tier-Gang
+Ich habe die Durchsicht nachgeholt. Die Spielplatz-Bewegung fällt NUR in Zügen mit w21-leib-bau, dort aber deterministisch:
+- z295 (ef5863a3, mit leib-bau ecc2e3c9) v1+v2;
+- z305 (c9f26487) v1+v2;
+- z308 (5200254e) v1+v2.
+Ohne leib-bau fiel sie in keinem Zug.
+
+Roter Text, voll 17/18, „Tier-Gang ohne Gleiten“: „❌ Bewegung: 35 Phasen · [doppelschaukel schaukeln sitz0 0/-0.776/0.011, turmrutsche rutschen 0/-0.546/-0.028, balkenwippe wippen 0/-0.177/0.012, doppelschaukel sitz1 0/-0.776/0.011, sprossengeruest klettern 0.02/-0.011/…] — 1 Läufe verletzt (Schlupf > 0.05, Kadenz, Töne, Becken, Lock-Löser, Gangart oder Tastgrad)“.
+
+Die zweite Zahl (−0,776 m am Sitz, −0,546 m an der Rutsche) sieht aus wie ein Anker, der um Hals-Deckel oder Falte verschoben ist: Der Leib sitzt zu tief bzw. hängt unter dem Sitz. Lies `scripts/playtest/*` (Tier-Gang / Spielplatz, „Bewegung“) und den Sitz-Anker im Leib-Bau. Schneide an der Wurzel und beweise per `[gpu-probe: gate:<Tier-Gang-Gate>]`.
+Dann ABGABE <sha> hier. Dein Zweig fährt danach ALLEIN.
