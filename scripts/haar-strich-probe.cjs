@@ -11,17 +11,33 @@ const PORT = 4793;
 const env = { ...process.env, WERKBANK_PORT: String(PORT) };
 const wb = (...a) => execFileSync(process.execPath, ["scripts/werkbank.cjs", ...a], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 1 << 26 });
 const json = (t) => JSON.parse(t.slice(t.indexOf("{")));
-// eine Spielart des Zweigs (live, dieselbe Welt, nur Uniformen): die Breite des Strichs D (Schirm-Pixel, 0 = aus) und die
-// Auflösung C [a0, a1] (Schirm-Pixel, [0, 0] = aus)
+// eine Spielart des Zweigs (live, dieselbe Welt): die Uniformen der Breite D und der Auflösung C, dazu ein Stoff mit verstärktem
+// Ton der Strähne (k: Ton = Mittel × (1 + k · (Würfel − 1))) und verstärkter Rundung (n: der Teil der Normale quer × n)
 const SPIELART = (d, a0, a1) =>
     `r._haarStrichPx.value = ${d}; r._haarAufloesung.value.set(${a0}, ${a1}); return [r._haarStrichPx.value, r._haarAufloesung.value.x, r._haarAufloesung.value.y];`;
+const STOFF = (k, n) => `r._haarStrichPx.value = 0; r._haarAufloesung.value.set(0, 0.0001);
+const S = T.TSL, HS = window.__koerperCore.HAAR_STRICH, mats = new Set();
+r.state.playerMesh.traverse((o) => o.isMesh && o.material && o.material.userData && o.material.userData.__klasse === "hair" && mats.add(o.material));
+for (const m of mats) {
+  const vcol = S.attribute("color", "vec3"), lw = S.vec3(0.2126, 0.7152, 0.0722);
+  const rahmen = (f, ohne) => S.Fn((b) => (b.geometry && b.geometry.hasAttribute("aStraehne") ? f(S.attribute("aStraehne", "vec4")) : ohne))();
+  const haarT = rahmen((a) => a.x.div(a.z.max(1e-6)).clamp(0, 1), S.float(0));
+  const w = vcol.dot(lw).div(S.float(m.userData.stoffWerte.tonL).mul(S.mix(S.float(HS.wurzel), S.float(1), haarT))).max(1e-4);
+  m.colorNode = S.vec4(vcol.div(w).mul(S.float(1).add(w.sub(1).mul(${k}))).max(0), 1);
+  const nGeo = S.normalViewGeometry.mul(S.faceDirection).normalize(), quer = rahmen((a) => a.y, S.float(0));
+  const g = S.cross(S.dFdy(S.positionView), nGeo).mul(S.dFdx(quer)).add(S.cross(nGeo, S.dFdx(S.positionView)).mul(S.dFdy(quer)));
+  const v = g.div(g.length().max(1e-12));
+  m.normalNode = nGeo.add(v.mul(nGeo.dot(v)).mul(${n} - 1)).normalize();
+  m.needsUpdate = true;
+}
+window.__bundlesNeu && window.__bundlesNeu(); return mats.size;`;
 const STAENDE = [
-    ["D2-C0.5", SPIELART(2, 0.5, 1)],
-    ["D3-C0.5", SPIELART(3, 0.5, 1)],
-    ["D2-C1", SPIELART(2, 1, 2)],
-    ["D3-C1", SPIELART(3, 1, 2)],
-    ["D0-C0", SPIELART(0, 0, 0.0001)],
-    ["D2-C0.5#2", SPIELART(2, 0.5, 1)],
+    ["ohne-C-D", SPIELART(0, 0, 0.0001)],
+    ["C0.75-1.5", SPIELART(0, 0.75, 1.5)],
+    ["C0.75-1.5#2", SPIELART(0, 0.75, 1.5)],
+    ["Ton×2", STOFF(2, 1)],
+    ["Rundung×1.6", STOFF(1, 1.6)],
+    ["Ton×2+Rundung×1.6", STOFF(2, 1.6)],
 ];
 (async () => {
     const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
