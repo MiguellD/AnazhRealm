@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": false,
-  "weltTakte": 134
+  "weltTakte": 35
  },
  "geraet": {
   "backend": "WebGPU",

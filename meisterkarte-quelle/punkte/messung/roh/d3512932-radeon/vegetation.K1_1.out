@@ -65,8 +65,11 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\d3512932-radeon\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
 [linse-gpu] amd/rdna-3
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 5.2 s
+SCHRITT /umstellen 1.9 s
 SCHRITT /eval 0.0 s
+SCHRITT /bild 21.4 s
+SCHRITT /zaehlen 0.1 s
+VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 48.3 σ 27 schwarz 0.0 % weiß 0.0 % · Stand 18.546.228 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3","pixel":1156283,"baender":[0,2,5,10,20,40,80,200],"cos":[null,0.5673,0.3577,0.1894,0.0816,0.0371,0.0231],"klassen":{"nahWiese:Lf:schale":[0,0,0,49991,103094,35399,602],"nahWiese:Lf":[0,0,43,89655,19123,2563,774],"bodenSatz":[0,45581,16737,767,0,121,5679],"nahWiese:L2":[0,265,272119,49055,59,11,0],"streuSatz":[0,1004,5321,4205,705,0,0],"nahWiese:L1":[0,336422,81734,0,0,0,0]},"farbton":[["-140,-523",10268,-4424.383,8780.809,10243],["-140,-524",2692,-1289.52,2310.562,2690],["-140,-522",18270,-9158.715,15080.903,18246],["-139,-524",23581,-10516.772,20286.81,23540],["-139,-525",2879,-1188.616,2553.293,2879],["-139,-523",22050,-8726.931,19568.436,22023],["-140,-521",8291,-4357.666,6693.539,8224],["-139,-522",10683,-5089.993,8961.009,10635],["-138,-525",3485,-1454.467,3100.658,3485],["-138,-524",2390,-864.856,2169.03,2390],["-139,-521",25,-19.094,15.948,25]],"budget":[4,52158]}]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
