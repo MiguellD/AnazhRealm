@@ -3204,50 +3204,7 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "kante") {
-        // DIE LAUB-SILHOUETTE AN DER TAFEL-POSE (lod.K1#1) — der Messplatz des GPU-Probe-Dienstes (`gate:laub-kante`): frisch an der
-        // Mess-Wiese, Pose und Klassen aus der Soll-Tafel (laub-kante `mass.werkzeug`), je Teil-Klasse ab 5 000 px ihre Kante.
-        // `--varianten w1z6,w2z4s3`: je Variante ein Karten-Gesetz (phyto-core KARTEN_GESETZ: w saumWeite, z saumZelle, s saum) in
-        // DERSELBEN Welt — jede gebackene Karte backt ohne Platte neu (`_weltNeu`), dieselbe Pose; zuerst der Stand des Kopfs,
-        // sein Bild in die Post
-        const w = jsonLesen(SOLL_TAFEL).klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
-        const [px, py, pz, lx, ly, lz] = w.slice(2);
-        const halt = await eigeneWelt(["--ort", "wiese"]);
-        const datei = process.env.RUNNER_TEMP && path.join(process.env.RUNNER_TEMP, "probe", "tafel.png");
-        const neu = (v) => `const G = globalThis.__phytoCore.KARTEN_GESETZ, at = r._kartenAtlas, q = r._impostorBakeQueue;
-            Object.assign(G, ${JSON.stringify(v)});
-            let n = 0;
-            for (const z of at.zellen.values()) if (z.gebacken) { z._platte = null; z._liefer = null; z._weltNeu = true; q.push(z.key); n++; }
-            const t0 = performance.now();
-            while ((q.length || at.offen) && performance.now() - t0 < 180000) { r._tickImpostorBake(); await new Promise((f) => requestAnimationFrame(f)); }
-            return { n, rest: q.length, ms: Math.round(performance.now() - t0) };`;
-        try {
-            const sch = { w: "saumWeite", z: "saumZelle", s: "saum", m: "saumMin" };
-            const varianten = String(opt("--varianten", "")).split(",").filter(Boolean).map((t) => Object.fromEntries([...t.matchAll(/([wzsm])([\d.]+)/g)].map((m) => [sch[m[1]], +m[2]])));
-            for (const [i, v] of [null, ...varianten].entries()) {
-                if (v) console.log("Variante", JSON.stringify(v), JSON.stringify((await evalRuf(neu(v))).ergebnis));
-                o = await rufe("/bild", { px, py, pz, lx, ly, lz, ziel: w[9], klasse: w[11].slice(1, -1), datei: i ? undefined : datei });
-                const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
-                console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
-                if (!i)
-                    console.log("✅ Strauch-Karten [m, φ°, Höhe, Boden über Strahl, Fuß über Boden]", JSON.stringify((await evalRuf(`const c = ${JSON.stringify(o.kamera)}, kg = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE), zz = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z]));
-                        const m = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s = new T.Vector3(), aus = [], cam = r.state.camera.clone();
-                        cam.aspect = 16 / 9; cam.position.set(...c); cam.lookAt(${lx}, ${ly}, ${lz}); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-                        for (let i = 0; i < kg.liveCount; i++) { const z = zz.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
-                            if (!z || !/strauch/.test(z.key)) continue;
-                            m.fromArray(kg.mesh.instanceMatrix.array, i * 16).decompose(p, q, s);
-                            const h = z.frame.halfH * s.y, d = Math.hypot(c[0] - p.x, c[2] - p.z);
-                            if (d > 150 || !fr.containsPoint(new T.Vector3(p.x, p.y + h, p.z))) continue;
-                            let ueber = -9;
-                            for (let t = 0.05; t < 0.97; t += 0.01) { const x = c[0] + (p.x - c[0]) * t, zq = c[2] + (p.z - c[2]) * t, g = r._bodenSichtAt(x, zq); if (g != null) ueber = Math.max(ueber, g - (c[1] + (p.y - c[1]) * t)); }
-                            aus.push([+d.toFixed(1), +((Math.atan2(c[1] - p.y - h, d) * 180) / Math.PI).toFixed(1), +(2 * h).toFixed(2), +ueber.toFixed(2), +(p.y - (r._bodenSichtAt(p.x, p.z) ?? p.y)).toFixed(2)]); }
-                        return aus.sort((a, b) => a[0] - b[0]).slice(0, 16).map((a) => a.join(" ")).join(",");`)).ergebnis));
-            }
-        } finally {
-            halt?.();
-        }
-        o = o.abnahme;
-    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung

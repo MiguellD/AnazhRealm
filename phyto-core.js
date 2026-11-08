@@ -3834,9 +3834,9 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 7,2: das Muster führt, das Band grenzt
+    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 8,4: das Muster führt, das Band grenzt
     //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 / 8,4 / 9,6 0,249 / 0,238 /
-    //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt)
+    //                 0,234 / 0,229 / 0,216 / 0,212 / 0,211 / 0,212 — sie sättigt; GTX bei 6 ein Raster am Strauch, zweiton 0,0025)
     //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
     //                 Lappen und Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
     //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
@@ -3857,7 +3857,11 @@
     // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
     // Band unter fremdem Laub auf dem Weg: 72 % seines gezählten Rands ist seine Sohle, ohne sie 0,337 (die Flanken).
     // DER STRAUCH (w24-strauch-saum): seine Sohle war Laub im Grund (foundry-core S7 galt nur der Baum-L0: die Karte schnitt
-    // Karten bis 27 % seiner Höhe unter y = 0 als Gerade), seine Flanken der Saum im Maß eines Texels (`saumWeite`).
+    // Karten bis 27 % seiner Höhe unter y = 0 als Gerade), seine Flanken der Saum im Maß eines Texels (`saumWeite`). Mit 8,4 /
+    // 2,5 / 8 / 0,02 / 3 (laub-kante, Tafel-Pose): Radeon c61e3a9b → 9adc557b birke 0,1887 → 0,1688 · eiche 0,1556 → 0,1438 ·
+    // fichte 0,1575 → 0,1500 · tanne 0,1775 → 0,1612 · strauch 0,3515 → 0,2109; GTX 41d69a4f (der w23-Saum in derselben Welt
+    // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
+    // 0,3242 → 0,2083.
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
@@ -3866,7 +3870,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 7.2,
+        saum: 8.4,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,

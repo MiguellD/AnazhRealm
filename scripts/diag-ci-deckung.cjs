@@ -138,7 +138,6 @@ const AUSNAHMEN = {
         klasse: KLASSEN.MESS,
         grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
     },
-    "gate:laub-kante": { klasse: KLASSEN.MESS, grund: "der Messplatz von lod.K1#1 im GPU-Probe-Dienst" },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
