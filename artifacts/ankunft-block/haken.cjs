@@ -26,6 +26,28 @@ function BAU_HAKEN() {
         return String(u.name || u.type || "?").replace(/NodeMaterial$/, "").slice(0, 32) + "@" + String(wer).slice(0, 28) + (g && g.name ? ":" + String(g.name).slice(0, 20) : "") + (sch ? "⟂" : "");
     };
     const zeit = (t0) => Math.round((performance.now() - t0) * 10) / 10;
+    // DER NACH-BILD-REKORDER: vom Weltbild bis +4 s je rAF [t, x, z, imFlug, gerendert, ausgesetzt, gehalten, Takt-ms] und je
+    // W-Taste [t, repeat, Ladeschirm steht] — in `window.__kalt.nach`
+    const N = { keys: [], frames: [] };
+    const schirm = () => {
+        const el = document.getElementById("ladeschirm");
+        return el && !el.hidden && !el.classList.contains("weg") ? 1 : 0;
+    };
+    window.addEventListener("keydown", (e) => e.code === "KeyW" && N.keys.push([Math.round(performance.now()), e.repeat ? 1 : 0, schirm()]), true);
+    const raf = (t) => {
+        const r = window.anazhRealm;
+        const st = r && r.state;
+        const da = st && st._weltbildDa;
+        if (da && t - da < 4000) {
+            const p = st.playerMesh && st.playerMesh.position;
+            const L = r._gpuLeine || {};
+            const g = st.verbTafel ? Object.keys(st.verbTafel.gehalten).filter((k) => st.verbTafel.gehalten[k]).join("+") : "?";
+            N.frames.push([Math.round(t), p ? Math.round(p.x * 100) / 100 : null, p ? Math.round(p.z * 100) / 100 : null, L.imFlug, L.gerendert, L.ausgesetzt, g]);
+        }
+        if (window.__kalt) window.__kalt.nach = N;
+        if (!da || t - da < 4000) requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
     const anNodes = (N) => {
         if (!N || N.__bauHaken) return;
         N.__bauHaken = true;

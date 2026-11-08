@@ -119,6 +119,25 @@ function zerlege(e) {
     return R;
 }
 
+// das Nach-Bild (haken.cjs `__kalt.nach`): die erste W-Taste nach dem Ladeschirm, das erste Halten in der Verb-Tafel, der erste Weg
+// ≥ 1 cm, die Kontrolle — dazu Bilder (rAF) je Sekunde, die längste Lücke zwischen zwei rAF und die Leine (gerendert/ausgesetzt)
+function nachZeile(z) {
+    const da = z.out.weltbildDa;
+    const N = z.out.nach || { keys: [], frames: [] };
+    const F = N.frames;
+    const k = N.keys.find((x) => x[0] >= da && !x[2]);
+    const h = F.find((f) => f[6] && f[6] !== "?" && f[6] !== "");
+    let weg = null;
+    for (let i = 1; i < F.length && !weg; i++) if (Math.hypot(F[i][1] - F[i - 1][1], F[i][2] - F[i - 1][2]) >= 0.01) weg = F[i];
+    let gap = 0;
+    for (let i = 1; i < F.length; i++) gap = Math.max(gap, F[i][0] - F[i - 1][0]);
+    const jeS = [0, 1, 2, 3].map((s) => F.filter((f) => f[0] - da >= s * 1000 && f[0] - da < (s + 1) * 1000).length);
+    const L0 = F[0] || [];
+    const L1 = F[F.length - 1] || [];
+    const rel = (x) => (x ? Math.round(x[0] - da) : "–");
+    return `Taste ${rel(k)} · Halten ${rel(h)}${h ? "(" + h[6] + ")" : ""} · Weg ${rel(weg)} · K ${Math.round(z.e.tK - da)} · rAF/s ${jeS.join("/")} · Lücke ${gap} · Bilder ${(L1[4] || 0) - (L0[4] || 0)} aus ${(L1[5] || 0) - (L0[5] || 0)}`;
+}
+
 function phasen(zs, pre) {
     const ph = new Map();
     for (const z of zs) for (const m of z.a.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push([m.t, m.belegtMs]);
@@ -177,6 +196,7 @@ function bericht(teil) {
             zeile(`${pre}INKL 1: ${inkl.slice(0, 14).join(" · ")}`);
             if (!AB) zeile(`INKL 2: ${inkl.slice(14, 30).join(" · ")}`);
             if (!AB) zeile(`SYSTEME selbst (Median ms): ${medMap(zs, "datei", 18).join(" · ")}`);
+            zeile(`${pre}NACH DEM BILD je Boot (ab Eigenmeldung, ms): ${zs.map((z) => nachZeile(z)).join(" | ")}`);
             if (!AB)
                 zeile(
                     `AUFGABEN (Boot 1, längste vor der Kontrolle): ${zs[0].a.aufgaben.slice(0, 6).map((x) => `${sek(x.t)} s ${x.ms} ms ${x.halter.slice(0, 2).map((h) => `${h.name} ${h.ms}`).join("+")}`).join(" | ")}`
