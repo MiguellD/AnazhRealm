@@ -654,6 +654,13 @@ class AnazhRealm_stoff_karte {
                 continue;
             }
             if (!(at.offen && at.offen.z === z) && this._gpuLeineStraff()) break; // an gespannter Leine nur die begonnene Karte
+            // VOR DEM ERSTEN BILD NUR IM BLICK (w25-ankunft-block, die Klasse der Kacheln von w23-ankunft-faden): eine Karte außer
+            // Blick (ihr Rang, `_rangImErstenBlick`) wartet auf den Nachlauf — bis hier backte der Lade-Takt sie, sobald die Karten im
+            // Blick auf ihre L1 warteten (GTX kalt: 0,30–0,39 s Haupt-Faden vor dem Bild außer Blick, im Blick 1,29–1,34 s).
+            if (!this._rangImErstenBlick(d2(q[i]))) {
+                i++;
+                continue;
+            }
             const e = this._karteWeltBacken(at, z);
             binden();
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
