@@ -3032,7 +3032,7 @@ class AnazhRealm_studio_bruecke {
         const u = this._pcg2d(entry.seed >>> 0, AnazhRealm.KARTEN_HORIZONT_SALZ) / 4294967296;
         const R = AnazhRealm.SCATTER.outerM;
         return (
-            (eintritt && entry.feldWurf === true ? Math.min(this._laubRand(), R) : R) -
+            (eintritt && entry.feldWurf === "VORHER" ? Math.min(this._laubRand(), R) : R) -
             AnazhRealm.KARTEN_HORIZONT_SAUM_M * u
         );
     }
