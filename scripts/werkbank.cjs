@@ -794,6 +794,67 @@ function bandProben(k) {
     })();
 }
 
+// DER POP UNTER BEWEGUNG (lod.K2 Staffel 1, die Messung der Station: koordination `bericht/2910-lod-k5/pop.js`; Seiten-Code, `r`
+// die Welt): im Ego-Auge an der Mess-Wiese 4 m/s ins Offene, EINE Sekunde = 4 m in 8 Schritten zu 0,5 m. Je Schritt dieselbe Pose
+// zweimal aus dem Ausgabe-Pfad (1920 × 1080): A mit dem Stand der Welt vom vorigen Ort, B nach 12 Takten des Spiels am neuen — jeder
+// Pixel mit ΔLuma > 18 (Rec. 709) ist ein Pop, den keine Bewegung erklärt (die Blende dithert in beiden dieselbe Folge); die Treue
+// nimmt A ein zweites Mal und bricht an jedem Byte. Je Schritt beim Namen, was zwischen A und B eintrat: die Karten-Dinge, die zum
+// ersten Mal gezeichnet stehen (Zahl, nächster Abstand), und die Bauten, die ihre Stufe wechselten.
+function popGang() {
+    return (async () => {
+        const cam = st.camera, W = 1920, H = 1080, pm = st.playerMesh.position, start = pm.clone(), y = (p) => r._voxelSurfaceY(p.x, p.z);
+        const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+        st.renderer.setAnimationLoop(null);
+        window.__buehne({});
+        const schuss = async (p) => {
+            cam.fov = r.constructor.KAM_FOV_GRAD;
+            cam.updateProjectionMatrix();
+            cam.position.set(p.x, y(p) + 1.7, p.z);
+            cam.lookAt(p.x + fwd.x * 50, y(p) + 1.7, p.z + fwd.z * 50);
+            cam.updateMatrixWorld(true);
+            if (st.lodUniforms?.uDitherT) st.lodUniforms.uDitherT.value = 0;
+            return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        };
+        const geh = async (p) => {
+            pm.set(p.x, y(p) + 0.05, p.z);
+            for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
+        };
+        const luma = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+        const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)];
+        const ad = await navigator.gpu?.requestAdapter();
+        const aus = { adapter: ad?.info && `${ad.info.vendor}/${ad.info.architecture}`, schritte: [], laub: [], popPixel: 0 };
+        try {
+            for (let i = 0; i < 8; i++) {
+                const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
+                await geh(start.clone().addScaledVector(fwd, i / 2));
+                const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
+                const a = await schuss(p1);
+                if (aus.treue === undefined) {
+                    const a2 = await schuss(p1);
+                    aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab`);
+                }
+                await geh(p1);
+                const b = await schuss(p1);
+                const s = { pop: 0, ein: [], wechsel: [] };
+                for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma(a, k) - luma(b, k)) > 18) s.pop++;
+                for (const e of st.architectures) {
+                    const v = e && vor.get(e), d = e && Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z));
+                    if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(d);
+                    else if (v && v[0] !== stufe(e)[0]) s.wechsel.push(`${r._foundryPresetForEntry(e) || e.type} ${d} m`);
+                }
+                aus.popPixel += s.pop;
+                aus.schritte.push(s);
+                aus.laub.push(Math.round(r._laubRand()));
+            }
+        } finally {
+            pm.copy(start);
+        }
+        aus.anteilJeSekunde = +((100 * aus.popPixel) / (W * H)).toFixed(4); // 4 m bei 4 m/s: EINE Sekunde
+        return aus;
+    })();
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -3134,6 +3195,22 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "pop") {
+        // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
+        // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
+        // Stufen-Wechsel, `+n@d` n Karten-Dinge zum ersten Mal gezeichnet, das nächste in d m
+        const tor = hat("eigen") && werkbankTor(PORT, ["--ort", "wiese"]); // frisch an der Mess-Wiese, wie die Station
+        try {
+            await tor?.bereit;
+            await rufe("/fenster", { w: 1920, h: 1080 });
+            await umstellen({ ort: "wiese", sicht: "ego" });
+            o = ergebnis(await evalRuf(`return await (${popGang})();`));
+        } finally {
+            tor?.stop();
+        }
+        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel.length ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (je.length) console.log(`[linse-gpu] ${o.adapter}\nlod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub}`);
+    }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
