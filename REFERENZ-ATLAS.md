@@ -43,8 +43,9 @@ trägt Koschmieder je Kanal (ferne.K1 GTX T/T_soll 0,86–1,08); die Karte hält
 
 **(d)** lod.K5 (Fehler ≤ 1 px am Wechsel) 0 Punkte: Haus 4,45 → 2,30 px (Radeon, 8412c007), Tor 7,8 px (Befund 08.11.). Die Wurzel ist
 rechnerisch: die L2 des Tors trägt laut Tafel einen Fehler ≥ 0,34 bei Welt-Skala 1 (`:2860`, „nie ≤ 1 px: untere Schranke“), 1 px verlangte
-den Wechsel erst ab 0,34 · 704 ≈ 239 m — der Haushalt des Buchs wechselt früher, weil der Kette zwischen L1 und L2 eine Stufe fehlt. lod.K1 (Umriss, laub-kante 0,2635 > 0,22) 0 Punkte; vegetation.K3 (Wald von innen) 0. Feststeck
-der Meisterkarte: 174 Commits laub/krone/impostor polierten die Karte an einer Pose.
+den Wechsel erst ab 0,34 · 704 ≈ 239 m — der Haushalt des Buchs wechselt früher, weil der Kette zwischen L1 und L2 eine Stufe fehlt.
+lod.K1 (Umriss, laub-kante 0,2635 > 0,22) 0 Punkte; vegetation.K3 (Wald von innen) 0. Feststeck der Meisterkarte: 174 Commits
+laub/krone/impostor polierten die Karte an einer Pose.
 
 **(e) Schnitt: Die Kette folgt dem Fehler.** Der Ofen baut je Art die Stufen per QEM so lange, bis jede ihren Vorgänger bei ≤ 1 px ablöst —
 die Zahl der Stufen folgt der Gestalt (2 bis 6), nicht der Tafel L0/L1/L2; jede Stufe trägt ihren gemessenen Fehler im Rezept. Der Wechsel
@@ -101,8 +102,9 @@ Ferne je Büschel nach `_nahStufe` (Tsushima: die Kachel ist Daten, die GPU wäh
 Stufen-Umzug in `_tickScatterLod`, `_nahWieseSicht` und `_nahWieseFernSatz`; der Bau einer Kachel bleibt CPU-Arbeit bei ihrer Geburt.
 **r184:** der Weg ist gebaut und ausgeliefert (roher WebGPU-Compute in `_wahlRechnen`, Liste je Kamera, Instanz-Knoten `_senkenKnoten`
 `stamm/stoff-instanz.js:444`); WebGL2 zeichnet weiter über den Zeichner. Der Vendor trägt dazu `IndirectStorageBufferAttribute` (6:113089) und
-TSL-`compute` mit `atomicAdd` (6:279004) — wir brauchen sie nicht, der rohe Compute schreibt in den Auftrags-Puffer der Arena. **Erwartet:** `_passSicht` 10–12,5 → ≤ 2 ms im Gang (Schätzung:
-übrig bleiben Lage und Aufträge je Arena wie heute beim Gang-Satz), `_tickNahWiese` 2–5 → ≤ 0,5 ms, GTX CPU-Takt stehend ≤ 5,8 ms (E).
+TSL-`compute` mit `atomicAdd` (6:279004) — wir brauchen sie nicht, der rohe Compute schreibt in den Auftrags-Puffer der Arena.
+**Erwartet:** `_passSicht` 10–12,5 → ≤ 2 ms im Gang (Schätzung: übrig bleiben Lage und Aufträge je Arena wie heute beim Gang-Satz),
+`_tickNahWiese` 2–5 → ≤ 0,5 ms, GTX CPU-Takt stehend ≤ 5,8 ms (E).
 
 **(f) Brief-Baustein:**
 > REFERENZ CPU-TAKT (Haar/Aaltonen, Wihlidal): Die CPU zahlt je Zustandsänderung, nie je Instanz und Bild. Sichtbarkeit, Stufe und Zug-Argumente
@@ -170,8 +172,8 @@ jede Figur, 8 Stufen fester Topologie mit gekappten Einflüssen (12 / 8 / 4 Gele
 (`koerper-core.js:1681 bauMensch`, nichtlinear `:1457 labMorph`) → der Ofen gießt eine SDF-Haut per Surface-Nets (`foundry-core.js:8474
 bakeMenschInstance`, `:6877 __leibHaut`), rechnet Gewichte 1/d⁴ über 15 Knochen (`:6050`, `:8616`) und kollabiert per QEM (`:6482`) auf
 L0 40 000 · L1 14 000 · L2 1 700 · L3 360 Dreiecke (`koerper-core.js:48`). Formziele gibt es keine (Morph abgewiesen
-`stamm/koerper-leib.js:1042`, die Arena nimmt keinen `stamm/stoff-instanz.js:726`). Darum hält die Menge 8 Gestalten je Siedlung
-(`stamm/siedlung-bewohner.js:3209`). **Besser als die Referenz:** der Gang ist ein Gesetz nach Froude für jede Größe und Gattung
+`stamm/koerper-leib.js:1042`, die Arena nimmt keinen `stamm/stoff-instanz.js:726`); die Menge trägt 8 Gestalten je Siedlung
+(`stamm/siedlung-bewohner.js:3209`), jede ein eigener Guss. **Besser als die Referenz:** der Gang ist ein Gesetz nach Froude für jede Größe und Gattung
 (`tetrapoda-core.js:1410 gangSchritt`, IK `koerper-core.js:4440`) statt einer Clip-Datenbank; die Menge skinnt auf der GPU aus einer
 gebackenen Pose-Tafel (`stamm/stoff-gang.js:15/:348`, 16 Phasen) — 1 094 Köpfe im Takt 0,748 ms (mensch.K4#2); Haut und Gewichte rechnet der
 Ofen ohne Künstler.
@@ -241,7 +243,8 @@ Berührungen 0 aus Konstruktion, Gridlock 0, jede Fahrt erreicht ihr Ziel — de
 
 ---
 
-**Ehrlich offen:** gemessen sind die Lücken (d) und die Vorbilder im eigenen Code (Gang-Satz −55 % Dreiecke, `_nahWieseSicht` 6,5 → 1,5 ms);
+**Ehrlich offen:** gemessen sind die Lücken (d) und die Vorbilder im eigenen Code (Gang-Satz −55 % Dreiecke; `_nahWieseSicht` 6,5 ms GTX
+vorher, 1,5 ms Radeon nachher — zwei Geräte, die GTX nachher ungemessen);
 die erwarteten Zahlen in (e) sind Schätzungen bis zum ersten A/B. Die These, dass die großen WGSL-Programme aus eingebetteten TSL-Funktionen
 wachsen (56 `Fn` gegen 5 `setLayout` im Stamm), ist ungeprüft — der erste Schritt von Schnitt 3 misst die Bau-Zeit je Stufe und Signatur.
 Wo das Tor seine 7,8 px trägt (welcher Stufen-Übergang), steht im Befund, nicht im Code; der Schnitt 1 gilt jeder Lücke der Kette.
