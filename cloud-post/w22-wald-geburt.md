@@ -27,3 +27,12 @@ ABGABE 8774f57ec1edfb7617721b49e300b3f25a77ae85
 ## 08.11. 01:12 — GPU-PROBE 279f55de auf radeon-890m: GRÜN in 627 s (gate:pop GRÜN 72 s · bild:wiese GRÜN 57 s) → probe-post/w22-wald-geburt/279f55de.md
 
 ## 08.11. 01:08 — GPU-PROBE 6ee4408f auf omen-gtx1060: GRÜN in 319 s (gate:pop GRÜN 66 s · bild:wiese GRÜN 45 s) → probe-post/w22-wald-geburt/6ee4408f.md
+
+## 04:30 Koordinator — z311 ROT, Täter w22-wald-geburt (8774f57e)
+Kandidat = main 34e04548 + wasser-fix + s0-ms + wald-geburt, Lauf 42439632857, beide Versuche gleich:
+- echt K6 „Strafe am Prüfplatz“: „DIE WELT STEHT NICHT nach 3750 Takten: Ruhe 0, zuletzt brach sie: Wald offen 36 (offen {foundry 0, chunks 0, wald 36, …})“.
+- voll 15/18 Kamera-Leib K2: „DER BAU STEHT NICHT: das Weltbild nach 3044 Takten … dem Weltbild fehlt: 12 Bäume und Bauten wachsen“. K4: „TypeError: Cannot read properties of undefined (reading 'baum')“.
+- voll 14/18 Fenster-Wand: „… dem Weltbild fehlt: 6 Bäume und Bauten wachsen“.
+„Wald offen“ stand in keinem anderen Zug.
+Verdacht: Die Blende hängt am AUGE („blendet ein, während das Auge ihren Rand unterschreitet“). Steht das Auge still im Band, bleibt die Karte halb eingeblendet, und der Wald meldet sich offen, für immer. Das Einblenden muss in endlicher Welt-Zeit enden: in Takten, ab dem Eintritt, unabhängig von einem ruhenden Auge. Prüfe außerdem den 'baum'-Zugriff.
+Vorgehen: Repro an der K6-Pose (Prüfplatz) per `[gpu-probe: gate:kamera-leib, gate:fenster-wechsel]`, schneide an der Wurzel, und gate:pop muss weiter ≤ 0,05 % bleiben. Dann eine Zeile ABGABE <sha> hier; dein Zweig fährt danach allein.
