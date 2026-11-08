@@ -65,6 +65,11 @@ class AnazhRealm_bild_erst {
     //   WANN — `_vorwaermZeit`: nie unter dem Ladeschirm (die Ankunft trägt nichts davon), nie unter kienspan (CPU-Raster), im
     //   ruhenden Loop ganz (die Werkbank, das Umstellen), im Spiel im LEERLAUF: die Eingabe ruht, die GPU-Leine ist lose und
     //   das Auge steht (`_augeRuht`) — kein Bild einer Bewegung trägt einen Vorbau.
+    // Gemessen (gpu-probe, kalter Boot, Genesis: Gehen · Fahrt Ego · Fahrt Third, Knoten-Bauten im Fenster): Radeon main 0ad23b8a →
+    // 2b2734e0 Fahrt Third 12 (536 ms) → 0, Fahrt Ego max-Schritt 38,3 → 22,9 ms, die Arena des gesetzten GT baut nicht mehr im Bild;
+    // GTX 001597fe → ac1ccd56 Gehen 8 (872 ms) → 5 (276 ms), Third 8 (468 ms) → 1 (11 ms); die Ankunft unverändert (Radeon 13,1 →
+    // 11,9 s, GTX 17,8 → 17,5–18,6 s). Offen: die Karten-Bühne neuer Baumarten (`_karteWeltBacken`, keine Familie) und die Kaskade
+    // des eben gesetzten Wagens; ein Leerlauf, der nicht reicht, lässt den Rest der Reihe dem ersten Bild.
     // Ein Objekt, das seine Pässe nie erreicht (die Render-Funktion des Wurfs übergeht es), fällt nach VORWAERM_VERSUCHE Rufen
     // ohne Antwort aus der Familie (`vorwaermVerweigert`, laut im Flugschreiber); eines, das die Szene verließ, fällt still.
     // Die Familie eines Passes der Welt-Szene: der Wurf (ein Schatten-Stoff über einer Ortho-Kamera: die Kaskaden), das Auge (die
