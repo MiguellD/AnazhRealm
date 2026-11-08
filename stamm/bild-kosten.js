@@ -596,11 +596,27 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
-                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
-                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild UND unter dem Ladeschirm baut kein Bild einen
+                // Knoten-Graphen am Stück — wer seinen noch nicht hat, wartet wie ein verschobener; der ruhende Loop baut wie bisher.
+                // UNTER DEM LADESCHIRM (w19-ankunft-takt, ankunft.K5): bis hier baute dort JEDER Render-Aufruf eines Lade-Bilds am Stück
+                // bis zu seinen eigenen LADE_TAKT_MS (Hauptpass, jede Kaskade, jedes Bündel, jeder Bake-Versuch der Karte) — eine
+                // Aufgabe hielt 250–480 ms Knoten-Bau (headless kalt 5fb21e29: `build` 18× ≥ 50 ms, die längste Aufgabe 737 ms;
+                // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
+                // Schritt bis zur EINEN Frist der Aufgabe (`_ladeFrist`, im Bild-Takt die Hälfte der Zeichnung); was wartet, macht
+                // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
+                // DAS LADE-BILD IST DIE WELT: unter dem Ladeschirm baut in Raten, was das Lade-Bild zeichnet (Welt-Szene, Kaskaden,
+                // Bündel, Karten-Bühne) — nie eine Bühne (`_buehneJetzt`: Ich, Hof, Feed, Werkstatt). Sie öffnet die Eingabe, ihr
+                // Vorbau läuft erst nach dem Weltbild (`_vorbauBedienung`); unter dem Ladeschirm zeichnet sie eine Probe, und dort baut
+                // sie wie vor w19-ankunft-takt am Stück bis LADE_TAKT_MS je Aufruf. In Raten ließ der Seelenwechsel unter dem
+                // Ladeschirm die Bauten der Zwischen-Seelen offen, der zweite Durchgang baute nach (Frost-Wand S2 headless, swiftshader:
+                // +13 Module / +11 Pipelines, am Stück +0 / +0; z287 2/2 rot).
+                if (
+                    ungebaut &&
+                    ((welt._ladeTakt() && scene !== welt._buehneJetzt) || (welt.state._weltbildDa && !welt._loopRuht()))
+                ) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
+                        if (welt._ladeTakt()) E.ladeSchuld = true;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -609,8 +625,7 @@ class AnazhRealm_bild_kosten {
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
-                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
-                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
+                        // unter dem Ladeschirm (nur noch eine Bühne, oben) baut ein Aufruf bis zur Frist des Lade-Frames
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
@@ -647,14 +662,14 @@ class AnazhRealm_bild_kosten {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
-                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
-                bauN: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
+                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
+                ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
+                bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
-                rateMs: 0,
-                rateFrist: null,
+                rateFrist: null, // der Bau in Raten (`_knotenRate`): die Frist der laufenden Aufgabe
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -703,12 +718,29 @@ class AnazhRealm_bild_kosten {
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
+        // die Frist der Aufgabe: im Spiel ERST_BAU_MS ab dem ersten Schritt, unter dem Ladeschirm die EINE Frist des Lade-Frames
+        // (`_ladeFrist`, geteilt mit jedem Leser) — der erste Schritt der Aufgabe geht immer (nie verhungert).
+        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
+        // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
+        // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
+        // Zeit, höchstens die Frist EINES Lade-Frames (LADE_TAKT_MS — keine Aufgabe trägt mehr Bau als der Lade-Frame); ohne
+        // gespannte Leine bleibt es der Rest der EINEN Frist. Bis hier baute es nur diesen Rest, den die Leser des Takts oft schon
+        // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
+        // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
+        // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
+        // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
+        let erster = false;
         if (E.rateFrist === null) {
-            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+            const jetzt = performance.now();
+            E.rateFrist = this._ladeTakt()
+                ? Math.max(this._ladeFrist(true), jetzt + Math.min(E.ladeGuthaben, AnazhRealm.LADE_TAKT_MS))
+                : jetzt + AnazhRealm.ERST_BAU_MS;
+            E.ladeGuthaben = 0;
+            erster = true;
             Promise.resolve().then(() => (E.rateFrist = null));
         }
         const t0 = performance.now();
-        if (t0 >= E.rateFrist) return false;
+        if (t0 >= E.rateFrist && !erster) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -722,12 +754,19 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null }));
+                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null, ms: 0 }));
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
-            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+            // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
+            // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
+            // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
+            // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
+            // geht immer (nie verhungert); jeder weitere, solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt
+            // darüber endet wie bisher.
+            const ueber = () => performance.now() >= E.rateFrist;
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
                 const stufe = STUFE[(R.i / 3) | 0];
                 const shader = SHADER[R.i % 3];
                 b.setBuildStage(stufe);
@@ -737,8 +776,7 @@ class AnazhRealm_bild_kosten {
                 for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
                 arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
             }
-            [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
-            if (arbeit) return false;
+            if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
             if (R) {
                 b.setBuildStage(null);
                 b.setShaderStage(null);
@@ -746,6 +784,12 @@ class AnazhRealm_bild_kosten {
                 b.buildUpdateNodes();
                 N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
                 E.imFlug.delete(key);
+                // DER FERTIGE BAU ZÄHLT AM EINEN ZÄHLER der Erst-Zeichnung (`bauN`, `bauMs` = Σ seiner Schritte), wie ein Bau am
+                // Stück: bis hier zählte der Bau in Raten nur in einem eigenen Paar (`rateN`/`rateMs`, ohne Leser) — seit der Bau
+                // unter dem Ladeschirm in Raten geht (w19-ankunft-takt), las der Flugschreiber (`erstBauN`) und die Erst-Zeichnungs-
+                // Wand (Konsum im Boot) 0 Knoten-Bauten bei 714 verschobenen (swiftshader, Teil 1)
+                E.bauN++;
+                E.bauMs += R.ms + performance.now() - t0;
             }
         } catch (e) {
             d.rate = undefined;
@@ -801,6 +845,22 @@ class AnazhRealm_bild_kosten {
             return k;
         };
         N.__anazhBauSchluessel = true;
+        // DER ABSCHIED OHNE BAU (w19-ankunft-takt, ankunft.K5): r184 löst ein Render-Objekt, dessen Schlüssel wechselte (ein Licht
+        // kam, der Stoff wechselte die Variante — `_objects.get` → `dispose`), über `bindings.deleteForRender` → `getBindings` →
+        // `getNodeBuilderState`: ein Objekt, das nie band (es wartete auf seinen Bau in Raten, `_knotenRate`), baute seinen ganzen
+        // Knoten-Graphen SYNCHRON, nur um ihn zu löschen (headless kalt, Bau in Raten unter dem Ladeschirm: eine Aufgabe 640 ms,
+        // davon 361 ms `dispose › deleteForRender › build`). Ohne Bindungen (`_bindings` null) gibt es nichts zu lösen — kein Bau;
+        // `nodes.delete` zählt nur einen Bau, der stand (gate:vendor-anker pinnt die drei Stellen).
+        const BI = renderer._bindings;
+        if (!BI || typeof BI.deleteForRender !== "function")
+            return this.log("ABSCHIED OHNE BAU: r184-Bindings.deleteForRender nicht gefunden (Vendor-Drift)", "ERROR");
+        if (BI.__anazhAbschiedOhneBau) return;
+        const loese = BI.deleteForRender;
+        BI.deleteForRender = function (ro) {
+            if (ro._bindings === null) return;
+            return loese.call(this, ro);
+        };
+        BI.__anazhAbschiedOhneBau = true;
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
