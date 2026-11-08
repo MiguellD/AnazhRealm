@@ -1,7 +1,7 @@
 {
  "sha": "34e045487123bdb06e5c7c16f76bff7b316f059c",
  "geraet": "radeon",
- "zeit": "2026-11-08T02:35:52.377Z",
+ "zeit": "2026-11-08T02:41:05.823Z",
  "host": "MiguellD",
  "je": {
   "lod.K2#1": {
@@ -90,6 +90,19 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 0.956 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.777 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.924 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.866 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0.19 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "amd/rdna-3",
+   "s": 27.8,
+   "zeit": "2026-11-08T02:41:05.823Z",
+   "abdruck": "8b9afa6bfd7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -120,79 +133,126 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "3f920b33ffcb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "8d264e84414d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "73ce8e3983c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "971fc3df75d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-08T02:31:00.951Z",
+  "start": "2026-11-08T02:38:49.184Z",
   "port": 7804,
-  "warten": 0.15,
-  "bootS": 7.9,
+  "warten": 0.1,
+  "bootS": 6.4,
   "grundstellungS": [
-   2.9,
-   2.1,
-   1.9
+   3.1
   ],
-  "proben": 5,
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "lod.K2#1",
-    "s": 19.6,
-    "takte": 675,
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 16.6,
+    "takte": 655,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 15.3,
-    "takte": 595,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K2#1",
-    "s": 12.1,
-    "takte": 711,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 12.2,
-    "takte": 712,
-    "chunks": 81,
+    "ort": "buehne",
+    "vor": "schatten.K1#2",
+    "s": 10.8,
+    "takte": 580,
+    "chunks": 84,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 6,
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1530,
-   "frameP95": 142.36,
-   "taktP95": 91.01,
-   "vramMax": 142.5,
-   "seiten": 8,
+   "bilder": 4,
+   "frameP95": 410.04,
+   "taktP95": 160.13,
+   "vramMax": 86.9,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "profiband.K1#1",
-     "m": 1092,
+     "probe": "ferne.K1#1",
+     "m": 3592,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
+    },
+    {
+     "probe": "schatten.K1#2",
+     "m": 459,
+     "ringVor": 4,
+     "ringMin": 0
     }
    ],
-   "zapfen": 323,
-   "luecken": 6,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 125,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 363.5,
-  "minuten": 6.28
+  "fahrtS": 158.5,
+  "minuten": 2.81
  }
 }

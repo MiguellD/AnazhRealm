@@ -1,14 +1,7 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-08T02:31:14.909Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-08T02:38:59.280Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-[seite] 2026-11-08T02:32:55.020Z navigiert http://localhost:7804/index.html
-[abbruch] /bild: der Rufer ist fort, 1 Abbruch
-[seite] 2026-11-08T02:34:43.136Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:34:57.563Z navigiert about:blank
-[seite] 2026-11-08T02:34:58.162Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:35:16.423Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:35:24.541Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:35:30.980Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:35:38.860Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-08T02:37:14.384Z GESCHLOSSEN
-[seite] 2026-11-08T02:37:14.454Z Browser getrennt
+[abbruch] /eval: der Rufer ist fort, 1 Abbruch
+[seite] 2026-11-08T02:40:53.341Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-08T02:41:34.646Z GESCHLOSSEN
+[seite] 2026-11-08T02:41:34.692Z Browser getrennt
