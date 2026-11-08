@@ -3066,7 +3066,34 @@ class AnazhRealm_bild_kosten {
             pass.dispatchWorkgroups(1, n); // je Auftrag EINE Arbeitsgruppe: sie verdichtet in der Folge der Instanzen
         }
         pass.end();
+        // DIE ZAHL DER GPU FÜR DAS BUCH (w25-gpu-wahl, profiband.K3): je Zug die gezogenen Instanzen seiner Glieder zurück — ein
+        // Lesen im Flug je Zug, ein Bild Verzug —, `_auftraege` bucht damit die Dreiecke (`renderer.info`) statt der Obergrenze
+        const lesen = [];
+        for (let j = 0; j < off.length; j++) {
+            const a = arenen[2 * j],
+                zug = arenen[2 * j + 1];
+            if (zug.liest || !zug.offs.length) continue;
+            const b = zug.offs[0],
+                laenge = zug.offs[zug.offs.length - 1] - b + 20;
+            if (!zug.lies || zug.lies.size < laenge) {
+                if (zug.lies) zug.lies.destroy();
+                zug.lies = dev.createBuffer({ label: "pass-wahl-zahl", size: Math.ceil(laenge / 16) * 16 + 16, usage: U.MAP_READ | U.COPY_DST }); // prettier-ignore
+            }
+            enc.copyBufferToBuffer(be.get(a._ind).buffer, b, zug.lies, 0, Math.ceil(laenge / 4) * 4);
+            lesen.push([zug, zug.zuege.slice(), zug.offs.map((o) => (o - b) / 4 + 1)]);
+            zug.liest = true;
+        }
         dev.queue.submit([enc.finish()]);
+        for (const [zug, glieder, platz] of lesen)
+            zug.lies
+                .mapAsync(GPUMapMode.READ)
+                .then(() => {
+                    const u = new Uint32Array(zug.lies.getMappedRange());
+                    zug.gpuZahl = new Map(glieder.map((m, k) => [m, u[platz[k]]]));
+                    zug.lies.unmap();
+                    zug.liest = false;
+                })
+                .catch(() => (zug.liest = false)); // ein Puffer, der mit seiner Arena fiel
     }
 
     // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und

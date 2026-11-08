@@ -1826,7 +1826,9 @@ class AnazhRealm_stoff_instanz {
                     if (wahl) wahl.push(m, z.erst, n, basis + o + 1, li);
                     zug.offs.push((basis + o) * 4);
                     zug.zuege.push(m);
-                    zug.tri += (ni / 3) * n;
+                    // das Buch zählt in der Wahl der GPU ihre Zahl (`_wahlRechnen`, ein Bild Verzug), sonst die der CPU
+                    const gz = wahl && zug.gpuZahl ? zug.gpuZahl.get(m) : undefined;
+                    zug.tri += (ni / 3) * (gz === undefined ? n : gz);
                     k++;
                 }
                 // gezählt am Stand dieses Passes (heilt jeden Schreiber an der Instanz-Zahl vorbei)
