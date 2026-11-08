@@ -930,8 +930,9 @@ class AnazhRealm_vegetation_wiese {
     // Boden (vegetation.K1#1 LAI 20–40 m satt → 0,89, swiftshader). Die Matrix trägt diese größte Breite als ihre Breiten-Achse (die Karte, wie sie
     // höchstens steht); der Stoff schmälert sie nach dem Abstand (`_wieseSchale`). Kein Platz für die schmalste: keine Karte. Bis
     // dahin stand jede Karte waagrecht und wuchs im Stoff bis 6,9 m: am Hang des Dorfs Treppen aus Karten, deren Enden bis 2,9 m
-    // über dem Boden in die Luft ragten (über der Silhouette des Hangs „Halme im Himmel"), an der Gasse lag jede zweite Karte über
-    // dem Weg. Die Matrix bleibt affin (die vierte Zeile 0 0 0 1): jeder CPU-Leser der Instanz (die Nah-Deckung der Linsen)
+    // über dem Boden in die Luft ragten (über der Silhouette des Hangs „Halme im Himmel": am Dorf, 1920 × 1080, 338 Pixel der
+    // Wiese, deren Strahl an keinem Gelände näher als 1,75 m vorbeiging — höher reicht keine stehende Karte; seither 0), an der
+    // Gasse lag jede zweite Karte über dem Weg. Die Matrix bleibt affin (die vierte Zeile 0 0 0 1): jeder CPU-Leser der Instanz (die Nah-Deckung der Linsen)
     // rechnet die Karte, wie r184 sie zeichnet — bis 9b6f7bb3 trug sie Ordnung und Saat in der vierten Zeile, three teilte durch
     // w, und die Sonde des Stand-Takts traf verzerrte Karten statt des Geländes. Ihr Farbton ist der der Halme an ihrem Ort: das
     // EINE Gesetz der Wiesen-Farbe (`terrain:wiesenTint` über dem Licht der Kronen und der Feuchte, wie
