@@ -76,6 +76,26 @@ function kartenFarbe(core) {
 // Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
 // an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
 const KANTE_SOLL = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften[0].band[1];
+// DIE DECKUNG AM SCHIRM (w24-strauch-saum): die Welt liest die Stufen 1–3 bilinear, mischt je zwei (trilinear, der Anteil t der
+// gröberen) und verwirft an der Schwelle der Karte (a ≤ s) — der Anteil, der besteht, je 4 × 4 Proben eines Texels. Bei 0,34 dehnte
+// der Filter jeden Rand des Saums und vereinte die Muster zweier Stufen: die Scheibe deckte 1,15–1,30 ihrer Stufe 0, die Wiese
+// stand dunkler (Koordinator 08.11., bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
+function schirmDeckung(st, s) {
+    const A = st.map((q) => ({ w: q.w, h: q.h, a: q.data.filter((x, i) => i % 4 === 3) }));
+    const bil = (L, u, v, x = u * L.w - 0.5, y = v * L.h - 0.5, i = Math.floor(x), j = Math.floor(y)) => {
+        const g = (a, b) => (a < 0 || b < 0 || a >= L.w || b >= L.h ? 0 : L.a[b * L.w + a] / 255);
+        return (g(i, j) * (1 - x + i) + g(i + 1, j) * (x - i)) * (1 - y + j) + (g(i, j + 1) * (1 - x + i) + g(i + 1, j + 1) * (x - i)) * (y - j);
+    };
+    let [n, m] = [0, 0];
+    for (let k = 1; k <= 3; k++)
+        for (let y = 0; y < A[k].h * 4; y++)
+            for (let x = 0; x < A[k].w * 4; x++) {
+                const [u, v] = [(x + 0.5) / (A[k].w * 4), (y + 0.5) / (A[k].h * 4)];
+                const [b0, b1] = [bil(A[k], u, v), bil(A[k + 1], u, v)];
+                for (const t of [0, 0.125, 0.25, 0.375, 0.625, 0.75, 0.875]) (n++, (m += (1 - t) * b0 + t * b1 > s ? 1 : 0));
+            }
+    return m / n;
+}
 function kartenSaum(core, presets, ic) {
     const [fehler, umriss] = [[], new Map()]; // je Saum-Gesetz die Kante seiner Stufe 0
     const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
@@ -91,6 +111,8 @@ function kartenSaum(core, presets, ic) {
         const st = core.impostorMips(scheibe, 128, 256, 1, null, 6, { saum: { ...sa.ringe[1], nadel: sa.nadel } }).stufen;
         const d = st.map((s) => s.data.filter((x, i) => i % 4 === 3 && x).length / (s.w * s.h));
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
+        const schirm = schirmDeckung(st, core.KARTEN_GESETZ.schwelle) / d[0];
+        if (Math.abs(schirm - 1) > 0.08) fehler.push(`Saum ${art}: die Karte deckt am Schirm ${schirm.toFixed(3)} ihrer Stufe 0 — der Test der Welt dehnt oder dünnt den Saum`);
         const k = st.slice(0, 2).map(kante);
         umriss.set(sa.nadel, k[0]);
         if (!(Math.max(...k) <= KANTE_SOLL)) fehler.push(`Saum ${art}: der Umriss franst nicht im Maß des Schirms (kante ${k} über ${KANTE_SOLL})`);
@@ -207,6 +229,7 @@ function main() {
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
             ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: ((c) => (Object.assign(c.KARTEN_GESETZ, { saumWeite: 1, saumZelle: 6 }), c))(codecAus()) }],
+            ["Schwelle 0,34 (bis w24)", /deckt am Schirm 1\.\d+ ihrer Stufe 0/, { core: ((c) => ((c.KARTEN_GESETZ.schwelle = 0.34), c))(codecAus()) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
