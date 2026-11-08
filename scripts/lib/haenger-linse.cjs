@@ -700,61 +700,45 @@ function linseWerten(roh, spur, b) {
 
 // DER TÄTER NACH DOMÄNE (`werkbank geh`, gate:geh-zerlegung): jeder Rahmen des Takts gehört der Domäne, die auf seinem Pfad
 // zuerst in der Reihe steht (die Bewohner im Takt-Planer sind Bewohner, die Kaskade über `_renderScene` ist Schatten); ohne Treffer
-// Rest. Je Domäne die SELBST-Zeit (ms je Takt ab p95 und in der Mitte) aus der Takt-Spitze `s` (`zeilen` in Tiefen-Reihe) und je
-// Hänger `h` (Liste der Hänger-Linse) die Domäne seiner Engstelle — GPU und GC behalten ihre Klasse.
+// Rest. Je Domäne die SELBST-Zeit [ab p95, Mitte] in ms je Takt aus der Takt-Spitze `s` (`zeilen` in Tiefen-Reihe), je Hänger der
+// Hänger-Linse `a` die Domäne seiner Engstelle (GPU und GC behalten ihre Klasse), dazu DER BAUM: die oberste Ebene des Takts und
+// je Wurzel `teile` ihr Teilbaum bis Tiefe 4, inklusive ms ab p95/Mitte ab 0,8 ms — wohin die Zeit des Takts fließt.
 const DOMAENEN = [
-    ["Bewohner", /ewohner|_tickHausTueren|_menschLeib/],
-    ["Verkehr", /erkehr|Wagen|_tickVehicle|vehicle/],
-    ["Tiere", /reatur|_tier[A-Z]|Fauna|Herde/],
-    ["Schatten", /chatten|Kaskade|kaskade|Shadow/],
+    ["Bewohner", /ewohner|_tickHausTueren/],
+    ["Verkehr", /erkehr|Wagen/],
+    ["Tiere", /reatur|Fauna|Herde/],
+    ["Schatten", /chatten|Kaskade|Shadow/],
     ["Satz", /Satz|_satz/],
-    ["Bau", /_knotenRate|Architecture|AutoSettlement|Blueprint|_foundry|Foundry|_arch[A-Z]|_bauFrist|_tickBau/],
-    ["Sicht", /_passSicht|Sicht/],
-    ["Leib", /_leib|Leib|_stepCharacter|gangSchritt|kelett/],
-    ["Streaming", /_runFrameScheduler|Streaming|VoxelChunk|Scatter|NahWiese|NahStreu|Wald|Saat|FernRing|WegeKarte|Water|Grass|Canopy|Impostor/],
-    ["Zeichnen", /_loopRender|_renderScene|_renderObject|render|Render|draw/],
+    ["Bau", /_knotenRate|Architecture|AutoSettlement|Foundry|_foundry|_arch[A-Z]|_grundriss/],
+    ["Sicht", /Sicht/],
+    ["Leib", /Leib|_leib|_stepCharacter|kelett/],
+    ["Streaming", /_runFrameScheduler|Streaming|VoxelChunk|Scatter|Wiese|Streu|Wald|Saat|FernRing|WegeKarte|Water|Grass/],
+    ["Zeichnen", /render|Render/],
 ];
 const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
-function domaenen(a, s, teile = /^_bewohnerGeburt|^_bewohnerListe|^tickArchitectureCulling|^tickDayNight|^_loopFixedStep|^_runFrameScheduler/) {
-    const je = {}, rahmen = [], stapel = [], baum = [];
-    const plus = (d, sp, mi) => ((je[d] = je[d] || { spitze: 0, mitte: 0 }), (je[d].spitze += sp), (je[d].mitte += mi));
-    const r1 = (x) => x.toFixed(1);
+function domaenen(a, s, teile = /^_bewohner(Geburt|Liste|WerkTakt)|^tickArchitectureCulling|^_runFrameScheduler/) {
+    const [je, hJe, stapel, baum, r1] = [{}, {}, [], [], (x) => x.toFixed(1)];
     s.zeilen.forEach((z, i) => {
         stapel.length = z.tiefe;
         stapel.push(z.name);
-        let sp = z.spitzeMs, mi = z.mitteMs;
+        const d = (je[domaeneVon(stapel)] ||= [0, 0]);
+        let [sp, mi] = [z.spitzeMs, z.mitteMs];
         for (let j = i + 1; j < s.zeilen.length && s.zeilen[j].tiefe > z.tiefe; j++)
-            if (s.zeilen[j].tiefe === z.tiefe + 1) [(sp -= s.zeilen[j].spitzeMs), (mi -= s.zeilen[j].mitteMs)];
-        const d = domaeneVon(stapel), name = z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32);
-        plus(d, Math.max(0, sp), Math.max(0, mi));
-        rahmen.push({ name, d, sp: Math.max(0, sp), mi: Math.max(0, mi) });
-        // DER BAUM (inklusive ms je Takt ab p95/Mitte, ab 0,8 ms): die oberste Ebene des Takts und je Wurzel `teile` ihr Teilbaum bis
-        // Tiefe 3 unter ihr — wohin die Zeit des Takts fließt
+            if (s.zeilen[j].tiefe === z.tiefe + 1) [sp, mi] = [sp - s.zeilen[j].spitzeMs, mi - s.zeilen[j].mitteMs];
+        [d[0], d[1]] = [d[0] + Math.max(0, sp), d[1] + Math.max(0, mi)];
         const w = stapel.findIndex((n) => teile.test(n));
         if ((z.tiefe === 0 || (w >= 0 && z.tiefe - w <= 4)) && Math.max(z.spitzeMs, z.mitteMs) >= 0.8)
-            baum.push(`${"›".repeat(w >= 0 ? z.tiefe - w : 0)}${name} ${r1(z.spitzeMs)}/${r1(z.mitteMs)}`);
+            baum.push(`${"›".repeat(w < 0 ? 0 : z.tiefe - w)}${z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32)} ${r1(z.spitzeMs)}/${r1(z.mitteMs)}`);
     });
-    const hJe = {};
     for (const h of a.haenger || []) {
-        const d = h.klasse === "TAKT" || h.klasse === "NEBEN" ? domaeneVon(h.pfad.map((p) => p.name).concat(h.name)) : h.klasse;
-        hJe[d] = (hJe[d] || 0) + 1;
+        const d = /TAKT|NEBEN/.test(h.klasse) ? domaeneVon(h.pfad.map((p) => p.name).concat(h.name)) : h.klasse;
+        hJe[d] = (hJe[d] | 0) + 1;
     }
+    const reihe = (o, f) => Object.entries(o).sort((x, y) => f(y[1]) - f(x[1]));
     return {
-        je,
-        jeDomaene: Object.entries(je)
-            .sort((x, y) => y[1].spitze - x[1].spitze)
-            .map(([d, v]) => `${d} ${r1(v.spitze)}/${r1(v.mitte)}`)
-            .join(" · "),
         baum,
-        rahmen: rahmen
-            .sort((x, y) => y.mi - x.mi)
-            .slice(0, 12)
-            .map((x) => `${x.name} (${x.d}) ${r1(x.sp)}/${r1(x.mi)}`)
-            .join(" · "),
-        haenger: Object.entries(hJe)
-            .sort((x, y) => y[1] - x[1])
-            .map(([d, n]) => `${d} ${n}`)
-            .join(" "),
+        jeDomaene: reihe(je, (v) => v[0]).map(([k, v]) => `${k} ${r1(v[0])}/${r1(v[1])}`).join(" · "),
+        haenger: reihe(hJe, (n) => n).map(([k, n]) => `${k} ${n}`).join(" "),
     };
 }
 
@@ -1121,6 +1105,12 @@ function selbsttest() {
     const dauer = (s) => s.profil.timeDeltas.reduce((x, y) => x + y);
     if (weg.split("9916 von 9916 Proben unter").length !== 4 || klein !== "256 ,256 ,256 " || Math.abs(dauer(spurProfil(ev.toSpliced(3, 1))) - dauer(sp)) > 1000)
         f.push(`der verlorene ProfileChunk: ${weg} · ${klein}`);
+    // DER TÄTER NACH DOMÄNE (`domaenen`): das Werk der Bewohner im Planer heißt Bewohner (nie Streaming), der Wurf über `_renderScene`
+    // Schatten, ein Hänger im Takt der Bewohner Bewohner, einer der GPU GPU; der Teilbaum unter dem Planer steht eingerückt
+    const Dt = domaenen({ haenger: [{ klasse: "TAKT", name: "frei", pfad: [{ name: "_tickBewohner" }] }, { klasse: "GPU", name: "?", pfad: [] }] }, { zeilen: [
+        ...[[0, "_runFrameScheduler", 9, 5], [1, "_bewohnerWerkTakt", 6, 3], [0, "_loopShadowUpdate", 4, 4], [1, "_renderScene", 3, 3]].map(([tiefe, name, spitzeMs, mitteMs]) => ({ tiefe, name, spitzeMs, mitteMs }))] }); // prettier-ignore
+    if (Dt.jeDomaene !== "Bewohner 6.0/3.0 · Schatten 4.0/4.0 · Streaming 3.0/2.0" || Dt.haenger !== "Bewohner 1 GPU 1" || Dt.baum[1] !== "›_bewohnerWerkTakt 6.0/3.0")
+        f.push(`der Täter nach Domäne: ${Dt.jeDomaene} · ${Dt.haenger} · ${Dt.baum.join(" ")}`);
     return f.concat(ankunftsSelbsttest());
 }
 

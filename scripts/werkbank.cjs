@@ -3206,48 +3206,38 @@ hauptLauf(async () => {
     }
     else if (cmd === "geh") {
         // DIE ZERLEGUNG DES GEHENS (`gate:geh-zerlegung`, die Bewegungszellen von profiband.K1#1; der Messplatz des GPU-Probe-Dienstes):
-        // je Ort frisch umgestellt der erste Gang wie die Station (Bahn, Regler voll, Tiere frei, 4 s nach 0,5 s), in der Stadt danach
-        // 2 s Stand und ein zweiter Gang — aus DERSELBEN Spur die Hänger über 33 ms (je Hänger die Domäne seiner Engstelle) und die
-        // Takt-Spitze je Domäne (ms je Takt ab p95 / Mitte, `HL.domaenen`). Zeilen „GEH …“ ≤ 590 Zeichen (der Dienst postet die
-        // letzten zehn). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält.
+        // je Ort frisch umgestellt die Gänge wie die Station (Bahn, Regler voll, Tiere frei, 4 s nach 0,5 s; in der Stadt zwei) — aus
+        // DERSELBEN Spur die Hänger über 33 ms (je Hänger die Domäne seiner Engstelle), die Takt-Spitze je Domäne (ms je Takt ab p95 /
+        // Mitte) und am letzten Gang je Ort der Baum (`HL.domaenen`); dazu GPU, Befehle je Pass und Dreiecke des Laufs. Zeilen „GEH …"
+        // ≤ 590 Zeichen (der Dienst postet die letzten zehn). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält. Bis w25-stadt-takt lebte
+        // die Zerlegung als eigenes Skript in den Zweigen (w23-geh-takt) und fiel mit deren Abgabe.
         const halt = await eigeneWelt();
         const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
         const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
+        const passe = (b) => Object.entries(b?.jePass || {}).sort((x, y) => y[1].p50 - x[1].p50).slice(0, 5).map(([p, v]) => `${p} ${v.p50}`).join(" "); // prettier-ignore
         let gruen = true;
+        const summe = [];
         try {
-            // je Pass die Befehle (p50) eines Laufs, die größten zuerst
-            const passe = (b) => Object.entries(b?.jePass || {}).sort((x, y) => y[1].p50 - x[1].p50).slice(0, 5).map(([p, v]) => `${p} ${v.p50}`).join(" "); // prettier-ignore
-            // DIE AKTE der Bewohner neben jedem Gang: was die Welt offen nennt (`_weltOffen`), je Siedlung Köpfe/Werk der Liste/Ungeborene,
-            // und wie oft seit der letzten Akte die Bevölkerung ging, ein Ort wuchs, die Liste begann, einer geboren wurde
-            const ZM = ["_bewohnerFort", "_ortWaechst", "_bewohnerListe", "_bewohnerGeburt"];
-            await evalRuf(`const P = Object.getPrototypeOf(r); if (!P.__gehZ) { P.__gehZ = {}; for (const m of ${JSON.stringify(ZM)}) { const f = P[m]; P[m] = function () { P.__gehZ[m] = (P.__gehZ[m] | 0) + 1; return f.apply(this, arguments); }; } } return 1;`); // prettier-ignore
-            const akte = async () => JSON.stringify(ergebnis(await evalRuf(`const P = Object.getPrototypeOf(r), z = P.__gehZ; P.__gehZ = {}; const o = r._weltOffen(), q = r._autoSettlementQueue; return { offen: Object.fromEntries(Object.entries(o).filter(([, v]) => v)), z, q: q ? q.cellKey + " " + q.idx : null, S: [...(r._bewohnerSiedlungen || new Map()).values()].map((S) => S.key + ":" + (S.liste ? S.liste.length : "-") + (S.listeWerk ? " werk" + (S.listeRest | 0) : "") + " u" + (S.liste || []).filter((b) => b.leib == null).length) };`))); // prettier-ignore
             for (const [ort, gaenge] of [["wiese", 1], ["stadt", 2]]) {
                 await umstellen({ ort, sicht: "ego" });
-                if (ort === "stadt") zeile(`GEH ROT Akte nach dem Umstellen: ${await akte()}`);
                 for (let g = 1; g <= gaenge; g++) {
-                    if (g > 1) {
-                        const l = await rufe("/lauf", { sek: 2, ein: 0.3, ruhe: 0, regler: "voll", tiere: "frei" });
-                        zeile(`GEH ${l.frameMs?.p95 <= 33.4 ? "GRÜN" : "ROT"} Stand ${ort}: Bild ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} · Befehle ${l.befehle?.p95} (${passe(l.befehle)}) · Dreiecke ${l.dreiecke?.p95} · Phasen ${JSON.stringify(l.phasenEwmaMs)}`); // prettier-ignore
-                    }
-                    const name = `${ort}-ego Gang ${g}`;
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
-                    if (!o?.datei) throw new Error(`${name}: ${JSON.stringify(o).slice(0, 300)}`);
+                    if (!o?.datei) throw new Error(`${ort} ${g}: ${JSON.stringify(o).slice(0, 300)}`);
                     const a = jsonLesen(o.datei), { roh, spur } = jsonLesen(o.datei.replace(/\.json$/, ".roh.json"));
                     const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s);
-                    const u = a.frameMs.p95 <= 33.4 ? "GRÜN" : "ROT";
-                    gruen = gruen && u === "GRÜN";
-                    zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
-                    zeile(`GEH ${u} ${name} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene} · Akte ${await akte()}`);
-                    if (g < gaenge) continue; // der letzte Gang des Orts trägt den Baum (der Dienst postet die letzten zehn Zeilen)
-                    for (let i = 0, k = 1; i < d.baum.length; k++) {
-                        let t = `GEH ${u} ${name} Baum ${k}:`;
+                    const u = `GEH ${a.frameMs.p95 <= 33.4 ? "GRÜN" : ((gruen = false), "ROT")} ${ort}-ego Gang ${g}`;
+                    zeile(`${u}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
+                    zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
+                    summe.push(`${ort} ${g}: ${a.frameMs.p50}/${a.frameMs.p95}/${a.frameMs.max} ms, > 33 ms ${a.haengerN}/${a.frames} (${Math.round((100 * a.haengerN) / a.frames)} %), Takt ${a.taktMs.p50}/${a.taktMs.p95}`); // prettier-ignore
+                    for (let i = 0, k = 1; g === gaenge && i < d.baum.length; k++) {
+                        let t = `${u} Baum ${k}:`;
                         do t += " " + d.baum[i++];
                         while (i < d.baum.length && t.length + d.baum[i].length < 580);
                         zeile(t);
                     }
                 }
             }
+            zeile(`GEH ${gruen ? "GRÜN" : "ROT"} Summe Bild p50/p95/max: ${summe.join(" · ")}`);
         } catch (e) {
             gruen = false;
             zeile(`GEH ROT Error ${String(e?.stack || e).slice(0, 500)}`);
