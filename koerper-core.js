@@ -1056,14 +1056,16 @@
     //   mundFalte = der Anteil der Ecken der Kopf-Haut neben dem Mund (seitlich über drei Viertel der Lippen-Breite von ihrer Mitte,
     //   von der Oberlippe bis anderthalb Lippen-Höhen unter die Unterlippe, vorn), deren Ton (Farbe × Verdeckung) unter 40 % des
     //   hellen Haut-Tons fällt — die harte Falte von den Mundwinkeln zum Kiefer, die Unterlippe wie ein abgesetzter Puppen-Kiefer
-    //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0).
+    //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0). haarRahmen = der Anteil der Bänder
+    //   des Haars am Guss L0, deren Ecken der EINE Leser `haarAchse` als Strähne liest (w25-haar-albedo: Welt und Labor lesen Achse,
+    //   Quer und Länge aus ihm — ein Band ohne Rahmen glänzte nie und löste sich nie auf).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
-        brauKontrast: [8, 80],
+        brauKontrast: [8, 80], haarRahmen: [1, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand

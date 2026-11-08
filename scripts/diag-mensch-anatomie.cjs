@@ -165,6 +165,11 @@ function messeKopf(sb, eingriff) {
     const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, eingriff && eingriff.dials ? { dials: eingriff.dials } : null); // prettier-ignore
     let hautK;
     g.traverse((n) => n.isMesh && n.material.userData.__klasse === "haut" && n.userData.__assetJoint === "head" && (hautK = n)); // prettier-ignore
+    // DER RAHMEN DER STRÄHNE (w25-haar-albedo): der Anteil der Bänder des Haars am Guss, die das Gesetz der Ecken des Bäckers
+    // tragen — gelesen vom EINEN Leser (koerper `haarAchse`; Welt `_haarAchse`, Labor `stufeAnlegen`), ohne Band 0
+    const haarB = [0, 0];
+    const je = (b, m) => Float32Array.from({ length: b.count * m }, (_, j) => b.getComponent((j / m) | 0, j % m));
+    g.traverse((n, a = n.geometry && n.geometry.attributes) => n.isMesh && n.material.userData.__klasse === "hair" && a.aTon && ((r) => ((haarB[0] += r.zahl), (haarB[1] += r.bruch)))(K.haarAchse(je(a.position, 3), je(a.color, 3), je(a.aTon, 1)))); // prettier-ignore
     // DIE TÖNE DES GUSSES (mensch.K4): je Ton der Kopf-Haut (`aTon`, koerper `menschTon`) seine Albedo in CIELAB — die Farbe
     // seiner hellsten Ecke (die Verdeckung der Haut dunkelt nur, die Mund-Linie ist dunkler: die hellste trägt den Ton genau):
     // die Haut, die Lippe, die Augenhöhle (der Ton der Haut am Auge) und die Braue
@@ -188,6 +193,7 @@ function messeKopf(sb, eingriff) {
         hautAlbedoMax: Math.max(...luma),
         // DIE BRAUE (mensch.K4): ihr Ton gegen die Haut (|ΔL*|)
         brauKontrast: Math.abs(lB[0] - lH[0]),
+        haarRahmen: haarB[0] ? haarB[0] / (haarB[0] + haarB[1]) : 0,
     };
 }
 // DIE EINE HAUT IM GUSS (w21-leib-bau, koerper-core `leibUrteil` — die Bänder LEIB_SOLL): am Ofen L0 die Naht der Kopf-Haut an der
@@ -355,6 +361,8 @@ if (SELBSTTEST) {
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
+    // DER RAHMEN DER STRÄHNE (w25-haar-albedo): der Bäcker gießt die Wurzel fern dem Gesetz (0,6 statt HAAR_STRICH.wurzel)
+    pruefe("H1 die Wurzel des Bäckers fern dem Gesetz (der Rahmen der Strähne bricht) wird erkannt", { kern: (K) => ({ ...K, haarStreu: (d) => K.haarStreu(d).map((z) => ({ ...z, wurzel: 0.6 })) }) }, /^haarRahmen/, true); // prettier-ignore
     // DER LEIB (w21-leib-bau): der Kopf über H — so stand er im Gesetz vor dem Kanon (der Scheitel 0,21 E über H, der Hals zu lang)
     pruefe("L1 der Scheitel 0,21 E über H (der Kopf vor w21-leib-bau) wird erkannt", (B) => (B.parts.head.position.y += 0.21), /^(hals|kopfH) /); // prettier-ignore
     // je Täter am Guss (Ofen L0) die Haut, wie sie vor w21-leib-bau stand: (L2) die Kopf-Haut schwebt über dem Hals (zwei Häute
