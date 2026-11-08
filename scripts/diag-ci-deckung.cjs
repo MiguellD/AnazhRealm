@@ -136,9 +136,7 @@ const KLASSEN = {
 const AUSNAHMEN = {
     "gate:pop": {
         klasse: KLASSEN.MESS,
-        grund:
-            "der Messplatz des GPU-Probe-Dienstes für lod.K2#1 (werkbank pop, die Messung der Station): er gibt die Pop-Pixel " +
-            "je Sekunde aus, der Richter ist die Station der Punkte-Maschine; die Klasse hält gate:fernwald G in der CI",
+        grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
     },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,

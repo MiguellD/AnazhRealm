@@ -2678,7 +2678,8 @@ class AnazhRealm_vegetation_baum {
         // zählt ihn, seine Zusage holt ihn zurück (`_cullWecken`), ein neuer Stand des Wunschs jeden. Bis w4-b-streu fragte ihn jeder
         // Stand neu — und der Stand wechselte mit jeder Lieferung (headless kalt bis zum Bild 26 766 Platz-Fragen, der Gang
         // 6,3–7,4 s); der Ziegel fragte je Takt („lädt noch — der nächste Tick fragt wieder").
-        const wunsch = this._foundryEnabled() ? this._bereitStand(this._lodAuge(), true) : -1;
+        const auge = this._lodAuge() || playerPos; // das EINE Auge der Stufen: an ihm tritt die Karte eines Wurfs des Felds ein
+        const wunsch = this._foundryEnabled() ? this._bereitStand(auge, true) : -1;
         const Z = this._cullZusagen || (this._cullZusagen = new Map());
         const zurueck = (e) => this._cullWecken(e);
         if (K.wunsch !== wunsch) {
@@ -2716,13 +2717,13 @@ class AnazhRealm_vegetation_baum {
                     regung++;
                 }
                 // der Eintrag fragt SEINEN Rand: ungezeichnet den des Eintritts, gezeichnet seinen Karten-Horizont. DER EINTRITT
-                // EINES WURFS DES FELDS MISST VOM SPIELER (w22-wald-geburt), wie sein Laub-Rand: die Bahn bereitet vor (die Saat),
-                // sichtbar wird, was der Spieler erreicht — an der Bahn trat beim ersten Schritt alles ein, was ihr Vorlauf überholte
-                // (GPU-Probe 6ee4408f, GTX: 21 Karten ab 186 m in EINEM Schritt, 480 Pop-Pixel)
+                // EINES WURFS DES FELDS MISST VOM AUGE (w22-wald-geburt), wo seine Karte einblendet (`aEin` im Karten-Stoff): die
+                // Bahn bereitet vor (die Saat), sichtbar wird, was das Auge erreicht — an der Bahn trat beim ersten Schritt alles
+                // ein, was ihr Vorlauf überholte (GPU-Probe 6ee4408f, GTX: 21 Karten ab 186 m in EINEM Schritt, 480 Pop-Pixel)
                 let rand = this._archKartenHorizont(entry, !this._archIsRendered(entry));
                 const dEin =
                     entry.feldWurf === true
-                        ? Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z)
+                        ? Math.hypot(entry.position.x - auge.x, entry.position.z - auge.z)
                         : Math.sqrt(distSq);
                 if (this._archIsRendered(entry) ? distSq <= rand * rand : dEin <= rand) {
                     if (!this._archIsRendered(entry)) {
@@ -2735,11 +2736,11 @@ class AnazhRealm_vegetation_baum {
                     regung++;
                     rand = this._archKartenHorizont(entry, true);
                 }
-                // der Schlaf: gezeichnet bis hinter das Totband, ungezeichnet bis an den eigenen Rand des Eintritts; eine Stufe
-                // ohne Studio-Asset (`instFoundry`) hebt der Rewarm in der Mesh-Zone — sie wacht dort und schläft davor nur bis
-                // an den Radius
+                // der Schlaf: gezeichnet bis hinter das Totband, ungezeichnet bis ein Totband vor seinem Rand des Eintritts (das
+                // Auge darf um den Spieler wandern); eine Stufe ohne Studio-Asset (`instFoundry`) hebt der Rewarm in der Mesh-Zone —
+                // sie wacht dort und schläft davor nur bis an den Radius
                 const d = Math.sqrt(distSq);
-                if (!this._archIsRendered(entry)) schlaf(entry, dEin - rand);
+                if (!this._archIsRendered(entry)) schlaf(entry, dEin - rand - totband);
                 else if (entry.instFoundry === true || !this._foundryPresetForEntry(entry))
                     schlaf(entry, rand + totband - d);
                 else if (d > radius) schlaf(entry, Math.min(rand + totband - d, d - radius));

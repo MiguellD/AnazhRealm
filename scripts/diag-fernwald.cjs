@@ -272,12 +272,13 @@ hauptLauf(async () => {
         // Die Linse liest die Karten-Art über die Prototyp-Methode — der Selbsttest ersetzt nur die der Welt.
         const kartenPreset = (e) => AR.prototype._archKartenPreset.call(r, e);
         const karten = () => st.architectures.filter((e) => e?.position && kartenPreset(e));
-        // Der Stempel einer Karten-Instanz: das Vorzeichen von aKarte.w im Slot (negativ = voll).
-        const stempel = (e) => {
+        // Der Stempel einer Karten-Instanz: das letzte Feld ihres Attributs `n` im Slot — aKarte.w (negativ = voll), aEin (der Rand
+        // der Blende des Eintritts).
+        const stempel = (e, n = "aKarte") => {
             for (const s of e.instSlots || []) {
                 const g = st.archInstanceGroups.get(s.key);
-                const ak = g && g.mesh && g.mesh.geometry.attributes.aKarte;
-                if (ak) return ak.array[s.slot * 4 + 3];
+                const a = g && g.mesh && g.mesh.geometry.attributes[n];
+                if (a) return a.array[(s.slot + 1) * a.itemSize - 1];
             }
             return null;
         };
@@ -531,8 +532,14 @@ hauptLauf(async () => {
 
         // ── G: die Geburt am Laub-Rand — der Spieler geht ins Offene, je Schritt 1 m und 12 Takte; jedes Karten-Ding, das zum
         // ersten Mal gezeichnet steht, nennt seinen Abstand vom Spieler. Ein Wurf des Felds im Saum vor dem Laub-Rand tritt erst
-        // an seinem Rand des Eintritts ein, gemessen vom Spieler — nie ein Chunk als Ring bei seiner Saat, nie, wo die Bahn
-        // ihm vorausläuft.
+        // an seinem Rand des Eintritts ein, gemessen vom Auge der Stufen (`_lodAuge`, wo seine Karte einblendet) — nie ein Chunk
+        // als Ring bei seiner Saat, nie, wo die Bahn ihm vorausläuft.
+        // der Eintritt eines Wurfs des Felds: das Auge innerhalb seines Rands, sein Slot trägt ihn als Rand der Blende (`aEin`)
+        const eintritt = (e, d) => {
+            const [h, se] = [rand(e, true), stempel(e, "aEin")];
+            return d > h + 0.5 || se !== Math.fround(h) ? `${e.type} ${d.toFixed(0)} m, Rand ${h.toFixed(0)}, Stempel ${se}` : null;
+        };
+        let probe = null;
         const geburt = async (dx, dz) => {
             const gezeichnet = new Set(karten().filter((e) => r._archIsRendered(e)));
             const [x0, z0, saum] = [pm.x, pm.z, AR.KARTEN_HORIZONT_SAUM_M];
@@ -544,12 +551,13 @@ hauptLauf(async () => {
                 for (const e of karten()) {
                     if (gezeichnet.has(e) || !r._archIsRendered(e)) continue;
                     gezeichnet.add(e);
-                    const d = dist(e);
-                    if (e.feldWurf !== true || d < g.rand - saum - 1) continue; // diesseits des Saums: kein Rand
+                    const [a, d0] = [r._lodAuge(), g.rand - saum - 1];
+                    const d = Math.hypot(e.position.x - a.x, e.position.z - a.z); // vom Auge der Stufen
+                    if (e.feldWurf !== true || d < d0) continue; // diesseits des Saums: kein Rand
                     neu++;
-                    const h = rand(e, true);
-                    if (d > h + 0.5 && g.taeter.length < 6)
-                        g.taeter.push(`${e.type} @ ${d.toFixed(0)} m (Rand des Eintritts ${h.toFixed(0)} m)`);
+                    const t = eintritt(e, d);
+                    if (t && g.taeter.length < 6) g.taeter.push(t);
+                    probe = [e, d];
                 }
                 g.n += neu;
                 g.ring = Math.max(g.ring, neu);
@@ -557,6 +565,14 @@ hauptLauf(async () => {
             return g;
         };
         res.G = await geburt(1, 0);
+        // ── SELBSTTEST (7): eine eingetretene Karte ohne den Rand ihrer Blende (aEin 0: sie träte hart ein) ──
+        if (probe) {
+            const s = probe[0].instSlots[0], a = st.archInstanceGroups.get(s.key).mesh.geometry.attributes.aEin.array;
+            const alt = a[s.slot];
+            a[s.slot] = 0;
+            res.S7 = eintritt(...probe);
+            a[s.slot] = alt;
+        }
         // ── SELBSTTEST (6): der alte Eintritt — jede Karte tritt an ihrem Karten-Horizont ein, der Chunk zugleich bei seiner Saat ──
         r._archKartenHorizont = function (e) {
             return AR.prototype._archKartenHorizont.call(this, e, false);
@@ -722,11 +738,12 @@ hauptLauf(async () => {
     // G: kein Wurf des Felds tritt jenseits seines Rands des Eintritts ein; nicht vakuös: der Gang trägt Eintritte im Saum
     const G = out.G || { taeter: ["nicht gelaufen"] };
     const gZeile = (g) =>
-        `Laub-Rand ${g.rand} m, 40 m Gang: ${g.n} Würfe des Felds treten im Saum ein, höchstens ${g.ring} je Schritt` +
+        `Laub-Rand ${g.rand} m, 40 m Gang: ${g.n} Eintritte im Saum, höchstens ${g.ring} je Schritt` +
         (g.taeter.length ? ` · Täter: ${g.taeter.join(" | ")}` : "");
-    check("G GEBURT (die Karte tritt an ihrem Rand ein, kein Ring der Saat)", G.n >= 5 && G.taeter.length === 0, gZeile(G));
+    check("G GEBURT (die Karte tritt an ihrem Rand ein und blendet dort ein)", G.n >= 5 && G.taeter.length === 0, gZeile(G));
     const S6 = out.S6 || { taeter: [] };
     check("SELBSTTEST 6 (der Eintritt am Karten-Horizont macht G rot)", S6.taeter.length > 0, gZeile(S6));
+    check("SELBSTTEST 7 (eine Karte ohne den Rand ihrer Blende macht G rot)", !!out.S7, out.S7 || "keine Probe");
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
     urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });

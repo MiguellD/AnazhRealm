@@ -812,17 +812,17 @@ function popGang() {
             cam.position.set(p.x, y(p) + 1.7, p.z);
             cam.lookAt(p.x + fwd.x * 50, y(p) + 1.7, p.z + fwd.z * 50);
             cam.updateMatrixWorld(true);
-            if (st.lodUniforms?.uDitherT) st.lodUniforms.uDitherT.value = 0;
-            return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
+            aus.kosten.push([f.info.drawCalls, f.info.triangles, +f.ms.toFixed(1)]); // Befehle, Dreiecke, ms des gezählten Bilds
+            return f.u8;
         };
         const geh = async (p) => {
             pm.set(p.x, y(p) + 0.05, p.z);
             for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
         };
-        const luma = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-        const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)];
+        const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
         const ad = await navigator.gpu?.requestAdapter();
-        const aus = { adapter: ad?.info && `${ad.info.vendor}/${ad.info.architecture}`, schritte: [], laub: [], popPixel: 0 };
+        const aus = { adapter: `${ad?.info.vendor}/${ad?.info.architecture}`, schritte: [], popPixel: 0, kosten: [] };
         try {
             for (let i = 0; i < 8; i++) {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
@@ -836,20 +836,20 @@ function popGang() {
                 }
                 await geh(p1);
                 const b = await schuss(p1);
-                const s = { pop: 0, ein: [], wechsel: [] };
-                for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma(a, k) - luma(b, k)) > 18) s.pop++;
+                const s = { pop: 0, ein: [], wechsel: 0 };
+                for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma709(a, k) - luma709(b, k)) > 18) s.pop++;
                 for (const e of st.architectures) {
-                    const v = e && vor.get(e), d = e && Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z));
-                    if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(d);
-                    else if (v && v[0] !== stufe(e)[0]) s.wechsel.push(`${r._foundryPresetForEntry(e) || e.type} ${d} m`);
+                    const v = e && vor.get(e);
+                    if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z)));
+                    else if (v && v[0] !== stufe(e)[0]) s.wechsel++;
                 }
                 aus.popPixel += s.pop;
                 aus.schritte.push(s);
-                aus.laub.push(Math.round(r._laubRand()));
             }
         } finally {
             pm.copy(start);
         }
+        aus.laub = r._laubRand();
         aus.anteilJeSekunde = +((100 * aus.popPixel) / (W * H)).toFixed(4); // 4 m bei 4 m/s: EINE Sekunde
         return aus;
     })();
@@ -3208,8 +3208,8 @@ hauptLauf(async () => {
         } finally {
             tor?.stop();
         }
-        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel.length ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
-        if (je.length) console.log(`[linse-gpu] ${o.adapter}\nlod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub}`);
+        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (je.length) console.log(`[linse-gpu] ${o.adapter}\nlod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke, ms je Bild ${o.kosten.at(-1)}`);
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {

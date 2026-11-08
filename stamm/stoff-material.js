@@ -1190,7 +1190,26 @@ class AnazhRealm_stoff_material {
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
                                         });
                                         {
-                                            _alpha = _alpha.mul(_keepFin);
+                                            // DER EINTRITT AM LAUB-RAND (w22-wald-geburt, lod.K2#1): die Karte eines Wurfs des
+                                            // Felds tritt an ihrem Rand des Eintritts ein (`aEin`, am Slot gestempelt; 0 = kein
+                                            // Rand) und blendet über das Band der Stufen (`uLodFade`) ein, während das Auge ihn
+                                            // unterschreitet — dieselbe Blende (`_ditherIGN`), dasselbe Auge wie die Stufen. Bis
+                                            // hierher trat sie hart ein: ein Ereignis im Takt, kein Ort des Auges (GPU-Probe
+                                            // aec208de, Radeon: 25 harte Eintritte in 4 m Gang, 0,0663 % Pop-Pixel/s)
+                                            const _lu = this._ensureLodUniforms();
+                                            const _ein = _Ta.attribute("aEin", "float");
+                                            const _dAuge = _Ta.length(_lu.uLodAuge.xz.sub(this._instanzMitteNode(_Ta)));
+                                            const _rampe = _ein
+                                                .sub(_dAuge)
+                                                .div(_lu.uLodFade.max(_Ta.float(1e-3)))
+                                                .clamp(0.0, 1.0);
+                                            const _keepEin = _Ta.step(
+                                                this._ditherIGN(_Ta, 0),
+                                                _ein.greaterThan(_Ta.float(0.0)).select(_rampe, _Ta.float(1.0))
+                                            );
+                                            _alpha = _alpha
+                                                .mul(_keepFin)
+                                                .mul(_Ta.mix(_Ta.float(1.0), _keepEin, _lu.uLodMaskOn));
                                             // der Stoff trägt die Maske: die Instanz-Wahl darf ihr Fenster lesen
                                             // (`_instanzFensterGilt`)
                                             mat.userData.kartenMaske = true;
