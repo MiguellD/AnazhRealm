@@ -3223,13 +3223,16 @@ hauptLauf(async () => {
         try {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
+            const alt = new Set();
             for (const s of "ABAB") {
-                await evalRuf(`r.state.wahlGpuWiese = ${s === "B"}; for (let i = 0; i < 20; i++) await __werkTakt(); return (${wahlUhren})({});`); // prettier-ignore
+                // geschaltet, 90 Takte eingeschwungen, dann das Bild an der Pose des Orts gegen das erste A (Pixel mit ΔLuma > 18)
+                const d = ergebnis(await evalRuf(`r.state.wahlGpuWiese = ${s === "B"}; for (let i = 0; i < 90; i++) await __werkTakt(); const b = (await __ausgabeAufnahme(1920, 1080, 1, { satz: "messung" })).u8, a = (window.__wahlA ??= b); let n = 0; for (let k = 0; k < a.length; k += 4) n += Math.abs(luma709(a, k) - luma709(b, k)) > 18; (${wahlUhren})({}); return n;`)); // prettier-ignore
                 const p = ergebnis(await evalRuf(`return await (${popGang})();`));
                 const l = await rufe("/lauf", { sek: 8, ein: 2, wandern: "bahn" });
                 const u = ergebnis(await evalRuf(`return (${wahlUhren})({ lesen: true });`));
-                const f = [p.fehler, ...(l.fehler || [])].filter(Boolean);
-                console.log(`WAHL ${s} ${f.length ? "ROT" : "GRÜN"} ${JSON.stringify({ pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, tri: l.dreiecke?.mittel, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
+                const f = [p.fehler, ...(l.fehler || []).filter((x) => !alt.has(x))].filter(Boolean);
+                (l.fehler || []).forEach((x) => alt.add(x));
+                console.log(`WAHL ${s} ${f.length ? "ROT" : "GRÜN"} ${JSON.stringify({ gegenA: d, pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
                 if (f.length) console.log(`WAHL ${s} ROT ${f.join(" · ").slice(0, 500)}`);
                 o ??= p;
             }

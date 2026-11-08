@@ -2941,12 +2941,12 @@ class AnazhRealm_bild_kosten {
         const { A, weit, eng } = this._wahlRaender(S);
         // DER SPIKE w25 (Atlas Schnitt 2, derselbe Messort-Schalter wie die Nah-Wiese, `_tickNahWiese`): jede Gruppe der Wahl
         // wählt die GPU (`_instanzWahlGpu`, das Fenster ihrer Stufe im Compute) — sie zieht lose aus der Szene, ihre Arena wählt
-        // je Pass; die CPU wählt sie nicht. Der Wechsel gibt sie ihrer Arena zurück (sie tritt im Takt in die der anderen Wahl).
+        // je Pass; die CPU wählt sie nicht. Der Wechsel gibt sie ihrer Arena zurück (sie tritt im Takt in die der anderen Wahl) —
+        // jede Gruppe JEDER Pass-Art im Haken des Hauptbilds, nie im Kaskaden-Render, der verschachtelt in ihm läuft.
         const gpu = (this.state.wahlGpuWiese ?? globalThis.__anazhWahlGpu) === true && AnazhRealm._arenaKann(this.state.renderer); // prettier-ignore
         for (const g of set) {
-            if (g.wahl !== art) continue;
             const m = g.mesh;
-            if (m && (m.__wahlGpu === true) !== gpu) {
+            if (art === "haupt" && m && (m.__wahlGpu === true) !== gpu) {
                 if (m.__arena) m.__arena.lassen(m, true);
                 m.__wahlGpu = gpu;
                 m.__wahlFenster = gpu ? [g.wahlStufe === "karte" ? 4 : g.wahlStufe, this._instanzFensterGilt(g) ? 1 : 0, 0, 0] : null; // prettier-ignore
@@ -2959,7 +2959,7 @@ class AnazhRealm_bild_kosten {
                 }
                 AnazhRealm._instanzZahl(m, g.liveCount | 0);
             }
-            if (gpu) continue;
+            if (g.wahl !== art || (m && m.__wahlGpu === true)) continue;
             const n = g.liveCount | 0;
             if (!m || n === 0 || m.visible === false) {
                 // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
