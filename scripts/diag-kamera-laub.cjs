@@ -296,24 +296,27 @@ async function leibStrafe(k) {
     const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
     const [out, RS] = [{ traa: true, an: [], aus: [], boden: { an: 0, aus: 0 } }, AnazhRealm.RUECKSTRAHL];
     for (const stand of ["an", "aus"])
-        for (const seite of ["KeyA", "KeyD"]) {
+        // je Stand zuerst DER RÜCKSTRAHL IM GANG (n < 2: links, dann rechts zurück — die Proben des Leibs stehen danach, wo sie ohne ihn
+        // stünden), dann der Leib (n ≥ 2)
+        for (const [n, seite] of ["KeyA", "KeyD", "KeyA", "KeyD"].entries()) {
             // der Schmuggel trägt dazu das Raster von vor w21-laub-unten, ohne die Ebenheit: der Pass baut neu mit dem Gesetz, das gilt
             // (sein Ziel bleibt, die Lesung nimmt die erste Kachel und den Texel daneben)
             if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
-            // j = 0: DER RÜCKSTRAHL IM GANG vor dem ersten Schuss der Seite — der Anlauf (`warm`: der Wechsel des Passes, der Schritt aus
-            // dem Stand), dann `bodenBilder` gezählte Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`)
-            // fort, der nächste zeichnet wieder in derselben Phase. j ≥ 1: die Fenster zwischen den Schüssen, in der Phase des Spiels
+            // der Rückstrahl vor jedem Schuss des Stands: der Anlauf (`warm`: der Wechsel des Passes, der Schritt aus dem Stand), dann
+            // `bodenBilder` gezählte Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`) fort, der nächste
+            // zeichnet wieder in derselben Phase. Der Leib: der Anlauf, dann `je` Proben im Abstand von `zwischen` Takten des Spiels
             for (let j = 0; j < k.je; j++) {
-                for (let i = 0, b0, b, v, D = st.lodUniforms.uDitherT; i < (j ? k.zwischen : k.warm + k.bodenBilder); i++, b0 = b) {
+                for (let i = 0, b0, b, v, D = st.lodUniforms.uDitherT; i < (j ? k.zwischen : k.warm + (n < 2) * k.bodenBilder); i++, b0 = b) {
                     v = [st.traaNode._jitterIndex, D.value];
                     await bild(k.dt);
-                    if (j) continue;
+                    if (n > 1) continue;
                     [st.traaNode._jitterIndex, D.value] = v;
                     b = luma709(st.rueckstrahlLeser.boden.value.toArray());
                     if (i > k.warm) out.boden[stand] = Math.max(out.boden[stand], Math.abs(b / b0 - 1));
                 }
+                if (n < 2) break;
                 const rt = new THREE.RenderTarget(W, H);
                 rend.setOutputRenderTarget(rt);
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
