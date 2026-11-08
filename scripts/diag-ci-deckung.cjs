@@ -134,6 +134,10 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
+    "gate:pop": {
+        klasse: KLASSEN.MESS,
+        grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
+    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:

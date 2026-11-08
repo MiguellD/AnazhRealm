@@ -40,6 +40,7 @@ class AnazhRealm_dirigent_takt {
                 return;
             }
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
+            this.state.weltTakt++; // … und ihre Takte (der Eintritt einer Karte, `aEin`)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
@@ -467,21 +468,23 @@ class AnazhRealm_dirigent_takt {
                                 ? `Wald offen ${o.wald}`
                                 : o.karten
                                   ? `Karten offen ${o.karten}`
-                                  : o.spiegel
-                                    ? `Spiegel offen ${o.spiegel}`
-                                    : o.felder
-                                      ? `Felder offen ${o.felder}`
-                                      : o.dorf
-                                        ? `Dorf offen ${o.dorf}`
-                                        : o.leib
-                                          ? "Leib offen"
-                                          : o.leute
-                                            ? `Leute offen ${o.leute}`
-                                            : o.huellen
-                                              ? `Hüllen offen ${o.huellen}`
-                                              : o.ankunft
-                                                ? `Ankunft gleitet ${o.ankunft}`
-                                                : null;
+                                  : o.blende
+                                    ? `Blende offen ${o.blende}`
+                                    : o.spiegel
+                                      ? `Spiegel offen ${o.spiegel}`
+                                      : o.felder
+                                        ? `Felder offen ${o.felder}`
+                                        : o.dorf
+                                          ? `Dorf offen ${o.dorf}`
+                                          : o.leib
+                                            ? "Leib offen"
+                                            : o.leute
+                                              ? `Leute offen ${o.leute}`
+                                              : o.huellen
+                                                ? `Hüllen offen ${o.huellen}`
+                                                : o.ankunft
+                                                  ? `Ankunft gleitet ${o.ankunft}`
+                                                  : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -524,6 +527,7 @@ class AnazhRealm_dirigent_takt {
                 ankunft: 0,
                 stau: 0,
                 horizont: 0,
+                blende: 0,
                 huellen: 0,
                 alter: 0,
             }); // je Takt, ohne Müll
@@ -572,6 +576,10 @@ class AnazhRealm_dirigent_takt {
             (this._saatOffen ? this._saatOffen.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        // DIE BLENDE DES EINTRITTS (w22-wald-geburt-heil, `aEin`): die Takte, bis die zuletzt eingetretene Karte eines Wurfs des
+        // Felds ganz steht — endlich ab ihrem Eintritt, an keinem Auge; die Ruhe der Welt sieht erst die eingeblendete Karte
+        const blende = (this._einBlendeBis | 0) - (st.weltTakt | 0);
+        o.blende = blende > 0 && blende <= AnazhRealm.KARTEN_EINTRITT_TAKTE ? blende : 0; // eine neue Welt zählt neu
         // DER SPIEGEL IM FADEN (D10, `_spiegelFeldTakt`): bis jeder Auftrag des Spiegel-Felds gebacken und im Takt eingetragen ist
         // (wartend, im Flug, die Antwort vor ihrem Eintrag) — bis studios-heim-stand stand die Welt, während der Faden das Feld
         // noch backte (am Bach der Mess-Wiese 16 von 24 Aufträgen offen, als die Linse ihre Bilder schoss)
@@ -1850,6 +1858,7 @@ class AnazhRealm_dirigent_takt {
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
         setze(st.architectureCullingRadius);
+        setze(this._laubRand()); // der Eintritt der Würfe des Felds (`_archKartenHorizont`) liegt vor ihm
         const f = this._foundry;
         setze(f ? f.ankunft | 0 : -1, true);
         // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die
@@ -2086,6 +2095,7 @@ class AnazhRealm_dirigent_takt {
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
             if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
+            if (_lu.uLodTakt) _lu.uLodTakt.value = this.state.weltTakt; // die Welt-Uhr des Eintritts (`aEin`)
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;

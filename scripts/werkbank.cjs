@@ -27,7 +27,6 @@
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
-//   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: jeder Geometrie-Puffer beim Halter nach GC
 //   node scripts/werkbank.cjs puffer --gang [min]          DER GANG (profiband K5): Heap ≤ 5 MB/min, VRAM ≤ 2 MB zurück
@@ -86,7 +85,6 @@ const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 const DIAET = require("./lib/diaet-linse.cjs");
 const STAND = require("./lib/stand-linse.cjs");
-const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -796,6 +794,66 @@ function bandProben(k) {
     })();
 }
 
+// DER POP UNTER BEWEGUNG (lod.K2 Staffel 1, die Messung der Station: koordination `bericht/2910-lod-k5/pop.js`; Seiten-Code, `r`
+// die Welt): im Ego-Auge an der Mess-Wiese 4 m/s ins Offene, EINE Sekunde = 4 m in 8 Schritten zu 0,5 m. Je Schritt dieselbe Pose
+// zweimal aus dem Ausgabe-Pfad (1920 × 1080): A mit dem Stand der Welt vom vorigen Ort, B nach 12 Takten des Spiels am neuen — jeder
+// Pixel mit ΔLuma > 18 (Rec. 709) ist ein Pop, den keine Bewegung erklärt (die Blende dithert in beiden dieselbe Folge); die Treue
+// nimmt A ein zweites Mal und bricht an jedem Byte. Je Schritt beim Namen, was zwischen A und B eintrat: die Karten-Dinge, die zum
+// ersten Mal gezeichnet stehen (Zahl, nächster Abstand), und die Bauten, die ihre Stufe wechselten.
+function popGang() {
+    return (async () => {
+        const cam = st.camera, W = 1920, H = 1080, pm = st.playerMesh.position, start = pm.clone(), y = (p) => r._voxelSurfaceY(p.x, p.z);
+        const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+        st.renderer.setAnimationLoop(null);
+        window.__buehne({});
+        const schuss = async (p) => {
+            cam.fov = r.constructor.KAM_FOV_GRAD;
+            cam.updateProjectionMatrix();
+            cam.position.set(p.x, y(p) + 1.7, p.z);
+            cam.lookAt(p.x + fwd.x * 50, y(p) + 1.7, p.z + fwd.z * 50);
+            cam.updateMatrixWorld(true);
+            const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
+            aus.kosten.push([f.info.drawCalls, f.info.triangles]); // Befehle und Dreiecke des gezählten Bilds
+            return f.u8;
+        };
+        const geh = async (p) => {
+            pm.set(p.x, y(p) + 0.05, p.z);
+            for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await sleep(5));
+        };
+        const stufe = (e) => [(e._lodLevel ?? -1) * 7 + (e._lodBandLevel | 0), r._archIsRendered(e)]; // Stufe, gezeichnet
+        const aus = { schritte: [], popPixel: 0, kosten: [] };
+        try {
+            for (let i = 0; i < 8; i++) {
+                const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
+                await geh(start.clone().addScaledVector(fwd, i / 2));
+                const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
+                const a = await schuss(p1);
+                if (aus.treue === undefined) {
+                    const a2 = await schuss(p1);
+                    aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab`);
+                }
+                await geh(p1);
+                const b = await schuss(p1);
+                const s = { pop: 0, ein: [], wechsel: 0 };
+                for (let k = 0; k < W * H * 4; k += 4) if (Math.abs(luma709(a, k) - luma709(b, k)) > 18) s.pop++;
+                for (const e of st.architectures) {
+                    const v = e && vor.get(e);
+                    if (e && r._archIsRendered(e) && !v?.[1]) s.ein.push(Math.round(Math.hypot(e.position.x - p1.x, e.position.z - p1.z)));
+                    else if (v && v[0] !== stufe(e)[0]) s.wechsel++;
+                }
+                aus.popPixel += s.pop;
+                aus.schritte.push(s);
+            }
+        } finally {
+            pm.copy(start);
+        }
+        aus.laub = r._laubRand();
+        aus.anteilJeSekunde = +((100 * aus.popPixel) / (W * H)).toFixed(4); // 4 m bei 4 m/s: EINE Sekunde
+        return aus;
+    })();
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -901,7 +959,7 @@ async function starte() {
                 ).length;
         });
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
-        for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
+        for (const i of [`window.__tierZahl = ${tierZahl};`, STAND.STAND_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
         // DIE SEITE IST GELADEN, WENN IHR ERSTES BILD DIE KETTE ENTSCHIED (w18-grund-post): die Post-Kette entsteht erst im ersten
         // gezeichneten Bild (`_ensurePostProcessing` in `_loopRender`), und `loopAus` hält die Welt danach still. Bis hier galt die Seite
@@ -3057,14 +3115,6 @@ async function starte() {
                     if (b.messung) o.messung = me;
                     return send(o);
                 }
-                if (req.url === "/fernwald")
-                    return send(
-                        await seite("__fernwaldLinse", {
-                            blicke: b.blicke ? String(b.blicke).split(",") : null,
-                            w: Number(b.w) || 1280,
-                            h: Number(b.h) || 720,
-                        })
-                    );
                 if (req.url === "/reload") {
                     await lade();
                     await loopAus();
@@ -3138,6 +3188,23 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "pop") {
+        // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
+        // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
+        // Stufen-Wechsel, `+n@d` n Karten-Dinge zum ersten Mal gezeichnet, das nächste in d m
+        const tor = hat("eigen") && werkbankTor(PORT, ["--ort", "wiese"]); // frisch an der Mess-Wiese, wie die Station
+        try {
+            await tor?.bereit;
+            await rufe("/fenster", { w: 1920, h: 1080 });
+            await umstellen({ ort: "wiese", sicht: "ego" });
+            o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
+        } finally {
+            tor?.stop();
+        }
+        const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+    }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
@@ -3601,7 +3668,6 @@ hauptLauf(async () => {
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
     } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") && Number(opt("--uhr")) });
-    else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {
         o = await rufe("/gang", { min: opt("--gang") });

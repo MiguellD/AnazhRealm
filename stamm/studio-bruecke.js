@@ -3021,9 +3021,27 @@ class AnazhRealm_studio_bruecke {
     // 05.10.: der Horizont-Schwund der Welle (eine Distanz-Blende 352–384 m in der Karten-Maske, für JEDE Karte des
     // Atlas) ließ jeden Baum, der im Band STAND, dauerhaft halb durchsichtig — am Grat der Mess-Wiese Geister, und die
     // ganze Streu dort mit. Die Streu hat ihren eigenen Rand (`_scatterRegion`, outerM ab dem Erzeugungs-Ort).
-    _archKartenHorizont(entry) {
+    // DER EINTRITT AM LAUB-RAND (w22-wald-geburt, lod.K2#1): ein Wurf des Felds (`feldWurf`: der Wald, sein Strauch-Teppich, sein
+    // Nachwuchs) entsteht, wo der Laub-Rand die Saat seines Chunks erreicht (`_foliageChunkInRadius`: die Mitte des Chunks) — sein
+    // Rand des EINTRITTS (`eintritt`, solange er ungezeichnet ist) liegt im Saum vor dem Laub-Rand (`_laubRand`), aus demselben
+    // Samen; gezeichnet hält er bis zu seinem Karten-Horizont. So tritt der Wald eines Chunks Karte um Karte ein, wie er am Horizont
+    // ausdünnt. Bis hierher trat jede Karte des Chunks bei der Saat zugleich ein, bis 30 m diesseits des Laub-Rands (die halbe
+    // Diagonale des Chunks): an der Mess-Wiese 16 Bäume als EIN Ring vor dem Himmel (Radeon, lod.K2#1 Schritt 7: 662 von 727
+    // Pop-Pixeln, Koordinator 07.11.).
+    // DER EINTRITT LIEGT NIE IN DER MESH-ZONE (w22-wald-geburt-heil): was der Spieler in ihr braucht (`architectureCullingRadius`,
+    // derselbe Rand, an dem `_weltbildFehlt` jeden Baum im Blick zählt), tritt ein — und unter dem Ladeschirm tritt jedes Ding an
+    // seinem Karten-Horizont ein (kein Bild sieht dort einen Eintritt, das erste Weltbild trägt den ganzen gesäten Wald). Bis hier
+    // stand der Laub-Rand unter dem Ladeschirm am gebauten Boot-Ring (Ring 2: 129,6 m), der Eintritt bei 97–130 m, die Mesh-Zone
+    // bei 150 m: die Bäume dazwischen traten nie ein, das Weltbild wartete auf sie, der Ladeschirm wich nie, und die Pflanz-Schlange
+    // hielt ihre Bäume außer Blick für immer (K6 Strafe am Prüfplatz, Radeon, 3 von 5 Läufen: „Wald offen 36“, Ring 2, Laub-Rand
+    // 129,6 m, 2 Bäume im Weltbild offen; z311 Kamera-Leib K2 und Fenster-Wand: „12 / 6 Bäume und Bauten wachsen“).
+    _archKartenHorizont(entry, eintritt = false) {
         const u = this._pcg2d(entry.seed >>> 0, AnazhRealm.KARTEN_HORIZONT_SALZ) / 4294967296;
-        return AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M * u;
+        const saum = AnazhRealm.KARTEN_HORIZONT_SAUM_M * u;
+        const h = AnazhRealm.SCATTER.outerM - saum;
+        if (!eintritt || entry.feldWurf !== true || this._ladeTakt()) return h;
+        const R = this.state.architectureCullingRadius;
+        return Math.min(h, Math.max(Number.isFinite(R) ? R : 0, this._laubRand() - saum));
     }
 
     // Foundry-Fit eines gesetzten Studio-Dings ohne Karte (Fels, Kristall): der Box-Satz (_archBoxFit) über eine
@@ -3422,6 +3440,9 @@ AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
 AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
+// Der Eintritt einer Karte (Takte der Welt-Uhr, `state.weltTakt`): so lange blendet die Karte eines Wurfs des Felds ab ihrem ersten
+// Bild ein (`aEin`, `_archInstanceAdd`) — bei 60 Bildern eine halbe Sekunde, endlich an jedem ruhenden Auge.
+AnazhRealm.KARTEN_EINTRITT_TAKTE = 32;
 // DER EINE RANG, ZEIT BIS BEDARF (`_bedarfWeg`, w7-rang): `vorlaufS` — so weit voraus lässt jeder Leser nach Abstand zu, was
 // die Bahn braucht (`_bedarfVoraus`). Die Kette eines Walds am Rand des Rings — der Chunk im Faden (0,15–0,4 s), seine Saat,
 // der Plan seiner Zellen im Wald-Faden, die Pflanzung, die Karte — braucht beim GT-Tempo mehr als 1,5 s (Null-Renderer: Karten

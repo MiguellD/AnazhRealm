@@ -75,6 +75,9 @@ class AnazhRealm {
             // Mitspieler reichen sie weiter (`_weltUhrNimm`: das Spätere gilt); die Uhr jeder Teil-Simulation (Leben und Gefühl,
             // Brand, Nässe, Wetter-Zug und Front); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
             spielZeit: 0,
+            // DIE WELT-UHR IN TAKTEN: die Zahl der Spiel-Takte der Heimat-Welt (der Loop zählt sie neben `spielZeit`) — der Eintritt
+            // einer Karte blendet an ihr ein (`aEin`, `uLodTakt`), in Takten, nie an Wanduhr oder Auge.
+            weltTakt: 0,
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
