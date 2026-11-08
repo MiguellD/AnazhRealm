@@ -373,7 +373,7 @@ hauptLauf(async () => {
         "H-F/W5: DIE FAUST — das Langschwert trägt in der Hand seine Gesetzbuch-Länge, der Griff sitzt in der Hand-Mitte, die Klinge steht quer zum Unterarm",
         fv.length === 0,
         out.h.faustErr ||
-            `Länge ${(fz.weltM || 0).toFixed(3)} m (Welt/Gesetz ${(fz.laenge || 0).toFixed(3)}) · Versatz ${fz.versatzM === null || fz.versatzM === undefined ? "—" : fz.versatzM.toFixed(3)} m · Winkel ${(fz.winkel || 0).toFixed(1)}°${fv.length ? " — Täter: " + fv.join(", ") : ""}`
+            `Länge ${(fz.weltM || 0).toFixed(3)} m (Welt/Gesetz ${(fz.laenge || 0).toFixed(3)}) · Versatz ${fz.versatzM == null ? "—" : fz.versatzM.toFixed(3)} m · Winkel ${(fz.winkel || 0).toFixed(1)}°${fv.length ? " — Täter: " + fv.join(", ") : ""}`
     );
     check(
         "H: die Werkzeug-Klasse ankert ueber fx.held.gripX (klinge_spitzhacke gripX > 0, axis x — Vertrags-Daten aus stations(P))",

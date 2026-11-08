@@ -329,7 +329,7 @@ async function s0Probe(page, station, schein) {
                 out.nacht[klang ? "klang" : "still"] = z;
                 const wie = klang ? "Klang an" : "Klang aus";
                 const amFeuer = z.lichter.filter((l) => l.eigen);
-                if (amFeuer.length < 1) {
+                if (!amFeuer.length) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
                         : "der Licht-Takt setzt keinen Platz an die Glut";

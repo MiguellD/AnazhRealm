@@ -1342,7 +1342,7 @@ function entsorgungen(srcRoh) {
             if (n.type !== "CallExpression" || n.callee.type !== "MemberExpression") return;
             const p = n.callee.property && n.callee.property.name;
             let art = null;
-            if (p === "dispose" && n.arguments.length === 0) art = artVon(n.callee.object, bind);
+            if (p === "dispose" && !n.arguments.length) art = artVon(n.callee.object, bind);
             else if ((p === "_queueDispose" || p === "_queueGeometryDispose") && n.arguments[0])
                 art = artVon(n.arguments[0], bind);
             if (art)
@@ -1423,7 +1423,7 @@ function scanKartenWand(srcRoh) {
         }
         const rumpf = code.slice(a, b);
         for (const t of ["CanvasTexture", 'createElement("canvas")', "getContext(", "putImageData", "drawImage("])
-            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
+            if (rumpf.includes(t)) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
     }
     return errs;
 }
@@ -1840,7 +1840,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const kette = (x) => {
         let t = "ruft " + x;
         let b = renderBauer.get(x);
-        for (let i = 0; b && b.ueber && i < 24; i++) {
+        for (let i = 0; b?.ueber && i < 24; i++) {
             t += (b.faden ? " ⇢ (Studio-Faden) " : " → ") + b.ueber;
             b = renderBauer.get(b.ueber);
         }
@@ -3210,7 +3210,7 @@ function main() {
         if (
             abschriftRot.length !== 2 ||
             !abschriftRot.every((x) => /Abschrift des Messorts/.test(x)) ||
-            abschriftStill.length !== 0
+            abschriftStill.length
         ) {
             console.log("❌ SELBST-TEST: die Abschrift des Messorts feuert nicht", abschriftRot, abschriftStill);
             process.exit(1);
@@ -3283,7 +3283,7 @@ function main() {
                 if (n.type === "TryStatement" && n.handler) {
                     k = n.handler.body;
                     ort = n.handler;
-                } else if (gliedRuf(n, "catch") && n.arguments.length >= 1 && /Function/.test(n.arguments[0].type)) {
+                } else if (gliedRuf(n, "catch") && n.arguments.length && /Function/.test(n.arguments[0].type)) {
                     k = n.arguments[0].body;
                     ort = n.arguments[0];
                 } else if (
