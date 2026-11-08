@@ -16,8 +16,9 @@
 // geht der Spieler in Third seitwärts, links und rechts, im Takt des Spiels; je Probe das Bild des Spiels (Ausgabe-Pfad mit seiner
 // Geschichte) gegen dieselbe Pose stehend und ohne Leib — gezählt wird jedes Bild mit durchsichtigem oder unsichtbarem Leib
 // (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
-// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild des Gangs der gelesene Boden
-// des Rückstrahls — die Unterseite jeder Krone liest ihn ganz; der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
+// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild eines eigenen Gangs ohne
+// Schuss, in stehender Phase der zeitlichen Auflösung, der gelesene Boden des Rückstrahls — die Unterseite jeder Krone liest ihn ganz;
+// der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
 //
 //   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
@@ -156,7 +157,19 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // größter Sprung von Bild zu Bild steht im Stand unter `bodenMax`, im Schmuggel (`aus`: dazu das Raster von vor w21-laub-unten, Kacheln
 // [1, 1] × 12², ohne die Ebenheit `ebenRel`) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
 // der Boden +15,4 % → ±0,08 %, der Ton der Unterseite +1,03 % → ±0,05 %.
-const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
+// DER GANG OHNE SCHUSS, IN STEHENDER PHASE (w23-k6-flimmern): je Stand nach den Proben des Leibs ein Gang links und rechts, je Seite
+// nach dem Anlauf `bodenBilder` gezählte Bilder ohne Schuss; der Halton-Versatz der zeitlichen Auflösung steht (wie im Schuss jeder
+// Aufnahme), die Proben des Leibs stehen, wo sie bis dahin standen (90 Bilder Gang davor schoben A0–A3: Kopf A3 bis 6,7 %, Radeon
+// a776bd61 — ein Ort, den die Proben nie maßen). Bis dahin zählte der
+// Sprung in den Fenstern ZWISCHEN den Schüssen: die Aufnahme ohne Leib misst den Boden ihrer Szene (`_rueckstrahlJetzt`), der Sprung
+// des Auges danach (`_traaR.neu`) nimmt den Boden des Gangs ganz (`folge` 1) — Radeon 664e127d + f423f129, 8 Läufe in 4 Boots: der
+// rote Sprung war IMMER diese erste Änderung (0,85–1,21 %, Bild 2–3 des Fensters), ein Boden, den das Spiel nie zeigt. Der Gang ohne
+// Schuss sprang 0,59–0,77 %: der Rückstrahl misst den Szenen-Pass mit dem Halton-Versatz der zeitlichen Auflösung (Versatz fest
+// 0,21–0,40 %, Dither-Phase allein fest 0,54–0,74 %, beide fest 0,19–0,30 %; im Stand mit erzwungener Messung 0,47–0,77 %, fest
+// 0,01 % bei laufender Zeit — Wind und Laub 0; ohne Leib 0,57–0,82 % — der Leib 0). Was der Spieler davon sieht, trägt die
+// Unterseite zu einem Fünfzehntel (K7), die Geschichte der zeitlichen Auflösung mittelt es weg. Das Raster (der Schmuggel) wandert
+// mit dem Auge über die ruhende Welt: 4,4–8,2 % je Bild, in stehender Phase 3,7–6,9 %.
+const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, bodenBilder: 90, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
@@ -285,19 +298,26 @@ async function leibStrafe(k) {
     const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
     const [out, RS] = [{ traa: true, an: [], aus: [], boden: { an: 0, aus: 0 } }, AnazhRealm.RUECKSTRAHL];
     for (const stand of ["an", "aus"])
-        for (const seite of ["KeyA", "KeyD"]) {
+        // je Stand zuerst der Leib (n < 2, vom Start des Stands wie bis w23-k6-flimmern), dann DER RÜCKSTRAHL IM GANG (n ≥ 2)
+        for (const [n, seite] of ["KeyA", "KeyD", "KeyA", "KeyD"].entries()) {
             // der Schmuggel trägt dazu das Raster von vor w21-laub-unten, ohne die Ebenheit: der Pass baut neu mit dem Gesetz, das gilt
             // (sein Ziel bleibt, die Lesung nimmt die erste Kachel und den Texel daneben)
             if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
+            // Der Leib: der Anlauf, dann `je` Proben im Abstand von `zwischen` Takten des Spiels. Der Rückstrahl: der Anlauf (`warm`: der
+            // Wechsel des Passes, der Schritt aus dem Stand, die erste Messung nach dem letzten Schuss), dann `bodenBilder` gezählte
+            // Bilder; jeder Takt rechnet den Versatz der zeitlichen Auflösung (`_jitterIndex`) fort, der nächste zeichnet wieder im selben
             for (let j = 0; j < k.je; j++) {
-                // der Sprung zählt nach dem Anlauf (j ≥ 1): der Anlauf trägt den Wechsel des Passes und den Schritt aus dem Stand
-                for (let i = 0, b0 = 0, b; i < (j ? k.zwischen : k.warm); i++, b0 = b) {
+                for (let i = 0, b0, b, v; i < (j ? k.zwischen : k.warm + (n > 1) * k.bodenBilder); i++, b0 = b) {
+                    v = st.traaNode._jitterIndex;
                     await bild(k.dt);
+                    if (n < 2) continue;
+                    st.traaNode._jitterIndex = v;
                     b = luma709(st.rueckstrahlLeser.boden.value.toArray());
-                    out.boden[stand] = Math.max(out.boden[stand], j && b0 && Math.abs(b / b0 - 1));
+                    if (i > k.warm) out.boden[stand] = Math.max(out.boden[stand], Math.abs(b / b0 - 1));
                 }
+                if (n > 1) break;
                 const rt = new THREE.RenderTarget(W, H);
                 rend.setOutputRenderTarget(rt);
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
@@ -1293,7 +1313,7 @@ hauptLauf(async () => {
     }
     if (strafe) {
         const v = urteilStrafe(strafe);
-        check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)}`, !v.length, v.join(" · "));
+        check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)} · Rückstrahl ${pct(strafe.boden?.an)}`, !v.length, v.join(" · "));
     }
     console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
