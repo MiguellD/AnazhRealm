@@ -16,8 +16,9 @@
 // geht der Spieler in Third seitwärts, links und rechts, im Takt des Spiels; je Probe das Bild des Spiels (Ausgabe-Pfad mit seiner
 // Geschichte) gegen dieselbe Pose stehend und ohne Leib — gezählt wird jedes Bild mit durchsichtigem oder unsichtbarem Leib
 // (`strafeMass`). Der Schmuggel in derselben Welt: das Feld der Bewegung ohne den getragenen Leib (`_traegerTeile` leer, der
-// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild des Gangs der gelesene Boden
-// des Rückstrahls — die Unterseite jeder Krone liest ihn ganz; der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
+// Stand vor w12-leib-sicht) muss Bilder nennen. DIE UNTERSEITE IM SEITWÄRTSGANG (w21-laub-unten): je Bild des Gangs vor dem ersten
+// Schuss der Seite, in stehender Phase der zeitlichen Auflösung, der gelesene Boden des Rückstrahls — die Unterseite jeder Krone liest
+// ihn ganz; der Schmuggel trägt dazu das dünne Raster am Schirm (12²).
 //
 //   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,strafe]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
@@ -156,7 +157,16 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // größter Sprung von Bild zu Bild steht im Stand unter `bodenMax`, im Schmuggel (`aus`: dazu das Raster von vor w21-laub-unten, Kacheln
 // [1, 1] × 12², ohne die Ebenheit `ebenRel`) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
 // der Boden +15,4 % → ±0,08 %, der Ton der Unterseite +1,03 % → ±0,05 %.
-const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
+// DER GANG VOR DEM SCHUSS, IN STEHENDER PHASE (w23-k6-flimmern): je Stand und Seite nach dem Anlauf `bodenBilder` gezählte Bilder, ehe
+// ein Schuss fällt; Versatz und Dither-Blende der zeitlichen Auflösung stehen (wie im Schuss jeder Aufnahme). Bis dahin zählte der
+// Sprung in den Fenstern ZWISCHEN den Schüssen: die Aufnahme ohne Leib misst den Boden ihrer Szene (`_rueckstrahlJetzt`), der Sprung
+// des Auges danach (`_traaR.neu`) nimmt den Boden des Gangs ganz (`folge` 1) — Radeon 664e127d, 4 Läufe in 2 Boots: der rote Sprung
+// war IMMER diese erste Änderung (0,89 · 1,21 · 1,00 · 1,19 %, Bild 2–3 des Fensters), ein Boden, den das Spiel nie zeigt. Der Gang
+// ohne Schuss sprang 0,60–0,77 %: das Rauschen der Messung an Versatz und Dither-Phase des Bilds (fest 0,19–0,28 %; im Stand mit
+// erzwungener Messung 0,47–0,77 %, fest 0,01 % bei laufender Zeit — Wind und Laub 0; ohne Leib 0,57–0,82 % — der Leib 0). Was der
+// Spieler davon sieht, trägt die Unterseite zu einem Fünfzehntel (K7), die Geschichte der zeitlichen Auflösung mittelt es weg.
+// Das Raster (der Schmuggel) wandert mit dem Auge über die ruhende Welt: 3,3–8,2 % je Bild.
+const STRAFE = Object.freeze({ dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, bodenBilder: 90, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kopfMax: 0.05, leibMax: 0.05, leibMinPx: 500, bodenMax: 0.01 });
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
 const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
@@ -291,16 +301,18 @@ async function leibStrafe(k) {
             if (stand === "aus") (r._traegerTeile = (o) => ((o.length = 0), o)), (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: seite, key: seite[3].toLowerCase() }));
             taste("keydown");
+            // DER RÜCKSTRAHL IM GANG vor dem ersten Schuss: der Anlauf (`warm`: der Wechsel des Passes, der Schritt aus dem Stand), dann
+            // `bodenBilder` gezählte Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`) fort, der nächste
+            // zeichnet wieder in derselben Phase
             for (let j = 0; j < k.je; j++) {
-                // der Sprung zählt nach dem Anlauf (j ≥ 1): der Anlauf trägt den Wechsel des Passes und den Schritt aus dem Stand
-                const fenster = { kap: luma709(st.rueckstrahlLeser.boden.value.toArray()), b: [], l: [] };
-                for (let i = 0, b0 = 0, b; i < (j ? k.zwischen : k.warm); i++, b0 = b) {
+                for (let i = 0, b0, b, v, D = st.lodUniforms.uDitherT; i < (j ? k.zwischen : k.warm + k.bodenBilder); i++, b0 = b) {
+                    v = [st.traaNode._jitterIndex, D.value];
                     await bild(k.dt);
+                    if (j) continue;
+                    [st.traaNode._jitterIndex, D.value] = v;
                     b = luma709(st.rueckstrahlLeser.boden.value.toArray());
-                    out.boden[stand] = Math.max(out.boden[stand], j && b0 && Math.abs(b / b0 - 1));
-                    if (j) fenster.b.push(b), fenster.l.push(st.rueckstrahlPass?.laeufe ?? -1);
+                    if (i > k.warm) out.boden[stand] = Math.max(out.boden[stand], Math.abs(b / b0 - 1));
                 }
-                if (j && k.mess) (out.fenster ||= { an: [], aus: [] })[stand].push(fenster);
                 const rt = new THREE.RenderTarget(W, H);
                 rend.setOutputRenderTarget(rt);
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
@@ -318,48 +330,6 @@ async function leibStrafe(k) {
             delete r._traegerTeile;
         }
     [AnazhRealm.RUECKSTRAHL, st.rueckstrahlPass] = [RS, null];
-    if (!k.mess) return out;
-    // WIP w23-k6-flimmern: die Zerlegung des Sprungs — Reihen OHNE Schuss (der Gang allein), mit stehendem Zittern der zeitlichen
-    // Auflösung und stehender Dither-Phase, ohne Leib (samt Schatten), im Stand mit erzwungener Messung je Bild, und das Raster
-    const reihe = async (o) => {
-        if (o.raster) (AnazhRealm.RUECKSTRAHL = { ...RS, kacheln: [1, 1], dichte: 12, ebenRel: 1e9 }), (st.rueckstrahlPass = null);
-        if (o.leib === false) st.playerMesh.visible = false;
-        const lu = st.lodUniforms;
-        const taste = (art) => o.seite && dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: o.seite, key: o.seite[3].toLowerCase() }));
-        taste("keydown");
-        const bs = [];
-        for (let i = 0; i < o.warm + o.n; i++) {
-            if (o.zwang && st.rueckstrahlPass) st.rueckstrahlPass.sig = null;
-            if (o.fest && o.fest !== "dither") st.traaNode._jitterIndex = 0;
-            if (o.fest && o.fest !== "zitter" && lu?.uDitherT) lu.uDitherT.value = 1 - 0.61803398875;
-            await (o.zeit === false ? new Promise(requestAnimationFrame).then(() => r._gameLoopTick(t)) : bild(k.dt));
-            if (i >= o.warm) bs.push(luma709(st.rueckstrahlLeser.boden.value.toArray()));
-        }
-        taste("keyup");
-        st.playerMesh.visible = true;
-        [AnazhRealm.RUECKSTRAHL, st.rueckstrahlPass] = [RS, null];
-        const d = bs.slice(1).map((b, i) => Math.abs(b / bs[i] - 1)).filter((x) => x > 0);
-        const s = [...d].sort((a, b) => a - b);
-        return { max: s.at(-1) || 0, p50: s[s.length >> 1] || 0, n: s.length, mittel: bs.reduce((a, b) => a + b, 0) / bs.length };
-    };
-    const R = (out.zerlegung = {});
-    for (const [name, o] of [
-        ["gehA", { seite: "KeyA", warm: 40, n: 90 }],
-        ["gehD", { seite: "KeyD", warm: 40, n: 90 }],
-        ["festA", { seite: "KeyA", warm: 40, n: 90, fest: true }],
-        ["festD", { seite: "KeyD", warm: 40, n: 90, fest: true }],
-        ["festA2", { seite: "KeyA", warm: 40, n: 90, fest: true }],
-        ["festD2", { seite: "KeyD", warm: 40, n: 90, fest: true }],
-        ["zitterA", { seite: "KeyA", warm: 40, n: 90, fest: "zitter" }],
-        ["zitterD", { seite: "KeyD", warm: 40, n: 90, fest: "zitter" }],
-        ["ditherA", { seite: "KeyA", warm: 40, n: 90, fest: "dither" }],
-        ["ditherD", { seite: "KeyD", warm: 40, n: 90, fest: "dither" }],
-        ["rasterFestA", { seite: "KeyA", warm: 40, n: 90, raster: true, fest: true }],
-        ["rasterFestD", { seite: "KeyD", warm: 40, n: 90, raster: true, fest: true }],
-        ["rasterA", { seite: "KeyA", warm: 40, n: 90, raster: true }],
-        ["rasterD", { seite: "KeyD", warm: 40, n: 90, raster: true }],
-    ])
-        R[name] = await reihe(o);
     return out;
 }
 
@@ -1285,41 +1255,11 @@ hauptLauf(async () => {
     await bereit();
     let m = null;
     // K6 zuerst: der Prüfplatz ist der Ort der Ankunft (die übrigen Teile ziehen um)
-    const MESS = process.argv.includes("--mess");
-    const strafeLauf = () =>
-        page.evaluate(leibStrafe, { ...STRAFE, ...require("./lib/welt-orte.cjs").messort("genesis"), mass: `${strafeMass}`, mess: MESS }).catch((e) => ({ err: fehlerStapel(e) }));
-    const strafe = TEILE.includes("strafe") && (await strafeLauf());
-    // WIP w23-k6-flimmern: je Fenster (nach den Schüssen) die erste Änderung des Bodens gegen den Gang danach
-    if (MESS && strafe) {
-        const pz = (x) => `${(100 * x).toFixed(2)}%`;
-        const fen = (S) =>
-            ["an", "aus"]
-                .map((stand) => {
-                    let [alt, erste, gang, n, wo] = [0, 0, 0, 0, []];
-                    for (const f of S.fenster?.[stand] || []) {
-                        let erst = true;
-                        for (let i = 1; i < f.b.length; i++) {
-                            const d = Math.abs(f.b[i] / f.b[i - 1] - 1);
-                            alt = Math.max(alt, d);
-                            if (!(d > 0)) continue;
-                            if (erst) (erste = Math.max(erste, d)), (erst = false), wo.push(i);
-                            else (gang = Math.max(gang, d)), n++;
-                        }
-                    }
-                    return `${stand} alt ${pz(alt)} erste ${pz(erste)} @${wo.join("/")} gang ${pz(gang)} n${n}`;
-                })
-                .join(" · ");
-        const zer = (Z) => Object.entries(Z || {}).map(([k, v]) => `${k} ${pz(v.max)}/${pz(v.p50)} n${v.n}`).join(" · ");
-        const laeufe = [strafe];
-        for (let w = 1; w < 2; w++) laeufe.push(await strafeLauf());
-        laeufe.forEach((S, w) => {
-            if (S.err) return console.log(`MESS ROT #${w}: ${String(S.err).slice(0, 400)}`);
-            console.log(`MESS GRÜN #${w} K6 ${pct(S.boden.an)}/${pct(S.boden.aus)} · ${fen(S)}`);
-            const z = Object.entries(S.zerlegung || {});
-            console.log(`MESS GRÜN #${w} Z1 ${zer(Object.fromEntries(z.slice(0, 6)))}`);
-            console.log(`MESS GRÜN #${w} Z2 ${zer(Object.fromEntries(z.slice(6)))}`);
-        });
-    }
+    const strafe =
+        TEILE.includes("strafe") &&
+        (await page
+            .evaluate(leibStrafe, { ...STRAFE, ...require("./lib/welt-orte.cjs").messort("genesis"), mass: `${strafeMass}` })
+            .catch((e) => ({ err: fehlerStapel(e) })));
     if (TEILE.includes("laub")) {
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
