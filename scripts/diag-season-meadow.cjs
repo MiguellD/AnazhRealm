@@ -8,7 +8,13 @@
 //       ändert die Welt;
 //   F1  `_saisonMul(phase)`: Sommer-Mitte exakt ×1, Herbst und Winter deutlich verschieden;
 //   F2  keine Paletten-Literale in der Shell (die dritte Palette im Stamm, `_seasonTint`, bewacht gate:fluss S5b);
-//   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
+//   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau) und bestellt jede gelegte Karte einer anderen Stufe
+//       des Jahrs neu (`_karteJahrTakt`), nie je Bild.
+// JEDE STUFE LIEST DAS JAHR (w21-laub-jahr-fern, Befund des Schöpfers: im Winter wich das Laub nah, Karte und Ferne blieben voll):
+//   F4  die Karte backt im Jahr (`_karteJahr`, der Eingang ihres Bakes `_karteWeltBacken`): Sommer ×1, Winter in der Präsenz
+//       und Tönung des EINEN Gesetzes;
+//   F5  die Ferne (phyto-core `kroneImJahr`, ihre Leser Ring, Boden, Feld und Kamm `_kammKroneSaison`): Sommer exakt, das Laub
+//       deckt im Winter ≤ 0,3, die Nadel steht ungetönt.
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
 const { selbsttestEnde, wandEnde, SELBSTTEST, stammLib, ROOT: root } = require("./lib/welt-boot.cjs");
@@ -47,16 +53,35 @@ function pruefe(o) {
         stammLib.fehlt(null, /0x6a9a3e|0xb0702a|0x6e6650/, { datei: SHELL, wandel: o.shell }),
         stammLib.fehlt.wo
     );
-    const w = Object.create(A.prototype);
+    // die Sommer-Karten a, b backen im Herbst neu, c trägt seine Stufe (8), d ist nicht gelegt; der zweite Takt ruht
+    const z = (key, jahr, gebacken = 1) => [key, { key, jahr, gebacken }];
+    const w = Object.assign(Object.create(A.prototype), { _kartenAtlas: { zellen: new Map([z("a", 0), z("b", 4), z("c", 8), z("d", 0, 0)]) }, _impostorBakeQueue: [], _schneeTakt() {}, _pegelTakt() {} }); // prettier-ignore
     w.state = { seasonPhase: 0.625, autoSeason: false };
     const u = { uSeasonMul: { value: { r: 1, g: 1, b: 1 } } };
-    w._ensureSeasonUniforms = () => u;
+    w._ensureSeasonUniforms = () => (w.state.seasonUniforms = u);
     if (o.mul) w._saisonMul = o.mul;
+    if (o.takt) w._karteJahrTakt = o.takt;
+    A.prototype._tickSeason.call(w);
     A.prototype._tickSeason.call(w);
     pruef(
-        "F3 _tickSeason fährt uSeasonMul aus _saisonMul",
-        d(u.uSeasonMul.value, o.welt(0.625)) < 1e-12 && d(u.uSeasonMul.value, { r: 1, g: 1, b: 1 }) > 0.3 && w.state.season === "autumn",
-        JSON.stringify(u.uSeasonMul.value)
+        "F3 _tickSeason fährt uSeasonMul aus _saisonMul und bestellt die Karten anderer Stufe",
+        d(u.uSeasonMul.value, o.welt(0.625)) < 1e-12 && d(u.uSeasonMul.value, { r: 1, g: 1, b: 1 }) > 0.3 && w.state.season === "autumn" && w._impostorBakeQueue + "" === "a,b", // prettier-ignore
+        JSON.stringify(u.uSeasonMul.value) + w._impostorBakeQueue
+    );
+    // die Karte (`_karteJahr`) und die Ferne (phyto-core `kroneImJahr`, der Kamm `_kammKroneSaison`) im Winter der Welt
+    const W = Object.assign(Object.create(A.prototype), { state: { seasonPhase: 0.875 } });
+    const wi = (o.karteJahr || A.prototype._karteJahr).call(W, 0.875);
+    const pw = SG.stuetzen[3].pr;
+    pruef("F4 die Karte backt im Jahr", wi.praesenz.x === pw && d(wi.mul, o.welt(0.875)) < 1e-12, wi.praesenz.x);
+    const kr = (...x) => (o.krone || ctx.__phytoCore.kroneImJahr)(ctx.__phytoCore.WIND_ZAHLEN, ...x);
+    const [so, la, na] = [kr(1, 1, 3, 2, 1, 1), kr(pw, 2, 3, 2, 1, 1), kr(pw, 2, 3, 0, 0, 0)];
+    const ecke = { setXYZ() {}, setX: (i, v) => (ecke[i] = v) };
+    const art = { laub: [[1, 1, 1], [1, 1, 1]], wirft: [1, 0], rinde: [[1, 1, 1], [1, 1, 1]] }; // prettier-ignore
+    (o.kamm || A.prototype._kammKroneSaison).call(W, { laub: art, mesh: { geometry: { userData: { kammArt: [0, 1] }, attributes: { color: ecke, aDeckt: ecke } } } }); // prettier-ignore
+    pruef(
+        "F5 die Ferne liest das Jahr",
+        so.farbe === 3 && so.deckung === 1 && la.deckung <= 0.3 && na.farbe === 3 && na.deckung === 1 && ecke[0] <= 0.3 && ecke[1] === 1, // prettier-ignore
+        [la.deckung, ecke[0], ecke[1]]
     );
     return aus;
 }
@@ -73,6 +98,11 @@ if (SELBSTTEST) {
         roh({ shell: (t) => t.replace("const seq = SAISON_GESETZ.stuetzen;", "const seq = [{ ti: 0x6a9a3e }];") }, "F2a")
     );
     check("Selbst-Test 5: _tickSeason ohne Leser (der Mul schreibt nicht) → F3 rot", roh({ mul: () => null }, "F3"));
+    // die Brüche des Befunds (w21): der Takt bestellt nie, die Karte backt Sommer, Ferne und Kamm tragen nur Farbe
+    check("Selbst-Test 6: der Takt bestellt nie → F3 rot", roh({ takt() {} }, "F3"));
+    check("Selbst-Test 7: die Karte backt Sommer → F4 rot", roh({ karteJahr: () => ({ praesenz: { x: 1 } }) }, "F4"));
+    check("Selbst-Test 8: die Ferne ohne Präsenz → F5 rot", roh({ krone: (Z, p, S, K) => ({ farbe: K, deckung: 1 }) }, "F5"));
+    check("Selbst-Test 9: der Kamm färbt nur → F5 rot", roh({ kamm() {} }, "F5"));
     selbsttestEnde(errs, "die Saison-Farb-Linse feuert auf jede injizierte Bruch-Klasse.");
     process.exit(0);
 }

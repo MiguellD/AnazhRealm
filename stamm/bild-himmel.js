@@ -971,12 +971,13 @@ class AnazhRealm_bild_himmel {
         return out;
     }
 
-    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. Jeder Foundry-Körper und jede Karte ist
-    // Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"); das Jahr trägt die Uniformen des EINEN
-    // SAISON_GESETZ — `uSeasonMul` färbt Laub, Gras und Karte (die Karte zu SAISON_GESETZ.kartenGewicht), `uLaubPraesenz`
-    // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
-    // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
-    // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
+    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. Jeder Foundry-Körper ist Golden-Sommer
+    // gebaut (die Transport-Schale nagelt season "summer"); das Jahr trägt die Uniformen des EINEN SAISON_GESETZ — `uSeasonMul`
+    // färbt Laub und Gras, `uLaubPraesenz` lässt das Laub fallen und austreiben (`_saisonPraesenz`) —, und JEDE Stufe liest sie:
+    // die Gestalt im Stoff, die Karte als Eingang ihres Bakes (`_karteJahr`, `_karteJahrTakt`), die Fern-Krone des Bodens, des
+    // Rings, des Kamms und des Panoramas (`_kroneImJahr`). Kein Neubau eines Körpers: das Studio trägt sein Jahr genauso
+    // (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe (GTX, main 24a0f3ef: Laub-Maske
+    // Winter 1,003 × Sommer); bis w21 trug nur die Nähe das Fallen des Laubs.
     _tickSeason() {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
@@ -1002,6 +1003,7 @@ class AnazhRealm_bild_himmel {
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
         this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
+        this._karteJahrTakt(); // die Karte backt ihre Stufe des Jahrs (w21-laub-jahr-fern), nie je Bild
     }
     // DER ANKER DES JAHRS (`_saisonAnker`, feld.K2#2): Phase und Welt-Uhr, gesetzt vom Wort des Spielers (`setSeason`, zur Tat-Uhr
     // seines Akts), vom Laden eines Stands (sein Anker `saisonAnker`, das Paar reist im Stand), vom Weiterlaufen eines angehaltenen
@@ -3231,8 +3233,9 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
     neuM: 0.25,
 });
 // DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
-// (`_saisonMul`, `_saisonPraesenz`, Laub- und Karten-Stoff), fail-closed in EINER Gültigkeits-Wand: je Stütze Tönung,
-// Laub-Präsenz und Blüte, die Typen des Jahrs (vegetation.K5) und die Karten-Schwelle.
+// (`_saisonMul`, `_saisonPraesenz`; ihre Leser jede Stufe: Stoff, Karte, Fern-Krone), fail-closed in EINER Gültigkeits-Wand: je
+// Stütze Tönung, Laub-Präsenz und Blüte, die Typen des Jahrs (vegetation.K5). `kartenGewicht` und `karteSchwelle` liest die Welt
+// seit w21 nicht mehr (ihre Karte backt im Jahr, `_karteJahr`) — ihr Leser ist der Impostor des Labors (worlds/terrain).
 AnazhRealm._saisonGesetz = function () {
     const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
     if (
@@ -3243,12 +3246,10 @@ AnazhRealm._saisonGesetz = function () {
         Number.isFinite(SG.bau) &&
         Number.isFinite(SG.mulMin) &&
         Number.isFinite(SG.mulMax) &&
-        Number.isFinite(SG.kartenGewicht) &&
         SG.typ &&
         Number.isFinite(SG.typ.laub) &&
         Number.isFinite(SG.typ.bluete) &&
-        Number.isFinite(SG.typ.halm) &&
-        Number.isFinite(SG.karteSchwelle)
+        Number.isFinite(SG.typ.halm)
     )
         return SG;
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");

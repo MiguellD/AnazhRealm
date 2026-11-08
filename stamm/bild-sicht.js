@@ -2235,10 +2235,12 @@ class AnazhRealm_bild_sicht {
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
         const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
+        // die Präsenz des Laubs (w21-laub-jahr-fern): das Dach des Felds fällt wie Ring und Boden (`kroneImJahr` im Faden)
+        const praesenz = this._fernPraesenz();
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
         // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer])
+        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz }, [punkte.buffer])
             .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
@@ -2249,6 +2251,7 @@ class AnazhRealm_bild_sicht {
                 fp.anchorX = ankerX;
                 fp.anchorZ = ankerZ;
                 fp.saison = saison;
+                fp.praesenz = praesenz;
                 fp.schnee = schnee;
                 fp.laeufe++;
                 // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
@@ -2261,8 +2264,8 @@ class AnazhRealm_bild_sicht {
             });
     }
 
-    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, oder die Schneegrenze um eine
-    // Stufe, `_schneeGilt`)? Ohne Bild nie.
+    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, die Präsenz des Laubs um mehr als
+    // denselben Schritt, oder die Schneegrenze um eine Stufe, `_schneeGilt`)? Ohne Bild nie.
     _feldSaisonDrift(fp) {
         if (!fp.saison || fp.flug) return false;
         if (fp.schnee !== this._schneeGilt()) return true;
@@ -2271,7 +2274,8 @@ class AnazhRealm_bild_sicht {
         return (
             Math.abs(jetzt.r - fp.saison.r) > d ||
             Math.abs(jetzt.g - fp.saison.g) > d ||
-            Math.abs(jetzt.b - fp.saison.b) > d
+            Math.abs(jetzt.b - fp.saison.b) > d ||
+            !(Math.abs(this._fernPraesenz() - fp.praesenz) <= d)
         );
     }
 
@@ -3119,6 +3123,9 @@ class AnazhRealm_bild_sicht {
     // Die Rand-Box (um den Saum geweitet) wirkt wie eine Mündung; ein Knoten mit Mündung oder offenem Rand ist ein Start.
     // Je Bereich die Starts und die Hülle aller ihrer Boxen (Mündungen und Ränder): ein Pass, dessen Gesetz die Hülle nicht
     // trifft, prüft keinen dieser Starts (Welle C — vorher prüfte jeder Pass jede Mündung des Rings).
+    // Ein Rand, der sich öffnet oder schließt, hebt den Stand des Satzes (jede Wahl liest neu) — nur dann (w24-fahrt-takt: der Strom
+    // der Fahrt legte bei jedem Ein- und Austritt die Ränder des Bereichs und seiner vier Nachbarn neu, je Nachbar fiel der Stand,
+    // auch an Seiten, an denen nichts offen lag — je Fall wählte jeder Pass den ganzen Satz neu).
     _hoehlenRand(s, b) {
         if (!b || !b.hoehle) return;
         const R = AnazhRealm.HOEHLEN_SAUM;
@@ -3126,12 +3133,15 @@ class AnazhRealm_bild_sicht {
         const fehlt = [0, 1, 2, 3].map((seite) => !this._hoehlenNachbar(s, b, seite));
         const starts = [];
         const huelle = new THREE.Box3();
+        let anders = false;
         for (const kn of b.hoehle.knoten) {
             let offen = kn.tore.length > 0;
             for (const tor of kn.tore) huelle.union(tor.box);
             for (let seite = 0; seite < 4; seite++) {
                 const sb = fehlt[seite] ? kn.seiten[seite] : null;
+                const alt = kn.raender[seite];
                 kn.raender[seite] = sb ? sb.clone().expandByScalar(saum) : null;
+                if (!alt !== !kn.raender[seite] || (alt && !alt.equals(kn.raender[seite]))) anders = true;
                 if (sb) {
                     offen = true;
                     huelle.union(kn.raender[seite]);
@@ -3142,9 +3152,12 @@ class AnazhRealm_bild_sicht {
                 starts.push(kn);
             } else s.hoehle.muendungen.delete(kn);
         }
-        b.hoehle.starts = starts;
-        b.hoehle.startHuelle = starts.length > 0 ? huelle : null;
-        s.stand++; // ein Rand öffnet oder schließt sich: jede Wahl liest neu
+        const H = b.hoehle;
+        anders ||= !H.starts || !this._satzListeGleich(H.starts, starts);
+        anders ||= !H.startHuelle !== !starts.length || (starts.length > 0 && !H.startHuelle.equals(huelle));
+        H.starts = starts;
+        H.startHuelle = starts.length > 0 ? huelle : null;
+        if (anders) s.stand++;
     }
 
     // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
@@ -3278,7 +3291,8 @@ class AnazhRealm_bild_sicht {
     // Portale und (5) aus jeder erreichten Zelle hinaus zu den gesperrten Mündungen dahinter (`_hoehlenHinaus`) — die Sperre
     // gilt nur Strahlen, die bis zu ihr in Himmels-Luft laufen; einer, der in einer Höhle beginnt oder durch sie hindurch
     // läuft, kommt an ihr vorbei. Das Hauptbild merkt seine erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
-    _hoehlenSicht(s, kamera, S, haupt) {
+    // `L`: die Lage, in der der Satz dieses Passes wählt (das Hauptbild in der Lage des Auges, `_chunkSatzPass`).
+    _hoehlenSicht(s, kamera, S, haupt, L = S.lage) {
         if (!kamera || kamera.isPerspectiveCamera !== true) return this._hoehlenSichtLicht(s, S, kamera);
         const H = s.hoehle;
         const st = ++H.stempel;
@@ -3310,7 +3324,7 @@ class AnazhRealm_bild_sicht {
         imBild.length = 0;
         for (const b of s.ordnung) {
             const bh = b.hoehle;
-            if (bh && bh.startHuelle && this._passTrifftBox(S.lage, bh.startHuelle, 0)) imBild.push(bh);
+            if (bh && bh.startHuelle && this._passTrifftBox(L, bh.startHuelle, 0)) imBild.push(bh);
         }
         // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
         // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch). Eine gesperrte
@@ -3405,7 +3419,8 @@ class AnazhRealm_bild_sicht {
             if (hinter.length > 0) this._hoehlenHinaus(H, kn, m, st, ex, ez);
         }
         // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (das EINE Gesetz der
-        // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt); eine neue Menge zählt `sichtGen`
+        // Pass-Wahl, wie `_chunkSatzAbschnitt` sie wählt) — in der Lage des WEGS (`S.lage`, w24-fahrt-takt): die Empfänger
+        // halten über die Strecke des Auges, der Lauf durch die Portale bleibt am Auge; eine neue Menge zählt `sichtGen`
         if (besucht) {
             const neu = besucht.filter(
                 (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(S.lage, kn.zelle.huelle, 0)

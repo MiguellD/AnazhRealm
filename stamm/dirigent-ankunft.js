@@ -494,6 +494,12 @@ class AnazhRealm_dirigent_ankunft {
         this._seite.felder.add("_seite");
         await this._weltAnkunft();
         // die Welt steht: Eingabe, Tor und Schleife der Seite (nur init — der Welt-Wechsel am Ort trägt sie weiter)
+        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
+        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`). Der Stempel steht VOR dem Fänger des Ladeschirms
+        // (w25-ankunft-block): wer unter ihm W hält, will gehen — bis hier endete seine Taste im Fänger, die Eingabe „ruhte“, und
+        // gleich nach dem Bild baute der Vorbau das Tuch (kalt: `folger`/`tuchGitter` 312–387 ms je Aufgabe vor der Kontrolle auf der Radeon, 441 ms auf der GTX).
+        for (const art of ["keydown", "pointerdown"])
+            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,
         // Werkstatt-Tasten, Portal-Weitergabe, Chat-Feld) — solange der Ladeschirm steht, endet jedes Tasten-Ereignis hier.
@@ -507,10 +513,6 @@ class AnazhRealm_dirigent_ankunft {
                 },
                 true
             );
-        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
-        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`).
-        for (const art of ["keydown", "pointerdown"])
-            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
         window.addEventListener("keydown", (event) => {
             // Ist ein Portal offen, ist die Heimat-Welt eingefroren: nur Esc verlässt das Portal, alle anderen
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
