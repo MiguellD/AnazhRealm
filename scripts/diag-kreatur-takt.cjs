@@ -7,7 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullWelt, urteilEnde, argOpt: opt, weltTor, path, SELBSTTEST, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
@@ -70,11 +70,7 @@ const gewaehlt = (() => {
 
 async function headless(laeufe) {
     const server = statikServer();
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({
-        frist: 900000,
-        viewport: ORT ? { width: 1920, height: 1080 } : undefined,
-    });
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, viewport: ORT ? { width: 1920, height: 1080 } : undefined }, 120000, "index.html", "networkidle0"); // prettier-ignore
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
@@ -104,7 +100,6 @@ async function headless(laeufe) {
     // die EINE Warte der Welt (welt-boot `__weltDa`): erwacht, dazu der Voxel-Worker
     const bereit = () => page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
         await bereit();
         await einschwingen();
         for (const l of laeufe) aus.push(await zeit(l.proben[0], () => lauf(l)));

@@ -587,6 +587,15 @@ class AnazhRealm_bild_schatten {
         S.basisInv.copy(S.basis).invert();
         S.dir.subVectors(licht.target.position, licht.position).normalize();
         const huellen = this._kaskadenHuellen(S);
+        // DIE BOX ÜBER DEN WEG (w24-fahrt-takt, Gebot 7): die Box legt sich um die Scheibe jetzt und am Ende des Wegs, den das Auge
+        // in `zeitS` fährt (`_augeWegJetzt`, derselbe Weg wie die Lage, `_lageAnker`) — sie hält, bis das Auge ihn verlässt. Befund
+        // (lokal, GT 23 m/s am Genesis-Ring): k0 legte in 36 von 41 Bildern eine neue Box (die Scheibe lief aus der gerasteten
+        // Box), jede Box eine neue Lage, jede Lage die volle Wahl des Passes.
+        const W = this._augeWegJetzt();
+        const PW = AnazhRealm.PASS_WAHL;
+        // erst in Fahrt (`kaskadeAb`, zwei Schritte in Folge): im Gang hält die Box ihre Größe (sie schimmert nicht, K3)
+        const fahrt = W.v >= PW.weg.kaskadeAb && W.n >= 2;
+        S.weg.fromArray(W.u).multiplyScalar(fahrt ? Math.min(PW.weg.wegMax, W.v * PW.weg.zeitS) : 0);
         if (!csm._anazhFit) csm._anazhFit = [];
         for (let i = 0; i < csm.lights.length; i++) {
             const sh = csm.lights[i].shadow;
@@ -598,10 +607,22 @@ class AnazhRealm_bild_schatten {
                 sh.needsUpdate = true; // die Scheibe lief aus der Box — diese Kaskade rendert jetzt
                 rendert = true;
             }
-            // auf ihrem Takt rendert die Kaskade mit derselben Box, solange sie hält (`_kaskadeHaelt`)
-            if (rendert && !(deckt && this._kaskadeHaelt(csm, i, alt, S, huellen, n)))
-                csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
+            // auf ihrem Takt rendert die Kaskade mit derselben Box, solange sie hält (`_kaskadeHaelt`, über den Weg ihres Fits)
+            if (
+                rendert &&
+                !(deckt && this._kaskadeHaelt(csm, i, alt, S, huellen, this._kaskadenUeberWeg(S, n, alt.ueberWeg)))
+            )
+                csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, this._kaskadenUeberWeg(S, n, S.weg), alt);
         }
+    }
+
+    // DIE SCHEIBE ÜBER DEN WEG (`_kaskadenPassen`): die Empfänger-Punkte der Scheibe (S.punkte[0, n)) und dieselben am Ende des Wegs
+    // `w` dahinter — Box und Wahl-Scheibe des Fits decken beide (`_kaskadeFit` mit dem Weg dieses Bilds, `_kaskadeHaelt` mit dem ihres
+    // Fits), `_kaskadeDeckt` prüft die Scheibe jetzt; ohne Weg dieselben n Punkte. → die Zahl der Punkte.
+    _kaskadenUeberWeg(S, n, w) {
+        if (!w || w.lengthSq() === 0) return n;
+        for (let k = 0; k < n; k++) S.punkte[n + k].copy(S.punkte[k]).add(w);
+        return 2 * n;
     }
 
     _kaskadenSchmier() {
@@ -616,7 +637,8 @@ class AnazhRealm_bild_schatten {
             dir: V(),
             v: V(),
             ecken: Array.from({ length: 8 }, V),
-            punkte: Array.from({ length: 32 }, V),
+            punkte: Array.from({ length: 64 }, V), // die Scheibe jetzt und am Ende des Wegs (`_kaskadenUeberWeg`)
+            weg: V(), // der Weg des Auges in `zeitS` (`_kaskadenPassen`)
             huellen: [],
             werferY: -Infinity, // die Welt-Höhe des höchsten Werfers der zuletzt gemessenen Box (`_kaskadenWerferOben`)
             band0: 0, // das Höhenband der Empfänger der zuletzt gelegten Scheibe (`_kaskadenScheibe`)
@@ -890,6 +912,9 @@ class AnazhRealm_bild_schatten {
         // sie wählt der Kaskaden-Pass jeden Werfer (Zelle, Bündel-Werfer, Instanz) nach der Licht-Kapsel, `_kaskadeDeckt` hält sie.
         if (!f.ebenen) f.ebenen = Array.from({ length: 6 }, () => new THREE.Plane());
         this._scheibenEbenen(S.ecken, f.ebenen, S.v);
+        // über den Weg (`_kaskadenUeberWeg`): jede Ebene weicht nach außen, bis die Scheibe am Ende des Wegs in ihr liegt
+        f.ueberWeg = (f.ueberWeg || new THREE.Vector3()).copy(S.weg);
+        for (const P of f.ebenen) P.constant += Math.max(0, -P.normal.dot(S.weg));
         const saum = AnazhRealm.PASS_WAHL.saumM;
         f.saum = saum[Math.min(i, saum.length - 1)];
         return f;

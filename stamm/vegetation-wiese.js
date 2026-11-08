@@ -695,6 +695,15 @@ class AnazhRealm_vegetation_wiese {
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
         const nw = this.state.nahWiese;
+        // DAS FELD ZUERST (w24-rueckfall-ruhe, Lehre 25: billig vor teuer): die 3 × 3 Gitter der Ferne (`_wieseFernGitter`, je
+        // Gitter ~0,03 ms; die Frist des Takts entscheidet je Gitter, ob es entsteht) stehen, BEVOR die Kachel die Büschel ihrer
+        // Kacheln der Nähe zieht (`_nahWieseKachelBueschel`, je Kachel der Ferne ~2,4 ms) — danach baut sie ohne Frist zu Ende. Bis
+        // hier zog sie erst die Büschel und fragte dann die Gitter unter der Frist: war sie über den Büscheln verstrichen, fiel der
+        // Bau auf null, und der nächste Takt zog dieselben Büschel neu. Unter dem Boden des Deko-Takts kam so kein Gitter an die
+        // Reihe (Radeon, Start-Dorf mit 81 Leibern: 1 065 von 1 920 Bauten verworfen, „Fege-Takt nahWiese wartet, nahStreu wartet“
+        // nach 681 Takten; Dorf /umstellen 534 von 1 396, die GTX stand dort nach 1 800 Takten nicht).
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) if (!this._wieseFernGitter(fx + di, fz + dj, frist)) return null;
         const bueschel = [];
         const chunkKarten = AnazhRealm._wieseKarten([(fx - 1) * K, (fz - 1) * K, (fx + 2) * K, (fz + 2) * K]);
         for (let j = 0; j < n; j++)
@@ -713,7 +722,7 @@ class AnazhRealm_vegetation_wiese {
                 }
             }
         bueschel.sort((a, b) => a.o - b.o);
-        const G = this._wieseFernGrenzen(fx, fz, bueschel, reich, frist);
+        const G = this._wieseFernGrenzen(fx, fz, bueschel, reich);
         if (!G) return null;
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
@@ -758,7 +767,9 @@ class AnazhRealm_vegetation_wiese {
     // Es fällt mit seinen Karten und seinem Wasser (dieselbe Prüfung wie die Kachel) und unter einer neuen Fläche
     // (`_nahWieseNeuIn`); jenseits des Chunk-Rings (`_bodenKommtNie`, `nie`) trägt es nichts. null, solange ein Chunk unter ihm
     // seine Karte noch bekommt — oder die Frist des Takts (`frist`) verstrich, bevor es neu entsteht (die Kachel wartet einen
-    // Takt, die gelesenen Gitter bleiben; Lehre 14). Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr Boden steht.
+    // Takt, die gelesenen Gitter bleiben; Lehre 14). Die Frist fragt nur der Bau der Kachel, VOR ihren Büscheln
+    // (`_nahWieseFernKachel`); die Grenze liest danach, was steht. Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr
+    // Boden steht.
     _wieseFernGitter(fx, fz, frist) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
@@ -803,7 +814,7 @@ class AnazhRealm_vegetation_wiese {
     // Grenze auf den vorigen; die Nähe (s = 1) gilt immer — sie stellte das Büschel. Das Feld der Lesung: die 3 × 3 Gitter um
     // die Kachel. → { grenze: Float32Array (je Büschel, in der Folge von `bueschel`), chunkKarten, nie: [[fx, fz], …] } oder
     // null, solange ein Gitter auf seine Karten wartet.
-    _wieseFernGrenzen(fx, fz, bueschel, reich, frist) {
+    _wieseFernGrenzen(fx, fz, bueschel, reich) {
         const F = AnazhRealm.NAH_WIESE.fern;
         const [n, l] = [Math.round(F.kachel / F.gitter), F.gitter];
         const N = 3 * n;
@@ -812,7 +823,7 @@ class AnazhRealm_vegetation_wiese {
         const nie = [];
         for (let dj = -1; dj <= 1; dj++)
             for (let di = -1; di <= 1; di++) {
-                const G = this._wieseFernGitter(fx + di, fz + dj, frist);
+                const G = this._wieseFernGitter(fx + di, fz + dj);
                 if (!G) return null;
                 if (G.nie) nie.push([fx + di, fz + dj]);
                 else AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);

@@ -53,11 +53,17 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
   (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
-  das Band der geglätteten Deckung, der Rahmen nie Umriss, die Zelle die der Stufe an der gröberen Texel-Achse, Laub-Lappen, Nadel-Grate,
-  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+  das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
+  das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
+  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`, ein gewählter Texel
+  ohne eigene Deckung trägt Farbe, Normale, Tiefe und Sonnen-Sicht seines Bands; die Schwelle 0,45 dort, wo der Filter der Welt —
+  bilinear, zwei Stufen gemischt — deckt, was Stufe 0 deckt, gate:streu-wahrheit „am Schirm"), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
-  das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).
+  das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`) · DAS JAHR liest jede Stufe aus der EINEN
+  Quelle (`uLaubPraesenz` · `uSeasonMul`, `_tickSeason`): die Gestalt im Stoff (`_jahrLage`: Laub Typ 1 fällt, der Wedel ist Nadel 2 und
+  steht, nur Laub tönt), die Karte als Eingang ihres Bakes (`_karteJahr`, neu je Stufe `_karteJahrTakt`), die Ferne über phyto-core
+  `kroneImJahr` (Ring, Boden, Kamm, Panorama); gate:asset-contract (J) nennt jede Nadel mit Laub-Ecke und jede Laub-Krone ohne.
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
 - LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung und Tag-Achse im Baustein
   `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Luft selbst ist Kern: foundry-core `ATMO_GESETZ`) · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN

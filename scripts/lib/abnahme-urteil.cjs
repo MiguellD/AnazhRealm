@@ -443,7 +443,7 @@ function spiegelPartner(m, W, H, s) {
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
         if (m[p] === 1) ys.push(hoch(p));
     }
-    const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
+    const yw = rang(ys.sort((a, b) => a - b));
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {
@@ -456,7 +456,7 @@ function spiegelPartner(m, W, H, s) {
             z = y * W + x;
         if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && w <= nah[z]) (nah[z] = w), (partner[z] = p);
     }
-    return { partner, yw };
+    return { partner, yw, P };
 }
 
 // DIE TIEFE DER AUFNAHME (A13, `__spiegelDaten` gleich nach dem Schuss): die Szenen-Tiefe samt Wasser (depth24plus kopiert WebGPU
@@ -582,6 +582,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // in der Klasse liegt — Σ √((Jxx − Jyy)² + 4 Jxy²) / Σ (Jxx + Jyy), die Kohärenz nach der Energie gewogen: Strähnen und
     // Fell-Strich, die gleich laufen → groß, eine glatte Schale oder Rauschen → klein (die Fläche trägt keine Energie).
     // `strich` dieses Mittel, `si` die Zahl der inneren Pixel.
+    const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null;
     let kr = 0,
         ks = 0,
         si = 0,
@@ -663,8 +664,16 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             };
             const Jm = tensor(sm),
                 Jl = tensor(lu);
-            const aus = (x, y) =>
-                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1);
+            // DAS AUSSEN HINTER DER KLASSE (w24-strauch-saum): trägt der Aufruf die Tiefe der Aufnahme (`spiegel`), zählt ein Außen nur,
+            // wenn es nicht klar VOR der Klasse liegt (≥ 0,9 ihrer Ferne; der Himmel ∞) — wo Gras, Weg oder Stamm sie von vorn
+            // verdecken, ist der Rand deren Umriss, nie ihre Silhouette (die REF misst gegen den Himmel, der stets dahinter liegt;
+            // Tafel-Pose, GTX 8505ae41: 43 % des Strauch-Rands grenzten unten an die Halme der Nah-Wiese vor ihm). Die Ferne liest
+            // das Außen einen Pixel weiter draußen, die Klasse einen weiter drinnen (`weite` aus den Welt-Punkten der EINEN Rückrechnung
+            // `spiegelPartner`, der Himmel 10⁴-fach fern; jenseits des Bilds zählt der Rand)
+            const weite = (x, y) => Math.hypot(...spiegel.auge.map((c, k) => sa.P[(y * W + x) * 3 + k] - c));
+            const aus = (x, y, dx, dy) =>
+                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1) &&
+                !(sa && weite(x + dx, y + dy) < 0.9 * weite(x - 2 * dx, y - 2 * dy)); // prettier-ignore
             for (let y = Math.max(1, by0); y <= Math.min(H - 2, by1); y++)
                 for (let x = Math.max(1, bx0); x <= Math.min(W - 2, bx1); x++) {
                     if (m[y * W + x] !== 1) continue;
@@ -672,7 +681,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     const [lxx, lyy, lxy, n2] = Jl(lx, ly);
                     if (n2 === (2 * r + 1) ** 2 && lxx + lyy > 1e-12)
                         [si, sz, sn] = [si + 1, sz + Math.sqrt((lxx - lyy) ** 2 + 4 * lxy * lxy), sn + lxx + lyy];
-                    if (!(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
+                    if (!(aus(x - 1, y, -1, 0) || aus(x + 1, y, 1, 0) || aus(x, y - 1, 0, -1) || aus(x, y + 1, 0, 1))) continue;
                     const [jxx, jyy, jxy] = Jm(lx, ly);
                     const tr = jxx + jyy;
                     if (!(tr > 1e-12)) continue;
@@ -684,8 +693,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // DIE SPIEGEL-TREUE (D10, Nordstern §4.1): je 8×8-Block ganz im Wasser das Luma-Mittel gegen das seiner Partner (`spiegelPartner`
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
     // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
-    const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null,
-        pa = sa?.partner;
+    const pa = sa?.partner;
     const sp = [0, 0, 0, 0, 0, 0];
     for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
         const z = [0, 0, 0, 0, 0, 0]; // die Block-Mittel der Zeile: n, Σa, Σb, Σa², Σb², Σab
@@ -2019,6 +2027,10 @@ function sollTafelSelbsttest(tafel, q) {
             v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
         const ka = klassenMasse(F0, q0, n, n, halb);
         if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        // rechts der Karte ein Außen VOR ihr (Tiefe 0,3 gegen 0,6), links eins in ihrer Ferne: nur ihr rechter Rand fällt aus
+        const E = Array.from({ length: 16 }, (_, i) => +!(i % 5));
+        const kv = klassenMasse(F0, q0, n, n, null, null, { tiefe: Float32Array.from(q0, (q, p) => (q || halb[p] ? 0.6 : 0.3)), tw: n, th: n, vp: E, ivp: E, auge: [0, 0, -1] }); // prettier-ignore
+        if (!(kv.kr < kq.kr - 60)) v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (${kv.kr} von ${kq.kr} Pixeln)`);
         // DER STRICH (haar.K1/K2): Streifen in der Karte (vor Schwarz — der Rand trägt nichts) → ≥ 0,9 und gedreht gleich,
         // weißes Rauschen → ≤ 0,2, die glatte Karte trägt keinen
         const streif = (a) =>

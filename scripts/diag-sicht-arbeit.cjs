@@ -30,8 +30,13 @@
 //       dem Halt als Rand, `PASS_WAHL_WGSL` — sein Gesetz prüft gate:foundry-crossfade (4));
 //   (D) DIE DREH-TREUE: nach einer Neu-Wahl mitten in einer gehaltenen Drehung zeichnet die gehaltene Wahl jede Zelle, die
 //       das echte Frustum trifft;
-//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen. (C) die Kacheln der Nah-Wiese je
-//       Generation und (W) ihre Ferne im Gang fielen mit dem Sicht-Satz der CPU (`_nahWieseSicht`, w25-gpu-wahl).
+//   (F) DIE FAHRT (w24-fahrt-takt): 20 m/s in Bildern zu 33 ms Wanduhr — der Anker des Hauptbilds hält über den Weg des Auges
+//       (höchstens jedes fünfte Bild neu), die gehaltene Wahl trägt jede Zelle der Sätze am Gesetz vom Auge des Bilds
+//       (0 Löcher); ohne Weg legt jedes Bild neu an, ohne den Rand des Wegs reißen Löcher (scharf);
+//   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen. Mit der Instanz-Wahl und dem
+//       Sicht-Satz der Nah-Wiese auf der CPU (`_instanzWahlPass`, `_nahWieseSicht`, w25-gpu-wahl) fielen die Blende-Treue
+//       an der Kante eines Fensters, die Instanz-Treue der Kaskaden, (C) die Kacheln der Nah-Wiese je Generation und
+//       (W) ihre Ferne im Gang.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser — MUSS rot fallen und ihn beim
 // Namen nennen.
@@ -51,6 +56,24 @@ function urteil(b) {
     // (A) das atmende Auge (die Phase urteilt `sichtUrteil`)
     if (!b.augeAn) v.push("LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht");
     else if (!b.auge) v.push("LEER: keine Phase mit atmendem Auge gemessen — (A) prüfte nichts");
+    // (F) die Fahrt: der Anker des Hauptbilds hält über den Weg des Auges, die gehaltene Wahl trägt jede Zelle am Gesetz
+    // vom Auge jedes Bilds
+    const [F, FO, FR] = [b.fahrt, b.fahrtOhneWeg, b.fahrtOhneRand];
+    if (!(F?.geprueft > 0)) v.push("LEER: keine Fahrt gemessen (F) — keine Zelle im Frustum");
+    else {
+        if (F.neu * 5 > F.bilder) v.push(`FAHRT: ${F.neu} neue Anker in ${F.bilder} Bildern zu 20 m/s — der Halt ist kürzer als der Weg (Kosten am Tempo)`); // prettier-ignore
+        if (F.loecher)
+            v.push(`FAHRT-TREUE: ${F.loecher} Löcher gegen das Gesetz am Auge des Bilds: ${F.namen.join(" · ")}`);
+        if (!(FO?.neu >= FO?.bilder - 1))
+            v.push(
+                `LINSE STUMPF: (F) ohne Weg hält der Anker (${FO?.neu} neue in ${FO?.bilder} Bildern) — die Fahrt prüft den Weg nicht`
+            );
+        if (!(FR?.loecher > 0))
+            v.push(
+                `LINSE STUMPF: (F) ohne den Rand des Wegs fehlt der gehaltenen Wahl keine Zelle (${FR?.loecher} Löcher) — ` +
+                    "die Fahrt prüft den Rand nicht"
+            );
+    }
     const D = b.drehTreue;
     if (!D) v.push("LEER: keine Dreh-Treue gemessen — (D) prüfte nichts");
     else if (!D.gehalten)
@@ -118,8 +141,11 @@ function selbsttest() {
             inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
         }),
         augeAn: true,
-        auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0, blendeFrames: 0 }),
+        auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0 }),
         treue: { geprueft: 12, abweichung: [] },
+        fahrt: { bilder: 30, neu: 2, geprueft: 9, loecher: 0, namen: [] },
+        fahrtOhneWeg: { bilder: 30, neu: 30 },
+        fahrtOhneRand: { bilder: 30, neu: 2, geprueft: 9, loecher: 4, namen: ["boden Zelle (Bild 7)"] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
     };
     const klon = () => jsonKlon(gruen);
@@ -212,7 +238,6 @@ function selbsttest() {
             bytes100("boden wahl:lage haupt", { licht: 0, lichtJe: { haupt: 1 } }),
             "ohne",
         ],
-        ["Blende des Reglers (Hauptbild)", bytes100("boden wahl:lage haupt", { blende: 1 }), "aenderung"],
         ["Verdichten einer ruhenden Wahl", bytes100("bauSatz dicht k0"), "folge"],
         ["Umlegen", bytes100("boden umlegen haupt"), "folge"],
         ["Verdichten ohne Schuld", bytes100("bauSatz dicht:ohne k0", { licht: 1 }), "ohne"],
@@ -236,48 +261,6 @@ function selbsttest() {
         const ok = lo.ohne === 480 && lo.ohneJe["bauSatz dicht:ohne k0"] === 480 && lf.folge === 480 && lf.ohne === 0;
         if (!ok) fehler.push(`Neulegen-Klasse: ${JSON.stringify(lo)} · ${JSON.stringify(lf)}`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
-    }
-    // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
-    // Linse jeden Ruhe-Frame), ein Schritt über den Halt und eine Drehung über den halben Dreh-Rand sind es
-    const mat = (yawGrad, x, y, z) => {
-        const w = (yawGrad * Math.PI) / 180;
-        const c = Math.cos(w),
-            s = Math.sin(w);
-        return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, x, y, z, 1];
-    };
-    const HALT = 0.02,
-        DREH = (2 * Math.PI) / 180;
-    const proj = (fern) => [1.3, 0, 0, 0, 0, 2.3, 0, 0, 0, 0, -1, -1, 0, 0, -0.2 * fern, 0];
-    const M = require("./lib/welt-orte.cjs").messort("wiese"); // die Kamera am Messort (Weltkoordinaten der Mess-Wiese)
-    for (const [name, b, soll] of [
-        ["Atmen ±4 mm", mat(0, M.x, 64.004, M.z).concat(proj(1)), false],
-        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, M.x - 0.015, 64, M.z).concat(proj(1)), true],
-        ["Drehung 0,5°", mat(0.5, M.x, 64, M.z).concat(proj(1)), false],
-        ["Drehung 1,5°", mat(1.5, M.x, 64, M.z).concat(proj(1)), true],
-        ["Projektion (Fern-Ebene)", mat(0, M.x, 64, M.z).concat(proj(1.01)), true],
-    ]) {
-        const k = SICHT.sichtKameraBewegt(mat(0, M.x, 64, M.z).concat(proj(1)), b, HALT, DREH);
-        if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
-        console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
-    }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`): das Auge der Maske ist ein Ort der Lage — sein
-    // Atmen unter dem halben Halt ist keine Bewegung
-    if (typeof SICHT.sichtBlendeBewegt !== "function")
-        fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
-    else {
-        const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
-        for (const [name, b, soll] of [
-            ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
-            ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
-            ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
-            ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
-            ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
-            ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
-        ]) {
-            const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, 0.02);
-            if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
-            console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
-        }
     }
     // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und ein Inhalt mit benanntem Grund erklären alles, das
     // Licht nur die Kaskaden, der Stand eines Satzes allein nichts
@@ -306,7 +289,6 @@ function selbsttest() {
             7,
         ],
         ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
-        ["Blende neu", { arbeit: 57, jePass: jp, blende: 1, inhalt: {} }, 0],
         [
             "Inhalt änderte sich",
             { arbeit: 57, jePass: jp, inhalt: { bauSatz: { grund: "aenderung", bereiche: 1 } } },
@@ -480,7 +462,6 @@ function selbsttest() {
         inhaltOhne: { "streuSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
         licht: 0,
         kamera: 0,
-        blende: 0,
         tag: 0.5,
         stufe: null,
         fehlt: [],
@@ -510,34 +491,41 @@ function selbsttest() {
         ["kein Stand-Bruch", ["standBruch"], /LEER: kein Stand-Bruch gemessen/],
         [
             "das atmende Auge arbeitet (der Täter der zweiten Gegenprüfung)",
-            ["auge=", Object.assign(phase(14999, 0, 0), {
+            [
+                "auge=",
+                Object.assign(phase(14999, 0, 0), {
                     frames: 5,
                     kameraFrames: 0,
-                    blendeFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
                     taeter: ["satz streuSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
-                })],
+                }),
+            ],
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
         ],
         [
-            "die Linse nennt das atmende Auge Blende",
-            ["auge=", Object.assign(phase(14999, 0, 0), {
+            "die Linse nennt das atmende Auge Bewegung",
+            [
+                "auge=",
+                Object.assign(phase(14999, 0, 0), {
                     frames: 5,
-                    kameraFrames: 0,
-                    blendeFrames: 5,
+                    kameraFrames: 5,
                     aenderungFrames: 5,
                     arbeitOhne: { frames: 0, median: 0, max: 0 },
-                })],
-            /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — Kamera in 0, Blende in 5 von 5/,
+                }),
+            ],
+            /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — in 5 von 5/,
         ],
         ["kein atmendes Auge", ["auge"], /LEER: keine Phase mit atmendem Auge/],
         ["die Maske ist aus", ["augeAn=", false], /LEER: die Maske ist aus/],
         [
             "der Inhalt ändert sich in der eingefrorenen Welt",
-            ["ruhe", {
+            [
+                "ruhe",
+                {
                     inhaltFrames: 2,
                     inhaltJe: { boden: { frames: 2, aenderung: 2, bereiche: 2, keys: ["+-901,-850", "-899,-850"] } },
-                }],
+                },
+            ],
             /RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in 2 von 10 Frames \(boden \+-901,-850/,
         ],
         [
@@ -556,22 +544,28 @@ function selbsttest() {
         ],
         [
             "Bytes in Ruhe",
-            ["ruhe", {
+            [
+                "ruhe",
+                {
                     bytes: werte(96, 0, 960),
                     schreibFrames: 1,
                     bytesOhne: werte(96, 0, 960),
                     ohneFrames: 1,
                     bytesOhneJe: { "bauSatz dicht?": 960 },
-                }],
+                },
+            ],
             /RUHE: 96 Index-Bytes je Frame ohne Änderung .*bauSatz dicht\? 960 B/,
         ],
         [
             "Neulegen in Ruhe (K71: 0 Bytes, der Gang über die Zellen)",
-            ["ruhe", {
+            [
+                "ruhe",
+                {
                     legeOhne: werte(48, 0, 480),
                     legeOhneFrames: 1,
                     legeOhneJe: { "bauSatz dicht:ohne k0": 480 },
-                }],
+                },
+            ],
             /RUHE: 48 Indizes je Frame neu gelegt ohne Änderung .*bauSatz dicht:ohne k0 480/,
         ],
         ["kein Treffer", ["ruhe.treffer=", werte(0)], /LINSE BLIND: kein Pass traf/],
@@ -591,11 +585,14 @@ function selbsttest() {
         ],
         [
             "stumpfe Lege-Linse (der Lege-Bruch steht unter fremdem Grund)",
-            ["legeBruch=", Object.assign(phase(0, 0, 9), {
+            [
+                "legeBruch=",
+                Object.assign(phase(0, 0, 9), {
                     legeOhne: werte(2400),
                     legeOhneFrames: 10,
                     legeOhneJe: { "boden umlegen:ohne haupt": 24000 },
-                })],
+                }),
+            ],
             /LINSE STUMPF: ein eingeschmuggelter Lege-Bruch/,
         ],
         ["kein Lege-Bruch", ["legeBruch"], /LEER: kein Lege-Bruch gemessen/],
@@ -612,11 +609,7 @@ function selbsttest() {
             ["sonne=", randSonne(199, 32)],
             /der Licht-Rand \(32 Texel\) erlaubt etwa 61 neue Wahlen/,
         ],
-        [
-            "Sonne ohne Lauf",
-            ["sonne.sonneRad=", 0],
-            /LEER: in der Phase mit laufender Sonne lief die Sonne nicht/,
-        ],
+        ["Sonne ohne Lauf", ["sonne.sonneRad=", 0], /LEER: in der Phase mit laufender Sonne lief die Sonne nicht/],
         ["keine Sonne", ["sonne"], /LEER: keine Phase mit laufender Sonne/],
         ["keine Ruhe", ["ruhe"], /LEER: keine Ruhe-Phase/],
         [
@@ -631,6 +624,21 @@ function selbsttest() {
         ],
         ["Drehfolge ohne Halt", ["drehTreue.gehalten=", false], /DREH-TREUE VAKUÖS/],
         ["keine Dreh-Treue", ["drehTreue"], /LEER: keine Dreh-Treue/],
+        ["die Fahrt ankert je Bild", ["fahrt.neu=", 30], /FAHRT: 30 neue Anker/],
+        [
+            "die Fahrt hält ein Loch",
+            ["fahrt", { loecher: 3, namen: ["boden Zelle (Bild 12)"] }],
+            /FAHRT-TREUE: 3 Löcher .*boden Zelle \(Bild 12\)/,
+        ],
+        ["keine Zelle in der Fahrt", ["fahrt.geprueft=", 0], /LEER: keine Fahrt gemessen \(F\)/],
+        ["keine Fahrt", ["fahrt"], /LEER: keine Fahrt gemessen \(F\)/],
+        ["Fahrt ohne Weg hält", ["fahrtOhneWeg.neu=", 2], /LINSE STUMPF: \(F\) ohne Weg hält der Anker \(2 neue in 30/],
+        [
+            "Fahrt ohne Rand ohne Loch",
+            ["fahrtOhneRand.loecher=", 0],
+            /LINSE STUMPF: \(F\) ohne den Rand des Wegs fehlt der gehaltenen Wahl keine Zelle \(0 Löcher\)/,
+        ],
+        ["Fahrt ohne Rand nicht gemessen", ["fahrtOhneRand"], /LINSE STUMPF: \(F\) ohne den Rand des Wegs/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -671,9 +679,28 @@ const server = statikServer();
             const aus = { ring, takte };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
-            // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, die Kaskaden-Treue, W)
+            // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, F)
             const lageBlick = () => (S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem), r._passWahlLage(S, cam, -1)); // prettier-ignore
             const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+            // die Lage des Hauptbilds ohne jeden Rand vom Auge der Kamera (die Wahrheit der Treue-Proben D, F)
+            const lageHaupt = () => Object.assign({}, lageBlick(), { fr: new T.Frustum().copy(S.frustum), halt: 0, haltBlende: 0, rand: 0, dreh: 0, licht: 0, fit: null, ax: cam.position.x, ay: cam.position.y, az: cam.position.z }); // prettier-ignore
+            // je Zelle eines Satzes, die das Gesetz in der Lage Lw trifft: `je(art, ob die gehaltene Wahl des Hauptbilds sie zeichnet)`
+            // — ohne Höhlen-Zellen (ihre Wahrheit prüft gate:hoehlen-sicht) und ohne den Wurf-Satz (`bauWurf`, S3 haus: nurWurf — er
+            // zeichnet nur in den Kaskaden, das Hauptbild hat für ihn kein Gesetz: gate:chunk-satz (l), gate:schatten-werfer W7)
+            const zellenWahr = (Lw, je) => {
+                for (const x of st.chunkSaetze.values()) {
+                    if (x.spec.nurWurf === true) continue;
+                    const ab = x.abschnitte.get("haupt");
+                    const gezeichnet = new Set(ab ? ab.liste : []);
+                    const art = String(x.art).split("|")[0];
+                    for (const b of x.ordnung) {
+                        if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(Lw, b.huelle, 0)) continue;
+                        for (const z of b.zellen)
+                            if (z.knoten === undefined && !z.huelle.isEmpty() && r._passTrifftBox(Lw, z.huelle, 0))
+                                je(art, gezeichnet.has(z));
+                    }
+                }
+            };
             const vergiss = () => r._passLagen && r._passLagen.clear(); // jede Lage-Erinnerung fällt
             const ppos = st.playerMesh.position.clone();
             const boden = r._voxelSurfaceY(MESS.x, MESS.z);
@@ -681,9 +708,10 @@ const server = statikServer();
             // Mitte ein halbes Feld vor dem Auge — sie laufen mit, wenn der Blick dreht oder geht.
             const kaskaden = [new T.OrthographicCamera(-120, 120, 120, -120, 0, 1600)];
             kaskaden.push(new T.OrthographicCamera(-400, 400, 400, -400, 0, 1600));
-            const stelle = (yaw, vor) => {
-                const ex = ppos.x + Math.sin(yaw) * vor,
-                    ez = ppos.z - Math.cos(yaw) * vor;
+            // `quer`: der Versatz quer zum Blick (die Fahrt der Linse geht quer, F)
+            const stelle = (yaw, vor, quer = 0) => {
+                const ex = ppos.x + Math.sin(yaw) * vor + Math.cos(yaw) * quer,
+                    ez = ppos.z - Math.cos(yaw) * vor + Math.sin(yaw) * quer;
                 cam.position.set(ex, boden + 1.7, ez);
                 cam.lookAt(ex + Math.sin(yaw) * 100, boden + 1.7, ez - Math.cos(yaw) * 100);
                 cam.updateMatrixWorld(true);
@@ -816,36 +844,13 @@ const server = statikServer();
                 frame();
                 D.gehalten = grenze > 0 && gX === g0 && gX2 === g0 && gen() === g0;
                 // die Wahrheit: das Gesetz ohne Rand im Frustum dieses Blicks
-                const Lw = lageBlick();
-                const rand = [Lw.rand, Lw.dreh, Lw.halt, Lw.licht];
-                Lw.rand = Lw.dreh = Lw.halt = Lw.licht = 0;
-                Lw.ax = cam.position.x;
-                Lw.ay = cam.position.y;
-                Lw.az = cam.position.z;
-                const loch = (x) => {
-                    D.loecher++;
-                    if (D.namen.length < 6) D.namen.push(x);
-                };
-                try {
-                    for (const x of st.chunkSaetze.values()) {
-                        // der Wurf-Satz (`bauWurf`, S3 haus: nurWurf) zeichnet nur in den Kaskaden — das Hauptbild hat für
-                        // ihn kein Gesetz (gate:chunk-satz (l), gate:schatten-werfer W7)
-                        if (x.spec.nurWurf === true) continue;
-                        const ab = x.abschnitte.get("haupt");
-                        const gezeichnet = new Set(ab ? ab.liste : []);
-                        for (const b of x.ordnung) {
-                            if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(Lw, b.huelle, 0)) continue;
-                            for (const z of b.zellen) {
-                                if (z.knoten !== undefined || z.huelle.isEmpty() || !r._passTrifftBox(Lw, z.huelle, 0))
-                                    continue;
-                                D.geprueft++;
-                                if (!gezeichnet.has(z)) loch(String(x.art).split("|")[0] + " Zelle");
-                            }
-                        }
+                zellenWahr(lageHaupt(), (art, da) => {
+                    D.geprueft++;
+                    if (!da) {
+                        D.loecher++;
+                        if (D.namen.length < 6) D.namen.push(art + " Zelle");
                     }
-                } finally {
-                    [Lw.rand, Lw.dreh, Lw.halt, Lw.licht] = rand;
-                }
+                });
                 aus.drehTreue = D;
             }
             // (L) RUHE MIT LAUFENDER SONNE: die Tageslänge des Spiels, 60 Frames je s; das Licht folgt `_applyDayNightToScene`,
@@ -945,6 +950,40 @@ const server = statikServer();
                 }
             }
             L.aus();
+            // (F) DIE FAHRT (w24-fahrt-takt, der Halt der Lage ist der Weg des Auges, `_lageAnker`): die Kamera fährt 20 m/s QUER zum
+            // Blick (der Blick aus dem Seitenfenster), je Bild 33 ms Wanduhr, das Auge der Maske mit ihr — der Anker des Hauptbilds
+            // hält über die Strecke, die das Auge in `zeitS` fährt, nie je Bild neu; die gehaltene Wahl zeichnet jede Zelle, die das
+            // Gesetz ohne Rand vom Auge DIESES Bilds trifft (`zellenWahr`). Quer, weil ein Weg im Kegel des Blicks (schräg 30°
+            // gemessen: 0 Löcher ohne Rand in 2805 Zellen) jede neue Lage in der alten trägt — erst quer wandern die Ebenen des
+            // Frustums mit dem Auge, und nur der Halt als Rand (`L.halt`) trägt die Zellen an der Kante. Scharf: ohne Weg (`bruch`
+            // "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen Rand ("rand") reißt Löcher.
+            const fahrt = async (bruch) => {
+                const [o, u] = [
+                    { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
+                    st.lodUniforms.uLodAuge.value,
+                ];
+                const [u0, P0] = [u.clone(), P._lageAnker];
+                const zurueck = leihe(r, { _lageAnker: function (a, s, k, Lx, key, weg) { const neu = P0.call(this, a, s, k, Lx, key, bruch === "weg" ? null : weg); if (bruch === "rand") a.halt = a.haltBlende = Lx.halt = Lx.haltBlende = 0; return neu; } }); // prettier-ignore
+                try {
+                    vergiss();
+                    for (let f = 0; f <= o.bilder; f++) {
+                        await sleep(33);
+                        stelle(Math.PI / 5, 0, f * 0.667);
+                        u.copy(cam.position);
+                        const g0 = genHaupt();
+                        frame();
+                        o.neu += f > 0 && genHaupt() !== g0;
+                        zellenWahr(lageHaupt(), (art, da) => (o.geprueft++, da || (o.loecher++, o.namen.length < 4 && o.namen.push(`${art} Zelle (Bild ${f})`)))); // prettier-ignore
+                    }
+                } finally {
+                    zurueck();
+                    u.copy(u0);
+                    stelle(0, 0);
+                    vergiss();
+                }
+                return o;
+            };
+            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(), await fahrt("weg"), await fahrt("rand")];
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             const H = s.hoehle;
             aus.hoehle = H
@@ -985,7 +1024,7 @@ const server = statikServer();
     if (befund.auge)
         console.log(
             `  Auge (±1 mm, unter dem Halt): Arbeit in ${befund.auge.arbeitFrames} von ${befund.auge.frames} Frames, ` +
-                `Kamera ${befund.auge.kameraFrames}, Blende ${befund.auge.blendeFrames}, ohne Änderung ` +
+                `Auge ${befund.auge.kameraFrames}, ohne Änderung ` +
                 `${befund.auge.arbeitOhne.frames}`
         );
     for (const n of ["ruhe", "standBruch"])
@@ -1007,6 +1046,9 @@ const server = statikServer();
             `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
+    console.log(
+        `  Fahrt, ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
+    );
     const v = urteil(befund);
     wandEnde(
         v,

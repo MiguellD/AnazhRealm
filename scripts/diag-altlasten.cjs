@@ -784,6 +784,9 @@ const FORBIDDEN = [
     // die Arcade-Zeile und der Zwilling der Sicht fielen mit ihren Lesern, die Welt-Glieder des Takts zogen in den Kern
     ...["NINJA_FEEL", "NINJA_VIS", "playPhysics", "playInput"].map((token) => [token, "w4-koerper-park", ["koerper-core.js", "worlds/koerperstudio/koerperstudio.js"]]),
     ...["_parkourGesetz", "_parkourLuftsprung", "_sprungDeckenKlemme", "_gaitSohle("].map((token) => [token, "w4-koerper-park"]),
+    // w24-strauch-saum — eine WGSL-Funktion gibt nie ein Feld zurück: der D3D12-Übersetzer der GTX entrollte binom() 16-fach in
+    // der BC5-Ablage der Karte, die frische Welt der Tafel stand nach 2099 Takten nicht (02c89d91, 33c73b16)
+    ["-> array<", "w24 — WGSL ohne Feld als Rückgabe"],
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

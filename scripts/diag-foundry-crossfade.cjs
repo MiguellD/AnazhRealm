@@ -238,7 +238,7 @@ function stufeOhneBildLinse(core, cfg, wgsl = A.PASS_WAHL_WGSL) {
     const perf = 1.21,
         ref = 12;
     const ebene = { normal: { x: 0, y: 0, z: 0 }, constant: 0 };
-    const L = { fr: { planes: Array(6).fill(ebene) }, ax: 0, ay: 0, az: 0, halt: 0, licht: 0, rand: 0, dreh: 0, fit: null, an: true, kanten: K, ex: 0, ez: 0, perf, ref }; // prettier-ignore
+    const L = { fr: { planes: Array(6).fill(ebene) }, ax: 0, ay: 0, az: 0, halt: 0, haltBlende: 0, licht: 0, rand: 0, dreh: 0, fit: null, an: true, kanten: K, ex: 0, ez: 0, perf, ref }; // prettier-ignore
     const mass = { h0: [0], h0l: [0], karte: [{ x: 0, y: 1.2, z: 4, w: 0 }] };
     const fenster = wgslFenster(wgsl, L, mass);
     // die Wahrheit an der Instanz-Distanz (`zeigt`, das Laub)
@@ -833,7 +833,7 @@ async function runPartB() {
                             const d = Math.hypot(auge.x - (m[i * 16 + 12] + w[12]), auge.z - (m[i * 16 + 14] + w[14]));
                             const ud = g.mat && g.mat.userData;
                             const laub = !!ud && ["foliage", "foliageTex", "grass"].includes(ud.foundryKind);
-                            if (a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                            if (a.aKarte?.isInstancedBufferAttribute) {
                                 const sicht = a.aKarte.array[i * 4 + 3];
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
@@ -1130,7 +1130,7 @@ async function runPartB() {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
-                if (!(m && m.userData && m.userData.foundryCrossfade === true)) continue;
+                if (!(m?.userData && m.userData.foundryCrossfade === true)) continue;
                 geprueft++;
                 const a = o.geometry.attributes || {};
                 if (!a.aLodLevel || !a.aH0 || !a.aH0L) verstoesse++;
@@ -1147,7 +1147,7 @@ async function runPartB() {
         let bpName = null;
         for (const n in st.blueprints) {
             const fl = r._archFlattenBlueprint(n);
-            if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+            if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                 bpName = n;
                 break;
             }
@@ -1244,7 +1244,7 @@ async function runPartB() {
         try {
             const m = r._foundryTreeMaterial("bark", null);
             res.still = !!m;
-            res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
+            res.maske = !!(m?.userData && m.userData.foundryCrossfade === true);
         } catch (e) {
             res.bruch = fehlerText(e);
             res.blende = !!(e && e.blende === true);
@@ -1426,7 +1426,7 @@ async function main() {
         check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
-            !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
+            !!(out.warm?.l0 && out.warm.l1 && out.warm.l2),
             out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);

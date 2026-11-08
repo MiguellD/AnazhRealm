@@ -494,6 +494,12 @@ class AnazhRealm_dirigent_ankunft {
         this._seite.felder.add("_seite");
         await this._weltAnkunft();
         // die Welt steht: Eingabe, Tor und Schleife der Seite (nur init — der Welt-Wechsel am Ort trägt sie weiter)
+        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
+        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`). Der Stempel steht VOR dem Fänger des Ladeschirms
+        // (w25-ankunft-block): wer unter ihm W hält, will gehen — bis hier endete seine Taste im Fänger, die Eingabe „ruhte“, und
+        // gleich nach dem Bild baute der Vorbau das Tuch (kalt: `folger`/`tuchGitter` 312–387 ms je Aufgabe vor der Kontrolle auf der Radeon, 441 ms auf der GTX).
+        for (const art of ["keydown", "pointerdown"])
+            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,
         // Werkstatt-Tasten, Portal-Weitergabe, Chat-Feld) — solange der Ladeschirm steht, endet jedes Tasten-Ereignis hier.
@@ -507,10 +513,6 @@ class AnazhRealm_dirigent_ankunft {
                 },
                 true
             );
-        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
-        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`).
-        for (const art of ["keydown", "pointerdown"])
-            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
         window.addEventListener("keydown", (event) => {
             // Ist ein Portal offen, ist die Heimat-Welt eingefroren: nur Esc verlässt das Portal, alle anderen
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
@@ -1492,11 +1494,15 @@ class AnazhRealm_dirigent_ankunft {
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
     // Himmel des Abends. α aus der Karte: tan α = (H − y) / s* + tan h☉ (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe
     // des Empfängers), ohne Grat 0. Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
-    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω, gemittelt
-    // über die Breite der Abtastung (`strahlung`: die Umgebung der Stoffe in der Rauheit `gratRauheit` — eine Richtung allein
-    // träfe die Aureole 2° neben der Sonne und wöge ihren Gipfel über das ganze Band) × max(n·ω, 0) × Δω/π — der Abzug von der
-    // mittleren Strahlung der Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der
-    // Hang hinter dem Grat den ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684).
+    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (`strahlung`:
+    // die Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
+    // Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den
+    // ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684). Bis w25-ferne-licht las die
+    // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
+    // Schattenhang bei Sonne 5° 3,6 % seines Himmels (Dorf, swiftshader voll) — die Himmels-Sicht im Band (±30°, bis zum Grat
+    // 11,6°) trägt 18,8 % (CPU-Nachbau der Tafeln, exakt integriert), die drei Abtastungen der Tafel schätzen es auf +18 %.
+    // Heute nimmt er 6,2 % (Median, je Ort 0–25 %): das Gitter (`zelleM` 96 m) liest nahe Grate (60–240 m vor dem Hang) bis 10°
+    // zu flach (Grat des Gesetzes 10,3° gegen die Karte 8,1° im Median, ferne.K4).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
     _horizontHimmel(p, n, strahlung) {
@@ -1781,8 +1787,7 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
 // `luftProben` die Punkte, an denen der Luftschatten (`_luftEnsure`) die Karte längs des Blicks liest; `gratRad` die halbe Breite
-// des Grats um das Azimut der Sonne, dessen Himmel er dem Empfänger nimmt (`_horizontHimmel`), `gratRauheit` die Rauheit der
-// Umgebung, in der er ihn abtastet (ihre Keule ~ der Abstand der Abtastungen). Die Leser der Karte: jeder
+// des Grats um das Azimut der Sonne, dessen Himmel er dem Empfänger nimmt (`_horizontHimmel`). Die Leser der Karte: jeder
 // Empfänger der Sonne (`_sonnenSicht`) und des Himmels (`_horizontHimmel`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die
 // Luft (`luftSicht`) und der Lichtmesser
 // (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
@@ -1806,7 +1811,6 @@ AnazhRealm.HORIZONT_KARTE = Object.freeze({
     leerM: 10000,
     luftProben: 8,
     gratRad: (30 * Math.PI) / 180,
-    gratRauheit: 0.5,
 });
 
 // 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.
