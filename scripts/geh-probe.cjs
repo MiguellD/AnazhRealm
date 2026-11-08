@@ -3,7 +3,7 @@
 // (Ego) erst die Latenz der Station leib.K1#1 (Taste → bewegter Leib, 15 Proben je Sicht × Verb gehen · wechsel), dann der erste
 // und der zweite Gang derselben Bahn (`lauf`, 4 m/s, Regler voll, Tiere frei, ohne Profil), dann Genesis Third — je Abschnitt
 // die Knoten-Bauten (`_knotenRate`) beim Namen. Zeilen „GEH …“ (≤ 590 Zeichen: der GPU-Probe-Dienst postet die letzten zehn
-// Zeilen mit Urteil). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält.
+// Zeilen mit Urteil). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält (die Latenz urteilt ihre Station).
 //   node scripts/geh-probe.cjs [--port 4793]          (npm run gate:geh-zerlegung; je Push nimmt der freie Läufer sie)
 "use strict";
 const fs = require("fs");
