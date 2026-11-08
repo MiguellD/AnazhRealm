@@ -1387,8 +1387,8 @@ class AnazhRealm_stoff_karte {
                         Math.ceil(wk / 16),
                         Math.ceil(hk / 16)
                     );
-                // DER SAUM (phyto-core `karteSaum`): der Schlüssel der Wahl — über dem Kronen-Fuß die Deckung des Fußabdrucks
-                // und das Muster der Art, darunter die geglättete Deckung (im Puffer `flag` der Glätte) — in den anderen Puffer;
+                // DER SAUM (phyto-core `karteSaumSchluessel`): der Schlüssel der Wahl — über dem Kronen-Fuß das Band und das
+                // Muster der Art, darunter die geglättete Deckung (im Puffer `flag` der Glätte) — in den anderen Puffer;
                 // Grenze und Ablage lesen ihn
                 zug(
                     "saumK",

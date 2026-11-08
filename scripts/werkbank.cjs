@@ -3204,20 +3204,7 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "kante") {
-        // DIE LAUB-SILHOUETTE AN DER TAFEL-POSE (lod.K1#1) — der Messplatz des GPU-Probe-Dienstes (`gate:laub-kante`, wie `gate:pop`
-        // für lod.K2#1): frisch an der Mess-Wiese, Pose und Klassen aus der Soll-Tafel (laub-kante `mass.werkzeug`, die EINE
-        // Quelle), je Teil-Klasse ab 5 000 px ihre Kante, die schlechteste zuerst; der Richter ist die Station
-        const w = jsonLesen(SOLL_TAFEL).klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
-        const [px, py, pz, lx, ly, lz] = w.slice(2);
-        const halt = await eigeneWelt(["--ort", "wiese"]);
-        // das Bild der Tafel (mit Maske) in den Ordner der GPU-Probe: die Post legt es neben das Urteil
-        const datei = process.env.RUNNER_TEMP && path.join(process.env.RUNNER_TEMP, "probe", "tafel.png");
-        o = await rufe("/bild", { px, py, pz, lx, ly, lz, ziel: w[9], klasse: w[11].slice(1, -1), datei }).finally(halt);
-        const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
-        console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
-        o = o.abnahme;
-    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung

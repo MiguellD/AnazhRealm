@@ -5959,7 +5959,6 @@
         bc1Kodiere: bc1Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
-        karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Laub oder Nadel (w23: die Zelle ist die der Stufe)
         karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Seitenmaß der Texel und Kronen-Fuß
         karteSaumSchluessel: karteSaumSchluessel, // w23-karte-l2 — der Schlüssel der Wahl jeder Stufe (Band, Muster, Stamm)
         karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)

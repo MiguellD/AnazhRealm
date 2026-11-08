@@ -380,6 +380,15 @@ if (require.main === module) hauptLauf(async () => {
             size: { x: sx, y: sy, z: sz },
             ...rest,
         });
+        // DER EINE MENSCH der Bänder (Rumpf, zwei Arme, zwei Beine aus Fleisch): die Form-Probe des Körpers (Λ.1 body-shaped, V17.84
+        // die Passung der Seele) — bis w23-karte-l2 schrieb jedes Band ihn selbst
+        window.__mensch = () => [
+            __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
+            __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
+        ];
         // DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE frozen Tabelle. Bänder proben
         // r[window.__anker.X] — zieht ein Symbol um, wandert EINE Zeile; diag-apparat.cjs hält jeden Eintrag
         // gegen den lebenden Stamm-Code.
