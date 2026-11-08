@@ -41,7 +41,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe, fenster } = require("./lib/welt-boot.cjs");
+const { statikServer, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe, fenster, nullSeite } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -869,8 +869,7 @@ function zugangProbe() {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang ==="
     );
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ art: "linse", bild: true, frist: 900000, erwartet: ERZWUNGEN });
     await fenster(page, "bild");
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
     const konsolenFehler = [];
@@ -889,7 +888,7 @@ function zugangProbe() {
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
-        await fenster(page, "bild", 1);
+        await fenster(page, "ungerade");
         await page.evaluate(async () => {
             for (let i = 0; i < 6; i++) {
                 window.__loopBild();

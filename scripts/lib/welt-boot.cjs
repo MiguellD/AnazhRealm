@@ -845,8 +845,9 @@ async function weicheUrteil(browser, art) {
 //                nicht antwortet, nach 3 s ohne Zeile — die Stall-Akte nennt sie): Fenster, Welt-Uhr, Last und die Taten des Felds.
 //                Steht der Regler einer Gesetz-Seite nicht bei ihrer Last, ist der Lauf ROT beim Namen der Linse.
 const PRUEF_LAST = 1;
-const FENSTER = { bild: { width: 1280, height: 720 }, klein: { width: 320, height: 240 } };
-const fenster = (page, art, plus = 0) => page.setViewport({ width: FENSTER[art].width + plus, height: FENSTER[art].height + plus });
+// `ungerade`: die ungerade Leinwand der Post-Kette (f), das Fenster des Spielers um ein Pixel je Achse gewachsen
+const FENSTER = { bild: { width: 1280, height: 720 }, klein: { width: 320, height: 240 }, ungerade: { width: 1281, height: 721 } };
+const fenster = (page, art) => page.setViewport(FENSTER[art]);
 async function pruefWeltMelden(page) {
     if (page.__pruefWelt || !/^https?:/.test(page.url())) return;
     page.__pruefWelt = true;
