@@ -1216,18 +1216,19 @@ hauptLauf(async () => {
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
         check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
-        // K5 haar.K1 — DER STRICH DES FELLS AUS DER GEOMETRIE (w10-figur): das Rechenmodell der Schale (tetrapoda `fellSchaleBild`,
-        // die Locke aus `fellLocke`) auf Armlänge über vier Kamm-Richtungen, gemessen mit `klassenMasse`. Die Radeon liest ~0,85 ×
-        // Modell: das Gesetz trägt das Band der REF [0,4358; 0,6538] / 0,85, die Locke, die an ihrer Zelle endet (der Stand bis
-        // w10-figur, Strich 4 ohne Nachbarn — Radeon 2674ff9a arm 0,4251), fällt darunter ROT
+        const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
+        // K5 haar.K1 — DAS FELL AN DER STATION OHNE RAUSCHEN (w10-figur, w20-haar-arm): das Rechenmodell der Schale (tetrapoda
+        // `fellStrichProbe`, eine Probe je Szenen-Pixel wie die GPU) am Arm des Station-Wolfs (1,95 Pixel je Strähnen-Zelle) und am
+        // Third (0,55): am Arm weiche Striche (Energie des Feindetails 0,05 … ½), am Third glatt; die harte Kante der Locke (Abgabe
+        // w20 im Raster 1,4: GTX dbf081c5 arm 0,3645 / third 0,3194), die Locke ohne Raster (GTX 0,441) und die Strich-14-Locke
+        // (w10-figur, GTX 0,4268) fallen beim Namen
         const f1 = fadenScope(["tetrapoda-core.js"]).__tetrapodaCore.fellStrichProbe((u8, m, n) => AU.klassenMasse(u8, m, n, n).strich);
-        check("K5 haar.K1: Strich des Fells im Band, die Zellwand-Locke darunter", f1.gesetz >= 0.513 && f1.gesetz <= 0.769 && f1.zelle < 0.513, JSON.stringify(f1));
+        check("K5 haar.K1: Fell am Arm weich, am Third glatt, Mutanten darunter", f1.gruen, JSON.stringify(f1));
         // K5 mensch.K4 — DAS GESICHT UNTER SEINEM LICHT (w12-gesicht, koerper `gesichtSelbsttest`): das gemalte Gesicht liest seine
         // Albedo im Schatten der Kamera des Spiels wie in der Sonne, jede Mutante (Lippe im Ton der Wange, Sklera im Saum der Höhle,
         // Lider über der Iris, das Auge ohne Spur, die Wange ohne Albedo) fällt beim Namen
         const g1 = fadenScope(["koerper-core.js"]).__koerperCore.gesichtSelbsttest();
         check("K5 mensch.K4: das Gesicht unter seinem Licht, jede Mutante beim Namen", g1.length === 0, g1.join(" · "));
-        const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
         selbsttestEnde(errs, "die Kamera-Laub-Linse nennt ihre Täter beim Namen.");

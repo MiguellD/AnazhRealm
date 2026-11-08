@@ -602,7 +602,8 @@ class AnazhRealm_bild_kosten {
                 // bis zu seinen eigenen LADE_TAKT_MS (Hauptpass, jede Kaskade, jedes Bündel, jeder Bake-Versuch der Karte) — eine
                 // Aufgabe hielt 250–480 ms Knoten-Bau (headless kalt 5fb21e29: `build` 18× ≥ 50 ms, die längste Aufgabe 737 ms;
                 // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
-                // Schritt bis zur EINEN Frist der Aufgabe (`_ladeFrist`, im Bild-Takt die Hälfte der Zeichnung); was wartet, macht
+                // Schritt bis zur EINEN Frist der Bau-Arbeit (`_bauFrist`, unter dem Ladeschirm die der Zeichnung `_ladeFrist(true)`,
+                // im Bild-Takt ihre zweite Hälfte); was wartet, macht
                 // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
                 // DAS LADE-BILD IST DIE WELT: unter dem Ladeschirm baut in Raten, was das Lade-Bild zeichnet (Welt-Szene, Kaskaden,
                 // Bündel, Karten-Bühne) — nie eine Bühne (`_buehneJetzt`: Ich, Hof, Feed, Werkstatt). Sie öffnet die Eingabe, ihr
@@ -669,7 +670,7 @@ class AnazhRealm_bild_kosten {
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                rateFrist: null, // der Bau in Raten (`_knotenRate`): die Frist der laufenden Aufgabe
+                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -710,16 +711,20 @@ class AnazhRealm_bild_kosten {
     // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
     // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
     // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
-    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, je Aufgabe des Event-Loops bis zur
-    // Frist ERST_BAU_MS (der erste Schritt immer); der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
+    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, bis zur EINEN Frist der Bau-Arbeit
+    // (`_bauFrist`), auch IM Schritt: zwischen zwei Fluss-Knoten einer Shader-Stufe fragt er sie (der erste Knoten immer; `R.k` ist
+    // der nächste, der Vendor setzt je Knoten nur Bau- und Shader-Stufe — headless Erst-Boot: eine Stufe trug bis 90 ms am Stück);
+    // der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
     // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
     // EIN BAU JE SCHLÜSSEL IM FLUG (w4-knoten-wurzel): der laufende Bau eines Schlüssels steht in `E.imFlug`, jedes Render-Objekt
     // desselben Schlüssels geht DENSELBEN Bau weiter — bis hier legte jedes, das im selben Bild kam, seinen eigenen an (die Teile
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
-        // die Frist der Aufgabe: im Spiel ERST_BAU_MS ab dem ersten Schritt, unter dem Ladeschirm die EINE Frist des Lade-Frames
-        // (`_ladeFrist`, geteilt mit jedem Leser) — der erste Schritt der Aufgabe geht immer (nie verhungert).
+        // DIE FRIST IST DIE EINE DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): im Spiel geteilt mit jedem Bauer des Takts (Strom,
+        // Planer, Pflanzung, Hüllen, Karte …), unter dem Ladeschirm die der Zeichnung (`_ladeFrist(true)`: die ganze Frist des
+        // Lade-Frames samt dem Guthaben der gehaltenen Leine). Bis hier trug der Bau in Raten eine zweite Uhr daneben (`rateFrist`:
+        // ERST_BAU_MS ab seinem ersten Schritt, unter dem Ladeschirm das Guthaben).
         // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
         // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
         // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
@@ -729,18 +734,13 @@ class AnazhRealm_bild_kosten {
         // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
         // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
         // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
-        let erster = false;
-        if (E.rateFrist === null) {
-            const jetzt = performance.now();
-            E.rateFrist = this._ladeTakt()
-                ? Math.max(this._ladeFrist(true), jetzt + Math.min(E.ladeGuthaben, AnazhRealm.LADE_TAKT_MS))
-                : jetzt + AnazhRealm.ERST_BAU_MS;
-            E.ladeGuthaben = 0;
-            erster = true;
-            Promise.resolve().then(() => (E.rateFrist = null));
-        }
+        const frist = this._bauFrist("knoten", true);
         const t0 = performance.now();
-        if (t0 >= E.rateFrist && !erster) return false;
+        // SEIN PFLICHT-STÜCK (w19-gang-hitch, Nacharbeit — jeder Leser der Frist geht mindestens eins): der erste Ruf des Takts baut
+        // einen Schritt auch nach der Frist, jeder weitere wartet — bis hier wartete jeder, und ein Takt, dessen Bauer vor dem Bild
+        // die Frist leerten, baute keinen Knoten (Wiese, Gehen: 0 von 6 Rufen); die Alterung gibt ihm dazu seinen Vortritt
+        if (t0 >= frist && E.pflichtTakt === this._taktZeit) return false;
+        E.pflichtTakt = this._taktZeit;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -754,7 +754,10 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null, ms: 0 }));
+                E.imFlug.set(
+                    key,
+                    (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 })
+                );
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
@@ -763,18 +766,25 @@ class AnazhRealm_bild_kosten {
             // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
             // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
             // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
-            // geht immer (nie verhungert); jeder weitere, solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt
-            // darüber endet wie bisher.
-            const ueber = () => performance.now() >= E.rateFrist;
+            // geht immer (nie verhungert); jeder weitere, solange die EINE Frist trägt (`_bauFrist`), ein Schritt darüber endet wie
+            // bisher. Ein begonnener Schritt geht mindestens EINEN Knoten: der Gang der Position (`flowNodeFromShaderStage`) steht am
+            // Anfang der Stufe (`R.k` 0) — ein Schritt ohne Knoten ginge ihn beim nächsten Ruf ein zweites Mal.
+            const ueber = () => performance.now() >= frist;
             for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
                 const stufe = STUFE[(R.i / 3) | 0];
                 const shader = SHADER[R.i % 3];
                 b.setBuildStage(stufe);
-                if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
+                if (R.k === 0 && R.i % 3 === 0 && b.context.position && b.context.position.isNode)
                     b.flowNodeFromShaderStage("vertex", b.context.position);
                 b.setShaderStage(shader);
-                for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
-                arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+                // eine leere Shader-Stufe geht im selben Schritt mit; die volle bis zur Frist, je Knoten gefragt
+                const [F, k0] = [b.flowNodes[shader], R.k];
+                for (; R.k < F.length && (R.k === k0 || !ueber()); R.k++) {
+                    if (stufe === "generate") b.flowNode(F[R.k]);
+                    else F[R.k].build(b);
+                    arbeit = true;
+                }
+                if (R.k >= F.length) [R.i, R.k] = [R.i + 1, 0];
             }
             if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
             if (R) {
@@ -3685,7 +3695,8 @@ AnazhRealm.TRAEGER = Object.freeze({ teile: 24, saumM: 0.03 });
 AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
-// Spiel nach dem Weltbild ist sie die Frist der Raten je Aufgabe (`_knotenRate`, der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
+// Spiel nach dem Weltbild baut der Knoten-Bau in Raten unter der EINEN Frist der Bau-Arbeit (`_knotenRate` → `_bauFrist`,
+// BAU_FRIST_MS; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
 // EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
 // verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)

@@ -157,7 +157,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     (`_weltBakeErlaubt(d2)`), nie verhungert (Nah-Schwelle die erste Fenster-Hälfte, eine Zähl-Hülle reicht die Argumente durch); die
     Foundry-Schlange `_foundryAuftrag` hält je Faden `FOUNDRY_IM_FLUG` (12) im Flug, die Pumpe (`_foundryPumpe`) wählt nah zuerst, vor dem
     ersten Weltbild den Blick zuerst, nie verhungert; die Freigabe danach ist FIFO (`INGEST_RATE_PER_S` 180/s, ≤ 8 je Bild) —
-    `werkbank takt` zerlegt.
+    `werkbank takt` zerlegt. Die EINE Frist der Bau-Arbeit altert (`_bauFrist(wer)`: der Hungrigste hat Vortritt, gate:takt T13); sie
+    misst CPU-Zeit — GPU-Arbeit fragt die Leine je Stück (`_tickKarteWelt`: jede Karte bei ihrem Beginn), nie die Frist.
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass (Kaskaden-Kamera) liest nur colorNode.a · map.a · maskShadowNode,
     nie opacityNode — LOD-Masken vom Auge (`uLodAuge`), Ausschnitte in colorNode.a (`gate:foundry-crossfade`); Bundles nach jedem
     castShadow-Wechsel neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` ×
