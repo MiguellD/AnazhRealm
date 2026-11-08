@@ -20,3 +20,11 @@
 - Radeon nie leer (22:20 lief sie 1 h leer): Bulk-Ernte auf die Radeon, OMEN nur GTX-Pflicht; Abgabe-Wache nach jedem Ende neu.
 - Effizienz-Tafel im Blick (`node %TEMP%\claude\w3\w22-blick\artifacts\profiband\werkzeug\messplatz-blick.cjs`): Pflicht zuerst, ehrliche Punkte, Punkte/Wochen-%, Fluss (Rot-Quote 67–71 %, Abgabe→Landung ~4 h).
 - Lokal messen nur ohne lokale CPU-Champions (falsche Rote: spielgang.K3#1, ankunft.K2#1, fahrzeug.K2#1-Deckel).
+
+## Nachtrag 08.11. 02:45
+- **main ec87c828** (z309: wiese-nachzug Schale + pop-heil). Davor z306 a7a9d7bf (CI-Diät + Dorf-Reload). Gebucht 218 am cbe910ed. Die Radeon-Ernte --offen am a7a9d7bf läuft seit 00:21; danach misst sie gezielt am ec87c828 (vegetation.K1/K2, lod.K1/K2). Dann buchen.
+- **Schlange:** z310 = ankunft-kalt (GTX 22,8 → 19,4 s, Radeon 15,0 → 13,0 s) + geh-bild (Gehen-Bild Radeon 67 → 42–50 ms). z311 = wasser-fix (Pegel faltet Front-Vergangenheit, Ufer steht) + s0-ms (S0 in ms, Zeichen-Decke weg) + laub-jahr-fern + wald-geburt (Pop GTX 0,062 → 0,030 %). Startbefehl immer `nohup bash … & disown`; zug-weiter2.sh trägt die Wackler-Liste ohne Tier-Gang.
+- **Täter:** leib-bau fällt am Tier-Gang-Spielplatz, 6/6 nur in Zügen mit ihm. Post ging raus, er fährt nach der Heilung allein. zeitraffer reißt Takt-Wand T9 (Boden-Strom 53 statt Kappe 3); die Post ging an die Zeitraffer-Cloud.
+- **Cloud aktiv:** geh-bild, wald-geburt, ankunft-kalt (alle abgegeben, können nachlegen). regel-inventur baut w22-wanduhr (Wanduhr → Bau-Ereignis, DECKE weg). zug-auswahl baut Vorlauf/Nachlauf (die Auswahl allein wählt im Median 95,6 %, landet so nicht). zeitraffer heilt T9, dann w22-pruef-welt (Feld in Welt-Zeit, Regler fest in Linsen, keine 320er-Fenster für Bild-Urteile). fern-hang macht w22-fern-hang-2 (ferne.K4#1 0,64).
+- **Gelernt:** Vor „chronisch auf main“ die Zweig-Listen der roten Kandidaten schneiden. Der Nexus ist am See nicht der Täter (gemessen). Der S0-Befund für B: Boden-Pipeline kalt 1,1 s GTX / 0,7 s Radeon.
+- Abgabe-Wache: `abgabe-wache9.sh` (neue Zweige drin), nach jedem Ende neu starten.
