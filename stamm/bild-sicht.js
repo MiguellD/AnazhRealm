@@ -692,10 +692,11 @@ class AnazhRealm_bild_sicht {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
                 if (konstant(stufe)) {
-                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden
+                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden;
+                    // die Strahlung im Band des Grats ist die Himmels-Sicht der Atmosphäre selbst (die Luft bindet ihre Tafel in
+                    // jedem Stoff schon)
                     const n = builder.context.getUV(this, builder);
-                    const strahlung = (dir) =>
-                        __weltLicht.himmelDerStoffe(quelle, U, dir, T.float(AnazhRealm.HORIZONT_KARTE.gratRauheit));
+                    const strahlung = (dir) => wirt._atmoLutBau().himmelFarbe(dir);
                     // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
                     // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen. Der Grat nimmt nur, wo
                     // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)

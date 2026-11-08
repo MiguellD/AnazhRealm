@@ -82,7 +82,7 @@ hauptLauf(async () => {
         const prevHook = window.__anazhFernRing;
         delete window.__anazhFernRing;
         for (let t = 0; t < 5; t++) r._tickFernRing(st.playerMesh.position);
-        res.headlessQuiet = st.fernRing === null || st.fernRing === undefined;
+        res.headlessQuiet = st.fernRing == null;
 
         // ===== Hook AN: der Ring entsteht in Scheiben aus dem Fern-Faden (B2) =====
         window.__anazhFernRing = true;
@@ -1431,7 +1431,7 @@ hauptLauf(async () => {
             res.horizont = [String(e15)];
         }
         r._fernRingDispose();
-        res.fpDisposed = st.feldPass === null || st.feldPass === undefined;
+        res.fpDisposed = st.feldPass == null;
 
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;

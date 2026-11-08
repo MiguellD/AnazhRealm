@@ -3321,9 +3321,10 @@ AnazhRealm.MOONLIGHT = __weltLicht.MOONLIGHT; // welt-licht.js: der Hue aus `ATM
 // 8 Stufen sind ≤ 10 % am Himmel, am Mittag ≤ 0,02 EV an der Karte.
 AnazhRealm.ATMO_LUT = __weltLicht.ATMO_LUT; // welt-licht.js — die Größen und Schritte der Tafeln (`atmoTafeln`)
 // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
-// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung UND die
-// untere Hälfte der EINEN Umgebung — den Boden, den jeder nahe Stoff spiegelt. w4-ferne-blau setzte das Mittel der Fern-Farbe
-// ±100 km (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1): der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die untere Hälfte der EINEN
+// Umgebung — den Boden, den jeder nahe Stoff spiegelt; die Mehrfachstreuung sieht seine Leuchtdichte ohne Buntheit (welt-licht.js
+// `ATMO_ERDE`, w25-ferne-licht: sein Grün trug den Horizont grün). w4-ferne-blau setzte das Mittel der Fern-Farbe ±100 km
+// (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1) für beide: der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
 // Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
 AnazhRealm.ATMO_BODEN = __weltLicht.ATMO_BODEN; // welt-licht.js — [0,1003 · 0,1385 · 0,0449]
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.

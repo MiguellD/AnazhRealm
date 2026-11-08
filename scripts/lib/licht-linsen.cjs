@@ -807,7 +807,6 @@ function lichtBilanz(o) {
             await lauf();
             return lauf();
         };
-        const Y = luma709;
         const so = r._sonnenRichtung();
         const out = { uhr: st.timeOfDay, sonnenRichtung: [so.x, so.y, so.z].map((v) => +v.toFixed(3)), lichter: {} };
         for (const [l, i] of lichtAlt)
@@ -834,7 +833,7 @@ function lichtBilanz(o) {
                     const L = await mess(n);
                     out[vn][ln] = {
                         L: L.map((v) => +v.toPrecision(4)).join("/"),
-                        E: +((Math.PI * Y(L)) / 0.18).toPrecision(4),
+                        E: +((Math.PI * luma709(L)) / 0.18).toPrecision(4),
                     };
                 }
             }
@@ -2092,6 +2091,14 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
     return { linie, stufe: +stufe.toFixed(4) };
 }
 
+// DIE AUFLÖSUNG DES BILDS (w25-ferne-licht): ein Durchlass je Kanal (l − S)/(l0 − S) ist so genau, wie die 8-bit-Stufen zwischen
+// L0 und S ihn tragen — die Wache zählt Stufen der Kanäle `kanaele` am Pixel `i` (≥ 12), nie lineare Einheiten. Bis dahin forderte
+// das Paar Rot/Blau 0,05 · Blende linear: am Morgen (Sonne 7°, In-Streuung 0,03–0,06) verwarf es Paare mit 18–34 Stufen und jede
+// Sicht abseits der Sonne stand ungemessen (0 Paare, T/T_soll je Kanal 0,92–1,03), im Hellen nahm es 9 Stufen (Radeon 77265b04).
+function luftAufgeloest(L0, S, i, kanaele) {
+    return kanaele.every((c) => Math.abs(L0[i + c] - S[i + c]) >= 12);
+}
+
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
 // Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
 // Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
@@ -2121,14 +2128,12 @@ function luftTiefe(o) {
         const gz = st.playerMesh.position.z;
         const gy = gesetz(gx, gz) + o.augeM;
         const Hs = R.skalenHoeheM;
-        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const roh = (u8, i) => {
-            const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
+            const c = [srgbLin(u8[i]), srgbLin(u8[i + 1]), srgbLin(u8[i + 2])];
             const m = Math.min(...c);
             const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
-        const Y = luma709;
         const ton = (u8, i) => {
             const c = [u8[i], u8[i + 1], u8[i + 2]];
             const hi = Math.max(...c);
@@ -2241,23 +2246,22 @@ function luftTiefe(o) {
                     const l0 = roh(L0, i);
                     const sa = roh(S, i);
                     if (t && !(xx in gesetzOben)) gesetzOben[xx] = yy;
-                    if (!t || !l || !l0 || !sa || Math.abs(Y(l0) - Y(sa)) < 0.02 * Y(sa)) continue;
-                    gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
+                    if (!t || !l || !l0 || !sa || Math.abs(luma709(l0) - luma709(sa)) < 0.02 * luma709(sa)) continue;
+                    gez.push({ x: xx, d: t.d, C: Math.abs(luma709(l) - luma709(sa)) / luma709(sa) });
                     sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
-                    const tg = Math.abs(L0[i + 1] - S[i + 1]) >= 12 && (l[1] - sa[1]) / (l0[1] - sa[1]);
+                    const tg = luftAufgeloest(L0, S, i, [1]) && (l[1] - sa[1]) / (l0[1] - sa[1]);
                     if (t.szene && tg > 0.05 && tg < 0.95) sb.push((-Math.log(R.kontrast) * t.g * t.d * U.spektrum.value.y) / -Math.log(tg));
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
-                    if (tc[0] > 0.01 && tc[2] > 0.01 && Math.min(Math.abs(l0[0] - sa[0]), Math.abs(l0[2] - sa[2])) >= 0.05 * k)
-                        b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
+                    if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
                     const dh = Math.abs(ton(L, i) - ton(S, i));
                     b.dh.push(Math.min(dh, 360 - dh));
                 }
             const rand = med(Object.values(fern));
-            const Yd = Float32Array.from({ length: W * H }, (_, p) => Y([lin[L[p * 4]], lin[L[p * 4 + 1]], lin[L[p * 4 + 2]]]));
+            const Yd = Float32Array.from({ length: W * H }, (_, p) => luma709([srgbLin(L[p * 4]), srgbLin(L[p * 4 + 1]), srgbLin(L[p * 4 + 2])]));
             // je Spalte die erste Zeile, die die Luft ändert (8 Bit, auch über der Kompression): das Ende der gezeichneten Welt
             const oben = {};
             for (const x in gesetzOben)
@@ -2488,6 +2492,11 @@ function luftTiefeSelbsttest(R) {
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.join().includes("T < 0") || "T < 0 namenlos",
+        // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
+        // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
+        ...[[[38, 32, 21], [62, 54, 40], 1], [[120, 121, 119], [124, 123, 126]], [[191, 191, 191], [200, 200, 200]]].map(
+            ([a, b, g]) => luftAufgeloest(a, b, 0, [0, 2]) === !!g || `Stufen ${a} gegen ${b}`
+        ),
         ...[[1500, 4, true], [1800, 4, false], [1500, 2, false]].map(([m, n, g]) =>
             wetterLuftUrteil({ zeilen: Array(n).fill({ sicht: { m, n: 50 } }) }, R).sicht.gruen === g || `Sicht ${m} m × ${n} nicht ${g}`),
         ...[[0.05, "rainy", true], [0.5, "rainy", false], [0.05, "sunny", false]].map(([e, w, g]) =>
@@ -2603,7 +2612,6 @@ function naesseSicht(o) {
         // 20 statt 10 min (0,992 gegen 0,909), und die helle nasse Schwelle des Dorf-Hauses zählte 15 Punkte als Regen innen
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
-        const Y = luma709;
         const strahl = new T.Vector3();
         // je Rasterpunkt „innen" · „aussen" · „fluegel" (der Tür-Flügel und sein Schwenk) · „himmel" (kein Treffer in 40 m; auf
         // der Wiese die obere Bildhälfte)
@@ -2645,11 +2653,11 @@ function naesseSicht(o) {
                 const c = klasse(x, y);
                 const s = summe[c === "himmel" ? "aussen" : c];
                 if (!s) continue;
-                s[0] += Y(klar, i);
-                s[1] += Y(nass, i);
+                s[0] += luma709(klar, i);
+                s[1] += luma709(nass, i);
                 if (!je[c]) continue;
-                if (Y(frisch, i) > 8) je[c].push(Y(nass, i) / Y(frisch, i));
-                if (Math.abs(Y(nass, i) - Y(ohne, i)) > 3) regen[c]++;
+                if (luma709(frisch, i) > 8) je[c].push(luma709(nass, i) / luma709(frisch, i));
+                if (Math.abs(luma709(nass, i) - luma709(ohne, i)) > 3) regen[c]++;
             }
         const bild = (s) => +(s[1] / s[0]).toFixed(3);
         const med = (l) => (l.length ? +l.sort(aufsteigend)[l.length >> 1].toFixed(3) : null);
@@ -2736,7 +2744,6 @@ function kontaktSicht(o) {
         st.playerMesh.visible = false;
         PU.bloomStrength.value = 0;
         const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
-        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
             const hi = Math.min(Math.max(...c), 0.9995);
@@ -2753,7 +2760,7 @@ function kontaktSicht(o) {
         const schuss = async () => {
             const u8 = await aufnahme();
             if (++zahl === 4 && (aus.treueBytes = (await aufnahme()).reduce((n, x, i) => n + (x !== u8[i]), 0))) throw new Error(`die Treue: ${aus.treueBytes} Bytes`);
-            return (i) => luma709(zurueck([lin[u8[4 * i]], lin[u8[4 * i + 1]], lin[u8[4 * i + 2]]])) / rend.toneMappingExposure;
+            return (i) => luma709(zurueck([srgbLin(u8[4 * i]), srgbLin(u8[4 * i + 1]), srgbLin(u8[4 * i + 2])])) / rend.toneMappingExposure;
         };
         const v = new T.Vector3();
         const probe = (L) => {
@@ -2875,6 +2882,7 @@ module.exports = {
     naesseUrteil,
     kantenLinie,
     luftBetaRef,
+    luftAufgeloest,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
