@@ -1250,13 +1250,7 @@ async function checkBandLambda1LivingCenter({ page, check }) {
         const out = {};
         // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
         const humanoid = {
-            parts: [
-                __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
-                __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
-                __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
-                __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
-                __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
-            ],
+            parts: __mensch(),
         };
         // Stein-Tempel — symmetrisch + vertikal, aber NICHT lebendig → !_isBodyShaped.
         const steinTempel = {
