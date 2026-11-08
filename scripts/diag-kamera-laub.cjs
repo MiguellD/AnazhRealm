@@ -330,10 +330,8 @@ async function leibStrafe(k) {
         const bs = [];
         for (let i = 0; i < o.warm + o.n; i++) {
             if (o.zwang && st.rueckstrahlPass) st.rueckstrahlPass.sig = null;
-            if (o.fest) {
-                st.traaNode._jitterIndex = 0;
-                if (lu?.uDitherT) lu.uDitherT.value = 1 - 0.61803398875;
-            }
+            if (o.fest && o.fest !== "dither") st.traaNode._jitterIndex = 0;
+            if (o.fest && o.fest !== "zitter" && lu?.uDitherT) lu.uDitherT.value = 1 - 0.61803398875;
             await (o.zeit === false ? new Promise(requestAnimationFrame).then(() => r._gameLoopTick(t)) : bild(k.dt));
             if (i >= o.warm) bs.push(luma709(st.rueckstrahlLeser.boden.value.toArray()));
         }
@@ -348,14 +346,16 @@ async function leibStrafe(k) {
     for (const [name, o] of [
         ["gehA", { seite: "KeyA", warm: 40, n: 90 }],
         ["gehD", { seite: "KeyD", warm: 40, n: 90 }],
-        ["gehFestA", { seite: "KeyA", warm: 40, n: 90, fest: true }],
-        ["gehFestD", { seite: "KeyD", warm: 40, n: 90, fest: true }],
-        ["gehOhneLeibA", { seite: "KeyA", warm: 40, n: 90, leib: false }],
-        ["gehOhneLeibD", { seite: "KeyD", warm: 40, n: 90, leib: false }],
-        ["steh", { warm: 20, n: 90, zwang: true }],
-        ["stehFest", { warm: 20, n: 90, zwang: true, fest: true }],
-        ["stehFestZeit", { warm: 20, n: 90, zwang: true, fest: true, zeit: false }],
-        ["stehOhneLeib", { warm: 20, n: 90, zwang: true, leib: false }],
+        ["festA", { seite: "KeyA", warm: 40, n: 90, fest: true }],
+        ["festD", { seite: "KeyD", warm: 40, n: 90, fest: true }],
+        ["festA2", { seite: "KeyA", warm: 40, n: 90, fest: true }],
+        ["festD2", { seite: "KeyD", warm: 40, n: 90, fest: true }],
+        ["zitterA", { seite: "KeyA", warm: 40, n: 90, fest: "zitter" }],
+        ["zitterD", { seite: "KeyD", warm: 40, n: 90, fest: "zitter" }],
+        ["ditherA", { seite: "KeyA", warm: 40, n: 90, fest: "dither" }],
+        ["ditherD", { seite: "KeyD", warm: 40, n: 90, fest: "dither" }],
+        ["rasterFestA", { seite: "KeyA", warm: 40, n: 90, raster: true, fest: true }],
+        ["rasterFestD", { seite: "KeyD", warm: 40, n: 90, raster: true, fest: true }],
         ["rasterA", { seite: "KeyA", warm: 40, n: 90, raster: true }],
         ["rasterD", { seite: "KeyD", warm: 40, n: 90, raster: true }],
     ])
@@ -1315,7 +1315,6 @@ hauptLauf(async () => {
         laeufe.forEach((S, w) => {
             if (S.err) return console.log(`MESS ROT #${w}: ${String(S.err).slice(0, 400)}`);
             console.log(`MESS GRÜN #${w} K6 ${pct(S.boden.an)}/${pct(S.boden.aus)} · ${fen(S)}`);
-            console.log(`MESS GRÜN #${w} Kopf ${S.an.map((b) => `${b.seite}${b.probe} ${pz(b.kopf)}`).join(" ")}`);
             const z = Object.entries(S.zerlegung || {});
             console.log(`MESS GRÜN #${w} Z1 ${zer(Object.fromEntries(z.slice(0, 6)))}`);
             console.log(`MESS GRÜN #${w} Z2 ${zer(Object.fromEntries(z.slice(6)))}`);
