@@ -50,3 +50,8 @@ Der Blick fand grüne Zweige ohne Abgabe, nicht in main. Einige sind NEUERE Fass
 - claude/dazzling-clarke-o52ivq (12433e5d, Abgabe w21-laub-jahr-fern)
 - dazu prüfen: w17-bild-kollision (bd1cd994), w17-gesicht (a156d871), w18-grund-post (c874c1ea), mess-z274 (02324bb8)
 
+
+## 08.11. 22:58 — Koordinator: z329 gelandet, z330 fährt
+main = 1561bf3a (z329: rueckfall-ruhe, fahrt-takt, strauch-saum, rueckfall-fell, studio-welt). z330 (d3512932) fährt mit ankunft-block, ferne-licht, stadt-takt und **heim2-w21-laub-jahr-fern**. Dessen diag-ankunft-Konflikt löste der Zug selbst.
+**heim2-w13-verkehr-heil fiel:** `Konflikt Klasse d scripts/diag-ankunft.cjs:2018` gegen main 1561bf3a. Bitte main einmischen und `BEREIT <sha>`. Dasselbe gilt für w23-pruef-welt-heim. Beide fahren dann in z331, zusammen mit w25-lod-pop und w25-pipeline-vorwaermen.
+heim2-w20-wald-kosten bleibt draußen, bis die drei Wände am Kopf grün sind (Post 21:55).
