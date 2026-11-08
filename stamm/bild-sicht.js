@@ -3414,10 +3414,11 @@ class AnazhRealm_bild_sicht {
             if (hinter.length > 0) this._hoehlenHinaus(H, kn, m, st, ex, ez);
         }
         // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (das EINE Gesetz der
-        // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt); eine neue Menge zählt `sichtGen`
+        // Pass-Wahl, wie `_chunkSatzAbschnitt` sie wählt) — in der Lage des WEGS (`S.lage`, w24-fahrt-takt): die Empfänger
+        // halten über die Strecke des Auges, der Lauf durch die Portale bleibt am Auge; eine neue Menge zählt `sichtGen`
         if (besucht) {
             const neu = besucht.filter(
-                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(L, kn.zelle.huelle, 0)
+                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(S.lage, kn.zelle.huelle, 0)
             );
             if (!H.sichtHaupt || !this._satzListeGleich(H.sichtHaupt, neu)) {
                 H.sichtHaupt = neu;
