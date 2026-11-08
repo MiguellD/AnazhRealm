@@ -510,10 +510,12 @@ function taktVergleich(welt, labor) {
 // DIE BEWEGUNG JE VERB UND PHASE (w4-koerper-park): die Vorführung des Labors fährt jedes Verb an seinem Gerät, sein Instrument misst
 // die Pose (koerper `leibPoseWinkel`, die Sohle `leibSohle`, die gehäutete Haut gegen jedes Teil des Werks), der Kern urteilt
 // (`leibSollUrteil` gegen VERB_SOLL: Winkel je Verb und Phase an JEDEM Angebot jedes Geräts, die Hand ≤ 3 cm am Anker, der Fuß nie im
-// Gerät, die Haut ≤ 1 cm in keinem Teil — kein Durchgreifen —, die Tempi im realen Band). Der Selbsttest bricht je einen Täter: die
+// Gerät, die Haut ≤ 1 cm in keinem Teil — kein Durchgreifen —, jedes Glied so nah an seinem Ziel, wie seine Länge erlaubt, die Tempi im
+// realen Band). Der Selbsttest bricht je einen Täter: die
 // Arcade-Kletter-Zahl der alten Bühne (3,2 m/s), die Hand ohne Löser, das gestreckte Knie auf dem Sitz, der Fuß in der Wand, die
 // Kamera ohne Leib (NP-03: der Löser der Kamera blind für den Park), das Becken durch die Bahn der Rutsche, der zweite Sitz der
-// Schaukel ungefahren.
+// Schaukel ungefahren, das Bein der Rutsche 0,69 m über seiner Reichweite neben dem Ziel (der Stand vor w21-leib-bau: das gestreckte
+// Bein drehte sich nach dem Rest der Rechnung um seine Achse, koerper `_glied`).
 const BEWEGUNG = (bruch) => {
     /* eslint-disable no-undef */
     const P0 = KC.PRESETS.mensch.fx.bewegung.parkour,
@@ -530,6 +532,7 @@ const BEWEGUNG = (bruch) => {
             if (P && bruch === "hand" && V.verb === "klettern") P.q.arm1 = P.q.elbow1 = [0, 0, 0, 1];
             if (P && bruch === "fuss" && V.verb === "klettern") P.wurzel.p = [P.wurzel.p[0] - V.ang.normale[0] * 0.3, P.wurzel.p[1], P.wurzel.p[2] - V.ang.normale[1] * 0.3];
             if (P && bruch === "durch" && V.verb === "rutschen") P.wurzel.p = [P.wurzel.p[0], P.wurzel.p[1] - 0.12, P.wurzel.p[2]];
+            if (P && bruch === "glied" && V.verb === "rutschen") P.ueber.fuss1 = 0.69;
             return P;
         };
     try {
@@ -549,7 +552,7 @@ const BEWEGUNG = (bruch) => {
     }
     /* eslint-enable no-undef */
 };
-const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /schaukeln sitz0 schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/, durch: /^turmrutsche rutschen: die Haut greift/, angebot: /^doppelschaukel schaukeln sitz1: nicht gemessen/ };
+const BEWEGUNG_BRUCH = { arcade: /^Tempo klettern/, hand: /die Hand .* vom Anker/, knie: /schaukeln sitz0 schaukeln:[02] knie/, fuss: /der Fuß .* im Gerät/, kamera: /^Kamera: \d+ von/, durch: /^turmrutsche rutschen: die Haut greift/, angebot: /^doppelschaukel schaukeln sitz1: nicht gemessen/, glied: /^turmrutsche rutschen: fuss1 .* über seiner Reichweite/ };
 
 // DIE GANGART UND IHR TASTGRAD AUS DEM TEMPO (Meisterkarte Tiere H3, K3): Welt (LAUF als Leib, SATZ im Satz) und Labor
 // (worlds/tetrapoda, EIN Tier über dieselben v̂) bei v̂ 0,3 · 0,74 (Fr 0,55 im Band der Hysterese) · 1,2 · 3,5 → Schritt

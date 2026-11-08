@@ -424,8 +424,8 @@ class AnazhRealm_gelaende_fern {
         }
         // DIE SCHALE 0 IN ZWEI TEILEN (`_fernRingTeilung`): ihr Träger (`geos[0]`, das volle Index-Muster — Normalen und Linsen
         // lesen ihn, gezeichnet wird er nie) und zwei Teil-Geometrien über DENSELBEN Attributen, je mit eigenem Index fester
-        // Länge (die Rest-Plätze entartet: kein Zeichen-Bereich wechselt, ein Bündel spielt jeden Stand ab). Bis die Maske
-        // trägt, ist alles frei.
+        // Länge (ein Puffer je Teil für jeden Stand) und dem Zeichen-Bereich ihrer Dreiecke (die Rest-Plätze zeichnen nie). Bis
+        // die Maske trägt, ist alles frei.
         const voll0 = geos[0].index.array;
         const teil = (index) => {
             const g = new THREE.BufferGeometry();
@@ -436,6 +436,7 @@ class AnazhRealm_gelaende_fern {
         };
         const frei0 = zeichne(teil(voll0.slice()), material);
         const naht0 = zeichne(teil(new voll0.constructor(voll0.length)), stoffNaht);
+        naht0.geometry.setDrawRange(0, 0);
         st.fernRing = {
             meshes, // die gezeichneten: Schale 1, Schale 2, Schale 0 frei, Schale 0 Naht
             geos, // je Schale die volle Geometrie (Schreiber, Normalen, Linsen)
@@ -1207,6 +1208,11 @@ class AnazhRealm_gelaende_fern {
                 T.klasse.set(a.klasse);
                 T.frei.index.array.set(a.frei);
                 T.naht.index.array.set(a.naht);
+                // DER ZEICHEN-BEREICH IST DIE ZAHL DER TEILE (ferne.K2#2): r184 liest `drawRange` bei jedem Draw — die Rest-Plätze
+                // zeichnen nie. Bis hier zog jeder Teil die volle Länge der Schale 0: die Band-Linse buchte 2 × 14 976 Dreiecke
+                // für 14 976, der Boden an Genesis 65 927 über seinem Haushalt 64 000.
+                T.frei.setDrawRange(0, a.n[0] * 3);
+                T.naht.setDrawRange(0, a.n[1] * 3);
                 T.randV = a.randV; // die Ecken der Naht-Dreiecke tragen die Fläche des Feldes (`_fernRingFeldY`)
                 T.gen = (T.gen | 0) + 1; // die Deck-Wache geht neu (`_fernRingDeckWache`)
                 T.frei.index.needsUpdate = true;

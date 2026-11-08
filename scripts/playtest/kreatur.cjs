@@ -157,13 +157,13 @@ async function checkBandV1753CreatureCombat({ page, check }) {
         const kipptErst =
             killR.killed &&
             !!c1.userData.dying &&
-            st.creatures.indexOf(c1) === -1 &&
-            st.leichname.indexOf(c1) !== -1;
+            !st.creatures.includes(c1) &&
+            st.leichname.includes(c1);
         c1.userData.dying.t = 9999;
         r.updateCreatures(0.016);
         out.killRemoves =
             kipptErst &&
-            st.leichname.indexOf(c1) === -1 &&
+            !st.leichname.includes(c1) &&
             !c1.parent &&
             st.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
@@ -187,7 +187,7 @@ async function checkBandV1753CreatureCombat({ page, check }) {
         out.dslOpDamages = c3.userData.hp < hp3Before;
 
         // cleanup (c1/c2 fielen im Kampf; c3 entfernen; Inventar restaurieren)
-        if (st.creatures.indexOf(c3) !== -1) r.removeCreature(c3);
+        if (st.creatures.includes(c3)) r.removeCreature(c3);
         for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
         st.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
@@ -306,10 +306,10 @@ async function checkBandV1754PlayerAttack({ page, check }) {
         const sv4 = c4.userData._stossV;
         out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax && !!sv4 && sv4.x > 0.01;
         out.knockbackTotFeld = kbOk && !totFeld;
-        if (st.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
+        if (st.creatures.includes(c4)) r.removeCreature(c4);
 
         // cleanup
-        if (st.creatures.indexOf(c1) !== -1) r.removeCreature(c1);
+        if (st.creatures.includes(c1)) r.removeCreature(c1);
         setEmo(savedEmo);
         p.lastAttackAt = savedLastAtk;
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];

@@ -762,7 +762,7 @@ function playMessen(P) {
   // die Zeile: am Gerät Verb und Phase, frei die Art der Szene (die Luft nach dem Sprung, die Hocke, der Abstoß)
   var t = play.t, zeile = V ? V.verb + ':' + V.phase : S && S.frei && (!S.ab || vorf.n >= S.ab) ? (L.isInAir ? (t - (L._wandSprungAt || -Infinity) < KC.VERB_POSE.kickSec ? 'wandsprung:0' : t - (L._doppelSprungAt || -Infinity) < KC.VERB_POSE.tuckSec ? 'doppelsprung:0' : 'springen:' + (L.playerVel.y() > 0 ? 1 : 2)) : S.frei === 'springen' ? null : S.frei + ':0') : null;
   // am Gerät trägt jedes Angebot seine Zeilen (die Verben an JEDEM Gerät), frei die Messung
-  var D = V && S ? M.geraete[V.ang.id] || (M.geraete[V.ang.id] = { name: _angName(V.ang), verb: V.verb, posen: 0, zeilen: {}, hand: 0, handWo: null, fuss: -Infinity, fussWo: null, durch: -Infinity, durchWo: null, griffe: {} }) : null;
+  var D = V && S ? M.geraete[V.ang.id] || (M.geraete[V.ang.id] = { name: _angName(V.ang), verb: V.verb, posen: 0, zeilen: {}, hand: 0, handWo: null, fuss: -Infinity, fussWo: null, durch: -Infinity, durchWo: null, glied: 0, gliedWo: null, griffe: {} }) : null;
   if (zeile) { w = KC.leibPoseWinkel(G, [f.x, f.y, f.z]); var ZZ = D ? D.zeilen : M.zeilen, Z = ZZ[zeile] || (ZZ[zeile] = { n: 0, w: {} }); Z.n++;
     for (var k in w) { var b = Z.w[k] || (Z.w[k] = [Infinity, -Infinity]); b[0] = Math.min(b[0], w[k]); b[1] = Math.max(b[1], w[k]); } play.winkel = w;
     // der Griff: die Hand des Paars, die an einen neuen Anker greift — ihr Ellbogen an seinem Tiefpunkt im Schwung
@@ -772,6 +772,8 @@ function playMessen(P) {
   if (D) {
     D.posen++;
     if (D.posen % 3 === 1) _hautGegenGeraet(V, D);
+    // jedes Glied so nah an seinem Ziel, wie seine Länge erlaubt (koerper `leibPose` ueber, w21-leib-bau)
+    if (P) for (var gn in P.ueber) if (P.ueber[gn] > D.glied) { D.glied = P.ueber[gn]; D.gliedWo = gn + ' Phase ' + V.phase; }
     ['hand1', 'hand-1'].forEach(function (h) {
       // die Stand-Hände: im Kreuzgang greift eine um, am Holm die wechselnde
       if (!P || (V.verb === 'klettern' && _seitePaar(V, h) && _umgreift(V, h)) || (V.verb === 'hangeln' && V.wechsel && V.wechsel.hand === h)) return;
