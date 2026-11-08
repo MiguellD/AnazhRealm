@@ -1355,7 +1355,7 @@ class AnazhRealm_siedlung_bauten {
     // jedes seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`), die Eingabe
     // ruht (`_eingabeRuht`) und das Auge steht: der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless:
     // acht Knoten-Bauten „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je
-    // Takt aus dem Loop; davor die kommenden Stufen jeder Art (`_vorwaermArten`).
+    // Takt aus dem Loop; davor die kommenden Stufen jeder Art und der Hotbar (`_vorwaermArten`).
     // DER LEIB ZUERST (w20-leib-takt): trägt der Leib des Spielers nah noch die Grobstufe und kam die feine (roh, `_ofenRoh`),
     // gießt und tauscht der erste Schritt sie (`_leibFeinTausch`) — vor jedem anderen, auch unter Kienspan (ein Bau des Leibs,
     // kein Vorbau einer Pipeline): jeder Schritt danach (das Tuch, der Leib im Vorwärmen) liest den Leib, der bleibt. Die Sicht
@@ -1363,6 +1363,9 @@ class AnazhRealm_siedlung_bauten {
     _vorbauBedienung() {
         const st = this.state;
         const R = st.renderer;
+        // die kommenden Stufen jeder Art (`_vorwaermArten`) in der Zeit des Vorwärm-Gesetzes — vor der Sperre der Eingabe: im
+        // ruhenden Loop gilt sie nicht (Radeon w25: nach den Sicht-Wechseln des Gehens wärmte das Umstellen keine Art vor)
+        if (R && R.__anazhErstZeichnung && this._vorwaermZeit()) this._vorwaermArten();
         if (!st._weltbildDa || !this._eingabeRuht()) return;
         const g = st.playerMesh && st.playerMesh.userData._gelenk;
         const z = this._spielerVorlagen;
@@ -1373,7 +1376,6 @@ class AnazhRealm_siedlung_bauten {
         // DIE ZEIT IST DIE DES VORWÄRM-GESETZES (`_vorwaermZeit`, w25): ruhende Eingabe UND stehendes Auge, lose GPU-Leine — bis
         // hier reichte die ruhende Eingabe, und der Gast baute in der Fahrt (GTX vorher: „vorbau:baum_eiche" 128 ms im Fenster)
         if (!R || !R.__anazhErstZeichnung || !this._vorwaermZeit()) return;
-        this._vorwaermArten(); // die kommenden Stufen jeder Art (`_vorwaermStufen`)
         // das eigene Tuch wartet nur auf die ruhende Eingabe, nie auf die stehende Welt: es liest keinen Auftrag der Welt
         if (!this._tuchVorbau() || !this._weltSteht()) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
@@ -1387,18 +1389,7 @@ class AnazhRealm_siedlung_bauten {
     _geistVorbau() {
         const st = this.state;
         const V =
-            this._geistVorbauStand ||
-            (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null, gestalt: new Set() });
-        // die KOMMENDEN STUFEN jedes Bauplans (`_vorwaermStufen`): gesetzt zeichnet er als Arena seiner Teile, nie als Geist —
-        // seine Art tritt ins Vorwärm-Gesetz, bevor der erste gesetzte steht
-        const A = this._erstZeichnungStand().vorwaermArten;
-        for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
-            if (!name || V.gestalt.has(name)) continue;
-            V.gestalt.add(name);
-            const bp = st.blueprints && st.blueprints[name];
-            const preset = bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
-            if (preset && !A.has(preset + "@null")) A.set(preset + "@null", { preset, streu: false, region: null });
-        }
+            this._geistVorbauStand || (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null });
         if (V.gast) {
             const fehlt = this._vorbauFehlt(V.gast.gruppe);
             if (fehlt && ++V.gast.takte < AnazhRealm.VORBAU_TAKTE) return false;

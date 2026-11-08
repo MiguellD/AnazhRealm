@@ -247,7 +247,7 @@ class AnazhRealm_bild_erst {
         }
     }
     // DIE KOMMENDEN STUFEN (Art × Stufe × Stoff, wie die Welt sie setzt — keine Liste von Hand): steht eine Art in einer Stufe in
-    // der Welt (ihre Arena wird geboren, `_vorwaermMerken`) oder liegt sie in der Hotbar (`_geistVorbau`: gesetzt zeichnet sie
+    // der Welt (ihre Arena wird geboren, `_vorwaermMerken`) oder liegt sie in der Hotbar (`_vorwaermArten`: gesetzt zeichnet sie
     // als Arena ihrer Teile, nie als der Geist der Auswahl), wartet jede ihrer Stufen (VORWAERM_STUFEN, die Foundry serviert die
     // deklarierte, `_foundryServierStufe`) auf ihre Gruppen — sie entstehen leer (`_vorwaermStufen`) in der Form, in der die Welt
     // sie setzt: die Streu regional (`fscatter:<art>:<gestalt>:<stufe>`, die Region der Arena, die sie rief), der gesetzte Bau
@@ -264,9 +264,16 @@ class AnazhRealm_bild_erst {
         const f = /^f:([^|:]+)\|/.exec(s);
         return f ? { preset: f[1], streu: false, region: null } : null;
     }
-    // die gemerkten Arten im Leerlauf (`_vorbauBedienung`): je Takt jede, deren Stufen noch nicht stehen
+    // die gemerkten Arten im Leerlauf (`_vorbauBedienung`): je Takt jede, deren Stufen noch nicht stehen — dazu die Hotbar: was
+    // sie setzen kann, zeichnet gesetzt als Arena seiner Teile, nie als der Geist der Auswahl (`_geistVorbau`, ein Mesh)
     _vorwaermArten() {
+        const st = this.state;
         const A = this._erstZeichnungStand().vorwaermArten;
+        for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
+            const bp = name && st.blueprints && st.blueprints[name];
+            const preset = bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
+            if (preset && !A.has(preset + "@null")) A.set(preset + "@null", { preset, streu: false, region: null });
+        }
         for (const [k, art] of A) if (this._vorwaermStufen(art)) A.set(k, null);
     }
     // die Stufen EINER Art als leere Gruppen; true: jede steht (oder die Art hat keine Studio-Gestalt, ist ein Baum)
