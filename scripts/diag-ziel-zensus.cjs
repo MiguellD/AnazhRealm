@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, nullWelt, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText, FENSTER } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -259,7 +259,7 @@ function rundungProbe() {
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
     const log = laufUhr();
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 900000, fenster: "klein", vor: [FALTE_INSTALL, vramAbgriff] }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 900000, fenster: FENSTER.klein, vor: [FALTE_INSTALL, vramAbgriff] }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     let out = {};
     try {
         await postKetteBereit(page, log, "der Zensus liest GPU-Befehle, die Wand wäre blind");

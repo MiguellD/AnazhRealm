@@ -1277,7 +1277,7 @@ async function nullSeite({ bild, ...opts } = {}) {
 async function nullWelt(server, { port = 0, vor, da, fenster, ...opts }, ...zeige) {
     await server.lausche(port);
     const s = await nullSeite(opts);
-    if (fenster) await s.page.setViewport(FENSTER[fenster] || fenster); // ein Name der EINEN Tafel (`FENSTER`) oder ein eigenes Maß
+    if (fenster) await s.page.setViewport(fenster);
     for (const v of [vor || []].flat()) await s.page.evaluateOnNewDocument(v);
     await server.zeige(s.page, ...zeige);
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
@@ -1838,6 +1838,7 @@ module.exports = {
     ortZug,
     starteBrowser,
     fenster,
+    FENSTER,
     startePuppeteer,
     tempNeu,
     lebt,

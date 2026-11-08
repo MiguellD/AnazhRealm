@@ -108,7 +108,7 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, jsonKlon, FENSTER } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
@@ -503,7 +503,7 @@ function buehne(arg) {
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
     const log = laufUhr();
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: "bild" }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: FENSTER.bild }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     let out = null;
     try {
         await page.evaluate(AUSGABE_INSTALL);

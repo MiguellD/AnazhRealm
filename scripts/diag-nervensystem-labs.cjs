@@ -412,7 +412,7 @@ hauptLauf(async () => {
             res.o.mensch = !!(gM?.isObject3D && gM.userData && gM.userData.rig);
             res.o.menschMemo = r._workshopStudioPreviewFrom("mensch", 1, 0, null) === gM;
             const gW = r._workshopStudioPreviewFrom("wolf", 1, 0, null);
-            res.o.wolf = !!(gW?.isObject3D && gW.children.length);
+            res.o.wolf = !!(gW?.isObject3D && gW.children.length > 0);
             const pDef = r._tetrapodaSoulParts("wolf");
             const pOv = r._tetrapodaSoulParts("wolf", { leg: 0.5 });
             res.o.ovFormt = !!(

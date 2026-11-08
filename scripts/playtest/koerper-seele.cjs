@@ -2099,7 +2099,7 @@ async function checkBandPhasenBF({ page, check }) {
             ],
             [{ type: "weld", partA: 0, partB: 1 }]
         );
-        const joint = roles && roles.find((x) => x?.joint);
+        const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint?.anchor && typeof joint.anchor.x === "number" && joint.axis);
         // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
         // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,

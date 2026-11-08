@@ -21,7 +21,7 @@
 //   node scripts/diag-garage-labor.cjs [--selftest | --epoche]          Port: GARAGE_LABOR_PORT (Standard 4414)
 /* eslint-disable no-undef */
 "use strict";
-const { statikServer, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, studioKern, ausDatei, jsonLesen, nullWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, studioKern, ausDatei, jsonLesen, nullWelt, FENSTER } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 const { kernAusText } = require("./lib/asset-worker-harness.cjs");
 
@@ -204,7 +204,7 @@ hauptLauf(async () => {
     }
 
     // G10 die Bildzeit, auf swiftshader geeicht (W5)
-    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, zeit: true, fenster: "bild" }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, zeit: true, fenster: FENSTER.bild }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
     await page.waitForFunction(() => typeof __vehicleCore === "object" && document.querySelector("canvas") && !document.getElementById("start").disabled, { timeout: 30000 });
     await sleep(500);
     const m = { geladen: true };
