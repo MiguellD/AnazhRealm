@@ -480,9 +480,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                             node.isMesh &&
                             node.material &&
                             (node.material.isMeshToonMaterial || node.material.isMeshStandardMaterial)
-                        ) {
-                            hasToonMaterial = true;
-                        }
+                        ) hasToonMaterial = true;
                     });
                 }
                 // Cleanup — unbedingt (auch ein mesh-loser Spawn verlässt die Test-Welt).
@@ -605,14 +603,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
         let _dynColorOk = false;
-        if (_structMat) {
-            try {
+        if (_structMat) try {
                 _structMat.color.setHex(0xc0392b);
                 _dynColorOk = _structMat.color.getHexString() === "c0392b";
             } catch {
                 _dynColorOk = false;
             }
-        }
         out.structDynamicColorPreserved = _dynColorOk;
         // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
         const _phantomMat = r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 });
@@ -779,12 +775,10 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
-        if (st.voxelChunkGrass) {
-            for (const v of st.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) for (const v of st.voxelChunkGrass.values()) {
                 grassCells++;
                 if (v?.isInstancedMesh) grassInstances++;
             }
-        }
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
         out.grassMatShared = r._foundryTreeMaterial("grass", null) === r._foundryTreeMaterial("grass", null);
 
@@ -816,7 +810,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                     gesetz.push(Math.abs(h[0].point.y - r._voxelSurfaceY(x, z)));
                 }
             }
-            const median = (a) => (a.length ? a.slice().sort(aufsteigend)[Math.floor(a.length / 2)] : null);
+            const median = (a) => (a.length ? rang(a.slice().sort(aufsteigend)) : null);
             const anteil = (a) => (a.length ? a.filter((d) => d <= 0.05).length / a.length : 0);
             out.bodenKarteTrifftMesh = karte.length >= 128 && median(karte) <= 0.02 && anteil(karte) >= 0.75;
             out.bodenKarteZahl =
@@ -834,7 +828,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             for (let dz = -3; dz <= 3; dz++)
                 for (let dx = -3; dx <= 3; dx++) {
                     const b = r._nahWieseKachelBueschel(t0x + dx, t0z + dz);
-                    if (b && b.length > bestN) {
+                    if (b?.length > bestN) {
                         bestN = b.length;
                         tx = t0x + dx;
                         tz = t0z + dz;
@@ -1155,17 +1149,13 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         out.noCrash = !crashed;
         const after = st.creatures.map((c) => c.position.x + c.position.y + c.position.z);
         let moved = 0;
-        for (let k = 0; k < before.length; k++) {
-            if (Math.abs(before[k] - after[k]) > 0.001) moved++;
-        }
+        for (let k = 0; k < before.length; k++) if (Math.abs(before[k] - after[k]) > 0.001) moved++;
         out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
         out.allFinite = st.creatures.every(
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
         // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
-        while (st.creatures.length > _baseN849) {
-            r.removeCreature(st.creatures[st.creatures.length - 1]);
-        }
+        while (st.creatures.length > _baseN849) r.removeCreature(st.creatures[st.creatures.length - 1]);
         st.maxCreatures = _saveMax849;
         return out;
     });
@@ -1276,9 +1266,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
         // schmiede-hammer in den Besitz legen (frieden-Modus: keine Stamina) und Material auf eisen setzen —
         // opClass=plastic ist mit stein inkompatibel (MATERIAL_OP_COMPATIBILITY).
         st.player.tools = Array.isArray(st.player.tools) ? st.player.tools : [];
-        if (!st.player.tools.includes("schmiede-hammer")) {
-            st.player.tools.push("schmiede-hammer");
-        }
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
         st.blueprints[tn].parts[0].material = "eisen";
         r.applyOpToPart(tn, 0, "schmiede-hammer");
         const c1 = r.computeBlueprintDomainCounts(st.blueprints[tn]);
@@ -1478,7 +1466,7 @@ async function checkBandWahrerAnblickAtmoBusch({ page, check }) {
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
         const busch = r._phytoArt("busch_hazel");
-        out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
+        out.buschGrammar = !!(busch?.rec.kind === "shrub");
         out.understoryArts = !!(r._phytoArt("farn_busch") && r._phytoArt("blume_gross"));
         let buschParts = 0;
         try {
@@ -1540,12 +1528,8 @@ async function checkBandWetterVektor({ page, check }) {
     if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
     else {
         const CH = ["fog", "sun", "grey", "wind", "rain"];
-        for (const w of ["sunny", "rainy", "stormy"]) {
-            for (const c of CH) {
-                if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c]))
+        for (const w of ["sunny", "rainy", "stormy"]) for (const c of CH) if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c]))
                     fails.push(`${w}.${c} ist kein finiter Kanal`);
-            }
-        }
         // grey — entsättigt das Licht (stormy stark, sunny gar nicht).
         if (!(out.stormy.grey >= 0.8)) fails.push(`stormy.grey ${out.stormy.grey} < 0.8 (kein deutliches Entsättigen)`);
         if (out.sunny.grey !== 0)
@@ -1558,10 +1542,8 @@ async function checkBandWetterVektor({ page, check }) {
         if (Math.abs(out.rainy.rain - 0.6) > 0.05) fails.push(`rainy.rain ${out.rainy.rain} ≉ 0.6`);
         if (Math.abs(out.stormy.rain - 1.0) > 0.01) fails.push(`stormy.rain ${out.stormy.rain} ≉ 1.0`);
         // Transition-Monotonie (fog steigt streng mit dem Sturm-Anteil).
-        for (let i = 1; i < out.fogRamp.length; i++) {
-            if (!(out.fogRamp[i] >= out.fogRamp[i - 1]))
+        for (let i = 1; i < out.fogRamp.length; i++) if (!(out.fogRamp[i] >= out.fogRamp[i - 1]))
                 fails.push(`fog-Ramp nicht monoton bei p-Schritt ${i} (${out.fogRamp[i - 1]} → ${out.fogRamp[i]})`);
-        }
         if (!(out.fogRamp[out.fogRamp.length - 1] > out.fogRamp[0]))
             fails.push(`fog-Ramp steigt gar nicht (${out.fogRamp[0]} → ${out.fogRamp[out.fogRamp.length - 1]})`);
     }
@@ -1687,7 +1669,7 @@ async function checkBandHimmelTag({ page, check }) {
         zeit(0);
         out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
         out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
-        out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
+        out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
         const unendlich = AnazhRealm._unendlichKnoten;
         out.vorn = [];
@@ -1696,11 +1678,9 @@ async function checkBandHimmelTag({ page, check }) {
             ["himmel-sterne", sf],
             ["himmel-sonne", st.sunMesh],
             ["himmel-mond", st.moonMesh],
-        ]) {
-            if (!o) out.vorn.push(`${name} fehlt`);
+        ]) if (!o) out.vorn.push(`${name} fehlt`);
             else if (!(unendlich && o.material.vertexNode === unendlich && o.material.depthTest !== false))
                 out.vorn.push(name);
-        }
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
@@ -1761,7 +1741,7 @@ async function checkBandSchattenTakt({ page, check }) {
             csm: st.csmNode,
             dl: st.directionalLight,
             iv: st._shadowMinInterval,
-            eigen: Object.prototype.hasOwnProperty.call(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
+            eigen: Object.hasOwn(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
         };
         const kaskade = () => ({ shadow: { autoUpdate: true, needsUpdate: false } });
         const sonne = { position: { x: 10, y: 200, z: 10 } };

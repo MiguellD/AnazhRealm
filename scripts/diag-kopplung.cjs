@@ -19,8 +19,7 @@ const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server, PORT);
     let out = null;
     try {
         await warteAufWelt(page, 120000, server);

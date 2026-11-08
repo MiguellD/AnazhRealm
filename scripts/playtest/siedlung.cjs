@@ -188,7 +188,7 @@ async function checkBandRing6Workshop({ page, check }) {
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
             v && v.mesh && !!st.blueprints._t_r6_haus && (st.blueprints._t_r6_haus.parts || []).length >= 5;
-        out.villageInScene = v && st.scene.children.indexOf(v.mesh) >= 0;
+        out.villageInScene = v && st.scene.children.includes(v.mesh);
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
@@ -1242,7 +1242,7 @@ async function checkBandLambda2HismSynthese({ page, check }) {
         out.tintVSpread = std(tintV);
         out.tintCount = tints.length;
         // Snapshot+Restore-Test: tintH muss bit-treu durchreisen.
-        if (tints.length >= 1) {
+        if (tints.length) {
             const probe = st.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
             st.architectures = [
                 {
@@ -1509,7 +1509,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
             out.flatLeafCount = flat ? flat.leaves.length : -1;
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
             // Jede merged geom hat ≥100 Vertices (viele Parts gemerged).
-            if (flat && flat.leaves.length > 0) {
+            if (flat?.leaves.length) {
                 out.firstLeafVertCount = flat.leaves[0].geom.attributes.position.count;
                 out.mergedHasManyVerts = flat.leaves.every(
                     (l) => l.geom && l.geom.attributes && l.geom.attributes.position.count >= 100

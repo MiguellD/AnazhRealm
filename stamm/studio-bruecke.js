@@ -1071,14 +1071,14 @@ class AnazhRealm_studio_bruecke {
                     (d) => d && m.karte && wirtSha().then((w) => w && schreib(l, Object.assign({ w }, m.karte)))
                 );
             return lies(l)
-                .then((wert) => wert && wirtSha().then((w) => (w && wert.w === w ? wert : null)))
+                .then((wert) => wert && wirtSha().then((w) => (w === wert.w && wert.jahr === m.jahr ? wert : null)))
                 .then((wert) =>
                     roh(
                         {
                             type: "karte",
                             world: "terrain",
                             reqId: m.reqId,
-                            karte: wert ? { bytes: wert.bytes, frame: wert.frame } : null,
+                            karte: wert ? { bytes: wert.bytes, frame: wert.frame, jahr: wert.jahr } : null,
                             platte: !!wert,
                             liefer: liest(l),
                         },
@@ -2526,7 +2526,8 @@ class AnazhRealm_studio_bruecke {
         return z;
     }
     // DIE STUFEN-GRENZEN EINER GEBAUTEN ART aus dem Gesetz des Schirms (lod.K5, `_wechselAbstand`): je gezeigter Stufe der
-    // Abstand (Meter × Welt-Skala des Eintrags), an dem ihr Kanten-Versatz zur L0 das Soll trägt, höchstens ihr Haushalt; die
+    // Abstand (Meter × Welt-Skala des Eintrags), an dem der Kanten-Versatz IHRER VORLAGE (`preset`) zur L0 das Soll trägt,
+    // frühestens ihr Haushalt (w25-lod-pop: die Geisttor-L2 erst ab 104 m, das Drachentor am Haushalt 12 m); die
     // Hysterese des Buchs (B2c `hyst`, sonst LOD_SCHIRM.hyst) — der LOD-Takt wählt nach IHNEN (`_stufeNachGrenzen`), Haus, Tor
     // und Ausstattung am selben Gesetz (bis w3v-lod: das Tor nach `ab` seines Buchs, das Haus nach den rohen Baum-Distanzen).
     // → { erste, grenzen: [{ stufe, ab }], h } oder null: eine Karten-Art (KIND_POLICY `impostor`: Baum, Strauch, Wagen) wechselt,
@@ -2547,7 +2548,7 @@ class AnazhRealm_studio_bruecke {
         const karte = AnazhRealm.KIND_POLICY[rec.kind];
         for (const s of karte && karte.impostor === true ? [] : st.slice(1)) {
             if (art && art[s] && art[s].nurWurf === true) continue;
-            const ab = this._wechselAbstand(rec.kind, s, 1);
+            const ab = this._wechselAbstand(rec.kind, s, 1, preset);
             if (ab != null) grenzen.push({ stufe: s, ab });
         }
         entry._stufenGrenzenZeilen = zeilen;
@@ -2660,7 +2661,7 @@ class AnazhRealm_studio_bruecke {
         const at = this._impostorAtlas();
         if (!at) return null;
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seine eigene Zelle: Schlüssel und Bake tragen den
-        // ov-Hash (die EINE _studioOvHash-Quelle). Keine Saison: die Karte ist Golden-Sommer, das Jahr färbt der Stoff.
+        // ov-Hash (die EINE _studioOvHash-Quelle). Keine Saison im Schlüssel: die Schicht trägt ihre Stufe (`_karteJahr`, die Platte).
         const ovK = ov && typeof ov === "object" ? ov : null;
         const key = "fimp:" + this._foundryKartenKey(preset, variant, ovK);
         const da = at.zellen.get(key);

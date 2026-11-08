@@ -1157,7 +1157,7 @@ async function checkBandWelle6DSoul({ page, check }) {
         r.applyPlayerSoul("wolf");
         const dragonGroup = st.playerMesh;
         let dragonHasInnerFlip = false;
-        if (dragonGroup && dragonGroup.children.length > 0) {
+        if (dragonGroup?.children.length) {
             // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
             for (const c of dragonGroup.children) {
                 if (c?.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
@@ -2100,7 +2100,7 @@ async function checkBandPhasenBF({ page, check }) {
             [{ type: "weld", partA: 0, partB: 1 }]
         );
         const joint = roles && roles.find((x) => x && x.joint);
-        out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
+        out.c1Joint = !!(joint?.anchor && typeof joint.anchor.x === "number" && joint.axis);
         // D4 — DAS TEMPERAMENT DER GATTUNG: die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus Ernährung der
         // Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch scheu,
         // Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
@@ -2519,7 +2519,7 @@ async function checkBandPhasenBF({ page, check }) {
                 ce: st.creatureEmotions,
             };
             // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
-            const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
+            const hatteStrom = Object.hasOwn(r, "_faunaRng");
             try {
                 st.weatherTransition = null;
                 st.weather = "rainy";

@@ -3163,7 +3163,7 @@ hauptLauf(async () => {
             : `${wer} —`;
     const stat = (xs) => {
         const s = xs.map((q) => q.fuell).sort(aufsteigend);
-        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
+        return s.length ? `min ${s[0]} · median ${rang(s)} · max ${s[s.length - 1]}` : "—";
     };
     const rm = out.rahmen || {};
     for (const [kurz, name, m, urteil, zeile] of [

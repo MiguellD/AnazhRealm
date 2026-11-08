@@ -486,7 +486,7 @@ function standUrteil(b) {
     const treue = (ph, wo, ohne) => {
         for (const n of namen) {
             const t = ph && ph.takte[n];
-            if (t && t.wirkt > 0 && !(ohne && n in ohne))
+            if (t?.wirkt > 0 && !(ohne && n in ohne))
                 v.push(
                     `TREUE: ${n} (${TAKTE[n]}) änderte mit gebrochener Wache ${wo} die Welt in ${t.wirkt} Gängen — die ` +
                         `Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)`

@@ -227,7 +227,6 @@ function selbsttest() {
         },
     };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         {
             name: "voxelChunk:0,0:lod0 direkt in der Szene",
@@ -352,7 +351,7 @@ function selbsttest() {
             muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
         },
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
     // ein fremder Umzug fallen rot, beim Namen.
     const neuFaelle = [
@@ -387,8 +386,7 @@ const { errs, check } = pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server);
     page.setDefaultTimeout(280000);
     let out = null;
     try {
@@ -1373,7 +1371,7 @@ const { errs, check } = pruefer();
                                 zu: v.soll,
                                 schritt: i,
                                 max: +ds[ds.length - 1].toFixed(3),
-                                p95: +ds[Math.floor(0.95 * ds.length)].toFixed(3),
+                                p95: +rang(ds, 0.95).toFixed(3),
                                 n: ds.length,
                             });
                         }
@@ -1387,7 +1385,7 @@ const { errs, check } = pruefer();
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
                 alle.sort(aufsteigend);
                 const q = (p) =>
-                    alle.length ? +alle[Math.min(alle.length - 1, Math.floor(p * alle.length))].toFixed(3) : 0;
+                    alle.length ? +rang(alle, p).toFixed(3) : 0;
                 return {
                     wechsel: sprung.length,
                     offen,

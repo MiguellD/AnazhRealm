@@ -34,9 +34,16 @@ var __weltLicht = (function () {
         schritte: Object.freeze({ durchlass: KERN.ATMO_GESETZ.durchlassSchritte, mehrfach: 20, himmel: 32 }),
     });
     // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
-    // (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung UND die
-    // untere Hälfte der EINEN Umgebung — den Boden, den jeder nahe Stoff spiegelt (Geschichte: stamm/bild-himmel.js).
+    // (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die untere Hälfte der EINEN
+    // Umgebung — den Boden, den jeder nahe Stoff spiegelt (Geschichte: stamm/bild-himmel.js) — und die Erde der Mehrfachstreuung.
     const ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
+    // DIE ERDE DER MEHRFACHSTREUUNG (w25-ferne-licht): Ψ_ms sieht den Boden über Dutzende Kilometer — seine Leuchtdichte (Y 0,1236
+    // von `ATMO_BODEN`) ohne die Buntheit des Laubs. Mit G/B 3,1 trug die Mehrfachstreuung den Horizont grün (Ton 101–125° statt
+    // 222°, Duv +0,0074 … +0,0096, Radeon 77265b04): jedes gemessene Himmelslicht liegt auf der Tageslicht-Ortskurve (Judd, MacAdam,
+    // Wyszecki 1964), die Rechnung der Referenz trägt eine graue Erde (Bruneton 2017, Hillaire 2020; Nachbau der Tafeln: 215–217°).
+    const ATMO_ERDE = Object.freeze(
+        Array(3).fill(0.2126 * ATMO_BODEN[0] + 0.7152 * ATMO_BODEN[1] + 0.0722 * ATMO_BODEN[2])
+    );
     // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage
     // dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
     const KEY_BASE = 2.6;
@@ -150,6 +157,7 @@ var __weltLicht = (function () {
             g: T.uniform(M.g),
             ozon: T.uniform(new THREE.Vector3().fromArray(M.ozon)),
             albedo: T.uniform(new THREE.Vector3().fromArray(M.albedo)),
+            erde: T.uniform(new THREE.Vector3().fromArray(ATMO_ERDE)),
             hKm: T.uniform(0.002),
             sonne: T.uniform(new THREE.Vector3(0, 1, 0)),
             mond: T.uniform(new THREE.Vector3(0, -1, 0)),
@@ -308,7 +316,7 @@ var __weltLicht = (function () {
             });
             return vec4(exp(tau.negate()), 1);
         });
-        // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = Welt-Albedo ──
+        // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = die Erde (`ATMO_ERDE`) ──
         const passMehrfach = Fn(() => {
             const q = uv();
             const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
@@ -365,7 +373,7 @@ var __weltLicht = (function () {
                         thr
                             .mul(durchlass(gr, nl))
                             .mul(nl)
-                            .mul(U.albedo)
+                            .mul(U.erde)
                             .mul(1 / PI)
                     );
                 });
