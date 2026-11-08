@@ -1418,7 +1418,8 @@ function wandEnde(errs, satz) {
 function rotListe(v) {
     if (!v.length) return;
     console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-    for (const s of v) console.log("   • " + s);
+    // je Verletzung ❌ (der Filter der GPU-Probe trägt nur Zeilen mit Urteils-Zeichen ins Post — ein „•" verschwand dort, w23-pruef-welt)
+    for (const s of v) console.log("   ❌ " + s);
     process.exit(1);
 }
 // DAS ENDE DER SEITE einer Linse (`await seiteZu(browser, server, out, kopf, feld = "error")`): Browser und Server zu, die
