@@ -124,11 +124,63 @@ const kurz = (n) =>
             const l = json(wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120)) || {};
             vorStand = `Stand Bild ${q(l.frameMs)} GPU ${q(l.gpuMs)} Phasen ${JSON.stringify(l.phasenEwmaMs || {})} · `;
         };
-        steh("wiese", "ego");
-        gang("wiese-ego Gang 1");
-        gang("wiese-ego Gang 2");
-        steh("genesis", "third");
-        gang("genesis-third Gang 1");
+        if (process.argv.includes("--ab")) {
+            // DAS A/B IN EINER WELT (`--ab`, npm run gate:geh-ab): je Besuch der Sicht-Satz der Wiese von main (A, der Quelltext
+            // geh-probe-alt.txt) oder des Zweigs (B), dann umgestellt, 2 s Stand, der erste Gang 4 s ohne Profil — Wiese Ego und Genesis
+            // Third im Wechsel (jeder Besuch nach dem anderen Ort: die Kacheln der Wiese wachsen neu wie in der Station), Folge A B B A
+            const ALT = fs.readFileSync(path.join(__dirname, "geh-probe-alt.txt"), "utf8");
+            const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis;
+            const setze = (alt) =>
+                ev(
+                    "const P = Object.getPrototypeOf(r); P.__neuSicht = P.__neuSicht || P._nahWieseSicht; " +
+                        `P._nahWieseSicht = ${alt ? ALT : "P.__neuSicht"}; const nw = r.state.nahWiese; ` +
+                        "if (nw) { nw.fernHalt = null; nw.neu = true; } return String(P._nahWieseSicht).includes('_nahWieseFernSatz');"
+                );
+            const M = { A: {}, B: {} };
+            for (const [i, v] of ["A", "B", "B", "A"].entries())
+                for (const [ort, sicht] of [
+                    ["wiese", "ego"],
+                    ["genesis", "third"],
+                ]) {
+                    const neu = setze(v === "A");
+                    if (neu !== (v === "B")) throw new Error(`Variante ${v} nicht gesetzt (neu ${neu})`);
+                    wb(["umstellen", "--ort", ort, "--sicht", sicht], 300);
+                    wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120);
+                    const l = json(wb(["lauf", "4", "--ein", "0.5", "--wandern", "bahn", "--regler", "voll", "--tiere", "frei"], 120)) || {}; // prettier-ignore
+                    (M[v][ort] = M[v][ort] || []).push({
+                        i,
+                        bild: l.frameMs,
+                        cpu: l.cpuTaktMs,
+                        gpu: l.gpuMs,
+                        n: l.frames,
+                        weg: l.bahnM,
+                    });
+                }
+            const med = (a) => a.slice().sort((x, y) => x - y)[(a.length - 1) >> 1];
+            for (const ort of ["wiese", "genesis"]) {
+                const z = (v, k, p) => M[v][ort].map((x) => (x[k] ? x[k][p] : NaN));
+                const [a, b] = [med(z("A", "bild", "p95")), med(z("B", "bild", "p95"))];
+                const ok = b <= 33.4;
+                gruen = gruen && ok;
+                zeile(
+                    `GEH-AB ${ok ? "GRÜN" : "ROT"} ${ort} erster Gang, Median der Besuche: Bild-p95 A ${a} → B ${b} ms · ` +
+                        ["A", "B"]
+                            .map(
+                                (v) =>
+                                    `${v}: Bild p50/p95 ${z(v, "bild", "p50").join(",")} / ${z(v, "bild", "p95").join(",")} · ` +
+                                    `CPU p50/p95 ${z(v, "cpu", "p50").join(",")} / ${z(v, "cpu", "p95").join(",")} · GPU p95 ${z(v, "gpu", "p95").join(",")} · ` +
+                                    `Bilder ${M[v][ort].map((x) => x.n).join(",")} · Weg ${M[v][ort].map((x) => x.weg).join(",")}`
+                            )
+                            .join(" ‖ ")
+                );
+            }
+        } else {
+            steh("wiese", "ego");
+            gang("wiese-ego Gang 1");
+            gang("wiese-ego Gang 2");
+            steh("genesis", "third");
+            gang("genesis-third Gang 1");
+        }
     } catch (e) {
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)} · ${tor.log.slice(-300)}`);
