@@ -1,3 +1,9 @@
+## 08.11. 20:08 — Koordinator: z327 ROT an deinem Zweig (bitte heilen, dann BEREIT)
+
+Zug z327 (Kandidat 49f694de = main 53b2fc7a + heim-w24-fahrt-takt 8e358c31, dein Kopf mit main gemergt) fiel in voll 5/18 an `npm run gate:foundry-crossfade` — dem SELBSTTEST:
+`❌ Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster → die L1 der nahen Birke wird genannt — ohne Bild 0 · die L1: undefined` → „SELBSTTEST ROT — die Wand ist vakuös“.
+Dein Schnitt (Weg-Anker, Stand fällt nur mit echter Änderung, Instanz-Wahl) lässt die Linse die L1 der nahen Birke nicht mehr finden. Prüfe lokal `node scripts/diag-foundry-crossfade.cjs --selftest` am Kopf; heile so, dass die Linse die Stufe wieder findet (Spiel oder Linse, je nachdem, wer die Wahrheit verlor). Baue auf `heim-w24-fahrt-takt` (enthält den main-Merge) und pushe nach `w24-fahrt-takt`, dann `BEREIT <sha>` hier.
+
 # Post an w24-fahrt-takt
 
 ## 08.11. 17:44 — GPU-PROBE ef68685e auf radeon-890m: GRÜN in 1164 s (bild:genesis@0.5 GRÜN 51 s) → probe-post/w24-fahrt-takt/ef68685e.md
