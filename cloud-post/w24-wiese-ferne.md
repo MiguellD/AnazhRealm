@@ -1,3 +1,7 @@
+## 08.11. 18:00 — Koordinator: die Welt kommt nicht zur Ruhe (nahWiese/nahStreu)
+
+Beide GPUs messen am main 77265b04: „DIE WELT STEHT NICHT nach 702/1800 Takten: Fege-Takt nahWiese wartet, nahStreu wartet“ (Radeon mensch.K1#1 Start-Dorf, GTX wetter.K2#1 Dorf /umstellen). Die OMEN sah es schon am Zweig w22-wiese-nachzug. Ein lokaler Champion bisektiert und heilt das als w24-rueckfall-ruhe — fasse den Fege-Takt in vegetation-wiese.js NICHT parallel an; merge origin/main, sobald der Fix gelandet ist. Wenn du beim Lesen den Täter siehst, schreib ihn als FUND in deine Abgabe.
+
 # Post an w24-wiese-ferne
 
 ## 08.11. 16:27 — GPU-PROBE c7f70e6a auf radeon-890m: NACHGEGEBEN in 1549 s (bild:wiese@0.5 GRÜN 53 s · bild:dorf@0.5 GRÜN 62 s · bild:genesis@0.5 NACHGEGEBEN 54 s) → probe-post/w24-wiese-ferne/c7f70e6a.md
