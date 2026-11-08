@@ -162,12 +162,14 @@ async function driveImpostor(page) {
                 await sleep(30);
             }
             const at = r._impostorAtlas();
-            if (rec) out.rec = {
+            if (rec) {
+                out.rec = {
                     imAtlas: !!(at && at.zellen.get(rec.key) === rec),
                     schicht: rec.idx,
                     hasFrame: !!(rec.frame && rec.frame.halfH > 0 && rec.frame.halfW > 0),
                     keineSaison: !/spring|summer|autumn|winter/.test(rec.key),
                 };
+            }
             // DER EINE ATLAS: zwei Arten teilen Quad + Material + Gruppe, die Schicht und der Rahmen reisen je Instanz.
             if (flat1 && flat2) {
                 const l1 = flat1.leaves[0],

@@ -671,10 +671,12 @@ function wurfRichten(zeilen, regel) {
 // Das Urteil (rein): rot, wo die Regel von der teureren Stufe wirft oder eine Stufe bricht.
 function wurfUrteil(zeilen) {
     const rot = [];
-    for (const z of zeilen) if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
+    for (const z of zeilen) {
+        if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
         else if (z.von !== "zwilling" && z.von !== "selbst") rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
         else if (z.wirft > Math.min(z.eigen, z.zwilling))
             rot.push(`${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`);
+    }
     return rot;
 }
 const tausend = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");

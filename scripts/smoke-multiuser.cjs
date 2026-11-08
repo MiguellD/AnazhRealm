@@ -289,7 +289,9 @@ async function run() {
     // Räume der Welt „test-room" (Basis + Bubble r0_0) mit korrekten peers.
     const presenceMsg = von(events.a, "world-presence", (e) => e.worldId === "test-room")[0];
     const regionsByName = {};
-    if (presenceMsg && Array.isArray(presenceMsg.regions)) for (const r of presenceMsg.regions) regionsByName[r.region] = r.peers;
+    if (presenceMsg && Array.isArray(presenceMsg.regions)) {
+        for (const r of presenceMsg.regions) regionsByName[r.region] = r.peers;
+    }
     const phi4PresenceBase = regionsByName[""] === 2; // peerA + peerB in test-room
     const phi4PresenceBubble = regionsByName["r0_0"] === 1; // peerC in test-room:r0_0
     const phi4OnlyAGotIt = !hat(events.b, "world-presence");

@@ -215,9 +215,11 @@ async function checkBandCadWorkshop({ page, check }) {
                 let tCount = 0,
                     rCount = 0,
                     sCount = 0;
-                for (const info of pre.gizmoMeshes.values()) if (info.mode === "translate") tCount++;
+                for (const info of pre.gizmoMeshes.values()) {
+                    if (info.mode === "translate") tCount++;
                     else if (info.mode === "rotate") rCount++;
                     else if (info.mode === "scale") sCount++;
+                }
                 out.gizmoHasTranslateMeshes = tCount >= 3;
                 out.gizmoHasRotateMeshes = rCount >= 3;
                 out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
@@ -846,7 +848,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         const out = {};
 
         // Reset: für deterministische Tests alle Werte + die Takte der Gesetze des Gemüts löschen.
-        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
+        }
         for (const g of st.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         st.player.emotionLastTick = -Infinity;
 
@@ -923,7 +927,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         return out;
     });
 
-    if (!ring3Results) check("Ring 3: player.emotions erreichbar", false, "page.evaluate fehlgeschlagen"); else {
+    if (!ring3Results) {
+        check("Ring 3: player.emotions erreichbar", false, "page.evaluate fehlgeschlagen");
+    } else {
         check(
             "Ring 3: collectPlayerEmotions erkennt 'schön' (joy +0.1)",
             ring3Results.collectJoyOk,
@@ -1012,8 +1018,10 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         let rainy = 0;
         for (let i = 0; i < 1000; i++) {
             const atom = r.dslComposeAtomic(rngJoy);
-            if (Array.isArray(atom) && atom[0] === "weather") if (atom[1] === "sunny") sunny++;
+            if (Array.isArray(atom) && atom[0] === "weather") {
+                if (atom[1] === "sunny") sunny++;
                 else if (atom[1] === "rainy") rainy++;
+            }
         }
         out.joySunnyOverRainy = sunny;
         out.joyRainyCount = rainy;
@@ -1027,8 +1035,10 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         let rainy2 = 0;
         for (let i = 0; i < 1000; i++) {
             const atom = r.dslComposeAtomic(rngSorrow);
-            if (Array.isArray(atom) && atom[0] === "weather") if (atom[1] === "sunny") sunny2++;
+            if (Array.isArray(atom) && atom[0] === "weather") {
+                if (atom[1] === "sunny") sunny2++;
                 else if (atom[1] === "rainy") rainy2++;
+            }
         }
         out.sorrowRainyOverSunny = rainy2;
         out.sorrowSunnyCount = sunny2;
@@ -1040,7 +1050,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         return out;
     });
 
-    if (!ring3v2Results) check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen"); else {
+    if (!ring3v2Results) {
+        check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+    } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
         check(
             "Ring 3 V2: hope > 0.7 triggert chain(sunny, happy) — die Sonne über den Wetter-Zug",
@@ -1107,7 +1119,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         out.allSixAxes = rows.length === 6;
 
         // Werte aktualisieren mit kontrollierten Emotionen
-        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
+        }
         st.player.emotions.joy = 0.5;
         st.player.emotions.chaos = 0.8;
         if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
@@ -1156,7 +1170,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         );
 
         // Cleanup
-        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
+        }
         if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(2000);
 
@@ -1343,7 +1359,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
 
         // (b) Eine Ability hinzufügen → Row erscheint
         r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
-        if (r._statusRefs) r._statusRefs.abilitiesSignature = "";
+        if (r._statusRefs) {
+            r._statusRefs.abilitiesSignature = "";
+        }
         r.updateStatusPanel(3001);
         const rows = container ? container.querySelectorAll(".ability-row") : [];
         out.rowCountAfterAdd = rows.length;
@@ -1357,18 +1375,28 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         if (st.creatures[0]) {
             const cR = st.creatures[0];
             if (cR.material?.color) cR.material.color.setHex(0xff0000);
-            else if (typeof cR.traverse === "function") cR.traverse((n) => {
+            else if (typeof cR.traverse === "function") {
+                cR.traverse((n) => {
                     if (n.isMesh && n.material?.color) n.material.color.setHex(0xff0000);
                 });
+            }
         }
         const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
         if (runBtn) runBtn.click();
         // Kreatur ist Group; Color über Sub-Meshes lesen.
         const cFirst = st.creatures[0];
         let colorAfter = 0;
-        if (cFirst) if (cFirst.material?.color) colorAfter = cFirst.material.color.getHex(); else if (typeof cFirst.traverse === "function") cFirst.traverse((n) => {
-                    if (!colorAfter && n.isMesh && n.material?.color) colorAfter = n.material.color.getHex();
+        if (cFirst) {
+            if (cFirst.material?.color) {
+                colorAfter = cFirst.material.color.getHex();
+            } else if (typeof cFirst.traverse === "function") {
+                cFirst.traverse((n) => {
+                    if (!colorAfter && n.isMesh && n.material?.color) {
+                        colorAfter = n.material.color.getHex();
+                    }
                 });
+            }
+        }
         out.runButtonExecutes = colorAfter === 0x0000ff;
 
         // (d) Signature-Cache: zweiter updateStatusPanel ohne
@@ -1404,7 +1432,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         //         Snapshots sauber sind.
         st.dsl.abilities = st.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
         delete st.abilities.uiAbilityTest;
-        if (r._statusRefs) r._statusRefs.abilitiesSignature = "";
+        if (r._statusRefs) {
+            r._statusRefs.abilitiesSignature = "";
+        }
         r.updateStatusPanel(3003);
         r.closeAllDrawers();
 
@@ -1873,7 +1903,8 @@ async function checkBandM5HudPolitur({ page, check }) {
             const bg = getComputedStyle(probeBar).backgroundColor;
             const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
             out.emotionTrackBright = !!m && Number(m[1]) > 150;
-        } else out.emotionTrackBright = /236, 225, 197/.test(
+        } else {
+            out.emotionTrackBright = /236, 225, 197/.test(
                 [...document.styleSheets]
                     .map((ss) => {
                         try {
@@ -1884,6 +1915,7 @@ async function checkBandM5HudPolitur({ page, check }) {
                     })
                     .join("")
             );
+        }
         // (4) Boost-Chips: Effekt-Label + data-expires + LIVE-Tick ändert den Text.
         const p = st.player;
         const savedBoosts = p.boosts;

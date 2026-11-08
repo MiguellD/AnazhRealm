@@ -30,7 +30,9 @@ const { errs, check } = pruefer();
 const DRIVE_KEYS = ["topSpeedMul", "kAcc", "kBrake", "mass", "vmax"];
 function driveDiverges(fp, expected) {
     const out = [];
-    for (const k of DRIVE_KEYS) if (!fp || !Number.isFinite(fp[k]) || fp[k] !== expected[k]) out.push(k);
+    for (const k of DRIVE_KEYS) {
+        if (!fp || !Number.isFinite(fp[k]) || fp[k] !== expected[k]) out.push(k);
+    }
     if (!fp || !fp.spring || fp.spring.k !== expected.spring.k || fp.spring.c !== expected.spring.c) out.push("spring");
     return out;
 }
@@ -150,7 +152,7 @@ hauptLauf(async () => {
         try {
             for (const id in f.recipes) {
                 const rec = f.recipes[id];
-                if (rec?.kind === "vehicle")
+                if (rec && rec.kind === "vehicle")
                     res.book[id] = rec.fx && typeof rec.fx.fahrprofil === "object" ? rec.fx.fahrprofil : null;
             }
         } catch (e) {

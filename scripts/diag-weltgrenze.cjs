@@ -109,10 +109,16 @@ function seitenPruefer() {
             if (t > 14 || out.size > 60) return;
             if (typeof v === "string") {
                 if (v.includes(T)) out.add(kurz(p));
-            } else if (Array.isArray(v)) v.forEach((x, i) => geh(x, `${p}[${i}]`, t + 1)); else if (v instanceof Set || v instanceof Map) geh(Array.from(v.keys()), p, t + 1); else if (v && typeof v === "object") for (const k of Object.keys(v)) {
+            } else if (Array.isArray(v)) {
+                v.forEach((x, i) => geh(x, `${p}[${i}]`, t + 1));
+            } else if (v instanceof Set || v instanceof Map) {
+                geh(Array.from(v.keys()), p, t + 1);
+            } else if (v && typeof v === "object") {
+                for (const k of Object.keys(v)) {
                     if (k.includes(T)) out.add(kurz(`${p}.${k}`));
                     geh(v[k], `${p}.${k}`, t + 1);
                 }
+            }
         };
         geh(obj, wurzel, 0);
         return Array.from(out);
@@ -576,7 +582,9 @@ async function fahreWeg(browser, weg, schein) {
                 (f) => `nach dem Reload: ${f}`
             )
         );
-        if (!b.ok) rep.befunde.push(`die Seite erwachte in ${b.welt} statt in der Ziel-Welt ${ziel}`); else {
+        if (!b.ok) {
+            rep.befunde.push(`die Seite erwachte in ${b.welt} statt in der Ziel-Welt ${ziel}`);
+        } else {
             if (basis !== "geburt" && !(await page.evaluate(() => window.__grenze.markerB())))
                 rep.befunde.push("nach dem Reload: MARKER-B fehlt — B lebt nicht");
             rep.befunde.push(

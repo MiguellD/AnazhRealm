@@ -22,7 +22,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         };
         const steinCount = () =>
             p.inventory.reduce(
-                (n, sl) => n + (sl?.kind === "material" && sl.material === "stein" ? sl.count || 0 : 0),
+                (n, sl) => n + (sl && sl.kind === "material" && sl.material === "stein" ? sl.count || 0 : 0),
                 0
             );
         const strikeUntilGone = (a, cap) => {
@@ -356,7 +356,9 @@ async function checkBandV1775MakeActCost({ page, check }) {
         // (3) pfad MIT Material → bereit (· ✓)
         const cost = r.computeBuildCost("koerper_human");
         let si = 0;
-        for (const mat of Object.keys(cost)) p.inventory[si++] = { kind: "material", material: mat, count: cost[mat] };
+        for (const mat of Object.keys(cost)) {
+            p.inventory[si++] = { kind: "material", material: mat, count: cost[mat] };
+        }
         out.pfadReady = r._makeActCostSuffix("koerper_human") === " · ✓";
 
         // (4) KERN — embody in pfad OHNE Material schlägt fehl + die Seele bleibt der alte Avatar
@@ -582,13 +584,15 @@ async function checkBandM6ErnteSpawn({ page, check }) {
                 { silent: true, precise: true }
             );
             const fitBaum = r._harvestFitness(baum);
-            for (let i = 0; i < 40 && (st.architectures || []).some((e) => e === baum); i++) r._strikeArchitecture(baum);
+            for (let i = 0; i < 40 && (st.architectures || []).some((e) => e === baum); i++) {
+                r._strikeArchitecture(baum);
+            }
             const holz = (st.player.inventory || []).reduce(
-                (n, s) => n + (s?.kind === "material" && s.material === "holz" ? s.count : 0),
+                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
                 0
             );
             const holzVorher = savedInv.reduce(
-                (n, s) => n + (s?.kind === "material" && s.material === "holz" ? s.count : 0),
+                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
                 0
             );
             out.faustErntet = fitBaum.yieldMult > 0 && holz > holzVorher;

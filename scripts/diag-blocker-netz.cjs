@@ -75,7 +75,11 @@ function boxWand(quelle) {
                 text: quelle.slice(n.start, Math.min(n.end, n.start + 80)).replace(/\s+/g, " "),
             });
         stammLib.wandere(body, (n) => {
-            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") if (name(n.left) === "blockerAABBs") zuweisungen++; else if (istBox(n.left.object)) meld(n, "Schreiben in die Boxen");
+            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") {
+                if (name(n.left) === "blockerAABBs") {
+                    zuweisungen++;
+                } else if (istBox(n.left.object)) meld(n, "Schreiben in die Boxen");
+            }
             if (n.type === "UpdateExpression" && n.argument.type === "MemberExpression" && istBox(n.argument.object))
                 meld(n, "Schreiben in die Boxen (++/--)");
             if (
@@ -157,7 +161,8 @@ async function probe() {
         const step = 0.2;
         let bestT = Infinity;
         const prevSolid = r._fieldSolid(sx, sy, sz);
-        if (!prevSolid) for (let d = step; d <= len; d += step) {
+        if (!prevSolid) {
+            for (let d = step; d <= len; d += step) {
                 const px = sx + ux * d,
                     py = sy + uy * d,
                     pz = sz + uz * d;
@@ -172,7 +177,8 @@ async function probe() {
                     bestT = hi / len;
                     break;
                 }
-            } else bestT = 0;
+            }
+        } else bestT = 0;
         let structHitT = Infinity,
             sFace = null;
         const arches = st.architectures;
@@ -186,7 +192,7 @@ async function probe() {
                 for (let bi = 0; bi < boxes.length; bi++) {
                     if (durchPflanzen && boxes[bi].pflanze === true) continue;
                     const hitInfo = r._segmentAABB(sx, sy, sz, dx, dy, dz, boxes[bi]);
-                    if (hitInfo?.t < structHitT) {
+                    if (hitInfo && hitInfo.t < structHitT) {
                         structHitT = hitInfo.t;
                         sFace = hitInfo;
                     }
@@ -375,9 +381,11 @@ async function probe() {
             if (huelle) huelle.quelle = e;
             const vorX = pos.x;
             const vorZ = pos.z;
-            for (let b = 0; b < boxes.length; b++) if (huelle) {
+            for (let b = 0; b < boxes.length; b++) {
+                if (huelle) {
                     if (!(boxes[b].dick < huelle.stufe)) r._resolveHuelleVsAABB(boxes[b], pos, huelle);
                 } else supportTop = r._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
+            }
             if (quellen && (pos.x !== vorX || pos.z !== vorZ)) quellen.push(e, pos.x - vorX, pos.z - vorZ);
         }
         return supportTop;

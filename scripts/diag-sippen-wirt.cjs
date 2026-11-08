@@ -106,21 +106,25 @@ hauptLauf(async () => {
         const tc = window.__tetrapodaCore;
         const gattungen = tc?.GATTUNGEN ? Object.keys(tc.GATTUNGEN).sort() : [];
         for (const recId of gattungen)
-            for (const lod of L.kindStages.kreatur || [0]) try {
+            for (const lod of L.kindStages.kreatur || [0]) {
+                try {
                     const m = ofenMessen(() => r._ofenKreaturTemplate(recId, null, lod));
                     res.items.push(Object.assign({ weg: "O", kind: "kreatur", preset: recId, lod }, m));
                 } catch (e) {
                     res.items.push({ weg: "O", kind: "kreatur", preset: recId, lod, fehler: e.message });
                 }
+            }
         const kc = window.__koerperCore;
         const anker = r._menschAnkerFarben();
-        for (const lod of L.kindStages.koerper || [0]) try {
+        for (const lod of L.kindStages.koerper || [0]) {
+            try {
                 const dials = Object.assign({}, kc.START_PARAMS || {});
                 const m = ofenMessen(() => r._ofenMenschTemplate(dials, anker.skin, anker.hair, lod));
                 res.items.push(Object.assign({ weg: "O", kind: "koerper", preset: "mensch", lod }, m));
             } catch (e) {
                 res.items.push({ weg: "O", kind: "koerper", preset: "mensch", lod, fehler: e.message });
             }
+        }
 
         // ===== S: Selbst-Test — ohne Verschmelzen und ohne Starr-Bindung MUSS die Linse abweichen =====
         // das Ziel: die Stufe, an der das Verschmelzen am meisten trägt (die meisten Teile je Gesetz-Draw)

@@ -182,11 +182,13 @@ function validateDaten(N, spec) {
         console.log(`\n  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
     }
     const golden = jsonLesen(goldenFile);
-    for (const spec of CORES) check(
+    for (const spec of CORES) {
+        check(
             `GOLDEN byte-treu: ${spec.file}`,
             golden[spec.file] === prints[spec.file],
             prints[spec.file].slice(0, 12)
         );
+    }
 
     // PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): die Daten der drei Kerne rufen beim Laden keine
     // Transzendente — der Nenner 0 ist der Befund (Ratsche v7 transzendenten-frei); ruft ein Kern eine, reißt die Zeile.

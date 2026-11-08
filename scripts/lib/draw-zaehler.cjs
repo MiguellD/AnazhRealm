@@ -32,7 +32,7 @@ function passName(scene, camera) {
             if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
     const dl = st.directionalLight;
     if (dl?.shadow && dl.shadow.camera === camera) return "k0";
-    if (scene?.name === "Render Pipeline") return "post";
+    if (scene && scene.name === "Render Pipeline") return "post";
     return scene?.name || (camera && (camera.name || camera.type)) || "?";
 }
 

@@ -130,7 +130,9 @@ async function checkBandV1774UseByRole({ page, check }) {
             wRoles.some((x) => x.role === "bein") &&
             wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&
             (r.computeMotionRoles(wingParts) || []).filter(Boolean).filter((x) => x.role === "fluegel").length === 2;
-        if (st.playerVel) st.playerVel.setValue(3, 0, 0);
+        if (st.playerVel) {
+            st.playerVel.setValue(3, 0, 0);
+        }
         st.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(10.0);
         const mSnap1 = st.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
@@ -408,8 +410,10 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // restore
         for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
         if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
-        if (st.blueprintEditHistory) for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
+        if (st.blueprintEditHistory) {
+            for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
                 delete st.blueprintEditHistory[n];
+        }
         r.selectBlueprintForEdit("stein_block");
         r.setGameMode(prevMode);
         return out;
@@ -525,15 +529,19 @@ async function checkBandV1790Recalibration({ page, check }) {
         // (6) Undo/Redo wohnen in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
         let cssHistory = false;
-        for (const sheet of document.styleSheets) try {
-                for (const rule of sheet.cssRules) if (
+        for (const sheet of document.styleSheets) {
+            try {
+                for (const rule of sheet.cssRules) {
+                    if (
                         rule.selectorText &&
                         /workshop-action-btn:disabled|workshop-station-card/.test(rule.selectorText)
                     )
                         cssHistory = true;
+                }
             } catch (e) {
                 void e;
             }
+        }
         out.cssHistory = cssHistory;
 
         r.setGameMode(prevMode);
@@ -892,13 +900,17 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
         for (let i = 0; i < n; i++) {
             const M = entryWorld.clone().multiply(flatKiefer.leaves[i].localMatrix);
             const cw = meshChildren[i].matrixWorld;
-            for (let e = 0; e < 16; e++) maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
+            for (let e = 0; e < 16; e++) {
+                maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
+            }
             const cm = meshChildren[i].material && meshChildren[i].material.color;
             const lm = flatKiefer.leaves[i].mat && flatKiefer.leaves[i].mat.color;
-            if (cm && lm) maxColorDelta = Math.max(
+            if (cm && lm) {
+                maxColorDelta = Math.max(
                     maxColorDelta,
                     Math.abs(cm.r - lm.r) + Math.abs(cm.g - lm.g) + Math.abs(cm.b - lm.b)
                 );
+            }
         }
         out.maxMatrixDelta = maxMatrixDelta;
         out.maxColorDelta = maxColorDelta;
@@ -917,7 +929,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
                     { seed: 7777, silent: true }
                 );
-                out.cutoverInstanced = !!(e?.instanced === true);
+                out.cutoverInstanced = !!(e && e.instanced === true);
                 out.cutoverNoMesh = !!(e && !e.mesh);
                 out.cutoverSlots = e?.instSlots ? e.instSlots.length : -1;
                 // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
@@ -1039,10 +1051,12 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
             "V12.0-perf.c.2: nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh)",
             res.waterfallClassic
         );
-        if (res.instancedPickHits !== undefined) check(
+        if (res.instancedPickHits !== undefined) {
+            check(
                 "V12.0-perf.c.2: instancierter Baum per Crosshair-Raycast pickbar (LMB-Harvest-Faden)",
                 res.instancedPickHits
             );
+        }
     }
 }
 
@@ -1102,7 +1116,9 @@ async function checkBandWelle6XAudit({ page, check }) {
                 !!rowA3 && out._a3aLabelCount === 3 && /⚒ Station/.test(rowA3.textContent || "");
             delete st.blueprints["audit_armor_test"];
             wsA3.selectedBlueprint = savedSelA3;
-        } else out.markListShowsEmergentRole = false;
+        } else {
+            out.markListShowsEmergentRole = false;
+        }
 
         // --- A3b: Stat-Panel zeigt Equipped-Zeile wenn Armor an
         const bp2Created = r.createBlueprint("audit_armor_real", "Audit-Helm");
@@ -1126,7 +1142,9 @@ async function checkBandWelle6XAudit({ page, check }) {
             r.equipArmor(null);
             delete st.blueprints["audit_armor_real"];
             r._ichRenderSpecSheet();
-        } else out.statsShowsArmorRow = false;
+        } else {
+            out.statsShowsArmorRow = false;
+        }
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -1139,7 +1157,9 @@ async function checkBandWelle6XAudit({ page, check }) {
         }
         if (st.hotbar && st.hotbar.length === 9) {
             const gurt = r._startGurt() || [];
-            for (let i = 0; i < 9; i++) st.hotbar[i] = i < gurt.length ? gurt[i] : null;
+            for (let i = 0; i < 9; i++) {
+                st.hotbar[i] = i < gurt.length ? gurt[i] : null;
+            }
         }
         r._clearBuildMode();
 

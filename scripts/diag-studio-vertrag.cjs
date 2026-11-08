@@ -254,7 +254,7 @@ function validateFunktionsKern(m, entry, erklaert) {
                 v.push(`§9: ${k} steht nicht in der Erklärung (studio-vertrag §9 „Stand der Gesetz-Kerne")`);
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
-    if (!(entry?.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
+    if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
     if (!entry?.ns) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
     if (m.presets) v.push("§9: ein Gesetz-Kern trägt keine Rezepte (PRESETS)");
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
@@ -306,11 +306,17 @@ function validateManifest(m, kern) {
     // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..3 — die Stufe 3 ist NUR-WURF (S3 haus: nie Anzeige, sie
     // wirft für die Art und trägt die Fernform; ihre Budget-Zeile trägt `nurWurf: true`, unten).
     const lodC = m.cfg && m.cfg.lod;
-    if (lodC?.kindStages) for (const k in lodC.kindStages) {
+    if (lodC?.kindStages) {
+        for (const k in lodC.kindStages) {
             const s = lodC.kindStages[k];
-            if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 3)) v.push(`B2: lod.kindStages.${k} muss ein nicht-leeres Array aus Stufen 0..3 sein`); else for (let i = 1; i < s.length; i++)
+            if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 3)) {
+                v.push(`B2: lod.kindStages.${k} muss ein nicht-leeres Array aus Stufen 0..3 sein`);
+            } else {
+                for (let i = 1; i < s.length; i++)
                     if (s[i] <= s[i - 1]) v.push(`B2: lod.kindStages.${k} muss strikt aufsteigend sein`);
+            }
         }
+    }
     // B2c — DAS BUDGET je Art × Stufe (docs/studio-vertrag.md B2c): trägt ein Kern `lod.budget`, dann
     // VOLLSTÄNDIG — jede Art aus seinen kindStages × jede deklarierte Stufe hat eine Zeile {tris, draws,
     // schatten}; tris ganzzahlig > 0, draws ganzzahlig ≥ 1, schatten = eine deklarierte Stufe der Art oder
@@ -367,7 +373,7 @@ function validateManifest(m, kern) {
                 const fern = B[k].fernform;
                 const st = Array.isArray(ks[k]) ? ks[k] : [];
                 const letzte = st.length ? B[k][st[st.length - 1]] : null;
-                const karte = !!(letzte?.karte === true);
+                const karte = !!(letzte && letzte.karte === true);
                 // S3 haus: "huelle" — die Liste der NUR-WURF-Stufe in der Hüllen-Form (N5, Beipack `__fern`); genau dann, wenn
                 // die Art eine NUR-WURF-Stufe trägt (sie ist der Träger von `__fern`, die Konsum-Wand in gate:asset-contract),
                 // außer ihre Ferne ist das Gesetz
@@ -413,12 +419,14 @@ function validateManifest(m, kern) {
                 }
                 // S3 haus — DIE NUR-WURF-STUFE (B2): nur `true`, nur an der Stufe 3, sie wirft selbst, nie Karte; eine Stufe 3
                 // ohne `nurWurf` wäre eine gezeigte Stufe jenseits der Grob-Stufe
-                if ("nurWurf" in z) if (z.nurWurf !== true) zv(`.nurWurf ist nur als true erlaubt`);
+                if ("nurWurf" in z) {
+                    if (z.nurWurf !== true) zv(`.nurWurf ist nur als true erlaubt`);
                     else if (st !== 3) zv(`.nurWurf — nur die Stufe 3 ist NUR-WURF`);
                     else {
                         if (z.schatten !== st) zv(`.nurWurf — die Stufe wirft selbst (schatten ${st})`);
                         if ("karte" in z) zv(`.nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
-                    } else if (st === 3) v.push(`B2: lod.kindStages.${k} — die Stufe 3 trägt nurWurf (nie Anzeige)`);
+                    }
+                } else if (st === 3) v.push(`B2: lod.kindStages.${k} — die Stufe 3 trägt nurWurf (nie Anzeige)`);
                 if (
                     "blattKarte" in z &&
                     !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte))
@@ -669,7 +677,8 @@ function validateManifest(m, kern) {
     // PARAMS_BY_KIND ({ <kind>: rows }) — auch Ein-Kind-Kerne. Das flache PARAMS ist
     // GEFALLEN (ein Kern, der es noch truege, wuerde schlicht nicht validiert —
     // must-ignore; die Werkstatt saehe keine Regler → der Bau-Fehler wird sichtbar).
-    if (m.paramsByKind) if (typeof m.paramsByKind !== "object" || Array.isArray(m.paramsByKind))
+    if (m.paramsByKind) {
+        if (typeof m.paramsByKind !== "object" || Array.isArray(m.paramsByKind))
             v.push("B4: PARAMS_BY_KIND ist keine Map { kind: rows[] }");
         else
             for (const kind in m.paramsByKind) {
@@ -678,7 +687,8 @@ function validateManifest(m, kern) {
                     v.push(`B4: PARAMS_BY_KIND.${kind} ist kein Array`);
                     continue;
                 }
-                for (const p of rows) if (!p || typeof p.id !== "string" || typeof p.lab !== "string")
+                for (const p of rows) {
+                    if (!p || typeof p.id !== "string" || typeof p.lab !== "string")
                         v.push(`B4: PARAMS_BY_KIND.${kind}-Eintrag ohne id/lab`);
                     else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max))
                         v.push(`B4: PARAMS_BY_KIND.${kind} "${p.id}" min/max ungültig`);
@@ -688,12 +698,18 @@ function validateManifest(m, kern) {
                         v.push(
                             `B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ohne Byte-Beweis (${kern}:${kind}:${p.id} fehlt in reglerGesetz — die Zeile baut neu)`
                         );
+                }
             }
-    if (m.lehren) if (!Array.isArray(m.lehren)) v.push("B5: LEHREN ist kein Array");
+    }
+    if (m.lehren) {
+        if (!Array.isArray(m.lehren)) v.push("B5: LEHREN ist kein Array");
         else
-            for (const l of m.lehren) if (!l || typeof l.id !== "string") v.push("B5: LEHREN-Eintrag ohne id");
+            for (const l of m.lehren) {
+                if (!l || typeof l.id !== "string") v.push("B5: LEHREN-Eintrag ohne id");
                 else if (!(Array.isArray(l.pass) && l.pass.length === 2 && l.pass[0] < l.pass[1]))
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
+            }
+    }
     // DIE GEFÜHLS-BLÖCKE sind VERTRAG, nicht mehr nur
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
@@ -795,11 +811,13 @@ function validateManifest(m, kern) {
                     (st && Array.isArray(st.aktionen) && Array.isArray(st.alle) && st.alle.length === 2)
             );
         if (!aOk || !sOk) v.push("§B6+ VERHALTEN unvollständig (aktionen ≥8 / stimmung{aktionen,alle[2]})");
-        else for (const k in V.stimmung) {
+        else {
+            for (const k in V.stimmung) {
                 if (k === "schwellen") continue;
                 for (const an of V.stimmung[k].aktionen)
                     if (!V.aktionen[an]) v.push(`§B6+ VERHALTEN: Stimmung "${k}" nennt unbekannte Aktion "${an}"`);
             }
+        }
         // SPIEGEL-ZENSUS 17.07. — die KREATUR-SEELE ist Vertrag: die vier
         // gereisten Verhaltens-Blöcke (jagd/furcht/temperament/wandern) —
         // dieselben Felder, die die _verhaltenGesetz-Gültigkeits-Wand des

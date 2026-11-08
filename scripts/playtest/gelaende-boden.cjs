@@ -111,7 +111,9 @@ async function checkBandVoxelTerrainCore({ page, check }) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        if (r && st?.voxelChunks) for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        if (r && st?.voxelChunks) {
+            for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        }
     });
     const voxelP1Results = await safeEvaluate(page, () => {
         const out = {};
@@ -130,14 +132,20 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0) vertikal zwischen festem Grund. Die
         // Höhlen-Zone ist SURF-RELATIV (base-20 .. surf-16) → relativ zur lokalen Oberfläche scannen.
         let foundCave = false;
-        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
+        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
+            for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
                 const surf = r._terrainMacroSurfaceY(sx, sz);
-                for (let sy = (st.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) if (
+                for (let sy = (st.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) {
+                    if (
                         r._terrainDensityAt(sx, sy, sz) < 0 &&
                         r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
                         r._terrainDensityAt(sx, sy + 6, sz) > 0
-                    ) foundCave = true;
+                    ) {
+                        foundCave = true;
+                    }
+                }
             }
+        }
         out.densityCanCave = foundCave;
 
         // Der Voxel-Chunk fasst das ganze Oberflächen-Band: Boden überall fest, Decke überall Luft →
@@ -175,7 +183,9 @@ async function checkBandVoxelTerrainCore({ page, check }) {
                         dHere < 0 &&
                         r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
                         r._terrainDensityAt(sx, sy + 6, sz) > 0
-                    ) caveCells++;
+                    ) {
+                        caveCells++;
+                    }
                 }
             }
         }
@@ -190,14 +200,17 @@ async function checkBandVoxelTerrainCore({ page, check }) {
             const pos = geom.getAttribute("position");
             out.geomVertexCount = pos.count;
             let allFinite = true;
-            for (let v = 0; v < pos.count * 3; v++) if (!Number.isFinite(pos.array[v])) allFinite = false;
+            for (let v = 0; v < pos.count * 3; v++) {
+                if (!Number.isFinite(pos.array[v])) allFinite = false;
+            }
             out.geomFinite = allFinite;
             out.geomHasNormals = !!geom.getAttribute("normal");
             out.geomHasIndex = !!geom.getIndex();
             // die Normalen aus dem Dichte-Gradienten: jede ein endlicher Einheitsvektor
             const nrm = geom.getAttribute("normal");
             let normalsUnit = !!nrm && nrm.count === pos.count;
-            if (nrm) for (let v = 0; v < nrm.count; v++) {
+            if (nrm) {
+                for (let v = 0; v < nrm.count; v++) {
                     const nl = Math.sqrt(
                         nrm.getX(v) * nrm.getX(v) + nrm.getY(v) * nrm.getY(v) + nrm.getZ(v) * nrm.getZ(v)
                     );
@@ -206,6 +219,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
                         break;
                     }
                 }
+            }
             out.normalsUnit = normalsUnit;
             // Kein Streck-Dreieck (Index-Aliasing): jede Kante ist lokal klein; ein Stray-Dreieck quer durch
             // den Chunk hätte zig Zellen Kantenlänge. step=1.8 → Grenze 5×step=9.
@@ -260,8 +274,10 @@ async function checkBandVoxelTerrainCore({ page, check }) {
                 // ersten == ERSTER des zweiten (b). Mit Schachbrett kommen beide Patterns vor.
                 let acDiag = 0;
                 let bdDiag = 0;
-                for (let t = 0; t + 5 < ia.length; t += 6) if (ia[t] === ia[t + 3]) acDiag++;
+                for (let t = 0; t + 5 < ia.length; t += 6) {
+                    if (ia[t] === ia[t + 3]) acDiag++;
                     else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+                }
                 out.diagonalAcCount = acDiag;
                 out.diagonalBdCount = bdDiag;
                 out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
@@ -374,10 +390,12 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         // der Voxel-Chunk grünt
         let grassEntries = 0;
         let grassBlades = 0;
-        if (st.voxelChunkGrass) for (const g of st.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) {
+            for (const g of st.voxelChunkGrass.values()) {
                 grassEntries++;
                 if (g?.isInstancedMesh) grassBlades += g.count;
             }
+        }
         out.voxelGrassBuilt = grassEntries > 0;
         // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
         // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf).
@@ -810,7 +828,9 @@ async function checkBandWellePerf3bDistanceLod({ page, check }) {
             if (!st.voxelChunks.has(`${pcx88},${pcz88}`)) r._ensureVoxelChunkAt(pcx88, pcz88, 1);
             st.voxelWorker = _savedW88;
         }
-        if (!st.voxelChunks || st.voxelChunks.size === 0) return { ...out, error: "no chunks streamed" };
+        if (!st.voxelChunks || st.voxelChunks.size === 0) {
+            return { ...out, error: "no chunks streamed" };
+        }
         // Sammle Chunks pro LOD
         let lod0Count = 0;
         let lod1Count = 0;
@@ -1287,7 +1307,8 @@ async function checkBandGammaGenese({ page, check }) {
                     const len = Math.hypot(dx, dz) || 1;
                     const nx = -dz / len;
                     const nz = dx / len;
-                    for (const side of [1, -1]) for (let d = 2; d <= 14; d += 1.5) {
+                    for (const side of [1, -1]) {
+                        for (let d = 2; d <= 14; d += 1.5) {
                             const x = p.x + nx * d * side;
                             const z = p.z + nz * d * side;
                             const sy = r._voxelSurfaceY(x, z);
@@ -1300,6 +1321,7 @@ async function checkBandGammaGenese({ page, check }) {
                                 }
                             }
                         }
+                    }
                 }
             }
             out.bankFound = !!bank;
@@ -1325,7 +1347,8 @@ async function checkBandGammaGenese({ page, check }) {
             const boden =
                 A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
             const wG = window.__phytoCore && window.__phytoCore.bodenGewicht;
-            if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) out.gesetz = {
+            if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) {
+                out.gesetz = {
                     farnSchatten: wG(boden.farn, { licht: 0.25, feucht: 0 }),
                     farnLicht: wG(boden.farn, { licht: 0.9, feucht: 0 }),
                     farnSaumTrocken: wG(boden.farn, { licht: 0.66, feucht: 0 }),
@@ -1336,6 +1359,7 @@ async function checkBandGammaGenese({ page, check }) {
                     blumeLicht: wG(boden.blume, { licht: 0.9 }),
                     blumeSchatten: wG(boden.blume, { licht: 0.2 }),
                 };
+            }
             out.schilfData = !!(
                 boden?.schilf &&
                 Array.isArray(boden.schilf.ufer) &&
@@ -1366,8 +1390,10 @@ async function checkBandGammaGenese({ page, check }) {
             const snap = r.buildStateSnapshot();
             out.snapGen = snap?.worldMeta ? snap.worldMeta.genVersion : null;
         } finally {
-            if (st.worldMeta) if (origGen === undefined) delete st.worldMeta.genVersion;
+            if (st.worldMeta) {
+                if (origGen === undefined) delete st.worldMeta.genVersion;
                 else st.worldMeta.genVersion = origGen;
+            }
         }
         return out;
     });
@@ -1617,11 +1643,13 @@ async function checkBandWahrerAnblickPfade({ page, check }) {
         // (B3) Behavioral (soft): wie viele Pfad-Treffer in einem 600m-Raster?
         let hits = 0,
             samples = 0;
-        for (let gx = -300; gx <= 300; gx += 20) for (let gz = -300; gz <= 300; gz += 20) {
+        for (let gx = -300; gx <= 300; gx += 20) {
+            for (let gz = -300; gz <= 300; gz += 20) {
                 samples++;
                 const sy = r._voxelSurfaceY(gx, gz);
                 if (r._pathFieldAt(gx, gz, sy) > 0.1) hits++;
             }
+        }
         out.pathSamples = samples;
         out.pathHits = hits;
 
@@ -1682,8 +1710,10 @@ async function checkBandSeamNormal({ page, check }) {
     });
     const TOL = 1.0; // konform = Rand-Normalen praktisch identisch (vor G1: bis 69°)
     const fails = [];
-    for (const [lbl, f] of [["x-Face", out && out.xFace], ["z-Face", out && out.zFace]]) if (!f || f.matched < 20) fails.push(`${lbl}: nur ${f && f.matched} geteilte Verts (vakuös)`);
+    for (const [lbl, f] of [["x-Face", out && out.xFace], ["z-Face", out && out.zFace]]) {
+        if (!f || f.matched < 20) fails.push(`${lbl}: nur ${f && f.matched} geteilte Verts (vakuös)`);
         else if (f.max > TOL) fails.push(`${lbl}: Rand-Normalen bis ${f.max}° > ${TOL}° (Lichtungs-Naht)`);
+    }
     check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
 }
 
@@ -1830,7 +1860,8 @@ async function checkBandTodZensus({ page, check }) {
                 "_tickKreaturVerhalten",
                 "_kreaturLaufTakt",
                 "_animateCompoundMotion",
-            ]) decke(
+            ]) {
+                decke(
                     name,
                     (alt) =>
                         function (c, ...rest) {
@@ -1838,6 +1869,7 @@ async function checkBandTodZensus({ page, check }) {
                             return alt.call(this, c, ...rest);
                         }
                 );
+            }
             let rufe = 0;
             decke(
                 "_tierRuf",
@@ -1962,7 +1994,7 @@ async function checkBandTodZensus({ page, check }) {
                             const out = alt.apply(this, a);
                             for (const c of s.leichname) {
                                 const d = c.userData.dying;
-                                if (d?.t >= d.dauer && !d._taeterRuf) {
+                                if (d && d.t >= d.dauer && !d._taeterRuf) {
                                     d._taeterRuf = true;
                                     this._tierRuf(c, "trauer");
                                 }
@@ -1983,7 +2015,7 @@ async function checkBandTodZensus({ page, check }) {
             // Inventar des Spielers legt, und die Einträge im Journal
             const holz = () =>
                 (s.player.inventory || []).reduce(
-                    (a, sl) => a + (sl?.kind === "material" && sl.material === "holz" ? sl.count || 0 : 0),
+                    (a, sl) => a + (sl && sl.kind === "material" && sl.material === "holz" ? sl.count || 0 : 0),
                     0
                 );
             let lastJournal = 0;

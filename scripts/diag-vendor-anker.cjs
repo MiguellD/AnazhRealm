@@ -458,9 +458,11 @@ function main() {
         console.log("  ℹ anker.lock.json GEMINTET (erster Lauf) — ab jetzt ist jeder Vendor-Bump ein bewusster Akt.");
         lock = ist;
     }
-    for (const f in ist) if (!lock[f]) errs.push(`${f}: kein Lock-Eintrag (Lock nachziehen = bewusster Akt)`);
+    for (const f in ist) {
+        if (!lock[f]) errs.push(`${f}: kein Lock-Eintrag (Lock nachziehen = bewusster Akt)`);
         else if (lock[f].fnv !== ist[f].fnv || lock[f].bytes !== ist[f].bytes)
             errs.push(`${f}: Fingerabdruck weicht vom Lock ab (${ist[f].bytes} B, fnv ${ist[f].fnv}) — Vendor-Bump? ALLE Anker neu beweisen + Lock nachziehen`);
+    }
     // (2) Anker:
     let geprueft = 0;
     for (const a of ANKER) {

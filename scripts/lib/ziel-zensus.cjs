@@ -713,7 +713,8 @@ function zielUrteil(z, lesen) {
         const x = byId.get(l.id);
         if (!x || !l.gelesen) continue;
         const name = x.name || `#${x.id}`;
-        if (/32float/.test(x.format)) if (l.f16exakt === true) {
+        if (/32float/.test(x.format)) {
+            if (l.f16exakt === true) {
                 klasse.get(x.id).push("format");
                 rot.push(
                     `FORMAT: ${name} (${form(x)}, ${mb(x.bytes)} MB) trägt nur 16-bit-Inhalt — jeder Wert liegt exakt in ` +
@@ -725,6 +726,7 @@ function zielUrteil(z, lesen) {
                         `(${+((Number(l.f16maxRel) || 0) * 100).toPrecision(2)} % relativ)` +
                         (l.f16ueberlauf ? `, ${l.f16ueberlauf} Werte über 65 504 (Überlauf)` : "")
                 );
+        }
         const konst = (l.min || []).map((m, c) => (m === l.max[c] ? c : -1)).filter((c) => c >= 0);
         if (konst.length && konst.length < (l.min || []).length)
             hinweis.push(
@@ -741,7 +743,8 @@ function zielUrteil(z, lesen) {
         geraet && geraet.ausgabeId != null && byId.has(geraet.ausgabeId)
             ? byId.get(geraet.ausgabeId)
             : ziele.find((x) => x.name === "output" && x.ziel && !x.tiefe);
-    if (geraet && aus) if (geraet.rg11b10 && aus.format === "rgba16float")
+    if (geraet && aus) {
+        if (geraet.rg11b10 && aus.format === "rgba16float")
             nenne(
                 aus,
                 "format",
@@ -753,6 +756,7 @@ function zielUrteil(z, lesen) {
                 `ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — ${aus.name || "#" + aus.id} bleibt ${form(aus)} (${mb(aus.bytes)} MB, ` +
                     `+${mb(aus.bytes / 2)} MB gegen ein Gerät mit dem Feature)`
             );
+    }
     const zeilen = ziele
         .filter((x) => !x.leinwand)
         .map((x) => {

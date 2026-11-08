@@ -367,10 +367,12 @@ async function tatProbe(m) {
             if (Object.values(x).every(Number.isFinite) || w >= deckel) return x;
         }
     };
-    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
+    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) {
+        taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
             const [mischung, antwort] = ohr(m.x, um.lage);
             return { antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db };
         }) });
+    }
     st.spielZeit += 120;
     const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), ...hoere(() => ({ antwort: ohr(m.x)[1] })) };
     stelle(30);

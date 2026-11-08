@@ -18,7 +18,9 @@ const { vm, fadenScope, ROOT, stammLib, pruefer } = require("./lib/welt-boot.cjs
 // aber der IIFE-Seiteneffekt setzt globalThis.__phytoCore).
 require("../phyto-core.js");
 const mainCore = globalThis.__phytoCore;
-if (typeof mainCore?.growSkeleton !== "function") throw new Error("phyto-core.js hat __phytoCore.growSkeleton nicht exportiert");
+if (typeof mainCore?.growSkeleton !== "function") {
+    throw new Error("phyto-core.js hat __phytoCore.growSkeleton nicht exportiert");
+}
 const { mulberry32 } = mainCore; // der Test-Strom ist der Strom des Kerns
 const grow = (P, seedInt) => mainCore.growSkeleton(P, mulberry32(seedInt));
 

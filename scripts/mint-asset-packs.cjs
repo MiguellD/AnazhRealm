@@ -98,16 +98,20 @@ hauptLauf(async () => {
 
         // Die Fall-Liste: --verify aus den Artefakten · expliziter Fall · sonst die warme Bibliothek.
         let cases = [];
-        if (args.verify) cases = verifyFiles.map((f) => {
+        if (args.verify) {
+            cases = verifyFiles.map((f) => {
                 const pack = PK.readPack(path.join(OUT_DIR, f));
                 return { presetId: pack.presetId, seed: pack.seed, lod: pack.lod, file: f };
-            }); else if (args.preset) cases = [
+            });
+        } else if (args.preset) {
+            cases = [
                 {
                     presetId: args.preset,
                     seed: Number.isFinite(args.seed) ? args.seed : 7,
                     lod: Number.isFinite(args.lod) ? args.lod : 2,
                 },
-            ]; else {
+            ];
+        } else {
             const lib = await PK.waitLibraryWarm(realm.page);
             if (!lib.warm) {
                 console.error("❌ Bibliothek wurde nicht warm (Prefetch hängt) — kein Inventar zu minten.");
@@ -172,7 +176,9 @@ hauptLauf(async () => {
                 }
             }
         }
-        if (!args.verify && packs > 0) jsonSchreiben(path.join(OUT_DIR, "index.json"), index, 2, "\n");
+        if (!args.verify && packs > 0) {
+            jsonSchreiben(path.join(OUT_DIR, "index.json"), index, 2, "\n");
+        }
 
         console.log(
             args.verify

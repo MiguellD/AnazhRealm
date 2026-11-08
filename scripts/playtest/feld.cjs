@@ -120,7 +120,9 @@ async function checkRing2Dsl({ page, check }) {
         };
     });
 
-    if (!dslResults) check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar"); else {
+    if (!dslResults) {
+        check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar");
+    } else {
         // Welt-Identität (worldId) gesetzt
         check("Welt-Identität gesetzt", dslResults.worldIdSet);
         check("Welt-Slug gesetzt", dslResults.slugSet);
@@ -161,7 +163,9 @@ async function checkRing2Dsl({ page, check }) {
                     typeof phase2Results.lastHistory.outcome.fpsBefore === "number",
                 phase2Results.lastHistory ? `id=${phase2Results.lastHistory.id}` : "kein Eintrag"
             );
-        } else check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+        } else {
+            check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+        }
     }
 }
 
@@ -389,9 +393,11 @@ async function checkBandV1733WorldRules({ page, check }) {
         st.worldRules.length = 0;
         // eine Mensch-Regel zuerst (aelteste — darf NICHT verdraengt werden)
         r.dslRun(["rule", ["emotion_above", "joy", 0.99], ["weather", "rainy"], { everySec: 99 }], { source: "human" });
-        for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "sunny"], { everySec: 99 }], {
+        for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "sunny"], { everySec: 99 }], {
                 source: "nexus",
             });
+        }
         out.capHolds = st.worldRules.length <= K.WORLD_RULES.cap;
         out.humanSurvives = st.worldRules.some((x) => x.source === "human");
 
@@ -1053,9 +1059,11 @@ async function checkBandV1739RulesUX({ page, check }) {
         keep.pinned = true;
         const keepId = keep.id;
         // das Registry mit ephemeren Nexus-Regeln ueber das Cap hinaus fluten
-        for (let i = 0; i < AnazhRealm.WORLD_RULES.cap + 5; i++) r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+        for (let i = 0; i < AnazhRealm.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
                 source: "nexus",
             });
+        }
         out.pinnedSurvivesEviction =
             st.worldRules.length <= AnazhRealm.WORLD_RULES.cap &&
             st.worldRules.some((x) => x.id === keepId);

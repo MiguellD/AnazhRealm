@@ -320,7 +320,8 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
     // B4 — der Kämpfer: nichts unter yS; die Kämpfersteine über ihrem Pfeiler
     const vMin = Math.min(...S.flatMap((s) => s.ecken.map((e) => e[1])));
     if (vMin < -0.01) bef.push(`B4 ein Keilstein reicht ${(-vMin).toFixed(2)} m unter den Kämpfer`);
-    if (B.pfeiler && S.length) for (const [s, pf] of [
+    if (B.pfeiler && S.length) {
+        for (const [s, pf] of [
             [S[0], B.pfeiler[0]],
             [S[S.length - 1], B.pfeiler[1]],
         ]) {
@@ -333,6 +334,7 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
                 break;
             }
         }
+    }
     // B5 — unter der Traufe
     const vMax = Math.max(zwickelMaxV, ...S.flatMap((s) => s.ecken.map((e) => e[1])));
     if (B.yS + vMax > B.cap + 0.005)

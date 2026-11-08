@@ -218,7 +218,9 @@ function pruefe(karte) {
         if (welt === "huelle" || !/\.(html|js)$/.test(rel)) continue;
         const ausgenommen = welt && AUSGENOMMEN[welt];
         // H1 — Hand-Regler
-        if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) rot.push(`H1 ${stammLib.fehlt.wo}: ein Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
+        if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) {
+            rot.push(`H1 ${stammLib.fehlt.wo}: ein Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
+        }
         if (!welt) continue;
         // H2 — Brücken-Kopie
         if (!fehltIn(rel, READY_LITERAL)) {
