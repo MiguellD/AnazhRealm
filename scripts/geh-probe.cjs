@@ -210,3 +210,4 @@ const kurz = (n) =>
 })();
 // das A/B des zweiten Läufers (Weg der Strecke, Bilder ohne Umstellen)
 // Nachher-A/B am Kopf nach dem Merge von main (V18.546.221)
+// zweiter Läufer
