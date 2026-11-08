@@ -324,18 +324,22 @@ class AnazhRealm_studio_stoff {
                     const haarT = HS ? rahmen((a) => a.x.div(a.z.max(1e-6)).clamp(0.0, 1.0), TSL.float(0)) : null;
                     if (HS) {
                         // DAS HAAR LÖST SICH AM SCHIRM AUF (koerper HAAR_STRICH.aufloesung, derselbe Satz wie die Locke des Fells):
-                        // die Breite des Bands in Szenen-Pixeln (quer läuft −1 → +1: 2 ÷ fwidth) blendet die eigenen Züge der
+                        // die Breite des Bands in Pixeln des Schirms (quer läuft −1 → +1: 2 ÷ fwidth, × Schirm je Szene wie der
+                        // Halm) blendet die eigenen Züge der
                         // Strähne ein — ihren Ton (der Würfel von Strähne und Locke: Ton ÷ Ton-Anker ÷ Verlauf der Achse) und ihre
                         // Rundung (die Normale ohne ihren Teil quer zur Strähne ist die der Kappe; quer = der Gradient von `quer`
                         // in der Fläche, aus den Ableitungen von Lage und quer). Darunter trägt das Band den Ton des Haars und das
                         // Licht der Kappe. Am Arm (Band ≥ 8 Pixel) unverändert; bis hier zeigte der Third ein Grieß aus Weiß und
                         // Braun (headless 53b2fc7a strich 0,20).
+                        if (!this._haarAufloesung)
+                            this._haarAufloesung = TSL.uniform(new THREE.Vector2(HS.aufloesung[0], HS.aufloesung[1]));
+                        const schirm = this._ensureAtmoUniforms().schirmJeSzene;
                         const zeigt = rahmen(
                             (a) =>
                                 TSL.smoothstep(
-                                    HS.aufloesung[0],
-                                    HS.aufloesung[1],
-                                    TSL.float(2).div(TSL.fwidth(a.y).max(1e-6))
+                                    this._haarAufloesung.x,
+                                    this._haarAufloesung.y,
+                                    TSL.float(2).div(TSL.fwidth(a.y).mul(schirm).max(1e-6))
                                 ),
                             TSL.float(1)
                         );

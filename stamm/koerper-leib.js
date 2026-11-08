@@ -1654,8 +1654,9 @@ class AnazhRealm_koerper_leib {
         return this._tonLeibKnoten;
     }
     // DIE ACHSE DER STRÄHNE (haar.K3, w25-haar-albedo): je Ecke des nahen Haars der Rahmen ihrer Strähne `aStraehne` [Achse,
-    // Quer, Länge, Samen] — das EINE Gesetz koerper `haarAchse` (das Gesetz der Ecken des Bäckers `__streuGeo` rückwärts; das Labor
-    // liest dasselbe). Die Achse trägt die Feder des Winds, Achse ÷ Länge den Glanz der Spitze (`_foundryTreeMaterial`); die
+    // Quer, Länge, Samen] und die halbe Breite ihres Bands `aQuer` — das EINE Gesetz koerper `haarAchse` (das Gesetz der Ecken des
+    // Bäckers `__streuGeo` rückwärts; das Labor liest dasselbe). Die Achse trägt die Feder des Winds, Achse ÷ Länge den Glanz der
+    // Spitze (`_foundryTreeMaterial`), die halbe Breite den Strich am Schirm (`_haarWindKnoten`); die
     // Braue im selben Teil trägt ihren eigenen Ton und steht. Gelesen hier, am Bau jedes Teils (`_foundryBuildMesh`): ein Band,
     // das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt byte-gleich (gate:ofen-contract); die
     // Grobstufe (die Kappe ohne Strähnen, einfarbig) trägt keine Achse. Liefert die Zahl der Strähnen.
@@ -1678,6 +1679,7 @@ class AnazhRealm_koerper_leib {
         }
         if (!r.zahl) return 0;
         mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(r.achse, 4));
+        mesh.geometry.setAttribute("aQuer", new THREE.BufferAttribute(r.quer, 3));
         return r.zahl;
     }
     // DAS HAAR IM EINEN WIND UND MIT DEM LEIB (haar.K3) — der Lage-Knoten jedes Haar-Stoffs: der Versatz der Ecke ist die
@@ -1697,7 +1699,33 @@ class AnazhRealm_koerper_leib {
         )();
         const zug = naht.vorlage(feder.mul(achse.mul(naht.skala).div(H.bezug)));
         const deckel = achse.mul(H.reichweite).div(zug.length().max(1e-9)).min(1);
-        this._haarWindNode = T.positionLocal.add(zug.mul(deckel).mul(meldung));
+        // DIE BREITE DES STRICHS AM SCHIRM (w25-haar-albedo, koerper HAAR_STRICH.strichPx; TressFX: die Strähne wird mit dem
+        // Abstand breiter, die Zahl ihrer Striche im Bild fällt): kein Band ist schmaler als strichPx Pixel des Schirms — seine
+        // halbe Breite (`aQuer`, Mitte → Kante quer +1) wächst bis dorthin, höchstens um strichMax, je Ecke nach außen (quer ±1).
+        // Der Pixel des Schirms in Metern wie beim Schutt-Korn: Abstand × 2 ÷ (Projektion × Schirmhöhe der Szene) × Schirm je
+        // Szene. `_haarStrichPx` hält die Zahl des Gesetzes als Uniform.
+        const HS = globalThis.__koerperCore.HAAR_STRICH;
+        if (!(HS && HS.strichPx > 0 && HS.strichMax >= 1))
+            throw this._stoffBruch("koerper HAAR_STRICH.strichPx/strichMax (die Breite des Strichs) fehlen");
+        this._haarStrichPx = T.uniform(HS.strichPx);
+        const breite = T.Fn((b) => {
+            const g = b.geometry;
+            if (!(g && g.hasAttribute("aStraehne") && g.hasAttribute("aQuer"))) return T.vec3(0.0);
+            const Q = T.attribute("aQuer", "vec3");
+            const pxM = naht.lage
+                .sub(T.cameraPosition)
+                .length()
+                .mul(2)
+                .div(T.cameraProjectionMatrix.element(1).y.mul(T.screenSize.y))
+                .mul(this._ensureAtmoUniforms().schirmJeSzene);
+            const f = this._haarStrichPx
+                .mul(0.5)
+                .mul(pxM)
+                .div(Q.length().mul(naht.skala).max(1e-9))
+                .clamp(1.0, HS.strichMax);
+            return Q.mul(T.attribute("aStraehne", "vec4").y).mul(f.sub(1.0));
+        })();
+        this._haarWindNode = T.positionLocal.add(zug.mul(deckel).mul(meldung)).add(breite);
         return this._haarWindNode;
     }
     // Die Meldung eines gezeichneten Haar-Teils mit Achse: der Takt (`_haarFederTakt`) führt es, bis es die Szene verlässt.

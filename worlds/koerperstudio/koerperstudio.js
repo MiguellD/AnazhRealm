@@ -97,7 +97,7 @@ const {trochanterY}=window.__koerperCore.labProportionen();
    HAAR_LOOK und der Webung der Kleid-Zeile — dieselben Zahlen liest der Welt-Stoff (stamm, TSL). */
 var KC=window.__koerperCore,BZ=KC.PORTAL_RENDER_CONFIG.lod.budget.koerper,STUFEN=KC.PORTAL_RENDER_CONFIG.lod.kindStages.koerper;
 var HL=KC.HAUT_LOOK,HAL=KC.HAAR_LOOK;
-var uZeit={value:0},stufeWahl='auto',gestalt=null;
+var uZeit={value:0},uSchirmH={value:innerHeight*devicePixelRatio},stufeWahl='auto',gestalt=null;
 var character=null,torsoG=null,headGroup=null,irisL=null,irisR=null,lidTL=null,lidTR=null,hairGroup=null,torsoR=0.38;
 function gf(x){var s=(+x).toString();return s.indexOf('.')<0&&s.indexOf('e')<0?s+'.0':s;}
 function gv(a){return 'vec3('+gf(a[0])+','+gf(a[1])+','+gf(a[2])+')';}
@@ -122,7 +122,12 @@ function laborStoff(m0,geo,skin,cache){
       // in Bildpunkten (2 ÷ fwidth(quer)) blendet nach HAAR_STRICH.aufloesung Ton und Rundung der Strähne ein: darunter trägt das
       // Band den Ton des Haars (Ton ÷ seinen Würfel) und die Normale der Kappe (ohne ihren Teil quer zur Strähne)
       var HS=KC.HAAR_STRICH,lumW='vec3(0.2126,0.7152,0.0722)';
-      var ach=haar?'\nattribute vec4 aStraehne;\nvarying vec3 vAchse;':'',achV=haar?'\nvAchse=aStraehne.xyz;':'';
+      // DIE BREITE DES STRICHS AM SCHIRM (wie die Welt `_haarWindKnoten`, HAAR_STRICH.strichPx): kein Band schmaler als strichPx
+      // Pixel — die halbe Breite `aQuer` wächst bis dorthin (höchstens strichMax), je Ecke nach außen (quer ±1)
+      var ach=haar?'\nattribute vec4 aStraehne;\nattribute vec3 aQuer;\nuniform float uSchirmH;\nvarying vec3 vAchse;':'',
+        achV=haar?'\nvAchse=aStraehne.xyz;{float pxM=-(modelViewMatrix*vec4(transformed,1.0)).z*2.0/(projectionMatrix[1][1]*uSchirmH);'+
+          'float hq=length((modelViewMatrix*vec4(aQuer,0.0)).xyz);transformed+=aQuer*aStraehne.y*(clamp('+gf(0.5*HS.strichPx)+'*pxM/max(hq,1e-9),1.0,'+gf(HS.strichMax)+')-1.0);}':'';
+      if(haar)sh.uniforms.uSchirmH=uSchirmH;
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV);
       var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vAchse;\n':'')+(webe?GLSL_RAUSCHEN:'');
       var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
@@ -164,7 +169,7 @@ function stufeAnlegen(lod,ov,baum,cache){
       if(ga.position.itemSize!==3||ga.color.itemSize!==3||ga.aTon.itemSize!==1||ga.position.isInterleavedBufferAttribute)throw new Error('Labor: das Haar trägt Lage, Farbe und Ton nicht je Ecke (fail-closed)');
       var ra=KC.haarAchse(ga.position.array,ga.color.array,ga.aTon.array);
       if(ra.bruch)throw new Error('Labor: '+ra.bruch+' Bänder des Haars folgen nicht dem Gesetz der Ecken (fail-closed)');
-      if(ra.zahl)geo.setAttribute('aStraehne',new THREE.BufferAttribute(ra.achse,4));}
+      if(ra.zahl){geo.setAttribute('aStraehne',new THREE.BufferAttribute(ra.achse,4));geo.setAttribute('aQuer',new THREE.BufferAttribute(ra.quer,3));}}
     var n=skin?new THREE.SkinnedMesh(geo,mat):new THREE.Mesh(geo,mat),j=baum.teile[m0.userData.__assetJoint];
     if(!j)throw new Error('Labor: das Gelenk '+m0.userData.__assetJoint+' fehlt dem Baum (fail-closed)');
     n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.userData.__webe=m0.material.userData.__webe||null;n.receiveShadow=true;j.add(n);liste.push(n);});
@@ -294,7 +299,7 @@ const clock=new THREE.Clock(); var blinkTimer=0;
 // DER TAKT DES LABORS: Emotion, Verhalten und PD-Federn treiben die GELENKE des Gusses (dieselben Namen liest der Stamm-Rig:
 // mensch · torso · head · arm/elbow/hand · hip/knee/ankle · Lider · Iris) — was die Welt nicht als Gelenk trägt (Atem-Skalen
 // der Brust, Muskel-Spannung, Finger-Faust, Brauen, Lippen), bewegt auch das Labor nicht mehr.
-function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(!character){composer.render();return;}
+function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();uZeit.value=t;uSchirmH.value=renderer.domElement.height;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(!character){composer.render();return;}
 // DAS SPIEL FÜHRT ALLEIN (Labor = Welt): der Schritt des EINEN Gesetzes, die Pose der Welt, die Kamera — das PD-Rig des Studios ruht
 if(play.on){playTakt(dt);stufeSchalten();tuchTakt(dt);composer.render();return;}
 emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;
