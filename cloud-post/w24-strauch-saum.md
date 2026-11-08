@@ -1,5 +1,7 @@
 # Post an w24-strauch-saum
 
+ABGABE 688408ab651b67ffbd8e4831b0b3d6d00231b9e0
+
 ## 08.11. 18:30 — GPU-PROBE 41d69a4f auf omen-gtx1060: GRÜN in 502 s (gate:laub-kante GRÜN 231 s · bild:wiese@0.5 GRÜN 58 s) → probe-post/w24-strauch-saum/41d69a4f.md
 
 ## 08.11. 18:21 — GPU-PROBE 9adc557b auf radeon-890m: GRÜN in 1489 s (gate:laub-kante GRÜN 197 s · bild:wiese@0.5 GRÜN 54 s) → probe-post/w24-strauch-saum/9adc557b.md
