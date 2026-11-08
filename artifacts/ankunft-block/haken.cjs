@@ -47,7 +47,22 @@ function BAU_HAKEN() {
                 try {
                     return f.apply(this, arguments);
                 } finally {
-                    N.gpu.push([Math.round(t0), art, String((d && d.label) || "").slice(0, 48), len(d), Math.round((performance.now() - t0) * 10) / 10]);
+                    const r = window.anazhRealm;
+                    const nach = !!(r && r.state && r.state._weltbildDa);
+                    // nach dem Bild: wer im Stamm bestellte (die ersten zwei Glieder des Stapels aus stamm/)
+                    const lim = Error.stackTraceLimit;
+                    Error.stackTraceLimit = 60;
+                    const stapel = nach ? new Error().stack || "" : "";
+                    Error.stackTraceLimit = lim;
+                    const wer = nach
+                        ? stapel
+                              .split("\n")
+                              .filter((z) => /stamm\//.test(z) && !/bild-kosten\.js/.test(z))
+                              .slice(0, 3)
+                              .map((z) => (/at (?:[\w.]+\.)?([\w$]+) /.exec(z) || [0, "?"])[1])
+                              .join("<")
+                        : "";
+                    N.gpu.push([Math.round(t0), art, String((d && d.label) || "").slice(0, 40), len(d), Math.round((performance.now() - t0) * 10) / 10, wer]);
                 }
             };
         };

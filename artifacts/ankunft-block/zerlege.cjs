@@ -154,8 +154,8 @@ function gpuZeile(z) {
 }
 function gpuNamen(z) {
     const da = z.out.weltbildDa;
-    const G = ((z.out.nach && z.out.nach.gpu) || []).filter((g) => g[0] >= da && g[0] < da + 4000 && (g[1] === "s" || g[1] === "c"));
-    return G.map((g) => `${g[0] - da} ${g[2] || "?"} ${g[4]}`).join(" · ") || "keine";
+    const G = ((z.out.nach && z.out.nach.gpu) || []).filter((g) => g[0] >= da && g[0] < da + 4000);
+    return G.map((g) => `${g[0] - da}${g[1]} ${(g[2] || "?").replace(/^(renderPipeline_|fragment_|vertex_)/, (m) => m[0])} ${g[1] === "m" ? Math.round(g[3] / 1000) + "k" : ""} ${g[5] || ""}`).join(" · ") || "keine";
 }
 
 function phasen(zs, pre) {
@@ -230,7 +230,7 @@ function bericht(teil) {
             zeile(AB ? `${pre}INKL 2: ${inkl.slice(14, 30).join(" · ")}` : `INKL 3: ${inkl.slice(30, 46).join(" · ")}`);
             if (!AB) zeile(`INKL 4: ${inkl.slice(46, 62).join(" · ")}`);
             zeile(`${pre}GPU-BAU je Boot (vor dem Bild │ nach dem Bild bis +4 s): ${zs.map((z) => gpuZeile(z)).join(" | ")}`);
-            zeile(`${pre}GPU NACH (Boot ${zs[0].e.i + 1}, synchron, t ab Bild ms/Ruf-ms): ${gpuNamen(zs[0])}`);
+            zeile(`${pre}GPU NACH (Boot ${zs[0].e.i + 1}, t ab Bild ms + Art, Label, Code, Besteller): ${gpuNamen(zs[0])}`);
             const S0 = Math.max(...zs.map((z) => z.jeSek.length));
             zeile(`${pre}BELEGT je Sekunde (Median ms): ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.jeSek[s] || 0)))}`).join(" ")} · BAU je s: ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.bau.sekMs[s] || 0)))}`).join(" ")}`);
             for (const z of zs.slice(1, AB ? 2 : 2))
