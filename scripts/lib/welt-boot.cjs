@@ -1405,7 +1405,10 @@ async function seiteZu(browser, server, out, kopf, feld = "error") {
 // der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
 // Der Täter eines Falls ist eine Funktion des Klons oder seine TAFEL `[pfad, wert]` („a.b.0"): „pfad=" setzt den Wert, sonst
 // mischt er sich in den Knoten, ohne Wert fällt der Pfad — bis w6-stoffe-k5 schrieb jede Wand je Täter ihre eigene Closure.
-function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
+// `gruen`: der grüne Befund — er fällt nie rot (EINMAL hier statt der Prüfung von Hand je Linse), seine Klone tragen die Täter
+function taeterFaelle(faelle, urteil, { fehler = [], gruen, klon = () => jsonKlon(gruen) } = {}) {
+    const g = gruen ? urteil(klon()) : [];
+    if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;

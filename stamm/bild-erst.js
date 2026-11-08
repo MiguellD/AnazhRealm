@@ -116,15 +116,15 @@ class AnazhRealm_bild_erst {
     _vorwaermZeit() {
         const st = this.state;
         const ruht = this._loopRuht();
-        return AnazhRealm._vorwaermUrteil({
-            holz: st._holzProfil,
-            bild: !!st._weltbildDa,
-            lade: this._ladeTakt(),
+        return AnazhRealm._vorwaermUrteil(
+            st._holzProfil,
+            !!st._weltbildDa,
+            this._ladeTakt(),
             ruht,
-            eingabe: !ruht && this._eingabeRuht(),
-            leine: !ruht && this._gpuLeineStraff(),
-            auge: !ruht && this._augeRuht(),
-        });
+            !ruht && this._eingabeRuht(),
+            !ruht && this._gpuLeineStraff(),
+            !ruht && this._augeRuht()
+        );
     }
     // STEHT DAS AUGE? Die Spiel-Kamera legte seit dem letzten Bild weniger als VORWAERM_RUHE_MS zurück (je Bild einmal gemessen):
     // wer geht, fährt oder fällt, zeichnet ein Bild der Bewegung — dort baut kein Vorbau
@@ -235,6 +235,8 @@ class AnazhRealm_bild_erst {
     // seine Karte trägt der Bestand). GTX vorher (53b2fc7a): der gesetzte GT baute im Fenster der ersten Fahrt „haupt arena
     // f:gt:L0" 149 ms und „k0" 100 ms. true: jede Stufe steht (oder der Bauplan hat keine Studio-Gestalt).
     _vorwaermGestalt(name) {
+        const R = this.state.renderer;
+        if (!R || R._isHeadlessNull || this.state._holzProfil === "kienspan") return true; // dort wärmt nichts vor
         const preset = this._foundryPresetForEntry({ type: name });
         if (!preset || !this._foundryEnabled() || this._foundryPresetIsTree(preset)) return true;
         // ohne Ort die Gestalt des Samens 0; der Rang in der Foundry-Schlange ist der Ort des Spielers (`wo`) — als ortloser
@@ -259,12 +261,12 @@ class AnazhRealm_bild_erst {
         }
         return steht;
     }
-    // DAS URTEIL DER ZEIT (rein, die Linse gate:kamera-treue (k) fährt es): der Stand {holz, bild, lade, ruht, eingabe, leine,
-    // auge} → baut das Vorwärm-Gesetz jetzt? Headless kalt 01.11.: ein Vorbau unter dem Ladeschirm hielt 169 ms Haupt-Faden vor
-    // dem Bild (darum nie dort); GTX z w25 vorher: der Vorbau in der Fahrt hielt Bilder (darum nie mit bewegtem Auge).
-    static _vorwaermUrteil(z) {
-        if (z.holz === "kienspan" || !z.bild || z.lade) return false;
-        return !!z.ruht || (!!z.eingabe && !z.leine && !!z.auge);
+    // DAS URTEIL DER ZEIT (rein, die Linse gate:kamera-treue (k) fährt es): baut das Vorwärm-Gesetz jetzt? Headless kalt 01.11.: ein
+    // Vorbau unter dem Ladeschirm hielt 169 ms Haupt-Faden vor dem Bild (darum nie dort); GTX vorher (53b2fc7a): der Vorbau in der
+    // Fahrt hielt Bilder (darum nie mit bewegtem Auge).
+    static _vorwaermUrteil(holz, bild, lade, ruht, eingabe, leine, auge) {
+        if (holz === "kienspan" || !bild || lade) return false;
+        return !!ruht || (!!eingabe && !leine && !!auge);
     }
     // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
     // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je

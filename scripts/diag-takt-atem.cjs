@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, jsonKlon, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -81,7 +81,6 @@ function selbsttest() {
         gegenprobe: Object.assign(gut(), { dichteJeTakt: 1, stempelDichteJeTakt: 1, archLodJeTakt: 95, lageJeTakt: 1 }),
     };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = abwandlung(gruen);
     const faelle = [
         ["Dichte ohne Wand (V18.538)", ["kopf", { dichteJeTakt: 0.52, stempelDichteJeTakt: 0.52 }], /DICHTE ATMET: .* 52\.0 %/],
@@ -94,7 +93,7 @@ function selbsttest() {
         },
         ["Gegenprobe blind", ["gegenprobe", { dichteJeTakt: 0.02 }], /GEGENPROBE: die stoßende Dichte fällt nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

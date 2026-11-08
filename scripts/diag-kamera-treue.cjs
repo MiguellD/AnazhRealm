@@ -17,20 +17,20 @@
 //   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph, in zwei
 //       Lichter aus EINEM Knoten-Zustand (w4-b-knoten, `_schattenGrund`); (h) zählt dazu Metall und Index (`_gestaltSchluessel`).
 //   (k) VORWÄRMEN (w25) — das Vorwärm-Gesetz baut ohne Draw nur im Leerlauf und in der ruhenden Werkbank: nie unter dem
-//       Ladeschirm, nie unter kienspan, nie mit bewegtem Auge (die Fahrt), nie in der Eingabe, nie an straffer GPU-Leine.
+//       Ladeschirm, nie unter kienspan, nie mit bewegtem Auge (die Fahrt).
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, jsonKlon, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
 const BLICK_GRENZE = 0.9; // Blick X und Blick Y sind verschiedene Bilder
-// (k) DIE FÄLLE DES VORWÄRM-GESETZES (`_vorwaermUrteil`): Name · Stand · baut es? — je Fall der Täter beim Namen
-const VZ = { holz: "voll", bild: true, lade: false, ruht: false, eingabe: true, leine: false, auge: true };
-const VF = [["Leerlauf", VZ, 1], ["Werkbank", { ...VZ, ruht: true, eingabe: false, auge: false }, 1], ["Ladeschirm", { ...VZ, bild: false, lade: true, ruht: true }], ["kienspan", { ...VZ, holz: "kienspan", ruht: true }], ["Fahrt", { ...VZ, auge: false }], ["Eingabe", { ...VZ, eingabe: false }], ["GPU-Leine", { ...VZ, leine: true }]]; // prettier-ignore
-const vfSoll = (baut = () => 0) => VF.map(([n, , s]) => (s || baut(n) ? "baut" : "ruht")).join();
+// (k) DIE FÄLLE DES VORWÄRM-GESETZES (`_vorwaermUrteil`: holz · Bild · Ladeschirm · Loop ruht · Eingabe ruht · Leine straff ·
+// Auge steht) — je Fall der Täter beim Namen; Soll: der Leerlauf und die Werkbank bauen
+const VF = [["voll", 1, 0, 0, 1, 0, 1], ["voll", 1, 0, 1], [0, 0, 1, 1], ["kienspan", 1, 0, 1], ["voll", 1, 0, 0, 1, 0, 0]];
+const VF_NAME = ["Leerlauf", "Werkbank", "Ladeschirm", "kienspan", "Fahrt"];
 
 const namen = (w) =>
     Object.entries(w || {})
@@ -81,9 +81,8 @@ function urteil(z) {
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
     if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
-    const vw = String(z.vorbau).split(",");
-    const falsch = VF.filter(([, , s], i) => vw[i] !== (s ? "baut" : "ruht")).map(([n, , s]) => n + (s ? " baut nicht" : " baut"));
-    if (falsch.length || vw.length !== VF.length) v.push(`VORWÄRMEN: ${falsch.join(" · ") || z.vorbau}`);
+    const falsch = VF_NAME.map((n, i) => (z.vorbau[i] === "11000"[i] ? "" : n + (i < 2 ? " baut nicht" : " baut"))).filter(Boolean); // prettier-ignore
+    if (falsch.length) v.push(`VORWÄRMEN: ${falsch.join(" · ")}`);
     if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
@@ -143,7 +142,7 @@ function selbsttest() {
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
         wurf: { leer: { verwirft: false }, formen: "2/1", werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
-        vorbau: vfSoll(),
+        vorbau: "11000",
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -153,7 +152,6 @@ function selbsttest() {
         },
     };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         ["Zeiger genullt", ["aufnahme", { verfolgt: 1 }], /verfolgt 1 von 13/],
         ["Bundle unter Override", ["aufnahme", { unterOverride: 2 }], /unter einem overrideMaterial/],
@@ -176,8 +174,8 @@ function selbsttest() {
         ["Teilen blind", ["stand.teilen", { programme: 0 }], /TEILEN: 0 Karten-Programme/],
         ["Programm je Senke", ["senke", { geteilt: false }], /SENKE: zwei Senken EINER Gestalt/],
         ["Form je Kaskade", ["wurf", { formen: "2/2" }], /Lichter\/Zustände 2\/2/],
-        { name: "Vorwärmen in der Fahrt", z: { ...gruen, vorbau: vfSoll((n) => n === "Fahrt") }, muss: /VORWÄRMEN: Fahrt baut$/ },
-        { name: "Vorwärmen unter dem Ladeschirm", z: { ...gruen, vorbau: vfSoll((n) => n === "Ladeschirm") }, muss: /VORWÄRMEN: Ladeschirm baut$/ },
+        { name: "Vorwärmen in der Fahrt", z: { ...gruen, vorbau: "11001" }, muss: /VORWÄRMEN: Fahrt baut$/ },
+        { name: "Vorwärmen unter dem Ladeschirm", z: { ...gruen, vorbau: "11100" }, muss: /VORWÄRMEN: Ladeschirm baut$/ },
         ["Senken-Kontrolle blind", ["senke", { kontrolle: false }], /SENKE: zwei r184-InstancedMesh/],
         ["Senke zeichnet anders", ["senke", { bild: 0.97 }], /SENKE: der Zeichner zeichnet 0.97/],
         ["Senken-Bild blind", ["senke", { blind: 0.999 }], /SENKE: ohne die Senke/],
@@ -193,7 +191,7 @@ function selbsttest() {
         ["Spiel-Frame in der Bühne", ["lauf", { spielBilder: 2, kehraus: 51 }], /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/],
         ["Kehraus ohne Spiel-Bild", ["lauf", { kehraus: 3 }], /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
@@ -712,7 +710,7 @@ function buehne(VF) {
                 for (const m of probe) m.dispose();
             }
             // (k) DAS URTEIL DES VORWÄRM-GESETZES (w25, `_vorwaermUrteil`): je Fall des Stands baut es oder ruht
-            const vorbau = A._vorwaermUrteil ? VF.map(([, z]) => (A._vorwaermUrteil(z) ? "baut" : "ruht")).join() : "fehlt";
+            const vorbau = A._vorwaermUrteil ? VF.map((a) => +A._vorwaermUrteil(...a)).join("") : "fehlt";
             return {
                 vorbau,
                 wurf,

@@ -122,7 +122,7 @@ return 1;`;
         // Gestalten der Hotbar, die Arenen des GT (z gezeichnet · v vorgebaut · q in der Reihe · i Form steht) und die Zeit
         const VW = `const E = r._erstZeichnung || {}; const V = r._geistVorbauStand; const q = {};
             for (const o of E.vorwaerm || []) { const k = r._taeterKlasse(o) + ":" + [...(E.vorwaermFehlt.get(o) || [])].join("+"); q[k] = (q[k] | 0) + 1; }
-            const gt = []; for (const [k, g] of r.state.archInstanceGroups || []) if (/:gt:|_gt/.test(k)) { const a = g.mesh.__arena;
+            const gt = []; for (const [k, g] of r.state.archInstanceGroups || []) if (/(^|[:|])gt[|:]/.test(k)) { const a = g.mesh.__arena;
               gt.push(k.replace(/^.*?(gt[^#]*).*$/, "$1") + (a ? "@" + (E.gezeichnet.has(a) ? "z" : "") + (E.vorgebaut.has(a) ? "v" : "") + (E.vorwaerm.has(a) ? "q" : "") + (a.geometry.index ? "i" : "") : "@-") + "#" + g.liveCount); }
             return { n: E.vorwaermN, rufe: E.vorwaermRufe, verw: E.vorwaermVerweigert, offen: E.vorwaerm ? E.vorwaerm.size : -1, zeit: r._vorwaermZeit(), gestalt: V ? [...V.gestalt].length : null, q: Object.entries(q).sort((a, b) => b[1] - a[1]).slice(0, 6), gt: gt.slice(0, 6) };`; // prettier-ignore
         let ankunft = ""; // die erste Zeile des Vorwärmens trägt sie (die Probe postet die letzten zehn)

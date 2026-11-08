@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -85,7 +85,6 @@ function selbsttest() {
         rest: [],
         rundung: { gelaufen: true, format: "rg11b10ufloat", rundung: "gegen null", versatz: 0, ruhe: 0, anders: 0.4, mittel: 0.02 },
     };
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         ["Täter im Zensus", (z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"]), /ZENSUS: OHNE LESER/],
         ["kein Leser der Tiefe im Blick", ["tiefeGelesen=", false], /keinen Leser im Blick/],
@@ -106,7 +105,7 @@ function selbsttest() {
         ["die Welt steht nicht", (z) => (z.rundung.ruhe = 1.3e-5), /ändert 0.000013 der Pixel — die Welt steht nicht/],
         ["Rundungs-Probe blind", (z) => (z.rundung = {}), /RUNDUNG: die Probe lief nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     return fehler;
 }
 
