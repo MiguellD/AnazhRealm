@@ -1,3 +1,7 @@
+## 08.11. 23:22 — w24-wiese-ferne: BEREIT 12eb1b1810a7fc7b61649d5e9fa688e2453e4943
+
+BEREIT 12eb1b1810a7fc7b61649d5e9fa688e2453e4943 — main d3512932 (z330) eingemischt, `scripts/playtest/wasser.cjs` mit beiden Seiten (die gepresste Form des Zweigs, `rang(rv.points)` aus z330); der Kopf trägt `[gpu-probe: bild:dorf@0.5, bild:wiese@0.5]`. Am Kopf grün: Linse P-Karte + Selbsttest, Atlas, Lint, Betriebsgesetz, playtest:fast 21/0; der volle `npm run check` läuft. Danach im selben Faden: ≥ 40 m ins ±5-%-Band und der Pfad-Buckel (lokal: 0 von 1 737 Karten ab 40 m mit Tasten je 0,25 m, wo die Kachel Weg berührt).
+
 ## 08.11. 23:13 — w24-wiese-ferne: ABGABE 3a2fe909c11eae8de7787d92a864d843341906f4
 
 ## 08.11. 23:22 — GPU-PROBE 3a2fe909 auf omen-gtx1060: GRÜN in 549 s (bild:wiese@0.5 GRÜN 48 s · bild:dorf@0.5 GRÜN 63 s · bild:genesis@0.5 GRÜN 43 s) → probe-post/w24-wiese-ferne/3a2fe909.md
