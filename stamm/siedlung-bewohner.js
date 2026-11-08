@@ -346,8 +346,8 @@ class AnazhRealm_siedlung_bewohner {
     // frei (die Frage von `_bewohnerAnschluss`: wer dort steht, geht von dort fort); wer im Ring um die Tür
     // keinen findet, steht weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`).
     // IN RATEN NACH ZEIT (Lehre 14: frame-adaptiv): jede Frage an das Netz, die nicht trägt, jede Probe eines Stands, die
-    // nicht trägt, und jede Person geben den Takt zurück (`yield`), der Bewohner-Takt rechnet je Takt `BEWOHNER.listeMs`
-    // (`_tickBewohner`). Bis bewohner-takt gab sie ihn je Haus und je acht Besuche zurück, der Takt legte vier Häuser: am
+    // nicht trägt, und jede Person geben den Takt zurück (`yield`), der Takt-Planer rechnet je Takt unter der EINEN Frist der
+    // Bau-Arbeit (`_bewohnerWerkTakt`). Bis bewohner-takt gab sie ihn je Haus und je acht Besuche zurück, der Takt legte vier Häuser: am
     // Start-Dorf suchten acht Besuche 1,5 s, die längste Aufgabe des Bewohner-Takts trug 2,1 s (swiftshader kalt, Median aus 3)
     // — die Stände sind dieselben, die Rate ist die Zeit.
     *_bewohnerListe(S) {
@@ -1069,7 +1069,6 @@ class AnazhRealm_siedlung_bewohner {
         let geburten = 0;
         let wege = 0;
         let ankuenfte = 0;
-        let frist = null; // die Frist der Listen dieses Takts (`listeMs`), gestellt mit dem ersten Schritt einer Liste
         const auge = this._lodAuge() || p; // das Auge der Stufen: Feld, Nah-Wahl, Stufe und Takt der Leiber messen von ihm
         const arm = Math.hypot(auge.x - p.x, auge.z - p.z);
         const NF = this._feldGrenzen(true); // die Grenzen des Felds der Menge, EINMAL je Takt (die Epoche, `_feldGrenzen`)
@@ -1101,26 +1100,9 @@ class AnazhRealm_siedlung_bewohner {
                 const q = this._autoSettlementQueue;
                 if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
                 if (!S.listeWerk && !this._bewohnerHuellenDa(S)) continue; // die Häuser stehen erst mit ihrer Hülle
+                // das Werk beginnt hier, es rechnet im Takt-Planer (`_bewohnerWerkTakt`); bis es steht, lebt die Siedlung nicht
                 if (!S.listeWerk) S.listeWerk = this._bewohnerListe(S);
-                // DAS WERK NACH ZEIT (Lehre 14): bis zur Frist dieses Takts (`listeMs`, EINE für alle Werke; ohne Bild trägt ein
-                // Takt das ganze), jedes Werk mindestens einen Schritt — nie verhungert
-                if (frist === null) frist = echt ? performance.now() + BW.listeMs : Infinity;
-                let w;
-                do w = S.listeWerk.next();
-                while (!w.done && performance.now() < frist);
-                if (!w.done) continue;
-                S.listeWerk = null;
-                if (!S.liste) {
-                    S.gestalten = this._bewohnerGestalten(S);
-                    S.liste = w.value;
-                    this._bewohnerGenome(S);
-                    this._bewohnerWacheSetzen(S);
-                    if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (PFLICHT-OFFEN C)
-                    S.listeWerk = this._bewohnerStandPruefen(S, null);
-                    continue;
-                }
-                S.planStunde = null;
-                S.uhrStunde = stunde;
+                continue;
             }
             // DIE KÖPFE DES TAKTS (Gebot 7: die Kosten an Schirm und Änderung, nie an der Kopfzahl): der Takt geht über die
             // Wachen (`aktiv`) — wer geht, wer etwas vorhat, wer im Ring um den Spieler steht —, über jeden Ruhenden
@@ -1407,6 +1389,42 @@ class AnazhRealm_siedlung_bewohner {
             );
             for (const b of koepfe) if (b.ruht) S.ruhend.push(b);
             [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
+        }
+    }
+
+    // DAS WERK DER LISTE IM TAKT-PLANER (w25-stadt-takt, die EINE Frist der Bau-Arbeit, Lehre 14 und 25): der Job `bewohner`
+    // (`_buildDeferrableJobs`, Welt-Substanz hinter dem Strom) rechnet bis zu seinem Budget `ms` (der Rest der EINEN Frist
+    // `_bauFrist`; ohne Bild und im ruhenden Loop ganz) an jedem Werk einer Siedlung im Nah-Ring (`listeWerk`: erst die Liste,
+    // `_bewohnerListe`, dann die Prüfung ihrer Stände, `_bewohnerStandPruefen`), jedes Werk mindestens einen Schritt — nie
+    // verhungert; solange ihre Häuser wachsen, ruht es. Den Beginn sagt der Bewohner-Takt (`_tickBewohner`). Bis hier rechnete
+    // der Bewohner-Takt mit eigener Uhr (`BEWOHNER.listeMs`, 4 ms je Takt) NEBEN der Frist der übrigen Bauer — die zweite Uhr,
+    // die w19-gang-hitch nicht fand: am Messort stadt trug die Liste der Stadt im Gang 3,6–3,9 ms je Takt über die Frist hinaus
+    // (Radeon und GTX, gate:geh-zerlegung).
+    _bewohnerWerkTakt(ms) {
+        const alle = this._bewohnerSiedlungen;
+        const pm = this.state.playerMesh;
+        if (!alle || !alle.size || !pm) return;
+        const bis = performance.now() + ms;
+        const [p, nah, q] = [pm.position, AnazhRealm.AUTO_SETTLEMENT.nearM, this._autoSettlementQueue];
+        const tag = Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5;
+        for (const S of alle.values()) {
+            if (!S.listeWerk || (q && q.cellKey === S.key) || (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 > nah * nah) continue;
+            let w;
+            do w = S.listeWerk.next();
+            while (!w.done && performance.now() < bis);
+            if (!w.done) continue;
+            S.listeWerk = null;
+            if (!S.liste) {
+                S.gestalten = this._bewohnerGestalten(S);
+                S.liste = w.value;
+                this._bewohnerGenome(S);
+                this._bewohnerWacheSetzen(S);
+                if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (PFLICHT-OFFEN C)
+                S.listeWerk = this._bewohnerStandPruefen(S, null);
+                continue;
+            }
+            S.planStunde = null;
+            S.uhrStunde = (((tag % 1) + 1) % 1) * 24;
         }
     }
 
@@ -3171,9 +3189,8 @@ AnazhRealm.RAUCH_BILD = Object.freeze({
 // je Muskel] der Genom-Achsen (0…1), Breite und Tiefe je höchstens ±restMax (die Breite trägt auch der Kopf: mit ±6 % lag die
 // Kopf-Breite 0,098 über MENSCH_SOLL 0,096) · platzAnteil = so viele
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
-// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · listeMs = so viele ms rechnet das Werk der Liste je Takt
-// (`_bewohnerListe` in Raten je Frage an das Netz, `_bewohnerStandPruefen` je Stand; ohne Bild trägt ein Takt das ganze) ·
-// fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
+// geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms; das Werk der Liste rechnet unter der EINEN Frist der Bau-Arbeit,
+// `_bewohnerWerkTakt`) · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
 // im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl; wo der Satz dem Feld weicht, sagt das Stufen-
 // Gesetz, `_feldGrenzen` mit LOD_SCHIRM.leib) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
@@ -3213,7 +3230,6 @@ AnazhRealm.BEWOHNER = Object.freeze({
     raumM: 1.5,
     saumM: 0.45,
     geburtenJeTakt: 2,
-    listeMs: 4,
     fernFaktor: 1.25,
     nahM: 8,
     nahHystM: 1,

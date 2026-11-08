@@ -606,7 +606,7 @@ class AnazhRealm_dirigent_takt {
                     if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
         // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
         // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
-        // dann `_bewohnerStandPruefen`) mit Bild je Takt `BEWOHNER.listeMs` — an der Karte geht die Liste des Start-Dorfs über Hunderte
+        // dann `_bewohnerStandPruefen`) mit Bild je Takt unter der EINEN Frist (`_bewohnerWerkTakt`) — an der Karte geht die Liste des Start-Dorfs über Hunderte
         // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
         // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
         // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
@@ -1888,6 +1888,11 @@ class AnazhRealm_dirigent_takt {
                     this._tickWaldPlan(ms - (performance.now() - _wp));
                     this._perfSenseLap("waldPlan", _wp);
                 },
+            },
+            {
+                name: "bewohner",
+                prio: 1, // Welt-Substanz: die Leute einer Siedlung im Nah-Ring (das Werk der Liste, `_bewohnerWerkTakt`), hinter dem Wald
+                run: (ms) => this._bewohnerWerkTakt(ms),
             },
             {
                 name: "scatterDeco",
