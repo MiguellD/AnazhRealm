@@ -1461,7 +1461,26 @@ async function neunSeite(r, T, C, kammSaum) {
             const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - wahl.az), Math.cos(o.w - wahl.az))) < halb);
             const zielY = med(im.map((o) => o.p.y));
             stell(E, new T.Vector3(E.x + Math.sin(wahl.az) * 4000, zielY == null ? E.y : zielY, E.z + Math.cos(wahl.az) * 4000), C.fernFov / (W / H));
-            const u8 = await schuss();
+            // DIE HÄNGE OHNE DEN SCHLEIER (w25-ferne-licht): die Luft legt auf jeden Hang dieselbe In-Streuung — aus 1 500 m über 5,6 km
+            // zwei Drittel jedes Pixels (Zerlegung swiftshader voll, Dorf: Licht- und Schattenhang mit Luft 0,0355 / 0,0323, ohne 0,0171 /
+            // 0,0108) —, je N·L geteilt trug sie das Verhältnis der N·L der Orte (der Schleier allein: 0,29 / 0,41 = 0,71) statt des
+            // Schattens: mit Luft 0,629, ohne 0,468. Der Schuss misst die Hänge ohne Luft (β 0, wie L0 der Luft-Linse); den Schleier
+            // urteilen ferne.K1 und K2
+            const luft = st.luft.U.beta, beta0 = luft.value, anw = r._dayNightApplyHemiUndLuft;
+            const eigen = Object.prototype.hasOwnProperty.call(r, "_dayNightApplyHemiUndLuft");
+            r._dayNightApplyHemiUndLuft = function (...a) {
+                anw.apply(this, a);
+                luft.value = 0;
+            };
+            let u8;
+            try {
+                luft.value = 0;
+                u8 = await schuss();
+            } finally {
+                if (eigen) r._dayNightApplyHemiUndLuft = anw;
+                else delete r._dayNightApplyHemiUndLuft;
+                luft.value = beta0;
+            }
             // gezählt wird, was das Bild trägt (der Ort projiziert ins Bild), nie der Plan
             const je = (s) => im.filter((o) => o.schatten === s).map((o) => {
                 const q = bp(o.p);
@@ -1472,7 +1491,7 @@ async function neunSeite(r, T, C, kammSaum) {
             return {
                 sonneGrad: r4((el * 180) / Math.PI), uhr: r4(st.timeOfDay), hochM: wahl.hoch, orte: orte.length, imBild: [js.length, jl.length],
                 gratKm: r4(med(im.filter((o) => o.schatten).map((o) => o.gratAb)) / 1000), Ls: r4(Ls), Ll: r4(Ll),
-                verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null,
+                verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null, luft: 0,
             };
         });
         // ───── schatten.K5 — nachts wirft das Feuer ─────
@@ -2107,8 +2126,11 @@ const NEUN = [
         "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät",
         // DAS AUGE WÄHLT DIE STATION (w6-g3-linsen): die Höhe über dem Spieler, aus der ≥ 5 Orte im Schatten UND im Licht im Bild stehen, nur
         // Hänge, die dem Auge ihr Gesicht zeigen (N·V ≥ 0,2), gezählt, was das Bild trägt — aus 80 m sah das Auge am Dorf 3 Orte im Schatten
-        (t) => [t.hochM != null && t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten im Bild, Auge ${t.hochM} m, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
-        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
+        // DER SCHLEIER IST NICHT DER SCHATTEN (w25-ferne-licht): gemessen wird der Hang ohne Luft (`luft` 0); die In-Streuung, je N·L
+        // geteilt, trägt das Verhältnis der N·L der Orte — mit ihr urteilte die Linse über die Luft (ferne.K1/K2), nie über den Grat
+        (t) => [t.luft === 0 && t.hochM != null && t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L, ${t.luft === 0 ? "ohne Luft" : "durch den Schleier der Luft"}; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten im Bild, Auge ${t.hochM} m, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
+        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22, luft: 0 }, [
+            ["durch den Schleier der Luft gemessen, die Zahl trüge (Radeon 77265b04 mit Luft 0,6352, der Schleier allein 0,71)", { sonneGrad: 5.0087, uhr: 0.735, hochM: 1500, orte: 257, imBild: [21, 64], gratKm: 5.3294, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
             ["main 0e3eadad und Zweig 35414866: kein Abendschatten an den Hängen im Blick (0,71 aus 28/100)", { sonneGrad: 5.0039, uhr: 0.7351, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4342, Ls: 0.0345, Ll: 0.0489, verhaeltnis: 0.7063 }],
             ["das alte Auge 80 m ohne Wahl (3/7 Orte, der Rücken der Hänge: 0,24)", { sonneGrad: 5.02, uhr: 0.74, orte: 44, imBild: [3, 7], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.24 }],
             ["jenseits der Kaskaden nur N·L (Spike 94c079cb)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.088, Ll: 0.09, verhaeltnis: 0.98 }],
