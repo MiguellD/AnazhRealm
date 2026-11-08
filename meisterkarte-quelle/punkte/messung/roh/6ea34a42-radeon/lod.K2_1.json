@@ -1,0 +1,1540 @@
+{
+ "plan": "lod.K2#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 1236,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.108,
+      "baeume": 8,
+      "kranz": 0.204,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 96,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 1236,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.108,\n   \"baeume\": 8,\n   \"kranz\": 0.204,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 96,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "pop": {
+   "exit": 0,
+   "json": {
+    "ms": 20990,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "weg": 4,
+     "schritte": [
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 12,
+       "rahmen": [
+        216,
+        186,
+        1513,
+        650
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 2 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 1 0 0 1 0 6 0  NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "busch_hazel",
+         "id": 70,
+         "d": 17,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 17.01,
+         "dBahn": 17.01,
+         "visH": 1.64,
+         "px": [
+          933,
+          495
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 79,
+         "d": 30.1,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 30.08,
+         "dBahn": 30.08,
+         "visH": 23.14,
+         "px": [
+          1488,
+          528
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 81,
+         "d": 33.1,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 33.1,
+         "dBahn": 33.1,
+         "visH": 25.51,
+         "px": [
+          2073,
+          541
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 856,
+         "d": 34.7,
+         "vor": [
+          1,
+          0,
+          false
+         ],
+         "nach": [
+          1,
+          2,
+          false
+         ],
+         "dAuge": 34.74,
+         "dBahn": 34.74,
+         "visH": 26.95,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_eiche",
+         "id": 88,
+         "d": 43.6,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 43.64,
+         "dBahn": 43.64,
+         "visH": 17.48,
+         "px": [
+          555,
+          479
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "glutbrunnen",
+         "id": 30,
+         "d": 83.1,
+         "vor": [
+          1,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 83.12,
+         "dBahn": 83.12,
+         "visH": 0,
+         "px": [
+          1128,
+          516
+         ],
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 6
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 12,
+       "rahmen": [
+        5,
+        260,
+        1523,
+        646
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 2",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "1 0 0 0 1 1 0 0 NaN NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "busch_hazel",
+         "id": 70,
+         "d": 16.5,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 16.51,
+         "dBahn": 16.51,
+         "visH": 1.64,
+         "px": [
+          932,
+          493
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 95,
+         "d": 62.4,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 62.35,
+         "dBahn": 62.35,
+         "visH": 24.28,
+         "px": [
+          863,
+          499
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "glutbrunnen",
+         "id": 30,
+         "d": 82.6,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          1,
+          null,
+          false
+         ],
+         "dAuge": 82.63,
+         "dBahn": 82.63,
+         "visH": 0,
+         "px": [
+          1129,
+          516
+         ],
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 3
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 92,
+       "rahmen": [
+        157,
+        242,
+        1551,
+        670
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 1 2",
+        "0 0 0 0 0 0 0 0",
+        "0 1 0 1 4 57 5 0 NaN",
+        "1 0 2 0 0 1 3 0  NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "busch_hazel",
+         "id": 846,
+         "d": 29.5,
+         "vor": [
+          2,
+          1,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 29.49,
+         "dBahn": 29.49,
+         "visH": 2.34,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 95,
+         "d": 61.9,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 61.86,
+         "dBahn": 61.86,
+         "visH": 24.28,
+         "px": [
+          862,
+          499
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "glutbrunnen",
+         "id": 30,
+         "d": 82.1,
+         "vor": [
+          1,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 82.15,
+         "dBahn": 82.15,
+         "visH": 0,
+         "px": [
+          1130,
+          516
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "felsbogen",
+         "id": 49,
+         "d": 154,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 154.02,
+         "dBahn": 154.02,
+         "visH": 0,
+         "px": [
+          1406,
+          521
+         ],
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 4
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 48,
+       "rahmen": [
+        192,
+        236,
+        1596,
+        691
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 2 1",
+        "0 0 0 0 0 0 0 0",
+        "0 1 0 0 0 0 0 21",
+        "0 3 1 0 0 1 1 0  NaN",
+        "0 0 0 0 0 0 10 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "baum_eiche",
+         "id": 80,
+         "d": 28.5,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 28.55,
+         "dBahn": 28.55,
+         "visH": 20.24,
+         "px": [
+          834,
+          495
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 95,
+         "d": 61.4,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 61.36,
+         "dBahn": 61.36,
+         "visH": 24.28,
+         "px": [
+          861,
+          498
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 222,
+         "d": 84.7,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 84.69,
+         "dBahn": 84.69,
+         "visH": 34.09,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 3
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 23,
+       "rahmen": [
+        107,
+        543,
+        1597,
+        705
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "1 1 0 0 0 0 0 1  NaN",
+        "0 0 0 0 0 0 0 10",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "baum_eiche",
+         "id": 80,
+         "d": 28.1,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 28.06,
+         "dBahn": 28.06,
+         "visH": 20.24,
+         "px": [
+          832,
+          494
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 862,
+         "d": 38.3,
+         "vor": [
+          1,
+          0,
+          false
+         ],
+         "nach": [
+          1,
+          2,
+          false
+         ],
+         "dAuge": 38.34,
+         "dBahn": 38.34,
+         "visH": 29.61,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 95,
+         "d": 60.9,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 60.87,
+         "dBahn": 60.87,
+         "visH": 24.28,
+         "px": [
+          860,
+          498
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 222,
+         "d": 84.5,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 84.48,
+         "dBahn": 84.48,
+         "visH": 34.09,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "glutbrunnen",
+         "id": 1350,
+         "d": 128.5,
+         "vor": [
+          1,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 128.47,
+         "dBahn": 128.47,
+         "visH": 0,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "glutbrunnen",
+         "id": 1500,
+         "d": 146.3,
+         "vor": [
+          1,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 146.27,
+         "dBahn": 146.27,
+         "visH": 0,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 6
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 37,
+       "rahmen": [
+        70,
+        224,
+        1673,
+        728
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 1 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 1 0 0 0 1 0",
+        "1 0 0 0 0 1 3 5  NaN NaN",
+        "0 0 0 0 0 0 0 9   NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "baum_eiche",
+         "id": 80,
+         "d": 27.6,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 27.57,
+         "dBahn": 27.57,
+         "visH": 20.24,
+         "px": [
+          829,
+          493
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 114,
+         "d": 45,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 45.05,
+         "dBahn": 45.05,
+         "visH": 17.21,
+         "px": [
+          1475,
+          534
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 146,
+         "d": 60.4,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 60.43,
+         "dBahn": 60.43,
+         "visH": 23.76,
+         "px": [
+          1676,
+          542
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 222,
+         "d": 84.3,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 84.28,
+         "dBahn": 84.28,
+         "visH": 34.09,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "felsturm",
+         "id": 50,
+         "d": 155.1,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 155.1,
+         "dBahn": 155.1,
+         "visH": 0,
+         "px": [
+          1052,
+          502
+         ],
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 5
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 1512,
+       "rahmen": [
+        25,
+        229,
+        1743,
+        762
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 152 0",
+        "0 0 0 0 0 0 517 46",
+        "5 0 0 0 0 0 171 535",
+        "1 0 0 1 2 0 33 17  NaN",
+        "0 0 0 0 0 0 0 21   NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "baum_birke",
+         "id": 75,
+         "d": 20,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          null,
+          false
+         ],
+         "dAuge": 20.01,
+         "dBahn": 20.01,
+         "visH": 10.59,
+         "px": [
+          1050,
+          501
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 86,
+         "d": 35.8,
+         "vor": [
+          2,
+          1,
+          false
+         ],
+         "nach": [
+          1,
+          2,
+          false
+         ],
+         "dAuge": 35.76,
+         "dBahn": 35.76,
+         "visH": 16.87,
+         "px": [
+          1294,
+          524
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 2099,
+         "d": 197,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 196.99,
+         "dBahn": 196.99,
+         "visH": 23.54,
+         "px": [
+          1185,
+          515
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2098,
+         "d": 204.8,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 204.77,
+         "dBahn": 204.77,
+         "visH": 13.43,
+         "px": [
+          1131,
+          514
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_birke",
+         "id": 2106,
+         "d": 213.6,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 213.64,
+         "dBahn": 213.64,
+         "visH": 9.34,
+         "px": [
+          1212,
+          517
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2104,
+         "d": 214,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 213.99,
+         "dBahn": 213.99,
+         "visH": 14.5,
+         "px": [
+          1162,
+          515
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2112,
+         "d": 217,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 217.04,
+         "dBahn": 217.04,
+         "visH": 29.4,
+         "px": [
+          1265,
+          519
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_birke",
+         "id": 2103,
+         "d": 217.7,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 217.68,
+         "dBahn": 217.68,
+         "visH": 12.49,
+         "px": [
+          1132,
+          514
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "busch_hazel",
+         "id": 2101,
+         "d": 219.2,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 219.18,
+         "dBahn": 219.18,
+         "visH": 2.05,
+         "px": [
+          1107,
+          514
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "busch_hazel",
+         "id": 2102,
+         "d": 220.3,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 220.26,
+         "dBahn": 220.26,
+         "visH": 1.84,
+         "px": [
+          1117,
+          514
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2114,
+         "d": 221.4,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 221.38,
+         "dBahn": 221.38,
+         "visH": 18.82,
+         "px": [
+          1228,
+          518
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 2100,
+         "d": 222.6,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 222.55,
+         "dBahn": 222.55,
+         "visH": 16.56,
+         "px": [
+          1090,
+          513
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 2107,
+         "d": 225.8,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 225.79,
+         "dBahn": 225.79,
+         "visH": 16.42,
+         "px": [
+          1141,
+          515
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "busch_hazel",
+         "id": 2110,
+         "d": 227,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 226.99,
+         "dBahn": 226.99,
+         "visH": 1.52,
+         "px": [
+          1143,
+          515
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2113,
+         "d": 227.2,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 227.23,
+         "dBahn": 227.23,
+         "visH": 25.65,
+         "px": [
+          1181,
+          517
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 2108,
+         "d": 230.3,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 230.26,
+         "dBahn": 230.26,
+         "visH": 29.74,
+         "px": [
+          1118,
+          514
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 2115,
+         "d": 231,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 231.05,
+         "dBahn": 231.05,
+         "visH": 16.25,
+         "px": [
+          1220,
+          519
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_eiche",
+         "id": 2116,
+         "d": 238.9,
+         "vor": null,
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 238.95,
+         "dBahn": 238.95,
+         "visH": 12.46,
+         "px": [
+          1187,
+          519
+         ],
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 18
+      },
+      {
+       "tempo": [
+        0,
+        0
+       ],
+       "pop": 48,
+       "rahmen": [
+        19,
+        230,
+        1815,
+        787
+       ],
+       "raster": [
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 3 0",
+        "0 0 0 0 0 0 0 0",
+        "3 0 0 0 0 0 0 0",
+        "0 0 0 0 0 1 2 2  NaN NaN",
+        "0 0 0 0 0 0 0 21    NaN",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0",
+        "0 0 0 0 0 0 0 0"
+       ],
+       "wechsel": [
+        {
+         "art": "busch_hazel",
+         "id": 72,
+         "d": 17.8,
+         "vor": [
+          1,
+          2,
+          false
+         ],
+         "nach": [
+          1,
+          0,
+          false
+         ],
+         "dAuge": 17.78,
+         "dBahn": 17.78,
+         "visH": 2.23,
+         "px": [
+          207,
+          456
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "busch_hazel",
+         "id": 847,
+         "d": 29.5,
+         "vor": [
+          2,
+          1,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 29.47,
+         "dBahn": 29.47,
+         "visH": 2.03,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "busch_hazel",
+         "id": 84,
+         "d": 32.8,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 32.81,
+         "dBahn": 32.81,
+         "visH": 2.34,
+         "px": [
+          1326,
+          523
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 857,
+         "d": 36.9,
+         "vor": [
+          1,
+          0,
+          false
+         ],
+         "nach": [
+          1,
+          2,
+          false
+         ],
+         "dAuge": 36.92,
+         "dBahn": 36.92,
+         "visH": 28.54,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 114,
+         "d": 44.2,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 44.24,
+         "dBahn": 44.24,
+         "visH": 17.21,
+         "px": [
+          1489,
+          534
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 896,
+         "d": 55.5,
+         "vor": [
+          2,
+          1,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 55.53,
+         "dBahn": 55.53,
+         "visH": 22.63,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_tanne",
+         "id": 899,
+         "d": 56.3,
+         "vor": [
+          2,
+          1,
+          false
+         ],
+         "nach": [
+          2,
+          null,
+          false
+         ],
+         "dAuge": 56.26,
+         "dBahn": 56.26,
+         "visH": 22.82,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 146,
+         "d": 59.7,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 59.73,
+         "dBahn": 59.73,
+         "visH": 23.76,
+         "px": [
+          1693,
+          543
+         ],
+         "inst": true,
+         "foundry": true
+        },
+        {
+         "art": "baum_kiefer",
+         "id": 222,
+         "d": 83.9,
+         "vor": [
+          2,
+          null,
+          false
+         ],
+         "nach": [
+          2,
+          1,
+          false
+         ],
+         "dAuge": 83.88,
+         "dBahn": 83.88,
+         "visH": 34.09,
+         "px": null,
+         "inst": true,
+         "foundry": true
+        }
+       ],
+       "nWechsel": 9
+      }
+     ],
+     "perfTargetMs": 17,
+     "laub": [
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216
+     ],
+     "bau": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150
+     ],
+     "treue": {
+      "schritt": 0,
+      "bytes": 6
+     },
+     "bilder": {},
+     "popPixel": 1784,
+     "lod": {
+      "D0": 12,
+      "D1": 26,
+      "fade": 8,
+      "fade0": 4,
+      "M": 3.4,
+      "ref": 12,
+      "kap": 24,
+      "perf": 1
+     },
+     "anteilJeSekunde": 0.086
+    }
+   },
+   "rest": "ull,\n      \"inst\": true,\n      \"foundry\": true\n     },\n     {\n      \"art\": \"baum_tanne\",\n      \"id\": 899,\n      \"d\": 56.3,\n      \"vor\": [\n       2,\n       1,\n       false\n      ],\n      \"nach\": [\n       2,\n       null,\n       false\n      ],\n      \"dAuge\": 56.26,\n      \"dBahn\": 56.26,\n      \"visH\": 22.82,\n      \"px\": null,\n      \"inst\": true,\n      \"foundry\": true\n     },\n     {\n      \"art\": \"baum_kiefer\",\n      \"id\": 146,\n      \"d\": 59.7,\n      \"vor\": [\n       2,\n       null,\n       false\n      ],\n      \"nach\": [\n       2,\n       1,\n       false\n      ],\n      \"dAuge\": 59.73,\n      \"dBahn\": 59.73,\n      \"visH\": 23.76,\n      \"px\": [\n       1693,\n       543\n      ],\n      \"inst\": true,\n      \"foundry\": true\n     },\n     {\n      \"art\": \"baum_kiefer\",\n      \"id\": 222,\n      \"d\": 83.9,\n      \"vor\": [\n       2,\n       null,\n       false\n      ],\n      \"nach\": [\n       2,\n       1,\n       false\n      ],\n      \"dAuge\": 83.88,\n      \"dBahn\": 83.88,\n      \"visH\": 34.09,\n      \"px\": null,\n      \"inst\": true,\n      \"foundry\": true\n     }\n    ],\n    \"nWechsel\": 9\n   }\n  ],\n  \"perfTargetMs\": 17,\n  \"laub\": [\n   216,\n   216,\n   216,\n   216,\n   216,\n   216,\n   216,\n   216\n  ],\n  \"bau\": [\n   150,\n   150,\n   150,\n   150,\n   150,\n   150,\n   150,\n   150\n  ],\n  \"treue\": {\n   \"schritt\": 0,\n   \"bytes\": 6\n  },\n  \"bilder\": {},\n  \"popPixel\": 1784,\n  \"lod\": {\n   \"D0\": 12,\n   \"D1\": 26,\n   \"fade\": 8,\n   \"fade0\": 4,\n   \"M\": 3.4,\n   \"ref\": 12,\n   \"kap\": 24,\n   \"perf\": 1\n  },\n  \"anteilJeSekunde\": 0.086\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}

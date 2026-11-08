@@ -1,0 +1,89 @@
+{
+ "sha": "6100a724681522633a34d38c04892e45ef05076a",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T07:08:05.653Z",
+ "host": "MiguellD",
+ "je": {
+  "ankunft.K2#1": {
+   "gruen": true,
+   "zahl": "0.01 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 10.37 s von außen (Eigenmeldung 9.47 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.61,
+   "gpu": "amd/rdna-3",
+   "s": 36.5,
+   "zeit": "2026-11-08T07:08:05.653Z",
+   "abdruck": "00e38dd9d4d2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 10.37 s von außen (Eigenmeldung 9.47 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.61,
+   "grund": "ROT: t(Kontrolle) kalt 10.37 s von außen (Eigenmeldung 9.47 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild nichts (Soll ≤ 5 s an dieser Karte, ein Kalt-Boot) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 36.5,
+   "zeit": "2026-11-08T07:08:05.653Z",
+   "abdruck": "b09301d4895d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 396 ms (Soll ≤ 250) · Haupt-Faden belegt 8.66 s bis zur Kontrolle (Soll ≤ 4; 41 LongTasks 5.79 s) · Kontrolle 10.46 s Seiten-Uhr · die längste: 396 ms bei 4.1 s: build [three.webgpu.min.js] 91 · build [three.webgpu.min.js] 66 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.06 · Bild 3.05 · Knoten-Bau 2.44 · program 0.53 · garbage collector 0.28 · Himmel 0.23 · Streu 0.16 · Saat 0.13 · Buch 0.10 · Gruppen-Bau 0.09 · Bauten 0.09 · Boden 0.06 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.61,
+   "grund": "ROT: längste Aufgabe 396 ms (Soll ≤ 250) · Haupt-Faden belegt 8.66 s bis zur Kontrolle (Soll ≤ 4; 41 LongTasks 5.79 s) · Kontrolle 10.46 s Seiten-Uhr · die längste: 396 ms bei 4.1 s: build [three.webgpu.min.js] 91 · build [three.webgpu.min.js] 66 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 3.06 · Bild 3.05 · Knoten-Bau 2.44 · program 0.53 · garbage collector 0.28 · Himmel 0.23 · Streu 0.16 · Saat 0.13 · Buch 0.10 · Gruppen-Bau 0.09 · Bauten 0.09 · Boden 0.06 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 36.5,
+   "zeit": "2026-11-08T07:08:05.653Z",
+   "abdruck": "8d570e46999f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T07:07:34.694Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K2#1",
+    "s": 15.4,
+    "takte": 677,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 124,
+   "frameP95": 502.53,
+   "taktP95": 171.11,
+   "vramMax": 143,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 56,
+   "luecken": 4,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 61.9,
+  "minuten": 1.21
+ }
+}

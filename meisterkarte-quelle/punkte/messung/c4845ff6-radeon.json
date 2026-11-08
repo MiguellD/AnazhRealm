@@ -1,0 +1,73 @@
+{
+ "sha": "c4845ff6243d20788b90374b565534eb08a0e495",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T22:31:56.318Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 213.3 über Rausch-Boden 0.000 (×213.3), Tal 32.3 — Kamm/Tal 6.59 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.2 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.37,
+   "gpu": "amd/rdna-3",
+   "s": 22.4,
+   "zeit": "2026-11-07T22:31:33.823Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 2.23 · 10–20 2.05 · 20–40 1.64 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.44,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 2.23 · 10–20 2.05 · 20–40 1.64 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 26.2,
+   "zeit": "2026-11-07T22:31:56.318Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T22:30:46.804Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 28.2,
+    "takte": 688,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 76,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 89.7,
+  "minuten": 1.68
+ }
+}
