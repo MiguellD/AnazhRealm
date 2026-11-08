@@ -81,7 +81,7 @@ function zerlege(e) {
     R.datei = new Map();
     R.jeSek = [];
     for (let i = 0; i < p.samples.length && zeiten[i] < bisUs; i++) {
-        const g = Math.min(10, ((i + 1 < zeiten.length ? zeiten[i + 1] : zeiten[i] + 1000) - zeiten[i]) / 1000);
+        const g = Math.max(0, Math.min(10, ((i + 1 < zeiten.length ? zeiten[i + 1] : zeiten[i] + 1000) - zeiten[i]) / 1000));
         const k = kn.get(p.samples[i]);
         if (!k || k.callFrame.functionName === "(idle)") continue;
         const c = k.callFrame;
@@ -160,8 +160,8 @@ function bericht(teil) {
                 })
                 .sort((a, b) => b[1] - a[1])
                 .map(([k, ms, n, len, s]) => `${k} ${Math.round(ms)}/${n}/${Math.round(len / 1000)}k${s}`);
-            zeile(`${pre}BAU je Stoff (ms/fertig/Code, Szene): ${je.slice(0, 16).join(" · ")}`);
-            if (!AB) zeile(`BAU je Stoff 2: ${je.slice(16, 40).join(" · ")}`);
+            zeile(`${pre}BAU je Stoff (ms/fertig/Code, Szene): ${je.slice(0, 12).join(" · ")}`);
+            if (!AB) zeile(`BAU je Stoff 2: ${je.slice(12, 30).join(" · ")}`);
             const inkl = medMap(zs, "inkl", 60, (k) => /\[[a-z-]+\.js[:\]]/.test(k) && !/three\.(webgpu|core)/.test(k));
             zeile(`${pre}INKL 1: ${inkl.slice(0, 14).join(" · ")}`);
             if (!AB) zeile(`INKL 2: ${inkl.slice(14, 30).join(" · ")}`);

@@ -21,7 +21,9 @@ function BAU_HAKEN() {
         if (!m) return "?";
         const sch = m.isShadowPassMaterial === true;
         const u = sch && o && o.material && !Array.isArray(o.material) ? o.material : m;
-        return String(u.name || u.type || "?").slice(0, 40) + (sch ? "⟂" : "");
+        const g = o && o.geometry;
+        const wer = (o && (o.name || (o.isInstancedMesh ? "Inst" : o.type))) || "?";
+        return String(u.name || u.type || "?").replace(/NodeMaterial$/, "").slice(0, 32) + "@" + String(wer).slice(0, 28) + (g && g.name ? ":" + String(g.name).slice(0, 20) : "") + (sch ? "⟂" : "");
     };
     const zeit = (t0) => Math.round((performance.now() - t0) * 10) / 10;
     const anNodes = (N) => {
