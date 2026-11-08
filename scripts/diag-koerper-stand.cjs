@@ -79,7 +79,7 @@ function gezeichnet(r, x, z) {
     const strahl = G.strahl || (G.strahl = new T.Raycaster());
     const span = r._voxelChunkConfig(0).span;
     const U = r.state.atmoUniforms;
-    const gm = U && U.geomorph ? U.geomorph.value : 1;
+    const gm = U?.geomorph ? U.geomorph.value : 1;
     let best = null;
     let oben = -Infinity;
     G.steil = false;
@@ -285,7 +285,7 @@ async function proben(mitWiese, umfang) {
             ik.probeR.g = NaN;
         }
     };
-    const wpl = () => (pm.userData._gaitIK && pm.userData._gaitIK.wpl) || 1;
+    const wpl = () => pm.userData._gaitIK?.wpl || 1;
     // ── K1 MENSCH AUF DEM TRÄGER ── der Träger ist ein Bauwerk, das die Probe selbst unter den Spieler setzt (ein Felsblock,
     // `stein_block`): der Genesis-Ort lässt seinen Ankunftskegel frei, die Start-Plattform fiel ganz (w4-genesis-ort-wirt) —
     // bis hierher stand K1 auf ihr und urteilte nach ihrem Fall am Gelände (Träger 90,30 = der Grund). Nach K1 fällt der

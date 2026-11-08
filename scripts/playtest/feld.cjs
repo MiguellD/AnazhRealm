@@ -1505,7 +1505,7 @@ async function checkBandV1745EmotionCore({ page, check }) {
         // Differential gegen die gleiche Welt-Position → gemeinsame Feld-Drift kürzt sich.
         st.lifeField = new Map();
         st.emotionField = new Map();
-        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        p.hp = p.stats?.hpMax || 100; // keine HP-Drift
         const pm = st.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
         setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
@@ -1677,7 +1677,7 @@ async function checkBandV1747FastSlow({ page, check }) {
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
         st.lifeField = new Map();
-        p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
+        p.hp = p.stats?.hpMax || 100; // keine HP-Drift
         const pm = st.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
 

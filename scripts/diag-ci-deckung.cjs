@@ -25,7 +25,7 @@ const VOLL_WENN =
     "github.event_name == 'workflow_dispatch' || " +
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
-const jobsVon = (doc) => (doc && doc.jobs) || {};
+const jobsVon = (doc) => doc?.jobs || {};
 const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
 // DER ZUG-KOPF läuft unter VOLL_WENN, die Batterie hinter ihm mit seiner Liste (scripts/lib/zug-auswahl.cjs --kopf)
@@ -33,7 +33,7 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/lib\/zug-auswahl\.cjs --kopf$/;
 const KOPF_AUS = ["voll", "echt", "liste", "gruppen", "art"];
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
-const needsVon = (J) => [].concat((J && J.needs) || []);
+const needsVon = (J) => [].concat(J?.needs || []);
 // (E) DIE ECHT-GRUPPE: GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
 // Kopf-Richter (`echt`), nie pull_request; je Schritt eine Frist, der Job ≤ ECHT_DECKEL_MIN, sein Plan ≤ ECHT_PLAN_S (T).
 const ECHT_JOB = "echt";
@@ -134,6 +134,10 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
+    "gate:pop": {
+        klasse: KLASSEN.MESS,
+        grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
+    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
@@ -716,7 +720,7 @@ const LINIE = [process.env.GITHUB_BASE_REF, process.env.GITHUB_REF_NAME || execS
 function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     const [v, alt] = [[], []];
     const zeilen = [];
-    const Z = (zeiten && zeiten.schritte) || {};
+    const Z = zeiten?.schritte || {};
     const vorb = zeiten && Number(zeiten.vorbereitung_s);
     if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
     const alter = (() => {
@@ -758,7 +762,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 if (!groesster || z > groesster[1]) groesster = [name(s), z];
             }
             const kl = (M.include || []).find((e) => e && e.gruppe === g);
-            const klasse = job + (kl && kl.klasse ? ` ${kl.klasse}` : "");
+            const klasse = job + (kl?.klasse ? ` ${kl.klasse}` : "");
             const wer = g === null ? job : `${job} ${g}/${gs.length}${klasse.slice(job.length)}`;
             gruppen.push({ job, art, klasse, plan: summe, n: mein.length, groesster, wer });
             if (art === "voll" && 1.2 * summe > 60 * J["timeout-minutes"])
@@ -789,7 +793,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     // (E) der Plan der Echt-Gruppe: ihre Vorbereitung und die Mediane ihrer Schritte auf der Karte, höchstens ECHT_PLAN_S
     const E = jobsVon(doc)[ECHT_JOB];
     if (E) {
-        const ze = (zeiten && zeiten.echt) || {};
+        const ze = zeiten?.echt || {};
         let plan = Number(ze.vorbereitung_s) || 0;
         for (const s of gates(E)) plan += gewicht(s, ECHT_JOB) || 0;
         zeilen.push(`${ECHT_JOB} ${minuten(plan)}`);

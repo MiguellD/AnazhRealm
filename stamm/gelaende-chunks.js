@@ -881,7 +881,7 @@ class AnazhRealm_gelaende_chunks {
     _foliageChunkInRadius(cx, cz) {
         const pm = this.state.playerMesh;
         if (!pm) return true; // kein Spieler (Boot/Test) → nicht gaten
-        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const fr = this._laubRand();
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
@@ -927,7 +927,7 @@ class AnazhRealm_gelaende_chunks {
         if (this._bepflanzungWartet()) return;
         // der Abstand des nächsten wartenden Chunks jenseits des Radius: so weit kann der Spieler gehen, ohne dass einer
         // hineinwächst; geht ein Gang ohne Wuchs zu Ende, schläft der Takt
-        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const fr = this._laubRand();
         const { span } = this._voxelChunkConfig();
         let frei = Infinity;
         // DER SCHLAF MISST AN DER BAHN (w14-strom-tempo): ein Chunk wächst, wenn seine Mitte entlang der Strecke des Vorlaufs im

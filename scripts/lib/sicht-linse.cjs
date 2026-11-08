@@ -697,7 +697,7 @@ function sichtBlendeBewegt(a, e, haltM) {
 // (`grund`: Änderung oder ihre Folge) erklären die ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass
 // `jePass`) — was bleibt, ist ein Cache-Bruch. Die Zähler eines Satzes allein (Stand, Verdichten) erklären nichts.
 function sichtArbeitOhne(f) {
-    if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!(e && e.grund))) return 0;
+    if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!e?.grund)) return 0;
     const lj = f.lichtJe || {};
     if (!f.licht && !Object.keys(lj).length) return f.arbeit;
     // das Licht erklärt die Arbeit der Kaskaden, die es seit ihrem letzten Pass gedreht sah (bzw. im Frame selbst drehte);
@@ -713,7 +713,7 @@ const sichtAenderung = (f) =>
         f.kamera ||
         f.blende ||
         Object.keys(f.lichtJe || {}).length ||
-        Object.values(f.inhalt || {}).some((e) => !!(e && e.grund))
+        Object.values(f.inhalt || {}).some((e) => !!e?.grund)
     );
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
@@ -975,7 +975,7 @@ function sichtUrteil(b) {
                     `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, Instanzen ${R.instanzBehalten.mittel}, ` +
                     `Werfer ${R.werferTrifft.mittel} (_werferWahlPass)) — ` +
                     "nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch" +
-                    (R.taeter && R.taeter.length ? `; neu gerechnet je Frame: ${R.taeter.join(", ")}` : "")
+                    (R.taeter?.length ? `; neu gerechnet je Frame: ${R.taeter.join(", ")}` : "")
             );
         if (R.ohneFrames > 0)
             v.push(
@@ -1070,7 +1070,7 @@ function sichtUrteil(b) {
                     `AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in ${A.frames} von ` +
                         `${x.frames} Frames (Median ${A.median}, max ${A.max} Prüfungen, Bytes ohne Grund in ${x.ohneFrames}) — ` +
                         "eine zweite Signatur neben dem Gesetz des Halts" +
-                        (x.taeter && x.taeter.length ? `; neu gerechnet je Frame: ${x.taeter.join(", ")}` : "")
+                        (x.taeter?.length ? `; neu gerechnet je Frame: ${x.taeter.join(", ")}` : "")
                 );
         }
     }

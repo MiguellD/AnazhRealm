@@ -232,7 +232,7 @@ async function checkBandRing6Workshop({ page, check }) {
         const beforeChat = st.architectures.length;
         r.processChatCommand("Baue Tempel hier");
         out.chatRoutesToDsl = Array.isArray(st.dsl.lastUserProgram) && st.dsl.lastUserProgram[0] === "spawn_temple";
-        const tempelWarm = !!(st.blueprints?.haus_griechisch);
+        const tempelWarm = !!st.blueprints?.haus_griechisch;
         out.chatActuallySpawned = st.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
 
         // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
@@ -1420,7 +1420,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
         // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
-        const __treeRef = (AnazhRealm.SPECIES_TAG_REFERENCE && AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) || null;
+        const __treeRef = AnazhRealm.SPECIES_TAG_REFERENCE?.baum_eiche || null;
         if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
             const diffs = {};

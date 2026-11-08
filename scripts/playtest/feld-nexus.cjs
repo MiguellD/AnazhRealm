@@ -55,7 +55,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         const voxelChunksBefore = st.voxelChunks ? st.voxelChunks.size : 0;
         const someVoxelVisible = () => {
             const s = st.chunkSaetze ? st.chunkSaetze.get("boden") : null;
-            return !!(s?.mesh && s.mesh.visible && s.mesh.parent === st.scene);
+            return !!(s?.mesh?.visible && s.mesh.parent === st.scene);
         };
         r.processChatCommand("Boden deaktivieren");
         out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
@@ -94,7 +94,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
             let hex = 0;
             if (typeof c.traverse === "function") {
                 c.traverse((n) => {
-                    if (!hex && n.isMesh && n.material && n.material.color) hex = n.material.color.getHex();
+                    if (!hex && n.isMesh && n.material?.color) hex = n.material.color.getHex();
                 });
             }
             return hex;
@@ -1060,7 +1060,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             const toolPalette = document.getElementById("workshop-tool-palette");
             out.toolPaletteInDom = !!toolPalette;
             // Wenn Spieler Werkzeuge hat, sind Cards drin
-            const playerTools = (st.player && st.player.tools) || [];
+            const playerTools = st.player?.tools || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
             // die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
             void playerTools;

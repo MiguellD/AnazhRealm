@@ -359,14 +359,14 @@ function innen(tl, M) {
         dach = -Infinity;
     // das Wand-Band endet unter dem Fuß des Trauf-Überstands (der Keil der Traufe liegt in der Luft unter der Dachhaut —
     // er wirft das Traufschatten-Band, wie die echte Traufe)
-    const ovZ = (H.P && H.P.ovEave) || 0,
+    const ovZ = H.P?.ovEave || 0,
         mS = (d.ridgeY - d.eaveY) / Math.max(0.1, d.D / 2);
     const bandOben = d.eaveY - Math.max(0.6, ovZ * mS + 0.08);
     const haupt = (H.masse || []).find((m) => m.art === "haupt");
     const sattel = !haupt || haupt.dach === "sattel";
     // das Schwungdach: das Verformungs-Feld des Gesetzbuchs (HAUS `deform`, DEF_cA = 1,35 · curve) hebt über der Traufe
     // jede Ecke um DEF_cA · f^2,2 (f = |z| / (D/2)) — die Dachhaut des Schwungs liegt um diesen Hub über der Ebene
-    const cA = 1.35 * ((haupt && haupt.curve) || 0);
+    const cA = 1.35 * (haupt?.curve || 0);
     const hub = (z) => (cA > 0 ? cA * Math.pow(Math.min(1, Math.abs(z) / (d.D / 2)), 2.2) : 0);
     // eine Dach-Ecke über einer Masse, die durch das Hauptdach steigt oder an ihm anschließt (Kamin, Gaube, Turm, Kuppel,
     // Rundbau, Stufe, Flügel, Hof-Arm, Anbau), misst ihre eigene Masse, nicht die Dachhaut des Hauptdachs — der Sockel,

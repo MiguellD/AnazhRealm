@@ -353,10 +353,11 @@ class AnazhRealm_siedlung_instanz {
             g2.setAttribute("aH0", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
             g2.setAttribute("aH0L", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
         }
-        // Die Karte: Atlas-Schicht + Rahmen + Billboard-Verdeckung je Slot in EINEM vec4 (`_lodSlotStamp`).
-        for (const k of ["aKarte"]) {
+        // Die Karte: Atlas-Schicht + Rahmen + Billboard-Verdeckung je Slot in EINEM vec4 (`_lodSlotStamp`), dazu ihr Rand des
+        // Eintritts (`aEin`, der Wurf des Felds blendet am Laub-Rand ein).
+        for (const k of ["aKarte", "aEin"]) {
             const n = AnazhRealm.LOD_INSTANZ_ATTRIBUTE[k];
-            if (srcGeom.attributes[k])
+            if (srcGeom.attributes.aKarte)
                 g2.setAttribute(k, new THREE.InstancedBufferAttribute(new Float32Array(capacity * n), n));
         }
         g2.boundingSphere = srcGeom.boundingSphere;
@@ -384,8 +385,9 @@ class AnazhRealm_siedlung_instanz {
     // DER EINE SLOT-STEMPEL (beide Slot-Chokepoints rufen ihn): Sichthöhe = Template ×
     // Instanz-Skala (exakt das Studio-`aH0*_isy`) + VOLL (`_lodSlotVoll`: die Karte des Verdeckten und der Brücke, die
     // Stufe ohne Partner — das Vorzeichen von aKarte.w bzw. aH0L, die Maske hält) + — trägt das Leaf eine Karte —
-    // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben).
-    _lodSlotStamp(g, slot, scale, voll, leaf) {
+    // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben). `ein`: der Welt-Takt
+    // des Eintritts der Karte (`state.weltTakt`, `_archInstanceAdd`; 0 = sie blendet nicht ein), gestempelt mit dem Leaf.
+    _lodSlotStamp(g, slot, scale, voll, leaf, ein = 0) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
         g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): Sichthöhe und Karte der Wahl
@@ -415,6 +417,11 @@ class AnazhRealm_siedlung_instanz {
             }
             ak.array[slot * 4 + 3] = voll ? -h : h;
             ak.needsUpdate = true;
+            const ae = geom.attributes.aEin;
+            if (leaf && ae && ae.isInstancedBufferAttribute) {
+                ae.array[slot] = ein;
+                ae.needsUpdate = true;
+            }
         }
         // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
         // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
@@ -821,6 +828,15 @@ class AnazhRealm_siedlung_instanz {
             entry._lodHalt = true;
             entry._lodHaltWartet = false;
         }
+        // DER EINTRITT IN WELT-TAKTEN (w22-wald-geburt-heil): die Karte eines Wurfs des Felds blendet ab ihrem ersten Bild über
+        // `KARTEN_EINTRITT_TAKTE` Takte der Welt-Uhr ein (`aEin` am Slot, der Karten-Stoff vergleicht `uLodTakt`) — jede Stufe
+        // trägt denselben Takt, nur das erste Bild blendet (der Cull räumt ihn mit dem Mesh); unter dem Ladeschirm tritt sie ganz
+        // ein (0: kein Bild sieht sie kommen). Bis hier blendete sie über den Weg des Auges unter ihren Rand: ruhte das Auge im
+        // Band, stand die Karte für immer halb durchsichtig — die Geister des Karten-Horizonts vom 05.10.
+        if (entry.feldWurf === true && entry._einTakt === undefined)
+            entry._einTakt = this._ladeTakt() ? 0 : this.state.weltTakt | 0;
+        const ein = entry.feldWurf === true ? entry._einTakt : 0;
+        if (ein > 0) this._einBlendeBis = Math.max(this._einBlendeBis | 0, ein + AnazhRealm.KARTEN_EINTRITT_TAKTE);
         const slots = [];
         // instanceColor trägt die Farbe als RGB (0..1); InstancedMesh alloziert mesh.instanceColor LAZY beim
         // ersten setColorAt. OB und WAS geschrieben wird, entscheidet `_archSlotColor`. instanceColor
@@ -873,7 +889,8 @@ class AnazhRealm_siedlung_instanz {
                 slot,
                 entry.scale,
                 this._lodSlotVoll(entry, !!(opts && opts.band), opts && opts.bandLod),
-                leaf
+                leaf,
+                ein
             );
             slots.push(ref);
         }
@@ -1221,7 +1238,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_instanz]);
 // ===== ATLAS · Siedlung/instanz — Außen-Konstanten =====
 // Die Instanz-Attribute der LOD-Fassade (`_lodInstanceFacade`) mit ihrer Breite: Sichthöhen (aH0/aH0L), Billboard-
 // die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und die Sichthöhe, negativ = verdeckt).
-AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4 };
+AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4, aEin: 1 };
 {
     // Die Ökologie der Streu ist das Gesetz des Kerns (phyto-core SCATTER_STRATUM), fail-closed — kein Zahlen-Zwilling hier.
     const _eco = (n) => {

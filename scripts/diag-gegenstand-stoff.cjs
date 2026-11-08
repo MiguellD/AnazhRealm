@@ -128,7 +128,7 @@ function lackGestalten() {
         let best = null;
         g.traverse((o) => {
             // der Karosserie-Lack (lackStoff stempelt __lack; der Bremssattel ist Lack, aber nicht die Karosserie)
-            if (!best && o.isMesh && o.material && o.material.userData && o.material.userData.__lack)
+            if (!best && o.isMesh && o.material?.userData?.__lack)
                 best = o.material.color.toArray();
         });
         ist.push(best);

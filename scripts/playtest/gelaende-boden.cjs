@@ -111,7 +111,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        if (r && st && st.voxelChunks) {
+        if (r && st?.voxelChunks) {
             for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
@@ -1109,7 +1109,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
-        const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
+        const fl = (tile?.rivers || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
@@ -1897,7 +1897,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData && c.userData.dying) return;
+                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );
@@ -2238,7 +2238,7 @@ async function checkBandTodZensus({ page, check }) {
             });
             return o;
         } catch (e) {
-            o.fehler = String((e && e.stack) || e).slice(0, 600);
+            o.fehler = String(e?.stack || e).slice(0, 600);
             return o;
         } finally {
             for (const f of restore.reverse())
@@ -2258,7 +2258,7 @@ async function checkBandTodZensus({ page, check }) {
         }
     };
     const urteil = function urteil(z) {
-        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z && z.fehler) || "leer"}` };
+        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z?.fehler) || "leer"}` };
         const v = [];
         if (!(z.tot?.A && z.tot.B && z.tot.C))
             v.push(`vakuös: nicht alle drei gefallen (${JSON.stringify(z.tot)})`);

@@ -1009,8 +1009,9 @@ async function checkBandV18210Verdrahtung({ page, check }) {
 // Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
 // Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
-// gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
-// --rauschprobe`).
+// gegen CPU je Pixel) urteilt kein Gate: die Rausch-Probe der Werkbank fiel 08.11. (w22-s0-ms), keine Station und kein
+// Schritt fuhr sie. Die Kosten des erzeugten Boden-Programms urteilt S0 als kalte Übersetzung auf echter GPU
+// (gate:pruefbuehne-licht, `S0_MS`); `werkbank shader --stoff boden` zeigt seine statischen Kosten (Werkzeug, kein Gate).
 async function checkBandRauschGesetz({ page, check }) {
     await page.evaluate(SK.SHADER_INSTALL);
     const res =

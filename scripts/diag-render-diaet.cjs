@@ -171,7 +171,7 @@ hauptLauf(async () => {
         if (neu.probeFlat) {
             const m0 = neu.probeFlat.leaves[0].mat;
             res.neu.matWeiss = m0 && m0.color && m0.color.getHex() === 0xffffff;
-            res.neu.matMarker = !!(m0?.userData && m0.userData.leafTint && m0.userData.sharedFoliage);
+            res.neu.matMarker = !!(m0?.userData?.leafTint && m0.userData.sharedFoliage);
         }
 
         // ── F: die FARB-WAHRHEIT am lebenden Slot (bevor die NEU-Welt drainiert) ──
@@ -227,8 +227,7 @@ hauptLauf(async () => {
             r._archInstanceAdd(eS, flat);
             const erdeMat = nahtFlat.instanceable && nahtFlat.leaves[0].mat;
             farbe.erdeKanaele = !!(
-                erdeMat?.userData &&
-                erdeMat.userData.leafTint &&
+                erdeMat?.userData?.leafTint &&
                 erdeMat.userData.useInstanceTint
             );
             const gotErde = les(eT.instSlots[0]).c;

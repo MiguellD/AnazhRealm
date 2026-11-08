@@ -288,13 +288,13 @@ async function probe(K) {
     const bildCache = new Map();
     // — auf der Karte gibt erst der Loop-Takt das Ergebnis frei (`_foundryIngestTakt`, headless sofort): die Zählung taktet, bis es da ist
     const bild = async (pr, g, k = pr + "|" + g) => {
-        const p = bildCache.get(k) || r._foundryRequest(pr, g, 0, null, 0).then((L) => (L || []).flatMap(({ position: p }) => Array.from((p?.length ? p : p && p.array) || [])));
+        const p = bildCache.get(k) || r._foundryRequest(pr, g, 0, null, 0).then((L) => (L || []).flatMap(({ position: p }) => Array.from((p?.length ? p : p?.array) || [])));
         for (let da = bildCache.set(k, p) && 0; !da; ) da = (await Promise.race([p.then(() => 1), sleep(20)])) || (takt(), 0);
         return p;
     };
     const kindVon = (pr) => {
         const rec = (f.recipes || {})[pr];
-        return (rec && rec.kind) || (globalThis.__terrainCore.PHYTO_PRESETS[pr] || {}).kind;
+        return (rec?.kind) || (globalThis.__terrainCore.PHYTO_PRESETS[pr] || {}).kind;
     };
     const urteileWerk = async (e, merke) => {
         const pr = r._foundryPresetForEntry(e);

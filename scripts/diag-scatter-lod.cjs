@@ -336,12 +336,12 @@ hauptLauf(async () => {
                     fertig: () => {
                         flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
                         karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
-                        return !!(flat?.instanceable && karte && karte.instanceable);
+                        return !!(flat?.instanceable && karte?.instanceable);
                     },
                     takt: () => sleep(100),
                     max: 300,
                 });
-            fern.flat = !!(flat?.instanceable && flat.lod === 2 && karte && karte.instanceable && karte.lod === 2);
+            fern.flat = !!(flat?.instanceable && flat.lod === 2 && karte?.instanceable && karte.lod === 2);
             if (fern.flat) {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.
                 const G = AR.IMPOSTOR_ATLAS_GRUPPE;

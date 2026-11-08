@@ -75,6 +75,9 @@ class AnazhRealm {
             // Mitspieler reichen sie weiter (`_weltUhrNimm`: das Spätere gilt); die Uhr jeder Teil-Simulation (Leben und Gefühl,
             // Brand, Nässe, Wetter-Zug und Front); Schreiben und Lesen in einem Takt sehen denselben Moment, eine Pause ist eine Pause.
             spielZeit: 0,
+            // DIE WELT-UHR IN TAKTEN: die Zahl der Spiel-Takte der Heimat-Welt (der Loop zählt sie neben `spielZeit`) — der Eintritt
+            // einer Karte blendet an ihr ein (`aEin`, `uLodTakt`), in Takten, nie an Wanduhr oder Auge.
+            weltTakt: 0,
             feldPass: null, // der Feld-Pass des Fern-Rings
             deckStreu: null, // die Deck-Streu des Fernfelds
             chunkSaetze: null, // Map Art → Boden-/Wasser-/Bau-Satz (_chunkSatzEin)
@@ -1878,7 +1881,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.214";
+AnazhRealm.VERSION = "18.546.221";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

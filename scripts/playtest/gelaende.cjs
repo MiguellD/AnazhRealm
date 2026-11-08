@@ -1278,7 +1278,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         const preDamCells = preDamEntry0?.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
         const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
         out.damSpawnSucceeded = !!damEntry;
-        if (damEntry?.blockerAABBs && damEntry.blockerAABBs[0]) {
+        if (damEntry?.blockerAABBs?.[0]) {
             const aabb = damEntry.blockerAABBs[0];
             out.aabbHasBotY = Number.isFinite(aabb.botY);
             out.aabbBotY = aabb.botY;
@@ -1323,8 +1323,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             const afterRemoveEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
             if (
                 preDamCells &&
-                afterRemoveEntry &&
-                afterRemoveEntry.waterCells &&
+                afterRemoveEntry?.waterCells &&
                 afterRemoveEntry.waterCells.length === preDamCells.length
             ) {
                 // VOLL-ARRAY-Vergleich: nach removeArchitecture + Drain MÜSSEN die waterCells EXAKT zum

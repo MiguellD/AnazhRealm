@@ -175,7 +175,7 @@ function wirtAmGesetz(root) {
 // Aufrufer es (`mitGras`, die Welt nach dem Einschwingen), ist ein ungemessenes Gras ROT.
 function wieseUrteil(m, S, mitGras) {
     const f = [];
-    if (!m || m.fehler) return [`Wiese: nicht gemessen (${(m && m.fehler) || "keine Messung"})`];
+    if (!m || m.fehler) return [`Wiese: nicht gemessen (${(m?.fehler) || "keine Messung"})`];
     const wo = `${m.x}/${m.z}`;
     if (m.hang > S.hangMax)
         f.push(`Wiese ${wo}: Hang ${m.hang}° über ${S.hangMax}° (Ausgleichs-Ebene über ${S.ring} m)`);

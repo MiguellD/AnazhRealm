@@ -70,8 +70,8 @@ const { errs, check } = pruefer();
                 }
             }
             const s = st.perfSense;
-            res.senseGpuMs = s && s.phase ? s.phase.gpuMs : null;
-            res.senseGpuMax = s && s.phaseMax ? s.phaseMax.gpuMs : null;
+            res.senseGpuMs = s?.phase ? s.phase.gpuMs : null;
+            res.senseGpuMax = s?.phaseMax ? s.phaseMax.gpuMs : null;
             res.senseQuelle = s ? s.gpuQuelle : null;
             res.senseQuelleGueltig = s ? quelleGueltig(s.gpuQuelle) : false;
             // PERF_PHASES bleibt die CPU-Liste — gpuMs darf ihre cpuSum-Semantik nie vergiften:
@@ -89,7 +89,7 @@ const { errs, check } = pruefer();
 
             // ── (3b) der Trace (steadyState) trägt das Feld ──
             const trace = r._flightRecorderBuildTrace();
-            res.steady = trace && trace.steadyState ? trace.steadyState : null;
+            res.steady = trace?.steadyState ? trace.steadyState : null;
             res.steadyOk = !!(
                 res.steady &&
                 Number.isFinite(res.steady.gpuMsEwma) &&

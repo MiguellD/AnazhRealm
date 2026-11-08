@@ -43,7 +43,7 @@ function haengerAn() {
     // Täter-Klasse — eine synchrone Pipeline im Schatten-Pass heißt „k0 tier:wolf", nicht nur „ShadowMaterial".
     const name = (art, d) => {
         if (!H.an || H.namen.length >= 20000) return;
-        const e = { t: +performance.now().toFixed(2), art, n: String((d && d.label) || "?") };
+        const e = { t: +performance.now().toFixed(2), art, n: String(d?.label || "?") };
         const c = H.cur;
         if (c) {
             try {
@@ -59,26 +59,18 @@ function haengerAn() {
         return e;
     };
     const rend = r.state.renderer;
-    // DER KNOTEN-BAU (r184 `Nodes.getForRender`): die CPU-Hälfte einer Erst-Zeichnung — der TSL-Graph des Stoffs wird zu
-    // WGSL gebaut, synchron, wenn ein RenderObject zum ersten Mal zeichnet und sein Schlüssel nicht im Bau-Cache liegt.
-    // Je synchronem Bau die Dauer, der Stoff und der Auftraggeber; ein asynchroner Bau (`buildAsync`, in Schritten mit
-    // yieldToMain) zählt nur.
-    const N = rend._nodes;
-    const gfr = N.getForRender;
-    N.getForRender = function (ro, asyncBau) {
-        const d = this.get(ro);
-        if (d.nodeBuilderState !== undefined || this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) !== undefined)
-            return gfr.apply(this, arguments);
-        if (asyncBau) {
-            H.acc.bauAsync = (H.acc.bauAsync || 0) + 1;
-            return gfr.apply(this, arguments);
-        }
+    // DER KNOTEN-BAU (die CPU-Hälfte einer Erst-Zeichnung: der TSL-Graph des Stoffs wird zu WGSL) — im laufenden Spiel baut
+    // jeder Graph in Raten (`_knotenRate`, ein Schritt je Aufruf): je Schritt die Dauer, der Stoff und der Auftraggeber (Pass,
+    // Täter-Klasse — `H.cur`). Bis w22-geh-bild hing die Linse an r184 `Nodes.getForRender`, den im Lauf kein Bau mehr nimmt:
+    // „0 Bauten", während der erste Gang an der Mess-Wiese 577–776 ms Kronen-Programme baute.
+    const kr = r._knotenRate;
+    r._knotenRate = function (N, ro) {
         const t0 = performance.now();
-        const s = gfr.apply(this, arguments);
+        const s = kr.apply(this, arguments);
         const ms = performance.now() - t0;
         H.acc.bauN = (H.acc.bauN || 0) + 1;
         H.acc.bauMs = (H.acc.bauMs || 0) + ms;
-        const e = name("bau", { label: (ro.material && (ro.material.name || ro.material.type)) || "?" });
+        const e = name("bau", { label: ro.material?.name || ro.material?.type || "?" });
         if (e) e.ms = +ms.toFixed(1);
         return s;
     };
@@ -125,19 +117,19 @@ function haengerAn() {
     const Q = GPUQueue.prototype;
     const wb = Q.writeBuffer;
     Q.writeBuffer = function (b, o, data, dOff, size) {
-        const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
-        H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
+        const bpe = data?.BYTES_PER_ELEMENT || 1;
+        H.acc.upKB += (size != null ? size * bpe : data?.byteLength || 0) / 1024;
         return wb.apply(this, arguments);
     };
     const wt = Q.writeTexture;
     Q.writeTexture = function (dst, data) {
-        H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
+        H.acc.texKB += (data?.byteLength || 0) / 1024;
         return wt.apply(this, arguments);
     };
     const cei = Q.copyExternalImageToTexture;
     Q.copyExternalImageToTexture = function (src, dst, size) {
-        const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
-        const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
+        const w = Array.isArray(size) ? size[0] : size?.width || 0;
+        const h = Array.isArray(size) ? size[1] || 1 : size?.height || 1;
         H.acc.texKB += (w * h * 4) / 1024;
         return cei.apply(this, arguments);
     };
@@ -588,7 +580,7 @@ function haengerTabelle(a) {
         );
     const kb = a.knotenBau || {};
     z.push(
-        `Knoten-Bau synchron: ${kb.sync} Bauten · Σ ${kb.ms} ms · max ${kb.maxMs} ms · ${kb.ueber16} über 16,7 ms` +
+        `Knoten-Bau in Raten: ${kb.sync} Schritte · Σ ${kb.ms} ms · max ${kb.maxMs} ms · ${kb.ueber16} über 16,7 ms` +
             (kb.sync
                 ? ` — je Auftrag: ${Object.entries(kb.jeAuftragMs)
                       .slice(0, 6)

@@ -324,6 +324,7 @@ class AnazhRealm_stoff_karte {
         g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
         g.setAttribute("aKarte", new THREE.BufferAttribute(karte, 4));
+        g.setAttribute("aEin", new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1)); // je Slot die Fassade, ohne: 0
         g.computeBoundingBox();
         g.computeBoundingSphere();
         at.quad = g;

@@ -769,10 +769,10 @@ async function checkBandWave10b({ page, check }) {
                 pmR.z = 82;
             }
             r._tickLiftingAffordances();
-            out.liftFieldActiveNear = !!(st.player.liftingField?.active);
+            out.liftFieldActiveNear = !!st.player.liftingField?.active;
             if (pmR) pmR.z = 400;
             r._tickLiftingAffordances();
-            out.liftFieldInactiveFar = !(st.player.liftingField?.active);
+            out.liftFieldInactiveFar = !st.player.liftingField?.active;
             weg(/^test_10ext_lifter$/);
 
             emoR.awe = aweBefore0;
@@ -1297,7 +1297,7 @@ async function checkBandV18266RockDetail({ page, check }) {
         const out = {};
         if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
-            g?.attributes && g.attributes.position
+            g?.attributes?.position
                 ? g.index
                     ? g.index.count / 3
                     : g.attributes.position.count / 3

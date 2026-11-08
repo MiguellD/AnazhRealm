@@ -906,7 +906,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         );
         out.importCrossAuthorValid =
             importValid.ok === true && importValid.signatureStatus === "valid" && importValid.reachable === true;
-        out.customWorldStored = !!(st.customWorlds && st.customWorlds["void-zwei"]);
+        out.customWorldStored = !!st.customWorlds?.["void-zwei"];
         out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
         out.worldEntryCustom = !!r._worldEntry("void-zwei");
         out.libraryWorldsMerged =
@@ -1572,7 +1572,7 @@ async function checkBandPhiArchipel({ page, check }) {
 
         // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
         const signed = await r.signWorldAddress({ skipConfirm: true, label: "test-welt", broker: "ws://h:4313" });
-        out.signOk = !!(signed?.ok && signed.address && signed.address.sig);
+        out.signOk = !!(signed?.ok && signed.address?.sig);
         const status = signed?.ok ? await r.verifyWorldAddress(signed.address) : null;
         out.verifyValid = status === "valid";
         // Manipulierte Adresse (label geändert) → invalid (die Signatur deckt label).
@@ -1593,11 +1593,9 @@ async function checkBandPhiArchipel({ page, check }) {
         const setRes = r.setPortalToActiveWorld("phi_test_portal");
         out.portalSetOk = !!(setRes?.ok);
         const bp = st.blueprints["phi_test_portal"];
-        out.portalCarriesAddress = !!(bp?.portalMeta && bp.portalMeta.worldAddress);
+        out.portalCarriesAddress = !!(bp?.portalMeta?.worldAddress);
         out.portalSigPreserved = !!(
-            bp?.portalMeta &&
-            bp.portalMeta.worldAddress &&
-            bp.portalMeta.worldAddress.sig
+            bp?.portalMeta?.worldAddress?.sig
         );
         const clearRes = r.setPortalAddress("phi_test_portal", null);
         out.portalClearOk = !!(clearRes?.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;

@@ -37,7 +37,7 @@ const frist = (z) => Math.max(5, Math.ceil((3 * z.p90) / 60), Math.ceil((1.2 * z
 // die Schritte einer check.yml: Name → { run-Text, Job-Art } (ohne Vorbereitung)
 function schritteAus(doc) {
     const m = new Map();
-    for (const [job, j] of Object.entries((doc && doc.jobs) || {}))
+    for (const [job, j] of Object.entries(doc?.jobs || {}))
         for (const s of (GRUPPE.test(job) && j.steps) || [])
             if (s.name && s.run && !VORBEREITUNG.test(s.name)) m.set(s.name, { run: lauf(s), echt: job === "echt", voll: job === "voll" });
     return m;
@@ -228,7 +228,7 @@ function verteile(jetzt, out) {
     let fristen = 0;
     const echt = yml.slice(von, bis).replace(/^( +)- name: (.+)\n(?:\1  timeout-minutes: \d+\n)?/gm, (m, x, n) => {
         const s = schritte[n.replace(/^"(.*)"$/, "$1")];
-        return s && s.p90 ? (fristen++, `${x}- name: ${n}\n${x}  timeout-minutes: ${frist(s)}\n`) : m;
+        return s?.p90 ? (fristen++, `${x}- name: ${n}\n${x}  timeout-minutes: ${frist(s)}\n`) : m;
     });
     if (von >= 0) yml = yml.slice(0, von) + echt + yml.slice(bis);
     fs.writeFileSync(path.join(root, WORKFLOW), yml);
