@@ -458,7 +458,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
             else aus.verborgen++;
         } else if (Array.isArray(n.functionNodes) && n.functionNodes.length) {
             const f = n.functionNodes[0];
-            name = (f && f.shaderNode && f.shaderNode.layout && f.shaderNode.layout.name) || "Überladung";
+            name = f?.shaderNode?.layout?.name || "Überladung";
         }
         if (name && ist.test(name)) {
             aus.rauschen++;

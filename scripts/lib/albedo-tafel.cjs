@@ -167,7 +167,7 @@ function tafelPruefen(t) {
             fz(`ratsche ist weder null noch Zahl`);
         // DIE STUFEN-PFLICHT: eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
-        const wk = String((z.welt?.klasse) || "");
+        const wk = String(z.welt?.klasse || "");
         const st = z.welt && z.welt.stufen;
         if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
             fz(`welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
@@ -231,7 +231,7 @@ function tafelUrteil(t, messung) {
     const randA = Math.log(1 + t.messRand);
     const sollA = Math.log(1 + t.toleranz);
     const zeilen = [];
-    const eich = (messung?.eichung) || {};
+    const eich = messung?.eichung || {};
     const eichOk = (y) => zahl(y) && Math.abs(y - t.karte.albedo) <= t.karte.eichRand;
     if (!eichOk(eich.welt)) rot.push({ art: "eichung", text: `Welt-Karte liest ${eich.welt} statt ${t.karte.albedo}` });
     for (const [s, y] of Object.entries(eich.labor || {}))
@@ -466,7 +466,7 @@ function laborAlbedo(o) {
             r: m.roughness,
             mt: m.metalness,
             cc: m.clearcoat || 0,
-            seh: (m.userData?.__seh) || null,
+            seh: m.userData?.__seh || null,
         });
         const matsOf = (x) => (Array.isArray(x.material) ? x.material : [x.material]).filter(Boolean);
         const alleMeshes = [];

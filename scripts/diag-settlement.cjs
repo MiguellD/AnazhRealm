@@ -1723,7 +1723,7 @@ hauptLauf(async () => {
         const plan = await r._foundryRequestSettlement({ seed: 7, nH: 8 });
         res.planOk = !!(plan && Array.isArray(plan.slots) && plan.slots.length >= 4);
         res.planName = plan && plan.name;
-        res.planSlots = plan && plan.slots ? plan.slots.length : -1;
+        res.planSlots = plan?.slots ? plan.slots.length : -1;
         if (!res.planOk) return res;
         // 2) Der Konsument: POSITIONS-DETERMINISTISCH am SELBEN Anker (die Wasser-Wand ist
         //    Terrain-Wahrheit je Ort — verschiedene Anker duerfen verschieden viele Slots
@@ -2025,9 +2025,9 @@ hauptLauf(async () => {
                     st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
                         .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !(wm5.genesisOrt && wm5.genesisOrt.steht); t5++)
+                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++)
                     r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
-                res.c.ring.stempel = !!(wm5.genesisOrt && wm5.genesisOrt.steht);
+                res.c.ring.stempel = !!wm5.genesisOrt?.steht;
                 res.c.ring.gebaut = imRing() - ringVorher;
                 res.c.ring.stehen = imRing();
                 const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
@@ -2145,7 +2145,7 @@ hauptLauf(async () => {
                 delete wm.settlementCells[key];
                 let [wach, erst, haus, haupt] = [false, null, -1, 1];
                 FC.ortPlan = function (p, ...a) {
-                    haupt += wach && p && p.slots ? 1 : 0;
+                    haupt += wach && p?.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
                 };
                 const lift = AnazhRealm.prototype._spawnSettlementSlot;
@@ -2519,7 +2519,7 @@ hauptLauf(async () => {
                     // gezählt am EXPORT (die Slots des Studios): der Plan v2 wirft nasse Slots, bevor er steht (fachwerk `ortPlan`,
                     // `wasserSlots`) — an ihm gezählt sähe die Linse die Häuser nie, die ein Ort ohne trockenen Grund verliert
                     res.slots = plan.slots.length;
-                    res.wasserSlots = (v2 && v2.wasserSlots) || 0;
+                    res.wasserSlots = v2?.wasserSlots || 0;
                     // DER TÄTER JE FEHLENDEM HAUS: die Wand der EINEN Slot-Quelle, an der der Slot fiel — das Wasser
                     // (`_fundamentLand`) oder ein Bau im Weg (`_bauFrei`, mit den Bauten, die keine Natur sind, binnen 8 m)
                     // die Meldung der Ort-Wahl (`_ortWahl`: kein trockener Ort in den Ringen) und ihre Kosten (`_ortWahlMass`)
@@ -2948,7 +2948,7 @@ hauptLauf(async () => {
                             cam.updateMatrixWorld(true);
                             r._leuchtPool = null;
                             r._leuchtTakt();
-                            const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                            const pl = r._leuchtPool?.plaetze || [];
                             // DER HORIZONT DES POOLS: die sichtbaren Quellen der Gasse, die das Gesetz des Pools überhaupt
                             // wählen darf (`_leuchtQuellen` im `umkreisM` um das Auge, ohne Sichtkegel) — eine Laterne 63 m vor
                             // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)

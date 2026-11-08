@@ -184,7 +184,7 @@ function KALT_PROBE() {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
         if (r?.state) {
-            if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
+            if (!A.buchDa && r._foundry?.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
                 o.fehlt = L.map((l) => l.satz);
@@ -416,7 +416,7 @@ hauptLauf(async () => {
         // auf ihren ersten Leser (_defaultBlueprints). Jeder Täter beim Namen seiner Tafel; fehlt eine, wirft die Linse laut.
         o.verborgen = ["inventory-recipes", "workshop-list", "library-list"].filter((id) => document.getElementById(id).childElementCount);
         if (!Object.getOwnPropertyDescriptor(st.blueprints.baum_mammut, "parts").get) o.verborgen.push("baum_mammut");
-        const headless = !!(st.renderer && st.renderer._isHeadlessNull);
+        const headless = !!st.renderer?._isHeadlessNull;
         // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──
         const terms = () => {
             const f = r._foundry;
@@ -428,10 +428,10 @@ hauptLauf(async () => {
                 water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
                 // die EINE Antwort der Welt (`_streuWartet`): fehlend · aufgeschoben · Scheibe offen, je Region in Reichweite
                 streu: !!st.playerMesh && r._streuWartet(st.playerMesh.position) === 0,
-                biblio: !!(f && f.ready && !f._vorrat),
+                biblio: !!(f?.ready && !f._vorrat),
                 // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                 impost: headless ? true : !q || q.length === 0,
-                luft: !!(st.scene && st.scene.fogNode) && sichtM() >= 5000,
+                luft: !!st.scene?.fogNode && sichtM() >= 5000,
             };
         };
         const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);

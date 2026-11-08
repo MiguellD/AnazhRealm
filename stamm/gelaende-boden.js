@@ -661,12 +661,18 @@ class AnazhRealm_gelaende_boden {
     // (Spawn/Streu/Boden/Material), NICHT in worldFieldAt (Hot-Path). Vier `_voxelSurfaceY`-Calls pro
     // Slope: OK für Punkt-Probes, nicht für Massen-Aufrufe.
     // h_dx, h_dz: Δ über 2 m → slope dimensionslos (m/m): ~0 flach, ~1 = 45°, ~2 Klippe.
-    _slopeAt(x, z, surf, eps, aus) {
+    _slopeAt(x, z, surf, eps, aus, fuss) {
         // Die EINE Platzierungs-Slope-Quelle: |∇h| (m/m); Sampler + eps sind Parameter — Gras reicht die
         // gecachte surfMap, der Scatter-Bäcker getTerrainHeightAt ±2 m, Default _voxelSurfaceY. So lesen Gras
         // und Fels DIESELBE Steilheit. Die Fragment-Slope `aSlope`/`_steep` (Fels-FARBE) bleibt bewusst
         // getrennt (gerenderte Normale pro Pixel). `aus` (DARF) nimmt den Gradienten selbst (gx, gz: die Ebene des
         // Hangs, auf der ein Büschel der Nah-Wiese steht, `_nahWieseKachelDaten`).
+        // DIE EBENE, DIE ÜBER KEINE KANTE KIPPT (w21-wiese-fern): reicht der Rufer die Höhe des Fußes (`fuss`), trägt `aus` je
+        // Achse den MINMOD der einseitigen Steigungen — gleiches Vorzeichen: die flachere, sonst 0 (Kamm und Mulde tragen die
+        // waagrechte Tangente). Auf dem gleichmäßigen Hang ist sie die zentrale; über einer Kante, einem Kamm oder einem Riss
+        // der Boden-Karte kippt sie nicht in den Fall. Bis dahin las das Büschel die zentrale Differenz über ±1 m: neben einem
+        // Riss von 24 m stand es auf einer Ebene mit Gradient 12,4, ein Büschel der Ferne spannte 72–84 m Höhe (Genesis-Ort,
+        // Null-Renderer). Der Betrag (die Steilheit der Platzierung) bleibt der zentrale.
         const s = surf || ((px, pz) => this._voxelSurfaceY(px, pz));
         const e = eps || 1;
         const yE = s(x + e, z);
@@ -679,7 +685,10 @@ class AnazhRealm_gelaende_boden {
         }
         const dxh = (yE - yW) / (2 * e);
         const dzh = (yS - yN) / (2 * e);
-        if (aus) [aus.gx, aus.gz] = [dxh, dzh];
+        const mm = (a, b) => (a * b <= 0 ? 0 : Math.abs(a) < Math.abs(b) ? a : b);
+        if (aus && Number.isFinite(fuss))
+            [aus.gx, aus.gz] = [mm((yE - fuss) / e, (fuss - yW) / e), mm((yS - fuss) / e, (fuss - yN) / e)];
+        else if (aus) [aus.gx, aus.gz] = [dxh, dzh];
         return Math.hypot(dxh, dzh);
     }
 

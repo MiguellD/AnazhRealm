@@ -39,7 +39,7 @@ async function runJob(page, fn, arg) {
                     window.__jobDone = true;
                 })
                 .catch((e) => {
-                    window.__jobOut = { err: String((e && e.stack) || e).split("\n")[0] };
+                    window.__jobOut = { err: String(e?.stack || e).split("\n")[0] };
                     window.__jobDone = true;
                 });
         },
@@ -65,7 +65,7 @@ async function vokabular() {
     const chunk = (cx, cz) => (st.voxelChunks && st.voxelChunks.get(cx + "," + cz)) || null;
     const posHashOf = (cx, cz) => {
         const e = chunk(cx, cz);
-        return e && e.mesh ? __abdruck(e.mesh.geometry) : null;
+        return e?.mesh ? __abdruck(e.mesh.geometry) : null;
     };
     const pumpChunk = async (cx, cz, ms) => {
         for (const weiter = __deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {

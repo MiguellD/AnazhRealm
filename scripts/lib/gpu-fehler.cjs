@@ -33,7 +33,7 @@ function gpuFehlerAbgriff() {
         try {
             dev.addEventListener("uncapturederror", (ev) =>
                 merke(F.device, {
-                    msg: String((ev.error && ev.error.message) || ev.error).slice(0, 600),
+                    msg: String(ev.error?.message || ev.error).slice(0, 600),
                     pass: F.pass,
                     objekt: F.objekt,
                     t: Math.round(performance.now()),
@@ -63,7 +63,7 @@ function gpuFehlerAbgriff() {
     const E = GPUCommandEncoder.prototype;
     const brp = E.beginRenderPass;
     E.beginRenderPass = function (d) {
-        F.pass = (d && d.label) || "?";
+        F.pass = d?.label || "?";
         const enc = brp.call(this, d);
         enc.__passLabel = F.pass;
         enc.__slots = new Set();
@@ -72,7 +72,7 @@ function gpuFehlerAbgriff() {
     const crbe = P.createRenderBundleEncoder;
     P.createRenderBundleEncoder = function (d) {
         const enc = crbe.call(this, d);
-        enc.__passLabel = "bundle:" + ((d && d.label) || "?") + " in " + F.pass;
+        enc.__passLabel = "bundle:" + (d?.label || "?") + " in " + F.pass;
         enc.__slots = new Set();
         return enc;
     };
@@ -125,7 +125,7 @@ function gpuFehlerAbgriff() {
 function gpuFehlerObjekt() {
     const be = r && st && st.renderer && st.renderer.backend;
     const F = window.__gpuFehler;
-    if (!be || !F || be.__gpuFehlerDraw) return !!(be && be.__gpuFehlerDraw);
+    if (!be || !F || be.__gpuFehlerDraw) return !!be?.__gpuFehlerDraw;
     const d = be.draw;
     be.draw = function (ro, info) {
         const o = ro && ro.object;

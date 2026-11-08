@@ -123,6 +123,11 @@ function seitenPruefer() {
         geh(obj, wurzel, 0);
         return Array.from(out);
     };
+    // Die Stufen von A, die `wm` ohne Erlaubnis trägt (Seite und Speicher lesen dieselbe), `vor` nennt die Quelle.
+    const stufenVonA = (wm, ok, vor) =>
+        Object.keys(A_STUFEN)
+            .filter((k) => !ok.has(`worldMeta.${k}`) && wm[k] === A_STUFEN[k])
+            .map((k) => `${vor}worldMeta.${k} (= ${JSON.stringify(A_STUFEN[k])} von A)`);
     window.__grenze = {
         T,
         // Welt B: eine Wildnis-Welt ohne Erbgut, Anker, Edits, Dörfer und Stempel — geboren wie jede neue Welt, gebaut,
@@ -249,11 +254,7 @@ function seitenPruefer() {
             const out = [];
             const wm = st.worldMeta || {};
             for (const p of pfade(wm, "worldMeta")) if (!ok.has(p)) out.push(p);
-            for (const k of Object.keys(A_STUFEN)) {
-                const pfad = `worldMeta.${k}`;
-                if (ok.has(pfad) || wm[k] !== A_STUFEN[k]) continue;
-                out.push(`${pfad} (= ${JSON.stringify(A_STUFEN[k])} von A)`);
-            }
+            out.push(...stufenVonA(wm, ok, ""));
             const e = r._erbgut();
             if (!(e.terme.length === 1 && e.terme[0].art === "wildnis"))
                 out.push(`Leser _erbgut() [${e.terme.map((t) => t.art).join(", ")}]`);
@@ -287,11 +288,7 @@ function seitenPruefer() {
             const s = JSON.parse(roh);
             const out = pfade(s, "Speicher", 3).filter((p) => !ok.has(p.replace(/^Speicher\./, "")));
             const wm = s.worldMeta || {};
-            for (const k of Object.keys(A_STUFEN)) {
-                const pfad = `worldMeta.${k}`;
-                if (ok.has(pfad) || wm[k] !== A_STUFEN[k]) continue;
-                out.push(`Speicher.${pfad} (= ${JSON.stringify(A_STUFEN[k])} von A)`);
-            }
+            out.push(...stufenVonA(wm, ok, "Speicher."));
             // das Erbgut wohnt im Gesetz der Welt (ultiversum.K1, `worldMeta.gesetz.gelaende`)
             if (wm.gesetz?.gelaende != null) out.push("Speicher.worldMeta.gesetz.gelaende");
             return out;

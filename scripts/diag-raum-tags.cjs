@@ -377,7 +377,7 @@ async function probe() {
         frage(NAME, "Stoff-Tag direkt (ohne API)", "rechnet");
         // ein Spielstand geladen: der Bauplan als neues Objekt, die Stoff-Tags im Bestand
         const ser = jsonKlon(r._serializeBlueprint(bp0()));
-        if (ser.parts && ser.parts[0] && ser.parts[0].position) ser.parts[0].position.x += 1;
+        if (ser.parts?.[0]?.position) ser.parts[0].position.x += 1;
         r._loadStateRestoreCraftingInventory({
             materials: [
                 { name: "raum_stoff", color: 0x885533, tags: { resoniert: 0.5, härte: 0.5, magieleitung: 0.7 } },
