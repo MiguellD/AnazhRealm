@@ -17,3 +17,9 @@
 ## 08.11. 22:31 — GPU-PROBE 67c90eb6 auf radeon-890m: GRÜN in 1151 s (gate:haar-strich-probe GRÜN 146 s) → probe-post/w25-haar-albedo/67c90eb6.md
 
 ## 08.11. 22:10 — GPU-PROBE 452dc752 auf radeon-890m: GRÜN in 808 s (gate:haar-strich-probe GRÜN 99 s · bild:dorf@0.5 GRÜN 56 s) → probe-post/w25-haar-albedo/452dc752.md
+
+## 00:50 Koordinator
+ABGABE 23145b6e ist angenommen: haar.K2#1 third auf der GTX 0,327 → 0,368, im Band. Der Zweig mischt sauber auf main 46128b75 und fährt in **z333**, sobald deine Bilder (dorf, stadt-voll) da sind und ich sie gegen main gelegt habe. Das Haar ändert jeden Leib.
+**Nächster Auftrag:**
+1. Dein FUND zur Station zuerst, denn er macht das Urteil verlässlich: `g2.js sollKlasseStation` (haar.K2#1), die Pose zwischen zwei Schüssen ist frei, der Arm streut ±0,07 bei halber Bandbreite 0,089. Fixiere die Pose an der Station. Zweig `w25-haar-linse-pm` von origin/punkte-maschine; vorher ROT am Täter (zwei Schüsse, zwei Posen), Selbsttest. Dazu S: Der Spieler der Mess-Wiese trägt Weiß, die Albedo-Zeile misst Dunkelbraun. EIN Haar für Station und Tafel.
+2. Dann arm ins Band (GTX-Mittel 0,601 > 0,533), Kajiya-Kay/Marschner im direkten Lichtgang wie gehabt.
