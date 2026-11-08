@@ -101,6 +101,15 @@ function urteil(b) {
     if (c.wieseLiest === "leer") v.push("LEER: die Nah-Wiese trägt keine Kachel mit Büscheln — die Wiesen-Probe ist blind");
     else if (!c.wieseLiest)
         v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
+    // (W) die Ferne der Wiese im Gang: keine Lücke gegen das Gesetz, je Bild nur ein Teil der Kacheln neu; die Brüche fallen rot
+    const [W, WH, WR] = [b.ferneWeg || { leer: true }, b.ferneWegHalt || {}, b.ferneWegRand || {}];
+    if (W.leer || !(W.geprueft > 0)) v.push("LEER: die Ferne der Wiese trägt keine Instanz im Gesetz — (W) prüfte den Weg nicht");
+    else {
+        if (W.loecher > 0) v.push(`FERNE: ${W.loecher} Löcher im Gang — die gehaltene Wahl zeichnet nicht, was das Gesetz wählt: ${W.namen.join(" · ")}`);
+        if (W.neuJeBild > W.kacheln / 4) v.push(`FERNE: die Wahl hält nicht über den Weg — je Bild ${W.neuJeBild} von ${W.kacheln} Kacheln neu (\`_nahWieseFernSatz\`)`);
+        if (!(WH.neuJeBild > WH.kacheln / 4)) v.push("LINSE STUMPF: der Halt-Bruch wählt nicht je Bild jede Kachel neu");
+        if (!(WR.loecher > 0)) v.push("LINSE STUMPF: der Rand-Bruch (die Wahl ohne den Weg) trägt keine Löcher");
+    }
     return v;
 }
 
@@ -187,6 +196,9 @@ function selbsttest() {
             namen: [],
         },
         code: { wieseLiest: true },
+        ferneWeg: { geprueft: 9000, loecher: 0, kacheln: 272, neuJeBild: 18, namen: [] },
+        ferneWegHalt: { kacheln: 272, neuJeBild: 272 },
+        ferneWegRand: { loecher: 31 },
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
@@ -744,6 +756,11 @@ function selbsttest() {
         ],
         ["Wiese liest nicht", ["code.wieseLiest=", false], /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", ["code.wieseLiest=", "leer"], /LEER: die Nah-Wiese trägt keine Kachel/],
+        ["Ferne mit Loch", ["ferneWeg.loecher=", 3], /FERNE: 3 Löcher im Gang/],
+        ["Ferne wählt je Bild neu", ["ferneWeg.neuJeBild=", 272], /FERNE: die Wahl hält nicht über den Weg/],
+        ["Ferne leer", ["ferneWeg.leer=", true], /LEER: die Ferne der Wiese/],
+        ["Halt-Bruch stumpf", ["ferneWegHalt.neuJeBild=", 9], /LINSE STUMPF: der Halt-Bruch/],
+        ["Rand-Bruch stumpf", ["ferneWegRand.loecher=", 0], /LINSE STUMPF: der Rand-Bruch/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -1361,6 +1378,54 @@ const server = statikServer();
                 r._nahWieseSicht(cam, Lg);
                 aus.code.wieseLiest = !trifft(Lg) && trifft(Object.assign({}, Lg, { gen: Lg.gen + 1 })) && nw.gen === Lg.gen + 1;
             }
+            // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m über dem Boden
+            // (4 m/s: die Uhr der Seite rückt je Bild 1/60 s), je Bild der Sicht-Satz in der Lage dieses Blicks; das Soll je Kachel ist ihre Wahl OHNE Weg am Auge
+            // dieses Bilds (`_wieseFernWahl` mit Rand 0 in der Lage des Bilds — der Anteil an der Tafel-Stütze darunter, die Kugel an
+            // der darüber: strenger als das Gesetz des Stoffs): jede Instanz des Solls steht in der gehaltenen Wahl, und je Bild wählt
+            // nur ein Teil der Kacheln neu. Scharf: der Halt-Bruch (die Wahlen fallen je Bild) wählt jede Kachel neu, der Rand-Bruch
+            // (die Wahl am Anker ohne den Weg) trägt Löcher.
+            const ferneWeg = (bruch) => {
+                const nw = st.nahWiese;
+                if (!nw?.fern?.kacheln.size || !nw.schale) return { leer: true };
+                const ohneWeg = (a) => ({ ...a, u: [0, 0, 0], lw: 0, qh: 1e-6, qv: 1e-6, L: { ...a.L, halt: a.L.halt - a.lw * Math.hypot(1, a.u[1]) - Math.hypot(a.qh, a.qv), dreh: a.L.dreh - a.dr } }); // prettier-ignore
+                const zurueck = leihe(r, bruch === "halt" ? { _nahWieseFernSatz(...a) { const H = this.state.nahWiese.fernHalt; if (H) H.wahl = new WeakMap(); return P._nahWieseFernSatz.apply(this, a); } }
+                    : bruch ? { _wieseFernWahl(a, ...x) { return Object.assign(P._wieseFernWahl.call(this, ohneWeg(a), ...x), { anker: a }); } } : {});
+                const o = { loecher: 0, geprueft: 0, neu: 0, kacheln: nw.fern.kacheln.size, namen: [] };
+                const [jetzt0, uhr] = [performance.now, { ms: 0 }];
+                performance.now = () => jetzt0.call(performance) + uhr.ms;
+                try {
+                    [nw.fernHalt, nw.neu] = [null, true];
+                    for (let f = 0; f < 45; f++) {
+                        uhr.ms += 1000 / 60;
+                        stelle(Math.PI / 5, f / 15);
+                        cam.position.y = (r._bodenSichtAt(cam.position.x, cam.position.z) ?? boden) + 1.7;
+                        cam.updateMatrixWorld(true);
+                        S.m.copy(cam.projectionMatrix);
+                        S.m.elements[8] = S.m.elements[9] = 0;
+                        S.frustum.setFromProjectionMatrix(S.m.multiply(cam.matrixWorldInverse), cam.coordinateSystem);
+                        r._passMatrixWeit(S.m, cam, AnazhRealm.PASS_WAHL.drehRand);
+                        const L = r._passWahlLage(S, cam, -1);
+                        const neu0 = nw.fernHalt?.neu || 0;
+                        r._nahWieseSicht(cam, L);
+                        if (f) o.neu += nw.fernHalt.neu - neu0;
+                        const ziel = [null, null, [nw.vorlagen.get("0:L2"), nw.vorlagen.get("1:L2")]];
+                        const rMax = Math.max(...[...nw.vorlagen.values()].map((vl) => vl.r + Math.abs(vl.cy)));
+                        const jetzt = { L, auge: r._wieseAuge(cam.position), u: [0, 0, 0], lw: 0, qh: 1e-6, qv: 1e-6 };
+                        for (const k of nw.fern.kacheln.values()) {
+                            const [w, x] = [nw.fernHalt.wahl.get(k), P._wieseFernWahl.call(r, jetzt, k, ziel, rMax, nw.schale)];
+                            for (const [soll, ist, wer] of [[x.idx[0], w?.idx[0], "Büschel 0:"], [x.idx[1], w?.idx[1], "Büschel 1:"], [x.karten, w?.karten, "Karte "]])
+                                for (const i of soll || [])
+                                    if ((o.geprueft++, !ist?.includes(i)) && o.loecher++ < 4) o.namen.push(`${wer}${i} in ${k.mx},${k.mz} Bild ${f}`);
+                        }
+                    }
+                } finally {
+                    [performance.now, nw.fernHalt, nw.neu] = [jetzt0, null, true];
+                    zurueck();
+                    stelle(0, 0);
+                }
+                return Object.assign(o, { neuJeBild: +(o.neu / 44).toFixed(1) });
+            };
+            [aus.ferneWeg, aus.ferneWegHalt, aus.ferneWegRand] = [ferneWeg(), ferneWeg("halt"), ferneWeg("rand")];
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             aus.gruppen = r._instanzWahlGruppen().size;
             const H = s.hoehle;
@@ -1447,6 +1512,8 @@ const server = statikServer();
             `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
+    for (const [n, w] of [["", befund.ferneWeg], [" Halt-Bruch", befund.ferneWegHalt], [" Rand-Bruch", befund.ferneWegRand]])
+        console.log(`  Ferne im Gang${n}: ${w.geprueft} geprüft, ${w.loecher} Löcher, je Bild ${w.neuJeBild} von ${w.kacheln} Kacheln neu ${w.namen?.join(" · ") || ""}`);
     const v = urteil(befund);
     wandEnde(
         v,

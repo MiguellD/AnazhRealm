@@ -560,9 +560,11 @@ class AnazhRealm_daten {
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,
-                    // DER WEG DER WAHL (w23-geh-takt, `_nahWieseFernSatz`): die Wahl einer Kachel hält für jedes Auge bis `wegM`
-                    // waagrecht und `lotM` lotrecht von ihrem Anker; ab der halben Drift wählt sie neu im Budget `ms` je Bild
-                    halt: Object.freeze({ wegM: 2, lotM: 0.25, ms: 0.5 }),
+                    // DER WEG DER WAHL (w23-geh-takt, `_wieseFernAnker`): die Wahl einer Kachel hält auf der Strecke, die das Auge in
+                    // `zeitS` geht (`wegM` bis `wegMax` m), quer `querM`, lotrecht `lotM`, die Höhe über dem Boden `hM`, die Drehung
+                    // samt Sichtfeld `drehRad`; im Stand ein Punkt mit `standM` (dem Halt der Lage); ab der halben Drift wählt sie
+                    // neu im Budget `ms` je Bild
+                    halt: Object.freeze({ wegM: 2, wegMax: 8, zeitS: 0.5, querM: 0.15, lotM: 0.1, hM: 0.1, drehRad: 0.026, standM: 0.02, ms: 0.5 }), // prettier-ignore
                     gitter: 1,
                     boden: 0.5,
                     wiese: 0.5,
