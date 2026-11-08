@@ -25,7 +25,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, jsonLesen, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, jsonLesen, SELBSTTEST, stammLib, nullWelt } = require("./lib/welt-boot.cjs");
 
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
@@ -593,12 +593,8 @@ function urteilWelt(d) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, vor: WELT_HAKEN }, 60000);
     try {
-        const page = await browser.newPage();
-        await page.evaluateOnNewDocument(WELT_HAKEN);
-        await server.zeige(page, 60000);
         const erst = await page.evaluate(WELT_MESSEN);
         // W3 DER ZWEIT-BOOT: dieselbe Welt lädt neu (gleicher Browser = dieselbe IndexedDB, derselbe Stempel) — was jetzt
         // noch gebaut wird, hat die Platte verfehlt.

@@ -2620,10 +2620,15 @@ class AnazhRealm_gelaende_chunks {
         // Stück hält den Strom wach. Bis hierher nahm die Hälfte außer Bild jedem Lade-Takt seine Kappe (GTX kalt, B-Blick:
         // 40 Ring-Rufe, 10 Einbauten und 10 Saaten außer Blick, 0,94 s Haupt-Faden vor dem Bild).
         let [haelfte, n, t0, satt] = [null, 0, 0, false];
+        const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
+        // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): der Strom ist ihr erster Leser im Takt (prio 0) — er stellt
+        // sie und baut im Spiel nie über sie hinaus (EIN Stück je Takt immer, über beide Hälften); unter dem Ladeschirm gelten die
+        // Kappen des Lade-Takts
+        const bauFrist = this._bauFrist("strom");
         const weiter = (frist) =>
             this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
-            this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist);
-        const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
+            this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist) &&
+            (lade || performance.now() < bauFrist);
         const leerlauf = lade && this._ringLeerlauf === true;
         this._ringLeerlauf = false;
         let [draussen, wartet] = [0, 0];
@@ -2683,7 +2688,14 @@ class AnazhRealm_gelaende_chunks {
         // Zeit bis Bedarf in Metern; die Zelle des Spielers vorn (Infinity − Infinity ist NaN: unter Gleichen der nächste Schlüssel)
         zellen.sort((a, b) => (lade ? b[2] - a[2] : 0) || a[3] - b[3] || a[4] - b[4] || a[5] - b[5]);
         for (const [cx, cz, bild, , , , existing, existingLod, desiredLod] of zellen) {
-            if (bild !== haelfte) [haelfte, n, t0, satt] = [bild, 0, performance.now(), false]; // die Hälfte beginnt ihre Kappe
+            // die Hälfte beginnt ihre Kappe — im Spiel nur, solange die EINE Frist offen ist (das Pflicht-Stück gilt dem Takt)
+            if (bild !== haelfte)
+                [haelfte, n, t0, satt] = [
+                    bild,
+                    0,
+                    performance.now(),
+                    !lade && built > 0 && performance.now() >= bauFrist,
+                ];
             if (satt) continue;
             const key = `${cx},${cz}`;
             // DAS NETZ IM FLUG KOSTET KEINEN PLATZ (w14-strom-tempo): wartet die verlangte Stufe schon im Faden

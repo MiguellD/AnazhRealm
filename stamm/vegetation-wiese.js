@@ -676,6 +676,15 @@ class AnazhRealm_vegetation_wiese {
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
         const nw = this.state.nahWiese;
+        // DAS FELD ZUERST (w24-rueckfall-ruhe, Lehre 25: billig vor teuer): die 3 × 3 Gitter der Ferne (`_wieseFernGitter`, je
+        // Gitter ~0,03 ms; die Frist des Takts entscheidet je Gitter, ob es entsteht) stehen, BEVOR die Kachel die Büschel ihrer
+        // Kacheln der Nähe zieht (`_nahWieseKachelBueschel`, je Kachel der Ferne ~2,4 ms) — danach baut sie ohne Frist zu Ende. Bis
+        // hier zog sie erst die Büschel und fragte dann die Gitter unter der Frist: war sie über den Büscheln verstrichen, fiel der
+        // Bau auf null, und der nächste Takt zog dieselben Büschel neu. Unter dem Boden des Deko-Takts kam so kein Gitter an die
+        // Reihe (Radeon, Start-Dorf mit 81 Leibern: 1 065 von 1 920 Bauten verworfen, „Fege-Takt nahWiese wartet, nahStreu wartet“
+        // nach 681 Takten; Dorf /umstellen 534 von 1 396, die GTX stand dort nach 1 800 Takten nicht).
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) if (!this._wieseFernGitter(fx + di, fz + dj, frist)) return null;
         const bueschel = [];
         const chunkKarten = AnazhRealm._wieseKarten([(fx - 1) * K, (fz - 1) * K, (fx + 2) * K, (fz + 2) * K]);
         for (let j = 0; j < n; j++)
@@ -694,7 +703,7 @@ class AnazhRealm_vegetation_wiese {
                 }
             }
         bueschel.sort((a, b) => a.o - b.o);
-        const G = this._wieseFernGrenzen(fx, fz, bueschel, reich, frist);
+        const G = this._wieseFernGrenzen(fx, fz, bueschel, reich);
         if (!G) return null;
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
@@ -744,7 +753,9 @@ class AnazhRealm_vegetation_wiese {
     // Es fällt mit seinen Karten und seinem Wasser (dieselbe Prüfung wie die Kachel) und unter einer neuen Fläche
     // (`_nahWieseNeuIn`); jenseits des Chunk-Rings (`_bodenKommtNie`, `nie`) trägt es nichts. null, solange ein Chunk unter ihm
     // seine Karte noch bekommt — oder die Frist des Takts (`frist`) verstrich, bevor es neu entsteht (die Kachel wartet einen
-    // Takt, die gelesenen Gitter bleiben; Lehre 14). Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr Boden steht.
+    // Takt, die gelesenen Gitter bleiben; Lehre 14). Die Frist fragt nur der Bau der Kachel, VOR ihren Büscheln
+    // (`_nahWieseFernKachel`); die Grenze liest danach, was steht. Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr
+    // Boden steht.
     _wieseFernGitter(fx, fz, frist) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
@@ -792,8 +803,8 @@ class AnazhRealm_vegetation_wiese {
     // die Kachel. → { grenze: Float32Array (je Büschel, in der Folge von `bueschel`), chunkKarten, nie: [[fx, fz], …], feld (das
     // Feld der Lesung, `_wieseFernFeld`: die Schale der Kachel liest DASSELBE) } oder null, solange ein Gitter auf seine Karten
     // wartet.
-    _wieseFernGrenzen(fx, fz, bueschel, reich, frist) {
-        const D = this._wieseFernFeld(fx, fz, frist);
+    _wieseFernGrenzen(fx, fz, bueschel, reich) {
+        const D = this._wieseFernFeld(fx, fz);
         if (!D) return null;
         const F = AnazhRealm.NAH_WIESE.fern;
         const ACHT = AnazhRealm.WIESE_ACHT;
@@ -830,7 +841,7 @@ class AnazhRealm_vegetation_wiese {
     // (bilinear, 1 an ihren Punkten), außerhalb des Felds 1: wo er die Hälfte kreuzt, endet die Karte; `gras` je Punkt, ob die
     // Nähe dort Gras trägt. EIN Leser für die Grenze der Büschel (`_wieseFernGrenzen`) und die Breite der Karten (`_wieseSchaleDaten`). null,
     // solange ein Gitter auf seine Karten wartet.
-    _wieseFernFeld(fx, fz, frist) {
+    _wieseFernFeld(fx, fz) {
         const F = AnazhRealm.NAH_WIESE.fern;
         const [n, l] = [Math.round(F.kachel / F.gitter), F.gitter];
         const N = 3 * n;
@@ -839,7 +850,7 @@ class AnazhRealm_vegetation_wiese {
         const nie = [];
         for (let dj = -1; dj <= 1; dj++)
             for (let di = -1; di <= 1; di++) {
-                const G = this._wieseFernGitter(fx + di, fz + dj, frist);
+                const G = this._wieseFernGitter(fx + di, fz + dj);
                 if (!G) return null;
                 if (G.nie) nie.push([fx + di, fz + dj]);
                 else AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
@@ -1516,10 +1527,10 @@ class AnazhRealm_vegetation_wiese {
     _nahWieseFernSatz(kamera, L, auge, ziel, rMax, schale) {
         const nw = this.state.nahWiese;
         const HW = AnazhRealm.NAH_WIESE.fern.halt;
-        const H = nw.fernHalt || (nw.fernHalt = { wahl: new WeakMap(), folge: [], neu: 0, vor: null });
+        const H = nw.fernHalt || (nw.fernHalt = { wahl: new WeakMap(), folge: [], neu: 0 });
         const [t0, we] = [performance.now(), kamera.matrixWorld.elements];
         let jetzt = null;
-        const anker = () => jetzt || (jetzt = this._wieseFernAnker(kamera, L, auge, H.vor, t0));
+        const anker = () => jetzt || (jetzt = this._wieseFernAnker(kamera, L, auge));
         // die Drift eines Ankers in Teilen seines Wegs (je Lage einmal): voran auf der Strecke, quer, lotrecht, die Höhe, die Drehung
         const drift = (a) => {
             if (a.gen === L.gen) return a.drift;
@@ -1546,23 +1557,23 @@ class AnazhRealm_vegetation_wiese {
             }
             folge.push(w);
         }
-        H.vor = { x: auge.x, z: auge.z, t: t0 };
         this._wieseFernSchreib(H, folge, ziel, schale);
     }
 
     // DER ANKER DER FERNE (`_nahWieseFernSatz`) am Auge dieses Bilds: der WEG, den das Auge geht — waagrecht in der Richtung seines
-    // letzten Schritts (`vor`), so lang wie es in `zeitS` geht (höchstens `wegMax`), lotrecht mit dem Boden unter ihm
+    // letzten Schritts (der EINE Weg des Auges, `_augeWegJetzt`), so lang wie es in `zeitS` geht (höchstens `wegMax`), lotrecht mit dem Boden unter ihm
     // (`_bodenSichtAt` an beiden Enden) —, quer bis `querM` und lotrecht bis `lotM` um ihn (mit dem Weg bis `wegM` wachsend); ohne
     // Schritt (Stand, ein Sprung über ZEIT_SPRUNG_M, die erste Bewegung nach 250 ms) ein Punkt mit dem Halt der Lage (`standM`). Dazu die Lage mit dem Rand des Wegs (der Halt um die weiteste
     // Wanderung des Auges, die Drehung bis `drehRad` mit dem Weg — `_passTrifft` trägt beide), die Drehung der Kamera, ihr
     // Sichtfeld, ihre Projektion.
-    _wieseFernAnker(kamera, L, auge, vor, t0) {
+    _wieseFernAnker(kamera, L, auge) {
         const HW = AnazhRealm.NAH_WIESE.fern.halt;
         const we = kamera.matrixWorld.elements;
         let [ux, uy, uz, lw] = [0, 0, 0, 0];
-        const [s, dt] = vor ? [Math.hypot(auge.x - vor.x, auge.z - vor.z), t0 - vor.t] : [0, Infinity];
-        if (s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250) {
-            [ux, uz, lw] = [(auge.x - vor.x) / s, (auge.z - vor.z) / s, Math.min(HW.wegMax, (s / Math.max(dt, 1)) * 1000 * HW.zeitS)]; // prettier-ignore
+        const W = this._augeWegJetzt();
+        const h = Math.hypot(W.u[0], W.u[2]);
+        if (W.v > 0 && h > 1e-6) {
+            [ux, uz, lw] = [W.u[0] / h, W.u[2] / h, Math.min(HW.wegMax, W.v * h * HW.zeitS)];
             const [g0, g1] = [
                 this._bodenSichtAt(auge.x, auge.z),
                 this._bodenSichtAt(auge.x + ux * lw, auge.z + uz * lw),

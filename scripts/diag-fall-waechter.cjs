@@ -44,7 +44,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite, urteilEnde, stammLib, SELBSTTEST, jsonKlon } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, urteilEnde, stammLib, SELBSTTEST, jsonKlon, nullWelt } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
 
@@ -1018,12 +1018,9 @@ async function probe(K) {
 
 hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs); B2: der Fern-Ring lebt auch ohne Renderer
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, vor: [WELT_ORTE_INSTALL, "window.__anazhFernRing = true"] }, 120000); // prettier-ignore
     page.setDefaultTimeout(880000);
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer
-    await server.zeige(page, 120000);
     await warteAufWelt(page, 180000);
     const befund = await page.evaluate(probe, {
         spaltenJeOrt: 6,
