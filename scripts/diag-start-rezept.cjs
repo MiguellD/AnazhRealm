@@ -30,10 +30,11 @@ const {
 // swiftshader-Boots, die Garage G10 die Bildzeit voll gegen leicht). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
 const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs", "scripts/diag-garage-labor.cjs"];
 
-// W5 je Zeit-Linse: jeder Start an der Weiche trägt `zeit: true`.
+// W5 je Zeit-Linse: jeder Start an der Weiche trägt `zeit: true` — über `starteBrowser` oder die Welt der Linse (`nullWelt`,
+// welt-boot: ihre Optionen reisen zu starteBrowser)
 function zeitFunde(name, src) {
     const code = ohneKommentare(src);
-    const starts = code.match(/starteBrowser\(\{[^}]*\}/g) || [];
+    const starts = code.match(/(?:starteBrowser\(|nullWelt\(\w+, )\{[^}]*\}/g) || [];
     if (!starts.length) return [`${name}: kein starteBrowser — die Zeit-Linse startet an der Weiche vorbei`];
     const ohne = starts.filter((s) => !/\bzeit:\s*true\b/.test(s)).length;
     return ohne ? [`${name}: ${ohne} Start(s) ohne zeit: true — die Zeit-Linse führe lokal die Karte`] : [];

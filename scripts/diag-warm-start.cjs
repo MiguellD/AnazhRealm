@@ -21,7 +21,7 @@
 // minutenlanges page.evaluate stirbt sonst an „Promise was collected".
 //   node scripts/diag-warm-start.cjs
 
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, hauptLauf } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 // Startet `fn(arg)` DETACHED im Page-Kontext und pollt das Ergebnis — kein
@@ -224,14 +224,8 @@ async function jobSelbsttest(kaltIn, V) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
-        window.__anazhChunkIdb = true; // den Warm-Start headless ERZWINGEN (Hook-Override in _chunkPlatte)
-    });
-    await server.zeige(page, 60000);
+    // der Gate-Kontext ohne GPU (die Null-Seite); den Warm-Start headless ERZWINGEN (Hook-Override in _chunkPlatte)
+    const { browser, page } = await nullWelt(server, { frist: 300000, vor: () => (window.__anazhChunkIdb = true) }, 60000);
 
     // ===== BAND 1: KALT =====
     const kalt = await runJob(page, jobKalt);

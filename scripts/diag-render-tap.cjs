@@ -14,7 +14,7 @@
 // und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt, urteilEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, warteAufWelt, urteilEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 (async () => {
@@ -23,15 +23,10 @@ const server = statikServer();
     // Lebenszeit-Detektor am echten r184-Info — die nightly Light-Real-Hälfte; der
     // GPU-freie Fake-Vertrag oben bleibt der CI-Pfad).
     const REAL = process.env.REAL_RENDERER === "1";
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: REAL ? "linse" : "null", frist: 300000 });
-    const page = await browser.newPage();
-    await page.evaluateOnNewDocument((real) => {
-        if (!real) window.__anazhHeadlessNullRenderer = true;
-    }, REAL);
+    const { browser, page } = await nullWelt(server, { bild: REAL, art: REAL ? "linse" : "null", frist: 300000 }, 120000, "index.html", "networkidle0"); // prettier-ignore
     let out = null;
     try {
-        await warteAufWelt(page, 120000, server);
+        await warteAufWelt(page, 120000);
         if (REAL) {
             // Der echte-Vendor-Pfad: der rAF-Loop rendert selbst — nur beobachten.
             const real = await page.evaluate(async () => {

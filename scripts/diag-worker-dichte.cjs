@@ -83,7 +83,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 const fl =
                     h && Array.isArray(h.rivers) ? h.rivers.find((f) => f && f.points && f.points.length > 4) : null;
                 if (fl) {
-                    const p = fl.points[Math.floor(fl.points.length / 2)];
+                    const p = rang(fl.points);
                     orte.push({ id: "fluss", x: p.x, z: p.z });
                 } else out.befunde.push("kein Fluss in der Heimat-Region — der Fluss-Ort fehlt");
             } else {
@@ -791,7 +791,7 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
         }
     // Spalten und Eichung WECHSELN sich ab (16 Scheiben, je Scheibe 4 000 noise2D): die Last des Holzes driftet während der
     // Messung, das Verhältnis je Scheibe nicht — gezählt wird sein Median.
-    const median = (a) => a.slice().sort(aufsteigend)[a.length >> 1];
+    const median = (a) => rang(a.slice().sort(aufsteigend));
     const takt = (ks) => {
         const B = Math.max(1, Math.floor(ks.length / 16));
         const rat = [];
@@ -1522,7 +1522,7 @@ async function gebaut(page) {
                     }
                 }
                 sin.sort(aufsteigend);
-                return { fenster: sin.length, sinuositaet: sin.length ? +sin[sin.length >> 1].toFixed(3) : null };
+                return { fenster: sin.length, sinuositaet: sin.length ? +rang(sin).toFixed(3) : null };
             };
             // der Selbsttest je Saat — die Gerade: jeder Fluss auf seine Sehne gelegt (der Bogen bleibt, der Versatz quer
             // fällt); der Mäander im Wasser MUSS rot werden

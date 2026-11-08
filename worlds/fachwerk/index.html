@@ -11,7 +11,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 /><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fachwerkhaus — parametrisch, begehbar</title>
-<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.226">
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.228">
 <style>
 :root{--bg:#0c0f14;--pn:#10151c;--ln:#1e2630;--ac:#c98a3a;--tx:#cdd6df;--mut:#7c8794;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -58,7 +58,7 @@ select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);bord
   <div id="sitzung"></div>
   <div class="sec">Form — Regler</div>
   <div class="pr"><label>Ausstattung <span class="val" id="vAus">— Haus —</span></label><select id="pAus"><option value="haus" selected>— Haus —</option><option value="feuerstelle">Feuerstelle · Steinring, Glut</option><option value="marktstand">Marktstand · Plane, Waren</option><option value="brunnen">Ziehbrunnen · Kranz, Haspel</option></select></div>
-  <div class="pr"><label>Kultur <span class="val" id="vK">manuell</span></label><select id="pK"><option value="manuell" selected>Manuell</option><option value="samen">⚂ Aus dem Samen</option><option value="alemannisch">Alemannisch · steil, hell</option><option value="fraenkisch">Fränkisch · Zierfachwerk</option><option value="niedersaechsisch">Niedersächsisch · breit</option><option value="mittelalterlich">Mittelalterlich · ganz alt</option><option value="holzhuette">Holzhütte · Block</option><option value="franzoesisch">Französisch · Schiefer, hoch</option><option value="italienisch">Italienisch · Terrakotta</option><option value="modern">Modern · Putz</option><option value="volle_moderne">Volle Moderne · Glas</option><option value="hochhaus">Hochhaus · Glasturm</option><option value="roemisch">Römisch · Domus</option><option value="tudor">Tudor · Sichtfachwerk</option><option value="alpenchalet">Alpenchalet · Holz</option><option value="hollaendisch">Holländisch · Klinker</option><option value="hanseatisch">Hanseatisch · Backstein</option><option value="georgian">Georgianisch · symm.</option><option value="viktorianisch">Viktorianisch · steil</option><option value="griechisch">Griechisch · Kykladen</option><option value="spanisch">Spanisch · Terrakotta</option><option value="andalusisch">Andalusisch · weiß</option><option value="provenzalisch">Provenzalisch · Stein</option><option value="pueblo">Pueblo · Adobe</option><option value="marokkanisch">Marokkanisch · Lehm</option><option value="skandinavisch">Skandinavisch · Falunrot</option><option value="norwegisch">Norwegisch · dunkel</option><option value="russisch">Russisch · Isba</option><option value="schwarzwald">Schwarzwald · breit</option><option value="japanisch">Japanisch · Minka</option><option value="gotisch">Gotisch · steil</option><option value="barock">Barock · Stuck</option><option value="renaissance">Renaissance · symm.</option><option value="chinesisch">Chinesisch · Schwungdach</option></select></div>
+  <div class="pr"><label>Kultur <span class="val" id="vK">Samen</span></label><select id="pK"><option value="manuell">Manuell</option><option value="samen" selected>⚂ Aus dem Samen</option><option value="alemannisch">Alemannisch · steil, hell</option><option value="fraenkisch">Fränkisch · Zierfachwerk</option><option value="niedersaechsisch">Niedersächsisch · breit</option><option value="mittelalterlich">Mittelalterlich · ganz alt</option><option value="holzhuette">Holzhütte · Block</option><option value="franzoesisch">Französisch · Schiefer, hoch</option><option value="italienisch">Italienisch · Terrakotta</option><option value="modern">Modern · Putz</option><option value="volle_moderne">Volle Moderne · Glas</option><option value="hochhaus">Hochhaus · Glasturm</option><option value="roemisch">Römisch · Domus</option><option value="tudor">Tudor · Sichtfachwerk</option><option value="alpenchalet">Alpenchalet · Holz</option><option value="hollaendisch">Holländisch · Klinker</option><option value="hanseatisch">Hanseatisch · Backstein</option><option value="georgian">Georgianisch · symm.</option><option value="viktorianisch">Viktorianisch · steil</option><option value="griechisch">Griechisch · Kykladen</option><option value="spanisch">Spanisch · Terrakotta</option><option value="andalusisch">Andalusisch · weiß</option><option value="provenzalisch">Provenzalisch · Stein</option><option value="pueblo">Pueblo · Adobe</option><option value="marokkanisch">Marokkanisch · Lehm</option><option value="skandinavisch">Skandinavisch · Falunrot</option><option value="norwegisch">Norwegisch · dunkel</option><option value="russisch">Russisch · Isba</option><option value="schwarzwald">Schwarzwald · breit</option><option value="japanisch">Japanisch · Minka</option><option value="gotisch">Gotisch · steil</option><option value="barock">Barock · Stuck</option><option value="renaissance">Renaissance · symm.</option><option value="chinesisch">Chinesisch · Schwungdach</option></select></div>
   <div id="reglerMeta" class="meta-regler"></div>
   <div id="reglerForm"></div>
   <div class="pr"><label>Fachwerk-Figur</label><select id="pB"><option value="andreas">Andreaskreuz</option><option value="k">K-Strebe (Bock)</option><option value="mann">Mann</option><option value="wild">Wilder Mann</option></select></div>
@@ -90,9 +90,9 @@ select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);bord
 <div id="esc"><b>ESC</b> — zurück zur Übersicht</div>
 <script src="../terrain/lib/three-r128.min.js"></script>
 <script src="../../vendor/simplex-noise.js"></script>
-<script src="../../gelaende-core.js?v=18.546.226"></script>
-<script src="../../fachwerk-core.js?v=18.546.226"></script>
-<script src="../../porta-core.js?v=18.546.226"></script>
-<script src="../huelle/huelle.js?v=18.546.226"></script>
-<script src="fachwerk.js?v=18.546.226"></script>
+<script src="../../gelaende-core.js?v=18.546.228"></script>
+<script src="../../fachwerk-core.js?v=18.546.228"></script>
+<script src="../../porta-core.js?v=18.546.228"></script>
+<script src="../huelle/huelle.js?v=18.546.228"></script>
+<script src="fachwerk.js?v=18.546.228"></script>
 </body></html>
