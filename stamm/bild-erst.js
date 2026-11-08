@@ -40,6 +40,7 @@ class AnazhRealm_bild_erst {
                 vorwaermN: 0,
                 vorwaermRufe: 0,
                 vorwaermVerweigert: 0,
+                ohneDraw: new WeakSet(), // Objekte, die ein Pass der Welt ohne Draw fand (die Arena ohne Instanz im Pass, der Gast)
                 leer: new Set(),
             };
         return this._erstZeichnung;

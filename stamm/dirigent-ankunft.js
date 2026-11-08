@@ -972,10 +972,10 @@ class AnazhRealm_dirigent_ankunft {
         if (!b || b.lod !== e._lodLevel) B.set(e, (b = { lod: e._lodLevel, n: L.gerendert }));
         return L.gerendert <= b.n;
     }
-    // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder sie fand sich ohne Draw und trat in das
-    // Vorwärm-Gesetz, das sie nach dem Bild im Leerlauf baut (die Erst-Zeichnung, `_vorwaermMerken`)
+    // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder ein Pass fand sie ohne Draw — dann baut
+    // sie das Vorwärm-Gesetz nach dem Bild im Leerlauf (die Erst-Zeichnung, `ohneDraw`; die Geburt allein zählt nie)
     _arenaImBild(E, a) {
-        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.vorwaerm.has(a);
+        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.ohneDraw.has(a);
     }
 
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera

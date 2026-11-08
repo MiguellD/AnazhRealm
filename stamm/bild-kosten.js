@@ -530,7 +530,10 @@ class AnazhRealm_bild_kosten {
                 if (vorbau) {
                     if (scene !== welt.state.scene) return;
                     if (!vorwaerm) {
-                        if (gast || object.isGeometrieArena === true) welt._vorwaermMerken(object);
+                        if (gast || object.isGeometrieArena === true) {
+                            E.ohneDraw.add(object); // ein Pass fand sie ohne Draw (`_arenaImBild`)
+                            welt._vorwaermMerken(object);
+                        }
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
                         // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
                         if (gast && aufnahme !== null && !(E.vorgebaut.get(object) || E.leer).has(k))
