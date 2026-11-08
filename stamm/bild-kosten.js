@@ -3028,7 +3028,7 @@ class AnazhRealm_bild_kosten {
         }
         off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
         // die Hälften des Zustands der Nah-Wiese wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
-        // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_nahWieseSicht`)
+        // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_wieseAugeTakt`)
         const F = AnazhRealm._wahlLage(L, W.lageF),
             nw = this.state.nahWiese;
         if (haupt) W.par ^= 1;

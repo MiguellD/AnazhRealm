@@ -43,11 +43,11 @@ class AnazhRealm_stoff_material {
 
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
-    // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), ihr
+    // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das `_wieseAugeTakt` je Hauptbild legt), ihr
     // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
     // Auges über dem eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
     // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), Anteil a und Streckung s aus
-    // dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
+    // dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL
     // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
     // Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
@@ -55,7 +55,7 @@ class AnazhRealm_stoff_material {
     // breiter), Neigung und Höhe bleiben;
     // die Ähre wandert mit ihrem Stängel, ihre Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als
     // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
-    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe
+    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) wählt die GPU dasselbe
     // Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem
     // Büschel (× v). DIE GRENZE (w21-wiese-fern): die Streckung endet an der Grenze des Büschels (`_wieseFernGrenzen`, in der
     // vierten Zeile seiner Instanz-Matrix) — es spreizt seine Halme nie über die Wiese der Nähe und seinen Boden hinaus.
@@ -80,7 +80,7 @@ class AnazhRealm_stoff_material {
 
             // DIE GRENZE DES BÜSCHELS (w21-wiese-fern): das erste Feld der vierten Zeile seiner Instanz-Matrix
             // (`_nahWieseFernBlock`) — so weit tragen es die Wiese der Nähe und sein Boden (`_wieseFernGrenzen`); die Spreizung
-            // seiner Füße endet an ihr (`spreiz`), wie im Sicht-Satz
+            // seiner Füße endet an ihr (`spreiz`), wie in der Wahl der GPU
             const grenze = this._instanzMatrixNode(T).element(0).w;
             const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze); // prettier-ignore
             const anteil = G.anteil;

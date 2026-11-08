@@ -457,7 +457,7 @@ class AnazhRealm_daten {
 
     // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
     // aus `kindStages.grass`). Kosten an den SCHIRM gebunden (Gebot 7): ein Kachel-Ring um das Auge, nie je Chunk;
-    // gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz `_nahWieseSicht`, EINE Senke je Vorlage × Stufe ×
+    // gezeichnet wird je Büschel, was das Auge sieht (die Wahl der GPU über dem Bestand `_nahWieseBestand`, EINE Senke je Vorlage × Stufe ×
     // Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je Büschel, `stufe1Rand` = ihr Austritt dahinter
     // (Hysterese), `radius` = die Übergabe: bis hier legt der Sicht-Satz jedes Büschel, dahinter zeichnet DIE FERNE
     // dieselben Büschel weiter, `vorlauf` = so weit vor der Übergabe steht jede Kachel schon (kein Büschel tritt in den Kreis,
