@@ -23,35 +23,35 @@ const TAETER = schalter("--taeter");
 
 const { errs, check } = pruefer();
 const taeter = (v, trenner = " · ") => (v.length ? " — Täter: " + v.join(trenner) : "");
+// DAS URTEIL JEDES VERDIKTS DIESER LINSE (die EINE Form): je Zeile [hält, der Täter beim Namen] — die Texte der Zeilen, die nicht
+// halten, in ihrer Folge (bis heim2-w13-verkehr-heil sammelten 13 Verdikte je ihr `out.push`, zwei je einen Helfer)
+const urteil = (zeilen) => zeilen.flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
-function taktVerdict(m, wegFahrtMinM) {
-    const out = [];
-    const minWeg = Number.isFinite(wegFahrtMinM) ? wegFahrtMinM : TAKT.wegFahrtMinM;
+function taktVerdict(m, minWeg = TAKT.wegFahrtMinM) {
     if (!m || m.gestartet !== true) return ["start"];
     if (!(m.frames > 0)) return ["frames 0"];
-    if (m.teleport !== 0) out.push(`teleport ${m.teleport}/${m.frames}`);
-    if (!(m.simWeg >= minWeg)) out.push(`sim-weg ${(m.simWeg || 0).toFixed(2)} m (keine Fahrt)`);
-    const tol = Math.max(TAKT.wegMinM, TAKT.wegAnteil * (m.simWeg || 0));
-    if (!(Math.abs((m.simWeg || 0) - (m.fahrWeg || 0)) <= tol))
-        out.push(`weg sim ${(m.simWeg || 0).toFixed(2)} ≠ fahrt ${(m.fahrWeg || 0).toFixed(2)} m`);
-    if (Number.isFinite(m.luft) && m.luft !== 0) out.push(`luft ${m.luft}/${m.schritte}`);
-    if (Number.isFinite(m.gierGrad) && !(m.gierGrad <= TAKT.gierGrad)) out.push(`gier ${m.gierGrad.toFixed(1)}°`);
-    // DIE GERITTEN-WAND: der Eintrag steht auf dem Reiter (Distanz 0), seine Stufe ist 0 — nie die Karte unter dem Reiter
-    if (!(m.versatz <= TAKT.versatzM))
-        out.push(`versatz ${Number(m.versatz).toFixed(3)} m (der Eintrag folgt dem Reiter nicht)`);
-    if (m.stufe !== 0) out.push(`stufe ${m.stufe} (geritten nie Grob- oder Kartenstufe)`);
-    return out;
+    const [s, f] = [m.simWeg || 0, m.fahrWeg || 0];
+    return urteil([
+        [m.teleport === 0, `teleport ${m.teleport}/${m.frames}`],
+        [m.simWeg >= minWeg, `sim-weg ${s.toFixed(2)} m (keine Fahrt)`],
+        [Math.abs(s - f) <= Math.max(TAKT.wegMinM, TAKT.wegAnteil * s), `weg sim ${s.toFixed(2)} ≠ fahrt ${f.toFixed(2)} m`],
+        [!Number.isFinite(m.luft) || m.luft === 0, `luft ${m.luft}/${m.schritte}`],
+        [!Number.isFinite(m.gierGrad) || m.gierGrad <= TAKT.gierGrad, `gier ${m.gierGrad?.toFixed(1)}°`],
+        // DIE GERITTEN-WAND: der Eintrag steht auf dem Reiter (Distanz 0), seine Stufe ist 0 — nie die Karte unter dem Reiter
+        [m.versatz <= TAKT.versatzM, `versatz ${Number(m.versatz).toFixed(3)} m (der Eintrag folgt dem Reiter nicht)`],
+        [m.stufe === 0, `stufe ${m.stufe} (geritten nie Grob- oder Kartenstufe)`],
+    ]);
 }
 // Am Hang ohne Taste: kein Teleport, der Wagen hält, die Gier steht.
 function haltVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
-    const out = [];
-    if (m.teleport !== 0) out.push(`teleport ${m.teleport}/${m.frames}`);
-    if (!(m.fahrWeg <= TAKT.haltM)) out.push(`rollt ${(m.fahrWeg || 0).toFixed(2)} m (v ${(m.v || 0).toFixed(1)} m/s)`);
-    if (!(m.gierGesamt <= TAKT.gierGrad)) out.push(`gier ${(m.gierGesamt || 0).toFixed(1)}°`);
-    return out;
+    return urteil([
+        [m.teleport === 0, `teleport ${m.teleport}/${m.frames}`],
+        [m.fahrWeg <= TAKT.haltM, `rollt ${(m.fahrWeg || 0).toFixed(2)} m (v ${(m.v || 0).toFixed(1)} m/s)`],
+        [m.gierGesamt <= TAKT.gierGrad, `gier ${(m.gierGesamt || 0).toFixed(1)}°`],
+    ]);
 }
 // T4 Der Wechsel am Steilhang (F1): jede zeichnende Stufe am Wagen, je Rückkehr nach Third (Ego drehte ≥ egoGrad) die Kamera
 // nach 10 Bildern am Ziel ihres Gesetzes (Gier + driftFolge · Drift, H3), Ruck (das Soll von fahrzeug.K3 Staffel 2, vorher 0,07: die Bildzeit zitterte die Feder 0,03) und
@@ -71,33 +71,42 @@ const WECHSEL = {
 function wechselVerdict(m) {
     if (!m || m.gestartet !== true) return [m && !m.ort ? "steilhang: kein Ort (vakuös)" : "wechsel start"];
     const W = WECHSEL;
-    const out = [];
-    if (!(m.stufeM <= W.stufeM)) out.push(`stufe ${m.stufeWer} ${m.stufeM} m neben dem Wagen (sie fährt nicht mit)`);
-    if (!(m.band > 0)) out.push("band: kein Band-Partner im Ritt (vakuös)");
-    if (!(m.ego.length === 2 && m.ego.every((g) => g >= W.egoGrad)))
-        out.push(`ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`);
-    if (!(m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad)))
-        out.push(`kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`);
-    if (!(m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM)))
-        out.push(
-            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`
-        );
-    if (!(m.abFov && m.abFov.length === 3 && m.abFov.every((x) => x <= W.fovGrad)))
-        out.push(
-            `sichtfeld: Ego → Third und der Abstieg in voller Fahrt springen ${m.abFov && m.abFov.join(" · ")}° je Bild (Wechsel · Third · Ego, Soll ≤ ${W.fovGrad})`
-        );
-    // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
-    if (!(m.ruckN >= 20 && m.ruckP95 <= W.ruckM))
-        out.push(`ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`);
-    if (!(m.gleichN >= 20 && m.gleichP95 <= W.gleichMax))
-        out.push(
-            `gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`
-        );
-    if (!(m.hochN >= 20 && m.hochP05 >= W.hochMin))
-        out.push(`hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`);
-    if (!Number.isFinite(m.wiederauf)) out.push("wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)");
-    else if (!(m.wiederauf <= W.wiederaufGrad)) out.push(`wiederaufstieg ${m.wiederauf}° neben der Gier`);
-    return out;
+    return urteil([
+        [m.stufeM <= W.stufeM, `stufe ${m.stufeWer} ${m.stufeM} m neben dem Wagen (sie fährt nicht mit)`],
+        [m.band > 0, "band: kein Band-Partner im Ritt (vakuös)"],
+        [
+            m.ego.length === 2 && m.ego.every((g) => g >= W.egoGrad),
+            `ego: die Gier drehte ${m.ego.join(" · ")}° (vakuös, Soll 2 × ≥ ${W.egoGrad}°)`,
+        ],
+        [
+            m.nach10.length === 2 && m.nach10.every((g) => g <= W.azGrad),
+            `kamera ${m.nach10.join(" · ")}° neben der Gier 10 Bilder nach dem Wechsel (die alte Richtung)`,
+        ],
+        [
+            m.abSprung.length === 2 && m.abV.every((v) => v >= W.abV) && m.abSprung.every((x) => x <= W.sprungM),
+            `absteigen in voller Fahrt (${m.abV.join(" · ")} m/s): die Kamera springt ${m.abSprung.join(" · ")} m je Bild (Third · Ego, Soll ≤ ${W.sprungM})`,
+        ],
+        [
+            m.abFov?.length === 3 && m.abFov.every((x) => x <= W.fovGrad),
+            `sichtfeld: Ego → Third und der Abstieg in voller Fahrt springen ${m.abFov?.join(" · ")}° je Bild (Wechsel · Third · Ego, Soll ≤ ${W.fovGrad})`,
+        ],
+        // eine Zahl ohne Bilder ist nie grün (null ist nie 0, Lehre 17)
+        [m.ruckN >= 20 && m.ruckP95 <= W.ruckM, `ruck p95 ${m.ruckP95} m quer je Bild (Soll ≤ ${W.ruckM}, ${m.ruckN} Bilder)`],
+        [
+            m.gleichN >= 20 && m.gleichP95 <= W.gleichMax,
+            `gleichlauf p95 ${m.gleichP95} (Soll ≤ ${W.gleichMax}, ${m.gleichN} Bilder): das Bild neben der Physik`,
+        ],
+        [
+            m.hochN >= 20 && m.hochP05 >= W.hochMin,
+            `hoch p05 ${m.hochP05}° über der Ebene des Wagens (Soll ≥ ${W.hochMin}°, ${m.hochN} Bilder)`,
+        ],
+        [
+            m.wiederauf <= W.wiederaufGrad,
+            Number.isFinite(m.wiederauf)
+                ? `wiederaufstieg ${m.wiederauf}° neben der Gier`
+                : "wiederaufstieg: kein Bild ohne Sim-Schritt (vakuös)",
+        ],
+    ]);
 }
 
 // DAS FAHR-GESETZ EINES REZEPTS (der Satz, den Probefahrt und Welt fahren): exportDrive über die Vorgabe und den Patch des Rezepts.
@@ -325,14 +334,15 @@ function reifenMessung(VC) {
     return m;
 }
 function reifenVerdict(m) {
-    const out = [];
-    for (const a of m.achsen) {
-        if (!(a.spitze >= REIFEN.spitze[0] && a.spitze <= REIFEN.spitze[1])) out.push(`spitze ${a.wo} ${a.spitze}°`);
-        if (!(a.abfall >= REIFEN.abfall)) out.push(`abfall ${a.wo} ${Math.round(a.abfall * 100)} %`);
-    }
-    if (!(m.hz >= REIFEN.hz)) out.push(`takt ${m.hz} Hz`);
-    if (!(m.kostenUs <= REIFEN.kostenUs)) out.push(`kosten ${m.kostenUs} µs`);
-    return m.achsen.length ? out : ["reifen ohne Achse"];
+    if (!m.achsen.length) return ["reifen ohne Achse"];
+    return urteil([
+        ...m.achsen.flatMap((a) => [
+            [a.spitze >= REIFEN.spitze[0] && a.spitze <= REIFEN.spitze[1], `spitze ${a.wo} ${a.spitze}°`],
+            [a.abfall >= REIFEN.abfall, `abfall ${a.wo} ${Math.round(a.abfall * 100)} %`],
+        ]),
+        [m.hz >= REIFEN.hz, `takt ${m.hz} Hz`],
+        [m.kostenUs <= REIFEN.kostenUs, `kosten ${m.kostenUs} µs`],
+    ]);
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
@@ -375,256 +385,268 @@ const STATION = {
     spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box
 };
 function stationVerdict(s) {
-    const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
-    if (!s.labor || !(s.labor.schritte > 0)) out.push("labor keine Spur");
-    else if (!(s.labor.maxM <= STATION.laborM))
-        out.push(`labor≠welt ${s.labor.maxM.toFixed(3)} m (Schritt ${s.labor.bei})`);
-    if (!s.klippe) out.push("klippe nicht gefunden");
-    else {
-        if (!(s.klippe.sprung <= STATION.sprungM)) out.push(`klippe-sprung ${s.klippe.sprung.toFixed(2)} m je Schritt`);
-        if (!(s.klippe.luft > 0)) out.push("klippe ohne Flug");
-    }
-    const ab = s.absteigen;
-    if (!ab) out.push("absteigen keine Probe");
-    else if (!ab.imFlug || !(ab.hoehe >= STATION.flugM))
-        out.push(`absteigen nicht im Flug (vakuös, ${(ab.hoehe || 0).toFixed(2)} m)`);
-    else {
-        if (!(Math.abs(ab.ueberBoden) <= STATION.standM))
-            out.push(`absteigen-luft: der Wagen hängt ${ab.ueberBoden.toFixed(2)} m über der Ebene seiner Räder`);
-        if (!(ab.sprung <= STATION.sprungM)) out.push(`absteigen-sprung ${ab.sprung.toFixed(2)} m je Schritt`);
-    }
-    if (!s.quer) out.push("querhang nicht gefunden");
-    else if (!(s.quer.drift >= STATION.querM))
-        out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
-    const rd = s.raeder;
-    if (!rd) out.push("raeder keine Probe");
-    else {
-        if (!(rd.leaves > 0)) out.push("raeder starr (keine Rad-Instanz)");
-        else {
-            if (!(rd.rolle >= STATION.rolleRad)) out.push(`raeder rollen nicht (${rd.rolle.toFixed(2)} rad)`);
-            if (!(rd.lenk >= STATION.lenkRad && rd.lenkHinten <= 0.01))
-                out.push(`raeder lenken nicht (vorn ${rd.lenk.toFixed(3)} · hinten ${rd.lenkHinten.toFixed(3)} rad)`);
-            // der Bremssattel (R:s) steht je Ecke als eigenes Leaf und hängt an der Nabe wie im Labor: er rollt nie
-            if (!(rd.stehend > 0)) out.push("raeder ohne Sattel (kein stehendes Rad-Leaf)");
-            else if (!(rd.stehRolle <= STATION.sattelRad))
-                out.push(`raeder Sattel rollt (${rd.stehRolle.toFixed(2)} rad)`);
-        }
-        if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
-        if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
-    }
-    const pf = s.pflicht;
-    if (!pf) out.push("pflicht keine Probe");
-    else if (pf.satz !== "bruch" || pf.ebene !== "bruch")
-        out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
-    else if (pf.leser !== true)
-        out.push("pflicht-leser: _fahrSatz/_rittEbene lesen den Kern nicht durch _fahrSchrittGesetz");
+    // je Probe `x` (fehlt sie oder hält ihre Vorbedingung nicht: ihr EINER Täter `t`) ihre Zeilen `z(x)`
+    const probe = (x, t, z) => (x ? z(x) : [[false, t]]);
+    const flug = (a) => a.imFlug && a.hoehe >= STATION.flugM;
     const hk = s.huelleKonsum || {};
-    for (const k of ["gleiten", "kapsel", "leibWagen", "leibTier"])
-        if (hk[k] !== true)
-            out.push(`huelle-konsum ${k}: ${s.huelleKonsum ? "der Leser ruft die EINE Quelle nicht" : "keine Probe"}`);
-    const hg = s.huelleHang;
-    if (!hg) out.push("huelle-hang keine Probe");
-    else if (!(hg.schub >= 0.5)) out.push(`huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`);
-    else if (!(hg.eindringen <= 0.01)) out.push(`huelle-hang Schub ins Gelände ${hg.eindringen.toFixed(2)} m`);
-    if (!s.huelleSchub) out.push("huelle-schub keine Probe");
-    else if (!(s.huelleSchub.weg <= STATION.schubM))
-        out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
-    // L1 DER HANGFUSS: nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
-    // begrenzt, er fährt weiter.
-    const hf = s.hangfuss;
-    if (!hf) out.push("hangfuss keine Probe");
-    else if (!hf.ziel || !(hf.kontakte >= 1))
-        out.push(`hangfuss vakuös (Glutbrunnen ${hf.ziel ? "steht" : "fehlt"}, ${hf.kontakte || 0} Kontakte)`);
-    else {
-        if (!(hf.unterMax <= STATION.unterM && hf.unterN <= STATION.unterN))
-            out.push(
-                `hangfuss-unter: der Wagen liegt ${hf.unterMax.toFixed(2)} m unter der Ebene seiner Räder (${hf.unterN} Schritte > 0,05 m) — eine Kontakt-Antwort ohne Erdung`
-            );
-        if (!(hf.schubMax <= STATION.versetztM))
-            out.push(
-                `hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax.toFixed(2)} m`
-            );
-        if (!(hf.weg >= STATION.wegM)) out.push(`hangfuss-steht: mit W nur ${hf.weg.toFixed(2)} m gefahren`);
-    }
-    // L3–L5 DER STOSS: ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
-    // für Kamera und Klang.
-    for (const [k, name] of [
-        ["stossFels", "stoss-fels"],
-        ["stossWagen", "stoss-wagen"],
-        ["stossBaer", "stoss-baer"],
-    ]) {
-        const m = s[k];
-        if (!m) {
-            out.push(`${name} keine Probe`);
-            continue;
-        }
-        if (!(m.kontakt >= 0 && m.vVor >= STATION.stossVMin)) {
-            out.push(`${name} vakuös (kein Stoß aus ≥ 3 m/s: Kontakt ${m.kontakt}, ${(m.vVor || 0).toFixed(2)} m/s)`);
-            continue;
-        }
-        // der Stoß gilt der Annäherung: gleitet der Gegner schon schneller fort, als der Wagen nachkommt, stößt nichts —
-        // die Ursache vor ihrem Symptom (der Wagen verliert dann Fahrt an einen Gegner, der schon fort ist)
-        if (m.ohneAnnaeherung > 0)
-            out.push(
-                `${name}: Stoß ohne Annäherung (${m.ohneAnnaeherung}×, der Gegner glitt schon schneller fort) — die Fahrt statt der Relativ-Geschwindigkeit`
-            );
-        const was = `${m.vVor.toFixed(2)} → ${m.vNach.toFixed(2)} m/s`;
-        if (k === "stossFels" && !(m.vMinNach <= STATION.rueckprallMs))
-            out.push(
-                `${name}: kein Rückprall (${was}, kleinste Fahrt danach ${m.vMinNach.toFixed(2)} m/s) — ein Stopp ohne Folge`
-            );
-        if (k === "stossWagen") {
-            if (!(m.zielWeg >= STATION.wagenWegM))
-                out.push(
-                    `${name}: der geparkte GT bewegt sich ${m.zielWeg.toFixed(2)} m (${was}) — er bekommt keinen Impuls`
-                );
-            if (!(m.vNach >= STATION.wagenFahrt * m.vVor))
-                out.push(`${name}: der Wagen steht nach dem Stoß (${was}) — kein Impuls-Austausch`);
-        }
-        if (k === "stossBaer") {
-            if (!(m.zielWeg >= STATION.baerWegM))
-                out.push(`${name}: der Bär bewegt sich ${m.zielWeg.toFixed(2)} m (${was}) — er bekommt keinen Impuls`);
-            if (!(m.vNach >= STATION.baerFahrt * m.vVor))
-                out.push(`${name}: der Wagen steht am Bären (${was}) — kein Impuls-Austausch nach Masse`);
-        }
-        if (!(m.ereignisse >= 1 && m.ruck > 0))
-            out.push(
-                `${name}: kein Stoß-Ereignis (${m.ereignisse} Ereignisse, Kamera-Ruck ${(m.ruck || 0).toFixed(2)}) — keine Rückmeldung`
-            );
-    }
-    // K3 (physik.K3) DER FREIE KÖRPER: die Kisten ruhen ≤ 2 s am Boden und jede auf der darunter (±2 cm), zittern danach und
-    // wach ≤ 1 cm; der Wagen kippt das Fass > 45°; die Mutanten (Schwere 0, ohne Stoß) fallen.
-    const fk = s.frei;
     const ruht = (k) => k && k.ruheS <= 2 && [k.boden, ...k.fugen].every((d) => Math.abs(d) <= 0.02);
-    if (!fk || !fk.fass) out.push("frei keine Probe");
-    else
-        for (const [gut, t] of [
+    const [fk, sw, ls, sch, rw, sp, lk] = [s.frei, s.spielerWagen, s.lockSchwimmer, s.schwimmer, s.reiter, s.spalt, s.lockstep]; // prettier-ignore
+    return urteil([
+        ...probe(s.labor?.schritte > 0 && s.labor, "labor keine Spur", (l) => [
+            [l.maxM <= STATION.laborM, `labor≠welt ${l.maxM.toFixed(3)} m (Schritt ${l.bei})`],
+        ]),
+        ...probe(s.klippe, "klippe nicht gefunden", (k) => [
+            [k.sprung <= STATION.sprungM, `klippe-sprung ${k.sprung.toFixed(2)} m je Schritt`],
+            [k.luft > 0, "klippe ohne Flug"],
+        ]),
+        ...probe(s.absteigen, "absteigen keine Probe", (a) =>
+            probe(flug(a), `absteigen nicht im Flug (vakuös, ${(a.hoehe || 0).toFixed(2)} m)`, () => [
+                [
+                    Math.abs(a.ueberBoden) <= STATION.standM,
+                    `absteigen-luft: der Wagen hängt ${a.ueberBoden.toFixed(2)} m über der Ebene seiner Räder`,
+                ],
+                [a.sprung <= STATION.sprungM, `absteigen-sprung ${a.sprung.toFixed(2)} m je Schritt`],
+            ])
+        ),
+        ...probe(s.quer, "querhang nicht gefunden", (q) => [
+            [q.drift >= STATION.querM, `querhang ohne Abtrieb (Quer-Abdrift ${q.drift.toFixed(2)} m)`],
+        ]),
+        ...probe(s.raeder, "raeder keine Probe", (rd) => [
+            ...probe(rd.leaves > 0, "raeder starr (keine Rad-Instanz)", () => [
+                [rd.rolle >= STATION.rolleRad, `raeder rollen nicht (${rd.rolle.toFixed(2)} rad)`],
+                [
+                    rd.lenk >= STATION.lenkRad && rd.lenkHinten <= 0.01,
+                    `raeder lenken nicht (vorn ${rd.lenk.toFixed(3)} · hinten ${rd.lenkHinten.toFixed(3)} rad)`,
+                ],
+                // der Bremssattel (R:s) steht je Ecke als eigenes Leaf und hängt an der Nabe wie im Labor: er rollt nie
+                ...probe(rd.stehend > 0, "raeder ohne Sattel (kein stehendes Rad-Leaf)", () => [
+                    [rd.stehRolle <= STATION.sattelRad, `raeder Sattel rollt (${rd.stehRolle.toFixed(2)} rad)`],
+                ]),
+            ]),
+            [rd.tauchBremse <= STATION.spaltM, `raeder tauchen beim Bremsen ${rd.tauchBremse?.toFixed(3)} m`],
+            [rd.spaltP75 <= STATION.spaltM, `raeder Spalt p75 ${rd.spaltP75?.toFixed(3)} m`],
+        ]),
+        ...probe(s.pflicht, "pflicht keine Probe", (pf) =>
+            probe(
+                pf.satz === "bruch" && pf.ebene === "bruch",
+                `pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`,
+                () => [[pf.leser === true, "pflicht-leser: _fahrSatz/_rittEbene lesen den Kern nicht durch _fahrSchrittGesetz"]]
+            )
+        ),
+        ...["gleiten", "kapsel", "leibWagen", "leibTier"].map((k) => [
+            hk[k] === true,
+            `huelle-konsum ${k}: ${s.huelleKonsum ? "der Leser ruft die EINE Quelle nicht" : "keine Probe"}`,
+        ]),
+        ...probe(s.huelleHang, "huelle-hang keine Probe", (hg) =>
+            probe(hg.schub >= 0.5, `huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`, () => [
+                [hg.eindringen <= 0.01, `huelle-hang Schub ins Gelände ${hg.eindringen?.toFixed(2)} m`],
+            ])
+        ),
+        ...probe(s.huelleSchub, "huelle-schub keine Probe", (h) => [
+            [h.weg <= STATION.schubM, `huelle-schub ein Wesen schob den Wagen ${h.weg?.toFixed(2)} m`],
+        ]),
+        // L1 DER HANGFUSS: nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
+        // begrenzt, er fährt weiter.
+        ...probe(s.hangfuss, "hangfuss keine Probe", (hf) =>
+            probe(
+                hf.ziel && hf.kontakte >= 1,
+                `hangfuss vakuös (Glutbrunnen ${hf.ziel ? "steht" : "fehlt"}, ${hf.kontakte || 0} Kontakte)`,
+                () => [
+                    [
+                        hf.unterMax <= STATION.unterM && hf.unterN <= STATION.unterN,
+                        `hangfuss-unter: der Wagen liegt ${hf.unterMax?.toFixed(2)} m unter der Ebene seiner Räder (${hf.unterN} Schritte > 0,05 m) — eine Kontakt-Antwort ohne Erdung`,
+                    ],
+                    [
+                        hf.schubMax <= STATION.versetztM,
+                        `hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax?.toFixed(2)} m`,
+                    ],
+                    [hf.weg >= STATION.wegM, `hangfuss-steht: mit W nur ${hf.weg?.toFixed(2)} m gefahren`],
+                ]
+            )
+        ),
+        // L3–L5 DER STOSS: ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
+        // für Kamera und Klang.
+        ...[
+            ["stossFels", "stoss-fels"],
+            ["stossWagen", "stoss-wagen"],
+            ["stossBaer", "stoss-baer"],
+        ].flatMap(([k, name]) =>
+            probe(s[k], `${name} keine Probe`, (m) =>
+                probe(
+                    m.kontakt >= 0 && m.vVor >= STATION.stossVMin,
+                    `${name} vakuös (kein Stoß aus ≥ 3 m/s: Kontakt ${m.kontakt}, ${(m.vVor || 0).toFixed(2)} m/s)`,
+                    () => {
+                        const was = `${m.vVor.toFixed(2)} → ${m.vNach.toFixed(2)} m/s`;
+                        const [wagen, baer] = [k === "stossWagen", k === "stossBaer"];
+                        return [
+                            // der Stoß gilt der Annäherung: gleitet der Gegner schon schneller fort, als der Wagen nachkommt, stößt
+                            // nichts — die Ursache vor ihrem Symptom (der Wagen verliert dann Fahrt an einen Gegner, der schon fort ist)
+                            [
+                                !(m.ohneAnnaeherung > 0),
+                                `${name}: Stoß ohne Annäherung (${m.ohneAnnaeherung}×, der Gegner glitt schon schneller fort) — die Fahrt statt der Relativ-Geschwindigkeit`,
+                            ],
+                            [
+                                k !== "stossFels" || m.vMinNach <= STATION.rueckprallMs,
+                                `${name}: kein Rückprall (${was}, kleinste Fahrt danach ${m.vMinNach?.toFixed(2)} m/s) — ein Stopp ohne Folge`,
+                            ],
+                            [
+                                !(wagen || baer) || m.zielWeg >= (wagen ? STATION.wagenWegM : STATION.baerWegM),
+                                wagen
+                                    ? `${name}: der geparkte GT bewegt sich ${m.zielWeg?.toFixed(2)} m (${was}) — er bekommt keinen Impuls`
+                                    : `${name}: der Bär bewegt sich ${m.zielWeg?.toFixed(2)} m (${was}) — er bekommt keinen Impuls`,
+                            ],
+                            [
+                                !(wagen || baer) || m.vNach >= (wagen ? STATION.wagenFahrt : STATION.baerFahrt) * m.vVor,
+                                wagen
+                                    ? `${name}: der Wagen steht nach dem Stoß (${was}) — kein Impuls-Austausch`
+                                    : `${name}: der Wagen steht am Bären (${was}) — kein Impuls-Austausch nach Masse`,
+                            ],
+                            [
+                                m.ereignisse >= 1 && m.ruck > 0,
+                                `${name}: kein Stoß-Ereignis (${m.ereignisse} Ereignisse, Kamera-Ruck ${(m.ruck || 0).toFixed(2)}) — keine Rückmeldung`,
+                            ],
+                        ];
+                    }
+                )
+            )
+        ),
+        // K3 (physik.K3) DER FREIE KÖRPER: die Kisten ruhen ≤ 2 s am Boden und jede auf der darunter (±2 cm), zittern danach und
+        // wach ≤ 1 cm; der Wagen kippt das Fass > 45°; die Mutanten (Schwere 0, ohne Stoß) fallen.
+        ...probe(fk?.fass, "frei keine Probe", () => [
             [ruht(fk.kisten), "frei-ruhe: die Kisten ruhen nicht am Boden"],
             [fk.kisten.zittern <= 0.01 && fk.wachZittern <= 0.01, "frei-zittern über 1 cm"],
             [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
             [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
             [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
-        ])
-            if (!gut) out.push(t);
-    // L6 SPIELER UND WAGEN: Impuls in beide Richtungen, keine Durchdringung.
-    const sw = s.spielerWagen;
-    if (!sw || !sw.a || !sw.b) out.push("spieler-wagen keine Probe");
-    else {
-        // im Lauf = er geht (die Kadenz folgt der Emotion: 0,81 · 1,15 · 1,44 m/s über die Läufe), nicht: er steht
-        if (!(sw.a.kontakt >= 0 && sw.a.vorKontakt >= 0.5))
-            out.push(
-                `spieler-wagen: der Spieler erreicht den GT nicht im Lauf (vakuös, ${(sw.a.vorKontakt || 0).toFixed(2)} m/s)`
-            );
-        else if (!(sw.a.paare >= 1))
-            out.push(
-                `spieler-wagen: der Spieler läuft gegen den GT (${sw.a.vorKontakt.toFixed(2)} m/s) und kein Stoß fällt — kein Impuls`
-            );
-        else if (!(sw.a.prallNach <= 0))
-            out.push(
-                `spieler-wagen: nach dem Stoß läuft der Spieler noch mit ${(sw.a.prallNach * 100).toFixed(0)} % seiner Fahrt in den Wagen — er prallt nicht ab`
-            );
-        if (!(sw.a.wagenWeg <= STATION.wagenHaltM))
-            out.push(
-                `spieler-wagen: der gebremste GT rutscht ${sw.a.wagenWeg.toFixed(3)} m vom Spieler (die Bremse hält nicht)`
-            );
-        if (!(sw.a.minAbstand >= -STATION.spielerTiefM))
-            out.push(`spieler-wagen: der Spieler steckt ${(-sw.a.minAbstand).toFixed(2)} m im Wagen`);
-        if (!(sw.b.spielerDv >= STATION.spielerDv))
-            out.push(
-                `wagen-spieler: der rutschende GT stößt den Spieler nicht (${(sw.b.spielerDv || 0).toFixed(3)} m/s)`
-            );
-        if (!(sw.b.minAbstand >= -STATION.spielerTiefM))
-            out.push(`wagen-spieler: der GT schiebt sich ${(-sw.b.minAbstand).toFixed(2)} m in den Spieler`);
-    }
-    // L8 + Schwimmer: der gestoßene Fuchs im Wasser steht bei jeder Bildrate gleich (x, z und y)
-    if (s.schwimmer && !s.schwimmer.fehler) {
-        const ls = s.lockSchwimmer;
-        if (!ls) out.push("lockstep schwimmer: keine Probe");
-        else if (!(ls.abw <= STATION.lockstepM) || !(ls.abwY <= STATION.lockstepM))
-            out.push(
-                `lockstep schwimmer: 20 Sim-Schritte nach dem Stoß steht der Fuchs bei gemischten Frames ${ls.abw} m daneben und ${ls.abwY} m höher/tiefer als bei 60 fps`
-            );
-    }
-    // L10 DER GESTOSSENE SCHWIMMER
-    const sch = s.schwimmer;
-    if (!sch || sch.fehler) out.push(`schwimmer keine Probe${sch && sch.fehler ? " (" + sch.fehler + ")" : ""}`);
-    else if (!(sch.gleitet >= 3)) out.push("schwimmer: der Stoß trägt ihn nicht (vakuös)");
-    else if (!(sch.tiefste >= -STATION.schwimmTiefM))
-        out.push(
-            `schwimmer: der gestoßene Fuchs sinkt ${(-sch.tiefste).toFixed(2)} m unter seine Schwimm-Linie (auf den Grund)`
-        );
-    // L9 DER REITER IM WAGEN
-    const rw = s.reiter;
-    if (!rw || !rw.length) out.push("reiter keine Probe");
-    else
-        for (const q of rw) {
-            if (q.fehler || q.sitz === null) {
-                out.push(`reiter ${q.typ}: ${q.fehler || "kein Sitz-Anker"}`);
-                continue;
-            }
-            if (q.dach !== null && !(q.oben <= q.dach))
-                out.push(`reiter ${q.typ}: die Oberkante steht ${(q.oben - q.dach).toFixed(3)} m über der Dachlinie`);
-            if (!(Math.abs(q.schenkel - q.sitz) <= STATION.sitzM))
-                out.push(
-                    `reiter ${q.typ}: die Oberschenkel liegen ${Math.abs(q.schenkel - q.sitz).toFixed(3)} m ${q.schenkel > q.sitz ? "über" : "unter"} der Sitzfläche`
-                );
-            if (!(Math.hypot(q.ankerL, q.ankerQ) <= STATION.ankerM))
-                out.push(
-                    `reiter ${q.typ}: das Hüftgelenk steht ${q.ankerL.toFixed(2)} m längs / ${q.ankerQ.toFixed(2)} m quer neben dem Sitz-Anker`
-                );
-            if (!(q.blickGrad <= STATION.blickGrad))
-                out.push(
-                    `reiter ${q.typ}: der Leib schaut ${q.blickGrad.toFixed(0)}° neben die Fahrt (er folgt der Maus)`
-                );
-            const gl = q.glas;
-            if (gl && gl.n > 0 && gl.aussen / gl.n > STATION.hautAussen)
-                out.push(
-                    `reiter ${q.typ}: ${((100 * gl.aussen) / gl.n).toFixed(1)} % der Haut seitlich durch die gezeichnete Haut des Wagens (${Object.entries(
-                        gl.wer
-                    )
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 3)
-                        .map(([w, k]) => `${w} ×${k}`)
-                        .join(", ")})`
-                );
-            const au = q.aussen;
-            if (au && au.n > 0)
-                for (const art of ["unten", "seite", "oben", "laengs"])
-                    if (au[art] / au.n > STATION.hautAussen)
-                        out.push(
-                            `reiter ${q.typ}: ${((100 * au[art]) / au.n).toFixed(1)} % der Haut ${{ unten: "unter dem Bauch", seite: "seitlich aus der Kabine", oben: "über dem Dach", laengs: "vor dem Bug / hinter dem Heck" }[art]} (bis ${au.tief[art]} m, ${au.wer[art]})`
-                        );
-        }
-    if (s.reiterStand && !(s.reiterStand.abw <= 1e-6))
+        ]),
+        // L6 SPIELER UND WAGEN: Impuls in beide Richtungen, keine Durchdringung.
+        ...probe(sw?.a && sw.b, "spieler-wagen keine Probe", () => {
+            const [a, b] = [sw.a, sw.b];
+            // im Lauf = er geht (die Kadenz folgt der Emotion: 0,81 · 1,15 · 1,44 m/s über die Läufe), nicht: er steht
+            return [
+                ...probe(
+                    a.kontakt >= 0 && a.vorKontakt >= 0.5,
+                    `spieler-wagen: der Spieler erreicht den GT nicht im Lauf (vakuös, ${(a.vorKontakt || 0).toFixed(2)} m/s)`,
+                    () =>
+                        probe(
+                            a.paare >= 1,
+                            `spieler-wagen: der Spieler läuft gegen den GT (${a.vorKontakt.toFixed(2)} m/s) und kein Stoß fällt — kein Impuls`,
+                            () => [
+                                [
+                                    a.prallNach <= 0,
+                                    `spieler-wagen: nach dem Stoß läuft der Spieler noch mit ${(a.prallNach * 100).toFixed(0)} % seiner Fahrt in den Wagen — er prallt nicht ab`,
+                                ],
+                            ]
+                        )
+                ),
+                [
+                    a.wagenWeg <= STATION.wagenHaltM,
+                    `spieler-wagen: der gebremste GT rutscht ${a.wagenWeg?.toFixed(3)} m vom Spieler (die Bremse hält nicht)`,
+                ],
+                [a.minAbstand >= -STATION.spielerTiefM, `spieler-wagen: der Spieler steckt ${(-a.minAbstand).toFixed(2)} m im Wagen`],
+                [
+                    b.spielerDv >= STATION.spielerDv,
+                    `wagen-spieler: der rutschende GT stößt den Spieler nicht (${(b.spielerDv || 0).toFixed(3)} m/s)`,
+                ],
+                [b.minAbstand >= -STATION.spielerTiefM, `wagen-spieler: der GT schiebt sich ${(-b.minAbstand).toFixed(2)} m in den Spieler`],
+            ];
+        }),
+        // L8 + Schwimmer: der gestoßene Fuchs im Wasser steht bei jeder Bildrate gleich (x, z und y)
+        ...(sch && !sch.fehler
+            ? probe(ls, "lockstep schwimmer: keine Probe", () => [
+                  [
+                      ls.abw <= STATION.lockstepM && ls.abwY <= STATION.lockstepM,
+                      `lockstep schwimmer: 20 Sim-Schritte nach dem Stoß steht der Fuchs bei gemischten Frames ${ls.abw} m daneben und ${ls.abwY} m höher/tiefer als bei 60 fps`,
+                  ],
+              ])
+            : []),
+        // L10 DER GESTOSSENE SCHWIMMER
+        ...probe(sch && !sch.fehler, `schwimmer keine Probe${sch?.fehler ? " (" + sch.fehler + ")" : ""}`, () =>
+            probe(sch.gleitet >= 3, "schwimmer: der Stoß trägt ihn nicht (vakuös)", () => [
+                [
+                    sch.tiefste >= -STATION.schwimmTiefM,
+                    `schwimmer: der gestoßene Fuchs sinkt ${(-sch.tiefste).toFixed(2)} m unter seine Schwimm-Linie (auf den Grund)`,
+                ],
+            ])
+        ),
+        // L9 DER REITER IM WAGEN
+        ...probe(rw?.length, "reiter keine Probe", () =>
+            rw.flatMap((q) => {
+                if (q.fehler || q.sitz === null) return [[false, `reiter ${q.typ}: ${q.fehler || "kein Sitz-Anker"}`]];
+                const [gl, au] = [q.glas, q.aussen];
+                return [
+                    [
+                        q.dach === null || q.oben <= q.dach,
+                        `reiter ${q.typ}: die Oberkante steht ${(q.oben - q.dach).toFixed(3)} m über der Dachlinie`,
+                    ],
+                    [
+                        Math.abs(q.schenkel - q.sitz) <= STATION.sitzM,
+                        `reiter ${q.typ}: die Oberschenkel liegen ${Math.abs(q.schenkel - q.sitz).toFixed(3)} m ${q.schenkel > q.sitz ? "über" : "unter"} der Sitzfläche`,
+                    ],
+                    [
+                        Math.hypot(q.ankerL, q.ankerQ) <= STATION.ankerM,
+                        `reiter ${q.typ}: das Hüftgelenk steht ${q.ankerL?.toFixed(2)} m längs / ${q.ankerQ?.toFixed(2)} m quer neben dem Sitz-Anker`,
+                    ],
+                    [
+                        q.blickGrad <= STATION.blickGrad,
+                        `reiter ${q.typ}: der Leib schaut ${q.blickGrad?.toFixed(0)}° neben die Fahrt (er folgt der Maus)`,
+                    ],
+                    [
+                        !(gl && gl.n > 0 && gl.aussen / gl.n > STATION.hautAussen),
+                        gl &&
+                            `reiter ${q.typ}: ${((100 * gl.aussen) / gl.n).toFixed(1)} % der Haut seitlich durch die gezeichnete Haut des Wagens (${Object.entries(
+                                gl.wer || {}
+                            )
+                                .sort((a, b) => b[1] - a[1])
+                                .slice(0, 3)
+                                .map(([w, k]) => `${w} ×${k}`)
+                                .join(", ")})`,
+                    ],
+                    ...(au && au.n > 0 ? ["unten", "seite", "oben", "laengs"] : []).map((art) => [
+                        !(au[art] / au.n > STATION.hautAussen),
+                        `reiter ${q.typ}: ${((100 * au[art]) / au.n).toFixed(1)} % der Haut ${{ unten: "unter dem Bauch", seite: "seitlich aus der Kabine", oben: "über dem Dach", laengs: "vor dem Bug / hinter dem Heck" }[art]} (bis ${au.tief[art]} m, ${au.wer[art]})`,
+                    ]),
+                ];
+            })
+        ),
         // die Gier des Beckens setzt der Gang selbst
-        out.push(
-            `reiter: nach dem Absteigen steht der Wurzel-Knochen ${s.reiterStand.abw.toFixed(3)} m neben seinem Stand (Gier ${(s.reiterStand.gier || 0).toFixed(3)})`
-        );
-    // L8 DER STOSS IM SIM-SCHRITT (der Leib vor der Mauer: gate:kollision-bild (V))
-    if (!s.lockstep) out.push("lockstep keine Probe");
-    else if (s.lockstep.ruhe !== true)
-        out.push(
-            `lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`
-        );
-    else if (s.lockstep.gleicherStart !== true)
-        out.push(
-            `lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`
-        );
-    else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
-        out.push(
-            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}` : ""}`
-        );
-    // L2 DIE SPALTKANTE: der Wagen fährt über die Kante und fällt.
-    const sp = s.spalt;
-    if (!sp) out.push("spalt keine Probe");
-    else if (!(sp.rand - sp.grund >= STATION.randM))
-        out.push(`spalt vakuös (Rand ${(sp.rand || 0).toFixed(1)} m, Grund ${(sp.grund || 0).toFixed(1)} m)`);
-    else if (!(sp.vor > 4.5 && sp.yMin < sp.rand - STATION.fallM))
-        out.push(
-            `spalt-wand: der Wagen hält an der Kante (${sp.vor.toFixed(2)} m über die Kante, tiefste Höhe ${sp.yMin.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`
-        );
-    return out;
+        [
+            !s.reiterStand || s.reiterStand.abw <= 1e-6,
+            `reiter: nach dem Absteigen steht der Wurzel-Knochen ${s.reiterStand?.abw?.toFixed(3)} m neben seinem Stand (Gier ${(s.reiterStand?.gier || 0).toFixed(3)})`,
+        ],
+        // L8 DER STOSS IM SIM-SCHRITT (der Leib vor der Mauer: gate:kollision-bild (V))
+        ...probe(lk, "lockstep keine Probe", () =>
+            probe(
+                lk.ruhe === true,
+                `lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(lk.unruhe || []).join(" / ")})`,
+                () =>
+                    probe(
+                        lk.gleicherStart === true,
+                        `lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${lk.startAbw} > 1e-7)`,
+                        () => [
+                            [
+                                lk.abw <= STATION.lockstepM && lk.baerAbw <= STATION.lockstepM,
+                                `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${lk.abw?.toFixed(3)} m anders als bei 60 fps (Bär ${lk.baerAbw?.toFixed(3)} m)${lk.erst ? ` — zuerst in Schritt ${lk.erst.schritt}: ${lk.erst.groesse} um ${lk.erst.d}` : ""}`,
+                            ],
+                        ]
+                    )
+            )
+        ),
+        // L2 DIE SPALTKANTE: der Wagen fährt über die Kante und fällt.
+        ...probe(sp, "spalt keine Probe", () =>
+            probe(
+                sp.rand - sp.grund >= STATION.randM,
+                `spalt vakuös (Rand ${(sp.rand || 0).toFixed(1)} m, Grund ${(sp.grund || 0).toFixed(1)} m)`,
+                () => [
+                    [
+                        sp.vor > 4.5 && sp.yMin < sp.rand - STATION.fallM,
+                        `spalt-wand: der Wagen hält an der Kante (${sp.vor?.toFixed(2)} m über die Kante, tiefste Höhe ${sp.yMin?.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`,
+                    ],
+                ]
+            )
+        ),
+    ]);
 }
 
 // K1 (physik.K1, `probeKoerper`): die Messung der Meisterkarte und ρ ×2 in der EINEN Stoff-Zeile (jede Masse ×2).
@@ -783,7 +805,7 @@ function ketteBericht(k, err) {
 // Sim-Schritte über 0,8 · Bezug (das Tempo, das der Weg trägt: min(vmax, Entwurfs-Tempo seiner Klasse, `WEGENETZ.entwurfKmh`)). ════
 const WEGENETZ = { orte: ["-1,-5", "0,-5", "1,-6", "2,-7", "3,-6", "4,-7"] };
 const wegenetzVerdict = (m) =>
-    [
+    urteil([
         [m.lang >= 2000, `Route ${m.lang} m`],
         [m.wegAnteil >= 0.95, `querfeldein (Weg ${m.wegAnteil})`],
         [m.ende, `nicht angekommen (${m.weg} m)`],
@@ -796,7 +818,7 @@ const wegenetzVerdict = (m) =>
                 .join(", ")}`,
         ],
         [m.boden.wiese > 0 && m.boden.wald >= 0.1 && m.boden.dorf >= 0.05, `Boden ${JSON.stringify(m.boden)}`],
-    ].flatMap(([ok, t]) => (ok ? [] : [t]));
+    ]);
 
 // ════ VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C, `verkehr` in probeLeben): das ganze Kriterium — die Metropole am Messort
 // stadt-voll um 10 und 23 Uhr je `sek` Bilder-Sekunden (10 min Spielzeit), ≥ `wagen` Wagen, jeder mit einem Bewohner am Steuer,
@@ -806,7 +828,7 @@ const wegenetzVerdict = (m) =>
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
 const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2 };
 const verkehrVerdict = (m) =>
-    [
+    urteil([
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
         // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
         // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
@@ -874,7 +896,7 @@ const verkehrVerdict = (m) =>
             !m.stufe.veraltet,
             `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`,
         ],
-    ].flatMap(([ok, t]) => (ok ? [] : [t]));
+    ]);
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
 // und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
@@ -895,46 +917,45 @@ const BAHN = {
 // ── DIE URTEILE DER BAHN (rein; Seiten-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 function bahnKernVerdict(rows) {
     if (!Array.isArray(rows) || rows.length === 0) return ["kein Kern-Lauf"];
-    const out = [];
-    for (const z of rows)
-        if (!(z.weg >= BAHN.rueckM)) out.push(`${z.rezept} ${z.art} ${z.grad}°: ${z.weg.toFixed(2)} m in 2,5 s`);
-    return out;
+    return urteil(rows.map((z) => [z.weg >= BAHN.rueckM, `${z.rezept} ${z.art} ${z.grad}°: ${z.weg.toFixed(2)} m in 2,5 s`]));
 }
 function bahnPlatzVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "kein Wagen"];
-    const out = [];
-    if (!(m.neigung <= BAHN.neigungGrad))
-        out.push(`Neigung ${m.neigung.toFixed(0)}° (steig ${m.steig.toFixed(0)}°, wank ${m.wank.toFixed(0)}°)`);
-    if (m.waende > 0) out.push(`${m.waende} Wände im Umriss`);
-    if (m.blocker > 0) out.push(`${m.blocker} Blocker im Band (${m.blockerNamen.join(", ")})`);
-    if (m.eingestiegen === false) out.push(`E steigt nicht ein${m.statt ? " (" + m.statt + ")" : ""}`);
-    else if (m.eingestiegen) {
-        if (m.vor != null && !(m.vor >= BAHN.vorM)) out.push(`W 2 s ${m.vor.toFixed(2)} m`);
-        if (m.zurueck != null && !(m.zurueck >= BAHN.rueckM)) out.push(`S 2,5 s ${m.zurueck.toFixed(2)} m`);
-        if (!m.ausgestiegen) out.push("E steigt nicht aus");
-    }
-    return out;
+    if (!m || !m.da) return [m?.grund || "kein Wagen"];
+    const ein = m.eingestiegen;
+    return urteil([
+        [
+            m.neigung <= BAHN.neigungGrad,
+            `Neigung ${m.neigung.toFixed(0)}° (steig ${m.steig?.toFixed(0)}°, wank ${m.wank?.toFixed(0)}°)`,
+        ],
+        [!(m.waende > 0), `${m.waende} Wände im Umriss`],
+        [!(m.blocker > 0), `${m.blocker} Blocker im Band (${m.blockerNamen?.join(", ")})`],
+        [ein !== false, `E steigt nicht ein${m.statt ? " (" + m.statt + ")" : ""}`],
+        [!ein || m.vor == null || m.vor >= BAHN.vorM, `W 2 s ${m.vor?.toFixed(2)} m`],
+        [!ein || m.zurueck == null || m.zurueck >= BAHN.rueckM, `S 2,5 s ${m.zurueck?.toFixed(2)} m`],
+        [!ein || m.ausgestiegen, "E steigt nicht aus"],
+    ]);
 }
 function bahnStossVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "keine Station"];
-    const out = [];
-    if (!m.stoss) out.push(`kein Stoß am ${m.ziel}${m.ohneStoss ? " " + JSON.stringify(m.ohneStoss) : ""}`);
-    if (!m.versuche || m.versuche.length === 0) out.push(`keine Befreiung am ${m.ziel}`);
-    for (const v of m.versuche || [])
-        if (!(v.freiFrame >= 0 && v.freiFrame <= BAHN.freiFrames))
-            out.push(`${m.ziel} ${v.seite}: nach 2 s ${v.weg.toFixed(2)} m (${v.vMinKmh.toFixed(1)} km/h)`);
-    return out;
+    if (!m || !m.da) return [m?.grund || "keine Station"];
+    return urteil([
+        [m.stoss, `kein Stoß am ${m.ziel}${m.ohneStoss ? " " + JSON.stringify(m.ohneStoss) : ""}`],
+        [m.versuche?.length > 0, `keine Befreiung am ${m.ziel}`],
+        ...(m.versuche || []).map((v) => [
+            v.freiFrame >= 0 && v.freiFrame <= BAHN.freiFrames,
+            `${m.ziel} ${v.seite}: nach 2 s ${v.weg.toFixed(2)} m (${v.vMinKmh.toFixed(1)} km/h)`,
+        ]),
+    ]);
 }
 function bahnTachoVerdict(m) {
     if (!m) return ["keine Probe"];
     if (!m.element) return ["kein Tacho im Spiel (#fahr-tacho fehlt)"];
-    const out = [];
-    if (!(m.proben > 0)) out.push("keine Probe im Sattel");
-    if (m.unsichtbar > 0) out.push(`im Sattel unsichtbar in ${m.unsichtbar}/${m.proben} Proben`);
-    if (m.falsch > 0) out.push(`${m.falsch}/${m.proben} Proben ≠ |vlong| × FAHR.kmh (${m.beispiel})`);
-    if (!(m.maxKmh >= 20)) out.push(`Fahrt zu langsam für die Probe (${m.maxKmh} km/h)`);
-    if (m.nachAbsteigenSichtbar) out.push("nach dem Absteigen noch sichtbar");
-    return out;
+    return urteil([
+        [m.proben > 0, "keine Probe im Sattel"],
+        [!(m.unsichtbar > 0), `im Sattel unsichtbar in ${m.unsichtbar}/${m.proben} Proben`],
+        [!(m.falsch > 0), `${m.falsch}/${m.proben} Proben ≠ |vlong| × FAHR.kmh (${m.beispiel})`],
+        [m.maxKmh >= 20, `Fahrt zu langsam für die Probe (${m.maxKmh} km/h)`],
+        [!m.nachAbsteigenSichtbar, "nach dem Absteigen noch sichtbar"],
+    ]);
 }
 // ════ RM — DIE RÜCKMELDUNG (fahrzeug.K5): drei Kanäle, je als Paar an ihrem Ausgang gemessen (`rueck` in probeLeben), Glatt ↔
 // Drift ↔ Hang; die Mutante (jede Kopplung gekappt) muss jeden Kanal ROT machen. Federweg je Ecke der Hülle in mm, Stoß ab
@@ -1028,23 +1049,21 @@ function rueckBericht(o) {
 function bahnTastenVerdict(m) {
     if (!m || !Array.isArray(m.zeilen)) return ["keine Hilfe"];
     const t = m.zeilen.join("\n");
-    const out = [];
-    if (!/\bE\b[^·\n]*(einsteig|aussteig)/i.test(t)) out.push("E (einsteigen) fehlt in der Hilfe");
-    if (!/\bShift\b[^·\n]*Handbremse/i.test(t)) out.push("Shift (Handbremse) fehlt in der Hilfe");
-    if (!m.handbremseWirkt)
-        out.push(`Shift kommt im Fahr-Schritt nicht als Handbremse an (${m.handbremseDetail || "?"})`);
-    return out;
+    return urteil([
+        [/\bE\b[^·\n]*(einsteig|aussteig)/i.test(t), "E (einsteigen) fehlt in der Hilfe"],
+        [/\bShift\b[^·\n]*Handbremse/i.test(t), "Shift (Handbremse) fehlt in der Hilfe"],
+        [m.handbremseWirkt, `Shift kommt im Fahr-Schritt nicht als Handbremse an (${m.handbremseDetail || "?"})`],
+    ]);
 }
 function bahnWandVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "keine Probe"];
-    const out = [];
-    if (m.urteil !== "wagen")
-        out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
-    if (m.grundriss)
-        out.push(
-            `der Wagen ist ein Grundriss (_imGrundriss → ${m.grundriss}): ein Haus räumt die Natur aus ihm und nennt sich`
-        );
-    return out;
+    if (!m || !m.da) return [m?.grund || "keine Probe"];
+    return urteil([
+        [m.urteil === "wagen", `ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`],
+        [
+            !m.grundriss,
+            `der Wagen ist ein Grundriss (_imGrundriss → ${m.grundriss}): ein Haus räumt die Natur aus ihm und nennt sich`,
+        ],
+    ]);
 }
 
 // FK — DER KERN SELBST: rückwärts aus dem Stand je Rezept, eben und bergauf (Node).
@@ -1111,13 +1130,7 @@ function bahnKernStimme(KC, VC) {
 
 // ── DIE PROBE DER BAHN IN DER SEITE (Funktionsrumpf; ein eigenes Boot, alle F-Phasen). ──
 async function probeBahn(B) {
-    const out = { log: [] };
-    const uhr = { t: performance.now(), zeilen: [] }; // die Dauer je Phase (Bericht, kein Urteil)
-    const phase = (name) => {
-        const t = performance.now();
-        uhr.zeilen.push(`${name} ${((t - uhr.t) / 1000).toFixed(1)} s`);
-        uhr.t = t;
-    };
+    const out = {};
     await __weltDa();
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
@@ -1348,7 +1361,6 @@ async function probeBahn(B) {
         wagenWeg(ev);
     } else out.vorschau = { da: false, grund: "keine Vorschau am Garage-Tor" };
 
-    phase("Boot + F2");
     // ════ F1 — DER PLATZ AN JEDEM TOR MIT VORSCHAU (der Weg der Vorschau: autonomous, Blick vom Ring hinaus) ════
     // Das Soll zählt der Plan des Orts (fachwerk GENESIS_ORT.tafel: die Tore mit der Zeile `vorschau`) — ein Tor ohne sie hat keinen
     // Wunsch-Ort, dort stellt das Spiel nie einen Wagen (bis zum Plan trug jedes der zehn Tore des Rings eine Vorschau-Stelle).
@@ -1398,7 +1410,6 @@ async function probeBahn(B) {
     }
     for (const { e } of gesetzt) wagenWeg(e);
 
-    phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
         // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (die Lichtung trägt den Ring der Tore, 15 m)
@@ -1464,7 +1475,6 @@ async function probeBahn(B) {
         delete r._blockerMit;
     }
 
-    phase("F3 + Schmuggel");
     // ════ F4 — DER STOSS UND DIE BEFREIUNG (die Stelle der Schau, Kurs auf −765/−752) ════
     // DIE STELLE AUS DER WELT: die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
     // sie am Hang, und der Wagen glitt quer am Ziel vorbei (kein Stoß). Die Station sucht in Ringen um die Stelle der Schau
@@ -1631,15 +1641,19 @@ async function probeBahn(B) {
     out.stossGlut = await stossStation("glutbrunnen", 4.4);
     out.stossStamm = await stossStation("baum_kiefer", 5);
 
-    phase("F4");
-    out.log.push("Dauer: " + uhr.zeilen.join(" · "));
-    out.log.push(...logs.slice(0, 20));
     return out;
 }
 
 hauptLauf(async () => {
     if (schalter("--selftest")) {
         console.log("=== SELBST-TEST: die Fahr-Linse nennt jeden Täter des Befunds ===");
+        // je Bruch [Name, Täter, Soll] am gesunden Lauf `gut`: das Verdikt nennt zuerst `soll` (`allein`: nur ihn)
+        const brueche = (wer, verdikt, gut, faelle, allein) => {
+            for (const [name, bruch, soll] of faelle) {
+                const v = verdikt({ ...gut, ...bruch });
+                check(`Selbst-Test${wer}: ‚${name}' → die Linse nennt ${soll}`, v[0]?.startsWith(soll) && (!allein || v.length === 1), v.join(" · ")); // prettier-ignore
+            }
+        };
         const gesund = {
             gestartet: true,
             frames: 240,
@@ -1759,7 +1773,7 @@ hauptLauf(async () => {
             }
         }
 
-        for (const [name, bruch, soll] of [
+        brueche("", taktVerdict, gesund, [
             ["der gerittene Wagen auf der Karte (Distanz-Wand)", { stufe: 2 }, "stufe"],
             ["der Eintrag bleibt hinter dem Reiter (Pin gerissen)", { versatz: 3.2 }, "versatz"],
             ["114 von 114 Frames Teleport (F-D1)", { teleport: 114 }, "teleport"],
@@ -1767,14 +1781,7 @@ hauptLauf(async () => {
             ["Reiter in der Luft 421/421 (F-D10)", { luft: 270 }, "luft"],
             ["82,4° Gier in Frames ohne Sim-Schritt (F-D2)", { gierGrad: 82.4 }, "gier"],
             ["keine Fahrt (0 m)", { simWeg: 0, fahrWeg: 0 }, "sim-weg"],
-        ]) {
-            const v = taktVerdict({ ...gesund, ...bruch });
-            check(
-                `Selbst-Test: ‚${name}' → die Linse nennt ${soll}`,
-                v.length >= 1 && v[0].startsWith(soll),
-                v.join(" · ")
-            );
-        }
+        ]);
         check("Selbst-Test: nicht gestartet → die Linse feuert", taktVerdict({ gestartet: false }).length === 1);
         const steht = { gestartet: true, frames: 180, teleport: 0, fahrWeg: 0.0, gierGesamt: 0, v: 0 };
         check("Selbst-Test H0: der haltende Wagen == 0 Täter", haltVerdict(steht).length === 0);
@@ -1802,7 +1809,7 @@ hauptLauf(async () => {
             wechselVerdict(wechsel).length === 0,
             wechselVerdict(wechsel).join(" · ")
         );
-        for (const [name, bruch, soll] of [
+        brueche(" T4", wechselVerdict, wechsel, [
             ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
             ["kein Band im Ritt", { band: 0 }, "band"],
             ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
@@ -1816,14 +1823,7 @@ hauptLauf(async () => {
             ["der Wiederaufstieg zeigt die alte Gier (57°)", { wiederauf: 57 }, "wiederaufstieg"],
             ["kein Bild ohne Sim-Schritt nach dem Aufstieg", { wiederauf: undefined }, "wiederaufstieg: kein"],
             ["kein Steilhang", { gestartet: false, ort: null }, "steilhang"],
-        ]) {
-            const v = wechselVerdict({ ...wechsel, ...bruch });
-            check(
-                `Selbst-Test T4: ‚${name}' → die Linse nennt ${soll}`,
-                v.length === 1 && v[0].startsWith(soll),
-                v.join(" · ")
-            );
-        }
+        ], 1);
         // der Ruck je Bild über ungleiche Bildzeiten (16,7 · 33,3 ms): gleichförmig 1,8 m/s quer ist keiner (je Bild roh 0,03), ein Zittern bleibt
         const [glatt, zittert] = [
             ruckJeBild([
@@ -1966,7 +1966,7 @@ hauptLauf(async () => {
             lockSchwimmer: { abw: 0, abwY: 0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
-        for (const [name, bruch, soll] of [
+        brueche(" S", stationVerdict, gutS, [
             [
                 "Hangfuß: 1,19 m unter den Rädern, 66 Schritte",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 1.19, unterN: 66, schubMax: 0.1, weg: 21 } },
@@ -2181,14 +2181,7 @@ hauptLauf(async () => {
                 { huelleKonsum: { kapsel: true, leibWagen: true, leibTier: true } },
                 "huelle-konsum gleiten",
             ],
-        ]) {
-            const v = stationVerdict({ ...gutS, ...bruch });
-            check(
-                `Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`,
-                v.length >= 1 && v[0].startsWith(soll),
-                v.join(" · ")
-            );
-        }
+        ]);
         {
             // F — DIE FAHR-BAHN: jedes Urteil nennt seinen eingeschmuggelten Täter
             const gutP = {
@@ -2935,7 +2928,6 @@ hauptLauf(async () => {
             hv.length === 0,
             `„${fz}“ · ${hilfe.handbremseDetail || ""}${taeter(hv)}`
         );
-        for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
     rueckBericht(out.rueck || out);

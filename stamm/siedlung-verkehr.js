@@ -298,16 +298,16 @@ class AnazhRealm_siedlung_verkehr {
         // ausparkte, wartete, bis keiner mehr auf 105 m der Bahn fuhr (23 Uhr eine Reihe von sieben 90 s vor dem Abzweig), und wer
         // sie verträglich durchfuhr, begegnete dem Entgegenkommenden, wo beide Bahnen 2,42 m nebeneinander liefen (die Wende 908/289,
         // 0,08 m bis „Wagen in Wagen"). DIE SCHLEIFE TRÄGT, WEN SIE FASST (die Regel des Kreisverkehrs): so viele Wagen samt Abstand,
-        // wie ihre Bahn im Ring außer der Begegnung lang ist, halten die Wende zugleich, wer dann kommt, wartet draußen — ohne sie
-        // hielten zwei Hineinfahrende die Begegnung, der Herausfahrende wartete vor ihr und der Ring hinter ihm (die West-Wende
-        // 668/419: 7 Halter, eine Fahrt 671 s).
+        // wie ihre Bahn außer der Begegnung lang ist, halten die Wende zugleich, wer dann kommt, wartet draußen — ohne sie hielten
+        // zwei Hineinfahrende die Begegnung, der Herausfahrende wartete vor ihr und der Ring hinter ihm (die West-Wende 668/419:
+        // 7 Halter, eine Fahrt 671 s).
         for (const w of VK.wenden.values()) {
             w.zone = zone("wende", w.x, w.z, w.r + VG.halbM + VG.parkRandM + VG.parkB + VG.parkL / 2);
             w.engZonen = (w.engen || []).map((e) => zone("enge", e.x, e.z, e.r));
-            const frei = (q) => Math.hypot(q.x - w.x, q.z - w.z) < w.zone.r && !w.engZonen.some((Z) => Math.hypot(q.x - Z.x, q.z - Z.z) < Z.r); // prettier-ignore
             let L = 0;
             for (let i = 1; i < w.bahn.length; i++)
-                if (frei(w.bahn[i])) L += Math.hypot(w.bahn[i].x - w.bahn[i - 1].x, w.bahn[i].z - w.bahn[i - 1].z);
+                if (!w.engZonen.some((Z) => Math.hypot(w.bahn[i].x - Z.x, w.bahn[i].z - Z.z) < Z.r))
+                    L += Math.hypot(w.bahn[i].x - w.bahn[i - 1].x, w.bahn[i].z - w.bahn[i - 1].z);
             w.zone.platz = Math.max(1, Math.floor(L / (VG.parkL + V.abstandM)));
         }
         // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,

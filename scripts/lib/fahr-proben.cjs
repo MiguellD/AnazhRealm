@@ -768,7 +768,7 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
-                ...{ fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [], bildMs: 0 },
+                ...{ fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
             };
             // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
             // (fachwerk `planSperren`), die der Sehne von Spur zu Spur am nächsten liegt, oder die Stufe des Bodens (`zahl.stufen`)
@@ -826,14 +826,6 @@ async function probeLeben(expected) {
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
-            // DER BILD-TAKT DES VERKEHRS (die Wahl und der Leib am Steuer, `_tickVerkehr`; der Wagen im Gedränge, `_verkehrImRaster`):
-            // seine Millisekunden je Bild — der Teil des Verkehrs am CPU-Takt des Profi-Bands neben dem Sim-Schritt
-            for (const n of ["_tickVerkehr", "_verkehrImRaster"])
-                r[n] = function (...a) {
-                    const t0 = performance.now();
-                    P[n].apply(this, a);
-                    m.bildMs += performance.now() - t0;
-                };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
@@ -860,13 +852,8 @@ async function probeLeben(expected) {
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
             if (o.taeter) r._verkehrUmfahren = () => false;
-            // DIE KOSTEN DES VERKEHRS JE BILD-TAKT (Sim-Schritte, Wahl am Steuer, Wagen im Gedränge): ihr p95 — die Kappe hält ihn
-            // (`VERKEHR.kappeMs`), gleich wie viele Wagen die Stadt fährt (Gebot 7)
-            const jeBild = new Float64Array(Math.round(o.sek * 60));
-            for (let k = 0; k < jeBild.length; k++, i++) {
-                const vorMs = m.ms + m.bildMs;
+            for (let k = 0; k < o.sek * 60; k++, i++) {
                 frame(i);
-                jeBild[k] = m.ms + m.bildMs - vorMs;
                 if (i % 8 === 7) await window.sleep();
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
                     const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
@@ -979,12 +966,7 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster", "_verkehrUmfahren"]) delete r[n];
-            // DER ABDRUCK DER STUNDE (FNV-1a über die Lage jedes Wagens und jedes Leibs auf den Zentimeter): zwei Läufe derselben
-            // Saat tragen denselben — der Beweis, dass die Linse urteilt, nicht die Wanduhr
-            let abdruck = 2166136261;
-            for (const p of VK.wagen.map((W) => W.entry.position).concat(S.liste.map((b) => b.leib.position)))
-                for (const v of [p.x, p.z]) abdruck = Math.imul(abdruck ^ Math.round(v * 100), 16777619);
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren"]) delete r[n];
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
             // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
@@ -1023,8 +1005,6 @@ async function probeLeben(expected) {
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
-                msJeBild: +(m.bildMs / jeBild.length).toFixed(3),
-                msTaktP95: +jeBild.sort()[Math.floor(0.95 * (jeBild.length - 1))].toFixed(3),
                 stufe: SK,
                 sek: o.sek,
                 ziele: {
@@ -1038,7 +1018,6 @@ async function probeLeben(expected) {
                 trasse: T.tr,
                 weg60: T.w60,
                 sitz: SZ,
-                abdruck: abdruck >>> 0,
             };
         }
         return aus;
