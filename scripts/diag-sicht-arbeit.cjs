@@ -102,12 +102,9 @@ function urteil(b) {
     else if (!c.wieseLiest)
         v.push("WIESE: `_nahWieseSicht` prüft ihre Kacheln bei gleicher Lage-Generation neu oder bei neuer nicht (`L.gen`)");
     // (W) die Ferne der Wiese im Gang: keine Lücke gegen das Gesetz, je Bild nur ein Teil der Kacheln neu; die Brüche fallen rot
-    const [W, WH, WR] = [b.ferneWeg || {}, b.ferneWegHalt || {}, b.ferneWegRand || {}];
-    if (!(W.soll > 0)) v.push("LEER: (W) ohne Soll der Ferne");
-    if (W.loecher) v.push(`FERNE: ${W.loecher} von ${W.soll} Instanzen des Solls fehlen der gehaltenen Wahl`);
-    if (W.neu > W.kacheln * 11) v.push(`FERNE: je Bild ${W.neu / 44} von ${W.kacheln} Kacheln neu`);
-    if (!(WH.neu > WH.kacheln * 11)) v.push("LINSE STUMPF: Halt-Bruch (W)");
-    if (!WR.loecher) v.push("LINSE STUMPF: Rand-Bruch (W)");
+    const [W, WH] = [b.ferneWeg || {}, b.ferneWegHalt || {}];
+    if (!(W.neu * 4 <= W.kacheln * 44)) v.push(`FERNE: je Bild ${W.neu / 44} von ${W.kacheln} Kacheln neu (\`_nahWieseFernSatz\`)`);
+    if (!(WH.neu * 4 > WH.kacheln * 44)) v.push("LINSE STUMPF: Halt-Bruch (W)");
     return v;
 }
 
@@ -194,9 +191,8 @@ function selbsttest() {
             namen: [],
         },
         code: { wieseLiest: true },
-        ferneWeg: { soll: 9, loecher: 0, kacheln: 8, neu: 9 },
+        ferneWeg: { kacheln: 8, neu: 9 },
         ferneWegHalt: { kacheln: 8, neu: 352 },
-        ferneWegRand: { loecher: 3 },
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
@@ -754,11 +750,9 @@ function selbsttest() {
         ],
         ["Wiese liest nicht", ["code.wieseLiest=", false], /WIESE: `_nahWieseSicht` prüft/],
         ["Wiese leer", ["code.wieseLiest=", "leer"], /LEER: die Nah-Wiese trägt keine Kachel/],
-        ["Ferne mit Loch", ["ferneWeg.loecher=", 3], /FERNE: 3 von 9/],
         ["Ferne wählt je Bild neu", ["ferneWeg.neu=", 352], /FERNE: je Bild 8 von 8/],
-        ["Ferne leer", ["ferneWeg.soll=", 0], /LEER: \(W\)/],
+        ["Ferne ohne Kachel", ["ferneWeg.kacheln=", undefined], /FERNE: je Bild/],
         ["Halt-Bruch stumpf", ["ferneWegHalt.neu=", 9], /STUMPF: Halt/],
-        ["Rand-Bruch stumpf", ["ferneWegRand.loecher=", 0], /STUMPF: Rand/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -800,6 +794,21 @@ const server = statikServer();
             const aus = { ring, takte, code: {} };
             const cam = st.camera;
             const S = r._kaskadenSchmier();
+            // die Lage des Hauptbilds aus dem Blick der Kamera und die Generation ihres Ankers (D, die Kaskaden-Treue, W)
+            const lageBlick = () => (S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem), r._passWahlLage(S, cam, -1)); // prettier-ignore
+            const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+            const vergiss = () => r._passLagen && r._passLagen.clear(); // jede Lage-Erinnerung fällt
+            // je Instanz einer Wahl-Gruppe des Hauptbilds, die das Gesetz in der Lage L trifft: `je(g, j, ob die gehaltene Wahl sie zeichnet)`
+            const instanzWahr = (L, je) => {
+                for (const g of r._instanzWahlGruppen()) {
+                    const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
+                    if (!w || !g.mesh) continue;
+                    const gezeichnet = new Set(w.refs);
+                    const fenster = L.an && r._instanzFensterGilt(g);
+                    for (let j = 0; j < (g.liveCount | 0); j++)
+                        if (r._instanzBehalten(g, j, L, fenster)) je(g, j, gezeichnet.has(g.slotRef[j]));
+                }
+            };
             const ppos = st.playerMesh.position.clone();
             const boden = r._voxelSurfaceY(MESS.x, MESS.z);
             // Die Stellvertreter-Kaskaden (wie gate:chunk-satz): Ortho-Kameras über dem Blick, k0 ±120 m, k1 ±400 m, die
@@ -864,6 +873,7 @@ const server = statikServer();
                     if (offen === 0) break;
                 }
             };
+            const nullReif = () => (stelle(0, 0), reif()); // der Blick 0, gereift
             const L = window.__sichtLinseAn();
             const phase = (n, schritt) => {
                 const fs = [];
@@ -875,8 +885,7 @@ const server = statikServer();
                 }
                 return fs;
             };
-            stelle(0, 0);
-            reif();
+            nullReif();
             L.an();
             // (R) RUHE
             const ruhe = phase(12);
@@ -892,7 +901,7 @@ const server = statikServer();
                 return m;
             };
             const halt = stand(frame());
-            if (r._passLagen) r._passLagen.clear();
+            vergiss();
             const frisch = stand(frame());
             const abw = [];
             let geprueft = 0;
@@ -922,10 +931,10 @@ const server = statikServer();
             // gate:hoehlen-sicht) und Instanzen, die das Gesetz ohne jeden Rand im Frustum dieses Blicks trifft und die
             // gehaltene Wahl nicht zeichnet.
             {
-                const gen = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+                const gen = genHaupt;
                 const neuAnker = () => {
                     stelle(0, 0);
-                    if (r._passLagen) r._passLagen.clear();
+                    vergiss();
                     frame();
                     return gen();
                 };
@@ -951,9 +960,7 @@ const server = statikServer();
                 frame();
                 D.gehalten = grenze > 0 && gX === g0 && gX2 === g0 && gen() === g0;
                 // die Wahrheit: das Gesetz ohne Rand im Frustum dieses Blicks
-                S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-                S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
-                const Lw = r._passWahlLage(S, cam, -1);
+                const Lw = lageBlick();
                 const rand = [Lw.rand, Lw.dreh, Lw.halt, Lw.licht];
                 Lw.rand = Lw.dreh = Lw.halt = Lw.licht = 0;
                 Lw.ax = cam.position.x;
@@ -980,17 +987,7 @@ const server = statikServer();
                             }
                         }
                     }
-                    for (const g of r._instanzWahlGruppen()) {
-                        const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
-                        if (!w || !g.mesh) continue;
-                        const gezeichnet = new Set(w.refs);
-                        const fenster = Lw.an && r._instanzFensterGilt(g);
-                        for (let j = 0; j < (g.liveCount | 0); j++) {
-                            if (!r._instanzBehalten(g, j, Lw, fenster)) continue;
-                            D.geprueft++;
-                            if (!gezeichnet.has(g.slotRef[j])) loch((g.mesh.name || g.key) + " Instanz");
-                        }
-                    }
+                    instanzWahr(Lw, (g, j, da) => (D.geprueft++, da || loch((g.mesh.name || g.key) + " Instanz")));
                 } finally {
                     [Lw.rand, Lw.dreh, Lw.halt, Lw.licht] = rand;
                 }
@@ -1001,8 +998,7 @@ const server = statikServer();
             // `_switchArchitectureLOD`), muss JEDE Kaskade neu wählen lassen: keine tote Marke (Slot −1), kein Wurf, kein NaN
             // in einem lebenden Slot, und jeder Werfer, den das Gesetz in der Lage einer Kaskade trifft, steht in ihrer Wahl.
             {
-                stelle(0, 0);
-                reif();
+                nullReif();
                 const I = { faelle: [], leichen: [], wuerfe: 0, nan: 0, tot: 0, fehlen: 0, geprueft: 0, namen: [] };
                 const nenne = (x) => {
                     if (I.namen.length < 6) I.namen.push(x);
@@ -1156,8 +1152,7 @@ const server = statikServer();
                 );
             }
             // (S) SCHARF: zurück in die Ruhe, dann der eingeschmuggelte Bruch — die Lage-Erinnerung fällt je Pass
-            stelle(0, 0);
-            reif();
+            nullReif();
             const orig = P._passWahlLage;
             r._passWahlLage = function (...a) {
                 if (this._passLagen) this._passLagen.clear();
@@ -1172,8 +1167,7 @@ const server = statikServer();
             // Dicht-Marke und legt sich neu, ohne dass eine Wahl es schuldet; die Linse zählt das Neulegen OHNE Änderung und
             // nennt `dicht:ohne` (die Hülle der Linse am Prototyp bleibt der Weg). Bytes legt er seit K71 keine: der
             // vergleichende Schreiber (`_satzSetze`) findet dieselben Indizes am selben Platz.
-            stelle(0, 0);
-            reif();
+            nullReif();
             const dichtNach = r.constructor.CHUNK_SATZ_ABSCHNITT.dichtNach;
             r._chunkSatzRuht = function (s, ab, key) {
                 ab.dicht = false;
@@ -1188,8 +1182,7 @@ const server = statikServer();
             // (S) SCHARF FÜR DEN SATZ-STAND: der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
             // seinen Stand, ohne dass ein Bereich, ein Anker oder eine Hülle sich ändert (der Cache-Schlüssel churnt, jede Wahl
             // rechnet neu); die Linse zählt die Arbeit OHNE Änderung und nennt `stand:ohne`
-            stelle(0, 0);
-            reif();
+            nullReif();
             r._tickChunkSatz = function () {
                 for (const x of st.chunkSaetze.values()) x.stand++;
                 return P._tickChunkSatz.call(this);
@@ -1206,7 +1199,6 @@ const server = statikServer();
             aus.augeAn = !!(lu?.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
             if (aus.augeAn) {
                 const augeVorher = lu.uLodAuge.value.clone();
-                const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
                 try {
                     stelle(0, 0);
                     cam.getWorldPosition(lu.uLodAuge.value);
@@ -1227,9 +1219,7 @@ const server = statikServer();
                     // (`L.halt` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
                     // Die Kamera steht; nur das Auge der Maske wandert.
                     const lageHaupt = () => {
-                        S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-                        S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
-                        const Lw = r._passWahlLage(S, cam, -1);
+                        const Lw = lageBlick();
                         return Object.assign({}, Lw, {
                             fr: new T.Frustum().copy(S.frustum),
                             halt: 0,
@@ -1245,7 +1235,7 @@ const server = statikServer();
                     const kante = () => {
                         stelle(0, 0);
                         cam.getWorldPosition(lu.uLodAuge.value);
-                        if (r._passLagen) r._passLagen.clear();
+                        vergiss();
                         frame();
                         const L0 = lageHaupt();
                         const ex = lu.uLodAuge.value.x,
@@ -1314,7 +1304,7 @@ const server = statikServer();
                         try {
                             lu.uLodAuge.value.x = f.A[0];
                             lu.uLodAuge.value.z = f.A[1];
-                            if (r._passLagen) r._passLagen.clear();
+                            vergiss();
                             frame();
                             const g0 = genHaupt();
                             lu.uLodAuge.value.x = f.J[0];
@@ -1326,28 +1316,16 @@ const server = statikServer();
                         }
                         // die Wahrheit: das Gesetz ohne Rand vom Auge DIESES Frames
                         const Lt = Object.assign(lageHaupt(), { ex: f.J[0], ez: f.J[1] });
-                        for (const g of r._instanzWahlGruppen()) {
-                            const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
-                            if (!w || !g.mesh) continue;
-                            const gezeichnet = new Set(w.refs);
-                            const fenster = Lt.an && r._instanzFensterGilt(g);
-                            for (let j = 0; j < (g.liveCount | 0); j++) {
-                                if (!r._instanzBehalten(g, j, Lt, fenster)) continue;
-                                B.geprueft++;
-                                const kantig = g === f.g && g.slotRef[j] === f.ref;
-                                if (kantig) B.traegt = true;
-                                if (!gezeichnet.has(g.slotRef[j])) {
-                                    B.loecher++;
-                                    if (B.namen.length < 6)
-                                        B.namen.push(
-                                            (g.mesh.name || g.key) +
-                                                " Slot " +
-                                                j +
-                                                (kantig ? " (die Instanz an der Kante)" : "")
-                                        );
-                                }
+                        instanzWahr(Lt, (g, j, da) => {
+                            B.geprueft++;
+                            const kantig = g === f.g && g.slotRef[j] === f.ref;
+                            if (kantig) B.traegt = true;
+                            if (!da) {
+                                B.loecher++;
+                                if (B.namen.length < 6)
+                                    B.namen.push((g.mesh.name || g.key) + " Slot " + j + (kantig ? " (die Instanz an der Kante)" : ""));
                             }
-                        }
+                        });
                         return B;
                     };
                     aus.blendeTreue = blendeTreue(false);
@@ -1356,60 +1334,40 @@ const server = statikServer();
                     delete r._instanzFenster;
                     lu.uLodAuge.value.copy(augeVorher);
                     stelle(0, 0);
-                    if (r._passLagen) r._passLagen.clear();
+                    vergiss();
                 }
             }
             L.aus();
-            // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m über dem Boden
-            // (4 m/s: die Uhr der Seite rückt je Bild 1/60 s); je Bild wählt nur ein Teil der Kacheln der Ferne neu. Am letzten Auge
-            // steht das Soll — die Wahl jeder Kachel OHNE Weg (`_wieseFernWahl` mit Rand 0 in der Lage des Hauptbilds: der Anteil an
-            // der Tafel-Stütze darunter, die Kugel an der darüber, strenger als das Gesetz des Stoffs) — ganz in der gehaltenen Wahl.
-            // DIE WIESE AM RUF (C): bei gleicher Lage-Generation prüft `_nahWieseSicht` keine Kachel neu (`_passTrifft`), bei neuer
-            // jede. Scharf: der Halt-Bruch (die Wahlen fallen je Bild) wählt jede Kachel neu, der Rand-Bruch (die Wahl am Anker ohne
-            // den Weg) trägt Löcher.
+            // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m; je Bild wählt
+            // nur ein Teil der Kacheln der Ferne neu. Scharf: der
+            // Halt-Bruch (die Wahlen fallen je Bild — der Satz bis w23) wählt jede Kachel neu. DIE WIESE AM RUF (C): bei gleicher
+            // Lage-Generation prüft `_nahWieseSicht` keine Kachel neu (`_passTrifft`), bei neuer jede.
             const ferneWeg = (bruch) => {
-                const [nw, uhr, jetzt0, o] = [st.nahWiese, { ms: 0 }, performance.now, { loecher: 0, soll: 0, neu: 0, ruf: 0 }];
-                if (!nw?.fern?.kacheln.size || !nw.schale) return o;
-                const ohneWeg = (a) => ({ ...a, u: [0, 0, 0], lw: 0, qh: 1e-6, qv: 1e-6 });
-                const zurueck = leihe(r, { halt: { _nahWieseFernSatz(...a) { const H = this.state.nahWiese.fernHalt; if (H) H.wahl = new WeakMap(); return P._nahWieseFernSatz.apply(this, a); } },
-                    rand: { _wieseFernWahl(a, ...x) { return { ...P._wieseFernWahl.call(this, ohneWeg(a), ...x), anker: a }; } } }[bruch] || {});
-                performance.now = () => jetzt0.call(performance) + uhr.ms;
+                const [nw, o] = [st.nahWiese, { neu: 0, ruf: 0 }];
                 try {
-                    [nw.fernHalt, nw.neu, o.kacheln] = [null, true, nw.fern.kacheln.size];
+                    [nw.fernHalt, nw.neu, o.kacheln] = [null, true, nw.fern?.kacheln.size];
                     for (let f = 0; f < 45; f++) {
-                        uhr.ms += 1000 / 60;
                         stelle(Math.PI / 5, f / 15);
-                        cam.position.y = (r._bodenSichtAt(cam.position.x, cam.position.z) ?? boden) + 1.7;
-                        cam.updateMatrixWorld(true);
+                        if (bruch && f) nw.fernHalt.wahl = new WeakMap();
                         const neu0 = nw.fernHalt?.neu;
                         frame();
                         o.neu += f && nw.fernHalt.neu - neu0;
                     }
-                    S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem);
-                    const L = r._passWahlLage(S, cam, -1);
+                    const L = lageBlick();
                     const zaehle = leihe(r, { _passTrifft: (...a) => (o.ruf++, P._passTrifft.apply(r, a)) });
                     r._nahWieseSicht(cam, L);
-                    o.gleich = o.ruf;
+                    o.liest = !o.ruf;
                     r._nahWieseSicht(cam, { ...L, gen: L.gen + 1 });
                     zaehle();
-                    o.liest = o.gleich === 0 && o.ruf > 0 && nw.gen === L.gen + 1;
-                    const soll = ohneWeg({ L, auge: r._wieseAuge(cam.position) });
-                    const ziel = [0, 0, [nw.vorlagen.get("0:L2"), nw.vorlagen.get("1:L2")]];
-                    const rMax = Math.max(...[...nw.vorlagen.values()].map((vl) => vl.r + Math.abs(vl.cy)));
-                    for (const k of nw.fern.kacheln.values()) {
-                        const [w, x] = [nw.fernHalt.wahl.get(k), P._wieseFernWahl.call(r, soll, k, ziel, rMax, nw.schale)];
-                        for (const [ja, ist] of [[x.idx[0], w?.idx[0]], [x.idx[1], w?.idx[1]], [x.karten, w?.karten]])
-                            for (const i of ja || []) o.loecher += (o.soll++, !ist?.includes(i));
-                    }
+                    o.liest &&= o.ruf > 0 && nw.gen === L.gen + 1;
                 } finally {
-                    [performance.now, nw.fernHalt, nw.neu] = [jetzt0, null, true];
-                    zurueck();
+                    [nw.fernHalt, nw.neu] = [null, true];
                     stelle(0, 0);
                 }
                 return o;
             };
-            [aus.ferneWeg, aus.ferneWegHalt, aus.ferneWegRand] = [ferneWeg(), ferneWeg("halt"), ferneWeg("rand")];
-            aus.code.wieseLiest = !st.nahWiese?.kacheln.size ? "leer" : aus.ferneWeg.liest;
+            [aus.ferneWeg, aus.ferneWegHalt] = [ferneWeg(), ferneWeg(1)];
+            aus.code.wieseLiest = st.nahWiese?.kacheln.size ? aus.ferneWeg.liest : "leer";
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             aus.gruppen = r._instanzWahlGruppen().size;
             const H = s.hoehle;
@@ -1496,7 +1454,7 @@ const server = statikServer();
             `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
-    console.log(`  Ferne im Gang (Soll · Löcher · neu in 44 Bildern · Kacheln), Halt-Bruch, Rand-Bruch: ${JSON.stringify([befund.ferneWeg, befund.ferneWegHalt, befund.ferneWegRand])}`);
+    console.log(`  Ferne im Gang, Halt-Bruch: ${JSON.stringify([befund.ferneWeg, befund.ferneWegHalt])}`);
     const v = urteil(befund);
     wandEnde(
         v,

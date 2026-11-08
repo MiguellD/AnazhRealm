@@ -160,9 +160,9 @@ const kurz = (n) =>
             // Satz ein Bild, dann Wert für Wert verglichen — die gehaltene Obermenge zeichnet, was der exakte Satz zeichnet
             const { pngLesen } = require("./lib/abnahme-urteil.cjs");
             const bilder = {};
+            wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
             for (const v of ["A", "B", "A"]) {
                 setze(v === "A");
-                wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
                 const kam = ev(
                     "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar(10).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');"
                 );
@@ -208,4 +208,4 @@ const kurz = (n) =>
     }
     process.exit(gruen ? 0 : 1);
 })();
-// das A/B des zweiten Läufers (Weg der Strecke)
+// das A/B des zweiten Läufers (Weg der Strecke, Bilder ohne Umstellen)
