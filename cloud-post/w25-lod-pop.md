@@ -1,4 +1,6 @@
 
+
+## 08.11. 22:35 — GPU-PROBE 77dae9b3 auf radeon-890m: GRÜN in 751 s (bild:dorf@0.5 GRÜN 105 s · bild:genesis@0.5 GRÜN 56 s) → probe-post/w25-lod-pop/77dae9b3.md
 ## 21:37 Koordinator
 FUND aus dem Referenz-Atlas: `stamm/vegetation-streu.js:2882` — der Haushalt kappt das 1-px-Gesetz (lod.K5). Atlas Schnitt 1 (`REFERENZ-ATLAS.md` §1): die Kette folgt dem Fehler ≤ 1 px, nie dem Haushalt. Heile es in deiner Welle mit, Brief-Baustein (f) wörtlich.
 
