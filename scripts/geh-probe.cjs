@@ -126,3 +126,4 @@ return { schluessel: a.length, ms: s((e) => e.ms), schritte: s((e) => e.n), fert
     process.exit(gruen ? 0 : 1);
 })();
 // die GTX-Nachher-Probe, Lauf 1
+// die GTX-Nachher-Probe, Lauf 2
