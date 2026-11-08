@@ -55,7 +55,8 @@ function boote() {
                 console.log(`❌ Boot ${i + 1} ${seite}: keine Ausgabe (Exit ${p.status}) ${txt.split(/\r?\n/).filter(Boolean).slice(-3).join(" | ").slice(0, 400)}`);
                 continue;
             }
-            liste.push({ i, seite, j, s, ad, tK: tK ? Number(tK[1]) * 1000 : NaN });
+            const linse = (/(✅|❌) synchron nach dem Bild: [^\r\n]*/.exec(txt) || ["?"])[0];
+            liste.push({ i, seite, j, s, ad, tK: tK ? Number(tK[1]) * 1000 : NaN, linse });
         }
     } finally {
         setze("B");
@@ -205,7 +206,7 @@ function berichtAB(teil, Z) {
             const kl = new Set(zs.flatMap((z) => Object.keys(z.klassen)));
             zeile(`${pre}KLASSEN bis Kontrolle (Median s): ${[...kl].map((k) => [k, med(zs.map((z) => z.klassen[k] || 0))]).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${sek(v)}`).join(" · ")}`); // prettier-ignore
         });
-        je((zs, pre) => zeile(`${pre}LADE-BILDER bis zum Weltbild je Boot: ${zs.map((z) => ladeZeile(z)).join(" | ")}`));
+        je((zs, pre) => zeile(`${pre}LINSE je Boot: ${zs.map((z) => z.e.linse.slice(0, 140)).join(" | ")}`));
         const namen = new Set(Z.flatMap((z) => Object.keys(z.klassen)));
         const d = [...namen].map((k) => [k, med(KL("B").map((z) => z.klassen[k] || 0)) - med(KL("A").map((z) => z.klassen[k] || 0))]).filter(([, v]) => Math.abs(v) >= 20); // prettier-ignore
         zeile(`B − A je Klasse (Median s): ${d.sort((a, b) => a[1] - b[1]).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${sek(v)}`).join(" · ")}`);
