@@ -1,18 +1,18 @@
 {
  "sha": "34e045487123bdb06e5c7c16f76bff7b316f059c",
  "geraet": "radeon",
- "zeit": "2026-11-08T02:41:05.823Z",
+ "zeit": "2026-11-08T02:46:31.531Z",
  "host": "MiguellD",
  "je": {
   "lod.K2#1": {
    "gruen": false,
-   "zahl": "Gehen 4 m/s: 0.0583 % Pop-Pixel je Sekunde (1208 px, Soll ≤ 0,05 %), je Schritt 19*/14*/299*/29/37*/41*/711*/58* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "zahl": "Gehen 4 m/s: 0.0578 % Pop-Pixel je Sekunde (1199 px, Soll ≤ 0,05 %), je Schritt 16*/13*/302*/20*/28*/34*/711*/75* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.45,
-   "grund": "ROT: Gehen 4 m/s: 0.0583 % Pop-Pixel je Sekunde (1208 px, Soll ≤ 0,05 %), je Schritt 19*/14*/299*/29/37*/41*/711*/58* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "minuten": 0.34,
+   "grund": "ROT: Gehen 4 m/s: 0.0578 % Pop-Pixel je Sekunde (1199 px, Soll ≤ 0,05 %), je Schritt 16*/13*/302*/20*/28*/34*/711*/75* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 27.3,
-   "zeit": "2026-11-08T02:31:40.801Z",
+   "s": 20.2,
+   "zeit": "2026-11-08T02:44:46.996Z",
    "abdruck": "c3b2c498b360",
    "port": 7804,
    "bahn": "sitzung",
@@ -20,13 +20,13 @@
   },
   "ankunft.K2#1": {
    "gruen": false,
-   "zahl": "0.03 % Lücke nach 0.1 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 1 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 11.64 s von außen (Eigenmeldung 10.72 s) · [linse-gpu] amd/rdna-3",
+   "zahl": "0.01 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.68,
-   "grund": "ROT: 0.03 % Lücke nach 0.1 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 1 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 11.64 s von außen (Eigenmeldung 10.72 s) · [linse-gpu] amd/rdna-3",
+   "minuten": 0.58,
+   "grund": "ROT: 0.01 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s) · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 41.1,
-   "zeit": "2026-11-08T02:34:56.593Z",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
    "abdruck": "00e38dd9d4d2",
    "port": 7804,
    "bahn": "sitzung",
@@ -34,13 +34,13 @@
   },
   "ankunft.K3#1": {
    "gruen": false,
-   "zahl": "warm Median 6.84 s (6.23 · 7.45, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
+   "zahl": "warm Median 5.96 s (5.51 · 6.41, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.68,
-   "grund": "ROT: warm Median 6.84 s (6.23 · 7.45, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
+   "minuten": 0.58,
+   "grund": "ROT: warm Median 5.96 s (5.51 · 6.41, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 41.1,
-   "zeit": "2026-11-08T02:34:56.593Z",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
    "abdruck": "c815b3602c7b",
    "port": 7804,
    "bahn": "sitzung",
@@ -49,13 +49,13 @@
   },
   "ankunft.K1#1": {
    "gruen": false,
-   "zahl": "t(Kontrolle) kalt 11.64 s von außen (Eigenmeldung 10.72 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 1 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "zahl": "t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.68,
-   "grund": "ROT: t(Kontrolle) kalt 11.64 s von außen (Eigenmeldung 10.72 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 1 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "minuten": 0.58,
+   "grund": "ROT: t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 41.1,
-   "zeit": "2026-11-08T02:34:56.593Z",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
    "abdruck": "b09301d4895d",
    "port": 7804,
    "bahn": "sitzung",
@@ -64,13 +64,13 @@
   },
   "ankunft.K5#1": {
    "gruen": false,
-   "zahl": "längste Aufgabe 416 ms (Soll ≤ 250) · Haupt-Faden belegt 9.19 s bis zur Kontrolle (Soll ≤ 4; 44 LongTasks 6.47 s) · Kontrolle 11.78 s Seiten-Uhr · die längste: 416 ms bei 4.9 s: build [three.webgpu.min.js] 70 · build [three.webgpu.min.js] 57 · build [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Bild 3.36 · Jobs 3.10 · Knoten-Bau 2.74 · program 0.51 · Himmel 0.28 · garbage collector 0.28 · Streu 0.16 · Saat 0.16 · Buch 0.10 · Bauten 0.09 · Gruppen-Bau 0.08 · Boden 0.06 · [linse-gpu] amd/rdna-3",
+   "zahl": "längste Aufgabe 414 ms (Soll ≤ 250) · Haupt-Faden belegt 8.12 s bis zur Kontrolle (Soll ≤ 4; 38 LongTasks 5.67 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 414 ms bei 4.4 s: build [three.webgpu.min.js] 63 · _applyDayNightToScene 57 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 2.99 · Bild 2.90 · Knoten-Bau 2.36 · program 0.44 · Himmel 0.26 · garbage collector 0.21 · Saat 0.16 · Streu 0.14 · Bauten 0.09 · Buch 0.08 · Gruppen-Bau 0.08 · Boden 0.08 · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.68,
-   "grund": "ROT: längste Aufgabe 416 ms (Soll ≤ 250) · Haupt-Faden belegt 9.19 s bis zur Kontrolle (Soll ≤ 4; 44 LongTasks 6.47 s) · Kontrolle 11.78 s Seiten-Uhr · die längste: 416 ms bei 4.9 s: build [three.webgpu.min.js] 70 · build [three.webgpu.min.js] 57 · build [three.webgpu.min.js] 52 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Bild 3.36 · Jobs 3.10 · Knoten-Bau 2.74 · program 0.51 · Himmel 0.28 · garbage collector 0.28 · Streu 0.16 · Saat 0.16 · Buch 0.10 · Bauten 0.09 · Gruppen-Bau 0.08 · Boden 0.06 · [linse-gpu] amd/rdna-3",
+   "minuten": 0.58,
+   "grund": "ROT: längste Aufgabe 414 ms (Soll ≤ 250) · Haupt-Faden belegt 8.12 s bis zur Kontrolle (Soll ≤ 4; 38 LongTasks 5.67 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 414 ms bei 4.4 s: build [three.webgpu.min.js] 63 · _applyDayNightToScene 57 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 2.99 · Bild 2.90 · Knoten-Bau 2.36 · program 0.44 · Himmel 0.26 · garbage collector 0.21 · Saat 0.16 · Streu 0.14 · Bauten 0.09 · Buch 0.08 · Gruppen-Bau 0.08 · Boden 0.08 · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 41.1,
-   "zeit": "2026-11-08T02:34:56.593Z",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
    "abdruck": "8d570e46999f",
    "port": 7804,
    "bahn": "sitzung",
@@ -79,13 +79,13 @@
   },
   "profiband.K1#1": {
    "gruen": false,
-   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 83.72 · wiese-ego-sprint 75.34 · wiese-fahrt ? · genesis-third-geht 58.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 83.72 > 33 | wiese-ego-sprint Bild-p95 75.34 > 33 | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 58.63 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 66.93 · wiese-ego-sprint 66.93 · wiese-fahrt 75.38 · genesis-third-geht 42 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81.2 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 66.93 > 33 | wiese-ego-sprint Bild-p95 66.93 > 33 | wiese-fahrt Bild-p95 75.38 > 33 | genesis-third-geht Bild-p95 42 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
    "exit": 0,
    "minuten": 1.35,
-   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 83.72 · wiese-ego-sprint 75.34 · wiese-fahrt ? · genesis-third-geht 58.63 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 83.72 > 33 | wiese-ego-sprint Bild-p95 75.34 > 33 | wiese-fahrt: ungemessen (die Uhr 84 s trug den Schritt nicht) | genesis-third-geht Bild-p95 58.63 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 66.93 · wiese-ego-sprint 66.93 · wiese-fahrt 75.38 · genesis-third-geht 42 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81.2 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 66.93 > 33 | wiese-ego-sprint Bild-p95 66.93 > 33 | wiese-fahrt Bild-p95 75.38 > 33 | genesis-third-geht Bild-p95 42 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
    "gpu": "amd/rdna-3",
-   "s": 81.1,
-   "zeit": "2026-11-08T02:35:52.377Z",
+   "s": 81.3,
+   "zeit": "2026-11-08T02:46:31.531Z",
    "abdruck": "a4809dc2e930",
    "port": 7804,
    "bahn": "sitzung",
@@ -103,23 +103,23 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  }
- },
- "ungemessen": {
+  },
   "leib.K1#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 1)",
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 61.8 · third/gehen 93.5 · ego/wechsel 31.9 · third/wechsel 26.3 · Bild 28.5 ms",
    "exit": 0,
-   "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 1)",
-   "s": 45.4,
-   "zeit": "2026-11-08T02:32:08.124Z",
+   "minuten": 0.6,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 61.8 · third/gehen 93.5 · ego/wechsel 31.9 · third/wechsel 26.3 · Bild 28.5 ms",
+   "gpu": "amd/rdna-3",
+   "s": 36.3,
+   "zeit": "2026-11-08T02:45:07.287Z",
    "abdruck": "38f8e3e5fe0e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  },
+  }
+ },
+ "ungemessen": {
   "ankunft.K4#1": {
    "gruen": false,
    "ungemessen": true,
@@ -195,64 +195,64 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-08T02:38:49.184Z",
+  "start": "2026-11-08T02:44:18.531Z",
   "port": 7804,
-  "warten": 0.1,
-  "bootS": 6.4,
+  "warten": 0.08,
+  "bootS": 5.3,
   "grundstellungS": [
-   3.1
+   1.6
   ],
-  "proben": 2,
+  "proben": 4,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 16.6,
-    "takte": 655,
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 16.4,
+    "takte": 640,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "buehne",
-    "vor": "schatten.K1#2",
-    "s": 10.8,
-    "takte": 580,
-    "chunks": 84,
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 11.7,
+    "takte": 717,
+    "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 3,
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4,
-   "frameP95": 410.04,
-   "taktP95": 160.13,
-   "vramMax": 86.9,
-   "seiten": 2,
+   "bilder": 1716,
+   "frameP95": 83.72,
+   "taktP95": 57.71,
+   "vramMax": 144,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#1",
-     "m": 3592,
+     "probe": "profiband.K1#1",
+     "m": 1091,
      "ringVor": 4,
      "ringMin": 0
     },
     {
-     "probe": "schatten.K1#2",
-     "m": 459,
+     "probe": "ankunft.K2#1",
+     "m": 1085,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 125,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 210,
+   "luecken": 3,
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 158.5,
-  "minuten": 2.81
+  "fahrtS": 209.5,
+  "minuten": 3.64
  }
 }
