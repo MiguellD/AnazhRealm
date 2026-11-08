@@ -1564,6 +1564,9 @@ class AnazhRealm_koerper_bewegung {
             } else if (m & 1) {
                 u._maskeVorEgo = m;
                 o.layers.mask = (m & ~1) >>> 0;
+                // das Auge sieht ihn wieder, sobald die Sicht auf Third geht: er wartet im Vorwärm-Gesetz auf sein Programm
+                // im Auge (`_vorwaermGehoert` liest die Maske) — ein Teil ohne Wurf erreicht im Ego keinen Pass
+                this._vorwaermMerken(o);
             }
             for (const k of o.children) leib(k);
         };

@@ -118,10 +118,18 @@ return 1;`;
         const BAU =
             "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.neubauN | 0, E.vorwaermN | 0, E.vorwaerm ? E.vorwaerm.size : -1, E.vorwaermVerweigert | 0];";
         const bauStand = () => ev(BAU) || [0, 0, 0, 0, 0, 0, 0];
-        const anft =
-            ev("const s = r.state; return [Math.round(s._weltbildDa || -1), Math.round(s._fernbildDa || -1)];") || [];
-        const b0 = bauStand();
-        zeile(`GEH GRÜN Ankunft (Messung) Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · bis dahin Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · Neubau ${b0[3]} · vorgewärmt ${b0[4]} offen ${b0[5]} verweigert ${b0[6]}`, true); // prettier-ignore
+        // DER STAND DES VORWÄRM-GESETZES: gebaut ohne Draw, Rufe, verweigert, offen je Klasse und fehlender Familie, die kommenden
+        // Gestalten der Hotbar, die Arenen des GT (z gezeichnet · v vorgebaut · q in der Reihe · i Form steht) und die Zeit
+        const VW = `const E = r._erstZeichnung || {}; const V = r._geistVorbauStand; const q = {};
+            for (const o of E.vorwaerm || []) { const k = r._taeterKlasse(o) + ":" + [...(E.vorwaermFehlt.get(o) || [])].join("+"); q[k] = (q[k] | 0) + 1; }
+            const gt = []; for (const [k, g] of r.state.archInstanceGroups || []) if (/:gt:|_gt/.test(k)) { const a = g.mesh.__arena;
+              gt.push(k.replace(/^.*?(gt[^#]*).*$/, "$1") + (a ? "@" + (E.gezeichnet.has(a) ? "z" : "") + (E.vorgebaut.has(a) ? "v" : "") + (E.vorwaerm.has(a) ? "q" : "") + (a.geometry.index ? "i" : "") : "@-") + "#" + g.liveCount); }
+            return { n: E.vorwaermN, rufe: E.vorwaermRufe, verw: E.vorwaermVerweigert, offen: E.vorwaerm ? E.vorwaerm.size : -1, zeit: r._vorwaermZeit(), gestalt: V ? [...V.gestalt].length : null, q: Object.entries(q).sort((a, b) => b[1] - a[1]).slice(0, 6), gt: gt.slice(0, 6) };`; // prettier-ignore
+        let ankunft = ""; // die erste Zeile des Vorwärmens trägt sie (die Probe postet die letzten zehn)
+        const vorwaermZeile = (wo) => {
+            zeile(`GEH GRÜN ${ankunft}Vorwärmen (Messung) ${wo}: ${JSON.stringify(ev(VW))}`, true);
+            ankunft = "";
+        };
         const zelle = (name, wandern, code, tief, still) => {
             const j = path.join(D, name.replace(/\W+/g, "-") + ".json");
             const bv = bauStand();
@@ -198,6 +206,10 @@ return 1;`;
         // der Stand vor dem ersten Fenster (wie die Station: das Anker-Fenster nach dem Umstellen) — Bild, GPU und Phasen als Bezug
         const steh = (ort, sicht) => {
             wb(["umstellen", "--ort", ort, "--sicht", sicht], 300);
+            // DIE ANKUNFT (das erste Weltbild steht nach dem ersten Umstellen): ihre Zeit ab Navigation und die Bauten bis dahin
+            const anft = ev("const s = r.state; return [Math.round(s._weltbildDa || -1), Math.round(s._fernbildDa || -1)];") || []; // prettier-ignore
+            const b0 = bauStand();
+            ankunft = `Ankunft Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · Knoten bis jetzt ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · `; // prettier-ignore
             const l = json(wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120)) || {};
             vorStand = `Stand Bild ${q(l.frameMs)} GPU ${q(l.gpuMs)} · `;
         };
@@ -247,10 +259,13 @@ return 1;`;
             }
         } else {
             steh("genesis", "ego");
+            vorwaermZeile("vor dem Gehen");
             zelle("genesis Gehen", "bahn", SEITE.geh, false);
             wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+            vorwaermZeile("vor der Fahrt Ego");
             zelle("genesis Fahrt Ego", "fahrt", SEITE.fahrt, true);
             wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
+            vorwaermZeile("vor der Fahrt Third");
             zelle("genesis Fahrt Third", "fahrt", SEITE.fahrt, true);
         }
     } catch (e) {

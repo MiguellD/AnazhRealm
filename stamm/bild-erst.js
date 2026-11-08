@@ -87,8 +87,8 @@ class AnazhRealm_bild_erst {
     }
     // Ein Objekt tritt ins Gesetz: seine fehlenden Familien (eine, in der es schon steht, fehlt nie)
     _vorwaermMerken(o) {
-        const E = this._erstZeichnung;
-        if (!E || !o || !o.isMesh) return;
+        if (!o || !o.isMesh) return;
+        const E = this._erstZeichnungStand();
         let f = E.vorwaermFehlt.get(o);
         if (f === undefined) {
             f = new Set();
@@ -237,7 +237,10 @@ class AnazhRealm_bild_erst {
     _vorwaermGestalt(name) {
         const preset = this._foundryPresetForEntry({ type: name });
         if (!preset || !this._foundryEnabled() || this._foundryPresetIsTree(preset)) return true;
-        const e = { type: name }; // ohne Ort: die Gestalt des Samens 0, die Schlange stellt sie als Vorrat hinten an
+        // ohne Ort die Gestalt des Samens 0; der Rang in der Foundry-Schlange ist der Ort des Spielers (`wo`) — als ortloser
+        // Vorrat stand sie hinter jedem Auftrag der Welt (lokal: die L0 des GT nach dem Stand der Welt noch nicht geliefert)
+        const pm = this.state.playerMesh;
+        const e = { type: name, wo: pm ? pm.position : undefined };
         let steht = true;
         for (const lod of AnazhRealm.VORWAERM_STUFEN) {
             const flat = this._foundryFlattenFor(e, preset, lod);
