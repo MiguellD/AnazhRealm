@@ -82,7 +82,7 @@ if (SELBSTTEST) {
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     const N = (s, l = s) => nexusRot({ schnell: s.split(" "), langsam: l.split(" ") }).length;
     if (N("a@24 b@48 c@72") || !N("a@24 b@48 c@72", "a@24 b@48 c@72 d@96") || !N("a@24 b@48 c@72", "a@24 b@48.1 c@72") || !N("a@24"))
-        v.push("nexus: gleiche Folge, ein Lauf mehr langsam, verschobene Sekunde oder stummer Nexus");
+        v.push("nexus: Folge gleich, Lauf mehr, Sekunde verschoben, stumm");
     selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
 }
@@ -531,7 +531,7 @@ function nexusProbe(o) {
 // (die Wanduhr): schnell 0 Läufe in 120 s, langsam 9 (Welt 42,6 · 52,2 · … · 119,4 — je 24 s Wanduhr ×2 unter Last)
 function nexusRot({ schnell: s, langsam: l }) {
     const z = (x) => `${x.length} Läufe [${x.slice(0, 4).join(" ")}]`;
-    return s.join() !== l.join() ? [`(N) NEXUS: die Tat-Folge hängt an der Wanduhr — schnell ${z(s)} ≠ langsam ${z(l)}`] : s.length < 3 ? [`(N) NEXUS: ${z(s)} — der Nexus schläft`] : [];
+    return s.join() !== l.join() ? [`(N) NEXUS: die Tat-Folge hängt an der Wanduhr — schnell ${z(s)} ≠ langsam ${z(l)}`] : s.length < 3 ? [`(N) NEXUS: ${z(s)} — schläft`] : [];
 }
 
 async function boot(browser) {
@@ -622,7 +622,7 @@ hauptLauf(async () => {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
-    console.log(`  Nexus je Welt-Sekunde: ${S.nexus.schnell.join(" ")}`);
+    console.log(`  Nexus: ${S.nexus.schnell.join(" ")}`);
     const rot = urteil(S, H);
     wandEnde(
         rot,

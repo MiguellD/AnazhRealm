@@ -276,7 +276,7 @@ async function weltStehtNach(takt, max) {
 // Takte), die Last (der Haken der Prüf-Bühne, loadScale) und jede Tat des Felds seit dem Boot: die Läufe des Nexus (Name @ Uhr des
 // Felds) und das Buch der Welt-Akte (Akt · Quelle @ Welt-Zeit); null ohne Welt
 function pruefWelt() {
-    if (!st?.dsl) return null;
+    if (!st?.dsl) return;
     const z = (x) => (+x).toFixed(1);
     const nexus = st.dsl.history.filter((h) => /^evo_/.test(h.id)).map((h) => h.id + "@" + z(h.at));
     return [innerWidth, innerHeight, z(st.spielZeit), st.weltTakt, window.__anazhPruefLast, st.perfSense?.loadScale, [...nexus, ...(st.taten || []).map((e) => `${e.op}·${e.wer}@${z(e.t)}`)]];
@@ -854,7 +854,7 @@ async function pruefWeltMelden(page) {
     if (!a) return;
     const [w, h, welt, takte, last, ls, taten] = a;
     const z = `PRÜF-WELT ${path.basename(process.argv[1], ".cjs")} ${w}×${h} · Welt ${welt} s ${takte} Takte · Last ${last ?? "frei"}: loadScale ${ls?.toFixed(2)} · Taten ${taten.length} [${taten.slice(0, 6).join(" ")}]`;
-    console.log(`  ${last != null && ls != null && ls !== last ? (melde("pruef-welt", "der Regler lief frei — " + z), "❌") : "✅"} ${z}`);
+    console.log(`  ${last != null && ls != null && ls !== last ? (melde("pruef-welt", "Regler frei — " + z), "❌") : "✅"} ${z}`);
 }
 // Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
@@ -2146,7 +2146,7 @@ async function selbsttest() {
         ],
         [
             pruef.length === 1 && /Last 1: loadScale 0\.40 · Taten 1 \[evo_1@2\.0\]/.test(pruef[0]),
-            `Prüf-Welt (Last 1, der Regler lief frei auf 0,4): ${pruef[0] || "KEINE Meldung"}`,
+            `Prüf-Welt (Last 1, loadScale 0,4): ${pruef[0] || "keine"}`,
         ],
         [
             /^welt-boot.cjs startet „echt" und zeichnet nie/.test(weiche[0]) && weiche[1] === null,
