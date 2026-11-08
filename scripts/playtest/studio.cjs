@@ -45,23 +45,19 @@ async function checkBandStoffSignatur({ page, check }) {
         });
         const l1 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 2 });
         const l2 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 3.5 });
-        const art = (s, ht, mp) => r._foundryTreeMaterial(s, mp, false, { ht, delta: ht / 450, an: 1 });
+        const w1 = r._foundryTreeMaterial("bark", null, false, { ht: 9.5, delta: 0.021, an: 1 });
+        const w2 = r._foundryTreeMaterial("bark", null, false, { ht: 14.25, delta: 0.034, an: 1 });
         out.regler = a !== b && k(a) === k(b);
         out.leucht =
             l1 !== l2 &&
             k(l1) === k(l2) &&
             l1.userData.stoffWerte.leucht === 2 &&
             l2.userData.stoffWerte.leucht === 3.5;
-        // JEDER KNOTEN-PLATZ (w22-geh-bild): Rinde, Krone (Laub, Karte), Halm und facettierter Fels zweier Arten tragen je EINEN
-        // Schlüssel — ROT nennt die Art und jeden Platz, der sie trennt (bis hier bauten Krone, Halm, Stein und Mikro-Relief ihre
-        // Normale, Verdeckung und den Empfang je Stoff frisch: jede Art im ersten Gang ihr Programm, 110–143 ms an der Mess-Wiese)
-        out.wind = [["bark"], ["foliage"], ["foliageTex"], ["grass"], ["unknown", { flatShading: true }]].flatMap(([s, mp]) => {
-            const [x, y] = [art(s, 9.5, mp), art(s, 14.25, mp)];
-            const w = x.userData.windArt;
-            const gut = x !== y && k(x) === k(y) && (!w || (w.x === 9.5 && y.userData.windArt.x === 14.25));
-            return gut ? [] : [s + ": " + Object.keys(x).filter((p) => x[p]?.isNode && x[p] !== y[p])];
-        });
-        out.trennt = k(a) !== k(l1) && k(a) !== k(art("bark", 9.5));
+        out.wind =
+            w1 !== w2 &&
+            k(w1) === k(w2) &&
+            (!w1.positionNode || (w1.userData.windArt.x === 9.5 && w2.userData.windArt.x === 14.25));
+        out.trennt = k(a) !== k(l1) && k(a) !== k(w1);
         const pc = globalThis.__portaCore;
         const tor = (n) => {
             const p = pc.gateParams(pc.PRESETS[n]);
@@ -94,8 +90,7 @@ async function checkBandStoffSignatur({ page, check }) {
     );
     check(
         "1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)",
-        !res.wind.length,
-        res.wind
+        res.wind === true
     );
     check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
     check(

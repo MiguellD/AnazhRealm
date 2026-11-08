@@ -559,8 +559,6 @@ class AnazhRealm_studio_stoff {
             // (Radeon main 25374f6f, material.K2#1 am Fels der Genesis 0,5/1/2 m: glatt 0,606/0,559/0,237 → 0/0,029/0), baute der
             // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
-            // DIE KRONE (`_laubStoffNormale`) belegt Normale und Empfang: Krone und freies Laub tragen eigene Graphen
-            _krone ? "krone" : "",
         ].join("|");
         this._graphTeilen(mat, _sig, [
             "colorNode",
@@ -572,11 +570,6 @@ class AnazhRealm_studio_stoff {
             "maskShadowNode",
             "roughnessNode",
             "metalnessNode",
-            // JEDER PLATZ, DEN DER BAU SCHREIBT (w22-geh-bild): Halm, Stein und Mikro-Relief schreiben die Normale, Halm und
-            // Mikro-Relief die Verdeckung, die Krone den Empfang — bis hier je Stoff frisch, jede Art ihr eigenes Programm
-            "normalNode",
-            "aoNode",
-            "receivedShadowPositionNode",
         ]);
         mat.userData.foundrySignatur = _sig;
         mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)

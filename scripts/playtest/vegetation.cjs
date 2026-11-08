@@ -1925,6 +1925,13 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
         out.tubeOk = tubeOk;
         out.cardOk = cardOk;
         out.taperProven = taperProven;
+        // (B4) DIE KRONE EMPFÄNGT AUS EINEM KNOTEN (w22-geh-bild, `_laubStoffNormale`): Laub und Karte zweier Arten tragen denselben
+        // Empfangs-Ort — je Stoff frisch gebaut hieß er für r184 ein Programm je Art (der erste Gang an der Mess-Wiese: eiche, birke,
+        // fichte, strauch je 110–143 ms Knoten-Bau im Bild)
+        const e = ["foliage", "foliageTex"].flatMap((s) =>
+            [9, 14].map((ht) => r._foundryTreeMaterial(s, null, false, { ht, delta: 0.03, an: 1 }).receivedShadowPositionNode)
+        );
+        out.empfang = new Set(e).size;
 
         return out;
     });
@@ -1935,6 +1942,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
         "Neues Kleid (B3) die Blatt-Form lebt in der Atlas-Silhouette (Cluster-Quad, uv-geroutet)",
         res.taperProven === true
     );
+    check("Neues Kleid (B4) vier Kronen empfangen aus EINEM Knoten", res.empfang === 1, res.empfang + " Knoten");
 }
 
 // Die Scheiben-Byte-Wand (W3.3b/3c) — eingefaltet aus gate:scatter-slice: `_scatterRegion` baut mit Deadline in ZEIT-
