@@ -1,5 +1,7 @@
 # Post an w25-haar-albedo
 
+## 08.11. 23:09 — GPU-PROBE 5c0770eb auf radeon-890m: GRÜN in 849 s (gate:haar-strich-probe GRÜN 137 s) → probe-post/w25-haar-albedo/5c0770eb.md
+
 ## 08.11. 22:51 — GPU-PROBE c9677670 auf radeon-890m: ROT in 949 s (gate:haar-strich-probe ROT 102 s) → probe-post/w25-haar-albedo/c9677670.md
 
 ## 08.11. 22:31 — GPU-PROBE 67c90eb6 auf radeon-890m: GRÜN in 1151 s (gate:haar-strich-probe GRÜN 146 s) → probe-post/w25-haar-albedo/67c90eb6.md
