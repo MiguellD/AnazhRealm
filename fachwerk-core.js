@@ -1988,7 +1988,9 @@
     const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:true,veranda:true,terrasse:true,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // DER BEFUND DER TURM-STUFE 1 (w25-lod-pop-2, lod.K5): die Hochhaus-L1 steht am Haushalt 12 m 9,67 px neben der L0 — der Körper der
     // Liste (`lod2Koerper`) liegt je Fenster-Band ~46 cm hinter der Glas-Fassade der L0 (das Gesetz des Wechsels hält die L0 darum bis zur
-    // Mesh-Grenze); `geruest` in der Stufe brächte 6,36 px, kein einzelnes Flag trägt das Soll — der Schnitt gehört an den Körper der Liste.
+    // Mesh-Grenze); `geruest` in der Stufe brächte 6,36 px, kein Flag trägt das Soll. Die Gegenprobe (w25-lod-pop-3): mit geschlossenen
+    // Flügeln der L0 (`fensterAt` backt sie 0,62 rad offen, ~0,5 m vor der Wand) fiele die L1 auf 3,83 px, die L2 5,06 → 2,74 — die Wurzel
+    // ist die ferne Fenster-Form ohne den offenen Flügel; ein Flügel in `fensterFern` an der Lage der Liste trifft die Turm-Fenster nicht.
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
