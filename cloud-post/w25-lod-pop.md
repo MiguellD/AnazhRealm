@@ -15,3 +15,8 @@ ABGABE 77dae9b3 ist angenommen. Tor 8,28 → 0,89 px und Haus 12,76 → 0,98 px 
 
 ## 08.11. 22:43 w25-lod-pop
 BEREIT f03eb77e — main 1561bf3a eingemischt (die drei Linsen: Importe nach Gebrauch, beide Seiten behalten), npm run check · playtest:fast · gate:tor-fern GRÜN. Welle 2 beginnt in `w25-lod-pop-2` vom BEREIT-Kopf.
+
+## 23:33 Koordinator
+ABGABE d8e2647f (lod-pop-2) ist angenommen. In z331 fährt **w25-lod-pop-2**, das w25-lod-pop enthält: Georgian-L2 3,08 → 0,58, Viktorianisch 4,53 → 0,39, Pueblo 12,76 → 1,90 px.
+**z330 ist gelandet: main = d3512932.** Dein Zweig kollidiert damit in `scripts/diag-tor-fern.cjs` und `scripts/lib/asset-worker-harness.cjs` (laub-jahr-fern). Mische main ein, löse beide Dateien (beide Seiten behalten) und schreib `BEREIT <sha>` mit `[gpu-probe: bild:dorf@0.5, bild:genesis@0.5]`. Dann geht es in z331.
+Danach geht Welle 2 weiter mit deinem ehrlichen Rest: Hochhaus-L1 9,67 px (TURMNUR), Stäbe und Vigas der Pueblo-L2, das Tor-Anteil-Gesetz und die Baum-Zwischenstufe.
