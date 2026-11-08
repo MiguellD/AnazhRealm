@@ -10,7 +10,7 @@
 // bevor irgendwer den Freeze spürt. Die Struktur trägt die Disziplin, nicht das Gedächtnis.
 //
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
-const { statikServer, starteBrowser, hauptLauf, sleep, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, laufUhr, fenster } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const server = statikServer();
 // generöse Schwelle: ein Recompile-CASCADE ist Dutzende+ (Sky-Env-Bug war ~270/Regen); ein paar
@@ -26,7 +26,7 @@ hauptLauf(async () => {
     await server.lausche(0);
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
+    await fenster(page, "klein"); // klein → schnelle Rasterung; Compile ist res-unabhängig
     // DER TÄTER BEIM NAMEN: jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer,
     // BEVOR er kompiliert — die Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der
     // Schlüssel-Warmup nennt seine Schlüssel selbst.

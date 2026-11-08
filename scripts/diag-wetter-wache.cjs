@@ -80,8 +80,8 @@ if (SELBSTTEST) {
         [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
-    const N = (s, l = s) => nexusRot({ schnell: s.split(" "), langsam: l.split(" ") }).length;
-    if (N("a@24 b@48 c@72") || !N("a@24 b@48 c@72", "a@24 b@48 c@72 d@96") || !N("a@24 b@48 c@72", "a@24 b@48.1 c@72") || !N("a@24"))
+    const [f3, N] = ["a@24 b@48 c@72", (s, l = s) => nexusRot([s, l].map((x) => x.split(" "))).length];
+    if (N(f3) || !N(f3, f3 + " d@96") || !N(f3, "a@24 b@48.1 c@72") || !N("a@24"))
         v.push("nexus: Folge gleich, Lauf mehr, Sekunde verschoben, stumm");
     selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
@@ -523,13 +523,13 @@ function nexusProbe(o) {
         for (let k = 0; k < o.sek / D; k++) r._gameLoopTick((T += wand * D * 1000));
         return [...buch];
     };
-    const [schnell, langsam] = o.wand.map(lauf);
+    const aus = o.wand.map(lauf); // [schnell, langsam]
     zurueck();
-    return { schnell, langsam };
+    return aus;
 }
 // (N) das Urteil des Nexus (rein): die langsame Uhr läuft dieselbe Folge wie die schnelle, mindestens drei Läufe. main ef667956
 // (die Wanduhr): schnell 0 Läufe in 120 s, langsam 9 (Welt 42,6 · 52,2 · … · 119,4 — je 24 s Wanduhr ×2 unter Last)
-function nexusRot({ schnell: s, langsam: l }) {
+function nexusRot([s, l]) {
     const z = (x) => `${x.length} Läufe [${x.slice(0, 4).join(" ")}]`;
     return s.join() !== l.join() ? [`(N) NEXUS: die Tat-Folge hängt an der Wanduhr — schnell ${z(s)} ≠ langsam ${z(l)}`] : s.length < 3 ? [`(N) NEXUS: ${z(s)} — schläft`] : [];
 }
@@ -622,7 +622,7 @@ hauptLauf(async () => {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
-    console.log(`  Nexus: ${S.nexus.schnell.join(" ")}`);
+    console.log(`  Nexus: ${S.nexus[0].join(" ")}`);
     const rot = urteil(S, H);
     wandEnde(
         rot,

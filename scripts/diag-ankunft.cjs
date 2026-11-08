@@ -34,7 +34,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, fenster } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -2014,7 +2014,7 @@ hauptLauf(async () => {
 
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.setViewport({ width: 1280, height: 720 });
+    await fenster(page, "bild");
     // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
     // schneller Boot ließ ihn weichen, ehe das Protokoll fragte); L2a trägt den Befund
     await page.evaluateOnNewDocument(() =>

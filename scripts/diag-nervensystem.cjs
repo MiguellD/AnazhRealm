@@ -25,7 +25,7 @@ const { fehlerText, statikServer,
     ROOT,
     hauptLauf,
     sleep,
-    wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+    wandEnde, ausDatei, SELBSTTEST, fenster } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 
 const lies = (f) => ausDatei(ROOT + "/" + f);
@@ -182,7 +182,7 @@ hauptLauf(async () => {
         const page = await k.newPage();
         await nullRenderer(page);
         await page.evaluateOnNewDocument(seitenHelfer);
-        await page.setViewport({ width: 1280, height: 720 });
+        await fenster(page, "bild");
         await server.zeige(page, 30000);
         return page;
     };

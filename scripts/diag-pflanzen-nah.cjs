@@ -555,6 +555,13 @@ const FRACHT_TOL = 0.03;
 const LIN8 = Float64Array.from({ length: 256 }, (_, c) => srgbLin(c)); // die EINE sRGB-Kurve (abnahme-urteil)
 // je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
 // `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
+// DER EINE BILINEARE ABTASTER der Raster-Proben (frachtStufe, kornReihe, farbKornReihe): die vier Nachbarn von (x, y) im Bild `m`
+// (rgba8, Ränder geklemmt) als [Gewicht, Byte-Index], q = 0…3 — bis hier stand er dreimal wortgleich.
+function bilinear(m, x, y) {
+    const [W, H, x0, y0] = [m.width, m.height, Math.floor(x), Math.floor(y)];
+    const [fx, fy] = [x - x0, y - y0];
+    return [0, 1, 2, 3].map((q) => [(q & 1 ? fx : 1 - fx) * (q >> 1 ? fy : 1 - fy), (Math.min(H - 1, Math.max(0, y0 + (q >> 1))) * W + Math.min(W - 1, Math.max(0, x0 + (q & 1)))) * 4]);
+}
 function frachtStufe(m, wert, teilen) {
     const W = m.width,
         H = m.height,
@@ -568,21 +575,11 @@ function frachtStufe(m, wert, teilen) {
             sy = 0;
         for (let j = 0; j < n; j++)
             for (let i = 0; i < n; i++) {
-                const x = ((c + (i + 0.5) / n) / 4) * W - 0.5,
-                    y = ((j + 0.5) / n) * H - 0.5;
-                const x0 = Math.floor(x),
-                    y0 = Math.floor(y),
-                    fx = x - x0,
-                    fy = y - y0;
                 let r = 0,
                     g = 0,
                     b = 0,
                     a = 0;
-                for (let q = 0; q < 4; q++) {
-                    const dx = q & 1,
-                        dy = q >> 1;
-                    const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-                    const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
+                for (const [w, o] of bilinear(m, ((c + (i + 0.5) / n) / 4) * W - 0.5, ((j + 0.5) / n) * H - 0.5)) {
                     r += w * LIN8[d[o]];
                     g += w * LIN8[d[o + 1]];
                     b += w * LIN8[d[o + 2]];
@@ -665,22 +662,8 @@ const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
     const stufeA = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
         let a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
-        }
+        for (const [w, o] of bilinear(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5)) a += w * m.data[o + 3];
         return a / 255;
     };
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
@@ -729,22 +712,10 @@ function kornReihe(mips, zBasis) {
 const FARB_KORN_ANTEIL = 0.5;
 function farbKornReihe(mips, zBasis) {
     const stufe = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
+        const d = m.data;
         let l = 0,
             a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
+        for (const [w, o] of bilinear(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5)) {
             l += w * (0.2126 * LIN8[d[o]] + 0.7152 * LIN8[d[o + 1]] + 0.0722 * LIN8[d[o + 2]]);
             a += (w * d[o + 3]) / 255;
         }

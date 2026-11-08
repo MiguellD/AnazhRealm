@@ -41,7 +41,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, SELBSTTEST, path, fs, stammLib, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, fenster } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -725,7 +725,7 @@ async function lauf(welten, taeter) {
     const ergebnisse = [];
     try {
         const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 720 });
+        await fenster(page, "bild");
         await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL); // in jedem Frame: die Prüfung jedes GPU-Geräts beim Namen (K6)
         // DIE ZEITFOLGE DES TRÄGEN LÄUFERS (K2 still): jede Welt hält ihre Bild-Rückrufe, bis die Probe nach dem Handshake ihr
         // erstes Bild freigibt — auf jedem Rechner kommt es dann, wie unter Last in der CI, nach dem letzten enter (schwarm

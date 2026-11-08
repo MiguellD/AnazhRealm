@@ -2,7 +2,7 @@
 // Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
 // Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
-const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText, ortZug, path, fs } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, fehlerText, ortZug, path, fs, fenster } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -147,7 +147,7 @@ if (require.main === module) hauptLauf(async () => {
               ],
     });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
+    await fenster(page, "bild");
     await page.evaluateOnNewDocument((realRenderer) => {
         // Foundry-ON wie in Produktion: der Warmup wartet unten gedeckelt, bis die Studio-Bibliothek WARM ist.
         // Bänder der lebenden Grammatik-MECHANIK (`_growTreeBlueprintRich`, `_buildVariantLODs`, Scatter, …)

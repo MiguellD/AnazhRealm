@@ -22,7 +22,7 @@
 //   Browser), den nichts mehr rief.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, fenster } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
@@ -1676,7 +1676,7 @@ hauptLauf(async () => {
         const browser = await starteBrowser({ art: NUR_VERBEN ? "linse" : "null", frist: 600000 });
         const page = await browser.newPage();
         if (!NUR_VERBEN) await nullRenderer(page); // ohne Verben-Karte zeichnet die Seite nichts
-        await page.setViewport({ width: 1280, height: 720 });
+        await fenster(page, "bild");
         await page.evaluateOnNewDocument(frageJa); // die souveräne Geste des Teilens (#frage-dialog, spielgang.K5)
         await page.evaluateOnNewDocument(() => {
             const strom = (window.__eingabeStrom = []);

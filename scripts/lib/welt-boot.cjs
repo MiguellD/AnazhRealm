@@ -277,9 +277,9 @@ async function weltStehtNach(takt, max) {
 // Felds) und das Buch der Welt-Akte (Akt · Quelle @ Welt-Zeit); null ohne Welt
 function pruefWelt() {
     if (!st?.dsl) return;
-    const z = (x) => (+x).toFixed(1);
-    const nexus = st.dsl.history.filter((h) => /^evo_/.test(h.id)).map((h) => h.id + "@" + z(h.at));
-    return [innerWidth, innerHeight, z(st.spielZeit), st.weltTakt, window.__anazhPruefLast, st.perfSense?.loadScale, [...nexus, ...(st.taten || []).map((e) => `${e.op}·${e.wer}@${z(e.t)}`)]];
+    const [z, L, ls] = [(x) => (+x).toFixed(1), window.__anazhPruefLast, st.perfSense?.loadScale];
+    const t = [...st.dsl.history.filter((h) => /^evo_/.test(h.id)).map((h) => h.id + "@" + z(h.at)), ...(st.taten || []).map((e) => `${e.op}·${e.wer}@${z(e.t)}`)];
+    return [L != null && ls != null && ls !== L, `${innerWidth}×${innerHeight} · Welt ${z(st.spielZeit)} s ${st.weltTakt} Takte · Last ${L ?? "frei"}: loadScale ${ls?.toFixed(2)} · Taten ${t.length} [${t.slice(0, 6).join(" ")}]`];
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis `fertig()` (sonst
 // `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
@@ -852,9 +852,8 @@ async function pruefWeltMelden(page) {
     page.__pruefWelt = true;
     const a = await Promise.race([page.evaluate("__pruefWelt?.()").catch(() => null), sleep(3000)]);
     if (!a) return;
-    const [w, h, welt, takte, last, ls, taten] = a;
-    const z = `PRÜF-WELT ${path.basename(process.argv[1], ".cjs")} ${w}×${h} · Welt ${welt} s ${takte} Takte · Last ${last ?? "frei"}: loadScale ${ls?.toFixed(2)} · Taten ${taten.length} [${taten.slice(0, 6).join(" ")}]`;
-    console.log(`  ${last != null && ls != null && ls !== last ? (melde("pruef-welt", "Regler frei — " + z), "❌") : "✅"} ${z}`);
+    const z = `PRÜF-WELT ${path.basename(process.argv[1], ".cjs")} ${a[1]}`;
+    console.log(`  ${a[0] ? (melde("pruef-welt", "Regler frei — " + z), "❌") : "✅"} ${z}`);
 }
 // Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
@@ -1990,9 +1989,8 @@ async function selbsttest() {
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
-    const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
-    const pruef = sammlung.fehler.filter((f) => f.startsWith("pruef-welt: "));
+    // die drei erwarteten Täter des Selbsttests (der Wurf der Seite, die Post-Kette, die Prüf-Welt) aus der Sammlung
+    const [wurf, kette, pruef] = [/__seitenWurf/, /^post-kette: /, /^pruef-welt: /].map((re) => sammlung.fehler.filter((f) => re.test(f)));
     sammlung.fehler = sammlung.fehler.filter((f) => ![...wurf, ...kette, ...pruef].includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })

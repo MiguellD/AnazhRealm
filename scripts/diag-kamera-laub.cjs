@@ -23,7 +23,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen, fadenScope, fehlerStapel, SELBSTTEST, path, stammLib, argOpt, jsonSchreiben, fenster } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -1219,7 +1219,7 @@ hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
+    await fenster(page, "bild");
     if (!BILD) await nullRenderer(page);
     // der Dorf-Zug ruht (die Häuser der Mess-Wiese setzt die Linse fest): die Ankunft trägt ihn (`server.zeige`, haushalt genesis)
     // DER START DER WELT — die EINE Stelle jeder Seite der Linse, auch der Prüfbühne und des Körper-Studios (CI 26./27.10.,
