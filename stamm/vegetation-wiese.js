@@ -1386,6 +1386,7 @@ class AnazhRealm_vegetation_wiese {
                 const stufe = art === 5 && f.ident[0].senken.includes(a) ? 1 : 2;
                 Object.assign(a.mesh, {
                     __wahlGpu: true,
+                    __bereiche: true, // jeder Schreiber des Bestands setzt seine Bereiche (`_block` kopiert nur sie)
                     __wahlFenster:
                         art === 5
                             ? [5, stufe, f.v * (nw.zustandCap || 0), stufe === 1 && p === 0 ? 1 : 0]

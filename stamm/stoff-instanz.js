@@ -1626,10 +1626,11 @@ class AnazhRealm_stoff_instanz {
                 if (!neu) return;
                 // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
                 // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
-                // der Nah-Wiese schreibt ihren Block, nie den Ring. Sonst ganz (eine Quelle ohne Bereich: ein Schreiber ohne Maß).
+                // der Nah-Wiese schreibt ihren Block, nie den Ring. Nur ein Glied, das jeden Schreiber an Bereiche bindet (`__bereiche`,
+                // der Bestand `_nahWieseBestand`); sonst ganz, wie jede Senke ohne Maß (ein Schreiber ohne Version ginge sonst verloren).
                 const e = z.erst,
                     alt = z.n,
-                    teil = alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[3] || x[0].updateRanges.length);
+                    teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[3] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
                 for (const [a, d, g, anders] of quellen) {
                     if (teil && !anders && n <= alt) continue;
