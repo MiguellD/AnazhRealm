@@ -1049,6 +1049,19 @@ async function neunSeite(r, T, C, kammSaum) {
                 const fov = C.kammFov / (W / H); // C.kammFov ist die waagrechte Öffnung
                 const ziel = E.clone().add(new T.Vector3(Math.sin(wahl.az), Math.tan(wahl.w), Math.cos(wahl.az)).multiplyScalar(1000));
                 stell(E, ziel, fov);
+                // DIE KAMM-KRONE STEHT (w24-rueckfall-kamm): den Umriss trägt der Wald des Kamms (`kammKrone`, je Sektor vom Faden nach dem
+                // Bild gerechnet, der Blick zuerst) — der Teil schießt erst, wenn jeder Sektor am Anker des Rings steht (höchstens
+                // `kammWarteS` s im Takt des Spiels, die Kamera der Probe ist sein Blick; sonst UNGEMESSEN beim Namen, nie ein nackter
+                // Kamm als ROT). Bis dahin schoss er in der Sitzung 19 s nach einer Tür den Kamm ohne Wald (Radeon 77265b04: Kohärenz
+                // 0,7488, Relief −2,9 m; derselbe Stand mit allen 8 Sektoren: 0,20 und +19,0 m)
+                const sektoren = () => (st.kammKrone && st.kammKrone.sektoren) || [];
+                for (const t1 = performance.now() + C.kammWarteS * 1000; !(sektoren().length && sektoren().every(Boolean)) && performance.now() < t1; ) {
+                    r._gameLoopTick(performance.now());
+                    await new Promise((z) => setTimeout(z, 50));
+                }
+                if (!(sektoren().length && sektoren().every(Boolean)))
+                    throw new Error("die Kamm-Krone steht nach " + C.kammWarteS + " s nicht: " + sektoren().filter(Boolean).length + " von " + sektoren().length + " Sektoren");
+                stell(E, ziel, fov);
                 const u8 = await schuss();
                 // DER HIMMEL ALLEIN (derselbe Blick, jedes Kind der Szene außer Himmel und Licht verborgen): ein Pixel, das ihm gleicht
                 // (±6 je Kanal), ist Himmel — die Farb-Regel der Soll-Tafel brach am Dunst (swiftshader, Dorf: Luma 149 unter 150)
@@ -1905,6 +1918,7 @@ const NEUN_C = {
     kammFov: 60,
     kammSchritt: 3,
     kammKroneM: 52.5, // die höchste Krone des Pflanz-Gesetzes: Weißtanne 26,9 m × Größe 1,95 (`kammSaum`)
+    kammWarteS: 10, // so lange wartet ferne.K3 auf die Sektoren der Kamm-Krone (im Deckel der Gruppe, 20 s auf der Radeon)
     lodVersatz: [4, -4],
     lodPixelMin: 1500,
     wolkeDeckung: 0.4,
