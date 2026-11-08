@@ -37,11 +37,11 @@ hauptLauf(async () => {
                 for (const weiter = __deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
                     __handTakt();
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
-                    if (grp?.children?.length) break;
+                    if (grp?.children && grp.children.length) break;
                     await sleep(40);
                 }
-                res.behavior.returnedGroup = !!(grp?.children?.length);
-                if (grp?.children?.length) {
+                res.behavior.returnedGroup = !!(grp?.children && grp.children.length);
+                if (grp?.children && grp.children.length) {
                     const child = grp.children[0];
                     res.behavior.isInstanced = !!child.isInstancedMesh;
                     const g = child.geometry;

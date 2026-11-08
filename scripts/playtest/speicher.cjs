@@ -165,7 +165,7 @@ async function checkBandRing8({ page, check }) {
             const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
             const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
             const POSITIV = new Set(["visibility", "creator"]);
-            const wmNeu = leer?.worldMeta || {};
+            const wmNeu = (leer?.worldMeta) || {};
             out.geborenGeerbt = Object.keys(wmNeu).filter(
                 (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
             );
@@ -582,7 +582,7 @@ async function checkBandRing9to10({ page, check }) {
         };
         const beforeCount = r.worldsIndexLoad().length;
         const result = r.importWorldBeside(importedSnapshot, { reload: false });
-        out.besideReturnedOk = !!result?.ok;
+        out.besideReturnedOk = !!(result?.ok);
         out.besideReturnedNewWorldId = result.worldId && result.worldId !== originalSrcId;
         out.besideReturnedSlug = result.slug === "test-fremd";
         out.indexGrewByOne = r.worldsIndexLoad().length === beforeCount + 1;
@@ -611,7 +611,7 @@ async function checkBandRing9to10({ page, check }) {
 
         // _openWeltTorDialog setzt pendingImport
         r._openWeltTorDialog(importedSnapshot, { name: "test.json", size: 100 });
-        out.pendingImportSet = !!st.pendingImport?.parsed;
+        out.pendingImportSet = !!(st.pendingImport?.parsed);
         // Cancel räumt pendingImport
         r._closeWeltTorDialog();
         out.pendingClearedAfterCancel = st.pendingImport === null;
@@ -1658,7 +1658,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
             out.vendorPropagatesPostFail =
                 vUnreach.ok === false &&
                 vUnreach.reason === "save_server_unreachable" &&
-                !st.customWorlds?.["vendor-test-2"];
+                !(st.customWorlds && st.customWorlds["vendor-test-2"]);
         } finally {
             r._vendorPostBundle = origPost;
         }
@@ -1827,7 +1827,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
                 repoUrl: "https://github.com/owner/nope",
             });
             out.propagatesPostFail =
-                vFail.ok === false && /404/.test(vFail.reason) && !st.customWorlds?.["gh-missing"];
+                vFail.ok === false && /404/.test(vFail.reason) && !(st.customWorlds && st.customWorlds["gh-missing"]);
             // _vendorRegisterWorld direkt — sandgesichert + vendored.
             const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
             const regStored = st.customWorlds && st.customWorlds["reg-test"];
@@ -1846,7 +1846,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
             });
             out.bundlePathStillWorks =
                 vb.ok === true &&
-                !!st.customWorlds?.["bundle-regress"] &&
+                !!(st.customWorlds && st.customWorlds["bundle-regress"]) &&
                 st.customWorlds["bundle-regress"].trust === "sandboxed";
         } finally {
             r._vendorPostRepo = origRepo;

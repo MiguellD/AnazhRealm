@@ -52,7 +52,7 @@ function stufe(ziel) {
     traeger("package-lock.json", (s) => {
         const j = JSON.parse(s);
         j.version = ziel;
-        if (j.packages?.[""]) j.packages[""].version = ziel;
+        if (j.packages && j.packages[""]) j.packages[""].version = ziel;
         return JSON.stringify(j, null, 4) + "\n";
     });
     // der VERSION-Träger: genau EINE Stamm-Datei mit genau EINER Zeile, sonst wirft scripts/lib/stamm.cjs (ein fehlender

@@ -155,7 +155,7 @@ function spalt(px, py, pz, tris) {
     await page.evaluate(async () => {
         let stubbed = false;
         for (const weiter = __deckel("der Ring 4", 15000); weiter(); ) {
-            if (r && !stubbed && st?.renderer) {
+            if (r && !stubbed && st && st.renderer) {
                 __bildAus();
                 // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht

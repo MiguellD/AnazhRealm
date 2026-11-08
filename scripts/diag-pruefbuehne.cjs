@@ -1597,7 +1597,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt an der Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) bei Farbton ${tgTon.hue}° netto im Band: das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`
         );
         // (c) eine Hilfs-Funktion liest eine Bindung des gezeichneten Programms
-        const prog = (sauber && !sauber.fehler && sauber.boden?.[0]) || "";
+        const prog = (sauber && !sauber.fehler && sauber.boden && sauber.boden[0]) || "";
         const bind = /@group\s*\(\s*\d+\s*\)\s*var(?:<[^>]*>)?\s+(\w+)/.exec(prog);
         const bindRot = bind ? S0_STOFF(`${prog}\nfn s0Mutante() {\n\tlet s0 = ${bind[1]};\n}\n`) : [];
         const bindGetroffen = bindRot.some((b) => b.includes(`s0Mutante: ${bind[1]}`));

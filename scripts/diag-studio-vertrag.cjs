@@ -255,7 +255,7 @@ function validateFunktionsKern(m, entry, erklaert) {
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
-    if (!entry?.ns) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
+    if (!(entry?.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
     if (m.presets) v.push("§9: ein Gesetz-Kern trägt keine Rezepte (PRESETS)");
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
     if (m.meshfrei) v.push("§9: MESHFREI gilt Rezept-Kernen ohne Gestalt, nie einem Gesetz-Kern");
@@ -640,7 +640,7 @@ function validateManifest(m, kern) {
         // Foundry) und die eine eigene Gestalten-Zeile hat (nie '*' = 16); ring ∈ {nah, wald}, dichte > 0,
         // skala [min ≤ max] > 0, jedes Band ein Trapez [a ≤ b ≤ c ≤ d].
         if (pl.boden) {
-            const L = m.cfg?.lod || {};
+            const L = (m.cfg?.lod) || {};
             const ksB = L.kindStages || {};
             const BB = L.budget || {};
             for (const id in pl.boden) {

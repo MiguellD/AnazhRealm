@@ -10,10 +10,10 @@ const LEBEN = require("../diag-kreatur-leben.cjs");
 async function kreaturProben(r, T, opts) {
     const s = r.state;
     const A = r.constructor;
-    const nur = opts?.proben || null;
-    const taeter = opts?.taeter || null; // Selbsttest: der alte Defekt als Täter
+    const nur = (opts && opts.proben) || null;
+    const taeter = (opts && opts.taeter) || null; // Selbsttest: der alte Defekt als Täter
     const aus = {};
-    const echt = !s.renderer?._isHeadlessNull;
+    const echt = !(s.renderer && s.renderer._isHeadlessNull);
     // Der Spiel-Loop ruht (Lehre 17; die Werkbank-Regel: die Welt ruht zwischen den Befehlen, nur `umstellen` tickt).
     if (echt && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
     const TAU = Math.PI * 2;
@@ -75,7 +75,7 @@ async function kreaturProben(r, T, opts) {
             if (window.__dorfVon && !dorf.hier)
                 aus[name] = { fehler: `${name} lief im Start-Dorf, das ${window.__dorfVon} wachsen ließ — die Dorf-Proben laufen zuletzt` }; // prettier-ignore
         } catch (e) {
-            aus[name] = { fehler: String(e?.stack || e).slice(0, 600) };
+            aus[name] = { fehler: String((e && e.stack) || e).slice(0, 600) };
         } finally {
             for (const f of restore.reverse()) {
                 try {
@@ -704,7 +704,7 @@ async function kreaturProben(r, T, opts) {
                         c.updateMatrixWorld(true);
                         const g = c.userData._tierBaum && c.userData._tierBaum._gang;
                         pf.leib.push({ x: c.position.x, z: c.position.z, y: c.position.y, sp, gier: c.rotation.y });
-                        pf.ph.push(g?.ph ? g.ph.slice() : null);
+                        pf.ph.push(g && g.ph ? g.ph.slice() : null);
                         pf.ps.forEach((p, j2) => pf.spur[j2].push(p.localToWorld(pf.lokal[j2].clone())));
                     }
                 });
@@ -1967,7 +1967,7 @@ async function kreaturProben(r, T, opts) {
         };
         // DER ORT: der erste Hang von 20–30° nahe dem Spieler; auf der Prüfbühne die feste Rampe ihrer Station
         // (`opts.hangOrt`) — ihre Neigung ≤ 1° an der Spec, sonst ein Fehler
-        const ort = opts?.hangOrt || null;
+        const ort = (opts && opts.hangOrt) || null;
         let hang = null;
         if (ort) {
             const a = hangAn(ort.x, ort.z, ort.winkel - 1, ort.winkel + 1);
@@ -2402,10 +2402,10 @@ async function kreaturProben(r, T, opts) {
         const altHook = W.__anazhAutoSettlement;
         restore.push(() => (W.__anazhAutoSettlement = altHook));
         W.__anazhAutoSettlement = true;
-        if (!wm.settlementCells?.start) r._startDorfBestellen(pm);
+        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
         for (
             const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
-            weiter() && (r._autoSettlementPendingKey || !wm.settlementCells?.start);
+            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
         )
             await sleep(50);
         for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {

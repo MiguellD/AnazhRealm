@@ -604,7 +604,7 @@ async function probe(A) {
                 ? !!traegerHaus(w.e)
                 : /^haus_/.test(w.e.type)
                   ? !!w.e._hausHuelle
-                  : !!w.e.blockerAABBs?.length);
+                  : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
         // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
         for (const w of werke)
             await __gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);

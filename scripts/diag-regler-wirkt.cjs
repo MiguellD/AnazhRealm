@@ -148,7 +148,7 @@ function ofenMessen(page, opts) {
                 for (let i = 0; i < at.position.count; i++)
                     (x.isSkinnedMesh ? x.applyBoneTransform(i, v.fromBufferAttribute(at.position, i)) : v.fromBufferAttribute(at.position, i)).applyMatrix4(x.matrixWorld).toArray(pos, i * 3);
                 const glut = m.emissive && [m.emissive.r, m.emissive.g, m.emissive.b].map((c) => c * (m.emissiveIntensity ?? 1));
-                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: m.userData?.__leucht || 0 });
+                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: (m.userData && m.userData.__leucht) || 0 });
             });
             return teile;
         };
@@ -580,7 +580,7 @@ async function stufenMessen(h, opts) {
         je.set(pl.p + "|" + pl.r + "|" + pl.s, pl.k);
         if (pl.nurAbdruck) return;
         // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
-        if (!pl.k.teile?.length) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
+        if (!(pl.k.teile && pl.k.teile.length)) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
         // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A): am Regler-Rand richtet der WURF
         const zu = ["tris", "draws"].filter(
             (f) =>

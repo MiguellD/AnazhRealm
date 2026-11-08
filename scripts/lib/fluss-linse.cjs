@@ -46,7 +46,7 @@ function flussLinse() {
             const bytes = bytesOf(m, new Set());
             const t1 = performance.now();
             om.call(this, ev);
-            const s = m?.reqId ? L.send.get(m.reqId) : null;
+            const s = m && m.reqId ? L.send.get(m.reqId) : null;
             L.done.push({
                 type: m && m.type,
                 bahn,
@@ -57,7 +57,7 @@ function flussLinse() {
                 des,
                 h: performance.now() - t1,
                 bytes,
-                platte: !!m?.platte,
+                platte: !!(m && m.platte),
             });
         };
     };

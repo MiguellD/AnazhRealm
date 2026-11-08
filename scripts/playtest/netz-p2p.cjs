@@ -151,7 +151,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         out.nanPosNotApplied =
             !!peerB &&
             ![peerB.x, peerB.y, peerB.z].some(Number.isFinite) &&
-            !peerB.snapBuf?.length &&
+            !(peerB.snapBuf?.length) &&
             !!peerB.mesh &&
             peerB.mesh.visible === false;
         // DIE KLASSE (Lehre 17): jeder Leser einer Zahl aus dem Draht — null (das JSON-Bild von NaN) ist kein Ort und
@@ -2197,7 +2197,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         st.blueprints["_t835_food_reg"].role = "consumable";
         const before = (st.player.boosts || []).length;
         const eatRes = r.activateConsumable("_t835_food_reg");
-        out.metaLessConsumableWorks = !!eatRes?.ok && (st.player.boosts || []).length > before;
+        out.metaLessConsumableWorks = !!(eatRes?.ok) && (st.player.boosts || []).length > before;
 
         // Aufräumen
         if (st.player.boosts) {

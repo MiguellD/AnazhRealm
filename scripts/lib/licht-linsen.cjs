@@ -131,7 +131,7 @@ function albedoSicht(opts) {
                 await window.__werkTakt();
         };
         for (const z of opts.zeilen) {
-            const ex = z.welt?.exemplar || {};
+            const ex = (z.welt?.exemplar) || {};
             let pos = null,
                 gesetzt = false,
                 verweigert = null,
@@ -537,7 +537,7 @@ function albedoSicht(opts) {
                     // DAS EXEMPLAR, nicht die Klasse: eine Instanz-Gruppe zählt, wenn ihre nächste Instanz im Umkreis des
                     // Exemplars steht (L0 und L1 einer Art tragen sonst je ein anderes Exemplar ins Bild), ein Satz mit
                     // seinen Ecken in diesem Umkreis (`radius` der Zeile, sonst 6 m) — nur sie zeichnen im Schuss.
-                    const R = w.exemplar?.radius || 6;
+                    const R = (w.exemplar?.radius) || 6;
                     const ziele = new Map();
                     if (w.blick !== "oben")
                         for (const m of sel) {
@@ -969,8 +969,8 @@ function tagKurveUrteil(welt) {
     const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
     const r2 = (v) => v.toFixed(2);
     for (const [ort, m] of Object.entries(welt)) {
-        const alle = (m?.zeilen || []).concat(m?.fein || []).sort((a, b) => a.uhr - b.uhr);
-        const rot = (name, text) => (m?.bahn || TAG_WAND.test(name + " ")) && befunde.push(`${name} ${ort}: ${text}`);
+        const alle = ((m?.zeilen) || []).concat((m?.fein) || []).sort((a, b) => a.uhr - b.uhr);
+        const rot = (name, text) => ((m?.bahn) || TAG_WAND.test(name + " ")) && befunde.push(`${name} ${ort}: ${text}`);
         const [mittag, nacht] = [0.5, 0].map((u) => alle.find((x) => x.uhr === u));
         if (!mittag || !nacht) {
             rot("BLIND", `ohne Mittag und Mitternacht (${(m?.fehler) || "leer"})`);
@@ -1328,7 +1328,7 @@ function nahFernUrteil(messung, band) {
             "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht für diesen Ort (bereit 0 oder Füll-Job offen) — der Boden mischt nichts"
         );
     for (const k of ["wald", "wiese"]) {
-        const n = (messung?.orte || []).filter((o) => o.klasse === k).length;
+        const n = ((messung?.orte) || []).filter((o) => o.klasse === k).length;
         if (n < band.jeKlasse)
             befunde.push(
                 `NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}` +
@@ -2045,7 +2045,7 @@ function kronenReflexionSoll(A, tau) {
 function kronenObenUrteil(messung) {
     const befunde = [];
     const zeilen = [];
-    for (const [art, w] of Object.entries(messung?.welt || {})) {
+    for (const [art, w] of Object.entries((messung?.welt) || {})) {
         const o = w && w.oben;
         if (!o || !(o.R > 0) || !(o.A > 0) || !Array.isArray(o.tau)) {
             befunde.push(
@@ -2555,7 +2555,7 @@ function naesseSicht(o) {
         const boxen = e ? e._hausHuelle.teile.filter((t) => t.art === "box" && t.rolle === "fest") : [];
         const t = e && e.tuer;
         if (o.haus) return { schwelle: welt(t.x + 1.3, 0, t.z - 0.8).toArray() };
-        for (const f of (e?.instSlots || []).map((s) => s.tuer || (st.archInstanceGroups.get(s.key) || {}).tuer).filter((f) => f && Math.abs(f.zf - t.z) < 0.5)) {
+        for (const f of ((e?.instSlots) || []).map((s) => s.tuer || (st.archInstanceGroups.get(s.key) || {}).tuer).filter((f) => f && Math.abs(f.zf - t.z) < 0.5)) {
             const L = Math.abs(t.x - f.hx);
             const [bx, bz] = [L * Math.cos(f.offen) * Math.sign(t.x - f.hx), Math.abs(L * Math.sin(f.offen))];
             for (const sz of [1, -1]) boxen.push({ tuer: true, c: [f.hx + bx / 2, t.y + t.h / 2, f.zf + (sz * bz) / 2], h: [Math.abs(bx) / 2 + 0.04, t.h / 2, bz / 2 + 0.04] });
@@ -2822,7 +2822,7 @@ function kontaktSicht(o) {
 // `zuwachs` (Staffel 2) dazu je Pose der Zuwachs der Scheibe 0,9 ± 0,25 cm je m (tan 0,53°) aus ≥ 75 % gültigen Kanten über
 // ≥ 1 m Weg — ein fester Filter-Kern (alle Kanten gleich breit) trägt 0, die Gründe der übrigen stehen je Linie in `linien`.
 function kontaktUrteil(m, zuwachs) {
-    const befunde = m && !m.fehler ? [] : [m?.fehler || "keine Messung"];
+    const befunde = m && !m.fehler ? [] : [(m?.fehler) || "keine Messung"];
     for (const pose of befunde.length ? [] : ["ego", "third"]) {
         const { fuss: f = { kanten: 0, von: 0 }, zuwachs: z = {} } = m.posen[pose] || {};
         for (const [rot, b] of [

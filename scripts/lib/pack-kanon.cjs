@@ -45,7 +45,7 @@ function readManifest(root) {
 // `meta.coreId` — DATEN-getrieben (M8, kein kind-if): Zweit-Kern-Rezepte reisen im gemergten
 // Buch mit `panel = <core.id>` (__replyRecipes); sonst führt der Erst-Kern des Manifests.
 function coreIdFor(rec, manifest) {
-    const first = Array.isArray(manifest) && manifest[0]?.id ? manifest[0].id : "phyto";
+    const first = Array.isArray(manifest) && manifest[0] && manifest[0].id ? manifest[0].id : "phyto";
     if (!rec || typeof rec.panel !== "string") return first;
     for (const core of manifest || []) {
         if (core?.ns && core.id === rec.panel) return core.id;

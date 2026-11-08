@@ -975,7 +975,7 @@ hauptLauf(async () => {
             res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
-            res.maskNode = !!stoffNaht9?.maskNode;
+            res.maskNode = !!(stoffNaht9 && stoffNaht9.maskNode);
             res.loch = loch9;
             res.lochZelle = lochZelle;
             res.lochSeite = lochSeite;
@@ -1178,7 +1178,7 @@ hauptLauf(async () => {
             res.streifenMedian = quantil(indizes, 0.5);
             res.streifenP90 = quantil(indizes, 0.9);
         } catch (e9) {
-            res.nahtErr = String(e9?.stack || e9).slice(0, 400);
+            res.nahtErr = String((e9 && e9.stack) || e9).slice(0, 400);
         }
         try {
             // ===== (11) DAS DACH IST DER BESTAND =====
@@ -1270,7 +1270,7 @@ hauptLauf(async () => {
             res.dachDeckung = na ? a / na : NaN;
             res.dachAlt = na ? alt / na : NaN;
         } catch (e11) {
-            res.dachErr = String(e11?.stack || e11).slice(0, 400);
+            res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
         }
         // ===== (14) DAS WASSER DES RINGS IST DAS WASSER DES BODENS (K16, die Naht) =====
         // Der SEE (ein Wasser-Körper über dem Meer, `_atlasWaterLevelAt` → koerper): der Ring liegt unter seinem Spiegel. Der
@@ -1404,7 +1404,7 @@ hauptLauf(async () => {
             }
             res.binnen = w;
         } catch (e14) {
-            res.binnenErr = String(e14?.stack || e14).slice(0, 400);
+            res.binnenErr = String((e14 && e14.stack) || e14).slice(0, 400);
         }
         // ===== (15) DER HORIZONT STEHT NACH DEM SCHNEE (heil-horizont) =====
         // Der Spieler baut (ein Edit: der Ring bestellt die Ecken um ihn, `editFlug` 1) und im SELBEN Takt wandert die

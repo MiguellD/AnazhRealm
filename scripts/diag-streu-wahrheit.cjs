@@ -137,7 +137,7 @@ function pruefe(o = {}) {
     // (1) DIE STUDIO-ARTEN der Nah-Streu
     const d = kernDaten(PHYTO, kernSrc);
     if (d && o.daten) o.daten(d);
-    const boden = d?.cfg?.placement ? d.cfg.placement.boden : null;
+    const boden = d?.cfg && d.cfg.placement ? d.cfg.placement.boden : null;
     if (!d || !d.presets) return { fehler: ["der Pflanzen-Kern (PRESETS) lädt nicht"], arten: 0, weich: 0 };
     if (!boden) fehler.push("placement.boden fehlt — die Nah-Streu hat keine Studio-Arten");
     let arten = 0;

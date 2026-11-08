@@ -896,7 +896,7 @@ function lebenUrteil(name, z, soll) {
                     `${wo}Geburten außerhalb des Lebensraums: ${L.drin} von ${L.n} (Soll ≥ 0,9; ${JSON.stringify(L.gattung)}, Saat ${L.saat})`
                 );
         }
-        const gb = z.gegen?.baer || { fluss: [0, 0], sonst: [0, 0] };
+        const gb = (z.gegen && z.gegen.baer) || { fluss: [0, 0], sonst: [0, 0] };
         const [F, N] = ["fluss", "sonst"].map((k) => [z.baer[k][0] + gb[k][0], z.baer[k][1] + gb[k][1]]);
         soll(
             F[0] >= 10 && N[0] >= 10 && F[1] > 0 && F[1] / F[0] >= (2 * N[1]) / N[0],
@@ -985,7 +985,7 @@ global.self = global;
 require(path.join(root, "tetrapoda-core.js"));
 const core = global.__tetrapodaCore;
 
-const V = core?.VERHALTEN || null;
+const V = (core && core.VERHALTEN) || null;
 
 // ── die Seele in sich: die Aktionen jeder Stimmung prüft gate:studio-vertrag (§B6+), hier der Takt alle=[min,max] ──
 if (V) {

@@ -371,7 +371,7 @@ async function probe(cfg) {
     // DIE SCHATTEN-DREIECKE eines Körpers: jedes Mesh im Teilbaum (und jede Instanz eines Slots), das im Schatten-Pass zeichnet
     // (castShadow, sichtbar, eine Ebene der Kaskaden-Kamera), in Welt-Koordinaten
     const ebenen =
-        csm?.lights?.[0]
+        csm?.lights && csm.lights[0]
             ? csm.lights[0].shadow.camera.layers
             : st.directionalLight.shadow.camera.layers;
     const sichtbar = (o) => {
@@ -496,7 +496,7 @@ async function probe(cfg) {
     // castShadow eines gesetzten Baus an/aus (je Instanz-Gruppe seiner Slots, das Bundle zeichnet neu)
     const merk = new Map();
     const bauWirft = (e, an) => {
-        for (const ref of (e?.instSlots) || []) {
+        for (const ref of (e && e.instSlots) || []) {
             const g = st.archInstanceGroups.get(ref.key);
             if (!g || !g.mesh) continue;
             if (!merk.has(g.mesh)) merk.set(g.mesh, g.mesh.castShadow);

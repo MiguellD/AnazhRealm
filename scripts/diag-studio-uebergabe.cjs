@@ -67,7 +67,7 @@ function weltBau({ r, AnazhRealm }, kind, preset, weltSame) {
         return d && { presetId: preset, seed: 0, lod: 0, ov: d.dials };
     }
     const pol = AnazhRealm.KIND_POLICY[kind];
-    const name = pol?.prefix || "";
+    const name = (pol && pol.prefix) || "";
     const stempel = r._studioStampFor(name + preset);
     const g = r._foundryGestaltFor({ seed: weltSame, studioOv: stempel }, preset);
     r.auftrag = null;
@@ -223,7 +223,7 @@ async function kanalPruefen() {
 
     console.log("\n=== (W) WÄNDE ===");
     const E = (m) => w.r._studioUebergabeEmpfang(m);
-    const ws = () => w.r.state.workshop?.studioOv || {};
+    const ws = () => (w.r.state.workshop && w.r.state.workshop.studioOv) || {};
     const koerper = Object.keys(buch.book).find((id) => buch.book[id].kind === "koerper");
     const tor = Object.keys(buch.book).find((id) => buch.book[id].kind === "gate");
     const hoehe = buch.paramsByKind.koerper.find((z) => z.id === "height");
@@ -298,7 +298,7 @@ async function weltPruefen() {
         };
         const spawnNorm = () => {
             const s = st;
-            const pm = s.playerMesh?.position || { x: 0, y: 5, z: 0 };
+            const pm = (s.playerMesh && s.playerMesh.position) || { x: 0, y: 5, z: 0 };
             const alt = s.maxCreatures;
             s.maxCreatures = Math.max(alt || 0, s.creatures.length + 2);
             const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });

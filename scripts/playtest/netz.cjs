@@ -906,7 +906,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         );
         out.importCrossAuthorValid =
             importValid.ok === true && importValid.signatureStatus === "valid" && importValid.reachable === true;
-        out.customWorldStored = !!st.customWorlds?.["void-zwei"];
+        out.customWorldStored = !!(st.customWorlds && st.customWorlds["void-zwei"]);
         out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
         out.worldEntryCustom = !!r._worldEntry("void-zwei");
         out.libraryWorldsMerged =

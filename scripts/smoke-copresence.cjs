@@ -49,7 +49,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
                 ok: !!po,
                 invited,
                 coPresence: po ? po.coPresence === true : false,
-                hint: po?.hintEl ? po.hintEl.textContent : "",
+                hint: po && po.hintEl ? po.hintEl.textContent : "",
             };
         });
         check("A betrat das Begegnungs-Portal", enteredA.ok === true, JSON.stringify(enteredA));
@@ -60,7 +60,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // B bekommt die Einladung (mit Tier-Wahrheit im Banner) + folgt.
         await waitFor(
             pageB,
-            () => !!st.p2p?.pendingInvite,
+            () => !!(st.p2p && st.p2p.pendingInvite),
             "B sieht die Portal-Einladung"
         );
         const bannerB = await pageB.evaluate(() => {
@@ -141,9 +141,9 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         const bridgeA = await pageA.evaluate(() => {
             const po = r._portalOverlay;
             return {
-                actions: po?.inputActions ? po.inputActions.slice() : null,
-                hint: po?.hintEl ? po.hintEl.textContent : "",
-                poseZ: po?.localPose ? po.localPose.z : null,
+                actions: po && po.inputActions ? po.inputActions.slice() : null,
+                hint: po && po.hintEl ? po.hintEl.textContent : "",
+                poseZ: po && po.localPose ? po.localPose.z : null,
             };
         });
         check(
@@ -237,7 +237,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             return {
                 ok: res.ok === true,
                 worldId: marker ? marker.worldId : null,
-                hint: po?.hintEl ? po.hintEl.textContent : "",
+                hint: po && po.hintEl ? po.hintEl.textContent : "",
             };
         });
         check(
@@ -271,7 +271,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         );
         const rebornB = await pageB.evaluate(() => {
             const po = r._portalOverlay;
-            return { hint: po?.hintEl ? po.hintEl.textContent : "" };
+            return { hint: po && po.hintEl ? po.hintEl.textContent : "" };
         });
         check("B: du wachst auf, wo du wohnst (Boot-Rückkehr durchs Tor)", true);
         check("B: der Hinweis kennt das Zuhause nach dem Reload", /wohnst hier/.test(rebornB.hint), rebornB.hint);

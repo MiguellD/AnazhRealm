@@ -175,7 +175,7 @@ async function laborLaub() {
             );
             labor[art] = await page.evaluate((o) => window.__laborLaub(o), {
                 studio: S,
-                weltHoehe: welt?.[art] ? welt[art].hoehe : null,
+                weltHoehe: welt && welt[art] ? welt[art].hoehe : null,
                 bilder: !!opt("--bilder"),
             });
         }
@@ -212,7 +212,7 @@ function messungZumTest(t, faktor) {
     for (const z of t.zeilen) {
         m.welt[z.id] = { Y: 0.2, rgb: "0.2/0.2/0.2" };
         if (z.welt && Array.isArray(z.welt.stufen)) m.welt[z.id].stufen = z.welt.stufen.slice();
-        m.labor[z.id] = { Y: 0.2 * (faktor?.[z.id] || 1), rgb: "x" };
+        m.labor[z.id] = { Y: 0.2 * ((faktor && faktor[z.id]) || 1), rgb: "x" };
     }
     for (const u of t.uhren.slice(1)) for (const z of t.zeilen) m.welt[z.id + "@" + u] = m.welt[z.id];
     for (const s of Object.keys(t.karten)) {

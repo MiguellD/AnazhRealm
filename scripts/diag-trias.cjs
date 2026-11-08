@@ -131,7 +131,7 @@ hauptLauf(async () => {
     check(
         "N3: kindStages.haus deklariert [0,1,2,3] (die Mehr-Stufen-Domaene; 3 = NUR-WURF, S3 haus — nie gezeigt, sie wirft)",
         JSON.stringify(
-            FC.PORTAL_RENDER_CONFIG?.lod?.kindStages
+            FC.PORTAL_RENDER_CONFIG?.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
                 ? FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus
                 : null
         ) === "[0,1,2,3]"

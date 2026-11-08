@@ -400,7 +400,7 @@ function bildUrteil(mess, tafel) {
                     );
             }
         }
-    for (const k of Object.keys(tafel?.faelle || {})) if (!mess[k]) v.push(`${k}: Tafel-Zeile ohne gebauten Baum`);
+    for (const k of Object.keys((tafel && tafel.faelle) || {})) if (!mess[k]) v.push(`${k}: Tafel-Zeile ohne gebauten Baum`);
     return v;
 }
 
@@ -460,8 +460,8 @@ hauptLauf(async () => {
         const rcV = vereint(bookReply.renderConfig);
         const lodB = rcV.lod;
         const budget = lodB && lodB.budget;
-        const stufen = lodB?.kindStages || {};
-        const gestalten = budget?.gestalten || {};
+        const stufen = (lodB && lodB.kindStages) || {};
+        const gestalten = (budget && budget.gestalten) || {};
         // Die Arten der Zweit-Kerne (aus dem Umschlag, VOR dem Merge): je Art ihr Kern.
         const kernVonArt = {};
         const zks = (bookReply.renderConfig && bookReply.renderConfig.lod && bookReply.renderConfig.lod.zusatzKindStages) || {};
@@ -799,7 +799,7 @@ hauptLauf(async () => {
                 }
                 const top = mm.reduce((s, x) => (!s || x.tris > s.tris ? x : s), null);
                 const dMax = mm.reduce((s, x) => Math.max(s, x.draws), 0);
-                const vor = mm.reduce((s, x) => Math.max(s, x.budget?.vorher ? x.budget.vorher.draws : 0), 0);
+                const vor = mm.reduce((s, x) => Math.max(s, x.budget && x.budget.vorher ? x.budget.vorher.draws : 0), 0);
                 zeilen.push(
                     `${k}[${st}] ${top ? top.tris : "—"}/${z.tris} · Draws ${dMax}/${z.draws}` +
                         (vor ? ` (ungefaltet bis ${vor})` : "") +

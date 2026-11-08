@@ -28,7 +28,7 @@ hauptLauf(async () => {
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
-        if (!(f?.ready && f.recipes?.wolf)) return { fatal: "wolf-Rezept kam nie" };
+        if (!(f?.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
 
         // Leere Bühne + genug Kapazität.
         for (const c of r.state.creatures.slice()) r.removeCreature(c);

@@ -74,7 +74,7 @@ function urteil(b) {
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
             `LEER: Instanz-Treue ohne beide Fälle (${I?.faelle ? I.faelle.join(", ") : "keine Messung"})` +
-                (I?.leichen?.length
+                (I?.leichen && I.leichen.length
                     ? ` — ohne Prüfung: ${I.leichen.join(" · ")} (eine leere Gruppe zeichnet in keinem Pass)`
                     : "") +
                 " — (I) prüfte nicht alles"

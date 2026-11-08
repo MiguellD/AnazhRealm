@@ -119,7 +119,7 @@ hauptLauf(async () => {
                 await rend.compileAsync(wurzel, cam).finally(() => delete P.getForRender);
                 verborgen.forEach((ob) => (ob.visible = false));
                 wurzel.traverse((ob) => (ob.__renderObjekte || []).forEach((ro) => {
-                    const karten = Object.fromEntries(ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => [x.name, x.texture?.name || x.name]))); // prettier-ignore
+                    const karten = Object.fromEntries(ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => [x.name, (x.texture && x.texture.name) || x.name]))); // prettier-ignore
                     for (const [s, q] of [[1, ro.getNodeBuilderState().vertexShader], [2, ro.getNodeBuilderState().fragmentShader]]) {
                         const hier = aktiv(q), n = hier.reduce((a, d) => a + Number(d[2] || 1), 0); // prettier-ignore
                         const k = `${ro.material.name || ro.material.type + "#" + ro.material.id} ${s === 1 ? "vertex" : "fragment"}`; // prettier-ignore

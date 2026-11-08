@@ -215,10 +215,10 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const c2 = st.creatures[2];
         r.assignCreatureTask(c2, "wander", {}, { silent: true });
         const jPre = (st.worldJournal && st.worldJournal.entries.length) || 0;
-        const rufPre = sym?.tierRufe || 0;
+        const rufPre = (sym?.tierRufe) || 0;
         r.assignCreatureTask(c2, "wait", {}, { silent: true });
         const jPost = (st.worldJournal && st.worldJournal.entries.length) || 0;
-        out.silentSuppressesJournal = jPost === jPre && (sym?.tierRufe || 0) === rufPre;
+        out.silentSuppressesJournal = jPost === jPre && ((sym?.tierRufe) || 0) === rufPre;
 
         // === Leerschlag-Feedback (UX + Vision §1.1) ===
         // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60

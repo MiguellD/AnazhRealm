@@ -92,7 +92,7 @@ function urteil(b) {
     const blicke = new Map((b.blicke || []).map((x) => [x.name, x]));
     for (const name of PFLICHT) if (!blicke.has(name)) v.push(`LEER: Blick ${name} fehlt (kein Standort gefunden)`);
     for (const x of b.blicke || []) {
-        if (x.fehlend?.length) {
+        if (x.fehlend && x.fehlend.length) {
             const f = x.fehlend[0];
             v.push(
                 `LOCH: Blick ${x.name}: ${x.fehlend.length} Zellen fehlen im Abschnitt, zuerst ${f.bereich}` +
@@ -100,7 +100,7 @@ function urteil(b) {
                     ` am Punkt ${JSON.stringify(f.punkt)}`
             );
         }
-        if (x.schatten?.lecks?.length) {
+        if (x.schatten?.lecks && x.schatten.lecks.length) {
             const l = x.schatten.lecks[0];
             v.push(
                 `LICHT-LECK: Blick ${x.name}: ${x.schatten.lecks.length} Empfänger, zuerst ${JSON.stringify(l.empfaenger)} — ` +

@@ -336,7 +336,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
 
         // Snapshot
         const savedMode = r.getGameMode();
-        const savedSoul = p?.soul || "mensch";
+        const savedSoul = (p && p.soul) || "mensch";
         const savedInv = Array.isArray(p.inventory) ? jsonKlon(p.inventory) : [];
         const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;

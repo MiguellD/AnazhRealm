@@ -1266,7 +1266,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
         }
         return out;
     });
-    const arten = res?.arten || {};
+    const arten = (res?.arten) || {};
     for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
         const a = arten[art] || {};
         check(

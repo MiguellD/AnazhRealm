@@ -307,7 +307,7 @@ hauptLauf(async () => {
                     const taub = selbst && geboren.length === 0; // der alte Weg: die Geburt trägt keine Frage
                     const w = {
                         url,
-                        name: taub ? null : o?.name || null,
+                        name: taub ? null : (o && o.name) || null,
                         post: [],
                         postMessage: (m) => w.post.push(m && m.type),
                         terminate: () => {},
@@ -320,7 +320,7 @@ hauptLauf(async () => {
                 try {
                     const f = r._ensureAssetFoundry();
                     await __weltDa(() => !!(!(f && !f.worker)));
-                    aus10.geboren = !!f?.worker;
+                    aus10.geboren = !!(f && f.worker);
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);
                 } finally {

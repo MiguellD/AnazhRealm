@@ -660,7 +660,7 @@ function koerperVerdict(k) {
 }
 function koerperBericht(k) {
     const v = koerperVerdict(k);
-    const [V, N] = [k?.vor || {}, k?.nach || {}];
+    const [V, N] = [(k && k.vor) || {}, (k && k.nach) || {}];
     const z = (n) =>
         V[n] && N[n]
             ? `${n} ${(+V[n].kg).toFixed(1)} → ${(+N[n].kg).toFixed(1)} kg` +
@@ -865,7 +865,7 @@ function bahnKernVerdict(rows) {
     return out;
 }
 function bahnPlatzVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "kein Wagen"];
+    if (!m || !m.da) return [m && m.grund ? m.grund : "kein Wagen"];
     const out = [];
     if (!(m.neigung <= BAHN.neigungGrad))
         out.push(`Neigung ${m.neigung.toFixed(0)}° (steig ${m.steig.toFixed(0)}°, wank ${m.wank.toFixed(0)}°)`);
@@ -880,7 +880,7 @@ function bahnPlatzVerdict(m) {
     return out;
 }
 function bahnStossVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "keine Station"];
+    if (!m || !m.da) return [m && m.grund ? m.grund : "keine Station"];
     const out = [];
     if (!m.stoss) out.push(`kein Stoß am ${m.ziel}${m.ohneStoss ? " " + JSON.stringify(m.ohneStoss) : ""}`);
     if (!m.versuche || m.versuche.length === 0) out.push(`keine Befreiung am ${m.ziel}`);
@@ -1000,7 +1000,7 @@ function bahnTastenVerdict(m) {
     return out;
 }
 function bahnWandVerdict(m) {
-    if (!m || !m.da) return [m?.grund ? m.grund : "keine Probe"];
+    if (!m || !m.da) return [m && m.grund ? m.grund : "keine Probe"];
     const out = [];
     if (m.urteil !== "wagen")
         out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
@@ -1086,7 +1086,7 @@ async function probeBahn(B) {
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
     await __weltDa(() => f && f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (!st.blueprints?.fahrzeug_gt) return { err: "Buch ohne fahrzeug_gt" };
+    if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { err: "Buch ohne fahrzeug_gt" };
     // DER TAKT: echte Frames (`_gameLoopTick`), feste Schritte — die Zahl der Frames ist die Uhr.
     let tMs = performance.now();
     const frame = () => {
@@ -2808,7 +2808,7 @@ hauptLauf(async () => {
         );
         const bz = (m) =>
             !m || !m.da
-                ? m?.grund || "—"
+                ? (m && m.grund) || "—"
                 : `${m.tor ? m.tor + " " : ""}bei (${m.x}, ${m.z})${m.weiter != null ? ` ${m.weiter} m vom Wunsch-Ort` : ""} · Neigung ${m.neigung.toFixed(1)}° · Wände ${m.waende} · Blocker ${m.blocker} · W 2 s ${m.vor != null ? m.vor.toFixed(2) : "—"} m · S 2,5 s ${m.zurueck != null ? m.zurueck.toFixed(2) : "—"} m`;
         const fv = bahnPlatzVerdict(bahn.vorschau);
         check(
@@ -2843,7 +2843,7 @@ hauptLauf(async () => {
         const sz = (m) =>
             m && m.da
                 ? `Stoß ${m.stoss ? "ja" : "nein"} · ${m.versuche.map((v) => `${v.seite} frei nach ${v.freiFrame >= 0 ? (v.freiFrame / 60).toFixed(2) + " s" : "—"} (${v.weg.toFixed(2)} m in 2 s)`).join(" · ")}`
-                : m?.grund || "—";
+                : (m && m.grund) || "—";
         for (const [name, m] of [
             ["am Glutbrunnen der Schau", bahn.stossGlut],
             ["am Kiefern-Stamm", bahn.stossStamm],

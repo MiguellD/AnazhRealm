@@ -414,7 +414,7 @@ function bandBefunde(messung, basis) {
             );
         else traeger = new Map(basis.rot.filter((r) => r && r.schluessel).map((r) => [r.schluessel, r]));
     }
-    const tol = basis?.toleranz || messung.toleranz || null;
+    const tol = (basis?.toleranz) || messung.toleranz || null;
     const zahl = Number.isFinite;
     for (const r of messung.rot) {
         const a = traeger && r.schluessel ? traeger.get(r.schluessel) : null;

@@ -63,7 +63,7 @@ function driveVerdict(d) {
 const STAND = { spaltM: 0.12, probenMin: 4 };
 function standVerdict(s) {
     const out = [];
-    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s?.proben) || 0}`];
+    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s && s.proben) || 0}`];
     if (!(s.spaltM <= STAND.spaltM)) out.push(`spalt ${(s.spaltM || 0).toFixed(3)} m`);
     return out;
 }
@@ -213,7 +213,7 @@ hauptLauf(async () => {
                         kernSitz !== null &&
                         Math.abs(entry._sitzHeight - kernSitz) < 1e-9 &&
                         (donorSitz === null || Math.abs(entry._sitzHeight - donorSitz) > 0.01);
-                    if (entry.blockerAABBs?.length && drv?.huelle) {
+                    if (entry.blockerAABBs && entry.blockerAABBs.length && drv?.huelle) {
                         let mnX = Infinity;
                         let mxX = -Infinity;
                         let mnZ = Infinity;

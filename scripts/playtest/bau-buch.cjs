@@ -2659,7 +2659,7 @@ async function checkBandWaves9And10a({ page, check }) {
             const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             out.soulApplyChangedSoul = st.player.soul !== soulBefore;
-            out.customSoulRegistered = !!st.customSouls?.["bp_test_9d_soul"];
+            out.customSoulRegistered = !!(st.customSouls && st.customSouls["bp_test_9d_soul"]);
 
             const archRes = r.applyPlayerSoulFromBlueprint("stein_block");
             out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";

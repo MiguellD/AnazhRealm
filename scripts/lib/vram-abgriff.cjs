@@ -60,12 +60,12 @@ function vramAbgriff() {
             : null;
     // Texturen tragen Format und Größe im Schlüssel (wenige, große), Puffer nur das Label.
     const buche = (o, art, d, b) => {
-        const s = d?.size || {};
+        const s = (d && d.size) || {};
         const form =
             art === "tex"
                 ? ` ${d.format} ${Array.isArray(s) ? s.join("x") : [s.width, s.height, s.depthOrArrayLayers || 1].join("x")}`
                 : "";
-        o.__vramK = art + ":" + window.__vramFalte(d?.label || "?") + form;
+        o.__vramK = art + ":" + window.__vramFalte((d && d.label) || "?") + form;
         const h = (o.__vramH = {
             b,
             k: o.__vramK,
@@ -105,7 +105,7 @@ function vramAbgriff() {
     const cb = P.createBuffer;
     P.createBuffer = function (d) {
         const b = cb.call(this, d);
-        const n = d?.size || 0;
+        const n = (d && d.size) || 0;
         V.puffer += n;
         V.nPuffer++;
         buche(b, "buf", d, n);
@@ -145,8 +145,8 @@ function vramAbgriff() {
     P.createBindGroup = function (d) {
         const g = cbg.call(this, d);
         const tex = [];
-        for (const e of d?.entries || []) {
-            const t = e?.resource ? ansichtTextur.get(e.resource) : undefined;
+        for (const e of (d && d.entries) || []) {
+            const t = e && e.resource ? ansichtTextur.get(e.resource) : undefined;
             if (t) tex.push(t);
         }
         if (tex.length) gruppeTex.set(g, tex);
@@ -157,7 +157,7 @@ function vramAbgriff() {
         return {
             testet: !!ds && ds.depthCompare !== undefined && ds.depthCompare !== "always",
             schreibt: !!ds && ds.depthWriteEnabled === true,
-            farben: (d?.fragment?.targets || []).filter(Boolean).length,
+            farben: ((d && d.fragment && d.fragment.targets) || []).filter(Boolean).length,
         };
     };
     const crp = P.createRenderPipeline;

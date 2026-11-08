@@ -33,7 +33,7 @@ function passName(scene, camera) {
     const dl = st.directionalLight;
     if (dl?.shadow && dl.shadow.camera === camera) return "k0";
     if (scene && scene.name === "Render Pipeline") return "post";
-    return scene?.name || (camera && (camera.name || camera.type)) || "?";
+    return (scene?.name) || (camera && (camera.name || camera.type)) || "?";
 }
 
 // DER SATZ-INHALT (S3 haus, 1b): ein Satz (je Stoff des gesetzten Baus) zeichnet je Pass EINEN Befehl über die Zellen
@@ -404,7 +404,7 @@ function pufferZensus() {
         }
         const k = "buf:" + window.__vramFalte(name);
         if (window.__vramUmbuchen) window.__vramUmbuchen(buf, k);
-        const b = buf.__vramH?.b || buf.size || 0;
+        const b = (buf.__vramH?.b) || buf.size || 0;
         gesamt += b;
         const h = name.split(":")[0];
         je.set(h, (je.get(h) || 0) + b);
@@ -596,7 +596,7 @@ function gangUrteil({ vor, nach }) {
                 " MB zurück am Start — " +
                 wuchs(vg(vor), [...nm].map(([k, x]) => [k, x - bestand(k)]))
         );
-    for (const [k, x] of Object.entries(nach.puffer?.halter || {}))
+    for (const [k, x] of Object.entries((nach.puffer?.halter) || {}))
         if (/ruhend|verwaist/.test(k) && x > 0) f.push("buf:" + k + " " + x + " MB");
     return f;
 }

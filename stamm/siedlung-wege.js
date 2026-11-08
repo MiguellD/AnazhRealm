@@ -180,7 +180,7 @@ class AnazhRealm_siedlung_wege {
         const U = AnazhRealm.UNDERGROWTH;
         const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
-            this._nahWieseNeuIn(x - a, z - a, x + a, z + a, false, true);
+            this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
     // Der EINE Kronen-Radius eines Wald-Baums: wie der Wald-Generator (phyto-core planForestCell) `FOREST.crown[art] ×
@@ -1177,17 +1177,12 @@ class AnazhRealm_siedlung_wege {
     // fällt, der nächste Takt baut sie auf dem Pfad-Feld neu (beide lesen `_pfadFeldAt` — bis 05.10. fiel nur die Wiese,
     // die Blume des Waldbodens blieb auf dem neuen Weg stehen).
     // `karte`: nur die Boden-Karte regte sich (der Trampelpfad, `_tritt`) — die Wache weckt nur ihre Leser (Wiese, Nah-Streu).
-    // `licht`: nur das Licht der Kronen änderte sich (`_kronenStreuWiese`) — die Gitter der Ferne tragen kein Licht (Höhe und
-    // Wiesen-Grund), sie und das Feld der Nachbarn bleiben; es fallen nur die Kacheln im Rechteck (ihr Wurf und ihr Tint lesen das
-    // Licht). Bis dahin fiel mit jeder Krone, die der Wald beim Einströmen setzte, der Rand von 3 × 3 Kacheln der Ferne samt
-    // Gittern: am Messort (Null-Renderer, 750 Takte) baute die Ferne 1 915 Kacheln in 1 951 ms gegen 915 ms an main, in der
-    // swiftshader-CI stand die Wiese nach 14 465 Takten nicht.
-    _nahWieseNeuIn(x0, z0, x1, z1, karte = false, licht = false) {
+    _nahWieseNeuIn(x0, z0, x1, z1, karte = false) {
         this._weltRegt(karte, karte); // die Kacheln fallen: die Stand-Wache weckt Wiese und Streu
         let n = 0;
-        const imRechteck = (key, K, rand = 0) => {
+        const imRechteck = (key, K) => {
             const [tx, tz] = key.split(",").map(Number);
-            return !((tx + 1) * K + rand < x0 || tx * K - rand > x1 || (tz + 1) * K + rand < z0 || tz * K - rand > z1);
+            return !((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1);
         };
         // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus. Die
         // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
@@ -1195,14 +1190,10 @@ class AnazhRealm_siedlung_wege {
         if (nw)
             for (const key of [...nw.kacheln.keys()])
                 if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
-        // die Kacheln der Ferne lesen dieselben Felder (`_nahWieseFernKachel`) und über ihr FELD (sie und ihre acht Nachbarn) die
-        // Gitter der Ferne (die Grenze der Streckung, `_wieseFernGrenzen`): ein Gitter unter der Fläche fällt, eine Kachel, deren
-        // Feld sie trifft
-        const KF = AnazhRealm.NAH_WIESE.fern.kachel;
-        for (const key of nw && nw.fern && !licht ? [...nw.fern.gitter.keys()] : [])
-            if (imRechteck(key, KF)) nw.fern.gitter.delete(key);
+        // die Kacheln der Ferne lesen dieselben Felder (`_nahWieseFernKachel`)
         for (const key of nw && nw.fern ? [...nw.fern.kacheln.keys()] : [])
-            if (imRechteck(key, KF, licht ? 0 : KF) && nw.fern.kacheln.delete(key)) ((nw.neu = true), n++);
+            if (imRechteck(key, AnazhRealm.NAH_WIESE.fern.kachel) && nw.fern.kacheln.delete(key))
+                ((nw.neu = true), n++);
         const ns = this.state.nahStreu;
         if (ns)
             for (const [key, k] of [...ns.kacheln]) {

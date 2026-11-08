@@ -59,7 +59,7 @@ function validateDaten(N, spec) {
     if (ids.length < spec.minRezepte) v.push(`B1: nur ${ids.length} Rezepte (< ${spec.minRezepte})`);
     const bands = {};
     // SYNERGIE-WELLE (v1.2) — DIE EINE B4-FORM: PARAMS_BY_KIND (Map), das flache PARAMS fiel.
-    for (const row of N.PARAMS_BY_KIND?.[spec.kind] || []) bands[row.id] = row;
+    for (const row of (N.PARAMS_BY_KIND && N.PARAMS_BY_KIND[spec.kind]) || []) bands[row.id] = row;
     for (const id of ids) {
         const r = P[id];
         if (!/^[a-z0-9_-]+$/.test(id)) v.push(`B1: id "${id}" verletzt den Namensraum`);
@@ -77,7 +77,7 @@ function validateDaten(N, spec) {
             continue;
         }
         if (spec.feld === "klang") {
-            if (!(Number.isFinite(feld.bpm) && feld.bpm > 0))
+            if (!(typeof feld.bpm === "number" && isFinite(feld.bpm) && feld.bpm > 0))
                 v.push(`§8.3: "${id}" klang.bpm ungueltig`);
             if (
                 !Array.isArray(feld.scale) ||
@@ -105,8 +105,8 @@ function validateDaten(N, spec) {
                     for (const k in prof) {
                         const pv = prof[k];
                         const ok =
-                            Number.isFinite(pv) ||
-                            (Array.isArray(pv) && pv.every(Number.isFinite));
+                            (typeof pv === "number" && isFinite(pv)) ||
+                            (Array.isArray(pv) && pv.every((x) => typeof x === "number" && isFinite(x)));
                         if (!ok) v.push(`§8.2: "${id}" motion.presets.${pn}.${k} nicht Zahl/Zahl-Liste`);
                     }
                 }

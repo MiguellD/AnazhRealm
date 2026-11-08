@@ -57,7 +57,7 @@ function fensterSammler() {
     GPUAdapter.prototype.requestDevice = async function (d) {
         const dev = await rd.call(this, d);
         dev.queue.__geraet = dev;
-        dev.addEventListener("uncapturederror", (ev) => melde(ev.error?.message || ev.error));
+        dev.addEventListener("uncapturederror", (ev) => melde((ev.error && ev.error.message) || ev.error));
         return dev;
     };
 }
@@ -91,7 +91,7 @@ async function fensterSchritt(o) {
     return {
         frames: L() - f0,
         pr: st.renderer.getPixelRatio(),
-        abbild: t?.image ? { id: t.id, version: t.version, b: t.image.width, h: t.image.height } : null,
+        abbild: t && t.image ? { id: t.id, version: t.version, b: t.image.width, h: t.image.height } : null,
         gpu: S.gpu[S.schritt] || {},
         wache: W.n,
         wacheKoepfe: W.meldungen.map((m) => `${m.quelle}: ${m.kopf}`),

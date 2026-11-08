@@ -47,7 +47,7 @@ async function bauAbdruck(meshes) {
       for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
   };
   for (const m of meshes || []) {
-    if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !m.position?.array)) continue;
+    if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array))) continue;
     teile++;
     for (const k of Object.keys(m).sort()) {
       const v = m[k];
@@ -139,7 +139,7 @@ function pageHtml() {
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
   const pending = new Map();
   let seq = 1;
-  worker.onerror = (e) => { S.error = e?.message || "Worker-Fehler"; };
+  worker.onerror = (e) => { S.error = (e && e.message) || "Worker-Fehler"; };
   worker.onmessage = (ev) => {
     const m = ev.data;
     if (!m || typeof m !== "object") return;
@@ -402,7 +402,7 @@ async function runWithWorker(port, cb) {
 // aber keine Meshes — der Vertrag v1 zählt sie nicht (Leser ohne position-Guard überspringen
 // sie). Hier fallen sie aus dem Fingerabdruck, damit Mint UND Gate dieselbe Regel lesen.
 function istBeipack(m) {
-    return !!m && typeof m.kind === "string" && m.kind.startsWith("__") && !m.attrs?.position;
+    return !!m && typeof m.kind === "string" && m.kind.startsWith("__") && !(m.attrs && m.attrs.position);
 }
 function fingerprintMeshes(meshes) {
     const sha = (b64) => {

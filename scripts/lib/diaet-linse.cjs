@@ -31,7 +31,7 @@ function diaetZaehler() {
                 nm = p.name + "/" + nm;
                 break;
             }
-        return (ro?.material?.isShadowPassMaterial ? "Schatten " : "") + nm;
+        return (ro?.material && ro.material.isShadowPassMaterial ? "Schatten " : "") + nm;
     };
     const wirkt = () => {
         const w = aktRo && offen.get(aktRo);
@@ -199,7 +199,7 @@ function diaetZaehler() {
         }
     };
     haken("szene", rend, "_renderScene", function (scene, camera, fb) {
-        const schatten = !!(scene?.overrideMaterial?.isShadowPassMaterial);
+        const schatten = !!(scene?.overrideMaterial && scene.overrideMaterial.isShadowPassMaterial);
         zaehle(schatten ? "schattenRenders" : "szenen");
         return ohneGang(() => rahmen(schatten ? "schattenRender" : "szene", () => roh.szene.call(this, scene, camera, fb)));
     });

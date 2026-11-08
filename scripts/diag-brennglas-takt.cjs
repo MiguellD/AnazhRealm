@@ -478,7 +478,7 @@ async function probe() {
         if (licht) for (const fa of focusing) for (const p of r._brennpunkte(fa, licht)) punkte.push({ fa, p });
         const name = (e) => {
             const b = e && st.blueprints ? st.blueprints[e.type] : null;
-            return String(b?.label || e?.type || "?").split(/\s[·—(]/)[0];
+            return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
         };
         const ignitions = [];
         const riddenId = st.player ? st.player.mountedArch : null;
@@ -886,7 +886,7 @@ async function probe() {
     };
     const filter = (k) =>
         k === "rauch"
-            ? st.architectures.filter((e) => e && (e.userData?.rauchQuelle || e.chimney))
+            ? st.architectures.filter((e) => e && ((e.userData && e.userData.rauchQuelle) || e.chimney))
             : st.architectures.filter((e) => e && e.affordances && e.affordances[k]);
     const vergleiche = (name) => {
         const f = [];
@@ -965,7 +965,7 @@ async function probe() {
         for (const e of st.architectures) {
             if (!e || !e.position) continue;
             const tip =
-                e.userData?.rauchQuelle ||
+                (e.userData && e.userData.rauchQuelle) ||
                 (e.chimney && Number.isFinite(e.chimney.x) ? e.chimney : null);
             if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y) || !Number.isFinite(tip.z)) continue;
             const phi = Number.isFinite(e.rotationY) ? e.rotationY : 0;
@@ -980,7 +980,7 @@ async function probe() {
     };
     r._updateDorfRauch(0.016);
     const qa = JSON.stringify(rauchAlt()),
-        qn = JSON.stringify(st.dorfRauch?.quellen || []);
+        qn = JSON.stringify((st.dorfRauch && st.dorfRauch.quellen) || []);
     aus.rauch = { quellen: JSON.parse(qa).length, gleich: qa === qn };
     // (H) DIE HAUS-TÜR: fern von jedem Haus scannt der Tür-Takt (nichts), dann 5 m vor ein Haus mit Tür — 2 s Frames später
     // steht es in der Nähe-Liste und trägt sein Tür-Gedächtnis (`_tuerRec`); die Liste ist der Filter über den Bestand
@@ -1406,7 +1406,7 @@ hauptLauf(async () => {
         `  Fernziel: ${F.art} ×${F.skala}, ${F.abstand} m vom Glas, Platz ±${F.reichweite} m · volle Frage ${F.voll}, ` +
             `halbe ${F.halb} · erwärmt ${F.heiz}× · Beweger: nur über die Beweger ${B.mitBewegern && !B.ohneBeweger} · erwärmt ${B.heiz}×`
     );
-    const Nz = S.naehe?.arbeit || {};
+    const Nz = (S.naehe && S.naehe.arbeit) || {};
     console.log(
         `  Nähe: ${S.naehe ? S.naehe.proben : 0} Proben gegen das Orakel, Abweichungen ${S.naehe ? S.naehe.abw : "?"} · ` +
             `Wirkung ${JSON.stringify(S.naehe && S.naehe.wirkung)} · ferne Menge ${S.naehe ? S.naehe.menge : 0} ` +
