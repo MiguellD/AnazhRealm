@@ -68,7 +68,7 @@ function archivBefund(dateien) {
 //    Spiel Prüf-Budget). Beide Texte je Datei liest EIN Diff mit voller Umgebung (`-U` über jede Länge): Umgebung und
 //    „-" sind der Grund, Umgebung und „+" der Kopf. `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne
 //    `--kopf` der Arbeitsbaum; kein Grund = ROT.
-const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*", ":(exclude)spec/ci/wirkung-karte.json"]; // Ratschen und die Wirkungs-Karte = Messdaten des Werkzeugs
+const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 const stamm = require("./lib/stamm.cjs");
 // 6c) WERKZEUG-TAFELN: was `stamm-umzug --nach-karte` als Spiegel des Stamms schreibt — die Stamm-Quellen der Tafeln

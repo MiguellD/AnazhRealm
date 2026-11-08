@@ -1,31 +1,25 @@
-// zug-auswahl.cjs — DIE ZUG-AUSWAHL: ein Zug fährt nur die Schritte der vollen Batterie, deren Urteil von den geänderten Gliedern
-// abhängen KANN (Test-Auswahl nach Wirkung, deterministisch). Die WIRKUNGS-KARTE (spec/ci/wirkung-karte.json) trägt je Schritt, was
-// er wirklich ausführt und liest — gemessen, nie geraten:
+// zug-auswahl.cjs — DER ZUG NACH WIRKUNG: der VORLAUF hält den Zug (die Fänger echter Fehler, die Schritte der Karte ohne
+// Takt-Wirkungen, der Puls), der NACHLAUF fährt den Rest nach der Landung, das HAUPTBUCH hält die Schuld, die BISEKTION nennt den
+// Täter (V.). Die WIRKUNGS-KARTE (koordination zug/wirkung-karte.json) trägt je Schritt, was er wirklich ausführt und liest —
+// gemessen, nie geraten:
 //   · jede Seite und jeder Worker über die EINE CDP-Sitzung des Browsers (auto-attach, angehalten bis die Precise Coverage läuft:
 //     kein Glied läuft ungezählt; RenderDocument aus, sonst tauscht ein Reload den Prozess und die Zählung der alten Seite stirbt),
 //     dazu jeder `Function.prototype.toString` der Seite (`__codeOf`, `__fehlt`: die Absenz liest Text, ohne ihn auszuführen);
 //   · jeder Node-Prozess über NODE_V8_COVERAGE (Kerne im vm-Faden, Linsen, Server) und die Lese-Spur (fs: Text, Liste, Probe —
 //     was ein HTTP-Server ausliefert oder der Modul-Lader lädt, zählt die Abdeckung).
 // Eingeschaltet NUR über `CI_WIRKUNG=<ordner>` (welt-boot ruft `haken()`, NODE_OPTIONS lädt diese Datei vor) — sonst null Kosten.
-//   node scripts/lib/zug-auswahl.cjs <basis> <kopf>       die Auswahl: Zeile 1 die JSON-Liste, je ausgelassenem Schritt eine Zeile
+//   node scripts/lib/zug-auswahl.cjs --kopf                der Zug-Kopf (check.yml `kopf`): Vorlauf, Nachlauf oder alles
+//   node scripts/lib/zug-auswahl.cjs --hauptbuch           der Nachlauf bucht (check.yml `nachlauf`): Hauptbuch, Bisektion, Fänger
 //   node scripts/lib/zug-auswahl.cjs --messen [n …] [--gruppe g] [--parallel n]   misst Schritte der vollen Batterie unter CI_WIRKUNG
-//   node scripts/lib/zug-auswahl.cjs --karte              die Roh-Spuren → spec/ci/wirkung-karte.json
-//   node scripts/lib/zug-auswahl.cjs --geschichte         der Richter: Treffer und Ersparnis an den Zügen (spec/ci/zug-geschichte.json)
+//   node scripts/lib/zug-auswahl.cjs --karte               die Roh-Spuren → koordination zug/wirkung-karte.json
+//   node scripts/lib/zug-auswahl.cjs --laeufe <tage> <f>   die Läufe von check.yml (API) → <f>; --faenger <f> die Fänger → koordination
+//   node scripts/lib/zug-auswahl.cjs --beweis <f> [ab]     der Beweis an den Zügen ab dem SHA `ab`
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const MESS = process.env.CI_WIRKUNG;
-const KARTE = "spec/ci/wirkung-karte.json";
-const ROH = path.join(require("os").tmpdir(), "anazh-wirkung");
-// der Pfad im Baum (ab der Wurzel `w`), außerhalb, in node_modules und .git: null
-const relPfad = (p, w = ROOT) => {
-    const r = path.relative(w, path.resolve(w, p)).replace(/\\/g, "/");
-    return r && !r.startsWith("..") && !/^(node_modules|\.git)\//.test(r) ? r : null;
-};
-const merk = (m, r, k) => (m.get(r) || m.set(r, new Set()).get(r)).add(k);
 // der Text als Glieder, je Schlüssel einmal; was acorn nicht liest: "kaputt"
 const gliederMerk = (cache, k, text) => {
     if (!cache.has(k)) {
@@ -41,158 +35,7 @@ const gliederMerk = (cache, k, text) => {
     return cache.get(k);
 };
 
-// ─── I. DIE MESSUNG ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-// a) der Browser: `haken()` legt sich um puppeteer.launch (welt-boot, jeder Start); die Spur je Browser in `<MESS>/b-<pid>-<n>.json`
-const TEXT_SPUR = `(() => { const roh = Function.prototype.toString, t = (window.__wirkungTexte = []), s = new Set();
-Function.prototype.toString = function () { const x = roh.call(this); if (!s.has(x)) (s.add(x), t.push(x)); return x; }; })();`;
-const AN_TYP = /^(page|iframe|worker|shared_worker|service_worker)$/;
-let browserZahl = 0;
-function haken() {
-    const p = require("puppeteer");
-    const roh = p.launch;
-    p.launch = async (o = {}) => {
-        const args = [...(o.args || [])];
-        const i = args.findIndex((a) => a.startsWith("--disable-features="));
-        if (i < 0) args.push("--disable-features=RenderDocument");
-        else args[i] += ",RenderDocument";
-        return anBrowser(await roh({ ...o, args }));
-    };
-}
-async function anBrowser(browser) {
-    const s = await browser.target().createCDPSession();
-    const [conn, sitz, fn, texte] = [s.connection(), new Set(), new Map(), new Set()];
-    const datei = path.join(MESS, `b-${process.pid}-${browserZahl++}.json`);
-    const nimm = async (c) => {
-        try {
-            for (const sc of (await c.send("Profiler.takePreciseCoverage")).result) {
-                if (!/^https?:\/\/(127\.0\.0\.1|localhost)[:/]/.test(sc.url)) continue;
-                const u = fn.get(sc.url) || fn.set(sc.url, new Set()).get(sc.url);
-                for (const f of sc.functions)
-                    if (f.ranges[0].count > 0) u.add(f.ranges[0].startOffset + "," + f.ranges[0].endOffset);
-            }
-            if (c.seite) for (const x of (await c.send("Runtime.evaluate", { expression: "(window.__wirkungTexte || []).splice(0)", returnByValue: true })).result.value || []) texte.add(x); // prettier-ignore
-        } catch {
-            sitz.delete(c); // das Ziel ist fort
-        }
-    };
-    const ernte = async () => {
-        await Promise.all([...sitz].map(nimm));
-        const o = { fn: Object.fromEntries([...fn].map(([u, m]) => [u, [...m]])), text: [...texte] };
-        fs.writeFileSync(datei, JSON.stringify(o));
-    };
-    const an = async ({ sessionId, targetInfo }) => {
-        const c = conn.session(sessionId);
-        if (!c) return;
-        c.on("Target.attachedToTarget", an);
-        try {
-            if (AN_TYP.test(targetInfo.type)) {
-                await c.send("Profiler.enable");
-                await c.send("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
-                c.seite = /^(page|iframe)$/.test(targetInfo.type);
-                if (c.seite) await c.send("Page.addScriptToEvaluateOnNewDocument", { source: TEXT_SPUR });
-                sitz.add(c);
-            }
-            await c.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
-        } catch {
-            // ein Ziel, das beim Anheften stirbt
-        }
-        c.send("Runtime.runIfWaitingForDebugger").catch(() => {});
-    };
-    s.on("Target.attachedToTarget", an);
-    await s.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
-    // ein Worker stirbt mit seiner Seite: je 1,5 s geerntet, vor jedem Schließen ganz
-    const uhr = setInterval(ernte, 1500);
-    uhr.unref();
-    const seite = (await browser.pages())[0];
-    if (seite) {
-        const P = Object.getPrototypeOf(seite);
-        if (!P.__wirkung) {
-            const zu = P.close;
-            P.close = async function (...a) {
-                await Promise.all(alleErnten.map((f) => f()));
-                return zu.apply(this, a);
-            };
-            P.__wirkung = true;
-        }
-    }
-    alleErnten.push(ernte);
-    const zu = browser.close.bind(browser);
-    browser.close = async (...a) => (clearInterval(uhr), await ernte(), zu(...a));
-    browser.on("disconnected", () => clearInterval(uhr));
-    return browser;
-}
-const alleErnten = [];
-
-// b) Node (über NODE_OPTIONS vorgeladen): die Lese-Spur je Prozess `<MESS>/n-<pid>.json` — gelesen (Text), geliefert (ein
-// HTTP-Server liefert: was die Seite nicht ausführt, wirkt als Datei), verz (eine Liste), probe (gibt es die Datei?); die
-// Abdeckung (NODE_V8_COVERAGE) schreibt Node am Ende, ein Signal schreibt sie vorher, ein Server alle 5 s (SIGKILL schreibt nichts)
-function nodeSpur() {
-    if (globalThis.__wirkungNode) return;
-    const spur = (globalThis.__wirkungNode = {
-        gelesen: new Set(),
-        geliefert: new Set(),
-        verz: new Set(),
-        probe: new Set(),
-        text: new Set(),
-        suche: new Set(),
-    });
-    // was Node als Text reicht (`page.evaluate(fn)`, `${fn}` in einer Seiten-Vorlage): ausgeführt wird es in der Seite, gemessen hier
-    const roh = Function.prototype.toString;
-    Function.prototype.toString = function () {
-        const x = roh.call(this);
-        spur.text.add(x);
-        return x;
-    };
-    const art = () => {
-        const alt = Error.stackTraceLimit;
-        Error.stackTraceLimit = 30;
-        const st = new Error().stack;
-        Error.stackTraceLimit = alt;
-        if (/_http_server/.test(st)) return "geliefert";
-        if (/\b(dateiMit|fehlt)\b/.test(st)) return "suche"; // stamm.cjs nennt die Stelle (das Muster) selbst
-        if (/internal\/modules\/|\b(fadenScope|ladeKlasse)\b/.test(st)) return "lade";
-        return "gelesen";
-    };
-    const merke = (wie, p) => {
-        const r = typeof p === "string" || p instanceof URL ? relPfad(p instanceof URL ? p.pathname : p) : null;
-        if (!r) return;
-        const a = wie || art();
-        if (a === "suche" || (a === "lade" && !/\.json$/.test(r))) return; // der Modul-Lader: die Abdeckung zählt, eine .json wirkt als Text
-        spur[a === "lade" ? "gelesen" : a].add(r);
-    };
-    const um = (o, name, wie) => {
-        const f = o[name];
-        o[name] = function (p, ...a) {
-            merke(wie, p);
-            return f.call(this, p, ...a);
-        };
-    };
-    for (const n of ["readFileSync", "readFile", "createReadStream"]) um(fs, n);
-    um(fs.promises, "readFile");
-    for (const n of ["readdirSync", "readdir", "opendirSync"]) um(fs, n, "verz");
-    um(fs.promises, "readdir", "verz");
-    um(fs, "existsSync", "probe");
-    const v8 = require("v8");
-    const schreib = () => {
-        const o = Object.fromEntries(Object.entries(spur).map(([k, v]) => [k, [...v]]));
-        fs.writeFileSync(path.join(MESS, `n-${process.pid}.json`), JSON.stringify(o));
-    };
-    process.on("exit", schreib);
-    for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"])
-        process.once(sig, () => {
-            try {
-                v8.takeCoverage();
-                schreib();
-            } catch {}
-            if (!process.listenerCount(sig)) process.kill(process.pid, sig);
-        });
-    if (!/[\\/]scripts[\\/]/.test(process.argv[1] || "") && /\.js$/.test(process.argv[1] || ""))
-        setInterval(() => (v8.takeCoverage(), schreib()), 5000).unref();
-}
-if (MESS) nodeSpur();
-
-// c) der Läufer: je Schritt der vollen Batterie (check.yml, Job voll) sein run-Text wie in der CI (bash -eo pipefail, CI=true,
-// CI_KLASSE der Gruppe) unter der Messung, die Roh-Spur in ROH/<nr>/ samt status.json (Exit, Sekunden); `--parallel n` Bahnen
+// ─── I. DIE SCHRITTE der vollen Batterie (check.yml, Job voll): je Schritt sein run-Text, seine Gruppe und Klasse
 function vollSchritte(text = fs.readFileSync(path.join(ROOT, ".github/workflows/check.yml"), "utf8")) {
     const J = require("js-yaml").load(text).jobs.voll;
     const klasse = new Map(J.strategy.matrix.include.map((x) => [x.gruppe, x.klasse]));
@@ -202,45 +45,6 @@ function vollSchritte(text = fs.readFileSync(path.join(ROOT, ".github/workflows/
             const gruppe = +/matrix\.gruppe == (\d+)/.exec(s.if)[1];
             return { nr, name: s.name, run: s.run, gruppe, klasse: klasse.get(gruppe) };
         });
-}
-function messeSchritt(x, fristS) {
-    const d = path.join(ROH, String(x.nr));
-    fs.rmSync(d, { recursive: true, force: true });
-    fs.mkdirSync(path.join(d, "node"), { recursive: true });
-    const env = {
-        ...process.env,
-        CI: "true",
-        CI_KLASSE: x.klasse,
-        CI_WIRKUNG: d,
-        NODE_V8_COVERAGE: path.join(d, "node"),
-        NODE_OPTIONS: `${process.env.NODE_OPTIONS || ""} --require ${__filename}`.trim(),
-    };
-    const log = fs.openSync(path.join(d, "log.txt"), "w");
-    const t0 = Date.now();
-    const p = require("child_process").spawn("bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", x.run], { cwd: ROOT, env, stdio: ["ignore", log, log], detached: true }); // prettier-ignore
-    const uhr = setTimeout(() => process.kill(-p.pid, "SIGKILL"), fristS * 1000);
-    return new Promise((ok) =>
-        p.on("exit", (code, signal) => {
-            clearTimeout(uhr);
-            fs.closeSync(log);
-            const s = Math.round((Date.now() - t0) / 1000);
-            fs.writeFileSync(path.join(d, "status.json"), JSON.stringify({ name: x.name, code, signal, s }));
-            console.log(
-                `[messen] ${x.nr} ${code === 0 ? "GRÜN" : `ROT (${code ?? signal})`} ${s} s — ${x.name.slice(0, 70)}`
-            );
-            ok(code);
-        })
-    );
-}
-async function messen(nummern, bahnen = 1, gruppe = 0, fristS = 2700) {
-    const alle = vollSchritte();
-    const liste = gruppe ? alle.filter((x) => x.gruppe === gruppe) : nummern.length ? nummern.map((n) => alle[n]) : alle;
-    let [i, rot] = [0, 0];
-    const bahn = async () => {
-        while (i < liste.length) rot += (await messeSchritt(liste[i++], fristS)) !== 0;
-    };
-    await Promise.all(Array.from({ length: bahnen }, bahn));
-    process.exitCode = rot ? 1 : 0;
 }
 
 // ─── II. DIE GLIEDER ────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -356,12 +160,9 @@ function satzUm(gl, i) {
 }
 // der Name eines Glieds: zu kurz für die Suche (`U`), wirkt er auf jeden, der die Datei lädt
 const KURZ = (n) => !/^[\w$]{3,}$/.test(n);
-
-// ─── III. DIE KARTE ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-// Je Schritt aus seiner Roh-Spur: `fn` die ausgeführten Glieder (Bitfeld über die EINE Tafel `glieder`), `txt` die als Text
-// gelesenen, `datei` was er als Datei liest (Text, ausgelieferte Nicht-Skripte, ausgelieferte Skripte, die keine Seite ausführt),
-// `verz` die gelisteten Ordner, `probe` die erfragten Pfade, `fege` die Dateien, deren Glieder er zur Hälfte und mehr als Text las.
 const JS = /\.(c|m)?js$/;
+
+// die Bitfelder der Karte (je Schritt `fn` über die EINE Tafel `glieder`)
 const bits = {
     aus: (idx, n) => {
         const b = Buffer.alloc((n + 7) >> 3);
@@ -374,104 +175,6 @@ const bits = {
     },
     puffer: {},
 };
-function karteBauen(wurzel = ROOT) {
-    const gl = new Map();
-    const gliederVon = (r) => {
-        const g = gliederMerk(gl, r, () => fs.readFileSync(path.join(wurzel, r), "utf8"));
-        return g === "kaputt" ? null : g;
-    };
-    const vonUrl = (u) =>
-        relPfad(/^https?:/.test(u) ? decodeURIComponent(new URL(u).pathname).slice(1) : u.startsWith("file:") ? new URL(u).pathname : u, wurzel); // prettier-ignore
-    const schritte = {};
-    const zaehler = { text: 0, textFrei: 0 };
-    for (const nr of fs.readdirSync(ROH)) {
-        const d = path.join(ROH, nr);
-        if (!fs.existsSync(path.join(d, "status.json"))) continue;
-        const st = JSON.parse(fs.readFileSync(path.join(d, "status.json"), "utf8"));
-        const [fn, txt, datei, verz, probe, gefuehrt, geliefert, suche] = [new Map(), new Map(), new Set(), new Set(), new Set(), new Set(), new Set(), new Set()]; // prettier-ignore
-        const lauf = (r, s, e) => {
-            const g = gliederVon(r);
-            if (!g) return datei.add(r);
-            gefuehrt.add(r);
-            merk(fn, r, gliedUm(g, s, e));
-        };
-        const texte = [];
-        for (const f of fs.readdirSync(d)) {
-            const j = () => JSON.parse(fs.readFileSync(path.join(d, f), "utf8"));
-            if (f.startsWith("b-")) {
-                const b = j();
-                for (const [u, liste] of Object.entries(b.fn)) {
-                    const r = vonUrl(u);
-                    if (r) for (const x of liste) lauf(r, ...x.split(",").map(Number));
-                }
-                texte.push(...b.text);
-            } else if (f.startsWith("n-")) {
-                const n = j();
-                for (const r of n.gelesen) datei.add(r);
-                for (const r of n.geliefert) geliefert.add(r);
-                for (const r of n.verz) verz.add(r);
-                for (const r of n.probe) probe.add(r);
-                texte.push(...(n.text || []));
-                for (const s of n.suche || []) suche.add(s);
-            }
-        }
-        for (const f of fs.readdirSync(path.join(d, "node"))) {
-            for (const sc of JSON.parse(fs.readFileSync(path.join(d, "node", f), "utf8")).result) {
-                const r = vonUrl(sc.url);
-                if (r && JS.test(r)) for (const x of sc.functions) if (x.ranges[0].count > 0) lauf(r, x.ranges[0].startOffset, x.ranges[0].endOffset);
-            }
-        }
-        for (const r of geliefert) if (!gefuehrt.has(r)) datei.add(r);
-        // die gelesenen Texte: das Glied, dessen Text `toString` liefert, sonst die Stelle in einer geführten Datei
-        // — und jedes Glied IN dem Text (ein Pfeil an evaluateOnNewDocument trägt `window.__wasserOrt`: sein Text reist mit)
-        const roh = new Map();
-        for (const r of gefuehrt) {
-            const g = gliederVon(r);
-            for (const x of g.G) roh.set(g.t.slice(x.ts, x.e), [r, x.ts]);
-        }
-        for (const t of new Set(texte)) {
-            let hit = roh.get(t);
-            if (!hit && t.length >= 40)
-                for (const r of gefuehrt) {
-                    const i = gl.get(r).t.indexOf(t);
-                    if (i >= 0 && (hit = [r, i])) break;
-                }
-            if (hit) {
-                const [r, i] = hit;
-                merk(txt, r, gliedUm(gl.get(r), i, i + t.length));
-                for (const x of gl.get(r).G) if (x.s >= i && x.e <= i + t.length) merk(txt, r, x.k);
-            }
-            zaehler[hit ? "text" : "textFrei"]++;
-        }
-        const fege = [...txt].filter(([r, ks]) => ks.size * 2 >= new Set(gl.get(r).G.map((x) => x.k)).size).map(([r]) => r);
-        schritte[st.name] = { gruen: st.code === 0, s: st.s, fn, txt, datei: [...datei].sort(), verz: [...verz].sort(), probe: [...probe].sort(), fege, suche: [...suche] }; // prettier-ignore
-    }
-    // die EINE Tafel: je Datei die Schlüssel, die ein Schritt ausführt oder liest
-    const tafel = new Map();
-    for (const x of Object.values(schritte)) for (const m of [x.fn, x.txt]) for (const [r, ks] of m) for (const k of ks) merk(tafel, r, k);
-    const dateien = [...tafel.keys()].sort();
-    const idx = new Map();
-    const glieder_ = {};
-    for (const r of dateien) {
-        glieder_[r] = [...tafel.get(r)].sort();
-        for (const k of glieder_[r]) idx.set(r + "\0" + k, idx.size);
-    }
-    const nach = (m) => [...m].flatMap(([r, ks]) => [...ks].map((k) => idx.get(r + "\0" + k)));
-    const kopf = spawnSync("git", ["rev-parse", "HEAD"], { cwd: wurzel, encoding: "utf8" }).stdout.trim();
-    const out = {
-        quelle: "scripts/lib/zug-auswahl.cjs --karte",
-        kopf,
-        erzeugt: new Date().toISOString().slice(0, 10),
-        glieder: glieder_,
-        schritte: Object.fromEntries(
-            Object.entries(schritte)
-                .sort()
-                .map(([n, x]) => [n, { gruen: x.gruen, s: x.s, fn: bits.aus(nach(x.fn), idx.size), txt: nach(x.txt).sort((a, b) => a - b), datei: x.datei, verz: x.verz, probe: x.probe, fege: x.fege, suche: x.suche }]) // prettier-ignore
-        ),
-    };
-    fs.writeFileSync(path.join(ROOT, KARTE), JSON.stringify(out, null, 1) + "\n");
-    return { out, zaehler };
-}
 
 // ─── IV. DIE AUSWAHL ────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Der Diff wird zu WIRKUNGEN: `alle` (beim Namen) · `glied` [Datei, Schlüssel] mit fn (die Token änderten sich) / txt (der Text) /
@@ -484,7 +187,6 @@ const ALLE = [
     [/^\.github\//, "Workflow"],
     [/^scripts\/lib\//, "Linsen-Bibliothek"],
     [/^index\.html$/, "Kern-Boot (die Seite der Welt)"],
-    [/^spec\/ci\/wirkung-karte\.json$/, "die Karte selbst"],
 ];
 const KERN_GLIED = /^AnazhRealm(_dirigent_takt)?\/(constructor|_gameLoopTick)$/; // der Kern-Boot und der Haupt-Takt
 const git = (args) => {
@@ -636,100 +338,339 @@ function waehle(namen, karte, W) {
     }
     return { alle, gewaehlt, aus: namen.filter((n) => !gewaehlt.has(n)) };
 }
-function auswahl(basis, kopf, karte = JSON.parse(fs.readFileSync(path.join(ROOT, KARTE), "utf8"))) {
-    const namen = vollSchritte(zeige(kopf, ".github/workflows/check.yml") ?? undefined).map((s) => s.name);
-    const W = wirkungen(basis, kopf, karte);
-    return { ...waehle(namen, karte, W), W, namen };
-}
 
-// ─── V. DER RICHTER ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-// An den Zügen seit z280 (spec/ci/zug-geschichte.json): je Zug die Zweige, die er neu trug (die Merges „Merge <zweig> in
-// integ-probe" auf dem Erst-Eltern-Pfad bis zum letzten gelandeten Kopf), je Zweig die Auswahl über SEINEN Merge (Eltern 1 → Merge).
-// TREFFER: jeder rote Schritt eines Täters ist gewählt (echt ist Kern); ERSPARNIS: gewählte Rechenzeit gegen voll, mit den
-// Schritt- und Vorbereitungs-Zeiten des Laufs `zeiten_lauf` (die Vorbereitung einer Gruppe zählt, wenn sie einen Schritt fährt).
-async function geschichte() {
-    const G = JSON.parse(fs.readFileSync(path.join(ROOT, "spec/ci/zug-geschichte.json"), "utf8"));
-    const karte = JSON.parse(fs.readFileSync(path.join(ROOT, KARTE), "utf8"));
-    const token = process.env.GITHUB_TOKEN || /password=(.*)/.exec(spawnSync("git", ["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n", encoding: "utf8" }).stdout || "")?.[1]; // prettier-ignore
-    const api = require("../ci-kopf.cjs").apiMit("https://api.github.com/repos/MiguellD/AnazhRealm", token);
-    const jobs = (await api(`/actions/runs/${G.zeiten_lauf}/attempts/1/jobs?per_page=100`)).jobs;
-    const sek = (a, b) => (new Date(b) - new Date(a)) / 1000;
-    const [zeit, gruppeVon, vorb] = [new Map(), new Map(), new Map()];
-    let kern = 0;
-    for (const j of jobs) {
-        const voll = /^voll (\d+)/.exec(j.name);
-        let schritte = 0;
-        for (const s of j.steps) {
-            if (!voll || s.conclusion === "skipped" || /^(Set up|Run actions|Cache|System-Libs|Dependencies|Urteil|Post |Complete)/.test(s.name)) continue; // prettier-ignore
-            zeit.set(s.name, sek(s.started_at, s.completed_at));
-            gruppeVon.set(s.name, +voll[1]);
-            schritte += zeit.get(s.name);
-        }
-        if (voll) vorb.set(+voll[1], sek(j.started_at, j.completed_at) - schritte);
-        else kern += sek(j.started_at, j.completed_at);
-    }
-    const voll = kern + [...zeit.values(), ...vorb.values()].reduce((a, b) => a + b, 0);
-    const kosten = (gewaehlt) => {
-        const gr = new Set([...gewaehlt].map((n) => gruppeVon.get(n)));
-        return kern + [...gewaehlt].reduce((a, n) => a + (zeit.get(n) || 0), 0) + [...gr].reduce((a, g) => a + (vorb.get(g) || 0), 0);
+// ─── V. DER ZUG: VORLAUF · NACHLAUF · HAUPTBUCH · BISEKTION ─────────────────────────────────────────────────────────────────
+// Der Zug hält auf dem VORLAUF: (a) die FÄNGER — jeder Schritt, der in TAGE Tagen einen ECHTEN Fehler fing; (b) was die Karte für
+// die Wirkungen des Kandidaten wählt, außer einer TAKT-Wirkung (sie trifft die Hälfte der gemessenen Schritte und mehr: der
+// Welt-Takt, `alle` — die Karte trägt dort ihr Tal, 392 Glieder zwischen 40 und 59 von 113 Schritten); (c) den Puls (Job `puls`).
+// Der NACHLAUF (Push auf main, nachts) fährt jeden Schritt, der am Kopf in keinem Lauf grün steht; wartet ein Zug, weicht er nach
+// dem laufenden Schritt (der Rest bleibt Schuld). Das HAUPTBUCH (koordination ZUG.buch) trägt je Schritt sein letztes Grün, die
+// SCHULD sind die Landungen seitdem; ein roter Nachlauf-Schritt bisektiert über die Merges seiner offenen Landungen (höchstens
+// SCHULD_MAX) und nennt den Täter-Zweig in ZUG.rot. Die Karte und die Fänger liegen im Zweig koordination, nie in spec/.
+const ZUG = { karte: "zug/wirkung-karte.json", faenger: "zug/faenger.json", buch: "zug/hauptbuch.json", rot: "zug/nachlauf-rot.txt" };
+const [TAGE, SCHULD_MAX, TAG] = [14, 4, 864e5];
+const SPIEL = /^(stamm\/|worlds\/(?!.*\/lib\/)|index\.html$|[^/]+\.js$)/; // die Spiel-Pfade der Wachstums-Wand (diag-betriebsgesetz)
+const kurz = (n) => n.replace(/\s*\(.*$/s, "").trim(); // der Schlüssel eines Schritts: sein Name bis zur Klammer
+const zeit = (x) => +new Date(x);
+const schlaf = (ms) => require("timers/promises").setTimeout(ms);
+
+// a) die API: EINE Anfrage (ein 5xx oder Abriss ist ein Wackler, bis 5 Versuche; sonst ROT) und die Läufe
+function apiMit(basis = `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY || "MiguellD/AnazhRealm"}`, token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN) {
+    const api = async (p, v = 1) => {
+        const r = await fetch(basis + p, { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }).catch((e) => (v < 3 ? null : Promise.reject(e))); // prettier-ignore
+        if ((!r || r.status >= 500) && v < 5) return schlaf(3000 * v).then(() => api(p, v + 1));
+        if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
+        return r.json();
     };
-    const gelandet = (h) => spawnSync("git", ["merge-base", "--is-ancestor", h, "origin/main"], { cwd: ROOT }).status === 0;
-    const [merges, wahl] = [[], new Map()];
-    let L = G.basis;
-    for (const [zn, kopf] of G.zuege) {
-        for (const l of git(["log", "--first-parent", "--format=%H %s", "-n", "80", kopf]).split("\n").filter(Boolean)) {
-            const [h, s] = [l.slice(0, 40), l.slice(41)];
-            if (spawnSync("git", ["merge-base", "--is-ancestor", h, L], { cwd: ROOT }).status === 0) break;
-            const m = /^Merge (\S+) in integ-probe/.exec(s);
-            if (m) merges.push({ z: zn, zweig: m[1], m: h });
+    return api;
+}
+// die Läufe, neueste zuerst: `nimm` wählt, `seit` endet; eine kurze Seite wird bis 3× neu gefragt — sonst ROT, nie leer (ci-zeiten)
+async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
+    const [out, je, neu] = [[], 30, (x) => new Date(x.created_at) >= seit];
+    let [gesamt, gelesen] = [0, 0];
+    for (let seite = 1; ; seite++) {
+        let r;
+        for (let v = 1; ; v++) {
+            r = await api(`${pfad}?per_page=${je}&page=${seite}`);
+            gesamt = Math.max(gesamt, r.total_count);
+            if (r.workflow_runs.length >= Math.min(je, gesamt - gelesen) && (seite > 1 || traegt(r.workflow_runs))) break;
+            if (v === 3) throw new Error(`ROT: ${pfad} Seite ${seite} trägt ${r.workflow_runs.length} Läufe von ${gesamt} nach 3 Versuchen`);
+            await schlaf(pause * v);
         }
-        if (gelandet(kopf)) L = kopf;
-    }
-    const waehleM = (m) => wahl.get(m) || wahl.set(m, auswahl(m + "^1", m, karte)).get(m);
-    let treffer = 0;
-    for (const [z, zweig, schritt] of G.taeter) {
-        const m = merges.find((x) => x.z === z && x.zweig === zweig);
-        const a = m && waehleM(m.m);
-        const n = a && a.namen.find((x) => x.startsWith(schritt));
-        const ok = schritt.startsWith("echt: ") ? "Kern (echt)" : n && a.gewaehlt.get(n);
-        treffer += !!ok;
-        console.log(`${ok ? "TREFFER" : "LÜCKE  "} z${z} ${zweig} → ${schritt}${ok ? ` — ${ok}` : m ? "" : " (kein Merge)"}`);
-    }
-    // je Zweig seine letzte Fassung im Zeitraum (ein Zweig, der in mehreren Zügen fuhr, zählt einmal)
-    const anteile = [];
-    for (const m of [...new Map(merges.map((x) => [x.zweig, x])).values()]) {
-        const a = waehleM(m.m);
-        const q = kosten(new Set(a.namen.filter((n) => a.gewaehlt.has(n)))) / voll;
-        anteile.push(q);
-        console.log(`  z${m.z} ${m.zweig.padEnd(24)} ${(100 * q).toFixed(1).padStart(5)} %  ${a.alle.length ? a.alle[0] : `${a.gewaehlt.size}/${a.namen.length} Schritte`}`); // prettier-ignore
-    }
-    anteile.sort((a, b) => a - b);
-    const q = (p) => (100 * anteile[Math.min(anteile.length - 1, Math.floor(p * anteile.length))]).toFixed(1);
-    console.log(`TREFFER ${treffer}/${G.taeter.length} · voll ${Math.round(voll / 60)} min Rechenzeit · je Zweig (${anteile.length} Zweige): Median ${q(0.5)} % · p25 ${q(0.25)} % · p75 ${q(0.75)} % · min ${q(0)} % · max ${q(1)} % · ALLE ${anteile.filter((x) => x > 0.999).length}`); // prettier-ignore
-    return { treffer, anteile };
-}
-
-module.exports = { KARTE, haken, vollSchritte, glieder, gliedUm, satzUm, wirkungen, waehle, karteIndex, bits, auswahl };
-
-if (require.main === module) {
-    const a = process.argv.slice(2);
-    const zahl = (n) => +(a[a.indexOf(n) + 1] || 0);
-    if (a[0] === "--messen") messen(a.slice(1).filter((x, i) => /^\d+$/.test(x) && !/^--(parallel|gruppe)$/.test(a[i])).map(Number), zahl("--parallel") || 1, zahl("--gruppe")); // prettier-ignore
-    else if (a[0] === "--karte") {
-        const { out, zaehler } = karteBauen(a[1] || ROOT);
-        console.log(`[karte] ${Object.keys(out.schritte).length} Schritte, ${Object.values(out.glieder).reduce((s, x) => s + x.length, 0)} Glieder in ${Object.keys(out.glieder).length} Dateien · Texte ${zaehler.text} zugeordnet, ${zaehler.textFrei} frei`); // prettier-ignore
-    } else if (a[0] === "--geschichte") geschichte().catch((e) => (console.error(e), process.exit(1)));
-    else if (a.length === 2) {
-        const { alle, gewaehlt, aus, namen } = auswahl(a[0], a[1]);
-        const liste = namen.filter((n) => gewaehlt.has(n));
-        console.log(JSON.stringify(liste));
-        // für check.yml: die Liste, die Gruppen mit einem gewählten Schritt (die Matrix), ob alle fahren
-        const gruppen = [...new Set(vollSchritte().filter((s) => gewaehlt.has(s.name)).map((s) => s.gruppe))].sort((x, y) => x - y);
-        if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `liste=${JSON.stringify(liste)}\ngruppen=${JSON.stringify(gruppen)}\nalle=${alle.length ? "ja" : "nein"}\n`); // prettier-ignore
-        if (alle.length) console.log(`# ALLE: ${alle.join(" · ")}`);
-        for (const n of aus) console.log(`# aus: ${n} — seine Karte trägt keine der Wirkungen von ${a[0].slice(0, 12)}..${a[1].slice(0, 12)}`);
-    } else {
-        console.error("zug-auswahl.cjs <basis> <kopf> | --messen [n …] [--gruppe g] [--parallel n] | --karte [wurzel] | --geschichte");
-        process.exit(2);
+        gelesen += r.workflow_runs.length;
+        out.push(...r.workflow_runs.filter((x) => nimm(x) && neu(x)));
+        if (!r.workflow_runs.every(neu) || out.length >= hoechstens || r.workflow_runs.length < je) return out.slice(0, hoechstens);
     }
 }
+// je Lauf von check.yml (ab `seit`, je Tag gefragt: die API trägt je Frage höchstens 1000; `frage` = eine Frage-Zeile) seine Jobs
+// aller Versuche — ein Job je id, je Schritt [Name, Schluss, Anfang, Ende]; ein abgeschlossener Lauf aus `alt` wird nicht neu gefragt
+async function laeufe(api, seit, alt = {}, frage = null) {
+    const R = [];
+    const fragen = frage ? [frage] : [];
+    for (let d = new Date(seit); !frage && d < new Date(); d = new Date(+d + TAG)) fragen.push("created=" + d.toISOString().slice(0, 10));
+    for (const q of fragen)
+        for (let p = 1, r = []; p === 1 || r.length === 100; p++) R.push(...(r = (await api(`/actions/workflows/check.yml/runs?per_page=100&page=${p}&${q}`)).workflow_runs).filter((x) => zeit(x.created_at) >= seit)); // prettier-ignore
+    const jobs = async (id, je = 100) => {
+        const out = [];
+        for (let p = 1; ; p++) {
+            const j = (await api(`/actions/runs/${id}/jobs?filter=all&per_page=${je}&page=${p}`).catch((e) => (je > 30 ? null : Promise.reject(e))))?.jobs; // prettier-ignore
+            if (!j) return jobs(id, 30); // die volle Seite riss mit 502
+            out.push(...j.filter((x) => !out.some((y) => y.id === x.id)));
+            if (j.length < je) return out;
+        }
+    };
+    const out = {};
+    const bahn = async () => {
+        for (let r; (r = R.shift()); ) {
+            const a = alt[r.id];
+            out[r.id] = a?.att === r.run_attempt && r.status === "completed" ? a : { sha: r.head_sha, zweig: r.head_branch, ev: r.event, att: r.run_attempt, st: r.status, t: r.created_at, jobs: (await jobs(r.id)).map((j) => ({ id: j.id, att: j.run_attempt, n: j.name, st: j.status, a: j.started_at, e: j.completed_at, s: (j.steps || []).map((s) => [s.name, s.conclusion, s.started_at, s.completed_at]) })) }; // prettier-ignore
+        }
+    };
+    await Promise.all(Array.from({ length: 8 }, bahn));
+    return out;
+}
+const VORB = /^(Set up|Run actions|Cache|System-Libs|Dependencies|Urteil der Gruppe|Post |Complete|Ein Urteil|Zug-Wahl)/;
+// die Schritte eines Laufs (voll und echt): f(Schlüssel, Schluss, Schritt, Job) — die Echt-Gruppe trägt „echt: " vor dem Namen
+const schritteIm = (l, f) => l.jobs.forEach((j) => /^(voll|echt)/.test(j.n) && j.s.forEach((s) => VORB.test(s[0]) || f((j.n[0] === "e" ? "echt: " : "") + kurz(s[0]), s[1], s, j))); // prettier-ignore
+
+// b) die Schritte am Stand: die volle Batterie (vollSchritte) und die Echt-Gruppe, je mit ihrem Schlüssel
+function zugSchritte(text = fs.readFileSync(path.join(ROOT, ".github/workflows/check.yml"), "utf8")) {
+    const echt = require("js-yaml").load(text).jobs.echt?.steps || [];
+    const v = vollSchritte(text).map((s) => ({ ...s, key: kurz(s.name), job: "voll" }));
+    const zwilling = (e) => v.find((s) => s.run.trim() === e.run.trim());
+    return v.concat(echt.filter((s) => s.name && s.run && !VORB.test(s.name)).map((s) => ({ name: s.name, run: s.run, key: "echt: " + kurz(s.name), job: "echt", klasse: "gpu", zwilling: zwilling(s)?.key }))); // prettier-ignore
+}
+
+// c) der Zweig koordination: lesen (ohne Blobs geholt, je Datei nachgeholt) und schreiben (ein Commit über den Index, bis 8 Versuche)
+let koordDa = false;
+function koord(datei) {
+    if (!koordDa) git(["fetch", "-q", "--depth=1", "--filter=blob:none", "origin", "+refs/heads/koordination:refs/remotes/origin/koordination"]); // prettier-ignore
+    koordDa = true;
+    return zeige("origin/koordination", datei);
+}
+async function koordSchreib(dateien, botschaft) {
+    for (let v = 1; ; v++) {
+        koordDa = false;
+        koord("README.md");
+        const idx = path.join(require("os").tmpdir(), `koord-${process.pid}`);
+        const wer = { GIT_AUTHOR_NAME: "zug-nachlauf", GIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com" };
+        const g = (a, input) => spawnSync("git", a, { cwd: ROOT, input, encoding: "utf8", env: { ...wer, GIT_COMMITTER_NAME: wer.GIT_AUTHOR_NAME, GIT_COMMITTER_EMAIL: wer.GIT_AUTHOR_EMAIL, ...process.env, GIT_INDEX_FILE: idx } }).stdout.trim(); // prettier-ignore
+        g(["read-tree", "origin/koordination"]);
+        for (const [d, t] of Object.entries(dateien)) g(["update-index", "--add", "--cacheinfo", `100644,${g(["hash-object", "-w", "--stdin"], t)},${d}`]); // prettier-ignore
+        const c = g(["commit-tree", g(["write-tree"]), "-p", "origin/koordination", "-m", botschaft]);
+        if (spawnSync("git", ["push", "-q", "origin", `${c}:refs/heads/koordination`], { cwd: ROOT }).status === 0) return c;
+        if (v === 8) throw new Error(`koordination: der Push wurde 8× abgewiesen (${botschaft})`);
+        await schlaf(2000 * v);
+    }
+}
+
+// d) die Geschichte von main (Erst-Eltern): je Zweig seine gelandeten Köpfe, je Landung (Versions-Stufe) ihr Kopf und ihre Merges
+function mainGeschichte(kopf = "origin/main") {
+    const M = { landung: new Map(), staende: [] };
+    for (const z of git(["log", "--first-parent", "--format=%H %P|%ct|%s", "-n", "3000", kopf]).trim().split("\n").reverse()) {
+        const [hp, ct, s] = z.split("|");
+        const t = new Date(ct * 1000).toISOString();
+        const [h, , p2] = hp.split(" ");
+        const zweig = /^Merge (\S+) in integ-probe/.exec(s)?.[1];
+        M.staende.push({ h, t, zweig, landung: /Versions-Stufe/.test(s) });
+        if (zweig && p2) (M.landung.get(zweig) || M.landung.set(zweig, []).get(zweig)).push({ kopf: p2, t });
+    }
+    return M;
+}
+// die Zweige eines Kandidaten (integ-probe): die Merges auf dem Erst-Eltern-Pfad bis zum Stand davor
+function zweigeIm(x) {
+    const out = [];
+    for (const [i, z] of git(["log", "--first-parent", "--format=%P|%s", "-n", "40", x]).trim().split("\n").entries()) {
+        const m = /^\S+ (\S+)\|Merge (\S+) in integ-probe/.exec(z);
+        if (m) out.push({ kopf: m[1], zweig: m[2] });
+        else if (i) break;
+    }
+    return out;
+}
+
+// e) DIE FÄNGER (a): je roter Schritt die HEILUNG — im Zug jeder Zweig des Kandidaten, der danach ANDERS landete (seine eigenen
+// Commits bis zur Landung), auf einem Zweig seine eigenen Commits bis zum nächsten Grün des Schritts (sonst bis zur Landung). Die
+// Methode der Regel-Inventur vom 07.11. (im Zweig `koordination`, bericht/regel-inventur-0711) als Werkzeug: REIBUNG ist bewiesen, wenn derselbe SHA im
+// Schritt grün wurde (wackler), sein echt-Zwilling am SHA grün stand (gpu: nur swiftshader), der Schritt ohne Urteil abbrach
+// (abbruch) oder die Heilung kein Spiel änderte, das der Schritt nach seiner Karte ausführt (ohne Karte: kein Spiel); ECHT, wenn
+// sie es änderte; OFFEN, solange keine Heilung landet. `bekannt` = die Landung der Heilung (ab dann zählt der Fang im Vorlauf).
+function faenger(L, karte, M = mainGeschichte(), alt = []) {
+    const [gruen, rot, zahl, W] = [new Set(), new Map(), { wackler: 0, gpu: 0, abbruch: 0, echt: 0, reibung: 0, offen: 0 }, new Map()];
+    const liste = Object.values(L).sort((a, b) => zeit(a.t) - zeit(b.t));
+    for (const l of liste)
+        schritteIm(l, (k, c) => {
+            if (c === "success") gruen.add(l.sha + "|" + k);
+            const e = (c === "failure" || c === "cancelled") && (rot.get(l.sha + "|" + k) || rot.set(l.sha + "|" + k, { k, sha: l.sha, zweig: l.zweig, t: l.t }).get(l.sha + "|" + k)); // prettier-ignore
+            if (e) e.urteil ||= c === "failure";
+        });
+    for (const e of alt.filter((x) => x.kl === "offen")) rot.has(e.sha + "|" + e.k) || rot.set(e.sha + "|" + e.k, { ...e, urteil: true }); // prettier-ignore
+    const da = (s) => spawnSync("git", ["cat-file", "-e", s], { cwd: ROOT }).status === 0 || spawnSync("git", ["fetch", "-q", "origin", s], { cwd: ROOT }).status === 0; // prettier-ignore
+    const name = (k) => Object.keys(karte.schritte).find((n) => kurz(n) === k && karte.schritte[n].gruen);
+    // führt der Schritt die Spiel-Änderungen der eigenen Commits a..b aus? (je Spanne EINE Wirkungs-Liste)
+    const spielWirkt = (a, b, k) => {
+        if (!da(a) || !da(b)) return null;
+        if (!W.has(a + b)) {
+            const f = [...new Set(git(["log", "--first-parent", "--no-merges", "--format=", "--name-only", `${a}..${b}`]).split("\n"))].filter((p) => SPIEL.test(p)); // prettier-ignore
+            const w = f.length && wirkungen(a, b, karte, git(["diff", "--name-status", "--no-renames", "-z", a, b, "--", ...f]).split("\0").filter(Boolean)); // prettier-ignore
+            W.set(a + b, w && new Set(waehle(Object.keys(karte.schritte), karte, w).gewaehlt.keys()));
+        }
+        return !!W.get(a + b) && (!name(k) || W.get(a + b).has(name(k)));
+    };
+    const naechst = (e) => liste.find((l) => l.zweig === e.zweig && zeit(l.t) > zeit(e.t) && l.sha !== e.sha && l.jobs.some((j) => j.s.some((s) => s[1] === "success" && (j.n[0] === "e" ? "echt: " : "") + kurz(s[0]) === e.k))); // prettier-ignore
+    const landet = (z, t) => (M.landung.get(z) || []).find((x) => zeit(x.t) >= zeit(t));
+    const out = [];
+    for (const [id, e] of rot) {
+        let kl = gruen.has(id) ? "wackler" : !e.k.startsWith("echt") && gruen.has(`${e.sha}|echt: ${e.k} auf der Karte`) ? "gpu" : !e.urteil ? "abbruch" : null; // prettier-ignore
+        const [heil, taeter] = [[], []];
+        if (!kl) {
+            const y = e.zweig !== "integ-probe" && naechst(e);
+            const zw = e.zweig === "integ-probe" ? (da(e.sha) ? zweigeIm(e.sha) : []) : [{ zweig: e.zweig, kopf: e.sha }];
+            for (const b of zw) {
+                const z = y ? { kopf: y.sha, t: y.t } : landet(b.zweig, e.t);
+                if (!z) heil.push(null);
+                else if (z.kopf !== b.kopf) heil.push([b.zweig, b.kopf, z.kopf, z.t]);
+            }
+            for (const h of heil.filter(Boolean)) if (spielWirkt(h[1], h[2], e.k)) taeter.push(h);
+            kl = taeter.length ? "echt" : heil.some(Boolean) ? "reibung" : heil.length ? "offen" : "reibung";
+            out.push({ k: e.k, sha: e.sha, zweig: e.zweig, t: e.t, kl, taeter: taeter.map((h) => h[0]), bekannt: taeter.map((h) => h[3]).sort().at(-1) }); // prettier-ignore
+        }
+        zahl[kl]++;
+    }
+    return { zahl, ereignisse: out };
+}
+// die echten FEHLER zur Zeit t: aus den letzten TAGE Tagen, deren Heilung vor t landete — EIN Fehler je Täter und Heilung, gefangen von
+// jedem seiner roten Schritte: id → die Schlüssel, die ihn fingen
+const fehlerAm = (F, t) => F.ereignisse.filter((e) => e.kl === "echt" && zeit(e.t) >= t - TAGE * TAG && zeit(e.bekannt) < t).reduce((m, e) => m.set(e.taeter + " " + e.bekannt, (m.get(e.taeter + " " + e.bekannt) || new Set()).add(e.k)), new Map()); // prettier-ignore
+// die Sekunden je Schlüssel aus der EINEN Tafel spec/ci/ci-zeiten.json (die Echt-Gruppe ohne „echt: ")
+// (`.puls` die Summe der ganzen Tafel, `.vorb(echt)` die Vorbereitung eines Jobs)
+function sekunden() {
+    const z = JSON.parse(fs.readFileSync(path.join(ROOT, "spec/ci/ci-zeiten.json"), "utf8"));
+    const m = new Map(Object.entries(z.schritte).map(([n, x]) => [kurz(n), x.s]));
+    return Object.assign((k) => m.get(k.replace(/^echt: /, "")) || 0, { puls: [...m.values()].reduce((a, s) => a + s, 0), vorb: (e) => (e ? z.echt.vorbereitung_s : z.vorbereitung_s) }); // prettier-ignore
+}
+
+// f) DIE WAHL des Vorlaufs — ein BUDGET: VORLAUF_ANTEIL der Batterie (die Sekunden der Tafel; der Puls, der Kopf und die Vorbereitung
+// jeder Gruppe, die er öffnet, zahlen mit), gefüllt nach
+// erwarteten echten Fehlern je Sekunde. (a) ein Schritt zählt die Fehler der Fänger-Tafel, die er als erster der Wahl deckt; (b) die
+// E Fehler des Fensters verteilen sich gleich auf die Wirkungen des Diffs außer der Takt-Wirkung (sie trifft die Hälfte der gemessenen
+// Schritte und mehr), jede gleich auf ihre Schritte — beide in Fehlern je Zug. Was am SHA schon grün steht, fährt nie noch einmal; im
+// Zug urteilt der echt-Job eine Wand, deren Text er wörtlich fährt (EINE Zug-Stelle: ihr swiftshader-Lauf bleibt Schuld des Nachlaufs).
+// der Schöpfer, 08.11.: der Vorlauf trägt höchstens ein Viertel der heutigen Rechenzeit — die Tafel wiegt p90, der Zug misst Läufe:
+// 0,25 der Tafel trug 27,1 % der Rechenzeit (Median, 35 Züge 60e60d09…ef667956), 0,23 trägt das Viertel (zug-werkzeug --beweis)
+const VORLAUF_ANTEIL = 0.23;
+function vorlauf(basis, kopf, karte, F, t = Date.now(), S = zugSchritte(zeige(kopf, ".github/workflows/check.yml") ?? undefined), sek = sekunden()) { // prettier-ignore
+    const [fehler, idx, gemessen, b, stelle] = [fehlerAm(F, t), karteIndex(karte), Object.keys(karte.schritte).filter((n) => karte.schritte[n].gruen), new Map(), (k) => S.find((s) => s.zwilling === k)?.key ?? k]; // prettier-ignore
+    let [n, takt] = [0, 0];
+    for (const w of wirkungen(basis, kopf, karte)) {
+        const s = w.alle ? gemessen : gemessen.filter((x) => grundIm(karte.schritte[x], w, idx));
+        if (s.length * 2 >= gemessen.length) takt++;
+        else if (s.length && ++n) for (const x of s) b.set(stelle(kurz(x)), (b.get(stelle(kurz(x))) || 0) + 1 / s.length);
+    }
+    const [E, wahl] = [fehler.size, new Map()];
+    const kann = S.filter((s) => !S.some((e) => e.zwilling === s.key));
+    const [offen, preis] = [new Set(), (s) => sek(s.key) + (offen.has(s.gruppe ?? "echt") ? 0 : sek.vorb(!s.gruppe))];
+    const puls = sek.puls - S.reduce((a, s) => a + sek(s.key), 0); // der Puls und der Kopf: was die Tafel außer voll und echt trägt
+    let rest = VORLAUF_ANTEIL * sek.puls - puls;
+    for (;;) {
+        const wert = (k) => [...fehler.values()].filter((f) => f.has(k)).length + (E * (b.get(k) || 0)) / Math.max(1, n);
+        const [s] = kann.filter((x) => !wahl.has(x.key) && preis(x) <= rest && wert(x.key) > 0).sort((x, y) => wert(y.key) / preis(y) - wert(x.key) / preis(x)); // prettier-ignore
+        if (!s) break;
+        const k = s.key;
+        rest -= preis(s);
+        offen.add(s.gruppe ?? "echt");
+        const f = [...fehler].filter(([, s]) => s.has(k)).map(([id]) => (fehler.delete(id), id.split(" ")[0]));
+        wahl.set(k, `${f.length ? `deckt ${f.length} echte Fehler (${f.join(", ")})` : ""}${f.length && b.has(k) ? " · " : ""}${b.has(k) ? `Karte ${(E * b.get(k) / Math.max(1, n)).toFixed(3)} Fehler je Zug` : ""} · ${sek(k)} s`); // prettier-ignore
+    }
+    return { wahl, takt, n, E, rest };
+}
+// grün und rot am Kopf: jeder Lauf von check.yml mit diesem SHA, jeder Versuch — grün zählt nur, was die Zug-Liste seines Laufs fahren
+// ließ (die Annotation „Zug-Liste" des Kopfs) und nicht dem Zug wich („Zug-Vorrang"): ein ruhender Schritt endet grün, ohne zu laufen
+// lief der Schritt `k` in diesem Lauf (seine Jobs `{ id, n|name }`)? (die Zeiten von ci-zeiten.cjs zählen nur, was lief)
+async function liefen(api, jobs) {
+    const a = (await Promise.all(jobs.filter((j) => /^(kopf|voll|echt)/.test(j.n || j.name)).map((j) => api(`/check-runs/${j.id}/annotations`)))).flat(); // prettier-ignore
+    const [liste, wich] = [a.find((x) => x?.title === "Zug-Liste"), new Set(a.filter((x) => x?.title === "Zug-Vorrang").map((x) => x.message))]; // prettier-ignore
+    return (k) => (!liste || JSON.parse(liste.message).includes(k)) && !wich.has(k);
+}
+async function amKopf(api, sha) {
+    const [gruen, rot] = [new Set(), new Set()];
+    for (const l of Object.values(await laeufe(api, 0, {}, `head_sha=${sha}`))) {
+        const lief = await liefen(api, l.jobs);
+        schritteIm(l, (k, c) => (c === "success" ? lief(k) && gruen.add(k) : c === "failure" && rot.add(k)));
+    }
+    return { gruen, rot: new Set([...rot].filter((k) => !gruen.has(k))) };
+}
+// DER ZUG-KOPF (Job `kopf`): die Art des Laufs, seine Liste (Schlüssel), die Gruppen der vollen Batterie, ob voll und echt fahren
+async function zugKopf(e = process.env, api = apiMit()) {
+    const art = e.GITHUB_EVENT_NAME === "workflow_dispatch" ? "alle" : e.GITHUB_EVENT_NAME === "schedule" || e.GITHUB_REF === "refs/heads/main" ? "nachlauf" : "vorlauf"; // prettier-ignore
+    const S = zugSchritte();
+    const { gruen } = await amKopf(api, e.GITHUB_SHA);
+    let grund = new Map(S.map((s) => [s.key, art]));
+    if (art === "vorlauf") {
+        const lies = (d) => JSON.parse(koord(d) ?? (() => { throw new Error(`ROT: koordination ${d} fehlt — der Vorlauf hat keine ${d === ZUG.karte ? "Karte" : "Fänger"}`); })()); // prettier-ignore
+        const basis = git(["merge-base", "origin/main", "HEAD"]).trim();
+        const v = vorlauf(basis, "HEAD", lies(ZUG.karte), lies(ZUG.faenger), Date.now(), S);
+        grund = v.wahl;
+        console.log(`Vorlauf ${basis.slice(0, 8)}..${e.GITHUB_SHA?.slice(0, 8)}: ${grund.size} von ${S.length} Schritten, ${v.takt} Takt-Wirkungen fahren im Nachlauf`); // prettier-ignore
+    }
+    const liste = S.filter((s) => grund.has(s.key) && !gruen.has(s.key));
+    for (const s of S) console.log(`  ${liste.includes(s) ? "fährt" : gruen.has(s.key) ? "grün am Kopf" : "Schuld"}: ${s.key}${grund.has(s.key) && art === "vorlauf" ? ` — ${grund.get(s.key)}` : ""}`); // prettier-ignore
+    const aus = { art, liste: JSON.stringify(liste.map((s) => s.key)), gruppen: JSON.stringify([...new Set(liste.filter((s) => s.gruppe).map((s) => s.gruppe))]), voll: liste.some((s) => s.job === "voll") ? "ja" : "nein", echt: liste.some((s) => s.job === "echt") ? "ja" : "nein" }; // prettier-ignore
+    console.log(`::notice title=Zug-Liste::${aus.liste}`);
+    if (e.GITHUB_OUTPUT) fs.appendFileSync(e.GITHUB_OUTPUT, Object.entries(aus).map(([k, v]) => `${k}=${v}\n`).join(""));
+    return aus;
+}
+// DER VORRANG des Zugs: wartet ein Lauf auf integ-probe, weicht der Nachlauf nach seinem laufenden Schritt
+const zugWartet = async (api = apiMit()) => (await api("/actions/workflows/check.yml/runs?branch=integ-probe&per_page=5")).workflow_runs.some((r) => r.status !== "completed"); // prettier-ignore
+
+// g) DAS HAUPTBUCH (rein): je Schritt `gruen` (der SHA seines letzten Grüns) und `schuld` (die Landungen seitdem, null: nie grün
+// gebucht); rot am Kopf nennt das Fenster der Bisektion: die Landungen ab dem letzten Grün, höchstens SCHULD_MAX
+function buchNach(buch, kopf, schluessel, gruen, rot, landungen) {
+    const [pos, n] = [new Map(landungen.map((h, i) => [h, i])), landungen.indexOf(kopf)];
+    const schritte = {};
+    const bisekt = [];
+    for (const k of schluessel) {
+        const g = gruen.has(k) ? kopf : buch.schritte?.[k]?.gruen;
+        schritte[k] = { gruen: g ?? null, schuld: pos.has(g) ? n - pos.get(g) : null };
+        if (rot.has(k)) bisekt.push({ k, fenster: landungen.slice(Math.max(pos.get(g) ?? 0, n - SCHULD_MAX), n + 1), gruen: g ?? null }); // prettier-ignore
+    }
+    return { kopf, schritte, bisekt };
+}
+// DIE BISEKTION (rein): die Stände alt → neu, der letzte ist rot; `probe(stand)` → true = rot. Der erste rote Stand, je Probe die Mitte
+function bisekt(staende, probe) {
+    let [lo, hi] = [-1, staende.length - 1];
+    while (hi - lo > 1) {
+        const m = (lo + hi) >> 1;
+        if (probe(staende[m])) hi = m;
+        else lo = m;
+    }
+    return { stand: staende[hi], ab: lo < 0 };
+}
+// die Probe eines Schritts an einem Stand: sein run-Text DORT (fehlt der Schritt, ist er grün), im eigenen Arbeitsbaum, dieselbe Klasse
+function probe(h, k, frist = 3600) {
+    const s = zugSchritte(zeige(h, ".github/workflows/check.yml") ?? undefined).find((x) => x.key === k);
+    if (!s) return false;
+    const d = path.join(require("os").tmpdir(), "probe-" + h.slice(0, 8));
+    git(["worktree", "add", "-f", "--detach", d, h]);
+    try {
+        if (zeige(h, "package-lock.json") === fs.readFileSync(path.join(ROOT, "package-lock.json"), "utf8")) fs.symlinkSync(path.join(ROOT, "node_modules"), path.join(d, "node_modules")); // prettier-ignore
+        else spawnSync("npm", ["ci", "--no-audit", "--no-fund"], { cwd: d, stdio: "inherit" });
+        const r = spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", s.run], { cwd: d, stdio: "inherit", timeout: frist * 1000, env: { ...process.env, CI: "true", CI_KLASSE: s.klasse } }); // prettier-ignore
+        console.log(`[probe] ${h.slice(0, 8)} ${r.status === 0 ? "GRÜN" : "ROT"} — ${k}`);
+        return r.status !== 0;
+    } finally {
+        git(["worktree", "remove", "--force", d]);
+    }
+}
+// DER NACHLAUF bucht (Job `nachlauf`, nach voll und echt): das Hauptbuch am Kopf, je roter Schritt die Bisektion über die Merges
+// der offenen Landungen (der Täter-Zweig beim Namen in ZUG.rot), die Fänger frisch — alles in EINEM Commit nach koordination
+async function hauptbuch(e = process.env, api = apiMit()) {
+    const [kopf, M, S] = [e.GITHUB_SHA, mainGeschichte(e.GITHUB_SHA), zugSchritte()];
+    const landungen = M.staende.filter((s) => s.landung).map((s) => s.h);
+    if (!landungen.includes(kopf)) landungen.push(kopf);
+    const { gruen, rot } = await amKopf(api, kopf);
+    const B = buchNach(JSON.parse(koord(ZUG.buch) ?? '{"schritte":{}}'), kopf, S.map((s) => s.key), gruen, rot, landungen);
+    const zeilen = [];
+    for (const b of B.bisekt) {
+        const von = M.staende.findIndex((s) => s.h === b.fenster[0]);
+        const staende = M.staende.slice(von + 1, M.staende.findIndex((s) => s.h === kopf) + 1).filter((s) => s.zweig || s.h === kopf);
+        const r = bisekt(staende, (s) => probe(s.h, b.k));
+        const wer = r.stand.zweig ? `Täter ${r.stand.zweig} (Merge ${r.stand.h.slice(0, 8)})` : `Täter die Versions-Stufe ${r.stand.h.slice(0, 8)}`;
+        zeilen.push(`${new Date().toISOString()} ROT „${b.k}" am ${kopf.slice(0, 8)} — ${r.ab && b.gruen !== b.fenster[0] ? `älter als ${SCHULD_MAX} Landungen (letztes Grün ${b.gruen?.slice(0, 8) ?? "nie"})` : wer} · ${staende.length} Stände, letztes Grün ${b.gruen?.slice(0, 8) ?? "nie gebucht"}`); // prettier-ignore
+    }
+    const schuld = Object.entries(B.schritte).filter(([, x]) => x.schuld !== 0);
+    console.log(`Hauptbuch ${kopf.slice(0, 8)}: ${S.length - schuld.length} grün am Kopf, Schuld bei ${schuld.length} (höchstens ${Math.max(0, ...schuld.map(([, x]) => x.schuld ?? Infinity))} Landungen)`); // prettier-ignore
+    zeilen.forEach((z) => console.log("::error title=Nachlauf ROT::" + z));
+    const F0 = JSON.parse(koord(ZUG.faenger) ?? '{"ereignisse":[]}');
+    const F = { bis: new Date().toISOString(), ...faenger(await laeufe(api, zeit(F0.bis ?? Date.now() - 2 * TAG) - TAG / 24), JSON.parse(koord(ZUG.karte)), M, F0.ereignisse) }; // prettier-ignore
+    const neu = new Set(F.ereignisse.map((x) => x.sha + x.k));
+    F.ereignisse = [...F0.ereignisse.filter((x) => !neu.has(x.sha + x.k) && zeit(x.t) > Date.now() - (TAGE + 1) * TAG), ...F.ereignisse];
+    const rotAlt = koord(ZUG.rot) ?? "";
+    await koordSchreib({ [ZUG.buch]: JSON.stringify(B, null, 1) + "\n", [ZUG.faenger]: JSON.stringify(F, null, 1) + "\n", ...(zeilen.length && { [ZUG.rot]: zeilen.join("\n") + "\n" + rotAlt }) }, `Hauptbuch ${kopf.slice(0, 8)}: Schuld bei ${schuld.length} Schritten${zeilen.length ? `, ${zeilen.length} ROT` : ""}`); // prettier-ignore
+    if (zeilen.length) process.exitCode = 1;
+}
+module.exports = { ROOT, ZUG, TAG, probe, vollSchritte, zugSchritte, gliederMerk, glieder, gliedUm, satzUm, wirkungen, waehle, karteIndex, grundIm, bits, git, zeige, apiMit, alleLaeufe, laeufe, schritteIm, kurz, zeit, koord, koordSchreib, liefen, faenger, fehlerAm, sekunden, vorlauf, buchNach, bisekt, mainGeschichte, zweigeIm, zugWartet }; // prettier-ignore
+
+// der Zug-Kopf (check.yml `kopf`) und der Nachlauf (check.yml `nachlauf`); der Messplatz der Karte und der Beweis leben im Zweig
+// `koordination` (zug/zug-werkzeug.cjs, neben der Karte, die er schreibt)
+if (require.main === module) require("./welt-boot.cjs").hauptLauf(() => ({ "--kopf": zugKopf, "--hauptbuch": hauptbuch })[process.argv[2]]?.() ?? Promise.reject(new Error("zug-auswahl.cjs --kopf | --hauptbuch"))); // prettier-ignore
+

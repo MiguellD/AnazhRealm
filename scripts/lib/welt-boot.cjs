@@ -20,7 +20,6 @@ const os = require("os");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
-if (process.env.CI_WIRKUNG) require("./zug-auswahl.cjs").haken(); // die Wirkungs-Messung jedes Browsers (scripts/lib/zug-auswahl.cjs)
 
 // DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
 // `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
@@ -1997,11 +1996,11 @@ async function selbsttest() {
         "statikServer(); await s.lausche(1); s.zeige(p, 1);"
     );
     // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
-    // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout
+    // Zwilling von hauptLauf (sein FREMD-Träger ci-kopf.cjs fiel mit w23-vorlauf: der Zug-Kopf fährt über hauptLauf)
     const faengerWand = wand(
         "eigene Absturz-Fänger neben hauptLauf",
         (c) => /(?:\}\)\(\)|\b\w+\(\))\.catch\(\(?\w*\)? => \{(?:(?!\}\);)[^]){0,300}process\.exit/.test(c),
-        "ci-kopf.cjs",
+        "",
         ["(async () => {})().catch((e) => { console.error(e); process.exit(1); });", "main().catch((err) => { console.error(`x ${err}`); process.exitCode = 2; });"],
         "hauptLauf(async () => {}); page.close().catch(() => {}); process.exit(1);"
     );

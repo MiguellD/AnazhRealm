@@ -8,7 +8,7 @@
 const { execSync, spawnSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
-const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
+const { alleLaeufe, apiMit, liefen, kurz } = require("./lib/zug-auswahl.cjs");
 const { hauptLauf, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
@@ -49,7 +49,8 @@ function schritteAus(doc) {
 // lief und sieben Läufe am Deckel brach (der langsame Läufer brach ab, der schnelle Wiederholungs-Versuch wurde gezählt).
 async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMain) {
     const soll = schritteAus(jetzt);
-    const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed" && gelandet(r.head_sha);
+    // der Zug (integ-probe) trägt den Vorlauf, main den Nachlauf: beide zählen, je Schritt nur, was laut Zug-Liste lief
+    const nimm = (r) => /^(integ-probe|main)$/.test(r.head_branch) && r.event === "push" && r.status === "completed" && gelandet(r.head_sha); // prettier-ignore
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const [vorb, ymlAm, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Set()];
@@ -65,6 +66,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
         const [damals, jobsDamals] = ymlAm.get(r.head_sha);
         const jobs = [];
         for (let a = r.run_attempt; a >= 1; a--) jobs.push(...(await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs);
+        const lief = await liefen(api, jobs);
         for (const job of jobs) {
             const g = GRUPPE.exec(job.name);
             // ein Wiederholungs-Versuch trägt die Jobs des vorigen mit (derselbe Start): einmal gezählt
@@ -80,7 +82,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
                 v -= t;
                 const d = damals.get(s.name);
                 const n = d && [...soll].find(([, x]) => x.run === d.run && x.echt === echt);
-                const zaehlt = /^(success|failure)$/.test(s.conclusion) || (amDeckel && t >= deckel / 2);
+                const zaehlt = lief((echt ? "echt: " : "") + kurz(s.name)) && (/^(success|failure)$/.test(s.conclusion) || (amDeckel && t >= deckel / 2)); // prettier-ignore
                 if (!n || !zaehlt || proben.get(n[0]).length >= JE_SCHRITT) continue;
                 proben.get(n[0]).push(t);
                 [kopf, gemessen] = [kopf || r.head_sha, gemessen + 1];

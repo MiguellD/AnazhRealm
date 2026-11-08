@@ -4,11 +4,12 @@ name: Code-Check
 # Merge-Regel (entscheidung.md §2.8): jeder Karten-Kopf braucht den Puls grün, eine Karte mit Risiko R2/R3 trägt am letzten Push `[ci voll]` und braucht die volle Batterie grün, und eine Karte mit R0/R1 merget auf den Puls, während die volle Batterie auf integ-probe je Merge richtet.
 # PULS (Job `puls`, je Push auf jedem Zweig, Wanduhr ≤ 2 min): Format (in Teilen auf allen Kernen), Lint, Syntax, die
 # Statik (`npm run check`), der Schnell-Playtest und die Byte-Verträge unter 30 s — zwei Gruppen parallel. VOLL (Job
-# `voll`, die ganze übrige Batterie): auf integ-probe und main, auf einem PR nach main, nachts, auf Abruf und bei
-# `[ci voll]` in der Commit-Message; die Gruppen nach dem p90 ihrer Schritte verteilt (spec/ci/ci-zeiten.json,
-# `node scripts/ci-zeiten.cjs` misst und verteilt, K61 je Klasse cpu/gpu), jede ≤ dem Mittel ihrer Klasse + 0,5 min, hinter dem
-# Kopf-Richter (Job `kopf`: ein Kopf, der die volle Batterie schon grün trug, fährt sie nicht noch einmal). `[skip ci]` (WIP)
-# überspringt beides. gate:ci-deckung hält die Waage: jeder Schritt steht an GENAU einer Stelle, keine Gruppe über ihrem
+# `voll` und die Echt-Gruppe `echt`, die übrige Batterie): hinter dem Zug-Kopf (Job `kopf`, scripts/lib/zug-auswahl.cjs), der je
+# Lauf die Liste schreibt — im Zug (integ-probe), auf einem PR und bei `[ci voll]` der VORLAUF (die Fänger echter Fehler, die Karte
+# ohne Takt-Wirkungen), nach der Landung (Push auf main) der NACHLAUF (jeder Schritt, der am Kopf nicht grün steht; der Job
+# `nachlauf` bucht das Hauptbuch im Zweig koordination und bisektiert jedes Rot bis zum Täter-Zweig), auf Abruf alles; die Gruppen
+# nach dem p90 ihrer Schritte verteilt (spec/ci/ci-zeiten.json, `node scripts/ci-zeiten.cjs`, K61 je Klasse cpu/gpu). `[skip ci]`
+# (WIP) überspringt beides. gate:ci-deckung hält die Waage: jeder Schritt steht an GENAU einer Stelle, keine Gruppe über ihrem
 # Deckel, kein Schritt ohne Zeit, ein voller Lauf nie mehr Jobs zugleich als das Konto Läufer-Plätze hat.
 on:
     push:
@@ -18,17 +19,15 @@ on:
         branches: ["**", "!claude/**"]
     pull_request:
         branches: [main]
-    schedule:
-        # nachts 02:30 UTC auf main — die Batterie nur, wenn der Kopf noch kein grünes Urteil trägt (Job `kopf`)
-        - cron: "30 2 * * *"
     workflow_dispatch:
 
 # V7 — ein Lauf pro Ref: ein neuer Push auf denselben Branch canceled den laufenden
 # (spart Runner-Minuten, kein veralteter Lauf hängt). Der pull_request-Trigger teilt sich
-# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft.
+# die Gruppe mit dem push, sodass ein PR-Branch nicht doppelt läuft. Auf main bricht nie ein Nachlauf ab: der nächste wartet,
+# ein jüngerer ersetzt den wartenden (er trägt dessen Schuld mit).
 concurrency:
     group: check-${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+    cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
     puls:
@@ -234,32 +233,46 @@ jobs:
                   exit 1
 
     kopf:
-        # EIN URTEIL JE KOPF (K61, Richter 22.10.): vor der vollen Batterie fragt dieser Job die API nach den anderen Läufen auf
-        # demselben Kopf (SHA): trug einer die volle Batterie grün, läuft sie nicht noch einmal (voll=nein), trug einer die
-        # Echt-Gruppe grün, sie auch nicht (echt=nein); läuft ein älterer noch, wartet er bis 30 min auf sein Urteil (grün steht,
-        # rot ist ROT, abgebrochen fährt selbst). Nachts urteilt derselbe Richter (main trägt den Kopf von integ-probe), auf Abruf
-        # und auf einem PR läuft alles; ein Fehler der API ist rot. gate:ci-deckung (V) KOPF hält die Form.
+        # DER ZUG-KOPF (w23-vorlauf, scripts/lib/zug-auswahl.cjs --kopf): je Lauf EINE Liste der Schritte von voll und echt —
+        # VORLAUF (Zug, PR, [ci voll]): die Fänger der letzten 14 Tage und was die Karte für die Wirkungen des Diffs gegen
+        # origin/main wählt, außer Takt-Wirkungen; NACHLAUF (main): jeder Schritt, der am Kopf in keinem Lauf grün steht; auf Abruf
+        # alles. Was am Kopf schon grün steht, fährt nie noch einmal (ein Urteil je Kopf und Schritt). Die Karte und die Fänger
+        # liest er aus dem Zweig koordination (fehlen sie, ist er ROT); die Liste steht als Annotation „Zug-Liste" am Lauf.
+        # gate:ci-deckung (V) KOPF hält die Form.
         name: kopf
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
         runs-on: ubuntu-latest
-        timeout-minutes: 35
+        timeout-minutes: 15
         permissions:
             actions: read
+            checks: read
             contents: read
         outputs:
             voll: ${{ steps.kopf.outputs.voll }}
             echt: ${{ steps.kopf.outputs.echt }}
+            liste: ${{ steps.kopf.outputs.liste }}
+            gruppen: ${{ steps.kopf.outputs.gruppen }}
+            art: ${{ steps.kopf.outputs.art }}
         steps:
             - uses: actions/checkout@v4
               with:
-                  sparse-checkout: scripts/ci-kopf.cjs
-                  sparse-checkout-cone-mode: false
+                  fetch-depth: 0
+                  filter: blob:none
 
-            - name: Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Dependencies installieren (ohne Chrome)
+              env:
+                  PUPPETEER_SKIP_DOWNLOAD: "true"
+              run: npm ci --no-audit --no-fund
+
+            - name: Der Zug-Kopf (Vorlauf, Nachlauf oder alles — die Liste der Schritte)
               id: kopf
               env:
                   GH_TOKEN: ${{ github.token }}
-              run: node scripts/ci-kopf.cjs
+              run: node scripts/lib/zug-auswahl.cjs --kopf
 
     voll:
         # DIE VOLLE BATTERIE — jede Wand, die nicht im Puls steht: die Echt-Renderer-Linsen, die Begehungen, die schweren
@@ -280,18 +293,16 @@ jobs:
         name: voll ${{ matrix.gruppe }}/18 ${{ matrix.klasse }}
         needs: kopf
         if: needs.kopf.outputs.voll == 'ja'
-        # R6 (07.11., der Schöpfer: „wird nicht viel zu viel unnötig gemessen?"): jeder Schritt läuft durch die EINE Shell
-        # scripts/lib/ci-klasse.cjs — ein Selbsttest beweist die Linse, nicht das Spiel: auf einem Zweig, PR und integ-probe
-        # ruht er, wenn der Kandidat gegen die Merge-Basis mit origin/main nichts ändert, woran er hängt (die Shell nennt je
-        # Selbsttest die Datei, die ihn weckt, oder warum er ruht); nachts, auf Abruf und auf main läuft jeder. Im Zug (Push auf
-        # integ-probe) fährt eine Wand, die der echt-Job auf der GTX urteilt, hier nicht noch einmal (EINE Zug-Stelle je Wand).
-        # Ohne Shell-Angabe fährt sie den Text unter bash -e wie die Standard-Shell. Gemessen z296 (42393703986): 262 min
-        # Rechenzeit je Zug, die Selbsttest-Schritte 189 min, die Zwillinge der Karte 40 min.
+        # DIE ZUG-SHELL (w23-vorlauf): jeder Schritt läuft durch scripts/lib/ci-klasse.cjs — er fährt nur, wenn die Liste des
+        # Zug-Kopfs ihn trägt (ZUG_LISTE), sonst nennt sie ihn und endet; im Nachlauf weicht sie einem wartenden Zug. Eine Gruppe
+        # ohne Schritt der Liste installiert nichts (npm ci unter ihrer Bedingung, die Schritte dahinter ruhen). Im Nachlauf fahren
+        # höchstens 8 Gruppen zugleich: die übrigen Läufer-Plätze hält der Zug.
         defaults:
             run:
                 shell: node scripts/lib/ci-klasse.cjs {0}
         strategy:
             fail-fast: false
+            max-parallel: ${{ needs.kopf.outputs.art == 'nachlauf' && 8 || 18 }}
             matrix:
                 gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
                 # K61 — DIE KLASSE je Gruppe: gpu braucht einen Echt-Renderer (Rezept linse · webgl · echt an der Weiche
@@ -336,9 +347,11 @@ jobs:
                     - gruppe: 18
                       klasse: gpu
         runs-on: ubuntu-latest
-        # die Klasse der Gruppe reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) urteilt mit ihr
+        # die Klasse der Gruppe reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) urteilt mit ihr; die Liste an die Zug-Shell
         env:
             CI_KLASSE: ${{ matrix.klasse }}
+            ZUG_LISTE: ${{ needs.kopf.outputs.liste }}
+            ZUG_ART: ${{ needs.kopf.outputs.art }}
         # Die Frist schreibt node scripts/ci-zeiten.cjs: 1,2 × die schwerste Gruppe im p90-Plan ((T) FRIST), gelernt nur aus Läufen, deren
         # Kopf auf main landete. Die echten Renderer laufen auf SwiftShader je Läufer bis 2,8× langsamer (Kamera-Leib-Linse am selben Kopf
         # 319 s und 841 s); seit dem Urteil der Gruppe fährt ein roter Lauf jeden Schritt wie ein grüner. 25 → 30 → 35 → 40 hob sie von Hand,
@@ -392,6 +405,7 @@ jobs:
 
             - name: Dependencies installieren (inkl. puppeteer)
               id: vorbereitung
+              if: contains(fromJSON(needs.kopf.outputs.gruppen), matrix.gruppe)
               run: npm ci --no-audit --no-fund
 
             # DER VOLLE PLAYTEST (K18): die ~5340 Invarianten über 242 Bänder, Null-Renderer, 63 s Median — seit CW
@@ -1540,24 +1554,27 @@ jobs:
         # Schritt derselbe Befehl wie in `voll`, dazu die Wände der Karte (gate:…:echt). Ein Schritt, dessen Browser nur den
         # Null-Renderer trägt, zeichnet nie und steht hier nicht (die Weiche nennt ihn ROT). Jeder Schritt fährt auch nach einem
         # roten (`!cancelled()`) und trägt seine Frist (timeout-minutes aus node scripts/ci-zeiten.cjs), der Job höchstens 45 min,
-        # sein Plan höchstens 20 min (die Waage). Bei jedem push auf integ-probe und nachts, hinter dem Kopf-Richter (echt=ja: der
-        # Kopf trägt noch keine grüne Echt-Gruppe); nie pull_request (das Repo ist öffentlich; der Hook des Läufers lässt nur push
+        # sein Plan höchstens 20 min (die Waage). Bei jedem push auf integ-probe (Vorlauf) und main (Nachlauf), hinter dem Zug-Kopf
+        # (echt=ja: seine Liste trägt einen Schritt der Echt-Gruppe); nie pull_request (das Repo ist öffentlich; der Hook des Läufers lässt nur push
         # von MiguellD durch und wartet auf das GPU-Schloss der Maschine). gate:ci-deckung (E).
         name: echt (GPU-Wände auf der Karte)
         needs: kopf
-        if: (github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main') && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'
         runs-on: [self-hosted, echt-gpu]
         timeout-minutes: 45
         permissions:
+            actions: read
             contents: read
         env:
             CI_KLASSE: gpu
             LINSE_GPU: karte
-        # bash für jeden Schritt: Windows PowerShell fährt auf dem Läufer keine Skript-Dateien (Richtlinie Restricted, Lauf
-        # 39935664101), die Standard-Shell eines run-Schritts wäre dort powershell
+            ZUG_LISTE: ${{ needs.kopf.outputs.liste }}
+            ZUG_ART: ${{ needs.kopf.outputs.art }}
+        # die Zug-Shell wie in voll (sie fährt den Text unter Git-Bash): Windows PowerShell fährt auf dem Läufer keine Skript-Dateien
+        # (Richtlinie Restricted, Lauf 39935664101), die Standard-Shell eines run-Schritts wäre dort powershell
         defaults:
             run:
-                shell: bash
+                shell: node scripts/lib/ci-klasse.cjs {0}
         steps:
             - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, am SHA: der Job läuft auf einem eigenen Rechner
 
@@ -1672,3 +1689,66 @@ jobs:
               timeout-minutes: 5
               if: ${{ !cancelled() }}
               run: npm run gate:gpu-fehler
+
+    nachlauf:
+        # DER NACHLAUF BUCHT (w23-vorlauf, scripts/lib/zug-auswahl.cjs --hauptbuch): nach voll und echt auf main das Hauptbuch im
+        # Zweig koordination (zug/hauptbuch.json: je Schritt sein letztes Grün, die Schuld in Landungen), je roter Schritt die
+        # Bisektion über die Merges seiner offenen Landungen (höchstens 4) bis zum Täter-Zweig (zug/nachlauf-rot.txt), dazu die
+        # Fänger frisch (zug/faenger.json, die Liste des nächsten Vorlaufs). gate:ci-deckung (N) hält die Form.
+        name: nachlauf (Hauptbuch, Bisektion, Fänger)
+        needs: [kopf, voll, echt]
+        if: always() && needs.kopf.outputs.art == 'nachlauf'
+        runs-on: ubuntu-latest
+        timeout-minutes: 120
+        permissions:
+            actions: read
+            checks: read
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Cache-Schlüssel
+              id: schluessel
+              run: node scripts/ci-schluessel.cjs
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}
+                  restore-keys: npm-${{ runner.os }}-
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/puppeteer
+                  key: puppeteer-${{ runner.os }}-${{ steps.schluessel.outputs.chrome }}
+                  restore-keys: puppeteer-${{ runner.os }}-
+
+            - name: System-Libs für headless Chromium
+              # K61: nur was fehlt — das Läufer-Bild trägt die Bibliotheken mit seinem Chrome, apt-get update kostete je Job ~9 s
+              run: |
+                  LIBS="libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2"
+                  # gefragt wird nach den Bibliotheken selbst (24.04 benennt die Pakete mit t64 um, dpkg -s fand sie nie: 38628488866)
+                  SO="libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2"
+                  DA=1; for so in $SO; do ldconfig -p | grep -qF "$so (" || DA=0; done
+                  if [ "$DA" = 1 ]; then
+                    echo "System-Libs da"
+                  else
+                    sudo apt-get update -qq
+                    sudo apt-get install -y --no-install-recommends $LIBS libasound2t64 || \
+                    sudo apt-get install -y --no-install-recommends $LIBS libasound2
+                  fi
+
+            - name: Dependencies installieren (die Proben der Bisektion booten die Welt)
+              run: npm ci --no-audit --no-fund
+
+            - name: Hauptbuch, Bisektion und Fänger (nach koordination)
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: node scripts/lib/zug-auswahl.cjs --hauptbuch

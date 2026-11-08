@@ -18,7 +18,7 @@
     "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)": {"s": 2, "n": 7},
     "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)": {"s": 1, "n": 7},
     "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)": {"s": 12, "n": 7},
-    "Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)": {"s": 17, "n": 7},
+    "Der Zug-Kopf (Vorlauf, Nachlauf oder alles — die Liste der Schritte)": {"s": 40, "n": 0, "geschaetzt": true},
     "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")": {"s": 122, "n": 7},
     "Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)": {"s": 95, "n": 7},
     "Erst-Zeichnungs-Wand Teil 1 (echter Renderer — Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau)": {"s": 188, "n": 7},
