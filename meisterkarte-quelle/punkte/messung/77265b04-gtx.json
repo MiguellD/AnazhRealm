@@ -1,0 +1,6630 @@
+{
+ "sha": "77265b04554159d5c93e0e124cc44a87facef5c9",
+ "geraet": "gtx",
+ "zeit": "2026-11-08T16:49:07.478Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 214.2 über Rausch-Boden 0.000 (×214.2), Tal 32.6 — Kamm/Tal 6.57 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.5 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "nvidia/pascal",
+   "s": 22.7,
+   "fremd": {
+    "s": 24.2,
+    "takte": 11,
+    "fremdS": 49.03,
+    "kerne": 2.027,
+    "fensterKerne": 2.095,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      26.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.63
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      3.58
+     ]
+    ],
+    "dienerS": 7.8,
+    "diener": [
+     [
+      "dwm.exe",
+      3.66
+     ],
+     [
+      "System",
+      2.84
+     ]
+    ],
+    "eigenS": 21.95
+   },
+   "zeit": "2026-11-08T15:08:58.592Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.5487 Soll [0.3554,0.533] — strich 0.5487 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3] · third ROT strich 0.351 Soll [0.3554,0.533] — strich 0.351 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.49,
+   "grund": "ROT: arm ROT strich 0.5487 Soll [0.3554,0.533] — strich 0.5487 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3] · third ROT strich 0.351 Soll [0.3554,0.533] — strich 0.351 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 29.6,
+   "fremd": {
+    "s": 31.1,
+    "takte": 14,
+    "fremdS": 66.53,
+    "kerne": 2.14,
+    "fensterKerne": 2.267,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      33.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.88
+     ],
+     [
+      "MsMpEng.exe",
+      5.38
+     ]
+    ],
+    "dienerS": 15.02,
+    "diener": [
+     [
+      "System",
+      9.31
+     ],
+     [
+      "dwm.exe",
+      3.7
+     ]
+    ],
+    "eigenS": 47.36
+   },
+   "zeit": "2026-11-08T15:10:35.272Z",
+   "abdruck": "c0eb0fef1e79",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.17 · 10–20 2.11 · 20–40 satt, Farbton 2–5 m 12.86°, nahWiese 4 Befehle / 55791 Dreiecke",
+   "exit": 0,
+   "minuten": 0.69,
+   "gpu": "nvidia/pascal",
+   "s": 41.4,
+   "fremd": {
+    "s": 43.7,
+    "takte": 20,
+    "fremdS": 87.44,
+    "kerne": 2.002,
+    "fensterKerne": 2.12,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      47.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.34
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.45
+     ]
+    ],
+    "dienerS": 10,
+    "diener": [
+     [
+      "dwm.exe",
+      5.47
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.42
+     ]
+    ],
+    "eigenS": 43.19
+   },
+   "zeit": "2026-11-08T15:11:05.245Z",
+   "abdruck": "6b1dbe84a49f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 183622 px · winter 20052 px → Winter 0.109 × Sommer",
+   "exit": 0,
+   "minuten": 0.36,
+   "gpu": "nvidia/pascal",
+   "s": 21.8,
+   "fremd": {
+    "s": 24.1,
+    "takte": 11,
+    "fremdS": 52.33,
+    "kerne": 2.169,
+    "fensterKerne": 2.237,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      26.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.52
+     ],
+     [
+      "MsMpEng.exe",
+      3.73
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "dwm.exe",
+      3.27
+     ],
+     [
+      "System",
+      2.61
+     ]
+    ],
+    "eigenS": 30.45
+   },
+   "zeit": "2026-11-08T15:11:48.914Z",
+   "abdruck": "73585cf32eac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 2.02 px · Haus 4.08 px · Tor 7.79 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: Baum 2.02 px · Haus 4.08 px · Tor 7.79 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 36.1,
+   "fremd": {
+    "s": 37.3,
+    "takte": 17,
+    "fremdS": 79.47,
+    "kerne": 2.131,
+    "fensterKerne": 2.239,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      40.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.78
+     ],
+     [
+      "MsMpEng.exe",
+      5.8
+     ]
+    ],
+    "dienerS": 12.38,
+    "diener": [
+     [
+      "System",
+      5.11
+     ],
+     [
+      "dwm.exe",
+      5.11
+     ]
+    ],
+    "eigenS": 55.06
+   },
+   "zeit": "2026-11-08T15:19:27.217Z",
+   "abdruck": "a1549116ae5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.93–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.31,
+   "gpu": "nvidia/pascal",
+   "s": 78.9,
+   "fremd": {
+    "s": 81.5,
+    "takte": 37,
+    "fremdS": 166.63,
+    "kerne": 2.043,
+    "fensterKerne": 2.338,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      85.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.86
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      10.98
+     ]
+    ],
+    "dienerS": 31.75,
+    "diener": [
+     [
+      "dwm.exe",
+      15.22
+     ],
+     [
+      "System",
+      11.91
+     ]
+    ],
+    "eigenS": 170.02
+   },
+   "zeit": "2026-11-08T15:24:39.929Z",
+   "abdruck": "f860195e6d68",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.3–1.6 % bei 18.3–23.2 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.31,
+   "gpu": "nvidia/pascal",
+   "s": 78.9,
+   "fremd": {
+    "s": 81.5,
+    "takte": 37,
+    "fremdS": 166.63,
+    "kerne": 2.043,
+    "fensterKerne": 2.338,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      85.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.86
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      10.98
+     ]
+    ],
+    "dienerS": 31.75,
+    "diener": [
+     [
+      "dwm.exe",
+      15.22
+     ],
+     [
+      "System",
+      11.91
+     ]
+    ],
+    "eigenS": 170.02
+   },
+   "zeit": "2026-11-08T15:24:39.929Z",
+   "abdruck": "5d8ab85fb384",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (8 Befunde) · Farbton 8 km 1.699–15° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.256/5.045 (≥ 1,2) · fernes Weiß R/B 6.183 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.31,
+   "grund": "ROT: K1-2 ROT (8 Befunde) · Farbton 8 km 1.699–15° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.256/5.045 (≥ 1,2) · fernes Weiß R/B 6.183 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 78.9,
+   "fremd": {
+    "s": 81.5,
+    "takte": 37,
+    "fremdS": 166.63,
+    "kerne": 2.043,
+    "fensterKerne": 2.338,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      85.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.86
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      10.98
+     ]
+    ],
+    "dienerS": 31.75,
+    "diener": [
+     [
+      "dwm.exe",
+      15.22
+     ],
+     [
+      "System",
+      11.91
+     ]
+    ],
+    "eigenS": 170.02
+   },
+   "zeit": "2026-11-08T15:24:39.929Z",
+   "abdruck": "9c259afc00c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.31,
+   "gpu": "nvidia/pascal",
+   "s": 78.9,
+   "fremd": {
+    "s": 81.5,
+    "takte": 37,
+    "fremdS": 166.63,
+    "kerne": 2.043,
+    "fensterKerne": 2.338,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      85.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.86
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      10.98
+     ]
+    ],
+    "dienerS": 31.75,
+    "diener": [
+     [
+      "dwm.exe",
+      15.22
+     ],
+     [
+      "System",
+      11.91
+     ]
+    ],
+    "eigenS": 170.02
+   },
+   "zeit": "2026-11-08T15:24:39.929Z",
+   "abdruck": "0346d90df351",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1504 · L1/L0 1.013 · L2/L0 1.004 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2547 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.85,
+   "gpu": "nvidia/pascal",
+   "s": 51.1,
+   "fremd": {
+    "s": 52.8,
+    "takte": 24,
+    "fremdS": 110.06,
+    "kerne": 2.083,
+    "fensterKerne": 2.273,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      54.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.47
+     ],
+     [
+      "MsMpEng.exe",
+      7.52
+     ]
+    ],
+    "dienerS": 27.98,
+    "diener": [
+     [
+      "System",
+      17.05
+     ],
+     [
+      "dwm.exe",
+      7.75
+     ]
+    ],
+    "eigenS": 130.52
+   },
+   "zeit": "2026-11-08T15:27:23.782Z",
+   "abdruck": "4c455d422927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.004 · fichte@0.5 l1 0.998/karte 0.993 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.004 · fichte@0.27 l1 0.997/karte 0.993 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.85,
+   "gpu": "nvidia/pascal",
+   "s": 51.1,
+   "fremd": {
+    "s": 52.8,
+    "takte": 24,
+    "fremdS": 110.06,
+    "kerne": 2.083,
+    "fensterKerne": 2.273,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      54.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.47
+     ],
+     [
+      "MsMpEng.exe",
+      7.52
+     ]
+    ],
+    "dienerS": 27.98,
+    "diener": [
+     [
+      "System",
+      17.05
+     ],
+     [
+      "dwm.exe",
+      7.75
+     ]
+    ],
+    "eigenS": 130.52
+   },
+   "zeit": "2026-11-08T15:27:23.782Z",
+   "abdruck": "14ccb724b6cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#1",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.2,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 9.86,
+    "kerne": 2.233,
+    "fensterKerne": 2.233,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      5.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.05
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.91
+     ]
+    ],
+    "dienerS": 1.41,
+    "diener": [
+     [
+      "dwm.exe",
+      0.7
+     ],
+     [
+      "System",
+      0.45
+     ]
+    ],
+    "eigenS": 5.11
+   },
+   "zeit": "2026-11-08T15:42:19.916Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K5#1": {
+   "gruen": true,
+   "zahl": "Sicht im Sturm 1637 m (Azimute 1517/1556/1637/1685, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.47,
+   "gpu": "nvidia/pascal",
+   "s": 28.5,
+   "fremd": {
+    "s": 30.8,
+    "takte": 14,
+    "fremdS": 62.58,
+    "kerne": 2.031,
+    "fensterKerne": 2.15,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      31.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.73
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      4.25
+     ]
+    ],
+    "dienerS": 13.36,
+    "diener": [
+     [
+      "System",
+      6.44
+     ],
+     [
+      "dwm.exe",
+      5.19
+     ]
+    ],
+    "eigenS": 72.88
+   },
+   "zeit": "2026-11-08T15:42:22.466Z",
+   "abdruck": "fe37562afe77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": true,
+   "zahl": "lack spiegelTreue 0.6432 (79581 px in der Ebene, 42 Blöcke, Einfall 53.6°, Normale [0.126,0.987,-0.098]) · glas spiegelTreue -0.0399 (8909 px in der Ebene, 53 Blöcke, Einfall 71.7°, Normale [0.015,1,-0.007]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000364 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.13,
+   "gpu": "nvidia/pascal",
+   "s": 7.6,
+   "fremd": {
+    "s": 11,
+    "takte": 5,
+    "fremdS": 24.22,
+    "kerne": 2.199,
+    "fensterKerne": 2.199,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      12.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.33
+     ],
+     [
+      "MsMpEng.exe",
+      1.94
+     ]
+    ],
+    "dienerS": 3.11,
+    "diener": [
+     [
+      "dwm.exe",
+      1.67
+     ],
+     [
+      "System",
+      0.88
+     ]
+    ],
+    "eigenS": 27.22
+   },
+   "zeit": "2026-11-08T15:43:17.135Z",
+   "abdruck": "164434f426c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K5#1": {
+   "gruen": true,
+   "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.244° NEBEN dem Band, ρ 7.18 im Band — black-oxidized-steel · bronze θ50 3.302° im Band, ρ 82.61 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.181° im Band, ρ 466.01 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.479° im Band, ρ 849.52 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.29,
+   "gpu": "nvidia/pascal",
+   "s": 17.7,
+   "fremd": {
+    "s": 19.6,
+    "takte": 9,
+    "fremdS": 38.14,
+    "kerne": 1.942,
+    "fensterKerne": 2.052,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      20.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.14
+     ],
+     [
+      "MsMpEng.exe",
+      2.61
+     ]
+    ],
+    "dienerS": 4.42,
+    "diener": [
+     [
+      "System",
+      1.81
+     ],
+     [
+      "dwm.exe",
+      1.53
+     ]
+    ],
+    "eigenS": 16.14
+   },
+   "zeit": "2026-11-08T15:43:26.542Z",
+   "abdruck": "75eb7c78fd95",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": true,
+   "zahl": "Tag first GRÜN: fällen -0.12 -4.63 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.73 dB · töten -0.03 -1.18 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
+   "exit": 0,
+   "minuten": 0.14,
+   "gpu": "nvidia/pascal",
+   "s": 8.5,
+   "fremd": {
+    "s": 11,
+    "takte": 5,
+    "fremdS": 21.77,
+    "kerne": 1.975,
+    "fensterKerne": 1.975,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      11.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.39
+     ],
+     [
+      "MsMpEng.exe",
+      1.83
+     ]
+    ],
+    "dienerS": 3.53,
+    "diener": [
+     [
+      "dwm.exe",
+      1.56
+     ],
+     [
+      "System",
+      0.84
+     ]
+    ],
+    "eigenS": 22.7
+   },
+   "zeit": "2026-11-08T15:52:40.757Z",
+   "abdruck": "9410239eb591",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": true,
+   "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 17.13 s, Furcht chaos 1 (Gegenlauf 0), 6 Jäger fallen, Triumph joy+hope 0.686 (Gegenlauf 0)",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.2,
+   "fremd": {
+    "s": 26.4,
+    "takte": 12,
+    "fremdS": 53.05,
+    "kerne": 2.011,
+    "fensterKerne": 2.121,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      28.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.77
+     ]
+    ],
+    "dienerS": 8.8,
+    "diener": [
+     [
+      "dwm.exe",
+      4.31
+     ],
+     [
+      "System",
+      1.66
+     ]
+    ],
+    "eigenS": 41.67
+   },
+   "zeit": "2026-11-08T15:52:56.247Z",
+   "abdruck": "7c55434a1b8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "arm GRÜN strich 0.5962 Soll [0.4358,0.6538] · third ROT strich 0.3819 Soll [0.4358,0.6538] — strich 0.3819 < 0.4358",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: arm GRÜN strich 0.5962 Soll [0.4358,0.6538] · third ROT strich 0.3819 Soll [0.4358,0.6538] — strich 0.3819 < 0.4358",
+   "gpu": "nvidia/pascal",
+   "s": 32.6,
+   "fremd": {
+    "s": 35.2,
+    "takte": 16,
+    "fremdS": 75.47,
+    "kerne": 2.145,
+    "fensterKerne": 2.299,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      37.31
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.44
+     ],
+     [
+      "MsMpEng.exe",
+      6.75
+     ]
+    ],
+    "dienerS": 11.97,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      3.77
+     ]
+    ],
+    "eigenS": 55.3
+   },
+   "zeit": "2026-11-08T15:53:24.405Z",
+   "abdruck": "4737c3538058",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": false,
+   "zahl": "Dorf: /umstellen: DIE WELT STEHT NICHT nach 1800 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 1800 Takten — die Welt hat nichts mehr offen)",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "ROT: Dorf: /umstellen: DIE WELT STEHT NICHT nach 1800 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 1800 Takten — die Welt hat nichts mehr offen)",
+   "gpu": "nvidia/pascal",
+   "s": 34,
+   "fremd": {
+    "s": 35.1,
+    "takte": 16,
+    "fremdS": 70.41,
+    "kerne": 2.004,
+    "fensterKerne": 2.121,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      36.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.89
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      4.81
+     ]
+    ],
+    "dienerS": 14.06,
+    "diener": [
+     [
+      "dwm.exe",
+      7.03
+     ],
+     [
+      "System",
+      5.19
+     ]
+    ],
+    "eigenS": 59.48
+   },
+   "zeit": "2026-11-08T16:09:27.347Z",
+   "abdruck": "241e09374c00",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.1 cm (10 Kanten) · Uhr 0.5 third 2.1 cm (10 Kanten), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "gpu": "nvidia/pascal",
+   "s": 14.1,
+   "fremd": {
+    "s": 17.7,
+    "takte": 8,
+    "fremdS": 39.3,
+    "kerne": 2.222,
+    "fensterKerne": 2.391,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      17.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.42
+     ],
+     [
+      "MsMpEng.exe",
+      3.73
+     ]
+    ],
+    "dienerS": 7.73,
+    "diener": [
+     [
+      "dwm.exe",
+      4.42
+     ],
+     [
+      "System",
+      2.38
+     ]
+    ],
+    "eigenS": 36.72
+   },
+   "zeit": "2026-11-08T16:18:47.059Z",
+   "abdruck": "4cf2516aa5c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "gras 5564 Hz (n 9) · laub 6226 Hz (n 10) · glut 1902 Hz (n 9) — kleinster Abstand 662 Hz",
+   "exit": 0,
+   "minuten": 0.65,
+   "gpu": "nvidia/pascal",
+   "s": 38.9,
+   "fremd": {
+    "s": 41.9,
+    "takte": 19,
+    "fremdS": 91.05,
+    "kerne": 2.174,
+    "fensterKerne": 2.358,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      45.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.31
+     ]
+    ],
+    "dienerS": 15.25,
+    "diener": [
+     [
+      "dwm.exe",
+      7.56
+     ],
+     [
+      "System",
+      4.5
+     ]
+    ],
+    "eigenS": 84.28
+   },
+   "zeit": "2026-11-08T16:22:02.697Z",
+   "abdruck": "ed23e53b8b0a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": true,
+   "zahl": "✅ Schritte gras 5564 Hz (n 9) · laub 6226 Hz (n 10) · glut 1902 Hz (n 9), kleinster Abstand 662 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 21.4 m/s 1.0664/1.0664 · -4.5 m 16.4 m/s 1.0502/1.0502 · -2 m 8.3 m/s 1.0248/1.0248 · 2 m -10.7 m/s 0.9697/0.9697 · 4.5 m -15.9 m/s 0.9557/0.9557 · 9 m -18.1 m/s 0.9498/0.9498)",
+   "exit": 0,
+   "minuten": 0.65,
+   "gpu": "nvidia/pascal",
+   "s": 38.9,
+   "fremd": {
+    "s": 41.9,
+    "takte": 19,
+    "fremdS": 91.05,
+    "kerne": 2.174,
+    "fensterKerne": 2.358,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      45.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.31
+     ]
+    ],
+    "dienerS": 15.25,
+    "diener": [
+     [
+      "dwm.exe",
+      7.56
+     ],
+     [
+      "System",
+      4.5
+     ]
+    ],
+    "eigenS": 84.28
+   },
+   "zeit": "2026-11-08T16:22:02.697Z",
+   "abdruck": "ede0f995fc5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 107.38 s nach dem Riss bei 36 s, am Aas fuchs 20 s, baer 16.5 s · Wolfsrevier wald, Riss 12.9 s, 3 fressen: tier:wolf 5060 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 11 m · Luma 69.3 σ 32.3 schwarz 0.3 % weiß 0.0 % · Stand 18.546.223 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 8 Posen",
+   "exit": 0,
+   "minuten": 0.56,
+   "gpu": "nvidia/pascal",
+   "s": 33.3,
+   "fremd": {
+    "s": 35.5,
+    "takte": 16,
+    "fremdS": 78.09,
+    "kerne": 2.202,
+    "fensterKerne": 2.292,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      38.98
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.56
+     ],
+     [
+      "MsMpEng.exe",
+      6.39
+     ]
+    ],
+    "dienerS": 13.39,
+    "diener": [
+     [
+      "dwm.exe",
+      7.2
+     ],
+     [
+      "System",
+      4.14
+     ]
+    ],
+    "eigenS": 92.53
+   },
+   "zeit": "2026-11-08T16:26:51.825Z",
+   "abdruck": "f27a185f07bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 7.2 cm / 29.2° 7.2 cm · Tod jagd, Anker 0.0 m · Abdruck 3102b94a439c → 3102b94a439c",
+   "exit": 0,
+   "minuten": 0.1,
+   "gpu": "nvidia/pascal",
+   "s": 6,
+   "fremd": {
+    "s": 6.6,
+    "takte": 3,
+    "fremdS": 13.67,
+    "kerne": 2.076,
+    "fensterKerne": 2.076,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      6.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.17
+     ],
+     [
+      "MsMpEng.exe",
+      0.98
+     ]
+    ],
+    "dienerS": 2.88,
+    "diener": [
+     [
+      "dwm.exe",
+      1.67
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "eigenS": 18.38
+   },
+   "zeit": "2026-11-08T16:41:36.427Z",
+   "abdruck": "76276551b53f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#2": {
+   "gruen": true,
+   "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/80.0/10.4 · Werk eisen 154.9/129.8/80.0/15.9 · bronze 152.7/131.0/80.0/15.5 · holz 131.9/144.5/80.0/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
+   "exit": 0,
+   "minuten": 0.1,
+   "gpu": "nvidia/pascal",
+   "s": 6,
+   "fremd": {
+    "s": 6.6,
+    "takte": 3,
+    "fremdS": 13.67,
+    "kerne": 2.076,
+    "fensterKerne": 2.076,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      6.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.17
+     ],
+     [
+      "MsMpEng.exe",
+      0.98
+     ]
+    ],
+    "dienerS": 2.88,
+    "diener": [
+     [
+      "dwm.exe",
+      1.67
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "eigenS": 18.38
+   },
+   "zeit": "2026-11-08T16:41:36.427Z",
+   "abdruck": "c420d1375d77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 74.5 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 76.9 J · p 6.67 · v 20.9 · Schaden 16.6 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 80.4 J · p 5.94 · v 23.2 · Schaden 17.3 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.22,
+   "gpu": "nvidia/pascal",
+   "s": 13,
+   "fremd": {
+    "s": 13.9,
+    "takte": 6,
+    "fremdS": 32.59,
+    "kerne": 2.337,
+    "fensterKerne": 2.353,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      14.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.7
+     ],
+     [
+      "MsMpEng.exe",
+      3.19
+     ]
+    ],
+    "dienerS": 4.86,
+    "diener": [
+     [
+      "dwm.exe",
+      2.44
+     ],
+     [
+      "System",
+      1.64
+     ]
+    ],
+    "eigenS": 83.28
+   },
+   "zeit": "2026-11-08T16:42:03.871Z",
+   "abdruck": "e5a8f60ac4b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 48.6,
+    "takte": 21,
+    "fremdS": 116.67,
+    "kerne": 2.403,
+    "fensterKerne": 2.629,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      49.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.59
+     ],
+     [
+      "MsMpEng.exe",
+      14.92
+     ]
+    ],
+    "dienerS": 20.97,
+    "diener": [
+     [
+      "dwm.exe",
+      11.86
+     ],
+     [
+      "System",
+      6.09
+     ]
+    ],
+    "eigenS": 254.48
+   },
+   "zeit": "2026-11-08T15:36:23.630Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 48.6,
+    "takte": 21,
+    "fremdS": 116.67,
+    "kerne": 2.403,
+    "fensterKerne": 2.629,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      49.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.59
+     ],
+     [
+      "MsMpEng.exe",
+      14.92
+     ]
+    ],
+    "dienerS": 20.97,
+    "diener": [
+     [
+      "dwm.exe",
+      11.86
+     ],
+     [
+      "System",
+      6.09
+     ]
+    ],
+    "eigenS": 254.48
+   },
+   "zeit": "2026-11-08T15:36:23.630Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT third (9.6 s): fein 1.1/200 · streu 0.8/363 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte))",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT third (9.6 s): fein 1.1/200 · streu 0.8/363 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte))",
+   "s": 45.2,
+   "fremd": {
+    "s": 47.3,
+    "takte": 21,
+    "fremdS": 103.78,
+    "kerne": 2.194,
+    "fensterKerne": 2.335,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      49.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.25
+     ],
+     [
+      "MsMpEng.exe",
+      9.14
+     ]
+    ],
+    "dienerS": 21.22,
+    "diener": [
+     [
+      "System",
+      9.75
+     ],
+     [
+      "dwm.exe",
+      8.06
+     ]
+    ],
+    "eigenS": 155.77
+   },
+   "zeit": "2026-11-08T15:07:25.609Z",
+   "abdruck": "7c0cbb1bb442",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 35 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
+   "exit": 1,
+   "minuten": 0.59,
+   "grund": "Deckel 35 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
+   "s": 35.2,
+   "fremd": {
+    "s": 35.8,
+    "takte": 16,
+    "fremdS": 75.66,
+    "kerne": 2.111,
+    "fensterKerne": 2.373,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      37.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.05
+     ],
+     [
+      "MsMpEng.exe",
+      6.11
+     ]
+    ],
+    "dienerS": 9.63,
+    "diener": [
+     [
+      "dwm.exe",
+      4.3
+     ],
+     [
+      "System",
+      2.94
+     ]
+    ],
+    "eigenS": 67.92
+   },
+   "zeit": "2026-11-08T15:09:22.625Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 13.0 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 13.0 s)",
+   "s": 90.3,
+   "fremd": {
+    "s": 92.2,
+    "takte": 42,
+    "fremdS": 195.41,
+    "kerne": 2.12,
+    "fensterKerne": 2.698,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      38.27
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      13.78
+     ]
+    ],
+    "dienerS": 28.58,
+    "diener": [
+     [
+      "dwm.exe",
+      13.16
+     ],
+     [
+      "System",
+      10.27
+     ]
+    ],
+    "eigenS": 119.66
+   },
+   "zeit": "2026-11-08T15:12:13.046Z",
+   "abdruck": "726e275ec65d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 16,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,1 CPU-s · OmenCommandCenterBackground.exe 2,5 CPU-s — 2,09 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 30,9 CPU-s in 15,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.317 (5–12,5), Schatten-Anteil 0.1881 (0,08–0,20), A/B 1.000, A/C 1.021, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "Fremd-Last: AppHelperCap.exe 16,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,1 CPU-s · OmenCommandCenterBackground.exe 2,5 CPU-s — 2,09 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 30,9 CPU-s in 15,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.317 (5–12,5), Schatten-Anteil 0.1881 (0,08–0,20), A/B 1.000, A/C 1.021, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "s": 12.1,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 30.91,
+    "kerne": 2.018,
+    "fensterKerne": 2.088,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      16.23
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.13
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      2.47
+     ]
+    ],
+    "dienerS": 4.23,
+    "diener": [
+     [
+      "System",
+      1.89
+     ],
+     [
+      "dwm.exe",
+      1.52
+     ]
+    ],
+    "eigenS": 25.31
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T15:14:23.000Z",
+   "abdruck": "2ccc636c8b4f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-5 · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-5 · Exit 0)",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.1,
+    "takte": 21,
+    "fremdS": 97.39,
+    "kerne": 2.115,
+    "fensterKerne": 2.339,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      49.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.28
+     ]
+    ],
+    "dienerS": 14.2,
+    "diener": [
+     [
+      "dwm.exe",
+      6.53
+     ],
+     [
+      "System",
+      5.05
+     ]
+    ],
+    "eigenS": 50.44
+   },
+   "zeit": "2026-11-08T15:14:36.167Z",
+   "abdruck": "a36e076c42f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ein-fels-2 · Exit 0)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ein-fels-2 · Exit 0)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93,
+    "takte": 42,
+    "fremdS": 201.61,
+    "kerne": 2.167,
+    "fensterKerne": 2.879,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      97.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      41.47
+     ],
+     [
+      "MsMpEng.exe",
+      14.09
+     ]
+    ],
+    "dienerS": 43.39,
+    "diener": [
+     [
+      "System",
+      19.66
+     ],
+     [
+      "dwm.exe",
+      17.52
+     ]
+    ],
+    "eigenS": 187.16
+   },
+   "zeit": "2026-11-08T15:15:59.121Z",
+   "abdruck": "2247d5f4601f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.2,
+   "fremd": {
+    "s": 48.4,
+    "takte": 22,
+    "fremdS": 97.64,
+    "kerne": 2.018,
+    "fensterKerne": 2.09,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.61
+     ]
+    ],
+    "dienerS": 13.69,
+    "diener": [
+     [
+      "dwm.exe",
+      6.95
+     ],
+     [
+      "System",
+      3.98
+     ]
+    ],
+    "eigenS": 65.83
+   },
+   "zeit": "2026-11-08T15:18:07.885Z",
+   "abdruck": "2a29046aa7bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.47,
+   "grund": "Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 28.2,
+   "fremd": {
+    "s": 30.6,
+    "takte": 14,
+    "fremdS": 59.02,
+    "kerne": 1.929,
+    "fensterKerne": 2.144,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      32.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.27
+     ],
+     [
+      "MsMpEng.exe",
+      3.77
+     ]
+    ],
+    "dienerS": 9.31,
+    "diener": [
+     [
+      "dwm.exe",
+      4.02
+     ],
+     [
+      "System",
+      3.72
+     ]
+    ],
+    "eigenS": 23.75
+   },
+   "zeit": "2026-11-08T15:20:03.660Z",
+   "abdruck": "ddb153481a96",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 40,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,1 CPU-s · MsMpEng.exe 6,9 CPU-s — 2,38 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 82,5 CPU-s in 37,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 195.1 · third/gehen 59.4 · ego/wechsel 58.2 · third/wechsel 47.4 · Bild 31.98 ms)",
+   "exit": 0,
+   "minuten": 0.61,
+   "grund": "Fremd-Last: AppHelperCap.exe 40,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,1 CPU-s · MsMpEng.exe 6,9 CPU-s — 2,38 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 82,5 CPU-s in 37,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 195.1 · third/gehen 59.4 · ego/wechsel 58.2 · third/wechsel 47.4 · Bild 31.98 ms)",
+   "gpu": "nvidia/pascal",
+   "s": 36.7,
+   "fremd": {
+    "s": 37.8,
+    "takte": 17,
+    "fremdS": 82.5,
+    "kerne": 2.183,
+    "fensterKerne": 2.375,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      40.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.09
+     ],
+     [
+      "MsMpEng.exe",
+      6.86
+     ]
+    ],
+    "dienerS": 17.13,
+    "diener": [
+     [
+      "dwm.exe",
+      8.78
+     ],
+     [
+      "System",
+      5.89
+     ]
+    ],
+    "eigenS": 97.73
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T15:21:17.367Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 13,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · MsMpEng.exe 2,5 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 27,5 CPU-s in 13,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 72 ms (50) · Menü 168 ms (20))",
+   "exit": 0,
+   "minuten": 0.19,
+   "gpu": "nvidia/pascal",
+   "s": 11.3,
+   "fremd": {
+    "s": 13.1,
+    "takte": 6,
+    "fremdS": 27.48,
+    "kerne": 2.093,
+    "fensterKerne": 2.153,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      13.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.72
+     ],
+     [
+      "MsMpEng.exe",
+      2.45
+     ]
+    ],
+    "dienerS": 5.5,
+    "diener": [
+     [
+      "dwm.exe",
+      3.09
+     ],
+     [
+      "System",
+      1.7
+     ]
+    ],
+    "eigenS": 17.56
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 13,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · MsMpEng.exe 2,5 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 27,5 CPU-s in 13,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: HUD deckt 2.55 % (1920×1080, im Spiel) · INP HUD 72 ms (50) · Menü 168 ms (20))",
+   "zeit": "2026-11-08T15:21:54.867Z",
+   "abdruck": "aa427f854569",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 45.7,
+    "takte": 20,
+    "fremdS": 161.69,
+    "kerne": 3.535,
+    "fensterKerne": 4.1,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      61
+     ],
+     [
+      "AppHelperCap.exe",
+      53.02
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.33
+     ]
+    ],
+    "dienerS": 21.64,
+    "diener": [
+     [
+      "dwm.exe",
+      12.11
+     ],
+     [
+      "System",
+      6.66
+     ]
+    ],
+    "eigenS": 176.45
+   },
+   "zeit": "2026-11-08T15:22:08.005Z",
+   "abdruck": "d04b4f29f398",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 29,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 57,1 CPU-s in 26,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: r 0.77 bei Lag 0 (n 104), Spitze 0.78 bei -0.2 s, CV Bild 0.25 / Ohr 0.51, 54.3 fps, Klang an)",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "fremd": {
+    "s": 26.4,
+    "takte": 12,
+    "fremdS": 57.09,
+    "kerne": 2.161,
+    "fensterKerne": 2.345,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      29.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.58
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.38
+     ]
+    ],
+    "dienerS": 12.78,
+    "diener": [
+     [
+      "dwm.exe",
+      6.09
+     ],
+     [
+      "System",
+      4.2
+     ]
+    ],
+    "eigenS": 37.55
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 29,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 57,1 CPU-s in 26,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: r 0.77 bei Lag 0 (n 104), Spitze 0.78 bei -0.2 s, CV Bild 0.25 / Ohr 0.51, 54.3 fps, Klang an)",
+   "zeit": "2026-11-08T15:23:40.784Z",
+   "abdruck": "99184fa7cfdf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 94.38,
+    "kerne": 2.039,
+    "fensterKerne": 2.195,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21
+     ],
+     [
+      "MsMpEng.exe",
+      6.78
+     ]
+    ],
+    "dienerS": 21.63,
+    "diener": [
+     [
+      "dwm.exe",
+      9.56
+     ],
+     [
+      "System",
+      9.17
+     ]
+    ],
+    "eigenS": 104.91
+   },
+   "zeit": "2026-11-08T15:26:00.474Z",
+   "abdruck": "f03c733d82c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "fremd": {
+    "s": 86.4,
+    "takte": 39,
+    "fremdS": 189.66,
+    "kerne": 2.195,
+    "fensterKerne": 2.33,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      92.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      43.14
+     ],
+     [
+      "MsMpEng.exe",
+      15.44
+     ]
+    ],
+    "dienerS": 41.16,
+    "diener": [
+     [
+      "System",
+      19.64
+     ],
+     [
+      "dwm.exe",
+      16.56
+     ]
+    ],
+    "eigenS": 274.75
+   },
+   "zeit": "2026-11-08T15:28:59.315Z",
+   "abdruck": "b414418827fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "fremd": {
+    "s": 86.4,
+    "takte": 39,
+    "fremdS": 189.66,
+    "kerne": 2.195,
+    "fensterKerne": 2.33,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      92.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      43.14
+     ],
+     [
+      "MsMpEng.exe",
+      15.44
+     ]
+    ],
+    "dienerS": 41.16,
+    "diener": [
+     [
+      "System",
+      19.64
+     ],
+     [
+      "dwm.exe",
+      16.56
+     ]
+    ],
+    "eigenS": 274.75
+   },
+   "zeit": "2026-11-08T15:28:59.315Z",
+   "abdruck": "6d366f695916",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 15.4 s · 36.7 s)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 15.4 s · 36.7 s)",
+   "s": 45.4,
+   "fremd": {
+    "s": 49.2,
+    "takte": 22,
+    "fremdS": 103.94,
+    "kerne": 2.111,
+    "fensterKerne": 2.322,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.23
+     ],
+     [
+      "MsMpEng.exe",
+      7.42
+     ]
+    ],
+    "dienerS": 16.81,
+    "diener": [
+     [
+      "System",
+      6.8
+     ],
+     [
+      "dwm.exe",
+      6.75
+     ]
+    ],
+    "eigenS": 126.27
+   },
+   "zeit": "2026-11-08T15:30:55.733Z",
+   "abdruck": "dfd7c213d39d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72449 ms)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72449 ms)",
+   "s": 90.2,
+   "fremd": {
+    "s": 91.5,
+    "takte": 42,
+    "fremdS": 179.47,
+    "kerne": 1.961,
+    "fensterKerne": 2.218,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      96.28
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      35.89
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      12.75
+     ]
+    ],
+    "dienerS": 21.92,
+    "diener": [
+     [
+      "dwm.exe",
+      9.55
+     ],
+     [
+      "System",
+      7.67
+     ]
+    ],
+    "eigenS": 103.42
+   },
+   "zeit": "2026-11-08T15:32:16.192Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.27 ungemessen · ring@0.05 ungemessen · feld@0.5 ungemessen · feld@) · Täter: PROBE-FEHLER Error: der Messort der Linse steht nicht:  ] | } |     at werkbankLinse ([eval]:120:35) |     at [eval]:182:3 |     at runScriptInThisContext (node:internal/vm:219:10)",
+   "exit": 1,
+   "minuten": 0.57,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.27 ungemessen · ring@0.05 ungemessen · feld@0.5 ungemessen · feld@) · Täter: PROBE-FEHLER Error: der Messort der Linse steht nicht:  ] | } |     at werkbankLinse ([eval]:120:35) |     at [eval]:182:3 |     at runScriptInThisContext (node:internal/vm:219:10)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 34.1,
+   "fremd": {
+    "s": 35.3,
+    "takte": 16,
+    "fremdS": 73.3,
+    "kerne": 2.075,
+    "fensterKerne": 2.172,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      38.16
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.52
+     ]
+    ],
+    "dienerS": 14.92,
+    "diener": [
+     [
+      "dwm.exe",
+      7.89
+     ],
+     [
+      "System",
+      4.88
+     ]
+    ],
+    "eigenS": 60.75
+   },
+   "zeit": "2026-11-08T15:39:36.867Z",
+   "abdruck": "5bc5276247f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.2,
+   "fremd": {
+    "s": 47.1,
+    "takte": 21,
+    "fremdS": 97.95,
+    "kerne": 2.081,
+    "fensterKerne": 2.241,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.84
+     ],
+     [
+      "MsMpEng.exe",
+      6.7
+     ]
+    ],
+    "dienerS": 18.83,
+    "diener": [
+     [
+      "dwm.exe",
+      10
+     ],
+     [
+      "System",
+      5.91
+     ]
+    ],
+    "eigenS": 149.92
+   },
+   "zeit": "2026-11-08T15:41:09.562Z",
+   "abdruck": "e73e2fe62927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 14 s gerissen — beendet, UNGEMESSEN (zuletzt: RUHE VOR TEIL C: die Welt steht nach 537 Takten · mit einer wartenden Karte: false)",
+   "exit": 1,
+   "minuten": 0.24,
+   "grund": "Deckel 14 s gerissen — beendet, UNGEMESSEN (zuletzt: RUHE VOR TEIL C: die Welt steht nach 537 Takten · mit einer wartenden Karte: false)",
+   "s": 14.2,
+   "fremd": {
+    "s": 15.5,
+    "takte": 7,
+    "fremdS": 37.69,
+    "kerne": 2.43,
+    "fensterKerne": 2.511,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      16.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.53
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ]
+    ],
+    "dienerS": 6.48,
+    "diener": [
+     [
+      "dwm.exe",
+      3.97
+     ],
+     [
+      "System",
+      1.66
+     ]
+    ],
+    "eigenS": 37.58
+   },
+   "zeit": "2026-11-08T15:43:46.159Z",
+   "abdruck": "81ecb380cb90",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 33.2,
+   "fremd": {
+    "s": 35.4,
+    "takte": 16,
+    "fremdS": 73.52,
+    "kerne": 2.077,
+    "fensterKerne": 2.226,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      36.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.95
+     ],
+     [
+      "MsMpEng.exe",
+      5.33
+     ]
+    ],
+    "dienerS": 13.86,
+    "diener": [
+     [
+      "dwm.exe",
+      7.36
+     ],
+     [
+      "System",
+      4.48
+     ]
+    ],
+    "eigenS": 102.25
+   },
+   "zeit": "2026-11-08T15:44:28.656Z",
+   "abdruck": "6c22c6593987",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 33.2,
+   "fremd": {
+    "s": 35.4,
+    "takte": 16,
+    "fremdS": 73.52,
+    "kerne": 2.077,
+    "fensterKerne": 2.226,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      36.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.95
+     ],
+     [
+      "MsMpEng.exe",
+      5.33
+     ]
+    ],
+    "dienerS": 13.86,
+    "diener": [
+     [
+      "dwm.exe",
+      7.36
+     ],
+     [
+      "System",
+      4.48
+     ]
+    ],
+    "eigenS": 102.25
+   },
+   "zeit": "2026-11-08T15:44:28.656Z",
+   "abdruck": "9cb0be8108f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.3,
+    "takte": 42,
+    "fremdS": 195.77,
+    "kerne": 2.098,
+    "fensterKerne": 2.287,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.64
+     ],
+     [
+      "MsMpEng.exe",
+      13.42
+     ]
+    ],
+    "dienerS": 29.72,
+    "diener": [
+     [
+      "dwm.exe",
+      15.94
+     ],
+     [
+      "System",
+      8.13
+     ]
+    ],
+    "eigenS": 294.42
+   },
+   "zeit": "2026-11-08T15:45:35.140Z",
+   "abdruck": "93eeb4494f5b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.3,
+    "takte": 42,
+    "fremdS": 195.77,
+    "kerne": 2.098,
+    "fensterKerne": 2.287,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.64
+     ],
+     [
+      "MsMpEng.exe",
+      13.42
+     ]
+    ],
+    "dienerS": 29.72,
+    "diener": [
+     [
+      "dwm.exe",
+      15.94
+     ],
+     [
+      "System",
+      8.13
+     ]
+    ],
+    "eigenS": 294.42
+   },
+   "zeit": "2026-11-08T15:45:35.140Z",
+   "abdruck": "0f54a91aa37d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.5,
+   "grund": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 30.2,
+   "fremd": {
+    "s": 34,
+    "takte": 15,
+    "fremdS": 70.61,
+    "kerne": 2.077,
+    "fensterKerne": 2.221,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      34.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.64
+     ],
+     [
+      "MsMpEng.exe",
+      5.47
+     ]
+    ],
+    "dienerS": 12.41,
+    "diener": [
+     [
+      "dwm.exe",
+      5.75
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "eigenS": 82.63
+   },
+   "zeit": "2026-11-08T15:47:51.705Z",
+   "abdruck": "cced14e7e624",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 48.4,
+    "takte": 22,
+    "fremdS": 99.42,
+    "kerne": 2.053,
+    "fensterKerne": 2.34,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      52.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.02
+     ],
+     [
+      "MsMpEng.exe",
+      7.5
+     ]
+    ],
+    "dienerS": 12.98,
+    "diener": [
+     [
+      "dwm.exe",
+      6.7
+     ],
+     [
+      "System",
+      3.41
+     ]
+    ],
+    "eigenS": 119.39
+   },
+   "zeit": "2026-11-08T15:49:04.434Z",
+   "abdruck": "87e41bb36cf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.2,
+    "takte": 42,
+    "fremdS": 187.77,
+    "kerne": 2.037,
+    "fensterKerne": 2.37,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.22
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      12.41
+     ]
+    ],
+    "dienerS": 33.59,
+    "diener": [
+     [
+      "dwm.exe",
+      18.25
+     ],
+     [
+      "System",
+      9.92
+     ]
+    ],
+    "eigenS": 185.47
+   },
+   "zeit": "2026-11-08T15:50:31.369Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3)) · Täter: (Welt 37.9 s · Garage 37.2 s im Fenster neben ihr)",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3)) · Täter: (Welt 37.9 s · Garage 37.2 s im Fenster neben ihr)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.9,
+    "takte": 19,
+    "fremdS": 92.75,
+    "kerne": 2.162,
+    "fensterKerne": 2.211,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      44.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.92
+     ],
+     [
+      "MsMpEng.exe",
+      7.38
+     ]
+    ],
+    "dienerS": 23.22,
+    "diener": [
+     [
+      "dwm.exe",
+      11.39
+     ],
+     [
+      "System",
+      6.33
+     ]
+    ],
+    "eigenS": 146.55
+   },
+   "zeit": "2026-11-08T15:54:01.780Z",
+   "abdruck": "e8395dc069f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 95.48,
+    "kerne": 2.063,
+    "fensterKerne": 2.311,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.58
+     ]
+    ],
+    "dienerS": 14.38,
+    "diener": [
+     [
+      "dwm.exe",
+      7.2
+     ],
+     [
+      "System",
+      4.39
+     ]
+    ],
+    "eigenS": 93.3
+   },
+   "zeit": "2026-11-08T15:55:21.092Z",
+   "abdruck": "f9160ef42707",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 95.48,
+    "kerne": 2.063,
+    "fensterKerne": 2.311,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.58
+     ]
+    ],
+    "dienerS": 14.38,
+    "diener": [
+     [
+      "dwm.exe",
+      7.2
+     ],
+     [
+      "System",
+      4.39
+     ]
+    ],
+    "eigenS": 93.3
+   },
+   "zeit": "2026-11-08T15:55:21.092Z",
+   "abdruck": "5f16d6260571",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 95.48,
+    "kerne": 2.063,
+    "fensterKerne": 2.311,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.58
+     ]
+    ],
+    "dienerS": 14.38,
+    "diener": [
+     [
+      "dwm.exe",
+      7.2
+     ],
+     [
+      "System",
+      4.39
+     ]
+    ],
+    "eigenS": 93.3
+   },
+   "zeit": "2026-11-08T15:55:21.092Z",
+   "abdruck": "9bcf6b523b3f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.2,
+   "fremd": {
+    "s": 95,
+    "takte": 43,
+    "fremdS": 195.98,
+    "kerne": 2.063,
+    "fensterKerne": 2.306,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      101.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      40.39
+     ],
+     [
+      "MsMpEng.exe",
+      15.19
+     ]
+    ],
+    "dienerS": 40.58,
+    "diener": [
+     [
+      "dwm.exe",
+      21.45
+     ],
+     [
+      "System",
+      13.73
+     ]
+    ],
+    "eigenS": 213.22
+   },
+   "zeit": "2026-11-08T15:56:43.382Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.2,
+   "fremd": {
+    "s": 95,
+    "takte": 43,
+    "fremdS": 195.98,
+    "kerne": 2.063,
+    "fensterKerne": 2.306,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      101.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      40.39
+     ],
+     [
+      "MsMpEng.exe",
+      15.19
+     ]
+    ],
+    "dienerS": 40.58,
+    "diener": [
+     [
+      "dwm.exe",
+      21.45
+     ],
+     [
+      "System",
+      13.73
+     ]
+    ],
+    "eigenS": 213.22
+   },
+   "zeit": "2026-11-08T15:56:43.382Z",
+   "abdruck": "ce8afc8b9d18",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K1#2",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "fremd": {
+    "s": 85.4,
+    "takte": 39,
+    "fremdS": 174.77,
+    "kerne": 2.047,
+    "fensterKerne": 2.382,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      92.02
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      33.61
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      11.98
+     ]
+    ],
+    "dienerS": 21.23,
+    "diener": [
+     [
+      "dwm.exe",
+      9.94
+     ],
+     [
+      "System",
+      6.8
+     ]
+    ],
+    "eigenS": 163.44
+   },
+   "zeit": "2026-11-08T15:58:56.247Z",
+   "abdruck": "8f7e47928a66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint) · Täter: @@PUNKTE@@ PROBE 84.2 s · Exit 1",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.3,
+   "fremd": {
+    "s": 85.4,
+    "takte": 39,
+    "fremdS": 174.77,
+    "kerne": 2.047,
+    "fensterKerne": 2.382,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      92.02
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      33.61
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      11.98
+     ]
+    ],
+    "dienerS": 21.23,
+    "diener": [
+     [
+      "dwm.exe",
+      9.94
+     ],
+     [
+      "System",
+      6.8
+     ]
+    ],
+    "eigenS": 163.44
+   },
+   "zeit": "2026-11-08T15:58:56.247Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K4#1",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 35 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ KLANG)",
+   "exit": 1,
+   "minuten": 0.59,
+   "grund": "Deckel 35 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ KLANG)",
+   "s": 35.2,
+   "fremd": {
+    "s": 37.4,
+    "takte": 17,
+    "fremdS": 75.63,
+    "kerne": 2.024,
+    "fensterKerne": 2.162,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      38.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.48
+     ]
+    ],
+    "dienerS": 13.58,
+    "diener": [
+     [
+      "dwm.exe",
+      6.23
+     ],
+     [
+      "System",
+      3.23
+     ]
+    ],
+    "eigenS": 84.75
+   },
+   "zeit": "2026-11-08T16:00:50.495Z",
+   "abdruck": "6684db253d7a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
+   "exit": 1,
+   "minuten": 3.82,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 38.2,
+   "teile": [
+    38.1,
+    38.2,
+    38.2,
+    38.2,
+    38.2,
+    38.2
+   ],
+   "fremd": {
+    "s": 232.8,
+    "takte": 103,
+    "fremdS": 518.19,
+    "kerne": 2.226,
+    "fensterKerne": 2.617,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      245.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      118.64
+     ],
+     [
+      "MsMpEng.exe",
+      42.81
+     ]
+    ],
+    "dienerS": 139.73,
+    "diener": [
+     [
+      "System",
+      78.34
+     ],
+     [
+      "dwm.exe",
+      46.58
+     ]
+    ],
+    "eigenS": 1266.89
+   },
+   "zeit": "2026-11-08T16:02:09.616Z",
+   "abdruck": "2fefbc9de50b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.2,
+   "fremd": {
+    "s": 91.5,
+    "takte": 41,
+    "fremdS": 200.52,
+    "kerne": 2.192,
+    "fensterKerne": 2.386,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      47.11
+     ],
+     [
+      "MsMpEng.exe",
+      15.91
+     ]
+    ],
+    "dienerS": 31.19,
+    "diener": [
+     [
+      "dwm.exe",
+      14.94
+     ],
+     [
+      "System",
+      10.97
+     ]
+    ],
+    "eigenS": 331.28
+   },
+   "zeit": "2026-11-08T16:19:52.345Z",
+   "abdruck": "39aa5fcd7528",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 39,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s — 2,26 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 78,6 CPU-s in 37,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.13 · fahrt 0.35 · nacht 0.19 ms · Aussetzer 0 in 30 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "Fremd-Last: AppHelperCap.exe 39,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s — 2,26 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 78,6 CPU-s in 37,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.13 · fahrt 0.35 · nacht 0.19 ms · Aussetzer 0 in 30 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "gpu": "nvidia/pascal",
+   "s": 34.6,
+   "fremd": {
+    "s": 37.3,
+    "takte": 17,
+    "fremdS": 78.59,
+    "kerne": 2.108,
+    "fensterKerne": 2.259,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      39.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.53
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.17
+     ]
+    ],
+    "dienerS": 16.67,
+    "diener": [
+     [
+      "dwm.exe",
+      7.44
+     ],
+     [
+      "System",
+      5.72
+     ]
+    ],
+    "eigenS": 67.78
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:22:44.863Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild-Rundlauf (Exit 1)) · Täter: PROBE 47.9 s",
+   "exit": 1,
+   "minuten": 0.8,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild-Rundlauf (Exit 1)) · Täter: PROBE 47.9 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 48,
+   "fremd": {
+    "s": 50.6,
+    "takte": 23,
+    "fremdS": 107.52,
+    "kerne": 2.126,
+    "fensterKerne": 2.353,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      54.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.06
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.84
+     ]
+    ],
+    "dienerS": 20.84,
+    "diener": [
+     [
+      "dwm.exe",
+      11.69
+     ],
+     [
+      "System",
+      6.42
+     ]
+    ],
+    "eigenS": 95.59
+   },
+   "zeit": "2026-11-08T16:23:27.080Z",
+   "abdruck": "072891de491c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.27 ungemessen · ring@0.05 ungemessen · Soll 0,9–1,1 · [linse-gpu] ) · Täter: PROBE-FEHLER Error: der Messort der Linse steht nicht:  ] | } |     at werkbankLinse ([eval]:120:35) |     at [eval]:182:3 |     at runScriptInThisContext (node:internal/vm:219:10)",
+   "exit": 1,
+   "minuten": 0.56,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: fichte@0.5 ungemessen · fichte@0.27 ungemessen · fichte@0.05 ungemessen · tanne@0.5 ungemessen · tanne@0.27 ungemessen · tanne@0.05 ungemessen · ring@0.5 ungemessen · ring@0.27 ungemessen · ring@0.05 ungemessen · Soll 0,9–1,1 · [linse-gpu] ) · Täter: PROBE-FEHLER Error: der Messort der Linse steht nicht:  ] | } |     at werkbankLinse ([eval]:120:35) |     at [eval]:182:3 |     at runScriptInThisContext (node:internal/vm:219:10)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 33.7,
+   "fremd": {
+    "s": 35.1,
+    "takte": 16,
+    "fremdS": 73.84,
+    "kerne": 2.102,
+    "fensterKerne": 2.19,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      37.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.77
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      5.47
+     ]
+    ],
+    "dienerS": 15.97,
+    "diener": [
+     [
+      "dwm.exe",
+      8.69
+     ],
+     [
+      "System",
+      5.42
+     ]
+    ],
+    "eigenS": 58.7
+   },
+   "zeit": "2026-11-08T16:12:03.236Z",
+   "abdruck": "4970c36e4fbd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (59 s))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (59 s))",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.4,
+    "takte": 41,
+    "fremdS": 204.58,
+    "kerne": 2.19,
+    "fensterKerne": 2.441,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      95.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      49.95
+     ],
+     [
+      "MsMpEng.exe",
+      14.3
+     ]
+    ],
+    "dienerS": 48.77,
+    "diener": [
+     [
+      "System",
+      22.08
+     ],
+     [
+      "dwm.exe",
+      20.92
+     ]
+    ],
+    "eigenS": 392.39
+   },
+   "zeit": "2026-11-08T16:13:07.666Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (59 s))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (59 s))",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.4,
+    "takte": 41,
+    "fremdS": 204.58,
+    "kerne": 2.19,
+    "fensterKerne": 2.441,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      95.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      49.95
+     ],
+     [
+      "MsMpEng.exe",
+      14.3
+     ]
+    ],
+    "dienerS": 48.77,
+    "diener": [
+     [
+      "System",
+      22.08
+     ],
+     [
+      "dwm.exe",
+      20.92
+     ]
+    ],
+    "eigenS": 392.39
+   },
+   "zeit": "2026-11-08T16:13:07.666Z",
+   "abdruck": "bf81faa399c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "fremd": {
+    "s": 49,
+    "takte": 22,
+    "fremdS": 103.36,
+    "kerne": 2.111,
+    "fensterKerne": 2.238,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.73
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.69
+     ]
+    ],
+    "dienerS": 16.27,
+    "diener": [
+     [
+      "dwm.exe",
+      8.33
+     ],
+     [
+      "System",
+      5.31
+     ]
+    ],
+    "eigenS": 158.47
+   },
+   "zeit": "2026-11-08T16:15:13.075Z",
+   "abdruck": "b81f750d0692",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.2,
+   "fremd": {
+    "s": 49,
+    "takte": 22,
+    "fremdS": 103.36,
+    "kerne": 2.111,
+    "fensterKerne": 2.238,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.73
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.69
+     ]
+    ],
+    "dienerS": 16.27,
+    "diener": [
+     [
+      "dwm.exe",
+      8.33
+     ],
+     [
+      "System",
+      5.31
+     ]
+    ],
+    "eigenS": 158.47
+   },
+   "zeit": "2026-11-08T16:15:13.075Z",
+   "abdruck": "f0aafc542846",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.3,
+   "fremd": {
+    "s": 49.4,
+    "takte": 22,
+    "fremdS": 105.5,
+    "kerne": 2.136,
+    "fensterKerne": 2.535,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ]
+    ],
+    "dienerS": 19.48,
+    "diener": [
+     [
+      "dwm.exe",
+      10.48
+     ],
+     [
+      "System",
+      6.13
+     ]
+    ],
+    "eigenS": 167.63
+   },
+   "zeit": "2026-11-08T16:16:31.034Z",
+   "abdruck": "eb8679013e74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 10 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 33.6,
+   "fremd": {
+    "s": 35.7,
+    "takte": 16,
+    "fremdS": 79.23,
+    "kerne": 2.217,
+    "fensterKerne": 2.322,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      37.66
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.39
+     ]
+    ],
+    "dienerS": 11.38,
+    "diener": [
+     [
+      "dwm.exe",
+      5.98
+     ],
+     [
+      "System",
+      3.33
+     ]
+    ],
+    "eigenS": 134.44
+   },
+   "zeit": "2026-11-08T16:17:49.855Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "zahl": "Messort: buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne — kein Urteil, UNGEMESSEN (die Probe sah: Folge: pts\\\\werkbank.cjs:1016:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\werkbank.cjs:2116:49)\"\n ]\n}\n) · Täter: @@PUNKTE@@ MESSORT buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+   "exit": 1,
+   "minuten": 0.06,
+   "grund": "Messort: buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne — kein Urteil, UNGEMESSEN (die Probe sah: Folge: pts\\\\werkbank.cjs:1016:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\Desktop\\\\AnazhRealm-OMEN\\\\AnazhRealm-mess\\\\.claude\\\\worktrees\\\\punkte-gtx\\\\scripts\\\\werkbank.cjs:2116:49)\"\n ]\n}\n) · Täter: @@PUNKTE@@ MESSORT buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 3.8,
+   "fremd": {
+    "s": 6.7,
+    "takte": 3,
+    "fremdS": 15.41,
+    "kerne": 2.302,
+    "fensterKerne": 2.302,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      7.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.11
+     ]
+    ],
+    "dienerS": 3.08,
+    "diener": [
+     [
+      "dwm.exe",
+      1.64
+     ],
+     [
+      "System",
+      1.06
+     ]
+    ],
+    "eigenS": 22.06
+   },
+   "zeit": "2026-11-08T16:19:15.136Z",
+   "abdruck": "bb691a8762eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.2,
+    "takte": 21,
+    "fremdS": 97.91,
+    "kerne": 2.118,
+    "fensterKerne": 2.313,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.41
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.56
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.73
+     ]
+    ],
+    "dienerS": 20.13,
+    "diener": [
+     [
+      "dwm.exe",
+      10.75
+     ],
+     [
+      "System",
+      6.84
+     ]
+    ],
+    "eigenS": 102.78
+   },
+   "zeit": "2026-11-08T16:24:29.871Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1,\"art\":\"schri)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BUEHNE {\"tiere\":[{\"seele\":\"wolf\",\"x\":-5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"fuchs\",\"x\":-1.5,\"art\":\"schritt\",\"amBoden\":3},{\"seele\":\"baer\",\"x\":2.1,\"art\":\"schri)",
+   "s": 47.2,
+   "fremd": {
+    "s": 50.5,
+    "takte": 17,
+    "fremdS": 124.11,
+    "kerne": 2.457,
+    "fensterKerne": 2.778,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      43.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      32.58
+     ],
+     [
+      "MsMpEng.exe",
+      18.95
+     ]
+    ],
+    "dienerS": 35.75,
+    "diener": [
+     [
+      "System",
+      18.02
+     ],
+     [
+      "dwm.exe",
+      14
+     ]
+    ],
+    "eigenS": 350.34
+   },
+   "zeit": "2026-11-08T16:25:41.500Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 4,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 1,7 CPU-s · MsMpEng.exe 0,5 CPU-s — 1,87 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 8,1 CPU-s in 4,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Schwarm-Takt 0.182 ms je Takt (Median, p95 0.2612) bei 100 Gliedern im Blick in jeder Reihe, 13380 Paare der Separation, Auge 43.3 m (Soll ≤ 0,3 ms, 100 im Bild))",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "fremd": {
+    "s": 4.3,
+    "takte": 2,
+    "fremdS": 8.14,
+    "kerne": 1.872,
+    "fensterKerne": 1.872,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      4.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.69
+     ],
+     [
+      "MsMpEng.exe",
+      0.52
+     ]
+    ],
+    "dienerS": 1.19,
+    "diener": [
+     [
+      "dwm.exe",
+      0.58
+     ],
+     [
+      "System",
+      0.39
+     ]
+    ],
+    "eigenS": 3.16
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 4,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 1,7 CPU-s · MsMpEng.exe 0,5 CPU-s — 1,87 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 8,1 CPU-s in 4,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Schwarm-Takt 0.182 ms je Takt (Median, p95 0.2612) bei 100 Gliedern im Blick in jeder Reihe, 13380 Paare der Separation, Auge 43.3 m (Soll ≤ 0,3 ms, 100 im Bild))",
+   "zeit": "2026-11-08T16:27:32.488Z",
+   "abdruck": "fe1bca1545e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 4,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 1,7 CPU-s · MsMpEng.exe 0,5 CPU-s — 1,87 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 8,1 CPU-s in 4,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klasse vogel 2 Befehle {\"haupt\":2}, 560 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle))",
+   "exit": 0,
+   "minuten": 0.01,
+   "gpu": "nvidia/pascal",
+   "s": 0.5,
+   "fremd": {
+    "s": 4.3,
+    "takte": 2,
+    "fremdS": 8.14,
+    "kerne": 1.872,
+    "fensterKerne": 1.872,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      4.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.69
+     ],
+     [
+      "MsMpEng.exe",
+      0.52
+     ]
+    ],
+    "dienerS": 1.19,
+    "diener": [
+     [
+      "dwm.exe",
+      0.58
+     ],
+     [
+      "System",
+      0.39
+     ]
+    ],
+    "eigenS": 3.16
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 4,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 1,7 CPU-s · MsMpEng.exe 0,5 CPU-s — 1,87 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 8,1 CPU-s in 4,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klasse vogel 2 Befehle {\"haupt\":2}, 560 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle))",
+   "zeit": "2026-11-08T16:27:32.488Z",
+   "abdruck": "c82dc02519ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "luftwasser.K5#1",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 14 ms portale, Neubau höchstens 2385 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 14 ms portale, Neubau höchstens 2385 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.8,
+   "fremd": {
+    "s": 87.7,
+    "takte": 40,
+    "fremdS": 183.48,
+    "kerne": 2.092,
+    "fensterKerne": 2.312,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      37.47
+     ],
+     [
+      "MsMpEng.exe",
+      15.02
+     ]
+    ],
+    "dienerS": 31,
+    "diener": [
+     [
+      "dwm.exe",
+      18.83
+     ],
+     [
+      "System",
+      7.69
+     ]
+    ],
+    "eigenS": 163.66
+   },
+   "zeit": "2026-11-08T16:27:40.867Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.173 ms), ohne garage L0 GPU 0.0236 ms↔Bank 9.1154 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.7846, portale L0 Bank 2.6417) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.173 ms), ohne garage L0 GPU 0.0236 ms↔Bank 9.1154 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.7846, portale L0 Bank 2.6417) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.8,
+   "fremd": {
+    "s": 87.7,
+    "takte": 40,
+    "fremdS": 183.48,
+    "kerne": 2.092,
+    "fensterKerne": 2.312,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      37.47
+     ],
+     [
+      "MsMpEng.exe",
+      15.02
+     ]
+    ],
+    "dienerS": 31,
+    "diener": [
+     [
+      "dwm.exe",
+      18.83
+     ],
+     [
+      "System",
+      7.69
+     ]
+    ],
+    "eigenS": 163.66
+   },
+   "zeit": "2026-11-08T16:27:40.867Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 128 von 130 build-asset von der Platte (98.5 %), Bau-Ereignisse Werk 0 · Haupt-Faden 2, leer 0, verschluckt 0) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 128 von 130 build-asset von der Platte (98.5 %), Bau-Ereignisse Werk 0 · Haupt-Faden 2, leer 0, verschluckt 0) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "e8b08865db0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "d2b650a6f75f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0.02 % Lücke nach 3 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s) · [linse-gpu] nvidia/pascal) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0.02 % Lücke nach 3 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s) · [linse-gpu] nvidia/pascal) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "fbcb837d411b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 14.54 s (13.53 · 15.54, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 14.54 s (13.53 · 15.54, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 23.18 s von außen (Eigenmeldung 22.10 s), Bild 0.02 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 3 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ) · Täter: @@ 81.1 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 81.3,
+   "fremd": {
+    "s": 85.2,
+    "takte": 37,
+    "fremdS": 218.45,
+    "kerne": 2.565,
+    "fensterKerne": 3.522,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      50.92
+     ],
+     [
+      "MsMpEng.exe",
+      36.78
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "dwm.exe",
+      23.11
+     ],
+     [
+      "System",
+      12.61
+     ]
+    ],
+    "eigenS": 494.73
+   },
+   "zeit": "2026-11-08T16:29:30.940Z",
+   "abdruck": "201ca904c048",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1812:14) |     at H.linse ([eval]:",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1812:14) |     at H.linse ([eval]:",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.2,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 4.41,
+    "kerne": 2.006,
+    "fensterKerne": 2.006,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      1.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.2
+     ],
+     [
+      "MsMpEng.exe",
+      0.42
+     ]
+    ],
+    "dienerS": 0.95,
+    "diener": [
+     [
+      "dwm.exe",
+      0.5
+     ],
+     [
+      "System",
+      0.22
+     ]
+    ],
+    "eigenS": 2.63
+   },
+   "zeit": "2026-11-08T16:31:20.657Z",
+   "abdruck": "39320cf4db45",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K5#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: geteilt · Ego · Bank (Frist der Probe) · geteilt · Third · Brücke (nicht gelaufen)) · Täter: ❌ geteilt · Ego · Bank × sitzen — Frist der Probe · 35 s",
+   "exit": 0,
+   "minuten": 0.59,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: geteilt · Ego · Bank (Frist der Probe) · geteilt · Third · Brücke (nicht gelaufen)) · Täter: ❌ geteilt · Ego · Bank × sitzen — Frist der Probe · 35 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 35.2,
+   "fremd": {
+    "s": 38.5,
+    "takte": 17,
+    "fremdS": 90.88,
+    "kerne": 2.361,
+    "fensterKerne": 2.627,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      41.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.31
+     ],
+     [
+      "MsMpEng.exe",
+      7.91
+     ]
+    ],
+    "dienerS": 14.67,
+    "diener": [
+     [
+      "dwm.exe",
+      7.89
+     ],
+     [
+      "System",
+      4.53
+     ]
+    ],
+    "eigenS": 184.98
+   },
+   "zeit": "2026-11-08T16:31:24.375Z",
+   "abdruck": "2e8942881f08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2388 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":11516,\"fehler\") · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (82.7 s)",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2388 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":11516,\"fehler\") · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (82.7 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.7,
+   "fremd": {
+    "s": 86.2,
+    "takte": 39,
+    "fremdS": 187.08,
+    "kerne": 2.171,
+    "fensterKerne": 2.592,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      40.58
+     ],
+     [
+      "MsMpEng.exe",
+      15.08
+     ]
+    ],
+    "dienerS": 41.56,
+    "diener": [
+     [
+      "dwm.exe",
+      25.39
+     ],
+     [
+      "System",
+      11.45
+     ]
+    ],
+    "eigenS": 216.53
+   },
+   "zeit": "2026-11-08T16:32:27.503Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2388 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":11516,\"fehler\") · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (82.7 s)",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2388 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":11516,\"fehler\") · Täter: K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (82.7 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.7,
+   "fremd": {
+    "s": 86.2,
+    "takte": 39,
+    "fremdS": 187.08,
+    "kerne": 2.171,
+    "fensterKerne": 2.592,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      40.58
+     ],
+     [
+      "MsMpEng.exe",
+      15.08
+     ]
+    ],
+    "dienerS": 41.56,
+    "diener": [
+     [
+      "dwm.exe",
+      25.39
+     ],
+     [
+      "System",
+      11.45
+     ]
+    ],
+    "eigenS": 216.53
+   },
+   "zeit": "2026-11-08T16:32:27.503Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "s": 45.4,
+   "fremd": {
+    "s": 49.3,
+    "takte": 21,
+    "fremdS": 121.38,
+    "kerne": 2.46,
+    "fensterKerne": 2.731,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      32.17
+     ],
+     [
+      "MsMpEng.exe",
+      10.73
+     ]
+    ],
+    "dienerS": 27.73,
+    "diener": [
+     [
+      "System",
+      15.28
+     ],
+     [
+      "dwm.exe",
+      8.63
+     ]
+    ],
+    "eigenS": 353.28
+   },
+   "zeit": "2026-11-08T16:34:19.866Z",
+   "abdruck": "780be0a8826d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "s": 45.4,
+   "fremd": {
+    "s": 49.3,
+    "takte": 21,
+    "fremdS": 121.38,
+    "kerne": 2.46,
+    "fensterKerne": 2.731,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      32.17
+     ],
+     [
+      "MsMpEng.exe",
+      10.73
+     ]
+    ],
+    "dienerS": 27.73,
+    "diener": [
+     [
+      "System",
+      15.28
+     ],
+     [
+      "dwm.exe",
+      8.63
+     ]
+    ],
+    "eigenS": 353.28
+   },
+   "zeit": "2026-11-08T16:34:19.866Z",
+   "abdruck": "6be425f258c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K2#1",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 34,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 20,4 CPU-s · MsMpEng.exe 5,8 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 76,4 CPU-s in 32,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 743.1 ms (haus_tudor, huelle in 214.1 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2276.3 ms (haus_tudor, mesh in 44.1 m, Bau-Hash 84121d20))",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Fremd-Last: AppHelperCap.exe 34,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 20,4 CPU-s · MsMpEng.exe 5,8 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 76,4 CPU-s in 32,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 743.1 ms (haus_tudor, huelle in 214.1 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2276.3 ms (haus_tudor, mesh in 44.1 m, Bau-Hash 84121d20))",
+   "gpu": "nvidia/pascal",
+   "s": 28.5,
+   "fremd": {
+    "s": 32.3,
+    "takte": 14,
+    "fremdS": 76.38,
+    "kerne": 2.362,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      34.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.39
+     ],
+     [
+      "MsMpEng.exe",
+      5.8
+     ]
+    ],
+    "dienerS": 15.97,
+    "diener": [
+     [
+      "dwm.exe",
+      9.14
+     ],
+     [
+      "System",
+      4.89
+     ]
+    ],
+    "eigenS": 182.97
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:35:40.902Z",
+   "abdruck": "53734dd61b83",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 34,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 20,4 CPU-s · MsMpEng.exe 5,8 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 76,4 CPU-s in 32,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 743.1 ms (haus_tudor, huelle in 214.1 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2276.3 ms (haus_tudor, mesh in 44.1 m, Bau-Hash 84121d20))",
+   "exit": 0,
+   "minuten": 0.48,
+   "grund": "Fremd-Last: AppHelperCap.exe 34,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 20,4 CPU-s · MsMpEng.exe 5,8 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 76,4 CPU-s in 32,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 743.1 ms (haus_tudor, huelle in 214.1 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 2276.3 ms (haus_tudor, mesh in 44.1 m, Bau-Hash 84121d20))",
+   "gpu": "nvidia/pascal",
+   "s": 28.5,
+   "fremd": {
+    "s": 32.3,
+    "takte": 14,
+    "fremdS": 76.38,
+    "kerne": 2.362,
+    "fensterKerne": 2.482,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      34.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.39
+     ],
+     [
+      "MsMpEng.exe",
+      5.8
+     ]
+    ],
+    "dienerS": 15.97,
+    "diener": [
+     [
+      "dwm.exe",
+      9.14
+     ],
+     [
+      "System",
+      4.89
+     ]
+    ],
+    "eigenS": 182.97
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:35:40.902Z",
+   "abdruck": "225997244700",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: })",
+   "s": 90.2,
+   "fremd": {
+    "s": 91.7,
+    "takte": 40,
+    "fremdS": 213.55,
+    "kerne": 2.329,
+    "fensterKerne": 2.67,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      53.34
+     ],
+     [
+      "MsMpEng.exe",
+      18.19
+     ]
+    ],
+    "dienerS": 37.39,
+    "diener": [
+     [
+      "System",
+      15.8
+     ],
+     [
+      "dwm.exe",
+      15.52
+     ]
+    ],
+    "eigenS": 473.41
+   },
+   "zeit": "2026-11-08T16:37:39.317Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "fremd": {
+    "s": 47.1,
+    "takte": 21,
+    "fremdS": 97.36,
+    "kerne": 2.067,
+    "fensterKerne": 2.27,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.47
+     ],
+     [
+      "MsMpEng.exe",
+      8.08
+     ]
+    ],
+    "dienerS": 12.08,
+    "diener": [
+     [
+      "dwm.exe",
+      6.06
+     ],
+     [
+      "System",
+      3.41
+     ]
+    ],
+    "eigenS": 141.67
+   },
+   "zeit": "2026-11-08T16:39:36.044Z",
+   "abdruck": "47608cd79624",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "fremd": {
+    "s": 47.1,
+    "takte": 21,
+    "fremdS": 97.36,
+    "kerne": 2.067,
+    "fensterKerne": 2.27,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.47
+     ],
+     [
+      "MsMpEng.exe",
+      8.08
+     ]
+    ],
+    "dienerS": 12.08,
+    "diener": [
+     [
+      "dwm.exe",
+      6.06
+     ],
+     [
+      "System",
+      3.41
+     ]
+    ],
+    "eigenS": 141.67
+   },
+   "zeit": "2026-11-08T16:39:36.044Z",
+   "abdruck": "dd158c900200",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K2#1",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "Messort: /umstellen ohne Antwort binnen 34 s — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 34 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at  (Exit 2)) · Täter: @@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 34 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "Messort: /umstellen ohne Antwort binnen 34 s — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 34 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at  (Exit 2)) · Täter: @@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 34 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:622:28) |     at ClientRequest.emit (node:events:508:28) |     at Socket.emitRequestTimeout (node:_http_client:927:9)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 38.2,
+   "fremd": {
+    "s": 40.1,
+    "takte": 18,
+    "fremdS": 87.23,
+    "kerne": 2.174,
+    "fensterKerne": 2.215,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      42.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.39
+     ],
+     [
+      "MsMpEng.exe",
+      5.84
+     ]
+    ],
+    "dienerS": 11.48,
+    "diener": [
+     [
+      "dwm.exe",
+      5.75
+     ],
+     [
+      "System",
+      3.34
+     ]
+    ],
+    "eigenS": 137.94
+   },
+   "zeit": "2026-11-08T16:40:46.455Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 91,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 47,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,2 CPU-s — 2,38 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 191,5 CPU-s in 85,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 7002 · third 16733 · ego 6890 · third 15586 · ego 6614 ms (Soll ≤ 2000) · Luma min 0.043 · Frame max 755 ms · Geburt 10522 ms · rot: #1 ego ff38ca01→522089e9: t 7002 ms, 84 Bilder schwarz und 0 weiß (Luma 0.043–0.31), 23 Frames über 1)",
+   "exit": 0,
+   "minuten": 1.36,
+   "grund": "Fremd-Last: AppHelperCap.exe 91,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 47,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,2 CPU-s — 2,38 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 191,5 CPU-s in 85,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 7002 · third 16733 · ego 6890 · third 15586 · ego 6614 ms (Soll ≤ 2000) · Luma min 0.043 · Frame max 755 ms · Geburt 10522 ms · rot: #1 ego ff38ca01→522089e9: t 7002 ms, 84 Bilder schwarz und 0 weiß (Luma 0.043–0.31), 23 Frames über 1)",
+   "gpu": "nvidia/pascal",
+   "s": 81.5,
+   "fremd": {
+    "s": 85,
+    "takte": 38,
+    "fremdS": 191.5,
+    "kerne": 2.254,
+    "fensterKerne": 2.38,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.98
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      47.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.16
+     ]
+    ],
+    "dienerS": 45.67,
+    "diener": [
+     [
+      "dwm.exe",
+      21.34
+     ],
+     [
+      "System",
+      19.3
+     ]
+    ],
+    "eigenS": 365.34
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:42:23.620Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppet",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppet",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.9,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 8.44,
+    "kerne": 1.903,
+    "fensterKerne": 1.903,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      4.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.94
+     ],
+     [
+      "MsMpEng.exe",
+      0.7
+     ]
+    ],
+    "dienerS": 1.58,
+    "diener": [
+     [
+      "dwm.exe",
+      0.73
+     ],
+     [
+      "System",
+      0.63
+     ]
+    ],
+    "eigenS": 5.63
+   },
+   "zeit": "2026-11-08T16:44:14.524Z",
+   "abdruck": "f945bff7be0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppet",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppet",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.9,
+   "fremd": {
+    "s": 4.4,
+    "takte": 2,
+    "fremdS": 8.44,
+    "kerne": 1.903,
+    "fensterKerne": 1.903,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      4.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.94
+     ],
+     [
+      "MsMpEng.exe",
+      0.7
+     ]
+    ],
+    "dienerS": 1.58,
+    "diener": [
+     [
+      "dwm.exe",
+      0.73
+     ],
+     [
+      "System",
+      0.63
+     ]
+    ],
+    "eigenS": 5.63
+   },
+   "zeit": "2026-11-08T16:44:14.524Z",
+   "abdruck": "7168640db50e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "fremd": {
+    "s": 49,
+    "takte": 22,
+    "fremdS": 104.89,
+    "kerne": 2.14,
+    "fensterKerne": 2.398,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.64
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.27
+     ],
+     [
+      "MsMpEng.exe",
+      7.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "dwm.exe",
+      11.33
+     ],
+     [
+      "System",
+      4.97
+     ]
+    ],
+    "eigenS": 146.52
+   },
+   "zeit": "2026-11-08T16:44:42.062Z",
+   "abdruck": "6c05ef8ef9e1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 100.02 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht: ungemessen (die Uhr 84 s trug den Sch)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 100.02 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht: ungemessen (die Uhr 84 s trug den Sch)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht 33.39 · wiese-third-steht ? · genesis-ego-steht 33.35 · genesis-third-steht 83.34 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 100.02 · stadt-ego-geht ? · wiese-ego-sturm ? · )",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht 33.39 · wiese-third-steht ? · genesis-ego-steht 33.35 · genesis-third-steht 83.34 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 100.02 · stadt-ego-geht ? · wiese-ego-sturm ? · )",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "cf1ffc5a5e15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-steht 33.39 · wiese-third-steht ? · genesis-ego-steht 33.35 · genesis-third-steht 83.34 · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Bild-p95 33.39 > 33 | wiese-third-steht: ungemessen (die Uhr)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-steht 33.39 · wiese-third-steht ? · genesis-ego-steht 33.35 · genesis-third-steht 83.34 · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Bild-p95 33.39 > 33 | wiese-third-steht: ungemessen (die Uhr)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "faadcb87e50f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 16.44 · wiese-third-steht ? · genesis-ego-steht 30.3 · genesis-third-steht 78.46 · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 16.44 > 5.8 | wiese-third-steht: ungemessen)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 16.44 · wiese-third-steht ? · genesis-ego-steht 30.3 · genesis-third-steht 78.46 · Gang 87.4 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 16.44 > 5.8 | wiese-third-steht: ungemessen)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 16.44 · wiese-third-steht ? · genesis-ego-steht 30.3 · genesis-third-steht 78.46 ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 94.67 · stadt-ego-geht ? · w)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 16.44 · wiese-third-steht ? · genesis-ego-steht 30.3 · genesis-third-steht 78.46 ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 94.67 · stadt-ego-geht ? · w)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "0a6126d9fbfe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 114 · 500k · 131.2 MB · 31.64 ms | wiese-third ? | genesis-ego 76 · 285k · 116.9 MB · 19.51 ms | genesis-third 109 · 382k · 121.3 MB · 18.89 ms | dorf-ego ? | dorf-third ? · Ga)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 114 · 500k · 131.2 MB · 31.64 ms | wiese-third ? | genesis-ego 76 · 285k · 116.9 MB · 19.51 ms | genesis-third 109 · 382k · 121.3 MB · 18.89 ms | dorf-ego ? | dorf-third ? · Ga)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 53 · wiese-third-steht ? · genesis-ego-steht 50 · genesis-third-steht 65 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 91 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p9)",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "Fremd-Last: AppHelperCap.exe 94,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 44,5 CPU-s · MsMpEng.exe 15,3 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 192,4 CPU-s in 90,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 53 · wiese-third-steht ? · genesis-ego-steht 50 · genesis-third-steht 65 · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 91 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p9)",
+   "gpu": "nvidia/pascal",
+   "s": 87.5,
+   "fremd": {
+    "s": 90.1,
+    "takte": 40,
+    "fremdS": 192.42,
+    "kerne": 2.135,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      94.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.52
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 38.02,
+    "diener": [
+     [
+      "dwm.exe",
+      19.97
+     ],
+     [
+      "System",
+      12.73
+     ]
+    ],
+    "eigenS": 322.23
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T16:45:55.522Z",
+   "abdruck": "4cc877868786",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z1 idb geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"522089e9-d7ea-42a2-8aef-4355edbe7012\"} alter=5.797 verloren=0/0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z1 idb geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"522089e9-d7ea-42a2-8aef-4355edbe7012\"} alter=5.797 verloren=0/0)",
+   "s": 45.3,
+   "fremd": {
+    "s": 49.5,
+    "takte": 22,
+    "fremdS": 112.25,
+    "kerne": 2.266,
+    "fensterKerne": 2.404,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      52.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.45
+     ],
+     [
+      "MsMpEng.exe",
+      8.72
+     ]
+    ],
+    "dienerS": 22.81,
+    "diener": [
+     [
+      "dwm.exe",
+      13.02
+     ],
+     [
+      "System",
+      6.83
+     ]
+    ],
+    "eigenS": 246.02
+   },
+   "zeit": "2026-11-08T16:47:54.009Z",
+   "abdruck": "7bedeb37abad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z1 idb geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"522089e9-d7ea-42a2-8aef-4355edbe7012\"} alter=5.797 verloren=0/0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z1 idb geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"522089e9-d7ea-42a2-8aef-4355edbe7012\"} alter=5.797 verloren=0/0)",
+   "s": 45.3,
+   "fremd": {
+    "s": 49.5,
+    "takte": 22,
+    "fremdS": 112.25,
+    "kerne": 2.266,
+    "fensterKerne": 2.404,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      52.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.45
+     ],
+     [
+      "MsMpEng.exe",
+      8.72
+     ]
+    ],
+    "dienerS": 22.81,
+    "diener": [
+     [
+      "dwm.exe",
+      13.02
+     ],
+     [
+      "System",
+      6.83
+     ]
+    ],
+    "eigenS": 246.02
+   },
+   "zeit": "2026-11-08T16:47:54.009Z",
+   "abdruck": "8100b54f9d70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K1#1",
+   "modus": "session"
+  },
+  "speicher.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 46,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · OmenCommandCenterBackground.exe 6,1 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 90,4 CPU-s in 44,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: je Speicher-Bild in der frischen Welt p50 0.01 / p95 0.035 / max 0.625 ms (Soll p95 ≤ 0,3; 20 Stände, 2868 Speicher-Bilder))",
+   "exit": 0,
+   "minuten": 0.69,
+   "gpu": "nvidia/pascal",
+   "s": 41.1,
+   "fremd": {
+    "s": 44,
+    "takte": 20,
+    "fremdS": 90.38,
+    "kerne": 2.053,
+    "fensterKerne": 2.15,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.52
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.08
+     ]
+    ],
+    "dienerS": 16.48,
+    "diener": [
+     [
+      "dwm.exe",
+      9.27
+     ],
+     [
+      "System",
+      4.94
+     ]
+    ],
+    "eigenS": 120.67
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 46,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · OmenCommandCenterBackground.exe 6,1 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 90,4 CPU-s in 44,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: je Speicher-Bild in der frischen Welt p50 0.01 / p95 0.035 / max 0.625 ms (Soll p95 ≤ 0,3; 20 Stände, 2868 Speicher-Bilder))",
+   "zeit": "2026-11-08T16:49:07.478Z",
+   "abdruck": "920fe5b46b7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 46,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · OmenCommandCenterBackground.exe 6,1 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 90,4 CPU-s in 44,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Speicher-Bild frisch p50 0.01 / p95 0.035 / max 0.625 ms (2868 Bilder), 0 von 140 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.01 / p95 0.04 / max 1.415 ms (1915 Bilder), 0 von 96 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ )",
+   "exit": 0,
+   "minuten": 0.69,
+   "gpu": "nvidia/pascal",
+   "s": 41.1,
+   "fremd": {
+    "s": 44,
+    "takte": 20,
+    "fremdS": 90.38,
+    "kerne": 2.053,
+    "fensterKerne": 2.15,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.52
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.08
+     ]
+    ],
+    "dienerS": 16.48,
+    "diener": [
+     [
+      "dwm.exe",
+      9.27
+     ],
+     [
+      "System",
+      4.94
+     ]
+    ],
+    "eigenS": 120.67
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 46,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · OmenCommandCenterBackground.exe 6,1 CPU-s — 2,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 90,4 CPU-s in 44,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Speicher-Bild frisch p50 0.01 / p95 0.035 / max 0.625 ms (2868 Bilder), 0 von 140 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.01 / p95 0.04 / max 1.415 ms (1915 Bilder), 0 von 96 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ )",
+   "zeit": "2026-11-08T16:49:07.478Z",
+   "abdruck": "9fd03137c637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T15:05:53.950Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 8.6,
+  "grundstellungS": [
+   0.2,
+   8.8,
+   5.8,
+   8.3,
+   6.1,
+   7.2,
+   5.8,
+   5.5,
+   11.1,
+   7.9,
+   5,
+   5,
+   6.4,
+   4.7,
+   5.5
+  ],
+  "proben": 25,
+  "freigaben": [],
+  "offen": [
+   "licht.K3#2",
+   "gelaende.K3#1",
+   "affekt.K4#2",
+   "ferne.K5#1",
+   "material.K4#1",
+   "material.K5#1",
+   "lod.K3#1",
+   "profiband.K5#1",
+   "profiband.K5#2",
+   "gelaende.K2#1",
+   "gelaende.K2#2",
+   "wetter.K2#2",
+   "physik.K2#2",
+   "tiere.K1#2",
+   "affekt.K1#2",
+   "oekologie.K4#2",
+   "haar.K1#1",
+   "fahrzeug.K3#1",
+   "fahrzeug.K3#2",
+   "fahrzeug.K4#1",
+   "fahrzeug.K4#2",
+   "leib.K1#2",
+   "halten.K2#1",
+   "leib.K4#1",
+   "leib.K4#2",
+   "fahrzeug.K5#1",
+   "fahrzeug.K2#1",
+   "fahrzeug.K2#2",
+   "klang.K4#1",
+   "klang.K4#2",
+   "klang.K5#2",
+   "speicher.K4#2",
+   "wetter.K2#1",
+   "licht.K3#1",
+   "mensch.K1#1",
+   "mensch.K2#2",
+   "vegetation.K4#1",
+   "vegetation.K4#2",
+   "mensch.K5#1",
+   "siedlung.K1#2",
+   "schatten.K1#1",
+   "schatten.K1#2",
+   "wetter.K3#2",
+   "tiere.K3#2",
+   "tiere.K2#2",
+   "luftwasser.K5#1",
+   "luftwasser.K5#2",
+   "studios.K2#2",
+   "studios.K3#2",
+   "pipeline.K4#1",
+   "pipeline.K4#2",
+   "ankunft.K2#1",
+   "ankunft.K3#1",
+   "ankunft.K1#1",
+   "ankunft.K1#2",
+   "bauen.K1#2",
+   "bauen.K5#2",
+   "studios.K4#1",
+   "studios.K4#2",
+   "siedlung.K2#1",
+   "siedlung.K2#2",
+   "siedlung.K5#1",
+   "siedlung.K5#2",
+   "siedlung.K4#2",
+   "leib.K2#1",
+   "leib.K2#2",
+   "leib.K3#2",
+   "halten.K5#1",
+   "halten.K5#2",
+   "halten.K1#2",
+   "tore.K1#1",
+   "tore.K3#1",
+   "tore.K3#2",
+   "streaming.K4#2",
+   "profiband.K1#1",
+   "profiband.K1#2",
+   "pflicht.E#1",
+   "profiband.K2#1",
+   "profiband.K2#2",
+   "profiband.K3#1",
+   "profiband.K3#2",
+   "speicher.K1#1",
+   "speicher.K1#2",
+   "speicher.K2#1",
+   "speicher.K2#2"
+  ],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K5#2",
+    "s": 31.5,
+    "takte": 825,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 36.9,
+    "takte": 1210,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 31.1,
+    "takte": 1131,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "licht.K2#1",
+    "s": 29.4,
+    "takte": 995,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "material.K2#1",
+    "s": 30.8,
+    "takte": 1101,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 29.8,
+    "takte": 1013,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 26.3,
+    "takte": 838,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K1#1",
+    "s": 37.6,
+    "takte": 1273,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 35.8,
+    "takte": 1279,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 34.4,
+    "takte": 1668,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K3#1",
+    "s": 29.1,
+    "takte": 945,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 39,
+    "takte": 1343,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 26.2,
+    "takte": 647,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 26.6,
+    "takte": 646,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 136.7,
+    "fehler": "DIE WELT STEHT NICHT nach 2012 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2012 Takten — die Welt hat nichts mehr offen)",
+    "nach": "der Tür (die Welt hing)"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "material.K1#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 5
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K2#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   },
+   {
+    "probe": "material.K3#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
+  "ciBlicke": 26,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 3242,
+   "frameP95": 66.63,
+   "taktP95": 64.04,
+   "vramMax": 139.5,
+   "seiten": 16,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "licht.K5#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "streaming.K3#1",
+     "m": 1000,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "gelaende.K5#2",
+     "m": 312,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 1618,
+   "luecken": 13,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 1816.2,
+  "grund": "die Fahrt riss 1800 s in licht.K3#2 — offen: licht.K3#2, gelaende.K3#1, affekt.K4#2, ferne.K5#1, material.K4#1, material.K5#1, lod.K3#1, profiband.K5#1, profiband.K5#2, gelaende.K2#1, gelaende.K2#2, wetter.K2#2, physik.K2#2, tiere.K1#2, affekt.K1#2, oekologie.K4#2, haar.K1#1, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#1, luftwasser.K5#2, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+  "minuten": 30.34
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-08T15:36:14.066Z",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.8,
+   "grundstellungS": [
+    0.2,
+    5.6,
+    5.1,
+    4.9,
+    4.3,
+    4.8,
+    5.2,
+    10.7,
+    8,
+    6.1,
+    7.8,
+    0.1,
+    0.1,
+    0.1,
+    8.2,
+    7.6,
+    6.6,
+    5.4,
+    6,
+    26.7
+   ],
+   "proben": 23,
+   "freigaben": [],
+   "offen": [
+    "fahrzeug.K2#2",
+    "klang.K4#1",
+    "klang.K4#2",
+    "klang.K5#2",
+    "speicher.K4#2",
+    "wetter.K2#1",
+    "licht.K3#1",
+    "mensch.K1#1",
+    "mensch.K2#2",
+    "vegetation.K4#1",
+    "vegetation.K4#2",
+    "mensch.K5#1",
+    "siedlung.K1#2",
+    "schatten.K1#1",
+    "schatten.K1#2",
+    "wetter.K3#2",
+    "tiere.K3#2",
+    "tiere.K2#2",
+    "luftwasser.K5#1",
+    "luftwasser.K5#2",
+    "studios.K2#2",
+    "studios.K3#2",
+    "pipeline.K4#1",
+    "pipeline.K4#2",
+    "ankunft.K2#1",
+    "ankunft.K3#1",
+    "ankunft.K1#1",
+    "ankunft.K1#2",
+    "bauen.K1#2",
+    "bauen.K5#2",
+    "studios.K4#1",
+    "studios.K4#2",
+    "siedlung.K2#1",
+    "siedlung.K2#2",
+    "siedlung.K5#1",
+    "siedlung.K5#2",
+    "siedlung.K4#2",
+    "leib.K2#1",
+    "leib.K2#2",
+    "leib.K3#2",
+    "halten.K5#1",
+    "halten.K5#2",
+    "halten.K1#2",
+    "tore.K1#1",
+    "tore.K3#1",
+    "tore.K3#2",
+    "streaming.K4#2",
+    "profiband.K1#1",
+    "profiband.K1#2",
+    "pflicht.E#1",
+    "profiband.K2#1",
+    "profiband.K2#2",
+    "profiband.K3#1",
+    "profiband.K3#2",
+    "speicher.K1#1",
+    "speicher.K1#2",
+    "speicher.K2#1",
+    "speicher.K2#2"
+   ],
+   "orte": [
+    {
+     "ort": "dorf",
+     "vor": "licht.K3#2",
+     "s": 142.3,
+     "fehler": "DIE WELT STEHT NICHT nach 2071 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2071 Takten — die Welt hat nichts mehr offen)",
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": null,
+     "vor": "gelaende.K3#1",
+     "s": 58.4,
+     "takte": 711,
+     "chunks": 81,
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": null,
+     "vor": "affekt.K4#2",
+     "s": 19.3,
+     "takte": 708,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "material.K4#1",
+     "s": 19.5,
+     "takte": 761,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "profiband.K5#1",
+     "s": 22.2,
+     "takte": 709,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "gelaende.K2#1",
+     "s": 27.6,
+     "takte": 723,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "wetter.K2#2",
+     "s": 33.6,
+     "takte": 1031,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "physik.K2#2",
+     "s": 32,
+     "takte": 939,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "tiere.K1#2",
+     "s": 33.8,
+     "takte": 1304,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "affekt.K1#2",
+     "s": 29.6,
+     "takte": 991,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "oekologie.K4#2",
+     "s": 6,
+     "takte": 315,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "haar.K1#1",
+     "s": 3.3,
+     "takte": 173,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K3#1",
+     "s": 3.3,
+     "takte": 238,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K3#2",
+     "s": 29.5,
+     "takte": 857,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "leib.K1#2",
+     "s": 29.9,
+     "takte": 925,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "leib.K4#1",
+     "s": 32.6,
+     "takte": 910,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K5#1",
+     "s": 24,
+     "takte": 724,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K2#1",
+     "s": 36.1,
+     "takte": 1276,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K2#2",
+     "s": 26.5,
+     "takte": 821,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [
+    {
+     "vor": "material.K4#1",
+     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+     "s": 4.3
+    }
+   ],
+   "unerklaert": [
+    {
+     "probe": "ferne.K5#1",
+     "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+    },
+    {
+     "probe": "profiband.K5#1",
+     "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+    }
+   ],
+   "ciBlicke": 24,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 4286,
+    "frameP95": 108.3,
+    "taktP95": 104.09,
+    "vramMax": 148.3,
+    "seiten": 18,
+    "marken": 1,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "gelaende.K3#1",
+      "m": 6468,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "gelaende.K2#1",
+      "m": 1718,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "fahrzeug.K2#1",
+      "m": 1618,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "fahrzeug.K5#1",
+      "m": 1071,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "tiere.K1#2",
+      "m": 315,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 1682,
+    "luecken": 8,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 1840.7,
+   "grund": "die Fahrt riss 1800 s in fahrzeug.K2#2 — offen: fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#1, luftwasser.K5#2, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+   "minuten": 30.74
+  },
+  {
+   "start": "2026-11-08T16:06:58.478Z",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.8,
+   "grundstellungS": [
+    3.9,
+    4.1,
+    4,
+    4.2,
+    4.7,
+    4,
+    4.4,
+    4.4,
+    2.1,
+    2.3,
+    2,
+    7.3,
+    0.1,
+    0.1,
+    0.1,
+    7.8,
+    2.8,
+    0.1,
+    0.1,
+    3.1,
+    2.9,
+    0.1,
+    5,
+    4.4,
+    9.8,
+    2.5
+   ],
+   "proben": 24,
+   "freigaben": [],
+   "offen": [
+    "siedlung.K4#2",
+    "leib.K2#1",
+    "leib.K2#2",
+    "leib.K3#2",
+    "halten.K5#1",
+    "halten.K5#2",
+    "halten.K1#2",
+    "tore.K1#1",
+    "tore.K3#1",
+    "tore.K3#2",
+    "streaming.K4#2",
+    "profiband.K1#1",
+    "profiband.K1#2",
+    "pflicht.E#1",
+    "profiband.K2#1",
+    "profiband.K2#2",
+    "profiband.K3#1",
+    "profiband.K3#2",
+    "speicher.K1#1",
+    "speicher.K1#2",
+    "speicher.K2#1",
+    "speicher.K2#2"
+   ],
+   "orte": [
+    {
+     "ort": "dorf",
+     "vor": "wetter.K2#1",
+     "s": 139.3,
+     "fehler": "DIE WELT STEHT NICHT nach 2032 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2032 Takten — die Welt hat nichts mehr offen)",
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": "dorf",
+     "vor": "licht.K3#1",
+     "s": 117.4,
+     "fehler": "DIE WELT STEHT NICHT nach 2160 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 2160 Takten — die Welt hat nichts mehr offen)",
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": "genesis",
+     "vor": "mensch.K1#1",
+     "s": 26.2,
+     "takte": 716,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "genesis",
+     "vor": "vegetation.K4#1",
+     "s": 28.4,
+     "takte": 962,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "genesis",
+     "vor": "mensch.K5#1",
+     "s": 27,
+     "takte": 767,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "genesis",
+     "vor": "siedlung.K1#2",
+     "s": 27,
+     "takte": 873,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "buehne",
+     "vor": "schatten.K1#1",
+     "s": 17.5,
+     "takte": 581,
+     "chunks": 84,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "buehne",
+     "vor": "schatten.K1#2",
+     "s": 10,
+     "fehler": "Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K2#2",
+     "s": 29.3,
+     "takte": 871,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "klang.K4#1",
+     "s": 31.1,
+     "takte": 1136,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "klang.K5#2",
+     "s": 1.2,
+     "takte": 66,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "speicher.K4#2",
+     "s": 6.1,
+     "takte": 418,
+     "chunks": 108,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "wetter.K3#2",
+     "s": 13.9,
+     "takte": 685,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "tiere.K3#2",
+     "s": 18.4,
+     "takte": 708,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "tiere.K2#2",
+     "s": 18.5,
+     "takte": 758,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "luftwasser.K5#1",
+     "s": 6.3,
+     "takte": 416,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "studios.K2#2",
+     "s": 6,
+     "takte": 414,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "pipeline.K4#1",
+     "s": 21,
+     "takte": 767,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "bauen.K1#2",
+     "s": 22.8,
+     "takte": 817,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "bauen.K5#2",
+     "s": 2,
+     "takte": 140,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "studios.K4#1",
+     "s": 21.7,
+     "takte": 832,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "siedlung.K2#1",
+     "s": 23.9,
+     "takte": 967,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "siedlung.K5#1",
+     "s": 23.1,
+     "takte": 885,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "siedlung.K4#2",
+     "s": 22,
+     "takte": 805,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [
+    {
+     "vor": "licht.K3#1",
+     "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+     "s": 4.1
+    },
+    {
+     "vor": "mensch.K1#1",
+     "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+     "s": 4.2
+    },
+    {
+     "vor": "siedlung.K4#2",
+     "wege": "wege +4 [-1010.2,-1538.8,-664,-1198.8/20] [-119.1,-274.9,279.2,201/272] [-1195.9,-1543,-671.9,-971.7/900] …",
+     "s": 2.5
+    }
+   ],
+   "ciBlicke": 25,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 3032,
+    "frameP95": 249.97,
+    "taktP95": 134.45,
+    "vramMax": 142.8,
+    "seiten": 26,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "fahrzeug.K2#2",
+      "m": 1863,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "siedlung.K5#1",
+      "m": 1798,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "siedlung.K2#1",
+      "m": 1350,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "wetter.K3#2",
+      "m": 1162,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "siedlung.K4#2",
+      "m": 639,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "luftwasser.K5#1",
+      "m": 558,
+      "ringVor": 4,
+      "ringMin": 4
+     },
+     {
+      "probe": "schatten.K1#1",
+      "m": 459,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 1746,
+    "luecken": 11,
+    "letzteLuecke": "THREE is not defined"
+   },
+   "fahrtS": 1800.3,
+   "grund": "die Fahrt riss 1800 s in siedlung.K4#2 — offen: siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+   "minuten": 30.09
+  },
+  {
+   "start": "2026-11-08T16:37:03.800Z",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 8.2,
+   "grundstellungS": [
+    4.1,
+    3.7,
+    0.4,
+    0.2,
+    0.1,
+    0.1,
+    3.1,
+    2.1,
+    7.1,
+    3.9
+   ],
+   "proben": 11,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "siedlung.K4#2",
+     "s": 25.9,
+     "takte": 709,
+     "chunks": 81,
+     "nach": null
+    },
+    {
+     "ort": null,
+     "vor": "leib.K2#1",
+     "s": 21.2,
+     "takte": 772,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "leib.K3#2",
+     "s": 20.1,
+     "takte": 752,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "halten.K5#1",
+     "s": 10.7,
+     "takte": 706,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "halten.K1#2",
+     "s": 20.9,
+     "takte": 757,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "tore.K1#1",
+     "s": 6.3,
+     "takte": 332,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "tore.K3#1",
+     "s": 27.8,
+     "takte": 1202,
+     "chunks": 98,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "streaming.K4#2",
+     "s": 21.5,
+     "takte": 765,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "profiband.K1#1",
+     "s": 23.8,
+     "takte": 711,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "speicher.K1#1",
+     "s": 22,
+     "takte": 720,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "speicher.K2#1",
+     "s": 22,
+     "takte": 692,
+     "chunks": 90,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [
+    {
+     "vor": "speicher.K1#1",
+     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+     "s": 7.1
+    }
+   ],
+   "anOrt": [
+    {
+     "vor": "streaming.K4#2",
+     "anders": [
+      "playerPathBuckets",
+      "tools",
+      "materials"
+     ],
+     "wie": {
+      "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w",
+      "tools": {
+       "vorher": 0,
+       "nachher": 1,
+       "fehlt": [],
+       "neu": [
+        "{\"label\":\"Konformanz-Feile\",\"opClass\":\"s"
+       ],
+       "anders": []
+      },
+      "materials": {
+       "vorher": 0,
+       "nachher": 1,
+       "fehlt": [],
+       "neu": [
+        "{\"label\":\"<b>Konformanz-Glut</b>\",\"color"
+       ],
+       "anders": []
+      }
+     }
+    }
+   ],
+   "ciBlicke": 12,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 1363,
+    "frameP95": 341.71,
+    "taktP95": 152.31,
+    "vramMax": 131.2,
+    "seiten": 11,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "leib.K3#2",
+      "m": 6430,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "leib.K2#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "profiband.K1#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "siedlung.K4#2",
+      "m": 639,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 740,
+    "luecken": 7,
+    "letzteLuecke": "kein Renderer"
+   },
+   "fahrtS": 765.8,
+   "minuten": 12.85
+  }
+ ]
+}

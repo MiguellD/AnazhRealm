@@ -1,0 +1,104 @@
+[linse-gpu] nvidia/pascal
+  ✅ wolf  v̂ 1.2 1.2 m/s (Mond) · Hüfte 0.629 m · Stand 0.53 · Schlupf 0.006
+  ✅ Gangart Welt wolf (Mond) v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.53
+  ✅ wolf  v̂ 0.3 0.7 m/s (Freude) · Hüfte 0.629 m · Stand 0.68 · Schlupf 0.006
+  ✅ Gangart Welt wolf (Freude) v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ wolf  v̂ 0.74 1.8 m/s (Furcht) · Hüfte 0.629 m · Stand 0.64 · Schlupf 0.001
+  ✅ Gangart Welt wolf (Furcht) v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64
+  ✅ wolf  v̂ 1.2 3.0 m/s (Trauer) · Hüfte 0.629 m · Stand 0.52 · Schlupf 0.008
+  ✅ Gangart Welt wolf (Trauer) v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ wolf  v̂ 3.5 8.7 m/s (Jagd) · Hüfte 0.629 m · Stand 0.27 · Schlupf 0.004
+  ✅ Gangart Welt wolf (Jagd) v̂ 3.5 · galopp [0 0.15 0.6 0.44] · Tastgrad 0.27
+  ✅ wolf  v̂ 0.74 1.8 m/s (30 fps · Leiter 1/3) · Hüfte 0.629 m · Stand 0.48 · Schlupf 0.001
+  ✅ wolf  v̂ 1.2 3.0 m/s (30 fps · Leiter 1/2) · Hüfte 0.629 m · Stand 0.38 · Schlupf 0.001
+  ✅ satz wolf  v̂ 0.3 0.7 m/s · Band schritt · Hüfte 0.629 m · Stand 0.68 · Schlupf 0.025
+  ✅ Gangart Satz wolf v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ satz wolf  v̂ 0.74 1.8 m/s · Band schritt · Hüfte 0.629 m · Stand 0.66 · Schlupf 0.019
+  ✅ Gangart Satz wolf v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66
+  ✅ satz wolf  v̂ 1.2 3.0 m/s · Band trab · Hüfte 0.629 m · Stand 0.52 · Schlupf 0.014
+  ✅ Gangart Satz wolf v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ satz wolf  v̂ 3.5 8.7 m/s · Band galopp · Hüfte 0.629 m · Stand 0.28 · Schlupf 0.012
+  ✅ Gangart Satz wolf v̂ 3.5 · galopp [0 0.15 0.59 0.44] · Tastgrad 0.28
+  ✅ fuchs v̂ 0.3 0.6 m/s (Furcht) · Hüfte 0.389 m · Stand 0.66 · Schlupf 0.007
+  ✅ Gangart Welt fuchs (Furcht) v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66
+  ✅ fuchs v̂ 0.74 1.4 m/s (Trauer) · Hüfte 0.389 m · Stand 0.64 · Schlupf 0.001
+  ✅ Gangart Welt fuchs (Trauer) v̂ 0.74 · schritt-lateral [0 0.5 0.24 0.74] · Tastgrad 0.64
+  ✅ fuchs v̂ 1.2 2.3 m/s (Jagd) · Hüfte 0.389 m · Stand 0.48 · Schlupf 0.003
+  ✅ Gangart Welt fuchs (Jagd) v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.48
+  ✅ fuchs v̂ 3.5 6.8 m/s (Freude) · Hüfte 0.389 m · Stand 0.28 · Schlupf 0.011
+  ✅ Gangart Welt fuchs (Freude) v̂ 3.5 · galopp [0 0.14 0.6 0.45] · Tastgrad 0.28
+  ✅ fuchs v̂ 0.74 1.4 m/s (30 fps · Leiter 1/2) · Hüfte 0.389 m · Stand 0.51 · Schlupf 0.001
+  ✅ fuchs v̂ 1.2 2.3 m/s (30 fps · Leiter 1/2) · Hüfte 0.389 m · Stand 0.33 · Schlupf 0.001
+  ✅ satz fuchs v̂ 0.3 0.6 m/s · Band schritt · Hüfte 0.389 m · Stand 0.68 · Schlupf 0.011
+  ✅ Gangart Satz fuchs v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ satz fuchs v̂ 0.74 1.4 m/s · Band schritt · Hüfte 0.389 m · Stand 0.65 · Schlupf 0.006
+  ✅ Gangart Satz fuchs v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65
+  ✅ satz fuchs v̂ 1.2 2.3 m/s · Band trab · Hüfte 0.389 m · Stand 0.51 · Schlupf 0.03
+  ✅ Gangart Satz fuchs v̂ 1.2 · trab [0 0.5 0.49 0.99] · Tastgrad 0.51
+  ✅ satz fuchs v̂ 3.5 6.8 m/s · Band galopp · Hüfte 0.389 m · Stand 0.28 · Schlupf 0.018
+  ✅ Gangart Satz fuchs v̂ 3.5 · galopp [0 0.17 0.61 0.46] · Tastgrad 0.28
+  ✅ baer  v̂ 0.3 0.8 m/s (Trauer) · Hüfte 0.767 m · Stand 0.67 · Schlupf 0.007
+  ✅ Gangart Welt baer (Trauer) v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.67
+  ✅ baer  v̂ 0.74 2.0 m/s (Jagd) · Hüfte 0.767 m · Stand 0.64 · Schlupf 0.002
+  ✅ Gangart Welt baer (Jagd) v̂ 0.74 · schritt-lateral [0 0.5 0.24 0.75] · Tastgrad 0.64
+  ✅ baer  v̂ 1.2 3.3 m/s (Freude) · Hüfte 0.767 m · Stand 0.52 · Schlupf 0.003
+  ✅ Gangart Welt baer (Freude) v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ baer  v̂ 3.5 9.6 m/s (Furcht) · Hüfte 0.767 m · Stand 0.27 · Schlupf 0.006
+  ✅ Gangart Welt baer (Furcht) v̂ 3.5 · galopp [0 0.17 0.62 0.49] · Tastgrad 0.27
+  ✅ baer  v̂ 0.74 2.0 m/s (30 fps · Leiter 1/3) · Hüfte 0.767 m · Stand 0.5 · Schlupf 0.001
+  ✅ baer  v̂ 1.2 3.3 m/s (30 fps · Leiter 1/3) · Hüfte 0.767 m · Stand 0.32 · Schlupf 0.001
+  ✅ satz baer  v̂ 0.3 0.8 m/s · Band schritt · Hüfte 0.767 m · Stand 0.68 · Schlupf 0.026
+  ✅ Gangart Satz baer v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ satz baer  v̂ 0.74 2.0 m/s · Band schritt · Hüfte 0.767 m · Stand 0.67 · Schlupf 0.019
+  ✅ Gangart Satz baer v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.67
+  ✅ satz baer  v̂ 1.2 3.3 m/s · Band trab · Hüfte 0.767 m · Stand 0.52 · Schlupf 0.021
+  ✅ Gangart Satz baer v̂ 1.2 · trab [0 0.5 0.49 1] · Tastgrad 0.52
+  ✅ satz baer  v̂ 3.5 9.6 m/s · Band galopp · Hüfte 0.767 m · Stand 0.3 · Schlupf 0.036
+  ✅ Gangart Satz baer v̂ 3.5 · galopp [0 0.15 0.61 0.46] · Tastgrad 0.3
+  ✅ wesen v̂ 0.3 0.9 m/s (Jagd) · Hüfte 0.917 m · Stand 0.66 · Schlupf 0.008
+  ✅ Gangart Welt wesen (Jagd) v̂ 0.3 · schritt-lateral [0 0.5 0.24 0.74] · Tastgrad 0.66
+  ✅ wesen v̂ 0.74 2.2 m/s (Freude) · Hüfte 0.917 m · Stand 0.66 · Schlupf 0.002
+  ✅ Gangart Welt wesen (Freude) v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66
+  ✅ wesen v̂ 1.2 3.6 m/s (Furcht) · Hüfte 0.917 m · Stand 0.52 · Schlupf 0.004
+  ✅ Gangart Welt wesen (Furcht) v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.52
+  ✅ wesen v̂ 3.5 10.5 m/s (Trauer) · Hüfte 0.917 m · Stand 0.31 · Schlupf 0.009
+  ✅ Gangart Welt wesen (Trauer) v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.31
+  ✅ wesen v̂ 0.74 2.2 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.46 · Schlupf 0.001
+  ✅ wesen v̂ 1.2 3.6 m/s (30 fps · Leiter 1/3) · Hüfte 0.917 m · Stand 0.34 · Schlupf 0.001
+  ✅ satz wesen v̂ 0.3 0.9 m/s · Band schritt · Hüfte 0.917 m · Stand 0.68 · Schlupf 0.024
+  ✅ Gangart Satz wesen v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.68
+  ✅ satz wesen v̂ 0.74 2.2 m/s · Band schritt · Hüfte 0.917 m · Stand 0.67 · Schlupf 0.02
+  ✅ Gangart Satz wesen v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.67
+  ✅ satz wesen v̂ 1.2 3.6 m/s · Band trab · Hüfte 0.917 m · Stand 0.52 · Schlupf 0.023
+  ✅ Gangart Satz wesen v̂ 1.2 · trab [0 0.51 0.5 1] · Tastgrad 0.52
+  ✅ satz wesen v̂ 3.5 10.5 m/s · Band galopp · Hüfte 0.917 m · Stand 0.29 · Schlupf 0.019
+  ✅ Gangart Satz wesen v̂ 3.5 · galopp [0 0.15 0.59 0.44] · Tastgrad 0.29
+  ✅ mensch gehen (W) 1.15 m/s · Bein 0.835 m · Stand 0.59 · Schlupf 0.034 · Kadenz 1.79 Schritte/s (0.64 m je Schritt) · Töne 4 / Soll 4.4 · Becken Hub 0.049 L / Tiefe 0.075 L · Lock-Löser 0 in 213 Stand-Takten
+  ✅ mensch laufen (Shift) 5.16 m/s · Bein 0.835 m · Stand 0.24 · Schlupf 0.015 · Kadenz 2.95 Schritte/s (1.75 m je Schritt) · Töne 8 / Soll 7.3 · Becken Hub 0.109 L / Tiefe 0.166 L · Lock-Löser 0 in 87 Stand-Takten
+  ✅ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.19 · Schlupf 0.016 · Kadenz 3.09 Schritte/s (2.19 m je Schritt) · Töne 8 / Soll 7.7 · Becken Hub 0.111 L / Tiefe 0.154 L · Lock-Löser 0 in 71 Stand-Takten
+  ✅ Schwere 1,62 m/s² · Takt Mensch 1.0000 × Gesetz · Becken-Zeile g 1.62 · Literal-Zwillinge 0
+[stall-akte] Seite #5: der Puls kehrt zurück nach 24.8 s — loading · anazhRealm — · programme 28 · gl-sync 84 · zuletzt gl.linkProgram #28
+[stall-akte] ═══ diag-tier-gang.cjs · Seite #5 http://127.0.0.1:17804/worlds/koerperstudio/index.html · der Puls steht seit 20.7 s
+[stall-akte] offen waitForFunction(() => typeof enterPlay === "function" && typeof playTakt === "function" && typeof parkTeil) seit 0.2 s
+[stall-akte] Puls 2×, zuletzt vor 20.7 s — loading · anazhRealm — · programme 28 · gl-sync 84 · zuletzt gl.linkProgram #28
+[stall-akte] Stempel 16:26:15.622 gl.linkProgram #17
+[stall-akte] Stempel 16:26:16.190 gl.linkProgram #18
+[stall-akte] Stempel 16:26:16.190 gl.linkProgram #19
+[stall-akte] Stempel 16:26:16.210 gl.linkProgram #20
+[stall-akte] Stempel 16:26:16.232 gl.linkProgram #21
+[stall-akte] Stempel 16:26:16.256 gl.linkProgram #22
+[stall-akte] Stempel 16:26:16.276 gl.linkProgram #23
+[stall-akte] Stempel 16:26:16.325 gl.linkProgram #24
+[stall-akte] Stempel 16:26:16.339 gl.linkProgram #25
+[stall-akte] Stempel 16:26:16.356 gl.linkProgram #26
+[stall-akte] Stempel 16:26:16.400 gl.linkProgram #27
+[stall-akte] Stempel 16:26:16.427 gl.linkProgram #28
+[stall-akte] CPU (2 s) GPU 6936 111 % · renderer 20792 26 % · renderer 20644 2 % · browser 23044 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 25:49 gpu 65/r 3 · 25:51 gpu 85/r 0 · 25:53 gpu 98/r 33 · 25:55 gpu 115/r 6 · 25:57 gpu 25/r 139 · 25:59 gpu 40/r 116 · 26:01 gpu 101/r 155 · 26:03 gpu 116/r 120 · 26:05 gpu 122/r 121 · 26:07 gpu 112/r 61 · 26:09 gpu 105/r 123 · 26:11 gpu 111/r 26 · 26:13 gpu 119/r 3 · 26:15 gpu 120/r 35
+[stall-akte] Stapel Jr three-r128.min.js:6 < acquireProgram three-r128.min.js:6 < Pt three-r128.min.js:6 < It three-r128.min.js:6 < renderBufferDirect three-r128.min.js:6 < Ct three-r128.min.js:6 < Rt three-r128.min.js:6 < render three-r128.min.js:6
+[stall-akte] Konsole log: %cDA VINCI BUILD B64·benchmark color:#7fd;font-weight:bold
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in Jr three-r128.min.js:6
+  ✅ Labor = Welt im Takt: frei 346 byte-gleich · Schaukel 404 byte-gleich · Seele gleich
+[welt-boot] FEHLER absturz: Page crashed!
+[welt-boot] FEHLER absturz: Page crashed!
+TIER-GANG EXIT=1
