@@ -34,15 +34,16 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
 const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
+const startFehlt = (m) => !m || m.gestartet !== true; // jedes Verdikt: ohne Start kein Urteil
 function ladeschirmVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.imHtml) out.push("kein Ladeschirm im HTML (das erste Bild ist die schwarze Leinwand)");
     else {
@@ -91,7 +92,7 @@ function ladeschirmVerdict(m) {
         if (koepfe.includes("w0") || koepfe[0] === koepfe[1]) out.push(`der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit (Leib → ${B.leib}, Dorf-Export → ${B["export-settlement"]}; das Werk w0 malt den Blatt-Atlas) — der Bild-Rang der Bahn fehlt (_foundryPumpe, _foundryRang)`);
         if (hinter.length) out.push(`${hinter.join(", ")} stellen sich hinter einen Kopf der Ankunft (${hinter.map((t) => B[t]).join(", ")}) — sie warten auf den Export (3,4–5,4 s) bzw. den Leib`);
     }
-    if (rg && rg.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
+    if (rg?.nachBild && rg.vorBild === "blick" && rg.nachBild !== "hinten,blick,vorrat") out.push(`nach dem ersten Bild sendet die Pumpe „${rg.nachBild}" statt nah zuerst rundum mit dem Vorrat („hinten,blick,vorrat") — der Blick-Schlüssel überlebt das Bild (_rangImErstenBlick)`);
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (!rb.spaet) out.push("der Rundblick ohne späten Baum (Vorbedingung)");
@@ -104,16 +105,12 @@ function ladeschirmVerdict(m) {
         out.push("die Terme des ersten Weltbilds fehlen (`WELTBILD_TERME`) — die Linse sieht nicht, was das Bild hält");
     else {
         const gedeckt = new Set();
-        for (const [k, z] of Object.entries(f)) {
-            for (const t of (z && z.terme) || []) {
-                if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
+        for (const [k, z] of Object.entries(f)) for (const t of (z && z.terme) || []) if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
                 else if (!z.weg) gedeckt.add(t);
-            }
-        }
         for (const t of terme)
             if (!gedeckt.has(t)) out.push(`der Term „${t}“ des ersten Weltbilds hat keinen Fall, der den Ladeschirm hält (L2a)`);
     }
-    if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot && m.fehltNachBoot.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
+    if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot?.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
     if (!f.lueckeRuht) out.push(`eine ruhende Lücke: ${ohne("lueckeRuht")}`);
     else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
     else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
@@ -160,7 +157,7 @@ function ladeschirmVerdict(m) {
     else if (v.fehler) out.push(`der Vorrat: ${v.fehler} (Vorbedingung)`);
     else {
         const liste = (v.ohneLeser || []).join(", ") || "keine";
-        if (v.fehltNeu && v.fehltNeu.length)
+        if (v.fehltNeu?.length)
             out.push(
                 `während der Vorrat läuft, wartet das erste Weltbild („${v.fehltNeu.join(" · ")}") auf Aufträge ohne Leser des ` +
                     `ersten Frames: ${liste}`
@@ -170,7 +167,7 @@ function ladeschirmVerdict(m) {
                 `der Vorrat bestellt ${v.karten} Karten nach der Buchgröße (${(v.kartenBsp || []).join(", ")}), das erste Weltbild ` +
                     "wartet auf jede (die Karten-Schlange) — die Karte bestellt ihr Leser"
             );
-        if (v.vorBild && v.vorBild.length)
+        if (v.vorBild?.length)
             out.push(
                 `vor dem ersten Weltbild bestellt der Vorrat ${v.vorBild.length} Aufträge ohne Leser des ersten Frames ` +
                     `(${v.vorBild.slice(0, 4).join(", ")}${v.vorBild.length > 4 ? ", …" : ""}) — die Leser warten in seiner Schlange`
@@ -188,7 +185,7 @@ function ladeschirmVerdict(m) {
                 out.push(`der Vorrat bestellt, ohne dass sein Merker „${PH.bestellt}" sagt: ${falsch.slice(0, 3).join(", ")}`);
         }
         if (v.ende !== true) out.push("der Vorrat endet nicht (`f._vorrat` bleibt an)");
-        else if (!(v.nachBild > 0) && !(v.vorBild && v.vorBild.length))
+        else if (!(v.nachBild > 0) && !(v.vorBild?.length))
             out.push("der Vorrat bestellt nie — die Wagen und die Siedlung bleiben kalt");
         if (!v.streu) out.push("die Streu-Region unter dem Vorrat: keine Probe (Vorbedingung)");
         else if (v.streu.aufgeschoben)
@@ -231,7 +228,7 @@ function ladeschirmVerdict(m) {
     return out;
 }
 function kreuzVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.da) return ["kein Fadenkreuz"];
     if (!m.sichtbar) out.push("das Fadenkreuz ist unsichtbar");
@@ -241,20 +238,20 @@ function kreuzVerdict(m) {
     return out;
 }
 function hilfeVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     for (const wort of ["hilfe", "help", "?"]) {
         const z = (m.antworten || {})[wort] || {};
         if (z.unbekannt) out.push(`„${wort}" ist unbekannt („${z.erste}")`);
-        else if (z.fehlt && z.fehlt.length) out.push(`„${wort}" nennt ${z.fehlt.length} Beispiel(e) der Tafeln nicht (${z.fehlt.slice(0, 3).join(" · ")})`);
-        if (z.tastenFehlen && z.tastenFehlen.length) out.push(`„${wort}" nennt ${z.tastenFehlen.length} Taste(n) nicht (${z.tastenFehlen.slice(0, 3).join(" · ")})`);
+        else if (z.fehlt?.length) out.push(`„${wort}" nennt ${z.fehlt.length} Beispiel(e) der Tafeln nicht (${z.fehlt.slice(0, 3).join(" · ")})`);
+        if (z.tastenFehlen?.length) out.push(`„${wort}" nennt ${z.tastenFehlen.length} Taste(n) nicht (${z.tastenFehlen.slice(0, 3).join(" · ")})`);
         if (!z.v1) out.push(`„${wort}" nennt keinen v1-Satz`);
     }
     if (m.unbekanntListe) out.push("der Satz für Unbekanntes trägt eine Liste von Hand");
     return out;
 }
 function gespraechVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (m.enterFokus !== "chat-input") out.push(`Enter öffnet das Gespräch nicht (Fokus ${m.enterFokus})`);
     if (m.wImFeld) out.push("W läuft beim Tippen im Feld");
@@ -267,16 +264,14 @@ function gespraechVerdict(m) {
     return out;
 }
 function gurtVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.buch) return ["Buch kalt (Vorbedingung)"];
     const belegt = (m.hotbar || []).filter(Boolean);
     if (!belegt.length) out.push("der Start-Gurt ist leer");
-    for (const e of m.eintraege || []) {
-        if (!e.sichtbar) out.push(`${e.name} ist im Katalog versteckt${e.altDoppel ? ` (Alt-Doppel → ${e.altDoppel})` : ""}`);
+    for (const e of m.eintraege || []) if (!e.sichtbar) out.push(`${e.name} ist im Katalog versteckt${e.altDoppel ? ` (Alt-Doppel → ${e.altDoppel})` : ""}`);
         else if (!e.art) out.push(`${e.name} ist kein Studio-Werk`);
         else if (!e.platzierbar) out.push(`${e.name} lässt sich nicht setzen`);
-    }
     const arten = (m.eintraege || []).map((e) => e.art).filter(Boolean);
     const doppelt = arten.filter((a, i) => arten.indexOf(a) !== i);
     if (doppelt.length) out.push(`Studio-Art doppelt im Gurt: ${doppelt.join(", ")}`);
@@ -285,14 +280,14 @@ function gurtVerdict(m) {
     return out;
 }
 function kameraVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.baum) return ["kein Studio-Baum als Eintrag (Vorbedingung)"];
     if (!(m.stammSkala >= 0.95 * m.weltSkala)) out.push(`Stamm-Hülle im Vorlagen-Maß (× ${m.stammSkala} statt × ${m.weltSkala})`);
     for (const k of ["fuss", "ritt"]) {
         const z = (m.wege || {})[k];
         if (!z || !(z.proben > 0)) {
-            out.push(`${k}: keine Probe (Vorbedingung${z && z.grund ? ": " + z.grund : ""})`);
+            out.push(`${k}: keine Probe (Vorbedingung${z?.grund ? ": " + z.grund : ""})`);
             continue;
         }
         if (z.pflanzeHaelt > 0)
@@ -337,7 +332,7 @@ function kameraVerdict(m) {
 const ID_RE = /\b(?:baum|haus|fahrzeug|tor|klinge|welt|ruestung|trank|koerper|reittier)_[a-z0-9_]+/;
 const TELE_RE = /\b[a-zA-Z]+=\S|FOUNDRY|\bSeed\b|Slots? übersprungen|export-settlement|BLOCKIERT|\["[a-z_]+",|op_exception|budget_exceeded|unknown_op/;
 function kanalVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     for (const z of m.zeilen || []) {
         if (/^> /.test(z)) continue;
@@ -348,7 +343,7 @@ function kanalVerdict(m) {
     return out;
 }
 function kiVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (/^Aktiv/.test(m.status || "")) out.push(`der Status sagt „${m.status}" ohne Dienst`);
     else if (!/läuft nicht/.test(m.status || "")) out.push(`der Status nennt die Ursache nicht („${(m.status || "").slice(0, 70)}")`);
@@ -359,7 +354,7 @@ function kiVerdict(m) {
     return out;
 }
 function dorfVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.buch) return ["Buch kalt (Vorbedingung)"];
     if (!(m.haeuser > 0)) return ["kein Haus gegründet"];
@@ -419,6 +414,7 @@ async function probe(arg) {
     // die Zeilen des Chats — mit `k` ihre Schlüssel (die Welt spricht aus der Tafel, `_chatEcho` trägt ihn am Knoten): die Linse
     // liest den Schlüssel, nie den Wortlaut
     const zeilen = (k) => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => (k ? d.querySelector("[data-t]")?.dataset.t : d.textContent));
+    const ueber = (P) => st.playerMesh.position.set(P.x, P.y + 2.2, P.z); // der Spieler 2,2 m über dem Punkt P
     const buch = await r._foundryAwaitBook(45000);
     await __takte(30, 30);
     // ── L2a: das erste Weltbild ──
@@ -657,7 +653,7 @@ async function probe(arg) {
             if (baum) fall("lueckeRuht", baumWeg(false), baumHer, ruht);
             // (6b) eine Lücke ARBEITET: ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
             // ist etwas unterwegs (das Buch im bootenden Studio-Faden) — der Ladeschirm bleibt, nie das halbe Bild unter Last
-            if (fo && fo.worker)
+            if (fo?.worker)
                 fall("lueckeArbeitet", () => (fo.ready = false), () => (fo.ready = merkBuch), ruht);
             else m.ohneFall.lueckeArbeitet = "kein Studio-Faden nach dem Boot";
             // (7) eine Lücke flackert
@@ -671,14 +667,14 @@ async function probe(arg) {
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
-                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                if (document.activeElement?.blur) document.activeElement.blur();
                 halt.vor = false;
                 taste(document.body, "keydown", "w", "KeyW");
                 const wLief = halt.vor === true;
                 taste(document.body, "keyup", "w", "KeyW");
                 taste(document.body, "keydown", "Enter");
                 const ae = document.activeElement;
-                if (ae && ae.id === "chat-input") ae.blur();
+                if (ae?.id === "chat-input") ae.blur();
                 // jeder Eingang: Strg+K öffnete die Omnibox hinter
                 // dem Ladeschirm, sie führte Befehle aus
                 const omni = document.getElementById("omnibox-overlay");
@@ -757,8 +753,8 @@ async function probe(arg) {
                             try {
                                 const reg = r._scatterRegion(rx, rz, p, 0);
                                 v.streu = {
-                                    aufgeschoben: !!(reg && reg._deferredFoundry && !reg._cont),
-                                    zellen: reg && reg.cells ? reg.cells.length : -1,
+                                    aufgeschoben: !!(reg?._deferredFoundry && !reg._cont),
+                                    zellen: reg?.cells ? reg.cells.length : -1,
                                 };
                             } finally {
                                 st.renderer._isHeadlessNull = merkH;
@@ -782,10 +778,8 @@ async function probe(arg) {
                             r._weltbildSteht();
                             if (merkDa) st._weltbildDa = merkDa;
                         }
-                        for (const k of Object.keys(alt)) {
-                            if (alt[k] === P[k]) delete r[k];
+                        for (const k of Object.keys(alt)) if (alt[k] === P[k]) delete r[k];
                             else r[k] = alt[k];
-                        }
                     }
                     v.ende = f._vorrat === false;
                     if (!v.laeuft) v.fehler = "der Vorrat lief nicht an (`f._vorrat` blieb aus)";
@@ -889,7 +883,7 @@ async function probe(arg) {
                 try {
                     let g = ((st._weltbildDa = 0), neu());
                     if (!(b.n[0] && b.n[1])) {
-                        [st.yaw, b.n] = [w.sort(aufsteigend)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
+                        [st.yaw, b.n] = [rang(w.sort(aufsteigend)) + r._ersterBlick().halb, [0, 0]];
                         g = neu();
                     }
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
@@ -1032,7 +1026,7 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.gespraech = m;
         const ci = document.getElementById("chat-input");
-        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        if (document.activeElement?.blur) document.activeElement.blur();
         taste(document.body, "keydown", "Enter");
         m.enterFokus = fokus();
         if (m.enterFokus !== "chat-input") ci.focus();
@@ -1060,7 +1054,7 @@ async function probe(arg) {
             taste(knopf, "keydown", "Enter");
             const a = document.activeElement;
             m.enterAufKnopf = a === knopf ? "knopf" : fokus(a);
-            if (a && a.blur) a.blur();
+            if (a?.blur) a.blur();
         }
         m.gestartet = true;
     } catch (e) {
@@ -1070,7 +1064,7 @@ async function probe(arg) {
     try {
         const m = { gestartet: false };
         out.gurt = m;
-        m.buch = !!(buch && buch.ok);
+        m.buch = !!(buch?.ok);
         m.hotbar = st.hotbar.slice();
         // die Art liest die EINE Zuordnung des Gurts (`_gurtArt`: der kind des Studio-Rezepts, am Ort sein Ort) — bis
         // w4-koerper-park las die Linse ihren eigenen kind-Zwilling und nannte jedes Gerät des Spielplatzes eine fehlende Art
@@ -1138,6 +1132,7 @@ async function probe(arg) {
                 linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
             }
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
+            const aufHang = (x, z) => st.playerMesh.position.set(x, hh(x, z) + 1.0, z); // der Spieler 1 m über dem Hang bei (x, z)
             // Die Pflanzen beiseite (die Blocker der Natur-Einträge): das Soll, das nur Boden und Bau erzwingen. Der Täter beim
             // Namen: der Stamm (Blocker).
             // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
@@ -1147,15 +1142,13 @@ async function probe(arg) {
                 (a) => a && natur(a) && a.blockerAABBs && a.blockerAABBs.length && a.blockerAABBs.every((b) => b && b.pflanze === true)
             );
             const ohneStaemme = (an) => {
-                for (const a of pflanzen) {
-                    if (an) {
+                for (const a of pflanzen) if (an) {
                         a.__lkBlocker = a.blockerAABBs;
                         a.blockerAABBs = null;
                     } else if (a.__lkBlocker) {
                         a.blockerAABBs = a.__lkBlocker;
                         delete a.__lkBlocker;
                     }
-                }
             };
             let T = 1000;
             const arm = () => {
@@ -1168,15 +1161,14 @@ async function probe(arg) {
                 for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
                 return arm();
             };
-            const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[Math.floor(a.length / 2)].toFixed(2) : null);
+            const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toFixed(2) : null);
             // EIN WEG zu Fuß (3rd, Neigung 0) oder im Ritt (die Verfolger-Kamera des GT): `stelle(x, z, gier)` setzt Spieler/Wagen.
             const weg = (name, stelle, schritt, sprungM, bildM) => {
                 const z = { proben: 0, pflanzeHaelt: 0, taeter: [], sprungM };
                 const ist = [];
                 const soll = [];
                 const taeter = new Set();
-                for (const L of linien) {
-                    for (let s = 0; s <= 30; s += schritt) {
+                for (const L of linien) for (let s = 0; s <= 30; s += schritt) {
                         const x = L.x0 + Math.sin(L.gier) * s;
                         const zz = L.z0 + Math.cos(L.gier) * s;
                         if (!Number.isFinite(hh(x, zz))) continue;
@@ -1193,7 +1185,6 @@ async function probe(arg) {
                             taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
                         }
                     }
-                }
                 z.armIst = med(ist);
                 z.armSoll = med(soll);
                 z.unter3 = ist.filter((a) => a < 3).length;
@@ -1204,9 +1195,7 @@ async function probe(arg) {
                 const fahre = (mitPflanzen) => {
                     let n = 0;
                     let hinaus = 0;
-                    if (!mitPflanzen) {
-                        ohneStaemme(true);
-                    }
+                    if (!mitPflanzen) ohneStaemme(true);
                     for (const L of linien.slice(0, 8)) {
                         let vor = null;
                         for (let s = 0; s <= 30; s += bildM) {
@@ -1224,9 +1213,7 @@ async function probe(arg) {
                         }
                         ruhig();
                     }
-                    if (!mitPflanzen) {
-                        ohneStaemme(false);
-                    }
+                    if (!mitPflanzen) ohneStaemme(false);
                     return { n, hinaus };
                 };
                 const jSoll = fahre(false);
@@ -1242,7 +1229,7 @@ async function probe(arg) {
             weg(
                 "fuss",
                 (x, zz, gier) => {
-                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                    aufHang(x, zz);
                     st.yaw = gier;
                 },
                 1.0,
@@ -1254,7 +1241,7 @@ async function probe(arg) {
             if (gt) {
                 await __gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
-                if (mr && mr.ok) {
+                if (mr?.ok) {
                     weg(
                         "ritt",
                         (x, zz, gier) => {
@@ -1279,22 +1266,22 @@ async function probe(arg) {
             const PFLANZE = new Set(["foliage", "foliageTex", "bark", "stem"]);
             const stoffe = new Set();
             st.scene.traverse((o) => {
-                const mats = o && o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
-                for (const mt of mats) if (mt && mt.userData && PFLANZE.has(mt.userData.foundryKind)) stoffe.add(mt);
+                const mats = o?.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+                for (const mt of mats) if (mt?.userData && PFLANZE.has(mt.userData.foundryKind)) stoffe.add(mt);
             });
             m.stoffe = stoffe.size;
             const kn = Object.values(r._kamDurchKnoten || {});
             const ohne = Array.from(stoffe).filter((mt) => !(mt.maskNode && kn.includes(mt.maskNode)));
             m.stoffeOhne = ohne.length;
             m.stoffeOhneArten = Array.from(new Set(ohne.map((mt) => mt.userData.foundryKind)));
-            m.schattenGeschnitten = Array.from(stoffe).filter((mt) => mt.maskNode && mt.maskNode.isNode && !(mt.maskShadowNode && mt.maskShadowNode.isNode)).length;
+            m.schattenGeschnitten = Array.from(stoffe).filter((mt) => mt.maskNode && mt.maskNode.isNode && !(mt.maskShadowNode?.isNode)).length;
             // das Ziel der Durchsicht ist der Blickpunkt (3rd: die Brust, zu Fuß um die Schulter versetzt) — gelesen, wo die
             // Uniform es trägt: höchstens KAMERA_SCHULTER_M neben der Brust, und AUF dem Blick der Kamera (
             // Gelb 1 der dritten Gegenprüfung: mit der Brust als Ziel stand die Ebene des Fadenkreuz-Strahls schräg, bei kurzem
             // Arm begann er 0,52–0,78 m hinter dem Blickpunkt)
             const lu = st.lodUniforms;
-            if (lu && lu.uKamZiel) {
-                st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            if (lu?.uKamZiel) {
+                ueber(P);
                 r._loopCamera((T += 0.1));
                 const v = lu.uKamZiel.value;
                 const p = st.playerMesh.position;
@@ -1304,7 +1291,7 @@ async function probe(arg) {
             // DAS FADENKREUZ IN 3RD: der Abstand der Brust vom Strahl
             // durch die Bildmitte
             {
-                st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+                ueber(P);
                 st.pitch = 0;
                 ruhig();
                 const c = st.camera.position;
@@ -1336,7 +1323,7 @@ async function probe(arg) {
                         const x = b.position.x + Math.sin(g) * 2.5;
                         const zz = b.position.z + Math.cos(g) * 2.5;
                         if (!Number.isFinite(hh(x, zz))) continue;
-                        st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                        aufHang(x, zz);
                         st.yaw = g;
                         st.pitch = 0;
                         const arm2 = ruhig();
@@ -1358,10 +1345,10 @@ async function probe(arg) {
                         const pick = r._pickArchitectureAtCrosshair();
                         if (pick && hinter(pick.point)) zaehl("_pickArchitectureAtCrosshair");
                         const wh = r._raycastWorldHit(30);
-                        if (wh && wh.hit && hinter(wh)) zaehl("_raycastWorldHit");
+                        if (wh?.hit && hinter(wh)) zaehl("_raycastWorldHit");
                         if (hinter(r._blickZiel(AnazhRealm.BLICK_ZIEL_M))) zaehl("_blickZiel");
                         const ph = r._resolvePhantomTarget();
-                        if (ph && ph.hit && hinter(ph)) zaehl("_resolvePhantomTarget");
+                        if (ph?.hit && hinter(ph)) zaehl("_resolvePhantomTarget");
                         for (const kreatur of fk.kreatur ? kreaturen : []) {
                             st.creatures = [kreatur];
                             kreaturAuf(kreatur, 0.5 * arm2);
@@ -1451,8 +1438,8 @@ async function probe(arg) {
                     r.setCameraMode(modus);
                     const x = cx + ux * 3;
                     const zz = cz + uz * 3;
-                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
-                    if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
+                    aufHang(x, zz);
+                    if (st.playerVel?.setValue) st.playerVel.setValue(0, 0, 0);
                     const gier = Math.atan2(-ux, -uz);
                     st.yaw = gier;
                     st.pitch = 0;
@@ -1520,7 +1507,7 @@ async function probe(arg) {
                             const x = b.position.x + Math.sin(g) * 2.5 - seite * Math.cos(g);
                             const zz = b.position.z + Math.cos(g) * 2.5 + seite * Math.sin(g);
                             if (!Number.isFinite(hh(x, zz))) continue;
-                            st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                            aufHang(x, zz);
                             st.yaw = g;
                             st.pitch = 0;
                             ruhig();
@@ -1541,7 +1528,7 @@ async function probe(arg) {
                 }
             }
             r.setCameraMode("first");
-            st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            ueber(P);
         }
         m.gestartet = true;
     } catch (e) {
@@ -1582,7 +1569,7 @@ async function probe(arg) {
         llm.providerConfig.ollama.endpoint = "https://ollama.com";
         llm.providerConfig.ollama.useProxy = true;
         const ant = await r.llmCall("hallo welt");
-        m.proxyFehler = ant && ant.error ? r.constructor._tIn("de", ...[].concat(ant.error)) : ""; // eine Zeile der Tafel (spielgang.K5#2)
+        m.proxyFehler = ant?.error ? r.constructor._tIn("de", ...[].concat(ant.error)) : ""; // eine Zeile der Tafel (spielgang.K5#2)
         llm.enabled = alt.enabled;
         llm.provider = alt.provider;
         llm.providerConfig.ollama = alt.oll;
@@ -1597,7 +1584,7 @@ async function probe(arg) {
         out.dorf = m;
         const k = { gestartet: false };
         out.kanal = k;
-        m.buch = !!(buch && buch.ok);
+        m.buch = !!(buch?.ok);
         const M = r._genesisMitte();
         if (!M) throw new Error("kein Genesis-Ort (der Plan der Welt)");
         const P = { x: M.x, y: r.getTerrainHeightAt(M.x, M.z), z: M.z };
@@ -1621,7 +1608,7 @@ async function probe(arg) {
             const w = nb * 3 + maxDh;
             if (!best || w < best.w) best = { yaw, w };
         }
-        st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+        ueber(P);
         st.yaw = best.yaw;
         const cam = st.camera;
         const tanH = Math.tan(((cam.fov || 75) * Math.PI) / 360) * (cam.aspect || 16 / 9);
@@ -1677,7 +1664,7 @@ async function probe(arg) {
                 for (const a of st.architectures.filter((a) => !vorM.has(a)).reverse()) r.removeArchitecture(a);
                 return orte;
             };
-            st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            ueber(P);
             st.yaw = best.yaw;
             const sprecher = await haeuserVon("human", { x: P.x, y: P.y + 2.2, z: P.z }, best.yaw);
             const mx = P.x + 200;
@@ -1693,7 +1680,7 @@ async function probe(arg) {
             m.mpAbweichung = sprecher.length && mitspieler.length ? +maxD.toFixed(2) : null;
             m.hierNaechstes = sprecher.length ? +Math.min(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
             m.hierWeitestes = sprecher.length ? +Math.max(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
-            st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            ueber(P);
             st.yaw = best.yaw;
         }
         // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Orts (sein Grundriss reicht 2 m in den Freiraum der Tore; die
@@ -2012,18 +1999,14 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.setViewport({ width: 1280, height: 720 });
     // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
     // schneller Boot ließ ihn weichen, ehe das Protokoll fragte); L2a trägt den Befund
-    await page.evaluateOnNewDocument(() =>
+    const lade = () =>
         document.addEventListener("DOMContentLoaded", () => {
             const l = document.getElementById("ladeschirm");
             window.__ladeHtml = l ? { imHtml: true, htmlVersteckt: !!l.hidden, zIndex: +getComputedStyle(l).zIndex || 0 } : { imHtml: false };
-        })
-    );
-    await server.zeige(page, 30000);
+        });
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 }, vor: lade }, 30000); // prettier-ignore
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();
@@ -2051,7 +2034,7 @@ hauptLauf(async () => {
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
             (m.wald ? ` · Wald-Zusage ${m.wald.kam ? `kam, ${m.wald.rest} von ${m.wald.ferne} fernen Zellen offen` : "kam nicht"}` : "") +
             (m.blick ? ` · Bild ${m.blick.geweckt}/${m.blick.vor2} · Takt ${m.takt.lief}` : "") +
-            ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
+            ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
     zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)}`); // prettier-ignore

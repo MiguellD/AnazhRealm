@@ -48,9 +48,7 @@ async function checkBandHydrosphere({ page, check }) {
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
-            for (let k = 0; k + 1 < rv.points.length; k++) {
-                if (rv.points[k].width > rv.points[k + 1].width + 1e-6) return false;
-            }
+            for (let k = 0; k + 1 < rv.points.length; k++) if (rv.points[k].width > rv.points[k + 1].width + 1e-6) return false;
             return true;
         });
         // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
@@ -69,29 +67,25 @@ async function checkBandHydrosphere({ page, check }) {
         let finiteOk = true;
         let oceanCells = 0;
         let lakeFieldCells = 0;
-        if (out.waterFieldShape) {
-            for (let i = 0; i < wf.waterKind.length; i++) {
+        if (out.waterFieldShape) for (let i = 0; i < wf.waterKind.length; i++) {
                 const k = wf.waterKind[i];
                 if (k > 2) kindOk = false;
                 if (k === 1) oceanCells++;
                 else if (k === 2) lakeFieldCells++;
                 if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
             }
-        }
         out.waterKindValid = kindOk && finiteOk;
         // alle Ozean-Zellen teilen EINEN flachen Spiegel: gemessen an der Kachel des Meer-Orts.
         let meerZellen = 0;
         let oceanY = null;
         let oceanFlat = true;
         const mw = meerOrt && meerOrt.hydro.water;
-        if (mw) {
-            for (let i = 0; i < mw.waterKind.length; i++) {
+        if (mw) for (let i = 0; i < mw.waterKind.length; i++) {
                 if (mw.waterKind[i] !== 1) continue;
                 meerZellen++;
                 if (oceanY === null) oceanY = mw.waterY[i];
                 else if (Math.abs(mw.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
             }
-        }
         out.waterFieldOceanFlat = oceanFlat && meerZellen > 0;
         out.waterFieldOceanCells = meerZellen;
         out.waterFieldLakeCells = lakeFieldCells;
@@ -164,8 +158,7 @@ async function checkBandHydrosphere({ page, check }) {
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert den See-Wasserspiegel, nicht den Meeresspiegel.
             const cellsSet = new Set(renderedLk.cells);
             let ringChecked = false;
-            for (let dj = -1; dj <= 1 && !ringChecked; dj++) {
-                for (let di = -1; di <= 1 && !ringChecked; di++) {
+            for (let dj = -1; dj <= 1 && !ringChecked; dj++) for (let di = -1; di <= 1 && !ringChecked; di++) {
                     const ni = ci + di;
                     const nj = cj + dj;
                     if (ni < 0 || nj < 0 || ni >= hydro.dim || nj >= hydro.dim) continue;
@@ -175,7 +168,6 @@ async function checkBandHydrosphere({ page, check }) {
                     out.ringFollowsPlane = r._waterLevelAt(rx, rz) > wlT + 1.5;
                     ringChecked = true;
                 }
-            }
         }
         // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
         out.seaFallbackOk = r._waterLevelAt(999999, 999999) === st.waterLevel;
@@ -269,13 +261,13 @@ async function checkBandHydrosphere({ page, check }) {
             const lk = seeH.lakes[li];
             if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
             if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
-            const idx = lk.cells[(lk.cells.length / 2) | 0];
+            const idx = rang(lk.cells);
             const ci = idx % seeH.dim;
             const cj = (idx / seeH.dim) | 0;
             const wx = seeH.originX + (ci + 0.5) * seeH.cell;
             const wz = seeH.originZ + (cj + 0.5) * seeH.cell;
             const la = r._hydrosphereLakeAt(wx, wz);
-            if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
+            if (la?.w > 0.5 && Number.isFinite(la.bedY)) {
                 out.lakeSculpted = true;
                 const bedOk = la.bedY > wl2 && la.bedY < lk.level;
                 const solidBelow = r._terrainDensityAt(wx, la.bedY - 2, wz) > 0;
@@ -296,12 +288,10 @@ async function checkBandHydrosphere({ page, check }) {
         // (14) der Carve ist im Perf-Budget
         const t0 = performance.now();
         const span = hydro.size;
-        for (let i = 0; i < 50000; i++) {
-            r._hydrosphereCarveAt(
+        for (let i = 0; i < 50000; i++) r._hydrosphereCarveAt(
                 hydro.originX + (i % 211) * (span / 211),
                 hydro.originZ + ((i * 7) % 211) * (span / 211)
             );
-        }
         out.carvePerfMs = performance.now() - t0;
         return out;
     });
@@ -364,12 +354,10 @@ async function checkBandHydrosphere({ page, check }) {
                 return K.umweltMischung(r._umweltLage());
             };
             let rp = null;
-            for (const rv of hydro.rivers || []) {
-                if (rv.points && rv.points.length > 2) {
-                    rp = rv.points[Math.floor(rv.points.length / 2)];
+            for (const rv of hydro.rivers || []) if (rv.points && rv.points.length > 2) {
+                    rp = rang(rv.points);
                     break;
                 }
-            }
             out.hasRiver = !!rp;
             // −∞ reist über die Brücke als null (null > −64 ist wahr — Lehre 17): stumm heißt −999.
             const db = (v) => (Number.isFinite(v) ? v : -999);
@@ -426,25 +414,19 @@ async function checkBandWelleC1WaterCells({ page, check }) {
         out.cellStateFrozen = STATE && Object.isFrozen(STATE);
         // 3) Streaming-aktiver Chunk hat waterCells (die LOD wandert pro Chunk — Entry-LOD lesen, nicht
         // den Default-`_voxelChunkConfig()`-Snapshot).
-        if (!st.voxelChunks || st.voxelChunks.size === 0) {
-            return { ...out, error: "no voxel chunks streamed" };
-        }
+        if (!st.voxelChunks || st.voxelChunks.size === 0) return { ...out, error: "no voxel chunks streamed" };
         // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty) — am Wasser-Ort des Gesetzes (`__wasserChunk`: ohne
         // Wasser-Zelle gibt es kein waterCells-Feld).
         out.wasserChunk = await window.__wasserChunk("see");
         let testKey = null;
         let testEntry = null;
-        for (const [key, entry] of st.voxelChunks.entries()) {
-            if (entry?.mesh && entry.waterCells) {
+        for (const [key, entry] of st.voxelChunks.entries()) if (entry?.mesh && entry.waterCells) {
                 testKey = key;
                 testEntry = entry;
                 break;
             }
-        }
         out.foundFilledChunk = !!testEntry;
-        if (!testEntry) {
-            return { ...out, foundFilledChunk: false };
-        }
+        if (!testEntry) return { ...out, foundFilledChunk: false };
         out.testKey = testKey;
         // 4) Konfig + Erwartungen: Wasser-Cells leben IMMER auf LOD 0 (71424 Cells), unabhängig von
         // entry.lod — naht-frei per Konstruktion; nur das Terrain ist LOD-aware.
@@ -485,13 +467,7 @@ async function checkBandWelleC1WaterCells({ page, check }) {
             // Hydro-Band (cy ≤ band.top). SOLID wird nicht geprüft (der Architektur-Stempel darf
             // nicht-solides Terrain SOLID setzen). 8-Corner-Avg-Density am Cell-Center wie der Build.
             let dSum = 0;
-            for (let dj = 0; dj <= 1; dj++) {
-                for (let dk = 0; dk <= 1; dk++) {
-                    for (let di = 0; di <= 1; di++) {
-                        dSum += r._terrainDensityAt(ox + (i + di) * step, oy + (j + dj) * step, oz + (k + dk) * step);
-                    }
-                }
-            }
+            for (let dj = 0; dj <= 1; dj++) for (let dk = 0; dk <= 1; dk++) for (let di = 0; di <= 1; di++) dSum += r._terrainDensityAt(ox + (i + di) * step, oy + (j + dj) * step, oz + (k + dk) * step);
             const d = dSum / 8;
             if (actual === STATE.WATER && (d > 0 || cy > band.top + 0.01)) mismatches++;
             if (actual === STATE.SOLID) solidCount++;
@@ -514,9 +490,7 @@ async function checkBandWelleC1WaterCells({ page, check }) {
         const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, 0);
         out.secondLen = second.length;
         let driftCount = 0;
-        for (let i = 0; i < expectedLen; i++) {
-            if (reference[i] !== second[i]) driftCount++;
-        }
+        for (let i = 0; i < expectedLen; i++) if (reference[i] !== second[i]) driftCount++;
         out.deterministic = driftCount === 0;
         out.driftCount = driftCount;
         // 7) Realismus-Check: über alle Cells hinweg gibt es überhaupt
@@ -593,9 +567,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
         // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
         // null, je nach Wasser-Existenz im Chunk).
-        if (!st.voxelChunkWaterIso || !st.voxelChunks) {
-            return { ...out, error: "iso map or chunks empty" };
-        }
+        if (!st.voxelChunkWaterIso || !st.voxelChunks) return { ...out, error: "iso map or chunks empty" };
         let chunksWithIso = 0;
         let chunksWithoutIso = 0;
         let isoMeshCount = 0;
@@ -636,12 +608,10 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
             // Suche eine Lake-Cell mit waterY > wlGlobal + 1 (klarer Bergsee)
             const wK = hydro.water.waterKind;
             const wY = hydro.water.waterY;
-            for (let idx = 0; idx < wK.length; idx++) {
-                if (wK[idx] === 2 && wY[idx] > wlGlobal + 1) {
+            for (let idx = 0; idx < wK.length; idx++) if (wK[idx] === 2 && wY[idx] > wlGlobal + 1) {
                     bergseeCheckable = true;
                     break;
                 }
-            }
             if (bergseeCheckable) {
                 // Scanne alle Chunk-Cells nach mind. einer water-Cell mit cy > wlGlobal
                 const cfg = r._voxelChunkConfig();
@@ -655,9 +625,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
                         if (cy <= wlGlobal + 0.5) continue; // nur OBER globalem Spiegel
                         const baseJ = j * cfg.dim * cfg.dim;
                         let found = false;
-                        for (let n = 0; n < cfg.dim * cfg.dim && !found; n++) {
-                            if (cells[baseJ + n] === STATE.WATER) found = true;
-                        }
+                        for (let n = 0; n < cfg.dim * cfg.dim && !found; n++) if (cells[baseJ + n] === STATE.WATER) found = true;
                         if (found) {
                             bergseeCellsFound = true;
                             break;
@@ -764,9 +732,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
                 }
                 out.surfaceMaxLErr = mx;
                 out.surfaceMaxAboveL = mxAbove;
-            } else {
-                out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
-            }
+            } else out.surfaceMaxLErr = "skip — iso-Modus (A/B)";
         } else {
             // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
             // Wasser) — Test überspringen, aber als sanity-skip markieren.
@@ -813,33 +779,25 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
             typeof res.waterTopsTris === "number" && res.waterTopsTris > 0,
             `Oberseite=${res.waterTopsTris}`
         );
-        if (typeof res.surfaceMaxLErr === "number") {
-            check(
+        if (typeof res.surfaceMaxLErr === "number") check(
                 "Wasser-KÖRPER (flach + aDepth≥1 Zelle) sitzt auf L + klettert nicht über L (Zell-Sheet, Ruhe; Gefälle-Glättung ausgenommen)",
                 res.surfaceMaxLErr <= 0.5 && res.surfaceMaxAboveL <= 0.5,
                 `maxErr(Körper,flach)=${res.surfaceMaxLErr}, maxÜberL(flach)=${res.surfaceMaxAboveL}`
             );
-        }
-        if (res.bergseeCheckable) {
-            check(
+        if (res.bergseeCheckable) check(
                 "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",
                 res.bergseeCellsFound,
                 "Cells über globalem waterLevel müssen water tragen, wenn Bergsee im Hydrosphäre-Atlas vermerkt"
-            );
-        } else {
-            check(
+            ); else check(
                 "Welle C.2 V9.73 (Heilung): Bergsee-Cell-Init (Vorbedingung: ≥1 Lake mit waterY > waterLevel+1)",
                 true,
                 "skip — keine Bergseen in der Test-Welt (Seed-abhängig)"
             );
-        }
-    } else {
-        check(
+    } else check(
             "Welle C.2 V9.72: Iso-Mesh-Sichtbarkeits-Tests (Vorbedingung: ≥1 Iso-Mesh)",
             true,
             "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)"
         );
-    }
 }
 
 // Wasser-Iso deferred-Queue: der schwerste Main-Thread-Streaming-Posten (Wasser-Iso ~78 ms) läuft
@@ -993,9 +951,7 @@ async function checkBandV17117FarWater({ page, check }) {
             for (let i = 0; i < len; i++) if (ocCells[i] !== wm.waterCells[i]) mism++;
             out.cellMismatches = mism;
             out.workerMainIdentical = mism === 0 && ocCells.length === wm.waterCells.length;
-        } else {
-            out.workerMainIdentical = false;
-        }
+        } else out.workerMainIdentical = false;
         return out;
     });
     if (res.error) {
@@ -1329,10 +1285,8 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
                         if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
                         let decke = false,
                             wasser = false;
-                        for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
-                            if (c[b + jj * dq] === ZS.SOLID) decke = true;
+                        for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) if (c[b + jj * dq] === ZS.SOLID) decke = true;
                             else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
-                        }
                         if (!decke) continue;
                         const boden = r._fieldSurfaceBelow(x, cy, z, 3);
                         if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
@@ -1368,9 +1322,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
                 if (
                     /fels|stein|tempel|geode|plattform/i.test(a.type || a.name || "") ||
                     /fels|stein|tempel/i.test(a.bp || "")
-                ) {
-                    archStoneSolid++;
-                }
+                ) archStoneSolid++;
             }
         }
         out.archSeen = archSeen;
@@ -1440,8 +1392,7 @@ async function checkBandWasserWahrheit({ page, check }) {
             const dimSq = dim * dim;
             // Plateau (i ≤ 11): SOLID ≤ 39, WATER @40 (Lauf). Tal (i ≥ 12): SOLID ≤ 7,
             // WATER @8..9 (Pool). Direkt benachbart = die 56-m-Klippe der Forensik.
-            for (let k = 0; k < dim; k++) {
-                for (let i = 0; i < dim; i++) {
+            for (let k = 0; k < dim; k++) for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
                     const jSolid = i <= 11 ? 39 : 7;
                     for (let j = 0; j <= jSolid; j++) cells[c + j * dimSq] = SOLID;
@@ -1451,7 +1402,6 @@ async function checkBandWasserWahrheit({ page, check }) {
                         cells[c + 9 * dimSq] = WATER;
                     }
                 }
-            }
             const shim = Object.create(r);
             shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
             shim._atlasWaterLevelAt = () => -Infinity; // top = faceY exakt (pur)
@@ -1567,14 +1517,12 @@ async function checkBandWasserWahrheit({ page, check }) {
                     return false;
                 };
                 const sz = h.dim * h.cell;
-                for (let z = h.originZ + 8; z < h.originZ + sz && !(bank && core); z += 8) {
-                    for (let x = h.originX + 8; x < h.originX + sz && !(bank && core); x += 8) {
+                for (let z = h.originZ + 8; z < h.originZ + sz && !(bank && core); z += 8) for (let x = h.originX + 8; x < h.originX + sz && !(bank && core); x += 8) {
                         const rv = r._hydroRiverAt(x, z);
                         if (!rv || bodyNear(x, z)) continue;
                         if (!core && rv.centerness > 0.3) core = { x, z, s: rv.surfaceY };
                         if (!bank && rv.centerness === 0) bank = { x, z, s: rv.surfaceY };
                     }
-                }
             }
         }
         o.bank = bank;
@@ -1925,13 +1873,11 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
                 out.mismatches.push(`${ctx} ${label} LEN ${A.length}≠${B.length}`);
                 return;
             }
-            for (let i = 0; i < A.length; i++) {
-                if (A[i] !== B[i]) {
+            for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) {
                     out.ok = false;
                     if (out.mismatches.length < 12) out.mismatches.push(`${ctx} ${label}[${i}] ${A[i]}≠${B[i]}`);
                     if (1 > out.maxDiff) out.maxDiff = 1;
                 }
-            }
         };
     
         // ZWEI FEHLRUNDEN (streaming.K5): je Blatt verfehlt in den ersten zwei Runden ein Verweis den Faden

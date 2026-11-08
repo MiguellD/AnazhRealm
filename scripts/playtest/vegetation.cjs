@@ -212,34 +212,22 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         check("Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
     check("headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)", res.densityHeadlessFull);
-    if (res.densityCutsInstances !== undefined) {
-        check(
+    if (res.densityCutsInstances !== undefined) check(
             `CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
             res.densityCutsInstances
-        );
-    } else if (res.densityProbeError) {
-        check("CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
-    }
+        ); else if (res.densityProbeError) check("CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
     check(
         "Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Konsum)",
         res.scatterReadsBuiltDensity && res.streamingCallsThin
     );
-    if (res.oneSourceProbeError) {
-        check("W1 CONSUM: Studio-Regime-Dichte-Probe lief ohne Fehler", false, res.oneSourceProbeError);
-    } else {
-        check(
+    if (res.oneSourceProbeError) check("W1 CONSUM: Studio-Regime-Dichte-Probe lief ohne Fehler", false, res.oneSourceProbeError); else check(
             "W1 CONSUM: Studio-Regime → Dichte-Quelle 1 trotz gesenktem Regler + Thin ist No-op; foundry-aus → der Regler führt (0.4)",
             res.oneSourceStudioFull === true && res.thinStudioNoop === true && res.oneSourceGateFollows === true
         );
-    }
-    if (res.thinReduces !== undefined) {
-        check(
+    if (res.thinReduces !== undefined) check(
             `CONSUM: sinkt die Kapazität, schrumpft die STATIONÄRE Welt (Region ${res.thinFull} → ${res.thinAfter}) — die geladene Welt dünnt beim Drehen`,
             res.thinReduces
-        );
-    } else if (res.thinProbeError) {
-        check("CONSUM: Nach-Dünn-Probe lief ohne Fehler", false, res.thinProbeError);
-    }
+        ); else if (res.thinProbeError) check("CONSUM: Nach-Dünn-Probe lief ohne Fehler", false, res.thinProbeError);
 }
 
 // DIE NAH-STREU: der Boden nah am Auge wächst aus dem Pflanzen-Studio — die Arten sind die
@@ -530,9 +518,7 @@ async function checkBandV18133Forage({ page, check }) {
             if (k) k.zustand = null;
             r._tickNahStreu();
             out.measured = true;
-        } else {
-            out.measured = false;
-        }
+        } else out.measured = false;
         return out;
     });
     if (!res) {
@@ -834,7 +820,7 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
         out.sixSpecies = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
             (sp) => {
                 const a = r._phytoArt(sp);
-                return !!(a && a.rec.kind === "tree" && Number.isFinite(a.rec.s.api));
+                return !!(a?.rec.kind === "tree" && Number.isFinite(a.rec.s.api));
             }
         );
 
@@ -1068,7 +1054,7 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
 
         // ─── (A) KARST: die Studio-Art karst (_phytoArt, K24) + Params + Variation ───────
         const karstArt = r._phytoArt("baum_karst");
-        out.grammarHasKarst = !!(karstArt && karstArt.id === "karst" && karstArt.rec.kind === "tree");
+        out.grammarHasKarst = !!(karstArt?.id === "karst" && karstArt.rec.kind === "tree");
         // K24-N1: der knorrige Sockel ist das Gesetz der Art (P.flare 0,9 im Phänotyp), nie eine Hand-Zeile
         r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
         const skK = r._lastTreeSkeleton;
@@ -1468,8 +1454,7 @@ async function checkBandV18218LODStufen({ page, check }) {
 
         // ─── (F) V17.16-Tag-Wand: LOD0/1/2 share compoundTags ────────
         // N7.3 — UNIT-RICHTER (wie Block C): die Grammatik-LOD-Baupläne unter lokalem Hook.
-        if (r._buildVariantLODs) {
-            window.__withNoFoundry(() => {
+        if (r._buildVariantLODs) window.__withNoFoundry(() => {
                 const keys = r._buildVariantLODs("baum_eiche", 1);
                 if (keys?.[0] && keys[1] && keys[2]) {
                     const bp0 = st.blueprints[keys[0]];
@@ -1485,7 +1470,6 @@ async function checkBandV18218LODStufen({ page, check }) {
                     }
                 }
             });
-        }
 
         return out;
     });
@@ -1679,11 +1663,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             out.perChunkActual = out.regionInstanceCount / ((SC.regionM / chunkSpan) * (SC.regionM / chunkSpan));
             // Wenigstens EINE Gruppe hat count > 0 (echte sichtbare Instanzen)
             let liveInstances = 0;
-            if (st.archInstanceGroups) {
-                for (const g of st.archInstanceGroups.values()) {
-                    if (g.mesh && g.mesh.count > 0) liveInstances += g.mesh.count;
-                }
-            }
+            if (st.archInstanceGroups) for (const g of st.archInstanceGroups.values()) if (g.mesh && g.mesh.count > 0) liveInstances += g.mesh.count;
             out.hasLiveInstances = liveInstances > 0;
             out.liveInstanceCount = liveInstances;
             // Cells tragen species + variantIndex + slots (Lookup-Fütterung)
@@ -1731,7 +1711,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 if (region && region.cells.length) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
                     // Understory/Streu sind nie promotable)
-                    const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
+                    const cell = region.cells.find((c) => c.promotable && c.slots?.length);
                     if (cell) {
                         const archBefore = st.architectures.length;
                         const promotedSpecies = cell.species;
@@ -1865,7 +1845,7 @@ async function checkBandWahrerAnblickFels({ page, check }) {
         // gäbe der Chokepoint null; geprüft wird der STATISCHE Grammatik-LOD-Weg ({0,1,2} = derselbe
         // Bauplan) → lokaler Hook.
         const lods = window.__withNoFoundry(() => r._buildVariantLODs("kiesel", 0));
-        out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
+        out.staticLods = !!(lods?.[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
 
@@ -2224,7 +2204,7 @@ async function checkBandScatterScheibe({ page, check }) {
             s.gleich === true &&
             s.zellen > 5,
         JSON.stringify(s) +
-            (s && s.haupt > 0
+            (s?.haupt > 0
                 ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${s.haupt} Darts im Haupt-Faden)`
                 : "")
     );

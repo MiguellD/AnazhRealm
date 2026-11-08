@@ -39,6 +39,9 @@
 //                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
 //                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
 //                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
+//   H10 WERK DER WELT (studios.K4, Labor = Welt) die Wurzel jeder Bühne trägt das Werk, das ihre Übergabe in die Welt schickt: die
+//                     erste Zeile der Kosten-Leiste nennt das Maß der Hülle (`werkMass`, die Box der Wurzel gegen die Box des Werks
+//                     aus dem Kern der Welt), H8 urteilt es im Stand der Öffnung; ein Mesh-Studio ohne Maß ist ROT.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -72,6 +75,12 @@ const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
 const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// H10 — DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4, Labor = Welt): die erste Zeile der Kosten-Leiste trägt je Bau das Maß der Hülle
+// (`werkMass`: die Box der Wurzel der Bühne gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut), ihr Urteil liest
+// H8 (`zeileUrteil`, eine Achse über 2 % des Halbmessers) — ein Mesh-Studio ohne Maß ist ROT. Bis w16-studio-welt trug die Wurzel der
+// Schmiede ihre Schnitt-Karte (0,433 gegen 0,244 m), die des Fachwerks Parzelle und Flügel (31 × 13,3 × 31 gegen 10,0 × 13,2 × 8,8 m).
+// Geurteilt im Stand der Öffnung (Labor = Welt, für JEDES Mesh-Studio ohne Ausnahme): ein Labor-Dial, der keine Zeile des Vertrags
+// ist (Phyto-Dial, die Zeit-Achse `jahr` des Fachwerks), ändert die Bühne ohne die Übergabe — das ist eine andere Schuld (studios.K4).
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -109,6 +118,7 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
         // H8 je gelesene Leiste: eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
         if (kosten && !kosten.some((k) => !k.audio === (id !== "klang"))) rot.push(`H8 ${id}: die Leiste ohne Zeile`);
         for (const k of kosten || []) rot.push(...AnazhHuelle.zeileUrteil(k, zeit, zeit).map((x) => `H8 ${id}: ${x}`));
+        if (kosten && !OFEN_STUDIOS[id] && id !== "klang" && !(kosten[0] || {}).werkWelt) rot.push(`H10 ${id}: kein Maß des Werks`);
         const fehl = f && (f[0] === f[1] ? 1 : VERLAUF.concat(0, 0).findIndex((_, i) => f[i] !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
@@ -208,9 +218,7 @@ function pruefe(karte) {
         if (welt === "huelle" || !/\.(html|js)$/.test(rel)) continue;
         const ausgenommen = welt && AUSGENOMMEN[welt];
         // H1 — Hand-Regler
-        if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) {
-            rot.push(`H1 ${stammLib.fehlt.wo}: ein Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
-        }
+        if (!fehltIn(rel, /\.html$/.test(rel) ? HAND_RANGE_HTML : HAND_RANGE_JS)) rot.push(`H1 ${stammLib.fehlt.wo}: ein Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
         if (!welt) continue;
         // H2 — Brücken-Kopie
         if (!fehltIn(rel, READY_LITERAL)) {
@@ -311,7 +319,7 @@ function selbsttest() {
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
     // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
-    const zeile = { befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
+    const zeile = { werkBuehne: 2, werkWelt: 2, befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
     const ort = (audio) => ({ kosten: audio ? [{ stufe: "sturm", audio, audioDeckel: 2.6667 }] : [] });
     const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
@@ -341,6 +349,9 @@ function selbsttest() {
             ["fachwerk", { bank: 4.1, bankCpu: 4 }, /^H8 fachwerk: L0 GPU-ms 0.4 ↔ Bank 4.1 CPU-gebunden/, true],
             ["klang", 0, /^H8 klang: die Leiste ohne Zeile/],
             ["klang", 3.1, /^H8 klang: sturm Audio-ms 3.1 über dem Deckel/],
+            // H10 (studios.K4): die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt), die garage ohne Maß
+            ["schmiede", { werkBuehne: 0.43, werkWelt: 0.24 }, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/],
+            ["garage", { werkWelt: undefined }, /^H10 garage: kein Maß/],
         ].map(([id, m, soll, zeit]) => [soll.source, {}, soll, mit(id, id === "klang" ? ort(m) : wahr(9000, 9000, 0, 62000, m)), { zeit }]),
         ["H7 ein Griff der garage zeigt nie einen neuen Bau-Hash", {}, /^H7 garage: 19 von 20 Griffen/, mit("garage", { griffe: [...sitz.griffe.slice(1), {}] }), { zeit: true }],
         ["H7 der Gesetz-Wert der portale wartet die Ruhe ab (290 ms, auf der Karte)", {}, /^H7 portale: p95 Gesetz-Wert 290 ms > 200/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 290 : 9 })) }), { zeit: true }],
@@ -392,6 +403,17 @@ async function gang() {
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
             await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
             await sleep(1500);
+            // H4 + H8 + H10: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen im STAND
+            // DER ÖFFNUNG, vor dem ersten Zug (H3), sobald jede Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor
+            // erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte
+            // nennt die Seite. Bis hier las die Wand NACH dem Zug: ob die Zeilen dann den Bau des Zugs trugen oder noch den der Öffnung,
+            // entschied das Tempo (Radeon mit Bank: die Öffnung, swiftshader: der Zug) — H10 urteilte das Rennen, nie das Werk.
+            const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
+            let kosten = null;
+            if (STUDIOS.includes(id)) {
+                await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
+                kosten = await page.evaluate(zeilen);
+            }
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
@@ -410,14 +432,7 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
-            // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
-            // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
-            // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
-            const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
-            if (STUDIOS.includes(id)) {
-                await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
-                z.kosten = await page.evaluate(zeilen);
-            }
+            if (kosten) z.kosten = kosten;
             if (STUDIOS.includes(id)) {
                 netzZaehlt = false;
                 // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft)

@@ -554,7 +554,7 @@ function lauf(k) {
             const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
                 const a = arr.filter(Number.isFinite).sort(aufsteigend);
-                return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
+                return a.length ? +rang(a, q).toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
             const dt = spalte("dtRender"), gpu = spalte("gpu");
@@ -670,7 +670,7 @@ function gpuBank(k) {
         for (let i = 0; i < (k.runden || 3); i++) rr.push(await runde(n));
         const med = (key) => {
             const v = rr.map((x) => x[key]).sort(aufsteigend);
-            return +v[Math.floor(v.length / 2)].toFixed(2);
+            return +rang(v).toFixed(2);
         };
         const jeFrame = med("jeFrame"),
             cpu = med("cpuJeFrame");
@@ -1074,7 +1074,9 @@ async function starte() {
                 const a = o?.anlauf || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
-                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
+                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
+                // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
+                // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
                 const g = o?.gruendung;
                 window.__ortBahn = o?.bahn || null;
@@ -1082,7 +1084,7 @@ async function starte() {
                     const same = g.wort.split(" ")[1];
                     const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
                     const steht = () =>
-                        zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
+                        zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
                         r._chatDispatchLegacyCommand(g.wort, [], () => {});
                         for (const weiter = __deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
@@ -1623,7 +1625,7 @@ async function starte() {
                                 .filter((p) => p.bild && p.seite === sd)
                                 .map((p) => p.d)
                                 .sort(aufsteigend);
-                            median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
+                            median[sd] = ds.length ? rang(ds) : null;
                         }
                         // DER STRAHL DER KAMERA ZUR IRIS (KOPF_SOLL augeFrei: „Strahl", die Lider sind das Rig): je vordere Iris-Probe,
                         // ob der Strahl von der Kamera dieses Schusses sie erreicht, ohne Haut, Lid, Braue oder Haar des Kopfs zu kreuzen —
@@ -1758,12 +1760,17 @@ async function starte() {
                                 if (bi < 0) continue;
                                 const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
                                 if (kk) __farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
+                                // DER WEG IST KEINE LÜCKE DER WIESE (w24-wiese-ferne): ein Boden-Pixel, dessen Treffer auf dem Weg liegt (das EINE
+                                // Pfad-Feld `_pfadFeldAt` über der Hälfte — dort steht keine Karte der Ferne), zählt als `bodenSatz:weg`, nie als
+                                // Grund der Wiese (vegetation.K1 liest als Grund nur `bodenSatz`): bis dahin hielt ein Ring nur „satt", solange Gras
+                                // den Weg bedeckte (Mess-Wiese, 20–40 m: 581 Pixel Weg, LAI 0,88)
+                                const weg = r._pfadFeldAt(pos.x + v.x * hit, pos.z + v.z * hit, pos.y + v.y * hit) > 0.5;
                                 for (let q = 0; q < 4; q++) {
                                     const x = x0 + (q & 1),
                                         y = y0 + (q >> 1);
                                     const c = x < W && y < H ? teil[y * W + x] : 0;
                                     if (!c) continue;
-                                    const n = namen[c - 1];
+                                    const n = weg && namen[c - 1] === "bodenSatz" ? "bodenSatz:weg" : namen[c - 1];
                                     (zahl[n] || (zahl[n] = baender.slice(1).map(() => 0)))[bi]++;
                                     cosS[bi] += -v.y;
                                     cosN[bi]++;
@@ -3477,7 +3484,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };

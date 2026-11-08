@@ -6,7 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, sleep, selbsttestEnde, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
@@ -79,11 +79,7 @@ hauptLauf(async () => {
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
     const server = statikServer({ seiten: { "/": "<!doctype html><title>gpu-fehler</title>" } });
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse" });
-    const page = await browser.newPage();
-    await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
-    await server.zeige(page, undefined, "");
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, vor: GPU_FEHLER_INSTALL }, undefined, "");
     const out = await page.evaluate(probe);
     // DIE ABGABE, Stillstand 1,5 s: 3 s spät, aber laufend abgegeben, wartet sie; ohne Bild nennt sie das Bild; hängt
     // ein Gerät, während ein zweites weiter abgibt, nennt sie das hängende

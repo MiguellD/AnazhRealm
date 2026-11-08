@@ -223,7 +223,7 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
     const perf = 1.21,
         ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
+    const L = { ex: 0, ez: 0, perf, ref, kanten: K, haltBlende: 0 };
     // die Wahrheit an der Instanz-Distanz (`zeigt`, das Laub)
     const zeigtL = (stufe, dS, dL) => zeigt(gesetz, stufe, dS, dL, cfg, true);
     const out = { proben: 0, ohneBild: 0, loecher: 0, beispiel: null, loch: null, jeStufe: {} };
@@ -825,7 +825,7 @@ async function runPartB() {
                             const d = Math.hypot(auge.x - (m[i * 16 + 12] + w[12]), auge.z - (m[i * 16 + 14] + w[14]));
                             const ud = g.mat && g.mat.userData;
                             const laub = !!ud && ["foliage", "foliageTex", "grass"].includes(ud.foundryKind);
-                            if (a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                            if (a.aKarte?.isInstancedBufferAttribute) {
                                 const sicht = a.aKarte.array[i * 4 + 3];
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
@@ -1122,7 +1122,7 @@ async function runPartB() {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
-                if (!(m && m.userData && m.userData.foundryCrossfade === true)) continue;
+                if (!(m?.userData && m.userData.foundryCrossfade === true)) continue;
                 geprueft++;
                 const a = o.geometry.attributes || {};
                 if (!a.aLodLevel || !a.aH0 || !a.aH0L) verstoesse++;
@@ -1139,7 +1139,7 @@ async function runPartB() {
         let bpName = null;
         for (const n in st.blueprints) {
             const fl = r._archFlattenBlueprint(n);
-            if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+            if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                 bpName = n;
                 break;
             }
@@ -1236,7 +1236,7 @@ async function runPartB() {
         try {
             const m = r._foundryTreeMaterial("bark", null);
             res.still = !!m;
-            res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
+            res.maske = !!(m?.userData && m.userData.foundryCrossfade === true);
         } catch (e) {
             res.bruch = fehlerText(e);
             res.blende = !!(e && e.blende === true);
@@ -1294,7 +1294,7 @@ async function main() {
             check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
         }
         // V5: die Weite der Gestalt (Krone 10,06 m) als Rand im Fenster — die L1 der nahen Birke wird genannt.
-        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { halt: L.halt + stumpf._instanzWeite().r }));
+        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { haltBlende: L.haltBlende + stumpf._instanzWeite().r }));
         const S8 = stufeOhneBildLinse(CORE, CFG, weit);
         check(
             "Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster → die L1 der nahen Birke wird genannt",
@@ -1419,7 +1419,7 @@ async function main() {
         check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
-            !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
+            !!(out.warm?.l0 && out.warm.l1 && out.warm.l2),
             out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);

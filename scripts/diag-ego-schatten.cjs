@@ -108,14 +108,13 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde, jsonKlon } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
     const stufe = (n) => ({ stufe: n, dritt: { wurf: 1500, leib: 900 }, vertrag: true, kopf: gut(), gegenprobe: GEGENPROBEN.map((g) => Object.assign({ m: gut(taeter[g.soll]) }, g)) }); // prettier-ignore
     const gruen = { grob: stufe(1), fein: stufe(0) };
     const fehler = [];
-    if (urteilJeStufe(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteilJeStufe(gruen).join(" · "));
     // prettier-ignore
     const faelle = [
         ["main (der Wurf geht mit der Haut)", ["fein.kopf.ego", { wurf: 0 }], /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/],
@@ -132,11 +131,11 @@ function selbsttest() {
         ["Bühne schreitet nicht (Gegenprobe Karte steht blind)", ["grob.gegenprobe.5.m.ego", { wurf: 754 }], /GEGENPROBE: die Regel „Karte steht" fällt nicht/],
         ["Bühne am falschen Leib", ["fein", { stufe: 1 }], /STUFE: die Bühne „fein" misst .* nahStufe 1/],
     ];
-    taeterFaelle(faelle, urteilJeStufe, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteilJeStufe, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
-const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
@@ -502,14 +501,10 @@ function buehne(arg) {
 
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
-    let out = null;
     const log = laufUhr();
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 320, height: 180 } }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    let out = null;
     try {
-        await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);
         // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
         // nach dem Bild die feine, sobald der Leerlauf sie tauscht — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der

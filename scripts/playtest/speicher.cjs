@@ -316,9 +316,7 @@ async function checkBandRing8({ page, check }) {
 
         // Aufräumen: alle Test-Welten weg, active zurück auf Original
         r.activeWorldSet(activeId);
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== activeId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== activeId) r.deleteWorld(e.worldId);
 
         return out;
     });
@@ -392,9 +390,7 @@ async function checkBandRing8({ page, check }) {
         out.pickerHidesActive = !Array.from(rows).some((row) => (row.textContent || "").includes(st.worldMeta.slug));
         // Cleanup
         const activeId = st.worldMeta.worldId;
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== activeId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== activeId) r.deleteWorld(e.worldId);
         return out;
     });
     if (erreichbar(check, "Ring 8 UI: Snapshot erreichbar", ring8UiResults)) {
@@ -462,16 +458,12 @@ async function checkBandRing8({ page, check }) {
                 if (Math.abs(nA.noise2D(x, z) - nB.noise2D(x, z)) > 1e-6) anyDiffers = true;
             }
             out.noiseSamplesDiffer = anyDiffers;
-        } else {
-            out.noiseSamplesDiffer = "SimplexNoise nicht verfügbar";
-        }
+        } else out.noiseSamplesDiffer = "SimplexNoise nicht verfügbar";
 
         // Aufräumen
         const keepId = st.worldMeta.worldId;
         r.activeWorldSet(keepId);
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== keepId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         return out;
     });
     if (erreichbar(check, "Ring 8.1: Snapshot erreichbar", ring81Results)) {
@@ -632,15 +624,11 @@ async function checkBandRing9to10({ page, check }) {
                 noJsSave.worldJournal &&
                 Array.isArray(noJsSave.worldJournal.entries) &&
                 noJsSave.worldJournal.entries.some((e) => e.type === "witness");
-        } else {
-            out.journallessGetsWitness = false;
-        }
+        } else out.journallessGetsWitness = false;
 
         // Aufräumen: alle Test-Welten weg
         const keepId = st.worldMeta.worldId;
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== keepId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         return out;
     });
     if (erreichbar(check, "Ring 9: Snapshot erreichbar", ring9Results)) {
@@ -855,9 +843,7 @@ async function checkBandRing9to10({ page, check }) {
 
         // Cleanup
         const keepId = st.worldMeta.worldId;
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== keepId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         return out;
     });
     if (erreichbar(check, "Ring 10: Snapshot erreichbar", ring10Results)) {
@@ -993,14 +979,10 @@ async function checkBandRing9to10({ page, check }) {
         r._renderWorldPicker();
         const pickerRows = document.querySelectorAll("#world-picker-list .world-picker-row");
         let hasRecipesBtn = false;
-        for (const row of pickerRows) {
-            for (const b of row.querySelectorAll("button")) {
-                if (b.textContent === "Rezepte holen") {
+        for (const row of pickerRows) for (const b of row.querySelectorAll("button")) if (b.textContent === "Rezepte holen") {
                     hasRecipesBtn = true;
                     break;
                 }
-            }
-        }
         out.uiHasRecipesBtn = hasRecipesBtn;
 
         delete st.blueprints["fremder-altar"];
@@ -1017,9 +999,7 @@ async function checkBandRing9to10({ page, check }) {
         // keine Geister-Einträge sehen.
         r._renderWorkshopDOM();
         const keepId = st.worldMeta.worldId;
-        for (const e of r.worldsIndexLoad()) {
-            if (e.worldId !== keepId) r.deleteWorld(e.worldId);
-        }
+        for (const e of r.worldsIndexLoad()) if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         return out;
     });
     if (erreichbar(check, "Ring 10.1: Snapshot erreichbar", recipeResults)) {
@@ -1378,9 +1358,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
         delete st.blueprints["portal_voxel-bau"];
         for (let i = 0; i < st.player.inventory.length; i++) {
             const s = st.player.inventory[i];
-            if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) {
-                st.player.inventory[i] = null;
-            }
+            if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) st.player.inventory[i] = null;
         }
         r.renderLibraryUI();
         return out;
@@ -1544,9 +1522,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
         delete st.blueprints["portal_schwarm"];
         for (let i = 0; i < st.player.inventory.length; i++) {
             const s = st.player.inventory[i];
-            if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
-                st.player.inventory[i] = null;
-            }
+            if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) st.player.inventory[i] = null;
         }
         r.renderLibraryUI();
         return out;
@@ -1697,11 +1673,9 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
             !!document.getElementById("vendor-dock");
         // Aufräumen.
         if (st.blueprints) delete st.blueprints["portal_vendor-test"];
-        if (st.player && Array.isArray(st.player.inventory)) {
-            st.player.inventory.forEach((sl, i) => {
-                if (sl && sl.blueprintName === "portal_vendor-test") st.player.inventory[i] = null;
+        if (st.player && Array.isArray(st.player.inventory)) st.player.inventory.forEach((sl, i) => {
+                if (sl?.blueprintName === "portal_vendor-test") st.player.inventory[i] = null;
             });
-        }
         st.customWorlds = {};
         r._saveCustomWorlds();
         r.saveState();
