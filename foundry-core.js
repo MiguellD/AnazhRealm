@@ -258,7 +258,10 @@ var SAISON_GESETZ = {
     // der Aehre die Spitze ihres Staengels; das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese Mitten
     // (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras — die Bytes bleiben gleich.
     typ: { laub: 1, bluete: 3, halm: 4 },
-    karteSchwelle: 0.5,
+    // w24-strauch-saum (08.11.) — der Hub ueber KARTEN_GESETZ.schwelle (0,5 seit dem Saum im Mass des Schirms, vorher 0,34):
+    // der Winter der Welt-Karte bleibt bei 0,84; ein Hub von 0,5 hiesse 1,0, und r184 verwirft a <= 1 — jede Laub-Karte fiele
+    // samt Stamm. Der Studio-Impostor (worlds/terrain) testet weiter ab 0,34.
+    karteSchwelle: 0.34,
 };
 
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
