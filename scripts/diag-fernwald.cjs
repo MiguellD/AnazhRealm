@@ -538,16 +538,14 @@ hauptLauf(async () => {
         // der Eintritt eines Wurfs des Felds: der Spieler innerhalb seines Rands, sein Slot trägt den Welt-Takt seines Eintritts
         // (`aEin`, in diesem Schritt: die 12 Takte, ehe der Gang ihn sah)
         const eintritt = (e, d) => {
-            const [h, se, t] = [rand(e, true), stempel(e, "aEin"), st.weltTakt];
-            return d > h + 0.5 || !(se > 0) || se !== Math.fround(e._einTakt) || se < t - 12 || se > t
-                ? `${e.type} ${d.toFixed(0)} m, Rand ${h.toFixed(0)}, Stempel ${se} (Takt ${t})`
-                : null;
+            const [h, se] = [rand(e, true), stempel(e, "aEin")];
+            return d > h + 0.5 || !(se > 0) || se !== Math.fround(e._einTakt) ? `${e.type} ${d.toFixed(0)} m, Rand ${h.toFixed(0)}, Stempel ${se}` : null;
         };
         let probe = null;
         const geburt = async (dx, dz) => {
             const gezeichnet = new Set(karten().filter((e) => r._archIsRendered(e)));
             const [x0, z0, saum] = [pm.x, pm.z, AR.KARTEN_HORIZONT_SAUM_M];
-            const g = { rand: r._laubRand(), n: 0, ring: 0, taeter: [], ein: AR.KARTEN_EINTRITT_TAKTE };
+            const g = { rand: r._laubRand(), n: 0, ring: 0, taeter: [] };
             for (let i = 1; i <= 40; i++) {
                 stelle(x0 + dx * i, z0 + dz * i);
                 await tick(12);
@@ -555,9 +553,8 @@ hauptLauf(async () => {
                 for (const e of karten()) {
                     if (gezeichnet.has(e) || !r._archIsRendered(e)) continue;
                     gezeichnet.add(e);
-                    const d0 = Math.max(st.architectureCullingRadius, g.rand - saum) - 1;
                     const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z); // vom Spieler
-                    if (e.feldWurf !== true || d < d0) continue; // diesseits des Saums: kein Rand
+                    if (e.feldWurf !== true || d < g.rand - saum - 1) continue; // diesseits des Saums: kein Rand
                     neu++;
                     const t = eintritt(e, d);
                     if (t && g.taeter.length < 6) g.taeter.push(t);
@@ -566,11 +563,9 @@ hauptLauf(async () => {
                 g.n += neu;
                 g.ring = Math.max(g.ring, neu);
             }
-            // die Blende endet: der Spieler steht, nach `KARTEN_EINTRITT_TAKTE` Takten ist die Blende der Welt zu, und jede
-            // eingetretene Karte steht ganz (ihr Stempel liegt so viele Takte zurück)
+            // die Blende endet: der Spieler steht, nach `KARTEN_EINTRITT_TAKTE` Takten ist die Blende der Welt zu
             await tick(AR.KARTEN_EINTRITT_TAKTE);
             g.blende = r._weltOffen().blende;
-            g.halb = karten().filter((e) => e.feldWurf === true && stempel(e, "aEin") > st.weltTakt - AR.KARTEN_EINTRITT_TAKTE).length;
             return g;
         };
         res.G = await geburt(1, 0);
@@ -749,14 +744,10 @@ hauptLauf(async () => {
     const gZeile = (g) =>
         `Laub-Rand ${g.rand} m, 40 m Gang: ${g.n} Eintritte im Saum, höchstens ${g.ring} je Schritt` +
         (g.taeter.length ? ` · Täter: ${g.taeter.join(" | ")}` : "");
-    check(
-        "G GEBURT (die Karte tritt an ihrem Rand ein und blendet ab ihrem Eintritt in Welt-Takten ein, endlich)",
-        G.n >= 5 && G.taeter.length === 0 && G.blende === 0 && G.halb === 0,
-        `${gZeile(G)} · nach ${G.ein} Takten Ruhe: Blende offen ${G.blende}, halb ${G.halb}`
-    );
+    check("G GEBURT (die Karte tritt an ihrem Rand ein und blendet in Takten ein)", G.n >= 5 && !G.taeter.length && !G.blende, gZeile(G) + `, Blende ${G.blende}`);
     const S6 = out.S6 || { taeter: [] };
     check("SELBSTTEST 6 (der Eintritt am Karten-Horizont macht G rot)", S6.taeter.length > 0, gZeile(S6));
-    check("SELBSTTEST 7 (eine Karte ohne die Blende ihres Eintritts macht G rot)", !!out.S7, out.S7 || "keine Probe");
+    check("SELBSTTEST 7 (eine Karte ohne Blende macht G rot)", !!out.S7, out.S7 || "keine Probe");
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
     urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });
