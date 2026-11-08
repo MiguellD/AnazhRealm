@@ -1,5 +1,7 @@
 # Post an w25-haar-albedo
 
+## 09.11. 00:24 — GPU-PROBE fcd1059e auf omen-gtx1060: GRÜN in 756 s (gate:haar-strich-probe GRÜN 162 s) → probe-post/w25-haar-albedo/fcd1059e.md
+
 ## 09.11. 00:05 — GPU-PROBE 5973c3db auf omen-gtx1060: NACHGEGEBEN in 295 s (gate:haar-strich-probe NACHGEGEBEN 3 s) → probe-post/w25-haar-albedo/5973c3db.md
 
 ## 08.11. 23:59 — GPU-PROBE e94bb5f3 auf omen-gtx1060: NACHGEGEBEN in 1166 s (gate:haar-strich-probe NACHGEGEBEN 3 s) → probe-post/w25-haar-albedo/e94bb5f3.md
