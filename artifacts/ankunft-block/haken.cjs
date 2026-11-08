@@ -76,6 +76,7 @@ function BAU_HAKEN() {
         const r = window.anazhRealm;
         const st = r && r.state;
         const da = st && st._weltbildDa;
+        if (da && !N.faeden && r._foundry) [N.faeden, N.kerne] = [((r._foundry.helfer || []).length | 0) + 1, navigator.hardwareConcurrency];
         if (da && t - da < 4000) {
             const p = st.playerMesh && st.playerMesh.position;
             const L = r._gpuLeine || {};

@@ -230,7 +230,7 @@ function berichtAB(teil, Z) {
                 const n = (q) => ((q.schlange || "").match(/\d+/g) || []).reduce((m, x) => m + +x, 0);
                 const voll = P.filter((q) => n(q) > 0);
                 const letzt = P.filter((q) => q.t > z.out.weltbildDa - 1000 && q.fehlt && q.fehlt.length).map((q) => q.fehlt.join("+"));
-                return `leer ab ${voll.length ? sek(voll[voll.length - 1].t) : "–"} s, max ${Math.max(0, ...P.map(n))} · zuletzt fehlt ${letzt.slice(-2).join(" / ").slice(0, 90)}`;
+                return `${(z.out.nach || {}).faeden}/${(z.out.nach || {}).kerne} Fäden/Kerne · leer ab ${voll.length ? sek(voll[voll.length - 1].t) : "–"} s, max ${Math.max(0, ...P.map(n))} · zuletzt fehlt ${letzt.slice(-2).join(" / ").slice(0, 90)}`;
             };
             zeile(`${pre}FOUNDRY bis zum Bild je Boot: ${zs.map(fo).join(" | ")}`);
             zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
