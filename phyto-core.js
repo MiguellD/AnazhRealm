@@ -5622,13 +5622,15 @@
     // Arten), D sein Anteil der Laub werfenden Arten, delta deren Anteil an der Deckung, R deren Rinde × delta (alle wie das Dach
     // × Selbstbeschattung), p die Präsenz, S die Tönung des Laubs. Rückgabe: { farbe (vormultipliziert), deckung } — Sommer
     // (p 1, S 1) exakt { K, 1 }. Über einer Algebra wie `windAusschlag` (WIND_ZAHLEN: Faden und CPU; die TSL-Algebra: der Stoff).
+    // Mit f = 1 − p (das gefallene Laub): farbe = K + D·(p·S − 1) + R·f·holz, deckung = 1 + delta·f·(holz − 1). p liegt nach
+    // seinem Gesetz in [0, 1] (`_saisonPraesenz`: linear zwischen den Stützen `pr` des SAISON_GESETZ) — keine Klemme; f baut
+    // jeder Leser frisch: im Stoff wird kein Knoten geteilt, das Boden-Programm trägt keine Variable des Jahrs mehr als nötig.
     var KRONE_JAHR = Object.freeze({ holz: 0.05 });
     function kroneImJahr(A, p, S, K, D, delta, R) {
-        const L = A.min(A.max(p, A.k(0)), A.k(1));
-        const kahl = A.mul(A.add(A.k(1), A.mul(L, A.k(-1))), A.k(KRONE_JAHR.holz));
+        const fiel = (x) => A.mul(A.add(A.k(1), A.mul(p, A.k(-1))), A.k(x));
         return {
-            farbe: A.add(A.add(K, A.mul(D, A.add(A.mul(L, S), A.k(-1)))), A.mul(R, kahl)),
-            deckung: A.add(A.add(A.k(1), A.mul(delta, A.add(L, A.k(-1)))), A.mul(delta, kahl)),
+            farbe: A.add(A.add(K, A.mul(D, A.add(A.mul(p, S), A.k(-1)))), A.mul(R, fiel(KRONE_JAHR.holz))),
+            deckung: A.add(A.k(1), A.mul(delta, fiel(KRONE_JAHR.holz - 1))),
         };
     }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.

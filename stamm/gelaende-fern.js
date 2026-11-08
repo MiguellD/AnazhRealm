@@ -1739,7 +1739,8 @@ class AnazhRealm_gelaende_fern {
             laub.a,
             kahl
         );
-        const farbe = J.farbe.div(J.deckung.max(1e-4));
+        // die Deckung im Jahr liegt nach dem Gesetz bei ≥ 1 − (1 − holz) = holz (die kahle Krone ganz Laub werfender Arten)
+        const farbe = J.farbe.div(J.deckung);
         const deckung = krone.a.mul(J.deckung).mul(ohneWald);
         return _T.mix(alb, farbe, kroneVertex ? deckung : deckung.mul(karte));
     }
