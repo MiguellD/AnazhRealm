@@ -275,6 +275,29 @@ async function weltStehtNach(takt, max) {
     }
     return n;
 }
+// DIE PRÜF-WELT (`window.__pruefWelt()`, w23-pruef-welt): die Welt, die eine Linse zum Urteil sieht — ihr Fenster, ihre Welt-Uhr
+// (`spielZeit`, `weltTakt`, daneben die Wanduhr der Seite), ihr Regler (gehalten oder frei, `loadScale`, ein Bild über dem Budget)
+// und jede Tat des Felds seit dem Boot: die Evolutionen des Nexus (je Name die Uhr ihres Laufs), das Feuern der Gesetze je Quelle
+// und das Buch der Welt-Akte (`taten`: Akt · Quelle @ Welt-Zeit); null ohne Welt. Am Abbau jeder Welt-Seite steht sie in EINER
+// Zeile (`pruefWeltMelden`).
+function pruefWelt() {
+    if (!st || !st.dsl) return null;
+    const g = {};
+    for (const x of st.worldRules || []) if (x.fires) g[x.source] = (g[x.source] || 0) + x.fires;
+    const s = st.perfSense;
+    return {
+        fenster: [innerWidth, innerHeight, devicePixelRatio].join("×"),
+        welt: st.spielZeit.toFixed(1),
+        takte: st.weltTakt,
+        wand: (performance.now() / 1000).toFixed(1),
+        regler: st.perfRegulator === false ? "aus" : "frei",
+        last: s ? s.loadScale.toFixed(2) : "–",
+        ueber: !!st._frameOverBudget,
+        nexus: (st.dsl.history || []).filter((h) => h.id.startsWith("evo_")).map((h) => `${h.id}@${h.at.toFixed(1)}`),
+        gesetze: g,
+        taten: (st.taten || []).map((e) => `${e.op}·${e.wer}@${e.t.toFixed(1)}`),
+    };
+}
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis `fertig()` (sonst
 // `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
 // der NAME dessen, was die Welt bauen soll. Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`); dann wirft sie beim Namen.
@@ -463,7 +486,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__pruefWelt = ${pruefWelt}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -825,6 +848,19 @@ async function weicheUrteil(browser, art) {
     if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
     return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
 }
+// DIE PRÜF-WELT AM ABBAU (`pruefWeltMelden(page)`): je Welt-Seite EINE Zeile, bevor sie geht — die Seite schließt oder der Browser
+// baut ab (eine Seite, die nicht antwortet, nach 3 s ohne Zeile; die Stall-Akte nennt sie)
+async function pruefWeltMelden(page) {
+    if (page.__pruefWeltGelesen || !/^https?:/.test(page.url())) return;
+    page.__pruefWeltGelesen = true;
+    const a = await Promise.race([page.evaluate(() => window.__pruefWelt?.()).catch(() => null), sleep(3000)]);
+    if (!a) return;
+    const n = (l) => `${l.length}${l.length ? ` [${l.slice(0, 6).join(" ")}${l.length > 6 ? " …" : ""}]` : ""}`;
+    const g = Object.entries(a.gesetze).map(([q, k]) => `${q} ${k}`);
+    console.log(
+        `  ❌ PRÜF-WELT ${path.basename(process.argv[1] || "?", ".cjs")} · Fenster ${a.fenster} · Welt ${a.welt} s in ${a.takte} Takten (Wand ${a.wand} s) · Regler ${a.regler} loadScale ${a.last}${a.ueber ? " über Budget" : ""} · Nexus ${n(a.nexus)} · Gesetze ${g.join(", ") || 0} · Taten ${n(a.taten)}`
+    );
+}
 // Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
@@ -850,6 +886,8 @@ async function akteAnlegen(page, b) {
     });
     AKTE_SEITEN.add(page);
     page.on("close", () => AKTE_SEITEN.delete(page));
+    const zu = page.close.bind(page);
+    page.close = async (...a) => (await pruefWeltMelden(page), zu(...a));
     page.on("console", (m) => ring(A.konsole, `${m.type()}: ${m.text().replace(/\s+/g, " ").slice(0, 200)}`, 12));
     for (const n of [
         "goto",
@@ -1173,6 +1211,7 @@ async function starteBrowser(opts = {}) {
     let abbau = false;
     const zu = browser.close.bind(browser);
     browser.close = async (...a) => {
+        for (const p of await browser.pages().catch(() => [])) await pruefWeltMelden(p);
         const rot = await weicheUrteil(browser, opts.art);
         if (rot) melde("klasse", rot);
         [abbau, b.offen] = [true, false];
