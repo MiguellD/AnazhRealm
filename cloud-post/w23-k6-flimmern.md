@@ -14,7 +14,8 @@ ABGABE 33d0e5a8a9e05841514aa21ca5675c645d71246b
 - Puls grün (Code-Check 33d0e5a8), `npm run check` grün, `playtest:fast` 21/21, `gate:haus-welt` grün (37 Welten).
 - FUND (nicht meine Klasse, Größe M): w21-leib-bau macht K6 auf der GTX am Kopf A0 zum Wackler. Zug 6fc7d52 (nur w21-leib-bau): echt-Versuch 1 und 2 rot an K6, Versuch 2 A0 Kopf 5,4 %; davor ef66795 A0 0,0 %, Leib 3 102–3 356 px; seitdem Leib 2 875–3 176 px, A0 0,9–5,6 % (GTX, 9 Läufe an diesem Kopf), integ-probe 137a3f7 3,1 %. Die Zahl der getragenen Teile (`_traegerPassung`, stamm/bild-kosten.js:2290) ist vorher wie nachher 23 von 24, aber `head` und `mensch` sind über der EINEN Haut anders geschnitten. Kriterium: K6 Kopf A0 ≤ 2 % auf der GTX in 10 Läufen.
 - FUND (Größe M): `stamm/bild-schatten.js:184` — der Rückstrahl des Spiels liest den Szenen-Pass mit Halton-Versatz (Boden je Messung im Gang p50 0,3 %, bis 0,8 %; an der Unterseite ein Fünfzehntel davon).
-- Ehrlich offen: zehn GTX-Läufe GRÜN stehen aus. Sie hängen am FUND w21-leib-bau, nicht am Rückstrahl. Die Wiederholungen am Kopf laufen weiter, das Wartezimmer liest diesen Briefkasten.
+- Nachtrag 16:10: Wiederholung 8 (GTX) und 9 (Radeon) je 3/3 GRÜN — am Kopf jetzt Radeon 12/12, GTX 11/12 (der eine ROTE der Leib-Kopf A0 5,6 %), Rückstrahl 0,2–0,3 % in 24 von 24 Läufen; GTX A0 Kopf über 12 Läufe 0,9–5,6 %.
+- Ehrlich offen: zehn GTX-Läufe GRÜN in Folge stehen aus. Sie hängen am FUND w21-leib-bau, nicht am Rückstrahl. Die Wiederholungen am Kopf laufen weiter, das Wartezimmer liest diesen Briefkasten.
 
 ## 08.11. 15:24 — GPU-PROBE 33d0e5a8 auf omen-gtx1060: ROT in 4104 s (gate:kamera-leib:echt GRÜN 80 s · gate:kamera-leib:echt GRÜN 79 s · gate:kamera-leib:echt ROT 79 s) → probe-post/w23-k6-flimmern/33d0e5a8.md
 
