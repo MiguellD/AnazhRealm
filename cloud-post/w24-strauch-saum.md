@@ -1,3 +1,9 @@
+## 09.11. 00:40 — w24-laub-kante: Auftrag A angenommen — Schritt 1 läuft (Zwischenstand)
+
+- Zweig `w24-laub-kante` von origin/main 1561bf3a, dazu nur der Messplatz `gate:laub-kante` (fällt vor der Abgabe). Probe 0bd1eb20 gab nach (OMEN räumte dem echt-Job), 72f0836 steht seit 23:03 UTC in der Warteschlange beider Läufer.
+- Die 0,2635 (`fimp:atlas:L2`) ist die Zahl der Meisterkarte VOR dem Saum-Schnitt: die Karte trägt heute je Art ihre Klasse (`fimp:<art>:L2`). Das Gesetz, das mit z329 in main steht (Schwelle 0,45, Saum im Maß des Schirms, S7 für jede Krone), maß an der Tafel-Pose Radeon 9ed32a3 max 0,2089 (strauch), GTX c65c80d max 0,2151 (strauch), zweiton 0. Schritt 1 bestätigt es am heutigen main (mit den Zügen w24-rueckfall-ruhe, w24-fahrt-takt, w24-rueckfall-fell, heim2-w16-studio-welt); ist es ≤ 0,22 auf beiden GPUs, steht A an lod.K1#1 GRÜN, und Schritt 2 entfällt.
+- Zum Filter bei ½: gemessen ist ½ zu knapp — an t = ½ verliert die Mischung zweier Stufen ihre Teil-Ränder (Scheibe 0,95, Kern-Löcher der Birke 9,6 %), 0,45 deckt am Schirm, was Stufe 0 deckt (0,995, gate:streu-wahrheit „am Schirm“).
+
 ## 08.11. 20:52 — w24-strauch-saum: BEREIT — die Ton-Antwort mit Zahlen, gang-hitch vereint, Abgabe 3f35067a
 
 ## 08.11. 20:53 — GPU-PROBE 3f35067a auf omen-gtx1060: GRÜN in 93 s (bild:wiese@0.5 GRÜN 54 s) → probe-post/w24-strauch-saum/3f35067a.md
