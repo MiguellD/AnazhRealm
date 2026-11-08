@@ -1,0 +1,100 @@
+{
+ "sha": "ec87c828d127b6ad9719d017de0abddf06cd8b75",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T02:22:31.028Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 213.8 über Rausch-Boden 0.000 (×213.8), Tal 32.3 — Kamm/Tal 6.63 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.31,
+   "gpu": "amd/rdna-3",
+   "s": 18.7,
+   "zeit": "2026-11-08T02:21:09.528Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 1.81 · 20–40 1.26 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.33,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.23 · 10–20 1.81 · 20–40 1.26 (Saum springt > 15 %), Farbton 2–5 m 13.48°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 19.7,
+   "zeit": "2026-11-08T02:21:28.260Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.4040 · Karte fimp:birke:L2 0.3266 (30832 px), fimp:eiche:L2 0.2261 (80272 px), fimp:fichte:L2 0.2085 (39143 px), fimp:strauch:L2 0.4040 (21835 px), fimp:tanne:L2 0.2219 (118673 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.4040 · Karte fimp:birke:L2 0.3266 (30832 px), fimp:eiche:L2 0.2261 (80272 px), fimp:fichte:L2 0.2085 (39143 px), fimp:strauch:L2 0.4040 (21835 px), fimp:tanne:L2 0.2219 (118673 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Natur baum_tanne in 44.54 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.8,
+   "zeit": "2026-11-08T02:21:48.047Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.0346 % Pop-Pixel je Sekunde (718 px, Soll ≤ 0,05 %), je Schritt 30*/26*/312*/67/103*/35*/35*/110 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.37,
+   "gpu": "amd/rdna-3",
+   "s": 22.3,
+   "zeit": "2026-11-08T02:22:31.028Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T02:20:36.700Z",
+  "port": 7804,
+  "warten": 0.12,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 17.5,
+    "takte": 650,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 269,
+   "frameP95": 50.31,
+   "taktP95": 37.71,
+   "vramMax": 132.7,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 118,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 129.6,
+  "minuten": 2.35
+ }
+}
