@@ -1,7 +1,7 @@
 {
  "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
  "geraet": "radeon",
- "zeit": "2026-11-08T05:44:12.850Z",
+ "zeit": "2026-11-08T05:52:22.236Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -141,14 +141,13 @@
    "modus": "session"
   },
   "licht.K2#1": {
-   "gruen": false,
-   "zahl": "Verhältnis 5.386 (5–12,5), Schatten-Anteil 0.1857 (0,08–0,20), A/B 1.000, A/C 1.021, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "gruen": true,
+   "zahl": "Verhältnis 5.311 (5–12,5), Schatten-Anteil 0.1883 (0,08–0,20), A/B 1.000, A/C 1.013, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.17,
-   "grund": "ROT: Verhältnis 5.386 (5–12,5), Schatten-Anteil 0.1857 (0,08–0,20), A/B 1.000, A/C 1.021, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "minuten": 0.15,
    "gpu": "amd/rdna-3",
-   "s": 10.1,
-   "zeit": "2026-11-08T04:46:29.421Z",
+   "s": 9,
+   "zeit": "2026-11-08T05:51:25.068Z",
    "abdruck": "56cfeaed06f3",
    "port": 7804,
    "bahn": "sitzung",
@@ -691,14 +690,13 @@
    "modus": "session"
   },
   "schatten.K1#2": {
-   "gruen": false,
-   "zahl": "Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:958:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:2058:49)\"\n ]\n}\n",
-   "exit": 1,
-   "minuten": 0.04,
-   "grund": "ROT: Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:958:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:2058:49)\"\n ]\n}\n",
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 0.955 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.802 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.917 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.859 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0.08 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.38,
    "gpu": "amd/rdna-3",
-   "s": 2.1,
-   "zeit": "2026-11-08T05:17:55.423Z",
+   "s": 22.6,
+   "zeit": "2026-11-08T05:51:44.078Z",
    "abdruck": "8b9afa6bfd7d",
    "port": 7804,
    "bahn": "sitzung",
@@ -778,14 +776,13 @@
    "modus": "session"
   },
   "speicher.K4#2": {
-   "gruen": false,
-   "zahl": "bild-diff 1.07 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
+   "gruen": true,
+   "zahl": "bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.49,
-   "grund": "ROT: bild-diff 1.07 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
+   "minuten": 0.5,
    "gpu": "amd/rdna-3",
-   "s": 29.4,
-   "zeit": "2026-11-08T05:27:42.909Z",
+   "s": 29.8,
+   "zeit": "2026-11-08T05:52:22.236Z",
    "abdruck": "cf5db34c59c4",
    "port": 7804,
    "bahn": "sitzung",
@@ -1756,982 +1753,66 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-08T04:40:53.539Z",
+  "start": "2026-11-08T05:50:56.833Z",
   "port": 7804,
-  "warten": 0.14,
-  "bootS": 5.4,
+  "warten": 0.08,
+  "bootS": 5.3,
   "grundstellungS": [
-   6.4,
-   4.5,
-   5,
-   0.1,
-   4.5,
-   2.8,
-   3.6,
-   4.5,
-   6.4,
-   0,
-   4.4,
-   0,
-   0.1,
-   3.9,
-   0.1,
-   4,
-   3.9
+   1.3
   ],
-  "proben": 42,
+  "proben": 3,
   "freigaben": [],
-  "offen": [
-   "leib.K1#2",
-   "halten.K2#1",
-   "leib.K4#1",
-   "leib.K4#2",
-   "fahrzeug.K5#1",
-   "fahrzeug.K2#1",
-   "fahrzeug.K2#2",
-   "klang.K4#1",
-   "klang.K4#2",
-   "klang.K5#2",
-   "speicher.K4#2",
-   "wetter.K2#1",
-   "licht.K3#1",
-   "mensch.K1#1",
-   "mensch.K2#2",
-   "vegetation.K4#1",
-   "vegetation.K4#2",
-   "mensch.K5#1",
-   "siedlung.K1#2",
-   "schatten.K1#1",
-   "schatten.K1#2",
-   "wetter.K3#2",
-   "tiere.K3#2",
-   "tiere.K2#2",
-   "luftwasser.K5#2",
-   "haar.K5#1",
-   "studios.K2#2",
-   "studios.K3#2",
-   "pipeline.K4#1",
-   "pipeline.K4#2",
-   "ankunft.K2#1",
-   "ankunft.K3#1",
-   "ankunft.K1#1",
-   "ankunft.K1#2",
-   "ankunft.K5#1",
-   "bauen.K1#2",
-   "bauen.K5#2",
-   "studios.K4#1",
-   "studios.K4#2",
-   "siedlung.K2#1",
-   "siedlung.K2#2",
-   "siedlung.K5#1",
-   "siedlung.K5#2",
-   "siedlung.K4#2",
-   "leib.K2#1",
-   "leib.K2#2",
-   "leib.K3#2",
-   "halten.K5#1",
-   "halten.K5#2",
-   "halten.K1#2",
-   "tore.K1#1",
-   "tore.K3#1",
-   "tore.K3#2",
-   "streaming.K4#2",
-   "profiband.K1#1",
-   "profiband.K1#2",
-   "pflicht.E#1",
-   "profiband.K2#1",
-   "profiband.K2#2",
-   "profiband.K3#1",
-   "profiband.K3#2",
-   "speicher.K1#1",
-   "speicher.K1#2",
-   "speicher.K2#1",
-   "speicher.K2#2"
-  ],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "gelaende.K5#2",
-    "s": 13.5,
-    "takte": 574,
+    "vor": "licht.K2#1",
+    "s": 16.2,
+    "takte": 652,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 15.1,
-    "takte": 571,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 12.8,
-    "takte": 605,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "klang.K2#1",
-    "s": 13.2,
+    "ort": "buehne",
+    "vor": "schatten.K1#2",
+    "s": 10,
     "takte": 601,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 9.6,
-    "takte": 614,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 3.5,
-    "takte": 224,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 12.2,
-    "takte": 577,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 22.4,
-    "takte": 823,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "schatten.K2#1",
-    "s": 17.9,
-    "takte": 549,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 12.4,
-    "takte": 536,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 11.7,
-    "takte": 562,
-    "chunks": 81,
+    "chunks": 84,
     "nach": null
    },
    {
     "ort": "wiese",
-    "vor": "wetter.K2#2",
-    "s": 14.9,
-    "takte": 599,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 1.3,
-    "takte": 112,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 13.1,
-    "takte": 606,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "affekt.K1#2",
-    "s": 6.8,
-    "takte": 579,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "oekologie.K4#2",
-    "s": 4.1,
-    "takte": 295,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "haar.K1#1",
-    "s": 13.9,
-    "takte": 564,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#1",
-    "s": 3.3,
-    "takte": 323,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#2",
-    "s": 13.7,
+    "vor": "speicher.K4#2",
+    "s": 14.2,
     "takte": 596,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 13.4,
-    "takte": 625,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "ankunft.K4#1",
-    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 4.5
-   },
-   {
-    "vor": "affekt.K4#2",
-    "wege": "wege +8 [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95] [1410.2,-6310.3,1771.1,-6169.3/88] …",
-    "s": 4.5
-   }
-  ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 9
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "material.K3#1",
-    "wie": "werke +5 (−0)"
-   },
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   },
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   },
-   {
-    "probe": "gelaende.K3#1",
-    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
-   }
-  ],
-  "ciBlicke": 43,
+  "wegeTueren": [],
+  "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 8880,
-   "frameP95": 50.49,
-   "taktP95": 41.99,
-   "vramMax": 170,
-   "seiten": 13,
-   "marken": 2,
+   "bilder": 154,
+   "frameP95": 184.14,
+   "taktP95": 128.27,
+   "vramMax": 139.6,
+   "seiten": 3,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "gelaende.K3#1",
-     "m": 5981,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "licht.K5#1",
-     "m": 3592,
+     "probe": "schatten.K1#2",
+     "m": 459,
      "ringVor": 4,
      "ringMin": 1
-    },
-    {
-     "probe": "streaming.K3#1",
-     "m": 3000,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "lod.K1#1",
-     "m": 1011,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K5#2",
-     "m": 312,
-     "ringVor": 4,
-     "ringMin": -1
     }
    ],
-   "zapfen": 1682,
-   "luecken": 7,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 113,
+   "luecken": 1,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 1802.9,
-  "grund": "die Fahrt riss 1800 s in leib.K1#2 — offen: leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#2, haar.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
-  "minuten": 30.25
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-08T05:11:08.250Z",
-   "port": 7804,
-   "warten": 0.09,
-   "bootS": 5.8,
-   "grundstellungS": [
-    2.5,
-    2.6,
-    2.6,
-    2.3,
-    2.5,
-    3.1,
-    1.4,
-    1.3,
-    1.4,
-    3.3,
-    3.3,
-    2.5,
-    9.9,
-    4.2,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    3.1,
-    1.7,
-    0,
-    2.4,
-    0,
-    3.5,
-    1.7,
-    2.2,
-    0,
-    0,
-    0.1,
-    2.1,
-    0.1,
-    2.1,
-    1.7
-   ],
-   "proben": 37,
-   "freigaben": [],
-   "offen": [
-    "profiband.K1#1",
-    "profiband.K1#2",
-    "pflicht.E#1",
-    "profiband.K2#1",
-    "profiband.K2#2",
-    "profiband.K3#1",
-    "profiband.K3#2",
-    "speicher.K1#1",
-    "speicher.K1#2",
-    "speicher.K2#1",
-    "speicher.K2#2"
-   ],
-   "orte": [
-    {
-     "ort": "dorf",
-     "vor": "wetter.K2#1",
-     "s": 23.2,
-     "takte": 626,
-     "chunks": 81,
-     "nach": null
-    },
-    {
-     "ort": "dorf",
-     "vor": "licht.K3#1",
-     "s": 17.2,
-     "takte": 650,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "mensch.K1#1",
-     "s": 12.8,
-     "takte": 600,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "vegetation.K4#1",
-     "s": 12.2,
-     "takte": 621,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "mensch.K5#1",
-     "s": 11.6,
-     "takte": 585,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "siedlung.K1#2",
-     "s": 12.1,
-     "takte": 605,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "buehne",
-     "vor": "schatten.K1#1",
-     "s": 10.1,
-     "takte": 575,
-     "chunks": 84,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "buehne",
-     "vor": "schatten.K1#2",
-     "s": 5.4,
-     "fehler": "Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
-     "nach": "der Tür (die Welt hing)"
-    },
-    {
-     "ort": "wiese",
-     "vor": "leib.K1#2",
-     "s": 14.2,
-     "takte": 621,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "leib.K4#1",
-     "s": 13.1,
-     "takte": 591,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K5#1",
-     "s": 13.4,
-     "takte": 616,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K2#1",
-     "s": 13.1,
-     "takte": 585,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K2#2",
-     "s": 13.4,
-     "takte": 603,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "klang.K4#1",
-     "s": 12.5,
-     "takte": 578,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "klang.K5#2",
-     "s": 0.7,
-     "takte": 66,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": "wiese",
-     "vor": "speicher.K4#2",
-     "s": 3,
-     "takte": 208,
-     "chunks": 100,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "wetter.K3#2",
-     "s": 9.3,
-     "takte": 666,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tiere.K3#2",
-     "s": 7.7,
-     "takte": 634,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tiere.K2#2",
-     "s": 1.1,
-     "takte": 84,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "luftwasser.K5#2",
-     "s": 2.8,
-     "takte": 202,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "haar.K5#1",
-     "s": 3.5,
-     "takte": 248,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "studios.K2#2",
-     "s": 0.7,
-     "takte": 55,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "pipeline.K4#1",
-     "s": 11.1,
-     "takte": 649,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "bauen.K1#2",
-     "s": 11.5,
-     "takte": 706,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "bauen.K5#2",
-     "s": 1.5,
-     "takte": 120,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "studios.K4#1",
-     "s": 11.1,
-     "takte": 700,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K2#1",
-     "s": 3.6,
-     "takte": 269,
-     "chunks": 89,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K5#1",
-     "s": 11.1,
-     "takte": 655,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K4#2",
-     "s": 11.1,
-     "takte": 699,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "leib.K2#1",
-     "s": 10.6,
-     "takte": 649,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "leib.K3#2",
-     "s": 7.9,
-     "takte": 657,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "halten.K5#1",
-     "s": 8.9,
-     "takte": 671,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "halten.K1#2",
-     "s": 11.3,
-     "takte": 650,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K1#1",
-     "s": 10.6,
-     "takte": 656,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K3#1",
-     "s": 7.6,
-     "takte": 561,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "streaming.K4#2",
-     "s": 11.3,
-     "takte": 705,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "profiband.K1#1",
-     "s": 12.4,
-     "takte": 705,
-     "chunks": 81,
-     "nach": "der Tür"
-    }
-   ],
-   "wegeTueren": [
-    {
-     "vor": "licht.K3#1",
-     "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-     "s": 2.5
-    },
-    {
-     "vor": "mensch.K1#1",
-     "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-     "s": 2.6
-    },
-    {
-     "vor": "vegetation.K4#1",
-     "wege": "wege +5 [-110,-230.5,17,-118.4/270] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
-     "s": 2.6
-    },
-    {
-     "vor": "siedlung.K1#2",
-     "wege": "wege +5 [-110,-230.5,17,-118.4/270] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
-     "s": 2.5
-    },
-    {
-     "vor": "fahrzeug.K2#1",
-     "wege": "wege +1 [-283.4,-1048.6,-205.4,-1042.6/1]",
-     "s": 2.5
-    },
-    {
-     "vor": "fahrzeug.K2#2",
-     "wege": "wege +25 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
-     "s": 9.9
-    },
-    {
-     "vor": "siedlung.K4#2",
-     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-     "s": 1.7
-    },
-    {
-     "vor": "leib.K2#1",
-     "wege": "wege +7 [-119.1,-274.9,279.2,201/272] [152.6,505.5,647.4,926.8/331] [234.5,504.5,580.5,843.3/329] …",
-     "s": 2.2
-    }
-   ],
-   "anOrt": [
-    {
-     "vor": "tore.K1#1",
-     "anders": [
-      "playerPathBuckets"
-     ],
-     "wie": {
-      "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-     }
-    },
-    {
-     "vor": "streaming.K4#2",
-     "anders": [
-      "tools",
-      "materials"
-     ],
-     "wie": {
-      "tools": {
-       "vorher": 0,
-       "nachher": 1,
-       "fehlt": [],
-       "neu": [
-        "{\"label\":\"Konformanz-Feile\",\"opClass\":\"s"
-       ],
-       "anders": []
-      },
-      "materials": {
-       "vorher": 0,
-       "nachher": 1,
-       "fehlt": [],
-       "neu": [
-        "{\"label\":\"<b>Konformanz-Glut</b>\",\"color"
-       ],
-       "anders": []
-      }
-     }
-    }
-   ],
-   "ciBlicke": 37,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 7919,
-    "frameP95": 75.1,
-    "taktP95": 47.3,
-    "vramMax": 149.7,
-    "seiten": 32,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "leib.K3#2",
-      "m": 6430,
-      "ringVor": 4,
-      "ringMin": 1
-     },
-     {
-      "probe": "fahrzeug.K2#2",
-      "m": 1863,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "siedlung.K5#1",
-      "m": 1798,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "fahrzeug.K2#1",
-      "m": 1618,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "siedlung.K2#1",
-      "m": 1350,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "wetter.K3#2",
-      "m": 1162,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "streaming.K4#2",
-      "m": 1158,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "leib.K2#1",
-      "m": 1083,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "profiband.K1#1",
-      "m": 1083,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "fahrzeug.K5#1",
-      "m": 1046,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "siedlung.K4#2",
-      "m": 639,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "schatten.K1#1",
-      "m": 459,
-      "ringVor": 4,
-      "ringMin": 1
-     },
-     {
-      "probe": "luftwasser.K5#2",
-      "m": 390,
-      "ringVor": 4,
-      "ringMin": 4
-     },
-     {
-      "probe": "leib.K4#1",
-      "m": 320,
-      "ringVor": 4,
-      "ringMin": -1
-     }
-    ],
-    "zapfen": 1807,
-    "luecken": 8,
-    "letzteLuecke": "kein Renderer"
-   },
-   "fahrtS": 1799.9,
-   "grund": "die Fahrt riss 1800 s in profiband.K1#1 — offen: profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
-   "minuten": 30.15
-  },
-  {
-   "start": "2026-11-08T05:41:17.258Z",
-   "port": 7804,
-   "warten": 0.08,
-   "bootS": 5.2,
-   "grundstellungS": [
-    3.9,
-    0
-   ],
-   "proben": 3,
-   "freigaben": [],
-   "orte": [
-    {
-     "ort": null,
-     "vor": "profiband.K1#1",
-     "s": 13.3,
-     "takte": 626,
-     "chunks": 81,
-     "nach": null
-    },
-    {
-     "ort": null,
-     "vor": "speicher.K1#1",
-     "s": 11.8,
-     "takte": 696,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "speicher.K2#1",
-     "s": 8.3,
-     "takte": 610,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    }
-   ],
-   "wegeTueren": [
-    {
-     "vor": "speicher.K1#1",
-     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-     "s": 3.9
-    }
-   ],
-   "ciBlicke": 4,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 890,
-    "frameP95": 150.69,
-    "taktP95": 110.19,
-    "vramMax": 144.1,
-    "seiten": 6,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "profiband.K1#1",
-      "m": 1091,
-      "ringVor": 4,
-      "ringMin": 0
-     }
-    ],
-    "zapfen": 184,
-    "luecken": 7,
-    "letzteLuecke": "kein Renderer"
-   },
-   "fahrtS": 192.6,
-   "minuten": 3.39
-  }
- ]
+  "fahrtS": 110.4,
+  "minuten": 2.01
+ }
 }
