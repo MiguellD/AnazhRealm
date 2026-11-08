@@ -1573,8 +1573,11 @@ class AnazhRealm_vegetation_wiese {
         for (let i = 0; i < K.n && K.o[i] < 1 + F.rand; i++) {
             const [dLo, dHi] = waag(K.x[i] - e.x, K.z[i] - e.z);
             if (dHi < NW.radius || K.o[i] >= AnazhRealm._wieseSchale(ZAHLEN, dLo).anteil * rand) continue;
-            // die Karte als Kugel: ihre Breite am weitesten Abstand (die Breite wächst im Abstand), ihre Höhe
-            const r = 0.5 * SF.breite * AnazhRealm._wieseSchale(ZAHLEN, dHi).breit + SF.hoehe;
+            // die Karte als Kugel: ihre Breite am weitesten Abstand (die Breite wächst im Abstand), nie über die größte ihrer
+            // Matrix, längs ihrer Breiten-Achse samt dem Hang (`_wieseSchaleDaten`), ihre Höhe
+            const M = K.matrizen.subarray(i * 16, i * 16 + 3);
+            const gk = Math.hypot(M[0], M[2]) / SF.breite;
+            const r = 0.5 * Math.hypot(M[0], M[1], M[2]) * Math.min(1, AnazhRealm._wieseSchale(ZAHLEN, dHi).breit / gk) + SF.hoehe; // prettier-ignore
             if (this._passTrifft(W, K.x[i], K.matrizen[i * 16 + 13] + SF.hoehe / 2, K.z[i], 0, 0, 0, r))
                 w.karten.push(i);
         }
