@@ -3861,10 +3861,10 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 3.2,
-        saumZelle: 3,
+        saum: 4.8,
+        saumZelle: 2.5,
         saumBand: 8,
-        saumMin: 0.05,
+        saumMin: 0.02,
         saumWeite: 3,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
