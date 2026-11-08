@@ -3844,6 +3844,10 @@
     //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
     //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
     //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
+    // DIE TAFEL-POSE mit 2,4 / 6 / 8 / 0,05 (laub-kante je Art, main ef667956 → c61e3a9b, Radeon 890M, je zwei Läufe ±0,0007):
+    // birke 0,2721 → 0,1889 · eiche 0,2044 → 0,1553 · fichte 0,2122 → 0,1575 · tanne 0,2232 → 0,1770 · strauch 0,3911 → 0,3536
+    // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
+    // Band unter fremdem Laub auf dem Weg: 72 % seines gezählten Rands ist seine Sohle, ohne sie 0,337 (die Flanken).
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
