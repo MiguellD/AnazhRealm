@@ -43,7 +43,7 @@ function codecAus(phytoSrc) {
     return sandbox.__phytoCore || null;
 }
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
-const { linSrgb } = require("./lib/abnahme-urteil.cjs");
+const { linSrgb, klassenMasse } = require("./lib/abnahme-urteil.cjs");
 const { kernKontext } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
@@ -69,21 +69,32 @@ function kartenFarbe(core) {
 
 // (6) DER SAUM DER KARTE — ein Rausch-Feld (30 % deckend, 8 Ansichten 128 × 256 wie der Atlas), je Baum- und Strauch-Art des
 // Kerns seine Stufen mit dem Saum ihres Gesetzes; Rückgabe { fehler, n: die Saum-Gesetze }. Dazu JE HEBUNGS-RING des Rezepts
-// (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt eine Zelle und
-// seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
+// (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt sein
+// Seitenmaß und seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
+// DIE KANTE DES SAUMS (w23-karte-l2, lod.K1#1): eine glatte Krone (die Scheibe, Kohärenz ≈ 1) trägt auf Stufe 0 UND Stufe 1 einen
+// zerfransten Umriss — `kante` der Soll-Tafel (abnahme-urteil `klassenMasse`) unter 0,6 der Scheibe ohne Saum, je Laub und Nadel.
+// Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
+// an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
 function kartenSaum(core, presets, ic) {
     const [rnd, rgba, fehler, umriss] = [core.mulberry32(1), new Uint8Array(1 << 20), [], new Map()];
     const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
     rgba.forEach((x, i) => i % 4 === 3 && rnd() < 0.3 && (rgba[i] = 255));
+    const scheibe = Uint8Array.from({ length: 128 * 256 * 4 }, (_, i) => (i % 4 === 3 && Math.hypot(((i >> 2) % 128) - 64, ((i >> 2) >> 7) - 128) < 48 ? 255 : 0));
+    const kante = (s) => klassenMasse(s.data, s.data.filter((x, i) => i % 4 === 3).map((a) => (a ? 1 : 0)), s.w, s.h).kante;
     for (const [art, pre] of Object.entries(presets)) {
         if (!pre.s || !/^(tree|shrub)$/.test(pre.kind)) continue;
-        const P = core.treeParams(pre.s, 1, 0, pre, 0), sa = core.karteSaum(P, 0.51 * P.height, 256);
-        core.karteSaumRinge(P, 1, 1, { minY: 0, R: 0 }, ringe, 256).ringe.forEach((r, i) => r.e * r.fuss > 0 || fehler.push(`Saum ${art}: Ring ${ringe[i].hebung}° ohne Saum`));
-        const st = core.impostorMips(rgba, 128, 2048, 8, null, 6, { saum: Object.assign({ fuss: 256 }, sa) }).stufen.map((s) => s.data.filter((x, i) => i % 4 === 3));
+        const P = core.treeParams(pre.s, 1, 0, pre, 0), sa = core.karteSaumRinge(P, 1, 0.5, { minY: 0, R: 0 }, ringe, 128, 256);
+        sa.ringe.forEach((r, i) => r.seite * r.fuss > 0 || fehler.push(`Saum ${art}: Ring ${ringe[i].hebung}° ohne Saum`));
+        if (sa.nadel !== !!core.artPhaenotyp(pre.s, pre).conifer) fehler.push(`Saum ${art}: Laub und Nadel vertauscht`);
+        // je Saum-Gesetz (Laub, Nadel — im selben Rahmen ist es die Art) EINMAL die Stufen und die Kante
+        const saum = Object.assign({ nadel: sa.nadel }, sa.ringe[1]);
+        if (umriss.has(String(sa.nadel))) continue;
+        const st = core.impostorMips(rgba, 128, 2048, 8, null, 6, { saum }).stufen.map((s) => s.data.filter((x, i) => i % 4 === 3));
         const d = st.map((m) => m.filter((x) => x).length / m.length);
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
-        if (sa.nadel !== !!core.artPhaenotyp(pre.s, pre).conifer) fehler.push(`Saum ${art}: Laub und Nadel vertauscht`);
-        umriss.set(sa.e + " " + sa.nadel, String(st[2]));
+        umriss.set(String(sa.nadel), String(st[2]));
+        const [glatt, k0, k1] = [null, saum, saum].map((o, j) => kante(core.impostorMips(scheibe, 128, 256, 1, null, 2, { saum: o }).stufen[j && j - 1]));
+        if (!(k0 < 0.6 * glatt && k1 < 0.6 * glatt)) fehler.push(`Saum ${art}: der Umriss franst nicht — kante Stufe 0 ${k0}, Stufe 1 ${k1}, die glatte Krone ${glatt}`);
     }
     if (new Set(umriss.values()).size < umriss.size) fehler.push(`Saum: ${umriss.size} Saum-Gesetze, ${new Set(umriss.values()).size} Umrisse — der Umriss folgt nicht der Art`);
     return { fehler, n: umriss.size };
@@ -197,8 +208,10 @@ function main() {
             ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
             ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus(PHYTO)) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
-            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaum) => Object.assign(c, { karteSaum: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
-            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].e = 0), a) }))(codecAus(PHYTO)) }],
+            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
+            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus(PHYTO)) }],
+            ["Stufe 0 ohne Saum (main)", /der Umriss franst nicht/, { core: ((c, f = c.impostorMips) => Object.assign(c, { impostorMips: (x, w, h, V, sw, n, o) => Object.assign(f(x, w, h, V, sw, n, o), { stufen: [f(x, w, h, V, sw, 1, {}).stufen[0], ...f(x, w, h, V, sw, n, o).stufen.slice(1)] }) }))(codecAus(PHYTO)) }],
+            ["die Zelle der Blattgröße (Strauch 55 Texel)", /der Umriss franst nicht/, { core: ((c) => ((c.KARTEN_GESETZ.saumZelle = 55), c))(codecAus(PHYTO)) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;

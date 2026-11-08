@@ -3833,8 +3833,16 @@
     //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
-    //   saum          die Stärke des Saums der Art im Wahl-Schlüssel der Stufen (`karteSaum`): so weit verschiebt das Muster
-    //                 der Blattgröße die Deckung eines Rand-Texels
+    //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
+    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses
+    //   saumZelle     die Zelle des Musters in Texeln der Stufe, gemessen an der gröberen Achse des Texels: die Lappen und
+    //                 Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
+    //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
+    //                 Saums, laub-kante strauch 0,4023, birke 0,3293)
+    //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (6: der 13 × 13-Kern, Binomial 12 / 4096), der Rand der
+    //                 Ansicht leer — der Rahmen ist nie der Umriss (an der Scheibe, Kohärenz 0,944: Zelle 6 / Band 4 / Stärke
+    //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; 8 / 6 / 2,4 / 0,05 auf 0,36 Laub, 0,52 Nadel)
+    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
@@ -3843,7 +3851,10 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 0.3,
+        saum: 2.4,
+        saumZelle: 8,
+        saumBand: 6,
+        saumMin: 0.05,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -3893,29 +3904,27 @@
     }
 
     // DER SAUM DER KARTE (w4-laub-saum, lod.K1): die Stufe wählte ihre deckenden Texel nach der GEGLÄTTETEN Deckung — der
-    // Umriss lief als Höhenlinie einer verwischten Krone, eine Hülle statt eines Saums (laub-kante: fimp:atlas:L2 0,2635 > 0,22,
-    // die Gestalten 0,16–0,19; gerastert liegt die Kohärenz des Karten-Umrisses 17–24 % über der ihrer eigenen L1). Über dem
-    // Kronen-Fuß wählt die Stufe nach der Deckung ihres Fußabdrucks selbst, und den Gleichstand am Rand bricht der Saum der Art:
-    // ein Zell-Muster in Stufe-0-Texeln der Ansicht, so groß wie ihr Blatt (`treeParams` leafSize der Nah-Stufe im Rahmen der
-    // Karte), nie feiner als zwei Texel der Stufe — Laub trägt runde Lappen (1 − F1), Nadel Grate zwischen den Büscheln
-    // (F2 − F1). Unter dem Kronen-Fuß wählt der Stamm wie bisher geglättet: er bleibt ganz oder fällt, nie als Perlenschnur. Je
-    // Ansicht decken weiter genau so viele Texel wie auf Stufe 0. Rückgabe { e (Stufe-0-Texel), nadel } oder null (keine Krone).
-    // Leser: der Wirt (`_karteWeltBacken` → die GPU-Ablage) und `impostorMips` (opt.saum).
-    function karteSaum(P, halfH, ch) {
-        return P && P.leafSize > 0 && halfH > 0
-            ? { e: (P.leafSize / (2 * halfH)) * ch, nadel: P.conifer === true }
-            : null;
+    // Umriss lief als Höhenlinie einer verwischten Krone, eine Hülle statt eines Saums (laub-kante: fimp:atlas:L2 0,2635 > 0,22).
+    // DER SAUM AUF JEDER STUFE (w23-karte-l2, lod.K1#1): danach wählte die Stufe über dem Kronen-Fuß nach der Deckung ihres
+    // Fußabdrucks, das Muster der Art (Zelle aus ihrer Blattgröße) brach nur den Gleichstand — es verschob den Umriss um kaum ein
+    // Texel, die Zelle maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel (ein Wellen-Hang statt eines Saums), isotrop
+    // im Texel, wo das Texel 1,5- bis 3,5-mal so breit wie hoch steht, und die Stufe 0, die nah gelesen wird, trug keinen:
+    // Laibe mit glatter Kuppel und gerader Sohle (Radeon, Tafel-Pose, main 03300ec8: strauch 0,4023, birke 0,3293, eiche 0,2264,
+    // tanne 0,2219). Jetzt trägt JEDE Stufe den Saum (`karteSaumSchluessel`) in der Zelle der Stufe und die Art nur, was ihr
+    // gehört: Laub (runde Lappen 1 − F1) oder Nadel (Grate F2 − F1). Rückgabe { nadel } oder null (keine Krone). Leser:
+    // `karteSaumRinge`.
+    function karteSaum(P) {
+        return P && P.leafSize > 0 ? { nadel: P.conifer === true } : null;
     }
     // DER SAUM JE HEBUNGS-RING (w4-laub-saum, 31.10.): der Saum der Art (`karteSaum`) im Bild JEDES Rings der Schicht
-    // (`karteRinge`) — seine Halbhöhe (`karteRingHalbe`, dieselbe Formel liest die Bühne) und seine Zelle (ch/τ) — und sein
+    // (`karteRinge`) — seine Halbhöhe (`karteRingHalbe`, dieselbe Formel liest die Bühne) — mit dem SEITENMASS seiner Texel
+    // (Breite durch Höhe im Rahmen: 2·halfW/(cw/τ) gegen 2·hh/(ch/τ); das Muster misst an der gröberen Achse) und seinem
     // Kronen-Fuß: die Stufe-0-Zeile des tiefsten Laubs im Bild der Bühnen-Kamera aus der Hebung e (Zeile 0 oben),
-    // v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R der Laub-Hülle). Bis dahin trug nur der waagrechte
-    // Ring den Saum, die gehobenen wählten die geglättete Hülle — und der Blick von unten liest den Ring −20°. Der Ring 0°
-    // ist der Saum von `karteSaum` mit dem Fuß (1 − minY / 2·halfH)·ch. `laub` { minY, R } im Maß des Rahmens (halfH, halfW);
-    // Rückgabe { nadel, ringe: [{ e, fuss }] } in der Reihe der Ringe, oder null (keine Krone). Leser: der Wirt
-    // (`_karteSaumVon` → die GPU-Ablage, `saumK`).
-    function karteSaumRinge(P, halfH, halfW, laub, ringe, ch) {
-        const s0 = karteSaum(P, halfH, ch);
+    // v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R der Laub-Hülle). Unter dem Fuß steht der Stamm.
+    // `laub` { minY, R } im Maß des Rahmens (halfH, halfW); Rückgabe { nadel, ringe: [{ seite, fuss }] } in der Reihe der
+    // Ringe, oder null (keine Krone). Leser: der Wirt (`_karteSaumVon` → die GPU-Ablage, `saumK`) und `impostorMips` (opt.saum).
+    function karteSaumRinge(P, halfH, halfW, laub, ringe, cw, ch) {
+        const s0 = karteSaum(P);
         if (!s0 || !laub || !Array.isArray(ringe)) return null;
         return {
             nadel: s0.nadel,
@@ -3924,9 +3933,78 @@
                 const hh = karteRingHalbe(WIND_ZAHLEN, halfH, halfW, e);
                 const chR = ch / ring.teiler;
                 const v = (laub.minY - halfH) * Math.cos(e) - laub.R * Math.abs(Math.sin(e));
-                return { e: karteSaum(P, hh, chR).e, fuss: ((hh - v) / (2 * hh)) * chR };
+                return { seite: (halfW * ch) / (hh * cw), fuss: ((hh - v) / (2 * hh)) * chR };
             }),
         };
+    }
+    // DER SCHLÜSSEL DER WAHL EINER STUFE k (w23-karte-l2) — EIN Gesetz für jede Art und jede Stufe, die GPU-Ablage rechnet es
+    // (KARTE_RECHNER_WGSL saumK): `c` die Deckung jedes Texels einer Ansicht (w × h, Stufe 0 binär, sonst der Anteil seines
+    // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
+    //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
+    //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
+    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k an der gröberen Achse des Texels; ganz Gedecktes
+    //     (g = 1) liegt +2 darüber und bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern)
+    //   unter ihm der STAMM: Stufe 0 bleibt, wie sie backt (4), jede tiefere wählt ihn geglättet (dK) — ganz oder gar nicht
+    // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
+    function karteSaumBand(c, w, h) {
+        const n = 2 * KARTEN_GESETZ.saumBand,
+            B = [1];
+        for (let j = 0; j < n; j++) B.push((B[j] * (n - j)) / (j + 1));
+        const s = B.reduce((a, b) => a + b, 0);
+        const lauf = (q, schritt, laenge, wo) => {
+            const out = new Float64Array(q.length);
+            for (let i = 0; i < q.length; i++) {
+                const a = wo(i);
+                let v = 0;
+                for (let j = 0; j <= n; j++) {
+                    const t = a + j - n / 2;
+                    if (t >= 0 && t < laenge) v += B[j] * q[i + (t - a) * schritt];
+                }
+                out[i] = v / s;
+            }
+            return out;
+        };
+        const zeilen = lauf(c, 1, w, (i) => i % w);
+        return lauf(zeilen, w, h, (i) => (i / w) | 0);
+    }
+    function karteSaumSchluessel(c, w, h, k, saum, dK) {
+        const G = KARTEN_GESETZ,
+            g = karteSaumBand(c, w, h),
+            f = 1 << k,
+            key = new Float64Array(w * h);
+        for (let i = 0; i < w * h; i++) {
+            const X = ((i % w) + 0.5) * f,
+                Y = (((i / w) | 0) + 0.5) * f;
+            if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
+            else if (g[i] >= G.saumMin)
+                key[i] = Math.max(
+                    1e-9,
+                    g[i] +
+                        (g[i] >= 1 ? 2 : 0) +
+                        G.saum *
+                            (karteSaumMuster(
+                                X * Math.max(saum.seite, 1),
+                                Y * Math.max(1 / saum.seite, 1),
+                                G.saumZelle * f,
+                                saum.nadel
+                            ) -
+                                0.5)
+                );
+            if (key[i] > 0) key[i] += 1e-6 * c[i];
+        }
+        return key;
+    }
+    // Die Wahl: die M größten Schlüssel über 0, der Gleichstand nach der Lage in der Ansicht (die GPU-Ablage, grenzeK)
+    function saumWahl(key, M) {
+        const wahl = new Uint8Array(key.length),
+            s = Float64Array.from(key).sort();
+        M = Math.min(M, key.filter((x) => x > 0).length);
+        if (M <= 0) return wahl;
+        const grenze = s[key.length - M];
+        let gleich = M;
+        for (const x of key) if (x > grenze) gleich--;
+        for (let i = 0; i < key.length; i++) wahl[i] = key[i] > grenze || (key[i] === grenze && gleich-- > 0) ? 1 : 0;
+        return wahl;
     }
     // Der Hash des Saums (u32 — die GPU-Ablage rechnet ihn bitgleich)
     function saumHash(ix, iy, s) {
@@ -4022,8 +4100,9 @@
     //            die Deckung an der Schwelle wie immer.
     //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
     //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
-    //   saum     { e, nadel, fuss } — der Saum der Art (`karteSaum`; die Karte, übereinander, nie glatt): über der Stufe-0-
-    //            Zeile `fuss` der Ansicht (dem Kronen-Fuß) ist der Schlüssel die Deckung des Fußabdrucks + saum × (Muster − ½).
+    //   saum     { seite, nadel, fuss } — der Saum der Art (`karteSaumRinge` je Ring; die Karte, übereinander, nie glatt): JEDE
+    //            Stufe, auch Stufe 0, wählt nach `karteSaumSchluessel`; ein gewählter Texel ohne eigene Deckung trägt die
+    //            Farbe seines Bands (das Mittel der deckenden im Kern, wie der Schlüssel sie wiegt).
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
     // DAS σ DER GLATTEN STUFE (K20): die Skala der Alpha (Deckung des Texels × σ, gerundet, bei 255 gekappt), unter der
     // die Zelle nw × nh, bilinear in S × S Unterproben je Texel gelesen (in der Zelle geklemmt), an der Schwelle `thr`
@@ -4123,6 +4202,29 @@
             }
         }
         for (let v = 0; v < V; v++) cov0[v] /= wA * hA;
+        // DER SAUM AUF STUFE 0 (w23-karte-l2): sie wählt wie jede Stufe — so viele, wie der Bäcker deckt
+        if (saum)
+            for (let v = 0; v < V; v++) {
+                const o0 = v * wA * hA;
+                const c = Float64Array.from({ length: wA * hA }, (_, i) => sa[o0 + i]);
+                const farbe = [sr, sg, sb].map((q) =>
+                    karteSaumBand(
+                        c.map((x, i) => x * q[o0 + i]),
+                        wA,
+                        hA
+                    )
+                );
+                const g = karteSaumBand(c, wA, hA);
+                const wahl = saumWahl(karteSaumSchluessel(c, wA, hA, 0, saum, null), Math.round(cov0[v] * wA * hA));
+                for (let i = 0; i < wA * hA; i++) {
+                    const o = (o0 + i) * 4;
+                    if (!wahl[i]) d0[o] = d0[o + 1] = d0[o + 2] = d0[o + 3] = 0;
+                    else if (!c[i]) {
+                        for (let q = 0; q < 3; q++) d0[o + q] = linZuSrgb8(farbe[q][i] / g[i]);
+                        d0[o + 3] = 255;
+                    }
+                }
+            }
         const stufen = [{ w: w, h: h, data: d0 }];
         const deckung = [opak / n0];
         let lw = w,
@@ -4187,25 +4289,26 @@
                     }
                     dicht.set(weich);
                 }
+                // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, Stamm unter dem Kronen-Fuß geglättet
+                const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[tex(v, i)] / fuss) : null;
+                if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum, dicht));
                 for (let i = 0; i < nA; i++) {
                     const s = ta[tex(v, i)];
-                    // DER SAUM (`karteSaum`): über dem Kronen-Fuß die Deckung des Fußabdrucks und das Muster der Art
-                    const X = ((i % nwA) + 0.5) * (1 << k),
-                        Y = (((i / nwA) | 0) + 0.5) * (1 << k);
-                    const basis =
-                        saum && s > 0 && Y <= saum.fuss
-                            ? Math.max(
-                                  1e-9,
-                                  s / fuss +
-                                      KARTEN_GESETZ.saum *
-                                          (karteSaumMuster(X, Y, Math.max(saum.e, 2 << k), saum.nadel) - 0.5)
-                              )
-                            : dicht[i];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
                     // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
-                    schluessel[i] = glatt || s > 0 ? basis + (1e-6 * s) / fuss : 0;
+                    if (!saum) schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
                     if (schluessel[i] > 0) positiv++;
                 }
+                // die Farbe des Bands: die Summen der Kinder im Kern des Saums (ein gewählter Texel ohne eigene Deckung)
+                const band = saum
+                    ? [tr, tg, tb, ta].map((q) =>
+                          karteSaumBand(
+                              Float64Array.from({ length: nA }, (_, i) => q[tex(v, i)]),
+                              nwA,
+                              nhA
+                          )
+                      )
+                    : null;
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
                 if (blut)
                     for (let i = 0; i < nA; i++) {
@@ -4246,10 +4349,11 @@
                         if (data[o * 4 + 3] >= thr) opakK++;
                         continue;
                     }
-                    if (ta[o] > 0 && (schluessel[i] > grenze || (schluessel[i] === grenze && gleich-- > 0))) {
-                        data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
-                        data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
-                        data[o * 4 + 2] = linZuSrgb8(tb[o] / ta[o]);
+                    if (schluessel[i] > 0 && (schluessel[i] > grenze || (schluessel[i] === grenze && gleich-- > 0))) {
+                        const eigen = ta[o] > 0;
+                        [tr, tg, tb].forEach(
+                            (q, j) => (data[o * 4 + j] = linZuSrgb8(eigen ? q[o] / ta[o] : band[j][i] / band[3][i]))
+                        );
                         data[o * 4 + 3] = 255;
                         opakK++;
                     }
@@ -5850,8 +5954,9 @@
         bc1Kodiere: bc1Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
-        karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Blattgröße in Stufe-0-Texeln, Laub oder Nadel
-        karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Zelle und Kronen-Fuß im Bild jedes Rings
+        karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Laub oder Nadel (w23: die Zelle ist die der Stufe)
+        karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Seitenmaß der Texel und Kronen-Fuß
+        karteSaumSchluessel: karteSaumSchluessel, // w23-karte-l2 — der Schlüssel der Wahl jeder Stufe (Band, Muster, Stamm)
         karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)

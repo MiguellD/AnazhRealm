@@ -1216,12 +1216,12 @@ class AnazhRealm_stoff_karte {
         );
     }
 
-    // DER SAUM DER KARTE JE HEBUNGS-RING (w4-laub-saum, phyto-core `karteSaumRinge`): die Blattgröße der Art aus ihrem Gesetz
-    // (`treeParams` der Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst), Laub oder Nadel,
-    // im Bild JEDES Rings, und sein Kronen-Fuß aus der Laub-Hülle der L1 (ihr tiefster Punkt, ihr Radius um die Stammachse).
-    // Bis hierher trug nur der waagrechte Ring den Saum, die gehobenen wählten die geglättete Hülle — und der Blick von unten
-    // liest den Ring −20°. [e je Ring, Fuß je Ring, nadel, Stärke] für die GPU-Ablage (`saumK`); ohne Krone (keine Pflanzen-Art,
-    // kein Laub) Fuß −1: jede Zeile wählt mit dem geglätteten Schlüssel.
+    // DER SAUM DER KARTE JE HEBUNGS-RING (w4-laub-saum, phyto-core `karteSaumRinge`): Laub oder Nadel aus dem Gesetz der Art
+    // (`treeParams` der Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst), im Bild JEDES Rings
+    // das Seitenmaß seiner Texel und sein Kronen-Fuß aus der Laub-Hülle der L1 (ihr tiefster Punkt, ihr Radius um die
+    // Stammachse). [Seitenmaß je Ring, Fuß je Ring, nadel, Stärke, Zelle, Schwelle des Bands, Gänge des Bands] für die
+    // GPU-Ablage (`saumK`, phyto-core `karteSaumSchluessel`); ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile
+    // ist Stamm. Bis w23-karte-l2 trug sie die Zelle der Blattgröße statt des Seitenmaßes.
     _karteSaumVon(at, z, fr, laub) {
         const pc = globalThis.__phytoCore;
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
@@ -1237,14 +1237,15 @@ class AnazhRealm_stoff_karte {
                           R: Math.hypot(Math.max(-laub.min.x, laub.max.x), Math.max(-laub.min.z, laub.max.z)),
                       },
                       at.ringe.ringe,
+                      at.cw,
                       at.ch
                   )
                 : null;
-        const aus = new Float32Array(12).fill(-1, 4, 8);
+        const G = pc.KARTEN_GESETZ;
+        const aus = Float32Array.of(1, 1, 1, 1, -1, -1, -1, -1, 0, G.saum, G.saumZelle, G.saumMin, G.saumBand, 0, 0, 0);
         if (!s) return aus;
-        s.ringe.forEach((r, i) => ((aus[i] = r.e), (aus[4 + i] = r.fuss)));
+        s.ringe.forEach((r, i) => ((aus[i] = r.seite), (aus[4 + i] = r.fuss)));
         aus[8] = s.nadel ? 1 : 0;
-        aus[9] = pc.KARTEN_GESETZ.saum;
         return aus;
     }
 
@@ -1354,15 +1355,24 @@ class AnazhRealm_stoff_karte {
         };
         const base = { V, thr: G.schwelle, w0: W, hA0: at.ch };
         zug("stufe0", Object.assign({}, base, { w: W, h: H }), Math.ceil(W / 16), Math.ceil(H / 16));
-        // Albedo: Stufe 0 binär, k ≥ 1 deckungstreu
+        // Albedo: JEDE Stufe deckungstreu mit dem Saum (w23-karte-l2) — Stufe 0 wählt aus der Bühne selbst (ihr Schlüssel ohne
+        // Glättung des Stamms: er bleibt, wie er backt), jede tiefere aus ihrer Summe
         let so = 0;
         let quelle = 0;
         for (let k = 0; k < M.a.length; k++) {
             const wk = W >> k,
                 hk = H >> k,
                 fuss = 1 << (2 * k);
-            let flag = 0;
-            if (k > 0) {
+            let flag = 1;
+            if (k === 0) {
+                zug(
+                    "saumK",
+                    Object.assign({}, base, { w: wk, h: hk, k, fuss }),
+                    Math.ceil(wk / 16),
+                    Math.ceil(hk / 16)
+                );
+                zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, fuss, flag, gi: 0 }), V, 1);
+            } else {
                 zug(
                     "summeK",
                     Object.assign({}, base, { w: wk, h: hk, k, quelle, ziel: so, fuss }),
@@ -1462,12 +1472,12 @@ class AnazhRealm_stoff_karte {
             param: mk("param", slots.length * 256, U.UNIFORM | U.COPY_DST),
             summe: mk("summe", summeN * 16, U.STORAGE),
             nsum: mk("nsum", no * 16, U.STORAGE),
-            dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
-            dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
+            dA: mk("dA", W * H * 4, U.STORAGE), // der Schlüssel jeder Stufe, auch der Stufe 0 (w23-karte-l2)
+            dB: mk("dB", W * H * 4, U.STORAGE),
             zahl: mk("zahl", (V + 5) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
-            saum: mk("saum", 48, U.UNIFORM | U.COPY_DST), // [e je Ring, Kronen-Fuß je Ring, nadel, Stärke] je Bake (`_karteSaumVon`)
+            saum: mk("saum", 64, U.UNIFORM | U.COPY_DST), // [Seitenmaß und Kronen-Fuß je Ring, Art, Band] je Bake (`_karteSaumVon`)
             tsum: mk("tsum", no * 8, U.STORAGE), // die Tiefe je Stufe der Normale: (Σ t, Zahl der deckenden Texel)
         };
         const roh = new Uint8Array(slots.length * 256);
@@ -1778,10 +1788,11 @@ fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
     if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
 }
 
-// DER SAUM DER KARTE JE HEBUNGS-RING (phyto-core karteSaum, karteSaumMuster — dieselben Zahlen, _karteSaumVon): e die
-// Blattgröße der Art in Stufe-0-Texeln der Ansicht des Rings, fuss sein Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone),
-// art.x Nadel (1) oder Laub (0), art.y die Stärke
-struct Saum { e: vec4<f32>, fuss: vec4<f32>, art: vec4<f32> };
+// DER SAUM DER KARTE AUF JEDER STUFE (phyto-core karteSaumSchluessel, karteSaumMuster — dieselben Zahlen, _karteSaumVon): je
+// Ring das Seitenmaß seiner Texel (Breite durch Höhe im Rahmen) und sein Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone,
+// jede Zeile ist Stamm); art: Nadel (1) oder Laub (0), Stärke, Zelle in Texeln der Stufe, Schwelle des Bands; band.x die Gänge
+// des binomialen Kerns
+struct Saum { seite: vec4<f32>, fuss: vec4<f32>, art: vec4<f32>, band: vec4<f32> };
 @group(0) @binding(11) var<uniform> saum: Saum;
 fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
     var h = (bitcast<u32>(ix) * 0x27d4eb2du) ^ (bitcast<u32>(iy) * 0x165667b1u) ^ (s * 0x9e3779b9u);
@@ -1804,30 +1815,65 @@ fn saumMuster(X: f32, Y: f32, e: f32, nadel: bool) -> f32 {
     }
     return select(max(0.0, 1.0 - f1), min(1.0, (f2 - f1) * 1.5), nadel);
 }
-// DER SCHLÜSSEL DER WAHL: über dem Kronen-Fuß die Deckung des Fußabdrucks + Stärke × (Muster − ½), das Muster nie feiner als
-// zwei Texel der Stufe; darunter (der Stamm) die geglättete Deckung des Puffers flag; dazu die eigene als Gleichstand, 0 ohne
-// eigene Deckung — in den anderen Puffer
+// Die Farbe (r·a, g·a, b·a) und Deckung a eines Texels der Stufe: Stufe 0 die Bühne an der Schwelle, sonst die Summe seines
+// Fußabdrucks (a zählt die deckenden Stufe-0-Texel)
+fn farbSumme(x: u32, y: u32) -> vec4<f32> {
+    if (p.k == 0u) {
+        if (!deckt(x, y)) { return vec4<f32>(0.0); }
+        return vec4<f32>(textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).rgb, 1.0);
+    }
+    return summe[p.ziel + y * p.w + x];
+}
+// DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht (der Rand leer — der Rahmen ist nie der Umriss),
+// durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss die geglättete Deckung)
+fn band(x: u32, y: u32, fe: vec4<u32>) -> vec4<f32> {
+    let n = i32(saum.band.x);
+    var B: array<f32, 17>;
+    B[0] = 1.0;
+    var sb = 1.0;
+    for (var j = 0; j < 2 * n; j++) {
+        B[j + 1] = B[j] * f32(2 * n - j) / f32(j + 1);
+        sb += B[j + 1];
+    }
+    var s = vec4<f32>(0.0);
+    for (var dy = -n; dy <= n; dy++) {
+        let yy = i32(y) + dy;
+        if (yy < i32(fe.y) || yy >= i32(fe.y + fe.w)) { continue; }
+        for (var dx = -n; dx <= n; dx++) {
+            let xx = i32(x) + dx;
+            if (xx < i32(fe.x) || xx >= i32(fe.x + fe.z)) { continue; }
+            s += B[dy + n] * B[dx + n] * farbSumme(u32(xx), u32(yy));
+        }
+    }
+    return s / (sb * sb);
+}
+// DER SCHLÜSSEL DER WAHL (phyto-core karteSaumSchluessel): über dem Kronen-Fuß das Band — wählbar ab der Schwelle seiner
+// Deckung, g + Stärke × (Muster − ½) in der Zelle der Stufe an der gröberen Achse des Texels, ganz Gedecktes +2 (es bleibt);
+// darunter der Stamm — Stufe 0 bleibt, wie sie backt (4), tiefer die geglättete Deckung des Puffers flag; 0 heißt nie —
+// in den anderen Puffer
 @compute @workgroup_size(16, 16)
 fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
     let i = g.y * p.w + g.x;
-    let s = summe[p.ziel + i].a;
+    let c = farbSumme(g.x, g.y).a / f32(p.fuss);
+    let v = ansicht(g.x, g.y);
+    let ri = v / jeRing();
+    let fe = feld(v);
+    let f = f32(1u << p.k);
+    let X = (f32(g.x - fe.x) + 0.5) * f;
+    let Y = (f32(g.y - fe.y) + 0.5) * f;
     var kk = 0.0;
-    if (s > 0.0) {
-        // die Lage in der Ansicht (ihr Feld, lod.K3) und ihr Ring: über seinem Kronen-Fuß der Saum seiner Zelle
-        let v = ansicht(g.x, g.y);
-        let ri = v / jeRing();
-        let fe = feld(v);
-        let f = f32(1u << p.k);
-        let X = (f32(g.x - fe.x) + 0.5) * f;
-        let Y = (f32(g.y - fe.y) + 0.5) * f;
-        if (Y <= saum.fuss[ri]) {
-            kk = max(1e-9, s / p.fuss + saum.art.y * (saumMuster(X, Y, max(saum.e[ri], 2.0 * f), saum.art.x > 0.5) - 0.5));
-        } else {
-            kk = dLies(i, p.flag == 1u);
+    if (Y > saum.fuss[ri]) {
+        if (c > 0.0) { kk = select(dLies(i, p.flag == 1u), 4.0, p.k == 0u); }
+    } else {
+        let gb = band(g.x, g.y, fe).a / f32(p.fuss);
+        if (gb >= saum.art.w) {
+            let sw = saum.seite[ri];
+            let m = saumMuster(X * max(sw, 1.0), Y * max(1.0 / sw, 1.0), saum.art.z * f, saum.art.x > 0.5);
+            kk = max(1e-9, gb + select(0.0, 2.0, gb >= 1.0) + saum.art.y * (m - 0.5));
         }
-        kk += 1e-6 * s / p.fuss;
     }
+    if (kk > 0.0) { kk += 1e-6 * c; }
     if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
 }
 
@@ -1956,17 +2002,14 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
     for (var t = 0u; t < 16u; t++) {
         let x = g.x * 4u + (t & 3u);
         let y = g.y * 4u + (t >> 2u);
-        var o = false;
+        // die Wahl jeder Stufe (w23-karte-l2: auch Stufe 0); ein gewählter Texel ohne eigene Deckung trägt die Farbe seines Bands
+        let kk = schluessel(y * p.w + x);
+        let o = kk > 0.0 && (kk > gr || (kk == gr && (y - gf.y) * gf.z + (x - gf.x) < gj));
         var c = vec3<f32>(0.0);
-        if (p.k == 0u) {
-            o = deckt(x, y);
-            if (o) { c = textureLoad(tAlb, vec2<i32>(i32(x), i32(y)), 0).rgb; }
-        } else {
-            let i = y * p.w + x;
-            let s = summe[p.ziel + i];
-            let kk = schluessel(i);
-            o = s.a > 0.0 && (kk > gr || (kk == gr && (y - gf.y) * gf.z + (x - gf.x) < gj));
-            if (o) { c = s.rgb / s.a; }
+        if (o) {
+            var e = farbSumme(x, y);
+            if (e.a == 0.0) { e = band(x, y, gf); }
+            c = e.rgb / e.a;
         }
         ok[t] = o;
         if (o) {
@@ -2092,15 +2135,15 @@ fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Normale und Tiefe eines Texels der Stufe für die Ablage: die Richtung seiner Summe und das Mittel seiner deckenden; ein
-// leerer trägt die seiner deckenden Nachbarn in der eigenen Ansicht (3×3) — der Filter der Welt mischt an der Silhouette
+// leerer trägt die seiner deckenden Nachbarn in der eigenen Ansicht (5×5: das Band des Saums reicht über die Bühne hinaus) — der Filter der Welt mischt an der Silhouette
 // keine fremde Normale und keine fremde Tiefe hinein —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
 fn ablageNT(x: u32, y: u32) -> vec3<f32> {
     var s = nsum[p.ziel + y * p.w + x].xyz;
     var d = tsum[p.ziel + y * p.w + x];
     if (dot(s, s) < 1e-12) {
         let f = feld(ansicht(x, y));
-        for (var dy = -1; dy <= 1; dy++) {
-            for (var dx = -1; dx <= 1; dx++) {
+        for (var dy = -2; dy <= 2; dy++) {
+            for (var dx = -2; dx <= 2; dx++) {
                 let xx = u32(clamp(i32(x) + dx, i32(f.x), i32(f.x + f.z) - 1));
                 let yy = u32(clamp(i32(y) + dy, i32(f.y), i32(f.y + f.w) - 1));
                 s += nsum[p.ziel + yy * p.w + xx].xyz;
