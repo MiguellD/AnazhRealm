@@ -36,9 +36,15 @@ const STAND = require("./lib/stand-linse.cjs");
 // hinter dem gezeichneten Blick, und der Strahl der Nah-Deckung (scripts/lib/kamera-nah.cjs, die Blick-Wahl fragt so vor jedem Bild)
 // nennt das Gelände, das der Satz-Abschnitt des Passes nicht trägt. Bis w18-abnahme-sicht fragte die Linie zum Ziel — das Ziel
 // urteilt seitdem die Tiefe des Bilds
+// (WN) DAS WASSERNETZ AM BACH STEHT: nach dem Stand wechselt in den Takten der Wache kein Netz (sonst der Chunk und die Ecke beim
+// Namen), und der Pendel des Pegels (die Mutante) wechselt es
+const N = (b) => b.netz || {};
 const urteil = (b) =>
     STAND.standUrteil(b).concat(
-        b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`
+        b.sonde?.vor === "Gelände" ? [] : `SONDE: Abschnitt der vorigen Kamera, trifft ${b.sonde?.vor}`,
+        !N(b).ort ? "LEER: keine Netz-Wache am Bach" : [],
+        N(b).wechsel ? `WASSERNETZ OHNE FIXPUNKT: ${N(b).wechsel} Wechsel nach dem Stand, zuletzt ${N(b).wo}` : [],
+        N(b).ort && !(N(b).mutante > 0) ? "BLIND: der Pendel des Pegels wechselt kein Netz" : []
     );
 
 function selbsttest() {
@@ -179,6 +185,8 @@ function selbsttest() {
         },
         fixWach: false,
         sonde: { vor: "Gelände" },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+        netz: { ort: [-396, -878], takte: 600, wechsel: 0, mutante: 25 },
         fix: [
             { takte: 49, wirkte: 7, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
             { takte: 44, wirkte: 8, nach: { frames: 150, summe: 0, takte: { archLod: { summe: 0, mitArbeit: 0, wirkt: 0 } } } },
@@ -531,6 +539,10 @@ function selbsttest() {
             /FIXPUNKT: die Welt hieß stehend — Sprung/,
         ],
         ["die Sonde ohne Bestand", ["sonde.vor=", "Rinde baum_tanne"], /SONDE: .* trifft Rinde/],
+        // main a7a9d7bf: der Pegel steigt nach der Geburt in Stufen von 1 cm
+        ["Pegel-Stufen", ["netz", { wechsel: 37, wo: "Chunk -11,-22, Ecke (-462.5, -907.4)" }], /WASSERNETZ OHNE FIXPUNKT: 37 .* Chunk -11,-22, Ecke/],
+        ["Pendel ungesehen", ["netz.mutante=", 0], /BLIND: der Pendel/],
+        ["keine Netz-Wache", ["netz"], /LEER: keine Netz-Wache/],
     ];
     taeterFaelle(faelle, urteil, { fehler, klon });
     selbsttestEnde(fehler);
@@ -1250,8 +1262,35 @@ const BRANDLAUF = process.argv.includes("--brand");
                 // einschwingen: die Welt steht (A9, das EINE Einschwingen, welt-boot `__weltStehtNach`: Chunks, die Foundry, der Wald
                 // samt seinen Pflanz-Gängen — K69: solange er plant, weckt seine Regung die Fege-Takte)
                 await __weltStehtNach(takt);
+                // (WN) DAS WASSERNETZ AM BACH STEHT (wetter.K3): je Takt das Netz jedes Chunks binnen 96 m um den Bach nächst der
+                // Mess-Wiese (`_wasserNetz`, das Wasser, das Körper und Nah-Wiese lesen) — nach dem Stand 600 Takte ohne Wechsel;
+                // die Mutante: der Pegel pendelt je Sekunde der Welt-Uhr (sein Takt, `_pegelUhr`) zwischen Ruhe und Krone
+                const Wn = { takte: 600, wechsel: 0 };
+                for (const B of (await window.__seite()).fluss(MESS).slice(0, 1)) {
+                    Wn.ort = [Math.round(B.x), Math.round(B.z)];
+                    const [vor, K, span] = [new Map(), globalThis.__gelaendeCore, r._voxelChunkConfig(0).span];
+                    for (let cz = Math.floor((B.z - 96) / span); cz * span < B.z + 96; cz++)
+                        for (let cx = Math.floor((B.x - 96) / span); cx * span < B.x + 96; cx++) vor.set([cx, cz], r._wasserNetz(cx, cz));
+                    const gang = async (n) => {
+                        for (let i = 0; i < n; i++, takt(), i % 5 || (await sleep(10)))
+                            for (const [c, o] of vor) {
+                                const neu = r._wasserNetz(...c);
+                                if (neu === o) continue;
+                                const e = neu && o ? neu.pos.findIndex((v, k) => v !== o.pos[k]) : -1;
+                                Wn.wechsel++;
+                                Wn.wo = `Chunk ${c}` + (e < 0 ? "" : `, Ecke (${neu.pos[e - (e % 3)].toFixed(1)}, ${neu.pos[e - (e % 3) + 2].toFixed(1)})`); // prettier-ignore
+                                vor.set(c, neu);
+                            }
+                    };
+                    await gang(600);
+                    const [w0, wo, hoch] = [Wn.wechsel, Wn.wo, K.pegelTafel(r._gelaende(), r._pegelStand.schmelze, { q: new Float64Array(K.LAUF.n).fill(1) })]; // prettier-ignore
+                    const zurueck = leihe(r, { _pegelTafel: () => (Math.floor(st.spielZeit) % 2 ? hoch : null) });
+                    await gang(300).finally(() => (zurueck(), r._pegelTakt()));
+                    [Wn.mutante, Wn.wechsel, Wn.wo] = [Wn.wechsel - w0, w0, wo];
+                    await __weltStehtNach(takt);
+                }
                 const ring = st.voxelChunks.size;
-                const aus = { ring, architekturen: (st.architectures || []).length };
+                const aus = { ring, architekturen: (st.architectures || []).length, netz: Wn };
                 // (W) WACH: ein kalter Bau, den der Cull meldet (Offenes), hält die Welt wach — beim Namen des Fege-Takts. Den atmenden
                 // Regler hält das Einschwingen (welt-boot Selbsttest REGLER).
                 const R0 = st.architectureCullingRadius;

@@ -165,7 +165,7 @@ async function checkBandRing8({ page, check }) {
             const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
             const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
             const POSITIV = new Set(["visibility", "creator"]);
-            const wmNeu = (leer && leer.worldMeta) || {};
+            const wmNeu = (leer?.worldMeta) || {};
             out.geborenGeerbt = Object.keys(wmNeu).filter(
                 (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
             );
@@ -582,7 +582,7 @@ async function checkBandRing9to10({ page, check }) {
         };
         const beforeCount = r.worldsIndexLoad().length;
         const result = r.importWorldBeside(importedSnapshot, { reload: false });
-        out.besideReturnedOk = !!(result && result.ok);
+        out.besideReturnedOk = !!(result?.ok);
         out.besideReturnedNewWorldId = result.worldId && result.worldId !== originalSrcId;
         out.besideReturnedSlug = result.slug === "test-fremd";
         out.indexGrewByOne = r.worldsIndexLoad().length === beforeCount + 1;
@@ -611,7 +611,7 @@ async function checkBandRing9to10({ page, check }) {
 
         // _openWeltTorDialog setzt pendingImport
         r._openWeltTorDialog(importedSnapshot, { name: "test.json", size: 100 });
-        out.pendingImportSet = !!(st.pendingImport && st.pendingImport.parsed);
+        out.pendingImportSet = !!(st.pendingImport?.parsed);
         // Cancel räumt pendingImport
         r._closeWeltTorDialog();
         out.pendingClearedAfterCancel = st.pendingImport === null;

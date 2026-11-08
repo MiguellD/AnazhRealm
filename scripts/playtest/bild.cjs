@@ -320,7 +320,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
             // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
             // ist das kamera-unabhängige Maß für über/unter dem Horizont.
-            const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
+            const offY = (m) => (m.userData?.skyOffset ? m.userData.skyOffset.y : m.position.y);
             r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const sunYNoon = offY(st.sunMesh);
@@ -545,7 +545,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             st.camera.position.set(2000, 50, 2000); // ferner Spieler
             r._followCelestialBodies();
             const sun = st.sunMesh;
-            const off = sun.userData && sun.userData.skyOffset ? sun.userData.skyOffset : null;
+            const off = sun.userData?.skyOffset ? sun.userData.skyOffset : null;
             if (off) {
                 const dCam = sun.position.distanceTo(st.camera.position);
                 const dOrig = sun.position.length();
@@ -566,12 +566,12 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         } finally {
             _zTerr.zu();
         }
-        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
+        out.terrainColorNodeBuilds = !!(_terrMat?.colorNode) && _zTerr.brueche.length === 0;
         out.terrainColorNodeError = _zTerr.brueche[0] || null;
         const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
         // Die Licht-Normale des Bodens ist seine WAHRE Normale (ferne.K4, w10-ferne: die 2.5D-Lichtung ist gefallen) — der
         // normalNode trägt die Geometrie-Normale mit dem Mikro-Relief, keine Mischung zur Senkrechten (kein `terrainFlatten`).
-        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode) && !("terrainFlatten" in st.atmoUniforms);
+        out.terrainNormalFlatten = !!(_terrMat?.normalNode) && !("terrainFlatten" in st.atmoUniforms);
         // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
         // (mindestens ein gesampelter Vertex weicht von up ab) — ein
         // up-gebackenes Normal-Attribut wäre die Akne-Regression.
@@ -600,7 +600,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
         const _structMat = r._buildToonNodeMaterial({ color: 0x808080 });
-        out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
+        out.structHasAerialOutput = !!(_structMat?.outputNode);
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
@@ -629,7 +629,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         const microAlt = st.atmosphere ? st.atmosphere.microStrength : undefined;
         r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
-        out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
+        out.atmospherePersisted = !!(snap?.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
         r.setMicroStrength(microAlt == null ? AnazhRealm.AERIAL.microStrength : microAlt);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
@@ -659,8 +659,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         r.setColorVariation(1.0);
         const snap2 = r.buildStateSnapshot();
         out.j4SlidersPersist = !!(
-            snap2 &&
-            snap2.atmosphere &&
+            snap2?.atmosphere &&
             Math.abs(snap2.atmosphere.cavityAO - 0.3) < 1e-6 &&
             snap2.atmosphere.kantenSchaerfe === 0 &&
             snap2.atmosphere.triplanar === 0
@@ -748,13 +747,13 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             const E = AnazhRealm.SHADOW_TWIN_LAYER;
             const knoten = [];
             const sammle = (o) => {
-                if (o.userData && o.userData._gehalten) return;
+                if (o.userData?._gehalten) return;
                 knoten.push(o);
                 for (const k of o.children) sammle(k);
             };
             const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
             if (kopf) sammle(kopf);
-            for (const ch of (pm && pm.children) || []) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
+            for (const ch of (pm?.children) || []) if (ch.userData?._creatureSkin) sammle(ch);
             const vorher = st.cameraMode;
             r.setCameraMode("third");
             const dritt = knoten.map((o) => o.layers.mask);
@@ -798,7 +797,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             const lpc = st.lastPlayerVoxelChunk;
             const e = lpc && st.voxelChunks && st.voxelChunks.get(lpc.cx + "," + lpc.cz);
             let geo = e && e.mesh && e.mesh.geometry;
-            if (geo && !(geo.attributes.position.array && geo.attributes.position.array.length)) geo = null;
+            if (geo && !(geo.attributes.position.array?.length)) geo = null;
             const karte = [];
             const gesetz = [];
             if (e && geo) {
@@ -1681,12 +1680,12 @@ async function checkBandHimmelTag({ page, check }) {
         );
         const zeitWar = st.timeOfDay;
         zeit(0.5);
-        out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
+        out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
         out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
         out.daemmerung = sichtbar();
         zeit(0);
-        out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
+        out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
         out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
         out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)

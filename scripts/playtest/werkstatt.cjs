@@ -1374,10 +1374,10 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
         if (st.creatures[0]) {
             const cR = st.creatures[0];
-            if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
+            if (cR.material?.color) cR.material.color.setHex(0xff0000);
             else if (typeof cR.traverse === "function") {
                 cR.traverse((n) => {
-                    if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                    if (n.isMesh && n.material?.color) n.material.color.setHex(0xff0000);
                 });
             }
         }
@@ -1387,11 +1387,11 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         const cFirst = st.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
-            if (cFirst.material && cFirst.material.color) {
+            if (cFirst.material?.color) {
                 colorAfter = cFirst.material.color.getHex();
             } else if (typeof cFirst.traverse === "function") {
                 cFirst.traverse((n) => {
-                    if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                    if (!colorAfter && n.isMesh && n.material?.color) {
                         colorAfter = n.material.color.getHex();
                     }
                 });
@@ -1558,7 +1558,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
         // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
-        out.feedWired = !!(r && r._chatFeedWired);
+        out.feedWired = !!(r?._chatFeedWired);
 
         // Collapse-Toggle
         const toggle = document.getElementById("console-collapse");
@@ -1607,7 +1607,7 @@ async function checkBandV18134Social({ page, check }) {
         st.socialRatings = new Map();
         try {
             const own = await r._socialSignOwnRating("welt:band134", 4);
-            out.ownSigned = !!(own && own.sig);
+            out.ownSigned = !!(own?.sig);
             const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
             const jwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
             const b64uToBytes = (b64u) => {
@@ -1700,7 +1700,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
         const was = r._feedFollowed(pub);
-        const jBefore = ((st.worldJournal && st.worldJournal.entries) || []).length;
+        const jBefore = ((st.worldJournal?.entries) || []).length;
         const on = r._toggleFeedFollow(pub);
         out.toggleOn = on === true && r._feedFollowed(pub) === true;
         let persisted = false;
@@ -1713,7 +1713,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Das Journal cappt bei entryCap (200) — nach dem langen Warmup wächst
         // length NICHT mehr; der Beweis sitzt am NEUESTEN Eintrag.
         void jBefore;
-        const j = (st.worldJournal && st.worldJournal.entries) || [];
+        const j = (st.worldJournal?.entries) || [];
         out.witnessWritten = j.slice(-3).some((e) => e.type === "witness" && /folge nun/.test(e.text || ""));
         const off = r._toggleFeedFollow(pub);
         out.toggleOff = off === false && r._feedFollowed(pub) === false;
@@ -1754,7 +1754,7 @@ async function checkBandV18143Comments({ page, check }) {
         const own = await r._socialSignOwnComment("band143:ziel", "  Ein gutes Werk!  ");
         out.ownSigned = !!own && own.x === "Ein gutes Werk!" && typeof own.sig === "string";
         out.ownStored = r._feedComments("band143:ziel").length === 1;
-        const j = (st.worldJournal && st.worldJournal.entries) || [];
+        const j = (st.worldJournal?.entries) || [];
         out.shareWritten = j.slice(-3).some((e) => e.type === "share" && /Wort/.test(e.text || ""));
         // (2) die ZWEITE Identitaet: ihr Wort verifiziert + landet; Tamper bricht.
         const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
@@ -2284,13 +2284,10 @@ async function checkBandRezeptKatalog({ page, check }) {
             await __weltDa(
                 () =>
                     !!(
-                        f &&
-                        f.ready &&
-                        f.recipes &&
-                        f.recipes.drachentor &&
+                        f?.ready &&
+                        f.recipes?.drachentor &&
                         f.recipes.gras &&
-                        f.paramsByKind &&
-                        f.paramsByKind.gate &&
+                        f.paramsByKind?.gate &&
                         !f._vorrat
                     )
             );
@@ -2377,8 +2374,8 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
                 // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
                 const KS = AnazhRealm.KIND_SUBSTANCE || {};
-                res.c.wagenAbsent = !(st.blueprints && st.blueprints.fahrzeug_wagen);
-                res.c.torBasisAbsent = !(st.blueprints && st.blueprints.tor_basis);
+                res.c.wagenAbsent = !(st.blueprints?.fahrzeug_wagen);
+                res.c.torBasisAbsent = !(st.blueprints?.tor_basis);
                 res.c.wagenSubstanzParts =
                     KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
                 res.c.torSubstanzParts =
@@ -2421,7 +2418,7 @@ async function checkBandRezeptKatalog({ page, check }) {
             // ===== (e) INTERIM: kalte Auswahl → pending, KEINE Donor-Part-Meshes =====
             try {
                 const ws = r._ensureWorkshopState();
-                res.e.gtExists = !!(st.blueprints && st.blueprints.fahrzeug_gt);
+                res.e.gtExists = !!(st.blueprints?.fahrzeug_gt);
                 // Kuenstlich kalt: alle gt-Cache-/Wachen-Keys raus (der naechste Blick zieht neu).
                 for (const k of Array.from(f.cache.keys())) if (k.indexOf("gt|") === 0) f.cache.delete(k);
                 if (f.requested)

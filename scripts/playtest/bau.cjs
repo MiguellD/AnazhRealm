@@ -334,7 +334,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         o.pediment =
             temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
         o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length === 2; // geschlossener Giebel
-        o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+        o.orders = !!(C.CLASSICAL_ORDERS?.dorisch && C.CLASSICAL_ORDERS.ionisch);
         // Ω-B4 GENERATIV: N Ordnungen×Parameter → N verschiedene Tempel, ALLE physik-garant.
         // (Der _classicalTempleVariant-Seed-Roller fiel; die Grammatik selbst — Ordnung ×
         // columnsFront — spannt den Varianten-Raum, jede Ausprägung bleibt physik-garant.)
@@ -398,7 +398,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
         o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
-        o.oakeshott = !!(C.OAKESHOTT_TYPES && C.OAKESHOTT_TYPES.XII && C.OAKESHOTT_TYPES.XV);
+        o.oakeshott = !!(C.OAKESHOTT_TYPES?.XII && C.OAKESHOTT_TYPES.XV);
         o.swordImplement = o.swordOk && r._isGraspableBladeForm(sword) === true; // gestreckt + spitz → Klinge
         try {
             const bg = r._makePartGeometry({
@@ -550,7 +550,7 @@ async function checkBandWave10b({ page, check }) {
             const peaceBefore0 = emoR.peace;
             const chaosBefore0 = emoR.chaos;
             const radEntry = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
-            out.radEntryAffordance = !!(radEntry && radEntry.affordances && radEntry.affordances.radiating === true);
+            out.radEntryAffordance = !!(radEntry?.affordances && radEntry.affordances.radiating === true);
             const pmR = st.playerMesh && st.playerMesh.position;
             const pmBefore = pmR ? { x: pmR.x, y: pmR.y, z: pmR.z } : null;
             if (pmR) {
@@ -615,7 +615,7 @@ async function checkBandWave10b({ page, check }) {
             out.relayOhneMastKeinEffekt = Math.abs(emoR.awe - 0.1) < 0.0001;
             // Jetzt einen broadcasting-Mast nahe den Strahler stellen.
             const mastE = r.spawnArchitecture("test_10ext_mast", { x: 65, y: 0, z: 60 }, { silent: true });
-            out.relayMastAffordance = !!(mastE && mastE.affordances && mastE.affordances.broadcasting === true);
+            out.relayMastAffordance = !!(mastE?.affordances && mastE.affordances.broadcasting === true);
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.relayMitMastReicheWeiter = emoR.awe > 0.1;
             weg(/^test_10ext_(radiator|mast)$/);
@@ -653,8 +653,7 @@ async function checkBandWave10b({ page, check }) {
             // spawnArchitecture friert die Stärke ein.
             const radSnap = r.spawnArchitecture("test_10ext_radiator", { x: 70, y: 0, z: 70 }, { silent: true });
             out.spawnFreezesStrength = !!(
-                radSnap &&
-                radSnap.affordanceStrength &&
+                radSnap?.affordanceStrength &&
                 typeof radSnap.affordanceStrength.radiating === "number"
             );
             weg(/^test_10ext_radiator$/);
@@ -759,8 +758,7 @@ async function checkBandWave10b({ page, check }) {
             // Welt-Reaktion: _tickLiftingAffordances setzt das Feld-Flag.
             const liftE = r.spawnArchitecture("test_10ext_lifter", { x: 80, y: 0, z: 80 }, { silent: true });
             out.liftEntryAffordance = !!(
-                liftE &&
-                liftE.affordances &&
+                liftE?.affordances &&
                 liftE.affordances.lifting === true &&
                 liftE.affordanceStrength &&
                 typeof liftE.affordanceStrength.lifting === "number"
@@ -771,10 +769,10 @@ async function checkBandWave10b({ page, check }) {
                 pmR.z = 82;
             }
             r._tickLiftingAffordances();
-            out.liftFieldActiveNear = !!(st.player.liftingField && st.player.liftingField.active);
+            out.liftFieldActiveNear = !!(st.player.liftingField?.active);
             if (pmR) pmR.z = 400;
             r._tickLiftingAffordances();
-            out.liftFieldInactiveFar = !(st.player.liftingField && st.player.liftingField.active);
+            out.liftFieldInactiveFar = !(st.player.liftingField?.active);
             weg(/^test_10ext_lifter$/);
 
             emoR.awe = aweBefore0;
@@ -789,7 +787,7 @@ async function checkBandWave10b({ page, check }) {
 
             // spawnArchitecture speichert affordances
             const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
-            out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
+            out.entryHasAffordances = !!(entry?.affordances && entry.affordances.moveable === true);
 
             // Cleanup: der Wagen (sein Quarz-Block schwebt 0,1 m über den Rädern: das Gesetz bricht ihn im nächsten Takt)
             weg(/^test_10b_car$/);
@@ -1299,7 +1297,7 @@ async function checkBandV18266RockDetail({ page, check }) {
         const out = {};
         if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
-            g && g.attributes && g.attributes.position
+            g?.attributes?.position
                 ? g.index
                     ? g.index.count / 3
                     : g.attributes.position.count / 3

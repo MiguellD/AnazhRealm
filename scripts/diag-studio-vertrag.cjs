@@ -253,7 +253,7 @@ function validateFunktionsKern(m, entry, erklaert) {
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
-    if (!(entry && entry.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
+    if (!(entry?.ns)) v.push("§9: ein Gesetz-Kern trägt einen Namensraum (ns)");
     if (m.presets) v.push("§9: ein Gesetz-Kern trägt keine Rezepte (PRESETS)");
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
     if (m.meshfrei) v.push("§9: MESHFREI gilt Rezept-Kernen ohne Gestalt, nie einem Gesetz-Kern");
@@ -638,7 +638,7 @@ function validateManifest(m, kern) {
         // Foundry) und die eine eigene Gestalten-Zeile hat (nie '*' = 16); ring ∈ {nah, wald}, dichte > 0,
         // skala [min ≤ max] > 0, jedes Band ein Trapez [a ≤ b ≤ c ≤ d].
         if (pl.boden) {
-            const L = (m.cfg && m.cfg.lod) || {};
+            const L = (m.cfg?.lod) || {};
             const ksB = L.kindStages || {};
             const BB = L.budget || {};
             for (const id in pl.boden) {
@@ -712,7 +712,7 @@ function validateManifest(m, kern) {
     // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
     // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
     const fxB =
-        m.presets && m.presets.mensch && m.presets.mensch.fx && m.presets.mensch.fx.bewegung
+        m.presets?.mensch?.fx?.bewegung
             ? m.presets.mensch.fx.bewegung
             : null;
     if (fxB) {
@@ -955,7 +955,7 @@ function validateManifest(m, kern) {
         const lodM = m.cfg && m.cfg.lod;
         if (lodM?.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM?.kindStages) ohneBudget.push(entry.file);
-        if (entry.ns && lodM?.kindStages && !(lodM.budget && lodM.budget.gestalten))
+        if (entry.ns && lodM?.kindStages && !(lodM.budget?.gestalten))
             ohneGestalten.push(entry.file);
         check(`${entry.file}: 0 Vertrags-Verletzungen`, viol.length === 0, viol[0] || "");
         for (let i = 1; i < viol.length; i++) console.log(`      ↳ ${viol[i]}`);
@@ -1044,20 +1044,14 @@ function validateManifest(m, kern) {
     const pflicht = {
         "koerper-core.js": (m) =>
             !!(
-                m.presets &&
-                m.presets.mensch &&
-                m.presets.mensch.fx &&
-                m.presets.mensch.fx.bewegung &&
-                m.presets.mensch.fx.bewegung.schwimmen &&
-                m.presets.mensch.fx.bewegung.parkour &&
-                m.presets.mensch.fx.bewegung.parkour.slidePose
+                m.presets?.mensch?.fx?.bewegung?.schwimmen &&
+                m.presets.mensch.fx.bewegung.parkour?.slidePose
             ),
-        "schmiede-core.js": (m) => !!(m.arena && m.arena.schwung && m.arena.gefuehl && m.arena.bogen),
-        "vehicle-core.js": (m) => !!(m.fahr && m.fahr.lenkung && typeof m.exportDrive === "function"),
+        "schmiede-core.js": (m) => !!(m.arena?.schwung && m.arena.gefuehl && m.arena.bogen),
+        "vehicle-core.js": (m) => !!(m.fahr?.lenkung && typeof m.exportDrive === "function"),
         "tetrapoda-core.js": (m) =>
             !!(
-                m.verhalten &&
-                m.verhalten.aktionen &&
+                m.verhalten?.aktionen &&
                 m.verhalten.stimmung &&
                 m.verhalten.jagd &&
                 m.verhalten.furcht &&

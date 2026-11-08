@@ -149,12 +149,15 @@ class AnazhRealm_wasser_hydro {
     // legen aus denselben Akten dieselben Knoten, bit-gleich, gleich wann ihr Takt sie sieht. Bis w18-pegel-peers stempelte der Takt
     // des Pegels, was er je Bild vom Feld sah (`_regenSah`): A und B setzten dieselbe Rampe an anderen Proben (A 1921,07 · 1929,66 ·
     // 2041,03 s, B 1921,12 · 1927,51 · 1929,76 · 2041,63 s), die Klasse 15 des Laufs stand auf zwei Stufen, der Pegel der Peers
-    // lief auseinander (gate:mp-sync (f) „pegel VERSCHIEDEN“).
-    _regenWeg(von, nach, beginn, dauerMs, ab) {
+    // lief auseinander (gate:mp-sync (f) „pegel VERSCHIEDEN“). `S` (optional): die Knoten, in die er legt — ohne sie der Weg der
+    // Welt (`state.regenStempel`); die Vergangenheit der Front (`_pegelVergangenheit`) legt ihre eigenen.
+    _regenWeg(von, nach, beginn, dauerMs, ab, S) {
         const st = this.state;
         if (!Number.isFinite(beginn)) return;
-        if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
-        const S = st.regenStempel;
+        if (!S) {
+            if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
+            S = st.regenStempel;
+        }
         if (ab === undefined)
             ab = st.pegelZustand && Number.isFinite(st.pegelZustand.t) ? st.pegelZustand.t : -Infinity;
         const r0 = this._weatherFieldFor(von, true).rain;
@@ -176,6 +179,36 @@ class AnazhRealm_wasser_hydro {
         S.push(a, ra);
         if (t1 > a && r1 !== ra) S.push(t1, r1);
         this._regenGen = (this._regenGen | 0) + 1;
+    }
+
+    // DIE VERGANGENHEIT DES PEGELS (wetter.K3): eine Welt ohne Gedächtnis des Pegels (kein `pegelZustand` — die Geburt, ein Stand
+    // ohne ihn) tritt mit dem Zug in ihre Front (`_wetterZugZiehen`, am Ort des Zugs): vor ihrem ersten Stempel regnete, was die Front
+    // dort trug — Zug für Zug über das Fenster des Grunds (`LAUF.fenster` Spieltage) derselbe Weg, den der Zug legt (`_wetterAmOrt`,
+    // `_regenWeg`, der Übergang des Gesetzes), gefaltet in den Zustand an ihrem ersten Stempel (gelaende-core `pegelZustand`); ihre
+    // Stempel laufen von ihm weiter. Bis hier begann jede frische Welt trocken („vor dem ersten Stempel regnete es nicht"), obwohl ihre
+    // Front davor regnete: mit dem ersten Regen stieg jeder Lauf in Stufen von 1 cm zur Krone, und jede Stufe baute die Chunks mit
+    // Wasser neu — am Bach der Mess-Wiese 634 Marken-Wechsel in der ersten Spielminute, dort wechselte das Wassernetz 0,15-mal je
+    // Takt (136 in 900 Takten), die Nah-Wiese fiel 669-mal, und das Ufer stand nie (gate:fenster-wechsel, gate:ziel-zensus: „DER BAU
+    // STEHT NICHT: das Ufer im Blick"). Ein Gedächtnis (der Zustand) faltet nie neu.
+    _pegelVergangenheit(x, z) {
+        const st = this.state;
+        if (st.pegelZustand) return;
+        const K = globalThis.__gelaendeCore;
+        const [Z, tagS, dauer] = [
+            AnazhRealm.WETTER_ZUG_SEK,
+            AnazhRealm.PEGEL_TAG_S,
+            this.constructor.WEATHER_TRANSITION_DURATION_MS,
+        ];
+        const t0 = this._regenStempel()[0];
+        const S = [];
+        let von = null;
+        for (let k = Math.floor((t0 - K.LAUF.fenster * tagS) / Z); k * Z < t0; k++) {
+            if (von === null) von = this._wetterAmOrt(x, z, (k - 1) * Z);
+            const nach = this._wetterAmOrt(x, z, k * Z);
+            this._regenWeg(von, nach, k * Z, von === nach ? 0 : dauer, -Infinity, S);
+            von = nach;
+        }
+        st.pegelZustand = K.pegelZustand(S, t0, tagS, this._regenMittel(), null);
     }
 
     // DER ZUSTAND DES PEGELS ZUR WELT-UHR (speicher.K3, gelaende-core `pegelZustand`, reist im Stand als `pegelZustand`): die Stempel

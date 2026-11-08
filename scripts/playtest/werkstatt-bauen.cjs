@@ -16,8 +16,8 @@ async function checkBandV1774UseByRole({ page, check }) {
 
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
-        const savedEquip = p && p.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
-        const savedSoul = (p && p.soul) || "mensch";
+        const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
+        const savedSoul = (p?.soul) || "mensch";
         const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
         // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
@@ -153,7 +153,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         }
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
-        r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        r.equipHeld(savedEquip?.held ? savedEquip.held : null);
         for (let i = 0; i < 9; i++) st.hotbar[i] = savedHotbar[i] || null;
         delete blu._t_v1774; // Test-Blueprints aufräumen
         delete blu._t_avatar74;
@@ -357,7 +357,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         mkBlade("_ab_holz", "holz");
         const eisenAb = r._blueprintAbilityStats(blu["_ab_eisen"]);
         const holzAb = r._blueprintAbilityStats(blu["_ab_holz"]);
-        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        const dmg = (ab) => (ab?.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
         out.materialMovesValues = !!eisenAb && !!holzAb && dmg(eisenAb) > dmg(holzAb) + 1;
         out.materialVals = `eisen=${dmg(eisenAb).toFixed(1)} holz=${dmg(holzAb).toFixed(1)}`;
         // (2) FORM bewegt die Eignung: ein stumpfer Zylinder an der Klinge senkt die Waffen-Eignung
@@ -457,8 +457,8 @@ async function checkBandV1790Recalibration({ page, check }) {
                 cone(m, { x: 0.2 * k, y: 0.1 * k, z: 0.6 * k }, { x: 0, y: 0, z: 1.0 * k }),
             ],
         });
-        const dmg = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
-        const tempo = (ab) => (ab && ab.stats ? (ab.stats.find((s) => s[0] === "Tempo") || [0, 0])[1] : 0);
+        const dmg = (ab) => (ab?.stats ? (ab.stats.find((s) => s[0] === "Schaden") || [0, 0])[1] : 0);
+        const tempo = (ab) => (ab?.stats ? (ab.stats.find((s) => s[0] === "Tempo") || [0, 0])[1] : 0);
 
         // (1) FACETTE 1 — das Spektrum ENTSÄTTIGT: eine Eisen-Klinge führt mit weapon, NICHT alles bei 1.0.
         const spec = r._blueprintRoleSpectrum(blade("eisen"));
@@ -931,7 +931,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                 );
                 out.cutoverInstanced = !!(e && e.instanced === true);
                 out.cutoverNoMesh = !!(e && !e.mesh);
-                out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
+                out.cutoverSlots = e?.instSlots ? e.instSlots.length : -1;
                 // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
                 // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
                 // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
@@ -958,7 +958,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
                     { seed: 8888, silent: true }
                 );
-                out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
+                out.waterfallClassic = !!(wf?.mesh && !wf.instanced);
                 if (wf) r.removeArchitecture(wf);
 
                 // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
@@ -1130,9 +1130,9 @@ async function checkBandWelle6XAudit({ page, check }) {
                 size: { x: 0.5, y: 0.5, z: 0.5 },
             });
             const armorResult = r.setBlueprintAsArmor("audit_armor_real");
-            out._a3bMarked = !!(armorResult && armorResult.ok);
+            out._a3bMarked = !!(armorResult?.ok);
             const equipResult = r.equipArmor("audit_armor_real");
-            out._a3bEquipped = !!(equipResult && equipResult.ok);
+            out._a3bEquipped = !!(equipResult?.ok);
             // das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
             r._ichRenderSpecSheet();
@@ -1291,7 +1291,7 @@ async function checkBandWelle6XAudit({ page, check }) {
         st.playerMesh.position.set(0, 50, 0);
         st.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
-        out.chatBuildDorfParses = !!(dslOut && dslOut.program);
+        out.chatBuildDorfParses = !!(dslOut?.program);
         if (dslOut?.program) {
             // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
@@ -1768,8 +1768,8 @@ async function checkBandWGGelenke({ page, check }) {
             }
             let axes = 0;
             grp.traverse((o) => {
-                if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
-                if (o.userData && o.userData.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
+                if (o.userData?.isJointAxis && o.isLine) axes++;
+                if (o.userData?.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
             });
             out.axisGhosts = axes >= 1;
             // KONSUM: der RAF-Tick der Werkstatt wackelt die Gelenk-Probe über den EINEN Animator (der Tick gefangen)

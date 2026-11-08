@@ -746,7 +746,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         // Portal-Overlay: das Betreten einer signierten Welt zeigt
         // „signiert von <Autor>".
         r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
-        out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
+        out.overlayHasSigEl = !!(r._portalOverlay?.sigEl);
         out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
         await sleep(180);
         const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
@@ -1281,7 +1281,7 @@ async function checkBandTailleOmega3({ page, check }) {
         };
         localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
         const resImp = r.importRecipesFromWorld(srcId);
-        out.importOk = !!(resImp && resImp.ok);
+        out.importOk = !!(resImp?.ok);
         const luegner = st.blueprints["o3_luegner"];
         const mauer = st.blueprints["o3_mauer"];
         const gift = st.blueprints["o3_gift"];
@@ -1321,7 +1321,7 @@ async function checkBandTailleOmega3({ page, check }) {
             connections: [],
         };
         let sigChain = false;
-        if (st.vibePass && st.vibePass.ready) {
+        if (st.vibePass?.ready) {
             const s = await r.signBlueprint("_o3_signed", { skipConfirm: true });
             if (s.ok) {
                 const wire = r._serializeBlueprint(st.blueprints["_o3_signed"]);
@@ -1390,7 +1390,7 @@ async function checkBandTailleGolden({ page, check }) {
         const pkg = jsonLesen(path.join(SKRIPTE, "..", "package.json"));
         check(
             "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
-            !!(pkg.scripts && pkg.scripts.leuchtturm) &&
+            !!(pkg.scripts?.leuchtturm) &&
                 fs.existsSync(path.join(SKRIPTE, "..", "scripts", "leuchtturm.cjs")) &&
                 /Dein eigener Leuchtturm/.test(ausDatei(path.join(SKRIPTE, "..", "README.md")))
         );
@@ -1572,8 +1572,8 @@ async function checkBandPhiArchipel({ page, check }) {
 
         // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
         const signed = await r.signWorldAddress({ skipConfirm: true, label: "test-welt", broker: "ws://h:4313" });
-        out.signOk = !!(signed && signed.ok && signed.address && signed.address.sig);
-        const status = signed && signed.ok ? await r.verifyWorldAddress(signed.address) : null;
+        out.signOk = !!(signed?.ok && signed.address?.sig);
+        const status = signed?.ok ? await r.verifyWorldAddress(signed.address) : null;
         out.verifyValid = status === "valid";
         // Manipulierte Adresse (label geändert) → invalid (die Signatur deckt label).
         const manip = { ...signed.address, label: "GEÄNDERT" };
@@ -1591,17 +1591,14 @@ async function checkBandPhiArchipel({ page, check }) {
             connections: [],
         };
         const setRes = r.setPortalToActiveWorld("phi_test_portal");
-        out.portalSetOk = !!(setRes && setRes.ok);
+        out.portalSetOk = !!(setRes?.ok);
         const bp = st.blueprints["phi_test_portal"];
-        out.portalCarriesAddress = !!(bp && bp.portalMeta && bp.portalMeta.worldAddress);
+        out.portalCarriesAddress = !!(bp?.portalMeta?.worldAddress);
         out.portalSigPreserved = !!(
-            bp &&
-            bp.portalMeta &&
-            bp.portalMeta.worldAddress &&
-            bp.portalMeta.worldAddress.sig
+            bp?.portalMeta?.worldAddress?.sig
         );
         const clearRes = r.setPortalAddress("phi_test_portal", null);
-        out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
+        out.portalClearOk = !!(clearRes?.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
         delete st.blueprints["phi_test_portal"];
 
         // (P8) Visibility-Setter wirkt + gelistet ruft die Lobby-BRIDGE (am Ruf). Den echten Round-Trip
@@ -1617,7 +1614,7 @@ async function checkBandPhiArchipel({ page, check }) {
         // (P9) Hausrecht-Sieb: ein gebannter peer fällt am _isPeerBanned, ein
         // unbekannter geht durch. Round-Trip ban → unban heilt das Sieb.
         const banRes = r.banPeer("test-peer-xyz");
-        out.banPeerOk = !!(banRes && banRes.ok);
+        out.banPeerOk = !!(banRes?.ok);
         out.bannedPeerSieb = r._isPeerBanned("test-peer-xyz", null) === true;
         out.unknownPeerPasses = r._isPeerBanned("never-seen-peer", null) === false;
         r.unbanPeer("test-peer-xyz");
@@ -1635,7 +1632,7 @@ async function checkBandPhiArchipel({ page, check }) {
         // + loadState bit-gleich (must-preserve am eigenen Welt-Save).
         const snap = r.buildStateSnapshot();
         out.snapHasGuestRights = snap.worldMeta && snap.worldMeta.guestRights === "frieden";
-        out.snapHasBanList = !!(snap.worldMeta && snap.worldMeta.banList);
+        out.snapHasBanList = !!(snap.worldMeta?.banList);
         out.snapHasWorldAddress = "worldAddress" in (snap.worldMeta || {});
 
         // Aufräumen — die signierte Test-Adresse aus der aktiven Welt entfernen.
@@ -1731,7 +1728,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
 
         // (Q5) setRegionsActive wirkt + initialisiert currentRegionKey.
         const onRes = r.setRegionsActive(true);
-        out.activateOk = !!(onRes && onRes.ok && onRes.regionsActive);
+        out.activateOk = !!(onRes?.ok && onRes.regionsActive);
         out.activateCurrentKey =
             typeof onRes.currentRegionKey === "string" && /^r-?\d+_-?\d+$/.test(onRes.currentRegionKey);
         out.isActiveNow = r.isRegionsActive() === true;
@@ -1749,12 +1746,12 @@ async function checkBandPhiArchipelV2({ page, check }) {
             pm.x = oldX;
             pm.z = oldZ;
         }
-        out.crossingDetected = !!(crossing && crossing.crossed && crossing.newKey === "r2_2");
+        out.crossingDetected = !!(crossing?.crossed && crossing.newKey === "r2_2");
 
         // (Q8) Handoff-Helper: ohne P2P-Verbindung ist es ein no-op (Logge +
         // Override setzen, kein Wurf), with-mesh false.
         const handoffRes = r._p2pRegionHandoff("r0_0", "r1_0");
-        out.handoffOkOffline = !!(handoffRes && handoffRes.ok && handoffRes.withMesh === false);
+        out.handoffOkOffline = !!(handoffRes?.ok && handoffRes.withMesh === false);
         out.handoffRoomCorrect = handoffRes && handoffRes.room && handoffRes.room.endsWith(":r1_0");
 
         // Wieder OFF schalten (clean state für nachfolgende Tests).
@@ -1810,7 +1807,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
         // (Q15) pinCurrentWorld pinnt + hash + bytes — und schreibt persistiert.
         const pinRes = r.pinCurrentWorld({ silent: true });
         out.pin = [pinRes, AR.PIN_WAND];
-        out.pinOk = !!(pinRes && pinRes.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
+        out.pinOk = !!(pinRes?.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
         out.pinInMap = st.p2p.pinnedWorlds.has(pinRes.worldId);
         const lsManifest = localStorage.getItem("anazh.pinnedManifest");
         out.pinPersisted = !!(lsManifest && lsManifest.includes(pinRes.worldId));
@@ -1849,7 +1846,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
 
         // (Q18) unpinWorld räumt; idempotent.
         const unpinRes = r.unpinWorld(pinRes.worldId);
-        out.unpinOk = !!(unpinRes && unpinRes.ok && unpinRes.removed);
+        out.unpinOk = !!(unpinRes?.ok && unpinRes.removed);
         out.unpinIdempotent = !st.p2p.pinnedWorlds.has(pinRes.worldId);
         // Aufräumen: localStorage-Snapshot lassen wir liegen (kein Müll, nur
         // ein orphan; ein erneuter pinCurrentWorld überschreibt).
@@ -1961,7 +1958,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             { address: mkAddr("beta"), label: "Zweite Welt" },
             { address: mkAddr("gamma"), label: "Dritte Welt" },
         ]);
-        out.createOk = !!(created && created.ok && created.entries === 3);
+        out.createOk = !!(created?.ok && created.entries === 3);
         out.hallStored = st.portalHalls.has("test-halle");
 
         // (H3) createPortalHall siebt kaputte Einträge (broker non-ws fällt).
@@ -1971,7 +1968,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             { address: null }, // fällt
         ]);
         const partialHall = st.portalHalls.get("partial-halle");
-        out.partialOk = !!(partial && partial.ok && partial.entries === 1);
+        out.partialOk = !!(partial?.ok && partial.entries === 1);
         out.partialStored = partialHall && partialHall.entries.length === 1;
 
         // (H4) createPortalHall ohne valide Einträge → ok:false.
@@ -1992,7 +1989,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         // (H6) signPortalHall signiert + verifyPortalHall liest "valid";
         // Manipulation am label kippt zu "modified" (signedHash mismatch).
         const sigRes = await r.signPortalHall("test-halle", { skipConfirm: true });
-        out.signOk = !!(sigRes && sigRes.ok);
+        out.signOk = !!(sigRes?.ok);
         const hall = st.portalHalls.get("test-halle");
         out.signFieldsSet = !!(hall.sig && hall.authorPubKey && hall.signedHash);
         const status = await r.verifyPortalHall(hall);
@@ -2052,7 +2049,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         }
         const archBefore = st.architectures.length;
         const matRes = r.materializePortalHall("test-halle", { x: 600, y: 0, z: 600 }, { portalBlueprint: portalBp });
-        out.matOk = !!(matRes && matRes.ok && matRes.spawned.length === 3);
+        out.matOk = !!(matRes?.ok && matRes.spawned.length === 3);
         out.matSpawnedArch = st.architectures.length === archBefore + 3;
 
         // (H10) Jeder gespawnte Slot trägt SEINE eigene entry.portalMeta mit
@@ -2187,7 +2184,7 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
 
         // (K4) Signieren + Verifizieren einer Compute-Contribution (ed25519).
         const sigRes = await r.signComputeContribution(h1, outputHash, { skipConfirm: true });
-        out.signOk = !!(sigRes && sigRes.ok && sigRes.sig);
+        out.signOk = !!(sigRes?.ok && sigRes.sig);
 
         // (K5) Pin-Pfad: eine valide Contribution wird angenommen + Status
         // ist "unverified" (Sig okay, aber noch nicht stichproben-verifiziert).
@@ -2197,7 +2194,7 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
             providedBy: sigRes.authorPubKey,
             sig: sigRes.sig,
         });
-        out.pinOk = !!(pinRes && pinRes.ok && pinRes.status === "unverified");
+        out.pinOk = !!(pinRes?.ok && pinRes.status === "unverified");
         out.pinInMap = st.computeContributions.has(h1);
 
         // (K6) Müll fällt am Eingang (kaputter Hash, Hex-Form verletzt).
@@ -2217,7 +2214,7 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         });
         const entry = st.computeContributions.get(verifyHash);
         const verifyRes = r.verifyComputeContribution(verifySpec, entry);
-        out.verifyEhrlich = !!(verifyRes && verifyRes.ok && verifyRes.equal && entry.status === "verified");
+        out.verifyEhrlich = !!(verifyRes?.ok && verifyRes.equal && entry.status === "verified");
 
         // (K8) FORGED-Wand: ein falscher outputHash → status forged + R4-
         // Eskalation (der Anbieter wird revoziert).
@@ -2243,9 +2240,9 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
             { commit: "abc12345", version: "18.191.0", result: "ok", total: 3500 },
             { skipConfirm: true }
         );
-        out.runSignOk = !!(runRes && runRes.ok && runRes.run.sig);
+        out.runSignOk = !!(runRes?.ok && runRes.run.sig);
         const recordRes = await r.recordPlaytestRun(runRes.run);
-        out.recordOk = !!(recordRes && recordRes.ok);
+        out.recordOk = !!(recordRes?.ok);
         out.recordInArray = st.playtestContributions.some((e) => e.commit === "abc12345");
 
         // (K10) DEDUP: derselbe Anbieter darf denselben Commit nur einmal
