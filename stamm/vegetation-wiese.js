@@ -862,7 +862,9 @@ class AnazhRealm_vegetation_wiese {
                 if (p >= 0 && Math.abs(H[p] - H[o]) > kante) [T[o], T[p], Kt[o], Kt[p]] = [0, 0, 1, 1];
         const maske = [];
         for (let o = 0; o < N * N; o++) if (!T[o]) maske.push(ox + (o % N) * l, oz + Math.floor(o / N) * l);
-        const bilinear = (A, aussen) => (x, z) => {
+        // bilinear in der Zelle um (x, z); `genau`: in den Zellen an Kante und Wasser der gezeichnete Boden selbst (`_bodenSichtAt`)
+        // — eine Grube, schmaler als zwei Zellen, fällt zwischen die Punkte des Gitters
+        const bilinear = (A, aussen, genau) => (x, z) => {
             const u = (x - ox) / l,
                 v = (z - oz) / l;
             const i = Math.floor(u),
@@ -871,11 +873,14 @@ class AnazhRealm_vegetation_wiese {
             const o = j * N + i,
                 fu = u - i,
                 fv = v - j;
-            return (A[o] * (1 - fu) + A[o + 1] * fu) * (1 - fv) + (A[o + N] * (1 - fu) + A[o + N + 1] * fu) * fv;
+            const g = (A[o] * (1 - fu) + A[o + 1] * fu) * (1 - fv) + (A[o + N] * (1 - fu) + A[o + N + 1] * fu) * fv;
+            if (!genau || Number.isNaN(g) || !(Kt[o] || Kt[o + 1] || Kt[o + N] || Kt[o + N + 1])) return g;
+            const y = this._bodenSichtAt(x, z);
+            return y === null ? NaN : y;
         };
-        // der Weg: das Gitter findet seine Nähe (bilinear über 0,2), dort entscheidet das EINE Pfad-Feld selbst (`_pfadFeldAt`);
-        // Wasser und Kante sind harte Ränder des Gitters (bilinear, 1 an ihren Punkten)
-        const [boden, pfadNah, hart] = [bilinear(H, NaN), bilinear(Wg, 1), bilinear(Kt, 1)];
+        // der Boden des Felds; der Weg: das Gitter findet seine Nähe (bilinear über 0,2), dort entscheidet das EINE Pfad-Feld
+        // selbst (`_pfadFeldAt`); Wasser und Kante sind harte Ränder des Gitters (bilinear, 1 an ihren Punkten)
+        const [boden, pfadNah, hart] = [bilinear(H, NaN, true), bilinear(Wg, 1), bilinear(Kt, 1)];
         const weg = (x, z) => {
             const [w, y] = [pfadNah(x, z), boden(x, z)];
             return Math.max(w > 0.2 && Number.isFinite(y) ? this._pfadFeldAt(x, z, y) : w, hart(x, z));
@@ -917,7 +922,9 @@ class AnazhRealm_vegetation_wiese {
     // längs der Unterkante: die Karte reicht bis an die Isolinie, wo die Nähe noch die Hälfte ihrer Halme trägt; mit dem Rand
     // einer Zelle um den nächsten Punkt des Wegs blieb an der Mess-Wiese ein kahler Saum neben ihm, 436 Boden-Pixel in 20–40 m,
     // swiftshader), am Grund eines Hauses (`erdbauGrund`) und dort, wo ein Ende ihrer Unterkante mehr als
-    // `boden` neben dem gezeichneten Boden läge (Kamm, Kante, Grube) — in Ringen × 1,25 wie die Grenze der Büschel. Wenig Grün
+    // `boden` neben dem gezeichneten Boden läge (Kamm, Kante, Grube) — stetig: je 0,5 m nach außen getastet, am ersten unfreien
+    // Schritt halbiert bis auf 3 cm (mit Ringen × 1,25 wie die Grenze der Büschel endete sie bis 1,2 m vor ihrem Rand: an der
+    // Mess-Wiese 3 Boden-Pixel in 20–40 m, vegetation.K1#1 LAI 1,75, der Saum sprang 17 %, swiftshader). Wenig Grün
     // (Waldboden unter Kronen) dünnt die Nähe, sperrt aber keine Karte: mit der vollen Maske der Büschel (Grün × Pfad ≥ `wiese`)
     // fehlten an der Mess-Wiese 8,6 % der Fläche der Karten in 20–40 m (874 von 3 526 beschnitten, 177 ohne Karte), der Ring zeigte
     // Boden (vegetation.K1#1 LAI 20–40 m satt → 0,89, swiftshader). Die Matrix trägt diese größte Breite als ihre Breiten-Achse (die Karte, wie sie
@@ -939,19 +946,19 @@ class AnazhRealm_vegetation_wiese {
         const WT = AnazhRealm.Gesetz("terrain:wiesenTint", null) || AnazhRealm._kernPflichtBruch("terrain:wiesenTint");
         const eigen = D.nie.some(([gx, gz]) => gx === fx && gz === fz);
         const licht = eigen ? null : this._bodenLichtFeld(fx * F.kachel, fz * F.kachel, (fx + 1) * F.kachel, (fz + 1) * F.kachel); // prettier-ignore
-        // die Ringe der Breite (× 1,25 von `schmal` bis `breitMax`, ihre halbe Breite `hb`) und die Schritte des Tastens nach außen:
-        // der schmalste Ring, dann je 0,5 m bis zum breitesten
-        const [p, eb, hb] = [[], {}, []];
-        for (let t = S.schmal; !hb.length || t < S.breitMax * 1.25; t *= 1.25) hb.push(0.5 * S.breite * Math.min(t, S.breitMax)); // prettier-ignore
-        const schritte = [hb[0]];
-        for (let e = 0.5; e < hb.at(-1); e += 0.5) if (e > hb[0]) schritte.push(e);
-        schritte.push(hb.at(-1));
+        // die halbe Breite der Karte von `schmal` bis `breitMax` × `breite`, die Schritte des Tastens nach außen: die schmalste,
+        // dann je 0,5 m bis zur breitesten
+        const [p, eb, h0, h1] = [[], {}, 0.5 * S.breite * S.schmal, 0.5 * S.breite * S.breitMax];
+        const schritte = [h0];
+        for (let e = 0.5; e < h1; e += 0.5) if (e > h0) schritte.push(e);
+        schritte.push(h1);
         // der Weg in Reichweite der Kachel (ihre Karten reichen höchstens breitMax × breite / 2 über sie): sonst tastet keine
         const reich = (S.breite * S.breitMax) / 2 + l;
         const tasten = D.wegIn(fx * F.kachel - reich, fz * F.kachel - reich, (fx + 1) * F.kachel + reich, (fz + 1) * F.kachel + reich); // prettier-ignore
-        // ist die Karte bei ±e frei? ihre Unterkante höchstens `boden` neben dem gezeichneten Boden, und wo die Kachel Weg
-        // berührt, kein Weg über der Hälfte
-        const frei = (x, z, y, c, s, sy, e) => {
+        // ist die Karte bei ±e frei? kein Grund eines Hauses in ihrer halben Breite, ihre Unterkante höchstens `boden` neben dem
+        // gezeichneten Boden, und wo die Kachel Weg berührt, kein Weg über der Hälfte
+        const frei = (x, z, y, c, s, sy, e, haus) => {
+            if (haus && Gb.erdbauGrund(E, x, z, e)) return false;
             for (let v = -e; v <= e; v += 2 * e)
                 if (!(Math.abs(D.boden(x + v * c, z - v * s) - (y + sy * v)) <= F.boden) || (tasten && !(D.weg(x + v * c, z - v * s) <= 0.5))) return false; // prettier-ignore
             return true;
@@ -966,16 +973,23 @@ class AnazhRealm_vegetation_wiese {
                 const [c, s] = [Math.cos(2 * Math.PI * w), Math.sin(2 * Math.PI * w)];
                 this._slopeAt(x, z, D.boden, l, eb, y);
                 const sy = eb.gx * c - eb.gz * s; // die Steigung der Unterkante je Meter längs der Karte
-                // der Grund der Häuser: berührt ihn die größte Breite nicht, fragt kein Ring
-                const haus = Gb.erdbauGrund(E, x, z, hb.at(-1));
-                // frei bis `bis` (je Schritt nach außen); die Karte nimmt den breitesten Ring darin, frei an seinem Ende
-                let [bis, r] = [0, hb.length - 1];
+                // der Grund der Häuser: berührt ihn die größte Breite nicht, fragt kein Schritt
+                const haus = Gb.erdbauGrund(E, x, z, h1);
+                // frei bis `a`, unfrei bei `b` (0: frei bis zur größten Breite); dazwischen halbiert bis auf 3 cm
+                let [a, b] = [0, 0];
                 for (const e of schritte) {
-                    if (!frei(x, z, y, c, s, sy, e)) break;
-                    bis = e;
+                    if (!frei(x, z, y, c, s, sy, e, haus)) {
+                        b = e;
+                        break;
+                    }
+                    a = e;
                 }
-                while (r >= 0 && !(hb[r] <= bis && (hb[r] === bis || frei(x, z, y, c, s, sy, hb[r])) && !(haus && Gb.erdbauGrund(E, x, z, hb[r])))) r--; // prettier-ignore
-                if (r >= 0) p.push([AnazhRealm._ortZiehung(W, x, z, 0, l), x, y, z, w, c, s, sy, 2 * hb[r]]);
+                for (let k = 0; a > 0 && b > 0 && k < 4; k++) {
+                    const m = (a + b) / 2;
+                    if (frei(x, z, y, c, s, sy, m, haus)) a = m;
+                    else b = m;
+                }
+                if (a > 0) p.push([AnazhRealm._ortZiehung(W, x, z, 0, l), x, y, z, w, c, s, sy, 2 * a]);
             }
         p.sort((a, b) => a[0] - b[0]);
         const fach = new Map(); // der Farbton je Fach von 2 m (Licht und Feuchte ändern sich langsamer als die Karten stehen)

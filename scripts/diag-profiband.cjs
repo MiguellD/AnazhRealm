@@ -1146,7 +1146,7 @@ function selbsttest() {
             ["_wieseSchaleDaten", "(tasten && !(D.weg(x + v", "(0 && !(D.weg(x + v", "gasse: Karte"],
             ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
             ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
-            ["_wieseSchaleDaten", "!(haus &&", "!(0 &&", "haus: Karte"],
+            ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
         ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
         t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
