@@ -2848,11 +2848,11 @@ AnazhRealm.LOD_DISTANCES = (() => {
 // DER SCHIRM DES WECHSELS (lod.K5, `_wechselAbstand`): `fehler` je Art (rec.kind) und VORLAGE (der Schlüssel des Rezepts im Buch)
 // der Kanten-Versatz jeder gezeigten Stufe zur L0, gemessen am Bau (w25-lod-pop: die Messung der Station am Gesetzbuch in Node,
 // `kantenVersatz` — L0 und Stufe je Peilung in den Bildpunkten des Haushalts gerastert, Chamfer der Kanten; die Tor-Flügel der L0
-// in der Fern-Pose, die Haus-Türen zu) — der Fehler ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms, × 1,1
-// (der Rand über dem Rausch der Messung), in Metern bei Welt-Skala 1. Die Zeilen prägt die Linse selbst (`node
-// scripts/diag-tor-fern.cjs --tafel`, `node scripts/diag-haus-fern.cjs --tafel`), sie misst sie an der Grenze des Gesetzes nach
-// (gate:tor-fern P, gate:haus-fern P). Bis hier stand je Art EINE Zahl (die schlechteste Vorlage, 29.10.), die der Haushalt
-// deckelte. DER BAUM trägt keine Zeile: seine Masken wechseln je Art (uLodD0/uLodD1 der Karten-Arten), nie je Vorlage — sein Wechsel
+// in der Fern-Pose, die Haus-Türen zu) — der Fehler ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms, in
+// Metern bei Welt-Skala 1: trägt die Stufe das Soll am Haushalt, ihr Versatz dort (der Wechsel bleibt am Haushalt); sonst der
+// GEMESSENE Abstand, an dem ihr Versatz × 1,1 einen Bildpunkt trägt (fern skaliert er nicht mehr mit 1 / d). Die Linse misst jede
+// Zeile an der Grenze des Gesetzes nach (gate:haus-fern P: Haus, Ausstattung, Tor), ein Täter nennt seine Zeile. Bis hier stand je
+// Art EINE Zahl (die schlechteste Vorlage, 29.10.), die der Haushalt deckelte. DER BAUM trägt keine Zeile: seine Masken wechseln je Art (uLodD0/uLodD1 der Karten-Arten), nie je Vorlage — sein Wechsel
 // steht am Haushalt; der Wagen wechselt an der Maske des Baums (die Limousine trägt dort 0,02 px). `px` = die Bildpunkte, die ein
 // Wechsel tragen darf (das Soll, Nanite: < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d). `leib` = der Haushalt des Felds der Leiber (`_feldGrenzen`):
@@ -2875,60 +2875,60 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
             // die Zeilen der Tore (w25-lod-pop; L2 Geisttor 8,28 · Lyra 8,30 · Ruine 3,51 · Vitruv 2,76 px am Haushalt 12 m: das Anteil-
             // Gesetz der Quote pipeline.K3 legt ihr Filigran unter den Pixel — die L1 hält bis zum Pixel-Term)
             gate: je({
-                drachentor: [0.007, 0.0154],
-                kathedrale: [0.0044, 0.0105],
-                maschine: [0.0047, 0.0129],
-                geisttor: [0.0032, 0.1902],
-                verkalkt: [0.0057, 0.0116],
-                ruine: [0.0055, 0.0659],
-                maurentor: [0.0041, 0.009],
-                lyra: [0.0019, 0.1557],
-                vitruv: [0.0086, 0.0575],
-                tiertor: [0.008, 0.0271],
+                drachentor: [0.0064, 0.014],
+                kathedrale: [0.004, 0.0096],
+                maschine: [0.0044, 0.0116],
+                geisttor: [0.0029, 0.1902],
+                verkalkt: [0.0052, 0.0106],
+                ruine: [0.0049, 0.0659],
+                maurentor: [0.0038, 0.0082],
+                lyra: [0.0017, 0.1557],
+                vitruv: [0.0079, 0.0575],
+                tiertor: [0.0073, 0.0271],
             }),
             // die Zeilen der Häuser (w25-lod-pop; Stufen-Defekte am Haushalt: Pueblo L2 12,8 px — die L2 ohne Terrassen-Geländer,
             // Brüstung und Vigas —, Hochhaus L1 9,7 · L2 5,1 — die Turm-Stufe ohne Balkone —, Viktorianisch L2 4,5, Georgian 3,1,
             // Marokkanisch 2,5, Chinesisch 1,7, Japanisch 1,5)
             haus: je({
-                alemannisch: [0.0042, 0.0431],
-                fraenkisch: [0.0045, 0.0463],
+                alemannisch: [0.0038, 0.0363],
+                fraenkisch: [0.0041, 0.0463],
                 niedersaechsisch: [0.0196, 0.0533],
-                mittelalterlich: [0.0054, 0.0394],
-                holzhuette: [0.0082, 0.0384],
-                franzoesisch: [0.0151, 0.0437],
-                italienisch: [0.0034, 0.0412],
-                modern: [0.0038, 0.036],
-                volle_moderne: [0.0032, 0.0485],
+                mittelalterlich: [0.005, 0.0359],
+                holzhuette: [0.0074, 0.034],
+                franzoesisch: [0.0137, 0.0437],
+                italienisch: [0.0031, 0.0363],
+                modern: [0.0035, 0.0326],
+                volle_moderne: [0.0029, 0.0485],
                 hochhaus: [0.1814, 0.2214],
-                roemisch: [0.0109, 0.0375],
-                tudor: [0.0052, 0.0441],
-                alpenchalet: [0.0035, 0.0394],
-                hollaendisch: [0.0035, 0.0514],
-                hanseatisch: [0.0025, 0.043],
-                georgian: [0.0019, 0.1404],
-                viktorianisch: [0.002, 0.1841],
-                griechisch: [0.0036, 0.0452],
-                spanisch: [0.0036, 0.0382],
-                andalusisch: [0.002, 0.0415],
-                provenzalisch: [0.004, 0.0361],
-                pueblo: [0.0165, 0.5184],
-                marokkanisch: [0.0022, 0.1024],
-                skandinavisch: [0.0025, 0.0391],
-                norwegisch: [0.0038, 0.0409],
-                russisch: [0.0047, 0.0287],
-                schwarzwald: [0.0002, 0.0317],
-                japanisch: [0.0123, 0.061],
-                gotisch: [0.0044, 0.0273],
-                barock: [0, 0.0194],
-                renaissance: [0.0035, 0.0384],
+                roemisch: [0.0099, 0.034],
+                tudor: [0.0047, 0.0441],
+                alpenchalet: [0.0031, 0.0359],
+                hollaendisch: [0.0033, 0.0514],
+                hanseatisch: [0.0023, 0.043],
+                georgian: [0.0018, 0.1404],
+                viktorianisch: [0.0019, 0.1841],
+                griechisch: [0.0033, 0.0452],
+                spanisch: [0.0033, 0.0348],
+                andalusisch: [0.0018, 0.0348],
+                provenzalisch: [0.0036, 0.0329],
+                pueblo: [0.0151, 0.5184],
+                marokkanisch: [0.0021, 0.1024],
+                skandinavisch: [0.0023, 0.0355],
+                norwegisch: [0.0035, 0.0363],
+                russisch: [0.0043, 0.0263],
+                schwarzwald: [0.0002, 0.0289],
+                japanisch: [0.0111, 0.061],
+                gotisch: [0.004, 0.0248],
+                barock: [0, 0.0178],
+                renaissance: [0.0031, 0.0348],
                 chinesisch: [0.0006, 0.0698],
             }),
             ausstattung: je({
-                feuerstelle: [0.0038],
-                marktstand: [0.0051],
-                brunnen: [0.0115],
-                laterne: [0.0083],
-                wandlaterne: [0.0093],
+                feuerstelle: [0.0035],
+                marktstand: [0.0047],
+                brunnen: [0.0105],
+                laterne: [0.0076],
+                wandlaterne: [0.0084],
             }),
         });
     })(),
