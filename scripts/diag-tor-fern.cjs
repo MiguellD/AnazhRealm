@@ -5,7 +5,8 @@
 // höchstens 24 Teile der Rolle "sicht" (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je
 // Pixel über alle Teile seines Eintrags). Die Linse misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7
 // Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node, die Engine des Fadens three r184 + porta-core.js) und
-// mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
+// mit dem EINEN Leser des Stamms (`_huelleVon` des geladenen Wirts, `wirtMitBuch`; die ferne Stufe je Rezept an der Grenze, die
+// `_wechselGesetz` aus der Zeile seiner Vorlage legt — den Pop dort misst gate:haus-fern P):
 //
 //   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);
 //      die Kosten der Stufe 3 (Zeile und Draw je Rezept und Rand) richtet gate:regler-wirkt STUFEN über die echte Brücke
