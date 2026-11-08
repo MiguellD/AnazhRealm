@@ -350,7 +350,7 @@ const WELT_HAKEN = () => {
                 const m = e.data;
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
                 if (m && m.type === "asset" && Array.isArray(m.meshes))
-                    for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
+                    for (const x of m.meshes) for (const k in x || {}) if (x[k]?.array) fl.reist.add(k);
                 if (m && m.type === "asset")
                     fl.antworten.push({ w: this.__flNr, vorrat: m.vorrat === true, leer: !m.meshes.length, p: m.presetId });
             });
@@ -517,7 +517,7 @@ function urteilWelt(d) {
         }
         // DIE EINE Gestalten-Zahl der Welt samt Solitär V+1 (`_foundryGestalten`): seit w12-eiche-same ist der Solitär ein
         // Same des Kerns (treeParams) und reist ungeprägt — bis dahin verbarg ihn sein FREISTAND-ov vor W1a, das gegen V maß
-        const T = (d.T && d.T[sp]) || V;
+        const T = d.T?.[sp] || V;
         for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= T)) raus.push(`${sp}|${s}`);
         // Die Karte bestellt ihr Leser: eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
         // (Budget samt Solitär, K20).

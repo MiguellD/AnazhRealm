@@ -55,8 +55,8 @@ hauptLauf(async () => {
         for (const [name, gestalt] of Object.entries(res.gestalt)) {
             const bp = st.blueprints[name];
             res.a[name] = {
-                inBook: !!(f && f.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
-                kind: f && f.recipes && f.recipes[gestalt] ? f.recipes[gestalt].kind : null,
+                inBook: !!(f?.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
+                kind: f?.recipes?.[gestalt] ? f.recipes[gestalt].kind : null,
                 ziel: !!bp.portalMeta?.world,
             };
         }
@@ -136,7 +136,7 @@ hauptLauf(async () => {
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
         const _rc = AnazhRealm._studioRenderConfig;
-        const _gz = _rc && _rc.lod && _rc.lod.budget?.gate ? _rc.lod.budget.gate[0] : null;
+        const _gz = _rc?.lod?.budget?.gate ? _rc.lod.budget.gate[0] : null;
         res.c.drawBudget = _gz ? _gz.draws : null;
         res.c.fluegelSlots = (entry.instSlots || []).filter((s) => {
             const g = st.archInstanceGroups && st.archInstanceGroups.get(s.key);

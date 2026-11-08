@@ -687,7 +687,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
                         text: `${z.id} ${p}: ${z.je[p][g]} ${g} über der Ratsche ${r[g]} (Täter: ${z.taeter
                             .slice(0, 3)
                             .map((t) =>
-                                t.inhalt && t.inhalt[p] ? `${t.klasse} ${p}: ${inhaltText(t.inhalt[p])}` : t.klasse
+                                t.inhalt?.[p] ? `${t.klasse} ${p}: ${inhaltText(t.inhalt[p])}` : t.klasse
                             )
                             .join(", ")})`,
                     });

@@ -97,7 +97,7 @@ async function checkBandV1774UseByRole({ page, check }) {
             );
         const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =
-            emb.ok === true && p.soul === "bp__t_avatar74" && !!(st.customSouls && st.customSouls["bp__t_avatar74"]);
+            emb.ok === true && p.soul === "bp__t_avatar74" && !!st.customSouls?.["bp__t_avatar74"];
         r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =

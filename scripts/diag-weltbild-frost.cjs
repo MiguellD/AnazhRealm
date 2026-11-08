@@ -837,7 +837,7 @@ hauptLauf(async () => {
         const holen = () => ws.preview;
         await E.warte(holen);
         const G = window.__tetrapodaCore.GATTUNGEN;
-        const recId = (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[id]) || id;
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP?.[id] || id;
         const basis = G[recId] || G.wolf;
         const dial = Object.keys(basis).find((k) => typeof basis[k] === "number" && basis[k] > 0.2);
         const stoffe = new Set();

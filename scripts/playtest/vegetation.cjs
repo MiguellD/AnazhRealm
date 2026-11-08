@@ -1471,7 +1471,7 @@ async function checkBandV18218LODStufen({ page, check }) {
         if (r._buildVariantLODs) {
             window.__withNoFoundry(() => {
                 const keys = r._buildVariantLODs("baum_eiche", 1);
-                if (keys && keys[0] && keys[1] && keys[2]) {
+                if (keys?.[0] && keys[1] && keys[2]) {
                     const bp0 = st.blueprints[keys[0]];
                     const bp1 = st.blueprints[keys[1]];
                     const bp2 = st.blueprints[keys[2]];

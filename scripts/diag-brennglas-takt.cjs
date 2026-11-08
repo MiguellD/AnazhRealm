@@ -965,7 +965,7 @@ async function probe() {
         for (const e of st.architectures) {
             if (!e || !e.position) continue;
             const tip =
-                (e.userData && e.userData.rauchQuelle) ||
+                e.userData?.rauchQuelle ||
                 (e.chimney && Number.isFinite(e.chimney.x) ? e.chimney : null);
             if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y) || !Number.isFinite(tip.z)) continue;
             const phi = Number.isFinite(e.rotationY) ? e.rotationY : 0;

@@ -59,7 +59,7 @@ function validateDaten(N, spec) {
     if (ids.length < spec.minRezepte) v.push(`B1: nur ${ids.length} Rezepte (< ${spec.minRezepte})`);
     const bands = {};
     // SYNERGIE-WELLE (v1.2) — DIE EINE B4-FORM: PARAMS_BY_KIND (Map), das flache PARAMS fiel.
-    for (const row of (N.PARAMS_BY_KIND && N.PARAMS_BY_KIND[spec.kind]) || []) bands[row.id] = row;
+    for (const row of N.PARAMS_BY_KIND?.[spec.kind] || []) bands[row.id] = row;
     for (const id of ids) {
         const r = P[id];
         if (!/^[a-z0-9_-]+$/.test(id)) v.push(`B1: id "${id}" verletzt den Namensraum`);

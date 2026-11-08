@@ -70,7 +70,7 @@ function torHuelleTreue(tafel, gemessen) {
             for (let j = 0; j < 4; j++)
                 paare.push([
                     `seiten[${k}].${namen[j]}`,
-                    t.seiten && t.seiten[k] ? t.seiten[k][j] : NaN,
+                    t.seiten?.[k] ? t.seiten[k][j] : NaN,
                     m.seiten[k][j],
                 ]);
         for (const [wo, a, b] of paare)

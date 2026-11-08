@@ -222,9 +222,9 @@ function ratscheUrteil(satz, PP, R) {
     if (z.faelle !== PP.faelle) rot.push(`${satz}: ${PP.faelle} Probe-Fälle statt ${z.faelle} (der Nenner der Ratsche)`);
     for (const [n, f] of Object.entries(PP.kipptJe)) {
         // pow ist hart 0 — außer ein Satz nennt seinen gepinnten Wirt (powWirt: CI und lokal dieselbe V8)
-        const grenze = n === "pow" && !z.powWirt ? 0 : (z.kippt && z.kippt[n]) || 0;
+        const grenze = n === "pow" && !z.powWirt ? 0 : z.kippt?.[n] || 0;
         if (f.length > grenze)
-            rot.push(`${satz} ${n} kippt ${f.length} > ${grenze}${PP.taeter && PP.taeter[n] ? " ← " + PP.taeter[n] : ""}`);
+            rot.push(`${satz} ${n} kippt ${f.length} > ${grenze}${PP.taeter?.[n] ? " ← " + PP.taeter[n] : ""}`);
     }
     for (const [n, g] of Object.entries(z.kippt || {})) {
         const ist = (PP.kipptJe[n] || []).length;
@@ -324,7 +324,7 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
         vertices += geo.attributes.position.count;
         objektAbdruck(h, o, nurGeometrie ? null : o.material);
     });
-    if (mitFern && group.userData && group.userData.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
+    if (mitFern && group.userData?.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
     return { objects, vertices, sha256: h.digest("hex") };
 }
 // DER ABDRUCK EINES OBJEKTS im Hash h: Typ, Welt-Matrix, die Stoff-Signatur von m (ohne m keine; `mehr` trägt eine Linse dazu —

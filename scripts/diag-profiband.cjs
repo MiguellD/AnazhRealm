@@ -244,7 +244,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
         summe += d;
     }
     for (const [pass, d] of Object.entries(jePass)) {
-        const r = rz && rz[pass] ? rz[pass].dreiecke : null;
+        const r = rz?.[pass] ? rz[pass].dreiecke : null;
         if (r == null || !Number.isFinite(r))
             errs.push(`P: die Ratsche (${ort}) trägt für ${block.klasse} ${pass} keine Dreiecke — kein Soll, keine Zeile`);
         else if (d > r) errs.push(`P: ${block.klasse} ${pass} projiziert ${d} Dreiecke > Ratsche ${r} (${ort})`);
@@ -1270,7 +1270,7 @@ function main() {
     for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {
         const j = jsonLesen(path.resolve(d));
         const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
-        const u = e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+        const u = e ? e.ergebnis?.messung || null : j;
         const geraet = u?.geraet ? u.geraet.schluessel : null;
         if (!u || !u.ort || !geraet || !u.sicht)
             errs.push(`H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`);

@@ -105,7 +105,7 @@ hauptLauf(async () => {
                 const n2 = r._foundryAutoRegisterSpecies(f.recipes);
                 res.d.probeRegistered = !!st.blueprints?.fahrzeug_probemobil;
                 res.d.probeLabel =
-                    st.blueprints && st.blueprints.fahrzeug_probemobil
+                    st.blueprints?.fahrzeug_probemobil
                         ? st.blueprints.fahrzeug_probemobil.label
                         : null;
                 res.d.idempotent = n1 >= 1 && n2 === 0;

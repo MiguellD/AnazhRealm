@@ -371,7 +371,7 @@ async function probe(cfg) {
     // DIE SCHATTEN-DREIECKE eines Körpers: jedes Mesh im Teilbaum (und jede Instanz eines Slots), das im Schatten-Pass zeichnet
     // (castShadow, sichtbar, eine Ebene der Kaskaden-Kamera), in Welt-Koordinaten
     const ebenen =
-        csm?.lights && csm.lights[0]
+        csm?.lights?.[0]
             ? csm.lights[0].shadow.camera.layers
             : st.directionalLight.shadow.camera.layers;
     const sichtbar = (o) => {

@@ -145,7 +145,7 @@ function vramAbgriff() {
     P.createBindGroup = function (d) {
         const g = cbg.call(this, d);
         const tex = [];
-        for (const e of (d && d.entries) || []) {
+        for (const e of d?.entries || []) {
             const t = e?.resource ? ansichtTextur.get(e.resource) : undefined;
             if (t) tex.push(t);
         }
@@ -157,7 +157,7 @@ function vramAbgriff() {
         return {
             testet: !!ds && ds.depthCompare !== undefined && ds.depthCompare !== "always",
             schreibt: !!ds && ds.depthWriteEnabled === true,
-            farben: ((d && d.fragment && d.fragment.targets) || []).filter(Boolean).length,
+            farben: (d?.fragment?.targets || []).filter(Boolean).length,
         };
     };
     const crp = P.createRenderPipeline;

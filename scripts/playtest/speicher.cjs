@@ -1658,7 +1658,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
             out.vendorPropagatesPostFail =
                 vUnreach.ok === false &&
                 vUnreach.reason === "save_server_unreachable" &&
-                !(st.customWorlds && st.customWorlds["vendor-test-2"]);
+                !st.customWorlds?.["vendor-test-2"];
         } finally {
             r._vendorPostBundle = origPost;
         }
@@ -1827,7 +1827,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
                 repoUrl: "https://github.com/owner/nope",
             });
             out.propagatesPostFail =
-                vFail.ok === false && /404/.test(vFail.reason) && !(st.customWorlds && st.customWorlds["gh-missing"]);
+                vFail.ok === false && /404/.test(vFail.reason) && !st.customWorlds?.["gh-missing"];
             // _vendorRegisterWorld direkt — sandgesichert + vendored.
             const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
             const regStored = st.customWorlds && st.customWorlds["reg-test"];
@@ -1846,7 +1846,7 @@ async function checkBandTranslatorAndUntrusted({ page, check }) {
             });
             out.bundlePathStillWorks =
                 vb.ok === true &&
-                !!(st.customWorlds && st.customWorlds["bundle-regress"]) &&
+                !!st.customWorlds?.["bundle-regress"] &&
                 st.customWorlds["bundle-regress"].trust === "sandboxed";
         } finally {
             r._vendorPostRepo = origRepo;

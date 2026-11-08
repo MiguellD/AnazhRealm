@@ -184,7 +184,7 @@ function KALT_PROBE() {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
         if (r?.state) {
-            if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
+            if (!A.buchDa && r._foundry?.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
                 o.fehlt = L.map((l) => l.satz);
@@ -428,7 +428,7 @@ hauptLauf(async () => {
                 water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
                 // die EINE Antwort der Welt (`_streuWartet`): fehlend · aufgeschoben · Scheibe offen, je Region in Reichweite
                 streu: !!st.playerMesh && r._streuWartet(st.playerMesh.position) === 0,
-                biblio: !!(f && f.ready && !f._vorrat),
+                biblio: !!(f?.ready && !f._vorrat),
                 // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                 impost: headless ? true : !q || q.length === 0,
                 luft: !!st.scene?.fogNode && sichtM() >= 5000,
