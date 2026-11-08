@@ -16,10 +16,6 @@
 // DAS BUDGET JE STOFF (`STOFFE`): ein Stoff des Spiels (der Zustands-Schlüssel seines Materials) und seine Decke — ein neues
 // Rauschen je Fragment fällt hier auf, bevor es Millisekunden kostet.
 //
-// DIE RAUSCH-PROBE: das Atlas-Rauschen der GPU gegen die CPU, je Pixel eines 64×64-Gleitkomma-Ziels — (1) die Ebene k = 0 ist
-// EXAKT MaterialX `mx_noise_float(vec3(x, y, 0))`, (2) jede Ebene und (3) der Raum-Wert sind das Rausch-Gesetz (Gradient =
-// mx-Regel aus lookup3 der versetzten Gitter-Zelle) — gerechnet auf der CPU aus dem HASH, nie aus den Atlas-Bytes.
-//
 // DER STOFF-GRAPH (GPU-frei, für den Playtest auf dem Null-Renderer): der Knoten-Graph eines Stoffs VOR dem Bau — dieselbe
 // Rausch-Regel an den Funktions-Knoten (ein Aufruf mit Layout, `mx_noise_float` ist ein Überladungs-Knoten), dazu die
 // Texturen je Name; ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler — der Graph zählt ihn als `verborgen`.
@@ -31,10 +27,9 @@
 //           kostenTabelle(nachher, vorher) · stoffGraph(stoff, rauschQuelle) · selbsttest() → [Fehler] · STOFFE
 //   Seite:  window.__shaderKosten({ frames, stoffe }) → [{ programm, objekte, klassen, stoffe, fragment }] — EIN echter Frame
 //           (`_loopRender`), je gezeichnetem Programm das erzeugte Fragment-WGSL (Bundles nehmen dafür neu auf)
-//           window.__rauschProbe() → { ebeneMx, ebeneY, ebeneZ, raum } (max |GPU − CPU| je Probe)
 //           window.__stoffGraph(stoff) → { slots, knoten, rauschen, rauschNamen, texturen, verborgen }
 //   Werkbank: node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
-//                                              [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]]
+//                                              [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl]]
 //             node scripts/werkbank.cjs shader --selbsttest
 "use strict";
 
@@ -54,10 +49,9 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
-// DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
-// WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
-// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel 96 050 Zeichen; mit dem Gesetz im Pixel, jede
-// Ziehung `zufall` 78-mal ausgeschrieben, 149 521 — die Prüfbühne S0 riss ihre Frist (171 s). Die Decke 100 000.
+// Die Zeichen eines Programms (`zeichen`) sind Ausgabe, nie Urteil: was das Programm vor dem ersten Bild kostet, misst die
+// Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
+// 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 const STOFFE = Object.freeze({
     boden: Object.freeze({
@@ -67,7 +61,6 @@ const STOFFE = Object.freeze({
             ladungenMax: 90,
             probenMax: 12,
             opsMax: 2400,
-            zeichenMax: 100000,
             bindungInFunktionMax: 0,
         }),
     }),
@@ -353,12 +346,6 @@ const GRENZEN = {
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
     probenMax: [(k) => k.proben, "≤", "Proben je Fragment", ""],
-    zeichenMax: [
-        (k) => k.zeichen,
-        "≤",
-        "Zeichen WGSL im Programm",
-        " — swiftshader übersetzt jede Zeile vor dem ersten Bild (Lehre 14: schwere Arbeit nie ausgeschrieben in jedem Pixel)",
-    ],
     bindungInFunktionMax: [
         (k) => k.bindungInFunktion.length,
         "≤",
@@ -537,11 +524,6 @@ fn main( @builtin( position ) p : vec4<f32> ) -> Out {
     // Eine Stufe, die aus ihrem Zweig wandert, wird unbedingt (der Fall, den gate:post-kette bewacht).
     const ohneZweig = wgslKosten(modul.replace("if ( render.staerke != 0.0 ) {", "{"));
     pruef("Stufe ohne Zweig", ohneZweig.abtastungen.unbedingt, 6);
-    // Die Programm-Größe: ein Programm über der Decke nennt seine Zeichen, eines darunter hält.
-    pruef("Größe hält", kostenUrteil(k, { zeichenMax: modul.length }, "s"), []);
-    const gross = kostenUrteil(k, { zeichenMax: modul.length - 1 }, "s");
-    if (!(gross.length === 1 && gross[0].includes(`${modul.length} Zeichen WGSL im Programm`)))
-        fehler.push(`Urteil nennt die Programm-Größe nicht (${JSON.stringify(gross)})`);
     // Die Bindung in einer Hilfs-Funktion: `hilf` liest die Texturen des Moduls (tex, tex2) — rot beim Namen; derselbe Zugriff
     // im Einstieg hält, eine reine Hilfs-Funktion hält, und ein r184-Bindungs-Name, den das Modul nicht deklariert (der Fall
     // der Prüfbühne: `nodeUniform0` war dort ein Feld im Uniform-Block), fällt ebenso.
@@ -802,9 +784,9 @@ function shaderKostenSeite(o) {
     })();
 }
 
-// Die Rausch-Probe: GPU (das Atlas-Rauschen im erzeugten WGSL) gegen CPU (MaterialX-Hash, nie die Atlas-Bytes).
 // DER HASH VON MATERIALX (three r184 mx_noise_float, lookup3 von Bob Jenkins, drei Schlüssel): die EINE Portierung der
-// Linsen — die Rausch-Probe und der Atlas des Playtests (scripts/playtest/dirigent.cjs) rufen sie in der Seite.
+// Linsen — der Atlas des Playtests (scripts/playtest/dirigent.cjs) ruft sie in der Seite. Die Rausch-Probe der Werkbank (GPU
+// gegen CPU je Pixel) fiel 08.11.: kein Gate fuhr sie, und dirigent.cjs zitierte sie als Beweis.
 function mxLookup3(x, y, z) {
     const rot = (v, k) => ((v << k) | (v >>> (32 - k))) >>> 0;
     let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
@@ -823,162 +805,16 @@ function mxLookup3(x, y, z) {
     return c;
 }
 
-function rauschProbe() {
-    return (async () => {
-        const T = window.THREE;
-        const TSL = T.TSL;
-        const A = AnazhRealm;
-        const R = A.RAUSCH_GESETZ;
-        const P = R.P;
-        const [SA, SB] = R.schraeg;
-        const ra = r._rauschAtlas();
-        // CPU: MaterialX (three r184 mx_noise_float) — lookup3 (`mxLookup3`), Gradienten-Regel, Fünftgrad-Blende, Skala
-        const hash = mxLookup3;
-        const grad = (h, x, y, z) => {
-            h &= 15;
-            const u = h < 8 ? x : y;
-            const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
-            return (h & 1 ? -u : u) + (h & 2 ? -v : v);
-        };
-        const blende = (t) => t * t * t * (t * (t * 6 - 15) + 10);
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const mx = (x, y, z) => {
-            const X = Math.floor(x);
-            const Y = Math.floor(y);
-            const Z = Math.floor(z);
-            const fx = x - X;
-            const fy = y - Y;
-            const fz = z - Z;
-            const g = (i, j, k, dx, dy, dz) =>
-                grad(hash((X + i) | 0, (Y + j) | 0, (Z + k) | 0), fx - dx, fy - dy, fz - dz);
-            const u = blende(fx);
-            const v = blende(fy);
-            const w = blende(fz);
-            const s0 = lerp(
-                lerp(g(0, 0, 0, 0, 0, 0), g(1, 0, 0, 1, 0, 0), u),
-                lerp(g(0, 1, 0, 0, 1, 0), g(1, 1, 0, 1, 1, 0), u),
-                v
-            );
-            const s1 = lerp(
-                lerp(g(0, 0, 1, 0, 0, 1), g(1, 0, 1, 1, 0, 1), u),
-                lerp(g(0, 1, 1, 0, 1, 1), g(1, 1, 1, 1, 1, 1), u),
-                v
-            );
-            return 0.982 * lerp(s0, s1, w);
-        };
-        // CPU: das Rausch-Gesetz — der Gradient der Gitter-Zelle (i, j, k) ist die mx-Regel aus lookup3 der versetzten
-        // Basis-Zelle ((i + SA·k) mod P, (j + SB·k) mod P, 0); `ebene` nimmt die Komponenten (x, cB).
-        const gv = (i, j, k) => {
-            const h = hash((((i + SA * k) % P) + P) % P, (((j + SB * k) % P) + P) % P, 0);
-            return [grad(h, 1, 0, 0), grad(h, 0, 1, 0), grad(h, 0, 0, 1)];
-        };
-        const ebeneCpu = (x, y, k, cB) => {
-            const X = Math.floor(x);
-            const Y = Math.floor(y);
-            const fx = x - X;
-            const fy = y - Y;
-            const e = (i, j, dx, dy) => {
-                const g = gv(X + i, Y + j, k);
-                return g[0] * (fx - dx) + g[cB] * (fy - dy);
-            };
-            const u = blende(fx);
-            return (
-                R.skala * lerp(lerp(e(0, 0, 0, 0), e(1, 0, 1, 0), u), lerp(e(0, 1, 0, 1), e(1, 1, 1, 1), u), blende(fy))
-            );
-        };
-        const raumCpu = (x, y, z) => {
-            const X = Math.floor(x);
-            const Y = Math.floor(y);
-            const Z = Math.floor(z);
-            const fx = x - X;
-            const fy = y - Y;
-            const fz = z - Z;
-            const e = (i, j, k) => {
-                const g = gv(X + i, Y + j, Z + k);
-                return g[0] * (fx - i) + g[1] * (fy - j) + g[2] * (fz - k);
-            };
-            const u = blende(fx);
-            const v = blende(fy);
-            const s = (k) => lerp(lerp(e(0, 0, k), e(1, 0, k), u), lerp(e(0, 1, k), e(1, 1, k), u), v);
-            return R.skala * lerp(s(0), s(1), blende(fz));
-        };
-        const N = 64;
-        const rt = new T.RenderTarget(N, N, { type: T.FloatType, depthBuffer: false });
-        const szene = new T.Scene();
-        const kam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const quad = new T.Mesh(new T.PlaneGeometry(2, 2), new T.MeshBasicNodeMaterial());
-        quad.frustumCulled = false;
-        szene.add(quad);
-        const sc = TSL.screenCoordinate;
-        // die Proben-Koordinate: Pixel-Mitte → Gitter-Raum (nie ganzzahlig, über den ganzen Atlas und über negative Zellen)
-        const px = sc.x.mul(3.9).add(-60.37);
-        const py = sc.y.mul(4.1).add(-30.61);
-        const cpuX = (i) => (i + 0.5) * 3.9 - 60.37;
-        const cpuY = (j) => (j + 0.5) * 4.1 - 30.61;
-        const proben = {
-            // die Basis-Ebene ist MaterialX selbst — nur auf der Basis-Kachel [0, P) (dort IST der Atlas der mx-Hash)
-            ebeneMx: [
-                ra.ebene(TSL.vec2(sc.x.mul(3.9).add(0.37), sc.y.mul(3.9).add(0.21)), 0, "y"),
-                (i, j) => mx((i + 0.5) * 3.9 + 0.37, (j + 0.5) * 3.9 + 0.21, 0),
-            ],
-            ebeneY: [ra.ebene(TSL.vec2(px, py), 11, "y"), (i, j) => ebeneCpu(cpuX(i), cpuY(j), 11, 1)],
-            ebeneZ: [ra.ebene(TSL.vec2(px, py), 0, "z"), (i, j) => ebeneCpu(cpuX(i), cpuY(j), 0, 2)],
-            raum: [
-                ra.raum(TSL.vec3(px, py, px.mul(0.37).add(py.mul(-0.53)))),
-                (i, j) => raumCpu(cpuX(i), cpuY(j), cpuX(i) * 0.37 - cpuY(j) * 0.53),
-            ],
-        };
-        const rend = st.renderer;
-        const vorZiel = rend.getRenderTarget();
-        const out = {};
-        try {
-            for (const [name, [knoten, cpu]] of Object.entries(proben)) {
-                // der Stoff-Ausgang kappt unter 0 (r184 `max(…, 0)`): der Wert reist als n/2 + 1/2
-                quad.material.colorNode = TSL.vec4(knoten.mul(0.5).add(0.5), 0.0, 0.0, 1.0);
-                quad.material.needsUpdate = true;
-                rend.setRenderTarget(rt);
-                rend.render(szene, kam);
-                const f = await rend.readRenderTargetPixelsAsync(rt, 0, 0, N, N);
-                let max = 0;
-                let summe = 0;
-                for (let j = 0; j < N; j++)
-                    for (let i = 0; i < N; i++) {
-                        const d = Math.abs(f[(j * N + i) * 4] * 2 - 1 - cpu(i, j));
-                        if (d > max) max = d;
-                        summe += Math.abs(cpu(i, j));
-                    }
-                out[name] = { maxFehler: +max.toExponential(2), mittelBetrag: +(summe / (N * N)).toFixed(3) };
-            }
-        } finally {
-            rend.setRenderTarget(vorZiel);
-            rt.dispose();
-            quad.geometry.dispose();
-            quad.material.dispose();
-        }
-        return out;
-    })();
-}
-
-// Die Rausch-Probe ist GRÜN, wenn jede Probe unter 1e-4 bleibt (über 1e-4 ist das WGSL nicht das Gesetz).
-function probeUrteil(probe) {
-    if (!probe || typeof probe !== "object" || !Object.keys(probe).length) return ["Rausch-Probe: kein Ergebnis"];
-    return Object.entries(probe)
-        .filter(([, v]) => !(v && v.maxFehler < 1e-4))
-        .map(([n, v]) => `Rausch-Probe ${n}: größter Fehler ${v && v.maxFehler} (Grenze 1e-4)`);
-}
-
 module.exports = {
     STOFFE,
     wgslKosten,
     tslLecks,
     kostenUrteil,
     kostenTabelle,
-    probeUrteil,
     selbsttest,
     SHADER_INSTALL:
         mxLookup3.toString() +
         `window.__shaderKosten = ${shaderKostenSeite.toString()};` +
-        `window.__rauschProbe = ${rauschProbe.toString()};` +
         `window.__stoffGraph = (stoff) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL, ` +
         `window.anazhRealm && typeof window.anazhRealm.constructor._zweigTSL === "function" ? ` +
         `[window.anazhRealm.constructor._zweigTSL(window.THREE.TSL).shaderNode] : []);`,

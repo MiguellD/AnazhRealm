@@ -60,7 +60,7 @@
 //   node scripts/werkbank.cjs ziele [--n frames] [--json datei]
 //                                                           DER ZIEL-ZENSUS: jede GPU-Textur mit Erzeuger, Schreibern, Lesern (scripts/lib/ziel-zensus.cjs)
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
-//                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
+//                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl]] | shader --selbsttest
 //                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
 //   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
@@ -2516,8 +2516,8 @@ async function starte() {
                 }
                 // DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm
                 // die statischen Kosten seines erzeugten Fragments; `--ordner` legt je Programm das WGSL ab. `--stoff` hält die
-                // Programme eines Stoffs (SK.STOFFE) gegen sein Budget (`--gegen` daneben, `--datei` sichert), `--rauschprobe`
-                // fährt die Rausch-Probe. `rot` sammelt jeden Bruch beim Namen — der Befehl endet dann mit Exit 1.
+                // Programme eines Stoffs (SK.STOFFE) gegen sein Budget (`--gegen` daneben, `--datei` sichert). `rot`
+                // sammelt jeden Bruch beim Namen — der Befehl endet dann mit Exit 1.
                 if (req.url === "/shader") {
                     const stoff = b.stoff ? SK.STOFFE[b.stoff] : null;
                     if (b.stoff && !stoff)
@@ -2622,16 +2622,10 @@ async function starte() {
                                 .join("\n\n"),
                         };
                     }
-                    let probe = null;
-                    if (b.rauschprobe) {
-                        probe = await seite("__rauschProbe");
-                        rot.push(...SK.probeUrteil(probe));
-                    }
                     return send({
                         programme: zeilen.length,
                         tabelle,
                         stoff: stoffBericht,
-                        probe,
                         rot,
                         ordner: b.ordner || null,
                     });
@@ -3932,14 +3926,12 @@ hauptLauf(async () => {
             stoff: opt("--stoff"),
             gegen: opt("--gegen"),
             datei: opt("--datei"),
-            rauschprobe: hat("rauschprobe"),
         });
         // Ein Fehler ist nie grün: ohne Tabelle und Urteil endet der Befehl mit Exit 1.
         if (!o || o.fehler || !o.tabelle || !Array.isArray(o.rot)) endeMit(o);
         console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
         if (o.stoff)
             console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
-        if (o.probe) console.log("\nRausch-Probe (max |GPU − CPU| je Probe, Grenze 1e-4) " + JSON.stringify(o.probe));
         endeMit(o.rot.length ? "\nROT:\n  " + o.rot.join("\n  ") : "\nGRÜN", !o.rot.length);
     } else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");

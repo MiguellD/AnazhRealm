@@ -76,7 +76,11 @@ class AnazhRealm_gelaende_fern {
         // 2 Chunks hinter der Ring-Kante; dahinter klemmt der Fern-Ring das Wasser auf den Spiegel.
         const outR = Math.max((ringR + 2.5) * span, F.maxRadius);
         const m = s.farWater;
-        if (m && m.builtRing === ringR && Math.abs(m.builtOutR - outR) < F.rebuildDelta) {
+        // DAS FERN-WASSER TRÄGT DEN PEGEL (wetter.K3): sein Spiegel ist der des Gesetzes samt der Tafel des Pegels (`_pegelGilt`) —
+        // wechselt sie, baut es neu. Bis hier baute es nur am Anker: nach einem Regen stand es bis zum nächsten Sprung 0,2 m unter
+        // dem Spiegel, den das nahe Wasser zeichnet (gate:fern-wasser „nasse Vertices bei Atlas-L−drop 0,0 %").
+        const pegel = this._pegelGilt();
+        if (m && m.builtRing === ringR && Math.abs(m.builtOutR - outR) < F.rebuildDelta && m.pegel === pegel) {
             const dx = pm.x - m.anchorX,
                 dz = pm.z - m.anchorZ;
             if (dx * dx + dz * dz < F.reanchorDist * F.reanchorDist) return; // steady: No-op
@@ -178,6 +182,7 @@ class AnazhRealm_gelaende_fern {
             anchorZ: pm.z,
             builtRing: ringR,
             builtOutR: outR,
+            pegel,
             quads: indices.length / 6,
             builtMs: +(performance.now() - t0).toFixed(1),
         };

@@ -32,7 +32,9 @@ class AnazhRealm_stoff_material {
         mat.normalNode = T.cameraViewMatrix.transformDirection(
             T.normalize(T.mix(n, T.vec3(0.0, 1.0, 0.0), dach.mul(H.dach.oben)))
         );
-        mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
+        // die Cuticula liest die Rauheit des zeichnenden Stoffs (`materialRoughness`), nie eine Zahl im Graphen: der Halm-Stoff teilt
+        // den Graphen seiner Signatur (`_graphTeilen`), eine Zahl gäbe jedem Halm-Stoff die Rauheit des ersten
+        mat.roughnessNode = T.mix(mat.roughnessNode || T.materialRoughness, T.float(1.0), dach);
         mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
         mat.userData.halm = true;
@@ -1656,12 +1658,7 @@ class AnazhRealm_stoff_material {
             this._applySubstanceResponse(mat, responseProfile, werte);
             // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
             // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
-            if (werte)
-                this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","), [
-                    "colorNode",
-                    "roughnessNode",
-                    "outputNode",
-                ]);
+            if (werte) this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","));
         }
         // DIE LICHT-NORMALE DES BODENS IST SEINE WAHRE NORMALE (ferne.K4, w10-ferne): der Hang zur Sonne nimmt ihr Licht nach N·L,
         // der abgewandte nicht — nah (der Chunk: −∇d der Dichte, `_voxelGradientNormals`), fern (der Ring: die Normale seiner

@@ -1323,8 +1323,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             const afterRemoveEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
             if (
                 preDamCells &&
-                afterRemoveEntry &&
-                afterRemoveEntry.waterCells &&
+                afterRemoveEntry?.waterCells &&
                 afterRemoveEntry.waterCells.length === preDamCells.length
             ) {
                 // VOLL-ARRAY-Vergleich: nach removeArchitecture + Drain MÜSSEN die waterCells EXAKT zum
