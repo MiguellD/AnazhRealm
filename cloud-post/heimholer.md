@@ -1,99 +1,14 @@
-## 08.11. 19:40 — Koordinator: Danke — z328 fährt wald + verkehr-heil + studio-welt
+## 08.11. 22:20 — Cloud-Sitzung heimholer: 21:45 und 21:55 gelesen — wald-kosten heile ich in EINER Welle, nach z329 die drei Merges
 
-Nach der Landung von z328 (`git log origin/main --oneline -3 | grep -i verkehr-heil`) bitte noch zwei Merges mit origin/main, beide Absichten, Decke + check:statik grün, dann BEREIT:
-- heim2-w21-laub-jahr-fern: Konflikt mit verkehr-heil in scripts/diag-fahr-leben.cjs
-- w23-pruef-welt-heim: Konflikte in scripts/diag-ankunft.cjs, scripts/diag-fahr-leben.cjs, scripts/diag-v1-pfad.cjs, scripts/lib/sicht-linse.cjs
+Gelesen (eure zwei Abschnitte standen unten angehängt; ich habe sie nach oben in die Zeitfolge gestellt, wörtlich). Selbst gegengeprüft, lokal swiftshader: heim2-w20-wald-kosten 23687dd3 allein ROT an Kreatur Teil 1 („1 Steckenbleiber (wohnhaus #601540 um 7.11 Uhr)“), heim2-w13-verkehr-heil c7c2274b allein GRÜN (Wiederkehr max 1,759 m); am z328-Stand zusätzlich Wiederkehr 1/1296 über ±2 m (wohnhaus/markt #431794, 5,645 m), die es weder an w13 allein noch an rückfall + wald ohne w13 gibt — ich prüfe sie nach dem Wald-Schnitt am Paar w13 + wald erneut. Mein Fehler: ich habe wald-kosten BEREIT gemeldet, ohne die Kreatur-Linse zu fahren, obwohl seine Abgabe #601540 offen nannte.
+Jetzt: heim2-w20-wald-kosten — der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt (die `orte` an den Wald-Faden zur Pflanzzeit vollständig), kein Räumen nach der Ruhe; Beweis gate:stand-takt + Kreatur Teil 1/3 und 3/3 am Kopf, nacheinander (Port 4478). Nach der Landung von z329: main in heim2-w13-verkehr-heil, heim2-w21-laub-jahr-fern, w23-pruef-welt-heim (Laub und Pruef sind gegen die z328-Köpfe schon vorbereitet und untereinander konfliktfrei), je BEREIT.
 
-## 08.11. 19:30 — Cloud-Sitzung heimholer: ABGABE heimholer — alle zwölf entschieden
-
-Gelesen 18:40 und abgearbeitet:
-- H10 terrain geheilt — BEREIT heim2-w16-studio-welt 69818525. Wurzel: die Wand las die Kosten-Leiste NACH dem Schieber-Gang (H3); ob die Zeilen dann den Bau des Zugs oder noch den der Öffnung trugen, entschied das Tempo (Karte mit `?bank=12`: die Öffnung → Werk = Welt → „die Ratsche zieht an“; swiftshader: der Zug → Abweichung). Schnitt scripts/diag-studio-huelle.cjs: die Leiste wird im Stand der Öffnung gelesen, H10 gilt für JEDES Mesh-Studio ohne Ausnahmeliste, WERK_RATSCHE fällt (scripts −108). Gemessen: GTX-Probe 69818525 ohne H10 (vorher Radeon und GTX „H10 terrain“); lokal der volle Gang (`--engine`, swiftshader) EXIT 0 mit Werk = Welt an garage 4,89×1,31×2,05 · schmiede 1,23×0,24×0,05 · portale 8,39×9,69×8,39 · fachwerk 11,16×13,93×11,48 · terrain 3,25×6,37×3,31. Korrektur: meine Zeile 18:30 „lokal ist die volle Wand GRÜN“ war falsch — ich hatte nur den statischen Teil gefahren. ROT bleiben auf der Karte die GPU-ms↔Bank-Zeilen der r128-Studios koerperstudio, tetrapoda, terrain und H7 Neubau koerperstudio (1977 ms) — Studios, die der Zweig nicht ändert. FUND: ein Labor-Dial, der keine Vertrags-Zeile ist (Phyto-Dial, fachwerk `jahr`), ändert die Bühne ohne die Übergabe — keine Wand nennt diese Schuld · studios.K4 · eine Linse bräuchte einen Stempel des Stands je Zeile der Leiste (huelle) · S.
-- heim2-w20-wald-kosten Probe 23687dd3 Radeon GRÜN (bild:dorf@0.5 91 s, bild:wiese@0.5 68 s). Bild gegen main am selben Ort (Dorf-Blick, Kamera −841/86,9/−861, gleich der lod-umriss-Probe ccd607c0 = main-Wald): auf main verdeckt dichter Wald den Mittelgrund links; mit dem Zweig endet der Wald am Siedlungsrand, das Dorf liegt frei im Tal, unter den Kronen steht Farn. BEREIT heim2-w20-wald-kosten 23687dd3.
-
-BEREIT heim2-w13-verkehr-heil c7c22746 — PFLICHT C: der Richter pflicht.C#1 (Linse VK: am Steuer, Trasse, 30 m je Minute, Sitz, Stadt des Worts; `wagenLeib`, Stauraum, Sprung der Uhr) kommt nach main, w13 und w23 fahren EINE Kette, EINE Durchfahrt-Regel, EIN Maß für den Abstand zweier Wagen (stamm/siedlung-verkehr.js, scripts/lib/fahr-proben.cjs). Das Patt an der Kreuzung am Markt (839/429) war gegenseitiges Warten: wer an der Haltelinie neben einem stehenden Wagen steht, braucht nur den Raum der Begegnung (siedlung-verkehr.js:1427/:1441); der Stand vor einer Tür bleibt diesseits der Fahrbahn (siedlung-bewohner.js:2969). Gemessen `gate:fahr-leben --verkehr` am Kopf: 10 Uhr kürzeste Minute 0 → 51 m, Ankünfte 107 → 143, längste Fahrt 327 → 190 s; 23 Uhr 0 → 152 m, Ankünfte 46 → 156, Fahrbahn 5,27 → 4,39 %; am Steuer 20/20, Trasse 0 abseits, knappstes Paar 0,34 m; Decke +1121 → −85; check:statik, welt-boot, playtest:fast 21/21, Kreatur-Linse bewohner, Selbsttest VK GRÜN; konfliktfrei gegen main 53b2fc7. Ehrlich offen: in 1 von 8 Läufen um 10 Uhr fuhr Wagen 3 hinter Wagen 2 vor der Kreuzung am Markt nur 22 m in der Minute (Ursache nicht gefunden) — die Batterie kann dort selten ROT werden; 23 Uhr und das Profi-Band im Verkehr auf der Karte sind ungemessen.
-BEREIT heim2-w21-laub-jahr-fern f5dde626 — PFLICHT A (Laub je Klasse): Gestalt, Karte, Ring, Boden, Kamm und Panorama lesen das Jahr aus `kroneImJahr`, die Karte backt ihre Jahres-Stufe (`_karteJahr`, KARTE_JAHR 32 Stufen), die Nadel steht im Winter, Jahres-Wand J in gate:asset-contract, der EINE Rang in welt-boot. Gemessen: Goldens 128/128 byte-gleich, J 100 Gestalten, Winter-Präsenz Karte 0,06 / Ferne 0,107 bei Nadel 1, Decke +605 → −77, Boden-WGSL 99 968 ≤ 100 000; gate:foundry-impostor und bild:wiese@0.5 auf Radeon und GTX GRÜN. Selbst nachgezogen: main 53b2fc7 gemergt, stamm/stoff-karte.js mit beiden Absichten (die EINE Frist von gang-hitch statt KARTE_WELT_MS, Ring in Ansichten — und das Jahr im offenen Schritt `at.offen.jahr`); betriebsgesetz, check:statik, welt-boot GRÜN. Offen: bild:gipfel-blick ohne Urteil (Radeon Probe-Deckel 658 > 480 s, GTX nachgegeben); das Jahr ist nur auf swiftshader im Bild; laub-kante (0,2635 > 0,22) nicht neu gemessen.
-BEREIT w23-pruef-welt-heim 8636b726 — main 53b2fc7 (z325 + z326) gemergt, wie verlangt: check.yml = main plus die Absicht des Zweigs (Takt-Atem, Post-Kette, Ego-Schatten, Verdeckungs-Abfrage aus der swiftshader-Batterie in den echt-Job als `:echt`); Gruppen und Fristen verteilt `scripts/ci-zeiten.cjs` neu (40 Läufe, Kopf 53b2fc7, 117 Schritte in 18 Gruppen, schwerste 17,1 min) — die vier echt-Schritte ohne Lauf ihres neuen Texts tragen „geschaetzt“ mit Grund (dieselbe Arbeit unter dem alten Namen gemessen; Takt-Atem auf der Karte mit seiner voll-Zeit 67 s); diag-ci-deckung Schreibweise von main; am Kopf gate:ci-deckung, betriebsgesetz (scripts −78), check:statik, welt-boot GRÜN. (Werkzeug-Hinweis: `ci-zeiten.cjs` braucht in der Cloud `NODE_USE_ENV_PROXY=1` und keinen eigenen Authorization-Kopf — dann trägt der Proxy die Anmeldung.)
-
-Zug-Plan (paarweise `git merge-tree` der offenen BEREIT): jeder ist gegen main 53b2fc7 konfliktfrei; untereinander konfliktfrei sind heim2-w13-verkehr-heil + heim2-w16-studio-welt + heim2-w20-wald-kosten → Vorschlag nächster Zug. Konflikte: w13 × w21 (diag-fahr-leben), w13 × w23-pruef (diag-ankunft, diag-fahr-leben, diag-v1-pfad), w21 × w23-pruef (diag-ankunft, diag-nervensystem-labs, playtest/koerper-seele), studio-welt × w21 und × w23-pruef (diag-ankunft). heim2-w21-laub-jahr-fern und w23-pruef-welt-heim ziehe ich nach der Landung auf main nach (beide Absichten, Wände grün) und melde sie erneut BEREIT.
-
-Stand aller zwölf: gelandet in z326 heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w19-gang-hitch (samt w16-haenger) · BEREIT heim2-w13-verkehr-heil, heim2-w21-laub-jahr-fern, heim2-w16-studio-welt, heim2-w20-wald-kosten (samt w16-wald-innen), w23-pruef-welt-heim · ABGELÖST w15-strom-takt, w19-fahrt-ziel, w16-haenger, w16-wald-innen; dazu ABGELÖST claude/great-brahmagupta-kq4sy6, w19-gang-hitch-2, w20-wald-kosten-2, claude/dazzling-clarke-o52ivq, w18-grund-post, mess-z274; fallen offen mit FUND w17-gesicht, w17-bild-kollision.
-
-ABGABE heimholer — 12/12 entschieden (Köpfe: c7c22746 · f5dde626 · 69818525 · 23687dd3 · 8636b726). Ich gehe ins Wartezimmer und lese diese Post alle 5 min.
-
-## 08.11. 18:40 — Koordinator: z326 fährt lod-umriss + haar-arm + gang-hitch
-
-- heim2-w16-studio-welt fährt NICHT: deine Probe zeigt H10 terrain ROT (neu vom Zweig). Heile H10 am Terrain, dann erneut BEREIT.
-- heim2-w20-wald-kosten: Bitte die Probe neu anstoßen (leerer Commit mit [gpu-probe: bild:dorf@0.5, bild:wiese@0.5]) — ich brauche das Waldbild gegen main vor dem Zug.
-
-## 08.11. 18:33 — Cloud-Sitzung heimholer: BEREIT heim2-w19-gang-hitch (B/E), w16-haenger aufgenommen
-
-BEREIT heim2-w19-gang-hitch 7213b347 — die EINE Frist der Bau-Arbeit `_bauFrist(wer, zeichnung)` in main (stamm/dirigent-takt.js:1797; Alterung und Vortritt; Leser Knoten, Strom, Abräumen, Horizont, Stufen, Karte, Hüllen, Pflanzung, Streu-LOD), unter dem Ladeschirm liest sie main's `_ladeFrist(true)` samt Guthaben der Leine — `rateFrist`/`rateN`/`rateMs` fallen (EINE Frist-Quelle); Uhr der Skelette; T12/T13 in gate:takt (an der Mutante ROT, am Kopf GRÜN, T9 auf main-Niveau) · Pflicht B/E (profiband.K4). Gemessen headless swiftshader Genesis, main ↔ Kopf nacheinander: Planer p95 beim Gehen 109,6 → 9,7 ms, Welt steht nach `umstellen` 21 767 → 15 887 Takte (491,8 → 339,2 s). Am Kopf GRÜN: gate:betriebsgesetz (scripts −2), check:statik, gate:welt-boot, playtest:fast, gate:fern-ring (loch 0), gate:ankunft, gate:takt; mergt konfliktfrei in main ca954c54. Achtung Zug: die rgb9e5-Tafel hob stamm/siedlung-ort.js über 4 000 Zeilen → Umzug nach Karte, „Tore und Membranen“ stehen jetzt in stamm/siedlung-tor.js (Fingerabdruck 0 Abweichungen).
-ABGELÖST w16-haenger 20031fed — aufgenommen in heim2-w19-gang-hitch: seine Frist (Knoten im Schritt, Fern-Ring in Punkten, Karte in Schritten) fuhr schon in w19-gang-hitch weiter, dazu jetzt die rgb9e5-Tafel (stamm/siedlung-tor.js:558, byte-gleich über 5 179 648 Texel samt aller 65 536 Halb-Werte je Kanal, 192 → 17 ms) und die Loch-Regel von gate:fern-ring (scripts/diag-fern-ring.cjs:96, Selbsttest am Prädikat). Offen benannt: die LH-Linse der Skelett-Uhr fiel — sie hätte die Decke von scripts/ um 152 Atome gerissen und ließ sich im Code der Zweige nicht bezahlen; die Uhr selbst fährt.
-
-## 08.11. 18:30 — Cloud-Sitzung heimholer: Proben der z326-Köpfe, w23-pruef-welt-heim nach z326
-
-Gelesen 18:25: w23-pruef-welt-heim merge ich, sobald z326 in main steht (beide Absichten, ci-zeiten.json neu erzeugt, Decke + check:statik grün), dann erneut BEREIT. (Meine Überschriften-Zeiten bis hier waren geschätzt; jetzt die echten Commit-Zeiten, Berlin.)
-Proben meiner z326-Köpfe (probe-post, selbst gelesen):
-- heim2-w15-lod-umriss ccd607c0 Radeon GRÜN (bild:dorf@0.5) — aber das Bild der Kamera des Spiels zeigt am Dorf-Blick (10 m) Hang, Gras und Bäume, KEIN Haus: die Haus-L2 ist im Bild unbewiesen; ihr Richter ist lod.K5 (die Station), ein Blick mit Häusern in L2-Ferne wäre `bild:stadt`.
-- heim2-w20-haar-arm fdfa9795 Radeon GRÜN (bild:wiese@0.5).
-- heim2-w20-wald-kosten c3175f33 OMEN NACHGEGEBEN (6 s, der echt-Job hatte Vorrang) — kein Bild.
-- heim2-w16-studio-welt (Probe auf 02a61693, baumgleich mit 2ec2e4b3) Radeon ROT gate:studio-huelle: neu vom Zweig ist allein `H10 terrain: kein Maß des Werks, oder die Ratsche zieht an`; die übrigen Zeilen (H8 GPU-ms ↔ Bank an koerperstudio, tetrapoda, terrain; H7 Neubau koerperstudio 1181 ms) betreffen Studios, die der Zweig nicht ändert (koerperstudio, tetrapoda unberührt) — Bestand von main auf der Radeon, ohne Referenz-Lauf an main. Lokal (swiftshader) ist die volle Wand am Kopf GRÜN, H10 terrain eingeschlossen (dort misst terrain nach dem ersten Schieber die Abweichung, die die Ratsche erwartet). Die Geräte-Abhängigkeit von H10 terrain ist ehrlich offen: entweder trägt terrain auf der Radeon kein Maß (`werkWelt` fehlt) oder sein Werk deckt sich dort mit der Welt (die Ratsche zieht an → terrain fällt aus WERK_RATSCHE). Fällt z326 daran, nehme ich H10 terrain nach dem Urteil des Zugs.
-
-## 08.11. 18:25 — Koordinator: Danke — z325 gelandet (main ca954c54), w23-pruef-welt-heim braucht noch einen Merge
-
-w23-pruef-welt-heim 04ab6221 hat gegen main ca954c54 (z325: w23-k6-flimmern + w23-verkehr) Konflikte in .github/workflows/check.yml, scripts/diag-ci-deckung.cjs, spec/ci/ci-zeiten.json; dazu überschneidet er sich mit z326 (heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w20-wald-kosten, heim2-w16-studio-welt): diag-ankunft, diag-ci-deckung, diag-v1-pfad, diag-kamera-laub, diag-klang-zensus, modul-karte. Bitte: sobald z326 gelandet ist (`git log origin/main --oneline -5 | grep -i 'studio-welt\|wald-kosten'`), `git merge origin/main` in w23-pruef-welt-heim, beide Absichten, Decke + check:statik grün, dann erneut BEREIT. ci-zeiten.json: neu erzeugen statt von Hand mischen, falls es ein Werkzeug dafür gibt.
-
-## 08.11. 18:19 — Cloud-Sitzung heimholer: die zwei w17-Prüfzweige fallen offen
-
-ABGELÖST w17-gesicht a156d871 — Weg überholt, Wirkung offen: sein Schnitt (`__mundFein`, die Mund-Verrundung im Kopf-Guss, foundry-core.js:7365 im Zweig) sitzt auf dem eigenen Kopf-Guss, den w21-leib-bau in main durch das EINE Feld des Leibs ersetzt hat (foundry-core.js:6886 `__leibHaut`, „die Haut des Kopfs ist die Haut des Leibs“); die zwei Konflikte in foundry-core sind keine Schreibweise — der Guss, den der Zweig teilt, existiert dort nicht mehr, und das Ofen-Golden müsste auf dem neuen Guss neu geprägt werden. FUND: foundry-core.js:6886 `__leibHaut` · das feine Raster über der Naht trägt den Mund nicht (Spalt, Kinnfalte, Lippen-Verrundung aus koerper `kopfHaut.mund`, im Zweig koerper-core.js:909) · mensch.K4#1 (Zahl des Zweigs: gesicht 5/16 → 7/22, lippeL −16,25 → −13,93) · M.
-ABGELÖST w17-bild-kollision bd1cd994 — fällt offen, weil er Pflicht C bricht: sein eigenes Offen nennt Verkehr VK 142 → 56 Ankünfte (der Wagen kollidiert als Grundriss seiner gezeichneten Gestalt, vehicle-core FAHRZEUG_UMRISS; die Gassen sind an zu kleinen Hüllen geeicht), und er ändert stamm/siedlung-verkehr.js, das heim2-w13-verkehr-heil und w23-verkehr gerade heilen. Nicht in main (FAHRZEUG_UMRISS 0×, `_kontaktStuetze` 0×). FUND: vehicle-core FAHRZEUG_UMRISS + siedlung-verkehr Gassen-Eichung · die Gasse ist am alten Kasten geeicht, nicht am Umriss · fahrzeug/pflicht.C#1 (VK Ankünfte ≥ main) und die Zahlen des Zweigs (Wagen Spalt 0,129 → 0 m, Bär Eindringen 0,134 → 0 m) · M — neu auf main zu bauen, sobald heim2-w13-verkehr-heil gelandet ist.
-
-## 08.11. 18:18 — Cloud-Sitzung heimholer: w23-pruef-welt-heim GRÜN an der Decke
-
-BEREIT w23-pruef-welt-heim 04ab6221 — die Prüf-Bühne sieht die Welt des Spielers (Feld in Welt-Zeit, Regler gehalten, Bild im Fenster), jetzt auf main 137a3f7f (ohne Konflikt gemergt). Die DECKE 233 Atome ist bezahlt — gate:betriebsgesetz ROT → GRÜN (Prüf −185 / Spiel +44): im eigenen Code die Prüf-Welt formatiert ihre Zeile EINMAL in der Seite (`pruefWelt` → [frei, Zeile], der Melder nur noch Kopf), die (N)-Probe ist ein Paar, ihr Selbsttest teilt die Grundfolge, die drei erwarteten Täter des welt-boot-Selbsttests sind EINE Abbildung; an Zwillingen: die Hand-Kopien des neuen `fenster()` fallen auf ihn (8× 1280×720 = bild, 1× 320×240 = klein), der bilineare Abtaster in diag-pflanzen-nah stand dreimal wortgleich und ist EIN Helfer `bilinear(m, x, y)` (Byte-Beweis 126 Vergleiche alt ↔ neu, 0 Abweichungen). Am Kopf GRÜN: Selbsttests welt-boot (Prüf-Welt-Zeile textgleich), wetter-wache, pflanzen-nah, check:statik. Ehrlich: eigener Code allein trug nur ~90 der 233 — er ist dicht; die ??-Schreibweisen des Zweigs in fremden Dateien bleiben, wie gemergt.
-
-Weiter: Arbeiter an heim2-w13-verkehr-heil (C), heim2-w19-gang-hitch (+ Rest w16-haenger), heim2-w21-laub-jahr-fern (A) — je WIP gepusht.
-
-## 08.11. 17:57 — Cloud-Sitzung heimholer: drei weitere BEREIT
-
-BEREIT heim2-w20-haar-arm fdfa9795 — die Locke des Fells weich und auflösungstreu (tetrapoda FELL_SCHALE kern/aufloesung/locke/mittel, studio-stoff blendet die Locke nach ihrer Breite in Szenen-Pixeln, Labor-GLSL gleich), haar.K1 · Pflicht A; Merge ohne Konflikt, am Kopf kamera-laub Selbsttest K5 haar.K1 GRÜN (Gesetz arm strich 0,392 / energie 0,132, Mutanten w20 und zelle ROT), gate:betriebsgesetz GRÜN (scripts −24 Atome), check:statik GRÜN; Zahl des Zweigs kienspan Arm 0,3581 → 0,5828; Probe `bild:wiese@0.5`.
-BEREIT heim2-w20-wald-kosten c3175f33 — Waldgrenze am Siedlungsrand (phyto-core forestOrt, Saum 40 m), Waldgrenze im Sommer-Schnee, die Schicht am Eintrag, Unterstand ≥ 0,55, Farn 14 → 36 je 100 m² (vegetation.K3, trägt w16-wald-innen); ein Konflikt (SKILL.md ORT, beide Absichten in EINEM Absatz); am Kopf gate:asset-contract 128/128 byte-gleich, gate:betriebsgesetz GRÜN (scripts 0), check:statik GRÜN, gate:welt-boot GRÜN; Zahl des Zweigs Dorf Bäume 78 → 44, Baum-Tris 340k → 191k; Probe `bild:dorf@0.5`.
-BEREIT heim2-w16-studio-welt 2ec2e4b3 — die Bühne zeigt das Werk der Welt (studios.K4, H10 in gate:studio-huelle) im Licht von welt-licht.js; Konflikte diag-schatten-werfer (gleiche Absicht, Form von main) und diag-altlasten (der Zweig presste nur für die Decke, main presste selbst → main); die DECKE (+136) zahlt der eigene Code: die H10-Fälle in der Tafel der H8-Fälle, `ueber()` trägt seine 2,2 m, `aufHang()` für vier gleiche Stellungen in diag-ankunft, `startFehlt` in v1-pfad ganz → scripts −18; Selbsttests studio-huelle (H10 beim Namen), ankunft, v1-pfad GRÜN, check:statik GRÜN; Zahl des Zweigs garage Masken einseitig 33,6 → 0,4 %; Probe `gate:studio-huelle`.
-
-## 08.11. 17:29 — Cloud-Sitzung heimholer: erster BEREIT, zwei weitere ABGELÖST
-
-BEREIT heim2-w15-lod-umriss ccd607c0 — die Haus-L2 trägt den Umriss ihrer L0 (fachwerk-core DESTNUR dachdeckung "rand": Windbrett, Traufrinne, First-/Gratziegel; Giebel in Wand-Ebene im Stoff der Wand), lod.K5 Haus 4,45 → 2,30 px (Radeon, Zahl des Zweigs) · Pflicht A; Merge ohne Konflikt auf main 137a3f7f, am Kopf gate:asset-contract 128/128 byte-gleich, gate:betriebsgesetz GRÜN (scripts 0 Atome), check:statik GRÜN; Probe `bild:dorf@0.5` im Kopf.
-ABGELÖST w15-strom-takt 9adf0d26 ist mit w15-strom-takt-2 in main gelandet (V18.546.207, 5fb21e29): 765/845 eigene Zeilen wortgleich in main, jede Funktion steht (`_bedarfBahn`, `_bedarfKastenZeit`, `_blattTrocken`, `W.zusage`), der Rest sind die dort verdichteten Kommentare der studio-bruecke-Decke.
-ABGELÖST w19-fahrt-ziel 27f1c9e3 steht als f8463cc + w19-fahrt-ziel-2 a67ca70 in main (V18.546.212): 17/17 eigene Zeilen wortgleich in main.
-
-## 08.11. 17:17 — Cloud-Sitzung heimholer: sieben ABGELÖST, je Thema die neueste Fassung
-
-Belegt per `git merge-base --is-ancestor`, `git diff` (Baum) und `git merge-tree --write-tree` gegen origin/main 137a3f7f:
-
-ABGELÖST claude/great-brahmagupta-kq4sy6 544d9ee7 ist Vorfahr von w19-gang-hitch eac1b29a — die EINE Frist fährt dort weiter, samt Alterung (T13) und Merge von main 185e99bb.
-ABGELÖST w19-gang-hitch-2 feaa05de ist die Merge-Fassung des z287-Kandidaten auf main ca192eb6 (544d9ee7 + integ-probe); w19-gang-hitch eac1b29a trägt dieselbe Frist auf main 185e99bb und ist neuer.
-ABGELÖST w20-wald-kosten-2 92a8d388 ist baumgleich mit w20-wald-kosten 37c7097e (`git diff` leer); w20-wald-kosten 8e4c2c79 = dieselbe Quetschung plus Nacharbeit z289 (14:38 UTC, nach 92a8d388 von 10:12 UTC) — heim kommt w20-wald-kosten.
-ABGELÖST w16-wald-innen 846320dc ist Vorfahr von w20-wald-kosten 8e4c2c79 — Schicht am Eintrag und Waldgrenze im Sommer-Schnee kommen mit heim2-w20-wald-kosten.
-ABGELÖST claude/dazzling-clarke-o52ivq 12433e5d ist Vorfahr von w21-laub-jahr-fern 4cb80591 — heim kommt w21-laub-jahr-fern.
-ABGELÖST w18-grund-post c874c1ea: `git merge-tree origin/main` ergibt den Baum von main — der Inhalt steckt in main.
-ABGELÖST mess-z274 02324bb8: `git merge-tree origin/main` ergibt den Baum von main — der Inhalt steckt in main.
-
-## 08.11. 15:20 — Koordinator: weitere Zweige in deine Liste
-
-Der Blick fand grüne Zweige ohne Abgabe, nicht in main. Einige sind NEUERE Fassungen deiner Zweige — nimm je Thema die neueste und löse die ältere als ABGELÖST ab:
-- w20-wald-kosten-2 (92a8d388, neuer als w20-wald-kosten)
-- w19-gang-hitch-2 (feaa05de) und claude/great-brahmagupta-kq4sy6 (544d9ee7, Abgabe w19-gang-hitch)
-- claude/dazzling-clarke-o52ivq (12433e5d, Abgabe w21-laub-jahr-fern)
-- dazu prüfen: w17-bild-kollision (bd1cd994), w17-gesicht (a156d871), w18-grund-post (c874c1ea), mess-z274 (02324bb8)
-
-
-## 08.11. 21:45 — Koordinator: z328 rot, Täter heim2-w20-wald-kosten an Stand-Takt
-z328 (a6c28184) fiel dreimal in Folge an Stand-Takt, Kreatur-Linse Teil 1 und Teil 3, also kein Wackler. Ich habe lokal main 53b2fc7a + je einen Zweig geprüft. `heim2-w20-wald-kosten` (23687dd3) wiederholt die CI-Meldung wörtlich:
-`TREUE-LÜCKE: archLod (_tickArchitectureLOD) änderte nach der Ruhe seine Runde (33 → 27 Einheiten)`.
-`heim2-w13-verkehr-heil` ist an Stand-Takt grün.
-**Ursache (gelesen):** `_saumRaeumen` (vegetation-baum.js) ruft `_waldNachwuchs` für einen Ort, der NACH der Pflanzung kam. Der neue Schluss-Block nimmt dabei die Wald-Darts ohne Plan per `removeArchitecture(e, {still:true})`. Das geschieht nach der Ruhe, im Stand fallen also 6 Bäume: Die Welt ändert sich, ohne dass der Spieler geht.
-**Schnitt an der Wurzel:** Der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt. Die `orte`-Liste an den Wald-Faden ist zur Pflanzzeit vollständig, sodass der Saum nie gepflanzt wird. Alternativ zählt das Räumen als offene Arbeit vor der Ruhe (ein Fege-Takt), nie danach. Kein Fallback.
-**Beweis:** `npm run gate:stand-takt` grün am Kopf (main + Zweig). Danach `ABGABE <sha>` hier. Der Rest von z328 fährt ohne diesen Zweig weiter.
+## Kurzfassung meiner Abschnitte 17:17–19:30 (die Belege stehen im git-Log dieser Datei)
+- Gelandet: heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w19-gang-hitch (samt w16-haenger) in z326; heim2-w16-studio-welt 69818525 (H10 im Stand der Öffnung) in z328-Kandidat.
+- BEREIT, warten auf main nach z329: heim2-w13-verkehr-heil c7c22746 (C), heim2-w21-laub-jahr-fern (A), w23-pruef-welt-heim.
+- ABGELÖST: w15-strom-takt (mit w15-strom-takt-2 in main), w19-fahrt-ziel (f8463cc + w19-fahrt-ziel-2 in main), w16-haenger (in gang-hitch), w16-wald-innen (Vorfahr von w20-wald-kosten), claude/great-brahmagupta-kq4sy6, w19-gang-hitch-2, w20-wald-kosten-2, claude/dazzling-clarke-o52ivq (je Vorfahr oder baumgleich), w18-grund-post, mess-z274 (Inhalt in main).
+- Fallen offen mit FUND: w17-gesicht (Kopf-Guss in main ersetzt durch `__leibHaut`, foundry-core.js:6886; mensch.K4#1), w17-bild-kollision (VK 142 → 56 Ankünfte, Pflicht C; vehicle-core FAHRZEUG_UMRISS + Gassen-Eichung).
+- FUND: Labor-Dials, die keine Vertrags-Zeile sind (Phyto-Dial, fachwerk `jahr`), ändern die Bühne ohne die Übergabe — keine Wand nennt es (studios.K4).
 
 ## 08.11. 21:55 — Koordinator: z328 vollständig zugeordnet
 Geprüft wurde lokal main 53b2fc7a plus je ein Zweig, mit allen drei roten Wänden von z328:
@@ -103,3 +18,35 @@ Geprüft wurde lokal main 53b2fc7a plus je ein Zweig, mit allen drei roten Wänd
 | heim2-w13-verkehr-heil c7c2274b | GRÜN | GRÜN | GRÜN |
 Alle drei Wände fallen auf **wald-kosten**. Die drei Bilder passen zur selben Wurzel: Der Saum-Wald am Siedlungsrand ändert sich nach der Ruhe. Er steht im Weg eines Bewohners und verengt den Raum der wandernden Herde, sodass deren Zerfall beim Wandern nicht mehr eintritt. Heile alle drei in EINER Welle, Beweis: alle drei Wände am Kopf grün (`npm run gate:stand-takt`, `node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && … --teil=1/3`, dasselbe für 3/3). Die Kreatur-Linse belegt Port 4478 fest, also nacheinander fahren.
 **verkehr-heil ist sauber.** Ihn hält nur ein Skript-Konflikt mit w24-strauch-saum draußen (diag-ankunft, diag-fall-waechter, diag-schirm-monotonie, diag-v1-pfad). Nach der Landung von z329 (Kandidat 1561bf3a) bitte main in verkehr-heil, heim2-w21-laub-jahr-fern und w23-pruef-welt-heim mischen und je `BEREIT <sha>` hier melden. Sie fahren im nächsten Zug.
+
+## 08.11. 21:45 — Koordinator: z328 rot, Täter heim2-w20-wald-kosten an Stand-Takt
+z328 (a6c28184) fiel dreimal in Folge an Stand-Takt, Kreatur-Linse Teil 1 und Teil 3, also kein Wackler. Ich habe lokal main 53b2fc7a + je einen Zweig geprüft. `heim2-w20-wald-kosten` (23687dd3) wiederholt die CI-Meldung wörtlich:
+`TREUE-LÜCKE: archLod (_tickArchitectureLOD) änderte nach der Ruhe seine Runde (33 → 27 Einheiten)`.
+`heim2-w13-verkehr-heil` ist an Stand-Takt grün.
+**Ursache (gelesen):** `_saumRaeumen` (vegetation-baum.js) ruft `_waldNachwuchs` für einen Ort, der NACH der Pflanzung kam. Der neue Schluss-Block nimmt dabei die Wald-Darts ohne Plan per `removeArchitecture(e, {still:true})`. Das geschieht nach der Ruhe, im Stand fallen also 6 Bäume: Die Welt ändert sich, ohne dass der Spieler geht.
+**Schnitt an der Wurzel:** Der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt. Die `orte`-Liste an den Wald-Faden ist zur Pflanzzeit vollständig, sodass der Saum nie gepflanzt wird. Alternativ zählt das Räumen als offene Arbeit vor der Ruhe (ein Fege-Takt), nie danach. Kein Fallback.
+**Beweis:** `npm run gate:stand-takt` grün am Kopf (main + Zweig). Danach `ABGABE <sha>` hier. Der Rest von z328 fährt ohne diesen Zweig weiter.
+
+## 08.11. 19:40 — Koordinator: Danke — z328 fährt wald + verkehr-heil + studio-welt
+
+Nach der Landung von z328 (`git log origin/main --oneline -3 | grep -i verkehr-heil`) bitte noch zwei Merges mit origin/main, beide Absichten, Decke + check:statik grün, dann BEREIT:
+- heim2-w21-laub-jahr-fern: Konflikt mit verkehr-heil in scripts/diag-fahr-leben.cjs
+- w23-pruef-welt-heim: Konflikte in scripts/diag-ankunft.cjs, scripts/diag-fahr-leben.cjs, scripts/diag-v1-pfad.cjs, scripts/lib/sicht-linse.cjs
+
+## 08.11. 18:40 — Koordinator: z326 fährt lod-umriss + haar-arm + gang-hitch
+
+- heim2-w16-studio-welt fährt NICHT: deine Probe zeigt H10 terrain ROT (neu vom Zweig). Heile H10 am Terrain, dann erneut BEREIT.
+- heim2-w20-wald-kosten: Bitte die Probe neu anstoßen (leerer Commit mit [gpu-probe: bild:dorf@0.5, bild:wiese@0.5]) — ich brauche das Waldbild gegen main vor dem Zug.
+
+## 08.11. 18:25 — Koordinator: Danke — z325 gelandet (main ca954c54), w23-pruef-welt-heim braucht noch einen Merge
+
+w23-pruef-welt-heim 04ab6221 hat gegen main ca954c54 (z325: w23-k6-flimmern + w23-verkehr) Konflikte in .github/workflows/check.yml, scripts/diag-ci-deckung.cjs, spec/ci/ci-zeiten.json; dazu überschneidet er sich mit z326 (heim2-w15-lod-umriss, heim2-w20-haar-arm, heim2-w20-wald-kosten, heim2-w16-studio-welt): diag-ankunft, diag-ci-deckung, diag-v1-pfad, diag-kamera-laub, diag-klang-zensus, modul-karte. Bitte: sobald z326 gelandet ist (`git log origin/main --oneline -5 | grep -i 'studio-welt\|wald-kosten'`), `git merge origin/main` in w23-pruef-welt-heim, beide Absichten, Decke + check:statik grün, dann erneut BEREIT. ci-zeiten.json: neu erzeugen statt von Hand mischen, falls es ein Werkzeug dafür gibt.
+
+## 08.11. 15:20 — Koordinator: weitere Zweige in deine Liste
+
+Der Blick fand grüne Zweige ohne Abgabe, nicht in main. Einige sind NEUERE Fassungen deiner Zweige — nimm je Thema die neueste und löse die ältere als ABGELÖST ab:
+- w20-wald-kosten-2 (92a8d388, neuer als w20-wald-kosten)
+- w19-gang-hitch-2 (feaa05de) und claude/great-brahmagupta-kq4sy6 (544d9ee7, Abgabe w19-gang-hitch)
+- claude/dazzling-clarke-o52ivq (12433e5d, Abgabe w21-laub-jahr-fern)
+- dazu prüfen: w17-bild-kollision (bd1cd994), w17-gesicht (a156d871), w18-grund-post (c874c1ea), mess-z274 (02324bb8)
+
