@@ -2632,7 +2632,7 @@ class AnazhRealm_bild_kosten {
     // Leser: die Lage des Wegs (`_lageAnker`) und der Anker der Ferne der Wiese (`_wieseFernAnker`). Mehrere Pässe eines Bilds
     // lesen denselben Schritt (das Auge steht zwischen ihnen).
     _augeWegJetzt() {
-        const W = this._augeWeg || (this._augeWeg = { x: NaN, y: 0, z: 0, t: -Infinity, u: [0, 0, 0], v: 0 });
+        const W = this._augeWeg || (this._augeWeg = { x: NaN, y: 0, z: 0, t: -Infinity, u: [0, 0, 0], v: 0, n: 0 });
         const cam = this.state.camera;
         if (!cam) return W;
         const e = cam.matrixWorld.elements;
@@ -2645,6 +2645,9 @@ class AnazhRealm_bild_kosten {
         const s = Math.hypot(dx, dy, dz);
         const dt = t - W.t;
         W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250 ? (s / Math.max(dt, 1)) * 1000 : 0;
+        // `n`: so viele Schritte in Folge in derselben Richtung (auf 25°) — ein einzelner Versatz ist noch kein Weg
+        const gleich = W.v > 0 && W.n > 0 && (dx * W.u[0] + dy * W.u[1] + dz * W.u[2]) / s > 0.9;
+        W.n = W.v > 0 ? (gleich ? W.n + 1 : 1) : 0;
         if (W.v > 0) W.u = [dx / s, dy / s, dz / s];
         [W.x, W.y, W.z, W.t] = [e[12], e[13], e[14], t];
         return W;
@@ -3791,7 +3794,8 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     lichtRandTexel: 32,
     wegM: 0.5,
     // DER WEG DES AUGES (`_lageAnker`, w24-fahrt-takt): die Strecke, die das Auge in `zeitS` fährt, höchstens `wegMax`, quer `querM`
-    weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05 }),
+    // die Box der Kaskaden liegt über ihn erst in Fahrt (`kaskadeAb` m/s, zwei Schritte in Folge): im Gang hält sie ihre Größe
+    weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05, kaskadeAb: 10 }),
 });
 // die Felder, die die Lage des Auges mit der des Wegs teilt (`_passWahlLage`): Ebenen, Kapsel, Licht und Blende dieses Passes
 AnazhRealm.LAGE_GETEILT = Object.freeze(["fr", "ax", "ay", "az", "rand", "halt", "haltBlende", "dreh", "fit", "dir", "licht", "an", "ex", "ez", "perf", "ref", "kanten"]); // prettier-ignore

@@ -593,7 +593,9 @@ class AnazhRealm_bild_schatten {
         // Box), jede Box eine neue Lage, jede Lage die volle Wahl des Passes.
         const W = this._augeWegJetzt();
         const PW = AnazhRealm.PASS_WAHL;
-        S.weg.fromArray(W.u).multiplyScalar(W.v > 0 ? Math.min(PW.weg.wegMax, W.v * PW.weg.zeitS) : 0);
+        // erst in Fahrt (`kaskadeAb`, zwei Schritte in Folge): im Gang hält die Box ihre Größe (sie schimmert nicht, K3)
+        const fahrt = W.v >= PW.weg.kaskadeAb && W.n >= 2;
+        S.weg.fromArray(W.u).multiplyScalar(fahrt ? Math.min(PW.weg.wegMax, W.v * PW.weg.zeitS) : 0);
         if (!csm._anazhFit) csm._anazhFit = [];
         for (let i = 0; i < csm.lights.length; i++) {
             const sh = csm.lights[i].shadow;
