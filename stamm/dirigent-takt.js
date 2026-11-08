@@ -1732,6 +1732,15 @@ class AnazhRealm_dirigent_takt {
     _psoVorbau() {
         return this._imTakt === true && this._ladeTakt();
     }
+    // DER VORBAU DES EINMAL-RENDERS (`_einmalRender`, w25-ankunft-block): unter dem Ladeschirm wie jeder Render außerhalb der Welt
+    // (`_psoVorbau`), nach dem Bild in jedem Takt des laufenden Loops — ein Pass, der dann zum ersten Mal zeichnet (der Spiegel,
+    // die Horizont-Karte, eine neue Tafel), übersetzt seine Pipeline nie im GPU-Prozess vor dem nächsten Bild. Der ruhende Loop
+    // (eine Linse, die Werkbank, das Portal) und jeder Leser außerhalb des Takts zeichnen ganz.
+    _einmalVorbau() {
+        const r = this.state.renderer;
+        if (this._psoVorbau()) return true;
+        return this._imTakt === true && !!this.state._weltbildDa && !!r && !r._isHeadlessNull && !this._loopRuht();
+    }
 
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
     // eigenen Takt (per setTimeout; bis K5 die Ort-Wahl, heute im Ort-Faden) eine andere; gestellt beim ersten Leser, gelöscht am Ende

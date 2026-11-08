@@ -980,9 +980,12 @@ class AnazhRealm {
     // Zeilen-r folgte der Schattierung (GTX ed7d3d23 −0,477; swiftshader am Grund der Sitzung, Feld leer: `an` 0 in jedem Bild,
     // Lack −0,422). Jetzt trägt das Feld nur, was es kann (`U.feld`, `_spiegelFeldSteht`): den Wasser-Punkt und den Strahl
     // jenseits des Schirms.
+    // AB DEM ERSTEN LADE-BILD (w25-ankunft-block): der Pass zeichnet wie jeder Pass der Post-Kette schon unter dem Ladeschirm — sein
+    // Programm entsteht dort im Vorbau (`_einmalRender`), und das erste Weltbild spiegelt wie das Bild danach (das Feld bäckt
+    // erst nach dem Bild, `_spiegelFeldTakt`). Bis hier begann er mit dem Bild und baute seine Pipeline synchron (Radeon kalt: der
+    // rAF stand danach 1,3–2,2 s).
     _spiegelImBild() {
         const st = this.state;
-        if (!st._weltbildDa) return false;
         const S = this._spiegelFeld();
         for (const s of st.chunkSaetze ? st.chunkSaetze.values() : [])
             if (s.spec && s.spec.name === "wasserSatz") S.wasserSatz = s;
@@ -998,7 +1001,7 @@ class AnazhRealm {
 
     // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe des gezeichneten Wassers): der
     // Pass rechnet aus Tiefe und Ansicht DIESES Bilds, das Wasser des nächsten reprojiziert in diese Ansicht. Läuft er nicht
-    // (vor dem ersten Weltbild, ohne Post-Kette, nach einem Bruch), liest jeder Leser den Himmel allein (`an` 0); das Feld
+    // (ohne Post-Kette, nach einem Bruch, seine Pipeline im Vorbau), liest jeder Leser den Himmel allein (`an` 0); das Feld
     // schaltet ihn nie ab (`_spiegelImBild`). Er ZAHLT NUR BEI ÄNDERUNG (Gebot 7, `_spiegelPassWach`): steht das Bild,
     // liest das Wasser den Spiegel des letzten Laufs in dessen Ansicht (die Reprojektion ist exakt) — bis D10-n1 rechnete er
     // jedes Bild neu (0,17–0,43 ms CPU je Bild im Stand, Radeon, See).
@@ -1012,9 +1015,9 @@ class AnazhRealm {
             return;
         }
         try {
-            // `an` 0: das Ziel ist alt (der Pass ruhte, ein Sprung des Auges, `_loopRender`) — er rechnet in jedem Fall
-            if (this._spiegelPassWach(L) || L.an.value === 0) this._spiegelPassRechne(L);
-            L.an.value = 1;
+            // `an` 0: das Ziel ist alt (der Pass ruhte, ein Sprung des Auges, `_loopRender`, seine Pipeline im Vorbau) — er rechnet
+            // in jedem Fall; `an` steht erst, wenn er ganz zeichnete
+            if (this._spiegelPassWach(L) || L.an.value === 0) L.an.value = this._spiegelPassRechne(L) ? 1 : 0;
         } catch (err) {
             // laut beim Namen (der EINE Melder), danach liest das Wasser den Himmel allein — nie still byte-alt
             st.spiegelBruch = true;
@@ -1105,7 +1108,8 @@ class AnazhRealm {
         return wach;
     }
 
-    // Der Lauf des Passes: Ziel in 1/teil des Schirms, Ansicht dieses Bilds, das Feld-Fenster, das Quad der Post-Kette.
+    // Der Lauf des Passes: Ziel in 1/teil des Schirms, Ansicht dieses Bilds, das Feld-Fenster, das Quad der Post-Kette — als
+    // Einmal-Render (`_einmalRender`): true, wenn er ganz zeichnete (seine Pipeline stand).
     _spiegelPassRechne(L) {
         const st = this.state;
         const P = this._spiegelPass();
@@ -1137,9 +1141,10 @@ class AnazhRealm {
         P.U.texel.value.set(1 / m.w, 1 / m.h);
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
-        P.quad.render(rend);
+        const ganz = this._einmalRender(P.quad, () => P.quad.render(rend));
         rend.setRenderTarget(vor);
-        L.vp.value.copy(P.vp);
+        if (ganz) L.vp.value.copy(P.vp);
+        return ganz;
     }
     // DER ABSCHIED EINER GEBUNDENEN TEXTUR (die Klasse „Destroyed texture … used in a submit": szene:tiefenabbild, spiegel:strahl,
     // horizont-karte): r184 legt ein Ziel, das eine Bindegruppe schon hält, beim ersten Bild oder einem Größen-Wechsel neu an

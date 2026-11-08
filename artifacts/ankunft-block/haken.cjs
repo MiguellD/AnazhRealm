@@ -125,6 +125,24 @@ function BAU_HAKEN() {
         if (r && r.state && r.state.renderer && r.state.renderer._nodes) anNodes(r.state.renderer._nodes);
         // eslint-disable-next-line no-undef
         const A = typeof AnazhRealm !== "undefined" ? AnazhRealm : null;
+        // die Bilder und die Jobs des Takts bis zum Weltbild: [t, ms] je `_loopRender` und je `_runFrameScheduler`
+        if (A && A.prototype._loopRender && !A.prototype._loopRender.__haken) {
+            N.lade = [];
+            N.jobs = [];
+            for (const [m, L] of [["_loopRender", N.lade], ["_runFrameScheduler", N.jobs]]) {
+                const f = A.prototype[m];
+                A.prototype[m] = function () {
+                    const t0 = performance.now();
+                    try {
+                        return f.apply(this, arguments);
+                    } finally {
+                        if (!(this.state && this.state._weltbildDa) || L.length === 0 || L[L.length - 1][2] !== 1)
+                            L.push([Math.round(t0), Math.round((performance.now() - t0) * 10) / 10, this.state && this.state._weltbildDa ? 1 : 0]);
+                    }
+                };
+                A.prototype[m].__haken = true;
+            }
+        }
         if (A && A.prototype._knotenRate && !A.prototype._knotenRate.__haken) {
             const kr = A.prototype._knotenRate;
             A.prototype._knotenRate = function (N, ro, E) {
@@ -138,7 +156,7 @@ function BAU_HAKEN() {
             };
             A.prototype._knotenRate.__haken = true;
         }
-        if (A && A.prototype._knotenRate.__haken && r && r.state && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
+        if (A && A.prototype._knotenRate.__haken && A.prototype._loopRender.__haken && r && r.state && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
             clearInterval(warte);
     }, 5);
 }

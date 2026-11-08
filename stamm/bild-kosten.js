@@ -564,8 +564,9 @@ class AnazhRealm_bild_kosten {
                 // ganz ist, und zeichnet im nächsten Takt neu (`_atmoZeichne` → false). Bis hier entstanden 16 Pipelines des
                 // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
                 // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
+                // Im Einmal-Render (`_einmalRender`, sein Sammler steht) gilt der Vorbau auch nach dem Bild (`_einmalVorbau`).
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    if (!welt._psoVorbau()) zeichne(this, ro, aufnahme, false);
+                    if (!welt._psoVorbau() && !E.einmalSammel) zeichne(this, ro, aufnahme, false);
                     else if (!zeichne(this, ro, aufnahme, true)) {
                         E.einmalOffen++;
                         if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
@@ -905,12 +906,17 @@ class AnazhRealm_bild_kosten {
     // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
     // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
     // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    // NACH DEM BILD GILT DER VORBAU WEITER (w25-ankunft-block): in jedem Takt des laufenden Loops entsteht die Pipeline eines
+    // Einmal-Renders asynchron (`_einmalVorbau`) — sein Leser hält den alten Stand, bis sie steht (Spiegel, Horizont-Karte,
+    // Tafeln, Umgebung, Rückstrahl). Bis hier baute der erste Lauf eines Passes, der nach dem Bild begann, seine Pipeline synchron
+    // im GPU-Prozess: Radeon kalt der Spiegel 0,4 s nach dem Bild (73 k Zeichen WGSL), die Horizont-Karte nach 2,5 s — der rAF
+    // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
-        if (!this._psoVorbau()) {
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er ganz, worauf er auch wartete
+        if (!this._einmalVorbau()) {
             W.delete(schluessel);
             fn();
             return true;
@@ -920,11 +926,12 @@ class AnazhRealm_bild_kosten {
             W.delete(schluessel);
         }
         const vorbau = E.einmalOffen;
+        const vorSammel = E.einmalSammel;
         const sammel = (E.einmalSammel = new Set());
         try {
             fn();
         } finally {
-            E.einmalSammel = null;
+            E.einmalSammel = vorSammel || null;
         }
         if (E.einmalOffen === vorbau) return true;
         if (sammel.size) W.set(schluessel, sammel);

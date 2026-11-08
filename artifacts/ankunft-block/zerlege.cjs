@@ -158,16 +158,83 @@ function gpuNamen(z) {
     return G.map((g) => `${g[0] - da}${g[1]} ${(g[2] || "?").replace(/^(renderPipeline_|fragment_|vertex_)/, (m) => m[0])} ${g[1] === "m" ? Math.round(g[3] / 1000) + "k" : ""} ${g[5] || ""}`).join(" · ") || "keine";
 }
 
+// die Lade-Bilder (haken.cjs `__kalt.nach.lade`): je `_loopRender` vor dem Weltbild seine ms, davon der Knoten-Bau in Raten in
+// ihm (Bau-Ereignisse „r“ in seinem Fenster); dazu die Jobs (`_runFrameScheduler`) vor dem Bild
+function ladeZeile(z) {
+    const N = z.out.nach || {};
+    const L = (N.lade || []).filter((x) => !x[2]);
+    const J = (N.jobs || []).filter((x) => !x[2]);
+    const bau = (z.out.bau || []).filter((b) => b[3] === "r");
+    let knoten = 0;
+    for (const [t0, ms] of L) for (const b of bau) if (b[0] >= t0 && b[0] < t0 + ms) knoten += b[1];
+    const sum = L.reduce((m, x) => m + x[1], 0);
+    return `${L.length} Bilder Σ ${Math.round(sum)} ms (Knoten ${Math.round(knoten)}, Rest ${Math.round(sum - knoten)}, Ø Rest ${L.length ? Math.round((sum - knoten) / L.length) : 0}) · Jobs ${J.length}× Σ ${Math.round(J.reduce((m, x) => m + x[1], 0))} ms`;
+}
+
 function phasen(zs, pre) {
     const ph = new Map();
     for (const z of zs) for (const m of z.a.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push([m.t, m.belegtMs]);
     zeile(`${pre}PHASEN (t · belegt, Median): ${[...ph].filter(([k]) => !/^(HTML|Skripte|DOM|buch steht)/.test(k)).map(([k, v]) => `${k.replace(" steht", "")} ${sek(med(v.map((x) => x[0])))}·${sek(med(v.map((x) => x[1])))}`).join(" | ")}`);
 }
 
+// ABAB in je ≤ 10 Zeilen: Teil 1 die Zeit, das Nach-Bild, die Klassen, die Lade-Bilder und B − A; Teil 2 Phasen, Knoten-Bau,
+// INKL, GPU-Bauten
+function berichtAB(teil, Z) {
+    const KL = (S) => Z.filter((z) => z.e.seite === S);
+    const ad = Z[0].e.ad;
+    const je = (f) => ["A", "B"].forEach((S) => f(KL(S), S + " "));
+    const stamm = (k) => /\[[a-z-]+\.js[:\]]/.test(k) && !/three\.(webgpu|core)/.test(k);
+    if (teil === 1) {
+        je((zs, pre) =>
+            zeile(
+                `${pre}KALT ${zs.length}× ${ad} V${zs[0].out.version} · t(Kontrolle) ${zs.map((z) => sek(z.e.tK)).join("/")} Median ${sek(med(zs.map((z) => z.e.tK)))} s · ` +
+                    `Eigenmeldung ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} Median ${sek(med(zs.map((z) => z.out.weltbildDa)))} · BELEGT bis Kontrolle ${zs.map((z) => sek(z.belegt)).join("/")} Median ${sek(med(zs.map((z) => z.belegt)))} s · ` +
+                    `LongTasks ${zs.map((z) => z.langN).join("/")} · längste ${zs.map((z) => z.laengste).join("/")} ms`
+            )
+        );
+        if (BILD) {
+            je((zs, pre) => {
+                const o = zs[0].out;
+                zeile(`${pre}BILD ${PNG.split(/[\\/]/).pop()}-${pre.trim()}.png · Lücke gegen die Ruhe ${o.bild ? (100 * o.bild.luecke).toFixed(2) + " %" : "?"} · dc ${o.bild ? o.bild.a.dc : "?"} · Dreiecke ${o.bild ? o.bild.a.dreiecke : "?"} · offen im Bild ${(o.offen || []).join(" · ") || "nichts"} · halbes Weltbild ${(o.ohne || []).length ? "JA" : "nein"}`); // prettier-ignore
+            });
+            return;
+        }
+        je((zs, pre) => zeile(`${pre}NACH DEM BILD (ab Eigenmeldung, ms): ${zs.map((z) => nachZeile(z)).join(" | ")}`));
+        je((zs, pre) => {
+            const kl = new Set(zs.flatMap((z) => Object.keys(z.klassen)));
+            zeile(`${pre}KLASSEN bis Kontrolle (Median s): ${[...kl].map((k) => [k, med(zs.map((z) => z.klassen[k] || 0))]).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${sek(v)}`).join(" · ")}`); // prettier-ignore
+        });
+        je((zs, pre) => zeile(`${pre}LADE-BILDER bis zum Weltbild je Boot: ${zs.map((z) => ladeZeile(z)).join(" | ")}`));
+        const namen = new Set(Z.flatMap((z) => Object.keys(z.klassen)));
+        const d = [...namen].map((k) => [k, med(KL("B").map((z) => z.klassen[k] || 0)) - med(KL("A").map((z) => z.klassen[k] || 0))]).filter(([, v]) => Math.abs(v) >= 20); // prettier-ignore
+        zeile(`B − A je Klasse (Median s): ${d.sort((a, b) => a[1] - b[1]).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${sek(v)}`).join(" · ")}`);
+        zeile(
+            `B − A: t(Kontrolle) ${sek(med(KL("B").map((z) => z.e.tK)) - med(KL("A").map((z) => z.e.tK)))} s · Eigenmeldung ${sek(med(KL("B").map((z) => z.out.weltbildDa)) - med(KL("A").map((z) => z.out.weltbildDa)))} s · belegt ` +
+                `${sek(med(KL("B").map((z) => z.belegt)) - med(KL("A").map((z) => z.belegt)))} s (Median, je ${N} Boots abwechselnd)`
+        );
+        return;
+    }
+    je((zs, pre) => phasen(zs, pre));
+    je((zs, pre) => {
+        const B = zs.map((z) => z.bau);
+        zeile(`${pre}KNOTEN-BAU bis Kontrolle: ${B.map((b) => b.n).join("/")} fertig · Σ ${B.map((b) => Math.round(b.ms)).join("/")} ms · Raten ${Math.round(med(B.map((b) => b.art.r || 0)))} · am Stück ${Math.round(med(B.map((b) => b.art.v || 0)))} ms`); // prettier-ignore
+    });
+    je((zs, pre) => {
+        const alle = new Set(zs.flatMap((z) => [...z.inkl.keys()]));
+        const inkl = [...alle].filter(stamm).map((k) => [k, med(zs.map((z) => z.inkl.get(k) || 0))]).sort((a, b) => b[1] - a[1]).slice(0, 16).map(([k, ms]) => `${k} ${Math.round(ms)}`); // prettier-ignore
+        zeile(`${pre}INKL: ${inkl.join(" · ")}`);
+    });
+    je((zs, pre) => zeile(`${pre}GPU-BAU je Boot (vor dem Bild │ nach dem Bild bis +4 s): ${zs.map((z) => gpuZeile(z)).join(" | ")}`));
+    const b = KL("B")[0];
+    zeile(`B GPU NACH (Boot ${b.e.i + 1}, t ab Bild ms + Art, Label, Code, Besteller): ${gpuNamen(b)}`);
+    zeile(`B AUFGABEN (Boot ${b.e.i + 1}): ${b.a.aufgaben.slice(0, 6).map((x) => `${sek(x.t)} s ${x.ms} ms ${x.halter.slice(0, 2).map((h) => `${h.name} ${h.ms}`).join("+")}`).join(" | ")}`); // prettier-ignore
+}
+
 function bericht(teil) {
     const liste = JSON.parse(fs.readFileSync(path.join(LAUF, "liste.json"), "utf8"));
     if (!liste.length) return console.log("❌ keine Boots"), process.exit(1);
     const Z = liste.map(zerlege);
+    if (AB) return berichtAB(teil, Z);
     const seiten = AB ? ["A", "B"] : ["B"];
     const ad = liste[0].ad;
     const medMap = (zs, key, top, filter = () => true) => {

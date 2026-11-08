@@ -1,0 +1,3863 @@
+class AnazhRealm_bild_kosten {
+    // ===== ATLAS · Bild/kosten — Renderer · TAAU und die EINE Skala · Ausgabe · Post · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe =====
+    // V12.0-a — WebGPURenderer-Konfiguration. Hot-Swap-WebGL-Fallback weg
+    // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
+    // nur auf WebGPU). `kind`-Param gestrichen.
+    _configureRenderer(renderer) {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(1);
+        renderer.setClearColor(0x000000, 1);
+        // JEDES-HOLZ: kienspan schaltet Schatten GANZ aus (der CSM-Erst-Frame-
+        // Kompilierschock tötet Software-Dawn-Devices; ohne Schatten-Pipeline
+        // überlebt der Boot — die NÄHE bleibt voll, nur das Licht wird flach).
+        renderer.shadowMap.enabled = this.state._holzProfil !== "kienspan";
+        // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
+        // Samples — Performance-Win).
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+        // DIE ZEICHEN-REIHE DER WELT (T3): die losen Opaken jedes Renders nach dem EINEN Gesetz (`_zeichenFolge`), nie nach der
+        // Boot-Ankunft (Objekt-id).
+        if (typeof renderer.setOpaqueSort !== "function")
+            this.log("ZEICHEN-REIHE: r184-Renderer.setOpaqueSort nicht gefunden (Vendor-Drift)", "ERROR");
+        else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);
+        // Native Shadow-Pipeline (MeshToonNodeMaterial konsumiert die Shadow-Map). Der Takt der Schatten-Renders lebt
+        // JE LICHT (`shadow.autoUpdate`/`needsUpdate`, `_loopShadowUpdate`) — `renderer.shadowMap.autoUpdate/
+        // needsUpdate` liest r184 nicht.
+        // autoReset AUS: `_loopRender` ruft `info.reset()` EINMAL pro Frame und liest am Ende die volle Last
+        // (Schatten + Haupt + Post-FX) für perfSense — sonst sähe es nur den letzten Post-FX-Pass.
+        if (renderer.info) renderer.info.autoReset = false;
+        // DER STABILE PUFFER-NAME: r184 nennt den Instanz-Matrix-Puffer im WGSL `NodeBuffer_<Knoten-id>`
+        // (WGSLNodeBuilder, ohne setName) — jede InstancedMesh bekam so ihren EIGENEN Quelltext, ihr eigenes
+        // Programm, ihre eigene Pipeline: gemessen 02.10. an der Mess-Wiese 675 Vertex-Programme, ohne die
+        // Ziffern 39 Familien — jede neue Streu-Gruppe ein Kompilat beim Laufen. Je Draw gibt es genau EINE
+        // Instanz-Matrix (und die Vorgänger-Matrix für Velocity) → ein fester Name macht gleiche Objekte gleich.
+        const IN = THREE.InstanceNode;
+        if (!IN || !IN.prototype || typeof IN.prototype._createInstanceMatrixNode !== "function")
+            this.log(
+                "INSTANZ-PUFFER-NAME: r184-InstanceNode._createInstanceMatrixNode nicht gefunden (Vendor-Drift)",
+                "ERROR"
+            );
+        else if (!IN.__anazhName) {
+            const matrixRoh = IN.prototype._createInstanceMatrixNode;
+            IN.prototype._createInstanceMatrixNode = function (assignBuffer, builder) {
+                const n = matrixRoh.call(this, assignBuffer, builder);
+                const puffer = n && n.node;
+                if (puffer && puffer.isBufferNode && typeof puffer.setName === "function")
+                    puffer.setName(assignBuffer ? "instanzMatrix" : "instanzMatrixVor");
+                // DER URSPRUNG DER INSTANZ (`_instanzMitteNode`, das Maß der Blende): r184 legt den InstancedMeshNode je
+                // Bau neu an (`setupPosition`, auch im Schattenpass) und baut die Matrix dort VOR jedem Fragment-Knoten
+                if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;
+                return n;
+            };
+            IN.__anazhName = true;
+        }
+        // DER STABILE KNOCHEN-NAME: dieselbe Klasse für die Haut jedes Leibs (`_knochenPufferName`)
+        this._knochenPufferName();
+        // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
+        // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
+        // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame
+        // (gemessen 04.10. nach der Haupt-Diät: Blume 360, Geröll 224 von 1176 Refreshs je Frame). Trägt das
+        // ORIGINAL die Diät (nur geteilte renderGroup-Uniforms), fährt der Schatten-Beobachter dieselbe EINE Prüfung.
+        // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
+        const NM =
+            THREE.MeshBasicNodeMaterial && Object.getPrototypeOf(THREE.MeshBasicNodeMaterial.prototype).constructor;
+        if (!NM || !NM.prototype || typeof NM.prototype.setupObserver !== "function")
+            this.log("SCHATTEN-DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!NM.__anazhSchattenDiaet) {
+            const beobRoh = NM.prototype.setupObserver;
+            NM.prototype.setupObserver = function (builder) {
+                const o = beobRoh.call(this, builder);
+                if (!o || this.isShadowPassMaterial !== true || typeof o.needsRefresh !== "function") return o;
+                const altNR = o.needsRefresh;
+                o.needsRefresh = function (ro, frame) {
+                    const om = ro && ro.object ? ro.object.material : null;
+                    if (!om || om._anazhDiaet !== true) return altNR.call(this, ro, frame);
+                    return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
+                };
+                return o;
+            };
+            NM.__anazhSchattenDiaet = true;
+        }
+        // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner`): r184 instanziert in `setupPosition` nur eine
+        // InstancedMesh (InstanceNode, der die Puffer des Objekts in den Graphen bindet — und den Schlüssel trägt die uuid).
+        // Zeichnet ein Zeichner, steht der EINE Instanz-Knoten (`_senkenKnoten`) dort, wo r184 seinen InstanceNode auf den Stapel
+        // legt: sein setup legt die Matrix am Builder ab (die Naht `_weltNaht` des positionNode liest sie), seine Zuweisung von Lage,
+        // Normale und Farbe baut NACH der des positionNode (Lehre 22) — im Hauptbild wie in jeder Kaskade (der Schatten-Stoff ist
+        // ein Knoten-Stoff).
+        if (NM && NM.prototype && typeof NM.prototype.setupPosition === "function" && !NM.__anazhSenke) {
+            const posRoh = NM.prototype.setupPosition;
+            NM.prototype.setupPosition = function (builder) {
+                if (builder.object && builder.object.isInstanzZeichner === true)
+                    AnazhRealm._senkenKnoten().instanz.toStack();
+                return posRoh.call(this, builder);
+            };
+            NM.__anazhSenke = true;
+        } else if (!NM || !NM.prototype || typeof NM.prototype.setupPosition !== "function")
+            this.log("DIE SENKE: r184-NodeMaterial.setupPosition nicht gefunden (Vendor-Drift)", "ERROR");
+        // DER EINE KNOTEN JE QUELLE (r184 gelesen, vendor/three.webgpu.min.js + vendor/CSMShadowNode.js): eine geteilte
+        // Uniform-Gruppe (renderGroup: Kamera · Lichter · Welt-Sätze) teilt r184 über Programme hinweg nur bei GLEICHEN
+        // Knoten — `_getBindGroup` schlüsselt sie nach den sortierten Knoten-ids, je Render-Kontext EIN Puffer. Zwei
+        // Erzeuger bauten ihre Knoten je Programm neu: `reference(…)` legt seinen Uniform-Knoten je ReferenceNode an
+        // (setNodeType), und der Schatten-Filter ruft es je Bau (ShadowNode: radius · mapSize je Kaskade); die CSM baut in
+        // `setup` je Programm camera.near · cascades · shadowFar. Jedes beleuchtete Programm trug so seine EIGENE Render-
+        // Gruppe, und jede Änderung von Kamera, TRAA-Zittern, Sonne oder Wind schrieb sie je Programm. Gemessen 07.10. an
+        // der Mess-Wiese (echte GPU, Stand, ein Frame): 192 Programme, 153 geteilte Gruppen, 121 Gruppen-Uploads und 1 042
+        // writeBuffer — dieselbe Kamera 80-mal hochgeladen. Ein Verweis einer geteilten Gruppe auf dasselbe Objekt und
+        // dieselbe Eigenschaft trägt jetzt EINEN Uniform-Knoten, die CSM baut ihren Knoten einmal je Instanz (TSL baut einen
+        // Knoten in jedem Programm für sich); Verweise ohne festes Objekt (je Zeichen-Objekt) bleiben je Knoten.
+        // gate:vendor-anker pinnt beide Stellen und den Schlüssel, gate:kamera-treue zählt die Gruppen am echten Bild.
+        const REF = THREE.TSL.reference;
+        let refProto = Object.getPrototypeOf(REF("x", "float", { x: 0 }));
+        while (refProto && !Object.prototype.hasOwnProperty.call(refProto, "setNodeType"))
+            refProto = Object.getPrototypeOf(refProto);
+        if (!refProto) this.log("EIN KNOTEN: r184-ReferenceNode.setNodeType nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!refProto.__anazhEinKnoten) {
+            const typRoh = refProto.setNodeType;
+            const jeQuelle = new WeakMap();
+            refProto.setNodeType = function (typ) {
+                const g = this.group;
+                const o = this.object;
+                if (!g || g.shared !== true || o === null || typeof o !== "object") return typRoh.call(this, typ);
+                let m = jeQuelle.get(o);
+                if (!m) jeQuelle.set(o, (m = new Map()));
+                const k = `${this.property}|${typ}|${this.count}|${g.name}|${this.name}`;
+                const n = m.get(k);
+                if (n) {
+                    this.node = n;
+                    return;
+                }
+                typRoh.call(this, typ);
+                m.set(k, this.node);
+            };
+            refProto.__anazhEinKnoten = true;
+        }
+        const CSM = THREE.CSMShadowNode;
+        if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
+            this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!CSM.__anazhEinAufbau) {
+            const aufbauRoh = CSM.prototype.setup;
+            const aufbau = new WeakMap();
+            CSM.prototype.setup = function (builder) {
+                let n = aufbau.get(this);
+                if (n === undefined) {
+                    n = aufbauRoh.call(this, builder);
+                    aufbau.set(this, n);
+                }
+                return n;
+            };
+            CSM.__anazhEinAufbau = true;
+        }
+        // DAS REGISTER DER REGUNG: der EINE needsUpdate-Setter meldet jede Version (`_regungMelder`, in der Diät-Scheibe)
+        this._regungMelder();
+        // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
+        // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
+        if (renderer._isHeadlessNull) return;
+        // DIE DRAW-WAHRHEIT IM INFO: r184 bucht einen Draw nur, wenn der Backend-Draw läuft — beim AUFNEHMEN
+        // eines RenderBundles; der Replay (`_renderBundle`, Versions-Treffer) zieht die aufgenommenen
+        // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
+        // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
+        // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
+        // DAS SIEGEL TRÄGT DIE MARKE DER ERST-ZEICHNUNG (`_erstWartet` (2)): versiegelte eine Aufnahme ohne einen Bürger,
+        // der auf seinen Knoten-Bau wartet oder dessen Pipeline absagte, nimmt das Bündel im NÄCHSTEN Render neu auf — die
+        // Marke fällt hier, gleich nach r184s Siegel (`u.version=s.version`, 6:413962, es schluckte eine Marke von mittendrin).
+        // Ein Mikrotask kam zu spät: jedes Bild im selben Task (die Warm-Frames einer Aufnahme, die Proben der Wand) spielte das
+        // Bündel ohne den Bürger ab und zählte keinen wartenden Draw — die Beweis-Aufnahme stand still grün (Erst-Zeichnungs-
+        // Wand, Absage einer Pipeline, 30.10.: das erste Bild der Aufnahme wartete 0, sie endete nach 1 Frame ohne Wurf).
+        if (!renderer.info || typeof renderer._renderBundle !== "function")
+            this.log("DRAW-WAHRHEIT: r184-Renderer._renderBundle nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhReplayBuchung) {
+            const replayRoh = renderer._renderBundle;
+            const welt = this;
+            renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
+                const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+                const daten = this.backend.get(rb);
+                const replay = daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version;
+                const aus = replayRoh.call(this, bundle, sceneRef, lightsNode);
+                if (replay && daten.renderObjects)
+                    for (const ro of daten.renderObjects) {
+                        const dp = ro.getDrawParameters();
+                        if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
+                    }
+                const E = welt._erstZeichnung;
+                if (!replay && E && E.aufnehmen.delete(bundle.bundleGroup)) bundle.bundleGroup.needsUpdate = true;
+                return aus;
+            };
+            renderer.__anazhReplayBuchung = true;
+        }
+        // DIE BUNDLE-WAHRHEIT AM CHOKEPOINT `_renderScene` (r184 gelesen, vendor/three.webgpu.min.js): jeder Render —
+        // Hauptbild, jede Schatten-Kaskade, jeder Post-Pass — läuft durch ihn, auch verschachtelt (der Schatten startet
+        // am ersten Licht-Empfänger MITTEN im Hauptbild).
+        // (1) DER AUFNAHME-STAPEL: `_renderBundle` setzt `_currentRenderBundle` zum Aufnehmen und danach auf null, ohne
+        //     Stapel; `_renderObjectDirect` verfolgt einen Draw nur, solange der Zeiger steht, und der Replay refresht nur
+        //     Verfolgte. Der Schatten-Render nullte den Zeiger der Haupt-Aufnahme: gemessen 04.10. (echte GPU, Mess-
+        //     Wiese) 107 von 237 aufgenommenen Draws verfolgt, der Rest behielt die Kamera seiner Aufnahme. Jeder Render
+        //     sichert den Zeiger der äußeren Aufnahme und gibt ihn zurück; ein verschachtelter Render nimmt nie in sie auf.
+        // (2) KEIN BUNDLE UNTER EINEM OVERRIDE-STOFF: `renderObject` richtet den geteilten Override-Stoff (Schatten:
+        //     isShadowPassMaterial) je Objekt ein (alphaTest · alphaMap · Seite · Knoten des Originals); Knoten und Seite
+        //     setzt es danach zurück, alphaTest · alphaMap bleiben vom zuletzt direkt gezeichneten Werfer. Der Replay
+        //     refresht seine Bürger außerhalb davon — gegen diesen fremden Stoff-Zustand. Gemessen 04.10.: der Schatten-
+        //     Replay warf das ausgeschnittene Laub voll (81 % gleiche Pixel gegen den direkten Pfad, Rauschboden 90 %;
+        //     mit dem alphaTest eines vollen Werfers reproduzierbar 0,817 gegen 0,902), eine Neuaufnahme je Frame stellte
+        //     90 % her. Ein Render mit overrideMaterial sammelt keine Bundles: `_projectObject` liest eine BundleGroup als
+        //     Gruppe, solange `backend.beginBundle` fehlt. gate:vendor-anker pinnt beide Stellen und fährt den Block am
+        //     Schein-Renderer, gate:kamera-treue an einer Bühne am echten WebGPU mit Schatten.
+        if (typeof renderer._renderScene !== "function" || !renderer.backend)
+            this.log("BUNDLE-WAHRHEIT: r184-Renderer._renderScene nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhBundleWahrheit) {
+            const szeneRoh = renderer._renderScene;
+            const be = renderer.backend;
+            // (3) DIE WELT-MATRIZEN EINMAL JE BILD (Welle K): r184 rechnet in JEDEM `_renderScene` den ganzen Szenen-
+            //     Graphen neu (`scene.updateMatrixWorld()` bei matrixWorldAutoUpdate) — auch in jeder Kaskade, die mitten im
+            //     Hauptbild derselben Szene startet. Gemessen 07.10. (Radeon, Mess-Wiese, echter Loop): 2,1 Graph-Gänge je
+            //     gerendertem Bild (Hauptbild + Kaskaden), ~1000 Knoten je Gang. Zwischen dem Hauptbild und seinen
+            //     verschachtelten Pässen bewegt sich nichts (kein Spiel-Takt läuft, kein Haken schreibt Matrizen): ein
+            //     verschachtelter Render DERSELBEN Szene liest die Matrizen, die ihr äußerer Render eben rechnete.
+            const offen = new Set();
+            renderer._renderScene = function (scene, camera, useFrameBufferTarget) {
+                const aufnahme = this._currentRenderBundle;
+                const override = !!(scene && scene.overrideMaterial);
+                const eigen = Object.prototype.hasOwnProperty.call(be, "beginBundle");
+                const beginRoh = be.beginBundle;
+                const innen = !!scene && offen.has(scene) && scene.matrixWorldAutoUpdate === true;
+                this._currentRenderBundle = null;
+                if (override) be.beginBundle = undefined;
+                if (innen) scene.matrixWorldAutoUpdate = false;
+                const aussen = !!scene && !offen.has(scene);
+                if (aussen) offen.add(scene);
+                try {
+                    return szeneRoh.call(this, scene, camera, useFrameBufferTarget);
+                } finally {
+                    if (aussen) offen.delete(scene);
+                    if (innen) scene.matrixWorldAutoUpdate = true;
+                    this._currentRenderBundle = aufnahme;
+                    if (override) {
+                        if (eigen) be.beginBundle = beginRoh;
+                        else delete be.beginBundle;
+                    }
+                }
+            };
+            renderer.__anazhBundleWahrheit = true;
+        }
+        // DIE BUNDLE-REIHENFOLGE: r184 sammelt die Bundles eines Passes und führt sie erst in finishRender aus — NACH
+        // allen direkten Draws. Der Feld-Pass („letzter Draw, nur Himmel-Pixel überleben") und das Wasser liefen so
+        // VOR Pflanzen, Boden und Bauten (alles Bundles): der Feld-March traced JEDES Pixel gegen einen fast leeren
+        // Tiefenpuffer, das Wasser mischte sich gegen den leeren Grund und seine Ufer-Tiefe sah keinen Boden (gemessen
+        // 04.10., echte GPU, Mess-Wiese). Die Bundles laufen jetzt sofort nach ihrer Aufnahme/ihrem Replay, die
+        // direkten Draws danach — die Reihenfolge, die der Code behauptet. executeBundles leert den Pass-Zustand, der
+        // gemerkte Zustand fällt mit (dasselbe Muster wie r184 nach dem Pass-Bruch). Array-Kameras behalten ihren Pfad.
+        // Nur das WebGPU-Backend nimmt Bundles auf (der WebGL2-Rückfall liest jede BundleGroup als Gruppe).
+        if (renderer.backend && renderer.backend.isWebGPUBackend) {
+            if (
+                typeof renderer._renderBundles !== "function" ||
+                typeof renderer.backend._isRenderCameraDepthArray !== "function"
+            )
+                this.log("BUNDLE-REIHENFOLGE: r184-Renderer._renderBundles nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!renderer.__anazhBundleReihenfolge) {
+                const bundlesRoh = renderer._renderBundles;
+                const welt = this;
+                renderer._renderBundles = function (bundles, sceneRef, lightsNode) {
+                    for (let i = 0; i < bundles.length; i++)
+                        if (bundles[i].bundleGroup.userData._creatureSkin === true)
+                            welt._leibBuendelStand(this, bundles[i]);
+                    const aus = bundlesRoh.call(this, bundles, sceneRef, lightsNode);
+                    const rc = this._currentRenderContext;
+                    const d = rc ? this.backend.get(rc) : null;
+                    if (
+                        d &&
+                        d.currentPass &&
+                        d.renderBundles &&
+                        d.renderBundles.length > 0 &&
+                        !this.backend._isRenderCameraDepthArray(rc)
+                    ) {
+                        d.currentPass.executeBundles(d.renderBundles);
+                        d.renderBundles = [];
+                        d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+                    }
+                    return aus;
+                };
+                renderer.__anazhBundleReihenfolge = true;
+            }
+            // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
+            // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
+            // zusammen: gemessen 07.10. (Mess-Wiese, Stand) 18 Gruppen-Uploads in 170 writeBuffer je Frame. Eine Gruppe
+            // mit mehreren geänderten Bereichen lädt jetzt EINEN Bereich vom ersten bis zum letzten (dazwischen liegen
+            // die gültigen Werte der Gruppe); r184 leert die Bereiche nach dem Upload (`_update`).
+            const be = renderer.backend;
+            if (typeof be.updateBinding !== "function")
+                this.log("EIN SCHREIBEN: r184-Backend.updateBinding nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!be.__anazhEinSchreiben) {
+                const bindungRoh = be.updateBinding;
+                be.updateBinding = function (b) {
+                    const rs = b && b.isNodeUniformsGroup === true ? b.updateRanges : null;
+                    if (rs && rs.length > 1) {
+                        let a = rs[0].start,
+                            z = a + rs[0].count;
+                        for (let i = 1; i < rs.length; i++) {
+                            if (rs[i].start < a) a = rs[i].start;
+                            if (rs[i].start + rs[i].count > z) z = rs[i].start + rs[i].count;
+                        }
+                        rs.length = 0;
+                        rs.push({ start: a, count: z - a });
+                    }
+                    return bindungRoh.call(this, b);
+                };
+                be.__anazhEinSchreiben = true;
+            }
+            // DIE VERDECKUNGS-ABFRAGE SCHLIESST NUR, WAS SIE BEGANN (0910-3 A, Leben-Schau 2: am Bach beim Aussteigen „No
+            // occlusion queries are active" in renderContext_4/_6, danach ungültige Command-Buffer und „Invalid value used in
+            // weak set"). r184 hält die offene Occlusion-Query nur indirekt: sie beginnt im Draw eines Objekts mit
+            // `occlusionTest` und endet träge beim Draw des NÄCHSTEN (`lastOcclusionObject`). Drei Vendor-Stellen nehmen dabei
+            // an, dass JEDES gezählte Objekt (`renderContext.occlusionQueryCount`, die Render-Liste) in einem durchgehenden
+            // Pass begann:
+            //   (1) `copyFramebufferToTexture` (das Tiefen-Abbild für Wasser und Feld-Pass, jede Viewport-Textur) beendet den
+            //       Pass mitten im Bild: die offene Query endet nie („ended with incomplete occlusion query"), die nächste
+            //       Zeichnung schließt sie im neuen Pass, in dem keine offen ist;
+            //   (2) `finishRender` schließt, sobald weniger begonnen als gezählt wurden — auch wenn keine offen ist. Ein
+            //       gezähltes Objekt beginnt nicht, wenn seine Pipeline nicht steht (die Erst-Zeichnung wartet oder verschiebt
+            //       es) oder als gescheitert gilt (`pipelineData.error`, auch durch einen FREMDEN Fehler, den r184s Fehler-
+            //       Bereich um den asynchronen Bau einfängt) → „No occlusion queries are active", der Frame ungültig;
+            //   (3) `resolveOccludedAsync` legt jedes Objekt mit 0 Proben in ein WeakSet — die Lücke eines nie begonnenen
+            //       Index ist `undefined` → „Invalid value used in weak set" (das Ergebnis eines ungültigen Frames ist 0);
+            //   (4) `beginRender` setzt `lastOcclusionObject` (und den Abfrage-Satz) nur bei Zähler > 0 zurück: war in einem
+            //       Probe-Frame ein Stellvertreter der LETZTE Draw, schließt der nächste Frame mit Zähler 0 (der Berg-Cull fragt
+            //       jeden `queryTakt`-ten) seine Abfrage beim ersten Draw — in einem Pass ohne Abfrage-Satz (Gegenprüfung
+            //       10.10., Radeon, Mess-Wiese, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
+            // Der EINE Ort: der Bruch schließt die offene Abfrage im alten Pass, `finishRender` schließt nur eine offene, und mit
+            // ihm endet die Abfrage des Kontexts (`lastOcclusionObject` fällt; den Satz zerstört r184 selbst im nächsten
+            // Probe-Frame), das Auflösen überspringt Lücken. Nachgestellt in gate:verdeckungs-abfrage (am Bach, Aussteigen;
+            // die Stationen Bruch, Gift, Letzter).
+            const VERDECKT_LEER = {};
+            const offen = (d) => {
+                const o = d.lastOcclusionObject;
+                return !!(o && o.occlusionTest === true);
+            };
+            if (
+                typeof be.copyFramebufferToTexture !== "function" ||
+                typeof be.finishRender !== "function" ||
+                typeof be.resolveOccludedAsync !== "function"
+            )
+                this.log(
+                    "VERDECKUNGS-ABFRAGE: r184-Backend copyFramebufferToTexture/finishRender/resolveOccludedAsync nicht gefunden (Vendor-Drift)",
+                    "ERROR"
+                );
+            else if (!be.__anazhVerdeckung) {
+                const bruchRoh = be.copyFramebufferToTexture;
+                be.copyFramebufferToTexture = function (textur, kontext, rechteck) {
+                    const d = this.get(kontext);
+                    if (d && d.currentPass && d.occlusionQuerySet !== undefined) {
+                        if (offen(d)) {
+                            d.currentPass.endOcclusionQuery();
+                            d.occlusionQueryIndex++;
+                        }
+                        d.lastOcclusionObject = null;
+                    }
+                    return bruchRoh.call(this, textur, kontext, rechteck);
+                };
+                const schlussRoh = be.finishRender;
+                be.finishRender = function (kontext) {
+                    const d = this.get(kontext);
+                    // keine offen → r184s Vergleich `occlusionQueryCount > occlusionQueryIndex` schließt nichts; danach liest
+                    // r184 nur noch den Zähler (resolveQuerySet über occlusionQueryCount)
+                    if (d && d.occlusionQuerySet !== undefined && !offen(d))
+                        d.occlusionQueryIndex = Math.max(d.occlusionQueryIndex, kontext.occlusionQueryCount);
+                    const aus = schlussRoh.call(this, kontext);
+                    // (4) die Abfrage endet mit ihrem Render — der nächste Frame (Zähler 0) erbt keinen offenen Stellvertreter
+                    if (d) d.lastOcclusionObject = null;
+                    return aus;
+                };
+                const aufloesenRoh = be.resolveOccludedAsync;
+                be.resolveOccludedAsync = function (kontext) {
+                    const d = this.get(kontext);
+                    const objekte = d ? d.currentOcclusionQueryObjects : null;
+                    if (objekte)
+                        for (let i = 0; i < objekte.length; i++)
+                            if (objekte[i] === undefined) objekte[i] = VERDECKT_LEER;
+                    return aufloesenRoh.call(this, kontext);
+                };
+                be.__anazhVerdeckung = true;
+            }
+        }
+        // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
+        // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
+        // Version hoch. Ausgeschnittene Blätter und volle Stämme wechseln sich ab → die Version sprang je Objekt, jeder
+        // Schatten-Bürger rechnete je Kaskade und Frame seinen ganzen Material-Schlüssel neu (getCacheKey ·
+        // getMaterialCacheKey) und prüfte seine Pipeline neu (gemessen 04.10., echte GPU, Mess-Wiese, Schattenpass
+        // direkt: 342 ms Schlüssel-Rechnung in 8 s, die Schatten-Pässe 1330 → 585 ms). Der Schatten-Stoff trägt jetzt je
+        // Objekt die Version des Original-Materials: ein Bürger prüft seinen Schlüssel genau dann, wenn SEIN Material
+        // sich änderte (auch dessen eigener alphaTest-Wechsel), der geteilte Setter zählt nichts mehr.
+        if (typeof renderer.renderObject !== "function")
+            this.log("SCHATTEN-STOFF: r184-Renderer.renderObject nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhSchattenStoff) {
+            const objektRoh = renderer.renderObject;
+            const still = new WeakSet();
+            renderer.renderObject = function (
+                object,
+                scene,
+                camera,
+                geometry,
+                material,
+                group,
+                lightsNode,
+                clip,
+                passId
+            ) {
+                const sm = scene ? scene.overrideMaterial : null;
+                if (sm && sm.isShadowPassMaterial === true && material && material.allowOverride === true) {
+                    if (!still.has(sm)) {
+                        Object.defineProperty(sm, "alphaTest", {
+                            configurable: true,
+                            get() {
+                                return this._alphaTest;
+                            },
+                            set(v) {
+                                this._alphaTest = v;
+                            },
+                        });
+                        // DIE SCHATTEN-FORM JE KASKADE EINMAL (w4-b-knoten): r184 legt je Licht einen Schatten-Stoff an, jeden
+                        // mit EIGENEM Grund-Knoten `vec4(0,0,0,1)` — dessen id steht im Programm-Schlüssel, und ein Werfer ohne
+                        // Ausschnitt (`_wurfOhneFarbe`) wirft mit ihm: jede der drei Kaskaden baute dieselbe Form neu (headless
+                        // kalt 01.11.: 14 Bauten EINES Programms, je Werfer k0 · k1 · k2). Jeder Schatten-Stoff trägt den EINEN.
+                        sm.colorNode = AnazhRealm._schattenGrund();
+                        still.add(sm);
+                    }
+                    sm.version = material.version;
+                }
+                return objektRoh.call(this, object, scene, camera, geometry, material, group, lightsNode, clip, passId);
+            };
+            renderer.__anazhSchattenStoff = true;
+        }
+        // DER WURF OHNE FARBE (B-K1): ein Werfer ohne Ausschnitt wirft ohne seinen Farb-Graphen (die Hülle um _getShadowNodes)
+        this._wurfOhneFarbe(renderer);
+        // DIE ERST-ZEICHNUNG (Welle K — die Hänger-Klasse „ein Frame trägt synchron eine schwere Arbeit"; r184 gelesen):
+        // `_renderObjectDirect` baut beim ERSTEN Zeichnen eines RenderObjects synchron, was ihm fehlt — den Knoten-Graphen
+        // seines Stoffs (`needsRefresh` → `getNodeBuilderState`) und die GPU-Pipeline (`updateForRender` →
+        // `device.createRenderPipeline`: der GPU-Prozess übersetzt den Shader, bevor er das nächste Bild zeigt). Die Hänger-
+        // Linse nannte 07.10. an der Radeon: 1,4–4,2 s Warten nach synchronen Pipelines (haupt/k0/k1 tier:baer · tier:fuchs ·
+        // fimp:atlas:L2 · bauSatz · feld-pass), Knoten-Bauten 50–270 ms je Stoff, bis zu sechs in EINEM Frame (ein Tier:
+        // Leib, Fell, Kopf, Kiefer). Für die WELT-Szene gilt hier: (1) jede Pipeline entsteht asynchron — ihr Deskriptor liest
+        // Stoff und Ziel synchron im Pass (wie das Vendor-Kompilat), das Objekt zeichnet ab dem Frame, in dem sie steht;
+        // (2) der Knoten-Bau bleibt im Pass (er liest MRT, Ziel und contextNode des Renderers, die nur dort gelten — ein
+        // buildAsync liefe daneben), aber je Render-Aufruf baut höchstens EINER (weitere nur, solange der Aufruf unter
+        // ERST_BAU_MS baute); jeder andere zeichnet ab dem nächsten Aufruf. Wer nicht zeichnen kann, meldet sich in der EINEN
+        // Warteschlange an (`_erstWartet`), auf JEDEM Weg — Erstbau, Neubau, fremde Szene: ein Bundle, dessen Bürger so wartet,
+        // nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht (der Vendor-Record droppt unfertige Draws und
+        // versiegelt das Bundle; das Vendor-Versprechen hängt am Fehler-Scope und zählt nie). Das gilt der ERSTEN
+        // Zeichnung eines Objekts in einem Pass (Render-Kontext · Pass-Kennung): ein Objekt, das dort schon zeichnete, baut
+        // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
+        // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
+        // nicht aus — nur wenn eine Erst-Zeichnung seinen neuen Schlüssel eben asynchron anlegte, wartet er auf dieselbe
+        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad)
+        // zeichnet wie bisher — ein Einmal-Render bliebe leer. Das ist der
+        // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
+        // `_geometries.updateForRender` liest die Attribute vor `getForRenderAsync`).
+        // Nodes und Pipelines legt erst init() an (dieser Eingriff läuft davor): die Nachbildung liest sie je Aufruf am
+        // Renderer; ihre Vendor-Stellen pinnt gate:vendor-anker.
+        if (typeof renderer._renderObjectDirect !== "function")
+            this.log("ERST-ZEICHNUNG: r184-Renderer._renderObjectDirect nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhErstZeichnung) {
+            const welt = this;
+            const E = this._erstZeichnungStand();
+            // der Vendor-Körper: auffrischen, Pipeline (asynchron mit Versprechen-Liste, sonst synchron), zeichnen, wenn sie
+            // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
+            // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
+            // eben asynchron anlegte: ein Neubau wartet dann wie sie.
+            const zeichne = (rend, ro, aufnahme, asynchron, nurBauen) => {
+                const N = rend._nodes,
+                    P = rend._pipelines;
+                E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
+                // wer auf seine Pipeline wartet, läuft durch keinen Knoten (`_renderObjectDirect`: wer nicht zeichnet …)
+                const imBau = P.get(ro).pipeline;
+                if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
+                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
+                const refresh = N.needsRefresh(ro);
+                if (refresh) {
+                    N.updateBefore(ro);
+                    rend._geometries.updateForRender(ro);
+                    N.updateForRender(ro);
+                    rend._bindings.updateForRender(ro);
+                }
+                if (asynchron) {
+                    // das Vendor-Versprechen einer neuen Pipeline wartet nach dem Bau noch auf popErrorScope — die Welt
+                    // hält es nicht (die Bereitschaft liest `_erstWartet` am Zustand)
+                    P.getForRender(ro, E.neu);
+                    if (E.neu.length > 0) {
+                        E.neu.length = 0;
+                        E.pipeAsync++;
+                    }
+                } else P.updateForRender(ro);
+                if (nurBauen) return false;
+                if (!P.isReady(ro)) {
+                    welt._erstWartet(rend.backend, P.get(ro).pipeline, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
+                if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
+                rend.backend.draw(ro, rend.info);
+                if (refresh) N.updateAfter(ro);
+                return true;
+            };
+            renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+                const N = this._nodes;
+                const ro = this._objects.get(
+                    object,
+                    material,
+                    scene,
+                    camera,
+                    lightsNode,
+                    this._currentRenderContext,
+                    clip,
+                    passId
+                );
+                ro.drawRange = object.geometry.drawRange;
+                ro.group = group;
+                // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
+                // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
+                // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
+                // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
+                // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
+                // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
+                // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
+                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
+                // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
+                // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
+                const gast = object.__vorbauGast === true;
+                const vorbau = gast || ro.getDrawParameters() === null;
+                const ctx = this._currentRenderContext.id;
+                const k = passId == null ? ctx : ctx + "|" + passId;
+                let merk;
+                const aufnahme = this._currentRenderBundle;
+                if (vorbau) {
+                    const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
+                    if (!arena || scene !== welt.state.scene) return;
+                    const wahl =
+                        gast && !welt._eingabeRuht()
+                            ? null
+                            : AnazhRealm._vorbauWahl(
+                                  E,
+                                  object,
+                                  k,
+                                  welt._ladeTakt(),
+                                  welt.state._weltbildDa,
+                                  N.nodeFrame.frameId,
+                                  gast
+                              );
+                    if (wahl !== "bauen") {
+                        // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
+                        // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
+                        if (gast && aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                    merk = E.vorgemerkt.get(object);
+                }
+                if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
+                // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
+                // zeichnete — ihre Hüllen wechseln den Stoff, darum zählt dort kein Pass, und ihre Bau-Frist gilt dem ganzen
+                // Bake-Versuch (13 Render-Aufrufe), nie je Aufruf
+                const B = welt._karteBuehneSatz;
+                const buehne = !!B && scene === B.szene;
+                // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
+                // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                // DER PSO-VORBAU (w16-lade-atem, ankunft.K5 — der Pipeline-Precache von Unreal/Fortnite): im Takt unter dem Ladeschirm
+                // entsteht auch die Pipeline eines solchen Renders asynchron (der Treiber übersetzt sie neben dem Bild, nie im
+                // GPU-Prozess vor dem nächsten); bis sie steht, zeichnet er nicht und zählt `einmalOffen` — ein Einmal-Render
+                // (Atmosphären-Tafel, Umgebung, Wolken- und Horizont-Karte, Welt-Licht, Rückstrahl) liest daran, dass er nicht
+                // ganz ist, und zeichnet im nächsten Takt neu (`_atmoZeichne` → false). Bis hier entstanden 16 Pipelines des
+                // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
+                // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
+                if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
+                    if (!welt._psoVorbau()) zeichne(this, ro, aufnahme, false);
+                    else if (!zeichne(this, ro, aufnahme, true)) {
+                        E.einmalOffen++;
+                        if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
+                    }
+                    return;
+                }
+                // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
+                // JEDEM Render voll auf (hasNode) — die Diät war ein Opt-in an fünf Bau-Stellen, jeder andere Stoff der Welt zahlte
+                // je Pass und Bild den vollen Gang über Knoten, Gruppen und Geometrie, auch ohne jede Änderung. Gemessen 17.10.
+                // (Radeon, Genesis Third, Regler voll): 2,9 ms je Bild Voll-Refresh — Fern-Ring, Inseln, Arena, Plattform, Himmel,
+                // Membranen, Kopf. Jetzt schreibt die Erst-Zeichnung jeden Stoff der Welt-Szene ein, bevor er baut (der Schatten-
+                // Stoff trägt die Diät seines Originals); was sich bewegt, atmet oder Knochen trägt, stellt nur seine eigenen Werte (der Objekt-Gang, `_diaetObjektGang`).
+                const urStoff = material.isShadowPassMaterial === true ? object.material : material;
+                if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
+                    welt._materialObserverDiaet(urStoff);
+                const ungebaut =
+                    ro._nodeBuilderState === null &&
+                    N.get(ro).nodeBuilderState === undefined &&
+                    N.nodeBuilderCache.get(N.getForRenderCacheKey(ro)) === undefined;
+                let pass = buehne ? undefined : E.gezeichnet.get(object);
+                const vor = vorbau ? E.vorgebaut.get(object) : undefined;
+                if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
+                    return void merk.delete(k);
+                if (pass !== undefined && pass.has(k)) {
+                    // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
+                    if (ungebaut) E.neubauN++;
+                    zeichne(this, ro, aufnahme, false);
+                    return;
+                }
+                let bau = -1;
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild UND unter dem Ladeschirm baut kein Bild einen
+                // Knoten-Graphen am Stück — wer seinen noch nicht hat, wartet wie ein verschobener; der ruhende Loop baut wie bisher.
+                // UNTER DEM LADESCHIRM (w19-ankunft-takt, ankunft.K5): bis hier baute dort JEDER Render-Aufruf eines Lade-Bilds am Stück
+                // bis zu seinen eigenen LADE_TAKT_MS (Hauptpass, jede Kaskade, jedes Bündel, jeder Bake-Versuch der Karte) — eine
+                // Aufgabe hielt 250–480 ms Knoten-Bau (headless kalt 5fb21e29: `build` 18× ≥ 50 ms, die längste Aufgabe 737 ms;
+                // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
+                // Schritt bis zur EINEN Frist der Bau-Arbeit (`_bauFrist`, unter dem Ladeschirm die der Zeichnung `_ladeFrist(true)`,
+                // im Bild-Takt ihre zweite Hälfte); was wartet, macht
+                // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
+                // DAS LADE-BILD IST DIE WELT: unter dem Ladeschirm baut in Raten, was das Lade-Bild zeichnet (Welt-Szene, Kaskaden,
+                // Bündel, Karten-Bühne) — nie eine Bühne (`_buehneJetzt`: Ich, Hof, Feed, Werkstatt). Sie öffnet die Eingabe, ihr
+                // Vorbau läuft erst nach dem Weltbild (`_vorbauBedienung`); unter dem Ladeschirm zeichnet sie eine Probe, und dort baut
+                // sie wie vor w19-ankunft-takt am Stück bis LADE_TAKT_MS je Aufruf. In Raten ließ der Seelenwechsel unter dem
+                // Ladeschirm die Bauten der Zwischen-Seelen offen, der zweite Durchgang baute nach (Frost-Wand S2 headless, swiftshader:
+                // +13 Module / +11 Pipelines, am Stück +0 / +0; z287 2/2 rot).
+                if (
+                    ungebaut &&
+                    ((welt._ladeTakt() && scene !== welt._buehneJetzt) || (welt.state._weltbildDa && !welt._loopRuht()))
+                ) {
+                    if (!welt._knotenRate(N, ro, E)) {
+                        E.verschoben++;
+                        if (welt._ladeTakt()) E.ladeSchuld = true;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                } else if (ungebaut) {
+                    const aufruf = buehne ? B.versuch : this.info.calls;
+                    if (E.aufruf !== aufruf) {
+                        E.aufruf = aufruf;
+                        E.aufrufMs = 0;
+                        // unter dem Ladeschirm (nur noch eine Bühne, oben) baut ein Aufruf bis zur Frist des Lade-Frames
+                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
+                    } else if (E.aufrufMs >= E.deckel) {
+                        E.verschoben++;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                    bau = performance.now();
+                }
+                const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
+                if (bau >= 0) {
+                    const ms = performance.now() - bau;
+                    E.aufrufMs += ms;
+                    E.bauN++;
+                    E.bauMs += ms;
+                }
+                if (vorbau) {
+                    if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
+                    else vor.add(k);
+                    merk.delete(k);
+                    if (bau >= 0) E.vorbauBild = N.nodeFrame.frameId; // nur ein Knoten-Bau nimmt den Platz des Bilds
+                } else if (gezeichnet && !buehne) {
+                    if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
+                    pass.add(k);
+                }
+            };
+            renderer.__anazhErstZeichnung = true;
+        }
+    }
+    // DER STAND DER ERST-ZEICHNUNG (der EINE Ort in `_configureRenderer`): je Render-Aufruf die Bau-Zeit, die Zähler für
+    // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines · bereit
+    // gewordene) und je offener Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.
+    _erstZeichnungStand() {
+        if (!this._erstZeichnung)
+            this._erstZeichnung = {
+                aufruf: -1,
+                aufrufMs: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
+                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
+                ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
+                bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
+                bauMs: 0,
+                verschoben: 0,
+                einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
+                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
+                imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
+                pipeAsync: 0,
+                bereitN: 0,
+                absagenN: 0,
+                wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
+                wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
+                neubauN: 0,
+                neu: [],
+                bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
+                offen: new Map(),
+                namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
+                abgesagt: new WeakSet(),
+                aufnehmen: new WeakSet(), // Bundles, versiegelt ohne einen Bürger — ihr Siegel setzt die Marke (`_renderBundle`)
+                gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
+                vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
+                vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
+                vorbauBild: -1, // das Bild (nodeFrame.frameId) des letzten Vorbaus nach dem Bild — höchstens einer je Bild
+            };
+        return this._erstZeichnung;
+    }
+    // DER VORBAU NACH DEM BILD (w4-b-knoten): ein Bau ohne Draw (die Arena im Pass, in den keine ihrer Instanzen fällt) steht
+    // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
+    // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
+    // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
+    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
+        let merk = E.vorgemerkt.get(arena);
+        if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
+        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
+        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
+        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
+        if (gast && bild && !(vor && vor.has(pass))) {
+            if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
+            merk.add(pass);
+        }
+        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
+    }
+    // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
+    // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
+    // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
+    // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
+    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, bis zur EINEN Frist der Bau-Arbeit
+    // (`_bauFrist`), auch IM Schritt: zwischen zwei Fluss-Knoten einer Shader-Stufe fragt er sie (der erste Knoten immer; `R.k` ist
+    // der nächste, der Vendor setzt je Knoten nur Bau- und Shader-Stufe — headless Erst-Boot: eine Stufe trug bis 90 ms am Stück);
+    // der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
+    // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
+    // EIN BAU JE SCHLÜSSEL IM FLUG (w4-knoten-wurzel): der laufende Bau eines Schlüssels steht in `E.imFlug`, jedes Render-Objekt
+    // desselben Schlüssels geht DENSELBEN Bau weiter — bis hier legte jedes, das im selben Bild kam, seinen eigenen an (die Teile
+    // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
+    _knotenRate(N, ro, E) {
+        const d = N.get(ro);
+        // DIE FRIST IST DIE EINE DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): im Spiel geteilt mit jedem Bauer des Takts (Strom,
+        // Planer, Pflanzung, Hüllen, Karte …), unter dem Ladeschirm die der Zeichnung (`_ladeFrist(true)`: die ganze Frist des
+        // Lade-Frames samt dem Guthaben der gehaltenen Leine). Bis hier trug der Bau in Raten eine zweite Uhr daneben (`rateFrist`:
+        // ERST_BAU_MS ab seinem ersten Schritt, unter dem Ladeschirm das Guthaben).
+        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
+        // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
+        // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
+        // Zeit, höchstens die Frist EINES Lade-Frames (LADE_TAKT_MS — keine Aufgabe trägt mehr Bau als der Lade-Frame); ohne
+        // gespannte Leine bleibt es der Rest der EINEN Frist. Bis hier baute es nur diesen Rest, den die Leser des Takts oft schon
+        // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
+        // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
+        // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
+        // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
+        const frist = this._bauFrist("knoten", true);
+        const t0 = performance.now();
+        // SEIN PFLICHT-STÜCK (w19-gang-hitch, Nacharbeit — jeder Leser der Frist geht mindestens eins): der erste Ruf des Takts baut
+        // einen Schritt auch nach der Frist, jeder weitere wartet — bis hier wartete jeder, und ein Takt, dessen Bauer vor dem Bild
+        // die Frist leerten, baute keinen Knoten (Wiese, Gehen: 0 von 6 Rufen); die Alterung gibt ihm dazu seinen Vortritt
+        if (t0 >= frist && E.pflichtTakt === this._taktZeit) return false;
+        E.pflichtTakt = this._taktZeit;
+        const key = N.getForRenderCacheKey(ro);
+        let s = N.nodeBuilderCache.get(key);
+        // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
+        if (s === undefined && d.rate && d.rate.s) N.nodeBuilderCache.set(key, (s = d.rate.s));
+        const bild = N.nodeFrame.frameId;
+        try {
+            let R = null;
+            if (s !== undefined) E.imFlug.delete(key);
+            else if (!(R = d.rate || E.imFlug.get(key))) {
+                // ein Bau, den seit KNOTEN_FLUG_BILDER kein Leser weiterging (sein Objekt fiel im Bau), verlässt den Flug
+                if (E.imFlug.size >= 32)
+                    for (const [k, x] of E.imFlug)
+                        if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
+                E.imFlug.set(
+                    key,
+                    (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 })
+                );
+            }
+            if (R) [d.rate, R.bild] = [R, bild];
+            const b = R && R.b;
+            let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
+            // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
+            // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
+            // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
+            // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
+            // geht immer (nie verhungert); jeder weitere, solange die EINE Frist trägt (`_bauFrist`), ein Schritt darüber endet wie
+            // bisher. Ein begonnener Schritt geht mindestens EINEN Knoten: der Gang der Position (`flowNodeFromShaderStage`) steht am
+            // Anfang der Stufe (`R.k` 0) — ein Schritt ohne Knoten ginge ihn beim nächsten Ruf ein zweites Mal.
+            const ueber = () => performance.now() >= frist;
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
+                const stufe = STUFE[(R.i / 3) | 0];
+                const shader = SHADER[R.i % 3];
+                b.setBuildStage(stufe);
+                if (R.k === 0 && R.i % 3 === 0 && b.context.position && b.context.position.isNode)
+                    b.flowNodeFromShaderStage("vertex", b.context.position);
+                b.setShaderStage(shader);
+                // eine leere Shader-Stufe geht im selben Schritt mit; die volle bis zur Frist, je Knoten gefragt
+                const [F, k0] = [b.flowNodes[shader], R.k];
+                for (; R.k < F.length && (R.k === k0 || !ueber()); R.k++) {
+                    if (stufe === "generate") b.flowNode(F[R.k]);
+                    else F[R.k].build(b);
+                    arbeit = true;
+                }
+                if (R.k >= F.length) [R.i, R.k] = [R.i + 1, 0];
+            }
+            if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
+            if (R) {
+                b.setBuildStage(null);
+                b.setShaderStage(null);
+                b.buildCode();
+                b.buildUpdateNodes();
+                N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
+                E.imFlug.delete(key);
+                // DER FERTIGE BAU ZÄHLT AM EINEN ZÄHLER der Erst-Zeichnung (`bauN`, `bauMs` = Σ seiner Schritte), wie ein Bau am
+                // Stück: bis hier zählte der Bau in Raten nur in einem eigenen Paar (`rateN`/`rateMs`, ohne Leser) — seit der Bau
+                // unter dem Ladeschirm in Raten geht (w19-ankunft-takt), las der Flugschreiber (`erstBauN`) und die Erst-Zeichnungs-
+                // Wand (Konsum im Boot) 0 Knoten-Bauten bei 714 verschobenen (swiftshader, Teil 1)
+                E.bauN++;
+                E.bauMs += R.ms + performance.now() - t0;
+            }
+        } catch (e) {
+            d.rate = undefined;
+            E.imFlug.delete(key);
+            this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
+            return (N.getForRender(ro), true);
+        }
+        [d.rate, d.nodeBuilderState] = [undefined, s];
+        s.usedTimes++;
+        return true;
+    }
+    // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
+    static _schattenGrund() {
+        return AnazhRealm.__schattenGrund || (AnazhRealm.__schattenGrund = THREE.TSL.vec4(0, 0, 0, 1));
+    }
+    // DER BAU-SCHLÜSSEL AUS DEM STOFF-GESETZ (w4-b-knoten): r184 schlüsselt den Knoten-Bau (`Nodes.getForRender`, der Cache
+    // `nodeBuilderCache`) mit dem Schlüssel des Render-Objekts (`initialCacheKey`), und darin trägt JEDE Zahl des Stoffs den
+    // Term „0"/„1" (`getMaterialCacheKey`). Die Zahlen in BAU_NEUTRAL liest der Bau nie als Wert — nur als Stoff-Referenz
+    // (`materialMetalness`, `getFloat("emissiveIntensity")`, die Umgebung im `onObjectUpdate`; Vendor gelesen, gate:vendor-anker
+    // pinnt die Stellen): Stoffe EINER Gestalt (EIN Graph je Signatur, `_graphTeilen`) mit Metall 0 und 0,1 bauten byte-gleich
+    // je ein Programm (headless kalt 01.11.: die Karten-Bühne dreimal dasselbe). Ebenso den Index der Geometrie (`index,` im
+    // Geometrie-Schlüssel): der Bau liest ihn nie, die Pipeline schlüsselt ihn selbst (`getRenderCacheKey`) — die Arena und der
+    // Zeichner EINES Stoffs bauten dasselbe Programm zweimal (52 + 56 ms). Der Bau-Schlüssel ist der r184s, gelesen mit diesen
+    // Zahlen als 1 und ohne den Index — Pipeline, Neuanlage des Render-Objekts und jeder andere Leser behalten den Vendor-
+    // Schlüssel; gemerkt je Render-Objekt (`delete` zählt `usedTimes` unter demselben). Der Rufer: der Anschluss nach init().
+    // DIE FORM DES RENDER-OBJEKTS (w4-knoten-takt): die Sicht ist eine flache KOPIE seiner Felder (ohne Prototyp: ruft r184s
+    // `getMaterialCacheKey` je eine andere Methode, bricht sie laut), der Schlüssel steht in einer WeakMap — nie ein Erbe des
+    // Render-Objekts, nie ein Feld an ihm. `Object.create(ro)` machte jedes Render-Objekt zum Prototyp, V8 gibt einem
+    // Prototyp eine EIGENE Form: jeder Zugriff des Takts auf ein Render-Objekt (Vendor-Draw, Bündel-Replay, Diät) ging den
+    // langsamen Weg (z119c GTX, Stadt im Stand: CPU-Takt p95 9,88 → 10,95 ms; Radeon: zwei Schreibe je Render-Objekt 5,5 →
+    // 30,5 ns, CPU je Bild der stehenden Stadt 4,50 → 5,20 ms, mit der Kopie 4,60). Die Wand: gate:altlasten (Zwillings-Wand,
+    // `Object.create` nur mit null).
+    _gestaltSchluessel(renderer) {
+        const N = renderer && renderer._nodes;
+        if (!N || typeof N.getForRenderCacheKey !== "function")
+            return this.log("BAU-SCHLÜSSEL: r184-Nodes.getForRenderCacheKey nicht gefunden (Vendor-Drift)", "ERROR");
+        if (N.__anazhBauSchluessel) return;
+        const NEUTRAL = AnazhRealm.BAU_NEUTRAL;
+        const blick = { get: (m, p) => (NEUTRAL.includes(p) && typeof m[p] === "number" ? 1 : Reflect.get(m, p, m)) };
+        const bau = new WeakMap(); // Render-Objekt → sein Bau-Schlüssel
+        N.getForRenderCacheKey = function (ro) {
+            let k = bau.get(ro);
+            if (k !== undefined) return k;
+            const m = ro.material;
+            const null0 = !!m && NEUTRAL.some((p) => m[p] === 0);
+            k = ro.initialCacheKey;
+            if (null0 || (ro.geometry && ro.geometry.index)) {
+                const geo = ro.getGeometryCacheKey().replace(/index,$/, "");
+                const sicht = { ...ro, material: null0 ? new Proxy(m, blick) : m, getGeometryCacheKey: () => geo };
+                k = ro.getMaterialCacheKey.call(sicht) + ro.getDynamicCacheKey();
+            }
+            bau.set(ro, k);
+            return k;
+        };
+        N.__anazhBauSchluessel = true;
+        // DER ABSCHIED OHNE BAU (w19-ankunft-takt, ankunft.K5): r184 löst ein Render-Objekt, dessen Schlüssel wechselte (ein Licht
+        // kam, der Stoff wechselte die Variante — `_objects.get` → `dispose`), über `bindings.deleteForRender` → `getBindings` →
+        // `getNodeBuilderState`: ein Objekt, das nie band (es wartete auf seinen Bau in Raten, `_knotenRate`), baute seinen ganzen
+        // Knoten-Graphen SYNCHRON, nur um ihn zu löschen (headless kalt, Bau in Raten unter dem Ladeschirm: eine Aufgabe 640 ms,
+        // davon 361 ms `dispose › deleteForRender › build`). Ohne Bindungen (`_bindings` null) gibt es nichts zu lösen — kein Bau;
+        // `nodes.delete` zählt nur einen Bau, der stand (gate:vendor-anker pinnt die drei Stellen).
+        const BI = renderer._bindings;
+        if (!BI || typeof BI.deleteForRender !== "function")
+            return this.log("ABSCHIED OHNE BAU: r184-Bindings.deleteForRender nicht gefunden (Vendor-Drift)", "ERROR");
+        if (BI.__anazhAbschiedOhneBau) return;
+        const loese = BI.deleteForRender;
+        BI.deleteForRender = function (ro) {
+            if (ro._bindings === null) return;
+            return loese.call(this, ro);
+        };
+        BI.__anazhAbschiedOhneBau = true;
+    }
+
+    // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
+    // vendor/three.webgpu.min.js 6:590437), und ein Fehler-Scope sieht asynchrone Fehler nach Spezifikation nie — ein Stoff,
+    // dessen Pipeline scheitert, bliebe STILL für immer unsichtbar (der synchrone Bau meldete denselben Fehler laut). Der EINE
+    // Abgriff am Gerät (wie der writeBuffer-Abgriff, nach init): das Original-Versprechen geht unverändert an r184 zurück,
+    // seine Absage meldet sich als `PIPELINE-ABSAGE <label>: <message>` (das Label nennt den Stoff:
+    // `renderPipeline_<Stoff>_<id>`, 6:589557) über den EINEN Melder der GPU-Wache (`_gpuWacheMeldung`: ERROR beim Namen,
+    // gezählt in `_gpuWache` — eine Absage ist eine Validierung wie jede andere, Integration V18.535), und die Erst-Zeichnung
+    // trägt die Pipeline aus ihrer Warteschlange aus (`_erstWartet` hält das Versprechen ihres Baus). Gerufen wird je Aufruf
+    // der Prototyp — Linsen hängen sich dort ein.
+    _erstAbsageWache(renderer) {
+        const be = renderer.backend;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!dev || dev.__anazhAbsage || typeof dev.createRenderPipelineAsync !== "function") return;
+        const E = this._erstZeichnungStand();
+        const welt = this;
+        dev.createRenderPipelineAsync = function (desc) {
+            const p = Object.getPrototypeOf(this).createRenderPipelineAsync.call(this, desc);
+            const label = (desc && desc.label) || "renderPipeline_(ohne Label)";
+            E.bau = { p, label };
+            p.catch((e) => {
+                E.absagenN++;
+                welt._gpuWacheMeldung("pipeline", `PIPELINE-ABSAGE ${label}: ${(e && e.message) || e}`);
+            });
+            return p;
+        };
+        dev.__anazhAbsage = true;
+    }
+
+    // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
+    // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
+    // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
+    // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    _einmalRender(schluessel, fn) {
+        const E = this._erstZeichnungStand();
+        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
+        const w = W.get(schluessel);
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
+        if (!this._psoVorbau()) {
+            W.delete(schluessel);
+            fn();
+            return true;
+        }
+        if (w) {
+            for (const p of w) if (E.offen.has(p)) return false;
+            W.delete(schluessel);
+        }
+        const vorbau = E.einmalOffen;
+        const sammel = (E.einmalSammel = new Set());
+        try {
+            fn();
+        } finally {
+            E.einmalSammel = null;
+        }
+        if (E.einmalOffen === vorbau) return true;
+        if (sammel.size) W.set(schluessel, sammel);
+        return false;
+    }
+
+    // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
+    // (Erstbau, Neubau, fremde Szene); `bg` ist das Bundle, dessen Aufnahme ohne ihn versiegelt (null: ein direkter Draw,
+    // er versucht es im nächsten Aufruf selbst).
+    // (1) Er wartet auf seine PIPELINE (`pipe`): bereit ist sie, sobald r184 die fertige GPU-Pipeline in seinen Zustand
+    //     schreibt — `h.pipeline=await d.createRenderPipelineAsync(A)` (vendor/three.webgpu.min.js 6:590389), genau das Feld,
+    //     das `isReady` liest (6:221094). Ein Setter an diesem Feld nimmt im SELBEN Moment jedes Bundle neu auf, das ohne
+    //     einen ihrer Bürger versiegelt wurde (die Zuweisung läuft nach einem await, nie mitten in einer Aufnahme). Das
+    //     Vendor-Versprechen wartet danach noch auf `popErrorScope` (6:590447) — auf der Spielseite > 5 s, auf Windows-
+    //     swiftshader nie aufgelöst (gemessen 07.10.: ein Bundle-Bürger mit fertiger Pipeline 120 s ohne Neuaufnahme); an
+    //     ihm hängt nichts.
+    // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
+    //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
+    //     eine Marke von mittendrin; die Marke setzt das Siegel selbst (`_renderBundle`, die Draw-Wahrheit), so nimmt auch
+    //     das nächste Bild im selben Task neu auf.
+    // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
+    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab. Auch im Bündel: es nimmt nach
+    // jeder Aufnahme neu auf wie in (2), statt ohne ihn zu versiegeln und still abzuspielen (mensch.K4, 30.10.: 8 abgesagte
+    // Stoffe im Bündel des Leibs — Auge und Kleid fehlten im Bild, die Beweis-Aufnahme stand grün).
+    // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
+    // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
+    // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
+    _erstWartet(be, pipe, bg) {
+        const E = this._erstZeichnung;
+        if (!pipe) {
+            if (bg !== null) E.aufnehmen.add(bg);
+            return;
+        }
+        E.wartetN++;
+        E.wartetAuf = pipe;
+        const bau = E.bau;
+        E.bau = null;
+        if (be.isWebGPUBackend !== true) return;
+        if (E.abgesagt.has(pipe)) return this._erstWartet(be, null, bg);
+        let bundles = E.offen.get(pipe);
+        if (bundles === undefined) {
+            const h = be.get(pipe);
+            let wert = h.pipeline;
+            const warten = (bundles = new Set());
+            E.offen.set(pipe, warten);
+            if (bau !== null) {
+                E.namen.set(pipe, bau.label);
+                bau.p.catch(() => {
+                    E.abgesagt.add(pipe);
+                    E.offen.delete(pipe);
+                    for (const b of warten) b.needsUpdate = true;
+                });
+            }
+            Object.defineProperty(h, "pipeline", {
+                configurable: true,
+                enumerable: true,
+                get: () => wert,
+                set: (v) => {
+                    wert = v;
+                    if (v === undefined || v === null) return;
+                    Object.defineProperty(h, "pipeline", {
+                        value: v,
+                        writable: true,
+                        configurable: true,
+                        enumerable: true,
+                    });
+                    E.offen.delete(pipe);
+                    E.bereitN++;
+                    for (const b of warten) b.needsUpdate = true;
+                },
+            });
+        }
+        if (bg !== null) bundles.add(bg);
+    }
+
+    // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
+    // die Welt bootet + simuliert voll (CPU), nur die Rasterung entfällt (Mechanik-Playtest GPU-frei;
+    // der Look gehört der echten WebGPU-Bahn). Deckt exakt die vom Code berührte Renderer-API; `init()`
+    // resolvt (rendererReady=true), `backend=null` nimmt die Sofort-Dispose-Bahn in _drainPools.
+    _makeHeadlessRenderer(canvas) {
+        const noop = () => {};
+        const resolved = () => Promise.resolve();
+        // der Zeichenpuffer folgt setSize × Pixel-Verhältnis wie am echten Renderer (r184 CanvasTarget): die Bühnen
+        // (`_buehneRenderer`) gleichen ihren Canvas an der CSS-Größe ab (`_workshopSyncCanvasSize`)
+        const mass = { w: canvas ? canvas.width : 0, h: canvas ? canvas.height : 0, pr: 1 };
+        const setSize = (w, h, stil = true) => {
+            Object.assign(mass, { w, h });
+            if (!canvas) return;
+            canvas.width = Math.floor(w * mass.pr);
+            canvas.height = Math.floor(h * mass.pr);
+            if (stil === true) Object.assign(canvas.style, { width: w + "px", height: h + "px" });
+        };
+        return {
+            domElement: canvas,
+            shadowMap: { enabled: false, type: 0, autoUpdate: false, needsUpdate: false },
+            toneMapping: 0,
+            toneMappingExposure: 1,
+            stencil: false,
+            outputColorSpace: "srgb",
+            backend: null,
+            info: { render: { calls: 0, drawCalls: 0, triangles: 0 }, memory: {}, autoReset: false, reset: () => {} },
+            init: resolved,
+            // render() lässt die Rasterung weg, aktualisiert aber die Welt-Matrizen — sonst veraltet
+            // matrixWorld und der echte Raycast (Graben/Picken) verfehlt das Terrain.
+            render: (scene, camera) => {
+                if (scene && scene.updateMatrixWorld) scene.updateMatrixWorld();
+                if (camera && camera.updateMatrixWorld) camera.updateMatrixWorld();
+            },
+            renderAsync: (scene, camera) => {
+                if (scene && scene.updateMatrixWorld) scene.updateMatrixWorld();
+                if (camera && camera.updateMatrixWorld) camera.updateMatrixWorld();
+                return Promise.resolve();
+            },
+            compute: noop,
+            computeAsync: resolved,
+            setAnimationLoop: noop,
+            setSize,
+            setPixelRatio: (pr = 1) => pr !== mass.pr && ((mass.pr = pr), setSize(mass.w, mass.h, false)),
+            setClearColor: noop,
+            getPixelRatio: () => mass.pr,
+            getContext: () => null,
+            // Der Zeichenpuffer ist der Canvas (der resize-Handler setzt ihn): der EINE Schirm-Maßstab (`_schirm`)
+            // liest headless denselben Schirm wie am echten Renderer.
+            getDrawingBufferSize: (t) => {
+                const w = canvas && canvas.width > 0 ? canvas.width : 0;
+                const h = canvas && canvas.height > 0 ? canvas.height : 0;
+                return t && typeof t.set === "function" ? t.set(w, h) : { x: w, y: h, width: w, height: h };
+            },
+            setRenderTarget: noop,
+            getRenderTarget: () => null,
+            clear: noop,
+            dispose: noop,
+            _isHeadlessNull: true,
+        };
+    }
+
+    // DIE REIHE DER BÜNDEL (1310-1): r184 zeichnet die Region-Bündel in der Reihenfolge der Szene und vor jedem losen
+    // Objekt — wer zuerst zeichnet, schreibt die Tiefe, hinter der die übrigen ihre Fragmente verwerfen. Die Verdecker
+    // zuerst: @global (die gesetzten Gruppen ohne Wahl), dann die Regionen, @wahl zuletzt (Pflanzen-Stufen, Atlas-Karten,
+    // Zwillinge — Ausschnitt je Fragment). Bis 1310-1 entschied die Ankunft beim Boot: am Genesis-Ring legte der Tor-
+    // Zwilling @wahl vor @global an — bei gleichen Befehlen in EINER Sitzung gpu-bank +1,6 ms und 47,5 statt 50,1 fps unter
+    // Regler voll (OMEN, GTX 1060). Jedes neue Bündel stellt die Reihe neu (stabil im Rang); die Plätze der übrigen Kinder
+    // der Szene bleiben, nur die Bündel tauschen ihre Plätze untereinander.
+    // DIE REIHE IM BÜNDEL (1310-8): auch die Gruppen EINES Bündels zeichnen in seiner Kinder-Folge — bis 1310-8 die Ankunft ihrer
+    // Assets beim Boot. Die nahe Stufe zuerst (L0 vor L1 vor der Atlas-Karte), im Gleichstand der Schlüssel: wer nah steht,
+    // schreibt die Tiefe, hinter der die fernen Stufen ihre Fragmente verwerfen. Gemessen an der Mess-Wiese (OMEN, GTX 1060,
+    // EINE Sitzung, Gier 0, alle Bäume an/aus): der Baum-Preis in der Ankunft 5,02/5,25 ms, nach Stufe aufsteigend 3,46/3,33,
+    // absteigend 7,26 — gpu-bank 14,1 → 12,4 ms. Jede Aufnahme eines Kinds stellt die Reihe neu (`_archInstanceGroupFor`, das
+    // Wachsen der Gruppe); das Bündel nimmt danach ohnehin neu auf.
+    // DIE REIHE NACH ABSTAND (1310-9): trägt der Ruf das Auge (`_buendelAuge`, der Anker der Reihe), zeichnet innerhalb einer
+    // Stufe die Gruppe zuerst, deren nächste Instanz dem Auge am nächsten steht (vorn schreibt die Tiefe); ohne Auge der Schlüssel.
+    static _buendelKinderReihe(bundle, auge) {
+        const rang = (c) => (c.userData && Number.isFinite(c.userData.buendelStufe) ? c.userData.buendelStufe : 0);
+        const key = (c) => String((c.userData && c.userData.archInstanceKey) || "");
+        const nah = new Map();
+        if (auge)
+            for (const c of bundle.children) {
+                let m = 1e30;
+                const a = c.instanceMatrix && c.instanceMatrix.array;
+                const n = c.count | 0;
+                if (a)
+                    for (let i = 0; i < n; i++) {
+                        const dx = a[i * 16 + 12] - auge.x;
+                        const dz = a[i * 16 + 14] - auge.z;
+                        const d = dx * dx + dz * dz;
+                        if (d < m) m = d;
+                    }
+                nah.set(c, m);
+            }
+        bundle.children.sort(
+            (a, b) =>
+                rang(a) - rang(b) ||
+                (auge ? nah.get(a) - nah.get(b) : 0) ||
+                (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
+        );
+    }
+    // DIE ZEICHEN-REIHE DER WELT (T3): EIN Gesetz für alles Opake, die Bündel und jedes lose Objekt — wer vorn steht, zeichnet
+    // zuerst und schreibt die Tiefe, hinter der die Übrigen ihre Fragmente verwerfen. Die Schichten vorn → hinten: die Bündel
+    // (r184 und die BUNDLE-REIHENFOLGE führen jedes vor jedem losen Draw aus) @global · die Regionen · @wahl, dann lose, was
+    // auf dem Boden steht (Bau-Satz, jede lose Senke, Tor, Membran, Leib — ohne Marke), der Boden, der Fern-Ring, der Himmel
+    // (im Unendlichen zahlt er zuletzt nur seine eigenen Pixel). Ein Erzeuger nennt seine Schicht als Laufzeit-Marke
+    // (`userData.zeichenSchicht`). Bis T3 sortierte r184 die losen Opaken nach renderOrder · Tiefe · Objekt-id, die Satz-Hülle
+    // liegt am Ursprung (gleiche Tiefe): die Boot-Ankunft entschied, der Himmel (id 20) zeichnete vor Boden und Bau. Gemessen
+    // (Radeon 890M, EINE Welt, gpu-bank-Median): Genesis Ego 28,25 → 23,38 ms, Dorf Ego 27,27 → 22,05 ms, Wiese 22,02 → 21,78.
+    static _zeichenRang(o) {
+        const u = (o && o.userData) || {};
+        if (o && o.isBundleGroup === true) return u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1;
+        const s = u.zeichenSchicht;
+        return s === "boden" ? 4 : s === "fern" ? 5 : s === "himmel" ? 6 : 3;
+    }
+    // Die Folge der losen Opaken in JEDEM Render (`setOpaqueSort`, `_configureRenderer`): r184s Schlüssel (Gruppe · renderOrder,
+    // die erklärte Folge wie der Feld-Pass zuletzt) und darin die Schicht vor Tiefe und id.
+    static _zeichenFolge(a, b) {
+        return (
+            a.groupOrder - b.groupOrder ||
+            a.renderOrder - b.renderOrder ||
+            AnazhRealm._zeichenRang(a.object) - AnazhRealm._zeichenRang(b.object) ||
+            a.z - b.z ||
+            a.id - b.id
+        );
+    }
+    _buendelReihe(scene) {
+        const kinder = scene.children;
+        const plaetze = [];
+        const buendel = [];
+        for (let i = 0; i < kinder.length; i++) {
+            const c = kinder[i];
+            if (c && c.isBundleGroup && c.userData && c.userData.regionKey != null) {
+                plaetze.push(i);
+                buendel.push(c);
+            }
+        }
+        const rang = AnazhRealm._zeichenRang;
+        const reihe = buendel.map((b, k) => ({ b, k })).sort((x, y) => rang(x.b) - rang(y.b) || x.k - y.k);
+        for (let k = 0; k < plaetze.length; k++) kinder[plaetze[k]] = reihe[k].b;
+    }
+
+    // DER STAND EINES LEIB-BÜNDELS (E2, `_leibHuelle`): r184 spielt ein Bündel ab, solange seine Version steht — was die
+    // Projektion dieses Passes ihm gibt, liest es dann nie (`_renderBundle`). Ein Leib wechselt aber, was er zeichnet: die
+    // Sicht (Ego nimmt ihn aus der Ebene des Auges), die Stufe (`_gelenkStufe`), das Gerät in der Hand, ein neues Kleid, der
+    // Blick, der ihn verlässt. Je Bündel-Aufnahme (Bündel · Kamera · Render-Kontext) merkt der Stand die Projektion — je Zug
+    // Objekt, Stoff und seine Version, Geometrie und die Summe ihrer Attribut-Versionen, Gruppe; weicht sie ab, nimmt GENAU
+    // diese Aufnahme neu auf (andere Kameras, der See-Spiegel, spielen weiter ab). Ein durchsichtiger Leib-Stoff zeichnete
+    // im Bündel vor der opaken Welt: der Melder nennt ihn.
+    _leibBuendelStand(rend, b) {
+        const d = rend.backend.get(rend._bundles.get(b.bundleGroup, b.camera, rend._currentRenderContext));
+        const s = d._anazhLeib || (d._anazhLeib = []);
+        const L = b.renderList;
+        if (L.transparent.length > 0 || L.transparentDoublePass.length > 0)
+            this._bruchMelden(
+                `LEIB-BÜNDEL: ein durchsichtiger Stoff im Leib „${b.bundleGroup.name || "?"}" — opak ist sein Gesetz`
+            );
+        let i = 0,
+            anders = false;
+        for (const it of L.opaque) {
+            const g = it.geometry;
+            let v = g.index ? g.index.version : 0;
+            for (const k in g.attributes) v += g.attributes[k].version;
+            const w0 = it.object.id,
+                w1 = it.material.id,
+                w2 = it.material.version,
+                w3 = g.id,
+                w4 = it.group ? it.group.start : -1;
+            if (
+                s[i] !== w0 ||
+                s[i + 1] !== w1 ||
+                s[i + 2] !== w2 ||
+                s[i + 3] !== w3 ||
+                s[i + 4] !== v ||
+                s[i + 5] !== w4
+            ) {
+                s[i] = w0;
+                s[i + 1] = w1;
+                s[i + 2] = w2;
+                s[i + 3] = w3;
+                s[i + 4] = v;
+                s[i + 5] = w4;
+                anders = true;
+            }
+            i += 6;
+        }
+        if (s.length !== i) {
+            s.length = i;
+            anders = true;
+        }
+        if (anders && d.bundleGPU !== undefined) {
+            d.bundleGPU = undefined;
+            d.renderObjects = undefined;
+            this._leibBuendelNeu = (this._leibBuendelNeu || 0) + 1;
+        }
+    }
+
+    // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
+    // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
+    // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
+    _gpuKehrausMarke() {
+        const ri = this.state.renderer && this.state.renderer.info;
+        return ri && ri.render ? ri.render.calls : 0;
+    }
+    // DER GPU-KEHRAUS — die Residenz folgt dem BILD, nie der Geschichte: nach dem Frame verlässt jeder Geometrie-Puffer die
+    // GPU, den kein Objekt des Szenen-Graphen zeichnet und den dieser Frame nicht zeichnete (die r184-Quads der Post-Kette
+    // tragen ihren Frame-Zähler in `attributeCall`). Was der Foundry-Cache nur auf der CPU behält, was ein Wachsen ersetzte,
+    // was eine Gruppe beim Fallen zurückließ — gleich welcher Erzeuger, EIN Chokepoint. Die Instanz-Matrizen (Speicher-
+    // Puffer) fallen nur über `_instanzAbschied` (ihre Bindegruppe hält sie). Kosten: ein Gang durch Graph und Register je
+    // GPU_KEHRAUS_MS — beide tragen nach dem Kehraus nur, was das Bild trägt. `zaehlerVor` = r184 `info.render.calls` vor
+    // dem Frame.
+    _gpuKehraus(zaehlerVor, jetzt) {
+        const st = this.state;
+        const rend = st.renderer;
+        if (!rend || !rend._attributes || !rend._geometries || !rend.info || !st.scene) return 0;
+        if (st._gpuKehrausT && jetzt - st._gpuKehrausT < AnazhRealm.GPU_KEHRAUS_MS) return 0;
+        st._gpuKehrausT = jetzt;
+        const lebt = new Set();
+        const sammle = (o) => {
+            // eine Senke in der Arena (G1) zeichnet nicht: ihre Gestalt trägt das Lager, ihre Instanzen die Arena
+            if (o.__arena) return;
+            const g = o.geometry;
+            if (g && g.attributes) {
+                for (const k in g.attributes) lebt.add(g.attributes[k]);
+                if (g.index) lebt.add(g.index);
+            }
+            if (o.isInstancedMesh) {
+                lebt.add(o.instanceMatrix);
+                if (o.instanceColor) lebt.add(o.instanceColor);
+            }
+            // Was seine Render-Objekte zeichnen (r184 `getAttributes`, gecacht): auch die Knoten-Attribute. Ein Objekt unter
+            // der Observer-Diät lädt NICHTS neu hoch, solange sich keine Version ändert — ein Attribut, das es zeichnet,
+            // darf nie fallen.
+            const ros = o.__renderObjekte;
+            if (ros) for (const ro of ros) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
+            // eine Senke zeichnet über ihren Zeichner (1410-1): dessen Render-Objekte zeichnen ihre Attribute
+            const zro = o.__zeichner && o.__zeichner.__renderObjekte;
+            if (zro) for (const ro of zro) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
+        };
+        st.scene.traverse(sammle);
+        // die Bühnen sind Bild: was eine Bühne seit dem letzten Kehraus zeichnete (`_buehneRender`), lebt wie der Graph
+        if (this._buehnenBild) for (const s of this._buehnenBild) s.traverse(sammle);
+        if (this._buehnenBild) this._buehnenBild.clear();
+        const gezeichnet = rend._geometries.attributeCall;
+        const weg = [];
+        // ein verschränkter Puffer (die Jahres-Ecken, `_jahrEcken`) fällt nur GANZ: je Puffer [Sichten im Register, die
+        // ungezeichneten] — zeichnet eine Sicht, bleibt er (`_gpuAbschiedVerschraenkt`)
+        const verschraenkt = new Map();
+        for (const [a, v] of rend.info.memoryMap) {
+            if (!v || (v.type !== "attributes" && v.type !== "indexAttributes")) continue;
+            const tot = !(lebt.has(a) || gezeichnet.get(a) >= zaehlerVor);
+            if (a.isInterleavedBufferAttribute) {
+                const z = verschraenkt.get(a.data) || verschraenkt.set(a.data, [0, []]).get(a.data);
+                z[0]++;
+                if (tot) z[1].push(a);
+            } else if (tot) weg.push(a);
+        }
+        let n = 0;
+        for (const a of weg) if (this._gpuAbschied(a)) n++;
+        for (const [d, [alle, tot]] of verschraenkt)
+            if (tot.length === alle) n += this._gpuAbschiedVerschraenkt(d, tot);
+        st._gpuKehrausN = (st._gpuKehrausN || 0) + n;
+        return n;
+    }
+
+    // DER EINE LEINWAND-WEG (06.10., 0910-1) — was der Direktpfad an der Leinwand braucht, lebt nur, solange er zeichnet.
+    // DIE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
+    // lebt im Ziel des Szene-Passes, mit eigener Tiefe) — r184 legt für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-
+    // Größe an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die dort kein Pixel liest. Der Direktpfad dagegen zeichnet
+    // die Szene in das Rahmen-Ziel des Renderers (`_getFrameBufferTarget`, das Tonemapping zur Leinwand), dessen Tiefe
+    // `renderer.depth` folgt: ohne sie zeichnete er ohne Tiefentest, und der erste Leser der Szenen-Tiefe (`_szeneTiefe`:
+    // Wasser, Feld-Pass) warf in r184 `copyFramebufferToTexture` („Invalid value used as weak map key" — das Rahmen-Ziel
+    // trägt keine Tiefen-Textur). Bis V18.532 stellten ZWEI Stellen die Tiefe (der Ketten-Bau nahm sie, nur der Fang eines
+    // Render-Fehlers gab sie zurück) — jeder andere Weg in den Direktpfad (die Weiche der Zerleg-Linse `post`/`leer`) fuhr
+    // ohne und stürzte. Jetzt stellt sie die Weiche in `_loopRender` je Frame hier: Direktpfad → mit Tiefe, Post-Kette →
+    // ohne, und die GPU-Textur der Leinwand-Tiefe fällt dabei mit (sonst hielte ein Ausflug in den Direktpfad die 7,9 MB
+    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
+    // DAS RAHMEN-ZIEL (0910-1, Koordinator + OMEN): r184 legt es beim ersten Leinwand-Render mit Tonemapping an
+    // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget`) und
+    // entsorgt es nur mit dem Leinwand-Ziel. Die Post-Kette legt es nie an (r184 schaltet Tonemapping und Farbraum für ihr
+    // Quad ab) — jeder Ausflug in den Direktpfad hielt es für immer: `zerlegen` (die Weiche `post`) ließ 23,7 MB
+    // `tex:r184-ausgabe` in der Sitzung, und `band --ort genesis` danach maß sie mit (0710-6, 0710-9). Zeichnet die Kette,
+    // verlässt jedes Rahmen-Ziel die GPU (`_rahmenZielAbschied`), gleich wer es anlegte — die Weiche oder eine Linse mit
+    // eigenem Leinwand-Render; eine Prüfung der Map-Größe je Frame. Die Wand: gate:post-kette (b) und (g).
+    _leinwandWeg(direkt) {
+        const rend = this.state.renderer;
+        if (rend && direkt !== true && rend._frameBufferTargets && rend._frameBufferTargets.size > 0)
+            this._rahmenZielAbschied(rend);
+        const be = rend && rend.backend;
+        if (!be || be.isWebGPUBackend !== true) return;
+        const soll = direkt === true;
+        if (rend.depth === soll) return;
+        rend.depth = soll;
+        // r184 hält den Deskriptor des Leinwand-Passes im Backend-Datensatz der Leinwand — updateSize verwirft ihn, der
+        // nächste Leinwand-Pass baut ihn mit bzw. ohne Tiefe neu (gate:vendor-anker pinnt beides).
+        be.updateSize();
+        if (!soll) {
+            const t = rend.getCanvasTarget().depthTexture;
+            if (t && be.has(t)) be.destroyTexture(t);
+        }
+    }
+
+    // DER ABSCHIED DES RAHMEN-ZIELS: r184s eigener — der dispose-Hörer, den `_getFrameBufferTarget` an das Leinwand- bzw.
+    // Ausgabe-Ziel hängt (Hörer ab, Ziel entsorgt: seine Farb- und Tiefen-Textur verlassen die GPU, der Eintrag fällt). Er
+    // ist am Text erkennbar (er löscht aus `_frameBufferTargets`; gate:vendor-anker pinnt ihn). Fehlt er (Vendor-Drift),
+    // fällt das Ziel trotzdem — LAUT, mit dem Grund.
+    _rahmenZielAbschied(rend) {
+        for (const [ziel, rahmen] of [...rend._frameBufferTargets]) {
+            const hoerer = (ziel && ziel._listeners && ziel._listeners.dispose) || [];
+            const abschied = hoerer.find((h) =>
+                /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h))
+            );
+            if (abschied) {
+                abschied.call(ziel);
+                continue;
+            }
+            this.log(
+                "RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
+                "ERROR"
+            );
+            rahmen.dispose();
+            rend._frameBufferTargets.delete(ziel);
+        }
+    }
+
+    // DIE ZEITLICHE HOCHSKALIERUNG (K50, TAAU): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`, der
+    // Szenen-Pass `setResolutionScale`), die zeitliche Auflösung löst auf die AUSGABE-Auflösung auf. Die Kamera springt je Frame
+    // um einen Halton-Versatz in EINGANGS-Pixeln (die Folge des Knotens, `setViewOffset` mit der Eingangs-Größe), jedes
+    // Eingangs-Texel trägt so über die Folge eine andere Stelle der Ausgabe. Je Ausgabe-Pixel wiegt der Resolve die 3×3 Texel
+    // um seine Stelle nach ihrem Abstand in AUSGABE-Pixeln (exp(−ZEIT_KERN·d²): 7 statt Unreals 2,29 — gemessen schärfer und ruhiger), die Deckung des
+    // nächsten Texels wiegt das Gewicht des Jetzt (ein Pixel ohne nahen Abtastpunkt in diesem Frame hält seine Geschichte),
+    // die Varianz-Klemme spannt dieselben 3×3 Texel (im Stand ZEIT_GAMMA_RUHE σ: das gröbere Gitter streut weiter). Geschichte und Resolve bleiben rgba16float in der Ausgabe-Auflösung (W7:
+    // 11/11/10 posterisierte die Geschichte). DIE VORTIEFE lebt im Kanal a der Geschichte (die Sicht-Tiefe des Vorbilds je
+    // Ausgabe-Pixel, float16 relativ 2⁻¹¹ — 0,05 mm Tiefen-Stufe auf 1 m gegen die Disokklusions-Schwelle 0,0005): kein
+    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe oder ein Kamera-Sprung
+    // (`_traaReprojektion`, ZEIT_SPRUNG_M) startet die Geschichte neu, danach läuft sie als Mittel an (K68: das Jetzt wiegt
+    // mindestens 1/(n+1)); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
+    // TRAANode (vendor/TRAANode.js unverändert): Bau, Ziele, Halton-Folge, Kamera-Uniformen und `clearViewOffset` erbt der
+    // Knoten, Resolve, Größen und Lauf sind seine. Das Quad nimmt die Klasse des Quads der Post-Kette (`pp._quadMesh`,
+    // gate:vendor-anker); fehlt sie, bricht die Kette LAUT.
+    _zeitAufloesung(pp, farbe, tiefe, bewegung, kamera) {
+        const T = THREE.TSL;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function" || typeof THREE.TRAANode !== "function")
+            throw new Error("ZEIT-AUFLÖSUNG: Quad der Post-Kette oder TRAANode fehlt (Vendor-Drift)");
+        const { Fn, If, float, vec2, vec3, vec4, uv, texture, uniform, max, exp, floor, mix, luminance } = T;
+        const realm = this;
+        const klemme = (h, lo, hi) => {
+            const p = hi.add(lo).mul(0.5);
+            const e = hi.sub(lo).mul(0.5).add(1e-7);
+            const v = h.sub(p);
+            const u = v.div(e).abs();
+            const m = max(u.x, u.y, u.z);
+            return m.greaterThan(1).select(p.add(v.div(m)), h);
+        };
+        class ZeitAufloesung extends THREE.TRAANode {
+            constructor() {
+                super(farbe, tiefe, bewegung, kamera);
+                this._zitter = uniform(new THREE.Vector2());
+                this._neustart = uniform(1);
+                // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
+                this._anlauf = uniform(0);
+                this._kern = uniform(AnazhRealm.ZEIT_KERN);
+                // die Unschärfe der Bewegung (spielgang.K4, `_zugangTakt` → `laufPxSetzen`): ab so vielen Ausgabe-Pixeln Bewegung
+                // je Bild trägt das Jetzt allein — an r184s `maxVelocityLength`, aus `ZUGANG.laufPxAus`. Eine KONSTANTE des
+                // Resolve, nie eine Uniform: an (der Default) ist der Resolve byte-gleich dem ohne Zugang (vp-0611g: die Teilung
+                // durch eine Uniform rundete auf 6,2 % der Pixel um 1 LSB); der Wechsel baut den Resolve-Stoff neu.
+                this._laufPx = this.maxVelocityLength;
+                this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
+                // DAS DECKUNGS-GEDÄCHTNIS (A3b): der Resolve schreibt neben dem Bild je Ausgabe-Pixel, wie oft sein 3×3 eine
+                // Deckungs-Kante trug (r8, `FLACKER`) — ein zweites Ziel des Resolve-Quads (MRT, Schlüssel = Name der Textur).
+                // DIE GESCHICHTE IST DAS ZIEL DES LETZTEN RESOLVE (G7): zwei solche Ziele wechseln je Frame die Rolle
+                // (`updateBefore`), keines wird kopiert. Bis G7 kopierte r184s Weg das Bild in die Geschichte und A3b das
+                // Gedächtnis in seine — jede Kopie ein eigener Befehls-Puffer mit Submit außerhalb jedes Pass-Stempels (Radeon,
+                // Mess-Wiese, gpu-bank in EINER Welt, 120 Paare: die zwei Kopien 0,69 ± 0,25 ms je Frame, die eine von main
+                // 93539122 0,23 ± 0,14). Die Ziele des Vendors (1×1, nie gezeichnet) fallen. EIN Resolve-Stoff liest das Ziel der
+                // Lage und schreibt in das andere; er und die Kette lesen es über Texturen, deren Wert wechselt (`updateBefore`,
+                // DIE LAGE IST DIE GENERATION). Ein Zweig je Abtastung der Kette kostete den Post-Pass 1,67 → 3,14
+                // ms (Radeon, Genesis, Pass-Stempel).
+                const zielBau = () => {
+                    const z = new THREE.RenderTarget(1, 1, { depthBuffer: false, type: THREE.HalfFloatType, count: 2 });
+                    z.name = "TRAANode.resolve";
+                    z.textures[0].name = "TRAANode.resolve";
+                    z.textures[1].name = "TRAANode.flacker";
+                    z.textures[1].type = THREE.UnsignedByteType;
+                    z.textures[1].format = THREE.RedFormat;
+                    return z;
+                };
+                this._resolveRenderTarget.dispose();
+                this._historyRenderTarget.dispose();
+                this._ziele = [zielBau(), zielBau()];
+                // die Lage: das Ziel des letzten Resolve (die Geschichte des nächsten); `setSize` des Vendors und der Neubeginn
+                // lesen die zwei Rollen-Namen
+                this._lage = 0;
+                this._historyRenderTarget = this._ziele[0];
+                this._resolveRenderTarget = this._ziele[1];
+                this._textureNode = T.passTexture(this, this._ziele[0].texture);
+                // EIN RESOLVE-STOFF (w14-ankunft-weg, FUND 06.11. `bild-kosten.js:1304`): er liest die Geschichte und ihr
+                // Gedächtnis über zwei Texturen, deren Wert die Lage wechselt (`updateBefore`, wie die Kette `_textureNode`) —
+                // r184 hält je Paar der Texturen eine Bindegruppe (`createBindings`, Schlüssel = ihre Ids). Bis hier stand je
+                // Ziel ein eigener Stoff, der fest das andere las: zwei Knoten-Bauten desselben Programms im ersten Lade-Bild
+                // (swiftshader kalt `updateBefore` 593 ms in der längsten Aufgabe).
+                const vor = this._ziele[1];
+                this._geschichte = texture(vor.textures[0]);
+                this._flackerAlt = texture(vor.textures[1]);
+                const F = AnazhRealm.FLACKER;
+                this._flacker = {
+                    kante: uniform(F.kante),
+                    rate: uniform(F.rate),
+                    an: uniform(new THREE.Vector2(F.an[0], F.an[1])),
+                    ruhePx: uniform(F.ruhePx),
+                };
+                this._versatzIndex = 0;
+                this._quad = Object.assign(new Quad(this._resolveMaterial), { name: "TRAA" });
+                this._gr = new THREE.Vector2();
+            }
+            // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
+            eingang(aus) {
+                const r = this._rend;
+                const sp = this.beautyNode.passNode;
+                r.getSize(aus);
+                const k = r.getPixelRatio() * sp.getResolutionScale();
+                return aus.set(Math.floor(aus.x * k), Math.floor(aus.y * k));
+            }
+            setViewOffset(_w, _h) {
+                const e = this.eingang(this._gr);
+                super.setViewOffset(e.x, e.y);
+                const v = this.camera.view;
+                this._zitter.value.set(v.offsetX, v.offsetY);
+                // DER VERSATZ DES LAUBS (A3, `_laubVersatz`) gehört zur Folge des Frames: die Halton-Achsen 5 und 7 am Frame
+                // seit dem Beginn der Geschichte (ein Neubeginn steht an, wenn ihre Größe nicht die der Ausgabe ist) als Phase, die
+                // der Stoff je Pixel dreht (`_laubVersatz`), z die Weite ±LAUB_VERSATZ Eingangs-Pixel. Bis A3b lief er am Index
+                // des Zitterns: jedes Ausgabe-Pixel wiegt die Frames nach der Nähe seines Abtastpunkts (`wNah`), so sah jede Phase
+                // des Gitters immer dieselben Versätze — ein Raster im Takt des Gitters (Radeon, Tafel-Pose, 256 Frames ohne
+                // Klemme: zweiton locker 58 135 → 20 452 px).
+                const lu = realm.state.lodUniforms;
+                if (lu && lu.uLaubVersatz) {
+                    const sch = realm._schirm();
+                    const g = this._historyRenderTarget;
+                    this._versatzIndex =
+                        g.width !== sch.breite || g.height !== sch.hoehe ? 0 : (this._versatzIndex + 1) % 1e6;
+                    const o = lu.uLaubVersatz.value;
+                    for (let a = 0; a < 2; a++) {
+                        const b = a ? 7 : 5;
+                        let h = 0;
+                        for (let i = this._versatzIndex + 1, f = 1; i > 0; i = Math.floor(i / b))
+                            h += (f /= b) * (i % b);
+                        o.setComponent(a, h);
+                    }
+                    o.z = AnazhRealm.LAUB_VERSATZ;
+                }
+            }
+            updateBefore(frame) {
+                const r = frame.renderer;
+                this._previousCameraWorldMatrix.value.copy(this._cameraWorldMatrix.value);
+                this._previousCameraProjectionMatrixInverse.value.copy(this._cameraProjectionMatrixInverse.value);
+                this._cameraNearFar.value.set(this.camera.near, this.camera.far);
+                this._cameraWorldMatrix.value.copy(this.camera.matrixWorld);
+                this._cameraWorldMatrixInverse.value.copy(this.camera.matrixWorldInverse);
+                this._cameraProjectionMatrixInverse.value.copy(this.camera.projectionMatrixInverse);
+                const sch = realm._schirm();
+                const aus = { x: sch.breite, y: sch.hoehe };
+                if (this._needsPostProcessingSync === true) {
+                    this.setViewOffset(); // der Versatz in Eingangs-Pixeln (`eingang`)
+                    this._needsPostProcessingSync = false;
+                }
+                const g = this._historyRenderTarget;
+                const neu = g.width !== aus.x || g.height !== aus.y;
+                this.setSize(aus.x, aus.y);
+                const ziel = r.getRenderTarget(),
+                    mrt = r.getMRT(),
+                    rof = r.getRenderObjectFunction(),
+                    autoClear = r.autoClear;
+                r.setMRT(null);
+                r.setRenderObjectFunction(null);
+                r.autoClear = true;
+                if (neu)
+                    this._ziele.forEach((z, i) => {
+                        r.initRenderTarget(z);
+                        // DIE LAGE IST DIE GENERATION: r184 bindet eine getauschte Textur nur neu, wenn die Generation ihrer
+                        // Renderer-Daten (beim Anlegen ihre `version`) nicht die gebundene ist (`Bindings._update`,
+                        // gate:vendor-anker) — gleiche Versionen hielten die Kette auf dem alten Ziel; je Ziel eine eigene,
+                        // gesetzt nach jedem Anlegen (Größen-Wechsel und Neubeginn laufen hier durch)
+                        r._textures.get(z.texture).generation = "zeit:" + i;
+                    });
+                this._neustart.value = neu ? 1 : 0;
+                const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
+                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
+                // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
+                // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
+                const k = 1 - this._lage;
+                this._geschichte.value = this._ziele[this._lage].textures[0];
+                this._flackerAlt.value = this._ziele[this._lage].textures[1];
+                r.setRenderTarget(this._ziele[k]);
+                this._quad.render(r);
+                r.setRenderTarget(null);
+                this._lage = k;
+                this._textureNode.value = this._ziele[k].texture;
+                this._historyRenderTarget = this._ziele[k];
+                this._resolveRenderTarget = this._ziele[1 - k];
+                r.setRenderTarget(ziel);
+                r.setMRT(mrt);
+                r.setRenderObjectFunction(rof);
+                r.autoClear = autoClear;
+            }
+            setup(builder) {
+                this._rend = builder.renderer;
+                const rp = builder.context.renderPipeline;
+                if (rp) {
+                    this._needsPostProcessingSync = true;
+                    rp.context.onBeforeRenderPipeline = () => {
+                        this.setViewOffset();
+                    };
+                    rp.context.onAfterRenderPipeline = () => this.clearViewOffset();
+                }
+                if (builder.renderer.reversedDepthBuffer === true || builder.renderer.logarithmicDepthBuffer === true)
+                    throw new Error("ZEIT-AUFLÖSUNG: umgekehrte oder logarithmische Tiefe trägt der Resolve nicht");
+                this._velocityNode = builder.context.velocity !== undefined ? builder.context.velocity : T.velocity;
+                const ein = this.beautyNode;
+                const tief = this.depthNode;
+                const { x: nah, y: fern } = this._cameraNearFar;
+                // der EINE Stoff liest die Geschichte und ihr Gedächtnis aus dem Ziel der Lage (G7, `updateBefore`); sein Bau
+                // steht als `_stoffBau` für den Wechsel der Lauf-Grenze (`laufPxSetzen`)
+                const bau = () => {
+                    const geschichte = this._geschichte;
+                    const flackerAlt = this._flackerAlt;
+                    const flackerNeu = T.property("float", "flackerNeu");
+                    const resolve = Fn(() => {
+                        const uvA = uv();
+                        const einGr = vec2(ein.size());
+                        const ausGr = vec2(1).div(this._invSize);
+                        const pEin = uvA.mul(einGr);
+                        const zelle = floor(pEin);
+                        const jePx = ausGr.div(einGr);
+                        const hoch = einGr.sub(1);
+                        const summeW = float(0).toVar();
+                        const summeC = vec3(0).toVar();
+                        const m1 = vec3(0).toVar();
+                        const m2 = vec3(0).toVar();
+                        const wNah = float(0).toVar();
+                        const nahD = float(2).toVar();
+                        const nahT = vec2(0).toVar();
+                        const fernD = float(-1).toVar();
+                        for (let y = -1; y <= 1; y++)
+                            for (let x = -1; x <= 1; x++) {
+                                const t = zelle.add(vec2(x, y)).clamp(vec2(0), hoch).toVar();
+                                const c = ein.load(t).rgb.max(0).toVar();
+                                const d = t.add(0.5).add(this._zitter).sub(pEin).mul(jePx);
+                                const w = exp(d.dot(d).mul(this._kern).negate()).toVar();
+                                summeW.addAssign(w);
+                                summeC.addAssign(c.mul(w));
+                                m1.addAssign(c);
+                                m2.addAssign(c.mul(c));
+                                wNah.assign(max(wNah, w));
+                                const tz = tief.load(t).r.toVar();
+                                If(tz.lessThan(nahD), () => {
+                                    nahD.assign(tz);
+                                    nahT.assign(t);
+                                });
+                                If(tz.greaterThan(fernD), () => {
+                                    fernD.assign(tz);
+                                });
+                            }
+                        const jetzt = summeC.div(max(summeW, 1e-5)).toVar();
+                        // die Bewegung des nächsten Texels (NDC → UV; gehört die Mitte dem getragenen Leib, ihre —
+                        // `_traaKameraBewegung`), die Geschichte an ihrer Stelle im Vorbild
+                        const versatz = this.velocityNode
+                            .load(nahT.add(0.5), zelle.clamp(vec2(0), hoch).add(0.5))
+                            .xy.mul(vec2(0.5, -0.5))
+                            .toVar();
+                        const gUV = uvA.sub(versatz).toVar();
+                        const hist = geschichte.sample(gUV).toVar();
+                        const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
+                        const posV = T.getViewPosition(gUV, vorD, this._previousCameraProjectionMatrixInverse);
+                        const posW = this._previousCameraWorldMatrix.mul(vec4(posV, 1)).xyz;
+                        const vorJetzt = T.viewZToPerspectiveDepth(
+                            this._cameraWorldMatrixInverse.mul(vec4(posW, 1)).z,
+                            nah,
+                            fern
+                        );
+                        const imBild = gUV.greaterThanEqual(0).all().and(gUV.lessThanEqual(1).all());
+                        const kante = fernD.sub(nahD).greaterThan(this.edgeDepthDiff);
+                        const frei = nahD.sub(vorJetzt).greaterThan(this.depthThreshold);
+                        // der ORT der Geschichte trägt (im Bild, keine Disokklusion); gültig ist sie dazu ohne Neubeginn
+                        const ort = imBild.and(kante.or(frei.not()));
+                        const gueltig = ort.and(this._neustart.equal(0));
+                        const lauf = uvA.sub(gUV).mul(ausGr).length().div(this._laufPx).saturate();
+                        // DAS DECKUNGS-GEDÄCHTNIS (A3b): eine stochastische Deckung (Laub, Nadeln, Halme, Karten, die Stufen-Blende)
+                        // zeigt je Frame Fläche ODER Grund. In einem Frame, in dem ihre Lücke das 3×3 verlässt, ist die Box nur Fläche,
+                        // und die Varianz-Klemme warf das Mittel der Geschichte weg (Radeon, Tafel-Pose, Abstand zum Mittel aus 256
+                        // Frames ohne Klemme: 4,06 Luma nach 32 Frames, 4,36 nach 256 — es konvergierte nie; ohne Klemme 2,74). Das
+                        // Gedächtnis je Ausgabe-Pixel ist der gleitende Anteil der Frames (`FLACKER.rate`), in denen sein 3×3 eine
+                        // DECKUNGS-KANTE trägt (Tiefen-Sprung über `FLACKER.kante` relativ, Δz/z), mit der Geschichte reprojiziert und
+                        // nur bei einer Disokklusion neu. Wo es über `FLACKER.an` steht, mittelt die Geschichte ungeklemmt — eine Lücke,
+                        // die das 3×3 eben verließ, bleibt im Mittel. Nur in Ruhe (unter `FLACKER.ruhePx` Bewegung je Frame): ein
+                        // laufender Blick klemmt wie bisher, und eine Kante, die nur vorbeizieht (ein Tier), hebt das Gedächtnis nicht.
+                        const deckKante = fernD
+                            .sub(nahD)
+                            .div(float(1).sub(nahD).max(1e-6))
+                            .greaterThan(this._flacker.kante)
+                            .select(float(1), float(0));
+                        // EIN NEUBEGINN (Größe, Aufnahme) startet das Gedächtnis offen: die Geschichte danach ist frisch (das Mittel
+                        // seit dem Neubeginn, `_anlauf`), die Klemme verwürfe nur gültige Frames; an Flächen ohne Kante klingt es in
+                        // ~8 Frames ab, ein laufender Blick klemmt wie immer (`ruhe`). Bis G7 trug ein eigenes Ziel das Gedächtnis
+                        // über den Neubeginn (das des Blicks davor); beim Jetzt (0 | 1) begonnen hielt die Tafel-Pose 49 px Raster.
+                        const phiAlt = this._neustart.equal(0).select(flackerAlt.sample(gUV).r, float(1));
+                        flackerNeu.assign(ort.select(mix(phiAlt, deckKante, this._flacker.rate), float(0)));
+                        const ruhe = float(1)
+                            .sub(uvA.sub(gUV).mul(ausGr).length().div(this._flacker.ruhePx))
+                            .saturate();
+                        const lass = T.smoothstep(this._flacker.an.x, this._flacker.an.y, phiAlt).mul(ruhe);
+                        // das Gewicht des Jetzt: Grund 0,05, Unterpixel-Korrektur der Bewegung, mal die Deckung des nächsten Texels
+                        const phase = versatz.mul(ausGr).fract().abs();
+                        const pw = max(phase, phase.oneMinus());
+                        const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
+                        alpha.mulAssign(wNah);
+                        // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
+                        // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
+                        // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
+                        // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
+                        const anlauf = float(1).div(this._anlauf.add(1));
+                        alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
+                        // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel, wo das Deckungs-Gedächtnis sie nicht löst
+                        const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
+                        const mittel = m1.div(9);
+                        const sigma = m2.div(9).sub(mittel.mul(mittel)).max(0).sqrt().mul(gamma);
+                        const histC = mix(klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma)), hist.rgb, lass);
+                        // die Flimmer-Dämpfung nach Luma (r184 flickerReduction)
+                        const wJ = alpha.div(luminance(jetzt.div(max(jetzt.x, jetzt.y, jetzt.z).add(1))).add(1));
+                        const wG = alpha
+                            .oneMinus()
+                            .div(luminance(histC.div(max(histC.x, histC.y, histC.z).add(1))).add(1));
+                        const aus = jetzt
+                            .mul(wJ)
+                            .add(histC.mul(wG))
+                            .div(max(wJ.add(wG), 1e-5));
+                        const dMitte = tief.load(zelle.clamp(vec2(0), hoch)).r;
+                        return vec4(aus, T.perspectiveDepthToViewZ(dMitte, nah, fern));
+                    });
+                    // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
+                    // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
+                    // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
+                    this._resolveMaterial.mrtNode = T.mrt({
+                        "TRAANode.resolve": resolve(),
+                        "TRAANode.flacker": flackerNeu,
+                    });
+                };
+                bau();
+                this._stoffBau = bau;
+                return this._textureNode;
+            }
+            // die Unschärfe der Bewegung wechselt (`_zugangTakt`): die Konstante des Resolve, sein Stoff neu gebaut — nur beim
+            // Wechsel, nie je Bild; vor dem ersten Bau (`setup`) liest der Bau sie selbst
+            laufPxSetzen(px) {
+                if (px === this._laufPx) return;
+                this._laufPx = px;
+                if (!this._stoffBau) return;
+                this._stoffBau();
+                this._resolveMaterial.needsUpdate = true;
+            }
+        }
+        return new ZeitAufloesung();
+    }
+
+    // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
+    // (8 Byte je Pixel, 15,8 MB bei 1080p). Sein Inhalt ist lineares HDR-Licht ≥ 0, und der Kanal a steht an jedem Ort auf 1
+    // (der Ziel-Zensus, 07.10.): TRAA reicht `currentColor.a` nur durch (vendor/TRAANode.js clipAABB), kein Leser wertet ihn.
+    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames, das
+    // jedes Fragment gedithert schreibt (`_ausgabeDither`). Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche
+    // Auflösung über 32 Frames, und rg11b10 posterisierte die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das
+    // Geräte-Feature `rg11b10ufloat-renderable` bleibt `output` rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus
+    // nennt das Format), nie still.
+    _ausgabeFormat(szenePass) {
+        const rend = this.state.renderer;
+        const be = rend && rend.backend;
+        const ziel = szenePass && szenePass.renderTarget;
+        if (!ziel || !ziel.texture) return;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!(dev && dev.features && dev.features.has("rg11b10ufloat-renderable"))) {
+            this.state._ausgabeFormat = "rgba16float";
+            this.log(
+                "AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel " +
+                    "bleibt rgba16float, +7,9 MB bei 1080p",
+                "WARN"
+            );
+            return;
+        }
+        // r184 `PassNode.setup` schreibt bei jedem Bau `texture.type = renderer.getOutputBufferType()` (rgba16float) — das Format
+        // gehört diesem EINEN Pass, nicht dem Renderer (dessen Typ legt auch das Rahmen-Ziel des Direktpfads an, RGBA: dort gibt es
+        // kein 11/11/10). Der Pass stellt es darum nach seinem eigenen Bau.
+        const P = Object.getPrototypeOf(szenePass);
+        szenePass.setup = function (builder) {
+            const o = P.setup.call(this, builder);
+            this.renderTarget.texture.type = THREE.UnsignedInt101111Type;
+            this.renderTarget.texture.format = THREE.RGBFormat;
+            return o;
+        };
+        ziel.texture.type = THREE.UnsignedInt101111Type;
+        ziel.texture.format = THREE.RGBFormat;
+        this.state._ausgabeFormat = "rg11b10ufloat";
+        this.state._ausgabeVersatz = this._uniformHeimatTeilen({ v: THREE.TSL.uniform(0) }).v;
+        this._ausgabeSonde(dev);
+    }
+
+    // DIE DITHERUNG DES SZENEN-ZIELS (w4-ferne-blau): 6/6/5 Bit Mantisse teilen jede glatte Rampe — Wolke, Himmel, Dunst — in
+    // Stufen von 1/64 bzw. 1/32 ihres Werts (die Wolken-Decke am Kopf 715754fc in Höhenlinien je 1–2 Ausgabe-Stufen, Blau doppelt
+    // so grob), und weil das Gerät gegen null rundet, fällt der Fehler je Pixel in jedem Frame gleich: die zeitliche Auflösung
+    // mittelt ihn nie weg. Darum trägt jedes Fragment des Szenen-Passes vor dem Schreiben (u − Versatz) ulp seines Kanals, u aus
+    // dem Interleaved-Gradient-Rauschen der Stufen-Blende (`__phytoCore.lodDitherIGN`, quer gelesen, rotiert mit `uDitherT`).
+    // Der Versatz ist die Rundung des Geräts (`_ausgabeSonde`): gegen null 0, zum nächsten ½ — so ist jeder geschriebene Wert im
+    // Mittel das Licht selbst (E[⌊x/q + u⌋] = x/q), für JEDEN Leser des Ziels; über die 32 Frames der Geschichte liest die
+    // Auflösung es ohne Stufe. DIE EINE STELLE ist der Eintrag `output` des MRT des Szenen-Passes (`_ensurePostProcessing`): unter
+    // einem MRT schreibt r184 (`NodeMaterial.setup`) jeden Stoff über den MRT-Knoten ins Ziel — das `getOutput` im Kontext des
+    // Passes (w4-ferne-blau) erreichte nur die Stoffe mit eigenem `outputNode`: zwei Phasen änderten 2,4 % der Pixel statt des
+    // ganzen Bilds, die übrigen schrieben ohne Ausgleich, gegen null gerundet (heil-w4-ferne-blau, gate:ziel-zensus RUNDUNG: 0,024
+    // → 0,758). `farbe` ohne 11/11/10 unverändert. Bis w4-ferne-blau hob ein Ausgleich nach dem Lesen das Mittel (E[1/m] des
+    // Gesetzes, 0,56 % / 1,13 %) — nur in der Post-Kette, der Spiegel des Wassers las das Ziel ohne ihn.
+    _ausgabeDither(farbe) {
+        const versatz = this.state._ausgabeVersatz;
+        if (this.state._ausgabeFormat !== "rg11b10ufloat" || !versatz) return farbe;
+        const T = THREE.TSL;
+        const fc = T.screenCoordinate;
+        const u = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
+                .add(this._ensureLodUniforms().uDitherT)
+        );
+        const c = farbe.rgb.max(T.vec3(0));
+        const ulp = T.exp2(T.floor(T.log2(c.max(T.vec3(2 ** -14)))).sub(T.vec3(6, 6, 5)));
+        return T.vec4(c.add(ulp.mul(u.sub(versatz))).max(T.vec3(0)), farbe.a);
+    }
+
+    // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
+    // → 1,0; W7 sah es auf der Radeon in der Geschichte) — ohne Ditherung fehlte je Kanal im Mittel ein halbes ulp, das Bild
+    // wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt 1 + ¾ ulp
+    // in ein 1×1-Ziel und liest zurück: rundet das Gerät gegen null, dithert das Ziel um u · ulp, rundet es zum nächsten, um
+    // (u − ½) · ulp (`_ausgabeVersatz`).
+    _ausgabeSonde(dev) {
+        const st = this.state;
+        const tex = dev.createTexture({
+            label: "ausgabe-sonde",
+            size: [1, 1],
+            format: "rg11b10ufloat",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
+        const modul = dev.createShaderModule({
+            label: "ausgabe-sonde",
+            code:
+                "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                "}\n" +
+                "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
+        });
+        // ihre Pipeline entsteht asynchron (w16-lade-atem: der PSO-Vorbau — eine synchrone hält den GPU-Prozess vor dem Bild)
+        const buf = dev.createBuffer({
+            label: "ausgabe-sonde",
+            size: 256,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        return dev
+            .createRenderPipelineAsync({
+                label: "ausgabe-sonde",
+                layout: "auto",
+                vertex: { module: modul, entryPoint: "vs" },
+                fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
+                primitive: { topology: "triangle-list" },
+            })
+            .then((pipe) => {
+                const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+                const pass = enc.beginRenderPass({
+                    label: "ausgabe-sonde",
+                    colorAttachments: [
+                        { view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" },
+                    ],
+                });
+                pass.setPipeline(pipe);
+                pass.draw(3);
+                pass.end();
+                enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+                dev.queue.submit([enc.finish()]);
+                return buf.mapAsync(GPUMapMode.READ);
+            })
+            .then(() => {
+                const w = new Uint32Array(buf.getMappedRange())[0];
+                buf.unmap();
+                // R: Mantisse Bit 0–5 über 1 + ¾ ulp: 0 = gegen null, 1 = zum nächsten
+                const nullRund = (w & 0x3f) === 0;
+                st._ausgabeRundung = nullRund ? "gegen null" : "zum nächsten";
+                st._ausgabeVersatz.value = nullRund ? 0 : 0.5;
+                this.log(
+                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — die Ditherung trägt (u − ${st._ausgabeVersatz.value}) ulp`,
+                    "INFO"
+                );
+            })
+            .catch((e) => {
+                this.log(
+                    "AUSGABE: die Rundungs-Sonde fiel (" +
+                        ((e && e.message) || e) +
+                        ") — die Ditherung nimmt gegen null an",
+                    "WARN"
+                );
+            })
+            .finally(() => {
+                tex.destroy();
+                buf.destroy();
+            });
+    }
+
+    // DIE EINE SZENEN-SKALA (K50): die interne Auflösung der Szene relativ zur Ausgabe — `state.szeneSkala` (der Regler
+    // „Szene-Auflösung“ im Menü, im Snapshot), sonst `SZENE_SKALA`. Sie lebt nur mit der zeitlichen Auflösung: ohne sie (Holz
+    // kienspan) gibt es keinen Hochskalierer, die Szene rendert in der Ausgabe-Auflösung.
+    _szeneSkalaWirk() {
+        if (!this.state._traa) return 1;
+        const s = this.state.szeneSkala;
+        const w = s == null || !Number.isFinite(+s) ? AnazhRealm.SZENE_SKALA : +s;
+        return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, w));
+    }
+
+    // DER ZUGANG IM BILD (spielgang.K4), je Bild aus `_loopRender`: der Stand `state.zugang` (Einstellungen › Ton & Sicht, im
+    // Snapshot) ist die EINE Quelle, die Kette liest ihn hier — die Farbsicht (`farbsicht`: die Art, ihr Fehler und Schub aus
+    // `_farbsichtMatrix`; ihre Ausgabe der Kette nur, wenn eine Art gewählt ist) und die Unschärfe der Bewegung: sie IST die
+    // Geschichte der zeitlichen Auflösung, die einem bewegten Pixel bis `maxVelocityLength` (r184: 128 px je Bild) nachzieht;
+    // aus (`unschaerfe` false) weicht sie ab `ZUGANG.laufPxAus` Ausgabe-Pixeln Bewegung je Bild ganz dem Jetzt (die Konstante
+    // des Resolve, `laufPxSetzen`). Alles nur beim Wechsel: aus ist die Kette der Graph ohne Zugang, Knoten für Knoten.
+    _zugangTakt(ppu) {
+        const Z = this.state.zugang || {};
+        const art = AnazhRealm.FARBSICHT.arten.includes(Z.farbsicht) ? Z.farbsicht : "aus";
+        const pp = this.state.postProcessing;
+        if (pp && ppu && ppu.ausgabe && ppu._farbArt !== art) {
+            const m = AnazhRealm._farbsichtMatrix(art);
+            if (m) (ppu.farbFehler.value.set(...m.fehler), ppu.farbSchub.value.set(...m.schub));
+            const ziel = m ? ppu.ausgabe.farbsicht : ppu.ausgabe.aus;
+            if (pp.outputNode !== ziel) {
+                pp.outputNode = ziel;
+                pp.needsUpdate = true;
+            }
+            ppu._farbArt = art;
+        }
+        const traa = this.state.traaNode;
+        if (traa && traa.laufPxSetzen)
+            traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
+    }
+
+    // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
+    // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
+    // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
+    _ensurePostProcessing() {
+        if (this.state.postProcessing || this.state.postProcessingFailed) return this.state.postProcessing;
+        // DER NULL-RENDERER TRÄGT KEINE KETTE (headless, `_isHeadlessNull`): er zeichnet nie, r184s RenderPipeline liest im
+        // render() seinen XR-Zustand (`renderer.xr.enabled`), den er nicht hat — bis hier warf die Kette dort JEDEN Frame, und
+        // jeder headless-Lauf meldete ERROR „STOFF: die Post-Kette (Render-Lauf …) — Cannot read properties of undefined
+        // (reading 'enabled')" (gate:fern-ring auf main, unbemerkt grün). Der Schirm ohne Pixel hat keine Kette — kein Bruch.
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) return null;
+        try {
+            const TSL = THREE.TSL;
+            // V18.113 — der PR-#81-Vendor benennt PostProcessing → RenderPipeline um
+            // (die Deprecation-Warnung in der Schöpfer-Konsole); wir nehmen den neuen
+            // Namen zuerst, der alte bleibt der Fallback für ältere Vendor-Stände.
+            const PPCtor =
+                typeof THREE.RenderPipeline === "function"
+                    ? THREE.RenderPipeline
+                    : typeof THREE.PostProcessing === "function"
+                      ? THREE.PostProcessing
+                      : null;
+            const { pass, uniform, vec2, vec3, float, luminance, smoothstep, screenUV, max, min } = TSL;
+            const pp = new PPCtor(this.state.renderer);
+            const scenePass = pass(this.state.scene, this.state.camera);
+            // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
+            // (`_zeitAufloesung`). Gesetzt vor dem ersten Render; ein neuer Wert (der Regler im Menü) legt die Ziele beim
+            // nächsten Frame neu an wie ein Fenster-Wechsel (`_loopRender`), nie je Last.
+            scenePass.setResolutionScale(this._szeneSkalaWirk());
+            this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
+            // DER GLANZ DES BILDS (material.K4): ein zweites Ziel des Szenen-Passes (r8, MRT) trägt je Pixel, wie sehr seine
+            // Fläche spiegelt (`_glanzKnoten`) — daran erkennt der EINE Spiegel-Pass (`_spiegelPass`) Glas, Lack, Metall und
+            // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
+            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75. Der Eintrag
+            // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
+            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(TSL.output), glanz: this._glanzKnoten() }));
+            const glanz = scenePass.getTexture("glanz");
+            glanz.type = THREE.UnsignedByteType;
+            glanz.format = THREE.RedFormat;
+            glanz.minFilter = glanz.magFilter = THREE.NearestFilter;
+            this.state.scenePass = scenePass;
+            // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
+            // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
+            // API-korrekt: der sampelbare Textur-Node kommt aus
+            // getTextureNode() (PassNode != TextureNode — .sample() lebt am
+            // TextureNode). Das ist das offizielle MRT/pass-Muster.
+            let sceneColor = scenePass.getTextureNode();
+            // DIE ZEITLICHE AUFLÖSUNG (TRAA, vendor/TRAANode.js = r184 verbatim) statt FXAA am Ende: die Kamera
+            // springt je Frame um einen Halton-Subpixel, die Geschichte wird reprojiziert und gegen die Varianz der
+            // 3×3-Nachbarschaft geklemmt — Kanten sind echt übersampelt, und die rotierende LOD-Dither-Blende
+            // (uDitherT, _loopRender) mittelt sich zu einer glatten Überblendung statt eines Gitters (Befund 04.10.:
+            // Birken und Büsche als gerasterte Geister; FXAA sah das Muster als Kante und ließ es stehen). Erste
+            // Stufe der Kette (Studio-Gesetz phytogenesis FIX v32: zeitliche Auflösung VOR den Nachbearbeitungen):
+            // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
+            // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
+            // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Auflösung
+            // und Geschichte bleiben rgba16float: alle drei in rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierten die
+            // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
+            // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
+            // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), gedithert geschrieben (`_ausgabeDither`). Seit K50 ist sie der
+            // zeitliche HOCHSKALIERER (`_zeitAufloesung`): die Szene in der Szenen-Skala, Geschichte und Resolve in der Ausgabe.
+            // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
+            // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
+            if (this.state._traa && typeof THREE.TRAANode !== "function") {
+                this.log(
+                    "Post-Kette: THREE.TRAANode fehlt — vendor/three-bootstrap.js ist eine veraltete Kopie (der ?v=-Buster folgt der Version).",
+                    "ERROR"
+                );
+                throw new Error("THREE.TRAANode fehlt im Bootstrap");
+            }
+            const traa = this.state._traa
+                ? this._zeitAufloesung(
+                      pp,
+                      sceneColor,
+                      scenePass.getTextureNode("depth"),
+                      this._traaKameraBewegung(TSL, scenePass.getTextureNode("depth")),
+                      this.state.camera
+                  )
+                : null;
+            if (traa) sceneColor = traa.getTextureNode();
+
+            const u = {
+                // Bloom-Schwelle 0.86: nur sehr helle Spitzen (Sonnen-Disc, Wasser-Glitzer) bloomen, nicht der
+                // diffuse Himmel — sonst blutet der Blur in die Skyline und die Sonne überstrahlt Berg-Silhouetten.
+                // Stärke 0.38; browser-justierbar.
+                bloomThreshold: uniform(0.86),
+                bloomStrength: uniform(0.38),
+                bloomRadius: uniform(2.2),
+                // 0 = Tag → 1 = Nacht (`_dayNightApplyDirectionalLight`): das Auge der Nacht liest ihn (unten).
+                nightFactor: uniform(0),
+                // Der lokale Kontrast (Unsharp-Mask) ist NUR der Spieler-Regler „Kanten-Schärfe" (`kantenSchaerfe`, Default 0 —
+                // die Foto-Kette F1: das Bild trägt die Kante, die der Stoff zeichnet; aus = der Zweig fällt mit seinen 4 Abtastungen).
+                localContrast: uniform(
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                        ? this.state.atmosphere.kantenSchaerfe
+                        : 0
+                ),
+                // GODRAYS: additiver Screen-Space-Radial-March als NODE in DIESEM Pass (kein zweiter RenderPipeline,
+                // keine MRT-Depth). `godraySun` = Sonnen-Screen-UV (pro Frame projiziert), `godrayStrength` = Pegel
+                // (0 → No-op), `godrayDensity` = March-Länge, `godrayThreshold` = Himmels-Helligkeits-Schwelle (nur
+                // helle Lücken bluten → Kronen-Occlusion gratis).
+                godraySun: uniform(new THREE.Vector2(0.5, 0.6)),
+                godrayStrength: uniform(0),
+                godrayDensity: uniform(0.55),
+                godrayThreshold: uniform(0.8),
+                // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
+                // Skala 1 null (die Stufe kostet dann nichts).
+                nachSchaerfe: uniform(0),
+                // DIE FARBSICHT (spielgang.K4): der Fehler e und der Schub v der gewählten Art (`state.zugang.farbsicht`,
+                // `_farbsichtMatrix`) — `_zugangTakt` stellt sie beim Wechsel und hängt ihre Ausgabe (`ausgabe.farbsicht`) ein.
+                farbFehler: uniform(new THREE.Vector3()),
+                farbSchub: uniform(new THREE.Vector3()),
+            };
+            this.state.postProcessingUniforms = u;
+            // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
+            // + der Perf-Lever (`_nexusPerfActuate` via `_godrayScale`) lesen NUR diese Uniforms.
+            this.state.godrayUniforms = {
+                sunScreenPos: u.godraySun,
+                strength: u.godrayStrength,
+                density: u.godrayDensity,
+                threshold: u.godrayThreshold,
+            };
+
+            // DIE STUFE KOSTET NUR, WENN SIE ZEIGT: eine Nachbild-Stufe mit Stärke-Regler (Godrays: Sonne im Bild ×
+            // Wetter × Höhe × Regler; lokaler Kontrast: der Kanten-Schärfe-Regler, 0 = aus) rechnet ihre Abtastungen in
+            // einem Zweig, den der Regler wählt — eine Uniform, also einheitlich für jedes Pixel (keine Divergenz, WGSL-
+            // Gleichförmigkeit erlaubt die Abtastung darin). Bei Stärke 0 liefert sie 0 wie zuvor das Produkt mit 0, nur
+            // ohne die Abtastungen: die Godrays tasteten 20× je Pixel auch ohne Sonne im Bild (06.10., GTX 1060, Mess-
+            // Wiese: 0,69 ms je Frame). Die Stufe reist als Argument (der Ketten-Graph bleibt lesbar: die Zerleg-Linse
+            // findet sie über ihre Stärke-Uniform, `ketteKante`); TSL erzeugt ihren Code dort, wo sie zuerst gebraucht
+            // wird — im Zweig. Was davor UND im Zweig gebraucht wird (das gemischte Bild), steht vor dem Aufruf.
+            // Die Wand: gate:post-kette (die Abtastungen der Stufen im erzeugten WGSL stehen im Zweig, das Budget der
+            // unbedingten Abtastungen hält).
+            const nurBeiStaerke = TSL.Fn(([stufe, staerke]) => {
+                const aus = vec3(0, 0, 0).toVar();
+                TSL.If(staerke.notEqual(float(0)), () => {
+                    aus.assign(stufe);
+                });
+                return aus;
+            });
+
+            // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
+            // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
+            // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
+            // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
+            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV). Das Szenen-Bild ist im Mittel
+            // das Licht selbst: die Rundung des Ziels trägt die Ditherung beim Schreiben (`_ausgabeDither`).
+            const bild = (uv) => sceneColor.sample(uv).rgb;
+            // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
+            // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
+            // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf
+            // deren Spanne (kein Saum über das Minimum und Maximum der Nachbarschaft hinaus). Stärke 0 → der Zweig fällt.
+            const roh = bild(screenUV);
+            const px1 = vec2(1, 1).div(TSL.screenSize);
+            const schaerfeDelta = () => {
+                const o = bild(screenUV.sub(vec2(float(0), px1.y)));
+                const un = bild(screenUV.add(vec2(float(0), px1.y)));
+                const li = bild(screenUV.sub(vec2(px1.x, float(0))));
+                const re = bild(screenUV.add(vec2(px1.x, float(0))));
+                const mn = min(min(min(o, un), min(li, re)), roh);
+                const mx = max(max(max(o, un), max(li, re)), roh);
+                const scharf = roh.add(roh.mul(4).sub(o).sub(un).sub(li).sub(re).mul(u.nachSchaerfe));
+                return scharf.clamp(mn, mx).sub(roh);
+            };
+            const mitte = roh.add(nurBeiStaerke(schaerfeDelta(), u.nachSchaerfe));
+            const bright = (uv) => {
+                const c = uv === screenUV ? mitte : bild(uv);
+                const l = luminance(c);
+                const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
+                return c.mul(m);
+            };
+            const px = float(0.0018).mul(u.bloomRadius);
+            const taps = [
+                [0, 0, 0.227],
+                [1, 0, 0.094],
+                [-1, 0, 0.094],
+                [0, 1, 0.094],
+                [0, -1, 0.094],
+                [1, 1, 0.056],
+                [-1, 1, 0.056],
+                [1, -1, 0.056],
+                [-1, -1, 0.056],
+            ];
+            let acc = bright(screenUV).mul(float(taps[0][2]));
+            for (let i = 1; i < taps.length; i++) {
+                const [dx, dy, w] = taps[i];
+                const uvT = screenUV.add(vec2(px.mul(float(dx)), px.mul(float(dy))));
+                acc = acc.add(bright(uvT).mul(float(w)));
+            }
+            const bloom = acc.mul(u.bloomStrength);
+
+            // --- GODRAYS: radialer Light-Shaft-March (GPU-Gems-3). Je Pixel N feste Schritte Richtung
+            // Sonnen-Screen-Position; nur sehr helle Himmels-Lücken tragen bei → Occlusion durch Blatt/Berg
+            // gratis, ohne Depth-Buffer. UNROLLT (der JS-Loop akkumuliert TSL-Nodes, kein Shader-Loop); der
+            // Beitrag klingt mit 0.96^i ab. Stärke 0 → der Zweig fällt, keine Abtastung (`nurBeiStaerke`).
+            const GN = 20;
+            const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
+            let gacc = null;
+            for (let i = 0; i < GN; i++) {
+                const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
+                const cI = bild(uvI);
+                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
+                const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
+                const srcI = cI.mul(mI).mul(float(wI));
+                gacc = gacc ? gacc.add(srcI) : srcI;
+            }
+            const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
+
+            // --- DIE FOTO-KETTE (F1): das Bild, wie die Kamera es sieht — kein Spiel-Filter dazwischen. Bis F1 trug die Kette vier:
+            // Sättigung 1,18, Kontrast 1,06 um 0,5, das Entgrauen (grauer Pixel warm angehoben, ein Pflaster gegen graue Albedo) und
+            // den lokalen Kontrast 0,46; dazu ACES. Die Farbe kommt aus Gesetz und Albedo-Tafel (Lehre 21): was danach grau oder satt
+            // wirkt, ist ein benannter Befund am Stoff, nie ein Regler der Kette.
+            const base = mitte;
+            const bloomed = base.add(bloom).add(godray);
+            // Der lokale Kontrast (Unsharp-Mask, der Spieler-Regler „Kanten-Schärfe", Default 0): die Umgebungs-Luminanz aus 4
+            // versetzten Abtastungen, die Differenz Pixel − Umgebung verstärkt. Stärke 0 → der Zweig fällt mit seinen 4
+            // Abtastungen (`nurBeiStaerke`).
+            const lcPx = float(0.0026);
+            const lumAt = (uv) => luminance(bild(uv));
+            const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
+                .add(lumAt(screenUV.add(vec2(lcPx.negate(), float(0.0)))))
+                .add(lumAt(screenUV.add(vec2(float(0.0), lcPx))))
+                .add(lumAt(screenUV.add(vec2(float(0.0), lcPx.negate()))))
+                .mul(float(0.25));
+            const selfLum = luminance(bloomed);
+            const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
+            const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
+            // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
+            // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
+            // Leuchtdichten des Stäbchen- und des Zapfen-Sehens (`NACHT_AUGE`, CIE 191:2010) trägt der Zapfen-Anteil die Farbe
+            // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
+            // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
+            // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
+            const NA = AnazhRealm.NACHT_AUGE;
+            const staebchenSicht = () => {
+                const lum = luminance(combined);
+                const zapfen = TSL.log(
+                    lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
+                )
+                    .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                    .clamp(0, 1);
+                return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
+            };
+            const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
+            const graded = gesehen.max(vec3(0, 0, 0));
+            // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
+            // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz
+            // der Tonkurve (PBR Neutral zieht unter ihrem Knie nur einen grauen Sockel ab), im Mittelbereich ist sie dieselbe wie
+            // auf dem getonten Bild. Sie ist eine eigene AUSGABE der Kette (`u.ausgabe`), die `_zugangTakt` beim Wechsel der Art
+            // einhängt: aus fehlt ihr Knoten im Graphen, das Fragment ist byte-gleich dem ohne Zugang (vp-0611g: ein Zweig hinter
+            // einer Uniform rundete auf 6,2 % der Pixel um 1 LSB; swiftshader, Holz nah: Ausgabe 17 802 B und Resolve 23 397 B
+            // gleich main, der Zweig trug 18 191 / 23 449 B; die Wand: gate:post-kette (i)). DER HIMMEL BLEIBT (die EINE Himmels-Maske aller Arten): wo die
+            // Szenen-Tiefe über der Himmels-Schwelle des Spiegels steht (0,99999, `bild-sicht`), zeichnete nur der Himmel
+            // (`_himmelImUnendlichen`: Kuppel, Sterne, Sonne und Mond auf Tiefe 1 — die Sonne rastert ihre 1 eine Spur darunter,
+            // gate:post-kette 80 Pixel unter Deuteranopie) — dort wirkt Δ nie. Deut und Prot trafen das Blau nie (e · Himmelsblau
+            // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
+            const szenenTiefe = scenePass.getTextureNode("depth");
+            const tiefenGr = vec2(szenenTiefe.size());
+            const welt = szenenTiefe
+                .load(screenUV.mul(tiefenGr).floor().clamp(vec2(0), tiefenGr.sub(1)))
+                .r.lessThan(float(0.99999))
+                .select(float(1), float(0));
+            const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
+            u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
+
+            // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
+            // Ausgabe-Quad — keine Zwischen-Textur.
+            pp.outputNode = graded;
+            this.state.postProcessing = pp;
+            // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim
+            // nächsten Uhr-Wechsel, das erste Bild nach dem Bau trug den Tag (die S0-Probe maß ihren ersten Nacht-Schuss ohne das Auge der Nacht)
+            this._applyDayNightToScene();
+            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
+            // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
+            this.state.traaNode = traa;
+            this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
+            return pp;
+        } catch (err) {
+            // der Schirm zeichnet dann direkt (nie schwarz) — aber nie still: der Bruch steht beim Namen im Log
+            this.state.postProcessingFailed = true;
+            this._stoffBruch("die Post-Kette (TRAA · Bloom · Grading) — der Schirm zeichnet direkt", err);
+            return null;
+        }
+    }
+
+    // DIE KAMERA-BEWEGUNG je Pixel für die zeitliche Auflösung — das Studio-Gesetz TAA-Lite (phytogenesis FIX v32):
+    // „die Welt ist statisch, also ist Kamerabewegung EXAKT reprojezierbar (Szenentiefe + ViewProj des letzten
+    // Frames); Wind/Wasser fängt der Nachbarschafts-Klemm". Ein Pixel (uv, Tiefe) im Clip-Raum dieses Frames, mal
+    // R = PV_vor · PV_jetzt⁻¹ (`_traaReprojektion`, je Frame in float64 auf der CPU gefaltet — keine Welt-
+    // Translation im Shader), liegt im Clip-Raum des vorigen Frames; die Differenz der NDC ist die Bewegung, die
+    // TRAANode als `velocityNode.load(texel)` liest. Keine MRT-Velocity: sie schriebe je Fragment JEDES Materials
+    // ein zweites Ziel und rechnete je Vertex die Vorgänger-Transformation, und ihre Objekt-Uniforms
+    // (previousModelWorldMatrix) schreibt die Diät (_diaetRefresh) nur, wenn sich das Objekt ändert (equals) —
+    // der ganze stehende Wald hätte die Bewegung seines letzten Refreshs getragen. Was sich selbst bewegt (Tiere, Wind),
+    // fängt die Varianz-Klemme der Geschichte.
+    // DER LEIB, DEN DIE KAMERA TRÄGT (w12-leib-sicht, Befund des Schöpfers 05.11.: am Prüfplatz wurde der eigene Leib beim
+    // Seitwärtsgehen durchsichtig): die Welt ist statisch, der Leib des Spielers nicht — er geht MIT der Kamera, steht am Schirm
+    // fast still, und die Kamera-Bewegung holte seine Geschichte vom Grund daneben (Radeon, Prüfplatz Third, Strafe: 5–7 % der
+    // Leib-Pixel über halb durchsichtig, das Haar ganz). Darum trägt das Feld die TEILE DES GETRAGENEN LEIBS (`_traegerTeile`):
+    // je Teil eine Box im Raum seines Ankers (Knochen oder Gerät) und seine eigene Reprojektion PV_vor · W_vor · W⁻¹ · PV⁻¹
+    // (`_traegerTakt`, je Frame in float64 gefaltet, die Lage relativ zum Auge). Ein Pixel, dessen Punkt (Tiefe, PV⁻¹) in einer
+    // Box liegt, folgt seinem Anker; jeder andere der Kamera wie bisher.
+    _traaKameraBewegung(TSL, tiefe) {
+        const { vec2, vec3, vec4, float, int, dot, abs, If, Loop, Break } = TSL;
+        const R = TSL.uniform(new THREE.Matrix4());
+        const N = AnazhRealm.TRAEGER.teile;
+        const tr = {
+            Q: TSL.uniform(new THREE.Matrix4()), // Clip des Frames → Welt relativ zum Auge
+            zeilen: TSL.uniformArray(
+                Array.from({ length: 8 * N }, () => new THREE.Vector4()),
+                "vec4"
+            ), // je Teil 3 Zeilen der Box-Matrix, die Halbachsen, 4 Zeilen der Reprojektion
+            zahl: TSL.uniform(0, "int"),
+            kugel: TSL.uniform(new THREE.Vector4(0, 0, 0, -1)), // die Kugel um alle Boxen (relativ zum Auge), w < 0: keine
+            liste: [],
+            vorW: new WeakMap(),
+            jetztInv: new THREE.Matrix4(),
+            m: new THREE.Matrix4(),
+            t: new THREE.Matrix4(),
+            v: new THREE.Vector3(),
+            box: new THREE.Box3(),
+        };
+        this.state._traaR = { R, jetzt: new THREE.Matrix4(), vor: new THREE.Matrix4(), neu: true, traeger: tr };
+        // Die Tiefen-Textur trägt [0, 1]; die NDC-Tiefe der Projektion ist es nur im WebGPU-Raum. Im WebGL2-Raum
+        // (forceWebGL, gate:webgl-probe) liegt sie in [−1, 1]: z = 2·Tiefe − 1, sonst reprojiziert jeder Pixel beim
+        // Laufen an die falsche Stelle (Schlieren). Die Textur-Zeilen dreht TSL je Rückend selbst (load, isFlipY).
+        const webgpuRaum = this.state.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        // die Bewegung eines Texels: die Kamera, oder liegt sein Punkt in einer Box des getragenen Leibs, ihr Anker
+        const bewegung = (texel) => {
+            const uvT = texel.div(vec2(tiefe.size()));
+            const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
+            const d = tiefe.load(texel).r;
+            const clip = vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1).toVar();
+            const vor = R.mul(clip).toVar();
+            const getragen = float(0).toVar();
+            const p4 = tr.Q.mul(clip);
+            const p = vec4(p4.xyz.div(p4.w), 1).toVar();
+            If(p.xyz.sub(tr.kugel.xyz).length().lessThan(tr.kugel.w), () => {
+                Loop({ start: int(0), end: tr.zahl, type: "int", condition: "<" }, ({ i }) => {
+                    const zeile = (k) => tr.zeilen.element(i.mul(8).add(k));
+                    const q = vec3(dot(zeile(0), p), dot(zeile(1), p), dot(zeile(2), p));
+                    If(abs(q).lessThanEqual(zeile(3).xyz).all(), () => {
+                        vor.assign(
+                            vec4(dot(zeile(4), clip), dot(zeile(5), clip), dot(zeile(6), clip), dot(zeile(7), clip))
+                        );
+                        getragen.assign(1);
+                        Break();
+                    });
+                });
+            });
+            return { bew: ndc.sub(vor.xy.div(vor.w)), getragen };
+        };
+        // `load(texel, mitte)`: die Bewegung am Texel der Wahl (der Resolve reicht den nächsten im 3×3 — die Kante eines Bewegten
+        // trägt seine Bewegung in den Grund) — gehört die MITTE selbst dem getragenen Leib, ihre: am Fuß liegt der Boden VOR dem
+        // Schuh näher am Auge, der nächste Texel war Boden, und der Schuh folgte der Kamera (Radeon, Prüfplatz: die Sohlen hell
+        // in der Karte der Durchsicht).
+        return {
+            load: (texel, mitte) => {
+                const n = bewegung(texel);
+                if (!mitte) return n.bew;
+                const m = bewegung(mitte);
+                return m.getragen.greaterThan(0.5).select(m.bew, n.bew);
+            },
+        };
+    }
+
+    // DER TAKT DES GETRAGENEN LEIBS (`_traaKameraBewegung`, aus `_traaReprojektion` je gerendertem Frame): die Teile dieses
+    // Frames (`_traegerTeile`) in die Zeilen des Felds — je Teil die Box-Matrix (W · T(Mitte))⁻¹ · T(Auge), die Halbachsen und
+    // die Reprojektion PV_vor · W_vor · W⁻¹ · PV_jetzt⁻¹ (W_vor die Welt-Matrix des Ankers im letzten Frame; nach einem Sprung
+    // des Auges sein Jetzt), dazu die Kugel um alle Boxen. Mehr Teile als TRAEGER.teile fallen LAUT (`_bruchMelden`).
+    _traegerTakt(z, cx, cy, cz) {
+        const tr = z.traeger;
+        const inv = tr.jetztInv.copy(z.jetzt).invert();
+        tr.Q.value.makeTranslation(-cx, -cy, -cz).multiply(inv);
+        const teile = this._traegerTeile(tr.liste);
+        const A = tr.zeilen.array;
+        const N = AnazhRealm.TRAEGER.teile;
+        const zeilen = (m, k, n) => {
+            const e = m.elements;
+            for (let i = 0; i < n; i++) A[k + i].set(e[i], e[4 + i], e[8 + i], e[12 + i]);
+        };
+        tr.box.makeEmpty();
+        if (teile.length > N && !tr.zuViel) {
+            tr.zuViel = true;
+            this._bruchMelden(`TRÄGER: ${teile.length} Teile des Leibs > ${N} — der Rest folgt der Kamera`);
+        }
+        const n = Math.min(N, teile.length);
+        for (let k = 0; k < n; k++) {
+            const t = teile[k];
+            const W = t.anker.matrixWorld;
+            zeilen(
+                tr.m
+                    .makeTranslation(t.c.x, t.c.y, t.c.z)
+                    .premultiply(W)
+                    .invert()
+                    .multiply(tr.t.makeTranslation(cx, cy, cz)),
+                8 * k,
+                3
+            );
+            A[8 * k + 3].set(t.h.x, t.h.y, t.h.z, 0);
+            let wv = tr.vorW.get(t.anker);
+            if (!wv) tr.vorW.set(t.anker, (wv = W.clone()));
+            else if (z.sprung) wv.copy(W);
+            zeilen(tr.m.copy(W).invert().premultiply(wv).premultiply(z.vor).multiply(inv), 8 * k + 4, 4);
+            wv.copy(W);
+            const r = W.getMaxScaleOnAxis() * t.h.length();
+            tr.v.copy(t.c).applyMatrix4(W);
+            tr.v.x -= cx;
+            tr.v.y -= cy;
+            tr.v.z -= cz;
+            tr.box.expandByPoint(tr.v.addScalar(r));
+            tr.box.expandByPoint(tr.v.addScalar(-2 * r));
+        }
+        tr.zahl.value = n;
+        if (!n) tr.kugel.value.w = -1;
+        else {
+            tr.box.getCenter(tr.v);
+            tr.kugel.value.set(tr.v.x, tr.v.y, tr.v.z, 0.5 * tr.box.max.distanceTo(tr.box.min));
+        }
+    }
+
+    // DIE TEILE DES GETRAGENEN LEIBS dieses Frames (`_traegerTakt`): der Leib des Spielers, wie ihn das Auge der Haupt-Kamera sieht —
+    // je Knochen die Box aus Haut, Kleid und Haar beider Stufen (`_traegerPassung`; die Stufe schaltet nur ihre Gruppe, B5 und
+    // `_gelenkStufe`), nur wenn eines ihrer Meshes sichtbar auf einer Ebene der Kamera liegt (Ego nimmt den Leib aus Ebene 0,
+    // `_applyEgoSicht`), und das Gerät in der Hand (`heldMesh`) als Box seiner Gestalt (`_traegerStarr`). Ein Leib, der nicht in der
+    // Szene hängt oder verborgen ist (der Ritt in der Kabine), trägt nichts. Die Welt-Matrizen dieses Frames stellt `_leibMatrix` (die
+    // Kamera stand schon, der Leib ging in diesem Takt). Die Radeon am Prüfplatz zeigte beim Strafe ohne die Grobstufe den Leib in 5 von
+    // 8 Bildern durchsichtig, solange die Ankunft die Stufe wählte (gate:kamera-leib:echt).
+    _traegerTeile(out) {
+        out.length = 0;
+        const pm = this.state.playerMesh;
+        const cam = this.state.camera;
+        if (!pm || !cam || pm.visible === false) return out;
+        let wurzel = pm;
+        while (wurzel.parent) wurzel = wurzel.parent;
+        if (wurzel !== this.state.scene) return out;
+        // das Auge sieht ein Mesh, wenn es und jeder Ahn bis zum Leib sichtbar sind (die Stufe schaltet ihre Gruppe) und es auf
+        // einer Ebene der Kamera liegt
+        const sieht = (m) => {
+            for (let o = m; o && o !== pm; o = o.parent) if (o.visible === false) return false;
+            return m.layers.test(cam.layers);
+        };
+        const held = pm.userData.heldMesh;
+        for (const t of [...this._traegerPassung(pm), ...(held ? [this._traegerStarr(held)] : [])])
+            if (t && t.meshes.some(sieht)) out.push(t);
+        if (out.length) this._leibMatrix(pm);
+        return out;
+    }
+
+    // DIE PASSUNG DES LEIBS (EINMAL je Leib, `_traegerTeile`): jede Ecke von Haut, Kleid und Haar beider Stufen (die Vorlage des Tuchs,
+    // seine Ruhe-Lage) im Raum ihres stärksten Knochens — boneInverse · bindMatrix · Ecke (r184 AttachedBindMode: die Welt ist
+    // Knochen-Welt · dieser Punkt) —, je Knochen die Box darum, um TRAEGER.saumM (in Welt-Metern) geweitet: Gelenk-Mischung und
+    // Tuch weichen um Zentimeter von der Starre ihres Knochens ab. Rückgabe [{ anker, c, h, meshes }].
+    _traegerPassung(leib) {
+        const memo = this._traegerMemo || (this._traegerMemo = new WeakMap());
+        let P = memo.get(leib);
+        if (P) return P;
+        const v = new THREE.Vector3();
+        const je = new Map();
+        leib.updateMatrixWorld(true);
+        leib.traverse((m) => {
+            if (!m.isSkinnedMesh || !m.skeleton) return;
+            const geo = (m.userData && m.userData.__tuchVorlage) || m.geometry;
+            const pos = geo.attributes.position;
+            const si = geo.attributes.skinIndex;
+            const sw = geo.attributes.skinWeight;
+            if (!pos || !si || !sw) return;
+            const S = m.skeleton;
+            for (let i = 0; i < pos.count; i++) {
+                let b = 0;
+                let w = -1;
+                for (let c = 0; c < 4; c++) {
+                    const x = sw.getComponent(i, c);
+                    if (x > w) {
+                        w = x;
+                        b = si.getComponent(i, c);
+                    }
+                }
+                const knochen = S.bones[b];
+                if (!knochen) continue;
+                v.fromBufferAttribute(pos, i).applyMatrix4(m.bindMatrix).applyMatrix4(S.boneInverses[b]);
+                let e = je.get(knochen);
+                if (!e) je.set(knochen, (e = { anker: knochen, box: new THREE.Box3(), meshes: new Set() }));
+                e.box.expandByPoint(v);
+                e.meshes.add(m);
+            }
+        });
+        P = [];
+        for (const e of je.values()) P.push(this._traegerBox(e.anker, e.box, [...e.meshes]));
+        memo.set(leib, P);
+        return P;
+    }
+
+    // EIN STARRES TEIL des getragenen Leibs (das Gerät in der Hand): die Box seiner Gestalt im eigenen Raum, EINMAL je Objekt
+    _traegerStarr(held) {
+        const memo = this._traegerMemo || (this._traegerMemo = new WeakMap());
+        if (memo.has(held)) return memo.get(held);
+        held.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(held.matrixWorld).invert();
+        const box = new THREE.Box3();
+        const b = new THREE.Box3();
+        const meshes = [];
+        held.traverse((m) => {
+            if (!m.isMesh || !m.geometry || !m.geometry.attributes.position) return;
+            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+            box.union(
+                b.copy(m.geometry.boundingBox).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld))
+            );
+            meshes.push(m);
+        });
+        const t = meshes.length ? this._traegerBox(held, box, meshes) : null;
+        memo.set(held, t);
+        return t;
+    }
+
+    // Ein Teil: Mitte und Halbachsen der Box im Raum des Ankers, der Saum in Welt-Metern über die Skala des Ankers
+    _traegerBox(anker, box, meshes) {
+        const s = Math.max(1e-3, anker.matrixWorld.getMaxScaleOnAxis());
+        const h = box
+            .getSize(new THREE.Vector3())
+            .multiplyScalar(0.5)
+            .addScalar(AnazhRealm.TRAEGER.saumM / s);
+        return { anker, c: box.getCenter(new THREE.Vector3()), h, meshes };
+    }
+
+    // Die Reprojektion des Frames: vor dem Post-Render (die Kamera trägt noch keinen TRAA-Versatz, der lebt nur
+    // zwischen onBefore-/onAfterRenderPipeline), einmal je gerendertem Frame.
+    _traaReprojektion() {
+        const z = this.state._traaR;
+        const cam = this.state.camera;
+        if (!z || !cam) return;
+        cam.updateMatrixWorld();
+        z.vor.copy(z.jetzt);
+        z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
+        // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
+        // das Bild noch eine halbe Sekunde lang.
+        const e = cam.matrixWorld.elements;
+        z.sprung = this._augeSprung(z, e[12], e[13], e[14]) || z.neu;
+        if (z.neu) {
+            z.vor.copy(z.jetzt);
+            z.neu = false;
+        }
+        z.R.value.copy(z.jetzt).invert().premultiply(z.vor);
+        this._traegerTakt(z, e[12], e[13], e[14]);
+    }
+
+    // DER SPRUNG DES AUGES (K68, A9-n2) — EIN Maß für jedes Gedächtnis des Blicks: springt das Auge seit dem letzten Blick des
+    // Halters `h` weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), gilt sein Gedächtnis nicht mehr — die Geschichte der
+    // zeitlichen Auflösung beginnt neu, jede Stufen-Hysterese der Nah-Sätze wählt frisch aus dem Jetzt. Der erste Blick springt.
+    _augeSprung(h, x, y, z) {
+        const sprung = h.augeX == null || Math.hypot(x - h.augeX, y - h.augeY, z - h.augeZ) > AnazhRealm.ZEIT_SPRUNG_M;
+        h.augeX = x;
+        h.augeY = y;
+        h.augeZ = z;
+        return sprung;
+    }
+
+    // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
+    // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
+    // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
+    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg ·
+    // Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
+    // sein Urteil nach dem EINEN Gesetz der Pass-Wahl (`_passTrifft`). Was in keiner Kaskade wirft, wirft nicht; was nur
+    // im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein Render unter dem Override-Stoff
+    // sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three projiziert seine Kinder frisch — die
+    // Wahl hier wirkt je Pass. Jeder Haken beginnt mit der Rückkehr (abgewählte Werfer sichtbar, Haupt-Urteil) — auch nach
+    // einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen Bestand). Der Stamm kompiliert nie neben dem Render (kein
+    // r184-compileAsync, das den Vorher-Haken ohne den Nachher-Haken riefe — die Erst-Zeichnung, `_configureRenderer`).
+    _passSicht(kamera, nach) {
+        const S = this._kaskadenSchmier();
+        this._passSichtZurueck(S);
+        // Der Haupt-Pass stellt die Kaskaden: sein Haken läuft nach der Kamera-Matrix und VOR jedem Schatten-Pass
+        // dieses Frames (die Karten rendern im Knoten-updateBefore seiner Objekte) — Loop, Sonde und Zähler gleich.
+        const csm = this.state.csmNode;
+        if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
+        const k = nach ? -1 : this._schattenKameraIndex(kamera);
+        // Die Lage des Passes: EINE Rechnung je Pass (Frustum der Pass-Kamera, Auge, Kaskaden-Scheibe, Blende), jeder Leser
+        // urteilt mit ihr nach dem EINEN Gesetz. Die Matrix der Wahl trägt den Versatz der zeitlichen Auflösung NICHT (TRAA
+        // verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den Rand dafür
+        // trägt `sichtRand`): dieselbe Lage wählt in jedem Frame dasselbe, die gehaltene Wahl ist die frische (Welle C).
+        // Die Höhlen-Sicht liest ihre Schirm-Rechtecke aus S.m: perspektivisch um den Dreh-Rand geweitet (`_passMatrixWeit`),
+        // damit ihre Wahl über eine kleine Drehung hält wie das Gesetz (`drehRand`).
+        if (!nach) {
+            S.m.copy(kamera.projectionMatrix);
+            if (kamera.isPerspectiveCamera === true) S.m.elements[8] = S.m.elements[9] = 0;
+            S.m.multiply(kamera.matrixWorldInverse);
+            S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
+            if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
+            this._passWahlLage(S, kamera, k);
+        }
+        const L = S.lage;
+        // Die Instanz-Wahl: die Gruppen der Wahl (Baum- und Strauch-Stufen, die Karten) zeichnen in diesem Pass nur ihre
+        // gewählten Instanzen, danach wieder alle.
+        if (nach) {
+            if (kamera === this.state.camera) this._instanzWahlZurueck(S.wahlHaupt);
+            else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
+        } else if (k >= 0) this._instanzWahlPass("schatten", S);
+        else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
+        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt)
+        if (!nach) this._instanzWahlGpu(kamera, S);
+        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
+        this._chunkSatzPass(kamera, nach, k, S);
+        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
+        if (!nach && k < 0) this._nahWieseSicht(kamera, L);
+        const map = this.state._regionBundles;
+        if (!map || map.size === 0) return;
+        if (k < 0) {
+            for (const bg of map.values()) {
+                const s = bg.userData._sichtHaupt;
+                if (s !== undefined) bg.visible = s;
+            }
+            return;
+        }
+        const n = this._werferWahlPass(map, S);
+        const z = this._werferZensus || (this._werferZensus = []);
+        z[k] = { werfer: n, bundles: map.size, abgewaehlt: S.ab.length };
+    }
+
+    // Die Werfer-Wahl eines Schatten-Passes: je Region-Bundle die Werfer-Hülle, darin je werfendes Blatt-Mesh (`_werferKind`,
+    // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
+    // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
+    // DIE WAHL STEHT (K72 — Welle C für den letzten Leser der Pass-Wahl): ein Bundle behält die Wahl dieses Passes (`L.key`),
+    // solange seine Lage (`L.gen`), sein Werfer-Stand (`_bundleWerferHuelle`) und die Instanz-Wahl dieses Passes stehen
+    // (`S.wahlNeu` — sie schaltet die Sicht der Wahl-Gruppen, die dieser Gang liest): kein Gang über die Kinder, keine
+    // Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
+    // Prüfungen in 22 Gängen, in jedem Render dieselbe Wahl.
+    _werferWahlPass(map, S) {
+        const L = S.lage,
+            ab = S.ab;
+        const instanzSteht = S.wahlNeu === 0;
+        let n = 0;
+        for (const bg of map.values()) {
+            const h = this._bundleWerferHuelle(bg);
+            const u = bg.userData;
+            const je = u._werferJe || (u._werferJe = new Map());
+            let w = je.get(L.key);
+            if (instanzSteht && w && w.gen === L.gen && w.stand === u._werferStand) {
+                bg.visible = w.vis;
+                if (!w.vis) continue;
+                n++;
+                for (let i = 0; i < w.ab.length; i++) {
+                    const c = w.ab[i];
+                    c.visible = false;
+                    ab.push(c);
+                }
+                continue;
+            }
+            const vis = h !== null && this._passTrifftBox(L, h, 0);
+            bg.visible = vis;
+            const a0 = ab.length;
+            if (vis) {
+                n++;
+                this._werferWahl(bg, L, ab);
+            }
+            if (!w) je.set(L.key, (w = { gen: 0, stand: 0, vis: false, ab: [] }));
+            this._werferWahlMerke(bg, w, L, vis, ab, a0);
+        }
+        return n;
+    }
+
+    // Merkt die Wahl eines Bundles für diesen Pass: Lage, Werfer-Stand, ob es wirft und welche Werfer darin ruhen.
+    _werferWahlMerke(bg, w, L, vis, ab, a0) {
+        w.gen = L.gen;
+        w.stand = bg.userData._werferStand;
+        w.vis = vis;
+        w.ab.length = 0;
+        for (let i = a0; i < ab.length; i++) w.ab.push(ab[i]);
+    }
+
+    _werferWahl(o, L, ab) {
+        const kinder = o.children;
+        for (let i = 0; i < kinder.length; i++) {
+            const c = kinder[i];
+            if (c.visible === false) continue;
+            // eine Senke ist ein Blatt: ihr einziges Kind ist ihr Zeichner (1410-1), er fällt mit ihr
+            const blatt = c.children.length === 0 || (c.__zeichner !== undefined && c.children.length === 1);
+            if (c.isMesh === true && c.castShadow === true && blatt) {
+                const b = c.userData._werferKind;
+                if (!b || b.isEmpty() || !this._passTrifftBox(L, b, 0)) {
+                    c.visible = false;
+                    ab.push(c);
+                }
+                continue;
+            }
+            if (c.children.length > 0) this._werferWahl(c, L, ab);
+        }
+    }
+
+    _passSichtZurueck(S) {
+        for (let i = 0; i < S.ab.length; i++) S.ab[i].visible = true;
+        S.ab.length = 0;
+    }
+
+    // DAS GESETZ DER PASS-WAHL (W7-Vereinigung). Bis hier wählten im selben Haken drei Wege: die Sätze und die Werfer der
+    // Region-Bündel nach ihrer Box gegen das Frustum der Pass-Kamera, die Pflanzen-Stufen nach Kugel, Licht-Kapsel und
+    // Fenster (`_instanzWahlPass`), die Karten als Senken-Kopie ihrer Sicht. Befund (echte GPU, Mess-Wiese, Band in Ruhe,
+    // Blick yaw −0,88): die Box der fernen Kaskade — ein Licht-Raum-Quader — umschließt bei schrägem Blick den nahen Boden,
+    // boden k1 173 784 Dreiecke über der Ratsche 90 845: dieselbe Klasse, die die Kapsel für die Bäume schon schnitt, im
+    // Nachbar-Leser offen. Jetzt urteilt EIN Gesetz über jeden Körper jedes Passes — die Zelle eines Satzes, den Werfer eines
+    // Bündels, die Instanz einer Gruppe der Wahl (Baum, Strauch, Karte), das Büschel der Nah-Wiese. Der Körper ist eine
+    // BOX MIT SAUM (Mitte c, Halb-Ausdehnung h je Achse, Saum-Radius r: h = 0 ist die Kugel, r = 0 die Box). Er zeichnet, wenn
+    // (1) er das Frustum der Pass-Kamera schneidet — je Ebene der Stütz-Abstand n·c + d + |n|·h + r, dazu der Rand
+    // `sichtRand` je Meter Abstand zum Auge (ein Satz, der seine Wahl über Frames hält, sieht den Versatz der zeitlichen
+    // Auflösung nicht) — und (2) im Kaskaden-Pass seine LICHT-KAPSEL, der Körper entlang des Lichts bis ganz unter die Box
+    // der Kaskade, die Scheibe dieser Kaskade trifft (`fit.ebenen`, um `saum` geweitet): ein Werfer, dessen Schatten auf
+    // keinen Empfänger der Scheibe fällt, wirft dort nicht. Für eine Ebene ist der gefegte Körper die Hülle seiner beiden
+    // Enden — liegen beide jenseits, liegt der ganze Weg jenseits.
+    _passWahlLage(S, kamera, k) {
+        const L =
+            S.lage ||
+            (S.lage = {
+                fr: null,
+                ax: 0,
+                ay: 0,
+                az: 0,
+                rand: 0,
+                fit: null,
+                dir: null,
+                v: new THREE.Vector3(),
+                an: false,
+                ex: 0,
+                ez: 0,
+                perf: 1,
+                ref: 1,
+                kanten: null,
+                halt: 0,
+                dreh: 0,
+                licht: 0,
+                gen: 0,
+                key: "",
+                neu: false,
+            });
+        const we = kamera.matrixWorld.elements;
+        const PW = AnazhRealm.PASS_WAHL;
+        L.fr = S.frustum;
+        L.ax = we[12];
+        L.ay = we[13];
+        L.az = we[14];
+        L.rand = PW.sichtRand;
+        // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
+        L.halt = PW.haltM * (1 + PW.sichtRand);
+        // der Dreh-Rand: eine Perspektive wählt mit `drehRand` (je Meter Abstand der Sinus) und hält bis zur Hälfte (`_wahlHaelt`)
+        L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
+        // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
+        const csm = this.state.csmNode;
+        const lw = k >= 0 && csm && csm.lights ? csm.lights[k] : null;
+        const fit = lw && lw.shadow && lw.shadow.camera === kamera && csm._anazhFit ? csm._anazhFit[k] : null;
+        L.fit = fit && fit.ebenen ? fit : null;
+        L.dir = S.dir;
+        // DER LICHT-RAND (`lichtRandTexel`): eine Kaskade wählt mit einem Saum von so vielen Texeln ihrer Karte — ihre Wahl
+        // hält über die Stufen der Sonne, solange die Drehung des Lichts seit der Wahl jeden Schatten um weniger als die
+        // Hälfte davon verschiebt (`_passLageHaelt`); die gehaltene Lage wählt mit dem Rand ihres Ankers weiter
+        L.licht = L.fit ? PW.lichtRandTexel * L.fit.texelMin : 0;
+        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
+        // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
+        const lu = this.state.lodUniforms;
+        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodPerf);
+        if (L.an) {
+            L.ex = lu.uLodAuge.value.x;
+            L.ez = lu.uLodAuge.value.z;
+            L.perf = lu.uLodPerf.value;
+            L.ref = lu.uLodRef.value;
+            const d0 = lu.uLodD0.value,
+                d1 = lu.uLodD1.value,
+                fade = lu.uLodFade.value,
+                fade0 = lu.uLodFade0.value;
+            let K = this._blendeK;
+            if (!K || K.d0 !== d0 || K.d1 !== d1 || K.fade !== fade || K.fade0 !== fade0) {
+                const pc = globalThis.__phytoCore;
+                if (!pc || typeof pc.lodCrossfadeMask !== "function")
+                    throw new Error(
+                        "_passWahlLage: __phytoCore.lodCrossfadeMask fehlt — ohne das Blend-Gesetz kein Fenster"
+                    );
+                K = this._blendeK = AnazhRealm._blendeKanten(pc.lodCrossfadeMask, d0, d1, fade, fade0);
+            }
+            L.kanten = K;
+        }
+        // `neu`: dieser Pass legte einen neuen Anker (die Lage hielt nicht) — wer jetzt wählt, wählt am Anker (die Höhlen-Sicht der
+        // Kaskade hält darum nur dann ihre Licht-Rechtecke über die Stufen der Sonne, `_hoehlenSichtLicht`)
+        L.neu = this._passLageGen(L, kamera, k);
+        return L;
+    }
+
+    // Die Matrix einer Perspektive ohne den Versatz der zeitlichen Auflösung, ihr Sichtfeld je Halbwinkel um 1,5 × `dreh`
+    // geweitet: jeder Strahl, den eine um höchstens `dreh` gedrehte Kamera sieht, liegt darin (der Abstand eines Strahls zur
+    // Seiten-Ebene wächst um höchstens `dreh`, sein Winkel in der Bild-Achse um höchstens dreh / cos(Höhe) — an den Ecken
+    // eines 75°-Bilds 16:9 das 1,1-Fache).
+    _passMatrixWeit(aus, kamera, dreh) {
+        aus.copy(kamera.projectionMatrix);
+        const e = aus.elements;
+        e[8] = e[9] = 0;
+        const zu = 1.5 * dreh;
+        e[0] = 1 / Math.tan(Math.atan(1 / e[0]) + zu);
+        e[5] = 1 / Math.tan(Math.atan(1 / e[5]) + zu);
+        return aus.multiply(kamera.matrixWorldInverse);
+    }
+
+    // DIE LAGE STEHT (Welle C, Lehre 25 — der Takt kostet, was ihn betrifft). Befund 06.10. (OMEN, GTX 1060 + i7-8750H, CPU-
+    // Profil, Regler voll, Blick gepinnt, Mess-Wiese): die Sicht je Pass kostete ~6 ms CPU je Frame — jeder Pass rechnete
+    // jeden Frame jede Wahl neu (Abschnitte, Höhlen-Sicht, Instanzen), auch wenn nichts sich bewegte; an der echten GPU
+    // (Mess-Wiese, Ruhe) 11 231 Körper-Prüfungen, 22 174 Ecken und 70 kB Index je Frame. Jeder Pass trägt darum die
+    // GENERATION seiner Lage (`L.gen`): sie bleibt, solange die Lage steht — und jeder Leser (die Sätze `_satzAbschnittSteht`,
+    // die Instanz-Wahl `_instanzWahlSteht`, die Nah-Wiese) behält seine Wahl, solange ihre Generation und sein eigener Stand
+    // gleich sind. Die Lage ist, was jedes Urteil liest: die sechs Ebenen des Frustums OHNE den Versatz der zeitlichen
+    // Auflösung (TRAA verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den
+    // Rand dafür trägt `sichtRand`), das Auge, die Drehung der Kamera (die Licht-Kacheln der Höhlen-Sicht lesen sie), im
+    // Kaskaden-Pass die Wahl-Scheibe (`fit.ebenen`, `zb`, `saum`, die Licht-Basis) und das Licht, dazu die Blende (Auge der
+    // Maske, Perf-Streck, Bezug, die Kanten des Blend-Gesetzes). Sie STEHT gegen den Anker der letzten Wahl dieses Passes
+    // (haupt · k<i> · anders), solange jede Richtung gleich ist (bis auf die Rundung, 1e-9) und jeder Ort — das Auge, jede
+    // Ebene, der Boden der Kaskaden-Box — um höchstens `haltM` gewandert ist: das Auge der Spiel-Kamera atmet im Stand um
+    // Millimeter, die Kaskaden-Box steigt mit ihm. Den Halt trägt das Gesetz als Rand (`L.halt` in `_passTrifft`). Eine
+    // ORTHOGONALE Kamera (die Kaskade) wandert dazu frei entlang ihrer Achse: ihre nahe Ebene steht über dem höchsten Werfer
+    // der Box (`_kaskadenWerferOben` — ein laufendes Tier hebt und senkt sie je Render um Meter, gemessen 06.10., k1 bis 30 m),
+    // und kein Körper, den ein Leser wählt, liegt darüber; Auge und nahe Ebene zählen darum nur quer zur Achse. Solange die Lage
+    // steht, urteilt jeder Leser vom Auge des Ankers (`L.ax`…) — der Rand je Meter ist der, mit dem die gehaltene Wahl fiel.
+    _passLageGen(L, kamera, k) {
+        const N = 89;
+        const key = k >= 0 ? "k" + k : kamera === this.state.camera ? "haupt" : "anders";
+        const M = this._passLagen || (this._passLagen = new Map());
+        let a = M.get(key);
+        if (!a) M.set(key, (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0 }));
+        const s = this._passLageSig || (this._passLageSig = new Float64Array(N));
+        const we = kamera.matrixWorld.elements;
+        // die Achse einer orthogonalen Kamera (sie blickt entlang −z ihrer Welt-Matrix)
+        const ortho = kamera.isOrthographicCamera === true;
+        let fx = 0,
+            fy = 0,
+            fz = 0;
+        if (ortho) {
+            const l = Math.hypot(we[8], we[9], we[10]) || 1;
+            fx = -we[8] / l;
+            fy = -we[9] / l;
+            fz = -we[10] / l;
+        }
+        const t = we[12] * fx + we[13] * fy + we[14] * fz;
+        s[0] = we[12] - t * fx;
+        s[1] = we[13] - t * fy;
+        s[2] = we[14] - t * fz;
+        // das Frustum des Passes (`_passSicht` legt es ohne den Versatz der zeitlichen Auflösung)
+        const F = L.fr;
+        const ebene = (P, o) => {
+            s[o] = P.normal.x;
+            s[o + 1] = P.normal.y;
+            s[o + 2] = P.normal.z;
+            s[o + 3] = P.constant;
+        };
+        // perspektivisch: die Projektion ohne Versatz (ihre Ebenen drehen mit der Kamera — die Drehung zählt als Winkel,
+        // s[84] = 1); orthogonal: die Ebenen, ohne die nahe
+        s[84] = ortho ? 0 : 1;
+        if (!ortho) {
+            const pe = kamera.projectionMatrix.elements;
+            for (let i = 0; i < 24; i++) s[3 + i] = i < 16 && i !== 8 && i !== 9 ? pe[i] : 0;
+        } else
+            for (let p = 0; p < 6; p++) {
+                const P = F.planes[p];
+                ebene(P, 3 + 4 * p);
+                // die nahe Ebene der orthogonalen Kamera (ihre Normale zeigt entlang der Achse) zählt nicht
+                if (P.normal.x * fx + P.normal.y * fy + P.normal.z * fz > 0.99) s[6 + 4 * p] = 0;
+            }
+        const f = L.fit;
+        s[27] = f ? 1 : 0;
+        for (let p = 0; p < 6; p++)
+            if (f) ebene(f.ebenen[p], 28 + 4 * p);
+            else s[28 + 4 * p] = s[29 + 4 * p] = s[30 + 4 * p] = s[31 + 4 * p] = 0;
+        const R = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+        const bi = f ? f.basisInv.elements : null;
+        s[52] = f ? f.zb : 0;
+        s[53] = f ? f.saum : 0;
+        for (let i = 0; i < 9; i++) {
+            s[54 + i] = bi ? bi[R[i]] : 0;
+            s[75 + i] = we[R[i]];
+        }
+        // das Licht liest nur die Licht-Kapsel des Kaskaden-Passes (das Hauptbild wählt ohne Scheibe)
+        const d = f ? L.dir : null;
+        s[63] = d ? d.x : 0;
+        s[64] = d ? d.y : 0;
+        s[65] = d ? d.z : 0;
+        const K = L.an ? L.kanten : null;
+        s[66] = L.an ? 1 : 0;
+        s[67] = L.an ? L.ex : 0;
+        s[68] = L.an ? L.ez : 0;
+        s[69] = L.an ? L.perf : 0;
+        s[70] = L.an ? L.ref : 0;
+        s[71] = K ? K.d0 : 0;
+        s[72] = K ? K.d1 : 0;
+        s[73] = K ? K.fade : 0;
+        s[74] = K ? K.fade0 : 0;
+        // die Kaskade unter der laufenden Sonne: ihr Licht-Rand, der längste Licht-Weg ihrer Box, das Höhenband ihrer Empfänger
+        s[85] = L.licht;
+        s[86] = f ? f.weg : 0;
+        s[87] = f ? f.band0 : 0;
+        s[88] = f ? f.band1 : 0;
+        if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
+            L.gen = a.gen;
+            L.key = key;
+            L.ax = a.ax;
+            L.ay = a.ay;
+            L.az = a.az;
+            // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
+            L.ex = a.sig[67];
+            L.ez = a.sig[68];
+            L.licht = a.sig[85];
+            if (s[86] > a.wegMax) a.wegMax = s[86];
+            return false;
+        }
+        a.sig.set(s);
+        a.kamera = kamera.id;
+        a.ax = L.ax;
+        a.ay = L.ay;
+        a.az = L.az;
+        a.wegMax = s[86];
+        a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
+        L.gen = a.gen;
+        L.key = key;
+        return true;
+    }
+
+    // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
+    // Hebel, mit dem sie am Rand wirkt — die HÄLFTE dieses Rands nicht überschreitet. Jede Wahl unter der gehaltenen Lage (der
+    // Anker und jeder Leser, der mitten in ihr neu wählt: ein Satz mit neuem Stand, eine Gruppe mit neuen Slots) urteilt vom
+    // Blick ihres Frames und liegt höchstens den halben Rand vom Anker, gegen die jetzige Lage also höchstens den ganzen —
+    // den ihr Rand trägt. Die Kamera dreht mit dem Hebel 1 gegen ihren Dreh-Rand (`drehRand`, Bogenmaß), das Licht mit dem
+    // längsten Licht-Weg gegen seinen Licht-Rand (Meter), jeder Ort der Lage (Auge, Ebenen, Band) gegen den Halt `haltM`. Gemessen 07.10. (gate:sicht-arbeit (D), Mess-Wiese): hielt die
+    // Kamera bis zum ganzen Rand, fielen nach einer Neu-Wahl mitten in der Drehung 12 Zellen und Instanzen am Bildrand weg.
+    _wahlHaelt(dreh, hebel, rand) {
+        return dreh * hebel <= rand / 2;
+    }
+
+    // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
+    // der Kaskaden-Box, das Auge der Blende — `_blendeHaelt`) um höchstens den halben Halt (`_wahlHaelt` gegen haltM), Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
+    // Drehung (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) nach dem Gesetz des Halts gegen den
+    // Dreh-Rand (`_wahlHaelt`) —, alles andere gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand
+    // (unten), nach demselben Gesetz.
+    _passLageHaelt(a, s, anker) {
+        const PW = AnazhRealm.PASS_WAHL;
+        const H = PW.haltM;
+        // jeder Ort hält nach dem Gesetz des Halts: höchstens den halben Halt vom Anker (`_wahlHaelt`)
+        const steht = (d) => this._wahlHaelt(d, 1, H);
+        if (s[84] !== a[84] || s[27] !== a[27]) return false;
+        // DIE KASKADE UNTER DER LAUFENDEN SONNE (orthogonal, mit Box): ihre echten Werfer bestimmen die Empfänger (die
+        // Wahl-Scheibe und ihr Höhenband) und das Licht — Box, Auge und Licht-Basis legt der Fit aus ihnen. Die Lage hält,
+        // solange die Empfänger stehen (die Scheibe um haltM, das Band um haltM, Saum und Blende gleich) und die Drehung des
+        // Lichts seit dem Anker, mal dem längsten Licht-Weg seit dem Anker (`wegMax`), unter dem halben Licht-Rand bleibt:
+        // ein echter Werfer liegt quer zum Licht so nah an seinem Empfänger in der Box wie Drehung × Weg, und jede Wahl unter
+        // dieser Lage (der Anker, ein Satz mit neuem Stand dazwischen) lag selbst höchstens den halben Rand vom Anker —
+        // gegen die jetzige Lage also höchstens den ganzen.
+        if (s[84] === 0 && s[27] === 1) {
+            for (let o = 28; o < 52; o += 4) {
+                if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
+                for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
+            }
+            if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
+            if (!this._blendeHaelt(a, s)) return false;
+            const cx = a[64] * s[65] - a[65] * s[64],
+                cy = a[65] * s[63] - a[63] * s[65],
+                cz = a[63] * s[64] - a[64] * s[63];
+            const dreh = Math.atan2(
+                Math.sqrt(cx * cx + cy * cy + cz * cz),
+                a[63] * s[63] + a[64] * s[64] + a[65] * s[65]
+            );
+            return this._wahlHaelt(dreh, Math.max(anker.wegMax, s[86]), a[85]);
+        }
+        const dx = s[0] - a[0],
+            dy = s[1] - a[1],
+            dz = s[2] - a[2];
+        if (!steht(Math.sqrt(dx * dx + dy * dy + dz * dz))) return false;
+        const persp = s[84] === 1;
+        // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
+        // Richtung bis auf die Rundung, die Konstante um haltM
+        if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
+        for (let p = persp ? 6 : 0; p < 12; p++) {
+            const o = p < 6 ? 3 + 4 * p : 28 + 4 * (p - 6);
+            if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
+            for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
+        }
+        if (!steht(Math.abs(s[52] - a[52])) || s[53] !== a[53]) return false;
+        // die Richtungen: die Licht-Basis (54…62), das Licht (63…65), die Drehung der Kamera (75…83)
+        for (let i = 54; i < 66; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
+        if (persp) {
+            let spur = 0;
+            for (let i = 75; i < 84; i++) spur += s[i] * a[i];
+            const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
+            if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
+        } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
+        return this._blendeHaelt(a, s);
+    }
+
+    // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
+    // Lage wie das Auge der Kamera: es hält nach dem Gesetz des Halts, höchstens den halben Halt vom Anker (`_wahlHaelt` gegen
+    // haltM); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
+    // Rand (`_instanzFenster`), und unter der gehaltenen Lage urteilt jeder Leser vom Auge des Ankers (`_passLageGen`).
+    // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
+    // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
+    // Prüfungen je Frame).
+    _blendeHaelt(a, s) {
+        if (s[66] !== a[66]) return false;
+        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, AnazhRealm.PASS_WAHL.haltM)) return false;
+        for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
+        return true;
+    }
+
+    // Das Urteil über einen Körper (Box mit Saum: Mitte cx/cy/cz, Halb-Ausdehnung hx/hy/hz, Saum-Radius r) in der Lage L.
+    _passTrifft(L, cx, cy, cz, hx, hy, hz, r) {
+        const ax = cx - L.ax,
+            ay = cy - L.ay,
+            az = cz - L.az;
+        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung und die Drehung, über die die Lage hält), der
+        // Halt der Lage (`_passLageGen`) und der Licht-Rand einer Kaskade (die Stufen der Sonne, über die ihre Wahl hält)
+        const rr = r + L.halt + L.licht + (L.rand + L.dreh) * Math.sqrt(ax * ax + ay * ay + az * az);
+        const E = L.fr.planes;
+        for (let p = 0; p < 6; p++) {
+            const n = E[p].normal;
+            const nx = n.x,
+                ny = n.y,
+                nz = n.z;
+            const st = (nx < 0 ? -nx : nx) * hx + (ny < 0 ? -ny : ny) * hy + (nz < 0 ? -nz : nz) * hz + rr;
+            if (nx * cx + ny * cy + nz * cz + E[p].constant < -st) return false;
+        }
+        const f = L.fit;
+        if (!f) return true;
+        // Die Licht-Kapsel: der Körper wandert entlang des Lichts (`dir`), bis er ganz unter der Box liegt (Licht-z < zb).
+        const d = L.dir;
+        const sl = (d.x < 0 ? -d.x : d.x) * hx + (d.y < 0 ? -d.y : d.y) * hy + (d.z < 0 ? -d.z : d.z) * hz + r;
+        const v = L.v.set(cx, cy, cz).applyMatrix4(f.basisInv);
+        const t = Math.max(0, v.z - f.zb + sl);
+        const ex = cx + d.x * t,
+            ey = cy + d.y * t,
+            ez = cz + d.z * t;
+        for (let j = 0; j < f.ebenen.length; j++) {
+            const P = f.ebenen[j];
+            const n = P.normal;
+            const nx = n.x,
+                ny = n.y,
+                nz = n.z;
+            // die Scheibe hält um haltM, der Boden der Box (das Ende der Kapsel) ebenso: zweimal der Halt; dreht das Licht,
+            // wandert das Ende der Kapsel um höchstens den Licht-Rand
+            const st =
+                (nx < 0 ? -nx : nx) * hx +
+                (ny < 0 ? -ny : ny) * hy +
+                (nz < 0 ? -nz : nz) * hz +
+                r +
+                f.saum +
+                2 * L.halt +
+                L.licht;
+            if (nx * cx + ny * cy + nz * cz + P.constant < -st && nx * ex + ny * ey + nz * ez + P.constant < -st)
+                return false;
+        }
+        return true;
+    }
+
+    // Eine Box (Box3) als Körper des Gesetzes, `r` = ihr Rand.
+    _passTrifftBox(L, b, r) {
+        const mn = b.min,
+            mx = b.max;
+        return this._passTrifft(
+            L,
+            (mn.x + mx.x) * 0.5,
+            (mn.y + mx.y) * 0.5,
+            (mn.z + mx.z) * 0.5,
+            (mx.x - mn.x) * 0.5,
+            (mx.y - mn.y) * 0.5,
+            (mx.z - mn.z) * 0.5,
+            r
+        );
+    }
+
+    // DIE INSTANZ-WAHL JE PASS (Welle 7). Befund 06.10. (echte GPU, Mess-Wiese, Band in Ruhe, fester Blick): die Baum-
+    // Gruppen sind global (eine Instanz-Gruppe je Art × Gestalt × Stufe × Teil, ein Befehl je Pass), und jeder Pass zog JEDE
+    // Instanz — das Hauptbild 380k Baum-Dreiecke, davon im Blick 251k (yaw 0) bzw. 164k (yaw −0,88); jede Kaskade jeden
+    // Zwilling (k0 182k, k1 blickabhängig 14k oder 182k); und die Stufen-Bänder der CPU (Hysterese ±3,4 m AUSSERHALB der
+    // Dither-Fenster) hielten Stufen, deren Maske vom Auge alles verwirft (eine L0 jenseits d0 kostet 17k Dreiecke je Tanne
+    // und zeigt nichts). Ebenso die EINE Atlas-Gruppe der Karten: im @global-Bündel zeichnete sie jede Karte des Rings (1 889
+    // Karten bis 385 m, ein Drittel im Blick) — sie ist eine Gruppe der Wahl wie jede Pflanzen-Stufe (W7-Vereinigung: ihre
+    // Senken-Kopie je Sicht fiel). Jeder Pass wählt: die Gruppe ordnet ihre Slots (`_archGroupTausch`), die gewählten vorn,
+    // und zeichnet nur sie (`count` über `_instanzZahl`); nach dem Pass zählt sie wieder alle (die Slot-Wahrheit: count =
+    // liveCount außerhalb jedes Passes). Gewählt ist, was (1) das EINE Gesetz der Pass-Wahl trifft (`_passTrifft`: Kugel der
+    // Instanz gegen das Frustum, im Schatten-Pass ihre Licht-Kapsel gegen die Scheibe) und (2) dessen Stufen-Maske vom Auge
+    // etwas behält (`_instanzFenster` — nur, wenn der Stoff die Maske trägt). Eine Gruppe zeichnet in genau EINER Pass-Art
+    // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
+    // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
+    // zeichnen Bündel-Kinder direkt.
+    // `S.wahlNeu` zählt die Gruppen, deren Wahl dieser Pass neu legte oder fallen ließ (0: die Wahl des Passes stand ganz —
+    // die Werfer-Wahl liest die Sicht der Wahl-Gruppen und hält ihre Wahl nur dann, `_werferWahlPass`).
+    _instanzWahlPass(art, S) {
+        const set = this._instanzWahlGruppen();
+        const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
+        if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        S.wahlNeu = 0;
+        // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
+        if (set.size === 0) return void (art === "haupt" && this._arenaTakt());
+        const L = S.lage;
+        // DIE WAHL FOLGT DEM WEG (w20-leib-takt): der Abdruck dieser Lage, die Ränder ± wegM daneben (`_wahlRaender`)
+        const { A, weit, eng } = this._wahlRaender(S);
+        for (const g of set) {
+            if (g.wahl !== art) continue;
+            const m = g.mesh;
+            const n = g.liveCount | 0;
+            if (!m || n === 0 || m.visible === false) {
+                // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
+                // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
+                // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
+                // hielten Slot −1.
+                if (g._wahlJe && L && g._wahlJe.delete(L.key)) S.wahlNeu++;
+                continue;
+            }
+            // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
+            if (this._instanzWahlSteht(g, L)) {
+                AnazhRealm._instanzZahl(m, g._wahlJe.get(L.key).refs.length);
+                liste.push(g);
+                continue;
+            }
+            const fenster = L.an && this._instanzFensterGilt(g);
+            const nach = this._instanzWahlWeg(g, L, A, fenster);
+            if (nach >= 0) {
+                if (nach > 0) S.wahlNeu++;
+                liste.push(g);
+                continue;
+            }
+            S.wahlNeu++;
+            // die volle Wahl: je Instanz das Urteil und ob es über den Weg hält — trifft der weite Rand nicht, fehlt sie
+            // sicher, trifft der enge, steht sie sicher (das Gesetz ist im Rand monoton); nur dazwischen urteilt der Pass
+            const wack = [];
+            let kk = 0,
+                tausch = 0;
+            for (let i = 0; i < n; i++) {
+                let ja;
+                if (!this._instanzBehalten(g, i, weit, fenster)) ja = false;
+                else if (this._instanzBehalten(g, i, eng, fenster)) ja = true;
+                else ((ja = this._instanzBehalten(g, i, L, fenster)), wack.push(g.slotRef[i]));
+                if (!ja) continue;
+                if (i !== kk) {
+                    this._archGroupTausch(g, i, kk);
+                    tausch++;
+                }
+                kk++;
+            }
+            this._instanzWahlLegt(g, L, kk, tausch, art);
+            liste.push(g);
+            const w = g._wahlJe.get(L.key);
+            w.anker = (w.anker || new Float64Array(A.length)).fill(0);
+            w.anker.set(A);
+            w.wack = wack;
+        }
+        if (art === "haupt") this._arenaTakt();
+    }
+
+    // Die Zahl der Wahl legen: die Senke zeichnet ihre ersten kk Slots, das Hauptbild nimmt sein Bündel neu auf, wenn die
+    // Wahl sich änderte (Zahl oder Ordnung — die Arena liest sie im Takt, G1), und der Pass merkt sie (`_instanzWahlMerke`).
+    _instanzWahlLegt(g, L, kk, tausch, art) {
+        const m = g.mesh;
+        AnazhRealm._instanzZahl(m, kk);
+        if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+        if (art === "haupt") g._wahlZahl = kk;
+        this._instanzWahlMerke(g, L, kk);
+    }
+
+    // DIE WAHL FOLGT DEM WEG (w20-leib-takt, Gebot 7 — der Takt kostet, was sich ändert). Befund (headless, Holz voll, Mess-Wiese
+    // Third, Gang gegen Stand, je Bild): jeder Schritt über den Halt (haltM, 2 cm Auge) legte eine neue Lage, und jeder Pass
+    // urteilte jede Instanz seiner Gruppen neu — die Karten-Gruppe (2 295 Karten) im Hauptbild 2 311 Urteile je Bild, in den
+    // Kaskaden 1 224 · 333 · 245; die Instanz-Wahl der vier Pässe kostete im Gang 1,8 ms je Bild, im Stand 0,4. Jetzt merkt die
+    // volle Wahl je Instanz, ob ihr Urteil über den Weg `wegM` hält (es fällt unter dem weiten und dem engen Rand gleich), und
+    // den Abdruck ihrer Lage (`_wahlAbdruck`). Eine neue Lage mit denselben Richtungen, deren Weg vom Abdruck (`_wahlWeg`)
+    // unter wegM liegt, urteilt nur die wackligen Instanzen neu (die nahe einer Grenze) und ordnet nur, was kippt — die Wahl
+    // ist dieselbe wie die volle (jedes Urteil fällt am Gesetz dieser Lage; Gegenprobe 2,6 Mio. Urteile in Stand, Gang und
+    // Drehung, 0 Brüche). Gemessen A B im Wechsel (4 × 240 Bilder Gang): Instanz-Wahl 1,8 → 0,9 ms je Bild, Gang-Takt p95
+    // Third 21,8 → 19,8, Ego 24,7 → 20,7 ms. Rückgabe −1: die volle Wahl muss legen; sonst die Zahl der gekippten Instanzen.
+    _instanzWahlWeg(g, L, A, fenster) {
+        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
+        if (!w || !w.anker || !w.wack || !(this._wahlWeg(w.anker, A) <= AnazhRealm.PASS_WAHL.wegM)) return -1;
+        const m = g.mesh;
+        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
+        if (
+            jetzt.belegt !== w.belegt ||
+            jetzt.im !== w.im ||
+            jetzt.vMat !== w.vMat ||
+            jetzt.vKarte !== w.vKarte ||
+            w.geo !== m.geometry ||
+            w.mat !== g.mat ||
+            w.live !== (g.liveCount | 0)
+        )
+            return -1;
+        let tausch = 0;
+        if (w.ordnung !== (g._ordnung | 0))
+            for (let j = 0; j < w.refs.length; j++)
+                if (w.refs[j].slot !== j) (this._archGroupTausch(g, w.refs[j].slot, j), tausch++);
+        let kk = w.refs.length,
+            kipp = 0;
+        for (let q = 0; q < w.wack.length; q++) {
+            const i = w.wack[q].slot;
+            const ja = this._instanzBehalten(g, i, L, fenster);
+            if (ja === i < kk) continue;
+            kipp++;
+            const z = ja ? kk++ : --kk;
+            if (i !== z) (this._archGroupTausch(g, i, z), tausch++);
+        }
+        this._instanzWahlLegt(g, L, kk, tausch, g.wahl);
+        return kipp;
+    }
+
+    // DIE RÄNDER DER WAHL (die Wahl folgt dem Weg, je Pass einmal): der Abdruck der Lage dieses Passes und dieselbe Lage mit dem
+    // Halt ± wegM. Das Gesetz ist im Halt monoton: was der weite Rand nicht trifft, fehlt unter jeder Lage, deren Weg vom Abdruck
+    // unter wegM liegt; was der enge trifft, steht unter ihr. (Die Sätze, `_chunkSatzAbschnitt`, gewannen damit nichts: ihre
+    // Ordnung fällt im Gang mit `s.stand`, gemessen 0,39 gegen 0,45 ms je Bild — sie wählen voll.)
+    _wahlRaender(S) {
+        const L = S.lage;
+        const D = AnazhRealm.PASS_WAHL.wegM;
+        const R = S.raender || (S.raender = { A: null, weit: {}, eng: {} });
+        R.A = this._wahlAbdruck(L, S);
+        Object.assign(R.weit, L).halt = L.halt + D;
+        Object.assign(R.eng, L).halt = L.halt - D;
+        return R;
+    }
+
+    // DER ABDRUCK EINER LAGE (die Wahl folgt dem Weg): alles, was das Gesetz der Pass-Wahl (`_passTrifft`) und das Fenster
+    // (`_instanzFenster`) aus ihr lesen — Ebenen des Frustums, Scheibe und Basis der Kaskade, Licht, Auge, Auge der Blende,
+    // Ränder, Blende. In `S.abdruck`.
+    _wahlAbdruck(L, S) {
+        const a = S.abdruck || (S.abdruck = new Float64Array(80));
+        const eb = (P, o) => (
+            (a[o] = P.normal.x),
+            (a[o + 1] = P.normal.y),
+            (a[o + 2] = P.normal.z),
+            (a[o + 3] = P.constant)
+        );
+        for (let p = 0; p < 6; p++) eb(L.fr.planes[p], 4 * p);
+        const f = L.fit;
+        a[24] = f ? 1 : 0;
+        for (let p = 0; p < 6; p++) if (f) eb(f.ebenen[p], 25 + 4 * p);
+        // die Basis der Kapsel: ihre Drehung (Richtung) und ihre Tiefe (bi[14], ein Ort: v.z der Licht-Kapsel)
+        const bi = f ? f.basisInv.elements : null;
+        a[49] = f ? f.zb : 0;
+        a[50] = f ? f.saum : 0;
+        for (let i = 0; i < 9; i++) a[51 + i] = bi ? bi[AnazhRealm.WAHL_BASIS[i]] : 0;
+        a[60] = a[61] = 0;
+        a[62] = bi ? bi[14] : 0;
+        a[63] = f ? L.dir.x : 0;
+        a[64] = f ? L.dir.y : 0;
+        a[65] = f ? L.dir.z : 0;
+        a[66] = L.ax;
+        a[67] = L.ay;
+        a[68] = L.az;
+        a[69] = L.an ? L.ex : 0;
+        a[70] = L.an ? L.ez : 0;
+        a[71] = L.licht;
+        a[72] = L.rand;
+        a[73] = L.dreh;
+        a[74] = L.halt;
+        const K = L.an ? L.kanten : null;
+        a[75] = L.an ? L.perf : 0;
+        a[76] = L.an ? L.ref : 0;
+        a[77] = K ? K.l0Aus + 3 * K.l1Ein : 0;
+        a[78] = K ? K.l1Aus + 3 * K.karteEin : 0;
+        a[79] = L.an ? 1 : 0;
+        return a;
+    }
+
+    // DER WEG ZWISCHEN ZWEI ABDRÜCKEN (`_wahlAbdruck`): um wie viel ein Urteil des Gesetzes höchstens wandert — die Konstante
+    // jeder Ebene des Frustums plus der Rand je Meter über den Weg des Auges, das Ende der Licht-Kapsel (Scheibe, Boden der Box,
+    // Tiefe der Basis) auf ihrem doppelten Halt, das Auge der Blende. Unendlich, wenn eine Richtung (Normalen, Basis, Licht)
+    // oder eine Zahl (Ränder, Blende, Saum) nicht dieselbe ist: dann wählt die Gruppe voll.
+    _wahlWeg(a, b) {
+        let eb = 0,
+            ef = 0;
+        for (let p = 0; p < 12; p++) {
+            const o = p < 6 ? 4 * p : 25 + 4 * (p - 6);
+            for (let j = 0; j < 3; j++) if (!(Math.abs(a[o + j] - b[o + j]) <= 1e-9)) return Infinity;
+            const d = Math.abs(a[o + 3] - b[o + 3]);
+            if (p < 6) eb = Math.max(eb, d);
+            else ef = Math.max(ef, d);
+        }
+        for (let i = 51; i < 66; i++) if (i !== 62 && !(Math.abs(a[i] - b[i]) <= 1e-9)) return Infinity;
+        if (a[24] !== b[24] || a[50] !== b[50]) return Infinity;
+        for (let i = 71; i < 80; i++) if (a[i] !== b[i]) return Infinity;
+        const auge = Math.hypot(a[66] - b[66], a[67] - b[67], a[68] - b[68]);
+        const kapsel = a[24] ? (ef + Math.abs(a[49] - b[49]) + Math.abs(a[62] - b[62])) / 2 : 0;
+        // die Rundung der Richtungen (1e-9) über Welt-Koordinaten (km) trägt höchstens Mikrometer
+        return Math.max(eb + (b[72] + b[73]) * auge, kapsel, Math.hypot(a[69] - b[69], a[70] - b[70])) + 1e-6;
+    }
+
+    // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
+    // (`L.gen`), ihr SLOT-STAND ist der, den er dabei merkte (`_instanzSlotStand`), und Geometrie, Stoff und Zahl sind dieselben.
+    // Eine Schatten-Gruppe ordnen BEIDE Kaskaden eines Frames (ein Puffer, zwei Präfixe): hat die andere sie umgeordnet, rücken
+    // die gemerkten Instanzen dieses Passes (ihre Slot-Marken, `slotRef`) wieder nach vorn — ein Tausch je verschobene, keine
+    // Prüfung. Gegenprüfung 07.10.: bis hier merkte die GRUPPE die Version ihrer Slots nach der letzten Wahl (`_wahlVer`) —
+    // ordnete k0 nach einem fremden Schreiber neu (der Stufen-Wechsel eines Baums: Freigeben + Belegen, die Zahl bleibt), fand
+    // k1 alles gleich und hielt ihre alten Marken, darunter eine freigegebene (Slot −1): der Tausch schrieb NaN in einen
+    // lebenden Slot und warf in jedem Frame dieser Kaskade (gate:sicht-arbeit (I): 2 Würfe, 2 NaN-Slots, 1 fehlender Werfer).
+    _instanzWahlSteht(g, L) {
+        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
+        if (!w || w.gen !== L.gen) return false;
+        const m = g.mesh;
+        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
+        if (
+            jetzt.belegt !== w.belegt ||
+            jetzt.im !== w.im ||
+            jetzt.vMat !== w.vMat ||
+            jetzt.vKarte !== w.vKarte ||
+            w.geo !== m.geometry ||
+            w.mat !== g.mat ||
+            w.live !== (g.liveCount | 0)
+        )
+            return false;
+        // DIE ORDNUNG STEHT (K72): tauschte seit der Wahl dieses Passes niemand einen Slot der Gruppe (`_archGroupTausch`
+        // zählt `g._ordnung`), liegen ihre gemerkten Instanzen noch vorn — kein Gang über die Marken
+        if (w.ordnung === (g._ordnung | 0)) return true;
+        const refs = w.refs;
+        let tausch = 0;
+        for (let j = 0; j < refs.length; j++) {
+            const i = refs[j].slot;
+            if (i === j) continue;
+            this._archGroupTausch(g, i, j);
+            tausch++;
+        }
+        w.ordnung = g._ordnung | 0;
+        if (tausch > 0 && g.wahl === "haupt" && !m.__arena) this._archMeshBundleTouch(m);
+        return true;
+    }
+
+    _instanzWahlMerke(g, L, kk) {
+        const je = g._wahlJe || (g._wahlJe = new Map());
+        let w = je.get(L.key);
+        if (!w)
+            je.set(
+                L.key,
+                (w = {
+                    gen: 0,
+                    geo: null,
+                    mat: null,
+                    live: 0,
+                    refs: null,
+                    belegt: 0,
+                    im: null,
+                    vMat: 0,
+                    vKarte: 0,
+                    ordnung: -1,
+                })
+            );
+        const m = g.mesh;
+        w.gen = L.gen;
+        w.geo = m.geometry;
+        w.mat = g.mat;
+        w.live = g.liveCount | 0;
+        w.refs = g.slotRef.slice(0, kk);
+        w.ordnung = g._ordnung | 0;
+        this._instanzSlotStand(g, w);
+    }
+
+    // DER SLOT-STAND einer Instanz-Gruppe (Welle C) — was ihre Slots trägt, ohne die Ordnung der Wahl: Belegen, Freigeben und
+    // Stempel (`g.slotStand`), der Puffer ihrer Instanz-Matrizen und die Versionen der Matrizen und des Karten-Stempels, von
+    // denen die Tausche der Wahl abgezogen sind (`_archGroupTausch` zählt, was sie selbst hebt). Ihn hebt jeder fremde
+    // Schreiber — auch eine Tür, die schwingt —, nie die Wahl eines Passes; jeder Pass merkt ihn in seiner Wahl. Schreibt den
+    // Stand in `aus`.
+    _instanzSlotStand(g, aus) {
+        const m = g.mesh;
+        const ak = m.geometry.attributes.aKarte;
+        aus.belegt = g.slotStand | 0;
+        aus.im = m.instanceMatrix;
+        aus.vMat = m.instanceMatrix.version - (g._tauschMat | 0);
+        aus.vKarte = ak ? ak.version - (g._tauschKarte | 0) : -1;
+        return aus;
+    }
+
+    _instanzWahlZurueck(liste) {
+        for (let i = 0; i < liste.length; i++) {
+            const g = liste[i];
+            if (g.mesh) AnazhRealm._instanzZahl(g.mesh, g.liveCount | 0);
+        }
+        liste.length = 0;
+    }
+
+    _instanzWahlGruppen() {
+        return this._wahlGruppen || (this._wahlGruppen = new Set());
+    }
+
+    // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
+    // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
+    // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
+    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) zeichnet im Hauptbild, ihr Zwilling (die Atlas-Gruppe "#S",
+    // w14-lod-sprung) in den Kaskaden. Eine Gruppe, die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines
+    // Frames — sie zeichnet weiter jede Instanz.
+    // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
+    // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
+    // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
+    // Pflanzen-Stufen und die Karte (ihr Fenster der Blende liest aH0 · aKarte).
+    _instanzWahlArt(leaf, castShadow, regional) {
+        if (regional || !leaf || leaf.tuer) return null;
+        const at = leaf.geom && leaf.geom.attributes;
+        if (!at) return null;
+        if (at.aGang) return "gpu";
+        if (leaf.atlasGruppe) return !at.aKarte ? null : leaf.shadowTwin ? "schatten" : castShadow ? null : "haupt";
+        if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
+        if (leaf.shadowTwin) return "schatten";
+        return castShadow ? null : "haupt";
+    }
+
+    // Trägt der Stoff der Gruppe die Maske, deren Fenster die Wahl liest — in dem Kanal, den ihr Pass liest? Die Stufen-
+    // Stoffe der Foundry markieren sie am Bau (`userData.foundryCrossfade` samt Kanal: der Schattenpass liest nur die Farbe,
+    // nie die Deckung), der Karten-Stoff ebenso (`userData.kartenMaske`, er zeichnet nur im Hauptbild). Ohne Maske zeichnet
+    // die GPU jede Instanz voll — ein Fenster schnitte dort ein Loch: die Wahl liest dann nur das Gesetz der Pass-Wahl.
+    _instanzFensterGilt(g) {
+        const ud = g.mat && g.mat.userData;
+        if (!ud) return false;
+        if (g.wahlStufe === "karte") return ud.kartenMaske === true;
+        return ud.foundryCrossfade === true && (g.wahl === "haupt" || ud.foundryCrossfadeKanal === "farbe");
+    }
+
+    // Behält der Pass die Instanz im Slot i? Ihr Körper (die Kugel der Geometrie × Instanz-Matrix + `pflanzeRandM` für den
+    // Wind; die Karte: ihr Quad auf der Stammachse, Höhe aKarte.z und Halbbreite aKarte.y × Instanz-Skala, das sich um die
+    // Hochachse zum Auge dreht) trifft nach dem EINEN Gesetz; trägt der Stoff die Maske, behält ihr Fenster etwas.
+    _instanzBehalten(g, i, L, fenster) {
+        const m = g.mesh;
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const mw = m.matrixWorld.elements;
+        let cx, cy, cz, r;
+        if (g.wahlStufe === "karte") {
+            const ak = m.geometry.attributes.aKarte.array;
+            const h = ak[i * 4 + 2] * 0.5;
+            const hw = ak[i * 4 + 1];
+            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
+            cx = a[o + 12] + a[o + 4] * h;
+            cy = a[o + 13] + a[o + 5] * h;
+            cz = a[o + 14] + a[o + 6] * h;
+            r = s * Math.sqrt(h * h + hw * hw);
+        } else {
+            const geo = m.geometry;
+            if (!geo.boundingSphere) geo.computeBoundingSphere();
+            const bs = geo.boundingSphere;
+            const c = bs.center;
+            const s2 = Math.max(
+                a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2],
+                a[o + 4] * a[o + 4] + a[o + 5] * a[o + 5] + a[o + 6] * a[o + 6],
+                a[o + 8] * a[o + 8] + a[o + 9] * a[o + 9] + a[o + 10] * a[o + 10]
+            );
+            cx = a[o] * c.x + a[o + 4] * c.y + a[o + 8] * c.z + a[o + 12];
+            cy = a[o + 1] * c.x + a[o + 5] * c.y + a[o + 9] * c.z + a[o + 13];
+            cz = a[o + 2] * c.x + a[o + 6] * c.y + a[o + 10] * c.z + a[o + 14];
+            r = bs.radius * Math.sqrt(s2) + AnazhRealm.PASS_WAHL.pflanzeRandM;
+        }
+        // in die Welt (die Gruppe hängt an der Szene oder in ihrem Bündel, beide ohne Lage — die Matrix bleibt exakt)
+        const wx = mw[0] * cx + mw[4] * cy + mw[8] * cz + mw[12],
+            wy = mw[1] * cx + mw[5] * cy + mw[9] * cz + mw[13],
+            wz = mw[2] * cx + mw[6] * cy + mw[10] * cz + mw[14];
+        if (!this._passTrifft(L, wx, wy, wz, 0, 0, 0, r)) return false;
+        return !fenster || this._instanzFenster(g, i, L);
+    }
+
+    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge auf der Instanz etwas? Die Maske misst je INSTANZ die Distanz vom
+    // Auge zu ihrem Ursprung in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
+    // Skelett-Metrik aH0, Blatt-Metrik aH0L; die Karte: zu ihrem Anker, Sichthöhe |aKarte.w|, ein negativer Stempel =
+    // verdeckt, sie blendet voll) — das Intervall ist der Punkt der Instanz, nur der Halt macht es breit; das Urteil fällt
+    // `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Bis 1110-11 maß die Maske je Fragment und das Fenster über die
+    // Weite der Gestalt: die L1 einer Birke in 5 m (Krone 10 m) behielt ihre fernen Äste und wurde ganz gezeichnet. Das Auge der
+    // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
+    // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
+    _instanzFenster(g, i, L) {
+        const m = g.mesh;
+        const geo = m.geometry;
+        const a = m.instanceMatrix.array;
+        const o = i * 16;
+        const mw = m.matrixWorld.elements;
+        const dx = a[o + 12] + mw[12] - L.ex,
+            dz = a[o + 14] + mw[14] - L.ez;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const halt = L.halt;
+        if (g.wahlStufe === "karte") {
+            const ak = geo.attributes.aKarte.array;
+            const sicht = ak[i * 4 + 3];
+            const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
+            const dSmin = Math.max(0, d - halt) * L.perf * k,
+                dSmax = (d + halt) * L.perf * k;
+            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
+        }
+        const dMin = Math.max(0, d - halt) * L.perf,
+            dMax = (d + halt) * L.perf;
+        const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
+        const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
+        const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);
+        return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
+    }
+
+    // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
+    // stadt-voll): der Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im
+    // Nah-Kreis, auch hinter dem Blick —, jede Kaskade ihren Wurf ganz (je ~110k): die Senken des Gang-Satzes wählte keine
+    // Pass-Art (`_instanzWahlArt` kannte nur Pflanzen-Stufen und Karten). Jetzt wählt eine
+    // Arena, deren Senken die Art "gpu" tragen, im Haken jedes Passes, vor seinem Encoder (r184 reicht ihn bei `finishRender`
+    // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
+    // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
+    // EINEN Gesetz der Pass-Wahl (`_passTrifft` als WGSL, `PASS_WAHL_WGSL`), schreibt die getroffenen verdichtet in die Liste
+    // und zählt die Zahl des Zugs atomar im Auftrags-Puffer der Arena; der Instanz-Knoten liest `matrizen[liste[instance_index]]`
+    // (`_senkenKnoten`). Ein Wurf ist der Bruch der Arena (`_arenaBruch`): jedes Glied zeichnet wieder über seinen Zeichner.
+    _instanzWahlGpu(kamera, S) {
+        const reg = AnazhRealm.__arenen;
+        if (!reg || !reg.size || AnazhRealm.__arenaBruch) return;
+        const rend = this.state.renderer;
+        try {
+            const arenen = [];
+            for (const a of reg.values()) {
+                if (!a._wahl || !kamera.layers.test(a.layers)) continue;
+                const zug = a._wahlVor(rend, kamera);
+                if (zug && zug.wahl.length) arenen.push(a, zug);
+            }
+            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen);
+        } catch (e) {
+            this._arenaBruch(e);
+        }
+    }
+
+    // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
+    // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
+    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (x: die Instanzen zu 64, y: ihre Züge).
+    _wahlRechnen(rend, L, arenen) {
+        const be = rend.backend,
+            dev = be.device,
+            U = GPUBufferUsage;
+        let W = AnazhRealm.__wahlGpu;
+        if (!W || W.dev !== dev) {
+            const lay = dev.createBindGroupLayout({
+                label: "pass-wahl",
+                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                    binding: i,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type, hasDynamicOffset: i === 1 },
+                })),
+            });
+            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
+            const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
+            const pipe = dev.createComputePipeline({
+                label: "pass-wahl",
+                layout,
+                compute: { module, entryPoint: "wahl" },
+            });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
+            W = AnazhRealm.__wahlGpu = {
+                dev,
+                lay,
+                pipe,
+                lage,
+                lageF: new Float32Array(68),
+                puffer: null,
+                f: null,
+                u: null,
+            };
+        }
+        const al = dev.limits.minStorageBufferOffsetAlignment;
+        const off = [];
+        let bytes = 0;
+        for (let i = 1; i < arenen.length; i += 2) {
+            off.push(bytes);
+            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 48) / al) * al;
+        }
+        if (!W.puffer || W.puffer.size < bytes) {
+            const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
+            if (W.puffer) W.puffer.destroy();
+            W.puffer = dev.createBuffer({ label: "pass-wahl-auftraege", size, usage: U.STORAGE | U.COPY_DST });
+            W.f = new Float32Array(size / 4);
+            W.u = new Uint32Array(W.f.buffer);
+        }
+        const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
+        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
+        const enc = dev.createCommandEncoder({ label: "pass-wahl" });
+        const pass = enc.beginComputePass({ label: "pass-wahl" });
+        pass.setPipeline(W.pipe);
+        for (let j = 0; j < off.length; j++) {
+            const a = arenen[2 * j],
+                q = a.__instanzQuelle,
+                n = arenen[2 * j + 1].wahl.length / 5;
+            for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
+            const puf = [W.lage, W.puffer, ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer)];
+            let bg = a.__wahlBG;
+            if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
+                const entries = puf.map((buffer, i) => ({
+                    binding: i,
+                    resource: { buffer, size: i === 1 ? n * 48 : undefined },
+                }));
+                bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
+            }
+            pass.setBindGroup(0, bg.bg, [off[j]]);
+            pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
+        }
+        pass.end();
+        dev.queue.submit([enc.finish()]);
+    }
+
+    // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und
+    // Abstand des Auges (n·a + d — die Instanz rechnet relativ zum Auge, f32 trägt keine Kilometer auf Millimeter), das Auge,
+    // der Rand (Halt + Licht, je Meter Abstand der Rand der zeitlichen Auflösung + der Drehung); im Kaskaden-Pass die
+    // Licht-Kapsel: je Ebene der Scheibe (`fit.ebenen`) dasselbe, die Licht-Tiefe über dem Boden der Box (die dritte Zeile von
+    // `fit.basisInv` relativ zum Auge, minus `zb`), das Licht (w = 1: die Kapsel gilt) und ihr Saum (Saum der Scheibe, zweimal
+    // der Halt, der Licht-Rand) — die Größen von `_passTrifft`.
+    static _wahlLage(L, aus) {
+        const ax = L.ax,
+            ay = L.ay,
+            az = L.az;
+        const ebene = (P, o) => {
+            const n = P.normal;
+            aus.set([n.x, n.y, n.z, n.x * ax + n.y * ay + n.z * az + P.constant], o);
+        };
+        for (let p = 0; p < 6; p++) ebene(L.fr.planes[p], p * 4);
+        aus.set([ax, ay, az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
+        const f = L.fit;
+        if (!f) return aus.fill(0, 32);
+        for (let p = 0; p < 6; p++) ebene(f.ebenen[p], 32 + p * 4);
+        const b = f.basisInv.elements,
+            d = L.dir;
+        aus.set([b[2], b[6], b[10], b[2] * ax + b[6] * ay + b[10] * az + b[14] - f.zb], 56);
+        aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
+        return aus;
+    }
+
+    // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 12 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
+    // erste Instanz · Zahl · Platz der Zahl im Auftrags-Puffer · Abschnitt der Liste, der Saum (die Gestalt des Gangs trägt
+    // keinen: ihre Kugel deckt jede Pose). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
+    // Liefert die größte Zahl (die Breite des Dispatch).
+    static _wahlAuftraege(wahl, f, u, o) {
+        let nMax = 0;
+        for (let j = 0; j < wahl.length; j += 5, o += 12) {
+            const g = wahl[j].geometry;
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            const s = g.boundingSphere;
+            f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
+            u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
+            f.set([0, 0, 0, 0], o + 8);
+            nMax = Math.max(nMax, wahl[j + 2]);
+        }
+        return nMax;
+    }
+
+    // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
+    // Blende und jeder Maske): je Rampe die Distanz, an der sie 0 verlässt bzw. 1 erreicht — per Bisektion AM GESETZ (seine
+    // f0 · f1 · f1o steigen monoton mit der Distanz), auf 1 mm, je Kante die äußere Grenze: das Fenster behält eher zu viel
+    // als zu wenig. Rein (kein Zustand): gate:foundry-crossfade fährt es in Node gegen das Gesetz.
+    static _blendeKanten(gesetz, d0, d1, fade, fade0) {
+        const cfg = { d0, d1, fade, fade0 };
+        const hoch = 4 * Math.max(d0, d1, 1) + Math.abs(fade) + Math.abs(fade0);
+        // [a, b]: `bed` gilt bei b, nicht bei a (bed steigt monoton von falsch nach wahr)
+        const kante = (lod, bed) => {
+            let a = 0,
+                b = hoch;
+            if (bed(gesetz(a, 0, cfg, lod, true, a))) return [0, 0];
+            if (!bed(gesetz(b, 0, cfg, lod, true, b))) return [hoch, Infinity];
+            while (b - a > 1e-3) {
+                const mitte = 0.5 * (a + b);
+                if (bed(gesetz(mitte, 0, cfg, lod, true, mitte))) b = mitte;
+                else a = mitte;
+            }
+            return [a, b];
+        };
+        return {
+            d0,
+            d1,
+            fade,
+            fade0,
+            l0Aus: kante(0, (x) => x.f0 >= 1)[1], // die L0 behält, solange f0 < 1 (Blatt-Metrik)
+            l1Ein: kante(1, (x) => x.f0 > 0)[0], // die L1 blendet ein, sobald f0 > 0 (Blatt-Metrik)
+            l1Aus: kante(1, (x) => x.f1o >= 1)[1], // die L1 behält, solange f1o < 1 (Skelett-Metrik)
+            karteEin: kante(2, (x) => x.f1 > 0)[0], // die Karte blendet ein, sobald f1 > 0
+        };
+    }
+
+    // Behält die Stufe über das Distanz-Intervall [dSmin, dSmax] (Skelett) bzw. [dLmin, dLmax] (Blatt) ein Fragment mit
+    // positivem Maß der Dither-Werte? Das Gesetz behält die L0 bei ramp(f0) < dh, die L1 bei f1o < dh ≤ ramp(f0) (die
+    // einzige Nah-Stufe, Stempel 3, blendet nie ein: f1o < dh), die Karte bei dh ≤ min(2·f1, 1) oder verdeckt — je Rampe
+    // die Kante aus `_blendeKanten`. Rein (gate:foundry-crossfade prüft es je Stufe gegen das Gesetz, kein Loch).
+    static _blendeBehaelt(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt) {
+        if (verdeckt === true) return true; // VOLL: die verdeckte Karte, die Stufe im Halt (K36) — die Maske behält alles
+        if (stufe === 1) return dLmin < K.l0Aus;
+        if (stufe === 2) return dLmax > K.l1Ein && dSmin < K.l1Aus;
+        if (stufe === 3) return dSmin < K.l1Aus;
+        if (stufe === "karte") return dSmax > K.karteEin;
+        return true;
+    }
+
+    // DER SCHIRM — die EINE Quelle jeder Schirm-Größe (Gebot 7: Kosten an den Schirm). Einmal je Takt (Loop-Eingang)
+    // aus dem Zeichenpuffer des Renderers (Bildpunkte samt Pixel-Verhältnis) und dem Sichtfeld der Kamera: Breite ·
+    // Höhe · pxJeM (Bildpunkte, die ein Meter Objekt in einem Meter Abstand senkrecht deckt). Jedes Gesetz, das
+    // den Schirm liest, liest IHN, und richtig herum: ein kleinerer Schirm trägt höchstens gleich viel Detail. Bis
+    // V18.531 las das Fell-Gesetz die Canvas-Höhe selbst (Rückfall 1080, Sichtfeld-Rückfall 60°), und der Geräte-Seed
+    // las `innerWidth·innerHeight·dpr²` VERKEHRT herum (ab 4 MPix weniger Welt: ein größerer Schirm startete ärmer).
+    // gate:schirm-monotonie zählt die Welt in drei Fenstergrößen je Pass und Klasse und nennt jeden zweiten Weg.
+    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0. Eine BÜHNE (`ziel`, eine Leinwand
+    // des Welt-Renderers mit ihrem Satz `ziel.buehne`) ist ihr eigener Schirm: derselbe Weg misst ihren Zeichenpuffer in
+    // ihren Satz (ohne Welt-Kamera, pxJeM null) — ihr Ziel folgt ihrer Leinwand, nie dem Fenster der Welt.
+    _schirmMessen(ziel = null) {
+        const st = this.state;
+        const rend = ziel || st.renderer;
+        const cam = ziel ? null : st.camera;
+        const h = ziel ? ziel.buehne : this;
+        const v = h._schirmPuffer || (h._schirmPuffer = new THREE.Vector2());
+        const s = h._schirmWert || (h._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
+        if (rend && typeof rend.getDrawingBufferSize === "function") rend.getDrawingBufferSize(v);
+        else v.set(0, 0);
+        s.breite = v.x;
+        s.hoehe = v.y;
+        s.pxJeM = cam && cam.isPerspectiveCamera && v.y > 0 ? v.y / (2 * Math.tan((cam.fov * Math.PI) / 360)) : null;
+        return s;
+    }
+
+    _schirm() {
+        return this._schirmWert || this._schirmMessen();
+    }
+
+    // DER TAKT DER HORIZONT-KARTE (je Bild aus `_weltLichtTakt`, wo das Richtlicht dieses Bilds steht; dazu aus `_atmoTakt`): das
+    // Gitter des Gesetzes folgt dem Anker (`_horizontGitterTakt`), die Karte wird neu gemalt, wenn das Licht sich um `lichtRad`
+    // gedreht hat oder ein Gitter kam — Kosten an Änderung (Gebot 7), der Null-Renderer zeichnet nichts. Unter dem Horizont, vor
+    // dem ersten Gitter, nach einem Bruch des Fadens und ohne Wurf des Lichts (`_lichtWirft`: die Sonnen-Sicht ist ein Schatten wie
+    // die Kaskaden jedes Stoffs — ohne Schatten-Karte des Renderers, Holz kienspan, wirft sie so wenig wie sie) ruht die Sicht (1).
+    _horizontKarteTakt() {
+        const st = this.state;
+        const K = st.horizontKarte;
+        if (!K) return null;
+        const dl = st.directionalLight;
+        const rend = st.renderer;
+        if (!dl || !rend || rend._isHeadlessNull || !st.rendererReady) return K;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        this._horizontGitterTakt(K);
+        const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
+        L.copy(dl.position);
+        if (dl.target) L.sub(dl.target.position);
+        if (!K.bereit || !this._lichtWirft() || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+            K.U.aktiv.value = 0;
+            return K;
+        }
+        if (K.gemalt !== K.stand || K.licht.dot(L) < Math.cos(H.lichtRad)) {
+            K.U.licht.value.copy(L);
+            if (!this._atmoZeichne(K.pass, K.rt)) return K; // die Pipeline im Vorbau: der nächste Takt malt
+            K.licht.copy(L);
+            K.gemalt = K.stand;
+            K.malZahl++;
+        }
+        K.U.aktiv.value = 1;
+        return K;
+    }
+
+    // DAS GITTER DES GESETZES (`HORIZONT_KARTE`): erst nach dem ersten Weltbild, um den Anker des Rings (ohne Ring der Spieler) auf
+    // das Raster `zelleM` gelegt; neu, wenn der Anker `nachM` von der Mitte gewandert ist. Der Feld-Faden rechnet die Höhe
+    // (`gitter` im voxel-worker, `gelaende-core` `hoehe` ohne Detail) in Aufträgen à `zeilenJeAuftrag` Zeilen nacheinander; das alte
+    // Gitter trägt, bis das neue ganz da ist. Eine Welt, die geht (`_horizontKarteLeeren`), lässt den Auftrag fallen (`gen`);
+    // ein Bruch des Fadens meldet sich EINMAL laut und hält die Karte an (`gebrochen`).
+    _horizontGitterTakt(K) {
+        const st = this.state;
+        if (K.flug || K.gebrochen || !st._weltbildDa) return;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const fr = st.fernRing;
+        const pm = st.playerMesh;
+        const ax = fr ? fr.anchorX : pm ? pm.position.x : NaN;
+        const az = fr ? fr.anchorZ : pm ? pm.position.z : NaN;
+        if (!Number.isFinite(ax) || !Number.isFinite(az)) return;
+        if (K.mitte && Math.hypot(ax - K.mitte[0], az - K.mitte[1]) <= H.nachM) return;
+        const [n, d] = [H.gitter, H.zelleM];
+        const [cx, cz] = [Math.round(ax / d) * d, Math.round(az / d) * d];
+        const [x0, z0] = [cx - (n / 2) * d, cz - (n / 2) * d];
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const neu = new Uint16Array(n * n);
+        const gen = K.gen;
+        const halb = THREE.DataUtils.toHalfFloat;
+        K.flug = true;
+        const zeilen = (j0) => {
+            if (K.gen !== gen) return;
+            if (j0 >= n) {
+                K.hoehen.image.data.set(neu);
+                K.hoehen.needsUpdate = true;
+                K.U.ursprung.value.set(x0, z0);
+                K.U.bezug.value = wl;
+                K.mitte = [cx, cz];
+                K.stand++;
+                K.bereit = true;
+                K.flug = false;
+                return;
+            }
+            const nz = Math.min(H.zeilenJeAuftrag, n - j0);
+            this._fernAuftrag("gitter", { x0, z0: z0 + j0 * d, d, nx: n, nz })
+                .then((a) => {
+                    if (K.gen !== gen) return;
+                    const h = a && a.hoehen;
+                    if (!h || h.length !== n * nz)
+                        throw new Error(`die Antwort trägt ${h ? h.length : 0} statt ${n * nz} Höhen`);
+                    for (let k = 0; k < h.length; k++) {
+                        if (!Number.isFinite(h[k])) throw new Error(`die Höhe ${h[k]} am Gitter-Punkt ${j0 * n + k}`);
+                        neu[j0 * n + k] = halb(h[k] - wl);
+                    }
+                    zeilen(j0 + nz);
+                })
+                .catch((e) => {
+                    if (K.gen === gen) [K.flug, K.gebrochen] = [false, true];
+                    this._stoffBruch("die Horizont-Karte (das Gitter im Feld-Faden)", e);
+                });
+        };
+        zeilen(0);
+    }
+
+    // Eine Welt geht (Ring-Abschied: Saat, Welt-Wechsel, Sicht-Regler): ihr Gitter gilt nicht mehr, ein Auftrag im Flug fällt.
+    _horizontKarteLeeren() {
+        const K = this.state.horizontKarte;
+        if (!K) return;
+        K.gen++;
+        K.flug = false;
+        K.gebrochen = false;
+        K.mitte = null;
+        K.bereit = false;
+        K.U.aktiv.value = 0;
+    }
+}
+_stammZonen(AnazhRealm, [AnazhRealm_bild_kosten]);
+
+// ===== ATLAS · Bild/kosten — Außen-Konstanten =====
+// DIE LUFT (V18.530, `_luftEnsure`): Koschmieder-Extinktion mit Höhen-Abnahme. Die Anker sind BEOBACHTBARE
+// Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
+// Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
+// Rayleigh bei 550 nm auf Meereshöhe (1,16·10⁻⁵/m, V ≈ 340 km). Der Dunst sitzt in der Grenzschicht: Skalenhöhe
+// 1 km über dem Meeresspiegel — dieselbe Luft ist das Aerosol der EINEN Atmosphäre (D3, `_atmoMedium`): ihre Keule zur
+// Sonne trägt die Mie-Phase des Gesetzes. Die Anker wohnen EINMAL im Gesetz (foundry-core `ATMO_GESETZ.luft`, auch das Labor
+// liest sie); hier kommt nur die Sicht unter Wasser hinzu. Fehlt der Kern, bricht es laut.
+AnazhRealm._atmoKern = function () {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const G = tc ? tc.ATMO_GESETZ : null;
+    if (!G || !G.luft || !G.nacht) throw new Error("Die Atmosphäre: foundry-core.js fehlt (__terrainCore.ATMO_GESETZ)");
+    return G;
+};
+// DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
+// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
+// die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
+// der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
+AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
+// DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
+// (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
+AnazhRealm.SZENE_SKALA = 0.75;
+AnazhRealm.SZENE_SKALA_MIN = 0.5;
+// Der Resolve der Hochskalierung (`_zeitAufloesung`): das Gewicht je Eingangs-Texel exp(−ZEIT_KERN · d²), d in Ausgabe-Pixeln;
+// die Breite der Varianz-Klemme im Stand (r184: 1); die Nach-Schärfe je fehlendem Skalen-Anteil (`nachSchaerfe`).
+AnazhRealm.ZEIT_KERN = 7;
+AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
+// DAS DECKUNGS-GEDÄCHTNIS des Resolve (A3b, `_zeitAufloesung`): eine Deckungs-Kante ist ein Tiefen-Sprung im 3×3 über `kante`
+// relativ (Δz/z: 0,4 m auf 20 m — Blatt vor Blatt zählt); das Gedächtnis folgt ihr mit `rate` je Frame; zwischen `an[0]` und
+// `an[1]` löst es die Klemme, voll nur in Ruhe (unter `ruhePx` Ausgabe-Pixeln Bewegung je Frame).
+AnazhRealm.FLACKER = Object.freeze({ kante: 0.02, rate: 0.125, an: Object.freeze([0.3, 0.6]), ruhePx: 2 });
+// Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
+// läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
+AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER GETRAGENE LEIB der zeitlichen Auflösung (`_traaKameraBewegung`, `_traegerTeile`): höchstens `teile` Boxen (der Mensch trägt
+// je Knochen eine, ~15, dazu das Gerät in der Hand); `saumM` weitet jede Box (Gelenk-Mischung und Tuch weichen von der Starre
+// ihres Knochens ab).
+AnazhRealm.TRAEGER = Object.freeze({ teile: 24, saumM: 0.03 });
+// Der Takt des GPU-Kehraus (`_gpuKehraus`): je Gang Graph + r184-Register (nach dem Kehraus beide nur das Bild); was zwischen
+// zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
+AnazhRealm.GPU_KEHRAUS_MS = 2000;
+// DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
+// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
+// Spiel nach dem Weltbild baut der Knoten-Bau in Raten unter der EINEN Frist der Bau-Arbeit (`_knotenRate` → `_bauFrist`,
+// BAU_FRIST_MS; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
+AnazhRealm.ERST_BAU_MS = 4;
+// EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
+// verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)
+AnazhRealm.KNOTEN_FLUG_BILDER = 600;
+AnazhRealm.KNOTEN_GANG = Object.freeze([
+    Object.freeze(["setup", "analyze", "generate"]),
+    Object.freeze(["fragment", "vertex", "compute"]),
+]);
+// DER BAU-SCHLÜSSEL (`_gestaltSchluessel`): die Zahlen eines Stoffs, die der Knoten-Bau nur als Stoff-Referenz liest — ihr
+// Wert (0 oder nicht) teilt kein Programm
+AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensity", "emissiveIntensity"]);
+// DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
+// Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
+// die zeitliche Auflösung versetzt die Projektion um höchstens einen halben Pixel (1080p, 75°: 0,0007 je m), der Rand trägt
+// ~2 Pixel — ein Satz, der seine Wahl über Frames hält, verliert am Bildrand nichts. `saumM` je Kaskade: so weit liegt die
+// Wahl-Scheibe außerhalb der Scheibe beim Rendern; läuft die Scheibe zwischen zwei Karten darüber hinaus, rendert die
+// Kaskade neu (`_kaskadeDeckt`). `pflanzeRandM`: der Wind-Saum um die Kugel einer Pflanzen-Instanz (Krone und Halm wiegen).
+// `haltM` (Welle C): DIE LAGE STEHT, solange jede Ebene des Passes ihre Richtung hält und um höchstens so viel wandert
+// (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
+// ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
+// Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
+// `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): der Rand einer Perspektive
+// (Bogenmaß) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das
+// 1,5-Fache geweitet; die Wahl hält über eine Drehung bis zur Hälfte (`_wahlHaelt`), dann wählt sie neu.
+// `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
+// seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
+// Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
+// `wegM` (w20-leib-takt, `_instanzWahlWeg`): so weit wandert ein Urteil der Instanz-Wahl (Auge, Ebenen, Scheibe), bevor die
+// Gruppe wieder voll wählt — darunter urteilt sie nur die Instanzen neu, deren Urteil unter den Rändern ± wegM nicht hält.
+// Im Gang (1,15 m/s) wählt sie so etwa jedes 26. Bild voll, unter 5 % der Bilder.
+AnazhRealm.PASS_WAHL = Object.freeze({
+    sichtRand: 0.003,
+    saumM: Object.freeze([2, 8, 24]),
+    pflanzeRandM: 2,
+    haltM: 0.02,
+    drehRand: (2 * Math.PI) / 180,
+    lichtRandTexel: 32,
+    wegM: 0.5,
+});
+// die Drehung der Licht-Basis im Abdruck einer Lage (`_wahlAbdruck`): die Elemente ihrer 3 × 3
+AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
+// DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags
+// ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
+// jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
+// entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
+// Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
+AnazhRealm.PASS_WAHL_WGSL = `
+struct Lage {
+    ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
+    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f
+}
+struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
+@group(0) @binding(0) var<uniform> lage: Lage;
+@group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
+@group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
+@group(0) @binding(3) var<storage, read_write> liste: array<u32>;
+@group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
+@compute @workgroup_size(64)
+fn wahl(@builtin(global_invocation_id) id: vec3u) {
+    let a = auftraege[id.y];
+    if (id.x >= a.platz.y) { return; }
+    let i = a.platz.x + id.x;
+    let m = matrizen[i];
+    let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
+    let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
+    let r = a.kugel.w * sqrt(s2) + a.saum.x;
+    let rr = r + lage.rand.x + lage.rand.y * length(c);
+    for (var p = 0u; p < 6u; p++) {
+        let e = lage.ebenen[p];
+        if (dot(e.xyz, c) + e.w < -rr) { return; }
+    }
+    if (lage.licht.w > 0.5) {
+        let ende = c + lage.licht.xyz * max(0.0, dot(lage.tiefe.xyz, c) + lage.tiefe.w + r);
+        let st = r + lage.saum.x;
+        for (var p = 0u; p < 6u; p++) {
+            let e = lage.kapsel[p];
+            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
+        }
+    }
+    liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
+}
+`;
+// DIE FARBSICHT (spielgang.K4, `_farbsichtMatrix`, die Post-Kette `_ensurePostProcessing`): die Simulation der Dichromasie nach
+// Viénot, Brettel & Mollon 1999 („Digital video colourmaps for checking the legibility of displays by dichromats", Color Res. Appl.
+// 24:243) — linear-RGB → LMS (`lms`, die Zapfen-Antwort nach Smith & Pokorny), der fehlende Zapfen als Ebene durch Weiß und einen
+// Anker des Schirms (`ebene`), zurück nach linear-RGB. Die Daltonisierung nach dem Prinzip von Fidaner, Lin & Ozguven (2005): der
+// Fehler, den der Dichromat nicht sieht (Bild − Simulation), geht in die Achsen, die er sieht — HALBSEITIG: nur die eine Seite des
+// Fehlers im Kanal des verlorenen Gegensatzes (`kanal`: Rot für protan und deutan, Blau für tritan; e = Zeile von I − Sim), Δ =
+// `schub` · staerke · max(e · Bild, 0). Rötliches wird dunkler und blauer, Grünes, Graues und das Blau des Himmels bleiben, wie der
+// Dichromat sie sah. Gemessen am Ausgabe-Bild des Genesis-Orts (swiftshader, Grenzen unter Machado-Deuteranopie, je Pixel): ohne
+// min ΔE 16,9 / Mittel 22,3; Fidaners Schub (beidseitig, Rot-Fehler in Grün und Blau je 0,7) machte Braun blauer und dem Grau
+// ähnlicher (Boden|Bau 16,9 → 11,6); ein beidseitiger Schub hebt die Grenzen, kippt aber den Himmel für den Dichromaten nach Khaki;
+// dieser 19,3 / 25,4, der Himmel unberührt. Acht klassische Verwechslungs-Paare (Rot/Grün, Braun/Oliv, Rosa/Grau, Lila/Blau …):
+// Deuteranopie min 6,4 → 31,8, Protanopie 4,1 → 29,1; die Tritan-Paare (Blau/Grün, Gelb/Rosa, Himmel/Grau …) 10,4 → 12,1 (Mittel
+// 22,1 → 49,0). Weiß, Grau und Schwarz tragen e = 0.
+AnazhRealm.FARBSICHT = Object.freeze({
+    arten: Object.freeze(["aus", "deuteranopie", "protanopie", "tritanopie"]),
+    lms: Object.freeze([
+        [17.8824, 43.5161, 4.11935],
+        [3.45565, 27.1554, 3.86714],
+        [0.0299566, 0.184309, 1.46709],
+    ]),
+    // der fehlende Zapfen (Zeile von lms) und der Anker seiner Ebene neben Weiß: protan und deutan das Blau des Schirms (Viénot
+    // 1999: die Konstanten L = 2,02344·M − 2,52581·S und M = 0,494207·L + 1,24827·S sind genau diese Ebene), tritan sein Rot (der
+    // Anker 660 nm bei Brettel, Viénot & Mollon 1997 — die eine Ebene trägt ihn; ihre zwei Halb-Ebenen fallen am Rot zusammen)
+    ebene: Object.freeze({ protanopie: [0, 2], deuteranopie: [1, 2], tritanopie: [2, 0] }),
+    kanal: Object.freeze({ protanopie: 0, deuteranopie: 0, tritanopie: 2 }),
+    schub: Object.freeze({
+        protanopie: Object.freeze([-1.5, -2.25, 2.25]),
+        deuteranopie: Object.freeze([-1.5, -2.25, 2.25]),
+        tritanopie: Object.freeze([-0.75, -0.75, 0]),
+    }),
+    staerke: 1,
+});
+// DER ZUGANG (spielgang.K4, `state.zugang`, Einstellungen › Ton & Sicht): das Sichtfeld des Spielers (vertikal, Grad; null =
+// KAM_FOV_GRAD) in `zugang.fov` im Bereich `fov`, die Unschärfe der Bewegung aus ab `laufPxAus` Ausgabe-Pixeln Bewegung je Bild (`_zugangTakt`; Genesis-Ort,
+// swiftshader, 1,5° Drehung je Bild über 12 Bilder: Kanten-Energie an 3,6, aus 12,5, in Ruhe beide 7,8 — spielgang.K4#2).
+AnazhRealm.ZUGANG = Object.freeze({ fov: Object.freeze([60, 100]), laufPxAus: 4 });
+// DAS SICHTFELD DES SPIELERS als reine Funktion: die Wahl (Menü, Stand) geklemmt auf ZUGANG.fov, null ohne Zahl — der EINE Weg Menü → Stand
+// → `_kamFov`; die Schreiber legen sie mit `Object.assign(zugang, { fov })` ab (`camera.fov` schreibt allein `_kamFov`, gate:fahr-leben T5)
+AnazhRealm._zugangFov = function (v) {
+    if (v == null || v === "" || !Number.isFinite(+v)) return null;
+    const [f0, f1] = AnazhRealm.ZUGANG.fov;
+    return Math.max(f0, Math.min(f1, +v));
+};
+// die Farbsicht als reine Funktion: { sim (Zeilen-Matrix 3×3), fehler (e), schub (v · staerke) } je Art — Δ = schub · max(e · Bild, 0)
+AnazhRealm._farbsichtMatrix = function (art, staerke) {
+    const F = AnazhRealm.FARBSICHT;
+    const E = F.ebene[art];
+    if (!E) return null;
+    const mul = (A, B) => A.map((z) => [0, 1, 2].map((j) => z[0] * B[0][j] + z[1] * B[1][j] + z[2] * B[2][j]));
+    const inv = (m) => {
+        const [[a, b, c], [d, e, f], [g, h, i]] = m;
+        const A = e * i - f * h,
+            B = -(d * i - f * g),
+            C = d * h - e * g;
+        const det = a * A + b * B + c * C;
+        return [
+            [A / det, -(b * i - c * h) / det, (b * f - c * e) / det],
+            [B / det, (a * i - c * g) / det, -(a * f - c * d) / det],
+            [C / det, -(a * h - b * g) / det, (a * e - b * d) / det],
+        ];
+    };
+    // die Ebene durch Weiß (lms · 1) und den Anker: der fehlende Zapfen z = k0·u + k1·v aus den zwei anderen (u, v)
+    const [z, a] = E;
+    const [u, v] = [0, 1, 2].filter((i) => i !== z);
+    const w = F.lms.map((r) => r[0] + r[1] + r[2]);
+    const q = F.lms.map((r) => r[a]);
+    const det = w[u] * q[v] - w[v] * q[u];
+    const k0 = (w[z] * q[v] - w[v] * q[z]) / det,
+        k1 = (w[u] * q[z] - w[z] * q[u]) / det;
+    const P = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ];
+    P[z] = [0, 0, 0];
+    P[z][u] = k0;
+    P[z][v] = k1;
+    const sim = mul(inv(F.lms), mul(P, F.lms));
+    const s = Number.isFinite(staerke) ? staerke : F.staerke;
+    const k = F.kanal[art];
+    return { sim, fehler: sim[k].map((v, j) => (k === j ? 1 : 0) - v), schub: F.schub[art].map((v) => s * v) };
+};
