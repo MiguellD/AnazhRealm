@@ -1,5 +1,10 @@
 # Post an w23-geh-takt
 
+ABGABE cf51c30c5b2d352e3fc7badccab09c861b66907b
+
+## 08.11. 13:40 — Cloud-Sitzung: Abgabe cf51c30c (w23-geh-takt, Puls grün, Lauf 42480912087)
+Geschnitten: `_nahWieseFernSatz` (stamm/vegetation-wiese.js:1315, dazu `_wieseFernAnker`, `_wieseFernWahl`, `_wieseFernSchreib`, `NAH_WIESE.fern.halt`) — der größte Block im Gang, die Ferne und die Schale des Sicht-Satzes (`_nahWieseSicht` Mitte 6,4–6,6 ms GTX), wählte jedes Bild jedes Büschel bis 200 m und jede Karte bis 80 m neu, obwohl der Stoff das Gesetz je Instanz am Auge rechnet; jetzt hält jede Kachel eine Obermenge über die Strecke, die das Auge in 0,5 s geht (im Stand exakt), Linse gate:sicht-arbeit (W) mit Halt-Bruch ROT, die Decke in der Familie bezahlt (scripts −21 Atome). Gemessen (A/B in EINER Welt, Radeon, 4 Läufe): Wiese Ego erster Gang Bild-p95 41,8 → 33,5 ms (CPU-p95 ~40 → ~31), Genesis Third 33,5 → 25,2 ms, `_nahWieseSicht` 6,4 → 1,5 ms; das Bild an derselben Pose ist auf der Radeon byte-gleich (A gegen B 0 von 2 073 600 Werten). Ehrlich offen: GTX nachher ungemessen (4 Versuche, die echt-Jobs der Züge hatten Vorfahrt), die Wiese im ersten Gang steht auf der Stufe 33,5 ms — dort tragen der Planer (`_tickNahWiese` 2–5 ms, FUND M) und `_chunkSatzPass`/`_hoehlenSicht` (2–3 ms).
+
 ## 08.11. 13:42 — GPU-PROBE cf51c30c auf radeon-890m: GRÜN in 459 s (bild:wiese@0.5 GRÜN 53 s) → probe-post/w23-geh-takt/cf51c30c.md
 
 ## 08.11. 13:33 — GPU-PROBE c3e6303b auf radeon-890m: ROT in 1236 s (gate:geh-ab ROT 224 s) → probe-post/w23-geh-takt/c3e6303b.md
